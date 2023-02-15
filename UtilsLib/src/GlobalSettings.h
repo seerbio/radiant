@@ -9,6 +9,8 @@
 
 #include <QString>
 
+using ProteinId = int;
+
 class UTILSLIB_EXPORTS GlobalSettings {
 
 public:
