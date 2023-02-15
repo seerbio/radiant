@@ -7,9 +7,13 @@
 
 #include "UtilsLib_Exports.h"
 
+#include <QPointF>
 #include <QString>
 
 using ProteinId = int;
+using ScanNumber = int;
+using ScanPoint = QPointF;
+using ScanPoints = QVector<QPointF>;
 
 class UTILSLIB_EXPORTS GlobalSettings {
 

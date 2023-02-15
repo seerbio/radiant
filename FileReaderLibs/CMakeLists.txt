@@ -22,12 +22,14 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
+        src/MsParquetReader.cpp
         src/PythiaParameterReader.cpp
 )
 
 SET(HEADER_FILES
         src/FastaReader.h
         src/JsonParametersReader.h
+        src/MsParquetReader.h
         src/PythiaParameterReader.h
 )
 
@@ -61,8 +63,9 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         UtilsLib
+        ${ARROW_SHARED_LIBRARY}
+        ${PARQUET_SHARED_LIBRARY}
         )
-
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
