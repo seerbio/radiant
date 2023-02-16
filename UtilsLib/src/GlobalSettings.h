@@ -9,6 +9,7 @@
 
 #include <QPointF>
 #include <QString>
+#include <QVector>
 
 using ProteinId = int;
 using ScanNumber = int;

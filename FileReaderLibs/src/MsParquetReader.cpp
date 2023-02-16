@@ -16,6 +16,8 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 
+#include <iostream>
+
 
 namespace {
 
@@ -87,210 +89,272 @@ bool MsParquetReader::checkParquetStatus() {
     return st.ok();
 }
 
-//namespace {
-//
-//    void printSchema(const std::shared_ptr<arrow::Schema> &schema) {
-//
-//        std::string test = schema->ToString();
-//        const std::vector<std::string> testSplit = schema->field_names();
-//
-//        std::cout << "PARQUET SCHEMA" << std::endl;
-//        for (auto &s : testSplit) {
-//            std::cout << s << std::endl;
-//        }
-//    }
-//
-//    template<typename T, typename U>
-//    Err readColumn(
-//            const std::shared_ptr<arrow::Table> &table,
-//            const std::shared_ptr<arrow::Schema> &schema,
-//            int columnIndex,
-//            std::vector<U> *output
-//            ) {
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isNotEmpty(schema->field_names()); ree;
-//
-//        std::shared_ptr<arrow::ChunkedArray> mzCol = table->column(columnIndex);
-//        const std::shared_ptr<arrow::Array> mzColChunks = mzCol->chunks()[0];
-//
-//        auto arrowArray = std::static_pointer_cast<T>(mzColChunks);
-//
-//        for (int64_t i = 0; i < mzColChunks->length(); ++i) {
-//            output->push_back(arrowArray->Value(i));
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//
-//    Err buildParquetRowsVector(
-//            std::vector<double> &mzColData,
-//            std::vector<float> &intensityColData,
-//            std::vector<int> &msLevelColData,
-//            std::vector<int> &scanNumberColData,
-//            std::vector<double> &retentionTimeColData,
-//            std::vector<double> &collisionEnergyColData,
-//            std::vector<double> &mzTargetColData,
-//            std::vector<double> &isoWindowLowerColData,
-//            std::vector<double> &isoWindowUpperColData,
-//            std::vector<ParquetRow> *parquetRows
-//            ) {
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(intensityColData.size())
-//                ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(msLevelColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(scanNumberColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(retentionTimeColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(collisionEnergyColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(mzTargetColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(isoWindowLowerColData.size())
-//        ); ree;
-//
-//        e = ErrorUtils::isEqual(
-//                static_cast<int>(mzColData.size()),
-//                static_cast<int>(isoWindowUpperColData.size())
-//        ); ree;
-//
-//        for (size_t i = 0; i < mzColData.size(); i++) {
-//
-//            ParquetRow pr;
-//            pr.mz = mzColData.at(i);
-//            pr.intensity = intensityColData.at(i);
-//            pr.msLevel = msLevelColData.at(i);
-//            pr.scanNumber = scanNumberColData.at(i);
-//            pr.retentionTime = retentionTimeColData.at(i);
-//            pr.collisionEnergy = collisionEnergyColData.at(i);
-//            pr.isoWindowLower = isoWindowLowerColData.at(i);
-//            pr.isoWindowUpper = isoWindowUpperColData.at(i);
-//            pr.mzTarget = mzTargetColData.at(i);
-//
-//            parquetRows->push_back(pr);
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//}//namespace
-//Err ParquetReader::readFile(const std::string &fileURI) {
-//
-//    ERR_INIT
-//
-//    e = checkParquetStatus(); ree;
-//
-//    arrow::Status st;
-//
-//    arrow::MemoryPool* pool = arrow::default_memory_pool();
-//    arrow::fs::LocalFileSystem fileSystem;
-//
-//    std::shared_ptr<arrow::io::RandomAccessFile> input
-//            = fileSystem.OpenInputFile(fileURI).ValueOrDie();
-//
-//    std::unique_ptr<parquet::arrow::FileReader> arrowReader;
-//    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
-//    e = ErrorUtils::isTrue(st.ok()); ree;
-//
-//    std::shared_ptr<arrow::Table> table;
-//    st = arrowReader->ReadTable(&table);
-//    e = ErrorUtils::isTrue(st.ok()); ree;
-//
-//    const std::shared_ptr<arrow::Schema> schema = table->schema();
-////    printSchema(schema);
-//
-//    std::vector<double> mzColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 0, &mzColData);
-//
-//    std::vector<float> intensityColData;
-//    e = readColumn<arrow::FloatArray , float>(table, schema, 1, &intensityColData);
-//
-//    std::vector<int> msLevelColData;
-//    e = readColumn<arrow::Int64Array, int>(table, schema, 2, &msLevelColData);
-//
-//    std::vector<int> scanNumberColData;
-//    e = readColumn<arrow::Int64Array, int>(table, schema, 3, &scanNumberColData);
-//
-//    std::vector<double> retentionTimeColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 4, &retentionTimeColData);
-//
-//    std::vector<double> collisionEnergyColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 5, &collisionEnergyColData);
-//
-//    std::vector<double> mzTargetColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 6, &mzTargetColData);
-//
-//    std::vector<double> isoWindowLowerColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 7, &isoWindowLowerColData);
-//
-//    std::vector<double> isoWindowUpperColData;
-//    e = readColumn<arrow::DoubleArray, double>(table, schema, 8, &isoWindowUpperColData);
-//
-//    e = buildParquetRowsVector(
-//            mzColData,
-//            intensityColData,
-//            msLevelColData,
-//            scanNumberColData,
-//            retentionTimeColData,
-//            collisionEnergyColData,
-//            mzTargetColData,
-//            isoWindowLowerColData,
-//            isoWindowUpperColData,
-//            &m_parquetRows
-//            ); ree;
-//
-//    ERR_RETURN
-//}
-//
-//Err ParquetReader::getScans(
-//        int msLevel,
-//        QMap<ScanNumber, ScanPoints> *scanPoints
-//        ) {
-//
-//    ERR_INIT
-//
-//    e = ErrorUtils::isNotEmpty(m_parquetRows); ree;
-//
-//    scanPoints->clear();
-//
-//    for (const ParquetRow &pr : m_parquetRows) {
-//
-//        if (pr.msLevel != msLevel) {
-//            continue;
-//        }
-//
-//        (*scanPoints)[pr.scanNumber].emplace_back(pr.mz, pr.intensity);
-//    }
-//
-//    ERR_RETURN
-//}
-//
+namespace {
+
+    std::map<std::string, int> buildSchemaMap(const std::shared_ptr<arrow::Schema> &schema) {
+
+        std::string test = schema->ToString();
+        const std::vector<std::string> testSplit = schema->field_names();
+
+        std::map<std::string, int> schemaMap;
+
+        std::cout << "PARQUET SCHEMA" << std::endl;
+        for (int i = 0; i < testSplit.size(); i++) {
+            std::cout << testSplit.at(i) << std::endl;
+            schemaMap.emplace(testSplit.at(i), i);
+        }
+
+        return schemaMap;
+    }
+
+    template<typename T, typename U>
+    bool readColumn(
+            const std::shared_ptr<arrow::Table> &table,
+            const std::shared_ptr<arrow::Schema> &schema,
+            int columnIndex,
+            std::vector<U> *output
+            ) {
+
+        if (schema->field_names().empty()) {
+            return false;
+        }
+
+        std::shared_ptr<arrow::ChunkedArray> mzCol = table->column(columnIndex);
+        const std::shared_ptr<arrow::Array> mzColChunks = mzCol->chunks()[0];
+
+        auto arrowArray = std::static_pointer_cast<T>(mzColChunks);
+
+        for (int64_t i = 0; i < mzColChunks->length(); ++i) {
+            output->push_back(arrowArray->Value(i));
+        }
+
+        return true;
+    }
+
+
+    bool isEqual(int a, int b) {
+        return a == b;
+    }
+
+    bool buildParquetRowsVector(
+            std::vector<double> &mzColData,
+            std::vector<float> &intensityColData,
+            std::vector<int> &msLevelColData,
+            std::vector<int> &scanNumberColData,
+            std::vector<double> &retentionTimeColData,
+            std::vector<double> &collisionEnergyColData,
+            std::vector<double> &mzTargetColData,
+            std::vector<double> &isoWindowLowerColData,
+            std::vector<double> &isoWindowUpperColData,
+            std::vector<ParquetRow> *parquetRows
+            ) {
+
+        bool e = true;
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(intensityColData.size())
+                );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(msLevelColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(scanNumberColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(retentionTimeColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(collisionEnergyColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(mzTargetColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(isoWindowLowerColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        e = isEqual(
+                static_cast<int>(mzColData.size()),
+                static_cast<int>(isoWindowUpperColData.size())
+        );
+        if (!e) {
+            return false;
+        }
+
+        for (size_t i = 0; i < mzColData.size(); i++) {
+
+            ParquetRow pr;
+            pr.mz = mzColData.at(i);
+            pr.intensity = intensityColData.at(i);
+            pr.msLevel = msLevelColData.at(i);
+            pr.scanNumber = scanNumberColData.at(i);
+            pr.retentionTime = retentionTimeColData.at(i);
+            pr.collisionEnergy = collisionEnergyColData.at(i);
+            pr.isoWindowLower = isoWindowLowerColData.at(i);
+            pr.isoWindowUpper = isoWindowUpperColData.at(i);
+            pr.mzTarget = mzTargetColData.at(i);
+
+            parquetRows->push_back(pr);
+        }
+
+        return true;
+    }
+
+}//namespace
+bool MsParquetReader::readFile(const std::string &fileURI) {
+
+    arrow::Status st;
+
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    arrow::fs::LocalFileSystem fileSystem;
+
+    std::shared_ptr<arrow::io::RandomAccessFile> input
+            = fileSystem.OpenInputFile(fileURI).ValueOrDie();
+
+    std::unique_ptr<parquet::arrow::FileReader> arrowReader;
+    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
+    if (!st.ok()) {
+        return false;
+    }
+
+    std::shared_ptr<arrow::Table> table;
+    st = arrowReader->ReadTable(&table);
+    if (!st.ok()) {
+        return false;
+    }
+
+    const std::shared_ptr<arrow::Schema> schema = table->schema();
+    const std::map<std::string, int> schemaMap = buildSchemaMap(schema);
+
+    bool columnChecker = true;
+
+    std::vector<double> mzColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("mz"), &mzColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<float> intensityColData;
+    columnChecker = readColumn<arrow::FloatArray , float>(table, schema, schemaMap.at("intensity"), &intensityColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<int> msLevelColData;
+    columnChecker = readColumn<arrow::Int64Array, int>(table, schema, schemaMap.at("ms_level"), &msLevelColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<int> scanNumberColData;
+    columnChecker = readColumn<arrow::Int64Array, int>(table, schema, schemaMap.at("scan_nubmer"), &scanNumberColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<double> retentionTimeColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("retention_time"), &retentionTimeColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<double> collisionEnergyColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("collision_energy"), &collisionEnergyColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<double> mzTargetColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("mz_target"), &mzTargetColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<double> isoWindowLowerColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("iso_window_lower"), &isoWindowLowerColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    std::vector<double> isoWindowUpperColData;
+    columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("iso_window_upper"), &isoWindowUpperColData);
+    if (!columnChecker) {
+        return false;
+    }
+
+    columnChecker = buildParquetRowsVector(
+            mzColData,
+            intensityColData,
+            msLevelColData,
+            scanNumberColData,
+            retentionTimeColData,
+            collisionEnergyColData,
+            mzTargetColData,
+            isoWindowLowerColData,
+            isoWindowUpperColData,
+            &m_parquetRows
+            );
+
+    return columnChecker;
+}
+
+bool MsParquetReader::getScans(
+        int msLevel,
+        QMap<ScanNumber, ScanPoints> *scanPoints
+        ) {
+
+    if (m_parquetRows.empty()) {
+        return false;
+    }
+
+    scanPoints->clear();
+
+    for (const ParquetRow &pr : m_parquetRows) {
+
+        if (pr.msLevel != msLevel) {
+            continue;
+        }
+
+        (*scanPoints)[pr.scanNumber].push_back({pr.mz, pr.intensity});
+    }
+
+    return true;
+}
+
 //Err ParquetReader::getScansInfo(std::map<ScanNumber, ScanInfo> *scansInfo) {
 //
 //    ERR_INIT

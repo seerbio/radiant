@@ -9,6 +9,7 @@
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
 
+#include <QMap>
 #include <vector>
 
 //using namespace Error;
@@ -48,15 +49,15 @@ public:
 
     static bool checkParquetStatus();
 
-//    Err readFile(const std::string &fileURI);
-//
+    bool readFile(const std::string &fileURI);
+
 //    Err writeFile(const std::string &outputFilePath);
 //
-//    Err getScans(
-//            int msLevel,
-//            QMap<ScanNumber, ScanPoints> *scanPoints
-//            );
-//
+    bool getScans(
+            int msLevel,
+            QMap<ScanNumber, ScanPoints> *scanPoints
+            );
+
 //    Err getScansInfo(std::map<ScanNumber, ScanInfo> *scansInfo);
 //
 //    void addParquetRowToParquetRows(const ParquetRow &parquetRow);
