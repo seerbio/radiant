@@ -12,6 +12,7 @@
 #include <QVector>
 
 using ProteinId = int;
+using ProteinSequence = QString;
 using ScanNumber = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;

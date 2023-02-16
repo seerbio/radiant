@@ -18,9 +18,6 @@ public:
 private Q_SLOTS:
 
     void parseFastaFileTest();
-    void hasDecoysTest();
-
-
 };
 
 void FastaReaderTests::parseFastaFileTest() {
@@ -31,7 +28,7 @@ void FastaReaderTests::parseFastaFileTest() {
         = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
 
     FastaReader fastaReader;
-    fastaReader.parseFastaFile(fastaFilePath, false);
+    fastaReader.parseFastaFile(fastaFilePath);
 
     const QVector<FastaEntry> proteins = fastaReader.fastaEntries().values().toVector();
 
@@ -52,27 +49,6 @@ void FastaReaderTests::parseFastaFileTest() {
     QCOMPARE(proteins.size(), 996);
     QCOMPARE(proteins.at(0).fastaDescription, expectedFastaDescription);
     QCOMPARE(proteins.at(0).fastaSequence, expectedFastaSequence);
-
-
-
-    FastaReader fastaReaderDecoys;
-    fastaReaderDecoys.parseFastaFile(fastaFilePath, true);
-
-    const QVector<FastaEntry> proteinsDecoys = fastaReaderDecoys.fastaEntries().values().toVector();
-    QCOMPARE(proteinsDecoys.size(), 1992);
-
-}
-
-void FastaReaderTests::hasDecoysTest() {
-
-    //TODO Change hard coded path to use qapp->directory.
-    const QString &fastaFilePath
-            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
-
-    FastaReader fastaReader;
-    fastaReader.parseFastaFile(fastaFilePath, false);
-
-    QCOMPARE(fastaReader.hasDecoys(), false);
 
 }
 

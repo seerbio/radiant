@@ -18,5 +18,7 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so")
 set(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so")
 
+ADD_SUBDIRECTORY("AlgorithmsLib")
+#ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
+ADD_SUBDIRECTORY("FileReadersLib")
 ADD_SUBDIRECTORY("UtilsLib")
-ADD_SUBDIRECTORY("FileReaderLibs")
