@@ -51,18 +51,18 @@ public:
 
     bool readFile(const std::string &fileURI);
 
-//    Err writeFile(const std::string &outputFilePath);
-//
+    bool writeFile(const std::string &outputFilePath);
+
     bool getScans(
             int msLevel,
             QMap<ScanNumber, ScanPoints> *scanPoints
             );
 
-//    Err getScansInfo(std::map<ScanNumber, ScanInfo> *scansInfo);
-//
-//    void addParquetRowToParquetRows(const ParquetRow &parquetRow);
-//
-//    void clearParquetRows();
+    bool getScansInfo(QMap<ScanNumber, ScanInfo> *scansInfo);
+
+    void addParquetRowToParquetRows(const ParquetRow &parquetRow);
+
+    void clearParquetRows();
 
 private:
 
