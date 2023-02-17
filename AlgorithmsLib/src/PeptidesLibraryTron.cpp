@@ -306,7 +306,7 @@ namespace {
 
             for (int residueIndex : indexesOfModResidue) {
 
-                if (peptide.modifications.contains(residueIndex)) {
+                if (peptide.modifications.keys().contains(residueIndex)) {
                     continue;
                 }
 
@@ -340,7 +340,11 @@ namespace {
                 maxModIndexCounter < pythiaParameters.maxModificationsPeptide;
                 maxModIndexCounter++) {
 
-            for (const Peptide &pepMod : peptidesModified.second) {
+            const int peptidesMofifiedSize = peptidesModified.second.size();
+
+            for (int i = 0; i < peptidesMofifiedSize; i++) {
+
+                const Peptide &pepMod = peptidesModified.second[i];
 
                 if (pepMod.modifications.size() > pythiaParameters.maxModificationsPeptide) {
                     continue;
