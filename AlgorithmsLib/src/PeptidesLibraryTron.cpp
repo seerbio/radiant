@@ -4,6 +4,7 @@
 
 #include "PeptidesLibraryTron.h"
 
+#include "BiophysicalCalcs.h"
 #include "FastaReader.h"
 #include "Molecule.h"
 #include "MolecularFormula.h"
@@ -34,7 +35,8 @@ Err PeptidesLibraryTron::exec(
     e = buildPeptides(); ree;
     e = addVariableModificationsToPeptides(); ree;
     e = addTerminalModificationsToPeptides(); ree;
-    e = addPeptideIdToPeptides();
+    e = addPeptideIdToPeptides(); ree;
+    e = addMassToPeptides(); ree;
 
     ERR_RETURN
 }
@@ -445,6 +447,19 @@ Err PeptidesLibraryTron::addMassToPeptides() {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(m_peptides); ree;
+
+    for (int i = 0; i < m_peptides.size(); i++) {
+        Peptide &pep = m_peptides[i];
+        pep.mass = BiophysicalCalcs::calculatePeptideMass(
+                pep.sequence,
+                m_pythiaParameters.aminoAcids,
+                pep.modifications
+                );
+    }
+
+    e = ErrorUtils::isTrue(m_peptides.first().mass > 0);
+    e = ErrorUtils::isTrue(m_peptides.last().mass > 0);
 
     ERR_RETURN
 }

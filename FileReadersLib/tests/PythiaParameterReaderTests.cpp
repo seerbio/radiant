@@ -64,6 +64,9 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(mod.type, ModificationType::FIXED);
     QCOMPARE(mod.formula, "H3C2NO");
     QCOMPARE(mod.residue, "C");
+    QCOMPARE(QString::number(pythiaParameters.aminoAcids.aminoAcid('C').monoisotopicMass()),
+             QString::number(160.031));
+
 }
 
 

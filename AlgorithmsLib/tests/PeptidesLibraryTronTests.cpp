@@ -19,6 +19,7 @@ private slots:
     void addVariableModificationsToPeptidesTest();
     void addTerminalModificationsToPeptidesTest();
     void addPeptideIdToPeptidesTest();
+    void addMassToPeptidesTest();
 
 private:
 
@@ -35,6 +36,11 @@ private:
         pythiaParameters.allowedMissedCleavages = 1;
         pythiaParameters.addDecoys = true;
         pythiaParameters.maxModificationsPeptide = 2;
+
+        PythiaParameterReader::applyFixedModificationsToAminoAcids(
+                pythiaParameters,
+                &pythiaParameters.aminoAcids
+                );
 
         return pythiaParameters;
     }
@@ -189,6 +195,22 @@ void PeptidesLibraryTronTests::addPeptideIdToPeptidesTest() {
 
     e = pepLib.addPeptideIdToPeptides();
     QCOMPARE(e, eNoError);
+}
+
+void PeptidesLibraryTronTests::addMassToPeptidesTest() {
+
+    ERR_INIT
+
+    PeptidesLibraryTron pepLib(pythiaParameters());
+    e = pepLib.processFasta(fastaFilePath());
+    QCOMPARE(e, eNoError);
+
+    e = pepLib.buildPeptides();
+    QCOMPARE(e, eNoError);
+
+    e = pepLib.addMassToPeptides();
+    QCOMPARE(e, eNoError);
+
 }
 
 
