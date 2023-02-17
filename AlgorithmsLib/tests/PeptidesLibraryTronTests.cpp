@@ -54,7 +54,7 @@ private:
 
 void PeptidesLibraryTronTests::processFastaTest()
 {
-   
+
     ERR_INIT;
 
     PeptidesLibraryTron pepLib(pythiaParameters());

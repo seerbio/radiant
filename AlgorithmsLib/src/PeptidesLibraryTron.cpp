@@ -370,6 +370,33 @@ namespace {
         return peptidesModified;
     }
 
+    struct InputParallelVarMods {
+        Peptide peptide;
+        PythiaParameters params;
+    };
+
+    QVector<InputParallelVarMods> buildInputeParallelVarMods(
+            const QVector<Peptide> &peptides,
+            const PythiaParameters &params
+            ) {
+
+        QVector<InputParallelVarMods> inputs;
+
+        for (const Peptide &peptide : peptides) {
+            InputParallelVarMods inputParallelVarMod;
+            inputParallelVarMod.peptide = peptide;
+            inputParallelVarMod.params = params;
+
+            inputs.push_back(inputParallelVarMod);
+        }
+
+        return inputs;
+    }
+
+    QPair<Err,QVector<Peptide>> addVariableModParallelLogic(const InputParallelVarMods &input) {
+        return addVariableModToPeptide(input.peptide, input.params);
+    }
+
 }//namespace
 Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
 
@@ -378,6 +405,31 @@ Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
     e = ErrorUtils::isNotEmpty(m_peptides); ree;
 
     QVector<Peptide> moddedPeptides;
+
+#define RUN_PARALLEL_ADD_VAR_MODS
+#ifdef RUN_PARALLEL_ADD_VAR_MODS
+
+    QVector<InputParallelVarMods> inputs = buildInputeParallelVarMods(
+            m_peptides,
+            m_pythiaParameters
+            );
+
+    QFuture<QPair<Err,QVector<Peptide>>> futures = QtConcurrent::mapped(
+            inputs,
+            addVariableModParallelLogic
+    );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QVector<Peptide>> & result : futures) {
+
+        if (result.first != eNoError) {
+            rrr(eError);
+        }
+
+        m_peptides.append(result.second);
+    }
+
+#else
     for (const Peptide &pep : m_peptides) {
 
         QPair<Err,QVector<Peptide>> modPeptides = addVariableModToPeptide(pep, m_pythiaParameters);
@@ -388,6 +440,7 @@ Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
     }
 
     m_peptides.append(moddedPeptides);
+#endif
 
     ERR_RETURN
 }
