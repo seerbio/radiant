@@ -79,22 +79,3 @@ const QMap<QChar, MolecularFormula> &AminoAcids::fixedModifications() const {
     return m_fixedModifications;
 }
 
-
-Err AminoAcids::applyFixedModificationsToAminoAcids(const PythiaParameters &parameters,
-                                                    AminoAcids *aminoAcids) {
-
-    ERR_INIT
-
-    for (const Modification &mod : parameters.modifications) {
-
-        if (mod.type == ModificationType::DYNAMIC) {
-            continue;
-        }
-
-        MolecularFormula mf;
-        e = parseMolecularFormulaString(mod.formula, &mf); ree;
-        aminoAcids->addFixedModification(mod.residue, mf);
-    }
-
-    ERR_RETURN
-}

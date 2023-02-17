@@ -271,6 +271,11 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
 
     }
 
+    e = applyFixedModificationsToAminoAcids(
+            *pythiaParameters,
+            &pythiaParameters->aminoAcids
+            );ree
+
     ERR_RETURN
 }
 
@@ -308,6 +313,27 @@ Err PythiaParameterReader::validateJsonKeys() {
 
     for(const QString &key : json){
         e = ErrorUtils::isTrue(json.contains(key)); ree;
+    }
+
+    ERR_RETURN
+}
+
+Err PythiaParameterReader::applyFixedModificationsToAminoAcids(
+        const PythiaParameters &parameters,
+        AminoAcids *aminoAcids
+        ) {
+
+    ERR_INIT
+
+    for (const Modification &mod : parameters.modifications) {
+
+        if (mod.type == ModificationType::DYNAMIC) {
+            continue;
+        }
+
+        MolecularFormula mf;
+        e = parseMolecularFormulaString(mod.formula, &mf); ree;
+        aminoAcids->addFixedModification(mod.residue, mf);
     }
 
     ERR_RETURN

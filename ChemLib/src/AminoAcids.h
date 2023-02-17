@@ -6,7 +6,6 @@
 #include "Error.h"
 #include "Molecule.h"
 #include "MolecularFormula.h"
-#include "PythiaParameterReader.h"
 
 #include <QMap>
 
@@ -33,10 +32,6 @@ public:
     static bool validPeptideSequence(const QString &sequence);
 
     [[nodiscard]] const QMap<QChar, MolecularFormula> &fixedModifications() const;
-
-    static Err applyFixedModificationsToAminoAcids(const PythiaParameters &reader,
-                                                   AminoAcids *aminoAcids);
-
 
 private:
 

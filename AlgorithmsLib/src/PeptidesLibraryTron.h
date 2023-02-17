@@ -183,6 +183,9 @@ private:
     Err addDecoys(int seed);
     Err buildPeptides();
     Err addVariableModificationsToPeptides();
+    Err addTerminalModificationsToPeptides();
+    Err addPeptideIdToPeptides();
+    Err addMassToPeptides();
 
 private:
 

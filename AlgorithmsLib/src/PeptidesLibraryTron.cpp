@@ -11,7 +11,6 @@
 
 #include <QElapsedTimer>
 #include <QList>
-#include <QtAlgorithms>
 #include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
@@ -34,6 +33,8 @@ Err PeptidesLibraryTron::exec(
     e = addDecoys(seed); ree;
     e = buildPeptides(); ree;
     e = addVariableModificationsToPeptides(); ree;
+    e = addTerminalModificationsToPeptides(); ree;
+    e = addPeptideIdToPeptides();
 
     ERR_RETURN
 }
@@ -265,22 +266,35 @@ Err PeptidesLibraryTron::buildPeptides() {
 
 namespace {
 
-    QVector<Peptide> iterateModification(
+    // Checks to see if the modification is specific to
+    // the N or C terminal of the Protein as a whole, or
+    // individual peptide.
+    bool isTerminalModification(const Modification &mod) {
+        return !mod.positionalLocation.isEmpty();
+    }
+
+    QPair<Err,QVector<Peptide>> iterateModification(
             const Peptide &peptide,
             const PythiaParameters &pythiaParameters
             ) {
+
+        ERR_INIT
 
         QVector<Peptide> modPeptides;
 
         for (const Modification &mod : pythiaParameters.modifications) {
 
 
-            if (mod.type == ModificationType::FIXED) {
+            if (mod.type == ModificationType::FIXED || isTerminalModification((mod))) {
                 continue;
             }
 
             MolecularFormula mf;
-            parseMolecularFormulaString(mod.formula, &mf);
+            e = parseMolecularFormulaString(mod.formula, &mf);
+            if (e != eNoError) {
+                return {e, {}};
+            }
+
             Molecule mol(mf);
 
             const QVector<int> indexesOfModResidue = StringUtils::findIndexesOfCharacterInString(
@@ -302,19 +316,21 @@ namespace {
 
         }
 
-        return modPeptides;
+        return {e, modPeptides};
     }
 
-    QVector<Peptide> addVariableModToPeptide(
+    QPair<Err,QVector<Peptide>> addVariableModToPeptide(
             const Peptide &peptide,
             const PythiaParameters &pythiaParameters
             ) {
 
-
-        QVector<Peptide> peptidesModified = iterateModification(
+        QPair<Err,QVector<Peptide>> peptidesModified = iterateModification(
                 peptide,
                 pythiaParameters
                 );
+        if (peptidesModified.first != eNoError) {
+            return {peptidesModified.first, {}};
+        }
 
         QMap<QString, bool> entered;
 
@@ -322,44 +338,112 @@ namespace {
                 maxModIndexCounter < pythiaParameters.maxModificationsPeptide;
                 maxModIndexCounter++) {
 
-            for (const Peptide &pepMod : peptidesModified) {
+            for (const Peptide &pepMod : peptidesModified.second) {
 
                 if (pepMod.modifications.size() > pythiaParameters.maxModificationsPeptide) {
                     continue;
                 }
 
-                QVector<Peptide> newModPeptides = iterateModification(pepMod, pythiaParameters);
-                for (const Peptide &np : newModPeptides) {
+                const QPair<Err,QVector<Peptide>> newModPeptides = iterateModification(pepMod, pythiaParameters);
+                if (peptidesModified.first != eNoError) {
+                    return {peptidesModified.first, {}};
+                }
+
+                for (const Peptide &np : newModPeptides.second) {
+
                     const QString enteredKey = np.peptideStringWithMods();
                     if (entered.value(enteredKey)) {
                         continue;
                     }
-                    peptidesModified.push_back(np);
+                    peptidesModified.second.push_back(np);
                     entered.insert(enteredKey, true);
                 }
             }
         }
 
-//        for (auto p : peptidesModified) {
-//            qDebug() << p.peptideStringWithMods();
-//        }
-
         return peptidesModified;
     }
-
 
 }//namespace
 Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
 
     ERR_INIT
 
-//    e = ErrorUtils::isNotEmpty(m_peptides); ree;
+    e = ErrorUtils::isNotEmpty(m_peptides); ree;
 
-    Peptide pep;
-    pep.sequence = "QMASSMSSNSLKSNDMSK";
-    pep.previousResidue = '*';
+    QVector<Peptide> moddedPeptides;
+    for (const Peptide &pep : m_peptides) {
 
-    addVariableModToPeptide(pep, m_pythiaParameters);
+        QPair<Err,QVector<Peptide>> modPeptides = addVariableModToPeptide(pep, m_pythiaParameters);
+        if (modPeptides.first != eNoError) {
+            rrr(eError);
+        }
+        moddedPeptides.append(modPeptides.second);
+    }
+
+    m_peptides.append(moddedPeptides);
+
+    ERR_RETURN
+}
+
+Err PeptidesLibraryTron::addTerminalModificationsToPeptides() {
+
+    ERR_INIT
+
+    for (const Modification &mod : m_pythiaParameters.modifications) {
+
+        if (mod.type == ModificationType::FIXED || !isTerminalModification((mod))) {
+            continue;
+        }
+
+        MolecularFormula mf;
+        e = parseMolecularFormulaString(mod.formula, &mf); ree;
+        Molecule mol(mf);
+
+        const int currentPeptidesSize = m_peptides.size();
+        for (int i = 0; i < currentPeptidesSize; i++) {
+
+            Peptide newPeptide = m_peptides.at(i);
+
+            if (mod.positionalLocation == Modification::nTermProtein() && newPeptide.previousResidue == '*') {
+
+                newPeptide.modifications.insert(0, mol.monoisotopicMass());
+
+            } else if (mod.positionalLocation == Modification::cTermProtein() && newPeptide.postResidue == '*') {
+
+                newPeptide.modifications.insert(newPeptide.sequence.size() - 1, mol.monoisotopicMass());
+            }
+
+            //TODO add logic for peptide terminal modifications.
+
+            else {
+                continue;
+            }
+
+            m_peptides.push_back(newPeptide);
+        }
+    }
+
+    ERR_RETURN
+}
+
+Err PeptidesLibraryTron::addPeptideIdToPeptides() {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_peptides); ree;
+    for (int i = 0; i < m_peptides.size(); i++) {
+        Peptide &p = m_peptides[i];
+        p.id = i;
+    }
+
+    e = ErrorUtils::isTrue(m_peptides.last().id == m_peptides.size() - 1); ree;
+
+    ERR_RETURN
+}
+
+Err PeptidesLibraryTron::addMassToPeptides() {
+
+    ERR_INIT
 
 
     ERR_RETURN

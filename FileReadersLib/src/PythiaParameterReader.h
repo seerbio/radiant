@@ -5,6 +5,7 @@
 #ifndef PYTHIAPARAMETERREADER_H
 #define PYTHIAPARAMETERREADER_H
 
+#include "AminoAcids.h"
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
 #include "JsonParametersReader.h"
@@ -119,6 +120,8 @@ struct PythiaParameters{
 
     QVector<Modification> modifications;
 
+    AminoAcids aminoAcids;
+
     void print() const {
         qDebug() << QStringLiteral("** Digest Parameters **************************");
         qDebug() << PythiaParameterReaderConstants::kNTermCleavePoints << nTermCleavePoints;
@@ -157,6 +160,9 @@ public:
     ~PythiaParameterReader() = default;
 
     Err loadPythiaParameters(PythiaParameters *pythiaParameters);
+
+    static Err applyFixedModificationsToAminoAcids(const PythiaParameters &reader,
+                                                   AminoAcids *aminoAcids);
 
 private:
 

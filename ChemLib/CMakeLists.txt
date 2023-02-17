@@ -63,7 +63,6 @@ ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
-        FileReadersLib
         UtilsLib
         )
 
