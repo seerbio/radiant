@@ -103,6 +103,7 @@ struct PythiaParameters{
     int peptideLengthMin = 7;
     int peptideLengthMax = 50;
     int maxModificationsPeptide = 1;
+
     int chargeStateMin = -1;
     int chargeStateMax = -1;
     int maxTandemPointCount = -1;
@@ -114,7 +115,7 @@ struct PythiaParameters{
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
 
-    bool addDecoys = true;
+    bool addDecoys = true; //TODO change this to a number for rounds of decoys.
 
     QVector<Modification> modifications;
 

@@ -11,8 +11,11 @@
 #include <QString>
 #include <QVector>
 
+using ModificationMass = double;
+using PeptideId = int;
 using ProteinId = int;
 using ProteinSequence = QString;
+using ResidueIndex = int;
 using ScanNumber = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;

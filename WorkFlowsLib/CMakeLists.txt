@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(UtilsLib
+PROJECT(WorkFlowsLib
         VERSION "1.0"
         )
 
 INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
-
-enable_testing(true)
 
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_AUTOMOC ON)
@@ -22,22 +20,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/Error.cpp
-        src/ErrorUtils.cpp
-        src/GlobalSettings.cpp
-        src/MathUtils.cpp
-        src/SqlUtils.cpp
-        src/StringUtils.cpp
-        )
+        src/IstrosLibraryBuilder.cpp
+)
 
 SET(HEADER_FILES
-        src/Error.h
-        src/ErrorUtils.h
-        src/GlobalSettings.h
-        src/MathUtils.h
-        src/SqlUtils.h
-        src/StringUtils.h
-        )
+        src/IstrosLibraryBuilder.h
+)
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
@@ -54,23 +42,21 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-
 FIND_PACKAGE(Qt5 REQUIRED
         Core
         Test
-        Network
-        Sql
         )
 
-
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
-        Qt5::Network
-        Qt5::Sql
+        AlgorithmsLib
+        FileReadersLib
+        UtilsLib
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

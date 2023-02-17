@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(UtilsLib
+PROJECT(ChemLib
         VERSION "1.0"
         )
 
 INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
-enable_testing(true)
-
-SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
@@ -22,22 +20,20 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/Error.cpp
-        src/ErrorUtils.cpp
-        src/GlobalSettings.cpp
-        src/MathUtils.cpp
-        src/SqlUtils.cpp
-        src/StringUtils.cpp
-        )
+
+        src/AminoAcids.cpp
+        src/ChemConstants.cpp
+        src/MolecularFormula.cpp
+        src/Molecule.cpp
+    )
 
 SET(HEADER_FILES
-        src/Error.h
-        src/ErrorUtils.h
-        src/GlobalSettings.h
-        src/MathUtils.h
-        src/SqlUtils.h
-        src/StringUtils.h
-        )
+
+        src/AminoAcids.h
+        src/ChemConstants.h
+        src/MolecularFormula.h
+        src/Molecule.h
+    )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
@@ -49,6 +45,7 @@ SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
+
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -58,10 +55,7 @@ INCLUDE_DIRECTORIES(
 FIND_PACKAGE(Qt5 REQUIRED
         Core
         Test
-        Network
-        Sql
         )
-
 
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
@@ -69,8 +63,8 @@ ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
-        Qt5::Network
-        Qt5::Sql
+        FileReadersLib
+        UtilsLib
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
@@ -127,5 +121,8 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         FILE ${PROJECT_NAME}Targets.cmake
         COMPONENT Devel
         )
+
+# for MSVS
+SOURCE_GROUP("Source Files" FILES ${${PROJECT_NAME}_LIB_SOURCES})
 
 ADD_SUBDIRECTORY("tests")

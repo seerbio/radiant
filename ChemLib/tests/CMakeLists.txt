@@ -1,8 +1,6 @@
 #https://github.com/KDAB/Charm/blob/master/Tests/CMakeLists.txt for example
 
-SET(TEST_MODULE UtilsLib)
-
-enable_testing(true)
+SET(TEST_MODULE ChemLib)
 
 SET(TEST_LIBRARIES
         ${TEST_MODULE}
@@ -10,14 +8,15 @@ SET(TEST_LIBRARIES
         Qt5::Test
     )
 
+
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 MESSAGE(${CMAKE_BINARY_DIR}/bin)
 
+
 #Add classes to test here.
 SET(TEST_CLASSES
-        ErrorUtilsTests
-        MathUtilsTests
-        SqlUtilsTests
+        AminoAcidsTests
+        MoleculeTests
         )
 
 foreach(class ${TEST_CLASSES})
@@ -30,9 +29,3 @@ foreach(class ${TEST_CLASSES})
     ADD_TEST( NAME ${class} COMMAND ${class} )
 
 endforeach()
-
-
-
-
-
-

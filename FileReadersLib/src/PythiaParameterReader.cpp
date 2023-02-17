@@ -46,8 +46,10 @@ QStringList Modification::modKeys() {
 }
 
 
-int Modification::positionalLocationIndexes(const QString &positionalLocation,
-                                            const QString &peptideSequence) {
+int Modification::positionalLocationIndexes(
+        const QString &positionalLocation,
+        const QString &peptideSequence
+        ) {
 
 
     if (positionalLocation == nTermProtein() || positionalLocation == nTermPeptide()) {
