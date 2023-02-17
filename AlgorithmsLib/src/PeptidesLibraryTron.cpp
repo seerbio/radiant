@@ -19,15 +19,32 @@
 
 
 PeptidesLibraryTron::PeptidesLibraryTron(const PythiaParameters &pythiaParameters)
-: m_pythiaParameters(pythiaParameters)
-{}
+: m_pythiaParameters(pythiaParameters) {}
 
+namespace {
+
+    int countDecoys(const QVector<Peptide> &peptides) {
+
+        int counter = 0;
+        for (const Peptide &p : peptides) {
+            if (p.isDecoy) {
+                counter++;
+            }
+        }
+
+        return counter;
+    }
+
+}//namespace
 Err PeptidesLibraryTron::exec(
         const QString &fastaFileUri,
         int seed
         ){
 
     ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
 
     e = processFasta(fastaFileUri); ree;
     e = removeDuplicatesFromPeptide(); ree;
@@ -37,6 +54,13 @@ Err PeptidesLibraryTron::exec(
     e = addTerminalModificationsToPeptides(); ree;
     e = addPeptideIdToPeptides(); ree;
     e = addMassToPeptides(); ree;
+
+    const int decoyCount = countDecoys(m_peptides);
+    const int targetCount = m_peptides.size() - decoyCount;
+
+    qDebug() << "Finished in" << et.elapsed() << "mSec";
+    qDebug() << "Total Peptide Count" << m_peptides.size();
+    qDebug() << "targets:" << targetCount << "decoys:" << decoyCount;
 
     ERR_RETURN
 }
@@ -404,8 +428,6 @@ Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
 
     e = ErrorUtils::isNotEmpty(m_peptides); ree;
 
-    QVector<Peptide> moddedPeptides;
-
 #define RUN_PARALLEL_ADD_VAR_MODS
 #ifdef RUN_PARALLEL_ADD_VAR_MODS
 
@@ -430,6 +452,8 @@ Err PeptidesLibraryTron::addVariableModificationsToPeptides() {
     }
 
 #else
+    QVector<Peptide> moddedPeptides;
+
     for (const Peptide &pep : m_peptides) {
 
         QPair<Err,QVector<Peptide>> modPeptides = addVariableModToPeptide(pep, m_pythiaParameters);

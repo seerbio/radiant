@@ -1,7 +1,6 @@
 #include "PeptidesLibraryTron.h"
 #include "Error.h"
 
-#include <QElapsedTimer>
 #include <QtTest>
 
 class PeptidesLibraryTronTests : public QObject
@@ -220,14 +219,9 @@ void PeptidesLibraryTronTests::execTest() {
 
     ERR_INIT
 
-    QElapsedTimer et;
-    et.start();
-
     PeptidesLibraryTron pepLib(pythiaParameters());
     e = pepLib.exec(fastaFilePath(), 666);
     QCOMPARE(e, eNoError);
-
-    qDebug() << "Finished in" << et.elapsed() << "mSec";
 }
 
 
