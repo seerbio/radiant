@@ -203,7 +203,6 @@ Err LibraryBuilderWorkFlow::buildTheoreticalMzFragsForPeptides(
 
 #define RUN_PARALLEL_THEO_FRAGMENTATION
 #ifdef RUN_PARALLEL_THEO_FRAGMENTATION
-
     const QVector<ParallelFragInput> inputs = buildParallelFragInputs(
             peptides,
             m_pythiaParameters
@@ -218,21 +217,21 @@ Err LibraryBuilderWorkFlow::buildTheoreticalMzFragsForPeptides(
     for (const QPair<Peptide, QVector<double>> &res : futures) {
         mzFrags->push_back(res);
     }
-
 #else
-    for (const Peptide &pep : peptidesLibraryTron.peptides()) {
+    for (const Peptide &pep: peptides) {
 
-            const QVector<double> bySeries = buildFragSeriesBY(
-                    pep,
-                    pythiaParameters.aminoAcids,
-                    pythiaParameters.mzMinDataStructure,
-                    pythiaParameters.mzMaxDataStructure
-                    );
+        const QVector<double> bySeries = buildFragSeriesBY(
+                pep,
+                m_pythiaParameters.aminoAcids,
+                m_pythiaParameters.mzMinDataStructure,
+                m_pythiaParameters.mzMaxDataStructure
+        );
 
-            mzFrags->push_back({pep, bySeries});
-        }
 
+        mzFrags->push_back({pep, bySeries});
+    }
 #endif
+
 
     ERR_RETURN
 }

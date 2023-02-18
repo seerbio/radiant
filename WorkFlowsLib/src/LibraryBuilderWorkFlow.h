@@ -40,7 +40,6 @@ private:
             QVector<QPair<Peptide, QVector<double>>> *mzFrags
             );
 
-
     static QVector<double> testPeptideFragmentation(
             const QString &peptideSequence,
             const QHash<ResidueIndex, ModificationMass> &mods

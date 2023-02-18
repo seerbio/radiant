@@ -26,8 +26,11 @@ class UTILSLIB_EXPORTS GlobalSettings {
 public:
 
     const QString MODIFICATION_STRING_FORMAT = QStringLiteral("%1%2%3");
+    const QString TAB = "\t";
+    const QString NEWLINE = "\n";
     const QChar MODIFICATION_INTERNAL_SEP = '|';
     const QChar SEPARATOR = ';';
+    const QChar COMMA = ',';
     const int HASHING_PRECISION = 3;
     const double ISO_DIFF = 1.0031;
     const int MAX_CHARGE_TANDEM_DEISOTOPING = 2;
