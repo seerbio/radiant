@@ -16,8 +16,9 @@
 using namespace Error;
 
 
-struct ALGORITHMSLIB_EXPORTS PeptideSequence {
+class ALGORITHMSLIB_EXPORTS PeptideSequence {
 
+public:
         QString sequence;
         QChar previousResidue;
         QChar firstResidue;

@@ -20,7 +20,7 @@ public:
     ~AminoAcids() = default;
 
     //TODO Write unit test
-    Molecule aminoAcid(QChar aminoAcid) const;
+    [[nodiscard]] Molecule aminoAcid(QChar aminoAcid) const;
 
     //TODO Write unit test
     Err addFixedModification(QChar aminoAcid, MolecularFormula modificationFormula);

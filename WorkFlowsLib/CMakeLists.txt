@@ -6,7 +6,7 @@ PROJECT(WorkFlowsLib
 INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
-SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
@@ -20,12 +20,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/IstrosLibraryBuilder.cpp
-)
+        src/LibraryBuilderWorkFlow.cpp
+    )
 
 SET(HEADER_FILES
-        src/IstrosLibraryBuilder.h
-)
+        src/LibraryBuilderWorkFlow.h
+    )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
@@ -37,10 +37,12 @@ SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
+
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
+
 
 FIND_PACKAGE(Qt5 REQUIRED
         Core
@@ -48,7 +50,6 @@ FIND_PACKAGE(Qt5 REQUIRED
         )
 
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
-
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
@@ -113,5 +114,8 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         FILE ${PROJECT_NAME}Targets.cmake
         COMPONENT Devel
         )
+
+# for MSVS
+SOURCE_GROUP("Source Files" FILES ${${PROJECT_NAME}_LIB_SOURCES})
 
 ADD_SUBDIRECTORY("tests")

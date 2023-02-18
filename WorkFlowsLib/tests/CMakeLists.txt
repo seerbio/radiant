@@ -1,19 +1,22 @@
 #https://github.com/KDAB/Charm/blob/master/Tests/CMakeLists.txt for example
 
-SET(TEST_MODULE AlgorithmsLib)
+SET(TEST_MODULE WorkFlowsLib)
 
 SET(TEST_LIBRARIES
         ${TEST_MODULE}
         Qt5::Core
         Qt5::Test
-)
+    )
+
 
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
+MESSAGE(${CMAKE_BINARY_DIR}/bin)
+
 
 #Add classes to test here.
 SET(TEST_CLASSES
-#        IstrosLibraryBuilderTests
-)
+        LibraryBuilderWorkFlowTests
+        )
 
 foreach(class ${TEST_CLASSES})
 
