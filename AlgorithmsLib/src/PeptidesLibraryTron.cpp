@@ -544,3 +544,7 @@ Err PeptidesLibraryTron::addMassToPeptides() {
 
     ERR_RETURN
 }
+
+QVector<Peptide> PeptidesLibraryTron::peptides() const {
+    return m_peptides;
+}

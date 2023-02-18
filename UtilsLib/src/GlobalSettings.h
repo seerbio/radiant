@@ -13,6 +13,7 @@
 
 using ModificationMass = double;
 using PeptideId = int;
+using PeptideString = QString;
 using ProteinId = int;
 using ProteinSequence = QString;
 using ResidueIndex = int;

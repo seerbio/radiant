@@ -1,7 +1,8 @@
 #include "LibraryBuilderWorkFlow.h"
 
-#include "PythiaParameterReader.h"
 #include "Error.h"
+#include "PeptidesLibraryTron.h"
+#include "PythiaParameterReader.h"
 
 #include <QtTest>
 
@@ -17,6 +18,7 @@ public:
 private slots:
 
     void execTest();
+    void testPeptideFragmentationTest();
 
 
 private:
@@ -54,12 +56,40 @@ void LibraryBuilderWorkFlowTests::execTest() {
 
     LibraryBuilderWorkFlow libraryBuilderWorkFlow;
 
+    QVector<QPair<Peptide, QVector<double>>> mzFrags;
     e = libraryBuilderWorkFlow.exec(
             pythiaParameters(),
-            fastaFilePath()
+            fastaFilePath(),
+            true,
+            &mzFrags
             );
 
     QCOMPARE(e, eNoError);
+
+}
+
+void LibraryBuilderWorkFlowTests::testPeptideFragmentationTest() {
+
+    const QString peptideSeq = QStringLiteral("VTAK");
+    QHash<ResidueIndex, ModificationMass> mods = {
+            {1, 10.0}
+    };
+
+    const QVector<double> frags
+        = LibraryBuilderWorkFlow::testPeptideFragmentation(peptideSeq, mods);
+
+    const QVector<double> expectedFrags = {
+            50.5415, 74.06, 100.076, 106.065, 109.579,
+            141.584, 147.113, 165.102, 211.123, 218.15, 282.16, 329.198
+    };
+
+    QCOMPARE(frags.size(), expectedFrags.size());
+
+    for (int i = 0; i < frags.size(); i++) {
+        const int expectedMz = static_cast<int>(expectedFrags.at(i));
+        const int foundMz = static_cast<int>(frags.at(i));
+        QCOMPARE(foundMz, expectedMz);
+    }
 
 }
 

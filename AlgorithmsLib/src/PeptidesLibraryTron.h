@@ -175,6 +175,8 @@ public:
             int seed
             );
 
+    [[nodiscard]] QVector<Peptide> peptides() const;
+
 
 private:
 
