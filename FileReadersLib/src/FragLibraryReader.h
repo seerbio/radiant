@@ -28,6 +28,11 @@ public:
 
     bool writeFile(const std::string &outputFilePath) override;
 
+    void addFragLibIon(
+            PeptideId peptideId,
+            double mzFrag,
+            double peptideMass
+            );
 
 private:
 

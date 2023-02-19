@@ -4,6 +4,7 @@
 
 #include "LibraryBuilderWorkFlow.h"
 
+#include "FragLibraryReader.h"
 #include "Molecule.h"
 #include "PeptidesLibraryTron.h"
 
@@ -160,13 +161,35 @@ namespace {
                 )};
     }
 
+    Err writeFragLibIonsParquet(
+            const QVector<QPair<Peptide, QVector<double>>> &mzFrags,
+            const QString &fragLibIonsFilePath
+            ) {
+
+        ERR_INIT
+
+        FragLibraryReader reader;
+        for (const QPair<Peptide, QVector<double>> &qp : mzFrags) {
+            const Peptide &peptide = qp.first;
+            const QVector<double> &fragIons = qp.second;
+
+            for (double mz : fragIons) {
+                reader.addFragLibIon(peptide.id, mz, peptide.mass);
+            }
+        }
+
+        const bool isWrttenOK = reader.writeFile(fragLibIonsFilePath.toStdString());
+        e = ErrorUtils::isTrue(isWrttenOK); ree;
+
+        ERR_RETURN
+    }
+
 
 }//namespace
 Err LibraryBuilderWorkFlow::exec(
         const PythiaParameters &pythiaParameters,
-        const QString &filePath,
-        bool theoreticalFrag,
-        QVector<QPair<Peptide, QVector<double>>> *mzFrags
+        const QString &fastaFilePath,
+        bool theoreticalFrag
         ) {
 
     ERR_INIT
@@ -174,16 +197,18 @@ Err LibraryBuilderWorkFlow::exec(
     m_pythiaParameters = pythiaParameters;
 
     PeptidesLibraryTron peptidesLibraryTron(pythiaParameters);
-    e = peptidesLibraryTron.exec(filePath, 666); ree;
+    e = peptidesLibraryTron.exec(fastaFilePath, 666); ree;
 
     const QVector<Peptide> peptides = peptidesLibraryTron.peptides();
     e = ErrorUtils::isNotEmpty(peptides);
+
+    QVector<QPair<Peptide, QVector<double>>> mzFrags;
 
     if (theoreticalFrag) {
 
         e = buildTheoreticalMzFragsForPeptides(
                 peptides,
-                mzFrags
+                &mzFrags
                 ); ree;
     }
 
@@ -191,6 +216,13 @@ Err LibraryBuilderWorkFlow::exec(
         //TODO add neural net frag predictions
     }
 
+    const QString fragLibIonsFilePath = fastaFilePath + ".fragLib";
+    e = writeFragLibIonsParquet(
+            mzFrags,
+            fragLibIonsFilePath
+            ); ree;
+
+    qDebug() << "FragLibIons library written to:" << fragLibIonsFilePath;
     ERR_RETURN
 }
 

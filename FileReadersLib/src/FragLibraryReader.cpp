@@ -214,3 +214,17 @@ bool FragLibraryReader::writeFile(const std::string &outputFilePath) {
 
     return true;
 }
+
+void FragLibraryReader::addFragLibIon(
+        PeptideId peptideId,
+        double mzFrag,
+        double peptideMass
+        ) {
+
+    FragLibIon fli;
+    fli.peptideId = peptideId;
+    fli.mzFrag = mzFrag;
+    fli.peptideMass = peptideMass;
+
+    m_fragLibIons.push_back(fli);
+}

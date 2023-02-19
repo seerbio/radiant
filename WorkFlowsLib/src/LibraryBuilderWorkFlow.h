@@ -28,9 +28,8 @@ public:
 
     Err exec(
             const PythiaParameters &pythiaParameters,
-            const QString &filePath,
-            bool theoreticalFrags,
-            QVector<QPair<Peptide, QVector<double>>> *mzFrags
+            const QString &fastaFilePath,
+            bool theoreticalFrags
             );
 
 private:
