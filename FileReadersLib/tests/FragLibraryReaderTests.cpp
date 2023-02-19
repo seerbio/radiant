@@ -38,7 +38,7 @@ void FragLibraryReaderTests::readFileTest() {
     fliExpected.peptideMass = 666.6;
 
     const FragLibIon &result = reader.m_fragLibIons.back();
-    
+
     QCOMPARE(result.peptideId , fliExpected.peptideId);
     QCOMPARE(result.mzFrag , fliExpected.mzFrag);
     QCOMPARE(result.peptideMass , fliExpected.peptideMass);
@@ -68,9 +68,9 @@ void FragLibraryReaderTests::writeFileTest() {
     QFileInfo checkFile(writeFileName);
     QCOMPARE(checkFile.exists(), true);
 
-//    QFile::remove(writeFileName);
-//    QFileInfo checkFile2(writeFileName);
-//    QCOMPARE(checkFile2.exists(), false);
+    QFile::remove(writeFileName);
+    QFileInfo checkFile2(writeFileName);
+    QCOMPARE(checkFile2.exists(), false);
 }
 
 
