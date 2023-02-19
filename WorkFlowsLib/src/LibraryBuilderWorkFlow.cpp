@@ -226,6 +226,12 @@ Err LibraryBuilderWorkFlow::exec(
             fragLibIonsFilePath
             ); ree;
 
+    const QString peptidesLibraryTronFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
+    e = PeptidesLibraryTron::writePeptidesLib(
+            peptides,
+            peptidesLibraryTronFilePath
+            ); ree;
+
     ERR_RETURN
 }
 

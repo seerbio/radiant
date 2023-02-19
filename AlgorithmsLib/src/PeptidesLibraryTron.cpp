@@ -548,3 +548,79 @@ Err PeptidesLibraryTron::addMassToPeptides() {
 QVector<Peptide> PeptidesLibraryTron::peptides() const {
     return m_peptides;
 }
+
+Err PeptidesLibraryTron::writePeptidesLib(
+        const QVector<Peptide> &peptides,
+        const QString &peptidesLibFilePath
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(peptides); ree;
+
+    QElapsedTimer et;
+    et.start();
+
+    QFile writeFile(peptidesLibFilePath);
+    if (!writeFile.open(QIODevice::WriteOnly)) {
+        qDebug() << "Could not write to file:" << peptidesLibFilePath
+                 << "Error string:" << writeFile.errorString();
+        return Error::eFileError;
+    }
+
+    QDataStream out(&writeFile);
+    out.setVersion(QDataStream::Qt_5_12);
+
+    out << peptides;
+
+    qDebug() << "PeptidesLibrary written in" << et.elapsed() << "mSec";
+    qDebug() << "PeptidesLibrary library written to:" << peptidesLibFilePath;
+    ERR_RETURN
+}
+
+Err PeptidesLibraryTron::readPeptidesLib(const QString &peptidesLibFilePath) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    m_peptides.clear();
+    m_peptidesLookupByPeptideId.clear();
+
+    QFile readFile(peptidesLibFilePath);
+    QDataStream in(&readFile);
+
+    in.setVersion(QDataStream::Qt_5_12);
+
+    if (!readFile.open(QIODevice::ReadOnly)) {
+        qDebug() << "Could not read the file:" << peptidesLibFilePath
+                 << "Error string:" << readFile.errorString();
+        return Error::eFileError;
+    }
+
+    in >> m_peptides;
+
+    e = ErrorUtils::isNotEmpty(m_peptides); ree;
+    e = buildPeptidesLookupByPeptideId(); ree;
+    e = ErrorUtils::isNotEmpty(m_peptidesLookupByPeptideId); ree;
+
+    qDebug() << "FragLibIons loaded from" << peptidesLibFilePath
+             << "in" <<  et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err PeptidesLibraryTron::buildPeptidesLookupByPeptideId() {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_peptides); ree;
+
+    for (const Peptide &pep : m_peptides) {
+
+        e = ErrorUtils::isEqual(m_peptidesLookupByPeptideId.value(pep.id).id, -1); ree;
+        m_peptidesLookupByPeptideId.insert(pep.id, pep);
+    }
+
+    ERR_RETURN
+}

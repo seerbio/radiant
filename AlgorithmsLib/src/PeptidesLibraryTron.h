@@ -12,6 +12,7 @@
 #include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
 
+#include <QDataStream>
 #include <QStringList>
 
 
@@ -157,6 +158,30 @@ class ALGORITHMSLIB_EXPORTS Peptide {
             return peptideStringWithMods(sequence, modifications);
         }
 
+    friend QDataStream &operator <<(QDataStream &stream, const Peptide &pep) {
+        stream << pep.id;
+        stream << pep.sequence;
+        stream << pep.mass;
+        stream << pep.isDecoy;
+        stream << pep.previousResidue;
+        stream << pep.postResidue;
+        stream << pep.modifications;
+
+        return stream;
+    }
+
+    friend QDataStream &operator >>(QDataStream &stream, Peptide &pep) {
+        stream >> pep.id;
+        stream >> pep.sequence;
+        stream >> pep.mass;
+        stream >> pep.isDecoy;
+        stream >> pep.previousResidue;
+        stream >> pep.postResidue;
+        stream >> pep.modifications;
+
+        return stream;
+    }
+
 };
 
 
@@ -168,6 +193,7 @@ public:
 
     explicit PeptidesLibraryTron(const PythiaParameters &pythiaParameters);
 
+    PeptidesLibraryTron() = default;
     ~PeptidesLibraryTron() = default;
 
     Err exec(
@@ -177,6 +203,12 @@ public:
 
     [[nodiscard]] QVector<Peptide> peptides() const;
 
+    static Err writePeptidesLib(
+            const QVector<Peptide> &peptides,
+            const QString &peptidesLibFilePath
+            );
+
+    Err readPeptidesLib(const QString &peptidesLibFilePath);
 
 private:
 
@@ -188,6 +220,7 @@ private:
     Err addTerminalModificationsToPeptides();
     Err addPeptideIdToPeptides();
     Err addMassToPeptides();
+    Err buildPeptidesLookupByPeptideId();
 
 private:
 

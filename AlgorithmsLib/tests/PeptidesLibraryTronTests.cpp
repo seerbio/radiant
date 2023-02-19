@@ -21,6 +21,7 @@ private slots:
     void addPeptideIdToPeptidesTest();
     void addMassToPeptidesTest();
     void execTest();
+    void readWriteTest();
 
 private:
 
@@ -222,6 +223,62 @@ void PeptidesLibraryTronTests::execTest() {
     PeptidesLibraryTron pepLib(pythiaParameters());
     e = pepLib.exec(fastaFilePath(), 666);
     QCOMPARE(e, eNoError);
+}
+
+void PeptidesLibraryTronTests::readWriteTest() {
+
+    ERR_INIT
+
+    QHash<ResidueIndex, ModificationMass> mods = {
+            {1, 100.0},
+            {2, 200.0}
+    };
+
+    Peptide pep1;
+    pep1.id = 1;
+    pep1.sequence = "SFSDDFS";
+    pep1.mass = 1000;
+    pep1.isDecoy = true;
+    pep1.previousResidue = 'K';
+    pep1.postResidue = 'Y';
+    pep1.modifications = mods;
+
+    QVector<Peptide> peptides;
+    for (int i = 0; i < 100; i++){
+
+        Peptide pep2 = pep1;
+        pep2.id = i;
+        peptides.append(pep2);
+    }
+
+    const QString libFilePath = fastaFilePath() + S_GLOBAL_SETTINGS.DOT_PEPLIB;
+
+    e = PeptidesLibraryTron::writePeptidesLib(
+            peptides,
+            libFilePath
+            );
+    QCOMPARE(e, eNoError);
+
+    PeptidesLibraryTron libTron;
+    e = libTron.readPeptidesLib(libFilePath);
+    QCOMPARE(e, eNoError);
+
+    const Peptide &pep = libTron.m_peptidesLookupByPeptideId.value(66);
+    QCOMPARE(pep.id, 66);
+    QCOMPARE(pep.sequence, "SFSDDFS");
+    QCOMPARE(pep.modifications.value(1), 100.0);
+    QCOMPARE(pep.modifications.value(2), 200.0);
+
+    peptides.push_back(peptides.first());
+    e = PeptidesLibraryTron::writePeptidesLib(
+            peptides,
+            libFilePath
+    );
+    QCOMPARE(e, eNoError);
+
+    PeptidesLibraryTron libTron2;
+    e = libTron2.readPeptidesLib(libFilePath);
+    QCOMPARE(e, eError);
 }
 
 
