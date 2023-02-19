@@ -5,9 +5,10 @@
 #ifndef SPARKDIA_PARQUETREADER_H
 #define SPARKDIA_PARQUETREADER_H
 
-//#include "Error.h"
+
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
+#include "ParquetReaderBase.h"
 
 #include <QMap>
 #include <vector>
@@ -40,18 +41,16 @@ struct FILEREADERSLIB_EXPORTS ParquetRow {
 };
 
 
-class FILEREADERSLIB_EXPORTS MsParquetReader {
+class FILEREADERSLIB_EXPORTS MsParquetReader : public ParquetReaderBase{
 
 public:
 
     MsParquetReader() = default;
     ~MsParquetReader() = default;
 
-    static bool checkParquetStatus();
+    bool readFile(const std::string &fileURI) override;
 
-    bool readFile(const std::string &fileURI);
-
-    bool writeFile(const std::string &outputFilePath);
+    bool writeFile(const std::string &outputFilePath) override;
 
     bool getScans(
             int msLevel,

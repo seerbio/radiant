@@ -16,7 +16,6 @@ public:
 
 private Q_SLOTS:
 
-    void checkParquetStatusTest();
     void readFileTest();
     void getScansTest();
     void getScansInfoTest();
@@ -24,11 +23,6 @@ private Q_SLOTS:
 
 };
 
-void MsParquetReaderTests::checkParquetStatusTest() {
-
-    const bool isOk = MsParquetReader::checkParquetStatus();
-    QCOMPARE(isOk, true);
-}
 
 void MsParquetReaderTests::readFileTest() {
 

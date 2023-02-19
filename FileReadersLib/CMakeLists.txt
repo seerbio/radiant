@@ -21,15 +21,19 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/FastaReader.cpp
+        src/FragLibraryReader.cpp
         src/JsonParametersReader.cpp
         src/MsParquetReader.cpp
+        src/ParquetReaderBase.cpp
         src/PythiaParameterReader.cpp
 )
 
 SET(HEADER_FILES
         src/FastaReader.h
+        src/FragLibraryReader.h
         src/JsonParametersReader.h
         src/MsParquetReader.h
+        src/ParquetReaderBase.h
         src/PythiaParameterReader.h
 )
 
