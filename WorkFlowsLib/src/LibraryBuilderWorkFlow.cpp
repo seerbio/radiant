@@ -220,7 +220,7 @@ Err LibraryBuilderWorkFlow::exec(
         //TODO add neural net frag predictions
     }
 
-    const QString fragLibIonsFilePath = fastaFilePath + ".fragLib";
+    const QString fragLibIonsFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
     e = writeFragLibIons(
             mzFrags,
             fragLibIonsFilePath

@@ -25,6 +25,7 @@ class UTILSLIB_EXPORTS GlobalSettings {
 
 public:
 
+    const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
     const QString MODIFICATION_STRING_FORMAT = QStringLiteral("%1%2%3");
     const QString TAB = "\t";
     const QString NEWLINE = "\n";

@@ -63,7 +63,7 @@ void LibraryBuilderWorkFlowTests::execTest() {
             );
     QCOMPARE(e, eNoError);
 
-    const QString fragLibFilePath = fastaFilePath() + ".fragLib";
+    const QString fragLibFilePath = fastaFilePath() + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
     QFileInfo fi(fragLibFilePath);
     QCOMPARE(fi.exists(), true);
 

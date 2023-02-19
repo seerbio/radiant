@@ -1,4 +1,5 @@
 #include "FragLibraryTron.h"
+#include "GlobalSettings.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
 
@@ -53,7 +54,7 @@ private:
 private:
 
     static QString fragFilePath() {
-        return QDir(qApp->applicationDirPath()).filePath("test.fragLib");
+        return QDir(qApp->applicationDirPath()).filePath("test" + S_GLOBAL_SETTINGS.DOT_FRAGLIB);
     }
 };
 
