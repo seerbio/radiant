@@ -14,7 +14,10 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 
+#include <QDebug>
+
 #include <iostream>
+
 
 
 class ParquetReaderBase {

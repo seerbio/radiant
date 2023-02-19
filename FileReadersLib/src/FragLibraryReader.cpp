@@ -77,6 +77,7 @@ bool FragLibraryReader::readFile(const std::string &fileURI) {
     if (!columnChecker) {
         return false;
     }
+    qDebug() << peptideIdColData;
 
     std::vector<double> mzFragColData;
     columnChecker = readColumn<arrow::DoubleArray, double>(table, schema, schemaMap.at("mzFrag"), &mzFragColData);

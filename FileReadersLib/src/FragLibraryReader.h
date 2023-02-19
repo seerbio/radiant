@@ -19,6 +19,8 @@ class FILEREADERSLIB_EXPORTS FragLibraryReader : public ParquetReaderBase {
 
 public:
 
+    friend class FragLibraryReaderTests;
+
     FragLibraryReader() = default;
     ~FragLibraryReader() = default;
 
