@@ -56,15 +56,16 @@ void LibraryBuilderWorkFlowTests::execTest() {
 
     LibraryBuilderWorkFlow libraryBuilderWorkFlow;
 
-    QVector<QPair<Peptide, QVector<double>>> mzFrags;
     e = libraryBuilderWorkFlow.exec(
             pythiaParameters(),
             fastaFilePath(),
-            true,
-            &mzFrags
+            true
             );
-
     QCOMPARE(e, eNoError);
+
+    const QString fragLibFilePath = fastaFilePath() + ".fragLib";
+    QFileInfo fi(fragLibFilePath);
+    QCOMPARE(fi.exists(), true);
 
 }
 

@@ -4,7 +4,8 @@
 
 #include "LibraryBuilderWorkFlow.h"
 
-#include "FragLibraryReader.h"
+#include "FragLibraryTron.h"
+#include "MathUtils.h"
 #include "Molecule.h"
 #include "PeptidesLibraryTron.h"
 
@@ -161,25 +162,28 @@ namespace {
                 )};
     }
 
-    Err writeFragLibIonsParquet(
+    Err writeFragLibIons(
             const QVector<QPair<Peptide, QVector<double>>> &mzFrags,
             const QString &fragLibIonsFilePath
             ) {
 
         ERR_INIT
 
-        FragLibraryReader reader;
+        QVector<FragLibIon> fragLibIons;
         for (const QPair<Peptide, QVector<double>> &qp : mzFrags) {
+
             const Peptide &peptide = qp.first;
             const QVector<double> &fragIons = qp.second;
 
             for (double mz : fragIons) {
-                reader.addFragLibIon(peptide.id, mz, peptide.mass);
+                fragLibIons.push_back({peptide.id, mz, peptide.mass});
             }
         }
 
-        const bool isWrttenOK = reader.writeFile(fragLibIonsFilePath.toStdString());
-        e = ErrorUtils::isTrue(isWrttenOK); ree;
+        e = FragLibraryTron::writeFragLibIons(
+                fragLibIons,
+                fragLibIonsFilePath
+                ); ree;
 
         ERR_RETURN
     }
@@ -217,12 +221,11 @@ Err LibraryBuilderWorkFlow::exec(
     }
 
     const QString fragLibIonsFilePath = fastaFilePath + ".fragLib";
-    e = writeFragLibIonsParquet(
+    e = writeFragLibIons(
             mzFrags,
             fragLibIonsFilePath
             ); ree;
 
-    qDebug() << "FragLibIons library written to:" << fragLibIonsFilePath;
     ERR_RETURN
 }
 

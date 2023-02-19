@@ -21,12 +21,14 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/FragLibraryTron.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
 )
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/FragLibraryTron.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
 )

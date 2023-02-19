@@ -105,9 +105,9 @@ void MsParquetReaderTests::writeFileTest() {
     QFileInfo checkFile(writeFileName);
     QCOMPARE(checkFile.exists(), true);
 
-//    QFile::remove(writeFileName);
-//    QFileInfo checkFile2(writeFileName);
-//    QCOMPARE(checkFile2.exists(), false);
+    QFile::remove(writeFileName);
+    QFileInfo checkFile2(writeFileName);
+    QCOMPARE(checkFile2.exists(), false);
 }
 
 

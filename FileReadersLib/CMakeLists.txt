@@ -21,7 +21,6 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/FastaReader.cpp
-        src/FragLibraryReader.cpp
         src/JsonParametersReader.cpp
         src/MsParquetReader.cpp
         src/ParquetReaderBase.cpp
@@ -30,7 +29,6 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/FastaReader.h
-        src/FragLibraryReader.h
         src/JsonParametersReader.h
         src/MsParquetReader.h
         src/ParquetReaderBase.h

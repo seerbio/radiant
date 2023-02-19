@@ -194,6 +194,7 @@ private:
     PythiaParameters m_pythiaParameters;
     QVector<PeptideSequence> m_peptideSequences;
     QVector<Peptide> m_peptides;
+    QMap<PeptideId, Peptide> m_peptidesLookupByPeptideId;
 
 };
 
