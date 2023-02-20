@@ -394,3 +394,149 @@ QMap<ScanNumber, double> MsReaderBase::retentionTimeByScanNumber() const {
 
     return retentionTimeByScanNumber;
 }
+
+namespace {
+
+    using NominalMzMass = int;
+
+    void sortTandemScanIons(QVector<TandemScanIon> &tandemScanIons) {
+
+        const double fudgeFactor = 0.0001;
+        const auto sortLogic = [fudgeFactor](const TandemScanIon &l, const TandemScanIon &r){
+
+            const int lmz = static_cast<int>(std::round(l.mz / fudgeFactor));
+            const int rmz = static_cast<int>(std::round(r.mz / fudgeFactor));
+
+            if (lmz == rmz) {
+                return l.precursorTargetMz < r.precursorTargetMz;
+            }
+
+            return lmz < rmz;
+        };
+
+        std::sort(tandemScanIons.begin(), tandemScanIons.end(), sortLogic);
+    }
+
+    QVector<TandemScanIon> sortTandemScanIonsInChunks(QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass) {
+
+        QVector<TandemScanIon> sortedTandemScanIons;
+        for (auto it = scanIonsByNominalMass->begin(); it != scanIonsByNominalMass->end(); it++) {
+            QVector<TandemScanIon> &tandemMsIonsAtNominalMzFrag = it.value();
+            sortTandemScanIons(tandemMsIonsAtNominalMzFrag);
+        }
+
+        return sortedTandemScanIons;
+    }
+
+}//namespace
+Err MsReaderBase::createTandemScanIonsCache(const QString &cacheFilePath) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    e = ErrorUtils::isNotEmpty(cacheFilePath); ree;
+    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
+
+    m_scanIonsMapped = scanIonsMapped();
+
+    QMap<NominalMzMass, QVector<TandemScanIon>> scanIonsByNominalMass;
+
+    for (auto it = m_msScanInfo.begin(); it != m_msScanInfo.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const MsScanInfo &msScanInfo = it.value();
+        const ScanPoints &scanPoints = m_scanIonsMapped.value(scanNumber);
+
+        for (const ScanPoint &sp : scanPoints) {
+
+            TandemScanIon tsi;
+            tsi.scanNumber = scanNumber;
+            tsi.collisionEnergy = msScanInfo.collisionEnergy;
+            tsi.mz = sp.x();
+            tsi.intensity = sp.y();
+            tsi.precursorTargetMz = msScanInfo.precursorTargetMz;
+            tsi.precursorTargetLowerWindow = msScanInfo.precursorWindowOffsetLower;
+            tsi.precursorTargetUpperWindow = msScanInfo.precursorWindowOffsetUpper;
+            tsi.scanTime = msScanInfo.scanTime;
+
+            const auto nominalMzMass = static_cast<NominalMzMass>(std::round(tsi.mz));
+            scanIonsByNominalMass[nominalMzMass].push_back(tsi);
+        }
+    }
+
+    sortTandemScanIonsInChunks(&scanIonsByNominalMass);
+
+    for (const QVector<TandemScanIon> &tandemScanIons : scanIonsByNominalMass) {
+        m_tandemScanIons.append(tandemScanIons);
+    }
+
+    QFile writeFile(cacheFilePath);
+    if (!writeFile.open(QIODevice::WriteOnly)) {
+        qDebug() << "Could not write to file:" << cacheFilePath
+                 << "Error string:" << writeFile.errorString();
+        return Error::eFileError;
+    }
+
+    QDataStream out(&writeFile);
+    out.setVersion(QDataStream::Qt_5_12);
+    out << m_tandemScanIons;
+
+    qDebug() << "Ms File Ions written in" << et.elapsed() << "mSec";
+    qDebug() << "Ms FileIons library written to:" << cacheFilePath;
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::readFromCache(const QString cacheFileURI) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    m_tandemScanIons.clear();
+
+    QFile readFile(cacheFileURI);
+    QDataStream in(&readFile);
+
+    in.setVersion(QDataStream::Qt_5_12);
+
+    if (!readFile.open(QIODevice::ReadOnly)) {
+        qDebug() << "Could not read the file:" << cacheFileURI
+                 << "Error string:" << readFile.errorString();
+        return Error::eFileError;
+    }
+
+    in >> m_tandemScanIons;
+
+    e = ErrorUtils::isNotEmpty(m_tandemScanIons); ree;
+
+    qDebug() << "Tandem Scan Ions loaded from" << cacheFileURI
+             << "in" <<  et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::buildUniqueTandemScanIons() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_tandemScanIons); ree;
+
+    for (int i = 0; i < m_tandemScanIons.size(); i++) {
+
+        const TandemScanIon &tsi = m_tandemScanIons.at(i);
+        m_uniqueTandemScanIons[tsi.hashedKey()].push_back(i);
+    }
+
+    ERR_RETURN
+}
+
+bool MsReaderBase::cacheExists(const QString cacheFileURI) {
+
+    QFileInfo fi(cacheFileURI);
+    return fi.exists();
+}

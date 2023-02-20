@@ -24,7 +24,7 @@ private Q_SLOTS:
 private:
     //TODO use proper path procedures.
     const QString m_filepath
-            = QStringLiteral("/home/anichols/Desktop/RawData/EXP21155_2021ms0609X7_A.raw.mzML");
+            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
 
 };
 

@@ -21,12 +21,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/LibraryBuilderWorkFlow.cpp
-        src/MsFraggerTron.cpp
+        src/MsFraggerTronWorkFlow.cpp
     )
 
 SET(HEADER_FILES
         src/LibraryBuilderWorkFlow.h
-        src/MsFraggerTron.h
+        src/MsFraggerTronWorkFlow.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

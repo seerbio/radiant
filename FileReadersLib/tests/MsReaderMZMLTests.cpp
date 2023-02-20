@@ -4,6 +4,8 @@
 
 #include "MsReaderMzML.h"
 #include "FastaReader.h"
+#include "GlobalSettings.h"
+
 #include <QString>
 #include <QtTest/QtTest>
 #include <QXmlStreamReader>
@@ -30,19 +32,34 @@ private:
 
     //TODO use proper path procedures.
     const QString m_filepath
-            = QStringLiteral("/home/anichols/Desktop/RawData/EXP21155_2021ms0609X7_A.raw.mzML");
+            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
 
 };
 
 
 void MsReaderMZMLTests::openFileTest() {
 
-    QSKIP("Waiting for small file");
+//    QSKIP("Waiting for small file");
     ERR_INIT
 
+    const QString cacheName = m_filepath + S_GLOBAL_SETTINGS.DOT_CACHE;
+
     MsReaderMzML reader;
-    e = reader.openFile(m_filepath);
+//    e = reader.openFile(m_filepath);
+//    QCOMPARE(e, Error::eNoError);
+
+//    e = reader.createTandemScanIonsCache(cacheName);
+//    QCOMPARE(e, Error::eNoError);
+
+    e = reader.readFromCache(cacheName);
     QCOMPARE(e, Error::eNoError);
+
+//    e = reader.buildUniqueTandemScanIons();
+//    QCOMPARE(e, Error::eNoError);
+
+    qDebug() << "IONS SIZE" << reader.m_tandemScanIons.size();
+    qDebug() << "UNIQUES IONS SIZE" << reader.m_uniqueTandemScanIons.size();
+
 }
 
 void MsReaderMZMLTests::buildScanIonWithScanInfoInputMs2Test() {

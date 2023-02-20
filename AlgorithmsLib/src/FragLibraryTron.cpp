@@ -13,51 +13,54 @@
 
 #include <iostream>
 
+namespace {
 
-void sortFragLibIons(QVector<FragLibIon> &fragLibIons) {
+    void sortFragLibIons(QVector<FragLibIon> &fragLibIons) {
 
-    const double fudgeFactor = 0.000001;
-    const auto sortLogic = [fudgeFactor](const FragLibIon &l, const FragLibIon &r){
+        const double fudgeFactor = 0.000001;
+        const auto sortLogic = [fudgeFactor](const FragLibIon &l, const FragLibIon &r){
 
-        const int lmz = static_cast<int>(std::round(l.mzFrag / fudgeFactor));
-        const int rmz = static_cast<int>(std::round(r.mzFrag / fudgeFactor));
+            const int lmz = static_cast<int>(std::round(l.mzFrag / fudgeFactor));
+            const int rmz = static_cast<int>(std::round(r.mzFrag / fudgeFactor));
 
-        if (lmz == rmz) {
-            return l.peptideMass < r.peptideMass;
+            if (lmz == rmz) {
+                return l.peptideMass < r.peptideMass;
+            }
+
+            return lmz < rmz;
+        };
+
+        std::sort(fragLibIons.begin(), fragLibIons.end(), sortLogic);
+    }
+
+    QVector<FragLibIon> sortFragLibIonsInChunks(const QVector<FragLibIon> &fragLibIons) {
+
+        using NominalMzFrag = int;
+
+        QMap<NominalMzFrag, QVector<FragLibIon>> sortingChunks;
+        for (const FragLibIon fli : fragLibIons) {
+            const auto nominalMzFrag = static_cast<NominalMzFrag>(std::round(fli.mzFrag));
+            sortingChunks[nominalMzFrag].push_back(fli);
         }
 
-        return lmz < rmz;
-    };
+        // TODO properly parallelize this.
+//        QFuture<void> futures = QtConcurrent::map(
+//                sortingChunks,
+//                &sortFragLibIons
+//        );
 
-    std::sort(fragLibIons.begin(), fragLibIons.end(), sortLogic);
-}
+        QVector<FragLibIon> sortedFragLibIons;
+        for (auto it = sortingChunks.begin(); it != sortingChunks.end(); it++) {
+            QVector<FragLibIon> &fragLibIonsAtNominalMzFrag = it.value();
+            sortFragLibIons(fragLibIonsAtNominalMzFrag);
 
-QVector<FragLibIon> sortFragLibIonsInChunks(const QVector<FragLibIon> &fragLibIons) {
+            sortedFragLibIons.append(fragLibIonsAtNominalMzFrag);
+        }
 
-    using NominalMzFrag = int;
-
-    QMap<NominalMzFrag, QVector<FragLibIon>> sortingChunks;
-    for (const FragLibIon fli : fragLibIons) {
-        const auto nominalMzFrag = static_cast<NominalMzFrag>(std::round(fli.mzFrag));
-        sortingChunks[nominalMzFrag].push_back(fli);
+        return sortedFragLibIons;
     }
 
-    QFuture<void> futures = QtConcurrent::map(
-            sortingChunks,
-            &sortFragLibIons
-            );
-
-    QVector<FragLibIon> sortedFragLibIons;
-    for (auto it = sortingChunks.begin(); it != sortingChunks.end(); it++) {
-        QVector<FragLibIon> &fragLibIonsAtNominalMzFrag = it.value();
-        sortFragLibIons(fragLibIonsAtNominalMzFrag);
-
-        sortedFragLibIons.append(fragLibIonsAtNominalMzFrag);
-    }
-
-    return sortedFragLibIons;
-}
-
+}//namespace
 Err FragLibraryTron::writeFragLibIons(
         const QVector<FragLibIon> &fragLibIons,
         const QString &fragLibIonsFilePath
@@ -116,6 +119,22 @@ Err FragLibraryTron::readFragLibIons(const QString &fragLibIonsFilePath) {
 
     qDebug() << "FragLibIons loaded from" << fragLibIonsFilePath
              << "in" <<  et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err FragLibraryTron::buildFragLibIonsUniqueIndexes() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_fragLibIons); ree;
+
+    for (const FragLibIon &fli : m_fragLibIons) {
+        m_fragLibIonsUniquePeptideId[fli.hashedKey()].push_back(fli.peptideId);
+    }
+
+    qDebug() << "OG" << m_fragLibIons.size() << "OG UNIQUES" << m_fragLibIonsUniquePeptideId.size();
+
 
     ERR_RETURN
 }

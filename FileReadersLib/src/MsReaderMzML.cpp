@@ -135,8 +135,6 @@ Err MsReaderMzML::PrivateData::openFile(const QString &filename) {
     QXmlStreamReader xmlReader(m_file.data());
 
     return parse(xmlReader);
-
-    ERR_RETURN
 }
 
 
@@ -680,6 +678,16 @@ MsReaderMzML::~MsReaderMzML() {
 
 
 Err MsReaderMzML::openFile(const QString &filePath) {
+
+    ERR_INIT
+
+    const QString cacheFileURI = filePath + S_GLOBAL_SETTINGS.DOT_CACHE;
+
+    if (cacheExists(cacheFileURI)) {
+        return readFromCache(cacheFileURI);
+    }
+
+    e = createTandemScanIonsCache(filePath); ree;
     return m_d->openFile(filePath);
 }
 

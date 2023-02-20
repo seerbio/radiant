@@ -11,9 +11,12 @@
 #include <QString>
 #include <QVector>
 
+using FragLibIonPeptideId = int;
 using IsolationWindowKey = QString;
 using ModificationMass = double;
 using MsLevel = int;
+using MZION = double;
+using MzTargetKey = QString;
 using PeptideId = int;
 using PeptideString = QString;
 using ProteinId = int;
@@ -22,13 +25,17 @@ using ResidueIndex = int;
 using ScanNumber = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;
+using TandemScansIndex = int;
+using TARGETMZ = double;
 using UniqueMsInfoScanKey = QString;
+using UniqueHashedMzAndTarget = QString;
 
 class UTILSLIB_EXPORTS GlobalSettings {
 
 public:
 
     const QChar COMMA = ',';
+    const QString DOT_CACHE = QStringLiteral(".cache");
     const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const int HASHING_PRECISION = 3;

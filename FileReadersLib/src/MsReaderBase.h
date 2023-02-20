@@ -9,6 +9,9 @@
 #include "FileReadersLib_Exports.h"
 
 #include "GlobalSettings.h"
+#include "MathUtils.h"
+
+#include <QDataStream>
 
 
 using namespace Error;
@@ -28,6 +31,72 @@ enum class ScanPointsSort {
     DescIntensity
 };
 
+
+struct FILEREADERSLIB_EXPORTS TandemScanIon {
+
+    ScanNumber scanNumber = -1;
+    int collisionEnergy = -1;
+    double mz = -1.0;
+    double intensity = -1.0;
+    double precursorTargetMz = -1.0;
+    double precursorTargetLowerWindow = -1.0;
+    double precursorTargetUpperWindow = -1.0;
+    double scanTime = -1.0;
+
+    friend QDataStream &operator <<(QDataStream &stream, const TandemScanIon &tsi) {
+        stream << tsi.scanNumber;
+        stream << tsi.collisionEnergy;
+        stream << tsi.mz;
+        stream << tsi.intensity;
+        stream << tsi.precursorTargetMz;
+        stream << tsi.precursorTargetLowerWindow;
+        stream << tsi.precursorTargetUpperWindow;
+        stream << tsi.scanTime;
+
+        return stream;
+    }
+
+    friend QDataStream &operator >>(QDataStream &stream, TandemScanIon &tsi) {
+
+        stream >> tsi.scanNumber;
+        stream >> tsi.collisionEnergy;
+        stream >> tsi.mz;
+        stream >> tsi.intensity;
+        stream >> tsi.precursorTargetMz;
+        stream >> tsi.precursorTargetLowerWindow;
+        stream >> tsi.precursorTargetUpperWindow;
+        stream >> tsi.scanTime;
+
+        return stream;
+    }
+
+    [[nodiscard]] QString hashedKey() const {
+
+        const int hashingPrecision = 3;
+
+
+        const int mzHashed = MathUtils::hashDecimal(mz, hashingPrecision);
+        const int targetHashed = MathUtils::hashDecimal(precursorTargetMz, hashingPrecision);
+
+        return S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT
+                .arg(mzHashed)
+                .arg(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP)
+                .arg(targetHashed);
+    }
+
+    static QPair<MZION , TARGETMZ> unhashKey(const QString &hashedKey) {
+        const QStringList splitStr = hashedKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT,
+                QString::SkipEmptyParts
+                );
+
+        const int hashingPrecision = 3;
+
+        return {MathUtils::unHashDecimal<double>(splitStr.first().toInt(), hashingPrecision),
+                MathUtils::unHashDecimal<double>(splitStr.back().toInt(), hashingPrecision)};
+    }
+
+};
 
 struct FILEREADERSLIB_EXPORTS MsScanInfo {
 
@@ -61,7 +130,6 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
 
 };
 
-
 struct FILEREADERSLIB_EXPORTS ScanIon {
 
     ScanNumber scanNumber = -1;
@@ -79,7 +147,6 @@ struct FILEREADERSLIB_EXPORTS ScanIon {
 
 };
 
-
 struct ScanIonWithScanInfo {
     ScanIon scanIon;
     MsScanInfo msScanInfo;
@@ -89,6 +156,9 @@ struct ScanIonWithScanInfo {
 class FILEREADERSLIB_EXPORTS MsReaderBase {
 
 public:
+
+    friend class MsReaderBaseTests;
+    friend class MsReaderMZMLTests;
 
     MsReaderBase() = default;
 
@@ -123,24 +193,15 @@ public:
             QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber
     );
 
-    Err deisotopeScanPoints(int maxTandemPointCount,
-                            double deisotopingTolerancePPM);
-
     static ScanPoints sortScanPoints(const ScanPoints &scanPoints,
                                      const ScanPointsSort &sort = ScanPointsSort::AscMz);
 
-    static ScanPoints topNScanPoints(const ScanPoints &scanPoints,
-                                     int topNIntensity,
-                                     const ScanPointsSort &sort = ScanPointsSort::DescIntensity);
+    Err createTandemScanIonsCache(const QString &cacheFilePath);
 
-    Err cacheMsReader(const QString &outputFilePath);
+    Err readFromCache(const QString cacheFileURI);
 
-    Err readMsReaderCache(const QString &msReaderCacheFilePath);
+    static bool cacheExists(const QString mzMLFileURI);
 
-    static bool checkForCachedDataFile(
-            const QString &filePath,
-            QString *cachedFilePath
-    );
 
     static Err getRangesFromIsolationWindowKey(
             const IsolationWindowKey &key,
@@ -179,6 +240,8 @@ public:
             QVector<double> *intensityVals
     );
 
+    Err buildUniqueTandemScanIons();
+
 protected:
 
     Err buildScanNumbersByUniqueMsInfoScanKey();
@@ -190,6 +253,8 @@ protected:
     QMap<UniqueMsInfoScanKey, QVector<ScanNumber>> m_scanNumbersByUniqueMsInfoScanKey;
 
     QVector<ScanIon> m_scanIons;
+    QVector<TandemScanIon> m_tandemScanIons;
+    QMap<UniqueHashedMzAndTarget, QVector<TandemScansIndex>> m_uniqueTandemScanIons;
 
 };
 
