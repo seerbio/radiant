@@ -22,6 +22,11 @@ public:
             const QHash<ResidueIndex, ModificationMass> &mods = {}
     );
 
+    static double calculateMassFromThomson(
+            double mz,
+            int charge,
+            int monoOffset
+            );
 };
 
 

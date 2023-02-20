@@ -273,7 +273,6 @@ Err LibraryBuilderWorkFlow::buildTheoreticalMzFragsForPeptides(
     }
 #endif
 
-
     ERR_RETURN
 }
 

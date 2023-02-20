@@ -23,3 +23,11 @@ double BiophysicalCalcs::calculatePeptideMass(
 
     return mass + modMassesSum;
 }
+
+double BiophysicalCalcs::calculateMassFromThomson(
+        double mz,
+        int charge,
+        int monoOffset
+        ) {
+    return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON) ;
+}

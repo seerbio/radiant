@@ -16,6 +16,8 @@ public:
 private slots:
 
     void calculatePeptideMassTest();
+    void calculateMassFromThomsonTest();
+
 
 };
 
@@ -39,6 +41,13 @@ void BiophysicalCalcsTests::calculatePeptideMassTest() {
     const auto expected = static_cast<int>(expectedSeqMass);
 
     QCOMPARE(test, expected);
+}
+
+void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
+
+    const double result = BiophysicalCalcs::calculateMassFromThomson(501.5, 2, 1);
+    QCOMPARE(result, 999.98234706);
+
 }
 
 
