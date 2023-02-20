@@ -59,7 +59,6 @@ public:
         return (vec[midPoint] + vec[midPoint - 1]) * 0.5;
     }
 
-
     template <typename Vector>
     static double mean(const Vector &vec)
     {
@@ -69,7 +68,6 @@ public:
 
         return std::accumulate(vec.begin(), vec.end(), 0.0) / static_cast<double>(vec.size());
     }
-
 
     template <typename Vector>
     static double stDev(const Vector &vec) {
@@ -89,13 +87,11 @@ public:
         return std::sqrt(differencesSum / vec.size());
     }
 
-
     template <typename T>
     static bool tZero(T val)
     {
         return qFuzzyIsNull(val);
     }
-
 
     template <typename T>
     static bool tSame(T v1, T v2, double fudgeFactor = 0.01)
@@ -104,7 +100,6 @@ public:
         return std::abs(v1 - v2) < fudgeFactor;
     }
 
-
     template <typename T>
     static T pRound(T val, int precision = 1)
     {
@@ -112,13 +107,11 @@ public:
         return round(val * precisionMultiplier) / precisionMultiplier;
     }
 
-
     template<typename T>
     static int hashDecimal(T val, int precision = 1) {
         const double precisionMultiplier = pow(10, precision);
         return static_cast<int>(round(val * precisionMultiplier));
     }
-
 
     template<typename T>
     static int hashDecimal(T val, double precision) {
@@ -126,21 +119,32 @@ public:
         return static_cast<int>(round(val * precisionMultiplier));
     }
 
-
     template<typename T>
     static T unHashDecimal(int val, int precision = 1) {
         const double precisionMultiplier = pow(10, precision);
         return static_cast<T>(val / precisionMultiplier);
     }
 
-
     static double calculatePPM(double val, double ppmTolerance);
-
 
     static unsigned long long factorial(int n);
 
-
     static double calculateHyperScore(long long intensity, int bIonCount, int yIonsCount);
+
+    template<typename T>
+    static int closest(const QVector<T> &vec, T value) {
+
+        assert(!vec.isEmpty());
+        auto it = std::min_element(vec.begin(), vec.end(), [value] (double a, double b) {
+            return std::abs(a - value) <= std::abs(b - value);
+        });
+
+        if(it == vec.end()) {
+            return -1;
+        }
+
+        return it - vec.begin();
+    }
 
 };
 

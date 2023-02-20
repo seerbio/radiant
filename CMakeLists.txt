@@ -15,12 +15,15 @@ SET(CMAKE_AUTOUIC ON)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so")
-set(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so")
+SET(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so")
+SET(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so")
+SET(ZLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/include")
+SET(ZLIB_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/lib/libz.so")
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 #ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
 ADD_SUBDIRECTORY("ChemLib")
 ADD_SUBDIRECTORY("FileReadersLib")
+#ADD_SUBDIRECTORY("ParquetLib")
 ADD_SUBDIRECTORY("WorkFlowsLib")
 ADD_SUBDIRECTORY("UtilsLib")

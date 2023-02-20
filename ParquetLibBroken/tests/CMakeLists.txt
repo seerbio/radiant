@@ -12,11 +12,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
-        FastaReaderTests
-        JsonParameterReaderTests
-        MsReaderBaseTests
-        MsReaderMZMLTests
-        PythiaParameterReaderTests
+    MsParquetReaderTests
 )
 
 foreach(class ${TEST_CLASSES})

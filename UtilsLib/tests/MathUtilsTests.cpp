@@ -30,20 +30,18 @@ private Q_SLOTS:
     void hashDecimalTest();
     void unHashDecimalTest();
     void factorialTest();
+    void closestTest();
     void cleanupTestCase();
 
 };
-
 
 MathUtilsTests::MathUtilsTests() : QObject()
 {
 }
 
-
 void MathUtilsTests::initTestCase()
 {
 }
-
 
 void MathUtilsTests::medianTest()
 {
@@ -64,7 +62,6 @@ void MathUtilsTests::medianTest()
     QCOMPARE(vec2TestMedian, 4.5);
 }
 
-
 void MathUtilsTests::meanTest()
 {
     const QVector<int> v1 = {};
@@ -80,7 +77,6 @@ void MathUtilsTests::meanTest()
     QCOMPARE(meanV1Std, 0.0);
 }
 
-
 void MathUtilsTests::pRoundTest() {
 
     const double roundVal1 = MathUtils::pRound(3.135, 2);
@@ -90,11 +86,9 @@ void MathUtilsTests::pRoundTest() {
     QCOMPARE(roundVal2, 3.13);
 }
 
-
 void MathUtilsTests::cleanupTestCase()
 {
 }
-
 
 void MathUtilsTests::hashDecimalTest() {
 
@@ -107,7 +101,6 @@ void MathUtilsTests::hashDecimalTest() {
 
 }
 
-
 void MathUtilsTests::unHashDecimalTest() {
 
     const int testVal = 66666;
@@ -118,7 +111,6 @@ void MathUtilsTests::unHashDecimalTest() {
     QCOMPARE(QString::number(unHashedTestVal2), QString::number(66666));
 }
 
-
 void MathUtilsTests::factorialTest() {
 
     QCOMPARE(MathUtils::factorial(30), 9223372036854775807);
@@ -126,6 +118,17 @@ void MathUtilsTests::factorialTest() {
     QCOMPARE(MathUtils::factorial(-1), 0);
     QCOMPARE(MathUtils::factorial(3), 6);
 
+}
+
+void MathUtilsTests::closestTest() {
+
+    const QVector<double> vec = {1.2, 1.3, 1.4, 1.45, 1.5};
+
+    int closestIndex = MathUtils::closest(vec, 1.349);
+    QCOMPARE(closestIndex, 1);
+
+    int closestIndex1 = MathUtils::closest(vec, 1.49);
+    QCOMPARE(closestIndex1, 4);
 }
 
 

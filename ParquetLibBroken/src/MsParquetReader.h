@@ -6,17 +6,17 @@
 #define SPARKDIA_PARQUETREADER_H
 
 
-#include "FileReadersLib_Exports.h"
-#include "GlobalSettings.h"
+#include "ParquetLib_Exports.h"
 #include "ParquetReaderBase.h"
 
 #include <QMap>
 #include <vector>
 
 //using namespace Error;
+using ScanNumber = int;
+using ScanPoints = QVector<QPointF>;
 
-
-struct FILEREADERSLIB_EXPORTS ScanInfo {
+struct PARQUETLIB_EXPORTS ScanInfo {
     int msLevel = 1;
     int scanNumber = 1;
     double retentionTime = -1.0;
@@ -27,7 +27,7 @@ struct FILEREADERSLIB_EXPORTS ScanInfo {
 };
 
 
-struct FILEREADERSLIB_EXPORTS ParquetRow {
+struct PARQUETLIB_EXPORTS ParquetRow {
 
     double mz = -1.0;
     float intensity = -1.0;
@@ -41,7 +41,7 @@ struct FILEREADERSLIB_EXPORTS ParquetRow {
 };
 
 
-class FILEREADERSLIB_EXPORTS MsParquetReader : public ParquetReaderBase{
+class PARQUETLIB_EXPORTS MsParquetReader : public ParquetReaderBase{
 
 public:
 

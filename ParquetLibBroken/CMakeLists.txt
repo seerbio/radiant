@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(WorkFlowsLib
+PROJECT(ParquetLib
         VERSION "1.0"
         )
 
 INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
-SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
@@ -20,25 +20,25 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/LibraryBuilderWorkFlow.cpp
-        src/MsFraggerTron.cpp
-    )
+        src/MsParquetReader.cpp
+        src/ParquetReaderBase.cpp
+        )
 
 SET(HEADER_FILES
-        src/LibraryBuilderWorkFlow.h
-        src/MsFraggerTron.h
-    )
+        src/MsParquetReader.h
+        src/ParquetReaderBase.h
+        )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
         )
 
+MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
-
 
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
@@ -53,13 +53,13 @@ FIND_PACKAGE(Qt5 REQUIRED
 
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
+
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE
         Qt5::Core
         Qt5::Test
-        AlgorithmsLib
-        FileReadersLib
-        UtilsLib
+        ${ARROW_SHARED_LIBRARY}
+        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
@@ -117,7 +117,4 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         COMPONENT Devel
         )
 
-# for MSVS
-SOURCE_GROUP("Source Files" FILES ${${PROJECT_NAME}_LIB_SOURCES})
-
-ADD_SUBDIRECTORY("tests")
+#ADD_SUBDIRECTORY("tests")

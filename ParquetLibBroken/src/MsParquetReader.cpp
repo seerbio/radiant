@@ -6,6 +6,8 @@
 
 //#include "ErrorUtils.h"
 //#include "StringUtils.h"
+#include <QVector>
+#include <QPointF>
 
 #include <iostream>
 

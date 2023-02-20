@@ -22,16 +22,16 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
-        src/MsParquetReader.cpp
-        src/ParquetReaderBase.cpp
+        src/MsReaderBase.cpp
+        src/MsReaderMzML.cpp
         src/PythiaParameterReader.cpp
 )
 
 SET(HEADER_FILES
         src/FastaReader.h
         src/JsonParametersReader.h
-        src/MsParquetReader.h
-        src/ParquetReaderBase.h
+        src/MsReaderBase.h
+        src/MsReaderMzML.h
         src/PythiaParameterReader.h
 )
 
@@ -49,8 +49,9 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${ZLIB_DIRECTORY}"
+        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
 )
-
 
 FIND_PACKAGE(Qt5 REQUIRED
         Core
@@ -66,8 +67,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         ChemLib
         UtilsLib
-        ${ARROW_SHARED_LIBRARY}
-        ${PARQUET_SHARED_LIBRARY}
+        ${ZLIB_STATIC_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
