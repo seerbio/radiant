@@ -148,8 +148,15 @@ Err FragLibraryTron::getFragLibIonTranches(
 
     for (const QPair<MzMin, MzMax> &trancheLimit : tranchLimits) {
 
-        QPair<int, int> trancheIndexLimits = getFragLibIonTrancheStartStop(trancheLimit);
+        const QPair<int, int> trancheIndexLimits = getFragLibIonTrancheStartStop(trancheLimit);
 
+        FragLibIonTranche fragLibIonTranche;
+        fragLibIonTranche.mzMin = trancheLimit.first;
+        fragLibIonTranche.mzMax = trancheLimit.second;
+        fragLibIonTranche.fragLibIonsTranche
+                = m_fragLibIons.mid(trancheIndexLimits.first, trancheIndexLimits.second);
+
+        fragLibIonTranches->push_back(fragLibIonTranche);
     }
 
     ERR_RETURN
@@ -173,8 +180,6 @@ namespace {
 } //namespace
 QPair<int, int> FragLibraryTron::getFragLibIonTrancheStartStop(const QPair<MzMin, MzMax> &tranchLimits) {
 
-    QPair<int, int> trancheIndexLimits;
-
     const double toleranceMultiplier = 5.0;
 
     const double mzMinTolerance
@@ -186,6 +191,6 @@ QPair<int, int> FragLibraryTron::getFragLibIonTrancheStartStop(const QPair<MzMin
     const int mzMinIndex = getIndexOfLimit(m_fragLibIons, tranchLimits.first - mzMinTolerance);
     const int mzMaxIndex = getIndexOfLimit(m_fragLibIons, tranchLimits.second + mzMaxTolerance);
 
-    return trancheIndexLimits;
+    return {mzMinIndex, mzMaxIndex};
 }
 

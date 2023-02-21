@@ -9,20 +9,16 @@
 #include "ParallelUtils.h"
 
 
-MsFraggerTronWorkFlow::~MsFraggerTronWorkFlow() {
-    delete m_fragLibraryTron;
-}
-
 Err MsFraggerTronWorkFlow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri) {
 
     ERR_INIT
 
-    m_pythiaParameters = pythiaParameters;
+    e = ErrorUtils::isNotEmpty(fragLibUri); ree;
 
-    m_fragLibraryTron = new FragLibraryTron(m_pythiaParameters);
-    e = m_fragLibraryTron->readFragLibIons(fragLibUri); ree;
+    m_pythiaParameters = pythiaParameters;
+    m_fragLibUri = fragLibUri;
 
     ERR_RETURN
 }
@@ -94,11 +90,14 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
             = getEachTranchedScanIonsMzLimits(tranchedTandemScanIons);
 
     QVector<FragLibIonTranche> fragLibIonTranches;
-    e = m_fragLibraryTron->getFragLibIonTranches(
-            mzMinMaxLimitsOfTranches,
-            &fragLibIonTranches
-            ); ree;
-
-
+    {
+        FragLibraryTron fragLibraryTron(m_pythiaParameters);
+        e = fragLibraryTron.readFragLibIons(m_fragLibUri); ree;
+        e = fragLibraryTron.getFragLibIonTranches(
+                mzMinMaxLimitsOfTranches,
+                &fragLibIonTranches
+        ); ree;
+    }
+    
     ERR_RETURN
 }

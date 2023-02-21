@@ -21,7 +21,7 @@ class WORKFLOWSLIB_EXPORTS MsFraggerTronWorkFlow {
 public:
 
     MsFraggerTronWorkFlow() = default;
-    ~MsFraggerTronWorkFlow();
+    ~MsFraggerTronWorkFlow() = default;
 
     Err init(
             const PythiaParameters &pythiaParameters,
@@ -37,8 +37,7 @@ private:
 private:
 
     PythiaParameters m_pythiaParameters;
-    FragLibraryTron *m_fragLibraryTron;
-
+    QString m_fragLibUri;
 };
 
 
