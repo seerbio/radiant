@@ -35,23 +35,19 @@ enum class ScanPointsSort {
 struct FILEREADERSLIB_EXPORTS TandemScanIon {
 
     ScanNumber scanNumber = -1;
-    int collisionEnergy = -1;
     double mz = -1.0;
     double intensity = -1.0;
     double precursorTargetMz = -1.0;
     double precursorTargetLowerWindow = -1.0;
     double precursorTargetUpperWindow = -1.0;
-    double scanTime = -1.0;
 
     friend QDataStream &operator <<(QDataStream &stream, const TandemScanIon &tsi) {
         stream << tsi.scanNumber;
-        stream << tsi.collisionEnergy;
         stream << tsi.mz;
         stream << tsi.intensity;
         stream << tsi.precursorTargetMz;
         stream << tsi.precursorTargetLowerWindow;
         stream << tsi.precursorTargetUpperWindow;
-        stream << tsi.scanTime;
 
         return stream;
     }
@@ -59,13 +55,11 @@ struct FILEREADERSLIB_EXPORTS TandemScanIon {
     friend QDataStream &operator >>(QDataStream &stream, TandemScanIon &tsi) {
 
         stream >> tsi.scanNumber;
-        stream >> tsi.collisionEnergy;
         stream >> tsi.mz;
         stream >> tsi.intensity;
         stream >> tsi.precursorTargetMz;
         stream >> tsi.precursorTargetLowerWindow;
         stream >> tsi.precursorTargetUpperWindow;
-        stream >> tsi.scanTime;
 
         return stream;
     }
@@ -241,6 +235,8 @@ public:
     );
 
     Err buildUniqueTandemScanIons();
+
+    QVector<TandemScanIon> tandemScanIons();
 
 protected:
 

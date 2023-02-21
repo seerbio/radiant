@@ -684,11 +684,14 @@ Err MsReaderMzML::openFile(const QString &filePath) {
     const QString cacheFileURI = filePath + S_GLOBAL_SETTINGS.DOT_CACHE;
 
     if (cacheExists(cacheFileURI)) {
+        qDebug() << "Reading from" << cacheFileURI;
         return readFromCache(cacheFileURI);
     }
 
-    e = createTandemScanIonsCache(filePath); ree;
-    return m_d->openFile(filePath);
+    e = m_d->openFile(filePath); ree;
+    e = createTandemScanIonsCache(cacheFileURI); ree;
+
+    ERR_RETURN
 }
 
 

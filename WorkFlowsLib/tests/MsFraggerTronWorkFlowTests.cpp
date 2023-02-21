@@ -34,6 +34,7 @@ private:
         pythiaParameters.allowedMissedCleavages = 1;
         pythiaParameters.addDecoys = true;
         pythiaParameters.maxModificationsPeptide = 2;
+        pythiaParameters.ms2ExtractionWidthPPM = 12.0;
 
         PythiaParameterReader::applyFixedModificationsToAminoAcids(
                 pythiaParameters,
@@ -49,13 +50,17 @@ void MsFraggerTronWorkFlowTests::execTest() {
 
     ERR_INIT
 
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow(pythiaParameters());
-
     const QString mzMLFileURI
         = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
 
-    e = msFraggerTronWorkFlow.exec(mzMLFileURI);
+    const QString fragLibPath
+            = QStringLiteral("/home/anichols/Desktop/RawData/human_plasma_entrapment_super_trunc.fasta.fragLib");
 
+    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
+    e = msFraggerTronWorkFlow.init(pythiaParameters(), fragLibPath);
+    QCOMPARE(e, eNoError);
+
+    e = msFraggerTronWorkFlow.processFile(mzMLFileURI);
     QCOMPARE(e, eNoError);
 
 

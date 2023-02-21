@@ -95,6 +95,8 @@ public:
 
 struct PythiaParameters{
 
+    int chunkSize = 16;
+
     QStringList nTermCleavePoints;
     QStringList cTermCleavePoints;
 

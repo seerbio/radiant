@@ -454,13 +454,11 @@ Err MsReaderBase::createTandemScanIonsCache(const QString &cacheFilePath) {
 
             TandemScanIon tsi;
             tsi.scanNumber = scanNumber;
-            tsi.collisionEnergy = msScanInfo.collisionEnergy;
             tsi.mz = sp.x();
             tsi.intensity = sp.y();
             tsi.precursorTargetMz = msScanInfo.precursorTargetMz;
             tsi.precursorTargetLowerWindow = msScanInfo.precursorWindowOffsetLower;
             tsi.precursorTargetUpperWindow = msScanInfo.precursorWindowOffsetUpper;
-            tsi.scanTime = msScanInfo.scanTime;
 
             const auto nominalMzMass = static_cast<NominalMzMass>(std::round(tsi.mz));
             scanIonsByNominalMass[nominalMzMass].push_back(tsi);
@@ -539,4 +537,8 @@ bool MsReaderBase::cacheExists(const QString cacheFileURI) {
 
     QFileInfo fi(cacheFileURI);
     return fi.exists();
+}
+
+QVector<TandemScanIon> MsReaderBase::tandemScanIons() {
+    return m_tandemScanIons;
 }

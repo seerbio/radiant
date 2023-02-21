@@ -26,6 +26,7 @@ SET(SOURCE_FILES
         src/ErrorUtils.cpp
         src/GlobalSettings.cpp
         src/MathUtils.cpp
+        src/ParallelUtils.cpp
         src/SqlUtils.cpp
         src/StringUtils.cpp
         )
@@ -35,6 +36,7 @@ SET(HEADER_FILES
         src/ErrorUtils.h
         src/GlobalSettings.h
         src/MathUtils.h
+        src/ParallelUtils.h
         src/SqlUtils.h
         src/StringUtils.h
         )

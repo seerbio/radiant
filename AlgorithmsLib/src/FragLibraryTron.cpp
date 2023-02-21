@@ -13,6 +13,12 @@
 
 #include <iostream>
 
+
+FragLibraryTron::FragLibraryTron(const PythiaParameters &pythiaParameters)
+: m_pythiaParameters(pythiaParameters){}
+
+
+
 namespace {
 
     void sortFragLibIons(QVector<FragLibIon> &fragLibIons) {
@@ -123,18 +129,63 @@ Err FragLibraryTron::readFragLibIons(const QString &fragLibIonsFilePath) {
     ERR_RETURN
 }
 
-Err FragLibraryTron::buildFragLibIonsUniqueIndexes() {
+QVector<FragLibIon> FragLibraryTron::fragLibIons() {
+    return m_fragLibIons;
+}
+
+Err FragLibraryTron::getFragLibIonTranches(
+        const QVector<QPair<MzMin, MzMax>> &tranchLimits,
+        QVector<FragLibIonTranche> *fragLibIonTranches
+        ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_fragLibIons); ree;
+    e = ErrorUtils::isNotEmpty(tranchLimits); ree;
+    e = ErrorUtils::isFalse(m_pythiaParameters.ms2ExtractionWidthPPM == -1); ree;
 
-    for (const FragLibIon &fli : m_fragLibIons) {
-        m_fragLibIonsUniquePeptideId[fli.hashedKey()].push_back(fli.peptideId);
+    fragLibIonTranches->clear();
+
+    for (const QPair<MzMin, MzMax> &trancheLimit : tranchLimits) {
+
+        QPair<int, int> trancheIndexLimits = getFragLibIonTrancheStartStop(trancheLimit);
+
     }
-
-    qDebug() << "OG" << m_fragLibIons.size() << "OG UNIQUES" << m_fragLibIonsUniquePeptideId.size();
-
 
     ERR_RETURN
 }
+
+namespace {
+
+    int getIndexOfLimit(const QVector<FragLibIon> &vec, double mzLimit) {
+
+        auto it = std::min_element(vec.begin(), vec.end(), [mzLimit] (const FragLibIon &a, const FragLibIon &b) {
+            return std::abs(a.mzFrag - mzLimit) <= std::abs(b.mzFrag - mzLimit);
+        });
+
+        if(it == vec.end()) {
+            return -1;
+        }
+
+        return it - vec.begin();
+    }
+
+} //namespace
+QPair<int, int> FragLibraryTron::getFragLibIonTrancheStartStop(const QPair<MzMin, MzMax> &tranchLimits) {
+
+    QPair<int, int> trancheIndexLimits;
+
+    const double toleranceMultiplier = 5.0;
+
+    const double mzMinTolerance
+        = MathUtils::calculatePPM(tranchLimits.first, m_pythiaParameters.ms2ExtractionWidthPPM) * toleranceMultiplier;
+
+    const double mzMaxTolerance
+            = MathUtils::calculatePPM(tranchLimits.second, m_pythiaParameters.ms2ExtractionWidthPPM) * toleranceMultiplier;
+
+    const int mzMinIndex = getIndexOfLimit(m_fragLibIons, tranchLimits.first - mzMinTolerance);
+    const int mzMaxIndex = getIndexOfLimit(m_fragLibIons, tranchLimits.second + mzMaxTolerance);
+
+    return trancheIndexLimits;
+}
+

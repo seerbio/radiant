@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibraryTron.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 
@@ -19,16 +20,24 @@ class WORKFLOWSLIB_EXPORTS MsFraggerTronWorkFlow {
 
 public:
 
-    explicit MsFraggerTronWorkFlow(const PythiaParameters &pythiaParameters);
+    MsFraggerTronWorkFlow() = default;
+    ~MsFraggerTronWorkFlow();
 
-    ~MsFraggerTronWorkFlow() = default;
+    Err init(
+            const PythiaParameters &pythiaParameters,
+            const QString &fragLibUri
+            );
 
-    Err exec(const QString &mzmLFileURI);
+    Err processFile(const QString &mzmLFileURI);
+
+
+private:
 
 
 private:
 
     PythiaParameters m_pythiaParameters;
+    FragLibraryTron *m_fragLibraryTron;
 
 };
 

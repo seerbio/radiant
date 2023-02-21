@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "PythiaParameterReader.h"
 
 #include <QDataStream>
 
@@ -51,31 +52,14 @@ struct ALGORITHMSLIB_EXPORTS FragLibIon {
             return stream;
         }
 
-    [[nodiscard]] QString hashedKey() const {
-
-        const int hashingPrecision = 4;
-
-        const int mzHashed = MathUtils::hashDecimal(mzFrag, hashingPrecision);
-        const int targetHashed = MathUtils::hashDecimal(peptideMass, hashingPrecision);
-
-        return S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT
-                .arg(mzHashed)
-                .arg(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP)
-                .arg(targetHashed);
-    }
-
-    static QPair<MZION , TARGETMZ> unhashKey(const QString &hashedKey) {
-        const QStringList splitStr = hashedKey.split(
-                S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT,
-                QString::SkipEmptyParts
-        );
-
-        const int hashingPrecision = 4;
-
-        return {MathUtils::unHashDecimal<double>(splitStr.first().toInt(), hashingPrecision),
-                MathUtils::unHashDecimal<double>(splitStr.back().toInt(), hashingPrecision)};
-    }
 };
+
+struct ALGORITHMSLIB_EXPORTS FragLibIonTranche {
+    QVector<FragLibIon> fragLibIonsTranche;
+    double mzMin = -1;
+    double mzMax = -1;
+};
+
 
 class ALGORITHMSLIB_EXPORTS FragLibraryTron {
 
@@ -83,8 +67,10 @@ public:
 
     friend class FragLibraryTronTests;
 
-    FragLibraryTron() = default;
+    explicit FragLibraryTron(const PythiaParameters &pythiaParameters);
     ~FragLibraryTron() = default;
+
+
 
     static Err writeFragLibIons(
             const QVector<FragLibIon> &fragLibIons,
@@ -93,12 +79,21 @@ public:
 
     Err readFragLibIons(const QString &fragLibIonsFilePath);
 
-    Err buildFragLibIonsUniqueIndexes();
+    Err getFragLibIonTranches(
+            const QVector<QPair<MzMin, MzMax>> &tranchLimits,
+            QVector<FragLibIonTranche> *fragLibIonTranches
+            );
+
+    QVector<FragLibIon> fragLibIons();
 
 private:
 
+    QPair<int, int> getFragLibIonTrancheStartStop(const QPair<MzMin, MzMax> &tranchLimits);
+
+private:
+
+    PythiaParameters m_pythiaParameters;
     QVector<FragLibIon> m_fragLibIons;
-    QMap<MzTargetKey , QVector<FragLibIonPeptideId>> m_fragLibIonsUniquePeptideId;
 
 };
 
