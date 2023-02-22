@@ -35,6 +35,9 @@ private:
         pythiaParameters.addDecoys = true;
         pythiaParameters.maxModificationsPeptide = 2;
         pythiaParameters.ms2ExtractionWidthPPM = 12.0;
+        pythiaParameters.precursorExtractionWindowThomsons = 1.0;
+        pythiaParameters.chargeStateMin = 2;
+        pythiaParameters.chargeStateMax = 3;
 
         PythiaParameterReader::applyFixedModificationsToAminoAcids(
                 pythiaParameters,

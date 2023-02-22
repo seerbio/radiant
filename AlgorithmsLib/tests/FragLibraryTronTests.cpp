@@ -71,7 +71,9 @@ void FragLibraryTronTests::readWriteTest()
             );
     QCOMPARE(e, eNoError);
 
-    FragLibraryTron fragLibTron;
+    PythiaParameters pythiaParameters;
+    FragLibraryTron fragLibTron(pythiaParameters);
+
     e = fragLibTron.readFragLibIons(fragFilePath());
     QCOMPARE(e, eNoError);
 

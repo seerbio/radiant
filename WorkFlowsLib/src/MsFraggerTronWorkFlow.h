@@ -18,6 +18,15 @@ class TandemScanIon;
 using namespace Error;
 
 
+struct PeptideIdIonFraggerResult {
+    ScanNumber scanNumber = -1;
+    PeptideId peptideId = -1;
+    double searchedFragIonMz = -1.0;
+    double intensity = -1.0;
+    double ppmMzSearched = -1.0;
+};
+
+
 class WORKFLOWSLIB_EXPORTS MsFraggerTronWorkFlow {
 
 public:
@@ -38,6 +47,12 @@ private:
     Err buildRTrees(
             const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
             QMap<int, FragmentLibraryRTree*> *rTreesByKey
+            );
+
+    Err fragScanIons(
+            const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
+            const QMap<int, FragmentLibraryRTree*> &rTreesByKey,
+            QMap<int, QVector<PeptideIdIonFraggerResult>> *peptideIdIonFraggerResults
             );
 
 private:

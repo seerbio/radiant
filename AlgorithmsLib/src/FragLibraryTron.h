@@ -74,8 +74,6 @@ public:
     explicit FragLibraryTron(const PythiaParameters &pythiaParameters);
     ~FragLibraryTron() = default;
 
-
-
     static Err writeFragLibIons(
             const QVector<FragLibIon> &fragLibIons,
             const QString &fragLibIonsFilePath

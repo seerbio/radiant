@@ -11,6 +11,8 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 
+#include <iostream>
+
 
 Err MsFraggerTronWorkFlow::init(
         const PythiaParameters &pythiaParameters,
@@ -25,7 +27,6 @@ Err MsFraggerTronWorkFlow::init(
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -161,6 +162,12 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
             &rTreesByKey
             ); ree;
 
+    QMap<int, QVector<PeptideIdIonFraggerResult>> peptideIdIonFraggerResults;
+    e = fragScanIons(
+            tranchedTandemScanIons,
+            rTreesByKey,
+            &peptideIdIonFraggerResults
+            ); ree;
 
 
     deleteRTreePointers(rTreesByKey);
@@ -217,3 +224,113 @@ Err MsFraggerTronWorkFlow::buildRTrees(
 
     ERR_RETURN
 }
+
+namespace {
+
+    struct FraggerParallelInput {
+        FragmentLibraryRTree *rTree;
+        QVector<TandemScanIon> tandemScanIons;
+    };
+
+    Err buildFraggerParallelInputs(
+            const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
+            const QMap<int, FragmentLibraryRTree *> &rTreesByKey,
+            QVector<FraggerParallelInput> *fraggerParallelInputs
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(tranchedTandemScanIons); ree;
+        e = ErrorUtils::isEqual(tranchedTandemScanIons.size(), rTreesByKey.size()); ree;
+
+        for (int key : tranchedTandemScanIons.keys()) {
+
+            e = ErrorUtils::isTrue(rTreesByKey.contains(key)); ree;
+
+            FraggerParallelInput fraggerParallelInput;
+            fraggerParallelInput.rTree = rTreesByKey.value(key);
+            fraggerParallelInput.tandemScanIons = tranchedTandemScanIons.value(key),
+
+            fraggerParallelInputs->push_back(fraggerParallelInput);
+        }
+
+        ERR_RETURN
+    }
+
+    QVector<PeptideIdIonFraggerResult> fraggerParallelLogic(const FraggerParallelInput &fraggerParallelInput) {
+
+        QVector<PeptideIdIonFraggerResult> peptideIdIonResults;
+
+        for (const TandemScanIon &tsi : fraggerParallelInput.tandemScanIons) {
+
+            const QPair<double, double> targetWindow = {tsi.precursorTargetLowerWindow, tsi.precursorTargetUpperWindow};
+
+            const QHash<PeptideId, MZION> peptidesTableIdsSearchResult = fraggerParallelInput.rTree->getPeptidesTableIds(
+                    tsi.mz,
+                    tsi.precursorTargetMz,
+                    targetWindow);
+
+            for (auto it = peptidesTableIdsSearchResult.begin(); it != peptidesTableIdsSearchResult.end(); it++) {
+
+                const PeptideId pepId = it.key();
+                const double rTreeMz = it.value();
+                const double ppmMzSearched = (std::abs(rTreeMz - tsi.mz) / rTreeMz) * 1e6;
+
+                PeptideIdIonFraggerResult res;
+                res.scanNumber = tsi.scanNumber;
+                res.peptideId = pepId;
+                res.searchedFragIonMz = tsi.mz;
+                res.intensity = tsi.intensity;
+                res.ppmMzSearched = ppmMzSearched;
+                peptideIdIonResults.push_back(res);
+            }
+
+        }
+
+        return peptideIdIonResults;
+    }
+
+
+}//namespace
+Err MsFraggerTronWorkFlow::fragScanIons(
+        const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
+        const QMap<int, FragmentLibraryRTree *> &rTreesByKey,
+        QMap<int, QVector<PeptideIdIonFraggerResult>> *peptideIdIonFraggerResults
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(tranchedTandemScanIons); ree;
+    e = ErrorUtils::isNotEmpty(rTreesByKey); ree;
+
+    QVector<FraggerParallelInput> fraggerParallelInputs;
+    e = buildFraggerParallelInputs(
+            tranchedTandemScanIons,
+            rTreesByKey,
+            &fraggerParallelInputs
+            ); ree;
+
+#define RUN_PARALLEL_FRAGGER
+#ifdef RUN_PARALLEL_FRAGGER
+    QFuture<QVector<PeptideIdIonFraggerResult>> futures = QtConcurrent::mapped(
+            fraggerParallelInputs,
+            fraggerParallelLogic
+            );
+    futures.waitForFinished();
+
+    int counter = 0;
+    for (const QVector<PeptideIdIonFraggerResult> &res : futures) {
+        peptideIdIonFraggerResults->insert(counter++, res);
+    }
+#else
+    for (const FraggerParallelInput &fpi : fraggerParallelInputs) {
+        qDebug() << "RTree id:" << fpi.rTree->getKey() << "Rtree size:" << fpi.rTree->size();
+        const QVector<PeptideIdIonFraggerResult> res = fraggerParallelLogic(fpi);
+        peptideIdIonFraggerResults->insert(fpi.rTree->getKey(), res);
+    }
+#endif
+
+    ERR_RETURN
+}
+
+

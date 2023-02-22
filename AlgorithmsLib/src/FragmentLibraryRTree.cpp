@@ -12,6 +12,8 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+#include <iostream>
+
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -34,7 +36,7 @@ public:
                  double ppmTolerance,
                  double precursorExtractionWindowThomsons);
 
-    QHash<PeptideId, double> getPeptidesTableIds(double mz,
+    QHash<PeptideId, MZION> getPeptidesTableIds(double mz,
                                            double targetMass,
                                            const QPair<double, double> &targetWindow);
 
@@ -137,7 +139,7 @@ namespace {
     }
 
 }//namespace
-QHash<PeptideId, double> FragmentLibraryRTree::Private::getPeptidesTableIds(
+QHash<PeptideId, MZION> FragmentLibraryRTree::Private::getPeptidesTableIds(
         double mz,
         double targetMass,
         const QPair<double, double> &targetWindow
@@ -147,10 +149,10 @@ QHash<PeptideId, double> FragmentLibraryRTree::Private::getPeptidesTableIds(
     const double mzStart = mz - ppm;
     const double mzEnd = mz + ppm;
 
-    QHash<PeptideId, double> peptidesTableIdsVsCoor;
+    QHash<PeptideId, MZION> peptidesTableIdsVsCoor;
 
     if (mz < m_mzMin || mz > m_mzMax) {
-        //qDebug() << "LOG IT MZ OUT OF RANGE" << m_mzMin << mz << m_mzMax;
+//        std::cout << "LOG IT MZ OUT OF RANGE " << m_mzMin << " " << mz << " " << m_mzMax << std::endl;
         return peptidesTableIdsVsCoor;
     }
 
@@ -212,7 +214,7 @@ Err FragmentLibraryRTree::init(
             );
 }
 
-QHash<PeptideId, double> FragmentLibraryRTree::getPeptidesTableIds(
+QHash<PeptideId, MZION> FragmentLibraryRTree::getPeptidesTableIds(
         double mz,
         double targetMass,
         const QPair<double, double> &targetWindow

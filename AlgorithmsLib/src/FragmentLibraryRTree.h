@@ -33,7 +33,7 @@ public:
             double precursorExtractionWindowThomsons
             );
 
-    QHash<PeptideId, double> getPeptidesTableIds(
+    QHash<PeptideId, MZION> getPeptidesTableIds(
             double mz,
             double targetMass,
             const QPair<double, double> &targetWindow
