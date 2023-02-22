@@ -41,11 +41,16 @@ public:
 
     int size();
 
+    void setKey(int key);
+
+    int getKey();
+
 
 private:
 
     Q_DISABLE_COPY(FragmentLibraryRTree) class Private;
     const QScopedPointer<Private> d_ptr;
+    int m_key;
 
 };
 

@@ -134,8 +134,8 @@ QVector<FragLibIon> FragLibraryTron::fragLibIons() {
 }
 
 Err FragLibraryTron::getFragLibIonTranches(
-        const QVector<QPair<MzMin, MzMax>> &tranchLimits,
-        QVector<FragLibIonTranche> *fragLibIonTranches
+        const QMap<int, QPair<MzMin, MzMax>> &tranchLimits,
+        QMap<int, FragLibIonTranche> *fragLibIonTranches
         ) {
 
     ERR_INIT
@@ -146,17 +146,26 @@ Err FragLibraryTron::getFragLibIonTranches(
 
     fragLibIonTranches->clear();
 
-    for (const QPair<MzMin, MzMax> &trancheLimit : tranchLimits) {
+    for (auto it = tranchLimits.begin(); it != tranchLimits.end(); it++) {
+
+        int key = it.key();
+        const QPair<MzMin, MzMax> &trancheLimit = it.value();
 
         const QPair<int, int> trancheIndexLimits = getFragLibIonTrancheStartStop(trancheLimit);
 
         FragLibIonTranche fragLibIonTranche;
+        fragLibIonTranche.key = key;
         fragLibIonTranche.mzMin = trancheLimit.first;
         fragLibIonTranche.mzMax = trancheLimit.second;
         fragLibIonTranche.fragLibIonsTranche
                 = m_fragLibIons.mid(trancheIndexLimits.first, trancheIndexLimits.second);
 
-        fragLibIonTranches->push_back(fragLibIonTranche);
+        fragLibIonTranche.precursorExtractionWindowThomsons = m_pythiaParameters.precursorExtractionWindowThomsons;
+        fragLibIonTranche.ppmTolerance = m_pythiaParameters.ms2ExtractionWidthPPM;
+        fragLibIonTranche.minMaxCharge
+            = {m_pythiaParameters.chargeStateMin, m_pythiaParameters.chargeStateMax};
+
+        fragLibIonTranches->insert(key, fragLibIonTranche);
     }
 
     ERR_RETURN

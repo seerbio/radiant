@@ -9,9 +9,11 @@
 
 #include "Error.h"
 #include "FragLibraryTron.h"
+#include "FragmentLibraryRTree.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 
+class TandemScanIon;
 
 using namespace Error;
 
@@ -33,6 +35,10 @@ public:
 
 private:
 
+    Err buildRTrees(
+            const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
+            QMap<int, FragmentLibraryRTree*> *rTreesByKey
+            );
 
 private:
 

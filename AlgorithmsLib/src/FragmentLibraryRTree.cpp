@@ -190,6 +190,7 @@ int FragmentLibraryRTree::Private::size() {
 
 FragmentLibraryRTree::FragmentLibraryRTree()
 : d_ptr(new Private())
+, m_key(-1)
 {}
 
 
@@ -221,4 +222,12 @@ QHash<PeptideId, double> FragmentLibraryRTree::getPeptidesTableIds(
 
 int FragmentLibraryRTree::size() {
     return d_ptr->size();
+}
+
+void FragmentLibraryRTree::setKey(int key) {
+    m_key = key;
+}
+
+int FragmentLibraryRTree::getKey() {
+    return m_key;
 }

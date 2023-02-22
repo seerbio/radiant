@@ -55,9 +55,13 @@ struct ALGORITHMSLIB_EXPORTS FragLibIon {
 };
 
 struct ALGORITHMSLIB_EXPORTS FragLibIonTranche {
+    int key = -1;
     QVector<FragLibIon> fragLibIonsTranche;
     double mzMin = -1;
     double mzMax = -1;
+    QPair<int, int> minMaxCharge;
+    double ppmTolerance = -1.0;
+    double precursorExtractionWindowThomsons = -1.0;
 };
 
 
@@ -80,8 +84,8 @@ public:
     Err readFragLibIons(const QString &fragLibIonsFilePath);
 
     Err getFragLibIonTranches(
-            const QVector<QPair<MzMin, MzMax>> &tranchLimits,
-            QVector<FragLibIonTranche> *fragLibIonTranches
+            const QMap<int, QPair<MzMin, MzMax>> &tranchLimits,
+            QMap<int, FragLibIonTranche> *fragLibIonTranches
             );
 
     QVector<FragLibIon> fragLibIons();
