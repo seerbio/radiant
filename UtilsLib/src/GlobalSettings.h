@@ -26,6 +26,7 @@ using ProteinId = int;
 using ProteinSequence = QString;
 using ResidueIndex = int;
 using ScanNumber = int;
+using ScanNumberIndex = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;
 using TandemScansIndex = int;

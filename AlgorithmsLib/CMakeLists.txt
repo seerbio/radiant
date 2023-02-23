@@ -21,6 +21,8 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/FeatureFinderHill.cpp
+        src/FeatureFinderHillBuilder.cpp
         src/FragLibraryTron.cpp
         src/FragmentLibraryRTree.cpp
         src/PeptidesLibraryTron.cpp
@@ -29,6 +31,8 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/FeatureFinderHill.h
+        src/FeatureFinderHillBuilder.h
         src/FragLibraryTron.h
         src/FragmentLibraryRTree.h
         src/PeptidesLibraryTron.h
@@ -48,6 +52,7 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        ${EIGEN_DIRECTORY}
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -65,6 +70,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         ChemLib
+        EigenLib
         FileReadersLib
         UtilsLib
         )
