@@ -624,3 +624,18 @@ Err PeptidesLibraryTron::buildPeptidesLookupByPeptideId() {
 
     ERR_RETURN
 }
+
+Err PeptidesLibraryTron::getPeptideById(
+        PeptideId peptideId,
+        Peptide *peptide
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_peptidesLookupByPeptideId); ree;
+
+    *peptide = m_peptidesLookupByPeptideId.value(peptideId);
+    e = ErrorUtils::isTrue(peptide->id == peptideId); ree;
+
+    ERR_RETURN
+}

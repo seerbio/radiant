@@ -19,6 +19,7 @@ using MZION = double;
 using MzMin = double;
 using MzMax = double;
 using MzTargetKey = QString;
+using Occurrence = int;
 using PeptideId = int;
 using PeptideString = QString;
 using ProteinId = int;

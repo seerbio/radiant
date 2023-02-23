@@ -59,13 +59,19 @@ void MsFraggerTronWorkFlowTests::execTest() {
     const QString fragLibPath
             = QStringLiteral("/home/anichols/Desktop/RawData/human_plasma_entrapment_super_trunc.fasta.fragLib");
 
+    const QString pepLibPath
+            = QStringLiteral("/home/anichols/Desktop/RawData/human_plasma_entrapment_super_trunc.fasta.pepLib");
+
     MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(pythiaParameters(), fragLibPath);
+    e = msFraggerTronWorkFlow.init(
+            pythiaParameters(),
+            fragLibPath,
+            pepLibPath
+            );
     QCOMPARE(e, eNoError);
 
     e = msFraggerTronWorkFlow.processFile(mzMLFileURI);
     QCOMPARE(e, eNoError);
-
 
 }
 

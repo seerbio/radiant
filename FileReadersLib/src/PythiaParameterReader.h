@@ -94,7 +94,7 @@ public:
 
 
 struct PythiaParameters{
-
+    //TODO make an is valid method to check and see if all values are initiated.
     int chunkSize = 16;
 
     QStringList nTermCleavePoints;

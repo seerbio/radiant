@@ -26,6 +26,15 @@ struct PeptideIdIonFraggerResult {
     double ppmMzSearched = -1.0;
 };
 
+struct CHEMLIB_EXPORTS TallyPeptideId {
+    ScanNumber scanNumber = -1;
+    PeptideId peptideId = -1;
+    Occurrence occurrence = 0;
+    int intensity = 0;
+    double meanMzPPM = -1.0;
+};
+
+using FraggerKey = int;
 
 class WORKFLOWSLIB_EXPORTS MsFraggerTronWorkFlow {
 
@@ -36,7 +45,8 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri
+            const QString &fragLibUri,
+            const QString &pepLibUri
             );
 
     Err processFile(const QString &mzmLFileURI);
@@ -50,15 +60,21 @@ private:
             );
 
     Err fragScanIons(
-            const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
-            const QMap<int, FragmentLibraryRTree*> &rTreesByKey,
-            QMap<int, QVector<PeptideIdIonFraggerResult>> *peptideIdIonFraggerResults
+            const QMap<FraggerKey, QVector<TandemScanIon>> &tranchedTandemScanIons,
+            const QMap<FraggerKey, FragmentLibraryRTree*> &rTreesByKey,
+            QHash<ScanNumber, QVector<PeptideIdIonFraggerResult>> *peptideIdIonFraggerResults
+            );
+
+    Err tallyPeptideIdsPerScan(
+            const QHash<ScanNumber, QVector<PeptideIdIonFraggerResult>> &peptideIdIonFraggerResults,
+            QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
             );
 
 private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
+    QString m_pepLibUri;
 };
 
 

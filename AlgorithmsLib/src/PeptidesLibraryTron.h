@@ -210,6 +210,11 @@ public:
 
     Err readPeptidesLib(const QString &peptidesLibFilePath);
 
+    Err getPeptideById(
+            PeptideId peptideId,
+            Peptide *peptide
+            );
+
 private:
 
     Err processFasta(const QString &fastaFileUri);
