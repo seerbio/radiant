@@ -15,6 +15,7 @@ SET(CMAKE_AUTOUIC ON)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so")
 SET(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so")
 SET(ZLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/include")
@@ -23,6 +24,7 @@ SET(ZLIB_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/lib/li
 ADD_SUBDIRECTORY("AlgorithmsLib")
 #ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
 ADD_SUBDIRECTORY("ChemLib")
+ADD_SUBDIRECTORY("EigenLib")
 ADD_SUBDIRECTORY("FileReadersLib")
 #ADD_SUBDIRECTORY("ParquetLib")
 ADD_SUBDIRECTORY("WorkFlowsLib")
