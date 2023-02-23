@@ -146,6 +146,10 @@ public:
         return it - vec.begin();
     }
 
+    template<typename T>
+    static int findMaxIndexInVector(const QVector<T> &vec) {
+        return std::max_element(vec.begin(), vec.end()) - vec.begin();
+    }
 };
 
 

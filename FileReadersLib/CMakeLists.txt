@@ -22,6 +22,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
+        src/MsFraggerTronResultsReader.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/PythiaParameterReader.cpp
@@ -30,6 +31,7 @@ SET(SOURCE_FILES
 SET(HEADER_FILES
         src/FastaReader.h
         src/JsonParametersReader.h
+        src/MsFraggerTronResultsReader.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/PythiaParameterReader.h

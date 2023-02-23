@@ -5,6 +5,7 @@
 #include "MsFraggerTronWorkFlow.h"
 
 #include "FragLibraryTron.h"
+#include "MsFraggerTronResultsReader.h"
 #include "MsReaderMzML.h"
 #include "ParallelUtils.h"
 #include "PeptidesLibraryTron.h"
@@ -104,20 +105,6 @@ namespace {
         return {e, rTree};
     }
 
-    struct RowToWrite {
-        ScanNumber scanNumber = -1;
-        PeptideId peptideId = -1;
-        Occurrence occurrence = -1;
-        int intensity = 0;
-        double meanMzPM = -1.0;
-        QString sequence;
-        QString sequenceWithMods;
-        QChar previousResidue;
-        QChar postResidue;
-        double mass = -1.0;
-        bool isDecoy = false;
-    };
-
     Err matchPeptideIdstoPeptides(
             const QString &pepLibFileURI,
             const QMap<ScanNumber, QVector<TallyPeptideId>> &tallyItemsByScanNumber,
@@ -128,12 +115,12 @@ namespace {
 
         PeptidesLibraryTron peptidesLibraryTron;
         e = peptidesLibraryTron.readPeptidesLib(pepLibFileURI); ree;
-        qDebug() << "SDFSD" << tallyItemsByScanNumber.size();
+
         for (auto it = tallyItemsByScanNumber.begin(); it != tallyItemsByScanNumber.end(); it++) {
 
             const ScanNumber scanNumber = it.key();
             const QVector<TallyPeptideId> &tallyPepIds = it.value();
-            qDebug() << "SDFDS" << tallyPepIds.size();
+
             for (const TallyPeptideId &tpi : tallyPepIds) {
 
                 e = ErrorUtils::isEqual(scanNumber, tpi.scanNumber); ree;
@@ -148,15 +135,16 @@ namespace {
                 rowToWrite.scanNumber = scanNumber;
                 rowToWrite.peptideId = tpi.peptideId;
                 rowToWrite.occurrence = tpi.occurrence;
-                rowToWrite.intensity = tpi.intensity;
-                rowToWrite.meanMzPM = tpi.meanMzPPM;
+                rowToWrite.intensityTotal = tpi.intensityTotal;
+                rowToWrite.meanMzPPM = tpi.meanMzPPM;
                 rowToWrite.sequence = peptide.sequence;
                 rowToWrite.sequenceWithMods = peptide.peptideStringWithMods();
                 rowToWrite.mass = peptide.mass;
                 rowToWrite.isDecoy = peptide.isDecoy;
                 rowToWrite.previousResidue = peptide.previousResidue;
                 rowToWrite.postResidue = peptide.postResidue;
-
+                rowToWrite.scanIonMZs = tpi.scanIonMZs;
+                rowToWrite.theoFragIonMZs = tpi.theoFragMZs;
                 rowsToWrite->push_back(rowToWrite);
             }
 
@@ -196,6 +184,8 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
             &peptideIdIonFraggerResults
             ); ree;
 
+    deleteRTreePointers(rTreesByKey);
+
     QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
     e = tallyPeptideIdsPerScan(
             peptideIdIonFraggerResults,
@@ -209,7 +199,11 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
             &rowsToWrite
             ); ree;
 
-    deleteRTreePointers(rTreesByKey);
+    const QString psmResultsFilePath = mzmLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
+    MsFraggerTronResultsReader::writeToCsv(
+            psmResultsFilePath,
+            &rowsToWrite
+            );
 
     ERR_RETURN
 }
@@ -361,6 +355,7 @@ namespace {
                 res.scanNumber = tsi.scanNumber;
                 res.peptideId = pepId;
                 res.searchedFragIonMz = tsi.mz;
+                res.foundTheoFragIonMz = rTreeMz;
                 res.intensity = tsi.intensity;
                 res.ppmMzSearched = ppmMzSearched;
                 peptideIdIonResults.push_back(res);
@@ -370,7 +365,6 @@ namespace {
 
         return peptideIdIonResults;
     }
-
 
 }//namespace
 Err MsFraggerTronWorkFlow::fragScanIons(
@@ -443,11 +437,11 @@ namespace {
 
             if (l.occurrence == r.occurrence) {
 
-                if (static_cast<int>(l.intensity) == static_cast<int>(r.intensity)) {
+                if (static_cast<int>(l.intensityTotal) == static_cast<int>(r.intensityTotal)) {
                     return l.meanMzPPM < r.meanMzPPM;
                 }
 
-                return l.intensity > r.intensity;
+                return l.intensityTotal > r.intensityTotal;
             }
 
             return l.occurrence > r.occurrence;
@@ -464,7 +458,10 @@ namespace {
         tallyPeptideIdsVec->resize(maxSize);
     }
 
-    QVector<TallyPeptideId> tallyFraggerResults(const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults) {
+    QVector<TallyPeptideId> tallyFraggerResults(
+            const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults,
+            bool saveMzVals
+            ) {
 
         QHash<PeptideId, TallyPeptideId> tallyPeptideIds;
 
@@ -482,7 +479,12 @@ namespace {
                 = ((tallyPeptideId.meanMzPPM * tallyPeptideId.occurrence) + pifr.ppmMzSearched) / (tallyPeptideId.occurrence + 1);
 
             tallyPeptideId.occurrence++;
-            tallyPeptideId.intensity += pifr.intensity;
+            tallyPeptideId.intensityTotal += static_cast<int>(pifr.intensity);
+            if (saveMzVals) {
+                tallyPeptideId.scanIonMZs.push_back(pifr.searchedFragIonMz);
+                tallyPeptideId.theoFragMZs.push_back(pifr.foundTheoFragIonMz);
+            }
+
         }
 
         QVector<TallyPeptideId> tallyPeptideIdsVec = tallyPeptideIds.values().toVector();
@@ -492,6 +494,13 @@ namespace {
         return tallyPeptideIdsVec;
     }
 
+    QVector<TallyPeptideId> tallyFraggerResultsNoSave(const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults) {
+        return tallyFraggerResults(peptideIdIonFraggerResults, false);
+    }
+
+    QVector<TallyPeptideId> tallyFraggerResultsSave(const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults) {
+        return tallyFraggerResults(peptideIdIonFraggerResults, true);
+    }
 
 }//namespace
 Err MsFraggerTronWorkFlow::tallyPeptideIdsPerScan(
@@ -503,9 +512,10 @@ Err MsFraggerTronWorkFlow::tallyPeptideIdsPerScan(
 
 #define PARALLEL_PROCESS_TALLY_ITEMS
 #ifdef PARALLEL_PROCESS_TALLY_ITEMS
+
     QFuture<QVector<TallyPeptideId>> futures = QtConcurrent::mapped(
             peptideIdIonFraggerResults,
-            tallyFraggerResults
+            tallyFraggerResultsSave
             );
     futures.waitForFinished();
 

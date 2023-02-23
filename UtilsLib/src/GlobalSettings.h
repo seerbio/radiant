@@ -39,8 +39,10 @@ public:
 
     const QChar COMMA = ',';
     const QString DOT_CACHE = QStringLiteral(".cache");
+    const QString DOT_CSV = QStringLiteral(".csv");
     const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
+    const QString DOT_PSM = QStringLiteral(".psm");
     const int HASHING_PRECISION = 3;
     const double ISO_DIFF = 1.0031;
     const int MAX_CHARGE_TANDEM_DEISOTOPING = 2;
