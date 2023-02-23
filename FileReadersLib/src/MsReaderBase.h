@@ -158,11 +158,10 @@ public:
 
     ~MsReaderBase() = default;
 
-    virtual Err openFile(const QString &filePath);
-
-    virtual Err openFile(const QString &filePath,
-                         double defaultIsolationWindow,
-                         int defaultCollisionEnergy);
+    virtual Err openFile(
+            const QString &filePath,
+            bool useCache = true
+            );
 
     virtual Err closeFile();
 
@@ -192,7 +191,7 @@ public:
 
     Err createTandemScanIonsCache(const QString &cacheFilePath);
 
-    Err readFromCache(const QString cacheFileURI);
+    Err readFromCache(const QString &cacheFileURI);
 
     static bool cacheExists(const QString mzMLFileURI);
 

@@ -161,15 +161,13 @@ ScanPoints MsReaderBase::sortScanPoints(const ScanPoints &scanPoints,
     return vd;
 }
 
-Err MsReaderBase::openFile(const QString &filePath) {
+Err MsReaderBase::openFile(
+        const QString &filePath,
+        bool useCache
+        ) {
     return Error::eNoError;
 }
 
-Err MsReaderBase::openFile(const QString &filePath,
-                           double defaultIsolationWindow,
-                           int defaultCollisionEnergy) {
-    return Error::eNoError;
-}
 
 Err MsReaderBase::closeFile() {
     return Error::eNoError;
@@ -488,7 +486,7 @@ Err MsReaderBase::createTandemScanIonsCache(const QString &cacheFilePath) {
     ERR_RETURN
 }
 
-Err MsReaderBase::readFromCache(const QString cacheFileURI) {
+Err MsReaderBase::readFromCache(const QString &cacheFileURI) {
 
     ERR_INIT
 
