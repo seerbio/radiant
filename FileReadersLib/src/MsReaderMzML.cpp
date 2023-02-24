@@ -692,7 +692,7 @@ Err MsReaderMzML::openFile(
     }
 
     e = m_d->openFile(filePath); ree;
-    e = createTandemScanIonsCache(cacheFileURI); ree;
+    e = createMsReaderCache(cacheFileURI); ree;
 
     ERR_RETURN
 }

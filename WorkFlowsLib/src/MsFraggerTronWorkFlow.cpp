@@ -66,7 +66,9 @@ namespace {
         MsReaderMzML mzMLReader;
         e = mzMLReader.openFile(mzmLFileURI); ree;
 
-        QVector<TandemScanIon> tandemScanIons = mzMLReader.tandemScanIons();
+        QVector<TandemScanIon> tandemScanIons;
+        e = mzMLReader.tandemScanIons(&tandemScanIons); ree;
+
         filterTandemScanIonsByMz(
                 pythiaParameters.mzMinDataStructure,
                 pythiaParameters.mzMaxDataStructure,

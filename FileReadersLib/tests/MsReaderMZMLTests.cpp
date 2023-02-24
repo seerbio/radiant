@@ -26,8 +26,6 @@ private Q_SLOTS:
 
     void openFileTest();
 
-    void buildScanIonWithScanInfoInputMs2Test();
-
 private:
 
     //TODO use proper path procedures.
@@ -45,51 +43,23 @@ void MsReaderMZMLTests::openFileTest() {
     const QString cacheName = m_filepath + S_GLOBAL_SETTINGS.DOT_CACHE;
 
     MsReaderMzML reader;
-//    e = reader.openFile(m_filepath);
-//    QCOMPARE(e, Error::eNoError);
-
-//    e = reader.createTandemScanIonsCache(cacheName);
-//    QCOMPARE(e, Error::eNoError);
-
-    e = reader.readFromCache(cacheName);
-    QCOMPARE(e, Error::eNoError);
-
-//    e = reader.buildUniqueTandemScanIons();
-//    QCOMPARE(e, Error::eNoError);
-
-    qDebug() << "IONS SIZE" << reader.m_tandemScanIons.size();
-    qDebug() << "UNIQUES IONS SIZE" << reader.m_uniqueTandemScanIons.size();
-
-}
-
-void MsReaderMZMLTests::buildScanIonWithScanInfoInputMs2Test() {
-    QSKIP("Waiting for small file");
-    ERR_INIT
-
-    MsReaderMzML reader;
     e = reader.openFile(m_filepath);
     QCOMPARE(e, Error::eNoError);
 
-    const QPair<double, double> mzMinMax(330.0, 2000.0);
-    const int skipEveryNScans = 1;
-    QVector<ScanIonWithScanInfo> scanIonWithScanInfos;
-    e = reader.buildScanIonWithScanInfoInputMs2(mzMinMax,
-                                                skipEveryNScans,
-                                                &scanIonWithScanInfos);
+////    e = reader.createTandemScanIonsCache(cacheName);
+////    QCOMPARE(e, Error::eNoError);
+//
+//    e = reader.readFromCache(cacheName);
+//    QCOMPARE(e, Error::eNoError);
+//
+////    e = reader.buildUniqueTandemScanIons();
+////    QCOMPARE(e, Error::eNoError);
+//
+//    qDebug() << "IONS SIZE" << reader.m_tandemScanIons.size();
+//    qDebug() << "UNIQUES IONS SIZE" << reader.m_uniqueTandemScanIons.size();
 
-    QCOMPARE(e, eNoError);
-
-    const ScanIonWithScanInfo &testInfo = scanIonWithScanInfos.at(1303115);
-
-    QCOMPARE(testInfo.msScanInfo.scanNumber, 8486);
-    QCOMPARE(testInfo.scanIon.scanNumber, 8486);
-    QCOMPARE(testInfo.msScanInfo.msLevel, 2);
-
-    QCOMPARE(QString::number(testInfo.msScanInfo.scanTime), "10.5584");
-    QCOMPARE(QString::number(testInfo.msScanInfo.precursorTargetMz), "967.384");
-    QCOMPARE(QString::number(testInfo.scanIon.mz), "868.858");
-    QCOMPARE(QString::number(testInfo.scanIon.intensity), "9373.9");
 }
+
 
 
 QTEST_MAIN(MsReaderMZMLTests)

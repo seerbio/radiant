@@ -16,13 +16,11 @@
 
 using namespace Error;
 
-
 enum TIME_UNITS {
     MINUTES = 0,
     SECONDS,
     MILLISECONDS
 };
-
 
 enum class ScanPointsSort {
     AscMz,
@@ -30,7 +28,6 @@ enum class ScanPointsSort {
     DescMz,
     DescIntensity
 };
-
 
 struct FILEREADERSLIB_EXPORTS TandemScanIon {
 
@@ -107,7 +104,7 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
     int collisionEnergy = -1;
     int faimsVoltage = -1;
 
-    QString msScanInfoKey() const {
+    [[nodiscard]] QString msScanInfoKey() const {
 
         if (msLevel < 2) {
             return "MS1";
@@ -120,6 +117,39 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
                         + QString::number(mzEnd);
 
         return key;
+    }
+
+    friend QDataStream &operator <<(QDataStream &stream, const MsScanInfo &msi) {
+        stream << msi.scanNumber;
+        stream << msi.msLevel;
+        stream << msi.scanTime;
+        stream << msi.TIC;
+        stream << msi.basePeakIntensity;
+        stream << msi.precursorTargetMz;
+        stream << msi.precursorTargetCharge;
+        stream << msi.precursorWindowOffsetLower;
+        stream << msi.precursorWindowOffsetUpper;
+        stream << msi.collisionEnergy;
+        stream << msi.faimsVoltage;
+
+        return stream;
+    }
+
+    friend QDataStream &operator >>(QDataStream &stream, MsScanInfo &msi) {
+
+        stream >> msi.scanNumber;
+        stream >> msi.msLevel;
+        stream >> msi.scanTime;
+        stream >> msi.TIC;
+        stream >> msi.basePeakIntensity;
+        stream >> msi.precursorTargetMz;
+        stream >> msi.precursorTargetCharge;
+        stream >> msi.precursorWindowOffsetLower;
+        stream >> msi.precursorWindowOffsetUpper;
+        stream >> msi.collisionEnergy;
+        stream >> msi.faimsVoltage;
+
+        return stream;
     }
 
 };
@@ -139,13 +169,24 @@ struct FILEREADERSLIB_EXPORTS ScanIon {
             , mz(mz)
             , intensity(intensity) {}
 
-};
+    friend QDataStream &operator <<(QDataStream &stream, const ScanIon &si) {
+        stream << si.scanNumber;
+        stream << si.mz;
+        stream << si.intensity;
 
-struct ScanIonWithScanInfo {
-    ScanIon scanIon;
-    MsScanInfo msScanInfo;
-};
+        return stream;
+    }
 
+    friend QDataStream &operator >>(QDataStream &stream, ScanIon &si) {
+
+        stream >> si.scanNumber;
+        stream >> si.mz;
+        stream >> si.intensity;
+
+        return stream;
+    }
+
+};
 
 class FILEREADERSLIB_EXPORTS MsReaderBase {
 
@@ -167,15 +208,12 @@ public:
 
     static QChar separator() {return S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP;}
 
-    Err  buildScanIonWithScanInfoInputMs2(const QPair<double, double> &mzMinMax,
-                                          int skipEveryNScans,
-                                          QVector<ScanIonWithScanInfo> *scanIonWithScanInfos);
-
     QMap<ScanNumber, bool> buildSkipNAllowableIndexesMs2(int skipEveryNScans);
 
-    Err getScanInfo(ScanNumber scanNumber,  MsScanInfo *msScanInfo) const;
-
-    Err getScanPoints(ScanNumber scanNumber,  QVector<QPointF> *scanPoints) const;
+    Err getScanInfo(
+            ScanNumber scanNumber,
+            MsScanInfo *msScanInfo
+            ) const;
 
     QVector<MsScanInfo> getMsScanInfos(int msLevel);
 
@@ -186,46 +224,22 @@ public:
             QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber
     );
 
-    static ScanPoints sortScanPoints(const ScanPoints &scanPoints,
-                                     const ScanPointsSort &sort = ScanPointsSort::AscMz);
+    static ScanPoints sortScanPoints(
+            const ScanPoints &scanPoints,
+            const ScanPointsSort &sort = ScanPointsSort::AscMz
+                    );
 
-    Err createTandemScanIonsCache(const QString &cacheFilePath);
+    Err createMsReaderCache(const QString &cacheFilePath);
 
     Err readFromCache(const QString &cacheFileURI);
 
-    static bool cacheExists(const QString mzMLFileURI);
-
-
-    static Err getRangesFromIsolationWindowKey(
-            const IsolationWindowKey &key,
-            QPair<double, double> *mzIsoRange
-    );
-
-    void loadScanIonsMapped();
-
-    QMap<ScanNumber, QVector<QPointF>> scanIonsMapped();
-
-    Err getBasePeakChromatogram(
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            QMap<ScanNumber, QPointF> *basePeakChromatogram
-    );
+    static bool cacheExists(const QString &mzMLFileURI);
 
     int getNearestScanNumberFromScanTime(double scanTime);
 
-    QVector<QPointF> getNearestTandemScan(double scanTime);
-
-    QMap<IsolationWindowKey, QVector<ScanNumber>> getAllUniqueTandemIsolationWindows();
-
-    QMap<ScanNumber, double> retentionTimeByScanNumber() const;
-
-    QStringList getUniqueMsInfoScanKeys();
+    [[nodiscard]] QMap<ScanNumber, double> retentionTimeByScanNumber() const;
 
     static QString buildUniqueTandemWindowKey(const MsScanInfo &si);
-
-    Err getScansByUniqueMsInfoScanKey(
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            QMap<ScanNumber, ScanPoints> *scanPointsMap
-    );
 
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
@@ -233,23 +247,12 @@ public:
             QVector<double> *intensityVals
     );
 
-    Err buildUniqueTandemScanIons();
-
-    QVector<TandemScanIon> tandemScanIons();
-
-protected:
-
-    Err buildScanNumbersByUniqueMsInfoScanKey();
+    Err tandemScanIons(QVector<TandemScanIon> *tandemScanIons);
 
 protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
-    QMap<ScanNumber, ScanPoints> m_scanIonsMapped;
-    QMap<UniqueMsInfoScanKey, QVector<ScanNumber>> m_scanNumbersByUniqueMsInfoScanKey;
-
     QVector<ScanIon> m_scanIons;
-    QVector<TandemScanIon> m_tandemScanIons;
-    QMap<UniqueHashedMzAndTarget, QVector<TandemScansIndex>> m_uniqueTandemScanIons;
 
 };
 

@@ -104,7 +104,8 @@ public:
     /*!
     * @brief returns specified if values are equal
     */
-    static Err isNotEqual(bool s1, bool s2, Err e = eError) {
+    template<typename T>
+    static Err isNotEqual(T s1, T s2, Err e = eError) {
         if (s1 == s2) {
             qCritical() << s1 << s2;
             rrr(e);
