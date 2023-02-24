@@ -332,3 +332,20 @@ Err MsReaderBase::tandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
 
     ERR_RETURN
 }
+
+
+Err MsReaderBase::sortDIATandemScansByMzTarget(
+        const QVector<TandemScanIon> &tandemScanIons,
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaFrames
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(tandemScanIons); ree;
+
+    for (const TandemScanIon &tsi : tandemScanIons) {
+        (*diaFrames)[tsi.targetScanKey()][tsi.scanNumber].push_back({tsi.mz, tsi.intensity});
+    }
+
+    ERR_RETURN
+}

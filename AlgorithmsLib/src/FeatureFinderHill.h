@@ -47,9 +47,11 @@ public:
 
     [[nodiscard]] int scanCount() const;
 
+    [[nodiscard]] QPair<ScanNumber , ScanNumber> minMaxScanNumber() const;
+
     [[nodiscard]] QVector<int> scanNumbers() const;
 
-    [[nodiscard]] QPair<ScanNumber , ScanNumber> minMaxScanNumber() const;
+    [[nodiscard]] QVector<double> mzVals() const;
 
     [[nodiscard]] QVector<double> intensities() const;
 

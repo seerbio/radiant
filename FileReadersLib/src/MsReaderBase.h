@@ -38,53 +38,8 @@ struct FILEREADERSLIB_EXPORTS TandemScanIon {
     double precursorTargetLowerWindow = -1.0;
     double precursorTargetUpperWindow = -1.0;
 
-    friend QDataStream &operator <<(QDataStream &stream, const TandemScanIon &tsi) {
-        stream << tsi.scanNumber;
-        stream << tsi.mz;
-        stream << tsi.intensity;
-        stream << tsi.precursorTargetMz;
-        stream << tsi.precursorTargetLowerWindow;
-        stream << tsi.precursorTargetUpperWindow;
-
-        return stream;
-    }
-
-    friend QDataStream &operator >>(QDataStream &stream, TandemScanIon &tsi) {
-
-        stream >> tsi.scanNumber;
-        stream >> tsi.mz;
-        stream >> tsi.intensity;
-        stream >> tsi.precursorTargetMz;
-        stream >> tsi.precursorTargetLowerWindow;
-        stream >> tsi.precursorTargetUpperWindow;
-
-        return stream;
-    }
-
-    [[nodiscard]] QString hashedKey() const {
-
-        const int hashingPrecision = 3;
-
-
-        const int mzHashed = MathUtils::hashDecimal(mz, hashingPrecision);
-        const int targetHashed = MathUtils::hashDecimal(precursorTargetMz, hashingPrecision);
-
-        return S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT
-                .arg(mzHashed)
-                .arg(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP)
-                .arg(targetHashed);
-    }
-
-    static QPair<MZION , TARGETMZ> unhashKey(const QString &hashedKey) {
-        const QStringList splitStr = hashedKey.split(
-                S_GLOBAL_SETTINGS.MODIFICATION_STRING_FORMAT,
-                QString::SkipEmptyParts
-                );
-
-        const int hashingPrecision = 3;
-
-        return {MathUtils::unHashDecimal<double>(splitStr.first().toInt(), hashingPrecision),
-                MathUtils::unHashDecimal<double>(splitStr.back().toInt(), hashingPrecision)};
+    [[nodiscard]] QString targetScanKey() const {
+        return QString::number(std::round(precursorTargetMz * 1000));
     }
 
 };
@@ -207,6 +162,11 @@ public:
     virtual Err closeFile();
 
     static QChar separator() {return S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP;}
+
+    static Err sortDIATandemScansByMzTarget(
+            const QVector<TandemScanIon> &tandemScanIons,
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaFrames
+            );
 
     QMap<ScanNumber, bool> buildSkipNAllowableIndexesMs2(int skipEveryNScans);
 

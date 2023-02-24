@@ -18,25 +18,25 @@ using namespace Error;
 
 struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
 
-    double tolerancePPM = 10;
-    int skipScanCount = 2;
-    int minScanCount = 3;
+    double tolerancePPM = -1.0;
+    int skipScanCount = -1;
+    int minScanCount = -1;
 
-    int filterLength = 7;
-    int smoothCount = 3;
-    double sigma = 1.0;
-    double signalToNoiseRatio = 3;
+//    int filterLength = 7;
+//    int smoothCount = 3;
+//    double sigma = 1.0;
+//    double signalToNoiseRatio = 3;
 
 
 public:
     bool isValid() const {
         return tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount > 0
-            && filterLength > 4
-            && smoothCount >0
-            && sigma > 0
-            && signalToNoiseRatio > 0;
+            && minScanCount > 0;
+//            && filterLength > 4
+//            && smoothCount >0
+//            && sigma > 0
+//            && signalToNoiseRatio > 0;
     }
 
 };

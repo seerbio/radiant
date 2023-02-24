@@ -8,6 +8,8 @@
 #include "AlgorithmsLib_Exports.h"
 
 #include "Error.h"
+#include "FeatureFinderHill.h"
+#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 
@@ -23,12 +25,15 @@ public:
 
     Err init(const PythiaParameters &pythiaParameter);
 
-    Err denoiseScansFrame(const QMap<ScanNumber, ScanPoints> &scansFrame);
+    Err denoiseScansFrame(const QMap<ScanNumber, ScanPoints> &scansFrame,
+                          QMap<ScanNumber, ScanPoints> *scansFrameDenoised
+                          );
 
 private:
 
     PythiaParameters m_pythiaParameters;
-
+    FeatureFinderParameters m_ffpParams;
+    FeatureFinderHillBuilder m_featureFinderHillBuilder;
 
 };
 
