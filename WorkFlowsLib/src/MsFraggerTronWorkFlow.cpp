@@ -57,23 +57,11 @@ namespace {
 
     Err trancheTandemScanIons(
             const PythiaParameters &pythiaParameters,
-            const QString &mzmLFileURI,
+            const QVector<TandemScanIon> &tandemScanIons,
             QMap<int, QVector<TandemScanIon>> *tranchedTandemScanIons
             ) {
 
         ERR_INIT
-
-        MsReaderMzML mzMLReader;
-        e = mzMLReader.openFile(mzmLFileURI); ree;
-
-        QVector<TandemScanIon> tandemScanIons;
-        e = mzMLReader.tandemScanIons(&tandemScanIons); ree;
-
-        filterTandemScanIonsByMz(
-                pythiaParameters.mzMinDataStructure,
-                pythiaParameters.mzMaxDataStructure,
-                &tandemScanIons
-        );
 
         QVector<QVector<TandemScanIon>> tranchedTandemScanIonsVec;
         e = ParallelUtils::tranchVectorForParallelizationInOrder(
@@ -107,54 +95,6 @@ namespace {
         return {e, rTree};
     }
 
-    Err matchPeptideIdstoPeptides(
-            const QString &pepLibFileURI,
-            const QMap<ScanNumber, QVector<TallyPeptideId>> &tallyItemsByScanNumber,
-            QVector<RowToWrite> *rowsToWrite
-            ) {
-
-        ERR_INIT
-
-        PeptidesLibraryTron peptidesLibraryTron;
-        e = peptidesLibraryTron.readPeptidesLib(pepLibFileURI); ree;
-
-        for (auto it = tallyItemsByScanNumber.begin(); it != tallyItemsByScanNumber.end(); it++) {
-
-            const ScanNumber scanNumber = it.key();
-            const QVector<TallyPeptideId> &tallyPepIds = it.value();
-
-            for (const TallyPeptideId &tpi : tallyPepIds) {
-
-                e = ErrorUtils::isEqual(scanNumber, tpi.scanNumber); ree;
-
-                Peptide peptide;
-                e = peptidesLibraryTron.getPeptideById(
-                        tpi.peptideId,
-                        &peptide
-                        ); ree;
-
-                RowToWrite rowToWrite;
-                rowToWrite.scanNumber = scanNumber;
-                rowToWrite.peptideId = tpi.peptideId;
-                rowToWrite.occurrence = tpi.occurrence;
-                rowToWrite.intensityTotal = tpi.intensityTotal;
-                rowToWrite.meanMzPPM = tpi.meanMzPPM;
-                rowToWrite.sequence = peptide.sequence;
-                rowToWrite.sequenceWithMods = peptide.peptideStringWithMods();
-                rowToWrite.mass = peptide.mass;
-                rowToWrite.isDecoy = peptide.isDecoy;
-                rowToWrite.previousResidue = peptide.previousResidue;
-                rowToWrite.postResidue = peptide.postResidue;
-                rowToWrite.scanIonMZs = tpi.scanIonMZs;
-                rowToWrite.theoFragIonMZs = tpi.theoFragMZs;
-                rowsToWrite->push_back(rowToWrite);
-            }
-
-        }
-
-        ERR_RETURN
-    }
-
     void deleteRTreePointers(const QMap<int, FragmentLibraryRTree*> &rTreesByKey) {
         for (FragmentLibraryRTree *rt : rTreesByKey) {
             delete rt;
@@ -166,46 +106,68 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
 
     ERR_INIT
 
+    MsReaderMzML mzMLReader;
+    e = mzMLReader.openFile(mzmLFileURI); ree;
+
+    QVector<TandemScanIon> tandemScanIons;
+    e = mzMLReader.tandemScanIons(&tandemScanIons); ree;
+
+    filterTandemScanIonsByMz(
+            m_pythiaParameters.mzMinDataStructure,
+            m_pythiaParameters.mzMaxDataStructure,
+            &tandemScanIons
+            );
+
+    QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
+    e = processScanIons(
+            tandemScanIons,
+            &tallyItemsByScanNumber
+            ); ree;
+
+    const QString psmResultsFilePath
+        = mzmLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
+
+    e = writePSMsToFile(
+            psmResultsFilePath,
+            tallyItemsByScanNumber
+            ); ree;
+
+    ERR_RETURN
+}
+
+Err MsFraggerTronWorkFlow::processScanIons(
+        const QVector<TandemScanIon> &tandemScanIons,
+        QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+        ) {
+
+    ERR_INIT
+
     QMap<int, QVector<TandemScanIon>> tranchedTandemScanIons;
     e = trancheTandemScanIons(
             m_pythiaParameters,
-            mzmLFileURI,
+            tandemScanIons,
             &tranchedTandemScanIons
-            ); ree;
+    ); ree;
 
     QMap<int, FragmentLibraryRTree*> rTreesByKey;
     e = buildRTrees(
             tranchedTandemScanIons,
             &rTreesByKey
-            ); ree;
+    ); ree;
 
     QHash<int, QVector<PeptideIdIonFraggerResult>> peptideIdIonFraggerResults;
     e = fragScanIons(
             tranchedTandemScanIons,
             rTreesByKey,
             &peptideIdIonFraggerResults
-            ); ree;
+    ); ree;
 
     deleteRTreePointers(rTreesByKey);
 
-    QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
     e = tallyPeptideIdsPerScan(
             peptideIdIonFraggerResults,
-            &tallyItemsByScanNumber
-            ); ree;
-
-    QVector<RowToWrite> rowsToWrite;
-    e = matchPeptideIdstoPeptides(
-            m_pepLibUri,
-            tallyItemsByScanNumber,
-            &rowsToWrite
-            ); ree;
-
-    const QString psmResultsFilePath = mzmLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
-    MsFraggerTronResultsReader::writeToCsv(
-            psmResultsFilePath,
-            &rowsToWrite
-            );
+            tallyItemsByScanNumber
+    ); ree;
 
     ERR_RETURN
 }
@@ -541,6 +503,80 @@ Err MsFraggerTronWorkFlow::tallyPeptideIdsPerScan(
         (*tallyItemsByScanNumber)[tallyPeptideIds.front().scanNumber] = tallyPeptideIds;
     }
 #endif
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err matchPeptideIdstoPeptides(
+            const QString &pepLibFileURI,
+            const QMap<ScanNumber, QVector<TallyPeptideId>> &tallyItemsByScanNumber,
+            QVector<RowToWrite> *rowsToWrite
+    ) {
+
+        ERR_INIT
+
+        PeptidesLibraryTron peptidesLibraryTron;
+        e = peptidesLibraryTron.readPeptidesLib(pepLibFileURI); ree;
+
+        for (auto it = tallyItemsByScanNumber.begin(); it != tallyItemsByScanNumber.end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const QVector<TallyPeptideId> &tallyPepIds = it.value();
+
+            for (const TallyPeptideId &tpi : tallyPepIds) {
+
+                e = ErrorUtils::isEqual(scanNumber, tpi.scanNumber); ree;
+
+                Peptide peptide;
+                e = peptidesLibraryTron.getPeptideById(
+                        tpi.peptideId,
+                        &peptide
+                ); ree;
+
+                RowToWrite rowToWrite;
+                rowToWrite.scanNumber = scanNumber;
+                rowToWrite.peptideId = tpi.peptideId;
+                rowToWrite.occurrence = tpi.occurrence;
+                rowToWrite.intensityTotal = tpi.intensityTotal;
+                rowToWrite.meanMzPPM = tpi.meanMzPPM;
+                rowToWrite.sequence = peptide.sequence;
+                rowToWrite.sequenceWithMods = peptide.peptideStringWithMods();
+                rowToWrite.mass = peptide.mass;
+                rowToWrite.isDecoy = peptide.isDecoy;
+                rowToWrite.previousResidue = peptide.previousResidue;
+                rowToWrite.postResidue = peptide.postResidue;
+                rowToWrite.scanIonMZs = tpi.scanIonMZs;
+                rowToWrite.theoFragIonMZs = tpi.theoFragMZs;
+                rowsToWrite->push_back(rowToWrite);
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFraggerTronWorkFlow::writePSMsToFile(
+        const QString &outputFilePath,
+        const QMap<ScanNumber, QVector<TallyPeptideId>> &tallyItemsByScanNumber
+        ) {
+
+    ERR_INIT
+
+    QVector<RowToWrite> rowsToWrite;
+    e = matchPeptideIdstoPeptides(
+            m_pepLibUri,
+            tallyItemsByScanNumber,
+            &rowsToWrite
+    ); ree;
+
+
+    MsFraggerTronResultsReader::writeToCsv(
+            outputFilePath,
+            &rowsToWrite
+    );
 
     ERR_RETURN
 }

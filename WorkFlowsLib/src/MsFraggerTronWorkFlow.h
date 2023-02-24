@@ -54,6 +54,11 @@ public:
 
     Err processFile(const QString &mzmLFileURI);
 
+    Err processScanIons(
+            const QVector<TandemScanIon> &tandemScanIons,
+            QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+            );
+
 
 private:
 
@@ -72,6 +77,11 @@ private:
             const QHash<ScanNumber, QVector<PeptideIdIonFraggerResult>> &peptideIdIonFraggerResults,
             QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
             );
+
+    Err writePSMsToFile(
+            const QString &outputFilePath,
+            const QMap<ScanNumber, QVector<TallyPeptideId>> &tallyItemsByScanNumber
+    );
 
 private:
 

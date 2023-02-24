@@ -4,6 +4,7 @@
 
 #include "Error.h"
 #include "MsScansDenoiseTron.h"
+#include "MsReaderMzML.h"
 
 
 using namespace Error;
@@ -20,11 +21,24 @@ public:
 
 private Q_SLOTS:
 
-    void denoiseMsScans();
+    void denoiseMsScansTest();
+
+private:
+
+    //TODO use proper path procedures.
+    const QString m_filepath
+            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
+
 
 };
 
-void MsScansDenoiseTronTests::denoiseMsScans() {
+void MsScansDenoiseTronTests::denoiseMsScansTest() {
+
+    ERR_INIT
+
+    MsReaderMzML reader;
+    e = reader.openFile(m_filepath);
+    QCOMPARE(e, Error::eNoError);
 
 
 
