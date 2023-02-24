@@ -21,6 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/FragLibraryTron.cpp
@@ -32,6 +33,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/FragLibraryTron.h
