@@ -529,7 +529,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &groupedMzVals,
             &groupedIntensityVals
     ); ree;
-    qDebug() << "Scans grouped in" << et.restart() << "mSec";
+//    qDebug() << "Scans grouped in" << et.restart() << "mSec";
 
     QVector<Eigen::MatrixX<int>> connectedCentroidsMats;
     e = connectCentroidsInGroupedMzVals(
@@ -537,7 +537,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             m_featureFinderParameters.tolerancePPM,
             &connectedCentroidsMats
     ); ree;
-    qDebug() << connectedCentroidsMats.size() << "Centroid pairs connected" << et.restart() << "mSec";
+//    qDebug() << connectedCentroidsMats.size() << "Centroid pairs connected" << et.restart() << "mSec";
 
     e = groupConnectedCentroidsToHills(
             connectedCentroidsMats,
@@ -545,7 +545,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             m_featureFinderParameters.minScanCount,
             featureFinderHills
     ); ree;
-    qDebug() << featureFinderHills->size() << "Centroids to hills" << et.restart() << "mSec";
+//    qDebug() << featureFinderHills->size() << "Centroids to hills" << et.restart() << "mSec";
 
 //    e = refineHills(featureFinderHills); ree;
 //    qDebug() << featureFinderHills->size() << "Hills refined in" << et.restart() << "mSec";

@@ -209,6 +209,10 @@ public:
 
     Err tandemScanIons(QVector<TandemScanIon> *tandemScanIons);
 
+    static QVector<TandemScanIon> sortTandemScanIonsInChunks(
+            QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass
+            );
+
 protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;

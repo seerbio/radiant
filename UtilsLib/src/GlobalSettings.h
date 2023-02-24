@@ -19,6 +19,7 @@ using MZION = double;
 using MzMin = double;
 using MzMax = double;
 using MzTargetKey = QString;
+using NominalMzMass = int;
 using Occurrence = int;
 using PeptideId = int;
 using PeptideString = QString;
@@ -31,6 +32,7 @@ using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;
 using TandemScansIndex = int;
 using TARGETMZ = double;
+using Tranche = int;
 using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
 

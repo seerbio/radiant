@@ -38,6 +38,7 @@ private:
         pythiaParameters.precursorExtractionWindowThomsons = 1.0;
         pythiaParameters.chargeStateMin = 2;
         pythiaParameters.chargeStateMax = 3;
+        pythiaParameters.returnPSMTopN = 2;
 
         PythiaParameterReader::applyFixedModificationsToAminoAcids(
                 pythiaParameters,

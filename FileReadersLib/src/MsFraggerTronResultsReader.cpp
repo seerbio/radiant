@@ -8,6 +8,7 @@
 
 #include <QFile>
 
+#include <iostream>
 
 namespace {
 

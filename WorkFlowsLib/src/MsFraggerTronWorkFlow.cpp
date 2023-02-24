@@ -5,6 +5,7 @@
 #include "MsFraggerTronWorkFlow.h"
 
 #include "DeisotoperTandem.h"
+#include "MsScansDenoiseTron.h"
 #include "FragLibraryTron.h"
 #include "MsFraggerTronResultsReader.h"
 #include "MsReaderMzML.h"
@@ -40,16 +41,18 @@ namespace {
     Err trancheTandemScanIons(
             const PythiaParameters &pythiaParameters,
             const QVector<TandemScanIon> &tandemScanIons,
-            QMap<int, QVector<TandemScanIon>> *tranchedTandemScanIons
+            QMap<Tranche, QVector<TandemScanIon>> *tranchedTandemScanIons
             ) {
 
         ERR_INIT
 
+        const int trancheBuffer = 0;
+
         QVector<QVector<TandemScanIon>> tranchedTandemScanIonsVec;
         e = ParallelUtils::tranchVectorForParallelizationInOrder(
                 tandemScanIons,
-                pythiaParameters.chunkSize,
-                0,
+                pythiaParameters.trancheSize,
+                trancheBuffer,
                 &tranchedTandemScanIonsVec
         ); ree;
 
@@ -120,7 +123,7 @@ Err MsFraggerTronWorkFlow::processScanIons(
 
     ERR_INIT
 
-    QMap<int, QVector<TandemScanIon>> tranchedTandemScanIons;
+    QMap<Tranche, QVector<TandemScanIon>> tranchedTandemScanIons;
     e = trancheTandemScanIons(
             m_pythiaParameters,
             tandemScanIons,
@@ -133,7 +136,7 @@ Err MsFraggerTronWorkFlow::processScanIons(
             &rTreesByKey
     ); ree;
 
-    QHash<int, QVector<PeptideIdIonFraggerResult>> peptideIdIonFraggerResults;
+    QHash<ScanNumber, QVector<PeptideIdIonFraggerResult>> peptideIdIonFraggerResults;
     e = fragScanIons(
             tranchedTandemScanIons,
             rTreesByKey,
@@ -149,7 +152,6 @@ Err MsFraggerTronWorkFlow::processScanIons(
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -175,7 +177,7 @@ namespace {
     struct DeisotopeParallelInput {
         QMap<ScanNumber, ScanPoints> scanPointsFrame;
         UniqueMsInfoScanKey uniqueMsInfoScanKey;
-        double ppmTol;
+        double ppmTol = -1.0;
     };
 
     QVector<DeisotopeParallelInput> buildDisotopeParallelInputs(
@@ -196,7 +198,6 @@ namespace {
 
         return deisotopeParallelInputs;
     }
-
 
     QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> deisotopeTargetMzScansFrame (
             const DeisotopeParallelInput &deisotopeParallelInput
@@ -219,9 +220,158 @@ namespace {
         return {deisotopeParallelInput.uniqueMsInfoScanKey, deisotopedScanFrame};
     }
 
+    QList<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> deisotopeScanFrames(
+            const QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &diaFrames,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        const QVector<DeisotopeParallelInput> deisotopeParallelInputs = buildDisotopeParallelInputs(
+                diaFrames,
+                pythiaParameters.ms2ExtractionWidthPPM
+        );
+
+        QFuture<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
+                deisotopeParallelInputs,
+                deisotopeTargetMzScansFrame
+        );
+        futures.waitForFinished();
+
+        return futures.results();
+    }
+
+    Err denoiseScanFramesParallelLogic(
+            const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &scanFrame,
+            const PythiaParameters &pythiaParameters,
+            QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *denoisedScanFrame
+            ) {
+
+        ERR_INIT
+
+        MsScansDenoiseTron msScansDenoiseTron;
+
+        e = msScansDenoiseTron.init(pythiaParameters); ree;
+
+        QMap<ScanNumber, ScanPoints> scansFrameDenoised;
+        e = msScansDenoiseTron.denoiseScansFrame(
+                scanFrame.second,
+                &scansFrameDenoised
+                ); ree;
+
+        *denoisedScanFrame = {scanFrame.first, scansFrameDenoised};
+
+        ERR_RETURN
+    }
+
+    Err denoiseScanFrames(
+            const QList<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> &scanFrames,
+            const PythiaParameters &pythiaParameters,
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *denoisedScanFrames
+            ) {
+
+        ERR_INIT
+
+        for (const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &scanFrame : scanFrames) {
+
+            QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> targetDenoisedScanFrame;
+            e = denoiseScanFramesParallelLogic(
+                    scanFrame,
+                    pythiaParameters,
+                    &targetDenoisedScanFrame
+                    ); ree;
+
+            denoisedScanFrames->insert(
+                    targetDenoisedScanFrame.first,
+                    targetDenoisedScanFrame.second
+                    );
+        }
+
+        ERR_RETURN
+    }
+
+    QHash<UniqueMsInfoScanKey, TandemScanIon> buildTandemScanReconstructionHash(
+            const QVector<TandemScanIon> &tandemScanIons
+    ) {
+
+        QHash<UniqueMsInfoScanKey, TandemScanIon> reconMap;
+
+        for (const TandemScanIon &tsi : tandemScanIons) {
+
+            const UniqueMsInfoScanKey uniqueMsInfoScanKey = tsi.targetScanKey();
+
+            if (reconMap.value(uniqueMsInfoScanKey).scanNumber != -1) {
+                continue;
+            }
+
+            reconMap.insert(uniqueMsInfoScanKey, tsi);
+        }
+
+        return reconMap;
+    }
+
+    Err rejoinTandemScanInfoWithProcessedScanPoints(
+            const QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &denoisedScanFrames,
+            QVector<TandemScanIon> *tandemScanIons
+            ) {
+
+        ERR_INIT
+
+        const QHash<UniqueMsInfoScanKey, TandemScanIon> tandemScanIonsReconstructionHash
+                = buildTandemScanReconstructionHash(*tandemScanIons);
+
+        tandemScanIons->clear();
+
+        for (auto it = denoisedScanFrames.begin(); it != denoisedScanFrames.end(); it++) {
+
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey = it.key();
+            const QMap<ScanNumber, ScanPoints> &dnsf = it.value();
+
+            const TandemScanIon &reconHashRef = tandemScanIonsReconstructionHash.value(uniqueMsInfoScanKey);
+            e = ErrorUtils::isNotEqual(reconHashRef.scanNumber, -1); ree;
+
+            for (auto itt = dnsf.begin(); itt != dnsf.end(); itt++) {
+
+                const ScanNumber scanNumber = itt.key();
+                const ScanPoints &scanPoints = itt.value();
+
+                for (const ScanPoint &sp: scanPoints) {
+
+                    TandemScanIon newTandemScanIon;
+                    newTandemScanIon.scanNumber = scanNumber;
+                    newTandemScanIon.mz = sp.x();
+                    newTandemScanIon.intensity = sp.y();
+                    newTandemScanIon.precursorTargetMz = reconHashRef.precursorTargetMz ;
+                    newTandemScanIon.precursorTargetLowerWindow = reconHashRef.precursorTargetLowerWindow;
+                    newTandemScanIon.precursorTargetUpperWindow = reconHashRef.precursorTargetUpperWindow;
+
+                    tandemScanIons->push_back(newTandemScanIon);
+                }
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    void sortTandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
+
+        QMap<NominalMzMass, QVector<TandemScanIon>> tandemScanIonsMapped;
+        for (const TandemScanIon &tsi : *tandemScanIons) {
+            tandemScanIonsMapped[static_cast<int>(std::round(tsi.mz))].push_back(tsi);
+        }
+
+        MsReaderBase::sortTandemScanIonsInChunks(&tandemScanIonsMapped);
+
+        tandemScanIons->clear();
+
+        for (const QVector<TandemScanIon> &vec : tandemScanIonsMapped) {
+            tandemScanIons->append(vec);
+        }
+    }
+
 }//namespace
 Err MsFraggerTronWorkFlow::preProcessScans(QVector<TandemScanIon> *tandemScanIons) {
+
     ERR_INIT
+    qDebug() << "Before Scans Preprocessing size" << tandemScanIons->size();
 
     filterTandemScanIonsByMz(
             m_pythiaParameters.mzMinDataStructure,
@@ -235,17 +385,26 @@ Err MsFraggerTronWorkFlow::preProcessScans(QVector<TandemScanIon> *tandemScanIon
             &diaFrames
     ); ree;
 
-    const QVector<DeisotopeParallelInput> deisotopeParallelInputs = buildDisotopeParallelInputs(
+    const QList<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> deisotopedScanFrames = deisotopeScanFrames(
             diaFrames,
-            m_pythiaParameters.ms2ExtractionWidthPPM
+            m_pythiaParameters
             );
 
-    QFuture<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
-            deisotopeParallelInputs,
-            deisotopeTargetMzScansFrame
-            );
-    futures.waitForFinished();
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> denoisedScanFrames;
+    e = denoiseScanFrames(
+            deisotopedScanFrames,
+            m_pythiaParameters,
+            &denoisedScanFrames
+            ); ree;
 
+    e = rejoinTandemScanInfoWithProcessedScanPoints(
+            denoisedScanFrames,
+            tandemScanIons
+            ); ree;
+
+    sortTandemScanIons(tandemScanIons);
+
+    qDebug() << "After Scans Preprocessing size" << tandemScanIons->size();
     ERR_RETURN
 }
 
@@ -292,7 +451,7 @@ namespace {
 
 }//namespace
 Err MsFraggerTronWorkFlow::buildRTrees(
-        const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
+        const QMap<Tranche, QVector<TandemScanIon>> &tranchedTandemScanIons,
         QMap<int, FragmentLibraryRTree *> *rTreesByKey
         ) {
 
@@ -470,9 +629,10 @@ namespace {
         tallyPeptideIdsVec->erase(terminator, tallyPeptideIdsVec->end());
     }
 
-    void returnTopNTallyPeptideIds(QVector<TallyPeptideId> *tallyPeptideIdsVec) {
-
-        const int occurrencesTopN = 50; //TODO consider making this settable.
+    void returnTopNTallyPeptideIds(
+            int occurrencesTopN,
+            QVector<TallyPeptideId> *tallyPeptideIdsVec
+            ) {
 
         const auto occurrencesTopNLogic = [](const TallyPeptideId &l, const TallyPeptideId &r){
 
@@ -501,6 +661,7 @@ namespace {
 
     QVector<TallyPeptideId> tallyFraggerResults(
             const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults,
+            int occurrencesTopN,
             bool saveMzVals
             ) {
 
@@ -525,22 +686,13 @@ namespace {
                 tallyPeptideId.scanIonMZs.push_back(pifr.searchedFragIonMz);
                 tallyPeptideId.theoFragMZs.push_back(pifr.foundTheoFragIonMz);
             }
-
         }
 
         QVector<TallyPeptideId> tallyPeptideIdsVec = tallyPeptideIds.values().toVector();
         fiterTallyPeptideIdByOccurrences(&tallyPeptideIdsVec);
-        returnTopNTallyPeptideIds(&tallyPeptideIdsVec);
+        returnTopNTallyPeptideIds(occurrencesTopN, &tallyPeptideIdsVec);
 
         return tallyPeptideIdsVec;
-    }
-
-    QVector<TallyPeptideId> tallyFraggerResultsNoSave(const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults) {
-        return tallyFraggerResults(peptideIdIonFraggerResults, false);
-    }
-
-    QVector<TallyPeptideId> tallyFraggerResultsSave(const QVector<PeptideIdIonFraggerResult> &peptideIdIonFraggerResults) {
-        return tallyFraggerResults(peptideIdIonFraggerResults, true);
     }
 
 }//namespace
@@ -554,9 +706,16 @@ Err MsFraggerTronWorkFlow::tallyPeptideIdsPerScan(
 #define PARALLEL_PROCESS_TALLY_ITEMS
 #ifdef PARALLEL_PROCESS_TALLY_ITEMS
 
+    const auto tallyFraggerSaveBinder = std::bind(
+            tallyFraggerResults,
+            std::placeholders::_1,
+            m_pythiaParameters.returnPSMTopN,
+            true
+            );
+
     QFuture<QVector<TallyPeptideId>> futures = QtConcurrent::mapped(
             peptideIdIonFraggerResults,
-            tallyFraggerResultsSave
+            tallyFraggerSaveBinder
             );
     futures.waitForFinished();
 
@@ -648,7 +807,6 @@ Err MsFraggerTronWorkFlow::writePSMsToFile(
             tallyItemsByScanNumber,
             &rowsToWrite
     ); ree;
-
 
     MsFraggerTronResultsReader::writeToCsv(
             outputFilePath,

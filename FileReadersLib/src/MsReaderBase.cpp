@@ -191,8 +191,6 @@ QMap<ScanNumber, double> MsReaderBase::retentionTimeByScanNumber() const {
 
 namespace {
 
-    using NominalMzMass = int;
-
     void sortTandemScanIons(QVector<TandemScanIon> &tandemScanIons) {
 
         const double fudgeFactor = 0.0001;
@@ -209,17 +207,6 @@ namespace {
         };
 
         std::sort(tandemScanIons.begin(), tandemScanIons.end(), sortLogic);
-    }
-
-    QVector<TandemScanIon> sortTandemScanIonsInChunks(QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass) {
-
-        QVector<TandemScanIon> sortedTandemScanIons;
-        for (auto it = scanIonsByNominalMass->begin(); it != scanIonsByNominalMass->end(); it++) {
-            QVector<TandemScanIon> &tandemMsIonsAtNominalMzFrag = it.value();
-            sortTandemScanIons(tandemMsIonsAtNominalMzFrag);
-        }
-
-        return sortedTandemScanIons;
     }
 
 }//namespace
@@ -250,6 +237,19 @@ Err MsReaderBase::createMsReaderCache(const QString &cacheFilePath) {
     qDebug() << "Ms FileIons library written to:" << cacheFilePath;
 
     ERR_RETURN
+}
+
+QVector<TandemScanIon> MsReaderBase::sortTandemScanIonsInChunks(
+        QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass
+        ) {
+
+    QVector<TandemScanIon> sortedTandemScanIons;
+    for (auto it = scanIonsByNominalMass->begin(); it != scanIonsByNominalMass->end(); it++) {
+        QVector<TandemScanIon> &tandemMsIonsAtNominalMzFrag = it.value();
+        sortTandemScanIons(tandemMsIonsAtNominalMzFrag);
+    }
+
+    return sortedTandemScanIons;
 }
 
 Err MsReaderBase::readFromCache(const QString &cacheFileURI) {

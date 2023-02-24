@@ -25,9 +25,11 @@ public:
 
     Err init(const PythiaParameters &pythiaParameter);
 
-    Err denoiseScansFrame(const QMap<ScanNumber, ScanPoints> &scansFrame,
-                          QMap<ScanNumber, ScanPoints> *scansFrameDenoised
-                          );
+    Err denoiseScansFrame(
+            const QMap<ScanNumber, ScanPoints> &scansFrame,
+            QMap<ScanNumber, ScanPoints> *scansFrameDenoised
+            );
+
 
 private:
 
