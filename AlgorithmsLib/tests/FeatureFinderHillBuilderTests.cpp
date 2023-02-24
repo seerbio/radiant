@@ -244,7 +244,7 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     params.skipScanCount = 3;
     params.tolerancePPM = 8.0;
     params.minScanCount = 5;
-    params.signalToNoiseRatio = 1;
+//    params.signalToNoiseRatio = 1;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);

@@ -4,6 +4,7 @@
 
 #include "MsFraggerTronWorkFlow.h"
 
+#include "DeisotoperTandem.h"
 #include "FragLibraryTron.h"
 #include "MsFraggerTronResultsReader.h"
 #include "MsReaderMzML.h"
@@ -35,25 +36,6 @@ Err MsFraggerTronWorkFlow::init(
 }
 
 namespace {
-
-    void filterTandemScanIonsByMz(
-            MzMin mzMin,
-            MzMax mzMax,
-            QVector<TandemScanIon> *tandemScanIons
-            ) {
-
-        const auto terminatorLogic = [mzMin, mzMax](const TandemScanIon &tsi){
-            return !(mzMin <= tsi.mz && tsi.mz <= mzMax);
-        };
-
-        const auto terminator = std::remove_if(
-                tandemScanIons->begin(),
-                tandemScanIons->end(),
-                terminatorLogic
-                );
-
-        tandemScanIons->erase(terminator, tandemScanIons->end());
-    }
 
     Err trancheTandemScanIons(
             const PythiaParameters &pythiaParameters,
@@ -112,11 +94,7 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
     QVector<TandemScanIon> tandemScanIons;
     e = mzMLReader.tandemScanIons(&tandemScanIons); ree;
 
-    filterTandemScanIonsByMz(
-            m_pythiaParameters.mzMinDataStructure,
-            m_pythiaParameters.mzMaxDataStructure,
-            &tandemScanIons
-            );
+    e = preProcessScans(&tandemScanIons); ree;
 
     QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
     e = processScanIons(
@@ -168,6 +146,105 @@ Err MsFraggerTronWorkFlow::processScanIons(
             peptideIdIonFraggerResults,
             tallyItemsByScanNumber
     ); ree;
+
+    ERR_RETURN
+}
+
+
+namespace {
+
+    void filterTandemScanIonsByMz(
+            MzMin mzMin,
+            MzMax mzMax,
+            QVector<TandemScanIon> *tandemScanIons
+    ) {
+
+        const auto terminatorLogic = [mzMin, mzMax](const TandemScanIon &tsi){
+            return !(mzMin <= tsi.mz && tsi.mz <= mzMax);
+        };
+
+        const auto terminator = std::remove_if(
+                tandemScanIons->begin(),
+                tandemScanIons->end(),
+                terminatorLogic
+        );
+
+        tandemScanIons->erase(terminator, tandemScanIons->end());
+    }
+
+    struct DeisotopeParallelInput {
+        QMap<ScanNumber, ScanPoints> scanPointsFrame;
+        UniqueMsInfoScanKey uniqueMsInfoScanKey;
+        double ppmTol;
+    };
+
+    QVector<DeisotopeParallelInput> buildDisotopeParallelInputs(
+            const QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &diaFrames,
+            double ppmTol
+            ) {
+
+        QVector<DeisotopeParallelInput> deisotopeParallelInputs;
+        for(auto it = diaFrames.begin(); it != diaFrames.end(); it++) {
+
+            DeisotopeParallelInput dipi;
+            dipi.scanPointsFrame = it.value();
+            dipi.uniqueMsInfoScanKey = it.key();
+            dipi.ppmTol = ppmTol;
+
+            deisotopeParallelInputs.push_back(dipi);
+        }
+
+        return deisotopeParallelInputs;
+    }
+
+
+    QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> deisotopeTargetMzScansFrame (
+            const DeisotopeParallelInput &deisotopeParallelInput
+            ) {
+
+        const QMap<ScanNumber, ScanPoints> &sps = deisotopeParallelInput.scanPointsFrame;
+
+        QMap<ScanNumber, ScanPoints> deisotopedScanFrame;
+        for (auto it = sps.begin(); it != sps.end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const ScanPoints &sp = it.value();
+
+            const ScanPoints deisotopedScanPoints
+                = DeisotoperTandem::deisotopeTandemScan(sp, deisotopeParallelInput.ppmTol);
+
+            deisotopedScanFrame.insert(scanNumber, deisotopedScanPoints);
+        }
+
+        return {deisotopeParallelInput.uniqueMsInfoScanKey, deisotopedScanFrame};
+    }
+
+}//namespace
+Err MsFraggerTronWorkFlow::preProcessScans(QVector<TandemScanIon> *tandemScanIons) {
+    ERR_INIT
+
+    filterTandemScanIonsByMz(
+            m_pythiaParameters.mzMinDataStructure,
+            m_pythiaParameters.mzMaxDataStructure,
+            tandemScanIons
+    );
+
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaFrames;
+    e = MsReaderMzML::sortDIATandemScansByMzTarget(
+            *tandemScanIons,
+            &diaFrames
+    ); ree;
+
+    const QVector<DeisotopeParallelInput> deisotopeParallelInputs = buildDisotopeParallelInputs(
+            diaFrames,
+            m_pythiaParameters.ms2ExtractionWidthPPM
+            );
+
+    QFuture<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
+            deisotopeParallelInputs,
+            deisotopeTargetMzScansFrame
+            );
+    futures.waitForFinished();
 
     ERR_RETURN
 }

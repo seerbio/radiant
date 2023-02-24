@@ -62,6 +62,8 @@ public:
 
 private:
 
+    Err preProcessScans(QVector<TandemScanIon> *tandemScanIons);
+
     Err buildRTrees(
             const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
             QMap<int, FragmentLibraryRTree*> *rTreesByKey
