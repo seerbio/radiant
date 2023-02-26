@@ -19,6 +19,7 @@ SET(TEST_CLASSES
         MsScansDenoiseTronTests
         PeptidesLibraryTronTests
         ProteinDigestomaticTests
+        ReCalibratomaticTests
 )
 
 foreach(class ${TEST_CLASSES})

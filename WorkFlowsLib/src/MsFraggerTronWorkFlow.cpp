@@ -678,7 +678,8 @@ namespace {
             }
 
             tallyPeptideId.meanMzPPM
-                = ((tallyPeptideId.meanMzPPM * tallyPeptideId.occurrence) + pifr.ppmMzSearched) / (tallyPeptideId.occurrence + 1);
+                = ((tallyPeptideId.meanMzPPM * tallyPeptideId.occurrence) + pifr.ppmMzSearched)
+                        / (tallyPeptideId.occurrence + 1);
 
             tallyPeptideId.occurrence++;
             tallyPeptideId.intensityTotal += static_cast<int>(pifr.intensity);

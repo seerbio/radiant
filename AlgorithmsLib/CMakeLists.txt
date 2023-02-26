@@ -29,6 +29,7 @@ SET(SOURCE_FILES
         src/MsScansDenoiseTron.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
+        src/ReCalibratomatic.cpp
 )
 
 SET(HEADER_FILES
@@ -41,6 +42,7 @@ SET(HEADER_FILES
         src/MsScansDenoiseTron.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
+        src/ReCalibratomatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -57,6 +59,7 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
+        ${DLIB_DIRECTORY}
 )
 
 FIND_PACKAGE(Qt5 REQUIRED

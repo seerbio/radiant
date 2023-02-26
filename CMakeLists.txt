@@ -15,6 +15,7 @@ SET(CMAKE_AUTOUIC ON)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+SET(DLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/dlib-19.24")
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so")
 SET(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so")
