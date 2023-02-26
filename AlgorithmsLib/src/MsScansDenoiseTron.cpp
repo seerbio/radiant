@@ -39,9 +39,9 @@ Err MsScansDenoiseTron::denoiseScansFrame(
 
     for (const FeatureFinderHill &ffh : featureFinderHills) {
 
-        const QVector<int> scanNumbers = ffh.scanNumbers();
-        const QVector<double> mzVals = ffh.mzVals();
-        const QVector<double> intensities = ffh.intensities();
+        const QVector<int> &scanNumbers = ffh.scanNumbers();
+        const QVector<double> &mzVals = ffh.mzVals();
+        const QVector<double> &intensities = ffh.intensities();
 
         e = ErrorUtils::isNotEmpty(scanNumbers); ree;
         e = ErrorUtils::isEqual(scanNumbers.size(), mzVals.size()); ree;
