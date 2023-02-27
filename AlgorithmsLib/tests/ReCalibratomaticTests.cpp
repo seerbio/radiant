@@ -77,11 +77,13 @@ void ReCalibratomaticTests::recalibrateTandemScanIonsTests() {
             InputSVM is;
             is.scanNumber = rtw.scanNumber;
             is.mzScan = scanMz;
+            is.mzTheo = theoMz;
             is.ppmDiff = ppmDiff;
 
             data.push_back(is);
 
         }
+
     }
 
     QCOMPARE(counter, 615);

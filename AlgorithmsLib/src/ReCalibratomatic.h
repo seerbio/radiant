@@ -21,6 +21,7 @@ using KernelType = dlib::radial_basis_kernel<MatrixType>;
 struct InputSVM {
     double scanNumber = -1;
     double mzScan = -1.0;
+    double mzTheo = -1.0;
     double ppmDiff = -1.0;
 };
 

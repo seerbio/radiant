@@ -14,8 +14,8 @@
 
 ReCalibratomatic::ReCalibratomatic()
 : m_gamma(10)
-, m_C(200.0)
-, m_epsilon(0.001)
+, m_C(1000.0)
+, m_epsilon(0.01)
 , m_scanNumberScaleValue(10000.0)
 , m_mzScanScaleValue(10.0 / 1e6)
 , m_bestModelScore(std::numeric_limits<double>::max())
@@ -247,6 +247,16 @@ Err ReCalibratomatic::initSVM(const QVector<InputSVM> &_inputSVMs) {
             ); ree;
 
     m_isInit = true;
+
+#define SANITY_CHECK_RECAL
+#ifdef SANITY_CHECK_RECAL
+    for (const InputSVM &is :  _inputSVMs) {
+        const double mzOG = is.mzScan;
+        double correctMz;
+        e = recalibrateMz(static_cast<int>(is.scanNumber), is.mzScan, &correctMz);
+        std::cout << mzOG << " " << is.mzTheo << " " <<  correctMz << std::endl;
+    }
+#endif
     ERR_RETURN
 }
 
@@ -329,7 +339,7 @@ Err ReCalibratomatic::recalibrateMz(
     const double pred = m_bestSVR(mat);
     const double predFinal = std::abs(pred) > m_ppmsDiffRejectionThreshold ? 0.0 : pred;
 
-    *mzCal += (-predFinal * mz) / 1e6;
+    *mzCal = mz - ((predFinal * mz) / 1e6);
 
     ERR_RETURN
 }
