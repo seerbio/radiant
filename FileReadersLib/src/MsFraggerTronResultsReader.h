@@ -39,6 +39,11 @@ public:
             QVector<RowToWrite> *rowsToWrite
             );
 
+    static Err readCsv(
+            const QString &firstPassCsvFilePath,
+            QVector<RowToWrite> *rowsToWrite
+            );
+
 
 };
 

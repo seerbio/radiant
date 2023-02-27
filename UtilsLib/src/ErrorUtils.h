@@ -28,6 +28,7 @@ public:
         bool ok;
         *out = object.toDouble(&ok);
         if (!ok) {
+            qDebug() << object;
             rrr(e);
         }
         return eNoError;

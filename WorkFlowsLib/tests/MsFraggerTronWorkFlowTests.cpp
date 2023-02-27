@@ -1,6 +1,8 @@
 #include "MsFraggerTronWorkFlow.h"
 
 #include "Error.h"
+#include "MsFraggerTronResultsReader.h"
+#include "MsReaderBase.h"
 #include "PeptidesLibraryTron.h"
 #include "PythiaParameterReader.h"
 
@@ -73,6 +75,15 @@ void MsFraggerTronWorkFlowTests::execTest() {
 
     e = msFraggerTronWorkFlow.processFile(mzMLFileURI);
     QCOMPARE(e, eNoError);
+
+    const QString firstPassPSMsFilePath
+        = mzMLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
+
+    QVector<RowToWrite> rowsToWrite;
+    MsFraggerTronResultsReader::readCsv(
+            firstPassPSMsFilePath,
+            &rowsToWrite
+            );
 
 }
 

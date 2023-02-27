@@ -150,6 +150,23 @@ public:
     static int findMaxIndexInVector(const QVector<T> &vec) {
         return std::max_element(vec.begin(), vec.end()) - vec.begin();
     }
+
+    template<typename T>
+    static double rmse(const QVector<QPair<T, T>> &actualVsPredicted) {
+
+        const auto accLogic = [](T sum, const QPair<T, T> &pr){
+            return sum + std::pow((pr.first - pr.second), 2);
+        };
+
+        const double squaredDiffs = std::accumulate(
+                actualVsPredicted.begin(),
+                actualVsPredicted.end(),
+                0.0,
+                accLogic
+                );
+
+        return std::sqrt(squaredDiffs / actualVsPredicted.size());
+    }
 };
 
 
