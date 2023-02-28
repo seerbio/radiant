@@ -74,9 +74,11 @@ void MsFraggerTronWorkFlowTests::execTest() {
     QCOMPARE(e, eNoError);
 
     QString firstPassPSMsFilePath;
+    QVector<TandemScanIon> tandemScanIons;
     e = msFraggerTronWorkFlow.processFile(
             mzMLFileURI,
-            &firstPassPSMsFilePath
+            &firstPassPSMsFilePath,
+            &tandemScanIons
             );
     QCOMPARE(e, eNoError);
 

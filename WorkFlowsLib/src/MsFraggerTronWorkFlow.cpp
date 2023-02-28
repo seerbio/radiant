@@ -89,7 +89,8 @@ namespace {
 }//namespace
 Err MsFraggerTronWorkFlow::processFile(
         const QString &mzmLFileURI,
-        QString *psmResultsFilePath
+        QString *psmResultsFilePath,
+        QVector<TandemScanIon> *tandemScanIons
         ) {
 
     ERR_INIT
@@ -97,14 +98,13 @@ Err MsFraggerTronWorkFlow::processFile(
     MsReaderMzML mzMLReader;
     e = mzMLReader.openFile(mzmLFileURI); ree;
 
-    QVector<TandemScanIon> tandemScanIons;
-    e = mzMLReader.tandemScanIons(&tandemScanIons); ree;
+    e = mzMLReader.tandemScanIons(tandemScanIons); ree;
 
-    e = preProcessScans(&tandemScanIons); ree;
+    e = preProcessScans(tandemScanIons); ree;
 
     QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
     e = processScanIons(
-            tandemScanIons,
+            *tandemScanIons,
             &tallyItemsByScanNumber
             ); ree;
 
@@ -815,6 +815,28 @@ Err MsFraggerTronWorkFlow::writePSMsToFile(
             outputFilePath,
             &rowsToWrite
     );
+
+    ERR_RETURN
+}
+
+Err MsFraggerTronWorkFlow::processScanIons(
+        const QVector<TandemScanIon> &tandemScanIons,
+        const QString &psmResultsFilePath
+        ) {
+
+    ERR_INIT
+
+    QMap<ScanNumber, QVector<TallyPeptideId>> tallyItemsByScanNumber;
+    e = processScanIons(
+            tandemScanIons,
+            &tallyItemsByScanNumber
+    ); ree;
+
+    e = writePSMsToFile(
+            psmResultsFilePath,
+            tallyItemsByScanNumber
+    ); ree;
+
 
     ERR_RETURN
 }

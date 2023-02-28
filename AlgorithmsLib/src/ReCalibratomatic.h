@@ -59,6 +59,10 @@ public:
             double *mzCal
             );
 
+    bool isInit() const;
+
+    QPair<double, double> oldVsNewPPMStDev();
+
 private:
 
     static void svmTest();
@@ -96,8 +100,5 @@ private:
     double m_bestModelScore;
 
 };
-
-
-
 
 #endif //PYTHIADIACPP_RECALIBRATOMATIC_H

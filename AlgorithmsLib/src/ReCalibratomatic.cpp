@@ -398,3 +398,11 @@ Err ReCalibratomatic::iterateTrainingModels(
 
     ERR_RETURN
 }
+
+bool ReCalibratomatic::isInit() const {
+    return m_isInit;
+}
+
+QPair<double, double> ReCalibratomatic::oldVsNewPPMStDev() {
+    return {m_stDevPPMOld, m_stDevPPM};
+}

@@ -54,13 +54,16 @@ public:
 
     Err processFile(
             const QString &mzmLFileURI,
-            QString *psmResultsFilePath
+            QString *psmResultsFilePath,
+            QVector<TandemScanIon> *tandemScanIons
             );
 
     Err processScanIons(
             const QVector<TandemScanIon> &tandemScanIons,
-            QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+            const QString &psmResultsFilePath
     );
+
+
 
 private:
 
@@ -70,6 +73,11 @@ private:
             const QMap<int, QVector<TandemScanIon>> &tranchedTandemScanIons,
             QMap<int, FragmentLibraryRTree*> *rTreesByKey
             );
+
+    Err processScanIons(
+            const QVector<TandemScanIon> &tandemScanIons,
+            QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+    );
 
     Err fragScanIons(
             const QMap<FraggerKey, QVector<TandemScanIon>> &tranchedTandemScanIons,

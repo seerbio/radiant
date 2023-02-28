@@ -38,10 +38,20 @@ private:
 
     Err runFirstPassMsFraggerTronWorkFlow(
             const QString &mzmlFilePath,
-            QString *firstPassPSMsFilePath
+            QString *firstPassPSMsFilePath,
+            QVector<TandemScanIon> *tandemScanIons
             );
 
     Err initReCalibratomatic(const QString &firstPassPSMsFilePath);
+
+    Err recalibrateTandemScanIons(QVector<TandemScanIon> *tandemScanIons);
+
+    Err optimizePythiaParameters();
+
+    Err runSecondPassMsFraggerTronWorkFlow(
+            const QVector<TandemScanIon> &tandemScanIons,
+            const QString &psmOutputFilePath
+            );
 
 
 private:
