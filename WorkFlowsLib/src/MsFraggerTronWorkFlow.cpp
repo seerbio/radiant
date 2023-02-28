@@ -87,7 +87,10 @@ namespace {
     }
 
 }//namespace
-Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
+Err MsFraggerTronWorkFlow::processFile(
+        const QString &mzmLFileURI,
+        QString *psmResultsFilePath
+        ) {
 
     ERR_INIT
 
@@ -105,11 +108,10 @@ Err MsFraggerTronWorkFlow::processFile(const QString &mzmLFileURI) {
             &tallyItemsByScanNumber
             ); ree;
 
-    const QString psmResultsFilePath
-        = mzmLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
+    *psmResultsFilePath = mzmLFileURI + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
 
     e = writePSMsToFile(
-            psmResultsFilePath,
+            *psmResultsFilePath,
             tallyItemsByScanNumber
             ); ree;
 

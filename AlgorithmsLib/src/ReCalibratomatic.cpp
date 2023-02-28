@@ -248,7 +248,7 @@ Err ReCalibratomatic::initSVM(const QVector<InputSVM> &_inputSVMs) {
 
     m_isInit = true;
 
-#define SANITY_CHECK_RECAL
+//#define SANITY_CHECK_RECAL
 #ifdef SANITY_CHECK_RECAL
     for (const InputSVM &is :  _inputSVMs) {
         const double mzOG = is.mzScan;

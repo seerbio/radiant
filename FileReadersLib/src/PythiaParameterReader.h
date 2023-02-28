@@ -120,6 +120,30 @@ struct PythiaParameters{
 
     bool addDecoys = true; //TODO change this to a number for rounds of decoys.
 
+    [[nodiscard]] bool isValid() const {
+
+        if (chargeStateMin < 1) {
+            return false;
+        }
+        if (chargeStateMax < 1) {
+            return false;
+        }
+        if (maxTandemPointCount < 0) {
+            return false;
+        }
+        if (returnPSMTopN < 0) {
+            return false;
+        }
+        if (ms2ExtractionWidthPPM < 0) {
+            return false;
+        }
+        if (precursorExtractionWindowThomsons < 0) {
+            return false;
+        }
+
+        return true;
+    }
+
     QVector<Modification> modifications;
 
     AminoAcids aminoAcids;

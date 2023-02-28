@@ -22,11 +22,13 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/LibraryBuilderWorkFlow.cpp
         src/MsFraggerTronWorkFlow.cpp
+        src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
         src/LibraryBuilderWorkFlow.h
         src/MsFraggerTronWorkFlow.h
+        src/PythiaDIAWorkflow.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -43,6 +45,7 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        ${DLIB_DIRECTORY}
 )
 
 

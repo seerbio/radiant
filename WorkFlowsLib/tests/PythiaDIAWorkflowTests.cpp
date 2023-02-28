@@ -1,21 +1,18 @@
-#include "MsFraggerTronWorkFlow.h"
+#include "PythiaDIAWorkflow.h"
 
 #include "Error.h"
-#include "MsFraggerTronResultsReader.h"
-#include "MsReaderBase.h"
-#include "PeptidesLibraryTron.h"
 #include "PythiaParameterReader.h"
 
 #include <QtTest>
 
-class MsFraggerTronWorkFlowTests : public QObject
+class PythiaDIAWorkflowTests : public QObject
 {
     Q_OBJECT
 
 public:
 
-    MsFraggerTronWorkFlowTests() = default;
-    ~MsFraggerTronWorkFlowTests() override = default;
+    PythiaDIAWorkflowTests() = default;
+    ~PythiaDIAWorkflowTests() override = default;
 
 private slots:
 
@@ -41,6 +38,7 @@ private:
         pythiaParameters.chargeStateMin = 2;
         pythiaParameters.chargeStateMax = 3;
         pythiaParameters.returnPSMTopN = 2;
+        pythiaParameters.maxTandemPointCount = 400;
 
         PythiaParameterReader::applyFixedModificationsToAminoAcids(
                 pythiaParameters,
@@ -52,7 +50,7 @@ private:
 
 };
 
-void MsFraggerTronWorkFlowTests::execTest() {
+void PythiaDIAWorkflowTests::execTest() {
 
     ERR_INIT
 
@@ -65,30 +63,21 @@ void MsFraggerTronWorkFlowTests::execTest() {
     const QString pepLibPath
             = QStringLiteral("/home/anichols/Desktop/RawData/human_plasma_entrapment_super_trunc.fasta.pepLib");
 
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(
+    PythiaDIAWorkflow pythiaDiaWorkflow;
+    e = pythiaDiaWorkflow.init(
             pythiaParameters(),
             fragLibPath,
             pepLibPath
             );
     QCOMPARE(e, eNoError);
 
-    QString firstPassPSMsFilePath;
-    e = msFraggerTronWorkFlow.processFile(
-            mzMLFileURI,
-            &firstPassPSMsFilePath
-            );
+    e = pythiaDiaWorkflow.processFile(mzMLFileURI);
     QCOMPARE(e, eNoError);
 
-    QVector<RowToWrite> rowsToWrite;
-    MsFraggerTronResultsReader::readCsv(
-            firstPassPSMsFilePath,
-            &rowsToWrite
-            );
 
 }
 
 
-QTEST_MAIN(MsFraggerTronWorkFlowTests)
+QTEST_MAIN(PythiaDIAWorkflowTests)
 
-#include "MsFraggerTronWorkFlowTests.moc"
+#include "PythiaDIAWorkflowTests.moc"

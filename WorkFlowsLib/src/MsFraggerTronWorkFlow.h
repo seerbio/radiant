@@ -18,7 +18,7 @@ class TandemScanIon;
 using namespace Error;
 
 
-struct PeptideIdIonFraggerResult {
+struct WORKFLOWSLIB_EXPORTS PeptideIdIonFraggerResult {
     ScanNumber scanNumber = -1;
     PeptideId peptideId = -1;
     double searchedFragIonMz = -1.0;
@@ -27,7 +27,7 @@ struct PeptideIdIonFraggerResult {
     double ppmMzSearched = -1.0;
 };
 
-struct CHEMLIB_EXPORTS TallyPeptideId {
+struct WORKFLOWSLIB_EXPORTS TallyPeptideId {
     ScanNumber scanNumber = -1;
     PeptideId peptideId = -1;
     Occurrence occurrence = 0;
@@ -52,13 +52,15 @@ public:
             const QString &pepLibUri
             );
 
-    Err processFile(const QString &mzmLFileURI);
+    Err processFile(
+            const QString &mzmLFileURI,
+            QString *psmResultsFilePath
+            );
 
     Err processScanIons(
             const QVector<TandemScanIon> &tandemScanIons,
             QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
-            );
-
+    );
 
 private:
 

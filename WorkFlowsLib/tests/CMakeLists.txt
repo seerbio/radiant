@@ -17,6 +17,7 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         LibraryBuilderWorkFlowTests
         MsFraggerTronWorkFlowTests
+        PythiaDIAWorkflowTests
         )
 
 foreach(class ${TEST_CLASSES})
