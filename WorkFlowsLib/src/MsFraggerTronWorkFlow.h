@@ -64,7 +64,6 @@ public:
     );
 
 
-
 private:
 
     Err preProcessScans(QVector<TandemScanIon> *tandemScanIons);
@@ -87,6 +86,11 @@ private:
 
     Err tallyPeptideIdsPerScan(
             const QHash<ScanNumber, QVector<PeptideIdIonFraggerResult>> &peptideIdIonFraggerResults,
+            QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+            );
+
+    Err filterTallyPeptideIdsBelowCountValue(
+            int countThreshold,
             QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
             );
 

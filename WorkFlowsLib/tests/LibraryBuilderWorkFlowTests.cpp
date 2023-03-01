@@ -25,22 +25,12 @@ private:
 
     static PythiaParameters pythiaParameters() {
 
-        Modification modOx('M', "Ox", ModificationType::DYNAMIC, "O");
-        Modification modDeam('N', "Deam", ModificationType::DYNAMIC, "N");
-        Modification modCAM('C', "CAM", ModificationType::FIXED, "C2H3NO");
-        Modification modAce("N-term-protein", "Ace", ModificationType::DYNAMIC, "C2H5O");
+        const QString paramsFile = "/home/anichols/Repositories/PythiaDIACpp/FileReadersLib/tests/TestFiles/WorkFlowTestsParams.pythia";
 
+        PythiaParameterReader reader;
         PythiaParameters pythiaParameters;
-        pythiaParameters.modifications.append({modCAM, modOx, modDeam, modAce});
-        pythiaParameters.cTermCleavePoints.append({"K", "R"});
-        pythiaParameters.allowedMissedCleavages = 1;
-        pythiaParameters.addDecoys = true;
-        pythiaParameters.maxModificationsPeptide = 2;
-
-        PythiaParameterReader::applyFixedModificationsToAminoAcids(
-                pythiaParameters,
-                &pythiaParameters.aminoAcids
-                );
+        reader.readFile(paramsFile);
+        reader.loadPythiaParameters(&pythiaParameters);
 
         return pythiaParameters;
     }

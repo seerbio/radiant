@@ -82,9 +82,6 @@ void MsFraggerTronResultsReader::writeToCsv(
 
             stream << S_GLOBAL_SETTINGS.NEWLINE;
 
-            if (counter++ == 1000) { //TODO make sure to delete this.
-                break;
-            }
         }
     }
 

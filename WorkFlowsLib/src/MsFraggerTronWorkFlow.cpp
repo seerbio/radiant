@@ -152,6 +152,12 @@ Err MsFraggerTronWorkFlow::processScanIons(
             tallyItemsByScanNumber
     ); ree;
 
+    const int minPeptideCount = 3;
+    e = filterTallyPeptideIdsBelowCountValue(
+            minPeptideCount,
+            tallyItemsByScanNumber
+            ); ree;
+
     ERR_RETURN
 }
 
@@ -837,6 +843,48 @@ Err MsFraggerTronWorkFlow::processScanIons(
             tallyItemsByScanNumber
     ); ree;
 
+
+    ERR_RETURN
+}
+
+Err MsFraggerTronWorkFlow::filterTallyPeptideIdsBelowCountValue(
+        int countThreshold,
+        QMap<ScanNumber, QVector<TallyPeptideId>> *tallyItemsByScanNumber
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*tallyItemsByScanNumber); ree;
+
+    QHash<PeptideId, int> petpideCountByPeptideId;
+    for (const QVector<TallyPeptideId> &tpi : *tallyItemsByScanNumber) {
+
+        for (const TallyPeptideId &pi : tpi) {
+            petpideCountByPeptideId[pi.peptideId] += 1;
+        }
+    }
+
+    QMap<ScanNumber, QVector<TallyPeptideId>> newTallyItemsByScanNumber;
+    for (auto it = tallyItemsByScanNumber->begin(); it != tallyItemsByScanNumber->end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const QVector<TallyPeptideId> &tpid = it.value();
+
+        for (const TallyPeptideId &t : tpid) {
+
+            const int globalPeptideCount = petpideCountByPeptideId.value(t.peptideId);
+
+            if (globalPeptideCount < countThreshold) {
+                continue;
+            }
+
+            newTallyItemsByScanNumber[scanNumber].push_back(t);
+        }
+
+    }
+
+    tallyItemsByScanNumber->clear();
+    *tallyItemsByScanNumber = newTallyItemsByScanNumber;
 
     ERR_RETURN
 }

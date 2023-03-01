@@ -234,6 +234,7 @@ Err PythiaDIAWorkflow::optimizePythiaParameters() {
 
     const double oldMs2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
     m_pythiaParameters.ms2ExtractionWidthPPM *= ppmAdjustmentPostCal;
+    m_pythiaParameters.returnPSMTopN = 20; //TODO correct this.
 
     qDebug() << "PPM Extraction value adjusted from:" << oldMs2ExtractionWidthPPM
                 << "to" << m_pythiaParameters.ms2ExtractionWidthPPM;

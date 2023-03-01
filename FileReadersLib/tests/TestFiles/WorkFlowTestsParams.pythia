@@ -1,0 +1,40 @@
+{
+    "ms2ExtractionWidthPPM": 12,
+    "precursorExtractionWindowThomsons": 1.0,
+    "percentFDR": 1.0,
+    "maxTandemPointCount": 400,
+    "returnPSMTopN": 30,
+    "chargeStateMin": 3,
+    "chargeStateMax": 2,
+    
+    "cTermCleavePoints": ["K", "R"],
+    "nTermCleavePoints": [],
+    "raggedness": "NoRagged",
+    "allowedMissedCleavages": 1,
+    "mzMinDataStructure": "350.0",
+    "mzMaxDataStructure": "1500.0",
+    "peptideLengthMin": 7,
+    "peptideLengthMax": 30,
+    "maxModificationsPeptide": 1,
+    "addDecoys": true,
+    "modifications": [
+        {
+            "residue": "C",
+            "name": "Carbamidomethyl",
+            "type": "fixed",
+            "formula": "H3C2NO"
+        },
+        {
+            "residue": "M",
+            "name": "Oxidation",
+            "type": "dynamic",
+            "formula": "O"
+        },
+        {
+            "residue": "N-term-protein",
+            "name": "Acetylation",
+            "type": "dynamic",
+            "formula": "H2C2O"
+        }
+    ]
+}
