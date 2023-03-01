@@ -22,7 +22,8 @@ private:
 
     static PythiaParameters pythiaParameters() {
 
-        const QString paramsFile = "/home/anichols/Repositories/PythiaDIACpp/FileReadersLib/tests/TestFiles/WorkFlowTestsParams.pythia";
+        const QString &paramsFile
+                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
 
         PythiaParameterReader reader;
         PythiaParameters pythiaParameters;
