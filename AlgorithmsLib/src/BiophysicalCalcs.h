@@ -27,6 +27,11 @@ public:
             int charge,
             int monoOffset
             );
+
+    static double calculateThomsonFromMass(
+            double mass,
+            int charge
+            );
 };
 
 

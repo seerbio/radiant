@@ -4,286 +4,143 @@
 
 #include "LibraryBuilderWorkFlow.h"
 
+#include "BiophysicalCalcs.h"
 #include "FragLibraryTron.h"
-#include "MathUtils.h"
-#include "Molecule.h"
-#include "PeptidesLibraryTron.h"
+#include "MolecularFormula.h"
+#include "TandemFragmentPredictotron.h"
+#include "TandemPredictionUtils.h"
 
 #include <QtConcurrent/QtConcurrent>
 
-#include <iostream>
+
+LibraryBuilderWorkFlow::~LibraryBuilderWorkFlow() {
+
+    for (int i = 1; i < 5; i++) {
+        delete m_tandemPredictionModels[i];
+    }
+
+}
+
+Err LibraryBuilderWorkFlow::init(
+        const QString &modelCharge1,
+        const QString &modelCharge2,
+        const QString &modelCharge3,
+        const QString &modelCharge4
+        ) {
+
+    ERR_INIT
+
+    m_modelFilePaths.insert(1, modelCharge1);
+    m_modelFilePaths.insert(2, modelCharge2);
+    m_modelFilePaths.insert(3, modelCharge3);
+    m_modelFilePaths.insert(4, modelCharge4);
+
+    for (auto it = m_modelFilePaths.begin(); it != m_modelFilePaths.end(); it++) {
+
+        const int charge = it.key();
+        const QString &modelFilePath = it.value();
+
+        auto *model = new TandemFragmentPredictotron();
+        e = model->init(
+                m_modelFilePaths.value(charge),
+                charge
+                ); ree;
+
+        m_tandemPredictionModels.insert(charge, model);
+    }
+
+    ERR_RETURN
+}
+
 
 namespace {
 
-    QVector<double> vectorizePeptideSequenceAminoAcidMasses(
-            const QString &peptideSequence,
-            const AminoAcids &aminoAcids
-            ) {
-
-        QVector<double> aaMassVals(peptideSequence.size());
-
-        for (int i = 0; i < peptideSequence.size(); i++) {
-
-            const QChar &aa = peptideSequence.at(i);
-            const double aaMass = aminoAcids.aminoAcid(aa).monoisotopicMass();
-            aaMassVals[i] = aaMass;
-        }
-
-        return aaMassVals;
-    }
-
-    void addModificationsToVec(
-            const QHash<ResidueIndex, ModificationMass> &modifications,
-            QVector<double> *vec
-            ) {
-
-        for (auto it = modifications.begin(); it != modifications.end(); it++) {
-
-            const ResidueIndex residueIndex = it.key();
-            const ModificationMass modificationMass = it.value();
-
-            (*vec)[residueIndex] += modificationMass;
-        }
-    }
-
-    QVector<double> calcMzPeptideFragmentSeries(
-            const Peptide &peptide,
-            const AminoAcids &aminoAcids,
-            bool isYSeries
-            ) {
-
-        QVector<double> aaMassVals = vectorizePeptideSequenceAminoAcidMasses(peptide.sequence, aminoAcids);
-
-        addModificationsToVec(
-                peptide.modifications,
-                &aaMassVals
-                );
-
-        aaMassVals[aaMassVals.size() - 1] += CommonMolecules::H2O.monoisotopicMass();
-
-        if (isYSeries) {
-            std::reverse(aaMassVals.begin(), aaMassVals.end());
-        }
-
-        aaMassVals[0] += PROTON;
-
-        QVector<double> cumSumSeries(aaMassVals.size());
-        std::partial_sum(aaMassVals.begin(), aaMassVals.end(), cumSumSeries.begin(), std::plus<>());
-
-        return cumSumSeries;
-    }
-
-    void filterMzMasses(
-            double mzMin,
-            double mzMax,
-            QVector<double> *vec
-            ) {
-
-        const auto terminatorLogic = [mzMin, mzMax](double mz){
-            return !(mzMin <= mz && mz <= mzMax);
-        };
-
-        const auto terminator = std::remove_if(vec->begin(), vec->end(), terminatorLogic);
-        vec->erase(terminator, vec->end());
-    }
-
-    QVector<double> buildFragSeriesBY(
-            const Peptide &peptide,
-            const AminoAcids &aminoAcids,
-            double mzMin,
-            double mzMax
-            ) {
-
-        QVector<double> bySeries;
-
-        QVector<double> bSeries = calcMzPeptideFragmentSeries(
-                peptide,
-                aminoAcids,
-                false
-                );
-        bSeries.pop_back();
-
-        QVector<double> ySeries = calcMzPeptideFragmentSeries(
-                peptide,
-                aminoAcids,
-                true
-        );
-        ySeries.pop_back();
-
-        bySeries.append(bSeries);
-        bySeries.append(ySeries);
-
-        const int bySeriesSize = bySeries.size();
-        for (int i = 0; i < bySeriesSize; ++i) {
-            const double fragIonCharge2 = (bySeries.at(i) + PROTON) / 2;
-            bySeries.push_back(fragIonCharge2);
-        }
-
-        std::sort(bySeries.begin(), bySeries.end());
-        filterMzMasses(
-                mzMin,
-                mzMax,
-                &bySeries
-                );
-
-        return bySeries;
-    }
-
-    struct ParallelFragInput {
-        Peptide peptide;
-        PythiaParameters params;
-    };
-
-    QVector<ParallelFragInput> buildParallelFragInputs(
-            const QVector<Peptide> &peptides,
-            const PythiaParameters &params
-            ) {
-
-        QVector<ParallelFragInput> inputs;
-        for (const Peptide &peptide : peptides) {
-
-            ParallelFragInput pi;
-            pi.peptide = peptide;
-            pi.params = params;
-
-            inputs.push_back(pi);
-        }
-
-        return inputs;
-    }
-
-    QPair<Peptide, QVector<double>> parallelFragLogic(const ParallelFragInput &pfi) {
-        return {pfi.peptide,
-                buildFragSeriesBY(
-                pfi.peptide,
-                pfi.params.aminoAcids,
-                pfi.params.mzMinDataStructure,
-                pfi.params.mzMaxDataStructure
-                )};
-    }
-
-    Err writeFragLibIons(
-            const QVector<QPair<Peptide, QVector<double>>> &mzFrags,
-            const QString &fragLibIonsFilePath
+    Err readCSV(
+            const QString &peptidesCSVFilePath,
+            QVector<PeptidePredictionInput> *peptidePredictionInputs
             ) {
 
         ERR_INIT
 
-        QVector<FragLibIon> fragLibIons;
-        for (const QPair<Peptide, QVector<double>> &qp : mzFrags) {
-
-            const Peptide &peptide = qp.first;
-            const QVector<double> &fragIons = qp.second;
-
-            for (double mz : fragIons) {
-                fragLibIons.push_back({peptide.id, mz, peptide.mass});
-            }
+        QFile file(peptidesCSVFilePath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            qDebug() << file.errorString();
+            rrr(eFileError);
         }
 
-        e = FragLibraryTron::writeFragLibIons(
-                fragLibIons,
-                fragLibIonsFilePath
-                ); ree;
+        const QString expectedHeader = "Peptide,Charge,CollisionEnergy\n";
+
+        QString header;
+
+        while (!file.atEnd()) {
+
+            if (header.isEmpty()) {
+                header = file.readLine();
+
+                e = ErrorUtils::isEqualString(header, expectedHeader); ree;
+                continue;
+            }
+
+            const QString &row = file.readLine().replace(S_GLOBAL_SETTINGS.NEWLINE, "");
+            const QStringList rowSplit = row.split(S_GLOBAL_SETTINGS.COMMA);
+
+            PeptidePredictionInput ppi;
+
+            ppi.peptideSequence = rowSplit.at(0);
+            e = ErrorUtils::toInt(rowSplit.at(1), &ppi.charge); ree;
+            e = ErrorUtils::toDouble(rowSplit.at(2), &ppi.collisionEnergy); ree;
+
+            peptidePredictionInputs->push_back(ppi);
+        }
 
         ERR_RETURN
     }
 
+    Err buildTandemPredictionInputs(QVector<PeptidePredictionInput> *peptidePredictionInputs) {
+
+        ERR_INIT
+
+        AminoAcids aminoAcids;
+        aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
+        for (int i = 0; i < peptidePredictionInputs->size(); i++) {
+
+            PeptidePredictionInput &ppi = (*peptidePredictionInputs)[i];
+
+            e = ErrorUtils::isTrue(ppi.charge > 0); ree;
+
+            const double mass = BiophysicalCalcs::calculatePeptideMass(ppi.peptideSequence, aminoAcids);
+            const double mz = BiophysicalCalcs::calculateThomsonFromMass(mass, ppi.charge);
+
+            ppi.normalizedCollisionEnergy = TandemPredictionUtils::calculateNormalizedCollisionEnergy(
+                    mz,
+                    ppi.charge,
+                    static_cast<int>(ppi.collisionEnergy)
+                    );
+        }
+
+        ERR_RETURN
+    }
 
 }//namespace
-Err LibraryBuilderWorkFlow::exec(
-        const PythiaParameters &pythiaParameters,
-        const QString &fastaFilePath,
-        bool theoreticalFrag
-        ) {
+Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
 
     ERR_INIT
 
-    m_pythiaParameters = pythiaParameters;
+    e = ErrorUtils::isNotEmpty(m_tandemPredictionModels); ree;
 
-    PeptidesLibraryTron peptidesLibraryTron(pythiaParameters);
-    e = peptidesLibraryTron.exec(fastaFilePath, 666); ree;
-
-    const QVector<Peptide> peptides = peptidesLibraryTron.peptides();
-    e = ErrorUtils::isNotEmpty(peptides);
-
-    QVector<QPair<Peptide, QVector<double>>> mzFrags;
-
-    if (theoreticalFrag) {
-
-        e = buildTheoreticalMzFragsForPeptides(
-                peptides,
-                &mzFrags
-                ); ree;
-    }
-
-    else {
-        //TODO add neural net frag predictions
-    }
-
-    const QString fragLibIonsFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
-    e = writeFragLibIons(
-            mzFrags,
-            fragLibIonsFilePath
+    QVector<PeptidePredictionInput> peptidePredictionInputs;
+    e = readCSV(
+            peptidesCSVFilePath,
+            &peptidePredictionInputs
             ); ree;
 
-    const QString peptidesLibraryTronFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
-    e = PeptidesLibraryTron::writePeptidesLib(
-            peptides,
-            peptidesLibraryTronFilePath
-            ); ree;
+    e = buildTandemPredictionInputs(&peptidePredictionInputs); ree;
+
 
     ERR_RETURN
 }
 
-Err LibraryBuilderWorkFlow::buildTheoreticalMzFragsForPeptides(
-        const QVector<Peptide> &peptides,
-        QVector<QPair<Peptide, QVector<double>>> *mzFrags
-        ) {
-
-    ERR_INIT
-
-#define RUN_PARALLEL_THEO_FRAGMENTATION
-#ifdef RUN_PARALLEL_THEO_FRAGMENTATION
-    const QVector<ParallelFragInput> inputs = buildParallelFragInputs(
-            peptides,
-            m_pythiaParameters
-    );
-
-    QFuture<QPair<Peptide, QVector<double>>> futures = QtConcurrent::mapped(
-            inputs,
-            parallelFragLogic
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Peptide, QVector<double>> &res : futures) {
-        mzFrags->push_back(res);
-    }
-#else
-    for (const Peptide &pep: peptides) {
-
-        const QVector<double> bySeries = buildFragSeriesBY(
-                pep,
-                m_pythiaParameters.aminoAcids,
-                m_pythiaParameters.mzMinDataStructure,
-                m_pythiaParameters.mzMaxDataStructure
-        );
 
 
-        mzFrags->push_back({pep, bySeries});
-    }
-#endif
 
-    ERR_RETURN
-}
-
-QVector<double> LibraryBuilderWorkFlow::testPeptideFragmentation(
-        const QString &peptideSequence,
-        const QHash<ResidueIndex, ModificationMass> &mods
-        ) {
-
-    Peptide pep;
-    pep.sequence = peptideSequence;
-    pep.modifications =mods;
-
-    return buildFragSeriesBY(pep, AminoAcids(), 0.0, 2000.0);
-}

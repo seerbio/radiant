@@ -30,6 +30,8 @@ SET(SOURCE_FILES
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
         src/ReCalibratomatic.cpp
+        src/TandemFragmentPredictotron.cpp
+        src/TandemPredictionUtils.cpp
 )
 
 SET(HEADER_FILES
@@ -43,6 +45,8 @@ SET(HEADER_FILES
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
         src/ReCalibratomatic.h
+        src/TandemFragmentPredictotron.h
+        src/TandemPredictionUtils.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -79,6 +83,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         FileReadersLib
+        MachineLrnLib
         UtilsLib
         )
 

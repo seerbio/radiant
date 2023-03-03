@@ -48,3 +48,6 @@ configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibIons.parquet COPY
 
 set(TEST_PARAMS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/WorkFlowTestsParams.pythia")
 configure_file(${TEST_PARAMS_PATH} ${CMAKE_BINARY_DIR}/bin/WorkFlowTestsParams.pythia COPYONLY)
+
+set(PEPTIDES_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/peptides.csv")
+configure_file(${PEPTIDES_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/peptides.csv COPYONLY)

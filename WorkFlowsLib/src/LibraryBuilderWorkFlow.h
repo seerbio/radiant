@@ -9,13 +9,14 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "PythiaParameterReader.h"
+#include "TandemFragmentPredictotron.h"
 
 
 using namespace Error;
 
 
 class Peptide;
+
 
 class WORKFLOWSLIB_EXPORTS LibraryBuilderWorkFlow {
 
@@ -24,30 +25,22 @@ public:
     friend class LibraryBuilderWorkFlowTests;
 
     LibraryBuilderWorkFlow() = default;
-    ~LibraryBuilderWorkFlow() = default;
+    ~LibraryBuilderWorkFlow();
 
-    Err exec(
-            const PythiaParameters &pythiaParameters,
-            const QString &fastaFilePath,
-            bool theoreticalFrags
-            );
+    Err init(
+            const QString &modelCharge1,
+            const QString &modelCharge2,
+            const QString &modelCharge3,
+            const QString &modelCharge4
+    );
 
-private:
+    Err exec(const QString &peptidesCSVFilePath);
 
-    Err buildTheoreticalMzFragsForPeptides(
-            const QVector<Peptide> &peptides,
-            QVector<QPair<Peptide, QVector<double>>> *mzFrags
-            );
-
-    static QVector<double> testPeptideFragmentation(
-            const QString &peptideSequence,
-            const QHash<ResidueIndex, ModificationMass> &mods
-            );
 
 private:
 
-    PythiaParameters m_pythiaParameters;
-
+    QMap<Charge, QString> m_modelFilePaths;
+    QMap<Charge, TandemFragmentPredictotron*> m_tandemPredictionModels;
 
 };
 

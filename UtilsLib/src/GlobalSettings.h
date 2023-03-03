@@ -11,6 +11,7 @@
 #include <QString>
 #include <QVector>
 
+using Charge = int;
 using FragLibIonPeptideId = int;
 using IsolationWindowKey = QString;
 using ModificationMass = double;
@@ -22,6 +23,7 @@ using MzTargetKey = QString;
 using NominalMzMass = int;
 using Occurrence = int;
 using PeptideId = int;
+using PeptideSequenceChargeCollisionEnergyKey = QString;
 using PeptideString = QString;
 using ProteinId = int;
 using ProteinSequence = QString;

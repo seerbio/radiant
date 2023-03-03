@@ -31,3 +31,10 @@ double BiophysicalCalcs::calculateMassFromThomson(
         ) {
     return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON) ;
 }
+
+double BiophysicalCalcs::calculateThomsonFromMass(
+        double mass,
+        int charge
+        ) {
+    return (mass + (charge * ChemConstants::PROTON)) / charge ;
+}
