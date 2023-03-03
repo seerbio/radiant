@@ -131,14 +131,60 @@ namespace {
         for (const PeptidePredictionInput &ppi : peptidePredictionInputs) {
 
             sortedPeptidePredictionInputs[ppi.charge].push_back(ppi);
-
         }
 
         return sortedPeptidePredictionInputs;
     };
 
+    Err writePredictionsToCSV(
+            const QHash<PeptideSequenceChargeCollisionEnergyKey,
+            TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+            const QString &outputFilePath
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(outputFilePath); ree;
+
+        const QStringList rowHeader = {
+                QStringLiteral("Peptide"),
+                QStringLiteral("IonLabel"),
+                QStringLiteral("Intensity")
+        };
+
+        QFile file(outputFilePath);
+        if (file.open(QIODevice::ReadWrite)) {
+
+            QTextStream stream(&file);
+            stream << rowHeader.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+
+            for (auto itt = tandemPredictionsAllCharges.begin(); itt != tandemPredictionsAllCharges.end(); itt++) {
+
+                const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
+                const TandemFragmentPredictotron::TandemPrediction &pred = itt.value();
+
+                for (const FragmentIon &fli : pred) {
+
+                    const QStringList row = {
+                            key,
+                            fli.ionLabel,
+                            QString::number(fli.intensity)};
+
+                    stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+                }
+            }
+        }
+
+        qDebug() << "FragLib file written to" << outputFilePath;
+        file.close();
+        ERR_RETURN
+    }
+
 }//namespace
-Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
+Err LibraryBuilderWorkFlow::exec(
+        const QString &peptidesCSVFilePath,
+        QString *returnFilePath
+        ) {
 
     ERR_INIT
 
@@ -154,6 +200,9 @@ Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
 
     const QMap<Charge, QVector<PeptidePredictionInput>> sortedPeptidePredictionInputs
             = sortPeptidePredictionInputs(peptidePredictionInputs);
+
+    QHash<PeptideSequenceChargeCollisionEnergyKey,
+            TandemFragmentPredictotron::TandemPrediction> tandemPredictionsAllCharges;
 
     for (auto it = sortedPeptidePredictionInputs.begin(); it != sortedPeptidePredictionInputs.end(); it++) {
 
@@ -174,13 +223,17 @@ Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
             const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
             const TandemFragmentPredictotron::TandemPrediction &pred = itt.value();
 
-            qDebug() << key;
-            for (const FragmentIon &fi : pred) {
-                qDebug() << fi.ionLabel << fi.intensity;
-            }
+            tandemPredictionsAllCharges.insert(key, pred);
         }
 
     }
+
+    *returnFilePath = peptidesCSVFilePath + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
+
+    e = writePredictionsToCSV(
+            tandemPredictionsAllCharges,
+            *returnFilePath
+            ); ree;
 
     ERR_RETURN
 }

@@ -34,7 +34,10 @@ public:
             const QString &modelCharge4
     );
 
-    Err exec(const QString &peptidesCSVFilePath);
+    Err exec(
+            const QString &peptidesCSVFilePath,
+            QString *returnFilePath
+            );
 
 
 private:

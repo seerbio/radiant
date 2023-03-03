@@ -36,8 +36,13 @@ void LibraryBuilderWorkFlowTests::execTest() {
     const QString model4FilePath
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
 
+    QString fragLibFilePath;
+
     LibraryBuilderWorkFlow libraryBuilderWorkFlow;
-    e = libraryBuilderWorkFlow.exec(peptidesCSVFilePath);
+    e = libraryBuilderWorkFlow.exec(
+            peptidesCSVFilePath,
+            &fragLibFilePath
+            );
     QCOMPARE(e, eError);
 
     e = libraryBuilderWorkFlow.init(
@@ -48,12 +53,14 @@ void LibraryBuilderWorkFlowTests::execTest() {
             );
     QCOMPARE(e, eNoError);
 
-    e = libraryBuilderWorkFlow.exec(peptidesCSVFilePath);
+    e = libraryBuilderWorkFlow.exec(
+            peptidesCSVFilePath,
+            &fragLibFilePath
+            );
     QCOMPARE(e, eNoError);
 
-//    const QString fragLibFilePath = fastaFilePath() + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
-//    QFileInfo fi(fragLibFilePath);
-//    QCOMPARE(fi.exists(), true);
+    QFileInfo fi(fragLibFilePath);
+    QCOMPARE(fi.exists(), true);
 
 }
 
