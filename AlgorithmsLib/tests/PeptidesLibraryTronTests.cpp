@@ -23,6 +23,8 @@ private slots:
     void execTest();
     void readWriteTest();
 
+    void buildPeptidesPredList();
+
 private:
 
     static PythiaParameters pythiaParameters() {
@@ -279,6 +281,66 @@ void PeptidesLibraryTronTests::readWriteTest() {
     PeptidesLibraryTron libTron2;
     e = libTron2.readPeptidesLib(libFilePath);
     QCOMPARE(e, eError);
+}
+
+void PeptidesLibraryTronTests::buildPeptidesPredList() {
+
+//    QSKIP("This test only for generating libraries to test")
+
+    PythiaParameters params = pythiaParameters();
+
+    params.modifications = {params.modifications.front()};
+    params.maxModificationsPeptide = 0;
+    params.mzMaxDataStructure = 1500;
+    params.peptideLengthMin = 7;
+    params.peptideLengthMax = 42;
+    params.addDecoys = false;
+
+    params.print();
+
+    const QString fastaFilePath
+            = QStringLiteral("/home/anichols/Desktop/RawData/2022-06-12-decoys-contam-human_plasma_entrapment.fasta");
+
+    PeptidesLibraryTron pepLib(params);
+    Err e = pepLib.exec(fastaFilePath, 666);
+    QCOMPARE(e, eNoError);
+
+    const QVector<Peptide> peptides = pepLib.peptides();
+
+    qDebug() << "Peptide Count" << peptides.size();
+
+    const QStringList rowHeader = {
+            QStringLiteral("Peptide"),
+            QStringLiteral("Charge"),
+            QStringLiteral("CollisionEnergy")
+    };
+
+
+    const QString outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_CSV;
+    const int collisionEnergy = 30;
+
+    QFile file(outputFilePath);
+    if (file.open(QIODevice::ReadWrite)) {
+
+        QTextStream stream(&file);
+        stream << rowHeader.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+
+        for (int charge: {2, 3}) {
+
+            for (const Peptide &pep: peptides) {
+
+                const QStringList row = {
+                        pep.sequence,
+                        QString::number(charge),
+                        QString::number(collisionEnergy)
+                };
+                stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+            }
+        }
+    }
+
+    qDebug() << "File written to" << outputFilePath;
+    file.close();
 }
 
 
