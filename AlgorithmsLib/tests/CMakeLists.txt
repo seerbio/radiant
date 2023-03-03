@@ -20,6 +20,8 @@ SET(TEST_CLASSES
         PeptidesLibraryTronTests
         ProteinDigestomaticTests
         ReCalibratomaticTests
+        TandemFragmentPredictotronTests
+        TandemPredictionUtilsTests
 )
 
 foreach(class ${TEST_CLASSES})

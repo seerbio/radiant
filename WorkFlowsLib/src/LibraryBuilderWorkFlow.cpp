@@ -122,6 +122,21 @@ namespace {
         ERR_RETURN
     }
 
+    QMap<Charge, QVector<PeptidePredictionInput>> sortPeptidePredictionInputs(
+            const QVector<PeptidePredictionInput> &peptidePredictionInputs
+            ) {
+
+        QMap<Charge, QVector<PeptidePredictionInput>> sortedPeptidePredictionInputs;
+
+        for (const PeptidePredictionInput &ppi : peptidePredictionInputs) {
+
+            sortedPeptidePredictionInputs[ppi.charge].push_back(ppi);
+
+        }
+
+        return sortedPeptidePredictionInputs;
+    };
+
 }//namespace
 Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
 
@@ -137,6 +152,35 @@ Err LibraryBuilderWorkFlow::exec(const QString &peptidesCSVFilePath) {
 
     e = buildTandemPredictionInputs(&peptidePredictionInputs); ree;
 
+    const QMap<Charge, QVector<PeptidePredictionInput>> sortedPeptidePredictionInputs
+            = sortPeptidePredictionInputs(peptidePredictionInputs);
+
+    for (auto it = sortedPeptidePredictionInputs.begin(); it != sortedPeptidePredictionInputs.end(); it++) {
+
+        const Charge charge = it.key();
+        const QVector<PeptidePredictionInput> &ppis = it.value();
+
+        qDebug() << "Prediction charge:" << charge;
+
+        TandemFragmentPredictotron *model = m_tandemPredictionModels.value(charge);
+
+        QHash<PeptideSequenceChargeCollisionEnergyKey,
+              TandemFragmentPredictotron::TandemPrediction> tandemPredictions;
+
+        e = model->batchPredictTandemSpectra(ppis, &tandemPredictions); ree;
+
+        for (auto itt = tandemPredictions.begin(); itt != tandemPredictions.end(); itt++) {
+
+            const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
+            const TandemFragmentPredictotron::TandemPrediction &pred = itt.value();
+
+            qDebug() << key;
+            for (const FragmentIon &fi : pred) {
+                qDebug() << fi.ionLabel << fi.intensity;
+            }
+        }
+
+    }
 
     ERR_RETURN
 }

@@ -47,8 +47,6 @@ private:
     Q_DISABLE_COPY(TandemFragmentPredictotron) class Private;
     const QScopedPointer<Private> d_ptr;
 
-
-
 };
 
 

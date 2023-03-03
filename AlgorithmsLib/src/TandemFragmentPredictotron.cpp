@@ -55,7 +55,6 @@ TandemFragmentPredictotron::Private::~Private() {
     }
 }
 
-
 Err TandemFragmentPredictotron::Private::init(
         const QString &modelFilePath,
         int charge
@@ -89,7 +88,6 @@ Err TandemFragmentPredictotron::Private::init(
     ERR_RETURN
 }
 
-
 namespace {
 
     // These methods are in this namespace so Eigen is not exposed to header if they were in TandemPredictionUtils.
@@ -105,7 +103,6 @@ namespace {
 
         return std::none_of(predictionInputs.begin(),  predictionInputs.end(), checkingLogic);
     }
-
 
     Err convertPeptideSequencesToOneHotMatrices(
             const QVector<PeptidePredictionInput> &predictionInputs,
@@ -131,7 +128,6 @@ namespace {
 
         ERR_RETURN
     }
-
 
     QVector<QVector<float>> normalizePredictions(const QVector<QVector<float>> &predictions) {
 
@@ -172,7 +168,7 @@ namespace {
     }
 
     QString buildPeptideLookupKey(const PeptidePredictionInput &ppi) {
-        return ppi.peptideSequence + S_GLOBAL_SETTINGS.SEPARATOR + QString::number(ppi.charge);
+        return ppi.peptideSequence + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(ppi.charge);
     }
 
 
