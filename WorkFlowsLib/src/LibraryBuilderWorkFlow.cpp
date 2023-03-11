@@ -82,11 +82,19 @@ namespace {
             }
 
             const QString &row = file.readLine().replace(S_GLOBAL_SETTINGS.NEWLINE, "");
+
+            if (row.isEmpty()) {
+                continue;
+            }
+
             const QStringList rowSplit = row.split(S_GLOBAL_SETTINGS.COMMA);
+
+            e = ErrorUtils::isEqual(rowSplit.size(), 3); ree;
 
             PeptidePredictionInput ppi;
 
             ppi.peptideSequence = rowSplit.at(0);
+
             e = ErrorUtils::toInt(rowSplit.at(1), &ppi.charge); ree;
             e = ErrorUtils::toDouble(rowSplit.at(2), &ppi.collisionEnergy); ree;
 
