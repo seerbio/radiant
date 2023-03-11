@@ -50,6 +50,31 @@ namespace {
         peptideSequences->erase(terminator, peptideSequences->end());
     }
 
+    void filterInvalidSequences(QVector<PeptideSequence> *peptideSequences) {
+
+        const QVector<QChar> invalidAminoAcidLetters = {'B', 'J', 'O', 'U', 'Z'};
+
+        const auto charInStringLogic = [invalidAminoAcidLetters](const QChar &c){
+            return invalidAminoAcidLetters.contains(c);
+        };
+
+        const auto terminatorLogic = [charInStringLogic](const PeptideSequence &ps){
+            return std::any_of(
+                    ps.sequence.begin(),
+                    ps.sequence.end(),
+                    charInStringLogic
+                    );
+        };
+
+        const auto terminator = std::remove_if(
+                peptideSequences->begin(),
+                peptideSequences->end(),
+                terminatorLogic
+                );
+
+        peptideSequences->erase(terminator, peptideSequences->end());
+    }
+
 }//END NAMESPACE
 Err ProteinDigestomatic::digestProtein(
         const ProteinSequence &proteinSequence,
@@ -132,6 +157,8 @@ Err ProteinDigestomatic::digestProtein(
     filterSequenceLength(m_pythiaParams.peptideLengthMin,
                          m_pythiaParams.peptideLengthMax,
                          peptideSequences);
+
+    filterInvalidSequences(peptideSequences);
 
     ERR_RETURN;
 }

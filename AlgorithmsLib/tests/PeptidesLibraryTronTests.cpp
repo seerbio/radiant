@@ -63,7 +63,7 @@ void PeptidesLibraryTronTests::processFastaTest()
     e = pepLib.processFasta(fastaFilePath());
     QCOMPARE(e, eNoError);
 
-    QCOMPARE(pepLib.m_peptideSequences.size(), 87612);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 87604);
 }
 
 void PeptidesLibraryTronTests::removeDuplicatesFromPeptideTest() {
@@ -73,11 +73,11 @@ void PeptidesLibraryTronTests::removeDuplicatesFromPeptideTest() {
     PeptidesLibraryTron pepLib(pythiaParameters());
     e = pepLib.processFasta(fastaFilePath());
     QCOMPARE(e, eNoError);
-    QCOMPARE(pepLib.m_peptideSequences.size(), 87612);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 87604);
 
     e = pepLib.removeDuplicatesFromPeptide();
     QCOMPARE(e, eNoError);
-    QCOMPARE(pepLib.m_peptideSequences.size(), 85574);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 85566);
 }
 
 void PeptidesLibraryTronTests::addDecoysTest() {
@@ -87,15 +87,15 @@ void PeptidesLibraryTronTests::addDecoysTest() {
     PeptidesLibraryTron pepLib(pythiaParameters());
     e = pepLib.processFasta(fastaFilePath());
     QCOMPARE(e, eNoError);
-    QCOMPARE(pepLib.m_peptideSequences.size(), 87612);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 87604);
 
     e = pepLib.removeDuplicatesFromPeptide();
     QCOMPARE(e, eNoError);
-    QCOMPARE(pepLib.m_peptideSequences.size(), 85574);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 85566);
 
     e = pepLib.addDecoys(666);
     QCOMPARE(e, eNoError);
-    QCOMPARE(pepLib.m_peptideSequences.size(), 171126);
+    QCOMPARE(pepLib.m_peptideSequences.size(), 171110);
 }
 
 namespace {
