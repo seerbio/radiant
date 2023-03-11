@@ -90,6 +90,10 @@ namespace {
             e = ErrorUtils::toInt(rowSplit.at(1), &ppi.charge); ree;
             e = ErrorUtils::toDouble(rowSplit.at(2), &ppi.collisionEnergy); ree;
 
+            if (!TandemPredictionUtils::isValidPeptideForPrediction(ppi.peptideSequence, ppi.charge)) {
+                continue;
+            }
+
             peptidePredictionInputs->push_back(ppi);
         }
 
@@ -136,6 +140,17 @@ namespace {
         return sortedPeptidePredictionInputs;
     };
 
+    void takeTop8IntensityFrags(TandemFragmentPredictotron::TandemPrediction *pred) {
+
+        const auto logic = [](const FragmentIon &l, const FragmentIon &r){
+            return l.intensity < r.intensity;
+        };
+
+        std::sort(pred->rbegin(), pred->rend(), logic);
+
+        pred->resize(std::min(8, pred->size()));
+    }
+
     Err writePredictionsToCSV(
             const QHash<PeptideSequenceChargeCollisionEnergyKey,
             TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
@@ -161,7 +176,9 @@ namespace {
             for (auto itt = tandemPredictionsAllCharges.begin(); itt != tandemPredictionsAllCharges.end(); itt++) {
 
                 const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
-                const TandemFragmentPredictotron::TandemPrediction &pred = itt.value();
+                TandemFragmentPredictotron::TandemPrediction pred = itt.value();
+
+                takeTop8IntensityFrags(&pred);
 
                 for (const FragmentIon &fli : pred) {
 

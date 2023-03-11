@@ -4,7 +4,8 @@
 
 #include "src/CommandLineParser.h"
 #include "Error.h"
-#include "workflows/PythiaFraggerWorkflow.h"
+#include "LibraryBuilderWorkFlow.h"
+#include "PythiaParameterReader.h"
 #include "StringUtils.h"
 
 #include <QCoreApplication>
@@ -40,72 +41,43 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     CommandLineParser parser;
 
-    if (!parser.validateArguments(QCoreApplication::arguments())) {
-        return 1;
-    }
+//    if (!parser.validateArguments(QCoreApplication::arguments())) {
+//        return 1;
+//    }
+//
+//    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
-    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
+    const QString peptidesCSVFilePath = QDir(qApp->applicationDirPath()).filePath("peptides.csv");
 
-    PythiaParameters pythiaParameters;
-    e = buildPythiaParameters(cliParameters.pythiaParametersFilePath, &pythiaParameters);
-    if (e != eNoError) {
-        qDebug() << QStringLiteral("Unable to load parameters from %1")
-        .arg(cliParameters.pythiaParametersFilePath);
-        return 1;
-    }
+    const QString model1FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
+    const QString model2FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
+    const QString model3FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_3.hdf5.json");
+    const QString model4FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
 
-    PythiaFraggerWorkflow pythiaFraggerWorkflow;
-    e = pythiaFraggerWorkflow.init(pythiaParameters,
-                                   cliParameters.fastaFilePath);
-    if (e != eNoError) {
-        qCritical() << e;
-        qDebug() << "Unable to init workflow";
-        return 1;
-    }
+    QString fragLibFilePath;
 
-    QFileInfo fileInfo(cliParameters.dataFilePath);
-    const bool isFile = fileInfo.isFile();
-    const bool isDirectory = fileInfo.isDir();
+    LibraryBuilderWorkFlow libraryBuilderWorkFlow;
+    e = libraryBuilderWorkFlow.init(
+            model1FilePath,
+            model2FilePath,
+            model3FilePath,
+            model4FilePath
+    );
+    qDebug() << e;
 
-    if (isFile) {
+    e = libraryBuilderWorkFlow.exec(
+            peptidesCSVFilePath,
+            &fragLibFilePath
+    );
+    qDebug() << e;
 
-        e = pythiaFraggerWorkflow.processDataFile(cliParameters.dataFilePath, true);
-        if (e != eNoError) {
-            qCritical() << e;
-            return 1;
-        }
 
-        qDebug() << "All files processed in" << et.elapsed() / 1000 << "seconds";
-        return 0;
-    }
+    return 0;
 
-    else if (isDirectory) {
-
-        QDirIterator it(cliParameters.dataFilePath);
-        while (it.hasNext()) {
-
-            const QString &dataFilePath = it.next();
-            const QFileInfo fi(dataFilePath);
-            const QString fileExtension = fi.suffix();
-
-            if (StringUtils::stringsMatch(FileReadersLibNameSpace::MZML_FILE_EXTENSION, fileExtension, false) ||
-                StringUtils::stringsMatch(FileReadersLibNameSpace::HDF_FILE_EXTENSION, fileExtension, false)) {
-
-                e = pythiaFraggerWorkflow.processDataFile(dataFilePath, true);
-                if (e != eNoError) {
-                    qDebug() << "*** IONS2 FILE NOT FRAGGED PROPERLY ****";
-                    qDebug() << "ions2FilePath:" << dataFilePath;
-                    qDebug() << "*****************************************";
-                    eee_absorb;
-                }
-            }
-        }
-
-        qDebug() << "All files processed in" << et.elapsed() / 1000 << "seconds";
-        return 0;
-    }
-
-    return 1;
 }
 
 

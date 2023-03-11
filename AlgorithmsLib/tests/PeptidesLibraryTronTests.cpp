@@ -315,7 +315,6 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
             QStringLiteral("CollisionEnergy")
     };
 
-
     const QString outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_CSV;
     const int collisionEnergy = 30;
 
@@ -339,8 +338,34 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
         }
     }
 
-    qDebug() << "File written to" << outputFilePath;
-    file.close();
+    const QString outputFilePathPeptide = fastaFilePath + ".peptide" + S_GLOBAL_SETTINGS.DOT_CSV;
+
+    const QStringList rowHeaderPeptide = {
+            QStringLiteral("Peptide"),
+            QStringLiteral("Mass"),
+            QStringLiteral("IsDecoy")
+    };
+
+    QFile filePeptide(outputFilePathPeptide);
+    if (filePeptide.open(QIODevice::ReadWrite)) {
+
+        QTextStream stream(&filePeptide);
+        stream << rowHeaderPeptide.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+
+        for (const Peptide &pep: peptides) {
+
+            const QStringList row = {
+                    pep.sequence,
+                    QString::number(pep.mass),
+                    QString::number(pep.isDecoy)
+            };
+            stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+        }
+
+    }
+
+    qDebug() << "File written to" << outputFilePathPeptide;
+    filePeptide.close();
 }
 
 

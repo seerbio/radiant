@@ -3,14 +3,13 @@
 //
 
 #include "CommandLineParser.h"
-
-#include "FileReadersLibNameSpace.h"
+#include "GlobalSettings.h"
 #include "StringUtils.h"
 
 #include <QDebug>
 #include <QFileInfo>
 
-using namespace FileReadersLibNameSpace;
+
 
 namespace {
     const QString ARG_RAW_DATA_PATH = QStringLiteral("raw-data-path");
@@ -60,10 +59,10 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.dataFilePath = args[1];
     const bool mzmlPathOrDirIsValid
-        = checkFileNameExtension(m_cliParams.dataFilePath, MZML_FILE_EXTENSION);
+        = checkFileNameExtension(m_cliParams.dataFilePath, ".mzML");
 
     const bool hdfPathOrDirIsValid
-            = checkFileNameExtension(m_cliParams.dataFilePath, HDF_FILE_EXTENSION);
+            = checkFileNameExtension(m_cliParams.dataFilePath, ".hdf");
 
 
     if (!(mzmlPathOrDirIsValid || hdfPathOrDirIsValid)) {
@@ -75,7 +74,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.pythiaParametersFilePath = args[2];
     const bool pythiaPathIsValid
-            = checkFileNameExtension(m_cliParams.pythiaParametersFilePath, PYTHIA_FILE_EXTENSION);
+            = checkFileNameExtension(m_cliParams.pythiaParametersFilePath, ".pythia");
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Second command line argument *.pythia argument invalid");
         argumentsLocal.append("-h");
@@ -85,7 +84,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.fastaFilePath = args[3];
     const bool fastaPathIsValid
-            = checkFileNameExtension(m_cliParams.fastaFilePath, FASTA_FILE_EXTENSION);
+            = checkFileNameExtension(m_cliParams.fastaFilePath, ".fasta");
     if (!fastaPathIsValid) {
         qCritical() << QStringLiteral("Thrid command line argument *.fasta argument invalid");
         argumentsLocal.append("-h");

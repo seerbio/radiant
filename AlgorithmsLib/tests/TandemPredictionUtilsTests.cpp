@@ -17,7 +17,7 @@ public:
 private slots:
 
     void buildTandemFragmentMassesTest();
-    void test();
+//    void test();
 
 };
 

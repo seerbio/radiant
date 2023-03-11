@@ -27,7 +27,7 @@ SET(ZLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/include")
 SET(ZLIB_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/lib/libz.so")
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
-#ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
+ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
 ADD_SUBDIRECTORY("ChemLib")
 ADD_SUBDIRECTORY("EigenLib")
 ADD_SUBDIRECTORY("FileReadersLib")

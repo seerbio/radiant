@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(Istros)
+PROJECT(IstrosLibraryBuilder)
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Core
@@ -30,6 +30,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Widgets
         FileReadersLib
         UtilsLib
+        WorkFlowsLib
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
