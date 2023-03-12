@@ -325,7 +325,7 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
         stream << rowHeader.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
 
         for (int charge: {2, 3}) {
-
+            int counter = 0;
             for (const Peptide &pep: peptides) {
 
                 const QStringList row = {
@@ -334,9 +334,13 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
                         QString::number(collisionEnergy)
                 };
                 stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+                counter++;
             }
+            qDebug() << "rows added:" << counter;
         }
     }
+    qDebug() << "File written to" << outputFilePath;
+    file.close();
 
     const QString outputFilePathPeptide = fastaFilePath + ".peptide" + S_GLOBAL_SETTINGS.DOT_CSV;
 
@@ -349,9 +353,10 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
     QFile filePeptide(outputFilePathPeptide);
     if (filePeptide.open(QIODevice::ReadWrite)) {
 
-        QTextStream stream(&filePeptide);
-        stream << rowHeaderPeptide.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+        QTextStream stream2(&filePeptide);
+        stream2 << rowHeaderPeptide.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
 
+        int counter = 0;
         for (const Peptide &pep: peptides) {
 
             const QStringList row = {
@@ -359,9 +364,10 @@ void PeptidesLibraryTronTests::buildPeptidesPredList() {
                     QString::number(pep.mass),
                     QString::number(pep.isDecoy)
             };
-            stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+            stream2 << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
+            counter++;
         }
-
+        qDebug() << "rows added:" << counter;
     }
 
     qDebug() << "File written to" << outputFilePathPeptide;
