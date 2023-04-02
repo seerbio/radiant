@@ -12,6 +12,14 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/export.hpp>
+#include <boost/geometry.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+#include <fstream>
 #include <iostream>
 
 
@@ -41,6 +49,7 @@ public:
                                            const QPair<double, double> &targetWindow);
 
     int size();
+
 
 private:
 
@@ -180,10 +189,10 @@ QHash<PeptideId, MZION> FragmentLibraryRTree::Private::getPeptidesTableIds(
     return peptidesTableIdsVsCoor;
 };
 
-
 int FragmentLibraryRTree::Private::size() {
     return static_cast<int>(m_rTree->size());
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -233,3 +242,4 @@ void FragmentLibraryRTree::setKey(int key) {
 int FragmentLibraryRTree::getKey() {
     return m_key;
 }
+
