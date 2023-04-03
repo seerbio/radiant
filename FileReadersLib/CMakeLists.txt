@@ -57,6 +57,7 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${ZLIB_DIRECTORY}"
         "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
+        "${ARROW_DIRECTORY}"
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -74,7 +75,9 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         UtilsLib
         ${ZLIB_STATIC_LIBRARY}
-        ${ARROW_STATIC_LIBRARY}
+        ${ARROW_SHARED_LIBRARY}
+        ${ARROW_STATIC_LIBRARY_DEPS}
+        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

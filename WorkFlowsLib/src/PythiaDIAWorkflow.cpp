@@ -7,6 +7,7 @@
 #include "ErrorUtils.h"
 #include "MsFraggerTronResultsReader.h"
 #include "MsFraggerTronWorkFlow.h"
+#include "MsParquetReader.h"
 #include "MsReaderBase.h"
 #include "ParallelUtils.h"
 
@@ -34,6 +35,15 @@ Err PythiaDIAWorkflow::init(
 Err PythiaDIAWorkflow::processFile(const QString &mzmlFilePath) {
 
     ERR_INIT
+
+    const QString &msParquetFilePath
+            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
+
+    MsParquetReader reader;
+
+    bool te;
+    te = reader.readFile(msParquetFilePath.toStdString());
+
 
     QString firstPassPSMsFilePath;
     QVector<TandemScanIon> tandemScanIons;

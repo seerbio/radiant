@@ -8,7 +8,9 @@ SET(TEST_LIBRARIES
         Qt5::Test
 )
 
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
+INCLUDE_DIRECTORIES(
+        ${CMAKE_BINARY_DIR}/bin
+)
 
 #Add classes to test here.
 SET(TEST_CLASSES

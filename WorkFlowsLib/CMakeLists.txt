@@ -46,6 +46,8 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${DLIB_DIRECTORY}
+        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
+        "${ARROW_DIRECTORY}"
 )
 
 
@@ -63,6 +65,9 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         AlgorithmsLib
         FileReadersLib
         UtilsLib
+        ${ARROW_SHARED_LIBRARY}
+        ${ARROW_STATIC_LIBRARY_DEPS}
+        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
