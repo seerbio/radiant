@@ -4,5 +4,5 @@
 
 @PACKAGE_INIT@
 
-include("${CMAKE_CURRENT_LIST_DIR}/ChemLibTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ParquetLibTargets.cmake")
 include(CMakeFindDependencyMacro)

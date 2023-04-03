@@ -23,8 +23,10 @@ SET(SOURCE_FILES
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
         src/MsFraggerTronResultsReader.cpp
+        src/MsParquetReader.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
+        src/ParquetReaderBase.cpp
         src/PythiaParameterReader.cpp
 )
 
@@ -32,8 +34,10 @@ SET(HEADER_FILES
         src/FastaReader.h
         src/JsonParametersReader.h
         src/MsFraggerTronResultsReader.h
+        src/MsParquetReader.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
+        src/ParquetReaderBase.h
         src/PythiaParameterReader.h
 )
 
@@ -70,6 +74,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         UtilsLib
         ${ZLIB_STATIC_LIBRARY}
+        ${ARROW_STATIC_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

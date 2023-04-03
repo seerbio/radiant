@@ -116,4 +116,4 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         COMPONENT Devel
         )
 
-#ADD_SUBDIRECTORY("tests")
+ADD_SUBDIRECTORY("tests")

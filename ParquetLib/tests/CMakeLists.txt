@@ -25,19 +25,3 @@ foreach(class ${TEST_CLASSES})
     ADD_TEST( NAME ${class} COMMAND ${class} )
 
 endforeach()
-
-
-set(FASTA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta")
-configure_file(${FASTA_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta COPYONLY)
-
-set(JSON_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest.dgst")
-configure_file(${JSON_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest.dgst COPYONLY)
-
-set(PYTHIA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest2.pythia")
-configure_file(${PYTHIA_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest2.pythia COPYONLY)
-
-set(MS_PARQUET "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet")
-configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet COPYONLY)
-
-set(FRAG_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/FragLibIons.parquet")
-configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibIons.parquet COPYONLY)

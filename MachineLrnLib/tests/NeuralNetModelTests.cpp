@@ -40,9 +40,9 @@ void NeuralNetModelTests::testPrediction() {
 
     //Performance benchmark 32 cores "predicted 100 entries in 21 mSec"
 
-    // TODO properly handle linking files.
-    const QString testModel
-            = QStringLiteral("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
+    const QString &testModel
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
+
 
     NeuralNetModel model;
     Err e = model.init(testModel);
