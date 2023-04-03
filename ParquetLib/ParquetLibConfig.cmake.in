@@ -1,0 +1,8 @@
+# Provides information about the installed library.
+# It can be used directly from CMake via find_package(<name> NO_MODULE)
+# this is template code
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/ChemLibTargets.cmake")
+include(CMakeFindDependencyMacro)
