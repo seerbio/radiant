@@ -32,7 +32,7 @@ namespace {
             const std::string ionLabelsJoined
                     = tlrs.ionLabels.join(S_GLOBAL_SETTINGS.SEPARATOR).toStdString();
 
-            peptideSequences->push_back(tlrs.peptideString.toStdString());
+            peptideSequences->push_back(tlrs.peptideSequenceChargeKey.toStdString());
             intensityVecsByteString->push_back(intensityByteStream);
             ionLabelVecs->push_back(ionLabelsJoined);
         }
@@ -179,7 +179,7 @@ namespace {
         for (size_t i = 0; i < peptideSequenceColData.size(); i++) {
 
             TandemLibraryReaderRow tlrr;
-            tlrr.peptideString = QString::fromStdString(peptideSequenceColData.at(i));
+            tlrr.peptideSequenceChargeKey = QString::fromStdString(peptideSequenceColData.at(i));
             tlrr.intensityVals =  ParquetReaderBase::bytesStdStringToQVector<double>(intensityColData.at(i));
             tlrr.ionLabels = QString::fromStdString(ionLabelsColData.at(i)).split(S_GLOBAL_SETTINGS.SEPARATOR);
 

@@ -5,9 +5,9 @@
 #include "LibraryBuilderWorkFlow.h"
 
 #include "BiophysicalCalcs.h"
-#include "FragLibraryTron.h"
 #include "MolecularFormula.h"
 #include "TandemFragmentPredictotron.h"
+#include "TandemLibraryReader.h"
 #include "TandemPredictionUtils.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -193,6 +193,35 @@ namespace {
         ERR_RETURN
     }
 
+    QVector<TandemLibraryReaderRow> buildTandemLibraryReaderRows(
+            const QHash<PeptideSequenceChargeKey,
+                TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges
+            ) {
+
+        QVector<TandemLibraryReaderRow> tlrs;
+        for (auto it = tandemPredictionsAllCharges.begin(); it != tandemPredictionsAllCharges.end(); it++) {
+
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+            const TandemFragmentPredictotron::TandemPrediction &tandemPrediction = it.value();
+
+            QStringList ionLabels;
+            QVector<double> intensities;
+            for (const FragmentIon &fi : tandemPrediction) {
+                ionLabels.push_back(fi.ionLabel);
+                intensities.push_back(fi.intensity);
+            }
+
+            TandemLibraryReaderRow row;
+            row.peptideSequenceChargeKey = peptideSequenceChargeKey;
+            row.ionLabels = ionLabels;
+            row.intensityVals = intensities;
+
+            tlrs.push_back(row);
+        }
+
+        return tlrs;
+    }
+
     Err writePredictionsToParquet(
             const QHash<PeptideSequenceChargeKey,
                     TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
@@ -204,6 +233,12 @@ namespace {
         e = ErrorUtils::isNotEmpty(outputFilePath); ree;
         e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
 
+        const QVector<TandemLibraryReaderRow> writeRows = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
+
+        e = TandemLibraryReader::writeTandemPredictions(
+                writeRows,
+                outputFilePath
+                ); ree;
 
         ERR_RETURN
     }

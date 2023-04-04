@@ -14,7 +14,7 @@ using namespace Error;
 
 
 struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow {
-    PeptideString peptideString;
+    PeptideSequenceChargeKey peptideSequenceChargeKey;
     QVector<double> intensityVals;
     QStringList ionLabels;
 };
