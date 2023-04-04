@@ -9,6 +9,10 @@
 
 namespace {
 
+    const std::string PEPTIDE_SEQUENCE = "peptideSequence";
+    const std::string INTENSITY_VEC = "intensityVec";
+    const std::string ION_LABELS = "ionLabels";
+
     bool splitParquetRowsIntoSeparateVectors(
             const QVector<TandemLibraryReaderRow> &tandemLibraryReaderRows,
             std::vector<std::string> *peptideSequences,
@@ -56,14 +60,12 @@ namespace {
 
 
         if (!e) {
-            qDebug() << "SDFKSDF" << st.ok();
             return st;
         }
 
         std::shared_ptr<arrow::Array> peptideSequencesArrow;
         st = ParquetReaderBase::buildParquetDataArrayFromString(peptideSequences, &peptideSequencesArrow);
         if (!st.ok()){
-            qDebug() << "KDKFDJ" << st.ok();
             return st;
         }
 
@@ -72,12 +74,6 @@ namespace {
         if (!st.ok()){
             return st;
         }
-
-//        std::shared_ptr<arrow::Array> intensityVecsArrow;
-//        st = ParquetReaderBase::buildParquetDataArrayFromString(intensityVecs, &intensityVecsArrow);
-//        if (!st.ok()){
-//            return st;
-//        }
 
         std::shared_ptr<arrow::Array> ionLabelVecsArrow;
         st = ParquetReaderBase::buildParquetDataArrayFromString(ionLabelVecs, &ionLabelVecsArrow);
@@ -98,9 +94,9 @@ namespace {
 
         std::shared_ptr<arrow::Schema> schema;
 
-        peptideSequencesField = arrow::field("peptideSequence", arrow::utf8());
-        intensityVecsField = arrow::field("intensityVec", arrow::binary());
-        ionLabelVecsField = arrow::field("ionLabels", arrow::utf8());
+        peptideSequencesField = arrow::field(PEPTIDE_SEQUENCE, arrow::utf8());
+        intensityVecsField = arrow::field(INTENSITY_VEC, arrow::binary());
+        ionLabelVecsField = arrow::field(ION_LABELS, arrow::utf8());
 
         schema = arrow::schema({
                     peptideSequencesField,
@@ -130,7 +126,6 @@ namespace {
         return st;
     }
 
-
 }//namespace
 Err TandemLibraryReader::writeTandemPredictions(
         const QVector<TandemLibraryReaderRow> &tandemLibraryReaderRows,
@@ -149,6 +144,123 @@ Err TandemLibraryReader::writeTandemPredictions(
 
     e = ErrorUtils::isTrue(st.ok()); ree;
     qDebug() << "File written to:" << outputFilePath;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildTandemLibraryReaderRowVector(
+            std::vector<std::string> &peptideSequenceColData,
+            std::vector<std::string> &intensityColData,
+            std::vector<std::string> &ionLabelsColData,
+            QVector<TandemLibraryReaderRow> *tandemLibraryReaderRows
+    ) {
+
+        ERR_INIT
+
+        bool ee = true;
+        ee = ParquetReaderBase::isEqual(
+                static_cast<int>(peptideSequenceColData.size()),
+                static_cast<int>(intensityColData.size())
+        );
+        if (!ee) {
+            rrr(eError);
+        }
+
+        ee = ParquetReaderBase::isEqual(
+                static_cast<int>(peptideSequenceColData.size()),
+                static_cast<int>(ionLabelsColData.size())
+        );
+        if (!ee) {
+            return eError;
+        }
+
+        for (size_t i = 0; i < peptideSequenceColData.size(); i++) {
+
+            TandemLibraryReaderRow tlrr;
+            tlrr.peptideString = QString::fromStdString(peptideSequenceColData.at(i));
+            tlrr.intensityVals =  ParquetReaderBase::bytesStdStringToQVector<double>(intensityColData.at(i));
+            tlrr.ionLabels = QString::fromStdString(ionLabelsColData.at(i)).split(S_GLOBAL_SETTINGS.SEPARATOR);
+
+            tandemLibraryReaderRows->push_back(tlrr);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err TandemLibraryReader::readTandemPredictions(
+        const std::string &fileURI,
+        QVector<TandemLibraryReaderRow> *tandemLibraryReaderRows
+        ) {
+
+    ERR_INIT
+
+    arrow::Status st;
+
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    arrow::fs::LocalFileSystem fileSystem;
+
+    std::shared_ptr<arrow::io::RandomAccessFile> input
+            = fileSystem.OpenInputFile(fileURI).ValueOrDie();
+
+    std::unique_ptr<parquet::arrow::FileReader> arrowReader;
+    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
+    if (!st.ok()) {
+        return Error::eFileError;
+    }
+
+    std::shared_ptr<arrow::Table> table;
+    st = arrowReader->ReadTable(&table);
+    if (!st.ok()) {
+        return Error::eError;
+    }
+
+    const std::shared_ptr<arrow::Schema> schema = table->schema();
+    const std::map<std::string, int> schemaMap = ParquetReaderBase::buildSchemaMap(schema);
+
+    bool columnChecker = true;
+
+    std::vector<std::string> peptideSequenceColData;
+    columnChecker = readColumn<arrow::StringArray , std::string>(
+            table,
+            schema,
+            schemaMap.at(PEPTIDE_SEQUENCE),
+            &peptideSequenceColData
+            );
+    if (!columnChecker) {
+        rrr(eError);
+    }
+
+    std::vector<std::string> intensityColData;
+    columnChecker = readColumn<arrow::BinaryArray, std::string>(
+            table,
+            schema,
+            schemaMap.at(INTENSITY_VEC),
+            &intensityColData
+            );
+    if (!columnChecker) {
+        rrr(eError);
+    }
+
+    std::vector<std::string> ionLabelsColData;
+    columnChecker = readColumn<arrow::StringArray, std::string>(
+            table,
+            schema,
+            schemaMap.at(ION_LABELS),
+            &ionLabelsColData
+            );
+    if (!columnChecker) {
+        rrr(eError);
+    }
+
+    e = buildTandemLibraryReaderRowVector(
+            peptideSequenceColData,
+            intensityColData,
+            ionLabelsColData,
+            tandemLibraryReaderRows
+    );
 
     ERR_RETURN
 }

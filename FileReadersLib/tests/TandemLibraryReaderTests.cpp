@@ -18,10 +18,10 @@ public:
 
 private Q_SLOTS:
 
-    void parseFastaFileTest();
+    void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
 };
 
-void TandemLibraryReaderTests::parseFastaFileTest() {
+void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
 
     TandemLibraryReaderRow tpr;
     tpr.peptideString = "CHAUNCYANDFLOPS";
@@ -44,6 +44,17 @@ void TandemLibraryReaderTests::parseFastaFileTest() {
 
     QCOMPARE(e, eNoError);
 
+    QVector<TandemLibraryReaderRow> readRows;
+    e = TandemLibraryReader::readTandemPredictions(
+            outputFilePath.toStdString(),
+            &readRows
+            );
+
+    const TandemLibraryReaderRow &tlrr = readRows.first();
+
+    QCOMPARE(tlrr.peptideString, tpr.peptideString);
+    QCOMPARE(tlrr.intensityVals, tpr.intensityVals);
+    QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
 }
 
 QTEST_MAIN(TandemLibraryReaderTests)

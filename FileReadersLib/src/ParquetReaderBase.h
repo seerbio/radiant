@@ -50,13 +50,13 @@ public:
             return false;
         }
 
-        std::shared_ptr<arrow::ChunkedArray> mzCol = table->column(columnIndex);
-        const std::shared_ptr<arrow::Array> mzColChunks = mzCol->chunks()[0];
+        std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
+        const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
 
-        auto arrowArray = std::static_pointer_cast<T>(mzColChunks);
+        auto arrowArray = std::static_pointer_cast<T>(colChunks);
 
-        for (int64_t i = 0; i < mzColChunks->length(); ++i) {
-            output->push_back(arrowArray->Value(i));
+        for (int64_t i = 0; i < colChunks->length(); ++i) {
+            output->push_back(static_cast<U>(arrowArray->Value(i)));
         }
 
         return true;

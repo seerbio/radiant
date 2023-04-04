@@ -32,9 +32,10 @@ public:
             const QString &outputFilePath
             );
 
-
-
-
+    static Err readTandemPredictions(
+            const std::string &fileURI,
+            QVector<TandemLibraryReaderRow> *tandemLibraryReaderRows
+            );
 
 private:
 
