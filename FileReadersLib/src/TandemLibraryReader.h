@@ -15,8 +15,8 @@ using namespace Error;
 
 struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow {
     PeptideString peptideString;
-    std::vector<double> intensityVals;
-    std::vector<std::string> ionLabels;
+    QVector<double> intensityVals;
+    QStringList ionLabels;
 };
 
 
