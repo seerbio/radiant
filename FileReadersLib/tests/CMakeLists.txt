@@ -19,7 +19,9 @@ SET(TEST_CLASSES
         MsParquetReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
+        ParquetReaderBaseTests
         PythiaParameterReaderTests
+        TandemLibraryReaderTests
 )
 
 foreach(class ${TEST_CLASSES})

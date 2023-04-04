@@ -26,7 +26,7 @@ public:
 
     Err  batchPredictTandemSpectra(
             const QVector<PeptidePredictionInput> &tandemPredictionInputs,
-            QHash<PeptideSequenceChargeCollisionEnergyKey, TandemPrediction> *result
+            QHash<PeptideSequenceChargeKey, TandemPrediction> *result
             );
 
     void setIntensityThreshold(double intensityThreshold);
@@ -175,7 +175,7 @@ namespace {
 }//NAMESPACE
 Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
         const QVector<PeptidePredictionInput> &predictionInputs,
-        QHash<PeptideSequenceChargeCollisionEnergyKey, TandemPrediction> *tandemPredictions
+        QHash<PeptideSequenceChargeKey, TandemPrediction> *tandemPredictions
         ) {
 
     ERR_INIT
@@ -201,7 +201,7 @@ Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
 
         const PeptidePredictionInput &ppi = predictionInputs.at(i);
 
-        const PeptideSequenceChargeCollisionEnergyKey peptideLookupKey = buildPeptideLookupKey(ppi);
+        const PeptideSequenceChargeKey peptideLookupKey = buildPeptideLookupKey(ppi);
 
         TandemPrediction frags;
         e = zipFragmentIonList(
@@ -242,7 +242,7 @@ Err TandemFragmentPredictotron::init(
 
 Err TandemFragmentPredictotron::batchPredictTandemSpectra(
         const QVector<PeptidePredictionInput> &tandemPredictionInputs,
-        QHash<PeptideSequenceChargeCollisionEnergyKey, TandemPrediction> *result
+        QHash<PeptideSequenceChargeKey, TandemPrediction> *result
         ) {
    ERR_INIT
    e = d_ptr->batchPredictTandemSpectra(tandemPredictionInputs, result); ree;

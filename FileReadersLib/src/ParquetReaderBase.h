@@ -6,6 +6,7 @@
 #define PYTHIADIACPP_PARQUETREADERBASE_H
 
 #include "FileReadersLib_Exports.h"
+#include "SqlUtils.h"
 
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
@@ -74,6 +75,19 @@ public:
         ARROW_ASSIGN_OR_RAISE(*output, arraybuilder.Finish());
 
         return st;
+    }
+
+    template<typename T>
+    static std::string qVectorToBytesStdString(const QVector<T> &vec) {
+        const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);
+        std::string arrStr = arr.toStdString();
+        return arrStr;
+    }
+
+    template<typename T>
+    static QVector<T> bytesStdStringToQVector(const std::string &bytesStdString) {
+        const QVector<T> vec = SqlUtils::decodeBLOB<T>(QByteArray::fromStdString(bytesStdString));
+        return vec;
     }
 
 protected:

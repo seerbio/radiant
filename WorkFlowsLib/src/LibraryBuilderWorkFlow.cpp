@@ -148,26 +148,16 @@ namespace {
         return sortedPeptidePredictionInputs;
     };
 
-    void takeTop8IntensityFrags(TandemFragmentPredictotron::TandemPrediction *pred) {
-
-        const auto logic = [](const FragmentIon &l, const FragmentIon &r){
-            return l.intensity < r.intensity;
-        };
-
-        std::sort(pred->rbegin(), pred->rend(), logic);
-
-        pred->resize(std::min(8, pred->size()));
-    }
-
     Err writePredictionsToCSV(
-            const QHash<PeptideSequenceChargeCollisionEnergyKey,
-            TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+            const QHash<PeptideSequenceChargeKey,
+                    TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QString &outputFilePath
             ) {
 
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(outputFilePath); ree;
+        e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
 
         const QStringList rowHeader = {
                 QStringLiteral("Peptide"),
@@ -183,10 +173,8 @@ namespace {
 
             for (auto itt = tandemPredictionsAllCharges.begin(); itt != tandemPredictionsAllCharges.end(); itt++) {
 
-                const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
+                const PeptideSequenceChargeKey &key = itt.key();
                 TandemFragmentPredictotron::TandemPrediction pred = itt.value();
-
-                takeTop8IntensityFrags(&pred);
 
                 for (const FragmentIon &fli : pred) {
 
@@ -202,6 +190,21 @@ namespace {
 
         qDebug() << "FragLib file written to" << outputFilePath;
         file.close();
+        ERR_RETURN
+    }
+
+    Err writePredictionsToParquet(
+            const QHash<PeptideSequenceChargeKey,
+                    TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+            const QString &outputFilePath
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(outputFilePath); ree;
+        e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
+
+
         ERR_RETURN
     }
 
@@ -226,7 +229,7 @@ Err LibraryBuilderWorkFlow::exec(
     const QMap<Charge, QVector<PeptidePredictionInput>> sortedPeptidePredictionInputs
             = sortPeptidePredictionInputs(peptidePredictionInputs);
 
-    QHash<PeptideSequenceChargeCollisionEnergyKey,
+    QHash<PeptideSequenceChargeKey,
             TandemFragmentPredictotron::TandemPrediction> tandemPredictionsAllCharges;
 
     for (auto it = sortedPeptidePredictionInputs.begin(); it != sortedPeptidePredictionInputs.end(); it++) {
@@ -238,14 +241,14 @@ Err LibraryBuilderWorkFlow::exec(
 
         TandemFragmentPredictotron *model = m_tandemPredictionModels.value(charge);
 
-        QHash<PeptideSequenceChargeCollisionEnergyKey,
+        QHash<PeptideSequenceChargeKey,
               TandemFragmentPredictotron::TandemPrediction> tandemPredictions;
 
         e = model->batchPredictTandemSpectra(ppis, &tandemPredictions); ree;
 
         for (auto itt = tandemPredictions.begin(); itt != tandemPredictions.end(); itt++) {
 
-            const PeptideSequenceChargeCollisionEnergyKey &key = itt.key();
+            const PeptideSequenceChargeKey &key = itt.key();
             const TandemFragmentPredictotron::TandemPrediction &pred = itt.value();
 
             tandemPredictionsAllCharges.insert(key, pred);
@@ -255,7 +258,7 @@ Err LibraryBuilderWorkFlow::exec(
 
     *returnFilePath = peptidesCSVFilePath + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
 
-    e = writePredictionsToCSV(
+    e = writePredictionsToParquet(
             tandemPredictionsAllCharges,
             *returnFilePath
             ); ree;

@@ -36,7 +36,7 @@ public:
 
     Err  batchPredictTandemSpectra(
             const QVector<PeptidePredictionInput> &predictionInputs,
-            QHash<PeptideSequenceChargeCollisionEnergyKey, TandemPrediction> *tandemPredictions
+            QHash<PeptideSequenceChargeKey, TandemPrediction> *tandemPredictions
             );
 
     void setIntensityThreshold(double intensityThreshold);

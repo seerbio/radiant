@@ -222,6 +222,10 @@ Err PeptidesLibraryTron::addDecoys(int seed) {
 
     ERR_INIT
 
+    if (!m_pythiaParameters.addDecoys) {
+        ERR_RETURN
+    }
+
     e = ErrorUtils::isNotEmpty(m_peptideSequences); ree;
     const int peptideSequencesSize = m_peptideSequences.size();
 

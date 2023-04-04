@@ -28,6 +28,7 @@ SET(SOURCE_FILES
         src/MsReaderMzML.cpp
         src/ParquetReaderBase.cpp
         src/PythiaParameterReader.cpp
+        src/TandemLibraryReader.cpp
 )
 
 SET(HEADER_FILES
@@ -39,6 +40,7 @@ SET(HEADER_FILES
         src/MsReaderMzML.h
         src/ParquetReaderBase.h
         src/PythiaParameterReader.h
+        src/TandemLibraryReader.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

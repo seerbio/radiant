@@ -41,7 +41,7 @@ struct FILEREADERSLIB_EXPORTS ParquetRow {
 };
 
 
-class FILEREADERSLIB_EXPORTS MsParquetReader : public ParquetReaderBase{
+class FILEREADERSLIB_EXPORTS MsParquetReader : public ParquetReaderBase {
 
 public:
 
