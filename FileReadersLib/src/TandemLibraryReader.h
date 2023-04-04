@@ -27,7 +27,7 @@ public:
     TandemLibraryReader() = default;
     ~TandemLibraryReader() = default;
 
-    Err writeTandemPrediction(
+    static Err writeTandemPredictions(
             const QVector<TandemLibraryReaderRow> &tandemLibraryReaderRows,
             const QString &outputFilePath
             );

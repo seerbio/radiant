@@ -77,6 +77,36 @@ public:
         return st;
     }
 
+    static arrow::Status buildParquetDataArrayFromString(
+            const std::vector<std::string> &vec,
+            std::shared_ptr<arrow::Array> *output
+    ) {
+
+        arrow::Status st;
+
+        arrow::StringBuilder stringBuilder = arrow::StringBuilder();
+
+        ARROW_RETURN_NOT_OK(stringBuilder.AppendValues(vec));
+        ARROW_ASSIGN_OR_RAISE(*output, stringBuilder.Finish());
+
+        return st;
+    }
+
+    static arrow::Status buildParquetDataArrayFromByteArray(
+            const std::vector<std::string> &vec,
+            std::shared_ptr<arrow::Array> *output
+    ) {
+
+        arrow::Status st;
+
+        arrow::BinaryBuilder binaryBuilder = arrow::BinaryBuilder();
+
+        ARROW_RETURN_NOT_OK(binaryBuilder.AppendValues(vec));
+        ARROW_ASSIGN_OR_RAISE(*output, binaryBuilder.Finish());
+
+        return st;
+    }
+
     template<typename T>
     static std::string qVectorToBytesStdString(const QVector<T> &vec) {
         const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);

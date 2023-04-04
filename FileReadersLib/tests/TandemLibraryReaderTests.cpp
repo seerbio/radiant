@@ -3,6 +3,7 @@
 //
 
 #include "ErrorUtils.h"
+#include "TandemLibraryReader.h"
 
 
 #include <QtTest/QtTest>
@@ -22,7 +23,26 @@ private Q_SLOTS:
 
 void TandemLibraryReaderTests::parseFastaFileTest() {
 
+    TandemLibraryReaderRow tpr;
+    tpr.peptideString = "CHAUNCYANDFLOPS";
+    tpr.intensityVals = {666.6, 66.6, 6.6};
+    for (const QString &s : {"a", "b", "c"}){
+        tpr.ionLabels.push_back(s);
+    }
 
+    const QVector<TandemLibraryReaderRow> tprs(10, tpr);
+
+    ERR_INIT
+
+    const QString &outputFilePath
+            = QDir(qApp->applicationDirPath()).filePath("pred.tPreds");
+
+    e = TandemLibraryReader::writeTandemPredictions(
+            tprs,
+            outputFilePath
+            );
+
+    QCOMPARE(e, eNoError);
 
 }
 
