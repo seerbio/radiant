@@ -45,7 +45,7 @@ public:
                 {"lastResidue", QVariant(lastResidue)},
                 {"postResidue", QVariant(postResidue)},
                 {"mass", QVariant(mass)},
-//                {"isDecoy", QVariant(isDecoy)},
+                {"isDecoy", QVariant(isDecoy)},
                 {"startIndex", QVariant(startIndex)},
                 {"endIndex", QVariant(endIndex)},
                 {"size", QVariant(size())}

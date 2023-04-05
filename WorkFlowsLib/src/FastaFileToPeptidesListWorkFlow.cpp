@@ -40,7 +40,7 @@ Err FastaFileToPeptidesListWorkFlow::exec(
             &peptideSequences
             ); ree;
 
-    *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB + S_GLOBAL_SETTINGS.DOT_CSV;
+    *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
 
     ParquetReader parquetReader;
     e = parquetReader.writeDataToParquet(

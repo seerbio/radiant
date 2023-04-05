@@ -103,7 +103,6 @@ namespace {
         arrow::Status st;
 
         const QVariant &vecFirst = vec.first();
-        qDebug() << vecFirst.typeName();
 
         if (
             vecFirst.typeName() == QStringLiteral("int") ||
@@ -115,6 +114,7 @@ namespace {
 
                 if (vecFirst.typeName() == QStringLiteral("bool")) {
                     stdVec.push_back(static_cast<int>(var.toBool()));
+                    continue;
                 }
 
                 stdVec.push_back(var.toInt());
@@ -177,7 +177,6 @@ namespace {
                 return st;
             }
         }
-
 
         if (!st.ok()) {
             einfo
