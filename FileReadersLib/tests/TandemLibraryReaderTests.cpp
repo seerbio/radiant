@@ -24,11 +24,9 @@ private Q_SLOTS:
 void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
 
     TandemLibraryReaderRow tpr;
-    tpr.peptideString = "CHAUNCYANDFLOPS";
+    tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
     tpr.intensityVals = {666.6, 66.6, 6.6};
-    for (const QString &s : {"a", "b", "c"}){
-        tpr.ionLabels.push_back(s);
-    }
+    tpr.ionLabels = QStringList({"a", "b", "c"});
 
     const QVector<TandemLibraryReaderRow> tprs(10, tpr);
 
@@ -52,7 +50,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
 
     const TandemLibraryReaderRow &tlrr = readRows.first();
 
-    QCOMPARE(tlrr.peptideString, tpr.peptideString);
+    QCOMPARE(tlrr.peptideSequenceChargeKey, tpr.peptideSequenceChargeKey);
     QCOMPARE(tlrr.intensityVals, tpr.intensityVals);
     QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
 }

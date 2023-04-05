@@ -20,12 +20,14 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/FastaFileToPeptidesListWorkFlow.cpp
         src/LibraryBuilderWorkFlow.cpp
         src/MsFraggerTronWorkFlow.cpp
         src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
+        src/FastaFileToPeptidesListWorkFlow.h
         src/LibraryBuilderWorkFlow.h
         src/MsFraggerTronWorkFlow.h
         src/PythiaDIAWorkflow.h
@@ -52,6 +54,7 @@ INCLUDE_DIRECTORIES(
 
 
 FIND_PACKAGE(Qt5 REQUIRED
+        Concurrent
         Core
         Test
         )
@@ -60,6 +63,7 @@ GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+        Qt5::Concurrent
         Qt5::Core
         Qt5::Test
         AlgorithmsLib
