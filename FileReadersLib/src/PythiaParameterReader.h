@@ -118,6 +118,7 @@ struct PythiaParameters{
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
 
+    bool replaceLeucinesWithX = true;
     bool addDecoys = true; //TODO change this to a number for rounds of decoys.
 
     [[nodiscard]] bool isValid() const {

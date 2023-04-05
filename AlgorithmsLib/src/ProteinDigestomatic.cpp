@@ -4,11 +4,13 @@
 
 #include "ProteinDigestomatic.h"
 
+#include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
 
 
 ProteinDigestomatic::ProteinDigestomatic(const PythiaParameters &params)
-: m_pythiaParams(params){}
+: m_pythiaParams(params)
+{}
 
 
 namespace {
@@ -75,15 +77,23 @@ namespace {
         peptideSequences->erase(terminator, peptideSequences->end());
     }
 
+
 }//END NAMESPACE
 Err ProteinDigestomatic::digestProtein(
-        const ProteinSequence &proteinSequence,
+        const ProteinSequence &_proteinSequence,
         QVector<PeptideSequence> *peptideSequences
         ) {
 
     ERR_INIT;
 
-    e = ErrorUtils::isNotEmpty(proteinSequence); ree;
+    e = ErrorUtils::isNotEmpty(_proteinSequence); ree;
+
+    ProteinSequence proteinSequence = _proteinSequence;
+
+    if (m_pythiaParams.replaceLeucinesWithX) {
+        proteinSequence = proteinSequence.replace('L', 'X');
+        proteinSequence = proteinSequence.replace('I', 'X');
+    }
 
     PeptideSequence peptideSequence;
 
@@ -159,6 +169,7 @@ Err ProteinDigestomatic::digestProtein(
                          peptideSequences);
 
     filterInvalidSequences(peptideSequences);
+    calculateMasses(peptideSequences);
 
     ERR_RETURN;
 }
@@ -284,4 +295,17 @@ Err ProteinDigestomatic::createRaggedSegments(QVector<PeptideSequence> *peptideS
 
     peptideSequences->append(tempPeptideSequence);
     ERR_RETURN;
+}
+
+void ProteinDigestomatic::calculateMasses(QVector<PeptideSequence> *peptideSequences) {
+
+    for (int i = 0; i < peptideSequences->size(); i++) {
+
+        PeptideSequence &ps = (*peptideSequences)[i];
+        ps.mass = BiophysicalCalcs::calculatePeptideMass(
+                ps.sequence,
+                m_pythiaParams.aminoAcids
+                );
+    }
+
 }

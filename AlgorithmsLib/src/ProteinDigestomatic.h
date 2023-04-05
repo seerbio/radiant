@@ -25,6 +25,8 @@ public:
         QChar lastResidue;
         QChar postResidue;
 
+        double mass = -1.0;
+
         bool isDecoy = false;
         int startIndex = -1;
         int endIndex = -1;
@@ -41,6 +43,8 @@ public:
 
     explicit ProteinDigestomatic(const PythiaParameters &params);
 
+    void replaceLeucinesWithX(bool value);
+
     Err digestProtein(
             const ProteinSequence &proteinSequence,
             QVector<PeptideSequence> *peptideSequences
@@ -50,6 +54,7 @@ private:
 
     Err createPartialDigestPeptides(QVector<PeptideSequence> *peptideSequences) const;
     Err createRaggedSegments(QVector<PeptideSequence> *peptideSequences) const;
+    void calculateMasses(QVector<PeptideSequence> *peptideSequences);
 
 private:
 

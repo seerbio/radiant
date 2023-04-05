@@ -41,6 +41,10 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
 
+    for (const PeptideSequence &ps: peptideSequences) {
+        qDebug() << ps.sequence << ps.mass;
+    }
+
     //write peptide sequences to
     qDebug() << "Peptides generate:" << peptideSequences.size();
     qDebug() << "Peptide Library written to:" << *outputFilePath;

@@ -30,10 +30,6 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     const QString &fastaFilePath
             = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
 
-    const QString &fastaLarge
-        = "/home/anichols/Desktop/RawData/UP000000589_10090.target.decoy.con.pepcal.20211006.fasta";
-
-
     PythiaParameters params;
     params.cTermCleavePoints = QStringList({"K", "R"});
     params.addDecoys = false;
@@ -46,13 +42,28 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     params.ms2ExtractionWidthPPM = 12.0;
     params.precursorExtractionWindowThomsons = 1.0;
 
+    Modification carboxyAmidoMethyl(
+            'C',
+            "CAM",
+            ModificationType::FIXED,
+            "C2H3NO"
+            );
+
+    params.modifications = {carboxyAmidoMethyl};
+    e = PythiaParameterReader::applyFixedModificationsToAminoAcids(
+            params,
+            &params.aminoAcids
+            );
+    QCOMPARE(e, eNoError);
+
+
     FastaFileToPeptidesListWorkFlow wf;
     e = wf.init(params);
     QCOMPARE(e, eNoError);
 
     QString outputFilePath;
     e = wf.exec(
-            fastaLarge,
+            fastaFilePath,
             &outputFilePath
             );
     QCOMPARE(e, eNoError);
