@@ -22,6 +22,14 @@
 #include <iostream>
 
 
+struct ParquetReaderInputBase {
+
+public:
+
+    virtual QMap<QString, QVariant> map() = 0;
+
+};
+
 class FILEREADERSLIB_EXPORTS ParquetReaderBase {
 
 public:

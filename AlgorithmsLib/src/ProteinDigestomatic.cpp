@@ -110,10 +110,12 @@ Err ProteinDigestomatic::digestProtein(
 
             if(!peptideSequence.sequence.isEmpty()){
 
-                setPeptideSequenceAux(startIndex,
-                                      aaPrev,
-                                      aaPost,
-                                      &peptideSequence);
+                setPeptideSequenceAux(
+                        startIndex,
+                        aaPrev,
+                        aaPost,
+                        &peptideSequence
+                        );
 
                 peptideSequences->push_back(peptideSequence);
             }
@@ -131,10 +133,12 @@ Err ProteinDigestomatic::digestProtein(
 
             peptideSequence.sequence += aa.toLatin1();
 
-            setPeptideSequenceAux(startIndex,
-                                  aaPrev,
-                                  aaPost,
-                                  &peptideSequence);
+            setPeptideSequenceAux(
+                    startIndex,
+                    aaPrev,
+                    aaPost,
+                    &peptideSequence
+                    );
 
             peptideSequences->push_back(peptideSequence);
 

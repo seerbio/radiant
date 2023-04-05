@@ -15,7 +15,7 @@ using namespace Error;
 struct CSVReaderBase {
 
 public:
-    
+
     virtual QMap<QString, QVariant> map() = 0;
 
 };
