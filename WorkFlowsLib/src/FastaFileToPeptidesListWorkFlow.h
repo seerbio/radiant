@@ -5,7 +5,7 @@
 #ifndef PYTHIADIACPP_FASTAFILETOPEPTIDESLISTWORKFLOW_H
 #define PYTHIADIACPP_FASTAFILETOPEPTIDESLISTWORKFLOW_H
 
-#include "CSVReader.h"
+#include "ParquetReader.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 #include "WorkFlowsLib_Exports.h"
@@ -34,7 +34,7 @@ private:
 
     Err digestFastaEntries(
             const QMap<ProteinId, FastaEntry> &fastaEntries,
-            QVector<QSharedPointer<CSVReaderBase>> *peptideSequences
+            QVector<QSharedPointer<ParquetReaderInputBase>> *peptideSequences
             );
 
 private:

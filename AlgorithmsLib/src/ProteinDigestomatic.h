@@ -6,7 +6,7 @@
 #define PYTHIACPP_PROTEINDIGESTOMATIC_H
 
 #include "AlgorithmsLib_Exports.h"
-#include "CSVReader.h"
+#include "ParquetReader.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 #include "Error.h"
@@ -17,7 +17,7 @@
 using namespace Error;
 
 
-class ALGORITHMSLIB_EXPORTS PeptideSequence : public CSVReaderBase {
+class ALGORITHMSLIB_EXPORTS PeptideSequence : public ParquetReaderInputBase {
 
 public:
         QString sequence;
@@ -45,7 +45,7 @@ public:
                 {"lastResidue", QVariant(lastResidue)},
                 {"postResidue", QVariant(postResidue)},
                 {"mass", QVariant(mass)},
-                {"isDecoy", QVariant(isDecoy)},
+//                {"isDecoy", QVariant(isDecoy)},
                 {"startIndex", QVariant(startIndex)},
                 {"endIndex", QVariant(endIndex)},
                 {"size", QVariant(size())}

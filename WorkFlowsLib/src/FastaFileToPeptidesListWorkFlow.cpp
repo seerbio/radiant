@@ -34,7 +34,7 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     const QMap<ProteinId, FastaEntry> fastaEntries = fastaReader.fastaEntries();
 
-    QVector<QSharedPointer<CSVReaderBase>> peptideSequences;
+    QVector<QSharedPointer<ParquetReaderInputBase>> peptideSequences;
     e = digestFastaEntries(
             fastaEntries,
             &peptideSequences
@@ -42,7 +42,8 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB + S_GLOBAL_SETTINGS.DOT_CSV;
 
-    e = CSVReader::writeDataToCSV(
+    ParquetReader parquetReader;
+    e = parquetReader.writeDataToParquet(
             *outputFilePath,
             peptideSequences
             ); ree;
@@ -76,7 +77,7 @@ namespace {
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         const QMap<ProteinId, FastaEntry> &fastaEntries,
-        QVector<QSharedPointer<CSVReaderBase>> *peptideSequences
+        QVector<QSharedPointer<ParquetReaderInputBase>> *peptideSequences
         ) {
 
     ERR_INIT
@@ -99,8 +100,8 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         e = result.first; ree;
 
         for (const PeptideSequence &ps : result.second) {
-            QSharedPointer<CSVReaderBase> csvReaderBase(new PeptideSequence(ps));
-            peptideSequences->push_back(csvReaderBase);
+            QSharedPointer<ParquetReaderInputBase> parquetReaderInputBase(new PeptideSequence(ps));
+            peptideSequences->push_back(parquetReaderInputBase);
         }
     }
 
