@@ -6,6 +6,7 @@
 
 #include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
+#include "MathUtils.h"
 
 
 ProteinDigestomatic::ProteinDigestomatic(const PythiaParameters &params)
@@ -302,10 +303,10 @@ void ProteinDigestomatic::calculateMasses(QVector<PeptideSequence> *peptideSeque
     for (int i = 0; i < peptideSequences->size(); i++) {
 
         PeptideSequence &ps = (*peptideSequences)[i];
-        ps.mass = BiophysicalCalcs::calculatePeptideMass(
+        ps.mass = MathUtils::pRound(BiophysicalCalcs::calculatePeptideMass(
                 ps.sequence,
                 m_pythiaParams.aminoAcids
-                );
+                ), 4);
     }
 
 }

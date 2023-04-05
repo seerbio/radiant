@@ -21,6 +21,7 @@ Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParamete
     ERR_RETURN
 }
 
+
 Err FastaFileToPeptidesListWorkFlow::exec(
         const QString &fastaFilePath,
         QString *outputFilePath
@@ -33,19 +34,19 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     const QMap<ProteinId, FastaEntry> fastaEntries = fastaReader.fastaEntries();
 
-    QVector<PeptideSequence> peptideSequences;
+    QVector<QSharedPointer<CSVReaderBase>> peptideSequences;
     e = digestFastaEntries(
             fastaEntries,
             &peptideSequences
             ); ree;
 
-    *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
+    *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB + S_GLOBAL_SETTINGS.DOT_CSV;
 
-    for (const PeptideSequence &ps: peptideSequences) {
-        qDebug() << ps.sequence << ps.mass;
-    }
+    e = CSVReader::writeDataToCSV(
+            *outputFilePath,
+            peptideSequences
+            ); ree;
 
-    //write peptide sequences to
     qDebug() << "Peptides generate:" << peptideSequences.size();
     qDebug() << "Peptide Library written to:" << *outputFilePath;
 
@@ -75,7 +76,7 @@ namespace {
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         const QMap<ProteinId, FastaEntry> &fastaEntries,
-        QVector<PeptideSequence> *peptideSequences
+        QVector<QSharedPointer<CSVReaderBase>> *peptideSequences
         ) {
 
     ERR_INIT
@@ -96,7 +97,11 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
     for (const QPair<Err, QVector<PeptideSequence>> &result : futures) {
         e = result.first; ree;
-        peptideSequences->append(result.second);
+
+        for (const PeptideSequence &ps : result.second) {
+            QSharedPointer<CSVReaderBase> csvReaderBase(new PeptideSequence(ps));
+            peptideSequences->push_back(csvReaderBase);
+        }
     }
 
     ERR_RETURN

@@ -14,7 +14,7 @@
 using namespace Error;
 
 
-struct FILEREADERSLIB_EXPORTS FastaEntry{
+struct FILEREADERSLIB_EXPORTS FastaEntry {
 
    QString fastaDescription;
    QString fastaSequence;

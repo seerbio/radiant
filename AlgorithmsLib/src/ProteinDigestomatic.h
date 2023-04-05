@@ -6,6 +6,7 @@
 #define PYTHIACPP_PROTEINDIGESTOMATIC_H
 
 #include "AlgorithmsLib_Exports.h"
+#include "CSVReader.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 #include "Error.h"
@@ -16,7 +17,7 @@
 using namespace Error;
 
 
-class ALGORITHMSLIB_EXPORTS PeptideSequence {
+class ALGORITHMSLIB_EXPORTS PeptideSequence : public CSVReaderBase {
 
 public:
         QString sequence;
@@ -34,6 +35,22 @@ public:
         [[nodiscard]] int size() const {
             return sequence.size();
         }
+
+        QMap<QString, QVariant> map() override {
+
+            return {
+                {"sequence", QVariant(sequence)},
+                {"previousResidue", QVariant(previousResidue)},
+                {"firstResidue", QVariant(firstResidue)},
+                {"lastResidue", QVariant(lastResidue)},
+                {"postResidue", QVariant(postResidue)},
+                {"mass", QVariant(mass)},
+                {"isDecoy", QVariant(isDecoy)},
+                {"startIndex", QVariant(startIndex)},
+                {"endIndex", QVariant(endIndex)},
+                {"size", QVariant(size())}
+            };
+        }
 };
 
 
@@ -42,8 +59,6 @@ class ALGORITHMSLIB_EXPORTS ProteinDigestomatic {
 public:
 
     explicit ProteinDigestomatic(const PythiaParameters &params);
-
-    void replaceLeucinesWithX(bool value);
 
     Err digestProtein(
             const ProteinSequence &proteinSequence,
