@@ -91,7 +91,8 @@ public:
         const bool allKeysPresent = std::all_of(
                 PeptideSequenceNamespace::keysToCheck.begin(),
                 PeptideSequenceNamespace::keysToCheck.end(),
-                keyCheckLogic);
+                keyCheckLogic
+                );
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 

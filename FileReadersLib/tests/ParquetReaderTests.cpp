@@ -108,11 +108,8 @@ void ParquetReaderTests::readWriteCombinedTest() {
 
     ERR_INIT
 
-    QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
-    for (const TestRow &tr : testRows) {
-        QSharedPointer<ParquetReaderInputBase> ptr(new TestRow(tr));
-        ptrs.push_back(ptr);
-    }
+    const QVector<QSharedPointer<ParquetReaderInputBase>> ptrs
+            = ParquetReaderInputBase::convertInputStructToSharedPointers(testRows);
 
     ParquetReader parquetReader;
     e = parquetReader.writeDataToParquet(

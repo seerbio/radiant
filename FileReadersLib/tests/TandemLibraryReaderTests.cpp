@@ -44,7 +44,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
 
     QVector<TandemLibraryReaderRow> readRows;
     e = TandemLibraryReader::readTandemPredictions(
-            outputFilePath.toStdString(),
+            outputFilePath,
             &readRows
             );
 

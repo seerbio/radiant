@@ -368,7 +368,6 @@ namespace {
         std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
         const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
         const QString typeName = QString::fromStdString(colChunks->type()->ToString());
-//        qDebug() << columnIndex << typeName;
 
         if (
             typeName == QStringLiteral("int64") ||

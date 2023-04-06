@@ -48,6 +48,37 @@ public:
         return l.join(S_GLOBAL_SETTINGS.SEPARATOR);
     }
 
+    template<typename T>
+    static QVector<QSharedPointer<ParquetReaderInputBase>> convertInputStructToSharedPointers(
+            const QVector<T> &paraquetReaderInputBaseDerivedStruct
+            ) {
+        QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
+        for (const T &tr : paraquetReaderInputBaseDerivedStruct) {
+            QSharedPointer<ParquetReaderInputBase> ptr(new T(tr));
+            ptrs.push_back(ptr);
+        }
+
+        return ptrs;
+    }
+
+    template<typename T>
+    static Err convertSharedPointersToInputStruct(
+            const QVector<ParquetReaderInputBase> &parquetReaderInputBases,
+            QVector<T> *outputStructs
+    ) {
+
+        ERR_INIT
+
+        for (const ParquetReaderInputBase &prib : parquetReaderInputBases) {
+            T strct;
+            e = strct.initFromRead(prib); ree;
+            outputStructs->push_back(strct);
+        }
+
+        ERR_RETURN
+    }
+
+
 protected:
 
     QMap<QString, QVariant> m_dataMap;
