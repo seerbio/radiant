@@ -677,22 +677,13 @@ MsReaderMzML::~MsReaderMzML() {
 }
 
 
-Err MsReaderMzML::openFile(
-        const QString &filePath,
-        bool useCache
-        ) {
+Err MsReaderMzML::openFile(const QString &filePath) {
 
     ERR_INIT
 
     const QString cacheFileURI = filePath + S_GLOBAL_SETTINGS.DOT_CACHE;
 
-    if (cacheExists(cacheFileURI) && useCache) {
-        qDebug() << "Reading from" << cacheFileURI;
-        return readFromCache(cacheFileURI);
-    }
-
     e = m_d->openFile(filePath); ree;
-    e = createMsReaderCache(cacheFileURI); ree;
 
     ERR_RETURN
 }

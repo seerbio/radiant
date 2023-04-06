@@ -154,10 +154,7 @@ public:
 
     ~MsReaderBase() = default;
 
-    virtual Err openFile(
-            const QString &filePath,
-            bool useCache = true
-            );
+    virtual Err openFile(const QString &filePath);
 
     virtual Err closeFile();
 
@@ -188,12 +185,6 @@ public:
             const ScanPoints &scanPoints,
             const ScanPointsSort &sort = ScanPointsSort::AscMz
                     );
-
-    Err createMsReaderCache(const QString &cacheFilePath);
-
-    Err readFromCache(const QString &cacheFileURI);
-
-    static bool cacheExists(const QString &mzMLFileURI);
 
     int getNearestScanNumberFromScanTime(double scanTime);
 

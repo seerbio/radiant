@@ -238,7 +238,7 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     const QString filePath = "/home/anichols/Desktop/RawData/EXP21155_2021ms0609X7_A.raw.mzML";
 
     MsReaderMzML msReaderMzMl;
-    msReaderMzMl.openFile(filePath, false);
+    msReaderMzMl.openFile(filePath);
 
     FeatureFinderParameters params;
     params.skipScanCount = 3;

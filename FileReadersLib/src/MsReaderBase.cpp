@@ -126,10 +126,7 @@ ScanPoints MsReaderBase::sortScanPoints(
     return vd;
 }
 
-Err MsReaderBase::openFile(
-        const QString &filePath,
-        bool useCache
-        ) {
+Err MsReaderBase::openFile(const QString &filePath) {
     return Error::eNoError;
 }
 
@@ -210,35 +207,6 @@ namespace {
     }
 
 }//namespace
-Err MsReaderBase::createMsReaderCache(const QString &cacheFilePath) {
-
-    ERR_INIT
-
-    QElapsedTimer et;
-    et.start();
-
-    e = ErrorUtils::isNotEmpty(cacheFilePath); ree;
-    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
-    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
-
-    QFile writeFile(cacheFilePath);
-    if (!writeFile.open(QIODevice::WriteOnly)) {
-        qDebug() << "Could not write to file:" << cacheFilePath
-                 << "Error string:" << writeFile.errorString();
-        return Error::eFileError;
-    }
-
-    QDataStream out(&writeFile);
-    out.setVersion(QDataStream::Qt_5_12);
-    out << m_scanIons;
-    out << m_msScanInfo;
-
-    qDebug() << "Ms File Ions written in" << et.elapsed() << "mSec";
-    qDebug() << "Ms FileIons library written to:" << cacheFilePath;
-
-    ERR_RETURN
-}
-
 QVector<TandemScanIon> MsReaderBase::sortTandemScanIonsInChunks(
         QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass
         ) {
@@ -252,44 +220,6 @@ QVector<TandemScanIon> MsReaderBase::sortTandemScanIonsInChunks(
     return sortedTandemScanIons;
 }
 
-Err MsReaderBase::readFromCache(const QString &cacheFileURI) {
-
-    ERR_INIT
-
-    QElapsedTimer et;
-    et.start();
-
-    m_scanIons.clear();
-    m_msScanInfo.clear();
-
-    QFile readFile(cacheFileURI);
-    QDataStream in(&readFile);
-
-    in.setVersion(QDataStream::Qt_5_12);
-
-    if (!readFile.open(QIODevice::ReadOnly)) {
-        qDebug() << "Could not read the file:" << cacheFileURI
-                 << "Error string:" << readFile.errorString();
-        return Error::eFileError;
-    }
-
-    in >> m_scanIons;
-    in >> m_msScanInfo;
-
-    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
-    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
-
-    qDebug() << "Tandem Scan Ions loaded from" << cacheFileURI
-             << "in" <<  et.elapsed() << "mSec";
-
-    ERR_RETURN
-}
-
-bool MsReaderBase::cacheExists(const QString &cacheFileURI) {
-
-    QFileInfo fi(cacheFileURI);
-    return fi.exists();
-}
 
 Err MsReaderBase::tandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
 
