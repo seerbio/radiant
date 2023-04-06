@@ -142,7 +142,6 @@ void ParquetReaderTests::readWriteCombinedTest() {
     QCOMPARE(readRow.i, testRow.i);
     QCOMPARE(readRow.f, testRow.f);
     QCOMPARE(readRow.b, testRow.b);
-
 }
 
 

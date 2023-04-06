@@ -30,6 +30,7 @@ struct FILEREADERSLIB_EXPORTS ScanInfo {
 struct FILEREADERSLIB_EXPORTS ParquetRow {
 
     double mz = -1.0;
+    double ionMobility = -1.0;
     float intensity = -1.0;
     int msLevel = -1;
     int scanNumber = 1;
