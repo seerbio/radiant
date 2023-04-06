@@ -45,7 +45,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
         QVector<int> testVecInt;
         QVector<float> testVecFloat;
         QVector<bool> testVecBool;
-        QStringList ionLabels;
+        QStringList testStringList;
         double d;
         int i;
         float f;
@@ -60,7 +60,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
                 {"testVecInt", QVariant(qVectorToQByteArray(testVecInt))},
                 {"testVecFloat", QVariant(qVectorToQByteArray(testVecFloat))},
                 {"testVecBool", QVariant(qVectorToQByteArray(testVecBool))},
-                {"ionLabels", QVariant(joinQStringList(ionLabels))},
+                {"testStringList", QVariant(joinQStringList(testStringList))},
                 {"d", QVariant(d)},
                 {"i", QVariant(i)},
                 {"f", QVariant(f)},
@@ -69,9 +69,31 @@ void ParquetReaderTests::readWriteCombinedTest() {
             };
         }
 
-
-
     };
+
+    TestRow testRow;
+    testRow.testString = QStringLiteral("Bellatrix and Kalliope are the best kittehs eva");
+    testRow.testVecDouble = {666.6, 66.6, 6.6};
+    testRow.testVecInt = {666, 666, 666};
+    testRow.testVecFloat = {666.6, 66.6, 6.6};;
+    testRow.testVecBool = {true, false};
+    testRow.testStringList = QStringList({"Chauncy", "Flops"});
+    testRow.d = 666.6;
+    testRow.i = 666;
+    testRow.f = 666.6;
+    testRow.b = false;
+    testRow.s = QStringLiteral("RIP Thor");
+
+    QVector<TestRow> testRows(10, testRow);
+
+    const QString &testFilePath
+            = QDir(qApp->applicationDirPath()).filePath("test_write.parquet");
+
+    ERR_INIT
+
+    ParquetReader parquetReader;
+    e = parquetReader.writeDataToParquet(testFilePath, testRows);
+    QCOMPARE(e, eNoError);
 
 }
 
