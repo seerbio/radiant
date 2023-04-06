@@ -17,7 +17,35 @@ struct FILEREADERSLIB_EXPORTS ParquetReaderInputBase {
 
 public:
 
-    virtual QMap<QString, QVariant> map() = 0;
+    ParquetReaderInputBase() = default;
+    ~ParquetReaderInputBase() = default;
+
+    virtual QMap<QString, QVariant> map() {return {};}
+
+    void setDataMap(const QMap<QString, QVariant> &dataMap) {
+        m_dataMap = dataMap;
+    }
+
+    QMap<QString, QVariant> dataMap() const {
+        return m_dataMap;
+    }
+
+    template<typename T>
+    static std::string qVectorToBytesStdString(const QVector<T> &vec) {
+        const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);
+        std::string arrStr = arr.toStdString();
+        return arrStr;
+    }
+
+    template<typename T>
+    static QVector<T> bytesStdStringToQVector(const std::string &bytesStdString) {
+        const QVector<T> vec = SqlUtils::decodeBLOB<T>(QByteArray::fromStdString(bytesStdString));
+        return vec;
+    }
+
+protected:
+
+    QMap<QString, QVariant> m_dataMap;
 
 };
 
@@ -33,15 +61,15 @@ public:
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
             );
 
-
+    Err readDataFromParquet(
+            const QString &parquetFilePath,
+            QVector<ParquetReaderInputBase> *rowsRead
+            );
 
 private:
 
     Q_DISABLE_COPY(ParquetReader) class Private;
     const QScopedPointer<Private> d_ptr;
-
-
-
 
 };
 

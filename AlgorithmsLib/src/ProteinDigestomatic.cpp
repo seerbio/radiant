@@ -5,7 +5,6 @@
 #include "ProteinDigestomatic.h"
 
 #include "BiophysicalCalcs.h"
-#include "ErrorUtils.h"
 #include "MathUtils.h"
 
 
