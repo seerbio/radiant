@@ -27,20 +27,18 @@ public:
         m_dataMap = dataMap;
     }
 
-    QMap<QString, QVariant> dataMap() const {
+    [[nodiscard]] QMap<QString, QVariant> dataMap() const {
         return m_dataMap;
     }
 
     template<typename T>
     static QByteArray qVectorToQByteArray(const QVector<T> &vec) {
-//        const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);
-//        std::string arrStr = arr.toStdString();
         return SqlUtils::encodeBLOB<T>(vec);;
     }
 
     template<typename T>
-    static QVector<T> bytesStdStringToQVector(const std::string &bytesStdString) {
-        const QVector<T> vec = SqlUtils::decodeBLOB<T>(QByteArray::fromStdString(bytesStdString));
+    static QVector<T> bytesArrayToQVector(const QByteArray &bytesString) {
+        const QVector<T> vec = SqlUtils::decodeBLOB<T>(bytesString);
         return vec;
     }
 
