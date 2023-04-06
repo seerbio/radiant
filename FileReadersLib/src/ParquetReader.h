@@ -7,6 +7,7 @@
 
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "GlobalSettings.h"
 #include "SqlUtils.h"
 
 #include <QDebug>
@@ -31,16 +32,20 @@ public:
     }
 
     template<typename T>
-    static std::string qVectorToBytesStdString(const QVector<T> &vec) {
-        const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);
-        std::string arrStr = arr.toStdString();
-        return arrStr;
+    static QByteArray qVectorToQByteArray(const QVector<T> &vec) {
+//        const QByteArray arr = SqlUtils::encodeBLOB<T>(vec);
+//        std::string arrStr = arr.toStdString();
+        return SqlUtils::encodeBLOB<T>(vec);;
     }
 
     template<typename T>
     static QVector<T> bytesStdStringToQVector(const std::string &bytesStdString) {
         const QVector<T> vec = SqlUtils::decodeBLOB<T>(QByteArray::fromStdString(bytesStdString));
         return vec;
+    }
+
+    static QString joinQStringList(const QStringList &l) {
+        return l.join(S_GLOBAL_SETTINGS.SEPARATOR);
     }
 
 protected:

@@ -19,7 +19,7 @@ SET(TEST_CLASSES
         MsParquetReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
-        ParquetReaderBaseTests
+        ParquetReaderTests
         PythiaParameterReaderTests
         TandemLibraryReaderTests
 )
