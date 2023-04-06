@@ -67,7 +67,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
             };
         }
 
-        Err initFromRead(const ParquetReaderInputBase &row) {
+        Err initFromRead(const ParquetReaderInputBase &row) override {
 
             ERR_INIT
 

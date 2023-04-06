@@ -23,6 +23,8 @@ public:
 
     virtual QMap<QString, QVariant> map() {return {};}
 
+    virtual Err initFromRead(const ParquetReaderInputBase &row) {return Error::eNoError;}
+
     void setDataMap(const QMap<QString, QVariant> &dataMap) {
         m_dataMap = dataMap;
     }

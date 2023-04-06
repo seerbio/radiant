@@ -96,10 +96,18 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
             );
     futures.waitForFinished();
 
+    QHash<PeptideString , bool> entered;
     for (const QPair<Err, QVector<PeptideSequence>> &result : futures) {
         e = result.first; ree;
 
         for (const PeptideSequence &ps : result.second) {
+
+            if (entered.value(ps.sequence)) {
+                continue;
+            }
+
+            entered[ps.sequence] = true;
+
             QSharedPointer<ParquetReaderInputBase> parquetReaderInputBase(new PeptideSequence(ps));
             peptideSequences->push_back(parquetReaderInputBase);
         }
