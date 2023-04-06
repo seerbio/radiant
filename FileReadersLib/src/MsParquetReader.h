@@ -7,14 +7,12 @@
 
 
 #include "FileReadersLib_Exports.h"
-#include "ParquetReaderBase.h"
+#include "GlobalSettings.h"
 
 #include <QMap>
 #include <vector>
 
 //using namespace Error;
-using ScanNumber = int;
-using ScanPoints = QVector<QPointF>;
 
 struct FILEREADERSLIB_EXPORTS ScanInfo {
     int msLevel = 1;
@@ -42,16 +40,16 @@ struct FILEREADERSLIB_EXPORTS ParquetRow {
 };
 
 
-class FILEREADERSLIB_EXPORTS MsParquetReader : public ParquetReaderBase {
+class FILEREADERSLIB_EXPORTS MsParquetReader {
 
 public:
 
     MsParquetReader() = default;
     ~MsParquetReader() = default;
 
-    bool readFile(const std::string &fileURI) override;
+    bool readFile(const std::string &fileURI);
 
-    bool writeFile(const std::string &outputFilePath) override;
+    bool writeFile(const std::string &outputFilePath);
 
     bool getScans(
             int msLevel,
