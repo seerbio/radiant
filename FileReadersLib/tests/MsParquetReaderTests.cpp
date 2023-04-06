@@ -2,7 +2,7 @@
 // Created by anichols on 11/07/2021.
 //
 
-#include "MsParquetReader.h"
+#include "MsReaderParquet.h"
 
 #include <QtTest/QtTest>
 
@@ -29,7 +29,7 @@ void MsParquetReaderTests::readFileTest() {
     const QString &msParquetFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
 
-    MsParquetReader reader;
+    MsReaderParquet reader;
 
     bool e;
     e = reader.readFile(msParquetFilePath.toStdString());
@@ -42,7 +42,7 @@ void MsParquetReaderTests::getScansTest() {
     const QString &msParquetFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
 
-    MsParquetReader reader;
+    MsReaderParquet reader;
 
     bool e;
     e = reader.readFile(msParquetFilePath.toStdString());
@@ -65,7 +65,7 @@ void MsParquetReaderTests::getScansInfoTest() {
     const QString &msParquetFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
 
-    MsParquetReader reader;
+    MsReaderParquet reader;
 
     bool e;
     e = reader.readFile(msParquetFilePath.toStdString());
@@ -92,7 +92,7 @@ void MsParquetReaderTests::writeFileTest() {
     const QString &msParquetFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
 
-    MsParquetReader reader;
+    MsReaderParquet reader;
 
     bool e;
     e = reader.readFile(msParquetFilePath.toStdString());

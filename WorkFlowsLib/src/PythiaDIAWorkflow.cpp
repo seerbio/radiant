@@ -7,7 +7,7 @@
 #include "ErrorUtils.h"
 #include "MsFraggerTronResultsReader.h"
 #include "MsFraggerTronWorkFlow.h"
-#include "MsParquetReader.h"
+#include "MsReaderParquet.h"
 #include "MsReaderBase.h"
 #include "ParallelUtils.h"
 
@@ -39,7 +39,7 @@ Err PythiaDIAWorkflow::processFile(const QString &mzmlFilePath) {
     const QString &msParquetFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
 
-    MsParquetReader reader;
+    MsReaderParquet reader;
 
     bool te;
     te = reader.readFile(msParquetFilePath.toStdString());

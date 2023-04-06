@@ -40,12 +40,12 @@ struct FILEREADERSLIB_EXPORTS ParquetRow {
 };
 
 
-class FILEREADERSLIB_EXPORTS MsParquetReader {
+class FILEREADERSLIB_EXPORTS MsReaderParquet {
 
 public:
 
-    MsParquetReader() = default;
-    ~MsParquetReader() = default;
+    MsReaderParquet() = default;
+    ~MsReaderParquet() = default;
 
     bool readFile(const std::string &fileURI);
 

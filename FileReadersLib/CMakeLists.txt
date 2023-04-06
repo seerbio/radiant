@@ -24,7 +24,7 @@ SET(SOURCE_FILES
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
         src/MsFraggerTronResultsReader.cpp
-        src/MsParquetReader.cpp
+        src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/ParquetReader.cpp
@@ -37,7 +37,7 @@ SET(HEADER_FILES
         src/FastaReader.h
         src/JsonParametersReader.h
         src/MsFraggerTronResultsReader.h
-        src/MsParquetReader.h
+        src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/ParquetReader.h

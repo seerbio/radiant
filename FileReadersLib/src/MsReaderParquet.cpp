@@ -2,7 +2,7 @@
 // Created by anichols on 2/6/23.
 //
 
-#include "MsParquetReader.h"
+#include "MsReaderParquet.h"
 
 //#include "ErrorUtils.h"
 //#include "StringUtils.h"
@@ -12,13 +12,13 @@
 #include <iostream>
 
 
-bool MsParquetReader::readFile(const std::string &fileURI) {
+bool MsReaderParquet::readFile(const std::string &fileURI) {
 
 
     return true;
 }
 
-bool MsParquetReader::getScans(
+bool MsReaderParquet::getScans(
         int msLevel,
         QMap<ScanNumber, ScanPoints> *scanPoints
         ) {
@@ -41,7 +41,7 @@ bool MsParquetReader::getScans(
     return true;
 }
 
-bool MsParquetReader::getScansInfo(QMap<ScanNumber, ScanInfo> *scansInfo) {
+bool MsReaderParquet::getScansInfo(QMap<ScanNumber, ScanInfo> *scansInfo) {
 
     if (m_parquetRows.empty()) {
         return false;
@@ -69,16 +69,16 @@ bool MsParquetReader::getScansInfo(QMap<ScanNumber, ScanInfo> *scansInfo) {
 }
 
 
-bool MsParquetReader::writeFile(const std::string &outputFilePath){
+bool MsReaderParquet::writeFile(const std::string &outputFilePath){
 
 
     return true;
 }
 
-void MsParquetReader::clearParquetRows() {
+void MsReaderParquet::clearParquetRows() {
     m_parquetRows.clear();
 }
 
-void MsParquetReader::addParquetRowToParquetRows(const ParquetRow &parquetRow) {
+void MsReaderParquet::addParquetRowToParquetRows(const ParquetRow &parquetRow) {
     m_parquetRows.push_back(parquetRow);
 }
