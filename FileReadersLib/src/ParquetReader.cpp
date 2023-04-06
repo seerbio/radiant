@@ -10,10 +10,11 @@
 #include <arrow/csv/api.h>
 #include <arrow/filesystem/localfs.h>
 #include <arrow/io/api.h>
-#include <arrow/ipc/api.h>
 
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
+
+#include <iostream>
 
 
 class Q_DECL_HIDDEN ParquetReader::Private
@@ -89,9 +90,9 @@ namespace {
     ) {
         arrow::Status st;
 
-        ArrowBuilderType stringOrBinaryBuilder;
-        ARROW_RETURN_NOT_OK(stringOrBinaryBuilder.AppendValues(vec));
-        ARROW_ASSIGN_OR_RAISE(*output, stringOrBinaryBuilder.Finish());
+        ArrowBuilderType stringOrBinaryArraybuilder;
+        ARROW_RETURN_NOT_OK(stringOrBinaryArraybuilder.AppendValues(vec));
+        ARROW_ASSIGN_OR_RAISE(*output, stringOrBinaryArraybuilder.Finish());
 
         return st;
     }
@@ -164,10 +165,12 @@ namespace {
 
             std::vector<std::string> stdVec;
             for (const QVariant &var : vec) {
-                stdVec.push_back(var.toString().toStdString());
+                const std::string arrStr = var.toByteArray().toStdString();
+                stdVec.push_back(arrStr);
             }
 
             if (vecFirst.typeName() == QStringLiteral("QByteArray")) {
+
                 st = buildParquetDataArrayFromString<arrow::BinaryBuilder>(stdVec, arrowArr);
             }
             else {
@@ -365,7 +368,7 @@ namespace {
         std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
         const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
         const QString typeName = QString::fromStdString(colChunks->type()->ToString());
-        qDebug() << columnIndex << typeName;
+//        qDebug() << columnIndex << typeName;
 
         if (
             typeName == QStringLiteral("int64") ||
@@ -521,11 +524,6 @@ Err ParquetReader::Private::readDataFromParquet(
             table,
             &columnsMap
             ); ree;
-
-    for (auto it = columnsMap.begin(); it != columnsMap.end(); it++) {
-        qDebug() << it.key();
-        qDebug() << it.value().first();
-    }
 
     e = columnsMapToRowsMap(
             columnsMap,

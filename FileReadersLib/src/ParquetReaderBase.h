@@ -104,6 +104,7 @@ public:
             const std::vector<std::string> &vec,
             std::shared_ptr<arrow::Array> *output
     ) {
+        std::cout << vec[0] << std::endl;
 
         arrow::Status st;
 
