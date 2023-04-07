@@ -22,15 +22,15 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/FastaFileToPeptidesListWorkFlow.cpp
         src/LibraryBuilderWorkFlow.cpp
-        src/MsFraggerTronWorkFlow.cpp
-        src/PythiaDIAWorkflow.cpp
+#        src/MsFraggerTronWorkFlow.cpp
+#        src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
         src/FastaFileToPeptidesListWorkFlow.h
         src/LibraryBuilderWorkFlow.h
-        src/MsFraggerTronWorkFlow.h
-        src/PythiaDIAWorkflow.h
+#        src/MsFraggerTronWorkFlow.h
+#        src/PythiaDIAWorkflow.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

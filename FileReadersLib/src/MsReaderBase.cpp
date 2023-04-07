@@ -13,26 +13,6 @@
 #include <iostream>
 
 
-QMap<ScanNumber, bool>  MsReaderBase::buildSkipNAllowableIndexesMs2(int skipEveryNScans) {
-
-    const QList<ScanNumber> &scanNumbers = m_msScanInfo.keys();
-
-    QMap<ScanNumber, bool> ms2SkipScanNumbers;
-    for (int i = 0; i < scanNumbers.size(); i++) {
-
-        const MsScanInfo &msScanInfo = m_msScanInfo.value(i);
-
-        if (i % skipEveryNScans != 0 || msScanInfo.msLevel == 1) {
-            ms2SkipScanNumbers.insert(scanNumbers.value(i), false);
-            continue;
-        }
-
-        ms2SkipScanNumbers.insert(scanNumbers.value(i), true);
-    }
-
-    return ms2SkipScanNumbers;
-}
-
 Err MsReaderBase::getScanInfo(
         ScanNumber scanNumber,
         MsScanInfo *msScanInfo
@@ -42,40 +22,6 @@ Err MsReaderBase::getScanInfo(
 
     e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
     *msScanInfo = m_msScanInfo.value(scanNumber);
-
-    ERR_RETURN
-}
-
-Err MsReaderBase::buildScanPointsByScanNumber(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber) {
-
-    ERR_INIT
-    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
-
-    for (const ScanIon &si : m_scanIons) {
-        (*scanPointsByScanNumber)[si.scanNumber].push_back({si.mz, si.intensity});
-    }
-
-    ERR_RETURN
-}
-
-Err MsReaderBase::buildScanPointsByScanNumber(
-        MsLevel msLevel,
-        QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber
-) {
-    ERR_INIT
-    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
-
-    for (const ScanIon &si : m_scanIons) {
-
-        MsScanInfo msScanInfo;
-        e = getScanInfo(si.scanNumber, &msScanInfo);
-
-        if (msScanInfo.msLevel != msLevel) {
-            continue;
-        }
-
-        (*scanPointsByScanNumber)[si.scanNumber].push_back({si.mz, si.intensity});
-    }
 
     ERR_RETURN
 }
@@ -148,13 +94,15 @@ int MsReaderBase::getNearestScanNumberFromScanTime(double scanTime) {
     return keys.at(nearestIndex);
 }
 
-QString MsReaderBase::buildUniqueTandemWindowKey(const MsScanInfo &si) {
+QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 
-    QString key = QString::number(si.precursorTargetMz - si.precursorWindowOffsetLower)
-                + MsReaderBase::separator()
-                + QString::number(si.precursorTargetMz + si.precursorWindowOffsetUpper);
+    QMap<ScanNumber, double> scanNumberVsScanTime;
 
-    return key;
+    for (const MsScanInfo &msi : m_msScanInfo) {
+        scanNumberVsScanTime.insert(msi.scanNumber, msi.scanTime);
+    }
+
+    return scanNumberVsScanTime;
 }
 
 Err MsReaderBase::splitScanPoints(
@@ -175,107 +123,10 @@ Err MsReaderBase::splitScanPoints(
     ERR_RETURN
 }
 
-QMap<ScanNumber, double> MsReaderBase::retentionTimeByScanNumber() const {
+QMap<ScanNumber, ScanPoints> MsReaderBase::scanNumberVsScanPoints(int msLevel) {
 
-    QMap<ScanNumber, double> retentionTimeByScanNumber;
-
-    for (const MsScanInfo &msi : m_msScanInfo) {
-        retentionTimeByScanNumber.insert(msi.scanNumber, msi.scanTime);
-    }
-
-    return retentionTimeByScanNumber;
-}
-
-namespace {
-
-    void sortTandemScanIons(QVector<TandemScanIon> &tandemScanIons) {
-
-        const double fudgeFactor = 0.0001;
-        const auto sortLogic = [fudgeFactor](const TandemScanIon &l, const TandemScanIon &r){
-
-            const int lmz = static_cast<int>(std::round(l.mz / fudgeFactor));
-            const int rmz = static_cast<int>(std::round(r.mz / fudgeFactor));
-
-            if (lmz == rmz) {
-                return l.precursorTargetMz < r.precursorTargetMz;
-            }
-
-            return lmz < rmz;
-        };
-
-        std::sort(tandemScanIons.begin(), tandemScanIons.end(), sortLogic);
-    }
-
-}//namespace
-QVector<TandemScanIon> MsReaderBase::sortTandemScanIonsInChunks(
-        QMap<NominalMzMass, QVector<TandemScanIon>> *scanIonsByNominalMass
-        ) {
-
-    QVector<TandemScanIon> sortedTandemScanIons;
-    for (auto it = scanIonsByNominalMass->begin(); it != scanIonsByNominalMass->end(); it++) {
-        QVector<TandemScanIon> &tandemMsIonsAtNominalMzFrag = it.value();
-        sortTandemScanIons(tandemMsIonsAtNominalMzFrag);
-    }
-
-    return sortedTandemScanIons;
-}
+    QMap<ScanNumber, ScanPoints> pointsOfReturn;
 
 
-Err MsReaderBase::tandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
-
-    ERR_INIT
-    e = ErrorUtils::isNotEmpty(m_scanIons); ree;
-    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
-
-    QMap<NominalMzMass, QVector<TandemScanIon>> scanIonsByNominalMass;
-
-    MsScanInfo msScanInfo;
-    for (const ScanIon &si : m_scanIons) {
-
-        if (msScanInfo.scanNumber != si.scanNumber) {
-            msScanInfo = m_msScanInfo.value(si.scanNumber);
-            e = ErrorUtils::isNotEqual(msScanInfo.scanNumber, -1); ree;
-        }
-
-        if (msScanInfo.msLevel == 1) {
-            continue;
-        }
-
-        TandemScanIon tsi;
-        tsi.scanNumber = si.scanNumber;
-        tsi.mz = si.mz;
-        tsi.intensity = si.intensity;
-        tsi.precursorTargetMz = msScanInfo.precursorTargetMz;
-        tsi.precursorTargetLowerWindow = msScanInfo.precursorWindowOffsetLower;
-        tsi.precursorTargetUpperWindow = msScanInfo.precursorWindowOffsetUpper;
-
-        const auto nominalMzMass = static_cast<NominalMzMass>(std::round(tsi.mz));
-        scanIonsByNominalMass[nominalMzMass].push_back(tsi);
-
-    }
-
-    sortTandemScanIonsInChunks(&scanIonsByNominalMass);
-
-    for (const QVector<TandemScanIon> &tsi : scanIonsByNominalMass) {
-        tandemScanIons->append(tsi);
-    }
-
-    ERR_RETURN
-}
-
-
-Err MsReaderBase::sortDIATandemScansByMzTarget(
-        const QVector<TandemScanIon> &tandemScanIons,
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaFrames
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(tandemScanIons); ree;
-
-    for (const TandemScanIon &tsi : tandemScanIons) {
-        (*diaFrames)[tsi.targetScanKey()][tsi.scanNumber].push_back({tsi.mz, tsi.intensity});
-    }
-
-    ERR_RETURN
+    return {};
 }

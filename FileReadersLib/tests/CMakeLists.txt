@@ -16,9 +16,9 @@ INCLUDE_DIRECTORIES(
 SET(TEST_CLASSES
         FastaReaderTests
         JsonParameterReaderTests
-        MsParquetReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
+        MsReaderParquetTests
         ParquetReaderTests
         PythiaParameterReaderTests
         TandemLibraryReaderTests

@@ -13,6 +13,7 @@
 
 using Charge = int;
 using FragLibIonPeptideId = int;
+using IonMobilityIndex = int;
 using IsolationWindowKey = QString;
 using ModificationMass = double;
 using MsLevel = int;
@@ -32,6 +33,7 @@ using ScanNumber = int;
 using ScanNumberIndex = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;
+using ScanTime = double;
 using TandemScansIndex = int;
 using TARGETMZ = double;
 using Tranche = int;

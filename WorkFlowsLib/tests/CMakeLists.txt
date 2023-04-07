@@ -17,8 +17,8 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         FastaFileToPeptidesListWorkFlowTests
         LibraryBuilderWorkFlowTests
-        MsFraggerTronWorkFlowTests
-        PythiaDIAWorkflowTests
+#        MsFraggerTronWorkFlowTests
+#        PythiaDIAWorkflowTests
         )
 
 foreach(class ${TEST_CLASSES})

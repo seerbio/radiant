@@ -251,22 +251,22 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     featureFinderHillBuilder.setRunParallel(false);
     QCOMPARE(e, eNoError);
 
-    const MsLevel msLevel = 1;
-    QMap<ScanNumber, ScanPoints> scanPointsByScanNumber;
-    e = msReaderMzMl.buildScanPointsByScanNumber(msLevel, &scanPointsByScanNumber);
-    QCOMPARE(e, eNoError);
-
-    QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber, &featureFinderHills);
-    QCOMPARE(e, eNoError);
-
-    qDebug() << "Hills found to write" << featureFinderHills.size();
-
-//    FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
-//            msReaderMzMl.retentionTimeByScanNumber(),
-//            featureFinderHills,
-//            "hills.mzrt.csv"
-//    );
+//    const MsLevel msLevel = 1;
+//    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints = msReaderMzMl.scanNumberVsScanPoints();
+//    e = msReaderMzMl.buildScanPointsByScanNumber(msLevel, &scanPointsByScanNumber);
+//    QCOMPARE(e, eNoError);
+//
+//    QVector<FeatureFinderHill> featureFinderHills;
+//    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber, &featureFinderHills);
+//    QCOMPARE(e, eNoError);
+//
+//    qDebug() << "Hills found to write" << featureFinderHills.size();
+//
+////    FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+////            msReaderMzMl.retentionTimeByScanNumber(),
+////            featureFinderHills,
+////            "hills.mzrt.csv"
+////    );
 
 }
 

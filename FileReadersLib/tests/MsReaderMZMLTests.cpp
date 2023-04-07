@@ -40,27 +40,22 @@ void MsReaderMZMLTests::openFileTest() {
 //    QSKIP("Waiting for small file");
     ERR_INIT
 
-    const QString cacheName = m_filepath + S_GLOBAL_SETTINGS.DOT_CACHE;
-
     MsReaderMzML reader;
     e = reader.openFile(m_filepath);
     QCOMPARE(e, Error::eNoError);
+    QCOMPARE(reader.m_msScanInfo.size(), 26010);
+    QCOMPARE(reader.m_scanPoints.size(), 26010);
 
-////    e = reader.createTandemScanIonsCache(cacheName);
-////    QCOMPARE(e, Error::eNoError);
-//
-//    e = reader.readFromCache(cacheName);
-//    QCOMPARE(e, Error::eNoError);
-//
-////    e = reader.buildUniqueTandemScanIons();
-////    QCOMPARE(e, Error::eNoError);
-//
-//    qDebug() << "IONS SIZE" << reader.m_tandemScanIons.size();
-//    qDebug() << "UNIQUES IONS SIZE" << reader.m_uniqueTandemScanIons.size();
+    MsScanInfo msScanInfo;
+    e = reader.getScanInfo(666, &msScanInfo);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(msScanInfo.scanNumber, 666);
+    QCOMPARE(msScanInfo.msLevel, 2);
+    QCOMPARE(msScanInfo.collisionEnergy, 28);
+    QCOMPARE(QString::number(msScanInfo.scanTime), "0.826693");
+    QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "725.079");
 
 }
-
-
 
 QTEST_MAIN(MsReaderMZMLTests)
 #include "MsReaderMZMLTests.moc"
