@@ -18,9 +18,6 @@ public:
 private Q_SLOTS:
 
 
-
-
-
 private:
     //TODO use proper path procedures.
     const QString m_filepath

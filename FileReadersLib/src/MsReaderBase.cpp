@@ -12,6 +12,13 @@
 
 #include <iostream>
 
+void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
+    m_msScanInfo = msScanInfos;
+}
+
+void MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
+    m_scanPoints = scanPoints;
+}
 
 Err MsReaderBase::getScanInfo(
         ScanNumber scanNumber,
@@ -203,3 +210,11 @@ Err MsReaderBase::getScanPoints(
 
     ERR_RETURN
 }
+
+void MsReaderBase::printSize() {
+    qDebug() << "MsScanInfo size" << m_msScanInfo.size();
+    qDebug() << "ScanPoints size" << m_scanPoints.size();
+
+}
+
+

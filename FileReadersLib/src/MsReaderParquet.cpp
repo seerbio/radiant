@@ -131,6 +131,9 @@ Err MsReaderParquet::writeMsReaderToParquet(
     QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
     e = buildRowsToWrite(sharedMsReaderBase, &ptrs); ree;
 
+    qDebug() << "SDFS" << ptrs.size();
+    e = ErrorUtils::isNotEmpty(ptrs); ree;
+
     ParquetReader reader;
     e = reader.writeDataToParquet(
             outputFilePath,

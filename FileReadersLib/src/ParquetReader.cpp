@@ -553,6 +553,8 @@ Err ParquetReader::writeDataToParquet(
             rowsToWrite
             ); ree;
 
+    qDebug() << "PQR file saved to" << outputFilePath;
+
     ERR_RETURN
 }
 

@@ -4,13 +4,17 @@
 
 #include <QFileInfo>
 
-Err ErrorUtils::fileExists(const QString &filePath, Err e) {
+Err ErrorUtils::fileExists(const QString &filePath) {
 
     QFileInfo fi(filePath);
 
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+
     if (!fi.exists() || !fi.isFile()) {
         qDebug() << filePath << "not found";
-        rrr(e);
+        rrr(eFileError);
     }
 
     return eNoError;

@@ -28,6 +28,7 @@ public:
 
     Err closeFile() override;
 
+    MsReaderBase msReaderBase();
 
 private:
 

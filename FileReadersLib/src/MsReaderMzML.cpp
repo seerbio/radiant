@@ -103,8 +103,7 @@ private:
     Err parseScan(QXmlStreamReader &reader);
 
 
-private:
-
+public:
     QScopedPointer<QFile> m_file;
     QMap<ScanNumber, MsScanInfo> *m_msScanInfo;
     QMap<ScanNumber, ScanPoints> *m_scanPoints;
@@ -184,7 +183,6 @@ Err MsReaderMzML::PrivateData::parse(QXmlStreamReader &reader) {
     ERR_RETURN
 }
 
-
 Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
 
     ERR_INIT
@@ -223,7 +221,6 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -634,7 +631,6 @@ MsReaderMzML::MsReaderMzML() {
             );
 }
 
-
 MsReaderMzML::~MsReaderMzML() {
 }
 
@@ -647,7 +643,15 @@ Err MsReaderMzML::openFile(const QString &filePath) {
     ERR_RETURN
 }
 
-
 Err MsReaderMzML::closeFile() {
     return m_d->closeFile();
+}
+
+MsReaderBase MsReaderMzML::msReaderBase() {
+
+    MsReaderBase msReaderBase;
+    msReaderBase.setScanPoints(*m_d->m_scanPoints);
+    msReaderBase.setMsScanInfo(*m_d->m_msScanInfo);
+
+    return msReaderBase;
 }

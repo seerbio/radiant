@@ -26,7 +26,7 @@ private Q_SLOTS:
 
 private:
 
-    //TODO use proper path procedures.
+    //TODO use proper path procedures after finding small file.
     const QString m_filepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
 
@@ -35,7 +35,9 @@ private:
 
 void MsReaderMZMLTests::openFileTest() {
 
-//    QSKIP("Waiting for small file");
+//    const QString &msParquetFilePath
+//            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
+
     ERR_INIT
 
     MsReaderMzML reader;

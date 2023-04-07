@@ -20,6 +20,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/ConvertMzMLToParquetWorkFlow.cpp
         src/FastaFileToPeptidesListWorkFlow.cpp
         src/LibraryBuilderWorkFlow.cpp
 #        src/MsFraggerTronWorkFlow.cpp
@@ -27,6 +28,7 @@ SET(SOURCE_FILES
     )
 
 SET(HEADER_FILES
+        src/ConvertMzMLToParquetWorkFlow.h
         src/FastaFileToPeptidesListWorkFlow.h
         src/LibraryBuilderWorkFlow.h
 #        src/MsFraggerTronWorkFlow.h
