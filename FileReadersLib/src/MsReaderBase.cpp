@@ -130,14 +130,12 @@ Err MsReaderBase::splitScanPoints(
     ERR_RETURN
 }
 
-Err MsReaderBase::scanNumberVsScanPoints(
+Err MsReaderBase::getScanPoints(
         int msLevel,
         QMap<ScanNumber, ScanPoints> *scanPoints
         ) {
 
     ERR_INIT
-
-    QMap<ScanNumber, ScanPoints> pointsOfReturn;
 
     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
 
@@ -151,7 +149,7 @@ Err MsReaderBase::scanNumberVsScanPoints(
             continue;
         }
 
-        pointsOfReturn.insert(scanNumber, scanPointsVec);
+        scanPoints->insert(scanNumber, scanPointsVec);
     }
 
     ERR_RETURN;

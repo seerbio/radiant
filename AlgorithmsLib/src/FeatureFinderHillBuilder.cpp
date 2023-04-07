@@ -4,6 +4,7 @@
 
 #include "FeatureFinderHillBuilder.h"
 
+#include "CSVReader.h"
 #include "ErrorUtils.h"
 #include "MathUtils.h"
 #include "MsReaderBase.h"
@@ -765,18 +766,36 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
 Err FeatureFinderHillBuilder::buildHills(
         const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber,
         QVector<FeatureFinderHill> *featureFinderHills
-) {
+        ) {
     ERR_INIT
     e = d_ptr->buildHills(scanPointsByScanNumber, featureFinderHills); ree;
     ERR_RETURN
 }
 
 
-void FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
         const QMap<ScanNumber, double> &retentionTimeByScanNumber,
         const QVector<FeatureFinderHill> &featureFinderHills,
         const QString &destinationFilePath
-) {
+        ) {
+
+    ERR_INIT
+
+    struct MzRtRow : public CSVReaderBase {
+        double mzLo = -1.0;
+        double mzHi = -1.0;
+        double rtLo = -1.0;
+        double rtHi = -1.0;
+
+        QMap<QString, QVariant> map() override {
+            return {
+                {"mzLo", mzLo},
+                {"mzHi", mzHi},
+                {"rtLo", rtLo},
+                {"rtHi", rtHi}
+            };
+        }
+    };
 
     QVector<FeatureFinderHill> featureFinderHillsSorted = featureFinderHills;
 
@@ -788,39 +807,32 @@ void FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
 
         return l.mzMean() < r.mzMean();
     };
-
     std::sort(featureFinderHillsSorted.begin(), featureFinderHillsSorted.end(), sortLogic);
 
-    const QStringList header = {"mzLo", "mzHi", "rtLo", "rtHi"};
+    QVector<MzRtRow> mzRtRows;
+    for (const FeatureFinderHill &ffh : featureFinderHills) {
 
-    QFile file(destinationFilePath);
-    if (file.open(QIODevice::ReadWrite)) {
+        const QPair<double, double> mzRange = ffh.mzMinMax();
+        const QPair<int, int> scanNumberRange = ffh.minMaxScanNumber();
 
-        QTextStream stream(&file);
+        MzRtRow mzRtRow;
+        mzRtRow.mzLo = mzRange.first;
+        mzRtRow.mzHi = mzRange.second;
+        mzRtRow.rtLo = retentionTimeByScanNumber.value(scanNumberRange.first);
+        mzRtRow.rtHi = retentionTimeByScanNumber.value(scanNumberRange.second);
 
-        stream << header.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-
-        for (const FeatureFinderHill &ffh : featureFinderHills) {
-
-            const QPair<double, double> mzRange = ffh.mzMinMax();
-            const QPair<int, int> scanNumberRange = ffh.minMaxScanNumber();
-            const QStringList row = {
-                    QString::number(mzRange.first),
-                    QString::number(mzRange.second),
-                    QString::number(retentionTimeByScanNumber.value(scanNumberRange.first)),
-                    QString::number(retentionTimeByScanNumber.value(scanNumberRange.second))
-            };
-
-            if (row.size() != 4) {
-                continue;
-            }
-
-            stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-        }
-
-        stream << endl;
+        mzRtRows.push_back(mzRtRow);
     }
 
+    const QVector<QSharedPointer<CSVReaderBase>> ptrs
+            = CSVReaderBase::convertInputStructToSharedPointers(mzRtRows);
+
+    e = CSVReader::writeDataToCSV(
+            destinationFilePath,
+            ptrs
+            ); ree;
+
+    ERR_RETURN
 }
 
 

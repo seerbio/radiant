@@ -54,3 +54,10 @@ Err CSVReader::writeDataToCSV(
 
     rrr(eFileError);
 }
+
+Err CSVReader::readDataFromCSV(
+        const QString &outputFilePath,
+        QVector<CSVReaderBase> &readRows
+        ) {
+    return Error::eFunctionNotImplemented;
+}

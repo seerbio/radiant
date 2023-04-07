@@ -6,7 +6,10 @@
 
 #include "GlobalSettings.h"
 
-Err ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(const QString &mzmlFilePath) {
+Err ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(
+        const QString &mzmlFilePath,
+        QString *outputFilePath
+        ) {
 
     ERR_INIT
 
@@ -15,10 +18,10 @@ Err ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(const QString &mzmlFilePa
     MsReaderMzML msReaderMzMl;
     e = msReaderMzMl.openFile(mzmlFilePath); ree;
 
-    const QString prqFileName = mzmlFilePath + S_GLOBAL_SETTINGS.DOT_PRQ;
+    *outputFilePath = mzmlFilePath + S_GLOBAL_SETTINGS.DOT_PRQ;
 
     e = MsReaderParquet::writeMsReaderToParquet(
-            prqFileName,
+            *outputFilePath,
             QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderMzMl.msReaderBase()))
             ); ree;
 

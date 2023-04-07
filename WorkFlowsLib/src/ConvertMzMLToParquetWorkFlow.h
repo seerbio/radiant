@@ -20,7 +20,10 @@ class WORKFLOWSLIB_EXPORTS ConvertMzMLToParquetWorkFlow {
 
 public:
 
-    static Err convertMzMLToParquet(const QString &mzmlFilePath);
+    static Err convertMzMLToParquet(
+            const QString &mzmlFilePath,
+            QString *outputFilePath
+            );
 
 
 

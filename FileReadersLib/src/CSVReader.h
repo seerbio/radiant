@@ -16,7 +16,20 @@ struct CSVReaderBase {
 
 public:
 
-    virtual QMap<QString, QVariant> map() = 0;
+    virtual QMap<QString, QVariant> map() {return {};};
+
+    template<typename T>
+    static QVector<QSharedPointer<CSVReaderBase>> convertInputStructToSharedPointers(
+            const QVector<T> &csvReaderInputBaseDerivedStruct
+            ) {
+        QVector<QSharedPointer<CSVReaderBase>> ptrs;
+        for (const T &tr : csvReaderInputBaseDerivedStruct) {
+            QSharedPointer<CSVReaderBase> ptr(new T(tr));
+            ptrs.push_back(ptr);
+        }
+
+        return ptrs;
+    }
 
 };
 
@@ -29,6 +42,11 @@ public:
     static Err writeDataToCSV(
             const QString &outputFilePath,
             const QVector<QSharedPointer<CSVReaderBase>> &rowsToWrite
+            );
+
+    static Err readDataFromCSV(
+            const QString &outputFilePath,
+            QVector<CSVReaderBase> &readRows
             );
 
 

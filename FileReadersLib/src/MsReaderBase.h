@@ -65,7 +65,7 @@ public:
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
-    Err scanNumberVsScanPoints(
+    Err getScanPoints(
             int msLevel,
             QMap<ScanNumber, ScanPoints> *scanPoints
             );

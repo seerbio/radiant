@@ -2,7 +2,7 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "MsReaderMzML.h"
+#include "MsReaderParquet.h"
 
 #include <QtTest>
 
@@ -54,6 +54,8 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
     FeatureFinderParameters params;
     params.skipScanCount = 1;
+    params.minScanCount = 2;
+    params.tolerancePPM = 1.0;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -144,6 +146,7 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
     FeatureFinderParameters params;
     params.skipScanCount = 1;
     params.tolerancePPM = 10.0;
+    params.minScanCount = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -235,10 +238,10 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     ERR_INIT
 
     //TODO use proper pathing here
-    const QString filePath = "/home/anichols/Desktop/RawData/EXP21155_2021ms0609X7_A.raw.mzML";
+    const QString filePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
 
-    MsReaderMzML msReaderMzMl;
-    msReaderMzMl.openFile(filePath);
+    MsReaderParquet msReader;
+    msReader.openFile(filePath);
 
     FeatureFinderParameters params;
     params.skipScanCount = 3;
@@ -248,25 +251,35 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
-    featureFinderHillBuilder.setRunParallel(false);
+    featureFinderHillBuilder.setRunParallel(true);
     QCOMPARE(e, eNoError);
 
-//    const MsLevel msLevel = 1;
-//    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints = msReaderMzMl.scanNumberVsScanPoints();
-//    e = msReaderMzMl.buildScanPointsByScanNumber(msLevel, &scanPointsByScanNumber);
-//    QCOMPARE(e, eNoError);
-//
-//    QVector<FeatureFinderHill> featureFinderHills;
-//    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber, &featureFinderHills);
-//    QCOMPARE(e, eNoError);
-//
-//    qDebug() << "Hills found to write" << featureFinderHills.size();
-//
-////    FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
-////            msReaderMzMl.retentionTimeByScanNumber(),
-////            featureFinderHills,
-////            "hills.mzrt.csv"
-////    );
+    const MsLevel msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
+    e = msReader.getScanPoints(
+            msLevel,
+            &scanNumberVsScanPoints
+            );
+    QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinderHillBuilder.buildHills(
+            scanNumberVsScanPoints,
+            &featureFinderHills
+            );
+    QCOMPARE(e, eNoError);
+
+    qDebug() << "Hills found to write" << featureFinderHills.size();
+
+#define WRITE_TO_MZRT
+#ifdef WRITE_TO_MZRT
+    e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+            msReader.getScanNumberVsScanTime(),
+            featureFinderHills,
+            "hills.mzrt.csv"
+    );
+    QCOMPARE(e, eNoError);
+#endif
 
 }
 

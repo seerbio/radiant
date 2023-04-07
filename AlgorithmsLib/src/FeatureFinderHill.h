@@ -6,6 +6,7 @@
 #define PYTHIACPP_FEATUREFINDERHILL_H
 
 #include "AlgorithmsLib_Exports.h"
+#include "CSVReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 

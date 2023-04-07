@@ -61,7 +61,7 @@ public:
 
     void setRunParallel(bool runParallel);
 
-    static void writeHillsToBatmassMzMrtFile(
+    static Err writeHillsToBatmassMzMrtFile(
             const QMap<ScanNumber, double> &retentionTimeByScanNumber,
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath

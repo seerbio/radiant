@@ -37,8 +37,13 @@ void ConvertMzMLToParquetWorkFlowTests::convertMzMLToParquetRunTest() {
 //    const QString &fastaFilePath
 //            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
 
-    e = ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(mzMLFilepath);
+    QString outputFilePath;
+    e = ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(
+            mzMLFilepath,
+            &outputFilePath
+            );
     QCOMPARE(e, eNoError);
+    QCOMPARE(outputFilePath, expectedOutputFilePath);
 
     e = ErrorUtils::fileExists(expectedOutputFilePath);
     QCOMPARE(e, eNoError);
