@@ -26,9 +26,9 @@ Err MsReaderBase::getScanInfo(
     ERR_RETURN
 }
 
-QVector<MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
+QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
 
-    QVector<MsScanInfo> msScanInfos;
+    QMap<ScanNumber, MsScanInfo> msScanInfos;
 
     for (const MsScanInfo &mi : m_msScanInfo) {
 
@@ -36,7 +36,7 @@ QVector<MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
             continue;
         }
 
-        msScanInfos.push_back(mi);
+        msScanInfos.insert(mi.scanNumber, mi);
     }
 
     return msScanInfos;
@@ -129,4 +129,58 @@ QMap<ScanNumber, ScanPoints> MsReaderBase::scanNumberVsScanPoints(int msLevel) {
 
 
     return {};
+}
+
+QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos() {
+    return m_msScanInfo;
+}
+
+QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
+    return m_scanPoints;
+}
+
+Err MsReaderBase::zipScanPoints(
+        const QVector<double> &mzVals,
+        const QVector<double> &intensityVals,
+        ScanPoints *scanPoints
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isEqual(mzVals.size(), intensityVals.size()); ree;
+
+    for (int i = 0; i < mzVals.size(); i++) {
+        scanPoints->push_back({mzVals.at(i), intensityVals.at(i)});
+    }
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::getMsScanInfo(
+        ScanNumber scanNumber,
+        MsScanInfo *msScanInfo
+        ){
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
+
+    *msScanInfo = m_msScanInfo.value(scanNumber);
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::getScanPoints(
+        int scanNumber,
+        ScanPoints *scanPoints
+        ) {
+
+    ERR_INIT
+
+    scanPoints->clear();
+
+    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
+    *scanPoints = m_scanPoints.value(scanNumber);
+
+    ERR_RETURN
 }

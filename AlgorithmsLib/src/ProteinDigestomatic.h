@@ -86,13 +86,10 @@ public:
         ERR_INIT
 
         const QMap<QString, QVariant> &dataMap = row.dataMap();
-        const QStringList &mapKeys = dataMap.keys();
-        auto keyCheckLogic = [mapKeys](const QString &s){return mapKeys.contains(s);};
-        const bool allKeysPresent = std::all_of(
-                PeptideSequenceNamespace::keysToCheck.begin(),
-                PeptideSequenceNamespace::keysToCheck.end(),
-                keyCheckLogic
-                );
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                PeptideSequenceNamespace::keysToCheck
+        );
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 

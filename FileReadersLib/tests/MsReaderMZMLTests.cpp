@@ -4,7 +4,6 @@
 
 #include "MsReaderMzML.h"
 #include "FastaReader.h"
-#include "GlobalSettings.h"
 
 #include <QString>
 #include <QtTest/QtTest>
@@ -54,6 +53,8 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(msScanInfo.collisionEnergy, 28);
     QCOMPARE(QString::number(msScanInfo.scanTime), "0.826693");
     QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "725.079");
+    QCOMPARE(msScanInfo.isoWindowLower, 5.5);
+    QCOMPARE(msScanInfo.isoWindowUpper, 5.5);
 
 }
 

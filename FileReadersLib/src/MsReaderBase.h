@@ -48,6 +48,7 @@ public:
 
     friend class MsReaderBaseTests;
     friend class MsReaderMZMLTests;
+    friend class MsReaderParquetTests;
 
     MsReaderBase() = default;
 
@@ -57,14 +58,24 @@ public:
 
     virtual Err closeFile();
 
+    QMap<ScanNumber, ScanPoints> getScanPoints();
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints(int msLevel);
+    Err getScanPoints(
+            int scanNumber,
+            ScanPoints *scanPoints
+            );
 
     Err getScanInfo(
             ScanNumber scanNumber,
             MsScanInfo *msScanInfo
             ) const;
 
-    QVector<MsScanInfo> getMsScanInfos(int msLevel);
+    QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
+    QMap<ScanNumber, MsScanInfo> getMsScanInfos();
+    Err getMsScanInfo(
+            ScanNumber scanNumber,
+            MsScanInfo *msScanInfo
+            );
 
     static ScanPoints sortScanPoints(
             const ScanPoints &scanPoints,
@@ -72,13 +83,18 @@ public:
                     );
 
     int getNearestScanNumberFromScanTime(double scanTime);
-
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
             QVector<double> *mzVals,
             QVector<double> *intensityVals
+    );
+
+    static Err zipScanPoints(
+            const QVector<double> &mzVals,
+            const QVector<double> &intensityVals,
+            ScanPoints *scanPoints
     );
 
 protected:

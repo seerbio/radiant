@@ -78,6 +78,21 @@ public:
         ERR_RETURN
     }
 
+    static bool checkIfExpectedKeysArePresent(
+            const QMap<QString, QVariant> &dataMap,
+            const QStringList &keysToCheck
+            ) {
+        const QStringList &mapKeys = dataMap.keys();
+        auto keyCheckLogic = [mapKeys](const QString &s){return mapKeys.contains(s);};
+        const bool allKeysPresent = std::all_of(
+                keysToCheck.begin(),
+                keysToCheck.end(),
+                keyCheckLogic
+        );
+
+        return allKeysPresent;
+    }
+
 
 protected:
 

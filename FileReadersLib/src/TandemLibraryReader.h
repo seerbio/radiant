@@ -50,18 +50,15 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
         ERR_INIT
 
         const QMap<QString, QVariant> &dataMap = row.dataMap();
-        const QStringList &mapKeys = dataMap.keys();
-        auto keyCheckLogic = [mapKeys](const QString &s){return mapKeys.contains(s);};
-        const bool allKeysPresent = std::all_of(
-                keysToCheck.begin(),
-                keysToCheck.end(),
-                keyCheckLogic
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
                 );
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         peptideSequenceChargeKey = dataMap.value(PEP_SEQ_CHRG_KEY).toString();
-        intensityVals << bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
         ionLabels = dataMap.value(ION_LABELS).toString().split(S_GLOBAL_SETTINGS.SEPARATOR);
 
         ERR_RETURN
