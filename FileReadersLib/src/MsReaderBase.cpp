@@ -123,12 +123,31 @@ Err MsReaderBase::splitScanPoints(
     ERR_RETURN
 }
 
-QMap<ScanNumber, ScanPoints> MsReaderBase::scanNumberVsScanPoints(int msLevel) {
+Err MsReaderBase::scanNumberVsScanPoints(
+        int msLevel,
+        QMap<ScanNumber, ScanPoints> *scanPoints
+        ) {
+
+    ERR_INIT
 
     QMap<ScanNumber, ScanPoints> pointsOfReturn;
 
+    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
 
-    return {};
+        const ScanNumber scanNumber = it.key();
+        const ScanPoints &scanPointsVec = it.value();
+
+        MsScanInfo msScanInfo;
+        e = getScanInfo(scanNumber, &msScanInfo); ree
+
+        if (msScanInfo.msLevel != msLevel) {
+            continue;
+        }
+
+        pointsOfReturn.insert(scanNumber, scanPointsVec);
+    }
+
+    ERR_RETURN;
 }
 
 QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos() {

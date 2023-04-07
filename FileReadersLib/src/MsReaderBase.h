@@ -59,7 +59,12 @@ public:
     virtual Err closeFile();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints(int msLevel);
+
+    Err scanNumberVsScanPoints(
+            int msLevel,
+            QMap<ScanNumber, ScanPoints> *scanPoints
+            );
+
     Err getScanPoints(
             int scanNumber,
             ScanPoints *scanPoints

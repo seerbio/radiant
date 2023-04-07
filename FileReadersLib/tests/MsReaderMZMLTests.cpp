@@ -10,7 +10,6 @@
 #include <QXmlStreamReader>
 
 
-
 class MsReaderMZMLTests : public QObject
 {
     Q_OBJECT
