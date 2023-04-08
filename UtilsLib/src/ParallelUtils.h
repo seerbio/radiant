@@ -107,6 +107,20 @@ public:
         ERR_RETURN;
     }
 
+    template <typename T, typename U>
+    static QVector<QPair<T, U>> convertMapToVectorPairs(const QMap<T, U> &map) {
+
+        QVector<QPair<T, U>> output;
+        for (auto it = map.begin(); it != map.end(); it++) {
+            const T &t = it.key();
+            const U &u = it.value();
+
+            output.push_back({t, u});
+        }
+
+        return output;
+    }
+
 };
 
 

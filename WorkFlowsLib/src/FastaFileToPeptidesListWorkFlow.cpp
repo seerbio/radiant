@@ -84,7 +84,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
     e = ErrorUtils::isNotEmpty(fastaEntries); ree;
 
-    const auto degestLogicBinder = std::bind(
+    const auto digestLogicBinder = std::bind(
             digestLogic,
             std::placeholders::_1,
             m_params
@@ -92,7 +92,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
     QFuture<QPair<Err, QVector<PeptideSequence>>> futures = QtConcurrent::mapped(
             fastaEntries,
-            degestLogicBinder
+            digestLogicBinder
             );
     futures.waitForFinished();
 

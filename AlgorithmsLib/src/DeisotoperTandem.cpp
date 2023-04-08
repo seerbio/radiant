@@ -4,18 +4,23 @@
 
 #include "DeisotoperTandem.h"
 
+#include <QtConcurrent/QtConcurrent>
 #include "EigenSparseUtils.h"
+#include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "ParallelUtils.h"
 
 #include <vector>
 
 
 namespace {
 
-    Eigen::SparseVector<double> buildSubtractionVector(const ScanPoints &scanPoints,
-                                                       int precision,
-                                                       double ppmTol) {
+    Eigen::SparseVector<double> buildSubtractionVector(
+            const ScanPoints &scanPoints,
+            int precision,
+            double ppmTol
+            ) {
 
         const auto sortLogic = [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();};
         const double maxMz = std::max_element(scanPoints.begin(), scanPoints.end(), sortLogic)->x();
@@ -53,7 +58,6 @@ namespace {
         return vec;
     }
 
-
 }//namespace
 ScanPoints DeisotoperTandem::deisotopeTandemScan(
         const ScanPoints &tandemScan,
@@ -66,8 +70,11 @@ ScanPoints DeisotoperTandem::deisotopeTandemScan(
     Eigen::SparseVector<double> vec
         = EigenSparseUtils::vectorizeFromScan(tandemScan, maxMz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
-    const Eigen::SparseVector<double> subtractionVecOG
-        = buildSubtractionVector(tandemScan,  S_GLOBAL_SETTINGS.HASHING_PRECISION, ppmTolerance);
+    const Eigen::SparseVector<double> subtractionVecOG = buildSubtractionVector(
+            tandemScan,
+            S_GLOBAL_SETTINGS.HASHING_PRECISION,
+            ppmTolerance
+            );
 
     int currentCharge = S_GLOBAL_SETTINGS.MAX_CHARGE_TANDEM_DEISOTOPING;
     while (currentCharge > 0) {
@@ -100,3 +107,55 @@ ScanPoints DeisotoperTandem::deisotopeTandemScan(
 
     return returnVec;
 }
+
+
+namespace {
+
+    QPair<ScanNumber, ScanPoints> parallelDeisotopeLogic(
+            const QPair<ScanNumber, ScanPoints> &pr,
+            double ppmTolerance
+            ) {
+
+        return {pr.first,
+                DeisotoperTandem::deisotopeTandemScan(
+                        pr.second,
+                        ppmTolerance
+                        )
+        };
+    }
+
+
+}//namespace
+Err DeisotoperTandem::deisotopeTandemScansParallel(
+        const QMap<ScanNumber, ScanPoints> &tandemScans,
+        double ppmTolerance,
+        QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped
+        ) {
+
+    ERR_INIT
+
+    tandemScansDeisotoped->clear();
+    e = ErrorUtils::isNotEmpty(tandemScans); ree;
+
+    const QVector<QPair<ScanNumber, ScanPoints>> scanPointsAsPair
+            = ParallelUtils::convertMapToVectorPairs<ScanNumber, ScanPoints>(tandemScans);
+
+    const auto deisotoperLogicBinder = std::bind(
+            parallelDeisotopeLogic,
+            std::placeholders::_1,
+            ppmTolerance
+    );
+
+    QFuture<QPair<ScanNumber, ScanPoints>> futures = QtConcurrent::mapped(
+            scanPointsAsPair,
+            deisotoperLogicBinder
+            );
+    futures.waitForFinished();
+
+    for (const QPair<ScanNumber, ScanPoints> &pr : futures) {
+        tandemScansDeisotoped->insert(pr.first, pr.second);
+    }
+
+    ERR_RETURN
+}
+
