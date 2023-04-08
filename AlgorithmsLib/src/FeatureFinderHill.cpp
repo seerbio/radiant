@@ -9,10 +9,12 @@
 
 
 void FeatureFinderHill::addPoint(
+        ScanNumberIndex scanNumberIndex,
         ScanNumber scanNumber,
         double mzVal,
         double intensityVal
 ) {
+    m_scanNumberIndexes.push_back(scanNumberIndex);
     m_mzVals.push_back(mzVal);
     m_scanNumbers.push_back(scanNumber);
     m_intensities.push_back(intensityVal);

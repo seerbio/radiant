@@ -27,6 +27,7 @@ SET(SOURCE_FILES
         src/FragLibraryTron.cpp
         src/FragmentLibraryRTree.cpp
         src/MsScansDenoiseTron.cpp
+        src/MsFrame.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
         src/ReCalibratomatic.cpp
@@ -41,6 +42,7 @@ SET(HEADER_FILES
         src/FeatureFinderHillBuilder.h
         src/FragLibraryTron.h
         src/FragmentLibraryRTree.h
+        src/MsFrame.h
         src/MsScansDenoiseTron.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h

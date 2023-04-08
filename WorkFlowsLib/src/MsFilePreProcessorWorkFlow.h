@@ -23,15 +23,6 @@ public:
 
     Err init(const PythiaParameters &pythiaParameters);
 
-    Err preprocessTandemScans(MsReaderPointer *msReaderPointer);
-
-private:
-
-    Err denoiseTandemScans(
-            QMap<ScanNumber, ScanPoints> &tandemScans,
-            QMap<ScanNumber, ScanPoints> *denoisedTandemScans
-            );
-
 private:
 
     PythiaParameters m_params;

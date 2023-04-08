@@ -62,32 +62,6 @@ void MsFilePreProcessorWorkFlowTests::preprocessTandemScansTest() {
     QPair<Err, MsReaderPointer> msReader = MsReaderPointerFactory::createInstance(prqFilePath);
     QCOMPARE(msReader.first, eNoError);
 
-    const ScanNumber scanNumber = 666;
-
-    ScanPoints ogScanPoints;
-    e = msReader.second->getScanPoints(
-            scanNumber,
-            &ogScanPoints
-            );
-
-    MsFilePreProcessorWorkFlow wf;
-    e = wf.init(params);
-    QCOMPARE(e, eNoError);
-
-    QString outputFilePath;
-    e = wf.preprocessTandemScans(&msReader.second);
-    QCOMPARE(e, eNoError);
-
-    ScanPoints processedScanPoints;
-    e = msReader.second->getScanPoints(
-            scanNumber,
-            &processedScanPoints
-    );
-
-    qDebug() << ogScanPoints.size() << processedScanPoints.size();
-
-    QCOMPARE(ogScanPoints.size(), 35);
-    QCOMPARE(processedScanPoints.size(), 18);
 }
 
 

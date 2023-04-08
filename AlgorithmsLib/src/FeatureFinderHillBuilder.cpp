@@ -461,6 +461,7 @@ namespace {
 
                     FeatureFinderHill featureFinderHill;
                     featureFinderHill.addPoint(
+                            currentScanIndex,
                             scanNumbers.at(currentScanIndex),
                             currentScanPoint.x(),
                             currentScanPoint.y()
@@ -484,6 +485,7 @@ namespace {
 
                         currentScanPoint = scanPoints.at(currentScanIndex).at(currentIndexVal);
                         featureFinderHill.addPoint(
+                                currentScanIndex,
                                 scanNumbers.at(currentScanIndex),
                                 currentScanPoint.x(),
                                 currentScanPoint.y()
@@ -492,6 +494,7 @@ namespace {
 
                     currentScanPoint = scanPoints.at(currentScanIndex).at(currentIndexVal);
                     featureFinderHill.addPoint(
+                            currentScanIndex,
                             scanNumbers.at(currentScanIndex),
                             currentScanPoint.x(),
                             currentScanPoint.y()

@@ -17,6 +17,7 @@ SET(TEST_CLASSES
         FeatureFinderHillBuilderTests
         FragLibraryTronTests
         FragmentLibraryRTreeTests
+        MsFrameTests
         MsScansDenoiseTronTests
         PeptidesLibraryTronTests
         ProteinDigestomaticTests

@@ -24,6 +24,7 @@ public:
     ~FeatureFinderHill() = default;
 
     void addPoint(
+        ScanNumberIndex scanNumberIndex,
         ScanNumber scanNumber,
         double mzVal,
         double intensityVal
@@ -60,7 +61,8 @@ public:
 private:
 
     QVector<double> m_mzVals;
-    QVector<int> m_scanNumbers;
+    QVector<ScanNumberIndex> m_scanNumberIndexes;
+    QVector<ScanNumber> m_scanNumbers;
     QVector<double> m_intensities;
 
 };
