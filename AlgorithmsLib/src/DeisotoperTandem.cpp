@@ -129,7 +129,8 @@ namespace {
 Err DeisotoperTandem::deisotopeTandemScansParallel(
         const QMap<ScanNumber, ScanPoints> &tandemScans,
         double ppmTolerance,
-        QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped
+        QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped,
+        bool runParallel
         ) {
 
     ERR_INIT
@@ -140,20 +141,36 @@ Err DeisotoperTandem::deisotopeTandemScansParallel(
     const QVector<QPair<ScanNumber, ScanPoints>> scanPointsAsPair
             = ParallelUtils::convertMapToVectorPairs<ScanNumber, ScanPoints>(tandemScans);
 
-    const auto deisotoperLogicBinder = std::bind(
-            parallelDeisotopeLogic,
-            std::placeholders::_1,
-            ppmTolerance
-    );
+    if (runParallel) {
 
-    QFuture<QPair<ScanNumber, ScanPoints>> futures = QtConcurrent::mapped(
-            scanPointsAsPair,
-            deisotoperLogicBinder
-            );
-    futures.waitForFinished();
+        const auto deisotoperLogicBinder = std::bind(
+                parallelDeisotopeLogic,
+                std::placeholders::_1,
+                ppmTolerance
+        );
 
-    for (const QPair<ScanNumber, ScanPoints> &pr : futures) {
-        tandemScansDeisotoped->insert(pr.first, pr.second);
+        QFuture<QPair<ScanNumber, ScanPoints>> futures = QtConcurrent::mapped(
+                scanPointsAsPair,
+                deisotoperLogicBinder
+        );
+        futures.waitForFinished();
+
+        for (const QPair<ScanNumber, ScanPoints> &pr : futures) {
+            tandemScansDeisotoped->insert(pr.first, pr.second);
+        }
+
+    }
+
+    else {
+
+        for (const QPair<ScanNumber, ScanPoints> &pr : scanPointsAsPair) {
+            const QPair<ScanNumber, ScanPoints> deisoPoints = parallelDeisotopeLogic(
+                    pr,
+                    ppmTolerance
+                    );
+            tandemScansDeisotoped->insert(deisoPoints.first, deisoPoints.second);
+        }
+
     }
 
     ERR_RETURN

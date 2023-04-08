@@ -233,3 +233,83 @@ Err MsReaderBase::updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUp
 
     ERR_RETURN
 }
+
+bool doUniqueKeysCycle(
+        const QVector<UniqueMsInfoScanKey> &uniqueInfoKeys,
+        const QList<MsScanInfo> &msScanInfos
+        ) {
+
+    int cycleCounter = 0;
+
+    int uniqueInfoKeysIndex = 0;
+    for (const MsScanInfo &msScanInfo : msScanInfos) {
+
+        if (uniqueInfoKeysIndex == uniqueInfoKeys.size()) {
+            cycleCounter++;
+            uniqueInfoKeysIndex = 0;
+        }
+
+        if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.targetScanKey()) {
+            return false;
+        }
+
+    }
+
+    if (cycleCounter < 5) {
+        return false;
+    }
+
+    const int expectedCycleSize = msScanInfos.size() / uniqueInfoKeys.size();
+
+    return abs(cycleCounter - expectedCycleSize) <= 1;
+}
+
+bool MsReaderBase::isDIA() {
+
+    const int msLevel = 2;
+
+    QMap<UniqueMsInfoScanKey, int> uniqueKeyCounter;
+
+    const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
+
+    for (const MsScanInfo &msScanInfo : tandemScanInfos) {
+        uniqueKeyCounter[msScanInfo.targetScanKey()]++;
+    }
+
+    const bool uniqueKeysCycle = doUniqueKeysCycle(
+            uniqueKeyCounter.keys().toVector(),
+            tandemScanInfos.values()
+            );
+
+    return uniqueKeysCycle;
+}
+
+Err MsReaderBase::collateTandemPrecursorTargetsDIA(
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+    e = ErrorUtils::isNotEmpty(m_scanPoints); ree;
+    e = ErrorUtils::isTrue(isDIA()); ree;
+
+    const int msLevel = 2;
+    const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
+
+    for (auto it = tandemScanInfos.begin(); it != tandemScanInfos.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const MsScanInfo msScanInfo = it.value();
+
+        ScanPoints scanPoints;
+        e = getScanPoints(
+                scanNumber,
+                &scanPoints
+                ); ree;
+
+        (*diaTargetFrame)[msScanInfo.targetScanKey()].insert(scanNumber, scanPoints);
+    }
+
+    ERR_RETURN
+}

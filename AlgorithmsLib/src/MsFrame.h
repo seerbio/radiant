@@ -18,13 +18,23 @@ public:
 
     friend class MsFrameTests;
 
-    MsFrame() = default;
+    MsFrame();
     ~MsFrame() = default;
 
     Err init(
             const PythiaParameters &pythiaParameters,
             const QMap<ScanNumber, ScanPoints> &scanPoints
             );
+
+    Err init(
+            const PythiaParameters &pythiaParameters,
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            double collisionEnergy,
+            double precursorTargetMz,
+            double isoWindowLower,
+            double isoWindowUpper
+    );
 
     Err preprocessMsFrame(
             bool denoise,
@@ -42,7 +52,11 @@ private:
 
     PythiaParameters m_params;
     QMap<ScanNumber, ScanPoints> m_frame;
-
+    UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
+    double m_collisionEnergy;
+    double m_precursorTargetMz;
+    double m_isoWindowLower;
+    double m_isoWindowUpper;
 
 };
 

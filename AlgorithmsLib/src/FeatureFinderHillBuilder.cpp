@@ -705,7 +705,6 @@ FeatureFinderHillBuilder::FeatureFinderHillBuilder() : d_ptr(new Private()) {}
 
 FeatureFinderHillBuilder::~FeatureFinderHillBuilder(){}
 
-
 Err FeatureFinderHillBuilder::init(const FeatureFinderParameters &featureFinderParameters) {
     ERR_INIT
     e = d_ptr->init(featureFinderParameters); ree;

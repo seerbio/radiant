@@ -11,6 +11,13 @@
 #include <QElapsedTimer>
 
 
+MsFrame::MsFrame()
+: m_collisionEnergy(-1.0)
+, m_isoWindowLower(-1.0)
+, m_isoWindowUpper(-1.0)
+, m_precursorTargetMz(-1.0)
+{}
+
 Err MsFrame::init(
         const PythiaParameters &pythiaParameters,
         const QMap<ScanNumber, ScanPoints> &scanPoints
@@ -26,6 +33,43 @@ Err MsFrame::init(
 
     ERR_RETURN
 }
+
+Err MsFrame::init(
+        const PythiaParameters &pythiaParameters,
+        const QMap<ScanNumber, ScanPoints> &scanPoints,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        double collisionEnergy,
+        double precursorTargetMz,
+        double isoWindowLower,
+        double isoWindowUpper
+        ) {
+
+    ERR_INIT
+
+    e = init(
+            pythiaParameters,
+            scanPoints
+            ); ree;
+
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+
+    for (const double val : {collisionEnergy, precursorTargetMz, isoWindowLower, isoWindowUpper}) {
+        e = ErrorUtils::isAboveThreshold(
+                collisionEnergy,
+                val,
+                ErrorUtilsParam::ExcludeThreshold
+        ); ree;
+    }
+
+    m_collisionEnergy = collisionEnergy;
+    m_precursorTargetMz = precursorTargetMz;
+    m_isoWindowLower = isoWindowLower;
+    m_isoWindowUpper = isoWindowUpper;
+
+    ERR_RETURN
+}
+
 
 Err MsFrame::preprocessMsFrame(
         bool denoise,
@@ -78,11 +122,14 @@ Err MsFrame::deisotopeFrame() {
 
     ERR_INIT
 
+    const bool runParallel = true;
+
     QMap<ScanNumber, ScanPoints> deisotopedTandemScans;
     e = DeisotoperTandem::deisotopeTandemScansParallel(
             m_frame,
             m_params.ms2ExtractionWidthPPM,
-            &deisotopedTandemScans
+            &deisotopedTandemScans,
+            runParallel
     ); ree;
 
     m_frame = deisotopedTandemScans;
@@ -93,3 +140,5 @@ Err MsFrame::deisotopeFrame() {
 Err MsFrame::smoothFrame() {
     return Error::eFunctionNotImplemented;
 }
+
+

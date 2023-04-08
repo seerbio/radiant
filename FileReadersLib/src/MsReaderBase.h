@@ -62,6 +62,8 @@ public:
 
     virtual Err closeFile();
 
+    bool isDIA();
+
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
     Err getScanPoints(
@@ -78,6 +80,10 @@ public:
             ScanNumber scanNumber,
             MsScanInfo *msScanInfo
             ) const;
+
+    Err collateTandemPrecursorTargetsDIA(
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame
+            );
 
     Err updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate);
 
@@ -100,13 +106,13 @@ public:
             const ScanPoints &scanPoints,
             QVector<double> *mzVals,
             QVector<double> *intensityVals
-    );
+            );
 
     static Err zipScanPoints(
             const QVector<double> &mzVals,
             const QVector<double> &intensityVals,
             ScanPoints *scanPoints
-    );
+            );
 
     void printSize();
 
