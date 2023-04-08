@@ -64,6 +64,16 @@ public:
     const double STDEV_MULTIPLIER = 2.5;
     const QString TAB = "\t";
 
+    const QString CACHED_FILE_EXTENSION = QStringLiteral("cached");
+    const QString CSV_FILE_EXTENSION = QStringLiteral("csv");
+    const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");
+    const QString HDF_FILE_EXTENSION = QStringLiteral("hdf");
+    const QString MZML_FILE_EXTENSION = QStringLiteral("mzml");
+    const QString PRQ_FILE_EXTENSION = QStringLiteral("prq");
+    const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
+    const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
+    const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");
+
     static QString VERSION();
 };
 

@@ -58,7 +58,6 @@ public:
 
     void setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
 
-
     virtual Err openFile(const QString &filePath);
 
     virtual Err closeFile();

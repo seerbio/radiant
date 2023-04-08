@@ -28,7 +28,6 @@ public:
             double ppmTolerance
             );
 
-
 };
 
 

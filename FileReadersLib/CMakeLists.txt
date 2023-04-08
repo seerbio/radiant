@@ -27,6 +27,7 @@ SET(SOURCE_FILES
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
+        src/MsReaderPointerFactory.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/TandemLibraryReader.cpp
@@ -40,6 +41,7 @@ SET(HEADER_FILES
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
+        src/MsReaderPointerFactory.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
         src/TandemLibraryReader.h
