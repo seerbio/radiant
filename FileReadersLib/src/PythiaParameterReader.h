@@ -121,6 +121,13 @@ struct PythiaParameters{
     bool replaceLeucinesWithX = true;
     bool addDecoys = true; //TODO change this to a number for rounds of decoys.
 
+    //TODO hook these up
+    double featureFinderTolerancePPM = 12;
+    int skipScanCount = 2;
+    int minScanCount = 3;
+    bool useMeanMz = true;
+
+
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin < 1) {
@@ -169,6 +176,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
         qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
         qDebug() << PythiaParameterReaderConstants::kModifications;
+        qDebug() << featureFinderTolerancePPM << skipScanCount << minScanCount << useMeanMz; //TODO make this proper like the rest
         for (const Modification &mod : modifications) {
             mod.print();
         }

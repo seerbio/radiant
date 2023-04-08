@@ -9,6 +9,8 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MsReaderPointerFactory.h"
+#include "PythiaParameterReader.h"
 
 using namespace Error;
 
@@ -19,7 +21,20 @@ public:
     MsFilePreProcessorWorkFlow() = default;
     ~MsFilePreProcessorWorkFlow() = default;
 
+    Err init(const PythiaParameters &pythiaParameters);
 
+    Err preprocessTandemScans(MsReaderPointer *msReaderPointer);
+
+private:
+
+    Err denoiseTandemScans(
+            QMap<ScanNumber, ScanPoints> &tandemScans,
+            QMap<ScanNumber, ScanPoints> *denoisedTandemScans
+            );
+
+private:
+
+    PythiaParameters m_params;
 
 };
 

@@ -215,4 +215,21 @@ void MsReaderBase::printSize() {
 
 }
 
+Err MsReaderBase::updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate) {
 
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scansToUpdate); ree;
+
+    for (auto it = scansToUpdate.begin(); it != scansToUpdate.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const ScanPoints &scanPoints = it.value();
+
+        e = ErrorUtils::isTrue(m_scanPoints.contains(scanNumber)); ree;
+
+        m_scanPoints[scanNumber] = scanPoints;
+    }
+
+    ERR_RETURN
+}

@@ -12,6 +12,25 @@
 #include <QFileInfo>
 
 
+template<typename T>
+QPair<Err, MsReaderPointer> returnMsReaderBaseInstanceLogic(const QString &filePath) {
+
+    ERR_INIT
+
+    QSharedPointer<MsReaderBase> msReader(new T);
+
+    e = msReader->openFile(filePath);
+    if (e != eNoError) {
+        return {eFileIncorrectTypeError, nullptr};
+    }
+
+    const QString msReaderType = typeid(msReader).name();
+    qDebug() << "MsReader Derived Type" << msReaderType;
+
+    return {e, msReader};
+}
+
+
 QPair<Err, MsReaderPointer> MsReaderPointerFactory::createInstance(const QString &filePath) {
 
     ERR_INIT
@@ -22,31 +41,13 @@ QPair<Err, MsReaderPointer> MsReaderPointerFactory::createInstance(const QString
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) &&
         fi.isFile()) {
 
-        QSharedPointer<MsReaderBase> msReader(new MsReaderMzML);
-        e = msReader->openFile(filePath);
-        if (e != eNoError) {
-            return {eFileIncorrectTypeError, nullptr};
-        }
-
-        const QString msReaderType = typeid(msReader).name();
-        qDebug() << "MsReader Derived Type" << msReaderType;
-
-        return {e, msReader};
-
+        return returnMsReaderBaseInstanceLogic<MsReaderMzML>(filePath);
     }
 
     else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
             && fi.isFile()) {
 
-        QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
-        e = msReader->openFile(filePath);
-        if (e != eNoError) {
-            return {eFileIncorrectTypeError, nullptr};
-        }
-
-        const QString msReaderType = typeid(msReader).name();
-        qDebug() << "MsReader Derived Type" << msReaderType;
-        return {e, msReader};
+        return returnMsReaderBaseInstanceLogic<MsReaderParquet>(filePath);
     }
 
     else {

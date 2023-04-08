@@ -21,6 +21,7 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double tolerancePPM = -1.0;
     int skipScanCount = -1;
     int minScanCount = -1;
+    bool useMeanMz = false;
 
 //    int filterLength = 7;
 //    int smoothCount = 3;

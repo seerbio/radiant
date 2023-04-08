@@ -79,6 +79,8 @@ public:
             MsScanInfo *msScanInfo
             ) const;
 
+    Err updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate);
+
     QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
     QMap<ScanNumber, MsScanInfo> getMsScanInfos();
     Err getMsScanInfo(

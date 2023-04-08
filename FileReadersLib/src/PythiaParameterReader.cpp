@@ -5,7 +5,6 @@
 #include "PythiaParameterReader.h"
 #include "ErrorUtils.h"
 
-#include <utility>
 #include <QDebug>
 #include <QJsonValue>
 
