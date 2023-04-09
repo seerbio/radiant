@@ -20,8 +20,8 @@ public:
     static Err deisotopeTandemScansParallel(
             const QMap<ScanNumber, ScanPoints> &tandemScans,
             double ppmTolerance,
-            QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped,
-            bool runParallel = true
+            bool runParallel,
+            QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped
             );
 
     static ScanPoints deisotopeTandemScan(

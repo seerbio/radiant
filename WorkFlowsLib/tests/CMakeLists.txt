@@ -20,7 +20,7 @@ SET(TEST_CLASSES
         LibraryBuilderWorkFlowTests
         MsFilePreProcessorWorkFlowTests
 #        MsFraggerTronWorkFlowTests
-#        PythiaDIAWorkflowTests
+        PythiaDIAWorkflowTests
         )
 
 foreach(class ${TEST_CLASSES})

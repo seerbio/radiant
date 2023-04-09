@@ -54,10 +54,12 @@ Err MsFrame::init(
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
 
+    const double minVal = 0.0;
+
     for (const double val : {collisionEnergy, precursorTargetMz, isoWindowLower, isoWindowUpper}) {
         e = ErrorUtils::isAboveThreshold(
-                collisionEnergy,
                 val,
+                minVal,
                 ErrorUtilsParam::ExcludeThreshold
         ); ree;
     }
@@ -122,14 +124,14 @@ Err MsFrame::deisotopeFrame() {
 
     ERR_INIT
 
-    const bool runParallel = true;
+    const bool runParallel = false;
 
     QMap<ScanNumber, ScanPoints> deisotopedTandemScans;
     e = DeisotoperTandem::deisotopeTandemScansParallel(
             m_frame,
             m_params.ms2ExtractionWidthPPM,
-            &deisotopedTandemScans,
-            runParallel
+            runParallel,
+            &deisotopedTandemScans
     ); ree;
 
     m_frame = deisotopedTandemScans;

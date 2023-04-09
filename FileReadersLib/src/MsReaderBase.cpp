@@ -311,5 +311,6 @@ Err MsReaderBase::collateTandemPrecursorTargetsDIA(
         (*diaTargetFrame)[msScanInfo.targetScanKey()].insert(scanNumber, scanPoints);
     }
 
+    qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
     ERR_RETURN
 }

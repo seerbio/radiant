@@ -5,11 +5,10 @@
 #include "PythiaDIAWorkflow.h"
 
 #include "ErrorUtils.h"
-#include "MsFraggerTronResultsReader.h"
-#include "MsFraggerTronWorkFlow.h"
-#include "MsReaderParquet.h"
-#include "MsReaderBase.h"
+#include "MsReaderPointerFactory.h"
 #include "ParallelUtils.h"
+
+#include <QtConcurrent/QtConcurrent>
 
 
 Err PythiaDIAWorkflow::init(
@@ -32,244 +31,133 @@ Err PythiaDIAWorkflow::init(
 
 }
 
-Err PythiaDIAWorkflow::processFile(const QString &mzmlFilePath) {
+
+Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
 
-    const QString &msParquetFilePath
-            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.parquet");
+    QPair<Err, MsReaderPointer> msReaderPointerResult
+            = MsReaderPointerFactory::createInstance(msDatalFilePath);
+    e = msReaderPointerResult.first; ree;
+    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
-    MsReaderParquet reader;
-
-    bool te;
-    te = reader.readFile(msParquetFilePath.toStdString());
-
-
-    QString firstPassPSMsFilePath;
-    QVector<TandemScanIon> tandemScanIons;
-    e = runFirstPassMsFraggerTronWorkFlow(
-            mzmlFilePath,
-            &firstPassPSMsFilePath,
-            &tandemScanIons
+    QVector<MsFrame> msFrames;
+    e = preprocessDIAFrames(
+            msReaderPointer,
+            &msFrames
             ); ree;
 
-    e = initReCalibratomatic(firstPassPSMsFilePath); ree;
-    e = recalibrateTandemScanIons(&tandemScanIons); ree;
-    e = optimizePythiaParameters(); ree;
-
-    const QString outputFilePath
-        = mzmlFilePath + ".recal" + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
-
-    e = runSecondPassMsFraggerTronWorkFlow(
-            tandemScanIons,
-            outputFilePath
-            ); ree;
-
-    qDebug() << "final output psm filepath" << outputFilePath;
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::runFirstPassMsFraggerTronWorkFlow(
-        const QString &mzmlFilePath,
-        QString *firstPassPSMsFilePath,
-        QVector<TandemScanIon> *tandemScanIons
-        ) {
-
-    ERR_INIT
-
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(
-            m_pythiaParameters,
-            m_fragLibUri,
-            m_pepLibUri
-    );ree;
-
-    e = msFraggerTronWorkFlow.processFile(
-            mzmlFilePath,
-            firstPassPSMsFilePath,
-            tandemScanIons
-    ); ree;
+    e = scoreCandidatesPerFrame(msFrames); ree;
 
     ERR_RETURN
 }
 
 namespace {
 
-    Err buildRecalibrationData(
-            const QString &firstPassPSMCsvFilePath,
-            QVector<InputSVM> *data
+    struct ProcessFileLogicInput {
+        MsScanInfo msScanInfo;
+        QMap<ScanNumber, ScanPoints> frame;
+        PythiaParameters pythiaParameters;
+    };
+
+    QPair<Err, MsFrame> processFileParallelLogic(const ProcessFileLogicInput &input) {
+
+        ERR_INIT
+
+        const MsScanInfo &msScanInfo = input.msScanInfo;
+        const PythiaParameters &pythiaParameters = input.pythiaParameters;
+
+        MsFrame frame;
+        e = frame.init(
+                pythiaParameters,
+                input.frame,
+                msScanInfo.targetScanKey(),
+                msScanInfo.collisionEnergy,
+                msScanInfo.precursorTargetMz,
+                msScanInfo.isoWindowLower,
+                msScanInfo.isoWindowUpper
+        );
+
+        if (e != eNoError) {
+            return {e, {}};
+        }
+
+        e = frame.preprocessMsFrame(
+                pythiaParameters.denoise,
+                pythiaParameters.deisotope,
+                pythiaParameters.smooth
+        );
+        if (e != eNoError) {
+            return {e, {}};
+        }
+
+        return {e, frame};
+    }
+
+    Err buildProcessFileLogicInputs(
+            const MsReaderPointer &msReaderPointer,
+            const PythiaParameters &pythiaParameters,
+            QVector<ProcessFileLogicInput> *processFileLogicInputs
     ) {
 
         ERR_INIT
 
-        QVector<RowToWrite> rowsToWrite;
-        e = MsFraggerTronResultsReader::readCsv(
-                firstPassPSMCsvFilePath,
-                &rowsToWrite
-        ); ree;
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrames;
+        e = msReaderPointer->collateTandemPrecursorTargetsDIA(&diaTargetFrames); ree;
 
+        for (const QMap<ScanNumber, ScanPoints> &frame : diaTargetFrames) {
 
+            const ScanNumber firstScanNumber = frame.firstKey();
 
-        int counter = 0;
-        for (const RowToWrite &rtw : rowsToWrite) {
+            ProcessFileLogicInput processFileLogicInput;
 
-            counter++;
+            e = msReaderPointer->getScanInfo(
+                    firstScanNumber,
+                    &processFileLogicInput.msScanInfo
+            ); ree;
 
-            if (rtw.isDecoy) {
-                break;
-            } //TODO think of a better stopping point.
+            processFileLogicInput.frame = frame;
+            processFileLogicInput.pythiaParameters = pythiaParameters;
 
-            const QVector<double> &scanIonMZs = rtw.scanIonMZs;
-            const QVector<double> &theoFragIonMZs = rtw.theoFragIonMZs;
-
-            e = ErrorUtils::isEqual(scanIonMZs.size(), theoFragIonMZs.size()); ree;
-
-            for (int i = 0; i < scanIonMZs.size(); i++) {
-
-                const double scanMz = scanIonMZs.at(i);
-                const double theoMz = theoFragIonMZs.at(i);
-                const double ppmDiff = 1e6 * (scanMz - theoMz) / theoMz;
-
-                InputSVM is;
-                is.scanNumber = rtw.scanNumber;
-                is.mzScan = scanMz;
-                is.mzTheo = theoMz;
-                is.ppmDiff = ppmDiff;
-
-                data->push_back(is);
-            }
+            processFileLogicInputs->push_back(processFileLogicInput);
         }
 
         ERR_RETURN
     }
 
 }//namespace
-Err PythiaDIAWorkflow::initReCalibratomatic(const QString &firstPassPSMsFilePath) {
-
-    ERR_INIT
-
-    QVector<InputSVM> recalibrationData;
-    e = buildRecalibrationData(
-            firstPassPSMsFilePath,
-            &recalibrationData
-    ); ree;
-
-    e = m_reCalibratomatic.initSVM(recalibrationData); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    QPair<Err, QVector<TandemScanIon>> reCalParallelLogic(
-            const QVector<TandemScanIon> &tandemScanIons,
-            ReCalibratomatic reCalibratomatic
-            ) {
-
-        ERR_INIT
-
-        QVector<TandemScanIon> reCalTandemScanIons;
-        for (const TandemScanIon &tsi : tandemScanIons) {
-
-            TandemScanIon reCalTsi = tsi;
-
-
-            e = reCalibratomatic.recalibrateMz(
-                    tsi.scanNumber,
-                    tsi.mz,
-                    &reCalTsi.mz
-            );
-            if (e != eNoError) {
-                return {e, {}};
-            }
-
-            reCalTandemScanIons.push_back(reCalTsi);
-        }
-
-        return {e, reCalTandemScanIons};
-    }
-
-}
-Err PythiaDIAWorkflow::recalibrateTandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(*tandemScanIons); ree;
-    e = ErrorUtils::isTrue(m_reCalibratomatic.isInit()); ree;
-
-    const int trancheBuffer = 0;
-
-    QVector<QVector<TandemScanIon>> tranchedTandemScanIons;
-    e = ParallelUtils::tranchVectorForParallelizationInOrder(
-            *tandemScanIons
-            , m_pythiaParameters.trancheSize,
-            trancheBuffer,
-            &tranchedTandemScanIons
-            ); ree;
-
-    const auto reCalBinder = std::bind(
-            reCalParallelLogic,
-            std::placeholders::_1,
-            m_reCalibratomatic
-    );
-
-    QFuture<QPair<Err, QVector<TandemScanIon>>> futures = QtConcurrent::mapped(
-            tranchedTandemScanIons,
-            reCalBinder
-            );
-    futures.waitForFinished();
-
-    tandemScanIons->clear();
-    for (const QPair<Err, QVector<TandemScanIon>> &future : futures) {
-
-        e = future.first; ree;
-        tandemScanIons->append(future.second);
-    }
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::optimizePythiaParameters() {
-
-    ERR_INIT
-
-    const QPair<double, double> oldVsNewPPMStDev = m_reCalibratomatic.oldVsNewPPMStDev();
-    const double oldPPMStDev = oldVsNewPPMStDev.first;
-    const double newPPMStDev = oldVsNewPPMStDev.second;
-
-    e = ErrorUtils::isTrue(oldPPMStDev > newPPMStDev); ree;
-    e = ErrorUtils::isNotEqual(oldPPMStDev, 0.0); ree;
-
-    const double ppmAdjustmentPostCal = newPPMStDev / oldPPMStDev;
-
-    const double oldMs2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-    m_pythiaParameters.ms2ExtractionWidthPPM *= ppmAdjustmentPostCal;
-    m_pythiaParameters.returnPSMTopN = 20; //TODO correct this.
-
-    qDebug() << "PPM Extraction value adjusted from:" << oldMs2ExtractionWidthPPM
-                << "to" << m_pythiaParameters.ms2ExtractionWidthPPM;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::runSecondPassMsFraggerTronWorkFlow(
-        const QVector<TandemScanIon> &tandemScanIons,
-        const QString &psmOutputFilePath
+Err PythiaDIAWorkflow::preprocessDIAFrames(
+        const MsReaderPointer &msReaderPointer,
+        QVector<MsFrame> *msFrames
         ) {
 
     ERR_INIT
 
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(
+    QVector<ProcessFileLogicInput> processFileLogicInputs;
+    e = buildProcessFileLogicInputs(
+            msReaderPointer,
             m_pythiaParameters,
-            m_fragLibUri,
-            m_pepLibUri
-    );ree;
+            &processFileLogicInputs
+    ); ree;
 
-    e = msFraggerTronWorkFlow.processScanIons(
-            tandemScanIons,
-            psmOutputFilePath
-            ); ree;
+    QFuture<QPair<Err, MsFrame>> futures = QtConcurrent::mapped(
+            processFileLogicInputs,
+            processFileParallelLogic
+    );
+    futures.waitForFinished();
+
+    for (const QPair<Err, MsFrame> &pr : futures) {
+
+        e = pr.first; ree;
+        msFrames->push_back(pr.second);
+    }
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::scoreCandidatesPerFrame(const QVector<MsFrame> &msFrames) {
+    ERR_INIT
+
 
     ERR_RETURN
 }

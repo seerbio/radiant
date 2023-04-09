@@ -129,8 +129,8 @@ namespace {
 Err DeisotoperTandem::deisotopeTandemScansParallel(
         const QMap<ScanNumber, ScanPoints> &tandemScans,
         double ppmTolerance,
-        QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped,
-        bool runParallel
+        bool runParallel,
+        QMap<ScanNumber, ScanPoints> *tandemScansDeisotoped
         ) {
 
     ERR_INIT
@@ -142,7 +142,7 @@ Err DeisotoperTandem::deisotopeTandemScansParallel(
             = ParallelUtils::convertMapToVectorPairs<ScanNumber, ScanPoints>(tandemScans);
 
     if (runParallel) {
-
+        qDebug() << "Running deisotoper parallel";
         const auto deisotoperLogicBinder = std::bind(
                 parallelDeisotopeLogic,
                 std::placeholders::_1,
@@ -162,7 +162,7 @@ Err DeisotoperTandem::deisotopeTandemScansParallel(
     }
 
     else {
-
+        qDebug() << "Running deisotoper serial";
         for (const QPair<ScanNumber, ScanPoints> &pr : scanPointsAsPair) {
             const QPair<ScanNumber, ScanPoints> deisoPoints = parallelDeisotopeLogic(
                     pr,

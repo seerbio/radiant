@@ -25,7 +25,7 @@ SET(SOURCE_FILES
         src/LibraryBuilderWorkFlow.cpp
         src/MsFilePreProcessorWorkFlow.cpp
 #        src/MsFraggerTronWorkFlow.cpp
-#        src/PythiaDIAWorkflow.cpp
+        src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
@@ -34,7 +34,7 @@ SET(HEADER_FILES
         src/LibraryBuilderWorkFlow.h
         src/MsFilePreProcessorWorkFlow.h
 #        src/MsFraggerTronWorkFlow.h
-#        src/PythiaDIAWorkflow.h
+        src/PythiaDIAWorkflow.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

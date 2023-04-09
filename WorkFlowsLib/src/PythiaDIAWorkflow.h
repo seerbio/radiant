@@ -10,6 +10,8 @@
 #include "Error.h"
 
 #include "GlobalSettings.h"
+#include "MsFrame.h"
+#include "MsReaderPointerFactory.h"
 #include "PythiaParameterReader.h"
 #include "ReCalibratomatic.h"
 
@@ -31,27 +33,17 @@ public:
             const QString &pepLibUri
             );
 
-    Err processFile(const QString &mzmlFilePath);
+    Err processFile(const QString &msDatalFilePath);
 
 
 private:
 
-    Err runFirstPassMsFraggerTronWorkFlow(
-            const QString &mzmlFilePath,
-            QString *firstPassPSMsFilePath,
-            QVector<TandemScanIon> *tandemScanIons
+    Err preprocessDIAFrames(
+            const MsReaderPointer &msReaderPointer,
+            QVector<MsFrame> *msFrames
             );
 
-    Err initReCalibratomatic(const QString &firstPassPSMsFilePath);
-
-    Err recalibrateTandemScanIons(QVector<TandemScanIon> *tandemScanIons);
-
-    Err optimizePythiaParameters();
-
-    Err runSecondPassMsFraggerTronWorkFlow(
-            const QVector<TandemScanIon> &tandemScanIons,
-            const QString &psmOutputFilePath
-            );
+    Err scoreCandidatesPerFrame(const QVector<MsFrame> &msFrames);
 
 
 private:

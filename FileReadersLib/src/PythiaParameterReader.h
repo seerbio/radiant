@@ -127,6 +127,11 @@ struct PythiaParameters{
     int minScanCount = 3;
     bool useMeanMz = true;
 
+    //TODO hook these up
+    bool denoise = true;
+    bool deisotope = true;
+    bool smooth = false;
+
 
     [[nodiscard]] bool isValid() const {
 

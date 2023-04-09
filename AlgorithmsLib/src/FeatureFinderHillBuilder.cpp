@@ -55,7 +55,7 @@ private:
 };
 
 
-FeatureFinderHillBuilder::Private::Private() : m_runParallel(true) {}
+FeatureFinderHillBuilder::Private::Private() : m_runParallel(false) {}
 FeatureFinderHillBuilder::Private::~Private() {}
 
 
@@ -183,6 +183,8 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
 
 //#define GROUP_SCANS_PARALLEL
 #ifdef GROUP_SCANS_PARALLEL
+    qDebug() << "Running buildScanPointGroups parallel";
+
     const int processorCount = ParallelUtils::numberOfAvailableSystemProcessors();
     const int defaultExtraGroup = 1;
 
@@ -214,6 +216,8 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
     }
 
 #else
+    qDebug() << "Running buildScanPointGroups serial";
+
     ScanGroupingParallelInput scanGroupingParallelInput;
     scanGroupingParallelInput.skipScanCount = m_featureFinderParameters.skipScanCount;
     scanGroupingParallelInput.allScanPointsTranch = allScanPoints;
@@ -350,6 +354,8 @@ Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
 
     if (m_runParallel) {
 
+        qDebug() << "Running connectCentroidsInGroupedMzVals parallel";
+
         QFuture<Eigen::MatrixX<int>> futures
                 = QtConcurrent::mapped(inputs, connectCentroidsInGroupedMzValsParallelLogic);
 
@@ -361,6 +367,8 @@ Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
     }
 
     else {
+
+        qDebug() << "Running connectCentroidsInGroupedMzVals serial";
 
         for (const ConnectCentroidsInGroupedMzValsInput &input: inputs) {
             const Eigen::MatrixX<int> mat = connectCentroidsInGroupedMzValsParallelLogic(input);
