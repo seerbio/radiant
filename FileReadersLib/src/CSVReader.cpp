@@ -52,7 +52,7 @@ Err CSVReader::writeDataToCSV(
         }
 
         file.close();
-        qDebug() << rowsToWrite.size() << "Written to" << outputFilePath;
+        qDebug() << rowsToWrite.size() << "Rows written to" << outputFilePath;
         ERR_RETURN
     }
 

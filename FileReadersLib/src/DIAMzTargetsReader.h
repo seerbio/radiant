@@ -68,7 +68,7 @@ struct DIAMzTargetsReaderRow : public CSVReaderInputBase {
 
         ERR_RETURN
     }
-    
+
 };
 
 
