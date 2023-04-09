@@ -1,8 +1,6 @@
 #include "LibraryBuilderWorkFlow.h"
 
 #include "Error.h"
-#include "PeptidesLibraryTron.h"
-#include "PythiaParameterReader.h"
 
 #include <QtTest>
 
