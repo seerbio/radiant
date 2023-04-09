@@ -12,24 +12,70 @@
 using namespace Error;
 
 
-struct CSVReaderBase {
+struct CSVReaderInputBase {
 
 public:
 
     virtual QMap<QString, QVariant> map() {return {};};
 
+    virtual Err initFromRead(const CSVReaderInputBase &row) {return Error::eNoError;}
+
+    void setDataMap(const QMap<QString, QVariant> &dataMap) {
+        m_dataMap = dataMap;
+    }
+
+    [[nodiscard]] QMap<QString, QVariant> dataMap() const {
+        return m_dataMap;
+    }
+
     template<typename T>
-    static QVector<QSharedPointer<CSVReaderBase>> convertInputStructToSharedPointers(
+    static QVector<QSharedPointer<CSVReaderInputBase>> convertInputStructToSharedPointers(
             const QVector<T> &csvReaderInputBaseDerivedStruct
             ) {
-        QVector<QSharedPointer<CSVReaderBase>> ptrs;
+        QVector<QSharedPointer<CSVReaderInputBase>> ptrs;
         for (const T &tr : csvReaderInputBaseDerivedStruct) {
-            QSharedPointer<CSVReaderBase> ptr(new T(tr));
+            QSharedPointer<CSVReaderInputBase> ptr(new T(tr));
             ptrs.push_back(ptr);
         }
 
         return ptrs;
     }
+
+    template<typename T>
+    static Err convertSharedPointersToInputStruct(
+            const QVector<CSVReaderInputBase> &csvReaderInputBases,
+            QVector<T> *outputStructs
+    ) {
+
+        ERR_INIT
+
+        for (const CSVReaderInputBase &prib : csvReaderInputBases) {
+            T strct;
+            e = strct.initFromRead(prib); ree;
+            outputStructs->push_back(strct);
+        }
+
+        ERR_RETURN
+    }
+
+    static bool checkIfExpectedKeysArePresent(
+            const QMap<QString, QVariant> &dataMap,
+            const QStringList &keysToCheck
+    ) {
+        const QStringList &mapKeys = dataMap.keys();
+        auto keyCheckLogic = [mapKeys](const QString &s){return mapKeys.contains(s);};
+        const bool allKeysPresent = std::all_of(
+                keysToCheck.begin(),
+                keysToCheck.end(),
+                keyCheckLogic
+        );
+
+        return allKeysPresent;
+    }
+
+protected:
+
+    QMap<QString, QVariant> m_dataMap;
 
 };
 
@@ -39,17 +85,15 @@ class FILEREADERSLIB_EXPORTS CSVReader {
 
 public:
 
-    static Err writeDataToCSV(
+    Err writeDataToCSV(
             const QString &outputFilePath,
-            const QVector<QSharedPointer<CSVReaderBase>> &rowsToWrite
+            const QVector<QSharedPointer<CSVReaderInputBase>> &rowsToWrite
             );
 
-    static Err readDataFromCSV(
-            const QString &outputFilePath,
-            QVector<CSVReaderBase> &readRows
+    Err readDataFromCSV(
+            const QString &csvFilePath,
+            QVector<CSVReaderInputBase> *readRows
             );
-
-
 
 };
 

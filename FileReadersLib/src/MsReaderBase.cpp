@@ -5,6 +5,7 @@
 #include "MsReaderBase.h"
 
 #include "ErrorUtils.h"
+#include "DIAMzTargetsReader.h"
 
 #include <QElapsedTimer>
 #include <QFile>
@@ -20,7 +21,7 @@ void MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints)
     m_scanPoints = scanPoints;
 }
 
-Err MsReaderBase::getScanInfo(
+Err MsReaderBase::getMsScanInfo(
         ScanNumber scanNumber,
         MsScanInfo *msScanInfo
         ) const {
@@ -143,7 +144,7 @@ Err MsReaderBase::getScanPoints(
         const ScanPoints &scanPointsVec = it.value();
 
         MsScanInfo msScanInfo;
-        e = getScanInfo(scanNumber, &msScanInfo); ree
+        e = getMsScanInfo(scanNumber, &msScanInfo); ree
 
         if (msScanInfo.msLevel != msLevel) {
             continue;
@@ -312,5 +313,72 @@ Err MsReaderBase::collateTandemPrecursorTargetsDIA(
     }
 
     qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
+    ERR_RETURN
+}
+
+QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
+
+    const int msLevel = 2;
+    const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
+
+    QMap<UniqueMsInfoScanKey, MsScanInfo> uniqueMsScanInfos;
+
+    for (const MsScanInfo &info : tandemScanInfos) {
+        uniqueMsScanInfos[info.targetScanKey()] = info;
+    }
+
+    return uniqueMsScanInfos.values().toVector();
+}
+
+Err MsReaderBase::printFileInfo() {
+
+    ERR_INIT
+
+    int ms1ScanSize = -1;
+    int ms2ScanSize = -1;
+    int msLevel = 1;
+    {
+        const QMap<ScanNumber, MsScanInfo> ms1Scans = getMsScanInfos(msLevel);
+        ms1ScanSize = ms1Scans.size();
+
+        const QMap<ScanNumber, MsScanInfo> ms2Scans = getMsScanInfos(++msLevel);
+        ms2ScanSize = ms2Scans.size();
+    }
+
+    const QVector<MsScanInfo> uniqueTandemScanInfos = getUniqueTandemMsScanInfos();
+
+    qDebug() << "MsData FilePath" << m_filePath;
+    qDebug() << "MS1 Scan Count" << ms1ScanSize;
+    qDebug() << "MS2 Scan Count" << ms2ScanSize;
+    qDebug() << "File is DIA" << isDIA();
+
+    if (isDIA()) {
+        qDebug() << "Mean Scan Count Per MS2 Target (DIA)" << static_cast<double>(ms2ScanSize) / uniqueTandemScanInfos.size();
+
+        QVector<DIAMzTargetsReaderRow> ops;
+        for (const MsScanInfo &si : uniqueTandemScanInfos) {
+            qDebug() << "TargetMz:" << si.precursorTargetMz
+                     << "IsoWinLo:" << si.isoWindowLower
+                     << "IsoWinHi:" << si.isoWindowUpper;
+            DIAMzTargetsReaderRow op;
+            op.targetMz = si.precursorTargetMz;
+            op.isoWindowLo = si.isoWindowLower;
+            op.isoWindowHi = si.isoWindowUpper;
+            op.collisionEnergy = si.collisionEnergy;
+
+            ops.push_back(op);
+        }
+
+        const QString outputFileName = m_filePath + S_GLOBAL_SETTINGS.DOT_CSV;
+
+        DIAMzTargetsReader reader;
+        e = reader.write(
+                ops,
+                outputFileName
+                ); ree;
+
+        qDebug() << "Target CSV written to" << outputFileName;
+    }
+
     ERR_RETURN
 }

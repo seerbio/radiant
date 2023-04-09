@@ -13,6 +13,9 @@ Err MsReaderParquet::openFile(const QString &filePath) {
 
     ParquetReader reader;
 
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+    m_filePath = filePath;
+
     QVector<ParquetReaderInputBase> ptrsRead;
     e = reader.readDataFromParquet(
             filePath,
@@ -53,6 +56,7 @@ Err MsReaderParquet::openFile(const QString &filePath) {
         m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
     }
 
+    e = printFileInfo(); ree;
     ERR_RETURN
 }
 

@@ -60,7 +60,7 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QCOMPARE(e, eNoError);
 
     MsScanInfo readMsScanInfo;
-    e = msReaderParquet.getScanInfo(
+    e = msReaderParquet.getMsScanInfo(
             msScanInfo.scanNumber,
             &readMsScanInfo
             );

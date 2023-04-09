@@ -36,7 +36,7 @@ private:
 
 void MsReaderBaseTests::openMzMlTest() {
 
-    QSKIP("SKIPPING FOR DEV");
+//    QSKIP("SKIPPING FOR DEV");
 
     QPair<Err, MsReaderPointer> msReaderFactoryResult = MsReaderPointerFactory::createInstance(m_mzMLFilePath);
     QCOMPARE(msReaderFactoryResult.first, eNoError);

@@ -111,7 +111,7 @@ namespace {
 
             ProcessFileLogicInput processFileLogicInput;
 
-            e = msReaderPointer->getScanInfo(
+            e = msReaderPointer->getMsScanInfo(
                     firstScanNumber,
                     &processFileLogicInput.msScanInfo
             ); ree;

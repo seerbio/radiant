@@ -76,7 +76,7 @@ public:
             ScanPoints *scanPoints
             );
 
-    Err getScanInfo(
+    Err getMsScanInfo(
             ScanNumber scanNumber,
             MsScanInfo *msScanInfo
             ) const;
@@ -84,6 +84,8 @@ public:
     Err collateTandemPrecursorTargetsDIA(
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame
             );
+
+    QVector<MsScanInfo> getUniqueTandemMsScanInfos();
 
     Err updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate);
 
@@ -116,10 +118,14 @@ public:
 
     void printSize();
 
+    Err printFileInfo();
+
 protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
+
+    QString m_filePath;
 
 };
 

@@ -638,8 +638,12 @@ Err MsReaderMzML::openFile(const QString &filePath) {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+    m_filePath = filePath;
+
     e = m_d->openFile(filePath); ree;
 
+    e = printFileInfo(); ree;
     ERR_RETURN
 }
 

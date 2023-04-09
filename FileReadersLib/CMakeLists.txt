@@ -21,6 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/CSVReader.cpp
+        src/DIAMzTargetsReader.cpp
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
         src/MsReaderParquet.cpp
@@ -34,6 +35,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/CSVReader.h
+        src/DIAMzTargetsReader.h
         src/FastaReader.h
         src/JsonParametersReader.h
         src/MsReaderParquet.h

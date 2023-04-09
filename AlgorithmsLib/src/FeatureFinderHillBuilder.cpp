@@ -791,7 +791,7 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
 
     ERR_INIT
 
-    struct MzRtRow : public CSVReaderBase {
+    struct MzRtRow : public CSVReaderInputBase {
         double mzLo = -1.0;
         double mzHi = -1.0;
         double rtLo = -1.0;
@@ -834,10 +834,11 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
         mzRtRows.push_back(mzRtRow);
     }
 
-    const QVector<QSharedPointer<CSVReaderBase>> ptrs
-            = CSVReaderBase::convertInputStructToSharedPointers(mzRtRows);
+    const QVector<QSharedPointer<CSVReaderInputBase>> ptrs
+            = CSVReaderInputBase::convertInputStructToSharedPointers(mzRtRows);
 
-    e = CSVReader::writeDataToCSV(
+    CSVReader csvReader;
+    e = csvReader.writeDataToCSV(
             destinationFilePath,
             ptrs
             ); ree;

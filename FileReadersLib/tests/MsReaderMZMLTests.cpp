@@ -47,7 +47,7 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(reader.m_scanPoints.size(), 26010);
 
     MsScanInfo msScanInfo;
-    e = reader.getScanInfo(666, &msScanInfo);
+    e = reader.getMsScanInfo(666, &msScanInfo);
     QCOMPARE(e, eNoError);
     QCOMPARE(msScanInfo.scanNumber, 666);
     QCOMPARE(msScanInfo.msLevel, 2);
