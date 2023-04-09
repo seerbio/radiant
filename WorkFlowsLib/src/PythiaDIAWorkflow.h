@@ -50,7 +50,7 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_pepLibUri;
-    
+
 
 };
 
