@@ -30,7 +30,6 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
-        src/ReCalibratomatic.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
 )
@@ -46,7 +45,6 @@ SET(HEADER_FILES
         src/MsScansDenoiseTron.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
-        src/ReCalibratomatic.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
 )

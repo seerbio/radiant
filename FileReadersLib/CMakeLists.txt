@@ -23,7 +23,6 @@ SET(SOURCE_FILES
         src/CSVReader.cpp
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
-        src/MsFraggerTronResultsReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
@@ -37,7 +36,6 @@ SET(HEADER_FILES
         src/CSVReader.h
         src/FastaReader.h
         src/JsonParametersReader.h
-        src/MsFraggerTronResultsReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h

@@ -13,7 +13,6 @@
 #include "MsFrame.h"
 #include "MsReaderPointerFactory.h"
 #include "PythiaParameterReader.h"
-#include "ReCalibratomatic.h"
 
 
 using namespace Error;
@@ -51,8 +50,7 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_pepLibUri;
-
-    ReCalibratomatic m_reCalibratomatic;
+    
 
 };
 
