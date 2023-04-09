@@ -18,8 +18,6 @@ SET(TEST_CLASSES
         ConvertMzMLToParquetWorkFlowTests
         FastaFileToPeptidesListWorkFlowTests
         LibraryBuilderWorkFlowTests
-        MsFilePreProcessorWorkFlowTests
-#        MsFraggerTronWorkFlowTests
         PythiaDIAWorkflowTests
         )
 

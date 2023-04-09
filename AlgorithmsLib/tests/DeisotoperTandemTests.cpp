@@ -26,6 +26,7 @@ private slots:
 private:
 
     const double ppmTolerance = 50.0;
+    const bool deisotopeParallel = true;
 
     const ScanPoints vec = {
             ScanPoint(348.1285358019215, 18005.48828125),
@@ -608,6 +609,7 @@ void DeisotoperTandemTests::deisotopeTandemScansParallelTest() {
     e = DeisotoperTandem::deisotopeTandemScansParallel(
             testMap,
             ppmTolerance,
+            deisotopeParallel,
             &deisotopedScans
             );
     QCOMPARE(e, eNoError);
@@ -645,6 +647,7 @@ void DeisotoperTandemTests::deisotopeTandemScansParallelRealDataTest() {
     e = DeisotoperTandem::deisotopeTandemScansParallel(
             tandemScans,
             ppmTolerance,
+            deisotopeParallel,
             &deisotopedScans
     );
     QCOMPARE(e, eNoError);
