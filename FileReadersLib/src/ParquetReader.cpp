@@ -105,6 +105,7 @@ namespace {
         arrow::Status st;
 
         const QVariant &vecFirst = vec.first();
+        qDebug() << vecFirst.typeName();
 
         if (
             vecFirst.typeName() == QStringLiteral("int") ||
@@ -165,7 +166,14 @@ namespace {
 
             std::vector<std::string> stdVec;
             for (const QVariant &var : vec) {
-                const std::string arrStr = var.toByteArray().toStdString();
+
+                if (vecFirst.typeName() == QStringLiteral("QByteArray")) {
+                    const std::string arrStr = var.toByteArray().toStdString();
+                    stdVec.push_back(arrStr);
+                    continue;
+                }
+
+                const std::string arrStr = var.toString().toStdString();
                 stdVec.push_back(arrStr);
             }
 
@@ -368,6 +376,7 @@ namespace {
         std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
         const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
         const QString typeName = QString::fromStdString(colChunks->type()->ToString());
+        qDebug() << "type" << typeName;
 
         if (
             typeName == QStringLiteral("int64") ||
@@ -413,9 +422,18 @@ namespace {
             else {
                 auto arrowArray = std::static_pointer_cast<arrow::StringArray>(colChunks);
                 for (int64_t i = 0; i < colChunks->length(); ++i) {
-                    outputVec->push_back(QString::fromStdString(
-                            static_cast<std::string>(arrowArray->Value(i)))
-                            );
+
+                    const QString convertedVal
+                            = QString::fromStdString(static_cast<std::string>(arrowArray->Value(i)));
+
+                    if (convertedVal.size() == 1) {
+
+                        const QChar qChar = convertedVal[0];
+                        outputVec->push_back(qChar);
+                        continue;
+                    }
+
+                    outputVec->push_back(convertedVal);
                 }
             }
         }
@@ -438,6 +456,8 @@ namespace {
 
                 const QString colName = QString::fromStdString(it->first);
                 const int colIndex = it->second;
+
+                qDebug() << "Col name" << colName;
 
                 QVector<QVariant> columnValsVec;
                 columnChecker = readColumn(

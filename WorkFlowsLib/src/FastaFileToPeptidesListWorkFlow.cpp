@@ -10,6 +10,8 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 
+#include <iostream>
+
 
 Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParameters) {
 
@@ -109,6 +111,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
             entered[ps.sequence] = true;
 
             QSharedPointer<ParquetReaderInputBase> parquetReaderInputBase(new PeptideSequence(ps));
+
             peptideSequences->push_back(parquetReaderInputBase);
         }
     }

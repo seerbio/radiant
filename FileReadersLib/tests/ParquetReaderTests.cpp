@@ -46,6 +46,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
         QVector<float> testVecFloat;
         QVector<bool> testVecBool;
         QStringList testStringList;
+        QChar c;
         double d;
         int i;
         float f;
@@ -60,6 +61,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
                 {"testVecFloat", QVariant(qVectorToQByteArray(testVecFloat))},
                 {"testVecBool", QVariant(qVectorToQByteArray(testVecBool))},
                 {"testStringList", QVariant(joinQStringList(testStringList))},
+                {"c", QVariant(c)},
                 {"d", QVariant(d)},
                 {"i", QVariant(i)},
                 {"f", QVariant(f)},
@@ -79,6 +81,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
             testVecFloat = bytesArrayToQVector<float>(dataMap.value("testVecFloat").toByteArray());
             testVecBool = bytesArrayToQVector<bool>(dataMap.value("testVecBool").toByteArray());
             testStringList = dataMap.value("testStringList").toString().split(S_GLOBAL_SETTINGS.SEPARATOR);
+            c = dataMap.value("c").toChar();
             d = dataMap.value("d").toDouble();
             i = dataMap.value("i").toInt();
             f = dataMap.value("f").toFloat();
@@ -96,6 +99,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
     testRow.testVecFloat = {666.6, 66.6, 6.6};;
     testRow.testVecBool = {true, false};
     testRow.testStringList = QStringList({"Chauncy", "Flops"});
+    testRow.c = 'C';
     testRow.d = 666.6;
     testRow.i = 666;
     testRow.f = 666.6;
@@ -142,6 +146,7 @@ void ParquetReaderTests::readWriteCombinedTest() {
     QCOMPARE(readRow.i, testRow.i);
     QCOMPARE(readRow.f, testRow.f);
     QCOMPARE(readRow.b, testRow.b);
+    QCOMPARE(readRow.c, testRow.c);
 }
 
 

@@ -233,7 +233,8 @@ namespace {
         e = ErrorUtils::isNotEmpty(outputFilePath); ree;
         e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
 
-        const QVector<TandemLibraryReaderRow> writeRows = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
+        const QVector<TandemLibraryReaderRow> writeRows
+                = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
 
         e = TandemLibraryReader::writeTandemPredictions(
                 writeRows,
