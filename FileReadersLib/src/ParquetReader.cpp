@@ -105,7 +105,6 @@ namespace {
         arrow::Status st;
 
         const QVariant &vecFirst = vec.first();
-        qDebug() << vecFirst.typeName();
 
         if (
             vecFirst.typeName() == QStringLiteral("int") ||
@@ -376,7 +375,6 @@ namespace {
         std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
         const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
         const QString typeName = QString::fromStdString(colChunks->type()->ToString());
-        qDebug() << "type" << typeName;
 
         if (
             typeName == QStringLiteral("int64") ||
@@ -456,8 +454,6 @@ namespace {
 
                 const QString colName = QString::fromStdString(it->first);
                 const int colIndex = it->second;
-
-                qDebug() << "Col name" << colName;
 
                 QVector<QVariant> columnValsVec;
                 columnChecker = readColumn(

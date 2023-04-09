@@ -27,7 +27,7 @@ Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParamete
 
 namespace {
 
-    Err writeToParquet(
+    Err writePeptideListToParquet(
             const QString &fastaFilePath,
             const QVector<PeptideSequence> &peptideSequences,
             QString *outputFilePath
@@ -78,7 +78,7 @@ Err FastaFileToPeptidesListWorkFlow::exec(
                 ); ree;
     }
 
-    e = writeToParquet(
+    e = writePeptideListToParquet(
             fastaFilePath,
             peptideSequences,
             outputFilePath
@@ -155,7 +155,7 @@ namespace {
 
     QString shufflePeptide(const QString& peptideSeq) {
 
-        std::mt19937 rng(666);
+        std::mt19937 rng(666); //TODO make this settable.
 
         const int peptideLen = peptideSeq.size();
         if (peptideLen < 3) {
