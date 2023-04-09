@@ -11,6 +11,7 @@
 #include <QFuture>
 
 #include <iostream>
+#include <random>
 
 
 Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParameters) {
@@ -24,6 +25,34 @@ Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParamete
 }
 
 
+namespace {
+
+    Err writeToParquet(
+            const QString &fastaFilePath,
+            const QVector<PeptideSequence> &peptideSequences,
+            QString *outputFilePath
+            ) {
+
+        ERR_INIT
+
+        *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
+
+        const QVector<QSharedPointer<ParquetReaderInputBase>> peptideSequencesPointers
+                = ParquetReaderInputBase::convertInputStructToSharedPointers(peptideSequences);
+
+        ParquetReader parquetReader;
+        e = parquetReader.writeDataToParquet(
+                *outputFilePath,
+                peptideSequencesPointers
+        ); ree;
+
+        qDebug() << "Peptides generate:" << peptideSequences.size();
+        qDebug() << "Peptide Library written to:" << *outputFilePath;
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err FastaFileToPeptidesListWorkFlow::exec(
         const QString &fastaFilePath,
         QString *outputFilePath
@@ -36,22 +65,24 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     const QMap<ProteinId, FastaEntry> fastaEntries = fastaReader.fastaEntries();
 
-    QVector<QSharedPointer<ParquetReaderInputBase>> peptideSequences;
+    QVector<PeptideSequence> peptideSequences;
     e = digestFastaEntries(
             fastaEntries,
             &peptideSequences
             ); ree;
 
-    *outputFilePath = fastaFilePath + S_GLOBAL_SETTINGS.DOT_PEPLIB;
+    if (m_params.addDecoys) {
+        e = addDecoys(
+                666,
+                &peptideSequences
+                ); ree;
+    }
 
-    ParquetReader parquetReader;
-    e = parquetReader.writeDataToParquet(
-            *outputFilePath,
-            peptideSequences
+    e = writeToParquet(
+            fastaFilePath,
+            peptideSequences,
+            outputFilePath
             ); ree;
-
-    qDebug() << "Peptides generate:" << peptideSequences.size();
-    qDebug() << "Peptide Library written to:" << *outputFilePath;
 
     ERR_RETURN
 }
@@ -79,7 +110,7 @@ namespace {
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         const QMap<ProteinId, FastaEntry> &fastaEntries,
-        QVector<QSharedPointer<ParquetReaderInputBase>> *peptideSequences
+        QVector<PeptideSequence> *peptideSequences
         ) {
 
     ERR_INIT
@@ -109,12 +140,108 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
             }
 
             entered[ps.sequence] = true;
-
-            QSharedPointer<ParquetReaderInputBase> parquetReaderInputBase(new PeptideSequence(ps));
-
-            peptideSequences->push_back(parquetReaderInputBase);
+            peptideSequences->push_back(ps);
         }
     }
+
+    qDebug() << "Targets size" << peptideSequences->size();
+    ERR_RETURN
+}
+
+
+namespace {
+
+    const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
+
+    QString shufflePeptide(const QString& peptideSeq) {
+
+        std::mt19937 rng(666);
+
+        const int peptideLen = peptideSeq.size();
+        if (peptideLen < 3) {
+            return peptideSeq;
+        }
+
+        QStringList strList = peptideSeq.split("", QString::SkipEmptyParts);
+
+        std::reverse(strList.rbegin() + 1, strList.rend() - 1);
+
+        std::shuffle(
+                strList.begin() + 1,
+                strList.begin() + peptideLen - 1,
+                rng
+        );
+
+        return strList.join("");
+    }
+
+    PeptideSequence parallelAddDecoysLogic(const PeptideSequence &ps) {
+
+        PeptideSequence newPepSeq = ps;
+        newPepSeq.isDecoy = true;
+
+        int retries = 0;
+        const int maxRetryCount = 10;
+        while (newPepSeq.sequence == ps.sequence) {
+
+            newPepSeq.sequence = shufflePeptide(ps.sequence);
+
+            if (retries++ > maxRetryCount) {
+                newPepSeq.sequence = FAILED_SHUFFLE;
+                return newPepSeq;
+            }
+        }
+
+        return newPepSeq;
+    }
+
+}//namespace
+Err FastaFileToPeptidesListWorkFlow::addDecoys(
+        int seed,
+        QVector<PeptideSequence> *peptideSequences
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*peptideSequences); ree;
+    const int peptideSequencesSize = peptideSequences->size();
+
+#define RUN_PARALLEL_DECOYS
+#ifdef RUN_PARALLEL_DECOYS
+
+    QFuture<PeptideSequence> futures = QtConcurrent::mapped(
+            *peptideSequences,
+            parallelAddDecoysLogic
+    );
+    futures.waitForFinished();
+
+    for (const PeptideSequence &pepSeq : futures) {
+
+        if (pepSeq.sequence == FAILED_SHUFFLE) {
+            continue;
+        }
+
+        peptideSequences->append(pepSeq);
+    }
+
+    e = ErrorUtils::isTrue(peptideSequencesSize != peptideSequences->size()); ree;
+    qDebug() << "Targets + Decoys size" << peptideSequences->size();
+
+#else
+    QVector<PeptideSequence> newPepSeqs;
+
+    for (const PeptideSequence &ps : *peptideSequences) {
+        const PeptideSequence newPepSeq = parallelAddDecoysLogic(ps);
+
+        if (newPepSeq.sequence == FAILED_SHUFFLE) {
+            continue;
+        }
+
+        newPepSeqs.push_back(newPepSeq);
+    }
+
+    peptideSequences->append(newPepSeqs);
+#endif
 
     ERR_RETURN
 }

@@ -28,11 +28,11 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     ERR_INIT
 
     const QString &fastaFilePath
-            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
-//            = "/home/anichols/Desktop/RawData/2022-05-05-decoys-Uniprot_human_plus_Arabidopsis.fasta";
+//            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
+            = "/home/anichols/Desktop/RawData/2022-05-05-decoys-Uniprot_human_plus_Arabidopsis.fasta";
     PythiaParameters params;
     params.cTermCleavePoints = QStringList({"K", "R"});
-    params.addDecoys = false;
+    params.addDecoys = true;
     params.peptideLengthMin = 7;
     params.peptideLengthMax = 40;
     params.chargeStateMin = 2;

@@ -34,8 +34,13 @@ private:
 
     Err digestFastaEntries(
             const QMap<ProteinId, FastaEntry> &fastaEntries,
-            QVector<QSharedPointer<ParquetReaderInputBase>> *peptideSequences
+            QVector<PeptideSequence> *peptideSequences
             );
+
+    Err addDecoys(
+            int seed,
+            QVector<PeptideSequence> *peptideSequences
+    );
 
 private:
 
