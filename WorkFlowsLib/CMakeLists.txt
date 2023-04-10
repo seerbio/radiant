@@ -70,6 +70,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         FileReadersLib
         UtilsLib
         ${ARROW_SHARED_LIBRARY}
+        ${ARROW_STATIC_LIBRARY_DEPS}
         ${PARQUET_SHARED_LIBRARY}
         )
 
