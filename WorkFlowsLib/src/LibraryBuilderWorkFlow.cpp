@@ -62,48 +62,18 @@ namespace {
 
         ERR_INIT
 
-        QFile file(peptidesCSVFilePath);
-        if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << file.errorString();
-            rrr(eFileError);
-        }
+        CSVReader csvReader;
 
-        const QString expectedHeader = "Peptide,Charge,CollisionEnergy\n";
+        QVector<CSVReaderInputBase> readRows;
+        e = csvReader.readDataFromCSV(
+                peptidesCSVFilePath,
+                &readRows
+                ); ree
 
-        QString header;
-
-        while (!file.atEnd()) {
-
-            if (header.isEmpty()) {
-                header = file.readLine();
-
-                e = ErrorUtils::isEqualString(header, expectedHeader); ree;
-                continue;
-            }
-
-            const QString &row = file.readLine().replace(S_GLOBAL_SETTINGS.NEWLINE, "");
-
-            if (row.isEmpty()) {
-                continue;
-            }
-
-            const QStringList rowSplit = row.split(S_GLOBAL_SETTINGS.COMMA);
-
-            e = ErrorUtils::isEqual(rowSplit.size(), 3); ree;
-
-            PeptidePredictionInput ppi;
-
-            ppi.peptideSequence = rowSplit.at(0);
-
-            e = ErrorUtils::toInt(rowSplit.at(1), &ppi.charge); ree;
-            e = ErrorUtils::toDouble(rowSplit.at(2), &ppi.collisionEnergy); ree;
-
-            if (!TandemPredictionUtils::isValidPeptideForPrediction(ppi.peptideSequence, ppi.charge)) {
-                continue;
-            }
-
-            peptidePredictionInputs->push_back(ppi);
-        }
+        e =  CSVReaderInputBase::convertSharedPointersToInputStruct(
+                readRows,
+                peptidePredictionInputs
+        ); ree;
 
         ERR_RETURN
     }
@@ -301,7 +271,3 @@ Err LibraryBuilderWorkFlow::exec(
 
     ERR_RETURN
 }
-
-
-
-
