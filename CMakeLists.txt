@@ -51,8 +51,8 @@ SET(ARROW_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/src")
 SET(ZLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/include")
 SET(ZLIB_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/lib/libz.so")
 
-SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/sys/libarrow.so.1100")
-SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/sys/libparquet.so.1100")
+SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/libarrow.so.1100")
+SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/libparquet.so.1100")
 
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
