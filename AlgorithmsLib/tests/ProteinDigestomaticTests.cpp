@@ -57,7 +57,7 @@ void ProteinDigestomaticTests::digestProteinTest()
     QCOMPARE(first.firstResidue, 'Q');
     QCOMPARE(first.lastResidue, 'Y');
     QCOMPARE(first.postResidue, 'Q');
-    QCOMPARE(first.sequence, QStringLiteral("QNITEEFY"));
+    QCOMPARE(first.sequence, QStringLiteral("QNXTEEFY"));
 
     QCOMPARE(mid.startIndex, 8);
     QCOMPARE(mid.endIndex, 16);
@@ -164,7 +164,7 @@ void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
     const QStringList expected = {
              "ACDK",
              "EFGK",
-             "HILK",
+             "HXXK",
              "MNP",
              "ACD",
              "CDK",
@@ -174,10 +174,10 @@ void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
              "FGK",
              "EF",
              "GK",
-             "HIL",
-             "ILK",
-             "HI",
-             "LK",
+             "HXX",
+             "XXK",
+             "HX",
+             "XK",
              "MN",
              "NP"
     };
@@ -238,7 +238,7 @@ void ProteinDigestomaticTests::proteomicsTest()
 
     const double timeElapsedSeconds = et2.elapsed() / 1000.0;
     qDebug() << peptideCount << timeElapsedSeconds;
-    QCOMPARE(peptideCount, 338191); //TODO updated test
+    QCOMPARE(peptideCount, 504082); //TODO updated test
     QVERIFY(timeElapsedSeconds < 20);
 }
 
