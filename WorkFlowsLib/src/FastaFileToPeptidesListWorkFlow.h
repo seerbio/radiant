@@ -27,6 +27,7 @@ public:
     Err init(const PythiaParameters &pythiaParameters);
     Err exec(
             const QString &fastaFilePath,
+            const QString &targetMzCollisionCSV,
             QString *outputFilePath
             );
 
@@ -40,6 +41,11 @@ private:
     Err addDecoys(
             int seed,
             QVector<PeptideSequence> *peptideSequences
+    );
+
+    Err writeLibraryBuilderCSV(
+            const QVector<PeptideSequence> &peptideSequences,
+            const QString &targetMzCollisionCSV
     );
 
 private:

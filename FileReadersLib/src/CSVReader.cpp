@@ -93,13 +93,19 @@ Err CSVReader::readDataFromCSV(
                 ); ree;
 
         CSVReaderInputBase csvReaderInputBase;
+
+        QMap<QString, QVariant> dataMap;
+
         for (int i = 0; i < headerSplit.size(); i++) {
             const QString &headerCol = headerSplit.at(i);
             const QVariant &rowColVal = lineSplit.at(i);
+
+            dataMap.insert(headerCol, rowColVal);
         }
 
-        readRows->push_back(csvReaderInputBase);
+        csvReaderInputBase.setDataMap(dataMap);
 
+        readRows->push_back(csvReaderInputBase);
     }
 
     ERR_RETURN

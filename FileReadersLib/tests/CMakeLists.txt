@@ -57,3 +57,6 @@ configure_file(${TEST_PARAMS_PATH} ${CMAKE_BINARY_DIR}/bin/WorkFlowTestsParams.p
 
 set(PEPTIDES_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/peptides.csv")
 configure_file(${PEPTIDES_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/peptides.csv COPYONLY)
+
+set(TARGETS_MZ_CE_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/target_mz_ce.csv")
+configure_file(${TARGETS_MZ_CE_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/target_mz_ce.csv COPYONLY)

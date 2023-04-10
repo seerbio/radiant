@@ -59,6 +59,11 @@ struct DIAMzTargetsReaderRow : public CSVReaderInputBase {
                 keysToCheck
         );
 
+        if (!allKeysPresent) {
+            qDebug() << dataMap;
+            qDebug() << keysToCheck;
+        }
+
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         targetMz = dataMap.value(TARGET_MZ).toDouble();
