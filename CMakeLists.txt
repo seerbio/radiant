@@ -54,7 +54,6 @@ SET(PARQUET_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/r
 SET(ZLIB_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/include")
 SET(ZLIB_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/zlib-1.2.12/lib/libz.so")
 
-
 SET(ARROW_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libarrow.so.1100")
 SET(PARQUET_SHARED_LIBRARY "/usr/lib/x86_64-linux-gnu/libparquet.so.1100")
 
