@@ -30,6 +30,12 @@ PROJECT(PythiaDIACpp)
 # sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip -
 # sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip - > arrow_parquet.zip
 
+# LIBRARIES TO ADD TO FRESH INSTALL
+# sudo apt-get install libutf8proc2
+# sudo apt-get install libre2-5
+# sudo apt-get install libsnappy1v5
+# sudo apt-get install libthrift-0.13.0
+
 enable_testing(true)
 
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
