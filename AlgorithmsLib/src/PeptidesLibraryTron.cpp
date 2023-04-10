@@ -320,11 +320,7 @@ namespace {
             }
 
             MolecularFormula mf;
-            e = parseMolecularFormulaString(mod.formula, &mf);
-            if (e != eNoError) {
-                return {e, {}};
-            }
-
+            e = parseMolecularFormulaString(mod.formula, &mf); rree;
             Molecule mol(mf);
 
             const QVector<int> indexesOfModResidue = StringUtils::findIndexesOfCharacterInString(

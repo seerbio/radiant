@@ -13,6 +13,8 @@
 
 using Charge = int;
 using FragLibIonPeptideId = int;
+using IonLabel = QString;
+using IonLabels = QStringList;
 using IonMobilityIndex = int;
 using IsolationWindowKey = QString;
 using ModificationMass = double;

@@ -8,6 +8,7 @@
 #include "AlgorithmsLib_Exports.h"
 #include "AminoAcids.h"
 #include "ErrorUtils.h"
+#include "GlobalSettings.h"
 
 #include <QVector>
 #include <utility>
@@ -70,6 +71,36 @@ public:
     static int calculateNormalizedCollisionEnergy(double mz, int charge, int collisionEnergy);
 
     static void sortPredictionByIonLabel(QVector<FragmentIon> *frags);
+
+    static QVector<double> buildTheoreticalMzListBYOnly(
+            const QString &seq,
+            double mzMin,
+            double mzMax,
+            const AminoAcids &aa
+            );
+
+    static QPair<QVector<double>, QVector<double>> buildTheoreticalMzListBYSeparated(
+            const QString &seq,
+            double mzMin,
+            double mzMax,
+            const AminoAcids &aa,
+            int charge,
+            const QHash<ResidueIndex, ModificationMass> &modifications
+    );
+
+    static Err calculateMzValuesForPrediction(
+            const QString &peptideSequence,
+            const QString &modificatonString,
+            const AminoAcids &aminoAcids,
+            int charge,
+            QVector<double> *vec
+            );
+
+    static Err extractSequenceAndChargeFromPeptideSequenceChargeKey(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            PeptideString *peptideString,
+            int *charge
+            );
 
 };
 

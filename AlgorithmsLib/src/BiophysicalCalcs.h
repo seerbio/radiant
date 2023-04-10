@@ -32,6 +32,20 @@ public:
             double mass,
             int charge
             );
+
+    static QVector<double> buildTandemFragmentMasses(
+            const QString &seq,
+            int charge,
+            double startMass,
+            int maxLength,
+            const AminoAcids &aa
+            );
+
+    static double calculateThomson(
+            const QString &sequence,
+            const AminoAcids &aminoAcids,
+            int charge
+            );
 };
 
 

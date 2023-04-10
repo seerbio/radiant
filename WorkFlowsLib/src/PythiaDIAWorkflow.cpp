@@ -76,20 +76,13 @@ namespace {
                 msScanInfo.precursorTargetMz,
                 msScanInfo.isoWindowLower,
                 msScanInfo.isoWindowUpper
-        );
-
-        if (e != eNoError) {
-            return {e, {}};
-        }
+        ); rree;
 
         e = frame.preprocessMsFrame(
                 pythiaParameters.denoise,
                 pythiaParameters.deisotope,
                 pythiaParameters.smooth
-        );
-        if (e != eNoError) {
-            return {e, {}};
-        }
+        ); rree
 
         return {e, frame};
     }
