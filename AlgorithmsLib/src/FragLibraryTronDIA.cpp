@@ -40,6 +40,11 @@ void FragLibraryTronDIA::buildChargeVsIonLabels() {
 
 namespace {
 
+    const auto sortMzAscLogic = [](const MS2Ion &l, const MS2Ion &r){return l.mz < r.mz;};
+
+    const auto sortIntzAscLogic
+            = [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;};
+
     Err buildIonLabelVsDoubleVec(
             const IonLabels &ionLabels,
             const QVector<double> &dVals,
@@ -119,7 +124,6 @@ namespace {
             ms2Ions.push_back(ms2Ion);
         }
 
-        const auto sortMzAscLogic = [](const MS2Ion &l, const MS2Ion &r){return l.mz < r.mz;};
         std::sort(ms2Ions.begin(), ms2Ions.end(), sortMzAscLogic);
 
         return {e , {tandemLibraryReaderRow.peptideSequenceChargeKey, ms2Ions}};
@@ -141,27 +145,26 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
 
 #define RUN_PARALLEL_MZ_ASS
 #ifdef RUN_PARALLEL_MZ_ASS
-
     qDebug() << "Running FragLibraryTronDIA parallel";
-        const auto mzBuilderLogicBinder = std::bind(
-                buildMS2IonsForPeptideSequenceChargeKey,
-                std::placeholders::_1,
-                m_chargeVsIonLabels,
-                m_params.aminoAcids
-        );
+    const auto mzBuilderLogicBinder = std::bind(
+            buildMS2IonsForPeptideSequenceChargeKey,
+            std::placeholders::_1,
+            m_chargeVsIonLabels,
+            m_params.aminoAcids
+    );
 
-        QFuture<QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>>> futures = QtConcurrent::mapped(
-                tandemLibraryRows,
-                mzBuilderLogicBinder
-        );
-        futures.waitForFinished();
+    QFuture<QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>>> futures = QtConcurrent::mapped(
+            tandemLibraryRows,
+            mzBuilderLogicBinder
+    );
+    futures.waitForFinished();
 
-        for (const QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> &pepMS2Ions : futures) {
+    for (const QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> &pepMS2Ions : futures) {
 
-            e = pepMS2Ions.first; ree;
-            const QPair<PeptideSequenceChargeKey , QVector<MS2Ion>> &res = pepMS2Ions.second;
-            m_pepSeqChrgKeyVsMS2Ions.insert(res.first, res.second);
-        }
+        e = pepMS2Ions.first; ree;
+        const QPair<PeptideSequenceChargeKey , QVector<MS2Ion>> &res = pepMS2Ions.second;
+        m_pepSeqChrgKeyVsMS2Ions.insert(res.first, res.second);
+    }
 #else
     qDebug() << "Running FragLibraryTronDIA serial";
     for (const TandemLibraryReaderRow &tandemLibraryReaderRow : tandemLibraryRows) {
@@ -178,6 +181,93 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
         m_pepSeqChrgKeyVsMS2Ions.insert(res.first, res.second);
     }
 #endif
+
+    ERR_RETURN
+}
+
+namespace {
+
+    void filterMS2IonsByMz(
+            const QPair<double, double> mzStartMzEnd,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto terminatorLogic = [mzStartMzEnd](const MS2Ion &ms2Ion){
+            return ms2Ion.mz < mzStartMzEnd.first || ms2Ion.mz > mzStartMzEnd.second;
+        };
+
+        const auto terminator = std::remove_if(ms2Ions->begin(), ms2Ions->end(), terminatorLogic);
+        ms2Ions->erase(terminator, ms2Ions->end());
+    }
+
+    void filterMs2IonsTopNIntense(
+            int topN,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        topN = std::min(topN, ms2Ions->size());
+
+        std::sort(ms2Ions->rbegin(), ms2Ions->rend(), sortIntzAscLogic);
+
+        ms2Ions->resize(topN);
+
+        std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAscLogic);
+    }
+
+}//namespace
+Err FragLibraryTronDIA::getMS2Ions(
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+        QPair<double, double> mzStartMzEnd,
+        QVector<MS2Ion> *ms2Ions
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_pepSeqChrgKeyVsMS2Ions.contains(peptideSequenceChargeKey)); ree;
+
+    *ms2Ions = m_pepSeqChrgKeyVsMS2Ions.value(peptideSequenceChargeKey);
+
+    filterMS2IonsByMz(
+            mzStartMzEnd,
+            ms2Ions
+            );
+
+    ERR_RETURN
+}
+
+Err FragLibraryTronDIA::getMS2Ions(
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+        QVector<MS2Ion> *ms2Ions
+        ) {
+
+    ERR_INIT
+    e = getMS2Ions(
+            peptideSequenceChargeKey,
+            {0.0, 2000.0},
+            ms2Ions
+            ); ree;
+    ERR_RETURN
+}
+
+Err FragLibraryTronDIA::getMS2Ions(
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+        QPair<double, double> mzStartMzEnd,
+        double topNIntense,
+        QVector<MS2Ion> *ms2Ions
+        ) {
+
+    ERR_INIT
+
+    e = getMS2Ions(
+            peptideSequenceChargeKey,
+            mzStartMzEnd,
+            ms2Ions
+    ); ree;
+
+    filterMs2IonsTopNIntense(
+            topNIntense,
+            ms2Ions
+            );
 
     ERR_RETURN
 }

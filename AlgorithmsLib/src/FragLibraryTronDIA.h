@@ -31,6 +31,8 @@ class ALGORITHMSLIB_EXPORTS FragLibraryTronDIA {
 
 public:
 
+    friend class FragLibraryTronDIATests;
+
     FragLibraryTronDIA() = default;
     ~FragLibraryTronDIA() = default;
 
@@ -39,6 +41,23 @@ public:
             const QString &fragLibFilePath
             );
 
+    Err getMS2Ions(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            QVector<MS2Ion> *ms2Ions
+    );
+
+    Err getMS2Ions(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            QPair<double, double> mzStartMzEnd,
+            QVector<MS2Ion> *ms2Ions
+            );
+
+    Err getMS2Ions(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            QPair<double, double> mzStartMzEnd,
+            double topNIntense,
+            QVector<MS2Ion> *ms2Ions
+    );
 
 private:
 
