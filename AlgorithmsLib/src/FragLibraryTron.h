@@ -54,6 +54,7 @@ struct ALGORITHMSLIB_EXPORTS FragLibIon {
 
 };
 
+
 struct ALGORITHMSLIB_EXPORTS FragLibIonTranche {
     int key = -1;
     QVector<FragLibIon> fragLibIonsTranche;

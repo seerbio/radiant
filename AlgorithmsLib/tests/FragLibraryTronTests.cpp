@@ -25,10 +25,10 @@ private:
 
     QVector<FragLibIon> buildTestData() {
 
-        std::srand(666);
+        const int seed = 666;
         const int n = 10000;
 
-        std::mt19937 re(std::random_device {}());
+        std::mt19937 re(seed);
 
         std::uniform_real_distribution<double> unifMass(1000.0, 4800.0);
         auto generatorMass = bind(unifMass, std::ref(re));

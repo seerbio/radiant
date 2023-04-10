@@ -16,6 +16,7 @@ SET(TEST_CLASSES
         DeisotoperTandemTests
         FeatureFinderHillBuilderTests
         FragLibraryTronTests
+        FragLibraryTronDIATests
         FragmentLibraryRTreeTests
         MsFrameTests
         MsScansDenoiseTronTests

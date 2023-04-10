@@ -40,6 +40,15 @@ endforeach()
 set(FASTA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta")
 configure_file(${FASTA_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta COPYONLY)
 
+set(FASTA_PEPTIDES_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.csv")
+configure_file(${FASTA_PEPTIDES_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.csv COPYONLY)
+
+set(FASTA_PEPLIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.pepLib")
+configure_file(${FASTA_PEPLIB_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.pepLib COPYONLY)
+
+set(FASTA_FRAGLIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.csv.fragLib")
+configure_file(${FASTA_FRAGLIB_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.fragLib COPYONLY)
+
 set(JSON_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest.dgst")
 configure_file(${JSON_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest.dgst COPYONLY)
 

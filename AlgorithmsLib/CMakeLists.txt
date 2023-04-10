@@ -25,6 +25,7 @@ SET(SOURCE_FILES
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/FragLibraryTron.cpp
+        src/FragLibraryTronDIA.cpp
         src/FragmentLibraryRTree.cpp
         src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
@@ -39,6 +40,7 @@ SET(HEADER_FILES
         src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/FragLibraryTron.h
         src/FragLibraryTron.h
         src/FragmentLibraryRTree.h
         src/MsFrame.h
