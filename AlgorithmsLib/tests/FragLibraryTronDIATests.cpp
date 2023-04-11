@@ -23,6 +23,7 @@ private slots:
     void getMS2IonsTest();
     void getMS2IonsTest2();
     void getMS2IonsTest3();
+    void getMS2IonsTest4();
 
 private:
 
@@ -55,6 +56,8 @@ private:
 
 void FragLibraryTronDIATests::initTest() {
 
+//    QSKIP("TEMP");
+
     ERR_INIT;
 
     FragLibraryTronDIA fragLibraryTronDia;
@@ -68,6 +71,8 @@ void FragLibraryTronDIATests::initTest() {
 }
 
 void FragLibraryTronDIATests::getMS2IonsTest() {
+
+//    QSKIP("TEMP");
 
     ERR_INIT
 
@@ -104,6 +109,8 @@ void FragLibraryTronDIATests::getMS2IonsTest() {
 }
 
 void FragLibraryTronDIATests::getMS2IonsTest2() {
+
+//    QSKIP("TEMP");
 
     ERR_INIT
 
@@ -144,6 +151,8 @@ void FragLibraryTronDIATests::getMS2IonsTest2() {
 
 void FragLibraryTronDIATests::getMS2IonsTest3() {
 
+//    QSKIP("TEMP");
+
     ERR_INIT
 
     FragLibraryTronDIA fragLibraryTronDia;
@@ -181,6 +190,35 @@ void FragLibraryTronDIATests::getMS2IonsTest3() {
     QCOMPARE(int(ms2IonBack.mz), 884);
     QCOMPARE(int(ms2IonBack.intensity), 1);
     QCOMPARE(ms2IonBack.ionLabel, "y8");
+
+}
+
+void FragLibraryTronDIATests::getMS2IonsTest4() {
+
+    ERR_INIT
+
+    FragLibraryTronDIA fragLibraryTronDia;
+    e = fragLibraryTronDia.init(
+            pythiaParameters(),
+            fragFilePath()
+    );
+    QCOMPARE(e, eNoError);
+
+    const PeptideSequenceChargeKey &peptideSequenceChargeKey = QStringLiteral("AGEVXVTAVAEHEK|3");
+
+    const double mzTargetStart = 500;
+    const double mzTargetEnd = 510;
+    const int topNIntense = 3;
+
+    QHash<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+    e = fragLibraryTronDia.getMS2Ions(
+            mzTargetStart,
+            mzTargetEnd,
+            topNIntense,
+            &peptideStringWithModsVsMS2Ions
+    );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(peptideStringWithModsVsMS2Ions.size(), 1960);
 
 }
 

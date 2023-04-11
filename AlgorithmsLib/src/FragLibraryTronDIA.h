@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "PeptideMassRTree.h"
 #include "PythiaParameterReader.h"
 
 
@@ -59,6 +60,13 @@ public:
             QVector<MS2Ion> *ms2Ions
             );
 
+    Err getMS2Ions(
+            double mzTargetStart,
+            double mzTargetEnd,
+            int topNIntense,
+            QHash<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions
+            );
+
 private:
 
     Err readFragLibFile(const QString &fragLibFilePath);
@@ -73,6 +81,8 @@ private:
     PythiaParameters m_params;
 
     QMap<Charge, IonLabels> m_chargeVsIonLabels;
+
+    PeptideMassRTree m_peptideMassRTree;
 
 };
 

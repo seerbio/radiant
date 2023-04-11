@@ -4,19 +4,43 @@
 
 #include "FragLibraryTronDIA.h"
 
+#include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
+#include "GlobalSettings.h"
 #include "TandemLibraryReader.h"
 #include "TandemPredictionUtils.h"
 
+#include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 
+namespace {
 
+    void stripToPeptideStringWithMods(
+            const QList<PeptideSequenceChargeKey> &peptideSequenceChargeKey,
+            QVector<PeptideStringWithMods> *peptideStringWithMods
+            ) {
+        const auto transformLogic = [&](const PeptideSequenceChargeKey &pk) {
+            return pk.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP).at(0);
+        };
+
+        std::transform(
+                peptideSequenceChargeKey.begin(),
+                peptideSequenceChargeKey.end(),
+                std::back_inserter(*peptideStringWithMods),
+                transformLogic
+        );
+    }
+
+}//namespace
 Err FragLibraryTronDIA::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibFilePath
         ) {
 
     ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
@@ -25,6 +49,20 @@ Err FragLibraryTronDIA::init(
     buildChargeVsIonLabels();
 
     e = readFragLibFile(fragLibFilePath); ree;
+
+    const QList<PeptideSequenceChargeKey> &peptideSequenceChargeKey = m_pepSeqChrgKeyVsMS2Ions.keys();
+    QVector<PeptideStringWithMods> peptideStringWithMods;
+    stripToPeptideStringWithMods(
+            peptideSequenceChargeKey,
+            &peptideStringWithMods
+            );
+
+    e = m_peptideMassRTree.init(
+            peptideStringWithMods,
+            m_params.aminoAcids
+            ); ree;
+
+    qDebug() << "Library init in" << et.elapsed();
 
     ERR_RETURN
 }
@@ -264,10 +302,74 @@ Err FragLibraryTronDIA::getMS2Ions(
             ms2Ions
     ); ree;
 
-    filterMs2IonsTopNIntense(
-            topNIntense,
-            ms2Ions
-            );
+    if (topNIntense > 0) {
+        filterMs2IonsTopNIntense(
+                topNIntense,
+                ms2Ions
+        );
+    }
+
+    ERR_RETURN
+}
+
+Err FragLibraryTronDIA::getMS2Ions(
+        double mzTargetStart,
+        double mzTargetEnd,
+        int topNIntense,
+        QHash<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions
+        ) {
+
+    ERR_INIT
+
+    const int monoOffset = 0;
+
+    for (int charge = m_params.chargeStateMin; charge <= m_params.chargeStateMax; charge++) {
+
+        const double massStart = BiophysicalCalcs::calculateMassFromThomson(
+                mzTargetStart,
+                charge,
+                monoOffset
+                );
+
+        const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
+                mzTargetEnd,
+                charge,
+                monoOffset
+        );
+
+        QHash<PeptideStringWithMods , Mass> peptideStringWithModsTableVsMass;
+        e = m_peptideMassRTree.getPeptides(
+                massStart,
+                massEnd,
+                &peptideStringWithModsTableVsMass
+        ); ree;
+
+        for (auto it = peptideStringWithModsTableVsMass.begin();
+                  it != peptideStringWithModsTableVsMass.end();
+                  it++
+                  ) {
+
+            const Mass mass = it.value();
+            const double mzTargetTheo = BiophysicalCalcs::calculateThomsonFromMass(mass, charge);
+            const PeptideStringWithMods  &peptideStringWithMods = it.key();
+            const PeptideSequenceChargeKey peptideSequenceChargeKey
+                = peptideStringWithMods + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(charge);
+
+            if (mzTargetTheo < mzTargetStart || mzTargetTheo > mzTargetEnd) {
+                continue;
+            }
+
+            QVector<MS2Ion> ms2Ions;
+            e = getMS2Ions(
+                    peptideSequenceChargeKey,
+                    {m_params.mzMinDataStructure, m_params.mzMaxDataStructure},
+                    topNIntense,
+                    &ms2Ions
+                    ); ree;
+
+            peptideStringWithModsVsMS2Ions->insert(peptideStringWithMods, ms2Ions);
+        }
+    }
 
     ERR_RETURN
 }
