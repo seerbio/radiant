@@ -71,7 +71,7 @@ private:
 
     Err readFragLibFile(const QString &fragLibFilePath);
 
-    void buildChargeVsIonLabels();
+    Err buildChargeVsIonLabels();
 
 
 private:

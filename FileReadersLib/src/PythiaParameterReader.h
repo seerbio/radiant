@@ -135,6 +135,9 @@ struct PythiaParameters{
 
     [[nodiscard]] bool isValid() const {
 
+        if (chargeStateMin > chargeStateMax) {
+            return false;
+        }
         if (chargeStateMin < 1) {
             return false;
         }

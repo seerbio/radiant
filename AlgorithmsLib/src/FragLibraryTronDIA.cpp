@@ -46,7 +46,7 @@ Err FragLibraryTronDIA::init(
 
     m_params = pythiaParameters;
 
-    buildChargeVsIonLabels();
+    e = buildChargeVsIonLabels(); ree;
 
     e = readFragLibFile(fragLibFilePath); ree;
 
@@ -62,18 +62,23 @@ Err FragLibraryTronDIA::init(
             m_params.aminoAcids
             ); ree;
 
-    qDebug() << "Library init in" << et.elapsed();
+    qDebug() << "Library init in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
 
-void FragLibraryTronDIA::buildChargeVsIonLabels() {
+Err FragLibraryTronDIA::buildChargeVsIonLabels() {
+
+    ERR_INIT
 
     for (int chrg = m_params.chargeStateMin; chrg <= m_params.chargeStateMax; ++chrg) {
         const QStringList ionLabels = TandemPredictionUtils::buildIonLabels(chrg);
         m_chargeVsIonLabels.insert(chrg, ionLabels);
     }
 
+    e = ErrorUtils::isNotEmpty(m_chargeVsIonLabels); ree;
+
+    ERR_RETURN
 }
 
 namespace {
@@ -261,7 +266,16 @@ Err FragLibraryTronDIA::getMS2Ions(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_pepSeqChrgKeyVsMS2Ions.contains(peptideSequenceChargeKey)); ree;
+    if (mzStartMzEnd.first > 989) {
+        qDebug() << peptideSequenceChargeKey;
+    }
+
+    e = ErrorUtils::isTrue(m_pepSeqChrgKeyVsMS2Ions.contains(peptideSequenceChargeKey));
+    if (e != eNoError) {
+        const QString pep = peptideSequenceChargeKey.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP).at(0);
+        qDebug() << peptideSequenceChargeKey << BiophysicalCalcs::calculatePeptideMass(pep, m_params.aminoAcids, {});
+        rrr(eValueError);
+    }
 
     *ms2Ions = m_pepSeqChrgKeyVsMS2Ions.value(peptideSequenceChargeKey);
 

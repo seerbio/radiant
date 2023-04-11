@@ -42,6 +42,8 @@ public:
             bool smooth
             );
 
+    QPair<double, double> precursorMzTargetStartEnd() const;
+
 private:
 
     Err denoiseFrame();

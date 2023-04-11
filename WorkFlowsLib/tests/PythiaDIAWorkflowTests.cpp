@@ -61,7 +61,6 @@ void PythiaDIAWorkflowTests::execTest() {
     e = pythiaDiaWorkflow.processFile(mzMLFileURI);
     QCOMPARE(e, eNoError);
 
-
 }
 
 

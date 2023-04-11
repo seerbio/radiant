@@ -5,6 +5,7 @@
 #include "PythiaDIAWorkflow.h"
 
 #include "ErrorUtils.h"
+#include "FragLibraryTronDIA.h"
 #include "MsReaderPointerFactory.h"
 #include "ParallelUtils.h"
 
@@ -18,6 +19,8 @@ Err PythiaDIAWorkflow::init(
         ) {
 
     ERR_INIT
+
+    pythiaParameters.print();
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isNotEmpty(fragLibUri); ree;
@@ -148,9 +151,48 @@ Err PythiaDIAWorkflow::preprocessDIAFrames(
     ERR_RETURN
 }
 
+
+namespace {
+
+    Err processFrame(
+            const MsFrame &frame
+            ) {
+
+        ERR_INIT
+
+        qDebug() << frame.precursorMzTargetStartEnd();
+
+        ERR_RETURN
+    }
+}
 Err PythiaDIAWorkflow::scoreCandidatesPerFrame(const QVector<MsFrame> &msFrames) {
     ERR_INIT
 
+    FragLibraryTronDIA fragLibraryTronDia;
+    e = fragLibraryTronDia.init(
+            m_pythiaParameters,
+            m_fragLibUri
+            ); ree;
+
+    for (const MsFrame &frame : msFrames) {
+
+        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
+
+        qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
+
+        QHash<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+
+        const int topNMs2Ions = 12;
+
+        e = fragLibraryTronDia.getMS2Ions(
+                mzTargetStartEnd.first,
+                mzTargetStartEnd.second,
+                topNMs2Ions,
+                &peptideStringWithModsVsMS2Ions
+                ); ree;
+
+        processFrame(frame);
+    }
 
     ERR_RETURN
 }

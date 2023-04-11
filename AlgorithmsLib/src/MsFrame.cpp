@@ -143,4 +143,8 @@ Err MsFrame::smoothFrame() {
     return Error::eFunctionNotImplemented;
 }
 
+QPair<double, double> MsFrame::precursorMzTargetStartEnd() const {
+    return {m_precursorTargetMz - m_isoWindowLower, m_precursorTargetMz + m_isoWindowUpper};
+}
+
 

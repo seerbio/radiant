@@ -169,8 +169,9 @@ namespace {
 
         std::mt19937 rng(666); //TODO make this settable.
 
+        const int minSizePeptideShuffle = 5;
         const int peptideLen = peptideSeq.size();
-        if (peptideLen < 3) {
+        if (peptideLen < minSizePeptideShuffle) {
             return peptideSeq;
         }
 
@@ -261,9 +262,10 @@ Err FastaFileToPeptidesListWorkFlow::addDecoys(
 
 namespace {
 
-    Err buildCollisionEnergyLookUpMap(
+    Err buildtargetMzVsCollisionEnergyLookUpMap(
             const QString &targetMzCollisionCSV,
-            QMap<double, double> *lookupMap
+            QMap<double, double> *lookupMap,
+            double *maxAlloableMz
             ) {
 
         ERR_INIT
@@ -285,8 +287,10 @@ namespace {
 
         std::sort(diaMzTargetRows.begin(), diaMzTargetRows.end(), sortTargetMzAscLogic);
 
+        const double buffer = 1.0;
         for (const DIAMzTargetsReaderRow &r : diaMzTargetRows) {
             lookupMap->insert(r.targetMz, r.collisionEnergy);
+            *maxAlloableMz = r.targetMz + r.isoWindowHi + buffer;
         }
 
         ERR_RETURN
@@ -300,22 +304,22 @@ Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
 
     ERR_INIT
 
-    QMap<double, double> collisionEnergyLookup;
-    e = buildCollisionEnergyLookUpMap(
+    double maxAllowableMz = -1.0;
+    QMap<double, double> targetMzVsCollisionEnergy;
+    e = buildtargetMzVsCollisionEnergyLookUpMap(
             targetMzCollisionCSV,
-            &collisionEnergyLookup
+            &targetMzVsCollisionEnergy,
+            &maxAllowableMz
             ); ree;
 
-    const QVector<double> ceLookUpVecKey = collisionEnergyLookup.keys().toVector();
-    const QVector<double> ceLookUpVecVals = collisionEnergyLookup.values().toVector();
+    const QVector<double> ceLookUpVecKey = targetMzVsCollisionEnergy.keys().toVector();
+    const QVector<double> ceLookUpVecVals = targetMzVsCollisionEnergy.values().toVector();
 
     QString outputFilePath = targetMzCollisionCSV;
     outputFilePath = outputFilePath.replace(
             S_GLOBAL_SETTINGS.DOT_CSV,
             S_GLOBAL_SETTINGS.DOT_LIB + S_GLOBAL_SETTINGS.DOT_CSV
     );
-
-    const double maxAllowableMz = collisionEnergyLookup.lastKey() + 1.0;
 
     QVector<PeptidePredictionInput> rowsToWrite;
 

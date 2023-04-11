@@ -4,8 +4,8 @@
     "percentFDR": 1.0,
     "maxTandemPointCount": 400,
     "returnPSMTopN": 30,
-    "chargeStateMin": 3,
-    "chargeStateMax": 2,
+    "chargeStateMin": 2,
+    "chargeStateMax": 3,
     
     "cTermCleavePoints": ["K", "R"],
     "nTermCleavePoints": [],
