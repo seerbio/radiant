@@ -29,6 +29,7 @@ namespace bgi = boost::geometry::index;
 
 class Q_DECL_HIDDEN PeptideMassRTree::Private
 {
+    //TODO might need to change this to 2D when rt pred is in place.
     using rTreeCoor = bg::model::point<double, 1, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
     using rTreePoint = std::pair<rTreeCoor, int> ;
@@ -43,6 +44,13 @@ public:
             const QVector<PeptideStringWithMods> &peptideStrings,
             const AminoAcids &aminoAcids
             );
+
+    Err getPeptides(
+            double massStart,
+            double massEnd,
+            QHash<PeptideStringWithMods , Mass> *peptideStringWithModsTableVsMass
+    );
+
 
 private:
 
@@ -133,6 +141,43 @@ Err PeptideMassRTree::Private::init(
     ERR_RETURN
 }
 
+Err PeptideMassRTree::Private::getPeptides(
+        double massStart,
+        double massEnd,
+        QHash<PeptideStringWithMods , Mass> *peptideStringWithModsTableVsMass
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isBelowThreshold(
+            massStart,
+            massEnd,
+            ErrorUtilsParam::ExcludeThreshold,
+            Error::eValueError
+            ); ree;
+
+    peptideStringWithModsTableVsMass->clear();
+
+    const rTreeSearchBox queryBox(rTreeCoor(massStart, 0), rTreeCoor(massEnd, 0));
+    std::vector<rTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    for (const rTreePoint &rtp : result) {
+
+        e = ErrorUtils::isIndexInRange(
+                m_peptideStringWithMods,
+                rtp.second
+                ); ree;
+
+        peptideStringWithModsTableVsMass->insert(
+                m_peptideStringWithMods.at(rtp.second),
+                rtp.first.get<0>()
+                        );
+    }
+
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -151,5 +196,19 @@ Err PeptideMassRTree::init(
             peptideStringsWithMods,
             aminoAcids
             ); ree;
+    ERR_RETURN
+}
+
+Err PeptideMassRTree::getPeptides(
+        double massStart,
+        double massEnd,
+        QHash<PeptideStringWithMods , Mass> *peptideStringWithModsTableVsMass
+        ) {
+    ERR_INIT
+    e = d_ptr->getPeptides(
+            massStart,
+            massEnd,
+            peptideStringWithModsTableVsMass
+            ); ree
     ERR_RETURN
 }

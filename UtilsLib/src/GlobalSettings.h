@@ -17,6 +17,7 @@ using IonLabel = QString;
 using IonLabels = QStringList;
 using IonMobilityIndex = int;
 using IsolationWindowKey = QString;
+using Mass = double;
 using ModificationMass = double;
 using MsLevel = int;
 using MZION = double;

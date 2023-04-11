@@ -27,6 +27,12 @@ public:
             const AminoAcids &aminoAcids
             );
 
+    Err getPeptides(
+            double massStart,
+            double massEnd,
+            QHash<PeptideStringWithMods, Mass> *peptideStringWithModsTableVsMass
+            );
+
 private:
 
     Q_DISABLE_COPY(PeptideMassRTree) class Private;
