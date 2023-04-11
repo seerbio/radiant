@@ -33,7 +33,27 @@ double BiophysicalCalcs::calculateMassFromThomson(
         int charge,
         int monoOffset
         ) {
-    return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON) ;
+    return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON);
+}
+
+QVector<QPair<PeptideString, double>> BiophysicalCalcs::calculatePeptideMasses(
+        const QVector<QPair<PeptideString, QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
+        const AminoAcids &aminoAcids
+        ) {
+
+    QVector<QPair<PeptideString, double>> output;
+    for (const QPair<PeptideString, QHash<ResidueIndex, ModificationMass>> &pr : sequenceAndMods) {
+
+        const double mass = calculatePeptideMass(
+                pr.first,
+                aminoAcids,
+                pr.second
+                );
+
+        output.push_back({pr.first, mass});
+    }
+
+    return output;
 }
 
 double BiophysicalCalcs::calculateThomsonFromMass(

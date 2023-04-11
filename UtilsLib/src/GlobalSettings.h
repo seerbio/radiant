@@ -28,6 +28,7 @@ using Occurrence = int;
 using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
 using PeptideString = QString;
+using PeptideStringWithMods = QString;
 using ProteinId = int;
 using ProteinSequence = QString;
 using ResidueIndex = int;

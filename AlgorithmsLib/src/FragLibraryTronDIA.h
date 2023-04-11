@@ -44,7 +44,7 @@ public:
     Err getMS2Ions(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             QVector<MS2Ion> *ms2Ions
-    );
+            );
 
     Err getMS2Ions(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
@@ -55,9 +55,9 @@ public:
     Err getMS2Ions(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             QPair<double, double> mzStartMzEnd,
-            double topNIntense,
+            int topNIntense,
             QVector<MS2Ion> *ms2Ions
-    );
+            );
 
 private:
 

@@ -22,6 +22,11 @@ public:
             const QHash<ResidueIndex, ModificationMass> &mods = {}
     );
 
+    static QVector<QPair<PeptideString, double>> calculatePeptideMasses(
+            const QVector<QPair<PeptideString,QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
+            const AminoAcids &aminoAcids
+    );
+
     static double calculateMassFromThomson(
             double mz,
             int charge,

@@ -252,7 +252,7 @@ Err FragLibraryTronDIA::getMS2Ions(
 Err FragLibraryTronDIA::getMS2Ions(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
         QPair<double, double> mzStartMzEnd,
-        double topNIntense,
+        int topNIntense,
         QVector<MS2Ion> *ms2Ions
         ) {
 
@@ -271,7 +271,3 @@ Err FragLibraryTronDIA::getMS2Ions(
 
     ERR_RETURN
 }
-
-
-
-

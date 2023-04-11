@@ -29,6 +29,7 @@ SET(SOURCE_FILES
         src/FragmentLibraryRTree.cpp
         src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
+        src/PeptideMassRTree.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
         src/TandemFragmentPredictotron.cpp
@@ -45,6 +46,7 @@ SET(HEADER_FILES
         src/FragmentLibraryRTree.h
         src/MsFrame.h
         src/MsScansDenoiseTron.h
+        src/PeptideMassRTree.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
         src/TandemFragmentPredictotron.h
