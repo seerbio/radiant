@@ -34,6 +34,7 @@ SET(SOURCE_FILES
         src/ProteinDigestomatic.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
+        src/TurboXIC.cpp
 )
 
 SET(HEADER_FILES
@@ -51,6 +52,7 @@ SET(HEADER_FILES
         src/ProteinDigestomatic.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
+        src/TurboXIC.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

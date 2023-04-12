@@ -35,6 +35,8 @@ private Q_SLOTS:
     void apexesTest();
     void troughtsTest();
 
+    void rowWiseCosineSimilarOfMatricesTest();
+
 };
 
 
@@ -105,6 +107,22 @@ void EigenUtilsTests::troughtsTest() {
     QCOMPARE(static_cast<int>(troughsResult.first()), 0);
     QCOMPARE(static_cast<int>(troughsResult.last()), 0);
 }
+
+void EigenUtilsTests::rowWiseCosineSimilarOfMatricesTest() {
+
+    Eigen::MatrixX<double> mat1(2,2);
+    Eigen::MatrixX<double> mat2(2,2);
+
+    mat1 << 1,2,3,4;
+    mat2 << 2,4,6,8;
+
+    Eigen::VectorX<double> cosineSim = EigenUtils::rowWiseCosineSimilarOfMatrices(mat1, mat2);
+
+    QCOMPARE(cosineSim.coeff(0), 1.0);
+    QCOMPARE(cosineSim.coeff(1), 1.0);
+
+}
+
 
 
 QTEST_MAIN(EigenUtilsTests)

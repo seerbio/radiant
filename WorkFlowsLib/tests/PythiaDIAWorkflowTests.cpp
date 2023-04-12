@@ -30,6 +30,8 @@ private:
         reader.readFile(paramsFile);
         reader.loadPythiaParameters(&pythiaParameters);
 
+        pythiaParameters.topNMs2Ions = 12;
+
         return pythiaParameters;
     }
 

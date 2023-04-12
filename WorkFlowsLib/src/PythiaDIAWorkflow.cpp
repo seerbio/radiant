@@ -4,12 +4,18 @@
 
 #include "PythiaDIAWorkflow.h"
 
+#include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FragLibraryTronDIA.h"
 #include "MsReaderPointerFactory.h"
 #include "ParallelUtils.h"
+#include "TurboXIC.h"
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <QtConcurrent/QtConcurrent>
+
+#include <iostream>
 
 
 Err PythiaDIAWorkflow::init(
@@ -30,8 +36,12 @@ Err PythiaDIAWorkflow::init(
     m_fragLibUri = fragLibUri;
     m_pepLibUri = pepLibUri;
 
-    ERR_RETURN
+    e = m_fragLibraryTronDia.init(
+            pythiaParameters,
+            fragLibUri
+    ); ree;
 
+    ERR_RETURN
 }
 
 
@@ -45,12 +55,12 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
     MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
     QVector<MsFrame> msFrames;
-    e = preprocessDIAFrames(
+    e = preprocessDIAFramesParallel(
             msReaderPointer,
             &msFrames
             ); ree;
 
-    e = scoreCandidatesPerFrame(msFrames); ree;
+    e = scoreCandidatesPerFrameParallel(msFrames); ree;
 
     ERR_RETURN
 }
@@ -122,7 +132,7 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::preprocessDIAFrames(
+Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
         const MsReaderPointer &msReaderPointer,
         QVector<MsFrame> *msFrames
         ) {
@@ -151,49 +161,269 @@ Err PythiaDIAWorkflow::preprocessDIAFrames(
     ERR_RETURN
 }
 
-
 namespace {
 
-    Err processFrame(
-            const MsFrame &frame
+    Err groupFramesWithTandemPredictions(
+            const QVector<MsFrame> &msFrames,
+            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &framePredictions,
+            QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> *processingChunks
             ) {
 
         ERR_INIT
 
-        qDebug() << frame.precursorMzTargetStartEnd();
+        for (const MsFrame &frame : msFrames) {
+            const UniqueMsInfoScanKey uniqueMsInfoScanKey = frame.uniqueMsInfoScanKey();
+            e = ErrorUtils::isTrue(framePredictions.contains(uniqueMsInfoScanKey)); ree;
+            processingChunks->push_back({frame, framePredictions.value(uniqueMsInfoScanKey)});
+        }
 
         ERR_RETURN
     }
-}
-Err PythiaDIAWorkflow::scoreCandidatesPerFrame(const QVector<MsFrame> &msFrames) {
-    ERR_INIT
 
-    FragLibraryTronDIA fragLibraryTronDia;
-    e = fragLibraryTronDia.init(
-            m_pythiaParameters,
-            m_fragLibUri
-            ); ree;
+    struct ScoringMatrices {
 
-    for (const MsFrame &frame : msFrames) {
+        Eigen::MatrixX<double> scoringMatrix;
+        Eigen::MatrixX<double> theoMatrixMatrix;
+    };
 
-        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
+    ScoringMatrices buildTargetScoringMatrices(
+            const QVector<MS2Ion> &ms2Ions,
+            int frameScanCount,
+            int topNMs2Ions,
+            double featureFinderTolerancePPM,
+            TurboXIC *turboXic
+            ) {
 
+        Eigen::MatrixX<double> scoringMat(frameScanCount, topNMs2Ions);
+        scoringMat.setZero();
+
+        Eigen::MatrixX<double> theoMat(frameScanCount, topNMs2Ions);
+        theoMat.setZero();
+
+        for (int colIdx = 0; colIdx < ms2Ions.size(); colIdx++) {
+
+            const double mz = ms2Ions.at(colIdx).mz;
+            const Intensity intensityTheo = ms2Ions.at(colIdx).intensity;
+
+            const double massTol = MathUtils::calculatePPM(
+                    mz,
+                    featureFinderTolerancePPM
+            );
+
+            const double mzMin = mz - massTol;
+            const double mzMax = mz + massTol;
+            const FrameIndex frameIndexMin = 0;
+            const FrameIndex frameIndexMax = frameScanCount;
+
+            const XICPoints xic = turboXic->extractPoints(
+                    mzMin,
+                    mzMax,
+                    frameIndexMin,
+                    frameIndexMax
+            );
+
+            if (xic.isEmpty()) {
+                continue;
+            }
+
+            for (auto it = xic.begin(); it != xic.end(); it++) {
+                const FrameIndex frameIndex = it.key();
+                const Intensity intensity = it.value();
+
+                scoringMat(frameIndex, colIdx) = intensity;
+                theoMat(frameIndex, colIdx) = intensityTheo;
+            }
+        }
+
+        ScoringMatrices sm;
+        sm.scoringMatrix = scoringMat;
+        sm.theoMatrixMatrix = theoMat;
+
+        return sm;
+    }
+
+    struct FrameIndexScoreResultOfTarget {
+        QVector<double> cosineSimPerFrameIndexOfTargetVec;
+        QVector<double> intensityPerFrameIndexOfTargetVec;
+        QVector<int> foundIonsPerFrameIndexOfTargetVec;
+        QVector<double> scorePerFrameIndexOfTargetVec;
+    };
+
+    FrameIndexScoreResultOfTarget buildPerFrameIndexScoreVectors(const ScoringMatrices &scoringMatrices) {
+
+        const Eigen::VectorX<double> cosineSimPerFrameIndexOfTarget = EigenUtils::rowWiseCosineSimilarOfMatrices(
+                scoringMatrices.scoringMatrix,
+                scoringMatrices.theoMatrixMatrix
+                );
+
+        const Eigen::VectorX<double> intensityPerFrameIndexOfTarget = scoringMatrices.scoringMatrix.rowwise().sum();
+
+        const Eigen::VectorX<int> foundIonsPerFrameIndexOfTarget
+                = (scoringMatrices.scoringMatrix.array() > 0.0).rowwise().count().cast<int>();
+
+        const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetCubed = foundIonsPerFrameIndexOfTarget
+                .cwiseProduct(foundIonsPerFrameIndexOfTarget
+                .cwiseProduct(foundIonsPerFrameIndexOfTarget)
+                ).cast<double>();
+
+        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = foundIonsPerFrameIndexOfTargetCubed.array()
+                                                                * intensityPerFrameIndexOfTarget.array()
+                                                                * cosineSimPerFrameIndexOfTarget.array();
+
+        FrameIndexScoreResultOfTarget frameIndexScoreResultOfTarget;
+
+        frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec
+                = EigenUtils::convertEigenVectorToQVector(cosineSimPerFrameIndexOfTarget);
+
+        frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec
+                = EigenUtils::convertEigenVectorToQVector(intensityPerFrameIndexOfTarget);
+
+        frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec
+                = EigenUtils::convertEigenVectorToQVector(foundIonsPerFrameIndexOfTarget);
+
+        frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec
+                = EigenUtils::convertEigenVectorToQVector(scorePerFrameIndexOfTarget);
+
+        return frameIndexScoreResultOfTarget;
+    }
+
+    Err scoreFrameTargets(
+            const MsFrame &frame,
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds,
+            const PythiaParameters &params
+            ) {
+
+        ERR_INIT
+
+        qDebug() << "Building matrix" << frame.uniqueMsInfoScanKey();
+
+        const QMap<FrameIndex, ScanPoints> scanPoints = frame.frameIndexVsScanPoints();
+
+        TurboXIC turboXic;
+        e = turboXic.init(scanPoints); ree;
+
+        QVector<FrameIndexScoreResultOfTarget> frameIndexScoreResultOfTargets;
+        for (auto it = tandemPreds.begin(); it != tandemPreds.end(); it++) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const QVector<MS2Ion> &ms2Ions = it.value();
+
+            const ScoringMatrices targetScoringMatrices = buildTargetScoringMatrices(
+                    ms2Ions,
+                    frame.scanCount(),
+                    params.topNMs2Ions,
+                    params.featureFinderTolerancePPM,
+                    &turboXic
+                    );
+
+            const FrameIndexScoreResultOfTarget frameIndexScoreResultOfTarget
+                            = buildPerFrameIndexScoreVectors(targetScoringMatrices);
+
+            frameIndexScoreResultOfTargets.push_back(frameIndexScoreResultOfTarget);
+        }
+
+
+
+        return e;
+    }
+
+    Err processFrameLogic(
+            const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+            const PythiaParameters &params
+            ) {
+
+        ERR_INIT
+
+        const MsFrame &frame = chunk.first;
+        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds = chunk.second;
+
+        const QPair<double, double> &mzTargetStartEnd = frame.precursorMzTargetStartEnd();
         qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
 
-        QHash<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
-
-        const int topNMs2Ions = 12;
-
-        e = fragLibraryTronDia.getMS2Ions(
-                mzTargetStartEnd.first,
-                mzTargetStartEnd.second,
-                topNMs2Ions,
-                &peptideStringWithModsVsMS2Ions
+        e = scoreFrameTargets(
+                frame,
+                tandemPreds,
+                params
                 ); ree;
 
-        processFrame(frame);
+        ERR_RETURN
     }
+
+}//namespace
+Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(const QVector<MsFrame> &msFrames) {
+    ERR_INIT
+
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> framePredictions;
+    e = buildTargetCandidatesForFrame(
+            msFrames,
+            &framePredictions
+    ); ree;
+
+    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
+    e = groupFramesWithTandemPredictions(
+            msFrames,
+            framePredictions,
+            &processingChunks
+            ); ree;
+
+#define PARALLEL_DIA_SCORE
+#ifdef PARALLEL_DIA_SCORE
+    qDebug() << "Running scoreCandidatesPerFrame parallel";
+
+    const auto scoringMatrixLogicBinder = std::bind(
+            processFrameLogic,
+            std::placeholders::_1,
+            m_pythiaParameters
+            );
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            processingChunks,
+            scoringMatrixLogicBinder
+    );
+    futures.waitForFinished();
+
+    for (const Err err : futures) {
+        e = err; ree;
+    }
+
+#else
+    qDebug() << "Running scoreCandidatesPerFrame serial";
+    for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
+
+        e = processFrameLogic(
+                chunk,
+                m_pythiaParameters
+                ); ree;
+
+    }
+#endif
 
     ERR_RETURN
 }
 
+Err PythiaDIAWorkflow::buildTargetCandidatesForFrame(
+        const QVector<MsFrame> &msFrames,
+        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+        ) {
+
+    ERR_INIT
+
+    for (const MsFrame &frame : msFrames) {
+
+        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
+        qDebug() << "Collecting Targets for:" << mzTargetStartEnd.first << mzTargetStartEnd.second;
+
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+
+        e = m_fragLibraryTronDia.getMS2Ions(
+                mzTargetStartEnd.first,
+                mzTargetStartEnd.second,
+                m_pythiaParameters.topNMs2Ions,
+                &peptideStringWithModsVsMS2Ions
+        ); ree;
+
+        framePredictions->insert(frame.uniqueMsInfoScanKey(), peptideStringWithModsVsMS2Ions);
+    }
+
+    ERR_RETURN
+}

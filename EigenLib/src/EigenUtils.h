@@ -192,14 +192,24 @@ public:
 
 
     template <typename T>
-    static void thresholdMatrix(double thresholdValue,  Eigen::MatrixX<T> *mat) {
+    static void thresholdMatrix(T thresholdValue,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
+    }
+
+    template <typename T>
+    static void thresholdMatrix(T thresholdValue, T fillVal,  Eigen::MatrixX<T> *mat) {
+        *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
 
     template <typename T>
-    static void thresholdVector(double thresholdValue,  Eigen::VectorX<T> *vec) {
+    static void thresholdVector(T thresholdValue,  Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
+    }
+
+    template <typename T>
+    static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
+        *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
 
 
@@ -394,6 +404,28 @@ public:
         return troughtIndicies;
     }
 
+
+    template<typename T>
+    static Eigen::VectorX<T> rowWiseCosineSimilarOfMatrices(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+            ) {
+
+        const Eigen::MatrixX<double> matElementWiseProd = mat1.cwiseProduct(mat2);
+        const Eigen::MatrixX<double> matElementWiseProdSum = matElementWiseProd.rowwise().sum();
+
+        const Eigen::MatrixX<double> mat1Norm = mat1.array().rowwise().norm();
+        const Eigen::MatrixX<double> mat2Norm = mat2.array().rowwise().norm();
+
+        Eigen::MatrixX<double> mat1NormMat2NormProd = mat1Norm.array() * mat2Norm.array();
+
+        const double nearZero = 0.000001;
+        EigenUtils::thresholdMatrix(nearZero, nearZero, &mat1NormMat2NormProd);
+
+        const Eigen::MatrixX<double> rowWiseCosineSimilarity = matElementWiseProdSum.array() / mat1NormMat2NormProd.array();
+
+        return rowWiseCosineSimilarity;
+    }
 
 };
 

@@ -136,7 +136,7 @@ namespace {
             //TODO replace w/ EigenUtils::convertQvectorToEigenVector
             Eigen::VectorX<float> eVec = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(vec.data(), vec.size());
             EigenUtils::normalizeVector<Eigen::VectorX<float>, float>(&eVec);
-            EigenUtils::thresholdVector(1e-2, &eVec);
+            EigenUtils::thresholdVector(static_cast<float>(1e-2), &eVec);
 
             std::vector<float> vecReturn(eVec.data(), eVec.data() + eVec.size());
             returnVecs.push_back(QVector<float>::fromStdVector(vecReturn));

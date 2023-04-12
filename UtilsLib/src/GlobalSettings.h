@@ -13,6 +13,8 @@
 
 using Charge = int;
 using FragLibIonPeptideId = int;
+using FrameIndex = int;
+using Intensity = double;
 using IonLabel = QString;
 using IonLabels = QStringList;
 using IonMobilityIndex = int;
@@ -43,6 +45,8 @@ using TARGETMZ = double;
 using Tranche = int;
 using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
+using XICPoint = QPair<ScanNumber, Intensity>;
+using XICPoints = QMap<ScanNumber, Intensity>;
 
 class UTILSLIB_EXPORTS GlobalSettings {
 

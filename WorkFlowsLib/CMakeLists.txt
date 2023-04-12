@@ -50,6 +50,7 @@ INCLUDE_DIRECTORIES(
         ${DLIB_DIRECTORY}
         "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
         "${ARROW_DIRECTORY}"
+        ${EIGEN_DIRECTORY}
 )
 
 
@@ -67,6 +68,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         AlgorithmsLib
+        EigenLib
         FileReadersLib
         UtilsLib
         ${ARROW_SHARED_LIBRARY}

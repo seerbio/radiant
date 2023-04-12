@@ -132,6 +132,9 @@ struct PythiaParameters{
     bool deisotope = true;
     bool smooth = false;
 
+    //TODO hook these up
+    int topNMs2Ions = 12;
+
 
     [[nodiscard]] bool isValid() const {
 
@@ -183,8 +186,10 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
         qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
-        qDebug() << PythiaParameterReaderConstants::kModifications;
+        qDebug() << "topNMs2Ions" << topNMs2Ions;
         qDebug() << featureFinderTolerancePPM << skipScanCount << minScanCount << useMeanMz; //TODO make this proper like the rest
+
+        qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {
             mod.print();
         }

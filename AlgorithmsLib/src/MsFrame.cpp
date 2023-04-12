@@ -31,6 +31,8 @@ Err MsFrame::init(
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
     m_frame = scanPoints;
 
+    e = buildFrameIndexVsScanNumber(); ree;
+
     ERR_RETURN
 }
 
@@ -63,6 +65,8 @@ Err MsFrame::init(
                 ErrorUtilsParam::ExcludeThreshold
         ); ree;
     }
+
+    e = buildFrameIndexVsScanNumber(); ree;
 
     m_collisionEnergy = collisionEnergy;
     m_precursorTargetMz = precursorTargetMz;
@@ -145,6 +149,38 @@ Err MsFrame::smoothFrame() {
 
 QPair<double, double> MsFrame::precursorMzTargetStartEnd() const {
     return {m_precursorTargetMz - m_isoWindowLower, m_precursorTargetMz + m_isoWindowUpper};
+}
+
+UniqueMsInfoScanKey MsFrame::uniqueMsInfoScanKey() const {
+    return m_uniqueMsInfoScanKey;
+}
+
+Err MsFrame::buildFrameIndexVsScanNumber() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+
+    for (const ScanNumber &sn : m_frame.keys()) {
+        m_frameIndexVsScanNumber.insert(m_frameIndexVsScanNumber.size(), sn);
+    }
+
+    ERR_RETURN
+}
+
+int MsFrame::scanCount() const {
+    return m_frameIndexVsScanNumber.size();
+}
+
+QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
+
+    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints;
+
+    for (const ScanPoints &sp : m_frame) {
+        frameIndexVsScanPoints.insert(frameIndexVsScanPoints.size(), sp);
+    }
+
+    return frameIndexVsScanPoints;
 }
 
 

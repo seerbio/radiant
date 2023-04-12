@@ -25,6 +25,7 @@ SET(TEST_CLASSES
         ProteinDigestomaticTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
+        TurboXICTests
 )
 
 foreach(class ${TEST_CLASSES})

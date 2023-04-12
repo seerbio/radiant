@@ -210,7 +210,7 @@ void FragLibraryTronDIATests::getMS2IonsTest4() {
     const double mzTargetEnd = 510;
     const int topNIntense = 3;
 
-    QHash<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
     e = fragLibraryTronDia.getMS2Ions(
             mzTargetStart,
             mzTargetEnd,

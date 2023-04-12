@@ -42,13 +42,20 @@ public:
             bool smooth
             );
 
-    QPair<double, double> precursorMzTargetStartEnd() const;
+    [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
+
+    [[nodiscard]] UniqueMsInfoScanKey uniqueMsInfoScanKey() const;
+
+    [[nodiscard]] int scanCount() const;
+
+    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
 
 private:
 
     Err denoiseFrame();
     Err deisotopeFrame();
     Err smoothFrame();
+    Err buildFrameIndexVsScanNumber();
 
 private:
 
@@ -59,6 +66,7 @@ private:
     double m_precursorTargetMz;
     double m_isoWindowLower;
     double m_isoWindowUpper;
+    QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
 
 };
 

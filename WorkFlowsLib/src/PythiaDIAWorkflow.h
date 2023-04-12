@@ -8,7 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
-
+#include "FragLibraryTronDIA.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "MsReaderPointerFactory.h"
@@ -16,6 +16,8 @@
 
 
 using namespace Error;
+
+
 
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
@@ -37,12 +39,17 @@ public:
 
 private:
 
-    Err preprocessDIAFrames(
+    Err preprocessDIAFramesParallel(
             const MsReaderPointer &msReaderPointer,
             QVector<MsFrame> *msFrames
             );
 
-    Err scoreCandidatesPerFrame(const QVector<MsFrame> &msFrames);
+    Err scoreCandidatesPerFrameParallel(const QVector<MsFrame> &msFrames);
+
+    Err buildTargetCandidatesForFrame(
+            const QVector<MsFrame> &msFrames,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+    );
 
 
 private:
@@ -50,6 +57,8 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_pepLibUri;
+
+    FragLibraryTronDIA m_fragLibraryTronDia;
 
 
 };

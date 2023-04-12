@@ -330,7 +330,7 @@ Err FragLibraryTronDIA::getMS2Ions(
         double mzTargetStart,
         double mzTargetEnd,
         int topNIntense,
-        QHash<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions
         ) {
 
     ERR_INIT
