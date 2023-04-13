@@ -134,7 +134,7 @@ struct PythiaParameters{
 
     //TODO hook these up
     int topNMs2Ions = 12;
-
+    int minFoundMzPeaks = 5;
 
     [[nodiscard]] bool isValid() const {
 

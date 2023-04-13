@@ -44,7 +44,10 @@ private:
             QVector<MsFrame> *msFrames
             );
 
-    Err scoreCandidatesPerFrameParallel(const QVector<MsFrame> &msFrames);
+    Err scoreCandidatesPerFrameParallel(
+            const QVector<MsFrame> &msFrames,
+            const QString &msDataFilePath
+            );
 
     Err buildTargetCandidatesForFrame(
             const QVector<MsFrame> &msFrames,

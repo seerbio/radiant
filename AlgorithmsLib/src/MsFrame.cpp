@@ -66,8 +66,6 @@ Err MsFrame::init(
         ); ree;
     }
 
-    e = buildFrameIndexVsScanNumber(); ree;
-
     m_collisionEnergy = collisionEnergy;
     m_precursorTargetMz = precursorTargetMz;
     m_isoWindowLower = isoWindowLower;

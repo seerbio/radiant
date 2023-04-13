@@ -78,5 +78,4 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
 };
 
 
-
 #endif //PYTHIADIACPP_MSFRAMESCOREVECTORREADER_H

@@ -6,6 +6,7 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "MsFrameScoreVectorReader.h"
 #include "MsReaderPointerFactory.h"
 #include "ParallelUtils.h"
 #include "TurboXIC.h"
@@ -153,7 +154,7 @@ Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
     futures.waitForFinished();
 
     for (const QPair<Err, MsFrame> &pr : futures) {
-
+        qDebug() << "FrameSize" << pr.second.scanCount();
         e = pr.first; ree;
         msFrames->push_back(pr.second);
     }
@@ -181,7 +182,6 @@ namespace {
     }
 
     struct ScoringMatrices {
-
         Eigen::MatrixX<double> scoringMatrix;
         Eigen::MatrixX<double> theoMatrixMatrix;
     };
@@ -287,15 +287,56 @@ namespace {
         return frameIndexScoreResultOfTarget;
     }
 
+    Err writeFrameTargetScoreVectors(
+            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
+            const QString &outputFilePath,
+            int minFoundMzCount
+            ) {
+
+        ERR_INIT
+
+        QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
+        for (auto it = pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+            const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+            const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
+
+            if (maxFoundCount < minFoundMzCount) {
+                continue;
+            }
+
+            MsFrameScoreVectorReaderRow row;
+            row.peptideStringWithMods = peptideStringWithMods;
+            row.cosineSimPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec;
+            row.foundIonsPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+            row.scorePerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
+            row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
+
+            msFrameScoreVectorReaderRows.push_back(row);
+        }
+
+        e = ParquetReader::write(
+                msFrameScoreVectorReaderRows,
+                outputFilePath
+                ); ree;
+
+        ERR_RETURN
+    }
+
     Err scoreFrameTargets(
             const MsFrame &frame,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds,
-            const PythiaParameters &params
+            const PythiaParameters &params,
+            const QString &msDataFilePath
             ) {
 
         ERR_INIT
 
         qDebug() << "Building matrix" << frame.uniqueMsInfoScanKey();
+        qDebug() << "Frame size" << frame.scanCount();
 
         const QMap<FrameIndex, ScanPoints> scanPoints = frame.frameIndexVsScanPoints();
 
@@ -322,16 +363,23 @@ namespace {
             pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }
 
+        const QString outputFilePath = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frame";
 
+        e = writeFrameTargetScoreVectors(
+                pepStrWModsVsFrameIndexScoreResultOfTargets,
+                outputFilePath,
+                params.minFoundMzPeaks
+                ); ree;
 
-
-
+        qDebug() << "Found Targets:" << pepStrWModsVsFrameIndexScoreResultOfTargets.size();
+        qDebug() << "Frame written to:" << outputFilePath;
         return e;
     }
 
     Err processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
-            const PythiaParameters &params
+            const PythiaParameters &params,
+            const QString &msDataFilePath
             ) {
 
         ERR_INIT
@@ -345,14 +393,19 @@ namespace {
         e = scoreFrameTargets(
                 frame,
                 tandemPreds,
-                params
+                params,
+                msDataFilePath
                 ); ree;
 
         ERR_RETURN
     }
 
 }//namespace
-Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(const QVector<MsFrame> &msFrames) {
+Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
+        const QVector<MsFrame> &msFrames,
+        const QString &msDataFilePath
+        ) {
+
     ERR_INIT
 
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> framePredictions;
@@ -368,14 +421,15 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(const QVector<MsFrame> &m
             &processingChunks
             ); ree;
 
-#define PARALLEL_DIA_SCORE
+//#define PARALLEL_DIA_SCORE
 #ifdef PARALLEL_DIA_SCORE
     qDebug() << "Running scoreCandidatesPerFrame parallel";
 
     const auto scoringMatrixLogicBinder = std::bind(
             processFrameLogic,
             std::placeholders::_1,
-            m_pythiaParameters
+            m_pythiaParameters,
+            msDataFilePath
             );
 
     QFuture<Err> futures = QtConcurrent::mapped(
@@ -393,7 +447,8 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(const QVector<MsFrame> &m
 
         e = processFrameLogic(
                 chunk,
-                m_pythiaParameters
+                m_pythiaParameters,
+                msDataFilePath
                 ); ree;
 
     }
