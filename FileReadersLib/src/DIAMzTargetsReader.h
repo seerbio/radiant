@@ -77,23 +77,4 @@ struct DIAMzTargetsReaderRow : public CSVReaderInputBase {
 };
 
 
-class FILEREADERSLIB_EXPORTS DIAMzTargetsReader {
-
-public:
-
-    DIAMzTargetsReader() = default;
-    ~DIAMzTargetsReader() = default;
-
-    Err write(
-            const QVector<DIAMzTargetsReaderRow> &diaMzTargetReaderRows,
-            const QString &outputFilePath
-            );
-
-    Err read(
-            const QString &fileURI,
-            QVector<DIAMzTargetsReaderRow> *diaMzTargetReaderRows
-            );
-
-};
-
 #endif //PYTHIADIACPP_DIAMZTARGETSREADER_H

@@ -302,7 +302,7 @@ namespace {
         TurboXIC turboXic;
         e = turboXic.init(scanPoints); ree;
 
-        QVector<FrameIndexScoreResultOfTarget> frameIndexScoreResultOfTargets;
+        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
         for (auto it = tandemPreds.begin(); it != tandemPreds.end(); it++) {
 
             const PeptideStringWithMods &peptideStringWithMods = it.key();
@@ -319,8 +319,10 @@ namespace {
             const FrameIndexScoreResultOfTarget frameIndexScoreResultOfTarget
                             = buildPerFrameIndexScoreVectors(targetScoringMatrices);
 
-            frameIndexScoreResultOfTargets.push_back(frameIndexScoreResultOfTarget);
+            pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }
+
+
 
 
 
@@ -385,7 +387,6 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(const QVector<MsFrame> &m
     for (const Err err : futures) {
         e = err; ree;
     }
-
 #else
     qDebug() << "Running scoreCandidatesPerFrame serial";
     for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {

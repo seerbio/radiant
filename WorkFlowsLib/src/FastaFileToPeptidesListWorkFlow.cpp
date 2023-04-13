@@ -270,10 +270,10 @@ namespace {
 
         ERR_INIT
 
-        DIAMzTargetsReader diaMzTargetsReader;
+
         QVector<DIAMzTargetsReaderRow> diaMzTargetRows;
 
-        e = diaMzTargetsReader.read(
+        e = CSVReader::read(
                 targetMzCollisionCSV,
                 &diaMzTargetRows
         ); ree;

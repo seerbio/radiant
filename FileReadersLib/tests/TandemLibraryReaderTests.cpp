@@ -35,7 +35,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
     const QString &outputFilePath
             = QDir(qApp->applicationDirPath()).filePath("pred.tPreds");
 
-    e = TandemLibraryReader::writeTandemPredictions(
+    e = ParquetReader::write(
             tprs,
             outputFilePath
             );
@@ -43,7 +43,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
     QCOMPARE(e, eNoError);
 
     QVector<TandemLibraryReaderRow> readRows;
-    e = TandemLibraryReader::readTandemPredictions(
+    e = ParquetReader::read(
             outputFilePath,
             &readRows
             );

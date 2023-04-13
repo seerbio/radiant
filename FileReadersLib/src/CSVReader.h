@@ -85,6 +85,50 @@ class FILEREADERSLIB_EXPORTS CSVReader {
 
 public:
 
+    template<typename T>
+    static Err write(
+            const QVector<T> &readerRow,
+            const QString &outputFilePath
+    ) {
+
+        ERR_INIT
+
+        const QVector<QSharedPointer<CSVReaderInputBase>> ptrs
+                = CSVReaderInputBase::convertInputStructToSharedPointers(readerRow);
+
+        CSVReader reader;
+        e = reader.writeDataToCSV(
+                outputFilePath,
+                ptrs
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    template<typename T>
+    static Err read(
+            const QString &fileURI,
+            QVector<T> *readerRow
+    ) {
+
+        ERR_INIT
+
+        CSVReader reader;
+
+        QVector<CSVReaderInputBase> ptrsRead;
+        e = reader.readDataFromCSV(
+                fileURI,
+                &ptrsRead
+        ); ree;
+
+        e = CSVReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsRead,
+                readerRow
+        ); ree;
+
+        ERR_RETURN
+    }
+
     Err writeDataToCSV(
             const QString &outputFilePath,
             const QVector<QSharedPointer<CSVReaderInputBase>> &rowsToWrite

@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/DIAMzTargetsReader.cpp
         src/FastaReader.cpp
         src/JsonParametersReader.cpp
+        src/MsFrameScoreVectorReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
@@ -38,6 +39,7 @@ SET(HEADER_FILES
         src/DIAMzTargetsReader.h
         src/FastaReader.h
         src/JsonParametersReader.h
+        src/MsFrameScoreVectorReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h

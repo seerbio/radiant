@@ -206,7 +206,7 @@ namespace {
         const QVector<TandemLibraryReaderRow> writeRows
                 = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
 
-        e = TandemLibraryReader::writeTandemPredictions(
+        e = ParquetReader::write(
                 writeRows,
                 outputFilePath
                 ); ree;

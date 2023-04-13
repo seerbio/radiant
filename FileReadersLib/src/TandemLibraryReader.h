@@ -67,23 +67,4 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
 };
 
 
-class FILEREADERSLIB_EXPORTS TandemLibraryReader {
-
-public:
-
-    TandemLibraryReader() = default;
-    ~TandemLibraryReader() = default;
-
-    static Err writeTandemPredictions(
-            const QVector<TandemLibraryReaderRow> &tandemLibraryReaderRows,
-            const QString &outputFilePath
-            );
-
-    static Err readTandemPredictions(
-            const QString &fileURI,
-            QVector<TandemLibraryReaderRow> *tandemLibraryReaderRows
-            );
-
-};
-
 #endif //PYTHIADIACPP_TANDEMLIBRARYREADER_H

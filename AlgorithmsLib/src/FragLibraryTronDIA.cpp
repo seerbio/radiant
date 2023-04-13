@@ -179,7 +179,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
     ERR_INIT
 
     QVector<TandemLibraryReaderRow> tandemLibraryRows;
-    e = TandemLibraryReader::readTandemPredictions(
+    e = ParquetReader::read(
             fragLibFilePath,
             &tandemLibraryRows
     );

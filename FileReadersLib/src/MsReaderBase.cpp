@@ -371,8 +371,7 @@ Err MsReaderBase::printFileInfo() {
 
         const QString outputFileName = m_filePath + S_GLOBAL_SETTINGS.DOT_CSV;
 
-        DIAMzTargetsReader reader;
-        e = reader.write(
+        e = CSVReader::write(
                 ops,
                 outputFileName
                 ); ree;

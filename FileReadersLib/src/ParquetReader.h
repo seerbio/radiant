@@ -107,6 +107,52 @@ public:
     ParquetReader();
     ~ParquetReader();
 
+    template<typename T>
+    static Err read(
+            const QString &fileURI,
+            QVector<T> *readerRows
+    ) {
+
+        ERR_INIT
+
+        ParquetReader reader;
+
+        QVector<ParquetReaderInputBase> ptrsRead;
+        e = reader.readDataFromParquet(
+                fileURI,
+                &ptrsRead
+        ); ree;
+
+
+        e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsRead,
+                readerRows
+        ); ree;
+
+
+        ERR_RETURN
+    }
+
+    template<typename T>
+    static Err write(
+            const QVector<T> &readerRows,
+            const QString &outputFilePath
+    ) {
+
+        ERR_INIT
+
+        const QVector<QSharedPointer<ParquetReaderInputBase>> ptrs
+                = ParquetReaderInputBase::convertInputStructToSharedPointers(readerRows);
+
+        ParquetReader reader;
+        e = reader.writeDataToParquet(
+                outputFilePath,
+                ptrs
+        ); ree;
+
+        ERR_RETURN
+    }
+
     Err writeDataToParquet(
             const QString &outputFilePath,
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
