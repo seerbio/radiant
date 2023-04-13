@@ -47,21 +47,21 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
 
-//    QPair<Err, MsReaderPointer> msReaderPointerResult
-//            = MsReaderPointerFactory::createInstance(msDatalFilePath);
-//    e = msReaderPointerResult.first; ree;
-//    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
-//
-//    QVector<MsFrame> msFrames;
-//    e = preprocessDIAFramesParallel(
-//            msReaderPointer,
-//            &msFrames
-//            ); ree;
-//
-//    e = scoreCandidatesPerFrameParallel(
-//            msFrames,
-//            msDatalFilePath
-//            ); ree;
+    QPair<Err, MsReaderPointer> msReaderPointerResult
+            = MsReaderPointerFactory::createInstance(msDatalFilePath);
+    e = msReaderPointerResult.first; ree;
+    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
+
+    QVector<MsFrame> msFrames;
+    e = preprocessDIAFramesParallel(
+            msReaderPointer,
+            &msFrames
+            ); ree;
+
+    e = scoreCandidatesPerFrameParallel(
+            msFrames,
+            msDatalFilePath
+            ); ree;
 
     ERR_RETURN
 }
