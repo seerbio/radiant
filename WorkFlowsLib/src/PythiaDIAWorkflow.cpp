@@ -8,11 +8,8 @@
 #include "ErrorUtils.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderPointerFactory.h"
-#include "ParallelUtils.h"
 #include "TurboXIC.h"
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -50,18 +47,21 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
 
-    QPair<Err, MsReaderPointer> msReaderPointerResult
-            = MsReaderPointerFactory::createInstance(msDatalFilePath);
-    e = msReaderPointerResult.first; ree;
-    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
-
-    QVector<MsFrame> msFrames;
-    e = preprocessDIAFramesParallel(
-            msReaderPointer,
-            &msFrames
-            ); ree;
-
-    e = scoreCandidatesPerFrameParallel(msFrames); ree;
+//    QPair<Err, MsReaderPointer> msReaderPointerResult
+//            = MsReaderPointerFactory::createInstance(msDatalFilePath);
+//    e = msReaderPointerResult.first; ree;
+//    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
+//
+//    QVector<MsFrame> msFrames;
+//    e = preprocessDIAFramesParallel(
+//            msReaderPointer,
+//            &msFrames
+//            ); ree;
+//
+//    e = scoreCandidatesPerFrameParallel(
+//            msFrames,
+//            msDatalFilePath
+//            ); ree;
 
     ERR_RETURN
 }
@@ -421,7 +421,7 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
             &processingChunks
             ); ree;
 
-//#define PARALLEL_DIA_SCORE
+#define PARALLEL_DIA_SCORE
 #ifdef PARALLEL_DIA_SCORE
     qDebug() << "Running scoreCandidatesPerFrame parallel";
 
