@@ -22,24 +22,11 @@ public:
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
-    Err init(const PythiaParameters &params);
-
-    Err scoreCandidatesPerFrameParallel(
-            const QVector<MsFrame> &msFrames,
-            const QString &msDataFilePath,
-            FragLibraryTronDIA *fragLibraryTronDia
+    static QPair<Err, QString> scoreCandidatesFrame(
+            const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+            const PythiaParameters &params,
+            const QString &msDataFilePath
     );
-
-    Err buildTargetCandidatesForFrame(
-            const QVector<MsFrame> &msFrames,
-            FragLibraryTronDIA *fragLibraryTronDia,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
-    ) const;
-
-private:
-
-    PythiaParameters m_params;
-
 
 };
 

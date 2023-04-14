@@ -7,44 +7,13 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoreVectorReader.h"
-#include "MsReaderPointerFactory.h"
 #include "PeakIntegratomatic.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
 
 
-
-Err MsFrameScoretron::init(const PythiaParameters &params) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(params.isValid()); ree;
-    m_params = params;
-
-    ERR_RETURN
-}
-
 namespace {
-
-    int featureCount = 0;
-
-    Err groupFramesWithTandemPredictions(
-            const QVector<MsFrame> &msFrames,
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &framePredictions,
-            QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> *processingChunks
-    ) {
-
-        ERR_INIT
-
-        for (const MsFrame &frame : msFrames) {
-            const UniqueMsInfoScanKey uniqueMsInfoScanKey = frame.uniqueMsInfoScanKey();
-            e = ErrorUtils::isTrue(framePredictions.contains(uniqueMsInfoScanKey)); ree;
-            processingChunks->push_back({frame, framePredictions.value(uniqueMsInfoScanKey)});
-        }
-
-        ERR_RETURN
-    }
 
     struct ScoringMatrices {
         Eigen::MatrixX<double> scoringMatrix;
@@ -221,8 +190,6 @@ namespace {
             msFrameScoreVectorReaderRows.push_back(row);
         }
 
-        featureCount += msFrameScoreVectorReaderRows.size();
-
         e = ParquetReader::write(
                 msFrameScoreVectorReaderRows,
                 outputFilePath
@@ -231,7 +198,7 @@ namespace {
         ERR_RETURN
     }
 
-    Err scoreFrameTargets(
+    QPair<Err, QString> scoreFrameTargets(
             const MsFrame &frame,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds,
             const PythiaParameters &params,
@@ -246,7 +213,7 @@ namespace {
         const QMap<FrameIndex, ScanPoints> scanPoints = frame.frameIndexVsScanPoints();
 
         TurboXIC turboXic;
-        e = turboXic.init(scanPoints); ree;
+        e = turboXic.init(scanPoints); rree;
 
         QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
         for (auto it = tandemPreds.begin(); it != tandemPreds.end(); it++) {
@@ -275,7 +242,7 @@ namespace {
             e = buildPerFrameIndexScoreVectors(
                     targetScoringMatrices,
                     &frameIndexScoreResultOfTarget
-            ); ree;
+            ); rree;
 
             pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }
@@ -286,14 +253,14 @@ namespace {
                 pepStrWModsVsFrameIndexScoreResultOfTargets,
                 outputFilePath,
                 params.minFoundMzPeaks
-        ); ree;
+        ); rree;
 
         qDebug() << "Found Targets:" << pepStrWModsVsFrameIndexScoreResultOfTargets.size();
         qDebug() << "Frame written to:" << outputFilePath;
-        return e;
+        return {e, outputFilePath};
     }
 
-    Err processFrameLogic(
+    QPair<Err, QString> processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
             const PythiaParameters &params,
             const QString &msDataFilePath
@@ -307,108 +274,36 @@ namespace {
         const QPair<double, double> &mzTargetStartEnd = frame.precursorMzTargetStartEnd();
         qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
 
-        e = scoreFrameTargets(
+        QPair<Err, QString> scoreFrameTargetsResult = scoreFrameTargets(
                 frame,
                 tandemPreds,
                 params,
                 msDataFilePath
-        ); ree;
+        );
 
-        ERR_RETURN
+        e = scoreFrameTargetsResult.first; rree;
+
+        return scoreFrameTargetsResult;
     }
 
 }//namespace
-Err MsFrameScoretron::scoreCandidatesPerFrameParallel(
-        const QVector<MsFrame> &msFrames,
-        const QString &msDataFilePath,
-        FragLibraryTronDIA *fragLibraryTronDia
+QPair<Err, QString> MsFrameScoretron::scoreCandidatesFrame(
+        const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+        const PythiaParameters &params,
+        const QString &msDataFilePath
         ) {
 
     ERR_INIT
 
-    featureCount = 0;
-
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> framePredictions;
-    e = buildTargetCandidatesForFrame(
-            msFrames,
-            fragLibraryTronDia,
-            &framePredictions
-    ); ree;
-
-    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
-    e = groupFramesWithTandemPredictions(
-            msFrames,
-            framePredictions,
-            &processingChunks
-    ); ree;
-
-#define PARALLEL_DIA_SCORE
-#ifdef PARALLEL_DIA_SCORE
-    qDebug() << "Running scoreCandidatesPerFrame parallel";
-
-    const auto scoringMatrixLogicBinder = std::bind(
-            processFrameLogic,
-            std::placeholders::_1,
-            m_params,
+    QPair<Err, QString> scoreFrameTargetsResult = processFrameLogic(
+            chunk,
+            params,
             msDataFilePath
     );
 
-    QFuture<Err> futures = QtConcurrent::mapped(
-            processingChunks,
-            scoringMatrixLogicBinder
-    );
-    futures.waitForFinished();
+    e = scoreFrameTargetsResult.first; rree;
 
-    for (const Err err : futures) {
-        e = err; ree;
-    }
-#else
-    qDebug() << "Running scoreCandidatesPerFrame serial";
-    for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
-
-        const QString frameID = chunk.first.uniqueMsInfoScanKey();
-        if (frameID != "504979") {
-            continue;
-        }
-
-        e = processFrameLogic(
-                chunk,
-                m_pythiaParameters,
-                msDataFilePath
-                ); ree;
-
-    }
-#endif
-
-    qDebug() << featureCount << "Features found";
-
-    ERR_RETURN
+    return scoreFrameTargetsResult;
 }
 
-Err MsFrameScoretron::buildTargetCandidatesForFrame(
-        const QVector<MsFrame> &msFrames,
-        FragLibraryTronDIA *fragLibraryTronDia,
-        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
-) const {
 
-    ERR_INIT
-
-    for (const MsFrame &frame : msFrames) {
-
-        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
-        qDebug() << "Collecting Targets for:" << mzTargetStartEnd.first << mzTargetStartEnd.second;
-
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
-
-        e = fragLibraryTronDia->getMS2Ions(
-                mzTargetStartEnd.first,
-                mzTargetStartEnd.second,
-                m_params.topNMs2Ions,
-                &peptideStringWithModsVsMS2Ions
-        ); ree;
-
-        framePredictions->insert(frame.uniqueMsInfoScanKey(), peptideStringWithModsVsMS2Ions);
-    }
-
-    ERR_RETURN
-}

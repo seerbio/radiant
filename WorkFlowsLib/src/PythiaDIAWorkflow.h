@@ -45,7 +45,16 @@ private:
             QVector<MsFrame> *msFrames
             );
 
+    Err scoreCandidatesPerFrameParallel(
+            const QVector<MsFrame> &msFrames,
+            const QString &msDataFilePath,
+            QStringList *scoredFrameFilePaths
+    );
 
+    Err buildTargetCandidatesForFrame(
+            const QVector<MsFrame> &msFrames,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+    );
 
 
 private:

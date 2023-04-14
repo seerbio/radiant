@@ -7,15 +7,10 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoretron.h"
-#include "MsFrameScoreVectorReader.h"
 #include "MsReaderPointerFactory.h"
 #include "PeakIntegratomatic.h"
-#include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
-
-#include <iostream>
-
 
 
 Err PythiaDIAWorkflow::init(
@@ -60,13 +55,11 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
             &msFrames
             ); ree;
 
-    MsFrameScoretron msFrameScoretron;
-    e = msFrameScoretron.init(m_pythiaParameters); ree;
-
-    e = msFrameScoretron.scoreCandidatesPerFrameParallel(
+    QStringList scoredFrameFilePaths;
+    e = scoreCandidatesPerFrameParallel(
             msFrames,
             msDatalFilePath,
-            &m_fragLibraryTronDia
+            &scoredFrameFilePaths
             ); ree;
 
     ERR_RETURN
@@ -168,3 +161,112 @@ Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
     ERR_RETURN
 }
 
+namespace {
+
+    Err groupFramesWithTandemPredictions(
+            const QVector<MsFrame> &msFrames,
+            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &framePredictions,
+            QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> *processingChunks
+    ) {
+
+        ERR_INIT
+
+        for (const MsFrame &frame : msFrames) {
+            const UniqueMsInfoScanKey uniqueMsInfoScanKey = frame.uniqueMsInfoScanKey();
+            e = ErrorUtils::isTrue(framePredictions.contains(uniqueMsInfoScanKey)); ree;
+            processingChunks->push_back({frame, framePredictions.value(uniqueMsInfoScanKey)});
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
+        const QVector<MsFrame> &msFrames,
+        const QString &msDataFilePath,
+        QStringList *scoredFrameFilePaths
+) {
+
+    ERR_INIT
+
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> framePredictions;
+    e = buildTargetCandidatesForFrame(
+            msFrames,
+            &framePredictions
+    ); ree;
+
+    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
+    e = groupFramesWithTandemPredictions(
+            msFrames,
+            framePredictions,
+            &processingChunks
+    ); ree;
+
+#define PARALLEL_DIA_SCORE
+#ifdef PARALLEL_DIA_SCORE
+    qDebug() << "Running scoreCandidatesPerFrame parallel";
+
+    const auto scoringMatrixLogicBinder = std::bind(
+            MsFrameScoretron::scoreCandidatesFrame,
+            std::placeholders::_1,
+            m_pythiaParameters,
+            msDataFilePath
+    );
+
+    QFuture<QPair<Err, QString>> futures = QtConcurrent::mapped(
+            processingChunks,
+            scoringMatrixLogicBinder
+    );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QString> &result : futures) {
+        e = result.first; ree;
+        scoredFrameFilePaths->push_back(result.second);
+    }
+#else
+    qDebug() << "Running scoreCandidatesPerFrame serial";
+    for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
+
+        const QString frameID = chunk.first.uniqueMsInfoScanKey();
+        if (frameID != "504979") {
+            continue;
+        }
+
+        QPair<Err, QString> scoreFrameTargetsResult = MsFrameScoretron::scoreCandidatesFrame(
+                chunk,
+                m_pythiaParameters,
+                msDataFilePath
+                ); ree;
+    }
+#endif
+
+    ERR_RETURN
+}
+
+
+Err PythiaDIAWorkflow::buildTargetCandidatesForFrame(
+        const QVector<MsFrame> &msFrames,
+        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+) {
+
+    ERR_INIT
+
+    for (const MsFrame &frame : msFrames) {
+
+        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
+        qDebug() << "Collecting Targets for:" << mzTargetStartEnd.first << mzTargetStartEnd.second;
+
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+
+        e = m_fragLibraryTronDia.getMS2Ions(
+                mzTargetStartEnd.first,
+                mzTargetStartEnd.second,
+                m_pythiaParameters.topNMs2Ions,
+                &peptideStringWithModsVsMS2Ions
+        ); ree;
+
+        framePredictions->insert(frame.uniqueMsInfoScanKey(), peptideStringWithModsVsMS2Ions);
+    }
+
+    ERR_RETURN
+}

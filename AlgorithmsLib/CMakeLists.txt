@@ -30,6 +30,7 @@ SET(SOURCE_FILES
         src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
+        src/MsFrameScoretronProcessormatic.cpp
         src/PeakIntegratomatic.cpp
         src/PeptideMassRTree.cpp
         src/PeptidesLibraryTron.cpp
@@ -48,7 +49,8 @@ SET(HEADER_FILES
         src/FragLibraryTron.h
         src/FragmentLibraryRTree.h
         src/MsFrame.h
-        src/MsFrame.h
+        src/MsFrameScoretron.h
+        src/MsFrameScoretronProcessormatic.h
         src/MsScansDenoiseTron.h
         src/PeakIntegratomatic.h
         src/PeptideMassRTree.h
