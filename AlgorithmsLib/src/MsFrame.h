@@ -11,6 +11,8 @@
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 
+using namespace Error;
+
 
 class ALGORITHMSLIB_EXPORTS MsFrame {
 

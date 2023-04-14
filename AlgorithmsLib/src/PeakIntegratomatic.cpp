@@ -211,7 +211,9 @@ namespace {
 
         ERR_INIT
 
-        const int order = 1;
+        QVector<double> v = EigenUtils::convertEigenVectorToQVector(*vec);
+
+        const int order = 2;
         const int derivative = 0;
         const int rate = 1;
 
@@ -224,6 +226,8 @@ namespace {
                     vec
                     ); ree;
         }
+
+        QVector<double> w = EigenUtils::convertEigenVectorToQVector(*vec);
 
         ERR_RETURN
     }
@@ -240,6 +244,30 @@ Err PeakIntegratomatic::simpleIntegrator(
 
     ERR_INIT
 
+    e = simpleIntegrator(
+            vec,
+            stopThresholdFraction,
+            filterLength,
+            smoothCount,
+            peakIntegrationIndexes,
+            {}
+            ); ree;
+
+    ERR_RETURN
+}
+
+
+Err PeakIntegratomatic::simpleIntegrator(
+        const QVector<double> &vec,
+        double stopThresholdFraction,
+        int filterLength,
+        int smoothCount,
+        PeakIntegrationIndexes *peakIntegrationIndexes,
+        QVector<double> *smoothedVec
+) {
+
+    ERR_INIT
+
     e = ErrorUtils::isNotEmpty(vec); ree;
 
     const int minFilterLength = 5;
@@ -247,7 +275,7 @@ Err PeakIntegratomatic::simpleIntegrator(
             filterLength,
             minFilterLength,
             ErrorUtilsParam::IncludeThreshold
-            ); ree;
+    ); ree;
 
     const double minStopThresholdFraction = 0.005;
     e = ErrorUtils::isAboveThreshold(
@@ -261,7 +289,7 @@ Err PeakIntegratomatic::simpleIntegrator(
             filterLength,
             smoothCount,
             &eVec
-            ); ree;
+    ); ree;
 
     const QVector<QPair<int, double>> vecApex = EigenUtils::returnTopXIndexAndValues(eVec, 1);
     const int apexIndex = vecApex.front().first;
@@ -276,15 +304,15 @@ Err PeakIntegratomatic::simpleIntegrator(
 
         const double currentValue = eVec(rightCurrentIndex);
         if (currentValue < stopThreshold) {
-           rightStopIndex = rightCurrentIndex;
-           break;
+            rightStopIndex = rightCurrentIndex;
+            break;
         }
 
         if (currentValue <= rightStopVal) {
-           rightStopVal = currentValue;
-           rightStopIndex = rightCurrentIndex;
-           rightCurrentIndex++;
-           continue;
+            rightStopVal = currentValue;
+            rightStopIndex = rightCurrentIndex;
+            rightCurrentIndex++;
+            continue;
         }
 
         break;
@@ -305,14 +333,15 @@ Err PeakIntegratomatic::simpleIntegrator(
         if (currentValue <= leftStopVal) {
             leftStopVal = currentValue;
             leftStopIndex = leftCurrentIndex;
-            leftCurrentIndex++;
+            leftCurrentIndex--;
             continue;
         }
 
         break;
     }
 
-    *peakIntegrationIndexes = {rightStopIndex, leftStopIndex};
-    
+    *smoothedVec = EigenUtils::convertEigenVectorToQVector(eVec);
+    *peakIntegrationIndexes = {leftStopIndex, rightStopIndex};
+
     ERR_RETURN
 }

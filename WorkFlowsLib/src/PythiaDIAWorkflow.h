@@ -12,6 +12,7 @@
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "MsReaderPointerFactory.h"
+#include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
 
 
@@ -44,15 +45,7 @@ private:
             QVector<MsFrame> *msFrames
             );
 
-    Err scoreCandidatesPerFrameParallel(
-            const QVector<MsFrame> &msFrames,
-            const QString &msDataFilePath
-            );
 
-    Err buildTargetCandidatesForFrame(
-            const QVector<MsFrame> &msFrames,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
-    );
 
 
 private:
@@ -62,6 +55,7 @@ private:
     QString m_pepLibUri;
 
     FragLibraryTronDIA m_fragLibraryTronDia;
+    QMap<PeptideStringWithMods, PeptideSequence> m_peptidesWithModsVsPeptideSequences;
 
 
 };

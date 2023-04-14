@@ -19,7 +19,6 @@ public:
         return QThread::idealThreadCount();
     }
 
-
     template <typename T>
     static Err tranchVectorForParallelization(
             const QVector<T> &input,
@@ -120,6 +119,25 @@ public:
 
         return output;
     }
+
+    template <typename T, typename U>
+    static Err zip(
+            const T &z1,
+            const U &z2,
+            QVector<QPair<T, U>> *zipResult
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(z1); ree;
+        e = ErrorUtils::isEqual(z1.size(), z2.size());
+
+        for (int i = 0; i < z1.size(); i++) {
+            zipResult->push_back({z1.at(i), z2.at(i)});
+        }
+
+        ERR_RETURN
+    }
+
 
 };
 

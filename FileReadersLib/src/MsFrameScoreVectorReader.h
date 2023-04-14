@@ -22,13 +22,17 @@ namespace MsFrameScoreVectorReaderNamespace {
     const QString FOUNDS_FRM_IND = QStringLiteral("foundIonsPerFrameIndexOfTargetVec");
     const QString SCORE_FRM_IND = QStringLiteral("scorePerFrameIndexOfTargetVec");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
+    const QString SCORE_PEAK_START  = QStringLiteral("scorePeakStart");
+    const QString SCORE_PEAK_END  = QStringLiteral("scorePeakEnd");
 
     const QStringList keysToCheck = {
             COSINE_SIM_VEC,
             INTZ_FRM_IND,
             FOUNDS_FRM_IND,
             SCORE_FRM_IND,
-            PEP_STR_W_MODS
+            PEP_STR_W_MODS,
+            SCORE_PEAK_START,
+            SCORE_PEAK_END
     };
 }
 
@@ -39,6 +43,8 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
     QVector<int> foundIonsPerFrameIndexOfTargetVec;
     QVector<double> scorePerFrameIndexOfTargetVec;
     PeptideStringWithMods peptideStringWithMods;
+    int scorePeakStart = -1;
+    int scorePeakEnd = -1;
 
     QMap<QString, QVariant> map() override {
 
@@ -50,6 +56,8 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
             {FOUNDS_FRM_IND, QVariant(qVectorToQByteArray(foundIonsPerFrameIndexOfTargetVec))},
             {SCORE_FRM_IND, QVariant(qVectorToQByteArray(scorePerFrameIndexOfTargetVec))},
             {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
+            {SCORE_PEAK_START, QVariant(scorePeakStart)},
+            {SCORE_PEAK_END, QVariant(scorePeakEnd)},
         };
     }
 
@@ -72,6 +80,8 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
         foundIonsPerFrameIndexOfTargetVec = bytesArrayToQVector<int>(dataMap.value(FOUNDS_FRM_IND).toByteArray());
         scorePerFrameIndexOfTargetVec = bytesArrayToQVector<double>(dataMap.value(SCORE_FRM_IND).toByteArray());
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
+        scorePeakStart = dataMap.value(SCORE_PEAK_START).toInt();
+        scorePeakEnd = dataMap.value(SCORE_PEAK_END).toInt();
 
         ERR_RETURN
     }

@@ -14,15 +14,16 @@ Err EigenKernelUtils::buildSavitzkyGolayKernel(
         int order,
         int derivative,
         int rate,
-        Eigen::VectorXd *mat
+        Eigen::MatrixX<double> *mat
 ) {
 
     //https://en.wikipedia.org/wiki/Savitzky–Golay_filter
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEqual(windowSize % 2 != 1, true, Error::eValueError); ree;
-    e = ErrorUtils::isNotEqual(windowSize < order + 2, true, Error::eValueError); ree;
+    e = ErrorUtils::isNotEqual(windowSize % 2 != 1, true, eValueError); ree;
+
+    e = ErrorUtils::isNotEqual(windowSize < order + 2, true, eValueError); ree;
 
     const int halfWindow = std::floor((windowSize - 1) / 2);
     const int cols = order + 1;
@@ -40,10 +41,11 @@ Err EigenKernelUtils::buildSavitzkyGolayKernel(
         factorialDerivative *= i;
     }
 
-    const Eigen::VectorXd pinv = mat->completeOrthogonalDecomposition().pseudoInverse();
-    Eigen::VectorXd kernel = pinv.row(derivative) * std::pow(rate, derivative) * factorialDerivative;
+    const Eigen::MatrixX<double> pinv = mat->completeOrthogonalDecomposition().pseudoInverse();
+    Eigen::MatrixX<double> kernel = pinv.row(derivative) * std::pow(rate, derivative) * factorialDerivative;
 
     *mat = kernel.transpose();
+    return e;
 
     ERR_RETURN
 }

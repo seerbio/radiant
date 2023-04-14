@@ -55,6 +55,15 @@ public:
             PeakIntegrationIndexes *peakIntegrationIndexes
             );
 
+    static Err simpleIntegrator(
+            const QVector<double> &vec,
+            double stopThresholdFraction,
+            int filterLength,
+            int smoothCount,
+            PeakIntegrationIndexes *peakIntegrationIndexes,
+            QVector<double> *smoothedVec
+    );
+
 private:
 
     Q_DISABLE_COPY(PeakIntegratomatic) class Private;

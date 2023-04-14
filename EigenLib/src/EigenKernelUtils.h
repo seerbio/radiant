@@ -30,7 +30,7 @@ public:
             int order,
             int derivative,
             int rate,
-            Eigen::VectorXd *mat
+            Eigen::MatrixX<double> *mat
     );
 
 
@@ -130,7 +130,7 @@ public:
 
         ERR_INIT
 
-        Eigen::VectorX<double> savitskyGolayKernel;
+        Eigen::MatrixX<double> savitskyGolayKernel;
         e = buildSavitzkyGolayKernel(
                 windowSize,
                 order,
@@ -139,8 +139,10 @@ public:
                 &savitskyGolayKernel
                 ); ree;
 
+        Eigen::VectorX<double> vec = *smoothedVec;
+
         *smoothedVec = convolveVectorWithKernel(
-                *smoothedVec,
+                vec,
                 savitskyGolayKernel
                 );
 
