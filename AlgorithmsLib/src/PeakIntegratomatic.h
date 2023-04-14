@@ -46,6 +46,7 @@ public:
             QVector<double> *intensityVecSmoothed
     );
 
+    /* Integrates the highest peak only.*/
     static Err simpleIntegrator(
             const QVector<double> &vec,
             double stopThresholdFraction,
@@ -53,9 +54,6 @@ public:
             int smoothCount,
             PeakIntegrationIndexes *peakIntegrationIndexes
             );
-
-
-private:
 
 private:
 
