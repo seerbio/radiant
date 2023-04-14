@@ -120,6 +120,33 @@ public:
             bool matchOriginalMaximum
     );
 
+    static Err savitskyGolaySmooth(
+            int windowSize,
+            int order = 1,
+            int derivative = 0,
+            int rate = 1,
+            Eigen::VectorX<double> *smoothedVec = Q_NULLPTR
+            ) {
+
+        ERR_INIT
+
+        Eigen::VectorX<double> savitskyGolayKernel;
+        e = buildSavitzkyGolayKernel(
+                windowSize,
+                order,
+                derivative,
+                rate,
+                &savitskyGolayKernel
+                ); ree;
+
+        *smoothedVec = convolveVectorWithKernel(
+                *smoothedVec,
+                savitskyGolayKernel
+                );
+
+        ERR_RETURN
+    }
+
 };
 
 

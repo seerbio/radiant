@@ -10,12 +10,14 @@
 #include "MsReaderPointerFactory.h"
 #include "TurboXIC.h"
 
-
 #include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
 
 
+namespace {
+    int featureCount = 0;
+}//namespace
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri,
@@ -47,6 +49,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
 
+    featureCount = 0;
+
     QPair<Err, MsReaderPointer> msReaderPointerResult
             = MsReaderPointerFactory::createInstance(msDatalFilePath);
     e = msReaderPointerResult.first; ree;
@@ -63,6 +67,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
             msDatalFilePath
             ); ree;
 
+    qDebug() << featureCount << "Features found";
     ERR_RETURN
 }
 
@@ -186,6 +191,26 @@ namespace {
         Eigen::MatrixX<double> theoMatrixMatrix;
     };
 
+    Eigen::MatrixX<double> buildTheoMat(
+            const QVector<MS2Ion> &ms2Ions,
+            int frameScanCount,
+            int topNMs2Ions
+            ) {
+
+        Eigen::MatrixX<double> theoMat(frameScanCount, topNMs2Ions);
+        theoMat.setZero();
+
+        Eigen::VectorX<double> theoIntensities(topNMs2Ions);
+        for (int i = 0; i < topNMs2Ions; i++) {
+            theoIntensities(i) = ms2Ions.at(i).intensity;
+        }
+        for (int i = 0; i < frameScanCount; i++) {
+            theoMat.row(i) = theoIntensities;
+        }
+
+        return theoMat;
+    }
+
     ScoringMatrices buildTargetScoringMatrices(
             const QVector<MS2Ion> &ms2Ions,
             int frameScanCount,
@@ -197,8 +222,11 @@ namespace {
         Eigen::MatrixX<double> scoringMat(frameScanCount, topNMs2Ions);
         scoringMat.setZero();
 
-        Eigen::MatrixX<double> theoMat(frameScanCount, topNMs2Ions);
-        theoMat.setZero();
+        const Eigen::MatrixX<double> theoMat = buildTheoMat(
+                ms2Ions,
+                frameScanCount,
+                topNMs2Ions
+                );
 
         for (int colIdx = 0; colIdx < ms2Ions.size(); colIdx++) {
 
@@ -231,7 +259,7 @@ namespace {
                 const Intensity intensity = it.value();
 
                 scoringMat(frameIndex, colIdx) = intensity;
-                theoMat(frameIndex, colIdx) = intensityTheo;
+
             }
         }
 
@@ -261,13 +289,16 @@ namespace {
         const Eigen::VectorX<int> foundIonsPerFrameIndexOfTarget
                 = (scoringMatrices.scoringMatrix.array() > 0.0).rowwise().count().cast<int>();
 
-        const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetCubed = foundIonsPerFrameIndexOfTarget
-                .cwiseProduct(foundIonsPerFrameIndexOfTarget
-                .cwiseProduct(foundIonsPerFrameIndexOfTarget)
-                ).cast<double>();
+//        const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetCubed = foundIonsPerFrameIndexOfTarget
+//                .cwiseProduct(foundIonsPerFrameIndexOfTarget
+//                .cwiseProduct(foundIonsPerFrameIndexOfTarget)
+//                ).cast<double>();
 
-        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = foundIonsPerFrameIndexOfTargetCubed.array()
-                                                                * intensityPerFrameIndexOfTarget.array()
+        const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
+            = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
+
+        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = foundIonsPerFrameIndexOfTargetFactorial.array()
+//                                                                * intensityPerFrameIndexOfTarget.array()
                                                                 * cosineSimPerFrameIndexOfTarget.array();
 
         FrameIndexScoreResultOfTarget frameIndexScoreResultOfTarget;
@@ -318,6 +349,8 @@ namespace {
             msFrameScoreVectorReaderRows.push_back(row);
         }
 
+        featureCount += msFrameScoreVectorReaderRows.size();
+
         e = ParquetReader::write(
                 msFrameScoreVectorReaderRows,
                 outputFilePath
@@ -349,6 +382,15 @@ namespace {
             const PeptideStringWithMods &peptideStringWithMods = it.key();
             const QVector<MS2Ion> &ms2Ions = it.value();
 
+//#define DEBUG_FRAME
+#ifdef DEBUG_FRAME
+            if (peptideStringWithMods != "AAANAVXQDK") {
+                continue;
+            }
+            for (const MS2Ion &i : ms2Ions) {
+                qDebug() << i.mz << i.intensity << i.ionLabel;
+            }
+#endif
             const ScoringMatrices targetScoringMatrices = buildTargetScoringMatrices(
                     ms2Ions,
                     frame.scanCount(),
@@ -444,6 +486,11 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
 #else
     qDebug() << "Running scoreCandidatesPerFrame serial";
     for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
+
+        const QString frameID = chunk.first.uniqueMsInfoScanKey();
+        if (frameID != "504979") {
+            continue;
+        }
 
         e = processFrameLogic(
                 chunk,

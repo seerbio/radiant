@@ -28,6 +28,7 @@ using MzMax = double;
 using MzTargetKey = QString;
 using NominalMzMass = int;
 using Occurrence = int;
+using PeakIntegrationIndexes = QPair<int, int>;
 using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
 using PeptideString = QString;
