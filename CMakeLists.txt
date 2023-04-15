@@ -36,6 +36,7 @@ PROJECT(PythiaDIACpp)
 # sudo apt-get install libsnappy1v5
 # sudo apt-get install libthrift-0.13.0
 
+enable_testing(true)
 
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
 
@@ -71,17 +72,15 @@ ADD_SUBDIRECTORY("WorkFlowsLib")
 ADD_SUBDIRECTORY("UtilsLib")
 
 
-enable_testing(true)
-
-# Add a custom target for running all tests
-add_custom_target(run_tests COMMAND ${CMAKE_CTEST_COMMAND})
-
-# Add a test for each QTest executable
-file(GLOB_RECURSE test_executables ${CMAKE_CURRENT_BINARY_DIR}/*Test)
-foreach(test_executable ${test_executables})
-    get_filename_component(test_name ${test_executable} NAME_WE)
-    add_test(NAME ${test_name} COMMAND ${test_executable})
-    add_dependencies(run_tests ${test_name})
-endforeach()
+## Add a custom target for running all tests
+#add_custom_target(run_tests COMMAND ${CMAKE_CTEST_COMMAND})
+#
+## Add a test for each QTest executable
+#file(GLOB_RECURSE test_executables ${CMAKE_CURRENT_BINARY_DIR}/*Test)
+#foreach(test_executable ${test_executables})
+#    get_filename_component(test_name ${test_executable} NAME_WE)
+#    add_test(NAME ${test_name} COMMAND ${test_executable})
+#    add_dependencies(run_tests ${test_name})
+#endforeach()
 
 # /snap/clion/234/bin/cmake/linux/x64/bin/cmake --build /home/anichols/Repositories/Builds/PythiaDIACpp --target run_tests -j 6
