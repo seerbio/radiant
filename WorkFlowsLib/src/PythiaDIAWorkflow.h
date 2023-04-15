@@ -40,8 +40,15 @@ public:
 
 private:
 
+    Err processLogic(
+            const MsReaderPointer &msReaderPointer,
+            int numberOfFramesToProcess,
+            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
+            );
+
     Err preprocessDIAFramesParallel(
             const MsReaderPointer &msReaderPointer,
+            int numberOfFramesToProcess,
             QVector<MsFrame> *msFrames
             );
 

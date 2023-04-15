@@ -381,3 +381,7 @@ Err MsReaderBase::printFileInfo() {
 
     ERR_RETURN
 }
+
+QString MsReaderBase::filePath() {
+    return m_filePath;
+}

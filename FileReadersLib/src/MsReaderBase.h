@@ -62,6 +62,8 @@ public:
 
     virtual Err closeFile();
 
+    QString filePath();
+
     bool isDIA();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();

@@ -48,27 +48,56 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
     e = msReaderPointerResult.first; ree;
     MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
-    QVector<MsFrame> msFrames;
-    e = preprocessDIAFramesParallel(
-            msReaderPointer,
-            &msFrames
-            ); ree;
-
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
-    e = scoreCandidatesPerFrameParallelWrite(
-            msFrames,
-            msDatalFilePath,
+
+    const int numberOfFramesToProcessForCalibration = 8;
+    e = processLogic(
+            msReaderPointer,
+            numberOfFramesToProcessForCalibration,
             &uniqueMsInfoScanKeyVsScoredFrameFilePaths
             ); ree;
 
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::processLogic(
+        const MsReaderPointer &msReaderPointer,
+        int numberOfFramesToProcess,
+        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
+        ) {
+
+    ERR_INIT
+
+    uniqueMsInfoScanKeyVsScoredFrameFilePaths->clear();
+
+    QVector<MsFrame> msFrames;
+    e = preprocessDIAFramesParallel(
+            msReaderPointer,
+            numberOfFramesToProcess,
+            &msFrames
+    ); ree;
+
+    const QString msDataFilePath = msReaderPointer->filePath();
+    e = ErrorUtils::isNotEmpty(msDataFilePath); ree;
+
+    e = scoreCandidatesPerFrameParallelWrite(
+            msFrames,
+            msDataFilePath,
+            uniqueMsInfoScanKeyVsScoredFrameFilePaths
+    ); ree;
+
+//#define WRITE_FRAME_SCANS
+#ifdef WRITE_FRAME_SCANS
     for (const MsFrame &frame : msFrames) {
 
         const QString outputFilePath
-                = msDatalFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
+                = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
 
         qDebug() << "Writing frame to" << outputFilePath;
         e = frame.writeFramScans(outputFilePath); ree;
     }
+#endif
 
     ERR_RETURN
 }
@@ -111,6 +140,7 @@ namespace {
     Err buildProcessFileLogicInputs(
             const MsReaderPointer &msReaderPointer,
             const PythiaParameters &pythiaParameters,
+            int numberOfFramesToProcess,
             QVector<ProcessFileLogicInput> *processFileLogicInputs
     ) {
 
@@ -119,7 +149,12 @@ namespace {
         QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrames;
         e = msReaderPointer->collateTandemPrecursorTargetsDIA(&diaTargetFrames); ree;
 
+        int counter = 0;
         for (const QMap<ScanNumber, ScanPoints> &frame : diaTargetFrames) {
+
+            if (numberOfFramesToProcess > 0 && counter >= numberOfFramesToProcess) {
+                break;
+            }
 
             const ScanNumber firstScanNumber = frame.firstKey();
 
@@ -134,6 +169,7 @@ namespace {
             processFileLogicInput.pythiaParameters = pythiaParameters;
 
             processFileLogicInputs->push_back(processFileLogicInput);
+            counter++;
         }
 
         ERR_RETURN
@@ -142,6 +178,7 @@ namespace {
 }//namespace
 Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
         const MsReaderPointer &msReaderPointer,
+        int numberOfFramesToProcess,
         QVector<MsFrame> *msFrames
         ) {
 
@@ -151,6 +188,7 @@ Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
     e = buildProcessFileLogicInputs(
             msReaderPointer,
             m_pythiaParameters,
+            numberOfFramesToProcess,
             &processFileLogicInputs
     ); ree;
 
