@@ -5,7 +5,7 @@
 #include "MsFrame.h"
 
 #include "DeisotoperTandem.h"
-#include "ErrorUtils.h"
+#include "MsReaderBase.h"
 #include "MsScansDenoiseTron.h"
 
 #include <QElapsedTimer>
@@ -181,4 +181,32 @@ QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
     return frameIndexVsScanPoints;
 }
 
+Err MsFrame::writeFramScans(const QString &outputFilePath) const {
 
+    ERR_INIT
+
+    const QMap<FrameIndex, ScanPoints> framesVsScanPoints = frameIndexVsScanPoints();
+
+    QVector<MsFrameScanPointRows> rowsToWrite;
+    for (auto it = framesVsScanPoints.begin(); it != framesVsScanPoints.end(); it++) {
+        MsFrameScanPointRows row;
+        row.frameIndex = it.key();
+
+        const ScanPoints &sp = it.value();
+
+        e = MsReaderBase::splitScanPoints(
+                sp,
+                &row.mzVals,
+                &row.intensityVals
+                ); ree;
+
+        rowsToWrite.push_back(row);
+    }
+
+    e = ParquetReader::write(
+            rowsToWrite,
+            outputFilePath
+            ); ree;
+
+    ERR_RETURN
+}

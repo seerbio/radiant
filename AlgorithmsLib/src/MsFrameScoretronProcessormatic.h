@@ -9,6 +9,7 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "PythiaParameterReader.h"
 
 
 using namespace Error;
@@ -20,6 +21,12 @@ public:
 
     MsFrameScoretronProcessormatic() = default;
     ~MsFrameScoretronProcessormatic() = default;
+
+    Err init(const PythiaParameters &pythiaParameters);
+
+private:
+
+    PythiaParameters m_params;
 
 };
 

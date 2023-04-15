@@ -8,10 +8,64 @@
 #include "AlgorithmsLib_Exports.h"
 
 #include "Error.h"
+#include "ErrorUtils.h"
 #include "GlobalSettings.h"
+#include "ParquetReader.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;
+
+ namespace MsFrameScanPointRowsNamespace {
+
+     const QString FRAME_INDEX = QStringLiteral("frameIndex");
+     const QString MZ_VALS = QStringLiteral("mzVals");
+     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
+
+     const QStringList keysToCheck = {
+             FRAME_INDEX,
+             MZ_VALS,
+             INTENSITY_VALS
+     };
+ }//namespace
+struct MsFrameScanPointRows : public ParquetReaderInputBase {
+
+    FrameIndex frameIndex = -1;
+    QVector<double> mzVals;
+    QVector<double> intensityVals;
+
+    QMap<QString, QVariant> map() override {
+
+        using namespace MsFrameScanPointRowsNamespace;
+
+        return {
+            {FRAME_INDEX, QVariant(frameIndex)},
+            {MZ_VALS, QVariant(qVectorToQByteArray(mzVals))},
+            {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))}
+        };
+    }
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        using namespace MsFrameScanPointRowsNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        frameIndex = dataMap.value(FRAME_INDEX).toInt();
+        mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+
+        ERR_RETURN
+    }
+
+};
 
 
 class ALGORITHMSLIB_EXPORTS MsFrame {
@@ -43,6 +97,8 @@ public:
             bool deisotope,
             bool smooth
             );
+
+    Err writeFramScans(const QString &outputFilePath) const;
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 

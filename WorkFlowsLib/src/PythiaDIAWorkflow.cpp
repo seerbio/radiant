@@ -39,7 +39,6 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
-
 Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
@@ -55,12 +54,21 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
             &msFrames
             ); ree;
 
-    QStringList scoredFrameFilePaths;
-    e = scoreCandidatesPerFrameParallel(
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
+    e = scoreCandidatesPerFrameParallelWrite(
             msFrames,
             msDatalFilePath,
-            &scoredFrameFilePaths
+            &uniqueMsInfoScanKeyVsScoredFrameFilePaths
             ); ree;
+
+    for (const MsFrame &frame : msFrames) {
+
+        const QString outputFilePath
+                = msDatalFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
+
+        qDebug() << "Writing frame to" << outputFilePath;
+        e = frame.writeFramScans(outputFilePath); ree;
+    }
 
     ERR_RETURN
 }
@@ -181,10 +189,10 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
+Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
         const QVector<MsFrame> &msFrames,
         const QString &msDataFilePath,
-        QStringList *scoredFrameFilePaths
+        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
 ) {
 
     ERR_INIT
@@ -204,24 +212,24 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
 
 #define PARALLEL_DIA_SCORE
 #ifdef PARALLEL_DIA_SCORE
-    qDebug() << "Running scoreCandidatesPerFrame parallel";
+    qDebug() << "Running scoreCandidatesPerFrameWrite parallel";
 
     const auto scoringMatrixLogicBinder = std::bind(
-            MsFrameScoretron::scoreCandidatesFrame,
+            MsFrameScoretron::scoreCandidatesFrameWrite,
             std::placeholders::_1,
             m_pythiaParameters,
             msDataFilePath
     );
 
-    QFuture<QPair<Err, QString>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
             processingChunks,
             scoringMatrixLogicBinder
     );
     futures.waitForFinished();
 
-    for (const QPair<Err, QString> &result : futures) {
+    for (const QPair<Err, QPair<UniqueMsInfoScanKey, QString>> &result : futures) {
         e = result.first; ree;
-        scoredFrameFilePaths->push_back(result.second);
+        uniqueMsInfoScanKeyVsScoredFrameFilePaths->insert(result.second.first, result.second.second);
     }
 #else
     qDebug() << "Running scoreCandidatesPerFrame serial";
@@ -232,7 +240,7 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
             continue;
         }
 
-        QPair<Err, QString> scoreFrameTargetsResult = MsFrameScoretron::scoreCandidatesFrame(
+        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreFrameTargetsResult = MsFrameScoretron::scoreCandidatesFrame(
                 chunk,
                 m_pythiaParameters,
                 msDataFilePath
@@ -242,7 +250,6 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallel(
 
     ERR_RETURN
 }
-
 
 Err PythiaDIAWorkflow::buildTargetCandidatesForFrame(
         const QVector<MsFrame> &msFrames,

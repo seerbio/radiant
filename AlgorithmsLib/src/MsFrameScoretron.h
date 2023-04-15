@@ -22,7 +22,7 @@ public:
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
-    static QPair<Err, QString> scoreCandidatesFrame(
+    static QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreCandidatesFrameWrite(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
             const PythiaParameters &params,
             const QString &msDataFilePath

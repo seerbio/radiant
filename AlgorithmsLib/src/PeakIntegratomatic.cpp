@@ -244,13 +244,14 @@ Err PeakIntegratomatic::simpleIntegrator(
 
     ERR_INIT
 
+    QVector<double> smoothedVecNoReturn;
     e = simpleIntegrator(
             vec,
             stopThresholdFraction,
             filterLength,
             smoothCount,
             peakIntegrationIndexes,
-            {}
+            &smoothedVecNoReturn
             ); ree;
 
     ERR_RETURN

@@ -45,10 +45,10 @@ private:
             QVector<MsFrame> *msFrames
             );
 
-    Err scoreCandidatesPerFrameParallel(
+    Err scoreCandidatesPerFrameParallelWrite(
             const QVector<MsFrame> &msFrames,
             const QString &msDataFilePath,
-            QStringList *scoredFrameFilePaths
+            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
     );
 
     Err buildTargetCandidatesForFrame(

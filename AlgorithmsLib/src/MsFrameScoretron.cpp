@@ -150,8 +150,7 @@ namespace {
                 stopThresholdFraction,
                 filterLength,
                 smoothCount,
-                &frameIndexScoreResultOfTarget->bestScorePeakLimits,
-                &frameIndexScoreResultOfTarget->scorePerFrameIndexOfTargetVec
+                &frameIndexScoreResultOfTarget->bestScorePeakLimits
         ); ree;
 
         ERR_RETURN
@@ -165,6 +164,7 @@ namespace {
 
         ERR_INIT
 
+        int counter = 0;
         QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
         for (auto it = pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
 
@@ -188,12 +188,16 @@ namespace {
             row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
 
             msFrameScoreVectorReaderRows.push_back(row);
+            counter++;
         }
 
         e = ParquetReader::write(
                 msFrameScoreVectorReaderRows,
                 outputFilePath
         ); ree;
+
+        qDebug() << "Found Targets:" << counter;
+        qDebug() << "Frame written to:" << outputFilePath;
 
         ERR_RETURN
     }
@@ -221,15 +225,6 @@ namespace {
             const PeptideStringWithMods &peptideStringWithMods = it.key();
             const QVector<MS2Ion> &ms2Ions = it.value();
 
-//#define DEBUG_FRAME
-#ifdef DEBUG_FRAME
-            if (peptideStringWithMods != "AAANAVXQDK") {
-                continue;
-            }
-            for (const MS2Ion &i : ms2Ions) {
-                qDebug() << i.mz << i.intensity << i.ionLabel;
-            }
-#endif
             const ScoringMatrices targetScoringMatrices = buildTargetScoringMatrices(
                     ms2Ions,
                     frame.scanCount(),
@@ -247,16 +242,15 @@ namespace {
             pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }
 
-        const QString outputFilePath = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frame";
+        const QString outputFilePath = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScores";
 
+        // Writing here because it saves RAM.  Otherwise, this should be its own method.
         e = writeFrameTargetScoreVectors(
                 pepStrWModsVsFrameIndexScoreResultOfTargets,
                 outputFilePath,
                 params.minFoundMzPeaks
         ); rree;
 
-        qDebug() << "Found Targets:" << pepStrWModsVsFrameIndexScoreResultOfTargets.size();
-        qDebug() << "Frame written to:" << outputFilePath;
         return {e, outputFilePath};
     }
 
@@ -287,7 +281,7 @@ namespace {
     }
 
 }//namespace
-QPair<Err, QString> MsFrameScoretron::scoreCandidatesFrame(
+QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidatesFrameWrite(
         const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
         const PythiaParameters &params,
         const QString &msDataFilePath
@@ -303,7 +297,5 @@ QPair<Err, QString> MsFrameScoretron::scoreCandidatesFrame(
 
     e = scoreFrameTargetsResult.first; rree;
 
-    return scoreFrameTargetsResult;
+    return {e, {chunk.first.uniqueMsInfoScanKey(), scoreFrameTargetsResult.second}};
 }
-
-
