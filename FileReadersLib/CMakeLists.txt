@@ -63,7 +63,6 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${ZLIB_DIRECTORY}"
         "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
         "${ARROW_DIRECTORY}"
 )
@@ -82,7 +81,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         ChemLib
         UtilsLib
-        ${ZLIB_STATIC_LIBRARY}
         ${ARROW_SHARED_LIBRARY}
         ${ARROW_STATIC_LIBRARY_DEPS}
         ${PARQUET_SHARED_LIBRARY}
