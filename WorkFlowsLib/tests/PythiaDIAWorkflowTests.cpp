@@ -31,6 +31,7 @@ private:
         reader.loadPythiaParameters(&pythiaParameters);
 
         pythiaParameters.topNMs2Ions = 12;
+//        pythiaParameters.ms2ExtractionWidthPPM = 20;
 
         return pythiaParameters;
     }

@@ -16,8 +16,9 @@
 namespace {
 
     struct ScoringMatrices {
-        Eigen::MatrixX<double> scoringMatrix;
-        Eigen::MatrixX<double> theoMatrixMatrix;
+        Eigen::MatrixX<double> scoringMatrixMz;
+        Eigen::MatrixX<double> scoringMatrixIntensity;
+        Eigen::MatrixX<double> theoMatrixMatrixIntensity;
     };
 
     Eigen::MatrixX<double> buildTheoMat(
@@ -41,27 +42,28 @@ namespace {
     }
 
     ScoringMatrices buildTargetScoringMatrices(
-            const QVector<MS2Ion> &ms2Ions,
+            const QVector<MS2Ion> &ms2IonsTandemPred,
             int frameScanCount,
             int topNMs2Ions,
             double featureFinderTolerancePPM,
             TurboXIC *turboXic
     ) {
 
-        Eigen::MatrixX<double> scoringMat(frameScanCount, topNMs2Ions);
-        scoringMat.setZero();
+        Eigen::MatrixX<double> scoringMatIntensity(frameScanCount, topNMs2Ions);
+        scoringMatIntensity.setZero();
+
+        Eigen::MatrixX<double> scoringMatMz(frameScanCount, topNMs2Ions);
+        scoringMatMz.setOnes();
 
         const Eigen::MatrixX<double> theoMat = buildTheoMat(
-                ms2Ions,
+                ms2IonsTandemPred,
                 frameScanCount,
                 topNMs2Ions
         );
 
-        for (int colIdx = 0; colIdx < ms2Ions.size(); colIdx++) {
+        for (int colIdx = 0; colIdx < ms2IonsTandemPred.size(); colIdx++) {
 
-            const double mz = ms2Ions.at(colIdx).mz;
-            const Intensity intensityTheo = ms2Ions.at(colIdx).intensity;
-
+            const double mz = ms2IonsTandemPred.at(colIdx).mz;
             const double massTol = MathUtils::calculatePPM(
                     mz,
                     featureFinderTolerancePPM
@@ -87,14 +89,15 @@ namespace {
                 const FrameIndex frameIndex = it.key();
                 const Intensity intensity = it.value();
 
-                scoringMat(frameIndex, colIdx) = intensity;
-
+                scoringMatIntensity(frameIndex, colIdx) = intensity;
+                scoringMatMz(frameIndex, colIdx) = mz;
             }
         }
 
         ScoringMatrices sm;
-        sm.scoringMatrix = scoringMat;
-        sm.theoMatrixMatrix = theoMat;
+        sm.scoringMatrixIntensity = scoringMatIntensity;
+        sm.theoMatrixMatrixIntensity = theoMat;
+        sm.scoringMatrixMz = scoringMatMz;
 
         return sm;
     }
@@ -115,20 +118,23 @@ namespace {
         ERR_INIT
 
         const Eigen::VectorX<double> cosineSimPerFrameIndexOfTarget = EigenUtils::rowWiseCosineSimilarOfMatrices(
-                scoringMatrices.scoringMatrix,
-                scoringMatrices.theoMatrixMatrix
+                scoringMatrices.scoringMatrixIntensity,
+                scoringMatrices.theoMatrixMatrixIntensity
         );
 
-        const Eigen::VectorX<double> intensityPerFrameIndexOfTarget = scoringMatrices.scoringMatrix.rowwise().sum();
+        const Eigen::VectorX<double> mzProductPerFrameIndexOfTarget = scoringMatrices.scoringMatrixMz.rowwise().prod();
+
+        const Eigen::VectorX<double> intensityPerFrameIndexOfTarget = scoringMatrices.scoringMatrixIntensity.rowwise().sum();
 
         const Eigen::VectorX<int> foundIonsPerFrameIndexOfTarget
-                = (scoringMatrices.scoringMatrix.array() > 0.0).rowwise().count().cast<int>();
+                = (scoringMatrices.scoringMatrixIntensity.array() > 0.0).rowwise().count().cast<int>();
 
         const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
                 = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
 
-        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = foundIonsPerFrameIndexOfTargetFactorial.array()
-                                                                  * cosineSimPerFrameIndexOfTarget.array();
+        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (foundIonsPerFrameIndexOfTargetFactorial.array()
+                                                                  * mzProductPerFrameIndexOfTarget.array().sqrt()
+                                                                  * cosineSimPerFrameIndexOfTarget.array()).sqrt().sqrt();
 
         frameIndexScoreResultOfTarget->cosineSimPerFrameIndexOfTargetVec
                 = EigenUtils::convertEigenVectorToQVector(cosineSimPerFrameIndexOfTarget);
@@ -223,10 +229,10 @@ namespace {
         for (auto it = tandemPreds.begin(); it != tandemPreds.end(); it++) {
 
             const PeptideStringWithMods &peptideStringWithMods = it.key();
-            const QVector<MS2Ion> &ms2Ions = it.value();
+            const QVector<MS2Ion> &ms2IonsTandemPred = it.value();
 
             const ScoringMatrices targetScoringMatrices = buildTargetScoringMatrices(
-                    ms2Ions,
+                    ms2IonsTandemPred,
                     frame.scanCount(),
                     params.topNMs2Ions,
                     params.featureFinderTolerancePPM,
