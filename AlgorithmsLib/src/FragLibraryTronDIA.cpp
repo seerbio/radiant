@@ -266,9 +266,7 @@ Err FragLibraryTronDIA::getMS2Ions(
 
     ERR_INIT
 
-    if (mzStartMzEnd.first > 989) {
-        qDebug() << peptideSequenceChargeKey;
-    }
+    ms2Ions->clear();
 
     e = ErrorUtils::isTrue(m_pepSeqChrgKeyVsMS2Ions.contains(peptideSequenceChargeKey));
     if (e != eNoError) {
@@ -335,6 +333,7 @@ Err FragLibraryTronDIA::getMS2Ions(
 
     ERR_INIT
 
+    peptideStringWithModsVsMS2Ions->clear();
     const int monoOffset = 0;
 
     for (int charge = m_params.chargeStateMin; charge <= m_params.chargeStateMax; charge++) {

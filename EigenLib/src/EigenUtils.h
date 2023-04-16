@@ -50,7 +50,6 @@ public:
         return returnVec;
     }
 
-
     /*!
     * @brief Returns the index of a vector nearest to a given value
     */
@@ -66,7 +65,6 @@ public:
 
         return returnIndexNearestToCutoff(vec.template cast<double>(), static_cast<double>(value), topX);
     }
-
 
     /*!
     * @brief Calculates root mean squared error given two Eigen vectors

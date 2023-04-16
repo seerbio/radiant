@@ -138,6 +138,25 @@ public:
         ERR_RETURN
     }
 
+    template <typename T, typename U>
+    static Err zip(
+            const T &z1,
+            const U &z2,
+            QVector<QPointF> *zipResult
+    ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(z1); ree;
+        e = ErrorUtils::isEqual(z1.size(), z2.size());
+
+        for (int i = 0; i < z1.size(); i++) {
+            zipResult->push_back({z1.at(i), z2.at(i)});
+        }
+
+        ERR_RETURN
+    }
+
+    static QPair<QVector<double>, QVector<double>> unZip(const QVector<QPointF> &points);
 
 };
 

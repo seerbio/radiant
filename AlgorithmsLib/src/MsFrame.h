@@ -15,18 +15,17 @@
 
 using namespace Error;
 
- namespace MsFrameScanPointRowsNamespace {
+namespace MsFrameScanPointRowsNamespace {
+    const QString FRAME_INDEX = QStringLiteral("frameIndex");
+    const QString MZ_VALS = QStringLiteral("mzVals");
+    const QString INTENSITY_VALS = QStringLiteral("intensityVals");
 
-     const QString FRAME_INDEX = QStringLiteral("frameIndex");
-     const QString MZ_VALS = QStringLiteral("mzVals");
-     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
-
-     const QStringList keysToCheck = {
-             FRAME_INDEX,
-             MZ_VALS,
-             INTENSITY_VALS
-     };
- }//namespace
+    const QStringList keysToCheck = {
+         FRAME_INDEX,
+         MZ_VALS,
+         INTENSITY_VALS
+    };
+}//namespace
 struct MsFrameScanPointRows : public ParquetReaderInputBase {
 
     FrameIndex frameIndex = -1;
@@ -106,7 +105,7 @@ public:
 
     [[nodiscard]] int scanCount() const;
 
-    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
+    [[nodiscard]] QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
 
 private:
 

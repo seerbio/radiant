@@ -69,3 +69,10 @@ configure_file(${PEPTIDES_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/peptides.csv COPYONL
 
 set(TARGETS_MZ_CE_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/target_mz_ce.csv")
 configure_file(${TARGETS_MZ_CE_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/target_mz_ce.csv COPYONLY)
+
+
+set(FRAME_SCANS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans")
+configure_file(${FRAME_SCANS_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans COPYONLY)
+
+set(FRAME_SCORES_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores")
+configure_file(${FRAME_SCORES_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores COPYONLY)
