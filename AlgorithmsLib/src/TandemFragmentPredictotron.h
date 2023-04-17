@@ -34,7 +34,7 @@ struct PeptidePredictionInput : CSVReaderInputBase {
     QString peptideSequence;
     double collisionEnergy = -1.0;
     int charge = -1;
-    bool isDecoy = false;
+    int isDecoy = 0;
 
     double normalizedCollisionEnergy = -1.0;
 
@@ -67,7 +67,7 @@ struct PeptidePredictionInput : CSVReaderInputBase {
         peptideSequence = dataMap.value(PEPTIDE).toString();
         collisionEnergy = dataMap.value(COLL_ENERGY).toDouble();
         charge = dataMap.value(CHARGE).toInt();
-        isDecoy = dataMap.value(IS_DECOY).toBool();
+        isDecoy = dataMap.value(IS_DECOY).toInt();
 
         ERR_RETURN
     }

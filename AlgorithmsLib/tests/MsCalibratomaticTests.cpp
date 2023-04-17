@@ -46,32 +46,6 @@ private:
 
         return pythiaParameters;
     }
-
-    Err buildPeptidesWithModsVsPeptideSequences(
-            const QString &m_pepLibUri,
-            QMap<PeptideStringWithMods, PeptideSequence> *peptidesWithModsVsPeptideSequences
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(m_pepLibUri); ree;
-
-        QVector<PeptideSequence> peptideSequences;
-        e = ParquetReader::read(
-                m_pepLibUri,
-                &peptideSequences
-        );ree
-
-        e = ErrorUtils::isNotEmpty(peptideSequences); ree;
-
-
-        for (const PeptideSequence &ps : peptideSequences) {
-            peptidesWithModsVsPeptideSequences->insert(ps.sequence, ps);
-        }
-
-        ERR_RETURN
-    }
-
 };
 
 MsCalibratomaticTests::MsCalibratomaticTests() : QObject(){}
@@ -86,29 +60,29 @@ void MsCalibratomaticTests::execTests() {
     const QString scansFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans");
 
-    const QString pepLibFilePath
-            = QDir(qApp->applicationDirPath()).filePath("2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib");
+    const QString fragLibFilePath
+            = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
 
     const QMap<QString, QString> filePaths = {
             {scoreVectorsFilePath, scansFilePath}
     };
 
-    QMap<PeptideStringWithMods, PeptideSequence> peptidesWithModsVsPeptideSequences;
-    e = buildPeptidesWithModsVsPeptideSequences(
-            pepLibFilePath,
-            &peptidesWithModsVsPeptideSequences
+    FragLibraryTronDIA fragLibraryTronDia;
+    e = fragLibraryTronDia.init(
+            pythiaParameters(),
+            fragLibFilePath
+    );
+    QCOMPARE(e, eNoError);
+
+    MsCalibratomatic calibratomatic;
+    e = calibratomatic.init(
+            pythiaParameters(),
+            &fragLibraryTronDia
             );
     QCOMPARE(e, eNoError);
 
-//    MsCalibratomatic calibratomatic;
-//    e = calibratomatic.init(
-//            pythiaParameters(),
-//            peptidesWithModsVsPeptideSequences
-//            );
-//    QCOMPARE(e, eNoError);
-//
-//    e = calibratomatic.exec(filePaths);
-//    QCOMPARE(e, eNoError);
+    e = calibratomatic.exec(filePaths);
+    QCOMPARE(e, eNoError);
 
 
 }

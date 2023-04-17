@@ -29,8 +29,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QMap<PeptideStringWithMods, PeptideSequence> &peptidesWithModsVsPeptideSequences,
-            const FragLibraryTronDIA &fragLibraryTronDia
+            FragLibraryTronDIA *fragLibraryTronDia
             );
 
     Err exec(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
@@ -57,8 +56,7 @@ private:
     QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
 
-    QMap<PeptideStringWithMods, PeptideSequence> m_peptidesWithModsVsPeptideSequences;
-    const FragLibraryTronDIA m_fragLibraryTronDia;
+    FragLibraryTronDIA *m_fragLibraryTronDia;
 
 };
 

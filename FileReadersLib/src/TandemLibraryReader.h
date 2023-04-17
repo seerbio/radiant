@@ -36,7 +36,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
     QVector<double> mzVals;
     QVector<double> intensityVals;
     QStringList ionLabels;
-    bool isDecoy = false;
+    bool isDecoy = 0;
 
     QMap<QString, QVariant> map() override {
 
@@ -69,7 +69,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
         mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
         ionLabels = dataMap.value(ION_LABELS).toString().split(S_GLOBAL_SETTINGS.SEPARATOR);
-        isDecoy = dataMap.value(IS_DECOY).toBool();
+        isDecoy = dataMap.value(IS_DECOY).toInt();
 
         ERR_RETURN
     }

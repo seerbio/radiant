@@ -78,7 +78,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
 
-    const int numberOfFramesToProcessForCalibration = 8;
+    const int numberOfFramesToProcessForCalibration = -1;
     e = buildCandidateScoreVectors(
             msReaderPointer,
             numberOfFramesToProcessForCalibration,

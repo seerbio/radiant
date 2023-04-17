@@ -13,6 +13,8 @@
 #include "PeptideMassRTree.h"
 #include "PythiaParameterReader.h"
 
+class TandemLibraryReaderRow;
+
 
 struct ALGORITHMSLIB_EXPORTS MS2Ion {
 
@@ -71,13 +73,23 @@ public:
             QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions
             );
 
+    Err peptideStringWithModsIsDecoy(
+            const PeptideStringWithMods &peptideStringWithMods,
+            bool *isDecoy
+            );
+
+    bool isInit();
+
 private:
 
     Err readFragLibFile(const QString &fragLibFilePath);
 
+    Err buildPeptideWithModsVsisDecoy(const QVector<TandemLibraryReaderRow> &tandemLibraryRows);
+
 private:
 
     QHash<PeptideSequenceChargeKey, QVector<MS2Ion>> m_pepSeqChrgKeyVsMS2Ions;
+    QHash<PeptideStringWithMods, bool> m_peptideWithModsVsisDecoy;
 
     PythiaParameters m_params;
     PeptideMassRTree m_peptideMassRTree;

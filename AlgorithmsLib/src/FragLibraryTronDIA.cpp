@@ -13,6 +13,8 @@
 #include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 
+#include <iostream>
+
 namespace {
 
     void stripToPeptideStringWithMods(
@@ -61,6 +63,7 @@ Err FragLibraryTronDIA::init(
             ); ree;
 
     qDebug() << "Library init in" << et.elapsed() << "mSec";
+    qDebug() << "Peptides count" << m_pepSeqChrgKeyVsMS2Ions.size() << m_peptideWithModsVsisDecoy.size();
 
     ERR_RETURN
 }
@@ -155,6 +158,39 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
     }
 #endif
 
+    e = buildPeptideWithModsVsisDecoy(tandemLibraryRows); ree;
+
+    ERR_RETURN
+}
+
+Err FragLibraryTronDIA::buildPeptideWithModsVsisDecoy(
+        const QVector<TandemLibraryReaderRow> &tandemLibraryRows
+        ) {
+
+    ERR_INIT
+
+    for (const TandemLibraryReaderRow &row : tandemLibraryRows) {
+
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey = row.peptideSequenceChargeKey;
+        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                QString::SkipEmptyParts
+                );
+
+        const int expectedSplitSize = 2;
+        e = ErrorUtils::isEqual(
+                peptideSequenceChargeKeySplit.size(),
+                expectedSplitSize
+                ); ree;
+
+        const PeptideStringWithMods &peptideStringWithMods = peptideSequenceChargeKeySplit.front();
+
+        m_peptideWithModsVsisDecoy.insert(
+                peptideStringWithMods,
+                row.isDecoy
+                );
+    }
+
     ERR_RETURN
 }
 
@@ -221,9 +257,13 @@ Err FragLibraryTronDIA::getMS2Ions(
         ) {
 
     ERR_INIT
+
+    const double mzMin = 0.0;
+    const double mzMax = 2000.0;
+
     e = getMS2Ions(
             peptideSequenceChargeKey,
-            {0.0, 2000.0},
+            {mzMax, mzMax},
             ms2Ions
             ); ree;
     ERR_RETURN
@@ -313,6 +353,25 @@ Err FragLibraryTronDIA::getMS2Ions(
             peptideStringWithModsVsMS2Ions->insert(peptideStringWithMods, ms2Ions);
         }
     }
+
+    ERR_RETURN
+}
+
+bool FragLibraryTronDIA::isInit() {
+    return !m_pepSeqChrgKeyVsMS2Ions.isEmpty();
+}
+
+Err
+FragLibraryTronDIA::peptideStringWithModsIsDecoy(
+        const PeptideStringWithMods &peptideStringWithMods,
+        bool *isDecoy
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_peptideWithModsVsisDecoy); ree;
+    e = ErrorUtils::isTrue(m_peptideWithModsVsisDecoy.contains(peptideStringWithMods)); ree;
+    *isDecoy = m_peptideWithModsVsisDecoy.value(peptideStringWithMods);
 
     ERR_RETURN
 }

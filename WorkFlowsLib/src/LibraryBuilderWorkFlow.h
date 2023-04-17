@@ -40,12 +40,16 @@ public:
             QString *returnFilePath
             );
 
+private:
+
+    Err buildPeptideSequenceChargeKeyVsIsDecoy(const QVector<PeptidePredictionInput> &peptidePredictionInputs);
 
 private:
 
     QMap<Charge, QString> m_modelFilePaths;
     QMap<Charge, TandemFragmentPredictotron*> m_tandemPredictionModels;
     PythiaParameters m_pythiaParameters;
+    QHash<PeptideSequenceChargeKey, bool> m_peptideSequenceChargeKeyVsIsDecoy;
 
 };
 

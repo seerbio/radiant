@@ -25,8 +25,7 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 Err MsCalibratomatic::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<PeptideStringWithMods, PeptideSequence> &peptidesWithModsVsPeptideSequences,
-        const FragLibraryTronDIA &fragLibraryTronDia
+        FragLibraryTronDIA *fragLibraryTronDia
         ) {
 
     ERR_INIT
@@ -34,8 +33,7 @@ Err MsCalibratomatic::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_params = pythiaParameters;
 
-    e = ErrorUtils::isNotEmpty(peptidesWithModsVsPeptideSequences);
-    m_peptidesWithModsVsPeptideSequences = peptidesWithModsVsPeptideSequences;
+    m_fragLibraryTronDia = fragLibraryTronDia;
 
     ERR_RETURN
 }
@@ -48,7 +46,6 @@ Err MsCalibratomatic::exec(
 
     e = ErrorUtils::isTrue(m_params.isValid()); ree;
     e = ErrorUtils::isNotEmpty(scoreVectorsVsScanFrameFilePaths); ree;
-    e = ErrorUtils::isNotEmpty(m_peptidesWithModsVsPeptideSequences); ree;
 
     for (
         auto it = scoreVectorsVsScanFrameFilePaths.begin();
@@ -76,7 +73,7 @@ Err MsCalibratomatic::processLogic(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_peptidesWithModsVsPeptideSequences); ree;
+    e = ErrorUtils::isTrue(m_fragLibraryTronDia->isInit()); ree;
 
     ParquetReader::read(
             scoreVectorsFilePath,
@@ -109,11 +106,17 @@ Err MsCalibratomatic::processLogic(
     int positives = 0;
     for (const Temp &r : scores) {
 
-        if (m_peptidesWithModsVsPeptideSequences.value(r.first).isDecoy) {
+        bool isDecoy;
+        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
+                r.first,
+                &isDecoy
+                ); ree;
+
+        if (isDecoy) {
             positives++;
         }
 
-        qDebug() << counter << positives / double(++counter) << r << m_peptidesWithModsVsPeptideSequences.value(r.first).isDecoy;
+        qDebug() << counter << positives / double(++counter) << r << isDecoy;
     }
 
 
