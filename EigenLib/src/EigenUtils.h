@@ -20,6 +20,15 @@ class EIGENLIB_EXPORTS EigenUtils {
 
 public:
 
+    template<typename T>
+    static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
+        mat->array().isNaN().select(replaceVal, mat->array());
+    }
+
+    template<typename T>
+    static void replaceInf(T replaceVal, Eigen::MatrixX<T> *mat){
+        *mat = mat->unaryExpr([replaceVal](double v) { return std::isinf(v) ? replaceVal : v; });
+    }
 
     /*!
     * @brief Returns the index of a vector nearest to a given value
@@ -209,7 +218,6 @@ public:
     static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
-
 
     template <typename EigenMatrix>
     static double cosineSimilarity(const EigenMatrix &v1,  const EigenMatrix &v2) {
@@ -425,7 +433,48 @@ public:
         return rowWiseCosineSimilarity;
     }
 
+    template <typename T>
+    static Eigen::VectorX<T> rowWiseKLDivergence(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+    ) {
+
+        Eigen::VectorX<T> mat1Sum = mat1.rowwise().sum();
+        Eigen::VectorX<T> mat2Sum = mat2.rowwise().sum();
+
+        const double nearZero = 0.000001;
+        thresholdVector(nearZero, nearZero, &mat1Sum);
+        thresholdVector(nearZero, nearZero, &mat2Sum);
+
+        Eigen::MatrixX<T> m1 = mat1.array().colwise() / mat1Sum.array();
+        Eigen::MatrixX<T> m2 = mat2.array().colwise() / mat2Sum.array();
+
+        thresholdMatrix(nearZero, nearZero, &m1);
+        thresholdMatrix(nearZero, nearZero, &m1);
+
+        Eigen::MatrixX<double> klDivMat
+                = (m1.array() * Eigen::log2(m1.array() / m2.array())).rowwise().sum();
+
+        double infReplaceVal = 10000.0;
+        replaceNaN(nearZero, &klDivMat);
+        replaceInf(infReplaceVal, &klDivMat);
+
+        return klDivMat;
+    }
 };
 
-
 #endif //EIGENUTILS_H
+
+
+
+
+
+
+
+
+
+
+
+
+
+

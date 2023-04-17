@@ -36,6 +36,7 @@ private Q_SLOTS:
     void troughtsTest();
 
     void rowWiseCosineSimilarOfMatricesTest();
+    void rowWiseKLDivergeneceTest();
 
 };
 
@@ -123,6 +124,27 @@ void EigenUtilsTests::rowWiseCosineSimilarOfMatricesTest() {
 
 }
 
+void EigenUtilsTests::rowWiseKLDivergeneceTest() {
+
+    Eigen::MatrixX<double> mat1(3,3);
+    Eigen::MatrixX<double> mat2(3,3);
+
+    mat1 << 1,2,3,4,5,6,7,8,9;
+    mat2 << 1,2,3,4,2.5,3,0,0,0;
+
+    Eigen::VectorX<double> res = EigenUtils::rowWiseKLDivergence(mat1, mat2);
+
+
+    EigenUtils::klDivergence(mat1.row(1), mat2.row(1));
+
+    for (int i = 0; i < 3; i++) {
+        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
+    }
+
+    std::cout << res << std::endl;
+
+
+}
 
 
 QTEST_MAIN(EigenUtilsTests)
