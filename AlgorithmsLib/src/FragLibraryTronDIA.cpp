@@ -46,8 +46,6 @@ Err FragLibraryTronDIA::init(
 
     m_params = pythiaParameters;
 
-    e = buildChargeVsIonLabels(); ree;
-
     e = readFragLibFile(fragLibFilePath); ree;
 
     const QList<PeptideSequenceChargeKey> &peptideSequenceChargeKey = m_pepSeqChrgKeyVsMS2Ions.keys();
@@ -67,20 +65,6 @@ Err FragLibraryTronDIA::init(
     ERR_RETURN
 }
 
-Err FragLibraryTronDIA::buildChargeVsIonLabels() {
-
-    ERR_INIT
-
-    for (int chrg = m_params.chargeStateMin; chrg <= m_params.chargeStateMax; ++chrg) {
-        const QStringList ionLabels = TandemPredictionUtils::buildIonLabels(chrg);
-        m_chargeVsIonLabels.insert(chrg, ionLabels);
-    }
-
-    e = ErrorUtils::isNotEmpty(m_chargeVsIonLabels); ree;
-
-    ERR_RETURN
-}
-
 namespace {
 
     const auto sortMzAscLogic = [](const MS2Ion &l, const MS2Ion &r){return l.mz < r.mz;};
@@ -88,36 +72,22 @@ namespace {
     const auto sortIntzAscLogic
             = [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;};
 
-    Err buildIonLabelVsDoubleVec(
-            const IonLabels &ionLabels,
-            const QVector<double> &dVals,
-            QHash<IonLabel, double> *ionLabelsVsDVals
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isEqual(dVals.size(),ionLabels.size()); ree;
-
-        for (int i = 0; i < dVals.size(); i++) {
-
-            ionLabelsVsDVals->insert(
-                    ionLabels.at(i),
-                    dVals.at(i)
-            );
-        }
-
-        ERR_RETURN
-    }
-
     QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> buildMS2IonsForPeptideSequenceChargeKey(
-            const TandemLibraryReaderRow &tandemLibraryReaderRow,
-            const QMap<Charge, IonLabels> &chargeVsIonLabels,
-            const AminoAcids &aminoAcids
+            const TandemLibraryReaderRow &tandemLibraryReaderRow
     ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(chargeVsIonLabels); rree;
+        e = ErrorUtils::isNotEmpty(tandemLibraryReaderRow.mzVals); rree;
+        e = ErrorUtils::isEqual(
+                tandemLibraryReaderRow.mzVals.size(),
+                tandemLibraryReaderRow.intensityVals.size()
+                ); rree;
+
+        e = ErrorUtils::isEqual(
+                tandemLibraryReaderRow.mzVals.size(),
+                tandemLibraryReaderRow.ionLabels.size()
+        ); rree;
 
         PeptideString peptideString;
         int charge = -1;
@@ -127,42 +97,13 @@ namespace {
                 &charge
         ); rree;
 
-        //TODO write code to extract mods w/i string i.e., PEPT[15.99]IDE
-        // For now just use {} in place for modifications.
-        QVector<double> mzVals;
-        e = TandemPredictionUtils::calculateMzValuesForPrediction(
-                peptideString,
-                {},
-                aminoAcids,
-                charge,
-                &mzVals
-        ); rree;
-
-        const IonLabels ionLabels =  chargeVsIonLabels.value(charge);
-
-        QHash<IonLabel, double> ionLabelsVsMzVals;
-        e = buildIonLabelVsDoubleVec(
-                ionLabels,
-                mzVals,
-                &ionLabelsVsMzVals
-        ); rree;
-
-        QHash<IonLabel, double> ionLabelsVsIntensityVals;
-        e = buildIonLabelVsDoubleVec(
-                tandemLibraryReaderRow.ionLabels,
-                tandemLibraryReaderRow.intensityVals,
-                &ionLabelsVsIntensityVals
-        ); rree;
-
         QVector<MS2Ion> ms2Ions;
-        for (auto it = ionLabelsVsIntensityVals.begin(); it != ionLabelsVsIntensityVals.end(); it++) {
+        for (int i = 0; i < tandemLibraryReaderRow.mzVals.size(); i++) {
 
             MS2Ion ms2Ion;
-            ms2Ion.ionLabel = it.key();
-            ms2Ion.intensity = it.value();
-
-            e = ErrorUtils::isTrue(ionLabelsVsMzVals.contains(ms2Ion.ionLabel)); rree;
-            ms2Ion.mz = ionLabelsVsMzVals.value(ms2Ion.ionLabel);
+            ms2Ion.ionLabel = tandemLibraryReaderRow.ionLabels.at(i);
+            ms2Ion.intensity = tandemLibraryReaderRow.intensityVals.at(i);
+            ms2Ion.mz = tandemLibraryReaderRow.mzVals.at(i);
 
             ms2Ions.push_back(ms2Ion);
         }
@@ -189,16 +130,9 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
 #define RUN_PARALLEL_MZ_ASS
 #ifdef RUN_PARALLEL_MZ_ASS
     qDebug() << "Running FragLibraryTronDIA parallel";
-    const auto mzBuilderLogicBinder = std::bind(
-            buildMS2IonsForPeptideSequenceChargeKey,
-            std::placeholders::_1,
-            m_chargeVsIonLabels,
-            m_params.aminoAcids
-    );
-
     QFuture<QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>>> futures = QtConcurrent::mapped(
             tandemLibraryRows,
-            mzBuilderLogicBinder
+            buildMS2IonsForPeptideSequenceChargeKey
     );
     futures.waitForFinished();
 
@@ -213,11 +147,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
     for (const TandemLibraryReaderRow &tandemLibraryReaderRow : tandemLibraryRows) {
 
         QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> pepMS2Ions
-                = buildMS2IonsForPeptideSequenceChargeKey(
-                        tandemLibraryReaderRow,
-                        m_chargeVsIonLabels,
-                        m_params.aminoAcids
-                        );
+                = buildMS2IonsForPeptideSequenceChargeKey(tandemLibraryReaderRow);
         e = pepMS2Ions.first; ree;
 
         const QPair<PeptideSequenceChargeKey , QVector<MS2Ion>> &res = pepMS2Ions.second;

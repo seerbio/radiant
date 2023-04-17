@@ -75,17 +75,11 @@ private:
 
     Err readFragLibFile(const QString &fragLibFilePath);
 
-    Err buildChargeVsIonLabels();
-
-
 private:
 
     QHash<PeptideSequenceChargeKey, QVector<MS2Ion>> m_pepSeqChrgKeyVsMS2Ions;
 
     PythiaParameters m_params;
-
-    QMap<Charge, IonLabels> m_chargeVsIonLabels;
-
     PeptideMassRTree m_peptideMassRTree;
 
 };
