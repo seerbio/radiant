@@ -108,10 +108,12 @@ public:
     template<typename T>
     static Err read(
             const QString &fileURI,
-            QVector<T> *readerRow
+            QVector<T> *readerRows
     ) {
 
         ERR_INIT
+
+        readerRows->clear();
 
         CSVReader reader;
 
@@ -123,7 +125,7 @@ public:
 
         e = CSVReaderInputBase::convertSharedPointersToInputStruct(
                 ptrsRead,
-                readerRow
+                readerRows
         ); ree;
 
         ERR_RETURN

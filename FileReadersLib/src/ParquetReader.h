@@ -115,6 +115,8 @@ public:
 
         ERR_INIT
 
+        readerRows->clear();
+
         ParquetReader reader;
 
         QVector<ParquetReaderInputBase> ptrsRead;

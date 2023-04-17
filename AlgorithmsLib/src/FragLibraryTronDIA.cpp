@@ -361,8 +361,7 @@ bool FragLibraryTronDIA::isInit() {
     return !m_pepSeqChrgKeyVsMS2Ions.isEmpty();
 }
 
-Err
-FragLibraryTronDIA::peptideStringWithModsIsDecoy(
+Err FragLibraryTronDIA::peptideStringWithModsIsDecoy(
         const PeptideStringWithMods &peptideStringWithMods,
         bool *isDecoy
         ) {

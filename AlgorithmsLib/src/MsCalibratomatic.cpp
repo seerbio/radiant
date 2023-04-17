@@ -56,6 +56,8 @@ Err MsCalibratomatic::exec(
         const QString &scoreVectorsFilePath = it.key();
         const QString &msFrameScansFilePath = it.value();
 
+        qDebug() << "Processing files" << scoreVectorsFilePath;
+
         e = processLogic(
                 scoreVectorsFilePath,
                 msFrameScansFilePath
@@ -88,7 +90,7 @@ Err MsCalibratomatic::processLogic(
 
     e = buildFrameIndexVsScanPoints(msFrameScanPointRows); ree;
 
-    const int topN = 2;
+    const int topN = 10;
     e = getTopNCandidatesPerFrameIndex(
             topN,
             &m_topCandidatesInFrameIndex
@@ -96,7 +98,14 @@ Err MsCalibratomatic::processLogic(
 
     QVector<QPair<PeptideStringWithMods, Score>> scores;
     for (const QVector<QPair<PeptideStringWithMods, Score>> &r : m_topCandidatesInFrameIndex) {
-        scores.append(r);
+        for (const QPair<PeptideStringWithMods, Score> &pr : r) {
+
+            if (pr.first.isEmpty()) {
+                continue;
+            }
+
+            scores.push_back(pr);
+        }
     }
 
     using Temp = QPair<PeptideStringWithMods, Score>;
@@ -116,7 +125,8 @@ Err MsCalibratomatic::processLogic(
             positives++;
         }
 
-        qDebug() << counter << positives / double(++counter) << r << isDecoy;
+        std::cout << counter << " " << positives / double(++counter) << " " << r.first.toStdString()
+                    << " " << r.second << " "<< isDecoy << std::endl;
     }
 
 
@@ -238,8 +248,8 @@ namespace {
             peptideScores->push_back(point);
         }
 
-        const double stDevs = 2.0;
-        const double thresholdScore = MathUtils::mean(scores) + (stDevs * MathUtils::stDev(scores));
+//        const double stDevs = 2.0;
+//        const double thresholdScore = MathUtils::mean(scores) + (stDevs * MathUtils::stDev(scores));
 
         std::sort(peptideScores->rbegin(), peptideScores->rend(), sortScoresAscLogic);
 
@@ -286,6 +296,7 @@ Err MsCalibratomatic::getTopNCandidatesPerFrameIndex(
             continue;
         }
 
+        topN = std::min(topN, peptideWithScoresDesc.size());
         peptideWithScoresDesc.resize(topN);
         topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
     }

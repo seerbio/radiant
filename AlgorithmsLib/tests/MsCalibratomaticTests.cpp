@@ -63,8 +63,47 @@ void MsCalibratomaticTests::execTests() {
     const QString fragLibFilePath
             = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
 
+//    const QMap<QString, QString> filePaths = {
+//            {scoreVectorsFilePath, scansFilePath}
+//    };
+
     const QMap<QString, QString> filePaths = {
-            {scoreVectorsFilePath, scansFilePath}
+            {
+                "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.595020.frameScores",
+                "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.595020.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.615029.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.615029.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.404934.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.404934.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.414939.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.414939.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.424943.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.424943.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.434948.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.434948.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.444952.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.444952.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.454957.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.454957.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.464961.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.464961.frameScans"
+            }
     };
 
     FragLibraryTronDIA fragLibraryTronDia;
