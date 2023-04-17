@@ -31,16 +31,13 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri,
-            const QString &pepLibUri
+            const QString &fragLibUri
             );
 
     Err processFile(const QString &msDatalFilePath);
 
 
 private:
-
-    Err buildPeptidesWithModsVsPeptideSequences();
 
     Err buildCandidateScoreVectors(
             const MsReaderPointer &msReaderPointer,
@@ -71,11 +68,8 @@ private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
-    QString m_pepLibUri;
 
     FragLibraryTronDIA m_fragLibraryTronDia;
-    QMap<PeptideStringWithMods, PeptideSequence> m_peptidesWithModsVsPeptideSequences;
-
 
 };
 

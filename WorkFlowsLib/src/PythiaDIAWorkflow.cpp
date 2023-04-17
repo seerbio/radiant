@@ -16,8 +16,7 @@
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
-        const QString &fragLibUri,
-        const QString &pepLibUri
+        const QString &fragLibUri
         ) {
 
     ERR_INIT
@@ -26,39 +25,14 @@ Err PythiaDIAWorkflow::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isNotEmpty(fragLibUri); ree;
-    e = ErrorUtils::isNotEmpty(pepLibUri); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
-    m_pepLibUri = pepLibUri;
 
     e = m_fragLibraryTronDia.init(
             pythiaParameters,
             fragLibUri
     ); ree;
-
-    e = buildPeptidesWithModsVsPeptideSequences(); ree;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::buildPeptidesWithModsVsPeptideSequences() {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_pepLibUri); ree;
-
-    QVector<PeptideSequence> peptideSequences;
-    e = ParquetReader::read(
-            m_pepLibUri,
-            &peptideSequences
-            );ree
-
-    e = ErrorUtils::isNotEmpty(peptideSequences); ree;
-
-    for (const PeptideSequence &ps : peptideSequences) {
-        m_peptidesWithModsVsPeptideSequences.insert(ps.sequence, ps);
-    }
 
     ERR_RETURN
 }
@@ -118,9 +92,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
             uniqueMsInfoScanKeyVsMsFrameFilePathCalibration,
             &scoreVectorsVsScanFrameFilePaths
             ); ree;
-
-
-
 
     ERR_RETURN
 }

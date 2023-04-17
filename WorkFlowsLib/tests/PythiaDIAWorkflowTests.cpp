@@ -49,15 +49,10 @@ void PythiaDIAWorkflowTests::execTest() {
 //            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/human_plasma_entrapment_super_trunc.fasta.fragLib");
             = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
 
-    const QString pepLibPath
-//            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/human_plasma_entrapment_super_trunc.fasta.pepLib");
-            = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib";
-
     PythiaDIAWorkflow pythiaDiaWorkflow;
     e = pythiaDiaWorkflow.init(
             pythiaParameters(),
-            fragLibPath,
-            pepLibPath
+            fragLibPath
             );
     QCOMPARE(e, eNoError);
 
