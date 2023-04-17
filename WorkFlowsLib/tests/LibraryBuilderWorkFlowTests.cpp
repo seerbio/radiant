@@ -17,6 +17,24 @@ private slots:
 
     void execTest();
 
+private:
+
+    static PythiaParameters pythiaParameters() {
+
+        const QString &paramsFile
+                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
+
+        PythiaParameterReader reader;
+        PythiaParameters pythiaParameters;
+        reader.readFile(paramsFile);
+        reader.loadPythiaParameters(&pythiaParameters);
+
+        pythiaParameters.topNMs2Ions = 12;
+//        pythiaParameters.ms2ExtractionWidthPPM = 20;
+
+        return pythiaParameters;
+    }
+
 };
 
 void LibraryBuilderWorkFlowTests::execTest() {
@@ -44,6 +62,7 @@ void LibraryBuilderWorkFlowTests::execTest() {
     QCOMPARE(e, eError);
 
     e = libraryBuilderWorkFlow.init(
+            pythiaParameters(),
             model1FilePath,
             model2FilePath,
             model3FilePath,

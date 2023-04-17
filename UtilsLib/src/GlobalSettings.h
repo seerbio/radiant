@@ -41,6 +41,7 @@ using ScanNumberIndex = int;
 using ScanPoint = QPointF;
 using ScanPoints = QVector<QPointF>;
 using ScanTime = double;
+using Score = double;
 using TandemScansIndex = int;
 using TARGETMZ = double;
 using Tranche = int;

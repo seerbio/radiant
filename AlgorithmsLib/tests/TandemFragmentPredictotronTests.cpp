@@ -15,6 +15,24 @@ private Q_SLOTS:
     void loadModelTest();
     void testPrediction();
 
+private:
+
+    static PythiaParameters pythiaParameters() {
+
+        const QString &paramsFile
+                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
+
+        PythiaParameterReader reader;
+        PythiaParameters pythiaParameters;
+        reader.readFile(paramsFile);
+        reader.loadPythiaParameters(&pythiaParameters);
+
+        pythiaParameters.topNMs2Ions = 12;
+//        pythiaParameters.ms2ExtractionWidthPPM = 20;
+
+        return pythiaParameters;
+    }
+
 };
 
 void TandemFragmentPredictotronTests::loadModelTest()
@@ -31,10 +49,18 @@ void TandemFragmentPredictotronTests::loadModelTest()
     const int charge = 2;
 
     TandemFragmentPredictotron predictotron;
-    e = predictotron.init(testModel, charge);
+    e = predictotron.init(
+            pythiaParameters(),
+            testModel,
+            charge
+            );
     QCOMPARE(e, eNoError);
 
-    e = predictotron.init(testModelFail, charge);
+    e = predictotron.init(
+            pythiaParameters(),
+            testModelFail,
+            charge
+            );
     QCOMPARE(e, eFileError);
 
 }
@@ -49,13 +75,18 @@ void TandemFragmentPredictotronTests::testPrediction() {
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
 
     TandemFragmentPredictotron predictotron;
-    e = predictotron.init(testModel, charge);
+    e = predictotron.init(
+            pythiaParameters(),
+            testModel,
+            charge
+            );
     QCOMPARE(e, eNoError);
 
     const QString seq = QStringLiteral("DTLMISR");
     PeptidePredictionInput ppi;
     ppi.peptideSequence = seq;
     ppi.collisionEnergy = 30;
+    ppi.charge = 2;
     ppi.normalizedCollisionEnergy = 30;
 
     const QVector<PeptidePredictionInput> seqs = {ppi, ppi};
@@ -94,7 +125,7 @@ void TandemFragmentPredictotronTests::testPrediction() {
 
     int i = 0;
     for (const FragmentIon &fi : prediction) {
-        qDebug() << templateString.arg(fi.ionLabel).arg(fi.intensity);
+        qDebug() << fi.mz << templateString.arg(fi.ionLabel).arg(fi.intensity);
         QCOMPARE(templateString.arg(fi.ionLabel).arg(fi.intensity), filteredResult.at(i++));
     }
 

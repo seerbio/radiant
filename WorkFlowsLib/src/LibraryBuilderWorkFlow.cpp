@@ -5,7 +5,9 @@
 #include "LibraryBuilderWorkFlow.h"
 
 #include "BiophysicalCalcs.h"
+#include "ErrorUtils.h"
 #include "MolecularFormula.h"
+#include "PythiaParameterReader.h"
 #include "TandemFragmentPredictotron.h"
 #include "TandemLibraryReader.h"
 #include "TandemPredictionUtils.h"
@@ -22,6 +24,7 @@ LibraryBuilderWorkFlow::~LibraryBuilderWorkFlow() {
 }
 
 Err LibraryBuilderWorkFlow::init(
+        const PythiaParameters &pythiaParameters,
         const QString &modelCharge1,
         const QString &modelCharge2,
         const QString &modelCharge3,
@@ -29,6 +32,9 @@ Err LibraryBuilderWorkFlow::init(
         ) {
 
     ERR_INIT
+
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    m_pythiaParameters = pythiaParameters;
 
     m_modelFilePaths.insert(1, modelCharge1);
     m_modelFilePaths.insert(2, modelCharge2);
@@ -42,6 +48,7 @@ Err LibraryBuilderWorkFlow::init(
 
         auto *model = new TandemFragmentPredictotron();
         e = model->init(
+                m_pythiaParameters,
                 m_modelFilePaths.value(charge),
                 charge
                 ); ree;
@@ -61,6 +68,8 @@ namespace {
             ) {
 
         ERR_INIT
+
+        qDebug() << "Reading csv" << peptidesCSVFilePath;
 
         CSVReader csvReader;
 
@@ -164,8 +173,7 @@ namespace {
     }
 
     QVector<TandemLibraryReaderRow> buildTandemLibraryReaderRows(
-            const QHash<PeptideSequenceChargeKey,
-                TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges
+            const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges
             ) {
 
         QVector<TandemLibraryReaderRow> tlrs;
@@ -175,14 +183,17 @@ namespace {
             const TandemFragmentPredictotron::TandemPrediction &tandemPrediction = it.value();
 
             QStringList ionLabels;
+            QVector<double> mzVals;
             QVector<double> intensities;
             for (const FragmentIon &fi : tandemPrediction) {
+                mzVals.push_back(fi.mz);
                 ionLabels.push_back(fi.ionLabel);
                 intensities.push_back(fi.intensity);
             }
 
             TandemLibraryReaderRow row;
             row.peptideSequenceChargeKey = peptideSequenceChargeKey;
+            row.mzVals = mzVals;
             row.ionLabels = ionLabels;
             row.intensityVals = intensities;
 
@@ -193,8 +204,7 @@ namespace {
     }
 
     Err writePredictionsToParquet(
-            const QHash<PeptideSequenceChargeKey,
-                    TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+            const QHash<PeptideSequenceChargeKey, TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QString &outputFilePath
             ) {
 
@@ -203,8 +213,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(outputFilePath); ree;
         e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
 
-        const QVector<TandemLibraryReaderRow> writeRows
-                = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
+        const QVector<TandemLibraryReaderRow> writeRows = buildTandemLibraryReaderRows(tandemPredictionsAllCharges);
 
         e = ParquetReader::write(
                 writeRows,

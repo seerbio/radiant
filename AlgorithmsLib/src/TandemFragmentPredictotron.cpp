@@ -26,6 +26,7 @@ public:
 
     Err  batchPredictTandemSpectra(
             const QVector<PeptidePredictionInput> &tandemPredictionInputs,
+            const AminoAcids &aminoAcids,
             QHash<PeptideSequenceChargeKey, TandemPrediction> *result
             );
 
@@ -146,6 +147,7 @@ namespace {
     }
 
     Err zipFragmentIonList(
+            const QVector<double> &mzVals,
             const QVector<float> &intensityVals,
             const QStringList &ionLabels,
             QVector<FragmentIon> *frags
@@ -154,13 +156,15 @@ namespace {
             ERR_INIT
 
             e = ErrorUtils::isEqual(intensityVals.size(), ionLabels.size()); ree;
+            e = ErrorUtils::isEqual(intensityVals.size(), mzVals.size()); ree;
 
             for (int i = 0; i < intensityVals.size(); i++) {
 
                 const float intensity = MathUtils::pRound(intensityVals.at(i), 2);
                 const QString &ionLabel = ionLabels.at(i);
+                const double mz = mzVals.at(i);
 
-                FragmentIon fragmentIon(intensity, ionLabel);
+                FragmentIon fragmentIon(mz, intensity, ionLabel);
                 frags->push_back(fragmentIon);
             }
 
@@ -175,6 +179,7 @@ namespace {
 }//NAMESPACE
 Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
         const QVector<PeptidePredictionInput> &predictionInputs,
+        const AminoAcids &aminoAcids,
         QHash<PeptideSequenceChargeKey, TandemPrediction> *tandemPredictions
         ) {
 
@@ -198,13 +203,23 @@ Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
     for (int i = 0; i < rawPredictionResultsCleaned.size(); i++) {
 
         const QVector<float> &intensityVals = rawPredictionResultsCleaned.at(i);
-
         const PeptidePredictionInput &ppi = predictionInputs.at(i);
+
+        QString nullModString;
+        QVector<double> mzVals;
+        e = TandemPredictionUtils::calculateMzValuesForPrediction(
+                ppi.peptideSequence,
+                nullModString,
+                aminoAcids,
+                ppi.charge,
+                &mzVals
+        ); ree;
 
         const PeptideSequenceChargeKey peptideLookupKey = buildPeptideLookupKey(ppi);
 
         TandemPrediction frags;
         e = zipFragmentIonList(
+                mzVals,
                 intensityVals,
                 m_ionLabels,
                 &frags
@@ -232,10 +247,12 @@ TandemFragmentPredictotron::TandemFragmentPredictotron() : d_ptr(new Private()) 
 TandemFragmentPredictotron::~TandemFragmentPredictotron() {}
 
 Err TandemFragmentPredictotron::init(
+        const PythiaParameters &pythiaParameters,
         const QString &modelFilePath,
         int charge
         ) {
     ERR_INIT
+    m_params = pythiaParameters;
     e = d_ptr->init(modelFilePath, charge); ree;
     ERR_RETURN
 }
@@ -245,7 +262,11 @@ Err TandemFragmentPredictotron::batchPredictTandemSpectra(
         QHash<PeptideSequenceChargeKey, TandemPrediction> *result
         ) {
    ERR_INIT
-   e = d_ptr->batchPredictTandemSpectra(tandemPredictionInputs, result); ree;
+   e = d_ptr->batchPredictTandemSpectra(
+           tandemPredictionInputs,
+           m_params.aminoAcids,
+           result
+           ); ree;
    ERR_RETURN
 }
 

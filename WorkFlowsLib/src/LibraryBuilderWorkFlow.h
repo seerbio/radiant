@@ -28,6 +28,7 @@ public:
     ~LibraryBuilderWorkFlow();
 
     Err init(
+            const PythiaParameters &pythiaParameters,
             const QString &modelCharge1,
             const QString &modelCharge2,
             const QString &modelCharge3,
@@ -44,6 +45,7 @@ private:
 
     QMap<Charge, QString> m_modelFilePaths;
     QMap<Charge, TandemFragmentPredictotron*> m_tandemPredictionModels;
+    PythiaParameters m_pythiaParameters;
 
 };
 

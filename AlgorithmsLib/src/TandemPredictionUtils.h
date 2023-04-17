@@ -18,11 +18,13 @@ struct ALGORITHMSLIB_EXPORTS FragmentIon{
 
     FragmentIon() = default;
 
-    FragmentIon(double intensity, QString ionLabel)
-    : intensity(intensity)
+    FragmentIon(double mz, double intensity, QString ionLabel)
+    : mz(mz)
+    , intensity(intensity)
     , ionLabel(std::move(ionLabel)){}
 
     QString ionLabel;
+    double mz = -1.0;
     double intensity = -1.0;
 };
 

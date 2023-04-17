@@ -38,17 +38,34 @@ public:
     MsFrameScoretronProcessormatic() = default;
     ~MsFrameScoretronProcessormatic() = default;
 
-    Err init(const PythiaParameters &pythiaParameters);
-
-    Err rescoreMsFrame(
-            const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
-            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &framePredictions
+    Err init(
+            const PythiaParameters &pythiaParameters,
+            const QString &scoreVectorsFilePath,
+            const QString &msFrameScansFilePath
             );
+
+    Err getTopNCandidatesPerFrameIndex(
+            int topN,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
+            );
+
+//    Err rescoreMsFrame(
+//            const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
+//            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
+//            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &framePredictions
+//            );
+//
+//    Err getTopNPeptidesPerFrameIndex();
+
+private:
+
+    Err buildFrameIndexVsScanPoints(const QVector<MsFrameScanPointRows> &msFrameScanPointRows);
 
 private:
 
     PythiaParameters m_params;
+    QVector<MsFrameScoreVectorReaderRow> m_scoreVectors;
+    QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
 
 };
 

@@ -7,6 +7,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoretron.h"
+#include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderPointerFactory.h"
 #include "PeakIntegratomatic.h"
 
@@ -36,9 +37,61 @@ Err PythiaDIAWorkflow::init(
             fragLibUri
     ); ree;
 
+    e = buildPeptidesWithModsVsPeptideSequences(); ree;
+
     ERR_RETURN
 }
 
+Err PythiaDIAWorkflow::buildPeptidesWithModsVsPeptideSequences() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_pepLibUri); ree;
+
+    QVector<PeptideSequence> peptideSequences;
+    e = ParquetReader::read(
+            m_pepLibUri,
+            &peptideSequences
+            );ree
+
+    e = ErrorUtils::isNotEmpty(peptideSequences); ree;
+
+    for (const PeptideSequence &ps : peptideSequences) {
+        m_peptidesWithModsVsPeptideSequences.insert(ps.sequence, ps);
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildScoreVectorsVsScanFrameFilePaths(
+            const QMap<UniqueMsInfoScanKey, QString> &uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths,
+            const QMap<UniqueMsInfoScanKey, QString> &uniqueMsInfoScanKeyVsMsFrameFilePath,
+            QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKeyVsMsFrameFilePath); ree;
+        e = ErrorUtils::isEqualString(
+                uniqueMsInfoScanKeyVsMsFrameFilePath.keys(),
+                uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths.keys()
+                ); ree;
+
+        const QList<UniqueMsInfoScanKey> &uniqueMsInfoScanKeys = uniqueMsInfoScanKeyVsMsFrameFilePath.keys();
+        for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueMsInfoScanKeys) {
+
+            scoreVectorsVsScanFrameFilePaths->insert(
+                    uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths.value(uniqueMsInfoScanKey),
+                    uniqueMsInfoScanKeyVsMsFrameFilePath.value(uniqueMsInfoScanKey)
+                    );
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
 
     ERR_INIT
@@ -48,23 +101,62 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
     e = msReaderPointerResult.first; ree;
     MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
 
     const int numberOfFramesToProcessForCalibration = 8;
-    e = processLogic(
+    e = buildCandidateScoreVectors(
             msReaderPointer,
             numberOfFramesToProcessForCalibration,
-            &uniqueMsInfoScanKeyVsScoredFrameFilePaths
+            &uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
+            &uniqueMsInfoScanKeyVsMsFrameFilePathCalibration
             ); ree;
+
+    QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
+    e = buildScoreVectorsVsScanFrameFilePaths(
+            uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
+            uniqueMsInfoScanKeyVsMsFrameFilePathCalibration,
+            &scoreVectorsVsScanFrameFilePaths
+            ); ree;
+
+
 
 
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::processLogic(
+namespace {
+
+    Err writeMsFrames(
+            const QVector<MsFrame> &msFrames,
+            const QString &msDataFilePath,
+            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
+            ) {
+
+        ERR_INIT
+
+        for (const MsFrame &frame : msFrames) {
+
+            const QString outputFilePath
+                    = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
+
+            qDebug() << "Writing frame to" << outputFilePath;
+            e = frame.writeFramScans(outputFilePath); ree;
+            uniqueMsInfoScanKeyVsMsFrameFilePath->insert(
+                    frame.uniqueMsInfoScanKey(),
+                    outputFilePath
+            );
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::buildCandidateScoreVectors(
         const MsReaderPointer &msReaderPointer,
         int numberOfFramesToProcess,
-        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
+        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths,
+        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
         ) {
 
     ERR_INIT
@@ -87,17 +179,11 @@ Err PythiaDIAWorkflow::processLogic(
             uniqueMsInfoScanKeyVsScoredFrameFilePaths
     ); ree;
 
-//#define WRITE_FRAME_SCANS
-#ifdef WRITE_FRAME_SCANS
-    for (const MsFrame &frame : msFrames) {
-
-        const QString outputFilePath
-                = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
-
-        qDebug() << "Writing frame to" << outputFilePath;
-        e = frame.writeFramScans(outputFilePath); ree;
-    }
-#endif
+    e = writeMsFrames(
+            msFrames,
+            msDataFilePath,
+            uniqueMsInfoScanKeyVsMsFrameFilePath
+            ); ree;
 
     ERR_RETURN
 }

@@ -41,13 +41,20 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     CommandLineParser parser;
 
-//    if (!parser.validateArguments(QCoreApplication::arguments())) {
-//        return 1;
-//    }
-//
-//    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
+    if (!parser.validateArguments(QCoreApplication::arguments())) {
+        return 1;
+    }
 
-    const QString peptidesCSVFilePath = QDir(qApp->applicationDirPath()).filePath("peptides.csv");
+    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
+
+    PythiaParameters pythiaParameters;
+    e = buildPythiaParameters(
+            cliParameters.pythiaParametersFilePath,
+            &pythiaParameters
+            );
+    if (e != eNoError) {
+        qDebug() << "Something went wrong";
+    }
 
     const QString model1FilePath
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
@@ -62,6 +69,7 @@ int main(int argc, char *argv[]) {
 
     LibraryBuilderWorkFlow libraryBuilderWorkFlow;
     e = libraryBuilderWorkFlow.init(
+            pythiaParameters,
             model1FilePath,
             model2FilePath,
             model3FilePath,
@@ -70,7 +78,7 @@ int main(int argc, char *argv[]) {
     qDebug() << e;
 
     e = libraryBuilderWorkFlow.exec(
-            peptidesCSVFilePath,
+            cliParameters.peptidesCSVFilePath,
             &fragLibFilePath
     );
     qDebug() << e;

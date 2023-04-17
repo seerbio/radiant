@@ -40,10 +40,13 @@ public:
 
 private:
 
-    Err processLogic(
+    Err buildPeptidesWithModsVsPeptideSequences();
+
+    Err buildCandidateScoreVectors(
             const MsReaderPointer &msReaderPointer,
             int numberOfFramesToProcess,
-            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
+            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths,
+            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
             );
 
     Err preprocessDIAFramesParallel(

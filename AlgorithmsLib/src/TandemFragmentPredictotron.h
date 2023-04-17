@@ -7,8 +7,9 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "CSVReader.h"
-#include "GlobalSettings.h"
 #include "Error.h"
+#include "GlobalSettings.h"
+#include "PythiaParameterReader.h"
 #include "TandemPredictionUtils.h"
 
 using namespace Error;
@@ -18,11 +19,13 @@ namespace PeptidePredictionInputNamespace {
     const QString PEPTIDE = QStringLiteral("Peptide");
     const QString CHARGE = QStringLiteral("Charge");
     const QString COLL_ENERGY = QStringLiteral("CollisionEnergy");
+    const QString IS_DECOY = QStringLiteral("IsDecoy");
 
     const QStringList keysToCheck = {
             PEPTIDE,
             CHARGE,
-            COLL_ENERGY
+            COLL_ENERGY,
+            IS_DECOY
     };
 }
 
@@ -31,6 +34,7 @@ struct PeptidePredictionInput : CSVReaderInputBase {
     QString peptideSequence;
     double collisionEnergy = -1.0;
     int charge = -1;
+    bool isDecoy = false;
 
     double normalizedCollisionEnergy = -1.0;
 
@@ -41,7 +45,8 @@ struct PeptidePredictionInput : CSVReaderInputBase {
         return {
             {PEPTIDE, peptideSequence},
             {CHARGE, charge},
-            {COLL_ENERGY, collisionEnergy}
+            {COLL_ENERGY, collisionEnergy},
+            {IS_DECOY, isDecoy}
         };
     }
 
@@ -62,6 +67,7 @@ struct PeptidePredictionInput : CSVReaderInputBase {
         peptideSequence = dataMap.value(PEPTIDE).toString();
         collisionEnergy = dataMap.value(COLL_ENERGY).toDouble();
         charge = dataMap.value(CHARGE).toInt();
+        isDecoy = dataMap.value(IS_DECOY).toBool();
 
         ERR_RETURN
     }
@@ -78,6 +84,7 @@ public:
     ~TandemFragmentPredictotron();
 
     Err init(
+            const PythiaParameters &pythiaParameters,
             const QString &modelFilePath,
             int charge
             );
@@ -94,6 +101,8 @@ private:
 
     Q_DISABLE_COPY(TandemFragmentPredictotron) class Private;
     const QScopedPointer<Private> d_ptr;
+
+    PythiaParameters m_params;
 
 };
 

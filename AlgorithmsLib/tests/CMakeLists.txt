@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         FragLibraryTronTests
         FragLibraryTronDIATests
         FragmentLibraryRTreeTests
+        MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronProcessormaticTests
         MsScansDenoiseTronTests

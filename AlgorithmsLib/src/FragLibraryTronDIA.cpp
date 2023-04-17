@@ -182,7 +182,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
     e = ParquetReader::read(
             fragLibFilePath,
             &tandemLibraryRows
-    );
+    ); ree;
 
     qDebug() << "Library size:" << tandemLibraryRows.size();
 

@@ -350,11 +350,13 @@ namespace {
     }
 
 
-    void addModificatonSeriesToVector(const QHash<ResidueIndex, ModificationMass> &modifications,
-                                      int peptideSequenceSize,
-                                      bool isYSeries,
-                                      Charge charge,
-                                      QVector<double> *vec) {
+    void addModificatonSeriesToVector(
+            const QHash<ResidueIndex, ModificationMass> &modifications,
+            int peptideSequenceSize,
+            bool isYSeries,
+            Charge charge,
+            QVector<double> *vec
+            ) {
 
         Eigen::VectorXd seriesModVec = buildModificationVector(
                 peptideSequenceSize,
@@ -367,6 +369,7 @@ namespace {
         for (int i = 0; i < seriesModVec.size(); ++i) {
             (*vec)[i] += seriesModVec.coeff(i);
         }
+
     }
 
 }//namespace
@@ -387,6 +390,7 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
 
     const double waterMonoisotopicMass = Molecule(MolecularFormulas::waterFormula).monoisotopicMass();
     const double nh3MonoisotopicMass = Molecule(MolecularFormulas::ammoniaFormula).monoisotopicMass();
+
     const IonLengths il = ionLengthsByCharge(charge);
     const int maxPeptideLength = getMaxLengthForPredictionInputByCharge(charge);
     const int peptideSequenceSize = peptideSequence.size();
@@ -394,7 +398,7 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
     std::reverse(peptideSequenceReversed.begin(),  peptideSequenceReversed.end());
 
     if (peptideSequence.size() > maxPeptideLength) {
-        return Error::eError;
+        rrr(eNoError)
     }
 
     QVector<double> bySeries;
@@ -424,8 +428,13 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
             il.lengthCharge1Ions,
             aminoAcids
             );
-
-    addModificatonSeriesToVector(modifications, peptideSequenceSize, true, charge1, &ySeries);
+    addModificatonSeriesToVector(
+            modifications,
+            peptideSequenceSize,
+            true,
+            charge1,
+            &ySeries
+            );
     bySeries.append(ySeries);
 
     if (charge > 1) {
@@ -455,7 +464,6 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
             il.lengthCharge1Ions,
             aminoAcids
             );
-
     addModificatonSeriesToVector(
             modifications,
             peptideSequenceSize,
@@ -466,7 +474,6 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
 
     bySeries.append(ySeriesNH3);
 
-
     QVector<double> ySeriesH2O = BiophysicalCalcs::buildTandemFragmentMasses(
             peptideSequenceReversed,
             charge1,
@@ -474,8 +481,13 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
             il.lengthCharge1Ions,
             aminoAcids
             );
-
-    addModificatonSeriesToVector(modifications, peptideSequenceSize, true, charge1, &ySeriesH2O);
+    addModificatonSeriesToVector(
+            modifications,
+            peptideSequenceSize,
+            true,
+            charge1,
+            &ySeriesH2O
+            );
     bySeries.append(ySeriesH2O);
 
 
@@ -494,7 +506,13 @@ Err TandemPredictionUtils::calculateMzValuesForPrediction(
         bSeries[lastResidueIndex] += waterMonoisotopicMass;
     }
 
-    addModificatonSeriesToVector(modifications, peptideSequenceSize, false, charge1, &bSeries);
+    addModificatonSeriesToVector(
+            modifications,
+            peptideSequenceSize,
+            false,
+            charge1,
+            &bSeries
+            );
     bySeries.append(bSeries);
 
     if (charge > 1) {

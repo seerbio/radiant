@@ -27,6 +27,7 @@ SET(SOURCE_FILES
         src/FragLibraryTron.cpp
         src/FragLibraryTronDIA.cpp
         src/FragmentLibraryRTree.cpp
+        src/MsCalibratomatic.cpp
         src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
@@ -49,6 +50,7 @@ SET(HEADER_FILES
         src/FragLibraryTron.h
         src/FragLibraryTron.h
         src/FragmentLibraryRTree.h
+        src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h
         src/MsFrameScoretronProcessormatic.h

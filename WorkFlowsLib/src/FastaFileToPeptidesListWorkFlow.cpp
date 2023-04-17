@@ -339,6 +339,7 @@ Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
             row.peptideSequence = ps.sequence;
             row.charge = chrg;
             row.collisionEnergy = collisionEnergy;
+            row.isDecoy = ps.isDecoy;
 
             rowsToWrite.push_back(row);
         }
