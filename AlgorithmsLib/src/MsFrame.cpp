@@ -210,3 +210,7 @@ Err MsFrame::writeFramScans(const QString &outputFilePath) const {
 
     ERR_RETURN
 }
+
+double MsFrame::meanPrecursorRange() const {
+    return ((m_precursorTargetMz + m_isoWindowUpper) + (m_precursorTargetMz - m_isoWindowLower)) / 2.0;
+}

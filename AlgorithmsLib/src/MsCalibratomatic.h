@@ -20,6 +20,12 @@ using namespace Error;
 
 class PeptideSequence;
 
+struct PeptideStringWithModsScoreResult {
+    PeptideStringWithMods peptideStringWithMods;
+    Score score = -1.0;
+    FrameIndex frameIndex = -1;
+};
+
 class ALGORITHMSLIB_EXPORTS MsCalibratomatic {
 
 public:
@@ -48,6 +54,9 @@ private:
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
     );
 
+    Err getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringWithModsScoreResult> *scoresNoDecoys);
+
+    Err buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys);
 
 private:
 
@@ -57,6 +66,8 @@ private:
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
 
     FragLibraryTronDIA *m_fragLibraryTronDia;
+
+    QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
 
 };
 

@@ -90,45 +90,16 @@ Err MsCalibratomatic::processLogic(
 
     e = buildFrameIndexVsScanPoints(msFrameScanPointRows); ree;
 
-    const int topN = 10;
+    const int topN = 1;
     e = getTopNCandidatesPerFrameIndex(
             topN,
             &m_topCandidatesInFrameIndex
             );ree;
 
-    QVector<QPair<PeptideStringWithMods, Score>> scores;
-    for (const QVector<QPair<PeptideStringWithMods, Score>> &r : m_topCandidatesInFrameIndex) {
-        for (const QPair<PeptideStringWithMods, Score> &pr : r) {
+    QVector<PeptideStringWithModsScoreResult> topScoringPSMs;
+    e = getScoredPSMsUntilFirstDecoyIsFound(&topScoringPSMs); ree;
 
-            if (pr.first.isEmpty()) {
-                continue;
-            }
-
-            scores.push_back(pr);
-        }
-    }
-
-    using Temp = QPair<PeptideStringWithMods, Score>;
-    std::sort(scores.rbegin(), scores.rend(), [](const Temp &l, const Temp &r){return l.second < r.second;});
-
-    int counter = 0;
-    int positives = 0;
-    for (const Temp &r : scores) {
-
-        bool isDecoy;
-        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
-                r.first,
-                &isDecoy
-                ); ree;
-
-        if (isDecoy) {
-            positives++;
-        }
-
-        std::cout << counter << " " << positives / double(++counter) << " " << r.first.toStdString()
-                    << " " << r.second << " "<< isDecoy << std::endl;
-    }
-
+    e = buildCalibrationPoints(topScoringPSMs); ree;
 
     ERR_RETURN
 }
@@ -300,6 +271,68 @@ Err MsCalibratomatic::getTopNCandidatesPerFrameIndex(
         peptideWithScoresDesc.resize(topN);
         topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
     }
+
+    ERR_RETURN
+}
+
+Err MsCalibratomatic::getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringWithModsScoreResult> *scoreNoDecoys) {
+
+    ERR_INIT
+
+    QVector<PeptideStringWithModsScoreResult> scores;
+    for (auto it = m_topCandidatesInFrameIndex.begin(); it != m_topCandidatesInFrameIndex.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        const QVector<QPair<PeptideStringWithMods, Score>> &scorePair = it.value();
+
+        for (const QPair<PeptideStringWithMods, Score> &pr : scorePair) {
+
+            if (pr.first.isEmpty()) {
+                continue;
+            }
+
+            PeptideStringWithModsScoreResult res;
+            res.frameIndex = frameIndex;
+            res.peptideStringWithMods = pr.first;
+            res.score = pr.second;
+
+            scores.push_back(res);
+        }
+    }
+
+    using T = PeptideStringWithModsScoreResult;
+    std::sort(scores.rbegin(), scores.rend(), [](const T &l, const T &r){return l.score < r.score;});
+
+    for (const T &r : scores) {
+
+        bool isDecoy;
+        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
+                r.peptideStringWithMods,
+                &isDecoy
+        ); ree;
+
+        if (isDecoy) {
+            break;
+        }
+
+        scoreNoDecoys->push_back(r);
+    }
+
+    ERR_RETURN
+}
+
+Err MsCalibratomatic::buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scoresNoDecoys); ree;
+
+    for (const PeptideStringWithModsScoreResult &res : scoresNoDecoys) {
+
+
+
+    }
+
 
     ERR_RETURN
 }

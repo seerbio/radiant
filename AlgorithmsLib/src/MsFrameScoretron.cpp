@@ -4,6 +4,7 @@
 
 #include "MsFrameScoretron.h"
 
+#include "BiophysicalCalcs.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoreVectorReader.h"
@@ -108,6 +109,7 @@ namespace {
         QVector<int> foundIonsPerFrameIndexOfTargetVec;
         QVector<double> scorePerFrameIndexOfTargetVec;
         PeakIntegrationIndexes bestScorePeakLimits = {-1, -1};
+        int charge = -1;
     };
 
     Err buildPerFrameIndexScoreVectors(
@@ -116,6 +118,8 @@ namespace {
     ) {
 
         ERR_INIT
+
+        const double numberOfSearchedFrags = static_cast<double>(scoringMatrices.scoringMatrixIntensity.cols());
 
         const Eigen::VectorX<double> cosineSimPerFrameIndexOfTarget = EigenUtils::rowWiseCosineSimilarOfMatrices(
                 scoringMatrices.scoringMatrixIntensity,
@@ -129,10 +133,14 @@ namespace {
         const Eigen::VectorX<int> foundIonsPerFrameIndexOfTarget
                 = (scoringMatrices.scoringMatrixIntensity.array() > 0.0).rowwise().count().cast<int>();
 
+        const Eigen::VectorX<double> fractionFoundIonsPerFrameIndexOfTarget
+                = foundIonsPerFrameIndexOfTarget.cast<double>() / numberOfSearchedFrags;
+
         const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
                 = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
 
         const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (foundIonsPerFrameIndexOfTargetFactorial.array()
+                                                                  * fractionFoundIonsPerFrameIndexOfTarget.array()
                                                                   * mzProductPerFrameIndexOfTarget.array().sqrt()
                                                                   * cosineSimPerFrameIndexOfTarget.array()).sqrt().sqrt();
 
@@ -192,7 +200,7 @@ namespace {
             row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
             row.scorePeakStart = frameIndexScoreResultOfTarget.bestScorePeakLimits.first;
             row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
-
+            row.charge = frameIndexScoreResultOfTarget.charge;
             msFrameScoreVectorReaderRows.push_back(row);
             counter++;
         }
@@ -244,6 +252,12 @@ namespace {
                     targetScoringMatrices,
                     &frameIndexScoreResultOfTarget
             ); rree;
+
+            frameIndexScoreResultOfTarget.charge = BiophysicalCalcs::calculateChargeFromSequence(
+                    peptideStringWithMods,
+                    params.aminoAcids,
+                    frame.meanPrecursorRange()
+                    );
 
             pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }

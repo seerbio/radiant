@@ -51,6 +51,12 @@ public:
             const AminoAcids &aminoAcids,
             int charge
             );
+
+    static int calculateChargeFromSequence(
+            const QString &peptideSequence,
+            const AminoAcids &aminoAcids,
+            double mz
+            );
 };
 
 

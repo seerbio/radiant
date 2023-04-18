@@ -114,3 +114,21 @@ double BiophysicalCalcs::calculateThomson(
     const double peptideMass = calculatePeptideMass(sequence, aminoAcids);
     return ((charge * ChemConstants::PROTON) + peptideMass) / charge;
 }
+
+int BiophysicalCalcs::calculateChargeFromSequence(
+        const QString &peptideSequence,
+        const AminoAcids &aminoAcids,
+        double mz
+        ) {
+
+    const double mass = calculatePeptideMass(
+            peptideSequence,
+            aminoAcids,
+            {}
+            );
+
+    return static_cast<int>(std::round(mass / mz));
+
+}
+
+

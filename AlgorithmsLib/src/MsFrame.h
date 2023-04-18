@@ -101,6 +101,8 @@ public:
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 
+    [[nodiscard]] double meanPrecursorRange() const;
+
     [[nodiscard]] UniqueMsInfoScanKey uniqueMsInfoScanKey() const;
 
     [[nodiscard]] int scanCount() const;
