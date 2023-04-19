@@ -20,12 +20,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-
+        src/NearestNeighborsSearch.cpp
         src/NeuralNetModel.cpp
         )
 
 SET(HEADER_FILES
-
+        src/NearestNeighborsSearch.h
         src/NeuralNetModel.h
         )
 

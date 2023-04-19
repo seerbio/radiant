@@ -146,7 +146,9 @@ NeuralNetModel::NeuralNetModel()  : d_ptr(new Private()) {}
 NeuralNetModel::~NeuralNetModel() {}
 
 Err NeuralNetModel::init(const QString &modelFilePath) {
-    return d_ptr->init(modelFilePath);
+    ERR_INIT
+    e = d_ptr->init(modelFilePath); ree;
+    ERR_RETURN
 }
 
 // TODO change this to handle errors.

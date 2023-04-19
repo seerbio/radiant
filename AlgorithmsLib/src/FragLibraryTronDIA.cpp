@@ -7,6 +7,7 @@
 #include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
+#include "TandemFragmentPredictotron.h"
 #include "TandemLibraryReader.h"
 #include "TandemPredictionUtils.h"
 
@@ -143,6 +144,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
 
         e = pepMS2Ions.first; ree;
         const QPair<PeptideSequenceChargeKey , QVector<MS2Ion>> &res = pepMS2Ions.second;
+
         m_pepSeqChrgKeyVsMS2Ions.insert(res.first, res.second);
     }
 #else
@@ -237,7 +239,8 @@ Err FragLibraryTronDIA::getMS2Ions(
     e = ErrorUtils::isTrue(m_pepSeqChrgKeyVsMS2Ions.contains(peptideSequenceChargeKey));
     if (e != eNoError) {
         const QString pep = peptideSequenceChargeKey.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP).at(0);
-        qDebug() << peptideSequenceChargeKey << BiophysicalCalcs::calculatePeptideMass(pep, m_params.aminoAcids, {});
+        qDebug() << "Prediction not found" << peptideSequenceChargeKey
+                 << BiophysicalCalcs::calculatePeptideMass(pep, m_params.aminoAcids, {});
         rrr(eValueError);
     }
 
@@ -263,7 +266,7 @@ Err FragLibraryTronDIA::getMS2Ions(
 
     e = getMS2Ions(
             peptideSequenceChargeKey,
-            {mzMax, mzMax},
+            {mzMin, mzMax},
             ms2Ions
             ); ree;
     ERR_RETURN
@@ -335,8 +338,11 @@ Err FragLibraryTronDIA::getMS2Ions(
             const Mass mass = it.value();
             const double mzTargetTheo = BiophysicalCalcs::calculateThomsonFromMass(mass, charge);
             const PeptideStringWithMods  &peptideStringWithMods = it.key();
-            const PeptideSequenceChargeKey peptideSequenceChargeKey
-                = peptideStringWithMods + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(charge);
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                    peptideStringWithMods,
+                    charge
+            );
+
 
             if (mzTargetTheo < mzTargetStart || mzTargetTheo > mzTargetEnd) {
                 continue;
@@ -373,4 +379,14 @@ Err FragLibraryTronDIA::peptideStringWithModsIsDecoy(
     *isDecoy = m_peptideWithModsVsisDecoy.value(peptideStringWithMods);
 
     ERR_RETURN
+}
+
+ScanPoints FragLibraryTronDIA::ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions) {
+
+    ScanPoints scanPoints;
+    for (const MS2Ion &ion : ms2Ions) {
+        scanPoints.push_back({ion.mz, ion.intensity});
+    }
+
+    return scanPoints;
 }

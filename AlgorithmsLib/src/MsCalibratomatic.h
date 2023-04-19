@@ -24,6 +24,7 @@ struct PeptideStringWithModsScoreResult {
     PeptideStringWithMods peptideStringWithMods;
     Score score = -1.0;
     FrameIndex frameIndex = -1;
+    Charge charge = -1;
 };
 
 class ALGORITHMSLIB_EXPORTS MsCalibratomatic {
@@ -42,7 +43,7 @@ public:
 
 private:
 
-    Err processLogic(
+    Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
             const QString &msFrameScansFilePath
     );
@@ -58,15 +59,17 @@ private:
 
     Err buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys);
 
+    Err buildPeptideSequenceWithModsVsCharge();
+
 private:
 
-    PythiaParameters m_params;
     QVector<MsFrameScoreVectorReaderRow> m_scoreVectors;
     QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
+    QMap<PeptideStringWithMods, Charge> m_peptideWithModsVsCharge;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
 
+    PythiaParameters m_params;
     FragLibraryTronDIA *m_fragLibraryTronDia;
-
     QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
 
 };

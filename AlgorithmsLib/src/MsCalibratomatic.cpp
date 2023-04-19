@@ -8,6 +8,7 @@
 #include "ErrorUtils.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
+#include "TandemFragmentPredictotron.h"
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -58,7 +59,7 @@ Err MsCalibratomatic::exec(
 
         qDebug() << "Processing files" << scoreVectorsFilePath;
 
-        e = processLogic(
+        e = processLogicForFrameScores(
                 scoreVectorsFilePath,
                 msFrameScansFilePath
                 ); ree;
@@ -68,7 +69,7 @@ Err MsCalibratomatic::exec(
     ERR_RETURN
 }
 
-Err MsCalibratomatic::processLogic(
+Err MsCalibratomatic::processLogicForFrameScores(
         const QString &scoreVectorsFilePath,
         const QString &msFrameScansFilePath
         ) {
@@ -77,10 +78,17 @@ Err MsCalibratomatic::processLogic(
 
     e = ErrorUtils::isTrue(m_fragLibraryTronDia->isInit()); ree;
 
+    m_scoreVectors.clear();
+    m_frameIndexVsScanPoints.clear();
+    m_peptideWithModsVsCharge.clear();
+    m_topCandidatesInFrameIndex.clear();
+
     ParquetReader::read(
             scoreVectorsFilePath,
             &m_scoreVectors
     ); ree;
+
+    e = buildPeptideSequenceWithModsVsCharge(); ree;
 
     QVector<MsFrameScanPointRows> msFrameScanPointRows;
     ParquetReader::read(
@@ -100,6 +108,20 @@ Err MsCalibratomatic::processLogic(
     e = getScoredPSMsUntilFirstDecoyIsFound(&topScoringPSMs); ree;
 
     e = buildCalibrationPoints(topScoringPSMs); ree;
+
+    ERR_RETURN
+}
+
+Err MsCalibratomatic::buildPeptideSequenceWithModsVsCharge() {
+
+    ERR_INIT
+    m_peptideWithModsVsCharge.clear();
+    e = ErrorUtils::isNotEmpty(m_scoreVectors); ree;
+
+    for (const MsFrameScoreVectorReaderRow &row : m_scoreVectors) {
+        e = ErrorUtils::isFalse(m_peptideWithModsVsCharge.contains(row.peptideStringWithMods)); ree;
+        m_peptideWithModsVsCharge.insert(row.peptideStringWithMods, row.charge);
+    }
 
     ERR_RETURN
 }
@@ -184,7 +206,6 @@ namespace {
             e = ErrorUtils::isFalse(peptideWithModsVsScoreVec->contains(r.peptideStringWithMods)); ree;
             peptideWithModsVsScoreVec->insert(r.peptideStringWithMods, r.scorePerFrameIndexOfTargetVec);
         }
-
 
         ERR_RETURN
     }
@@ -296,6 +317,9 @@ Err MsCalibratomatic::getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringW
             res.peptideStringWithMods = pr.first;
             res.score = pr.second;
 
+            e = ErrorUtils::isTrue(m_peptideWithModsVsCharge.contains(res.peptideStringWithMods));ree;
+            res.charge = m_peptideWithModsVsCharge.value(res.peptideStringWithMods);
+
             scores.push_back(res);
         }
     }
@@ -329,10 +353,32 @@ Err MsCalibratomatic::buildCalibrationPoints(const QVector<PeptideStringWithMods
 
     for (const PeptideStringWithModsScoreResult &res : scoresNoDecoys) {
 
+        const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                res.peptideStringWithMods,
+                res.charge
+                );
 
+        QVector<MS2Ion> theoTandemPrediction;
+        e = m_fragLibraryTronDia->getMS2Ions(
+                peptideSequenceChargeKey,
+                &theoTandemPrediction
+                ); ree
+        e = ErrorUtils::isNotEmpty(theoTandemPrediction); ree;
+        const ScanPoints theoTandemPredictionScanPoints
+                = FragLibraryTronDIA::ms2IonsToScanPoints(theoTandemPrediction);
+
+        const ScanPoints &scanPoints = m_frameIndexVsScanPoints.value(res.frameIndex);
+        e = ErrorUtils::isNotEmpty(scanPoints); ree;
+
+        const ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
+                scanPoints,
+                theoTandemPredictionScanPoints,
+                m_params.ms2ExtractionWidthPPM
+                );
+
+        m_calibrationPoints[res.frameIndex].push_back(extractPoints);
 
     }
-
 
     ERR_RETURN
 }

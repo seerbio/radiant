@@ -80,6 +80,8 @@ public:
 
     bool isInit();
 
+    [[nodiscard]] static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions);
+
 private:
 
     Err readFragLibFile(const QString &fragLibFilePath);

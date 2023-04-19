@@ -171,11 +171,6 @@ namespace {
             ERR_RETURN
     }
 
-    QString buildPeptideLookupKey(const PeptidePredictionInput &ppi) {
-        return ppi.peptideSequence + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(ppi.charge);
-    }
-
-
 }//NAMESPACE
 Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
         const QVector<PeptidePredictionInput> &predictionInputs,
@@ -215,7 +210,10 @@ Err  TandemFragmentPredictotron::Private::batchPredictTandemSpectra(
                 &mzVals
         ); ree;
 
-        const PeptideSequenceChargeKey peptideLookupKey = buildPeptideLookupKey(ppi);
+        const PeptideSequenceChargeKey peptideLookupKey = buildPeptideSequenceChargeKey(
+                ppi.peptideSequence,
+                ppi.charge
+                );
 
         TandemPrediction frags;
         e = zipFragmentIonList(
@@ -272,4 +270,11 @@ Err TandemFragmentPredictotron::batchPredictTandemSpectra(
 
 void TandemFragmentPredictotron::setIntensityThreshold(double intensityThreshold) {
     d_ptr->setIntensityThreshold(intensityThreshold);
+}
+
+PeptideSequenceChargeKey TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+        const PeptideStringWithMods &peptideStringWithMods,
+        int charge
+        ) {
+    return peptideStringWithMods + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(charge);
 }

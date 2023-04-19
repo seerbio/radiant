@@ -302,8 +302,10 @@ Err LibraryBuilderWorkFlow::buildPeptideSequenceChargeKeyVsIsDecoy(
 
     for (const PeptidePredictionInput &ppi : peptidePredictionInputs) {
 
-        const PeptideSequenceChargeKey peptideSequenceChargeKey
-            = ppi.peptideSequence + S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP + QString::number(ppi.charge);
+        const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                ppi.peptideSequence,
+                ppi.charge
+        );
 
         m_peptideSequenceChargeKeyVsIsDecoy.insert(peptideSequenceChargeKey, ppi.isDecoy);
 
