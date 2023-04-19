@@ -42,6 +42,12 @@ public:
             FragLibraryTronDIA *fragLibraryTronDia
             );
 
+    // either FrameIndex, or ScanNumber can be key as they are both ints.
+    Err recalibratePoints(
+            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
+            QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
+            );
+
 private:
 
     Err buildCalibrator(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
@@ -50,8 +56,6 @@ private:
             const QString &scoreVectorsFilePath,
             const QString &msFrameScansFilePath
     );
-
-    Err buildFrameIndexVsScanPoints(const QVector<MsFrameScanPointRows> &msFrameScanPointRows);
 
     Err getTopNCandidatesPerFrameIndex(
             int topN,

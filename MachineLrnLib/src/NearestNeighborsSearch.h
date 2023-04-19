@@ -14,6 +14,7 @@ using namespace Error;
 
 
 struct NNSearchResult {
+    QVector<double> searchedCoor;
     std::vector<long> indexes;
     std::vector<double> distancesSquared;
     std::vector<double> values;
@@ -22,14 +23,15 @@ struct NNSearchResult {
     ~NNSearchResult() = default;
 
     NNSearchResult(
+            const QVector<double> &searchedCoor,
             const std::vector<long> &indexes,
             const std::vector<double> &distancesSquared,
             const std::vector<double> &values
             )
-            : indexes(indexes)
+            : searchedCoor(searchedCoor)
+            , indexes(indexes)
             , distancesSquared(distancesSquared)
             , values(values) {}
-
 };
 
 class MACHINELRNLIB_EXPORTS NearestNeighborsSearch {
@@ -54,6 +56,8 @@ public:
             double searchRadiusSquared,
             QVector<NNSearchResult> *result
     );
+
+    [[nodiscard]] int kdTreeSize() const;
 
 
 private:

@@ -45,6 +45,8 @@ Err MsCalibratomatic::init(
 
     e = buildCalibrator(scoreVectorsVsScanFrameFilePaths); ree;
 
+    qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
+
     ERR_RETURN
 }
 
@@ -107,7 +109,10 @@ Err MsCalibratomatic::processLogicForFrameScores(
             &msFrameScanPointRows
     ); ree;
 
-    e = buildFrameIndexVsScanPoints(msFrameScanPointRows); ree;
+    e = MsFrame::buildFrameIndexVsScanPoints(
+            msFrameScanPointRows,
+            &m_frameIndexVsScanPoints
+            ); ree;
 
     const int topN = 1;
     e = getTopNCandidatesPerFrameIndex(
@@ -132,28 +137,6 @@ Err MsCalibratomatic::buildPeptideSequenceWithModsVsCharge() {
     for (const MsFrameScoreVectorReaderRow &row : m_scoreVectors) {
         e = ErrorUtils::isFalse(m_peptideWithModsVsCharge.contains(row.peptideStringWithMods)); ree;
         m_peptideWithModsVsCharge.insert(row.peptideStringWithMods, row.charge);
-    }
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::buildFrameIndexVsScanPoints(const QVector<MsFrameScanPointRows> &msFrameScanPointRows) {
-
-    ERR_INIT
-
-    m_frameIndexVsScanPoints.clear();
-    e = ErrorUtils::isNotEmpty(msFrameScanPointRows); ree;
-
-    for (const MsFrameScanPointRows &row : msFrameScanPointRows) {
-
-        ScanPoints scanPoints;
-        e = ParallelUtils::zip(
-                row.mzVals,
-                row.intensityVals,
-                &scanPoints
-        ); ree
-
-        m_frameIndexVsScanPoints.insert(row.frameIndex, scanPoints);
     }
 
     ERR_RETURN
@@ -496,6 +479,130 @@ Err MsCalibratomatic::loadCalibrationPointsToKDTree() {
             &valuesVsTreePointsRemoved
             );
     qDebug() << "Calibration points filtered count" << valuesVsTreePoints.size();
+
+    e = m_nnSearch.init(valuesVsTreePoints); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    QVector<QVector<double>> buildNearestNeighborsInput(const QMap<FrameIndex, ScanPoints> &indexVsScanPoints) {
+
+        QVector<QVector<double>> nnInputs;
+
+        for (auto it = indexVsScanPoints.begin(); it != indexVsScanPoints.end(); it++) {
+
+            const FrameIndex frameIndex = it.key();
+            const ScanPoints &scanPoints = it.value();
+
+            for (const ScanPoint &sp : scanPoints) {
+                nnInputs.push_back({static_cast<double>(frameIndex), sp.x()});
+            }
+        }
+
+        return nnInputs;
+    }
+
+    QMap<FrameIndex, QVector<NNSearchResult>> groupNNSearchResultsByFrame(
+            const QVector<NNSearchResult> &nnSearchResults
+            ) {
+
+        QMap<FrameIndex, QVector<NNSearchResult>> frameIndexVsNNSearchResults;
+
+        for (const NNSearchResult &res : nnSearchResults) {
+
+            const auto frameIndex = static_cast<int>(res.searchedCoor.at(0));
+            frameIndexVsNNSearchResults[frameIndex].push_back(res);
+        }
+
+        return frameIndexVsNNSearchResults;
+    }
+
+    Err correctMzValues(
+            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
+            const QVector<NNSearchResult> &nnSearchResults,
+            QMap<FrameIndex, ScanPoints> *correctedIndexVsScanPoints
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(indexVsScanPoints); ree;
+        e = ErrorUtils::isNotEmpty(nnSearchResults); ree;
+
+        const QMap<FrameIndex, QVector<NNSearchResult>> frameIndexVsNNSearchResults
+                =  groupNNSearchResultsByFrame(nnSearchResults);
+
+        e = ErrorUtils::isEqual(
+                indexVsScanPoints.size(),
+                frameIndexVsNNSearchResults.size()
+                ); ree;
+
+        for (auto it = indexVsScanPoints.begin(); it != indexVsScanPoints.end(); it++) {
+
+            const FrameIndex frameIndex = it.key();
+            const ScanPoints &scanPoints = it.value();
+            const QVector<NNSearchResult> &nnSearchResultsFrame = frameIndexVsNNSearchResults.value(frameIndex);
+
+            e = ErrorUtils::isEqual(
+                    scanPoints.size(),
+                    nnSearchResultsFrame.size()
+                    ); ree;
+
+            for (int i = 0; i < scanPoints.size(); i++) {
+
+                const ScanPoint &scanPoint = scanPoints.at(i);
+                const NNSearchResult &nnSearchResult = nnSearchResultsFrame.at(i);
+
+                const double ogMz = scanPoint.x();
+                const double ogIntensity = scanPoint.y();
+                const double searchedMz = nnSearchResult.searchedCoor.at(1);
+                const int searchedFrameIndex = static_cast<int>(nnSearchResult.searchedCoor.at(0));
+
+                e = ErrorUtils::isTrue(MathUtils::tSame(ogMz, searchedMz)); ree;
+                e = ErrorUtils::isEqual(
+                        frameIndex,
+                        searchedFrameIndex
+                        ); ree;
+
+                const double meanDiffPPM = MathUtils::mean(nnSearchResult.values);
+                const double mzCorrectionAmount = (ogMz * meanDiffPPM) / 1e6;
+                const double correctedMz = ogMz - mzCorrectionAmount;
+
+                (*correctedIndexVsScanPoints)[frameIndex].push_back({correctedMz, ogIntensity});
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
+
+}//namespace
+Err MsCalibratomatic::recalibratePoints(
+        const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
+        QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(indexVsScanPoints); ree;
+
+    const QVector<QVector<double>> nnInputs
+            = buildNearestNeighborsInput(indexVsScanPoints);
+
+    QVector<NNSearchResult> nnSearchResults;
+    e = m_nnSearch.kNearestNeighborsSearch(
+            nnInputs,
+            m_calPointK,
+            &nnSearchResults
+            ); ree;
+
+    e = correctMzValues(
+            indexVsScanPoints,
+            nnSearchResults,
+            recalIndexVsScanPoints
+            ); ree;
 
     ERR_RETURN
 }

@@ -143,7 +143,28 @@ void MsCalibratomaticTests::execTests() {
             );
     QCOMPARE(e, eNoError);
 
+    QVector<MsFrameScanPointRows> msFrameScanPointRows;
+    ParquetReader::read(
+            "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.595020.frameScans",
+            &msFrameScanPointRows
+    );
+    QCOMPARE(e, eNoError);
 
+    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints;
+    e = MsFrame::buildFrameIndexVsScanPoints(
+            msFrameScanPointRows,
+            &frameIndexVsScanPoints
+            );
+    QCOMPARE(e, eNoError);
+
+    QMap<FrameIndex, ScanPoints> recalFrameIndexVsScanPoints;
+    e = calibratomatic.recalibratePoints(
+            frameIndexVsScanPoints,
+            &recalFrameIndexVsScanPoints
+            );
+    QCOMPARE(e, eNoError);
+
+    //TODO add more tests to actually test the corrected points.
 
 }
 

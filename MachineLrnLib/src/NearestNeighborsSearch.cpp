@@ -40,6 +40,8 @@ public:
             QVector<NNSearchResult> *result
     );
 
+    [[nodiscard()]] int treeSize() const;
+
 private:
 
     KDTree *m_kdTree;
@@ -229,7 +231,8 @@ Err NearestNeighborsSearch::Private::kNearestNeighborsSearch(
     e = ErrorUtils::isNotEqual(
             static_cast<int>(m_kdTree->kdtree_get_point_count()),
             0
-            ); ree;
+            ); ree; //TODO, figure out a better way to check this as this value is not
+                        // initialized w/ nanoflann.
 
     result->reserve(searchPointCoors.size());
 
@@ -267,6 +270,7 @@ Err NearestNeighborsSearch::Private::kNearestNeighborsSearch(
                 );
 
         NNSearchResult nnSearchResult(
+                coor,
                 retIndex,
                 outDistSqr,
                 vals
@@ -325,6 +329,10 @@ Err NearestNeighborsSearch::Private::radiusSearch(
     ERR_RETURN
 }
 
+int NearestNeighborsSearch::Private::treeSize() const {
+    return static_cast<int>(m_kdTree->kdtree_get_point_count());
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -379,5 +387,9 @@ Err NearestNeighborsSearch::radiusSearch(
             ); ree;
 
     ERR_RETURN
+}
+
+int NearestNeighborsSearch::kdTreeSize() const {
+    return d_ptr->treeSize();
 }
 

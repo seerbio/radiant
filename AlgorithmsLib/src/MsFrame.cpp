@@ -7,6 +7,7 @@
 #include "DeisotoperTandem.h"
 #include "MsReaderBase.h"
 #include "MsScansDenoiseTron.h"
+#include "ParallelUtils.h"
 
 #include <QElapsedTimer>
 
@@ -213,4 +214,34 @@ Err MsFrame::writeFramScans(const QString &outputFilePath) const {
 
 double MsFrame::meanPrecursorRange() const {
     return ((m_precursorTargetMz + m_isoWindowUpper) + (m_precursorTargetMz - m_isoWindowLower)) / 2.0;
+}
+
+Err MsFrame::buildFrameIndexVsScanPoints(
+        const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
+        QMap<FrameIndex, ScanPoints> *frameIndexVsScanPoints
+        ) {
+
+    ERR_INIT
+
+    frameIndexVsScanPoints->clear();
+    e = ErrorUtils::isNotEmpty(msFrameScanPointRows); ree;
+
+    for (const MsFrameScanPointRows &row : msFrameScanPointRows) {
+
+        e = ErrorUtils::isEqual(
+                row.mzVals.size(),
+                row.intensityVals.size()
+                ); ree;
+
+        ScanPoints scanPoints;
+        e = ParallelUtils::zip(
+                row.mzVals,
+                row.intensityVals,
+                &scanPoints
+        ); ree
+
+        frameIndexVsScanPoints->insert(row.frameIndex, scanPoints);
+    }
+
+    ERR_RETURN
 }

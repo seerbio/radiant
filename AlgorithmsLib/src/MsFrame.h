@@ -109,6 +109,11 @@ public:
 
     [[nodiscard]] QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
 
+    static Err buildFrameIndexVsScanPoints(
+            const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
+            QMap<FrameIndex, ScanPoints> *frameIndexVsScanPoints
+            );
+
 private:
 
     Err denoiseFrame();
