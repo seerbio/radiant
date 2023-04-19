@@ -11,6 +11,8 @@
 
 #include <Eigen/Dense>
 
+#include <QElapsedTimer>
+
 
 class Q_DECL_HIDDEN NearestNeighborsSearch::Private
 {
@@ -55,8 +57,10 @@ NearestNeighborsSearch::Private::Private()
 {}
 
 NearestNeighborsSearch::Private::~Private() {
-    delete m_kdTree;
-    delete m_mat;
+//    delete m_kdTree; //TODO, make sure this is not a memory leak
+//    delete m_mat; //TODO, make sure this is not a memory leak
+//    It appears d_ptr which is a qscopedpointer is deleting this so this is not
+//    necessary.
 }
 
 namespace {
@@ -173,6 +177,9 @@ Err NearestNeighborsSearch::Private::init(
 
     ERR_INIT
 
+    QElapsedTimer et;
+    et.start();
+
     e = ErrorUtils::isNotEmpty(valuesVsTreePoints); ree;
     m_maxTreeLeafSize = maxTreeLeafSize;
 
@@ -198,6 +205,14 @@ Err NearestNeighborsSearch::Private::init(
             *m_mat,
             m_maxTreeLeafSize
             );
+
+    const int treePointCount = static_cast<int>(m_kdTree->kdtree_get_point_count());
+    e = ErrorUtils::isNotEqual(
+            treePointCount,
+            0
+            ); ree;
+
+    qDebug() << treePointCount << "Loaded in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }

@@ -64,7 +64,7 @@ Err FragLibraryTronDIA::init(
             ); ree;
 
     qDebug() << "Library init in" << et.elapsed() << "mSec";
-    qDebug() << "Peptides count" << m_pepSeqChrgKeyVsMS2Ions.size() << m_peptideWithModsVsisDecoy.size();
+    qDebug() << "Peptides count charge vs uniques" << m_pepSeqChrgKeyVsMS2Ions.size() << m_peptideWithModsVsisDecoy.size();
 
     ERR_RETURN
 }

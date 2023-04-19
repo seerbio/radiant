@@ -24,8 +24,12 @@ using rTreePoint = std::pair<rTreePeakBox, QString> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
+MsCalibratomatic::MsCalibratomatic() : m_calPointK(10) {}
+
 Err MsCalibratomatic::init(
+        const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
         const PythiaParameters &pythiaParameters,
+        int calPointK,
         FragLibraryTronDIA *fragLibraryTronDia
         ) {
 
@@ -34,12 +38,17 @@ Err MsCalibratomatic::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_params = pythiaParameters;
 
+    e = ErrorUtils::isNotEqual(calPointK, 0); ree;
+    m_calPointK = calPointK;
+
     m_fragLibraryTronDia = fragLibraryTronDia;
+
+    e = buildCalibrator(scoreVectorsVsScanFrameFilePaths); ree;
 
     ERR_RETURN
 }
 
-Err MsCalibratomatic::exec(
+Err MsCalibratomatic::buildCalibrator(
         const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths
         ) {
 
@@ -65,6 +74,8 @@ Err MsCalibratomatic::exec(
                 ); ree;
 
     }
+
+    e = loadCalibrationPointsToKDTree(); ree;
 
     ERR_RETURN
 }
@@ -379,6 +390,112 @@ Err MsCalibratomatic::buildCalibrationPoints(const QVector<PeptideStringWithMods
         m_calibrationPoints[res.frameIndex].push_back(extractPoints);
 
     }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    using DiffPPM = double;
+    using Coors = QVector<double>;
+
+    void buildNNInput(
+            const QMap<FrameIndex, QVector<ExtractPoints>> &calibrationPoints,
+            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
+            QVector<double> *ppmDiffVals
+            ) {
+
+        for (auto it = calibrationPoints.begin(); it != calibrationPoints.end(); it++) {
+
+            const FrameIndex frameIndex = it.key();
+            const auto frameIndexDouble = static_cast<double>(frameIndex);
+            const QVector<ExtractPoints> &eps = it.value();
+
+            for (const ExtractPoints &ep : eps) {
+
+                for (const QPointF &p : ep.mzFoundVsSearched) {
+
+                    const double mzFound = p.x();
+                    if (mzFound < 0) {
+                        continue;
+                    }
+
+                    const double mzTheo = p.y();
+                    const double ppmDiff = 1e6 * ((mzFound - mzTheo) / mzTheo);
+
+                    valuesVsTreePoints->push_back({ppmDiff, {frameIndexDouble, mzFound}});
+                    ppmDiffVals->push_back(ppmDiff);
+                }
+            }
+        }
+
+    }
+
+    void filterNNInput(
+            const QVector<double> &ppmDiffVals,
+            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
+            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
+            ) {
+
+        const double ppmMean = MathUtils::mean(ppmDiffVals);
+        const double stDev = MathUtils::stDev(ppmDiffVals);
+
+        const double stDevMultiplier = 3.0;
+        const double ppmMin = ppmMean - (stDevMultiplier * stDev);
+        const double ppmMax = ppmMean + (stDevMultiplier * stDev);
+
+        const auto terminatorLogic = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
+            return !(ppmMin <= calPoint.first && calPoint.first <= ppmMax);
+        };
+
+        const auto terminator = std::remove_if(
+                valuesVsTreePoints->begin(),
+                valuesVsTreePoints->end(),
+                terminatorLogic
+                );
+
+        valuesVsTreePoints->erase(terminator, valuesVsTreePoints->end());
+
+        const auto terminatorLogicRemoved = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
+            return ppmMin <= calPoint.first && calPoint.first <= ppmMax;
+        };
+
+        const auto terminatorRemoved = std::remove_if(
+                valuesVsTreePointsRemoved->begin(),
+                valuesVsTreePointsRemoved->end(),
+                terminatorLogicRemoved
+        );
+
+        valuesVsTreePointsRemoved->erase(terminatorRemoved, valuesVsTreePointsRemoved->end());
+
+    }
+
+}//namespace
+Err MsCalibratomatic::loadCalibrationPointsToKDTree() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_calibrationPoints); ree;
+
+    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePoints;
+    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePointsRemoved;
+    QVector<double> ppmDiffVals;
+
+    buildNNInput(
+            m_calibrationPoints,
+            &valuesVsTreePoints,
+            &ppmDiffVals
+            );
+
+    valuesVsTreePointsRemoved = valuesVsTreePoints;
+
+    qDebug() << "Calibration points count" << valuesVsTreePoints.size();
+    filterNNInput(
+            ppmDiffVals,
+            &valuesVsTreePoints,
+            &valuesVsTreePointsRemoved
+            );
+    qDebug() << "Calibration points filtered count" << valuesVsTreePoints.size();
 
     ERR_RETURN
 }

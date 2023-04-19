@@ -103,7 +103,27 @@ void MsCalibratomaticTests::execTests() {
             {
                     "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.464961.frameScores",
                     "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.464961.frameScans"
-            }
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.484970.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.484970.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.494975.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.494975.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.504979.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.504979.frameScans"
+            },
+            {
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.514984.frameScores",
+                    "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.514984.frameScans"
+            },
     };
 
     FragLibraryTronDIA fragLibraryTronDia;
@@ -113,15 +133,16 @@ void MsCalibratomaticTests::execTests() {
     );
     QCOMPARE(e, eNoError);
 
+    const int calPointK = 25;
     MsCalibratomatic calibratomatic;
     e = calibratomatic.init(
+            filePaths,
             pythiaParameters(),
+            calPointK,
             &fragLibraryTronDia
             );
     QCOMPARE(e, eNoError);
 
-    e = calibratomatic.exec(filePaths);
-    QCOMPARE(e, eNoError);
 
 
 }

@@ -13,6 +13,7 @@
 #include "MsFrame.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsUtils.h"
+#include "NearestNeighborsSearch.h"
 #include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
 
@@ -31,17 +32,19 @@ class ALGORITHMSLIB_EXPORTS MsCalibratomatic {
 
 public:
 
-    MsCalibratomatic() = default;
+    MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
     Err init(
+            const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
             const PythiaParameters &pythiaParameters,
+            int calPointK,
             FragLibraryTronDIA *fragLibraryTronDia
             );
 
-    Err exec(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
-
 private:
+
+    Err buildCalibrator(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
 
     Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
@@ -61,16 +64,22 @@ private:
 
     Err buildPeptideSequenceWithModsVsCharge();
 
+    Err loadCalibrationPointsToKDTree();
+
 private:
 
+    //Need to be cleared w/ each new ScoreFrame iteration
     QVector<MsFrameScoreVectorReaderRow> m_scoreVectors;
     QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
     QMap<PeptideStringWithMods, Charge> m_peptideWithModsVsCharge;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
 
+    //Never cleared
     PythiaParameters m_params;
     FragLibraryTronDIA *m_fragLibraryTronDia;
     QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
+    NearestNeighborsSearch m_nnSearch;
+    int m_calPointK;
 
 };
 
