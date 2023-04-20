@@ -42,6 +42,11 @@ public:
             FragLibraryTronDIA *fragLibraryTronDia
             );
 
+    Err init(
+            const QString &calFilePath,
+            const QString &matFilePath
+            );
+
     // either FrameIndex, or ScanNumber can be key as they are both ints.
     Err recalibratePoints(
             const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,

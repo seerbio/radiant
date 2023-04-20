@@ -606,3 +606,18 @@ Err MsCalibratomatic::recalibratePoints(
 
     ERR_RETURN
 }
+
+Err MsCalibratomatic::init(
+        const QString &calFilePath,
+        const QString &matFilePath
+        ) {
+
+    ERR_INIT
+
+    e = m_nnSearch.readNearestNeighbors(
+            calFilePath,
+            matFilePath
+            ); ree;
+
+    ERR_RETURN
+}

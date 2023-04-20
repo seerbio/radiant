@@ -41,9 +41,8 @@ void LibraryBuilderWorkFlowTests::execTest() {
 
     ERR_INIT
 
-    const QString peptidesCSVFilePath //= QDir(qApp->applicationDirPath()).filePath("peptides.csv");
-                            = "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/target_mz_ce.lib.csv";
-
+    const QString peptidesCSVFilePath = QDir(qApp->applicationDirPath()).filePath("peptides.csv");
+    
     const QString model1FilePath
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
     const QString model2FilePath
