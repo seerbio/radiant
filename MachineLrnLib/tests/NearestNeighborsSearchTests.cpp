@@ -166,6 +166,7 @@ void NearestNeighborsSearchTests::readWriteNearestNeighborsTest() {
             testSavePath + ".mat"
             );
     QCOMPARE(e, eNoError);
+    QCOMPARE(newSeeker.kdTreeSize(), 10);
 
 }
 
