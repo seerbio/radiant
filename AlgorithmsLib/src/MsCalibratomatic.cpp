@@ -621,3 +621,18 @@ Err MsCalibratomatic::init(
 
     ERR_RETURN
 }
+
+Err MsCalibratomatic::writeCalibratomatic(
+        const QString &msDataFilePath,
+        QString *calibrationMatFilePath,
+        QString *calibarationCalFilePath
+        ) {
+
+    ERR_INIT
+    e = m_nnSearch.writeNearestNeighbors(
+            msDataFilePath,
+            calibrationMatFilePath,
+            calibarationCalFilePath
+            ); ree;
+    ERR_RETURN
+}

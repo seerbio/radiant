@@ -35,7 +35,7 @@ public:
             const QString &fragLibUri
             );
 
-    Err processFile(const QString &msDatalFilePath);
+    Err processFile(const QString &msDataFilePath);
 
 
 private:
@@ -63,6 +63,13 @@ private:
             const QVector<MsFrame> &msFrames,
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
     );
+
+    Err buildCalibrationFiles(
+            const MsReaderPointer &msReaderPointer,
+            const QString &msDataFilePath,
+            QString *calibrationMatFilePath,
+            QString *calibarationCalFilePath
+            );
 
 
 private:

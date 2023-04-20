@@ -47,6 +47,12 @@ public:
             const QString &matFilePath
             );
 
+    Err writeCalibratomatic(
+            const QString &msDataFilePath,
+            QString *calibrationMatFilePath,
+            QString *calibarationCalFilePath
+            );
+
     // either FrameIndex, or ScanNumber can be key as they are both ints.
     Err recalibratePoints(
             const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,

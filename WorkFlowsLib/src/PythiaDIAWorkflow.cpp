@@ -66,42 +66,24 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
+Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
     QPair<Err, MsReaderPointer> msReaderPointerResult
-            = MsReaderPointerFactory::createInstance(msDatalFilePath);
+            = MsReaderPointerFactory::createInstance(msDataFilePath);
     e = msReaderPointerResult.first; ree;
     MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
+    QString calibrationMatFilePath;
+    QString calibarationCalFilePath;
 
-    const int numberOfFramesToProcessForCalibration = -1;
-    e = buildCandidateScoreVectors(
+    e = buildCalibrationFiles(
             msReaderPointer,
-            numberOfFramesToProcessForCalibration,
-            &uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
-            &uniqueMsInfoScanKeyVsMsFrameFilePathCalibration
+            msDataFilePath,
+            &calibrationMatFilePath,
+            &calibarationCalFilePath
             ); ree;
-
-    QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
-    e = buildScoreVectorsVsScanFrameFilePaths(
-            uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
-            uniqueMsInfoScanKeyVsMsFrameFilePathCalibration,
-            &scoreVectorsVsScanFrameFilePaths
-            ); ree;
-
-    MsCalibratomatic msCalibratomatic;
-    const int calPointK = 25;
-    e = msCalibratomatic.init(
-            scoreVectorsVsScanFrameFilePaths,
-            m_pythiaParameters,
-            calPointK,
-            &m_fragLibraryTronDia
-    );
-
 
     ERR_RETURN
 }
@@ -379,6 +361,51 @@ Err PythiaDIAWorkflow::buildTargetCandidatesForFrame(
 
         framePredictions->insert(frame.uniqueMsInfoScanKey(), peptideStringWithModsVsMS2Ions);
     }
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildCalibrationFiles(
+        const MsReaderPointer &msReaderPointer,
+        const QString &msDataFilePath,
+        QString *calibrationMatFilePath,
+        QString *calibarationCalFilePath
+        ) {
+
+    ERR_INIT
+
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
+
+    const int numberOfFramesToProcessForCalibration = -1;
+    e = buildCandidateScoreVectors(
+            msReaderPointer,
+            numberOfFramesToProcessForCalibration,
+            &uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
+            &uniqueMsInfoScanKeyVsMsFrameFilePathCalibration
+    ); ree;
+
+    QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
+    e = buildScoreVectorsVsScanFrameFilePaths(
+            uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
+            uniqueMsInfoScanKeyVsMsFrameFilePathCalibration,
+            &scoreVectorsVsScanFrameFilePaths
+    ); ree;
+
+    MsCalibratomatic msCalibratomatic;
+    const int calPointK = 25;
+    e = msCalibratomatic.init(
+            scoreVectorsVsScanFrameFilePaths,
+            m_pythiaParameters,
+            calPointK,
+            &m_fragLibraryTronDia
+    );
+
+    e = msCalibratomatic.writeCalibratomatic(
+            msDataFilePath,
+            calibrationMatFilePath,
+            calibarationCalFilePath
+            ); ree;
 
     ERR_RETURN
 }

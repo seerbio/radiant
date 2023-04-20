@@ -45,7 +45,11 @@ public:
 
     [[nodiscard]] int treeSize() const;
 
-    Err writeNearestNeighbors(const QString &msDataFilePath);
+    Err writeNearestNeighbors(
+            const QString &msDataFilePath,
+            QString *calibrationMatFilePath,
+            QString *calibarationCalFilePath
+            );
 
     Err readNearestNeighbors(
             const QString &calFilePath,
@@ -141,28 +145,6 @@ namespace {
 
          ERR_RETURN
     }
-
-    Err convertTreePointsToEigenMatrix(
-            const QVector<QVector<double>> &searchPointCoors,
-            int treeColumnCount,
-            Eigen::MatrixX<double> *mat
-            ) {
-
-         ERR_INIT
-
-         QVector<QPair<double, QVector<double>>> nullValuesVsTreePoints;
-         for (const QVector<double> &coor : searchPointCoors) {
-             nullValuesVsTreePoints.push_back({-1.0, coor});
-         }
-
-         e = convertTreePointsToEigenMatrix(
-                 nullValuesVsTreePoints,
-                 treeColumnCount,
-                 mat
-                 ); ree
-
-         ERR_RETURN
-     }
 
     Err extractValuesFromPairs(
             const QVector<QPair<double, QVector<double>>> &valuesVsTreePoints,
@@ -342,7 +324,11 @@ int NearestNeighborsSearch::Private::treeSize() const {
     return static_cast<int>(m_kdTree->kdtree_get_point_count());
 }
 
-Err NearestNeighborsSearch::Private::writeNearestNeighbors(const QString &msDataFilePath) {
+Err NearestNeighborsSearch::Private::writeNearestNeighbors(
+        const QString &msDataFilePath,
+        QString *calibrationMatFilePath,
+        QString *calibarationCalFilePath
+        ) {
 
     ERR_INIT
 
@@ -375,6 +361,9 @@ Err NearestNeighborsSearch::Private::writeNearestNeighbors(const QString &msData
     writeFile.close();
 
     qDebug() << "Cal file saved to" << calFilePath;
+
+    *calibrationMatFilePath = matrixFilePath;
+    *calibarationCalFilePath = calFilePath;
 
     ERR_RETURN
 }
@@ -494,11 +483,19 @@ int NearestNeighborsSearch::kdTreeSize() const {
     return d_ptr->treeSize();
 }
 
-Err NearestNeighborsSearch::writeNearestNeighbors(const QString &msDataFilePath) {
+Err NearestNeighborsSearch::writeNearestNeighbors(
+        const QString &msDataFilePath,
+        QString *calibrationMatFilePath,
+        QString *calibarationCalFilePath
+        ) {
 
     ERR_INIT
 
-    e = d_ptr->writeNearestNeighbors(msDataFilePath); ree;
+    e = d_ptr->writeNearestNeighbors(
+            msDataFilePath,
+            calibrationMatFilePath,
+            calibarationCalFilePath
+            ); ree;
 
     ERR_RETURN
 }
