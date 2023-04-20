@@ -51,7 +51,6 @@ public:
         ERR_RETURN;
     }
 
-
     template <typename T>
     static Err tranchVectorForParallelizationInOrder(
             const QVector<T> &input,
@@ -105,6 +104,41 @@ public:
 
         ERR_RETURN;
     }
+
+    template <typename T, typename U>
+    static Err tranchMapForParallelizationInOrder(
+            const QMap<T, U> &map,
+            int numberOfProcesses,
+            QVector<QMap<T, U>> *tranchedMaps
+            ) {
+
+        ERR_INIT
+
+        QVector<QPair<T, U>> pairs
+                = ParallelUtils::convertMapToVectorPairs(map);
+
+        const int buffer = 0;
+
+        QVector<QVector<QPair<T, U>>> tranchedPairs;
+        e = ParallelUtils::tranchVectorForParallelizationInOrder<T, U>(
+                pairs,
+                numberOfProcesses,
+                buffer,
+                &tranchedPairs
+        ); ree;
+
+
+        for (const QVector<QPair<T, U>> &pairVec : tranchedPairs) {
+            QMap<T, U> pairVecMap;
+            for (const QPair<T, U> &pr : pairVec) {
+                pairVecMap->insert(pr.first, pr.second);
+            }
+            tranchedMaps->push_back(pairVecMap);
+        }
+
+        ERR_RETURN
+    }
+
 
     template <typename T, typename U>
     static QVector<QPair<T, U>> convertMapToVectorPairs(const QMap<T, U> &map) {

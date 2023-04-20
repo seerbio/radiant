@@ -15,6 +15,8 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/serialization/vector.hpp>
 
+#include <QtConcurrent/QtConcurrent>
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 using rTreeCoor = bg::model::point<int, 1, bg::cs::cartesian>;
@@ -46,6 +48,21 @@ Err MsCalibratomatic::init(
     e = buildCalibrator(scoreVectorsVsScanFrameFilePaths); ree;
 
     qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
+
+    ERR_RETURN
+}
+
+Err MsCalibratomatic::init(
+        const QString &calFilePath,
+        const QString &matFilePath
+) {
+
+    ERR_INIT
+
+    e = m_nnSearch.readNearestNeighbors(
+            calFilePath,
+            matFilePath
+    ); ree;
 
     ERR_RETURN
 }
@@ -607,17 +624,53 @@ Err MsCalibratomatic::recalibratePoints(
     ERR_RETURN
 }
 
-Err MsCalibratomatic::init(
-        const QString &calFilePath,
-        const QString &matFilePath
-        ) {
+namespace {
+
+    QPair<Err, QMap<ScanNumber, ScanPoints>> recalibrationLogicParallel(
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QString &calibarationCalFilePath,
+            const QString &calibrationMatFilePath
+    ) {
+
+        ERR_INIT
+
+        MsCalibratomatic calibratomatic;
+        e = calibratomatic.init(
+                calibarationCalFilePath,
+                calibrationMatFilePath
+                ); rree;
+
+        QMap<ScanNumber, ScanPoints> recalScanPoints;
+        e = calibratomatic.recalibratePoints(
+                scanPoints,
+                &recalScanPoints
+                ); rree;
+
+        return {e, recalScanPoints};
+}
+
+
+}//namespace
+Err MsCalibratomatic::recalibratePoints(
+        const QMap<ScanNumber, ScanPoints> &scanPoints,
+        const QString &calibarationCalFilePath,
+        const QString &calibrationMatFilePath,
+        QMap<ScanNumber, ScanPoints> *recalScanPoints
+) {
 
     ERR_INIT
 
-    e = m_nnSearch.readNearestNeighbors(
-            calFilePath,
-            matFilePath
+    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::fileExists(calibrationMatFilePath); ree;
+    e = ErrorUtils::fileExists(calibarationCalFilePath); ree;
+
+    QVector<QMap<ScanNumber, ScanPoints>> tranchedScanPoints;
+    e = ParallelUtils::tranchMapForParallelizationInOrder<ScanNumber, ScanPoints>(
+            scanPoints,
+            ParallelUtils::numberOfAvailableSystemProcessors(),
+            &tranchedScanPoints
             ); ree;
+
 
     ERR_RETURN
 }
@@ -636,3 +689,46 @@ Err MsCalibratomatic::writeCalibratomatic(
             ); ree;
     ERR_RETURN
 }
+
+//Err MsCalibratomatic::applyFileCalibration(
+//        const QString &calibarationCalFilePath,
+//        const QString &calibrationMatFilePath,
+//        MsReaderPointer *msReaderPointer
+//) {
+//
+//    ERR_INIT
+//
+//
+//
+//    const QMap<ScanNumber, ScanPoints> scanPoints = (*msReaderPointer)->getScanPoints();
+//    e = ErrorUtils::isNotEmpty(scanPoints);
+//
+//    qDebug() << "Recalibrating file in parallel";
+//    const auto recalLogicBinder = std::bind(
+//            recalibrationLogicParallel,
+//            std::placeholders::_1,
+//            calibrationMatFilePath,
+//            calibarationCalFilePath
+//    );
+//
+//    QFuture<QPair<Err, ScanPoints>> futures = QtConcurrent::mapped(
+//            scanPoints,
+//            recalLogicBinder
+//            );
+//    futures.waitForFinished();
+//
+//    const QVector<ScanNumber> scanNumbers = scanPoints.keys().toVector();
+//    int scanPointsIndex = 0;
+//
+//    QMap<ScanNumber, ScanPoints> recalScanPoints;
+//    for (const QPair<Err, ScanPoints> &re : futures) {
+//        e = re.first; ree;
+//
+//        const ScanNumber scanNumber = scanNumbers.at(scanPointsIndex++);
+//        recalScanPoints.insert(scanNumber, re.second);
+//    }
+//
+//    (*msReaderPointer)->setScanPoints(recalScanPoints);
+//
+//    ERR_RETURN
+//}

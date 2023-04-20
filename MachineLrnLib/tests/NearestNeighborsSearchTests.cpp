@@ -157,7 +157,13 @@ void NearestNeighborsSearchTests::readWriteNearestNeighborsTest() {
     const QString &testSavePath
             = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.mzml");
 
-    e  = seeker.writeNearestNeighbors(testSavePath);
+    QString calFile;
+    QString matFile;
+    e  = seeker.writeNearestNeighbors(
+            testSavePath,
+            &calFile,
+            &matFile
+            );
     QCOMPARE(e, eNoError);
 
     NearestNeighborsSearch newSeeker;

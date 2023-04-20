@@ -50,7 +50,7 @@ public:
     friend class MsReaderMZMLTests;
     friend class MsReaderParquetTests;
 
-    MsReaderBase() = default;
+    MsReaderBase();
 
     ~MsReaderBase() = default;
 
@@ -89,6 +89,8 @@ public:
 
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();
 
+    int getFrameCount();
+
     Err updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate);
 
     QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
@@ -123,6 +125,8 @@ public:
     Err printFileInfo();
 
 protected:
+
+    bool m_fileIsCalibrated;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;

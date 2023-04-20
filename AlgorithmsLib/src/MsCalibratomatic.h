@@ -5,7 +5,6 @@
 #ifndef PYTHIADIACPP_MSCALIBRATOMATIC_H
 #define PYTHIADIACPP_MSCALIBRATOMATIC_H
 
-
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "FragLibraryTronDIA.h"
@@ -58,6 +57,14 @@ public:
             const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
             QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
             );
+
+    static Err recalibratePoints(
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QString &calibarationCalFilePath,
+            const QString &calibrationMatFilePath,
+            QMap<ScanNumber, ScanPoints> *recalScanPoints
+    );
+
 
 private:
 

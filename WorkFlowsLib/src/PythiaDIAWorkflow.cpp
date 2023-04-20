@@ -377,7 +377,11 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
 
-    const int numberOfFramesToProcessForCalibration = -1;
+
+    const double fractionOfFramesToUseForCalibration = 0.25;
+    const int numberOfFramesToProcessForCalibration
+            = static_cast<int>(msReaderPointer->getFrameCount() * fractionOfFramesToUseForCalibration);
+
     e = buildCandidateScoreVectors(
             msReaderPointer,
             numberOfFramesToProcessForCalibration,

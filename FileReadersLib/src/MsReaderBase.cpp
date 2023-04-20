@@ -13,12 +13,15 @@
 
 #include <iostream>
 
+MsReaderBase::MsReaderBase() : m_fileIsCalibrated(false) {}
+
 void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
     m_msScanInfo = msScanInfos;
 }
 
 void MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
     m_scanPoints = scanPoints;
+    m_fileIsCalibrated = true;
 }
 
 Err MsReaderBase::getMsScanInfo(
@@ -385,3 +388,9 @@ Err MsReaderBase::printFileInfo() {
 QString MsReaderBase::filePath() {
     return m_filePath;
 }
+
+int MsReaderBase::getFrameCount() {
+    return getUniqueTandemMsScanInfos().size();
+}
+
+
