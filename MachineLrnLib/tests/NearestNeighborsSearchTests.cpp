@@ -16,6 +16,7 @@ private Q_SLOTS:
     void initTest();
     void kNearestNeighborsSearchTest();
     void radiusSearchTest();
+    void readWriteNearestNeighborsTest();
 
 
 private:
@@ -141,6 +142,31 @@ void NearestNeighborsSearchTests::radiusSearchTest() {
     QCOMPARE(nnSearchResult2.indexes, expectedIndexes2);
     QCOMPARE(nnSearchResult2.values, expectedValues2);
     QCOMPARE(nnSearchResult2.distancesSquared, expectedDistancesSquared2);
+}
+
+void NearestNeighborsSearchTests::readWriteNearestNeighborsTest() {
+
+    ERR_INIT
+
+    const QVector<QPair<double, QVector<double>>> testPoints = buildTestPoints();
+
+    NearestNeighborsSearch seeker;
+    e = seeker.init(testPoints);
+    QCOMPARE(e, eNoError);
+
+    const QString &testSavePath
+            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.mzml");
+
+    e  = seeker.writeNearestNeighbors(testSavePath);
+    QCOMPARE(e, eNoError);
+
+    NearestNeighborsSearch newSeeker;
+    e = newSeeker.readNearestNeighbors(
+            testSavePath + ".cal",
+            testSavePath + ".mat"
+            );
+    QCOMPARE(e, eNoError);
+
 }
 
 QTEST_MAIN(NearestNeighborsSearchTests)

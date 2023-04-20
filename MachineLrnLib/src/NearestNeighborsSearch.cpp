@@ -6,13 +6,16 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "EigenMatrixDiskUtils.h"
+#include "GlobalSettings.h"
 
 #include "../ThirdPartyLibs/nanoflann.hpp" //TODO find a better way to do this.
 
 #include <Eigen/Dense>
 
 #include <QElapsedTimer>
-
+#include <QFile>
+#include <QDataStream>
 
 class Q_DECL_HIDDEN NearestNeighborsSearch::Private
 {
@@ -40,7 +43,14 @@ public:
             QVector<NNSearchResult> *result
     );
 
-    [[nodiscard()]] int treeSize() const;
+    [[nodiscard]] int treeSize() const;
+
+    Err writeNearestNeighbors(const QString &msDataFilePath);
+
+    Err readNearestNeighbors(
+            const QString &calFilePath,
+            const QString &matFilePath
+            );
 
 private:
 
@@ -201,7 +211,6 @@ Err NearestNeighborsSearch::Private::init(
             &m_pairValues
             ); ree;
 
-
     m_kdTree = new KDTree(
             m_columnCount,
             *m_mat,
@@ -333,6 +342,98 @@ int NearestNeighborsSearch::Private::treeSize() const {
     return static_cast<int>(m_kdTree->kdtree_get_point_count());
 }
 
+Err NearestNeighborsSearch::Private::writeNearestNeighbors(const QString &msDataFilePath) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_pairValues); ree;
+    e = ErrorUtils::isNotEqual(static_cast<int>(m_mat->rows()), 0); ree
+
+    const QString matrixFilePath = msDataFilePath + S_GLOBAL_SETTINGS.DOT_MAT;
+    e = EigenMatrixDiskUtils::saveEigenMatrix(
+            *m_mat,
+            matrixFilePath
+            ); ree;
+
+    qDebug() << "Mat file saved to" << matrixFilePath;
+
+
+    const QString calFilePath = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CAL;
+    QFile writeFile(calFilePath);
+    if (!writeFile.open(QIODevice::WriteOnly)) {
+        qDebug() << "Could not write to file:" << calFilePath
+                 << "Error string:" << writeFile.errorString();
+        return Error::eFileError;
+    }
+
+    QDataStream out(&writeFile);
+    out.setVersion(QDataStream::Qt_5_12);
+
+    out << m_pairValues;
+    out << m_maxTreeLeafSize;
+
+    writeFile.close();
+
+    qDebug() << "Cal file saved to" << calFilePath;
+
+    ERR_RETURN
+}
+
+Err NearestNeighborsSearch::Private::readNearestNeighbors(
+        const QString &calFilePath,
+        const QString &matFilePath
+        ) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    m_mat = new Eigen::MatrixX<double>();
+
+    e = EigenMatrixDiskUtils::loadEigenMatrix(
+            matFilePath,
+            m_mat
+            ); ree;
+
+    e = ErrorUtils::isFalse(static_cast<int>(m_mat->rows(), 0)); ree;
+
+    QFile readFile(calFilePath);
+    QDataStream in(&readFile);
+
+    in.setVersion(QDataStream::Qt_5_12);
+
+    if (!readFile.open(QIODevice::ReadOnly)) {
+        qDebug() << "Could not read the file:" << calFilePath
+                 << "Error string:" << readFile.errorString();
+        return Error::eFileError;
+    }
+
+    in >> m_pairValues;
+    in >> m_maxTreeLeafSize;
+
+    e = ErrorUtils::isNotEmpty(m_pairValues); ree;
+    e = ErrorUtils::isNotEqual(m_maxTreeLeafSize, 0); ree;
+
+    m_columnCount = static_cast<int>(m_mat->cols());
+
+    m_kdTree = new KDTree(
+            m_columnCount,
+            *m_mat,
+            m_maxTreeLeafSize
+    );
+
+    const int treePointCount = static_cast<int>(m_kdTree->kdtree_get_point_count());
+    e = ErrorUtils::isNotEqual(
+            treePointCount,
+            0
+    ); ree;
+
+    qDebug() << treePointCount << "Loaded in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -391,5 +492,27 @@ Err NearestNeighborsSearch::radiusSearch(
 
 int NearestNeighborsSearch::kdTreeSize() const {
     return d_ptr->treeSize();
+}
+
+Err NearestNeighborsSearch::writeNearestNeighbors(const QString &msDataFilePath) {
+
+    ERR_INIT
+
+    e = d_ptr->writeNearestNeighbors(msDataFilePath); ree;
+
+    ERR_RETURN
+}
+
+Err NearestNeighborsSearch::readNearestNeighbors(
+        const QString &calFilePath,
+        const QString &matFilePath
+        ) {
+
+    ERR_INIT
+    e = d_ptr->readNearestNeighbors(
+            calFilePath,
+            matFilePath
+            ); ree;
+    ERR_RETURN
 }
 

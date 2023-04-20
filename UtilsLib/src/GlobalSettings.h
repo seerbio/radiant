@@ -56,9 +56,11 @@ public:
 
     const QChar COMMA = ',';
     const QString DOT_CACHE = QStringLiteral(".cache");
+    const QString DOT_CAL = QStringLiteral(".cal");
     const QString DOT_CSV = QStringLiteral(".csv");
     const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
     const QString DOT_LIB = QStringLiteral(".lib");
+    const QString DOT_MAT = QStringLiteral(".mat");
     const QString DOT_PRQ = QStringLiteral(".prq");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");

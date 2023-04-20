@@ -157,12 +157,17 @@ void MsCalibratomaticTests::execTests() {
             );
     QCOMPARE(e, eNoError);
 
-    QMap<FrameIndex, ScanPoints> recalFrameIndexVsScanPoints;
-    e = calibratomatic.recalibratePoints(
-            frameIndexVsScanPoints,
-            &recalFrameIndexVsScanPoints
-            );
-    QCOMPARE(e, eNoError);
+    for (int i = 0; i < 62; i++) {
+        qDebug() << i;
+        QMap<FrameIndex, ScanPoints> recalFrameIndexVsScanPoints;
+        e = calibratomatic.recalibratePoints(
+                frameIndexVsScanPoints,
+                &recalFrameIndexVsScanPoints
+        );
+        QCOMPARE(e, eNoError);
+
+    }
+
 
     //TODO add more tests to actually test the corrected points.
 

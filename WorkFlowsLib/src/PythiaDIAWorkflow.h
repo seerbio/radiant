@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "FragLibraryTronDIA.h"
 #include "GlobalSettings.h"
+#include "MsCalibratomatic.h"
 #include "MsFrame.h"
 #include "MsReaderPointerFactory.h"
 #include "ProteinDigestomatic.h"

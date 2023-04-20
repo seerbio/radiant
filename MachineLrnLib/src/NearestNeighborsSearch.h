@@ -59,6 +59,13 @@ public:
 
     [[nodiscard]] int kdTreeSize() const;
 
+    Err writeNearestNeighbors(const QString &msDataFilePath);
+
+    Err readNearestNeighbors(
+            const QString &calFilePath,
+            const QString &matFilePath
+            );
+
 
 private:
 

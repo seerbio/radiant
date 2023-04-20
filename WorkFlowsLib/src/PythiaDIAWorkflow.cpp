@@ -93,6 +93,15 @@ Err PythiaDIAWorkflow::processFile(const QString &msDatalFilePath) {
             &scoreVectorsVsScanFrameFilePaths
             ); ree;
 
+    MsCalibratomatic msCalibratomatic;
+    const int calPointK = 25;
+    e = msCalibratomatic.init(
+            scoreVectorsVsScanFrameFilePaths,
+            m_pythiaParameters,
+            calPointK,
+            &m_fragLibraryTronDia
+    );
+
     ERR_RETURN
 }
 

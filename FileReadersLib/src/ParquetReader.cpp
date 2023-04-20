@@ -351,10 +351,10 @@ namespace {
 
         std::map<std::string, int> schemaMap;
 
-        qDebug() << "PARQUET SCHEMA";
-        qDebug() << QString::fromStdString(schemaColumns);
+//        qDebug() << "PARQUET SCHEMA";
+//        qDebug() << QString::fromStdString(schemaColumns);
         for (int i = 0; i < schemaColumnsSplit.size(); i++) {
-            qDebug() << QString::fromStdString(schemaColumnsSplit.at(i));
+//            qDebug() << QString::fromStdString(schemaColumnsSplit.at(i));
             schemaMap.emplace(schemaColumnsSplit.at(i), i);
         }
 
