@@ -29,6 +29,7 @@ public:
         ERR_INIT
 
         output->clear();
+        output->reserve(desiredTrancheSize);
 
         e = ErrorUtils::isNotEmpty(input); ree;
 
@@ -62,6 +63,7 @@ public:
         ERR_INIT
 
         output->clear();
+        output->reserve(desiredTrancheSegments);
 
         e = ErrorUtils::isNotEmpty(input); ree;
         if (desiredTrancheSegments == -1) {
@@ -117,23 +119,22 @@ public:
         QVector<QPair<T, U>> pairs
                 = ParallelUtils::convertMapToVectorPairs(map);
 
-        const int buffer = 0;
+        const int itemsPerTranche = static_cast<int>(std::round(map.size() / static_cast<double>(numberOfProcesses)));
 
-        QVector<QVector<QPair<T, U>>> tranchedPairs;
-        e = ParallelUtils::tranchVectorForParallelizationInOrder<T, U>(
-                pairs,
-                numberOfProcesses,
-                buffer,
-                &tranchedPairs
-        ); ree;
+        QMap<T,U> trancheMap;
+        for (int i = 0; i < pairs.size(); i++) {
 
-
-        for (const QVector<QPair<T, U>> &pairVec : tranchedPairs) {
-            QMap<T, U> pairVecMap;
-            for (const QPair<T, U> &pr : pairVec) {
-                pairVecMap->insert(pr.first, pr.second);
+            if (i % itemsPerTranche == 0 && i > 0 && tranchedMaps->size() < numberOfProcesses - 1) {
+                tranchedMaps->push_back(trancheMap);
+                trancheMap.clear();
             }
-            tranchedMaps->push_back(pairVecMap);
+
+            const QPair<T, U> &pr = pairs.at(i);
+            trancheMap.insert(pr.first, pr.second);
+        }
+
+        if (!trancheMap.isEmpty()) {
+            tranchedMaps->push_back(trancheMap);
         }
 
         ERR_RETURN
@@ -191,6 +192,24 @@ public:
     }
 
     static QPair<QVector<double>, QVector<double>> unZip(const QVector<QPointF> &points);
+
+    template <typename T, typename U>
+    static QPair<QVector<T>, QVector<U>> unZip(const QVector<QPair<T, U>> &vecOfPairs) {
+
+        QVector<T> v1;
+        v1.reserve(vecOfPairs.size());
+
+        QVector<U> v2;
+        v2.reserve(vecOfPairs.size());
+
+        for (const QPair<T, U> &pr : vecOfPairs) {
+            v1.push_back(pr.first);
+            v2.push_back(pr.second);
+        }
+
+        return {v1, v2};
+    }
+
 
 };
 

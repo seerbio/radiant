@@ -65,6 +65,27 @@ namespace {
         ERR_RETURN
     }
 
+    Err recalibrateMsReader(
+            const QString &calibrationMatFilePath,
+            const QString &calibarationCalFilePath,
+            MsReaderPointer *msReaderPointer
+            ) {
+
+        ERR_INIT
+
+        QMap<ScanNumber, ScanPoints> recalScanPoints;
+        e = MsCalibratomatic::recalibratePoints(
+                (*msReaderPointer)->getScanPoints(),
+                calibrationMatFilePath,
+                calibarationCalFilePath,
+                &recalScanPoints
+                ); ree;
+
+        (*msReaderPointer)->setScanPoints(recalScanPoints);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
@@ -83,6 +104,12 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             msDataFilePath,
             &calibrationMatFilePath,
             &calibarationCalFilePath
+            ); ree;
+
+    e = recalibrateMsReader(
+            calibrationMatFilePath,
+            calibarationCalFilePath,
+            &msReaderPointer
             ); ree;
 
     ERR_RETURN
@@ -377,7 +404,6 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
     QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
 
-
     const double fractionOfFramesToUseForCalibration = 0.25;
     const int numberOfFramesToProcessForCalibration
             = static_cast<int>(msReaderPointer->getFrameCount() * fractionOfFramesToUseForCalibration);
@@ -397,7 +423,7 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(
     ); ree;
 
     MsCalibratomatic msCalibratomatic;
-    const int calPointK = 25;
+    const int calPointK = 3;
     e = msCalibratomatic.init(
             scoreVectorsVsScanFrameFilePaths,
             m_pythiaParameters,

@@ -26,7 +26,10 @@ using rTreePoint = std::pair<rTreePeakBox, QString> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
-MsCalibratomatic::MsCalibratomatic() : m_calPointK(10) {}
+MsCalibratomatic::MsCalibratomatic()
+: m_calPointK(10)
+, m_stDevNew(-1.0)
+{}
 
 Err MsCalibratomatic::init(
         const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
@@ -95,6 +98,8 @@ Err MsCalibratomatic::buildCalibrator(
     }
 
     e = loadCalibrationPointsToKDTree(); ree;
+
+    e = calculateNewAccuracyMetrics(); ree;
 
     ERR_RETURN
 }
@@ -431,45 +436,6 @@ namespace {
 
     }
 
-    void filterNNInput(
-            const QVector<double> &ppmDiffVals,
-            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
-            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
-            ) {
-
-        const double ppmMean = MathUtils::mean(ppmDiffVals);
-        const double stDev = MathUtils::stDev(ppmDiffVals);
-
-        const double stDevMultiplier = 3.0;
-        const double ppmMin = ppmMean - (stDevMultiplier * stDev);
-        const double ppmMax = ppmMean + (stDevMultiplier * stDev);
-
-        const auto terminatorLogic = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
-            return !(ppmMin <= calPoint.first && calPoint.first <= ppmMax);
-        };
-
-        const auto terminator = std::remove_if(
-                valuesVsTreePoints->begin(),
-                valuesVsTreePoints->end(),
-                terminatorLogic
-                );
-
-        valuesVsTreePoints->erase(terminator, valuesVsTreePoints->end());
-
-        const auto terminatorLogicRemoved = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
-            return ppmMin <= calPoint.first && calPoint.first <= ppmMax;
-        };
-
-        const auto terminatorRemoved = std::remove_if(
-                valuesVsTreePointsRemoved->begin(),
-                valuesVsTreePointsRemoved->end(),
-                terminatorLogicRemoved
-        );
-
-        valuesVsTreePointsRemoved->erase(terminatorRemoved, valuesVsTreePointsRemoved->end());
-
-    }
-
 }//namespace
 Err MsCalibratomatic::loadCalibrationPointsToKDTree() {
 
@@ -500,6 +466,44 @@ Err MsCalibratomatic::loadCalibrationPointsToKDTree() {
     e = m_nnSearch.init(valuesVsTreePoints); ree;
 
     ERR_RETURN
+}
+
+void MsCalibratomatic::filterNNInput(
+        const QVector<double> &ppmDiffVals,
+        QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
+        QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
+) {
+
+    const double ppmMean = MathUtils::mean(ppmDiffVals);
+    const double stDev = MathUtils::stDev(ppmDiffVals);
+
+    const double stDevMultiplier = 3.0;
+    const double ppmMin = ppmMean - (stDevMultiplier * stDev);
+    const double ppmMax = ppmMean + (stDevMultiplier * stDev);
+
+    const auto terminatorLogic = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
+        return !(ppmMin <= calPoint.first && calPoint.first <= ppmMax);
+    };
+
+    const auto terminator = std::remove_if(
+            valuesVsTreePoints->begin(),
+            valuesVsTreePoints->end(),
+            terminatorLogic
+    );
+
+    valuesVsTreePoints->erase(terminator, valuesVsTreePoints->end());
+
+    const auto terminatorLogicRemoved = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
+        return ppmMin <= calPoint.first && calPoint.first <= ppmMax;
+    };
+
+    const auto terminatorRemoved = std::remove_if(
+            valuesVsTreePointsRemoved->begin(),
+            valuesVsTreePointsRemoved->end(),
+            terminatorLogicRemoved
+    );
+
+    valuesVsTreePointsRemoved->erase(terminatorRemoved, valuesVsTreePointsRemoved->end());
 }
 
 namespace {
@@ -594,7 +598,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err MsCalibratomatic::recalibratePoints(
         const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
@@ -628,8 +631,9 @@ namespace {
 
     QPair<Err, QMap<ScanNumber, ScanPoints>> recalibrationLogicParallel(
             const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QString &calibarationCalFilePath,
-            const QString &calibrationMatFilePath
+            const QString &calibrationMatFilePath,
+            const QString &calibarationCalFilePath
+
     ) {
 
         ERR_INIT
@@ -653,8 +657,8 @@ namespace {
 }//namespace
 Err MsCalibratomatic::recalibratePoints(
         const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const QString &calibarationCalFilePath,
         const QString &calibrationMatFilePath,
+        const QString &calibarationCalFilePath,
         QMap<ScanNumber, ScanPoints> *recalScanPoints
 ) {
 
@@ -671,6 +675,30 @@ Err MsCalibratomatic::recalibratePoints(
             &tranchedScanPoints
             ); ree;
 
+    const auto recalLogicBinder = std::bind(
+        recalibrationLogicParallel,
+        std::placeholders::_1,
+        calibrationMatFilePath,
+        calibarationCalFilePath
+        );
+
+    QFuture<QPair<Err, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
+            tranchedScanPoints,
+            recalLogicBinder
+            );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QMap<ScanNumber, ScanPoints>> &res : futures) {
+        e = res.first; ree;
+
+        const QMap<ScanNumber, ScanPoints> &map = res.second;
+        for (auto it = map.begin(); it != map.end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const ScanPoints &sp = it.value();
+            recalScanPoints->insert(scanNumber, sp);
+        }
+    }
 
     ERR_RETURN
 }
@@ -690,45 +718,55 @@ Err MsCalibratomatic::writeCalibratomatic(
     ERR_RETURN
 }
 
-//Err MsCalibratomatic::applyFileCalibration(
-//        const QString &calibarationCalFilePath,
-//        const QString &calibrationMatFilePath,
-//        MsReaderPointer *msReaderPointer
-//) {
-//
-//    ERR_INIT
-//
-//
-//
-//    const QMap<ScanNumber, ScanPoints> scanPoints = (*msReaderPointer)->getScanPoints();
-//    e = ErrorUtils::isNotEmpty(scanPoints);
-//
-//    qDebug() << "Recalibrating file in parallel";
-//    const auto recalLogicBinder = std::bind(
-//            recalibrationLogicParallel,
-//            std::placeholders::_1,
-//            calibrationMatFilePath,
-//            calibarationCalFilePath
-//    );
-//
-//    QFuture<QPair<Err, ScanPoints>> futures = QtConcurrent::mapped(
-//            scanPoints,
-//            recalLogicBinder
-//            );
-//    futures.waitForFinished();
-//
-//    const QVector<ScanNumber> scanNumbers = scanPoints.keys().toVector();
-//    int scanPointsIndex = 0;
-//
-//    QMap<ScanNumber, ScanPoints> recalScanPoints;
-//    for (const QPair<Err, ScanPoints> &re : futures) {
-//        e = re.first; ree;
-//
-//        const ScanNumber scanNumber = scanNumbers.at(scanPointsIndex++);
-//        recalScanPoints.insert(scanNumber, re.second);
-//    }
-//
-//    (*msReaderPointer)->setScanPoints(recalScanPoints);
-//
-//    ERR_RETURN
-//}
+Err MsCalibratomatic::calculateNewAccuracyMetrics() {
+
+    ERR_INIT
+
+    e =  ErrorUtils::isNotEmpty(m_calibrationPoints);
+
+    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePoints;
+    QVector<double> ppmDiffVals;
+    buildNNInput(
+            m_calibrationPoints,
+            &valuesVsTreePoints,
+            &ppmDiffVals
+    );
+
+    const double ppmMean = MathUtils::mean(ppmDiffVals);
+    const double stDev = MathUtils::stDev(ppmDiffVals);
+    qDebug() << "OG Mean / StDev" << ppmMean << stDev;
+
+    const QPair<QVector<DiffPPM>, QVector<QVector<double>>> unzippedTreePoints
+            = ParallelUtils::unZip(valuesVsTreePoints);
+
+    const int calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped = m_calPointK + 1;
+    QVector<NNSearchResult> searchResults;
+    e = m_nnSearch.kNearestNeighborsSearch(
+            unzippedTreePoints.second,
+            calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped,
+            &searchResults
+            ); ree;
+
+    QVector<double> adjustedPPMs;
+    for (int i = 0; i < searchResults.size(); i++) {
+
+        const NNSearchResult &sr = searchResults.at(i);
+        const double ogPPM = ppmDiffVals.at(i);
+
+        QVector<double> ppms = QVector<double>::fromStdVector(sr.values);
+        ppms.pop_front();
+
+        const double ppmCorrectionMean = MathUtils::mean(ppms);
+        adjustedPPMs.push_back(ogPPM - ppmCorrectionMean);
+    }
+
+    const double ppmMeanNew = MathUtils::mean(adjustedPPMs);
+    const double stDevNew = MathUtils::stDev(adjustedPPMs);
+    qDebug() << "New Mean / StDev" << ppmMeanNew << stDevNew;
+
+    ERR_RETURN
+}
+
+int MsCalibratomatic::newStDev() {
+    return m_stDevNew;
+}

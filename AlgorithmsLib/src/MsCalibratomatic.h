@@ -27,6 +27,9 @@ struct PeptideStringWithModsScoreResult {
     Charge charge = -1;
 };
 
+using DiffPPM = double;
+using Coors = QVector<double>;
+
 class ALGORITHMSLIB_EXPORTS MsCalibratomatic {
 
 public:
@@ -60,8 +63,8 @@ public:
 
     static Err recalibratePoints(
             const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QString &calibarationCalFilePath,
             const QString &calibrationMatFilePath,
+            const QString &calibarationCalFilePath,
             QMap<ScanNumber, ScanPoints> *recalScanPoints
     );
 
@@ -69,6 +72,12 @@ public:
 private:
 
     Err buildCalibrator(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
+
+    void filterNNInput(
+            const QVector<double> &ppmDiffVals,
+            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
+            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
+    );
 
     Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
@@ -88,6 +97,10 @@ private:
 
     Err loadCalibrationPointsToKDTree();
 
+    Err calculateNewAccuracyMetrics();
+
+    [[nodiscard]] int newStDev();
+
 private:
 
     //Need to be cleared w/ each new ScoreFrame iteration
@@ -102,6 +115,7 @@ private:
     QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
     NearestNeighborsSearch m_nnSearch;
     int m_calPointK;
+    double m_stDevNew;
 
 };
 
