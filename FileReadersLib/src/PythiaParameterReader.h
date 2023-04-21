@@ -139,24 +139,31 @@ struct PythiaParameters{
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin > chargeStateMax) {
+            print();
             return false;
         }
         if (chargeStateMin < 1) {
+            print();
             return false;
         }
         if (chargeStateMax < 1) {
+            print();
             return false;
         }
         if (maxTandemPointCount < 0) {
+            print();
             return false;
         }
         if (returnPSMTopN < 0) {
+            print();
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
+            print();
             return false;
         }
         if (precursorExtractionWindowThomsons < 0) {
+            print();
             return false;
         }
 

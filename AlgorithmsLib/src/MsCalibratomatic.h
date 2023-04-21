@@ -68,6 +68,7 @@ public:
             QMap<ScanNumber, ScanPoints> *recalScanPoints
     );
 
+    [[nodiscard]] int newStDev();
 
 private:
 
@@ -98,8 +99,6 @@ private:
     Err loadCalibrationPointsToKDTree();
 
     Err calculateNewAccuracyMetrics();
-
-    [[nodiscard]] int newStDev();
 
 private:
 

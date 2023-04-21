@@ -761,8 +761,8 @@ Err MsCalibratomatic::calculateNewAccuracyMetrics() {
     }
 
     const double ppmMeanNew = MathUtils::mean(adjustedPPMs);
-    const double stDevNew = MathUtils::stDev(adjustedPPMs);
-    qDebug() << "New Mean / StDev" << ppmMeanNew << stDevNew;
+    m_stDevNew = MathUtils::stDev(adjustedPPMs);
+    qDebug() << "New Mean / StDev" << ppmMeanNew << m_stDevNew;
 
     ERR_RETURN
 }

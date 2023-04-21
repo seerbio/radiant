@@ -57,6 +57,7 @@ Err MsReaderParquet::openFile(const QString &filePath) {
     }
 
     e = printFileInfo(); ree;
+
     ERR_RETURN
 }
 
