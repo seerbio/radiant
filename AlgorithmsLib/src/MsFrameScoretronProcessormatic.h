@@ -19,6 +19,14 @@
 using namespace Error;
 
 
+struct PeptideStringWithModsScoreResult {
+    PeptideStringWithMods peptideStringWithMods;
+    Score score = -1.0;
+    FrameIndex frameIndex = -1;
+    Charge charge = -1;
+};
+
+
 struct ScoredPSM : public ParquetReaderInputBase {
     FrameIndex frameIndex = -1;
     PeptideStringWithMods peptideStringWithMods;
@@ -35,37 +43,21 @@ public:
 
     friend class MsFrameScoretronProcessormaticTests;
 
-    MsFrameScoretronProcessormatic() = default;
-    ~MsFrameScoretronProcessormatic() = default;
-
-    Err init(
-            const PythiaParameters &pythiaParameters,
+    static Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
-            const QString &msFrameScansFilePath
-            );
-
-    Err getTopNCandidatesPerFrameIndex(
-            int topN,
+            const QString &msFrameScansFilePath,
+            int topNPSMs,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-            );
-
-//    Err rescoreMsFrame(
-//            const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
-//            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
-//            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &framePredictions
-//            );
-//
-//    Err getTopNPeptidesPerFrameIndex();
+    );
 
 private:
 
-    Err buildFrameIndexVsScanPoints(const QVector<MsFrameScanPointRows> &msFrameScanPointRows);
-
-private:
-
-    PythiaParameters m_params;
-    QVector<MsFrameScoreVectorReaderRow> m_scoreVectors;
-    QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
+    static Err getTopNCandidatesPerFrameIndex(
+            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
+            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
+            int topNPSMs,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
+    );
 
 };
 

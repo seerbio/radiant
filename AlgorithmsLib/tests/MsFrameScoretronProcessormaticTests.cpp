@@ -85,38 +85,21 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
 
     ERR_INIT
 
-    const QString scansFilePath
-            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans");
-
     const QString scoreVectorsFilePath
             = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores");
 
-//    QVector<MsFrameScanPointRows> msFrameScanPointRows;
-//    e = ParquetReader::read(
-//            scansFilePath,
-//            &msFrameScanPointRows
-//            );
-//    QCOMPARE(e, eNoError);
-//
-//    QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
-//    e = ParquetReader::read(
-//            scoreVectorsFilePath,
-//            &msFrameScoreVectorReaderRows
-//    );
-//    QCOMPARE(e, eNoError);
-//
-//    MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
-//    e = msFrameScoretronProcessormatic.init(pythiaParameters());
-//    QCOMPARE(e, eNoError);
+    const QString scansFilePath
+            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans");
 
-//    e = msFrameScoretronProcessormatic.rescoreMsFrame(
-//            msFrameScanPointRows,
-//            msFrameScoreVectorReaderRows,
-//            buildPredictions()
-//            );
-//    QCOMPARE(e, eNoError);
+    const int topN = 10;
 
-
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
+    MsFrameScoretronProcessormatic::processLogicForFrameScores(
+            scoreVectorsFilePath,
+            scansFilePath,
+            topN,
+            &topCansInFrameIndex
+            );
 
 }
 

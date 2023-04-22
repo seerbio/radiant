@@ -6,6 +6,7 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
 #include "TandemFragmentPredictotron.h"
@@ -113,17 +114,9 @@ Err MsCalibratomatic::processLogicForFrameScores(
 
     e = ErrorUtils::isTrue(m_fragLibraryTronDia->isInit()); ree;
 
-    m_scoreVectors.clear();
     m_frameIndexVsScanPoints.clear();
     m_peptideWithModsVsCharge.clear();
     m_topCandidatesInFrameIndex.clear();
-
-    ParquetReader::read(
-            scoreVectorsFilePath,
-            &m_scoreVectors
-    ); ree;
-
-    e = buildPeptideSequenceWithModsVsCharge(); ree;
 
     QVector<MsFrameScanPointRows> msFrameScanPointRows;
     ParquetReader::read(
@@ -134,13 +127,17 @@ Err MsCalibratomatic::processLogicForFrameScores(
     e = MsFrame::buildFrameIndexVsScanPoints(
             msFrameScanPointRows,
             &m_frameIndexVsScanPoints
+    ); ree;
+
+    const int topNPSMs = 1;
+    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
+            scoreVectorsFilePath,
+            msFrameScansFilePath,
+            topNPSMs,
+            &m_topCandidatesInFrameIndex
             ); ree;
 
-    const int topN = 1;
-    e = getTopNCandidatesPerFrameIndex(
-            topN,
-            &m_topCandidatesInFrameIndex
-            );ree;
+    e = buildPeptideSequenceWithModsVsCharge(scoreVectorsFilePath); ree;
 
     QVector<PeptideStringWithModsScoreResult> topScoringPSMs;
     e = getScoredPSMsUntilFirstDecoyIsFound(&topScoringPSMs); ree;
@@ -150,163 +147,22 @@ Err MsCalibratomatic::processLogicForFrameScores(
     ERR_RETURN
 }
 
-Err MsCalibratomatic::buildPeptideSequenceWithModsVsCharge() {
+Err MsCalibratomatic::buildPeptideSequenceWithModsVsCharge(const QString &scoreVectorsFilePath) {
 
     ERR_INIT
     m_peptideWithModsVsCharge.clear();
-    e = ErrorUtils::isNotEmpty(m_scoreVectors); ree;
 
-    for (const MsFrameScoreVectorReaderRow &row : m_scoreVectors) {
-        e = ErrorUtils::isFalse(m_peptideWithModsVsCharge.contains(row.peptideStringWithMods)); ree;
-        m_peptideWithModsVsCharge.insert(row.peptideStringWithMods, row.charge);
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    RTree buildScorePeaksRTree(const QVector<MsFrameScoreVectorReaderRow> &scoreVectors) {
-
-        std::vector<rTreePoint> cloudLoader;
-        for (const MsFrameScoreVectorReaderRow &row : scoreVectors) {
-
-            const FrameIndex frameIndexStart = row.scorePeakStart;
-            const FrameIndex frameIndexEnd = row.scorePeakEnd;
-
-            const rTreePeakBox peakBox(
-                    rTreeCoor(frameIndexStart, 0),
-                    rTreeCoor(frameIndexEnd, 0)
-            );
-
-            cloudLoader.emplace_back(peakBox, row.peptideStringWithMods);
-        }
-
-        const int maxElements = 16;
-        return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    }
-
-    Err getScorePeptidesByFrameIndex(
-            FrameIndex frameIndex,
-            const RTree &rtree,
-            QStringList *peptidesFoundInFrameIndex
-            ) {
-
-        ERR_INIT
-
-        peptidesFoundInFrameIndex->clear();
-
-        const rTreeSearchBox queryBox(rTreeCoor(frameIndex, 0), rTreeCoor(frameIndex, 0));
-        std::vector<rTreePoint> result;
-        rtree.query(bgi::intersects(queryBox), std::back_inserter(result));
-
-        for (const rTreePoint &rtp : result) {
-            peptidesFoundInFrameIndex->push_back(rtp.second);
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildPeptideWithModsVsScoreVec(
-            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
-            QMap<PeptideStringWithMods, QVector<double>> *peptideWithModsVsScoreVec
-            ) {
-
-        ERR_INIT
-
-        peptideWithModsVsScoreVec->clear();
-
-        e = ErrorUtils::isNotEmpty(scoreVectors); ree;
-
-        for (const MsFrameScoreVectorReaderRow &r : scoreVectors) {
-            e = ErrorUtils::isFalse(peptideWithModsVsScoreVec->contains(r.peptideStringWithMods)); ree;
-            peptideWithModsVsScoreVec->insert(r.peptideStringWithMods, r.scorePerFrameIndexOfTargetVec);
-        }
-
-        ERR_RETURN
-    }
-
-    const auto sortScoresAscLogic = [](
-            const QPair<PeptideStringWithMods, double> &l,
-            const QPair<PeptideStringWithMods, double> &r
-    ){return l.second < r.second;};
-
-    Err getFrameIndexPeptidesWithScoresDesc(
-            FrameIndex frameIndex,
-            const QStringList &peptidesFoundInFrameIndex,
-            const QMap<PeptideStringWithMods, QVector<double>> &peptideWithModsVsScoreVec,
-            QVector<QPair<PeptideStringWithMods, double>> *peptideScores
-            ) {
-
-        ERR_INIT
-
-        QVector<double> scores;
-        for (const QString &peptideStringWithMods : peptidesFoundInFrameIndex) {
-
-            e = ErrorUtils::isTrue(peptideWithModsVsScoreVec.contains(peptideStringWithMods)); ree;
-            const QVector<double> &scoresVec = peptideWithModsVsScoreVec.value(peptideStringWithMods);
-
-            const QPair<PeptideStringWithMods, double> point = {peptideStringWithMods, scoresVec.at(frameIndex)};
-
-            const double minScore = 0.001;
-            if (point.second < minScore){
-                continue;
-            }
-            scores.push_back(point.second);
-            peptideScores->push_back(point);
-        }
-
-//        const double stDevs = 2.0;
-//        const double thresholdScore = MathUtils::mean(scores) + (stDevs * MathUtils::stDev(scores));
-
-        std::sort(peptideScores->rbegin(), peptideScores->rend(), sortScoresAscLogic);
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err MsCalibratomatic::getTopNCandidatesPerFrameIndex(
-        int topN,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-) {
-
-    ERR_INIT
-
-    topCansInFrameIndex->clear();
-
-    const RTree scoresRTree = buildScorePeaksRTree(m_scoreVectors);
-
-    QMap<PeptideStringWithMods, QVector<double>> peptideWithModsVsScoreVec;
-    e = buildPeptideWithModsVsScoreVec(
-            m_scoreVectors,
-            &peptideWithModsVsScoreVec
+    QVector<MsFrameScoreVectorReaderRow> scoreVectors;
+    ParquetReader::read(
+            scoreVectorsFilePath,
+            &scoreVectors
     ); ree;
 
-    const QList<FrameIndex> &frameIndexes = m_frameIndexVsScanPoints.keys();
-    for (const FrameIndex frameIndex : frameIndexes) {
+    e = ErrorUtils::isNotEmpty(scoreVectors); ree;
 
-        QStringList peptidesFoundInFrameIndex;
-        e = getScorePeptidesByFrameIndex(
-                frameIndex,
-                scoresRTree,
-                &peptidesFoundInFrameIndex
-        ); ree;
-
-        QVector<QPair<PeptideStringWithMods, Score>> peptideWithScoresDesc;
-        e = getFrameIndexPeptidesWithScoresDesc(
-                frameIndex,
-                peptidesFoundInFrameIndex,
-                peptideWithModsVsScoreVec,
-                &peptideWithScoresDesc
-        ); ree;
-
-        if (peptideWithScoresDesc.isEmpty()) {
-            continue;
-        }
-
-        topN = std::min(topN, peptideWithScoresDesc.size());
-        peptideWithScoresDesc.resize(topN);
-        topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
+    for (const MsFrameScoreVectorReaderRow &row : scoreVectors) {
+        e = ErrorUtils::isFalse(m_peptideWithModsVsCharge.contains(row.peptideStringWithMods)); ree;
+        m_peptideWithModsVsCharge.insert(row.peptideStringWithMods, row.charge);
     }
 
     ERR_RETURN

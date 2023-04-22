@@ -19,13 +19,7 @@
 using namespace Error;
 
 class PeptideSequence;
-
-struct PeptideStringWithModsScoreResult {
-    PeptideStringWithMods peptideStringWithMods;
-    Score score = -1.0;
-    FrameIndex frameIndex = -1;
-    Charge charge = -1;
-};
+class PeptideStringWithModsScoreResult;
 
 using DiffPPM = double;
 using Coors = QVector<double>;
@@ -85,16 +79,11 @@ private:
             const QString &msFrameScansFilePath
     );
 
-    Err getTopNCandidatesPerFrameIndex(
-            int topN,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-    );
-
     Err getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringWithModsScoreResult> *scoresNoDecoys);
 
     Err buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys);
 
-    Err buildPeptideSequenceWithModsVsCharge();
+    Err buildPeptideSequenceWithModsVsCharge(const QString &scoreVectorsFilePath);
 
     Err loadCalibrationPointsToKDTree();
 
@@ -103,7 +92,6 @@ private:
 private:
 
     //Need to be cleared w/ each new ScoreFrame iteration
-    QVector<MsFrameScoreVectorReaderRow> m_scoreVectors;
     QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
     QMap<PeptideStringWithMods, Charge> m_peptideWithModsVsCharge;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
