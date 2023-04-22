@@ -195,7 +195,7 @@ namespace {
             TandemLibraryReaderRow row;
             row.peptideSequenceChargeKey = peptideSequenceChargeKey;
             row.mzVals = mzVals;
-            row.ionLabels = ionLabels;
+//            row.ionLabels = ionLabels;
             row.intensityVals = intensities;
             row.isDecoy = peptideSeqChargeKeyVsIsDecoy.value(row.peptideSequenceChargeKey);
 

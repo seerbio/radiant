@@ -25,7 +25,7 @@ namespace TandemLibraryReaderNamespace {
             PEP_SEQ_CHRG_KEY,
             MZ_VALS,
             INTENSITY_VALS,
-            ION_LABELS,
+//            ION_LABELS,
             IS_DECOY
     };
 }
@@ -35,7 +35,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
     PeptideSequenceChargeKey peptideSequenceChargeKey;
     QVector<double> mzVals;
     QVector<double> intensityVals;
-    QStringList ionLabels;
+//    QStringList ionLabels;
     bool isDecoy = 0;
 
     QMap<QString, QVariant> map() override {
@@ -46,7 +46,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
             {PEP_SEQ_CHRG_KEY, QVariant(peptideSequenceChargeKey)},
             {MZ_VALS, QVariant(qVectorToQByteArray(mzVals))},
             {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
-            {ION_LABELS, QVariant(joinQStringList(ionLabels))},
+//            {ION_LABELS, QVariant(joinQStringList(ionLabels))},
             {IS_DECOY, QVariant(isDecoy)},
         };
     }
@@ -68,7 +68,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
         peptideSequenceChargeKey = dataMap.value(PEP_SEQ_CHRG_KEY).toString();
         mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
-        ionLabels = dataMap.value(ION_LABELS).toString().split(S_GLOBAL_SETTINGS.SEPARATOR);
+//        ionLabels = dataMap.value(ION_LABELS).toString().split(S_GLOBAL_SETTINGS.SEPARATOR);
         isDecoy = dataMap.value(IS_DECOY).toInt();
 
         ERR_RETURN

@@ -26,7 +26,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
     TandemLibraryReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
     tpr.intensityVals = {666.6, 66.6, 6.6};
-    tpr.ionLabels = QStringList({"a", "b", "c"});
+//    tpr.ionLabels = QStringList({"a", "b", "c"});
 
     const QVector<TandemLibraryReaderRow> tprs(10, tpr);
 
@@ -52,7 +52,7 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
 
     QCOMPARE(tlrr.peptideSequenceChargeKey, tpr.peptideSequenceChargeKey);
     QCOMPARE(tlrr.intensityVals, tpr.intensityVals);
-    QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
+//    QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
 }
 
 QTEST_MAIN(TandemLibraryReaderTests)

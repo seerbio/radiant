@@ -88,10 +88,10 @@ namespace {
                 tandemLibraryReaderRow.intensityVals.size()
                 ); rree;
 
-        e = ErrorUtils::isEqual(
-                tandemLibraryReaderRow.mzVals.size(),
-                tandemLibraryReaderRow.ionLabels.size()
-        ); rree;
+//        e = ErrorUtils::isEqual(
+//                tandemLibraryReaderRow.mzVals.size(),
+//                tandemLibraryReaderRow.ionLabels.size()
+//        ); rree;
 
         PeptideString peptideString;
         int charge = -1;
@@ -105,7 +105,7 @@ namespace {
         for (int i = 0; i < tandemLibraryReaderRow.mzVals.size(); i++) {
 
             MS2Ion ms2Ion;
-            ms2Ion.ionLabel = tandemLibraryReaderRow.ionLabels.at(i);
+//            ms2Ion.ionLabel = tandemLibraryReaderRow.ionLabels.at(i);
             ms2Ion.intensity = tandemLibraryReaderRow.intensityVals.at(i);
             ms2Ion.mz = tandemLibraryReaderRow.mzVals.at(i);
 

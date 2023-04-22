@@ -100,11 +100,11 @@ void FragLibraryTronDIATests::getMS2IonsTest() {
     qDebug() << ms2Ions;
     QCOMPARE(int(ms2IonFront.mz), 101);
     QCOMPARE(int(ms2IonFront.intensity * 10), 1);
-    QCOMPARE(ms2IonFront.ionLabel, "a2");
+//    QCOMPARE(ms2IonFront.ionLabel, "a2");
 
     QCOMPARE(int(ms2IonBack.mz), int(1096.071));
     QCOMPARE(int(ms2IonBack.intensity * 10), 1);
-    QCOMPARE(ms2IonBack.ionLabel, "y10");
+//    QCOMPARE(ms2IonBack.ionLabel, "y10");
 
 }
 
@@ -141,11 +141,11 @@ void FragLibraryTronDIATests::getMS2IonsTest2() {
     qDebug() << ms2Ions;
     QCOMPARE(int(ms2IonFront.mz), 129);
     QCOMPARE(int(ms2IonFront.intensity * 100), 44);
-    QCOMPARE(ms2IonFront.ionLabel, "b2");
+//    QCOMPARE(ms2IonFront.ionLabel, "b2");
 
     QCOMPARE(int(ms2IonBack.mz), 983);
     QCOMPARE(int(ms2IonBack.intensity * 100), 54);
-    QCOMPARE(ms2IonBack.ionLabel, "y9");
+//    QCOMPARE(ms2IonBack.ionLabel, "y9");
 
 }
 
@@ -185,11 +185,11 @@ void FragLibraryTronDIATests::getMS2IonsTest3() {
     qDebug() << ms2Ions;
     QCOMPARE(int(ms2IonFront.mz), 258);
     QCOMPARE(int(ms2IonFront.intensity * 100), 79);
-    QCOMPARE(ms2IonFront.ionLabel, "b3");
+//    QCOMPARE(ms2IonFront.ionLabel, "b3");
 
     QCOMPARE(int(ms2IonBack.mz), 884);
     QCOMPARE(int(ms2IonBack.intensity), 1);
-    QCOMPARE(ms2IonBack.ionLabel, "y8");
+//    QCOMPARE(ms2IonBack.ionLabel, "y8");
 
 }
 

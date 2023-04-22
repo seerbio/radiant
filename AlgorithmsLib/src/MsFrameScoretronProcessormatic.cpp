@@ -52,12 +52,27 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
             &frameIndexVsScanPoints
     ); ree;
 
+    topNPSMs = 20; //TODO remove this.
     e = getTopNCandidatesPerFrameIndex(
             scoreVectors,
             frameIndexVsScanPoints,
             topNPSMs,
             topCansInFrameIndex
     );ree;
+
+
+//    for (auto it = topCansInFrameIndex->begin(); it != topCansInFrameIndex->end(); it++) {
+//
+//        if (it.key() != 128) {
+//            continue;
+//        }
+//
+//        qDebug() << it.key();
+//        for (const auto r : it.value()) {
+//            qDebug() << r.first << r.second;
+//        }
+//    }
+
 
     ERR_RETURN
 }

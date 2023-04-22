@@ -20,15 +20,15 @@ struct ALGORITHMSLIB_EXPORTS MS2Ion {
 
     double mz = -1.0;
     double intensity = -1.0;
-    QString ionLabel;
+//    QString ionLabel;
 
     MS2Ion() = default;
 
-    MS2Ion(double mz, double intensity, QString ionLabel)
-    : mz(mz) , intensity(intensity), ionLabel(ionLabel){}
+    MS2Ion(double mz, double intensity)
+    : mz(mz) , intensity(intensity){}
 
     friend QDebug &operator <<(QDebug &d, const MS2Ion &ms2Ion) {
-        d << "MS2Ion(" << ms2Ion.mz << "," << ms2Ion.intensity << "," << ms2Ion.ionLabel << ")";
+        d << "MS2Ion(" << ms2Ion.mz << "," << ms2Ion.intensity << ")";
         return d;
     }
 };
