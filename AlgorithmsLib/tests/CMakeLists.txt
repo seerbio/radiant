@@ -29,6 +29,7 @@ SET(TEST_CLASSES
         ProteinDigestomaticTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
+        TandemSpectraDeconvolvotronTests
         TurboXICTests
 )
 

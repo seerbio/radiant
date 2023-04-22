@@ -272,7 +272,7 @@ Err MsCalibratomatic::getTopNCandidatesPerFrameIndex(
 
     ERR_INIT
 
-    m_topCandidatesInFrameIndex.clear();
+    topCansInFrameIndex->clear();
 
     const RTree scoresRTree = buildScorePeaksRTree(m_scoreVectors);
 
@@ -767,6 +767,6 @@ Err MsCalibratomatic::calculateNewAccuracyMetrics() {
     ERR_RETURN
 }
 
-int MsCalibratomatic::newStDev() {
+double MsCalibratomatic::newStDev() {
     return m_stDevNew;
 }

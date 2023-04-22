@@ -39,6 +39,7 @@ SET(SOURCE_FILES
         src/ProteinDigestomatic.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
+        src/TandemSpectraDeconvolvotron.cpp
         src/TurboXIC.cpp
 )
 
@@ -62,6 +63,7 @@ SET(HEADER_FILES
         src/ProteinDigestomatic.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
+        src/TandemSpectraDeconvolvotron.h
         src/TurboXIC.h
 )
 

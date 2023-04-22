@@ -68,7 +68,7 @@ public:
             QMap<ScanNumber, ScanPoints> *recalScanPoints
     );
 
-    [[nodiscard]] int newStDev();
+    [[nodiscard]] double newStDev();
 
 private:
 

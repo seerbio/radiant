@@ -461,6 +461,12 @@ public:
 
         return klDivMat;
     }
+
+    static Eigen::VectorX<double> convertQPointFVecToEigen(
+            const QVector<QPointF> &points,
+            int precision,
+            double valMax
+            );
 };
 
 #endif //EIGENUTILS_H

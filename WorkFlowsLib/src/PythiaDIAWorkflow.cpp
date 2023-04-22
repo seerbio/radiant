@@ -86,6 +86,8 @@ namespace {
         ERR_RETURN
     }
 
+
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
@@ -98,38 +100,42 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     QString calibrationMatFilePath;
     QString calibarationCalFilePath;
-
-    {
-        e = buildCalibrationFiles(
-                msReaderPointer,
-                msDataFilePath,
-                &calibrationMatFilePath,
-                &calibarationCalFilePath
-        ); ree;
-
-        e = recalibrateMsReader(
-                calibrationMatFilePath,
-                calibarationCalFilePath,
-                &msReaderPointer
-        ); ree;
-    }
-
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePaths;
-
-    const int numberOfFrames = -1;
-    e = buildCandidateScoreVectors(
-            msReaderPointer,
-            numberOfFrames,
-            &uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-            &uniqueMsInfoScanKeyVsMsFrameFilePaths
-    ); ree;
+    e = runCalibration(
+            msDataFilePath,
+            &msReaderPointer,
+            &calibrationMatFilePath,
+            &calibarationCalFilePath
+            ); ree;
 
     QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
-    e = buildScoreVectorsVsScanFrameFilePaths(
-            uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-            uniqueMsInfoScanKeyVsMsFrameFilePaths,
+    e = runAllFrames(
+            msReaderPointer,
             &scoreVectorsVsScanFrameFilePaths
+            ); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::runCalibration(
+        const QString &msDataFilePath,
+        MsReaderPointer *msReaderPointer,
+        QString *calibrationMatFilePath,
+        QString *calibarationCalFilePath
+) {
+
+    ERR_INIT
+
+    e = buildCalibrationFiles(
+            (*msReaderPointer),
+            msDataFilePath,
+            calibrationMatFilePath,
+            calibarationCalFilePath
+    ); ree;
+
+    e = recalibrateMsReader(
+            *calibrationMatFilePath,
+            *calibarationCalFilePath,
+            msReaderPointer
     ); ree;
 
     ERR_RETURN
@@ -459,6 +465,34 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(
 
     const int stDevMultiplier = 3;
     m_pythiaParameters.ms2ExtractionWidthPPM = stDevMultiplier * msCalibratomatic.newStDev();
+    qDebug() << "New ppm tolerance set to " << m_pythiaParameters.ms2ExtractionWidthPPM << "after calibration!!!";
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::runAllFrames(
+        const MsReaderPointer &msReaderPointer,
+        QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
+        ) {
+
+    ERR_INIT
+
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
+    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePaths;
+
+    const int numberOfFrames = -1;
+    e = buildCandidateScoreVectors(
+            msReaderPointer,
+            numberOfFrames,
+            &uniqueMsInfoScanKeyVsScoredFrameFilePaths,
+            &uniqueMsInfoScanKeyVsMsFrameFilePaths
+    ); ree;
+
+    e = buildScoreVectorsVsScanFrameFilePaths(
+            uniqueMsInfoScanKeyVsScoredFrameFilePaths,
+            uniqueMsInfoScanKeyVsMsFrameFilePaths,
+            scoreVectorsVsScanFrameFilePaths
+    ); ree;
 
     ERR_RETURN
 }

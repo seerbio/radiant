@@ -40,6 +40,13 @@ public:
 
 private:
 
+    Err runCalibration(
+            const QString &msDataFilePath,
+            MsReaderPointer *msReaderPointer,
+            QString *calibrationMatFilePath,
+            QString *calibarationCalFilePath
+    );
+
     Err buildCandidateScoreVectors(
             const MsReaderPointer &msReaderPointer,
             int numberOfFramesToProcess,
@@ -69,6 +76,11 @@ private:
             const QString &msDataFilePath,
             QString *calibrationMatFilePath,
             QString *calibarationCalFilePath
+            );
+
+    Err runAllFrames(
+            const MsReaderPointer &msReaderPointer,
+            QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
             );
 
 
