@@ -116,6 +116,7 @@ namespace {
             row.ionMobilityIndex = msScanInfo.ionMobilityIndex;
             row.mzVals = mzVals;
             row.intensityVals = intensityVals;
+            row.targetKey = QString::number(static_cast<int>(std::round(row.precursorTargetMz *1000)));
 
             rowsToWrite.push_back(row);
         }

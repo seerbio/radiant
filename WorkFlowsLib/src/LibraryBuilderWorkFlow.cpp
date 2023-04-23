@@ -174,7 +174,8 @@ namespace {
 
     QVector<TandemLibraryReaderRow> buildTandemLibraryReaderRows(
             const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
-            const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy
+            const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy,
+            const AminoAcids &aminoAcids
             ) {
 
         QVector<TandemLibraryReaderRow> tlrs;
@@ -192,15 +193,29 @@ namespace {
                 intensities.push_back(fi.intensity);
             }
 
+            const PeptideString peptideString = peptideSequenceChargeKey.split(
+                    S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                    QString::SkipEmptyParts
+                    ).front();
+
             TandemLibraryReaderRow row;
             row.peptideSequenceChargeKey = peptideSequenceChargeKey;
             row.mzVals = mzVals;
-//            row.ionLabels = ionLabels;
+            row.mass = BiophysicalCalcs::calculatePeptideMass(peptideString, aminoAcids);
             row.intensityVals = intensities;
             row.isDecoy = peptideSeqChargeKeyVsIsDecoy.value(row.peptideSequenceChargeKey);
 
             tlrs.push_back(row);
         }
+
+        const auto sortLogicMassAsc = [](
+                const TandemLibraryReaderRow &l,
+                const TandemLibraryReaderRow &r
+                ){
+            return l.mass < r.mass;
+        };
+
+        std::sort(tlrs.begin(), tlrs.end(), sortLogicMassAsc);
 
         return tlrs;
     }
@@ -208,7 +223,8 @@ namespace {
     Err writePredictionsToParquet(
             const QHash<PeptideSequenceChargeKey, TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QString &outputFilePath,
-            const QHash<PeptideSequenceChargeKey, bool> &peptideSequenceChargeKeyVsIsBool
+            const QHash<PeptideSequenceChargeKey, bool> &peptideSequenceChargeKeyVsIsBool,
+            const AminoAcids &aminoAcids
             ) {
 
         ERR_INIT
@@ -218,7 +234,8 @@ namespace {
 
         const QVector<TandemLibraryReaderRow> writeRows = buildTandemLibraryReaderRows(
                 tandemPredictionsAllCharges,
-                peptideSequenceChargeKeyVsIsBool
+                peptideSequenceChargeKeyVsIsBool,
+                aminoAcids
                 );
 
         e = ParquetReader::write(
@@ -287,7 +304,8 @@ Err LibraryBuilderWorkFlow::exec(
     e = writePredictionsToParquet(
             tandemPredictionsAllCharges,
             *returnFilePath,
-            m_peptideSequenceChargeKeyVsIsDecoy
+            m_peptideSequenceChargeKeyVsIsDecoy,
+            m_pythiaParameters.aminoAcids
             ); ree;
 
     ERR_RETURN

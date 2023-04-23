@@ -31,6 +31,7 @@ namespace MsParquetReaderNamespace {
     const QString IM_IND = QStringLiteral("ionMobilityIndex");
     const QString MZ_VALS = QStringLiteral("mzVals");
     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
+    const QString TARGET_KEY = QStringLiteral("targetKey");
 
     const QStringList keysToCheck = {
         MS_LEVEL,
@@ -43,7 +44,8 @@ namespace MsParquetReaderNamespace {
         IM_DRIFT_TIME ,
         IM_IND ,
         MZ_VALS ,
-        INTENSITY_VALS
+        INTENSITY_VALS,
+        TARGET_KEY
     };
 }
 
@@ -60,6 +62,7 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
     IonMobilityIndex ionMobilityIndex = -1;
     QVector<double> mzVals;
     QVector<double> intensityVals;
+    QString targetKey;
 
     QMap<QString, QVariant> map() override {
 
@@ -77,6 +80,7 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
             {IM_IND, QVariant(ionMobilityIndex)},
             {MZ_VALS, QVariant(qVectorToQByteArray(mzVals))},
             {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
+            {TARGET_KEY, QVariant(QVariant(targetKey))}
         };
     }
 
@@ -105,6 +109,7 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
         ionMobilityIndex = dataMap.value(IM_IND).toInt();
         mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        targetKey = dataMap.value(TARGET_KEY).toString();
 
         ERR_RETURN
     }
