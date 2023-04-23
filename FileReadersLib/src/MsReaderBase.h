@@ -37,7 +37,14 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
     IonMobilityIndex ionMobilityIndex = -1;
 
     [[nodiscard]] QString targetScanKey() const {
-        return QString::number(std::round(precursorTargetMz * 1000));
+        return targetScanKey(
+                precursorTargetMz - isoWindowLower,
+                precursorTargetMz + isoWindowUpper
+                );
+    }
+
+    static QString targetScanKey(double mzStart, double mzEnd) {
+        return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };
 

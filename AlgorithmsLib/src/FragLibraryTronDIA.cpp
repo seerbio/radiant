@@ -7,6 +7,7 @@
 #include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
+#include "MsReaderBase.h"
 #include "TandemFragmentPredictotron.h"
 #include "TandemLibraryReader.h"
 #include "TandemPredictionUtils.h"
@@ -389,4 +390,36 @@ ScanPoints FragLibraryTronDIA::ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ion
     }
 
     return scanPoints;
+}
+
+Err FragLibraryTronDIA::buildTargetCandidatesForFrame(
+        const QVector<QPair<double, double>> &percursorMzWindows,
+        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+        ) {
+
+    ERR_INIT
+
+    for (const QPair<double, double> &percursorMzWindow : percursorMzWindows) {
+
+        qDebug() << "Collecting Targets for:" << percursorMzWindow.first << percursorMzWindow.second;
+
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+
+        e = getMS2Ions(
+                percursorMzWindow.first,
+                percursorMzWindow.second,
+                m_params.topNMs2Ions,
+                &peptideStringWithModsVsMS2Ions
+        ); ree;
+
+        const UniqueMsInfoScanKey uniqueMsInfoScanKey = MsScanInfo::targetScanKey(
+                percursorMzWindow.first,
+                percursorMzWindow.second
+                );
+
+        framePredictions->insert(uniqueMsInfoScanKey, peptideStringWithModsVsMS2Ions);
+    }
+
+    ERR_RETURN
+
 }

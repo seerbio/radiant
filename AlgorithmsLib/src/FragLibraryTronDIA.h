@@ -82,6 +82,11 @@ public:
 
     [[nodiscard]] static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions);
 
+    Err buildTargetCandidatesForFrame(
+            const QVector<QPair<double, double>> &percursorMzWindows,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
+    );
+
 private:
 
     Err readFragLibFile(const QString &fragLibFilePath);

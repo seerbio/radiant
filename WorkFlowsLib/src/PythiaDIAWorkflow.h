@@ -20,8 +20,6 @@
 using namespace Error;
 
 
-
-
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
 public:
@@ -66,11 +64,6 @@ private:
             QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
     );
 
-    Err buildTargetCandidatesForFrame(
-            const QVector<MsFrame> &msFrames,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
-    );
-
     Err buildCalibrationFiles(
             const MsReaderPointer &msReaderPointer,
             const QString &msDataFilePath,
@@ -90,6 +83,7 @@ private:
     QString m_fragLibUri;
 
     FragLibraryTronDIA m_fragLibraryTronDia;
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> m_framePredictions;
 
 };
 

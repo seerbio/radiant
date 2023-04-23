@@ -337,16 +337,23 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
 
     ERR_INIT
 
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> framePredictions;
-    e = buildTargetCandidatesForFrame(
-            msFrames,
-            &framePredictions
+    QVector<QPair<double, double>> mzPrecursorTargetWindows;
+    std::transform(
+            msFrames.begin(),
+            msFrames.end(),
+            std::back_inserter(mzPrecursorTargetWindows),
+            [](const MsFrame &f){ return f.precursorMzTargetStartEnd();}
+            );
+
+    e = m_fragLibraryTronDia.buildTargetCandidatesForFrame(
+            mzPrecursorTargetWindows,
+            &m_framePredictions
     ); ree;
 
     QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
     e = groupFramesWithTandemPredictions(
             msFrames,
-            framePredictions,
+            m_framePredictions,
             &processingChunks
     ); ree;
 
@@ -387,33 +394,6 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
                 ); ree;
     }
 #endif
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::buildTargetCandidatesForFrame(
-        const QVector<MsFrame> &msFrames,
-        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *framePredictions
-) {
-
-    ERR_INIT
-
-    for (const MsFrame &frame : msFrames) {
-
-        const QPair<double, double> mzTargetStartEnd = frame.precursorMzTargetStartEnd();
-        qDebug() << "Collecting Targets for:" << mzTargetStartEnd.first << mzTargetStartEnd.second;
-
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
-
-        e = m_fragLibraryTronDia.getMS2Ions(
-                mzTargetStartEnd.first,
-                mzTargetStartEnd.second,
-                m_pythiaParameters.topNMs2Ions,
-                &peptideStringWithModsVsMS2Ions
-        ); ree;
-
-        framePredictions->insert(frame.uniqueMsInfoScanKey(), peptideStringWithModsVsMS2Ions);
-    }
 
     ERR_RETURN
 }
