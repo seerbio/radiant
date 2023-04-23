@@ -33,13 +33,13 @@ TandemSpectraDeconvolvotronTests::TandemSpectraDeconvolvotronTests() : QObject()
 
 void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
 
-    const MS2Ion i1(100.0, 1, "");
-    const MS2Ion i2(200.0, 1, "");
-    const MS2Ion i3(300.0, 1, "");
+    const MS2Ion i1(100.0, 1);
+    const MS2Ion i2(200.0, 1);
+    const MS2Ion i3(300.0, 1);
 
-    const MS2Ion j1(100.0, 1, "");
-    const MS2Ion j2(200.0, 1, "");
-    const MS2Ion j3(600.0, 1, "");
+    const MS2Ion j1(100.0, 1);
+    const MS2Ion j2(200.0, 1);
+    const MS2Ion j3(600.0, 1);
 
     const QVector<QPointF> points = {
             {100, 1.5},
