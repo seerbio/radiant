@@ -125,12 +125,40 @@ public:
                 &ptrsRead
         ); ree;
 
-
         e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
                 ptrsRead,
                 readerRows
         ); ree;
 
+        ERR_RETURN
+    }
+
+    template<typename T>
+    static Err read(
+            const QString &fileURI,
+            const QString &column,
+            const QPair<double, double> &range,
+            QVector<T> *readerRows
+            ) {
+
+        ERR_INIT
+
+        readerRows->clear();
+
+        ParquetReader reader;
+
+        QVector<ParquetReaderInputBase> ptrsRead;
+        e = reader.readDataFromParquet(
+                fileURI,
+                column,
+                range,
+                &ptrsRead
+        ); ree;
+
+        e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsRead,
+                readerRows
+        ); ree;
 
         ERR_RETURN
     }
@@ -155,6 +183,7 @@ public:
         ERR_RETURN
     }
 
+
     Err writeDataToParquet(
             const QString &outputFilePath,
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
@@ -164,6 +193,13 @@ public:
             const QString &parquetFilePath,
             QVector<ParquetReaderInputBase> *rowsRead
             );
+
+    Err readDataFromParquet(
+            const QString &parquetFilePath,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &filterRange,
+            QVector<ParquetReaderInputBase> *rowsRead
+    );
 
 private:
 

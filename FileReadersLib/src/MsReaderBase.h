@@ -67,6 +67,12 @@ public:
 
     virtual Err openFile(const QString &filePath);
 
+    virtual Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &filterRange
+            );
+
     virtual Err closeFile();
 
     QString filePath();

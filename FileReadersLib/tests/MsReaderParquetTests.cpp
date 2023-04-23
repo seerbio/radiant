@@ -19,6 +19,7 @@ public:
 private Q_SLOTS:
 
     void saveMsReaderToParquetOpenFileCombinedTests();
+    void flowReadTest();
 
 };
 
@@ -87,6 +88,26 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QFile::remove(msParquetFilePath);
     QFileInfo checkFile2(msParquetFilePath);
     QCOMPARE(checkFile2.exists(), false);
+}
+
+void MsReaderParquetTests::flowReadTest() {
+
+    ERR_INIT
+
+    //TODO add this to test files.
+    const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(
+            testFilePath,
+            "targetKey",
+            {404934, 404934}
+            );
+
+    QMap<ScanNumber, MsScanInfo> scanInfos = msReaderParquet.getMsScanInfos();
+    qDebug() << "ScanInfos size filtered" << scanInfos.size();
+    QCOMPARE(scanInfos.size(), 413);
+
 }
 
 

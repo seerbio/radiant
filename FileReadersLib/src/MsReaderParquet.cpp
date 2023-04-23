@@ -61,6 +61,66 @@ Err MsReaderParquet::openFile(const QString &filePath) {
     ERR_RETURN
 }
 
+Err MsReaderParquet::openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange
+) {
+
+    ERR_INIT
+
+    ParquetReader reader;
+
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+    m_filePath = filePath;
+
+    QVector<ParquetReaderInputBase> ptrsRead;
+    e = reader.readDataFromParquet(
+            filePath,
+            columnToFilterBy,
+            filterRange,
+            &ptrsRead
+    ); ree;
+
+    QVector<MsParquetReaderRow> msParquetReaderRows;
+    e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+            ptrsRead,
+            &msParquetReaderRows
+    ); ree;
+
+    for (const MsParquetReaderRow &row : msParquetReaderRows) {
+
+        MsScanInfo msScanInfo;
+
+        msScanInfo.msLevel = row.msLevel;
+        msScanInfo.scanNumber = row.scanNumber;
+        msScanInfo.scanTime = row.scanTime;
+        msScanInfo.collisionEnergy = row.collisionEnergy;
+        msScanInfo.precursorTargetMz = row.precursorTargetMz;
+        msScanInfo.isoWindowLower = row.isoWindowLower;
+        msScanInfo.isoWindowUpper = row.isoWindowUpper;
+        msScanInfo.ionMobilityDriftTime = row.ionMobilityDriftTime;
+        msScanInfo.ionMobilityIndex = row.ionMobilityIndex;
+
+        ScanPoints scanPoints;
+        e = MsReaderBase::zipScanPoints(
+                row.mzVals,
+                row.intensityVals,
+                &scanPoints
+        ); ree;
+
+        e = ErrorUtils::isFalse(m_msScanInfo.contains(msScanInfo.scanNumber)); ree;
+        e = ErrorUtils::isFalse(m_scanPoints.contains(msScanInfo.scanNumber)); ree;
+
+        m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
+        m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
+    }
+
+    e = printFileInfo(); ree;
+
+    ERR_RETURN
+}
+
 Err MsReaderParquet::closeFile() {
 
     ERR_INIT
@@ -137,7 +197,6 @@ Err MsReaderParquet::writeMsReaderToParquet(
     QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
     e = buildRowsToWrite(sharedMsReaderBase, &ptrs); ree;
 
-    qDebug() << "SDFS" << ptrs.size();
     e = ErrorUtils::isNotEmpty(ptrs); ree;
 
     ParquetReader reader;

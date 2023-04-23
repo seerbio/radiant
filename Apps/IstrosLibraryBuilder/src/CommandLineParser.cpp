@@ -53,7 +53,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     }
 
     m_cliParams.peptidesCSVFilePath = args[1];
-    qDebug() << "SFSDFSF" << m_cliParams.peptidesCSVFilePath;
+
 //    const bool peptidesCSVFilePathIsValid
 //        = checkFileNameExtension(m_cliParams.peptidesCSVFilePath, S_GLOBAL_SETTINGS.DOT_CSV);
 //
@@ -65,7 +65,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 //    }
 
     m_cliParams.pythiaParametersFilePath = args[2];
-    qDebug() << "SFSDFSF" << m_cliParams.pythiaParametersFilePath;
+
 //    const bool pythiaPathIsValid
 //            = checkFileNameExtension(m_cliParams.pythiaParametersFilePath, ".pythia");
 //    if (!pythiaPathIsValid) {

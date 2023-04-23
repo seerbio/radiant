@@ -126,6 +126,12 @@ public:
 
     Err openFile(const QString &filePath) override;
 
+    Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &filterRange
+            ) override;
+
     Err closeFile() override;
 
     static Err writeMsReaderToParquet(

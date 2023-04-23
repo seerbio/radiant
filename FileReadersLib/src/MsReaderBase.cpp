@@ -87,6 +87,14 @@ Err MsReaderBase::openFile(const QString &filePath) {
     return Error::eNoError;
 }
 
+Err MsReaderBase::openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange
+) {
+    return Error::eNoError;
+}
+
 Err MsReaderBase::closeFile() {
     return Error::eNoError;
 }

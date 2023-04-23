@@ -10,6 +10,7 @@
 #include <arrow/csv/api.h>
 #include <arrow/filesystem/localfs.h>
 #include <arrow/io/api.h>
+#include <arrow/status.h>
 
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
@@ -34,6 +35,13 @@ public:
 
     Err readDataFromParquet(
             const QString &parquetFilePath,
+            QVector<ParquetReaderInputBase> *rowsRead
+    );
+
+    arrow::Status readDataFromParquet(
+            const QString &parquetFilePath,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &filterRange,
             QVector<ParquetReaderInputBase> *rowsRead
     );
 
@@ -361,19 +369,11 @@ namespace {
         return schemaMap;
     }
 
-    bool readColumn(
-            const std::shared_ptr<arrow::Table> &table,
-            const std::shared_ptr<arrow::Schema> &schema,
-            int columnIndex,
+    bool readColumnLogic(
+            const std::shared_ptr<arrow::Array> &colChunks,
             QVector<QVariant> *outputVec
-    ) {
+            ) {
 
-        if (schema->field_names().empty()) {
-            return false;
-        }
-
-        std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
-        const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
         const QString typeName = QString::fromStdString(colChunks->type()->ToString());
 
         if (
@@ -439,7 +439,38 @@ namespace {
         return true;
     }
 
-    Err extractColumnsFromTable(
+    bool readColumn(
+            const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+            const std::shared_ptr<arrow::Schema> &schema,
+            int columnIndex,
+            QVector<QVariant> *outputVec
+            ) {
+
+        if (schema->field_names().empty()) {
+            return false;
+        }
+
+        const std::shared_ptr<arrow::Array> colChunks = recordBatch->column(columnIndex);
+        return readColumnLogic(colChunks, outputVec);
+    }
+
+    bool readColumn(
+            const std::shared_ptr<arrow::Table> &table,
+            const std::shared_ptr<arrow::Schema> &schema,
+            int columnIndex,
+            QVector<QVariant> *outputVec
+    ) {
+
+        if (schema->field_names().empty()) {
+            return false;
+        }
+
+        std::shared_ptr<arrow::ChunkedArray> col = table->column(columnIndex);
+        const std::shared_ptr<arrow::Array> colChunks = col->chunks()[0];
+        return readColumnLogic(colChunks, outputVec);
+    }
+
+    Err extractColumns(
             const std::shared_ptr<arrow::Table> &table,
             QMap<QString, QVector<QVariant>> *columnsMap
             ) {
@@ -535,7 +566,7 @@ Err ParquetReader::Private::readDataFromParquet(
     }
 
     QMap<QString, QVector<QVariant>> columnsMap;
-    e = extractColumnsFromTable(
+    e = extractColumns(
             table,
             &columnsMap
             ); ree;
@@ -548,6 +579,160 @@ Err ParquetReader::Private::readDataFromParquet(
     ERR_RETURN
 }
 
+namespace {
+
+    Err extractColumns(
+            const std::shared_ptr<arrow::RecordBatch> &recordBatch,
+            QMap<QString, QVector<QVariant>> *columnsMap
+    ) {
+
+        ERR_INIT
+
+        const std::shared_ptr<arrow::Schema> schema = recordBatch->schema();
+        const std::map<std::string, int> schemaMap = buildSchemaMap(schema);
+
+        bool columnChecker = true;
+        for (auto it = schemaMap.begin(); it != schemaMap.end(); it++) {
+
+            const QString colName = QString::fromStdString(it->first);
+            const int colIndex = it->second;
+
+            QVector<QVariant> columnValsVec;
+            columnChecker = readColumn(
+                    recordBatch,
+                    schema,
+                    colIndex,
+                    &columnValsVec
+            );
+            if (!columnChecker) {
+                rrr(eError);
+            }
+
+            columnsMap->insert(colName, columnValsVec);
+        }
+
+        ERR_RETURN
+    }
+
+    Err columnsMapToRowsMap(
+            const QMap<QString, QVector<QVariant>> &columnsMap,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &range,
+            QVector<ParquetReaderInputBase> *rowsRead
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isBelowThreshold(
+                range.first,
+                range.second,
+                ErrorUtilsParam::IncludeThreshold
+                ); ree;
+
+        const int colSize = columnsMap.first().size();
+
+        for (const QVector<QVariant> &v : columnsMap) {
+            e = ErrorUtils::isEqual(v.size(), colSize);
+        }
+
+        for (int i = 0; i < colSize; i++) {
+
+            QMap<QString, QVariant> rowMap;
+
+            for (auto it = columnsMap.begin(); it != columnsMap.end(); it++) {
+
+                const QString &colName = it.key();
+                const QVector<QVariant> &var = it.value();
+
+                rowMap.insert(colName, var.at(i));
+            }
+
+            ParquetReaderInputBase prib;
+            prib.setDataMap(rowMap);
+
+            const double &var = rowMap.value(columnToFilterBy).toDouble();
+
+            if (!(range.first <= var && var <= range.second)) {
+                continue;
+            }
+
+            rowsRead->push_back(prib);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+arrow::Status ParquetReader::Private::readDataFromParquet(
+        const QString &parquetFilePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange,
+        QVector<ParquetReaderInputBase> *rowsRead
+        ) {
+
+    ERR_INIT
+
+    arrow::Status st;
+
+    arrow::MemoryPool* pool = arrow::default_memory_pool();
+    arrow::fs::LocalFileSystem fileSystem;
+
+    auto reader_properties = parquet::ReaderProperties(pool);
+    reader_properties.set_buffer_size(4096 * 4);
+    reader_properties.enable_buffered_stream();
+
+    auto arrow_reader_props = parquet::ArrowReaderProperties();
+    arrow_reader_props.set_batch_size(128 * 1024);  // default 64 * 1024
+
+    parquet::arrow::FileReaderBuilder reader_builder;
+    st = reader_builder.OpenFile(
+            parquetFilePath.toStdString(),
+            /*memory_map=*/false,
+            reader_properties
+            );
+    if (!st.ok()) {
+        return st;
+    }
+
+    reader_builder.memory_pool(pool);
+    reader_builder.properties(arrow_reader_props);
+
+    std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
+
+    ARROW_ASSIGN_OR_RAISE(arrow_reader, reader_builder.Build());
+
+    std::shared_ptr<::arrow::RecordBatchReader> rb_reader;
+    st = arrow_reader->GetRecordBatchReader(&rb_reader);
+    if (!st.ok()) {
+        return st;
+    }
+
+    for (arrow::Result<std::shared_ptr<arrow::RecordBatch>> maybeBatch : *rb_reader) {
+
+        std::shared_ptr<arrow::RecordBatch> batch = maybeBatch.ValueOrDie();
+
+        QMap<QString, QVector<QVariant>> columnsMap;
+        extractColumns(batch, &columnsMap);
+
+        QVector<ParquetReaderInputBase> rowsReadBatch;
+
+        e = columnsMapToRowsMap(
+                columnsMap,
+                columnToFilterBy,
+                filterRange,
+                &rowsReadBatch
+        );
+
+        if (e != eNoError) {
+            st = arrow::Status::Invalid("Invalid input");
+            return st;
+        }
+
+        rowsRead->append(rowsReadBatch);
+    }
+
+    return st;
+}
 
 /////////////////////////////////////////////////////
 // END PRIVATE //////////////////////////////////////
@@ -585,6 +770,27 @@ Err ParquetReader::readDataFromParquet(
             parquetFilePath,
             rowsRead
             ); ree;
+
+    ERR_RETURN
+}
+
+Err ParquetReader::readDataFromParquet(
+        const QString &parquetFilePath,
+        const QString &columnToFilterBy,
+        const QPair<double, double> &filterRange,
+        QVector<ParquetReaderInputBase> *rowsRead
+        ) {
+
+    ERR_INIT
+
+    arrow::Status st = d_ptr->readDataFromParquet(
+            parquetFilePath,
+            columnToFilterBy,
+            filterRange,
+            rowsRead
+    );
+
+    e = ErrorUtils::isTrue(st.ok()); ree;
 
     ERR_RETURN
 }
