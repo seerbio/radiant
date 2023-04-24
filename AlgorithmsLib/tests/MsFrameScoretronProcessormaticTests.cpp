@@ -1,4 +1,6 @@
 #include "MsFrameScoretronProcessormatic.h"
+
+#include "FragLibReader.h"
 #include "MsFrame.h"
 #include "MsFrameScoreVectorReader.h"
 #include "ParquetReader.h"

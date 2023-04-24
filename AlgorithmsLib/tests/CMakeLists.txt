@@ -15,9 +15,6 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         DeisotoperTandemTests
         FeatureFinderHillBuilderTests
-        FragLibraryTronTests
-        FragLibraryTronDIATests
-        FragmentLibraryRTreeTests
         MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronProcessormaticTests

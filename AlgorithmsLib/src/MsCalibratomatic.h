@@ -7,7 +7,6 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
-#include "FragLibraryTronDIA.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "MsFrameScoreVectorReader.h"
@@ -34,8 +33,7 @@ public:
     Err init(
             const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
             const PythiaParameters &pythiaParameters,
-            int calPointK,
-            FragLibraryTronDIA *fragLibraryTronDia
+            int calPointK
             );
 
     Err init(
@@ -98,7 +96,6 @@ private:
 
     //Never cleared
     PythiaParameters m_params;
-    FragLibraryTronDIA *m_fragLibraryTronDia;
     QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
     NearestNeighborsSearch m_nnSearch;
     int m_calPointK;

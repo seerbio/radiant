@@ -8,7 +8,6 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
-#include "FragLibraryTronDIA.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
@@ -82,8 +81,6 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
 
-    FragLibraryTronDIA m_fragLibraryTronDia;
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> m_framePredictions;
 
 };
 

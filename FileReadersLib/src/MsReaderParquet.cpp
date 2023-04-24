@@ -53,20 +53,9 @@ Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
 
-    ParquetReader reader;
-
-    e = ErrorUtils::isNotEmpty(filePath); ree;
-    m_filePath = filePath;
-
-    QVector<ParquetReaderInputBase> ptrsRead;
-    e = reader.readDataFromParquet(
-            filePath,
-            &ptrsRead
-    ); ree;
-
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
-            ptrsRead,
+    ParquetReader::read(
+            filePath,
             &msParquetReaderRows
     ); ree;
 
@@ -89,22 +78,11 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    ParquetReader reader;
-
-    e = ErrorUtils::isNotEmpty(filePath); ree;
-    m_filePath = filePath;
-
-    QVector<ParquetReaderInputBase> ptrsRead;
-    e = reader.readDataFromParquet(
+    QVector<MsParquetReaderRow> msParquetReaderRows;
+    ParquetReader::read(
             filePath,
             columnToFilterBy,
             filterRange,
-            &ptrsRead
-    ); ree;
-
-    QVector<MsParquetReaderRow> msParquetReaderRows;
-    e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
-            ptrsRead,
             &msParquetReaderRows
     ); ree;
 
@@ -126,21 +104,10 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
-    ParquetReader reader;
-
-    e = ErrorUtils::isNotEmpty(filePath); ree;
-    m_filePath = filePath;
-
-    QVector<ParquetReaderInputBase> ptrsRead;
-    e = reader.readDataFromParquetUniqueByColumn(
+    QVector<MsParquetReaderRow> msParquetReaderRows;
+    ParquetReader::read(
             filePath,
             columnToFilterBy,
-            &ptrsRead
-    ); ree;
-
-    QVector<MsParquetReaderRow> msParquetReaderRows;
-    e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
-            ptrsRead,
             &msParquetReaderRows
     ); ree;
 

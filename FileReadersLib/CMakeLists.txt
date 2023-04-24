@@ -68,6 +68,7 @@ INCLUDE_DIRECTORIES(
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
+        Concurrent
         Core
         Test
         )
@@ -77,6 +78,7 @@ GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+        Qt5::Concurrent
         Qt5::Core
         Qt5::Test
         ChemLib

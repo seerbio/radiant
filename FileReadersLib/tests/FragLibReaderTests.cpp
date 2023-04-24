@@ -5,7 +5,7 @@
 #include "ErrorUtils.h"
 #include "FragLibReader.h"
 
-
+#include <QtConcurrent/QtConcurrent>
 #include <QtTest/QtTest>
 
 class FragLibReaderTests : public QObject
@@ -19,6 +19,7 @@ public:
 private Q_SLOTS:
 
     void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
+    void getSM2IonsTest();
 };
 
 void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
@@ -26,7 +27,6 @@ void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedT
     FragLibReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
     tpr.intensityVals = {666.6, 66.6, 6.6};
-//    tpr.ionLabels = QStringList({"a", "b", "c"});
 
     const QVector<FragLibReaderRow> tprs(10, tpr);
 
@@ -52,8 +52,45 @@ void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedT
 
     QCOMPARE(tlrr.peptideSequenceChargeKey, tpr.peptideSequenceChargeKey);
     QCOMPARE(tlrr.intensityVals, tpr.intensityVals);
-//    QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
+
 }
+
+Err logic(const QString &testFilePath) {
+
+    ERR_INIT
+
+    const double massStart = 1000.0;
+    const double massEnd = 1002.0;
+
+    FragLibReader fragLibReader;
+    e = fragLibReader.init(testFilePath); ree;
+
+
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
+    e = fragLibReader.getMS2Ions(
+            massStart,
+            massEnd,
+            &peptideStringWithModsVsMS2Ions
+    ); ree;
+
+    ERR_RETURN
+}
+
+void FragLibReaderTests::getSM2IonsTest() {
+
+    const QString testFilePath
+        = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
+
+    QVector<QString> paths(60, testFilePath);
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            paths,
+            logic
+            ) ;
+    futures.waitForFinished();
+
+}
+
 
 QTEST_MAIN(FragLibReaderTests)
 #include "FragLibReaderTests.moc"

@@ -35,8 +35,7 @@ MsCalibratomatic::MsCalibratomatic()
 Err MsCalibratomatic::init(
         const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
         const PythiaParameters &pythiaParameters,
-        int calPointK,
-        FragLibraryTronDIA *fragLibraryTronDia
+        int calPointK
         ) {
 
     ERR_INIT
@@ -46,8 +45,6 @@ Err MsCalibratomatic::init(
 
     e = ErrorUtils::isNotEqual(calPointK, 0); ree;
     m_calPointK = calPointK;
-
-    m_fragLibraryTronDia = fragLibraryTronDia;
 
     e = buildCalibrator(scoreVectorsVsScanFrameFilePaths); ree;
 
@@ -112,7 +109,6 @@ Err MsCalibratomatic::processLogicForFrameScores(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_fragLibraryTronDia->isInit()); ree;
 
     m_frameIndexVsScanPoints.clear();
     m_peptideWithModsVsCharge.clear();
@@ -202,10 +198,10 @@ Err MsCalibratomatic::getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringW
     for (const T &r : scores) {
 
         bool isDecoy;
-        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
-                r.peptideStringWithMods,
-                &isDecoy
-        ); ree;
+//        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
+//                r.peptideStringWithMods,
+//                &isDecoy
+//        ); ree;
 
         if (isDecoy) {
             break;
@@ -230,25 +226,25 @@ Err MsCalibratomatic::buildCalibrationPoints(const QVector<PeptideStringWithMods
                 res.charge
                 );
 
-        QVector<MS2Ion> theoTandemPrediction;
-        e = m_fragLibraryTronDia->getMS2Ions(
-                peptideSequenceChargeKey,
-                &theoTandemPrediction
-                ); ree
-        e = ErrorUtils::isNotEmpty(theoTandemPrediction); ree;
-        const ScanPoints theoTandemPredictionScanPoints
-                = FragLibraryTronDIA::ms2IonsToScanPoints(theoTandemPrediction);
+//        QVector<MS2Ion> theoTandemPrediction;
+//        e = m_fragLibraryTronDia->getMS2Ions(
+//                peptideSequenceChargeKey,
+//                &theoTandemPrediction
+//                ); ree
+//        e = ErrorUtils::isNotEmpty(theoTandemPrediction); ree;
+//        const ScanPoints theoTandemPredictionScanPoints
+//                = FragLibraryTronDIA::ms2IonsToScanPoints(theoTandemPrediction);
 
         const ScanPoints &scanPoints = m_frameIndexVsScanPoints.value(res.frameIndex);
         e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
-        const ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
-                scanPoints,
-                theoTandemPredictionScanPoints,
-                m_params.ms2ExtractionWidthPPM
-                );
-
-        m_calibrationPoints[res.frameIndex].push_back(extractPoints);
+//        const ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
+//                scanPoints,
+//                theoTandemPredictionScanPoints,
+//                m_params.ms2ExtractionWidthPPM
+//                );
+//
+//        m_calibrationPoints[res.frameIndex].push_back(extractPoints);
 
     }
 

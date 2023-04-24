@@ -6,7 +6,6 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FragLibraryTronDIA.h"
 #include "MathUtils.h"
 #include "FragLibReader.h"
 

@@ -812,8 +812,6 @@ arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
 
     arrow::Status st;
 
-    qDebug() << "SDFKJDSLFJSL:";
-
     parquet::arrow::FileReaderBuilder readerBuilder;
     st = initArrowReaderBuilder(
             parquetFilePath,

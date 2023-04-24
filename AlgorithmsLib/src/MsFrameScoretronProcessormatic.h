@@ -8,7 +8,6 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
-#include "FragLibraryTronDIA.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "MsFrameScoreVectorReader.h"

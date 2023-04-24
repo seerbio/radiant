@@ -29,10 +29,6 @@ Err PythiaDIAWorkflow::init(
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
-    e = m_fragLibraryTronDia.init(
-            pythiaParameters,
-            fragLibUri
-    ); ree;
 
     ERR_RETURN
 }
@@ -345,17 +341,13 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
             [](const MsFrame &f){ return f.precursorMzTargetStartEnd();}
             );
 
-    e = m_fragLibraryTronDia.buildTargetCandidatesForFrame(
-            mzPrecursorTargetWindows,
-            &m_framePredictions
-    ); ree;
 
-    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
-    e = groupFramesWithTandemPredictions(
-            msFrames,
-            m_framePredictions,
-            &processingChunks
-    ); ree;
+//    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
+//    e = groupFramesWithTandemPredictions(
+//            msFrames,
+//            m_framePredictions,
+//            &processingChunks
+//    ); ree;
 
 #define PARALLEL_DIA_SCORE
 #ifdef PARALLEL_DIA_SCORE
@@ -368,16 +360,16 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
             msDataFilePath
     );
 
-    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
-            processingChunks,
-            scoringMatrixLogicBinder
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Err, QPair<UniqueMsInfoScanKey, QString>> &result : futures) {
-        e = result.first; ree;
-        uniqueMsInfoScanKeyVsScoredFrameFilePaths->insert(result.second.first, result.second.second);
-    }
+//    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
+//            processingChunks,
+//            scoringMatrixLogicBinder
+//    );
+//    futures.waitForFinished();
+//
+//    for (const QPair<Err, QPair<UniqueMsInfoScanKey, QString>> &result : futures) {
+//        e = result.first; ree;
+//        uniqueMsInfoScanKeyVsScoredFrameFilePaths->insert(result.second.first, result.second.second);
+//    }
 #else
     qDebug() << "Running scoreCandidatesPerFrame serial";
     for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
@@ -433,8 +425,7 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(
     e = msCalibratomatic.init(
             scoreVectorsVsScanFrameFilePaths,
             m_pythiaParameters,
-            calPointK,
-            &m_fragLibraryTronDia
+            calPointK
     );
 
     e = msCalibratomatic.writeCalibratomatic(

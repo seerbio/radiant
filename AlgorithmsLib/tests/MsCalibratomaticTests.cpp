@@ -126,20 +126,13 @@ void MsCalibratomaticTests::execTests() {
             },
     };
 
-    FragLibraryTronDIA fragLibraryTronDia;
-    e = fragLibraryTronDia.init(
-            pythiaParameters(),
-            fragLibFilePath
-    );
-    QCOMPARE(e, eNoError);
 
     const int calPointK = 25;
     MsCalibratomatic calibratomatic;
     e = calibratomatic.init(
             filePaths,
             pythiaParameters(),
-            calPointK,
-            &fragLibraryTronDia
+            calPointK
             );
     QCOMPARE(e, eNoError);
 

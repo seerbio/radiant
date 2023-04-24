@@ -5,10 +5,9 @@
 #ifndef PYTHIADIACPP_MSFRAMESCORETRON_H
 #define PYTHIADIACPP_MSFRAMESCORETRON_H
 
-
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
-#include "FragLibraryTronDIA.h"
+#include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "PythiaParameterReader.h"

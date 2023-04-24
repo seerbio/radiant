@@ -3,7 +3,7 @@
 //
 
 #include "TandemSpectraDeconvolvotron.h"
-#include "FragLibraryTronDIA.h"
+#include "FragLibReader.h"
 
 #include "ParallelUtils.h"
 

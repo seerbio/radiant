@@ -76,5 +76,45 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
 };
 
+struct FILEREADERSLIB_EXPORTS MS2Ion {
+
+        double mz = -1.0;
+        double intensity = -1.0;
+
+        MS2Ion() = default;
+
+        MS2Ion(double mz, double intensity)
+        : mz(mz) , intensity(intensity){}
+
+        friend QDebug &operator <<(QDebug &d, const MS2Ion &ms2Ion) {
+            d << "MS2Ion(" << ms2Ion.mz << "," << ms2Ion.intensity << ")";
+            return d;
+        }
+};
+
+class FILEREADERSLIB_EXPORTS FragLibReader {
+
+
+public:
+
+    FragLibReader() = default;
+    ~FragLibReader() = default;
+
+    Err init(const QString &fragLibFilePath);
+
+    Err getMS2Ions(
+            double massStart,
+            double massEnd,
+            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions
+    );
+
+private:
+
+    QString m_fragLibFilePath;
+
+};
+
+
+
 
 #endif //PYTHIADIACPP_FRAGLIBREADER_H
