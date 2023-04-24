@@ -19,7 +19,8 @@ public:
 private Q_SLOTS:
 
     void saveMsReaderToParquetOpenFileCombinedTests();
-    void flowReadTest();
+    void readFilteredTest();
+    void readUniqueTest();
 
 };
 
@@ -90,7 +91,7 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QCOMPARE(checkFile2.exists(), false);
 }
 
-void MsReaderParquetTests::flowReadTest() {
+void MsReaderParquetTests::readFilteredTest() {
 
     ERR_INIT
 
@@ -108,6 +109,24 @@ void MsReaderParquetTests::flowReadTest() {
     qDebug() << "ScanInfos size filtered" << scanInfos.size();
     QCOMPARE(scanInfos.size(), 413);
 
+}
+
+void MsReaderParquetTests::readUniqueTest() {
+
+    ERR_INIT
+
+    //TODO add this to test files.
+    const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(
+            testFilePath,
+            "targetKey"
+    );
+
+    QMap<ScanNumber, MsScanInfo> scanInfos = msReaderParquet.getMsScanInfos();
+    qDebug() << "ScanInfos unique size filtered" << scanInfos.size();
+    QCOMPARE(scanInfos.size(), 63);
 }
 
 

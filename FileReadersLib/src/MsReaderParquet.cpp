@@ -7,6 +7,48 @@
 #include "ErrorUtils.h"
 
 
+namespace {
+
+    Err convertForMemberVars(
+            const QVector<MsParquetReaderRow> &msParquetReaderRows,
+            QMap<ScanNumber, MsScanInfo> *memberMsScanInfo,
+            QMap<ScanNumber, ScanPoints>  *memberScanPoints
+            ) {
+
+        ERR_INIT
+
+        for (const MsParquetReaderRow &row : msParquetReaderRows) {
+
+            MsScanInfo msScanInfo;
+
+            msScanInfo.msLevel = row.msLevel;
+            msScanInfo.scanNumber = row.scanNumber;
+            msScanInfo.scanTime = row.scanTime;
+            msScanInfo.collisionEnergy = row.collisionEnergy;
+            msScanInfo.precursorTargetMz = row.precursorTargetMz;
+            msScanInfo.isoWindowLower = row.isoWindowLower;
+            msScanInfo.isoWindowUpper = row.isoWindowUpper;
+            msScanInfo.ionMobilityDriftTime = row.ionMobilityDriftTime;
+            msScanInfo.ionMobilityIndex = row.ionMobilityIndex;
+
+            ScanPoints scanPoints;
+            e = MsReaderBase::zipScanPoints(
+                    row.mzVals,
+                    row.intensityVals,
+                    &scanPoints
+            ); ree;
+
+            e = ErrorUtils::isFalse(memberMsScanInfo->contains(msScanInfo.scanNumber)); ree;
+            e = ErrorUtils::isFalse(memberScanPoints->contains(msScanInfo.scanNumber)); ree;
+
+            memberMsScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
+            memberScanPoints->insert(msScanInfo.scanNumber, scanPoints);
+        }
+
+        ERR_RETURN
+    }
+
+}
 Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
@@ -28,33 +70,11 @@ Err MsReaderParquet::openFile(const QString &filePath) {
             &msParquetReaderRows
     ); ree;
 
-    for (const MsParquetReaderRow &row : msParquetReaderRows) {
-
-        MsScanInfo msScanInfo;
-
-        msScanInfo.msLevel = row.msLevel;
-        msScanInfo.scanNumber = row.scanNumber;
-        msScanInfo.scanTime = row.scanTime;
-        msScanInfo.collisionEnergy = row.collisionEnergy;
-        msScanInfo.precursorTargetMz = row.precursorTargetMz;
-        msScanInfo.isoWindowLower = row.isoWindowLower;
-        msScanInfo.isoWindowUpper = row.isoWindowUpper;
-        msScanInfo.ionMobilityDriftTime = row.ionMobilityDriftTime;
-        msScanInfo.ionMobilityIndex = row.ionMobilityIndex;
-
-        ScanPoints scanPoints;
-        e = MsReaderBase::zipScanPoints(
-                row.mzVals,
-                row.intensityVals,
-                &scanPoints
-                ); ree;
-
-        e = ErrorUtils::isFalse(m_msScanInfo.contains(msScanInfo.scanNumber)); ree;
-        e = ErrorUtils::isFalse(m_scanPoints.contains(msScanInfo.scanNumber)); ree;
-
-        m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
-        m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
-    }
+    e = convertForMemberVars(
+            msParquetReaderRows,
+            &m_msScanInfo,
+            &m_scanPoints
+            ); ree;
 
     e = printFileInfo(); ree;
 
@@ -88,33 +108,47 @@ Err MsReaderParquet::openFile(
             &msParquetReaderRows
     ); ree;
 
-    for (const MsParquetReaderRow &row : msParquetReaderRows) {
+    e = convertForMemberVars(
+            msParquetReaderRows,
+            &m_msScanInfo,
+            &m_scanPoints
+    ); ree;
 
-        MsScanInfo msScanInfo;
+    e = printFileInfo(); ree;
 
-        msScanInfo.msLevel = row.msLevel;
-        msScanInfo.scanNumber = row.scanNumber;
-        msScanInfo.scanTime = row.scanTime;
-        msScanInfo.collisionEnergy = row.collisionEnergy;
-        msScanInfo.precursorTargetMz = row.precursorTargetMz;
-        msScanInfo.isoWindowLower = row.isoWindowLower;
-        msScanInfo.isoWindowUpper = row.isoWindowUpper;
-        msScanInfo.ionMobilityDriftTime = row.ionMobilityDriftTime;
-        msScanInfo.ionMobilityIndex = row.ionMobilityIndex;
+    ERR_RETURN
+}
 
-        ScanPoints scanPoints;
-        e = MsReaderBase::zipScanPoints(
-                row.mzVals,
-                row.intensityVals,
-                &scanPoints
-        ); ree;
+Err MsReaderParquet::openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy
+        ) {
 
-        e = ErrorUtils::isFalse(m_msScanInfo.contains(msScanInfo.scanNumber)); ree;
-        e = ErrorUtils::isFalse(m_scanPoints.contains(msScanInfo.scanNumber)); ree;
+    ERR_INIT
 
-        m_msScanInfo.insert(msScanInfo.scanNumber, msScanInfo);
-        m_scanPoints.insert(msScanInfo.scanNumber, scanPoints);
-    }
+    ParquetReader reader;
+
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+    m_filePath = filePath;
+
+    QVector<ParquetReaderInputBase> ptrsRead;
+    e = reader.readDataFromParquetUniqueByColumn(
+            filePath,
+            columnToFilterBy,
+            &ptrsRead
+    ); ree;
+
+    QVector<MsParquetReaderRow> msParquetReaderRows;
+    e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+            ptrsRead,
+            &msParquetReaderRows
+    ); ree;
+
+    e = convertForMemberVars(
+            msParquetReaderRows,
+            &m_msScanInfo,
+            &m_scanPoints
+    ); ree;
 
     e = printFileInfo(); ree;
 

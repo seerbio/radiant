@@ -164,6 +164,34 @@ public:
     }
 
     template<typename T>
+    static Err read(
+            const QString &fileURI,
+            const QString &column,
+            QVector<T> *readerRows
+    ) {
+
+        ERR_INIT
+
+        readerRows->clear();
+
+        ParquetReader reader;
+
+        QVector<ParquetReaderInputBase> ptrsRead;
+        e = reader.readDataFromParquetUniqueByColumn(
+                fileURI,
+                column,
+                &ptrsRead
+        ); ree;
+
+        e = ParquetReaderInputBase::convertSharedPointersToInputStruct(
+                ptrsRead,
+                readerRows
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    template<typename T>
     static Err write(
             const QVector<T> &readerRows,
             const QString &outputFilePath
@@ -183,6 +211,12 @@ public:
         ERR_RETURN
     }
 
+
+    Err readDataFromParquetUniqueByColumn(
+            const QString &parquetFilePath,
+            const QString &uniqueColumn,
+            QVector<ParquetReaderInputBase> *rowsRead
+            );
 
     Err writeDataToParquet(
             const QString &outputFilePath,

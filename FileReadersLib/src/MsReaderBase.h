@@ -73,6 +73,11 @@ public:
             const QPair<double, double> &filterRange
             );
 
+    virtual Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy
+    );
+
     virtual Err closeFile();
 
     QString filePath();

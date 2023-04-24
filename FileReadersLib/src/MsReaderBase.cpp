@@ -95,6 +95,13 @@ Err MsReaderBase::openFile(
     return Error::eNoError;
 }
 
+Err MsReaderBase::openFile(
+        const QString &filePath,
+        const QString &columnToFilterBy
+) {
+    return Error::eNoError;
+}
+
 Err MsReaderBase::closeFile() {
     return Error::eNoError;
 }

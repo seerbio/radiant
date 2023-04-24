@@ -132,6 +132,11 @@ public:
             const QPair<double, double> &filterRange
             ) override;
 
+    Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy
+    ) override;
+
     Err closeFile() override;
 
     static Err writeMsReaderToParquet(
