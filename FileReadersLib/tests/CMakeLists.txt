@@ -16,13 +16,13 @@ INCLUDE_DIRECTORIES(
 SET(TEST_CLASSES
         CSVReaderTests
         FastaReaderTests
+        FragLibReaderTests
         JsonParameterReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
         MsReaderParquetTests
         ParquetReaderTests
         PythiaParameterReaderTests
-        TandemLibraryReaderTests
 )
 
 foreach(class ${TEST_CLASSES})

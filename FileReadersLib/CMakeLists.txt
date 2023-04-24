@@ -23,6 +23,7 @@ SET(SOURCE_FILES
         src/CSVReader.cpp
         src/DIAMzTargetsReader.cpp
         src/FastaReader.cpp
+        src/FragLibReader.cpp
         src/JsonParametersReader.cpp
         src/MsFrameScoreVectorReader.cpp
         src/MsReaderParquet.cpp
@@ -31,13 +32,13 @@ SET(SOURCE_FILES
         src/MsReaderPointerFactory.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
-        src/TandemLibraryReader.cpp
-)
+        )
 
 SET(HEADER_FILES
         src/CSVReader.h
         src/DIAMzTargetsReader.h
         src/FastaReader.h
+        src/FragLibReader.h
         src/JsonParametersReader.h
         src/MsFrameScoreVectorReader.h
         src/MsReaderParquet.h
@@ -46,8 +47,7 @@ SET(HEADER_FILES
         src/MsReaderPointerFactory.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
-        src/TandemLibraryReader.h
-)
+        )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}

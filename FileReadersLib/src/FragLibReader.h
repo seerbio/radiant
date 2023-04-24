@@ -2,8 +2,8 @@
 // Created by anichols on 4/3/23.
 //
 
-#ifndef PYTHIADIACPP_TANDEMLIBRARYREADER_H
-#define PYTHIADIACPP_TANDEMLIBRARYREADER_H
+#ifndef PYTHIADIACPP_FRAGLIBREADER_H
+#define PYTHIADIACPP_FRAGLIBREADER_H
 
 #include "Error.h"
 #include "ErrorUtils.h"
@@ -13,7 +13,7 @@
 
 using namespace Error;
 
-namespace TandemLibraryReaderNamespace {
+namespace FragLibReaderNamespace {
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");
     const QString MZ_VALS = QStringLiteral("mzVals");
@@ -30,7 +30,7 @@ namespace TandemLibraryReaderNamespace {
     };
 }
 
-struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInputBase {
+struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
     PeptideSequenceChargeKey peptideSequenceChargeKey;
     QVector<double> mzVals;
@@ -40,7 +40,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
 
     QMap<QString, QVariant> map() override {
 
-        using namespace TandemLibraryReaderNamespace;
+        using namespace FragLibReaderNamespace;
 
         return {
             {PEP_SEQ_CHRG_KEY, QVariant(peptideSequenceChargeKey)},
@@ -53,7 +53,7 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
-        using namespace TandemLibraryReaderNamespace;
+        using namespace FragLibReaderNamespace;
 
         ERR_INIT
 
@@ -77,4 +77,4 @@ struct FILEREADERSLIB_EXPORTS TandemLibraryReaderRow : public ParquetReaderInput
 };
 
 
-#endif //PYTHIADIACPP_TANDEMLIBRARYREADER_H
+#endif //PYTHIADIACPP_FRAGLIBREADER_H

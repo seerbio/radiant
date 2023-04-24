@@ -34,7 +34,6 @@ SET(SOURCE_FILES
         src/MsFrameScoretronProcessormatic.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
-        src/PeptideMassRTree.cpp
         src/PeptidesLibraryTron.cpp
         src/ProteinDigestomatic.cpp
         src/TandemFragmentPredictotron.cpp
@@ -58,7 +57,6 @@ SET(HEADER_FILES
         src/MsScansDenoiseTron.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
-        src/PeptideMassRTree.h
         src/PeptidesLibraryTron.h
         src/ProteinDigestomatic.h
         src/TandemFragmentPredictotron.h

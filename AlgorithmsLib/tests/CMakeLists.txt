@@ -25,7 +25,6 @@ SET(TEST_CLASSES
         MsUtilsTests
         PeakIntegratomaticTests
         PeptidesLibraryTronTests
-        PeptideMassRTreeTests
         ProteinDigestomaticTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests

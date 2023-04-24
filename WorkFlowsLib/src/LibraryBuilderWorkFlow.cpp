@@ -9,7 +9,7 @@
 #include "MolecularFormula.h"
 #include "PythiaParameterReader.h"
 #include "TandemFragmentPredictotron.h"
-#include "TandemLibraryReader.h"
+#include "FragLibReader.h"
 #include "TandemPredictionUtils.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -172,13 +172,13 @@ namespace {
         ERR_RETURN
     }
 
-    QVector<TandemLibraryReaderRow> buildTandemLibraryReaderRows(
+    QVector<FragLibReaderRow> buildFragLibReaderRows(
             const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy,
             const AminoAcids &aminoAcids
             ) {
 
-        QVector<TandemLibraryReaderRow> tlrs;
+        QVector<FragLibReaderRow> tlrs;
         for (auto it = tandemPredictionsAllCharges.begin(); it != tandemPredictionsAllCharges.end(); it++) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
@@ -198,7 +198,7 @@ namespace {
                     QString::SkipEmptyParts
                     ).front();
 
-            TandemLibraryReaderRow row;
+            FragLibReaderRow row;
             row.peptideSequenceChargeKey = peptideSequenceChargeKey;
             row.mzVals = mzVals;
             row.mass = BiophysicalCalcs::calculatePeptideMass(peptideString, aminoAcids);
@@ -209,8 +209,8 @@ namespace {
         }
 
         const auto sortLogicMassAsc = [](
-                const TandemLibraryReaderRow &l,
-                const TandemLibraryReaderRow &r
+                const FragLibReaderRow &l,
+                const FragLibReaderRow &r
                 ){
             return l.mass < r.mass;
         };
@@ -232,7 +232,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(outputFilePath); ree;
         e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
 
-        const QVector<TandemLibraryReaderRow> writeRows = buildTandemLibraryReaderRows(
+        const QVector<FragLibReaderRow> writeRows = buildFragLibReaderRows(
                 tandemPredictionsAllCharges,
                 peptideSequenceChargeKeyVsIsBool,
                 aminoAcids

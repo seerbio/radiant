@@ -10,7 +10,6 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
-#include "PeptideMassRTree.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;

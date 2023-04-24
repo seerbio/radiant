@@ -9,7 +9,7 @@
 #include "GlobalSettings.h"
 #include "MsReaderBase.h"
 #include "TandemFragmentPredictotron.h"
-#include "TandemLibraryReader.h"
+#include "FragLibReader.h"
 #include "TandemPredictionUtils.h"
 
 #include <QElapsedTimer>
@@ -59,11 +59,6 @@ Err FragLibraryTronDIA::init(
             &peptideStringWithMods
             );
 
-    e = m_peptideMassRTree.init(
-            peptideStringWithMods,
-            m_params.aminoAcids
-            ); ree;
-
     qDebug() << "Library init in" << et.elapsed() << "mSec";
     qDebug() << "Peptides count charge vs uniques" << m_pepSeqChrgKeyVsMS2Ions.size() << m_peptideWithModsVsisDecoy.size();
 
@@ -78,7 +73,7 @@ namespace {
             = [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;};
 
     QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> buildMS2IonsForPeptideSequenceChargeKey(
-            const TandemLibraryReaderRow &tandemLibraryReaderRow
+            const FragLibReaderRow &tandemLibraryReaderRow
     ) {
 
         ERR_INIT
@@ -124,7 +119,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
 
     ERR_INIT
 
-    QVector<TandemLibraryReaderRow> tandemLibraryRows;
+    QVector<FragLibReaderRow> tandemLibraryRows;
     e = ParquetReader::read(
             fragLibFilePath,
             &tandemLibraryRows
@@ -150,7 +145,7 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
     }
 #else
     qDebug() << "Running FragLibraryTronDIA serial";
-    for (const TandemLibraryReaderRow &tandemLibraryReaderRow : tandemLibraryRows) {
+    for (const FragLibReaderRow &tandemLibraryReaderRow : tandemLibraryRows) {
 
         QPair<Err, QPair<PeptideSequenceChargeKey , QVector<MS2Ion>>> pepMS2Ions
                 = buildMS2IonsForPeptideSequenceChargeKey(tandemLibraryReaderRow);
@@ -167,12 +162,12 @@ Err FragLibraryTronDIA::readFragLibFile(const QString &fragLibFilePath) {
 }
 
 Err FragLibraryTronDIA::buildPeptideWithModsVsisDecoy(
-        const QVector<TandemLibraryReaderRow> &tandemLibraryRows
+        const QVector<FragLibReaderRow> &tandemLibraryRows
         ) {
 
     ERR_INIT
 
-    for (const TandemLibraryReaderRow &row : tandemLibraryRows) {
+    for (const FragLibReaderRow &row : tandemLibraryRows) {
 
         const PeptideSequenceChargeKey &peptideSequenceChargeKey = row.peptideSequenceChargeKey;
         const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
@@ -325,40 +320,40 @@ Err FragLibraryTronDIA::getMS2Ions(
         );
 
         QHash<PeptideStringWithMods , Mass> peptideStringWithModsTableVsMass;
-        e = m_peptideMassRTree.getPeptides(
-                massStart,
-                massEnd,
-                &peptideStringWithModsTableVsMass
-        ); ree;
-
-        for (auto it = peptideStringWithModsTableVsMass.begin();
-                  it != peptideStringWithModsTableVsMass.end();
-                  it++
-                  ) {
-
-            const Mass mass = it.value();
-            const double mzTargetTheo = BiophysicalCalcs::calculateThomsonFromMass(mass, charge);
-            const PeptideStringWithMods  &peptideStringWithMods = it.key();
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
-                    peptideStringWithMods,
-                    charge
-            );
-
-
-            if (mzTargetTheo < mzTargetStart || mzTargetTheo > mzTargetEnd) {
-                continue;
-            }
-
-            QVector<MS2Ion> ms2Ions;
-            e = getMS2Ions(
-                    peptideSequenceChargeKey,
-                    {m_params.mzMinDataStructure, m_params.mzMaxDataStructure},
-                    topNIntense,
-                    &ms2Ions
-                    ); ree;
-
-            peptideStringWithModsVsMS2Ions->insert(peptideStringWithMods, ms2Ions);
-        }
+//        e = m_peptideMassRTree.getPeptides(
+//                massStart,
+//                massEnd,
+//                &peptideStringWithModsTableVsMass
+//        ); ree;
+//
+//        for (auto it = peptideStringWithModsTableVsMass.begin();
+//                  it != peptideStringWithModsTableVsMass.end();
+//                  it++
+//                  ) {
+//
+//            const Mass mass = it.value();
+//            const double mzTargetTheo = BiophysicalCalcs::calculateThomsonFromMass(mass, charge);
+//            const PeptideStringWithMods  &peptideStringWithMods = it.key();
+//            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+//                    peptideStringWithMods,
+//                    charge
+//            );
+//
+//
+//            if (mzTargetTheo < mzTargetStart || mzTargetTheo > mzTargetEnd) {
+//                continue;
+//            }
+//
+//            QVector<MS2Ion> ms2Ions;
+//            e = getMS2Ions(
+//                    peptideSequenceChargeKey,
+//                    {m_params.mzMinDataStructure, m_params.mzMaxDataStructure},
+//                    topNIntense,
+//                    &ms2Ions
+//                    ); ree;
+//
+//            peptideStringWithModsVsMS2Ions->insert(peptideStringWithMods, ms2Ions);
+//        }
     }
 
     ERR_RETURN

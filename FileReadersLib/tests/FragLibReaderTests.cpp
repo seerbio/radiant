@@ -3,32 +3,32 @@
 //
 
 #include "ErrorUtils.h"
-#include "TandemLibraryReader.h"
+#include "FragLibReader.h"
 
 
 #include <QtTest/QtTest>
 
-class TandemLibraryReaderTests : public QObject
+class FragLibReaderTests : public QObject
 {
     Q_OBJECT
 
 public:
-    TandemLibraryReaderTests() = default;
-    ~TandemLibraryReaderTests() override = default;
+    FragLibReaderTests() = default;
+    ~FragLibReaderTests() override = default;
 
 private Q_SLOTS:
 
     void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
 };
 
-void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
+void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
 
-    TandemLibraryReaderRow tpr;
+    FragLibReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
     tpr.intensityVals = {666.6, 66.6, 6.6};
 //    tpr.ionLabels = QStringList({"a", "b", "c"});
 
-    const QVector<TandemLibraryReaderRow> tprs(10, tpr);
+    const QVector<FragLibReaderRow> tprs(10, tpr);
 
     ERR_INIT
 
@@ -42,18 +42,18 @@ void TandemLibraryReaderTests::writeTandemPredictionsAndReadTandemPredictionsCom
 
     QCOMPARE(e, eNoError);
 
-    QVector<TandemLibraryReaderRow> readRows;
+    QVector<FragLibReaderRow> readRows;
     e = ParquetReader::read(
             outputFilePath,
             &readRows
             );
 
-    const TandemLibraryReaderRow &tlrr = readRows.first();
+    const FragLibReaderRow &tlrr = readRows.first();
 
     QCOMPARE(tlrr.peptideSequenceChargeKey, tpr.peptideSequenceChargeKey);
     QCOMPARE(tlrr.intensityVals, tpr.intensityVals);
 //    QCOMPARE(tlrr.ionLabels, tpr.ionLabels);
 }
 
-QTEST_MAIN(TandemLibraryReaderTests)
-#include "TandemLibraryReaderTests.moc"
+QTEST_MAIN(FragLibReaderTests)
+#include "FragLibReaderTests.moc"

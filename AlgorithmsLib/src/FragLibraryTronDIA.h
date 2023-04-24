@@ -10,10 +10,9 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
-#include "PeptideMassRTree.h"
 #include "PythiaParameterReader.h"
 
-class TandemLibraryReaderRow;
+class FragLibReaderRow;
 
 
 struct ALGORITHMSLIB_EXPORTS MS2Ion {
@@ -90,7 +89,7 @@ private:
 
     Err readFragLibFile(const QString &fragLibFilePath);
 
-    Err buildPeptideWithModsVsisDecoy(const QVector<TandemLibraryReaderRow> &tandemLibraryRows);
+    Err buildPeptideWithModsVsisDecoy(const QVector<FragLibReaderRow> &tandemLibraryRows);
 
 private:
 
@@ -98,7 +97,6 @@ private:
     QHash<PeptideStringWithMods, bool> m_peptideWithModsVsisDecoy;
 
     PythiaParameters m_params;
-    PeptideMassRTree m_peptideMassRTree;
 
 };
 

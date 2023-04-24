@@ -8,7 +8,7 @@
 #include "ErrorUtils.h"
 #include "FragLibraryTronDIA.h"
 #include "MathUtils.h"
-#include "TandemLibraryReader.h"
+#include "FragLibReader.h"
 
 #include <Eigen/Sparse>
 
