@@ -40,6 +40,25 @@ namespace {
         ERR_RETURN
     }
 
+    void filterMs2IonsByMz(
+            double mzStart,
+            double mzEnd,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto terminatorLogic = [mzStart, mzEnd](const MS2Ion &ion){
+            return !(mzStart <= ion.mz && ion.mz <= mzEnd);
+        };
+
+        const auto terminator = std::remove_if(
+                ms2Ions->begin(),
+                ms2Ions->end(),
+                terminatorLogic
+                );
+
+        ms2Ions->erase(terminator, ms2Ions->end());
+    }
+
     void getTopNMostIntenseMs2Ions(
             int topNMs2Ions,
             QVector<MS2Ion> *ms2Ions
@@ -107,7 +126,16 @@ namespace {
                         &peptideStringWithMods
                         ); ree;
 
-                getTopNMostIntenseMs2Ions(params.topNMs2Ions, &ms2Ions);
+                filterMs2IonsByMz(
+                        params.mzMinDataStructure,
+                        params.mzMaxDataStructure,
+                        &ms2Ions
+                        );
+
+                getTopNMostIntenseMs2Ions(
+                        params.topNMs2Ions,
+                        &ms2Ions
+                        );
 
                 output->insert(peptideStringWithMods, ms2Ions);
             }
@@ -473,6 +501,8 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             mzTargetStartStop,
             &msFrame
             ); rree;
+
+    qDebug() << uniqueMsInfoScanKey << msFrame.scanCount() << fragPreds.size();
 
     QPair<Err, QString> scoreFrameTargetsResult = processFrameLogic(
             {msFrame, fragPreds},
