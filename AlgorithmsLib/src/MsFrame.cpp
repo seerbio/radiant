@@ -13,15 +13,16 @@
 
 
 MsFrame::MsFrame()
-: m_collisionEnergy(-1.0)
-, m_isoWindowLower(-1.0)
-, m_isoWindowUpper(-1.0)
-, m_precursorTargetMz(-1.0)
+: m_mzWindowLower(-1.0)
+, m_mzWindowUpper(-1.0)
+
 {}
 
 Err MsFrame::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints> &scanPoints
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const QMap<ScanNumber, ScanPoints> &scanPoints,
+        const QPair<double, double> &frameMzStartStop
         ) {
 
     ERR_INIT
@@ -31,6 +32,12 @@ Err MsFrame::init(
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
     m_frame = scanPoints;
+
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+
+    m_mzWindowLower = frameMzStartStop.first;
+    m_mzWindowUpper = frameMzStartStop.second;
 
     e = buildFrameIndexVsScanNumber(); ree;
 
@@ -51,11 +58,10 @@ Err MsFrame::init(
 
     e = init(
             pythiaParameters,
-            scanPoints
+            uniqueMsInfoScanKey,
+            scanPoints,
+            {precursorTargetMz - isoWindowLower, precursorTargetMz + isoWindowUpper}
             ); ree;
-
-    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
-    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
 
     const double minVal = 0.0;
 
@@ -66,11 +72,6 @@ Err MsFrame::init(
                 ErrorUtilsParam::ExcludeThreshold
         ); ree;
     }
-
-    m_collisionEnergy = collisionEnergy;
-    m_precursorTargetMz = precursorTargetMz;
-    m_isoWindowLower = isoWindowLower;
-    m_isoWindowUpper = isoWindowUpper;
 
     ERR_RETURN
 }
@@ -147,7 +148,7 @@ Err MsFrame::smoothFrame() {
 }
 
 QPair<double, double> MsFrame::precursorMzTargetStartEnd() const {
-    return {m_precursorTargetMz - m_isoWindowLower, m_precursorTargetMz + m_isoWindowUpper};
+    return {m_mzWindowLower, m_mzWindowUpper};
 }
 
 UniqueMsInfoScanKey MsFrame::uniqueMsInfoScanKey() const {
@@ -213,7 +214,7 @@ Err MsFrame::writeFramScans(const QString &outputFilePath) const {
 }
 
 double MsFrame::meanPrecursorRange() const {
-    return ((m_precursorTargetMz + m_isoWindowUpper) + (m_precursorTargetMz - m_isoWindowLower)) / 2.0;
+    return (m_mzWindowLower + m_mzWindowUpper) / 2.0;
 }
 
 Err MsFrame::buildFrameIndexVsScanPoints(

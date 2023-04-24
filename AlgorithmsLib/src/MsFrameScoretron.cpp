@@ -8,6 +8,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoreVectorReader.h"
+#include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
 #include "TurboXIC.h"
 
@@ -15,6 +16,149 @@
 
 
 namespace {
+
+    Err peptideStringWithModsFromPeptideSequenceChargeKey(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            PeptideStringWithMods *peptideStringWithMods
+            ){
+
+        ERR_INIT
+
+        const int expectedSplitSize = 2;
+
+        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                QString::SkipEmptyParts
+                );
+
+        e = ErrorUtils::isEqual(
+                peptideSequenceChargeKeySplit.size(),
+                expectedSplitSize); ree;
+
+        *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
+
+        ERR_RETURN
+    }
+
+    void getTopNMostIntenseMs2Ions(
+            int topNMs2Ions,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto sortIntensityAsc = [](const MS2Ion &l, const MS2Ion &r){
+            return l.intensity < r.intensity;
+        };
+
+        std::sort(ms2Ions->rbegin(), ms2Ions->rend(), sortIntensityAsc);
+
+        topNMs2Ions = std::min(topNMs2Ions, ms2Ions->size());
+
+        ms2Ions->resize(topNMs2Ions);
+
+        const auto sortMzAsc = [](const MS2Ion &l, const MS2Ion &r) {
+            return l.mz < r.mz;
+        };
+
+        std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
+    }
+
+    Err buildFragIonLibForTarget(
+            const PythiaParameters &params,
+            const QString &fragLibUri,
+            const QPair<double, double> &mzTargetStartStop,
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *output
+            ) {
+
+        ERR_INIT
+
+        const int monoOffset = 0;
+        for (Charge charge = params.chargeStateMin; charge <= params.chargeStateMax; ++charge) {
+
+            const double massStart = BiophysicalCalcs::calculateMassFromThomson(
+                    mzTargetStartStop.first,
+                    charge,
+                    monoOffset
+                    );
+
+            const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
+                    mzTargetStartStop.second,
+                    charge,
+                    monoOffset
+            );
+
+            FragLibReader fragLibReader;
+            e = fragLibReader.init(fragLibUri); ree;
+
+            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+            e = fragLibReader.getMS2Ions(
+                    massStart,
+                    massEnd,
+                    &peptideSequenceChargeKeyVsMS2Ions
+                    ); ree;
+
+            for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+
+                const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+                QVector<MS2Ion> &ms2Ions = it.value();
+
+                PeptideStringWithMods peptideStringWithMods;
+                e = peptideStringWithModsFromPeptideSequenceChargeKey(
+                        peptideSequenceChargeKey,
+                        &peptideStringWithMods
+                        ); ree;
+
+                getTopNMostIntenseMs2Ions(params.topNMs2Ions, &ms2Ions);
+
+                output->insert(peptideStringWithMods, ms2Ions);
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
+
+    Err buildMsFrame(
+            const QString &msDataFilePath,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            const PythiaParameters &params,
+            const QPair<double, double> mzTargetStartStop,
+            MsFrame *msFrame
+            ) {
+
+        ERR_INIT
+
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(
+                msDataFilePath,
+                MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
+                {mzTargetStartStop.first, mzTargetStartStop.second}
+        ); ree;
+
+        const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
+        e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
+
+        e = msFrame->init(
+                params,
+                uniqueMsInfoScanKey,
+                targetScanPoints,
+                mzTargetStartStop
+        ); ree;
+
+        const bool denoise = true;
+        const bool deisotope = true;
+        const bool smooth = false;
+        e = msFrame->preprocessMsFrame(
+                denoise,
+                deisotope,
+                smooth
+        ); ree;
+
+        ERR_RETURN
+    }
+
+
+
 
     struct ScoringMatrices {
         Eigen::MatrixX<double> scoringMatrixMz;
@@ -301,21 +445,43 @@ namespace {
     }
 
 }//namespace
-QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidatesFrameWrite(
-        const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidates(
         const PythiaParameters &params,
-        const QString &msDataFilePath
+        const QString &msDataFilePath,
+        const QString &fragLibFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const QPair<double, double> &mzTargetStartStop
         ) {
 
     ERR_INIT
 
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> fragPreds;
+    e = buildFragIonLibForTarget(
+            params,
+            fragLibFilePath,
+            mzTargetStartStop,
+            &fragPreds
+            ); rree;
+
+    e = ErrorUtils::isNotEmpty(fragPreds); rree;
+
+    MsFrame msFrame;
+    e = buildMsFrame(
+            msDataFilePath,
+            uniqueMsInfoScanKey,
+            params,
+            mzTargetStartStop,
+            &msFrame
+            ); rree;
+
     QPair<Err, QString> scoreFrameTargetsResult = processFrameLogic(
-            chunk,
+            {msFrame, fragPreds},
             params,
             msDataFilePath
-    );
+    ); rree
 
     e = scoreFrameTargetsResult.first; rree;
 
-    return {e, {chunk.first.uniqueMsInfoScanKey(), scoreFrameTargetsResult.second}};
+    return {e, {uniqueMsInfoScanKey, scoreFrameTargetsResult.second}};
+
 }

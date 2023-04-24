@@ -78,7 +78,9 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QMap<ScanNumber, ScanPoints> &scanPoints
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QPair<double, double> &frameMzStartStop
             );
 
     Err init(
@@ -97,7 +99,7 @@ public:
             bool smooth
             );
 
-    Err writeFramScans(const QString &outputFilePath) const;
+    [[nodiscard]] Err writeFramScans(const QString &outputFilePath) const;
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 
@@ -126,10 +128,8 @@ private:
     PythiaParameters m_params;
     QMap<ScanNumber, ScanPoints> m_frame;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
-    double m_collisionEnergy;
-    double m_precursorTargetMz;
-    double m_isoWindowLower;
-    double m_isoWindowUpper;
+    double m_mzWindowLower;
+    double m_mzWindowUpper;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
 
 };

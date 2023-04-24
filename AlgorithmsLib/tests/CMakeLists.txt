@@ -17,6 +17,7 @@ SET(TEST_CLASSES
         FeatureFinderHillBuilderTests
         MsCalibratomaticTests
         MsFrameTests
+        MsFrameScoretronTests
         MsFrameScoretronProcessormaticTests
         MsScansDenoiseTronTests
         MsUtilsTests

@@ -94,20 +94,13 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     e = msReaderPointerResult.first; ree;
     MsReaderPointer msReaderPointer = msReaderPointerResult.second;
 
-    QString calibrationMatFilePath;
-    QString calibarationCalFilePath;
-    e = runCalibration(
-            msDataFilePath,
-            &msReaderPointer,
-            &calibrationMatFilePath,
-            &calibarationCalFilePath
-            ); ree;
+    const QVector<MsScanInfo> uniqueScanInfos =msReaderPointer->getUniqueTandemMsScanInfos();
 
-    QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
-    e = runAllFrames(
-            msReaderPointer,
-            &scoreVectorsVsScanFrameFilePaths
-            ); ree;
+    for (auto x : uniqueScanInfos) {
+        qDebug() << x.targetScanKey();
+    }
+
+
 
     ERR_RETURN
 }
@@ -353,12 +346,12 @@ Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
 #ifdef PARALLEL_DIA_SCORE
     qDebug() << "Running scoreCandidatesPerFrameWrite parallel";
 
-    const auto scoringMatrixLogicBinder = std::bind(
-            MsFrameScoretron::scoreCandidatesFrameWrite,
-            std::placeholders::_1,
-            m_pythiaParameters,
-            msDataFilePath
-    );
+//    const auto scoringMatrixLogicBinder = std::bind(
+//            MsFrameScoretron::scoreCandidatesFrameWrite,
+//            std::placeholders::_1,
+//            m_pythiaParameters,
+//            msDataFilePath
+//    );
 
 //    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
 //            processingChunks,

@@ -92,8 +92,6 @@ Err MsReaderParquet::openFile(
             &m_scanPoints
     ); ree;
 
-    e = printFileInfo(); ree;
-
     ERR_RETURN
 }
 
@@ -116,8 +114,6 @@ Err MsReaderParquet::openFile(
             &m_msScanInfo,
             &m_scanPoints
     ); ree;
-
-    e = printFileInfo(); ree;
 
     ERR_RETURN
 }
