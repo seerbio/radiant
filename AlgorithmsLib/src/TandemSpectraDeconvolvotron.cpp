@@ -15,8 +15,8 @@
 TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
 : m_precision(2)
 , m_mzMax(1500.0)
-, m_iterationsMax(10)
-, m_stopTolerance(1e-10)
+, m_iterationsMax(100)
+, m_stopTolerance(1e-8)
 {}
 
 Err TandemSpectraDeconvolvotron::setParameters(
@@ -100,8 +100,8 @@ namespace {
 }//namespace
 Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
-        const QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> &tandemPredictions,
-        QMap<PeptideSequenceChargeKey, double> *pepSeqVsWeight
+        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
+        QMap<PeptideStringWithMods, double> *pepSeqVsWeight
         ) {
 
     ERR_INIT
@@ -115,11 +115,13 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
             m_mzMax
             );
 
-    const Eigen::VectorX<double> vecScanPoints = EigenUtils::convertQPointFVecToEigen(
+    Eigen::VectorX<double> vecScanPoints = EigenUtils::convertQPointFVecToEigen(
             scanPoints,
             m_precision,
             m_mzMax
             );
+
+    vecScanPoints /= vecScanPoints.maxCoeff();
 
     Eigen::VectorX<double> x(mat.cols());
     x.setZero();
@@ -130,11 +132,11 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
     lscg.compute(mat);
     x = lscg.solve(vecScanPoints);
 
-    const QList<PeptideSequenceChargeKey> &keys = tandemPredictions.keys();
+    const QList<PeptideStringWithMods> &keys = tandemPredictions.keys();
 
     for (int i = 0; i < keys.size(); i++) {
 
-        const PeptideSequenceChargeKey &peptideSequenceChargeKey = keys.at(i);
+        const PeptideStringWithMods &peptideSequenceChargeKey = keys.at(i);
         const double score = x.coeff(i);
         pepSeqVsWeight->insert(peptideSequenceChargeKey, score);
     }

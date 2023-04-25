@@ -32,8 +32,8 @@ public:
 
     Err deconvolveTandemSpectra(
             const ScanPoints &scanPoints,
-            const QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> &tandemPredictions,
-            QMap<PeptideSequenceChargeKey, double> *pepSeqVsWeight
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
+            QMap<PeptideStringWithMods, double> *pepSeqVsWeight
             );
 
 private:

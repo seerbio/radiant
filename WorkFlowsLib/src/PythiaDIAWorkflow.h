@@ -18,6 +18,7 @@
 
 using namespace Error;
 
+class FrameParallelInput;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -38,7 +39,7 @@ public:
 private:
 
 
-    Err processDIAFramesParallel(const QString &msDataFilePath);
+    Err processDIAFramesParallel(const QVector<FrameParallelInput> &frameParallelInputs);
 
 
 

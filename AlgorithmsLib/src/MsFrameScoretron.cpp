@@ -525,15 +525,16 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             );
 
     const QString outputFilePath = msDataFilePath + "." + msFrame.uniqueMsInfoScanKey() + ".frameScores";
-//    e = writeFrameTargetScoreVectors(
-//            pepStrWModsVsFrameIndexScoreResultOfTargets,
-//            outputFilePath
-//    ); rree;
+    e = writeFrameTargetScoreVectors(
+            pepStrWModsVsFrameIndexScoreResultOfTargets,
+            outputFilePath
+    ); rree;
 
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
     e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
             outputFilePath,
             msFrame,
+            fragPreds,
             params.returnPSMTopN,
             &topCansInFrameIndex
             ); rree;

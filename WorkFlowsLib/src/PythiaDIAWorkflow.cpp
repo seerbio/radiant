@@ -33,67 +33,77 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
+struct FrameParallelInput {
+    PythiaParameters params;
+    QString msDataFilePath;
+    QString fragLibFilePath;
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    QPair<double, double> mzTargetStartStop;
+};
+
+namespace {
+
+    Err buildParallelInput(
+            const PythiaParameters &pythiaParameters,
+            const QString &msDataFilePath,
+            const QString &fragLibFilePath,
+            QVector<FrameParallelInput> *frameParallelInputs
+    ) {
+
+        ERR_INIT
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(
+                msDataFilePath,
+                MsParquetReaderNamespace::TARGET_KEY
+        ); ree;
+
+        const QVector<MsScanInfo> uniqueScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
+
+        for (const MsScanInfo &si : uniqueScanInfos) {
+
+            FrameParallelInput fpi;
+            fpi.msDataFilePath = msDataFilePath;
+            fpi.params = pythiaParameters;
+            fpi.fragLibFilePath = fragLibFilePath;
+            fpi.uniqueMsInfoScanKey = si.targetScanKey();
+            fpi.mzTargetStartStop
+                    = {si.precursorTargetMz - si.isoWindowLower, si.precursorTargetMz + si.isoWindowUpper};
+
+            e = ErrorUtils::isBelowThreshold(
+                    fpi.mzTargetStartStop.first,
+                    fpi.mzTargetStartStop.second,
+                    ErrorUtilsParam::ExcludeThreshold
+            ); ree;
+
+            frameParallelInputs->push_back(fpi);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    e = processDIAFramesParallel(msDataFilePath); ree;
+    QVector<FrameParallelInput> frameParallelInputs;
+    e = buildParallelInput(
+            m_pythiaParameters,
+            msDataFilePath,
+            m_fragLibUri,
+            &frameParallelInputs
+    ); ree;
 
+    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
+    e = processDIAFramesParallel(frameParallelInputs); ree;
 
 
 
     ERR_RETURN
 }
 
-
 namespace {
-
-    struct FrameParallelInput {
-        PythiaParameters params;
-        QString msDataFilePath;
-        QString fragLibFilePath;
-        UniqueMsInfoScanKey uniqueMsInfoScanKey;
-        QPair<double, double> mzTargetStartStop;
-    };
-
-   Err buildParallelInput(
-           const PythiaParameters &pythiaParameters,
-           const QString &msDataFilePath,
-           const QString &fragLibFilePath,
-           QVector<FrameParallelInput> *frameParallelInputs
-           ) {
-
-       ERR_INIT
-       MsReaderParquet msReaderParquet;
-       e = msReaderParquet.openFile(
-               msDataFilePath,
-               MsParquetReaderNamespace::TARGET_KEY
-       ); ree;
-
-       const QVector<MsScanInfo> uniqueScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
-
-       for (const MsScanInfo &si : uniqueScanInfos) {
-
-           FrameParallelInput fpi;
-           fpi.msDataFilePath = msDataFilePath;
-           fpi.params = pythiaParameters;
-           fpi.fragLibFilePath = fragLibFilePath;
-           fpi.uniqueMsInfoScanKey = si.targetScanKey();
-           fpi.mzTargetStartStop
-                = {si.precursorTargetMz - si.isoWindowLower, si.precursorTargetMz + si.isoWindowUpper};
-
-           e = ErrorUtils::isBelowThreshold(
-                   fpi.mzTargetStartStop.first,
-                   fpi.mzTargetStartStop.second,
-                   ErrorUtilsParam::ExcludeThreshold
-                   ); ree;
-
-           frameParallelInputs->push_back(fpi);
-       }
-
-       ERR_RETURN
-    }
 
     QPair<Err, QPair<UniqueMsInfoScanKey, QString>> parallelFrameProcossingLogic(
             const FrameParallelInput &fpi
@@ -113,19 +123,9 @@ namespace {
    }
 
 }//namespace
-Err PythiaDIAWorkflow::processDIAFramesParallel(const QString &msDataFilePath) {
+Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput> &frameParallelInputs) {
 
     ERR_INIT
-
-    QVector<FrameParallelInput> frameParallelInputs;
-    e = buildParallelInput(
-            m_pythiaParameters,
-            msDataFilePath,
-            m_fragLibUri,
-            &frameParallelInputs
-            ); ree;
-
-    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
 //#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
@@ -147,9 +147,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QString &msDataFilePath) {
 
     }
 
-
 #endif
-
 
 
     ERR_RETURN
