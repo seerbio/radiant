@@ -22,28 +22,20 @@ private:
 
     static PythiaParameters pythiaParameters() {
 
+        const QString &paramsFile
+                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
 
+        PythiaParameterReader reader;
         PythiaParameters pythiaParameters;
+        reader.readFile(paramsFile);
+        reader.loadPythiaParameters(&pythiaParameters);
 
-        pythiaParameters.returnPSMTopN = 1;
-        pythiaParameters.maxTandemPointCount = 2;
-        pythiaParameters.ms2ExtractionWidthPPM = 12.0;
-        pythiaParameters.precursorExtractionWindowThomsons = 1.0;
-        pythiaParameters.chargeStateMin = 2;
-        pythiaParameters.chargeStateMax = 3;
-
-        PythiaParameterReader::applyFixedModificationsToAminoAcids(
-                pythiaParameters,
-                &pythiaParameters.aminoAcids
-        );
-
+        pythiaParameters.topNMs2Ions = 12;
+        pythiaParameters.print();
         return pythiaParameters;
     }
 
-
-
 };
-
 
 void MsFrameScoretronTests::scoreCandidatesTest() {
 
@@ -55,7 +47,6 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
     const QString fragLibPath
             = QStringLiteral("/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib");
 
-
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "474966";
     QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = MsFrameScoretron::scoreCandidates(
             pythiaParameters(),
@@ -64,7 +55,6 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             uniqueMsInfoScanKey,
             {474.966 - 5.5, 474.966 + 5.5}
             );
-
 
 }
 

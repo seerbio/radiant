@@ -77,6 +77,46 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
     ERR_RETURN
 }
 
+Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
+        const QString &scoreVectorsFilePath, const MsFrame &msFrame,
+        int topNPSMs,
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
+        ) {
+
+    ERR_INIT
+
+    QVector<MsFrameScoreVectorReaderRow> scoreVectors;
+    ParquetReader::read(
+            scoreVectorsFilePath,
+            &scoreVectors
+    ); ree;
+    e = ErrorUtils::isNotEmpty(scoreVectors); ree;
+
+
+    topNPSMs = 20; //TODO remove this.
+    e = getTopNCandidatesPerFrameIndex(
+            scoreVectors,
+            msFrame.frameIndexVsScanPoints(),
+            topNPSMs,
+            topCansInFrameIndex
+    );ree;
+
+
+    for (auto it = topCansInFrameIndex->begin(); it != topCansInFrameIndex->end(); it++) {
+
+        if (it.key() != 128) {
+            continue;
+        }
+
+        qDebug() << it.key();
+        for (const auto r : it.value()) {
+            qDebug() << r.first << r.second;
+        }
+    }
+
+    ERR_RETURN
+}
+
 namespace {
 
     RTree buildScorePeaksRTree(const QVector<MsFrameScoreVectorReaderRow> &scoreVectors) {
@@ -225,3 +265,5 @@ Err MsFrameScoretronProcessormatic::getTopNCandidatesPerFrameIndex(
 
     ERR_RETURN
 }
+
+

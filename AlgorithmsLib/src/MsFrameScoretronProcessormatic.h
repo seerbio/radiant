@@ -34,8 +34,6 @@ struct ScoredPSM : public ParquetReaderInputBase {
 };
 
 
-class FrameIndexCandidate;
-
 class ALGORITHMSLIB_EXPORTS MsFrameScoretronProcessormatic {
 
 public:
@@ -45,6 +43,13 @@ public:
     static Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
             const QString &msFrameScansFilePath,
+            int topNPSMs,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
+    );
+
+    static Err processLogicForFrameScores(
+            const QString &scoreVectorsFilePath,
+            const MsFrame &msFrame,
             int topNPSMs,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
     );

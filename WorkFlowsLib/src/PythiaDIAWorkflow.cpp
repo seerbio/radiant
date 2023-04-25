@@ -8,7 +8,7 @@
 #include "ErrorUtils.h"
 #include "MsFrameScoretron.h"
 #include "MsFrameScoretronProcessormatic.h"
-#include "MsReaderPointerFactory.h"
+#include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -33,430 +33,124 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
-namespace {
-
-    Err buildScoreVectorsVsScanFrameFilePaths(
-            const QMap<UniqueMsInfoScanKey, QString> &uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths,
-            const QMap<UniqueMsInfoScanKey, QString> &uniqueMsInfoScanKeyVsMsFrameFilePath,
-            QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKeyVsMsFrameFilePath); ree;
-        e = ErrorUtils::isEqualString(
-                uniqueMsInfoScanKeyVsMsFrameFilePath.keys(),
-                uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths.keys()
-                ); ree;
-
-        const QList<UniqueMsInfoScanKey> &uniqueMsInfoScanKeys = uniqueMsInfoScanKeyVsMsFrameFilePath.keys();
-        for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueMsInfoScanKeys) {
-
-            scoreVectorsVsScanFrameFilePaths->insert(
-                    uniqueMsInfoScanKeyVsScoreVecsFrameFilePaths.value(uniqueMsInfoScanKey),
-                    uniqueMsInfoScanKeyVsMsFrameFilePath.value(uniqueMsInfoScanKey)
-                    );
-        }
-
-        ERR_RETURN
-    }
-
-    Err recalibrateMsReader(
-            const QString &calibrationMatFilePath,
-            const QString &calibarationCalFilePath,
-            MsReaderPointer *msReaderPointer
-            ) {
-
-        ERR_INIT
-
-        QMap<ScanNumber, ScanPoints> recalScanPoints;
-        e = MsCalibratomatic::recalibratePoints(
-                (*msReaderPointer)->getScanPoints(),
-                calibrationMatFilePath,
-                calibarationCalFilePath,
-                &recalScanPoints
-                ); ree;
-
-        (*msReaderPointer)->setScanPoints(recalScanPoints);
-
-        ERR_RETURN
-    }
-
-
-
-}//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QPair<Err, MsReaderPointer> msReaderPointerResult
-            = MsReaderPointerFactory::createInstance(msDataFilePath);
-    e = msReaderPointerResult.first; ree;
-    MsReaderPointer msReaderPointer = msReaderPointerResult.second;
+    e = processDIAFramesParallel(msDataFilePath); ree;
 
-    const QVector<MsScanInfo> uniqueScanInfos =msReaderPointer->getUniqueTandemMsScanInfos();
 
-    for (auto x : uniqueScanInfos) {
-        qDebug() << x.targetScanKey();
-    }
 
 
 
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::runCalibration(
-        const QString &msDataFilePath,
-        MsReaderPointer *msReaderPointer,
-        QString *calibrationMatFilePath,
-        QString *calibarationCalFilePath
-) {
-
-    ERR_INIT
-
-    e = buildCalibrationFiles(
-            (*msReaderPointer),
-            msDataFilePath,
-            calibrationMatFilePath,
-            calibarationCalFilePath
-    ); ree;
-
-    e = recalibrateMsReader(
-            *calibrationMatFilePath,
-            *calibarationCalFilePath,
-            msReaderPointer
-    ); ree;
-
-    ERR_RETURN
-}
 
 namespace {
 
-    Err writeMsFrames(
-            const QVector<MsFrame> &msFrames,
-            const QString &msDataFilePath,
-            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
-            ) {
-
-        ERR_INIT
-
-        for (const MsFrame &frame : msFrames) {
-
-            const QString outputFilePath
-                    = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScans";
-
-            qDebug() << "Writing frame to" << outputFilePath;
-            e = frame.writeFramScans(outputFilePath); ree;
-            uniqueMsInfoScanKeyVsMsFrameFilePath->insert(
-                    frame.uniqueMsInfoScanKey(),
-                    outputFilePath
-            );
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAWorkflow::buildCandidateScoreVectors(
-        const MsReaderPointer &msReaderPointer,
-        int numberOfFramesToProcess,
-        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
-        ) {
-
-    ERR_INIT
-
-    uniqueMsInfoScanKeyVsScoredFrameFilePaths->clear();
-
-    QVector<MsFrame> msFrames;
-    e = preprocessDIAFramesParallel(
-            msReaderPointer,
-            numberOfFramesToProcess,
-            &msFrames
-    ); ree;
-
-    const QString msDataFilePath = msReaderPointer->filePath();
-    e = ErrorUtils::isNotEmpty(msDataFilePath); ree;
-
-    e = scoreCandidatesPerFrameParallelWrite(
-            msFrames,
-            msDataFilePath,
-            uniqueMsInfoScanKeyVsScoredFrameFilePaths
-    ); ree;
-
-    e = writeMsFrames(
-            msFrames,
-            msDataFilePath,
-            uniqueMsInfoScanKeyVsMsFrameFilePath
-            ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    struct ProcessFileLogicInput {
-        MsScanInfo msScanInfo;
-        QMap<ScanNumber, ScanPoints> frame;
-        PythiaParameters pythiaParameters;
+    struct FrameParallelInput {
+        PythiaParameters params;
+        QString msDataFilePath;
+        QString fragLibFilePath;
+        UniqueMsInfoScanKey uniqueMsInfoScanKey;
+        QPair<double, double> mzTargetStartStop;
     };
 
-    QPair<Err, MsFrame> processFileParallelLogic(const ProcessFileLogicInput &input) {
+   Err buildParallelInput(
+           const PythiaParameters &pythiaParameters,
+           const QString &msDataFilePath,
+           const QString &fragLibFilePath,
+           QVector<FrameParallelInput> *frameParallelInputs
+           ) {
 
-        ERR_INIT
+       ERR_INIT
+       MsReaderParquet msReaderParquet;
+       e = msReaderParquet.openFile(
+               msDataFilePath,
+               MsParquetReaderNamespace::TARGET_KEY
+       ); ree;
 
-        const MsScanInfo &msScanInfo = input.msScanInfo;
-        const PythiaParameters &pythiaParameters = input.pythiaParameters;
+       const QVector<MsScanInfo> uniqueScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
 
-        MsFrame frame;
-        e = frame.init(
-                pythiaParameters,
-                input.frame,
-                msScanInfo.targetScanKey(),
-                msScanInfo.collisionEnergy,
-                msScanInfo.precursorTargetMz,
-                msScanInfo.isoWindowLower,
-                msScanInfo.isoWindowUpper
-        ); rree;
+       for (const MsScanInfo &si : uniqueScanInfos) {
 
-        e = frame.preprocessMsFrame(
-                pythiaParameters.denoise,
-                pythiaParameters.deisotope,
-                pythiaParameters.smooth
-        ); rree
+           FrameParallelInput fpi;
+           fpi.msDataFilePath = msDataFilePath;
+           fpi.params = pythiaParameters;
+           fpi.fragLibFilePath = fragLibFilePath;
+           fpi.uniqueMsInfoScanKey = si.targetScanKey();
+           fpi.mzTargetStartStop
+                = {si.precursorTargetMz - si.isoWindowLower, si.precursorTargetMz + si.isoWindowUpper};
 
-        return {e, frame};
+           e = ErrorUtils::isBelowThreshold(
+                   fpi.mzTargetStartStop.first,
+                   fpi.mzTargetStartStop.second,
+                   ErrorUtilsParam::ExcludeThreshold
+                   ); ree;
+
+           frameParallelInputs->push_back(fpi);
+       }
+
+       ERR_RETURN
     }
 
-    Err buildProcessFileLogicInputs(
-            const MsReaderPointer &msReaderPointer,
-            const PythiaParameters &pythiaParameters,
-            int numberOfFramesToProcess,
-            QVector<ProcessFileLogicInput> *processFileLogicInputs
-    ) {
+    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> parallelFrameProcossingLogic(
+            const FrameParallelInput &fpi
+            ) {
 
-        ERR_INIT
+       ERR_INIT
 
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrames;
-        e = msReaderPointer->collateTandemPrecursorTargetsDIA(&diaTargetFrames); ree;
+        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = MsFrameScoretron::scoreCandidates(
+                fpi.params,
+                fpi.msDataFilePath,
+                fpi.fragLibFilePath,
+                fpi.uniqueMsInfoScanKey,
+                fpi.mzTargetStartStop
+                ); rree;
 
-        int counter = 0;
-        for (const QMap<ScanNumber, ScanPoints> &frame : diaTargetFrames) {
+        return result;
+   }
 
-            if (numberOfFramesToProcess > 0 && counter >= numberOfFramesToProcess) {
-                break;
-            }
+}//namespace
+Err PythiaDIAWorkflow::processDIAFramesParallel(const QString &msDataFilePath) {
 
-            const ScanNumber firstScanNumber = frame.firstKey();
+    ERR_INIT
 
-            ProcessFileLogicInput processFileLogicInput;
-
-            e = msReaderPointer->getMsScanInfo(
-                    firstScanNumber,
-                    &processFileLogicInput.msScanInfo
+    QVector<FrameParallelInput> frameParallelInputs;
+    e = buildParallelInput(
+            m_pythiaParameters,
+            msDataFilePath,
+            m_fragLibUri,
+            &frameParallelInputs
             ); ree;
 
-            processFileLogicInput.frame = frame;
-            processFileLogicInput.pythiaParameters = pythiaParameters;
+    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
-            processFileLogicInputs->push_back(processFileLogicInput);
-            counter++;
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAWorkflow::preprocessDIAFramesParallel(
-        const MsReaderPointer &msReaderPointer,
-        int numberOfFramesToProcess,
-        QVector<MsFrame> *msFrames
-        ) {
-
-    ERR_INIT
-
-    QVector<ProcessFileLogicInput> processFileLogicInputs;
-    e = buildProcessFileLogicInputs(
-            msReaderPointer,
-            m_pythiaParameters,
-            numberOfFramesToProcess,
-            &processFileLogicInputs
-    ); ree;
-
-    QFuture<QPair<Err, MsFrame>> futures = QtConcurrent::mapped(
-            processFileLogicInputs,
-            processFileParallelLogic
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Err, MsFrame> &pr : futures) {
-        qDebug() << "FrameSize" << pr.second.scanCount();
-        e = pr.first; ree;
-        msFrames->push_back(pr.second);
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    Err groupFramesWithTandemPredictions(
-            const QVector<MsFrame> &msFrames,
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &framePredictions,
-            QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> *processingChunks
-    ) {
-
-        ERR_INIT
-
-        for (const MsFrame &frame : msFrames) {
-            const UniqueMsInfoScanKey uniqueMsInfoScanKey = frame.uniqueMsInfoScanKey();
-            e = ErrorUtils::isTrue(framePredictions.contains(uniqueMsInfoScanKey)); ree;
-            processingChunks->push_back({frame, framePredictions.value(uniqueMsInfoScanKey)});
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAWorkflow::scoreCandidatesPerFrameParallelWrite(
-        const QVector<MsFrame> &msFrames,
-        const QString &msDataFilePath,
-        QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
-) {
-
-    ERR_INIT
-
-    QVector<QPair<double, double>> mzPrecursorTargetWindows;
-    std::transform(
-            msFrames.begin(),
-            msFrames.end(),
-            std::back_inserter(mzPrecursorTargetWindows),
-            [](const MsFrame &f){ return f.precursorMzTargetStartEnd();}
+//#define PARALLEL_RUN_SCORE_VEC
+#ifdef PARALLEL_RUN_SCORE_VEC
+    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
+            frameParallelInputs,
+            parallelFrameProcossingLogic
             );
-
-
-//    QVector<QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> processingChunks;
-//    e = groupFramesWithTandemPredictions(
-//            msFrames,
-//            m_framePredictions,
-//            &processingChunks
-//    ); ree;
-
-#define PARALLEL_DIA_SCORE
-#ifdef PARALLEL_DIA_SCORE
-    qDebug() << "Running scoreCandidatesPerFrameWrite parallel";
-
-//    const auto scoringMatrixLogicBinder = std::bind(
-//            MsFrameScoretron::scoreCandidatesFrameWrite,
-//            std::placeholders::_1,
-//            m_pythiaParameters,
-//            msDataFilePath
-//    );
-
-//    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
-//            processingChunks,
-//            scoringMatrixLogicBinder
-//    );
-//    futures.waitForFinished();
-//
-//    for (const QPair<Err, QPair<UniqueMsInfoScanKey, QString>> &result : futures) {
-//        e = result.first; ree;
-//        uniqueMsInfoScanKeyVsScoredFrameFilePaths->insert(result.second.first, result.second.second);
-//    }
+    futures.waitForFinished();
 #else
-    qDebug() << "Running scoreCandidatesPerFrame serial";
-    for (const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk : processingChunks) {
 
-        const QString frameID = chunk.first.uniqueMsInfoScanKey();
-        if (frameID != "504979") {
+    for (const FrameParallelInput &fpi : frameParallelInputs) {
+
+        if (fpi.uniqueMsInfoScanKey != "474966") {
             continue;
         }
 
-        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreFrameTargetsResult = MsFrameScoretron::scoreCandidatesFrame(
-                chunk,
-                m_pythiaParameters,
-                msDataFilePath
-                ); ree;
+        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result
+                = parallelFrameProcossingLogic(fpi); ree;
+
     }
+
+
 #endif
 
-    ERR_RETURN
-}
 
-Err PythiaDIAWorkflow::buildCalibrationFiles(
-        const MsReaderPointer &msReaderPointer,
-        const QString &msDataFilePath,
-        QString *calibrationMatFilePath,
-        QString *calibarationCalFilePath
-        ) {
-
-    ERR_INIT
-
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration;
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePathCalibration;
-
-    const double fractionOfFramesToUseForCalibration = 0.25;
-    const int numberOfFramesToProcessForCalibration
-            = static_cast<int>(msReaderPointer->getFrameCount() * fractionOfFramesToUseForCalibration);
-
-    e = buildCandidateScoreVectors(
-            msReaderPointer,
-            numberOfFramesToProcessForCalibration,
-            &uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
-            &uniqueMsInfoScanKeyVsMsFrameFilePathCalibration
-    ); ree;
-
-    QMap<QString, QString> scoreVectorsVsScanFrameFilePaths;
-    e = buildScoreVectorsVsScanFrameFilePaths(
-            uniqueMsInfoScanKeyVsScoredFrameFilePathsCalibration,
-            uniqueMsInfoScanKeyVsMsFrameFilePathCalibration,
-            &scoreVectorsVsScanFrameFilePaths
-    ); ree;
-
-    MsCalibratomatic msCalibratomatic;
-    const int calPointK = 3;
-    e = msCalibratomatic.init(
-            scoreVectorsVsScanFrameFilePaths,
-            m_pythiaParameters,
-            calPointK
-    );
-
-    e = msCalibratomatic.writeCalibratomatic(
-            msDataFilePath,
-            calibrationMatFilePath,
-            calibarationCalFilePath
-            ); ree;
-
-    const int stDevMultiplier = 3;
-    m_pythiaParameters.ms2ExtractionWidthPPM = stDevMultiplier * msCalibratomatic.newStDev();
-    qDebug() << "New ppm tolerance set to " << m_pythiaParameters.ms2ExtractionWidthPPM << "after calibration!!!";
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::runAllFrames(
-        const MsReaderPointer &msReaderPointer,
-        QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
-        ) {
-
-    ERR_INIT
-
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsScoredFrameFilePaths;
-    QMap<UniqueMsInfoScanKey, QString> uniqueMsInfoScanKeyVsMsFrameFilePaths;
-
-    const int numberOfFrames = -1;
-    e = buildCandidateScoreVectors(
-            msReaderPointer,
-            numberOfFrames,
-            &uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-            &uniqueMsInfoScanKeyVsMsFrameFilePaths
-    ); ree;
-
-    e = buildScoreVectorsVsScanFrameFilePaths(
-            uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-            uniqueMsInfoScanKeyVsMsFrameFilePaths,
-            scoreVectorsVsScanFrameFilePaths
-    ); ree;
 
     ERR_RETURN
 }

@@ -37,43 +37,10 @@ public:
 
 private:
 
-    Err runCalibration(
-            const QString &msDataFilePath,
-            MsReaderPointer *msReaderPointer,
-            QString *calibrationMatFilePath,
-            QString *calibarationCalFilePath
-    );
 
-    Err buildCandidateScoreVectors(
-            const MsReaderPointer &msReaderPointer,
-            int numberOfFramesToProcess,
-            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths,
-            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsMsFrameFilePath
-            );
+    Err processDIAFramesParallel(const QString &msDataFilePath);
 
-    Err preprocessDIAFramesParallel(
-            const MsReaderPointer &msReaderPointer,
-            int numberOfFramesToProcess,
-            QVector<MsFrame> *msFrames
-            );
 
-    Err scoreCandidatesPerFrameParallelWrite(
-            const QVector<MsFrame> &msFrames,
-            const QString &msDataFilePath,
-            QMap<UniqueMsInfoScanKey, QString> *uniqueMsInfoScanKeyVsScoredFrameFilePaths
-    );
-
-    Err buildCalibrationFiles(
-            const MsReaderPointer &msReaderPointer,
-            const QString &msDataFilePath,
-            QString *calibrationMatFilePath,
-            QString *calibarationCalFilePath
-            );
-
-    Err runAllFrames(
-            const MsReaderPointer &msReaderPointer,
-            QMap<QString, QString> *scoreVectorsVsScanFrameFilePaths
-            );
 
 
 private:

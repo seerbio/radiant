@@ -7,6 +7,7 @@
 #include "BiophysicalCalcs.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "MsFrameScoretronProcessormatic.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
@@ -145,7 +146,6 @@ namespace {
         ERR_RETURN
     }
 
-
     Err buildMsFrame(
             const QString &msDataFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
@@ -184,9 +184,6 @@ namespace {
 
         ERR_RETURN
     }
-
-
-
 
     struct ScoringMatrices {
         Eigen::MatrixX<double> scoringMatrixMz;
@@ -344,8 +341,7 @@ namespace {
 
     Err writeFrameTargetScoreVectors(
             const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-            const QString &outputFilePath,
-            int minFoundMzCount
+            const QString &outputFilePath
     ) {
 
         ERR_INIT
@@ -356,13 +352,6 @@ namespace {
 
             const PeptideStringWithMods &peptideStringWithMods = it.key();
             const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
-
-            const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
-            const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
-
-            if (maxFoundCount < minFoundMzCount) {
-                continue;
-            }
 
             MsFrameScoreVectorReaderRow row;
             row.peptideStringWithMods = peptideStringWithMods;
@@ -388,12 +377,13 @@ namespace {
         ERR_RETURN
     }
 
-    QPair<Err, QString> scoreFrameTargets(
+    Err scoreFrameTargets(
             const MsFrame &frame,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds,
             const PythiaParameters &params,
-            const QString &msDataFilePath
-    ) {
+            const QString &msDataFilePath,
+            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+            ) {
 
         ERR_INIT
 
@@ -403,9 +393,8 @@ namespace {
         const QMap<FrameIndex, ScanPoints> scanPoints = frame.frameIndexVsScanPoints();
 
         TurboXIC turboXic;
-        e = turboXic.init(scanPoints); rree;
+        e = turboXic.init(scanPoints); ree;
 
-        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
         for (auto it = tandemPreds.begin(); it != tandemPreds.end(); it++) {
 
             const PeptideStringWithMods &peptideStringWithMods = it.key();
@@ -423,7 +412,7 @@ namespace {
             e = buildPerFrameIndexScoreVectors(
                     targetScoringMatrices,
                     &frameIndexScoreResultOfTarget
-            ); rree;
+            ); ree;
 
             frameIndexScoreResultOfTarget.charge = BiophysicalCalcs::calculateChargeFromSequence(
                     peptideStringWithMods,
@@ -431,25 +420,17 @@ namespace {
                     frame.meanPrecursorRange()
                     );
 
-            pepStrWModsVsFrameIndexScoreResultOfTargets.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
+            pepStrWModsVsFrameIndexScoreResultOfTargets->insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
         }
 
-        const QString outputFilePath = msDataFilePath + "." + frame.uniqueMsInfoScanKey() + ".frameScores";
-
-        // Writing here because it saves RAM.  Otherwise, this should be its own method.
-        e = writeFrameTargetScoreVectors(
-                pepStrWModsVsFrameIndexScoreResultOfTargets,
-                outputFilePath,
-                params.minFoundMzPeaks
-        ); rree;
-
-        return {e, outputFilePath};
+        ERR_RETURN
     }
 
-    QPair<Err, QString> processFrameLogic(
+    Err processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
             const PythiaParameters &params,
-            const QString &msDataFilePath
+            const QString &msDataFilePath,
+            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     ) {
 
         ERR_INIT
@@ -460,16 +441,43 @@ namespace {
         const QPair<double, double> &mzTargetStartEnd = frame.precursorMzTargetStartEnd();
         qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
 
-        QPair<Err, QString> scoreFrameTargetsResult = scoreFrameTargets(
+        e = scoreFrameTargets(
                 frame,
                 tandemPreds,
                 params,
-                msDataFilePath
-        );
+                msDataFilePath,
+                pepStrWModsVsFrameIndexScoreResultOfTargets
+        ); ree;
 
-        e = scoreFrameTargetsResult.first; rree;
+        ERR_RETURN
+    }
 
-        return scoreFrameTargetsResult;
+    void filterByFoundMzCount(
+            int minFoundMzCount,
+            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+            ) {
+
+        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
+        for (
+            auto it = pepStrWModsVsFrameIndexScoreResultOfTargets->begin();
+            it != pepStrWModsVsFrameIndexScoreResultOfTargets->end();
+            it++
+            ) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+            const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+            const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
+
+            if (maxFoundCount < minFoundMzCount) {
+                continue;
+            }
+
+            pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
+        }
+
+        *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
     }
 
 }//namespace
@@ -490,7 +498,6 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             mzTargetStartStop,
             &fragPreds
             ); rree;
-
     e = ErrorUtils::isNotEmpty(fragPreds); rree;
 
     MsFrame msFrame;
@@ -504,14 +511,32 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
 
     qDebug() << uniqueMsInfoScanKey << msFrame.scanCount() << fragPreds.size();
 
-    QPair<Err, QString> scoreFrameTargetsResult = processFrameLogic(
+    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
+    e = processFrameLogic(
             {msFrame, fragPreds},
             params,
-            msDataFilePath
+            msDataFilePath,
+            &pepStrWModsVsFrameIndexScoreResultOfTargets
     ); rree
 
-    e = scoreFrameTargetsResult.first; rree;
+    filterByFoundMzCount(
+            params.minFoundMzPeaks,
+            &pepStrWModsVsFrameIndexScoreResultOfTargets
+            );
 
-    return {e, {uniqueMsInfoScanKey, scoreFrameTargetsResult.second}};
+    const QString outputFilePath = msDataFilePath + "." + msFrame.uniqueMsInfoScanKey() + ".frameScores";
+//    e = writeFrameTargetScoreVectors(
+//            pepStrWModsVsFrameIndexScoreResultOfTargets,
+//            outputFilePath
+//    ); rree;
 
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
+    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
+            outputFilePath,
+            msFrame,
+            params.returnPSMTopN,
+            &topCansInFrameIndex
+            ); rree;
+
+    return {e, {uniqueMsInfoScanKey, outputFilePath}};
 }
