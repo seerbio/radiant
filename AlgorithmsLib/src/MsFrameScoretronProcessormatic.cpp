@@ -8,7 +8,6 @@
 #include "ErrorUtils.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
-#include "TandemSpectraDeconvolvotron.h"
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -67,12 +66,13 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
 Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
         const QString &scoreVectorsFilePath,
         const MsFrame &msFrame,
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions,
         int topNPSMs,
         QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
         ) {
 
     ERR_INIT
+
+    topCansInFrameIndex->clear();
 
     QVector<MsFrameScoreVectorReaderRow> scoreVectors;
     ParquetReader::read(
@@ -81,7 +81,6 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
     ); ree;
     e = ErrorUtils::isNotEmpty(scoreVectors); ree;
 
-
     topNPSMs = 20; //TODO remove this.
     e = getTopNCandidatesPerFrameIndex(
             scoreVectors,
@@ -89,38 +88,6 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
             topNPSMs,
             topCansInFrameIndex
     );ree;
-
-
-    for (auto it = topCansInFrameIndex->begin(); it != topCansInFrameIndex->end(); it++) {
-
-        if (it.key() != 128) {
-            continue;
-        }
-
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPreds;
-        for (const auto r : it.value()) {
-
-            e = ErrorUtils::isTrue(tandemPredictions.contains(r.first)); ree;
-            scanPreds.insert(r.first, tandemPredictions.value(r.first));
-            qDebug() << r.first << r.second;
-        }
-
-        const QMap<FrameIndex, ScanPoints> &frame = msFrame.frameIndexVsScanPoints();
-        ScanPoints scanPoints = frame.value(it.key());
-
-        QMap<PeptideStringWithMods, double> pepSeqVsWeight;
-        TandemSpectraDeconvolvotron deconvolvotron;
-        deconvolvotron.deconvolveTandemSpectra(
-                scanPoints,
-                scanPreds,
-                &pepSeqVsWeight
-        );
-
-        for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
-            qDebug() << itt.key() << itt.value();
-        }
-
-    }
 
     ERR_RETURN
 }

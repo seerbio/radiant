@@ -12,6 +12,7 @@
 #include <QVector>
 
 using Charge = int;
+using DiscScore = double;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
 using Intensity = double;

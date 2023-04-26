@@ -98,8 +98,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     e = processDIAFramesParallel(frameParallelInputs); ree;
 
-
-
     ERR_RETURN
 }
 
@@ -111,7 +109,9 @@ namespace {
 
        ERR_INIT
 
-        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = MsFrameScoretron::scoreCandidates(
+        MsFrameScoretron msFrameScoretron;
+
+        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = msFrameScoretron.scoreCandidates(
                 fpi.params,
                 fpi.msDataFilePath,
                 fpi.fragLibFilePath,

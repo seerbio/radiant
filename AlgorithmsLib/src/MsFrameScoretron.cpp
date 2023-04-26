@@ -11,6 +11,7 @@
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
+#include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -82,11 +83,12 @@ namespace {
         std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
     }
 
-    Err buildFragIonLibForTarget(
+    Err buildFragIonLibForTargetMz(
             const PythiaParameters &params,
             const QString &fragLibUri,
             const QPair<double, double> &mzTargetStartStop,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *output
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *outputIons,
+            QMap<PeptideStringWithMods, bool> *outputDecoy
             ) {
 
         ERR_INIT
@@ -110,10 +112,12 @@ namespace {
             e = fragLibReader.init(fragLibUri); ree;
 
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+            QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
             e = fragLibReader.getMS2Ions(
                     massStart,
                     massEnd,
-                    &peptideSequenceChargeKeyVsMS2Ions
+                    &peptideSequenceChargeKeyVsMS2Ions,
+                    &peptideSequenceChargeKeyVsIsDecoy
                     ); ree;
 
             for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
@@ -138,7 +142,10 @@ namespace {
                         &ms2Ions
                         );
 
-                output->insert(peptideStringWithMods, ms2Ions);
+                e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
+
+                outputIons->insert(peptideStringWithMods, ms2Ions);
+                outputDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
             }
 
         }
@@ -491,29 +498,28 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
 
     ERR_INIT
 
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> fragPreds;
-    e = buildFragIonLibForTarget(
+    e = buildFragIonLibForTargetMz(
             params,
             fragLibFilePath,
             mzTargetStartStop,
-            &fragPreds
+            &m_fragPreds,
+            &m_fragPredsIsDecoy
             ); rree;
-    e = ErrorUtils::isNotEmpty(fragPreds); rree;
+    e = ErrorUtils::isNotEmpty(m_fragPreds); rree;
 
-    MsFrame msFrame;
     e = buildMsFrame(
             msDataFilePath,
             uniqueMsInfoScanKey,
             params,
             mzTargetStartStop,
-            &msFrame
+            &m_msFrame
             ); rree;
 
-    qDebug() << uniqueMsInfoScanKey << msFrame.scanCount() << fragPreds.size();
+    qDebug() << uniqueMsInfoScanKey << m_msFrame.scanCount() << m_fragPreds.size();
 
     QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
     e = processFrameLogic(
-            {msFrame, fragPreds},
+            {m_msFrame, m_fragPreds},
             params,
             msDataFilePath,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
@@ -524,7 +530,7 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
-    const QString outputFilePath = msDataFilePath + "." + msFrame.uniqueMsInfoScanKey() + ".frameScores";
+    const QString outputFilePath = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
             pepStrWModsVsFrameIndexScoreResultOfTargets,
             outputFilePath
@@ -533,11 +539,135 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
     e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
             outputFilePath,
-            msFrame,
-            fragPreds,
+            m_msFrame,
             params.returnPSMTopN,
             &topCansInFrameIndex
             ); rree;
 
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
+    e = calculateDiscriminateScoreForFrameIndexes(
+            topCansInFrameIndex,
+            &topCansInFrameIndexVsDiscScore
+            ); rree;
+
+
     return {e, {uniqueMsInfoScanKey, outputFilePath}};
+}
+
+
+Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
+        const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
+        ) {
+
+    ERR_INIT
+
+    for (auto it = topCansInFrameIndex.begin(); it != topCansInFrameIndex.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore = it.value();
+
+        e = calculateDiscriminateScoreForFrame(
+                peptideStringWithModsScore,
+                frameIndex,
+                topCansInFrameIndexVsDiscScore
+                ); ree;
+
+#define DEBUG_DISC
+#ifdef DEBUG_DISC
+        if (frameIndex > -1) {
+
+            const auto &discScores = topCansInFrameIndexVsDiscScore->value(frameIndex);
+            for (const QPair<PeptideStringWithMods, DiscScore > &pr : discScores) {
+                qDebug() << pr << m_fragPredsIsDecoy.value(pr.first);
+            }
+        }
+        qDebug() << "************";
+#endif
+
+    }
+
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err getFrameIndexMs2Ions(
+            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanPreds
+            ) {
+
+        ERR_INIT
+
+        for (const QPair<PeptideStringWithMods, Score> &pepScore : peptideStringWithModsScore) {
+
+            const PeptideStringWithMods &peptideStringWithMods = pepScore.first;
+
+            e = ErrorUtils::isTrue(fragPreds.contains(peptideStringWithMods)); ree;
+            scanPreds->insert(peptideStringWithMods, fragPreds.value(peptideStringWithMods));
+        }
+
+        ERR_RETURN
+    }
+
+    void sortDiscScoresDesc(
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+            ) {
+
+        for (
+            auto it = frameIndexVsPeptideStringWithModsDiscScore->begin();
+            it != frameIndexVsPeptideStringWithModsDiscScore->end();
+            it++
+            ) {
+
+            QVector<QPair<PeptideStringWithMods, Score>> &scores = it.value();
+            using Sort = QPair<PeptideStringWithMods, Score>;
+            std::sort(scores.rbegin(), scores.rend(), [](const Sort &l, const Sort &r){
+                return l.second < r.second;
+            });
+
+        }
+
+    }
+
+}//namespace
+Err MsFrameScoretron::calculateDiscriminateScoreForFrame(
+        const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+        FrameIndex frameIndex,
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+        ) {
+
+    ERR_INIT
+
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPreds;
+    e = getFrameIndexMs2Ions(
+            peptideStringWithModsScore,
+            m_fragPreds,
+            &scanPreds
+            ); ree;
+
+    const QMap<FrameIndex, ScanPoints> &frame = m_msFrame.frameIndexVsScanPoints();
+    ScanPoints scanPoints = frame.value(frameIndex);
+
+    QMap<PeptideStringWithMods, DiscScore> pepSeqVsWeight;
+    TandemSpectraDeconvolvotron deconvolvotron;
+    deconvolvotron.deconvolveTandemSpectra(
+            scanPoints,
+            scanPreds,
+            &pepSeqVsWeight
+    );
+
+    for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
+
+        const PeptideStringWithMods &peptideStringWithMods = itt.key();
+        const double discriminateScore = itt.value();
+
+        (*frameIndexVsPeptideStringWithModsDiscScore)[frameIndex].push_back({peptideStringWithMods, discriminateScore});
+    }
+
+    sortDiscScoresDesc(frameIndexVsPeptideStringWithModsDiscScore);
+
+    ERR_RETURN
 }

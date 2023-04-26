@@ -101,10 +101,12 @@ namespace {
 Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
         const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-        QMap<PeptideStringWithMods, double> *pepSeqVsWeight
+        QMap<PeptideStringWithMods, DiscScore> *pepSeqVsWeight
         ) {
 
     ERR_INIT
+
+    pepSeqVsWeight->clear();
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
     e = ErrorUtils::isNotEmpty(tandemPredictions); ree;
@@ -128,6 +130,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
 
     Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>> lscg;
     lscg.setMaxIterations(m_iterationsMax);
+    lscg.setTolerance(m_stopTolerance);
 
     lscg.compute(mat);
     x = lscg.solve(vecScanPoints);
@@ -137,11 +140,12 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
     for (int i = 0; i < keys.size(); i++) {
 
         const PeptideStringWithMods &peptideSequenceChargeKey = keys.at(i);
-        const double score = x.coeff(i);
-        pepSeqVsWeight->insert(peptideSequenceChargeKey, score);
+        const DiscScore discScore = x.coeff(i);
+
+        pepSeqVsWeight->insert(peptideSequenceChargeKey, discScore);
     }
 
-    qDebug() << "#iterations:" << lscg.iterations() << "estimated error: " << lscg.error();
+//    qDebug() << "#iterations:" << lscg.iterations() << "estimated error: " << lscg.error();
 
     ERR_RETURN
 }

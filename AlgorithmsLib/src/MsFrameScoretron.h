@@ -21,13 +21,32 @@ public:
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
-    static QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreCandidates(
+    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreCandidates(
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QPair<double, double> &mzTargetStartStop
     );
+
+private:
+
+    Err calculateDiscriminateScoreForFrameIndexes(
+            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
+            );
+
+    Err calculateDiscriminateScoreForFrame(
+            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+            FrameIndex frameIndex,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+            );
+
+private:
+
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
+    QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
+    MsFrame m_msFrame;
 
 };
 

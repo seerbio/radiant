@@ -51,7 +51,6 @@ public:
     static Err processLogicForFrameScores(
             const QString &scoreVectorsFilePath,
             const MsFrame &msFrame,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions,
             int topNPSMs,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
     );
