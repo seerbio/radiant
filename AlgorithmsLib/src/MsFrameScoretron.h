@@ -10,9 +10,12 @@
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
+#include "PSMsReader.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;
+
+
 
 class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 
@@ -21,7 +24,7 @@ public:
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
-    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> scoreCandidates(
+    QPair<Err, QVector<PSMsReaderRow>> scoreCandidates(
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,

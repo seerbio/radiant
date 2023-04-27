@@ -9,6 +9,7 @@
 #include "MsFrameScoretron.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
+#include "PSMsReader.h"
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -118,7 +119,7 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(const QVector<FrameParallelInput> &
 
 namespace {
 
-    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> parallelFrameProcossingLogic(
+    QPair<Err, QVector<PSMsReaderRow>> parallelFrameProcossingLogic(
             const FrameParallelInput &fpi
             ) {
 
@@ -126,7 +127,7 @@ namespace {
 
         MsFrameScoretron msFrameScoretron;
 
-        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = msFrameScoretron.scoreCandidates(
+        QPair<Err, QVector<PSMsReaderRow>> result = msFrameScoretron.scoreCandidates(
                 fpi.params,
                 fpi.msDataFilePath,
                 fpi.fragLibFilePath,
@@ -142,13 +143,21 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
     ERR_INIT
 
-#define PARALLEL_RUN_SCORE_VEC
+    QVector<PSMsReaderRow> psmReaderRows;
+
+//#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
             frameParallelInputs,
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();
+
+    for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
+        e = result.first; ree;
+        psmReaderRows.append(result.second);
+    }
+
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
@@ -156,12 +165,18 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
             continue;
         }
 
-        QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result
+        QPair<Err, QVector<PSMsReaderRow>> result
                 = parallelFrameProcossingLogic(fpi); ree;
 
+        e = result.first; ree;
+        psmReaderRows.append(result.second);
     }
 #endif
 
+    ParquetReader::write(psmReaderRows, "test.prq");
+//    for (auto &r : psmReaderRows) {
+//        qDebug() << r.discScore;
+//    }
 
     ERR_RETURN
 }

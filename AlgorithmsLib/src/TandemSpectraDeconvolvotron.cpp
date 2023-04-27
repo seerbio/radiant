@@ -127,8 +127,8 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
     x.setZero();
 
     Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>> lscg;
-    lscg.setMaxIterations(m_iterationsMax);
-    lscg.setTolerance(m_stopTolerance);
+//    lscg.setMaxIterations(m_iterationsMax);
+//    lscg.setTolerance(m_stopTolerance);
 
     lscg.compute(mat);
     x = lscg.solve(vecScanPoints);
@@ -143,7 +143,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         pepSeqVsWeight->insert(peptideSequenceChargeKey, discScore);
     }
 
-//    qDebug() << "#iterations:" << lscg.iterations() << "estimated error: " << lscg.error();
+    qDebug() << "#iterations:" << lscg.iterations() << "estimated error: " << lscg.error();
 
     ERR_RETURN
 }

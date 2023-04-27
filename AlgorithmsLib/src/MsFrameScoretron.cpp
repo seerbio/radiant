@@ -11,7 +11,6 @@
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
-#include "PSMsReader.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
@@ -552,7 +551,7 @@ namespace {
     }
 
 }//namespace
-QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidates(
+QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
         const PythiaParameters &params,
         const QString &msDataFilePath,
         const QString &fragLibFilePath,
@@ -582,7 +581,7 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             &m_msFrame
             ); rree;
 
-    qDebug() << uniqueMsInfoScanKey << m_msFrame.scanCount() << m_fragPreds.size();
+    qDebug() << uniqueMsInfoScanKey << m_msFrame.scanCount() << "Candidates:" << m_fragPreds.size();
 
     QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
     e = processFrameLogic(
@@ -618,14 +617,14 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             ); rree;
 
     QVector<PSMsReaderRow> psmsReaderRows;
-    e = buildPSMsReaderRows(
-            m_msFrame,
-            pepStrWModsVsFrameIndexScoreResultOfTargets,
-            topCansInFrameIndexVsScore,
-            topCansInFrameIndexVsDiscScore,
-            m_fragPredsIsDecoy,
-            &psmsReaderRows
-            ); rree;
+//    e = buildPSMsReaderRows(
+//            m_msFrame,
+//            pepStrWModsVsFrameIndexScoreResultOfTargets,
+//            topCansInFrameIndexVsScore,
+//            topCansInFrameIndexVsDiscScore,
+//            m_fragPredsIsDecoy,
+//            &psmsReaderRows
+//            ); rree;
 
 //    for (auto &row : psmsReaderRows) {
 //        qDebug() << row.charge << row.peptideStringWithMods << row.discScore << row.frameRankDiscScore
@@ -633,7 +632,7 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
 //                << row.uniqueMsInfoScanKey;
 //    }
 
-    return {e, {uniqueMsInfoScanKey, outputFilePathFrameScores}};
+    return {e, psmsReaderRows};
 }
 
 
@@ -649,22 +648,27 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
         const FrameIndex frameIndex = it.key();
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore = it.value();
 
+        if (frameIndex != 128) {
+            continue;
+        }
+
         e = calculateDiscriminateScoreForFrame(
                 peptideStringWithModsScore,
                 frameIndex,
                 topCansInFrameIndexVsDiscScore
                 ); ree;
 
-//#define DEBUG_DISC
+#define DEBUG_DISC
 #ifdef DEBUG_DISC
-        if (frameIndex > -1) {
+        if (frameIndex == 128) {
             qDebug() << frameIndex;
             const auto &discScores = topCansInFrameIndexVsDiscScore->value(frameIndex);
             for (const QPair<PeptideStringWithMods, DiscScore > &pr : discScores) {
-                qDebug() << pr << m_fragPredsIsDecoy.value(pr.first);
+                qDebug() << pr << m_fragPredsIsDecoy.value(pr.first) << pr.second;
             }
+            qDebug() << "************";
         }
-        qDebug() << "************";
+
 #endif
 
     }
@@ -756,11 +760,11 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrame(
             stopTolerance
             ); ree;
 
-    deconvolvotron.deconvolveTandemSpectra(
+    e = deconvolvotron.deconvolveTandemSpectra(
             scanPoints,
             scanPreds,
             &pepSeqVsWeight
-    );
+    ); ree;
 
     for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
 
