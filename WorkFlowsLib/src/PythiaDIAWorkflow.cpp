@@ -145,7 +145,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
     QVector<PSMsReaderRow> psmReaderRows;
 
-//#define PARALLEL_RUN_SCORE_VEC
+#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
     QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
             frameParallelInputs,
@@ -157,7 +157,6 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
         e = result.first; ree;
         psmReaderRows.append(result.second);
     }
-
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 

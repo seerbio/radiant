@@ -617,14 +617,14 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             ); rree;
 
     QVector<PSMsReaderRow> psmsReaderRows;
-//    e = buildPSMsReaderRows(
-//            m_msFrame,
-//            pepStrWModsVsFrameIndexScoreResultOfTargets,
-//            topCansInFrameIndexVsScore,
-//            topCansInFrameIndexVsDiscScore,
-//            m_fragPredsIsDecoy,
-//            &psmsReaderRows
-//            ); rree;
+    e = buildPSMsReaderRows(
+            m_msFrame,
+            pepStrWModsVsFrameIndexScoreResultOfTargets,
+            topCansInFrameIndexVsScore,
+            topCansInFrameIndexVsDiscScore,
+            m_fragPredsIsDecoy,
+            &psmsReaderRows
+            ); rree;
 
 //    for (auto &row : psmsReaderRows) {
 //        qDebug() << row.charge << row.peptideStringWithMods << row.discScore << row.frameRankDiscScore
@@ -648,17 +648,13 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
         const FrameIndex frameIndex = it.key();
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore = it.value();
 
-        if (frameIndex != 128) {
-            continue;
-        }
-
         e = calculateDiscriminateScoreForFrame(
                 peptideStringWithModsScore,
                 frameIndex,
                 topCansInFrameIndexVsDiscScore
                 ); ree;
 
-#define DEBUG_DISC
+//#define DEBUG_DISC
 #ifdef DEBUG_DISC
         if (frameIndex == 128) {
             qDebug() << frameIndex;
@@ -668,7 +664,6 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
             }
             qDebug() << "************";
         }
-
 #endif
 
     }
