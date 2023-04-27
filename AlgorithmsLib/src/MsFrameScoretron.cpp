@@ -562,6 +562,9 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
 
     ERR_INIT
 
+    e = ErrorUtils::isTrue(params.isValid()); rree;
+    m_params = params;
+
     e = buildFragIonLibForTargetMz(
             params,
             fragLibFilePath,
@@ -673,6 +676,7 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
 namespace {
 
     Err getFrameIndexMs2Ions(
+            const PythiaParameters &params,
             const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
             QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanPreds
@@ -684,8 +688,17 @@ namespace {
 
             const PeptideStringWithMods &peptideStringWithMods = pepScore.first;
 
+            QVector<MS2Ion> ms2Ions = fragPreds.value(peptideStringWithMods);
+
+            const double mzMin = 0.0;
+            filterMs2IonsByMz(
+                    mzMin,
+                    params.mzMaxDataStructure,
+                    &ms2Ions
+                    );
+
             e = ErrorUtils::isTrue(fragPreds.contains(peptideStringWithMods)); ree;
-            scanPreds->insert(peptideStringWithMods, fragPreds.value(peptideStringWithMods));
+            scanPreds->insert(peptideStringWithMods, ms2Ions);
         }
 
         ERR_RETURN
@@ -722,6 +735,7 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrame(
 
     QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPreds;
     e = getFrameIndexMs2Ions(
+            m_params,
             peptideStringWithModsScore,
             m_fragPreds,
             &scanPreds
@@ -733,6 +747,16 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrame(
     QMap<PeptideStringWithMods, DiscScore> pepSeqVsWeight;
 
     TandemSpectraDeconvolvotron deconvolvotron;
+    const int precision = 2;
+    const int maxIters = 50;
+    const double stopTolerance = 1e-8;
+    e = deconvolvotron.init(
+            precision,
+            m_params.mzMaxDataStructure,
+            maxIters,
+            stopTolerance
+            ); ree;
+
     deconvolvotron.deconvolveTandemSpectra(
             scanPoints,
             scanPreds,

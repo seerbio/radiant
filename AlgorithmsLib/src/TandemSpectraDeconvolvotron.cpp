@@ -12,13 +12,14 @@
 
 
 TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
-: m_precision(2)
-, m_mzMax(1500.0)
-, m_iterationsMax(20)
-, m_stopTolerance(1e-8)
+: m_precision(-1)
+, m_mzMax(-1.0)
+, m_iterationsMax(-1)
+, m_stopTolerance(-1.0)
+, m_isInit(false)
 {}
 
-Err TandemSpectraDeconvolvotron::setParameters(
+Err TandemSpectraDeconvolvotron::init(
         int precision,
         double mzMax,
         int iterationsMax,
@@ -51,13 +52,10 @@ Err TandemSpectraDeconvolvotron::setParameters(
     ); ree;
     m_iterationsMax = iterationsMax;
 
-    const double stopTolMin = 0;
-    e = ErrorUtils::isAboveThreshold(
-            stopTolerance,
-            stopTolMin,
-            ErrorUtilsParam::ExcludeThreshold
-    ); ree;
-    m_stopTolerance = stopTolerance;
+    const double stopTolMin = 1e-100;
+    m_stopTolerance = std::max(stopTolerance, stopTolMin);
+
+    m_isInit = true;
 
     ERR_RETURN
 }
@@ -107,6 +105,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
 
     pepSeqVsWeight->clear();
 
+    e = ErrorUtils::isTrue(m_isInit); ree;
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
     e = ErrorUtils::isNotEmpty(tandemPredictions); ree;
 

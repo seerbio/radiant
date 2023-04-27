@@ -23,7 +23,7 @@ public:
     TandemSpectraDeconvolvotron();
     ~TandemSpectraDeconvolvotron() = default;
 
-    Err setParameters(
+    Err init(
             int precision,
             double mzMax,
             int iterationsMax,
@@ -42,6 +42,8 @@ private:
     int m_precision;
     double m_mzMax;
     double m_stopTolerance;
+
+    bool m_isInit;
 
 };
 

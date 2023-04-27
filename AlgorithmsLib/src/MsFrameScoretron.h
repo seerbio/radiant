@@ -47,6 +47,7 @@ private:
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
+    PythiaParameters m_params;
 
 };
 
