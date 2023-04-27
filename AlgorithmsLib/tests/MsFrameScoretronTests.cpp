@@ -48,7 +48,9 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             = QStringLiteral("/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib");
 
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "474966";
-    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = MsFrameScoretron::scoreCandidates(
+
+    MsFrameScoretron msFrameScoretron;
+    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = msFrameScoretron.scoreCandidates(
             pythiaParameters(),
             mzMLFileURI,
             fragLibPath,

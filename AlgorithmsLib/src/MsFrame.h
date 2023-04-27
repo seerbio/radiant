@@ -111,6 +111,8 @@ public:
 
     [[nodiscard]] QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
 
+    [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
+
     static Err buildFrameIndexVsScanPoints(
             const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
             QMap<FrameIndex, ScanPoints> *frameIndexVsScanPoints

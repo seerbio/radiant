@@ -246,3 +246,7 @@ Err MsFrame::buildFrameIndexVsScanPoints(
 
     ERR_RETURN
 }
+
+ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
+    return m_frameIndexVsScanNumber.value(frameIndex);
+}

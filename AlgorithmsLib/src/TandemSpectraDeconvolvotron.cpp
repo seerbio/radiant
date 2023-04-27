@@ -1,7 +1,6 @@
 //
 // Created by anichols on 4/21/23.
 //
-
 #include "TandemSpectraDeconvolvotron.h"
 
 #include "EigenUtils.h"
@@ -15,7 +14,7 @@
 TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
 : m_precision(2)
 , m_mzMax(1500.0)
-, m_iterationsMax(100)
+, m_iterationsMax(20)
 , m_stopTolerance(1e-8)
 {}
 

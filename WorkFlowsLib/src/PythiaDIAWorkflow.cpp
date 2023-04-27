@@ -7,7 +7,6 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoretron.h"
-#include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
 
@@ -127,8 +126,9 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
     ERR_INIT
 
-//#define PARALLEL_RUN_SCORE_VEC
+#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
+
     QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
             frameParallelInputs,
             parallelFrameProcossingLogic
@@ -138,9 +138,9 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-        if (fpi.uniqueMsInfoScanKey != "474966") {
-            continue;
-        }
+//        if (fpi.uniqueMsInfoScanKey != "474966") {
+//            continue;
+//        }
 
         QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result
                 = parallelFrameProcossingLogic(fpi); ree;
