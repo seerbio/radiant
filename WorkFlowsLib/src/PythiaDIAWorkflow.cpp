@@ -92,10 +92,26 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             m_fragLibUri,
             &frameParallelInputs
     ); ree;
-
     e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
-    e = processDIAFramesParallel(frameParallelInputs); ree;
+    e = buildCalibrationFiles(frameParallelInputs); ree;
+
+//    e = processDIAFramesParallel(frameParallelInputs); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildCalibrationFiles(const QVector<FrameParallelInput> &frameParallelInputs) {
+
+    ERR_INIT
+
+    const double calibrationFraction = 0.25;
+    const int calibrationResize = static_cast<int>(std::round(frameParallelInputs.size() * calibrationFraction));
+
+    QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
+    frameParallelInputsCalibration.resize(calibrationResize);
+
+    e = processDIAFramesParallel(frameParallelInputsCalibration); ree;
 
     ERR_RETURN
 }
@@ -128,25 +144,22 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-
     QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QString>>> futures = QtConcurrent::mapped(
             frameParallelInputs,
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();
 #else
-
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-//        if (fpi.uniqueMsInfoScanKey != "474966") {
-//            continue;
-//        }
+        if (fpi.uniqueMsInfoScanKey != "474966") {
+            continue;
+        }
 
         QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result
                 = parallelFrameProcossingLogic(fpi); ree;
 
     }
-
 #endif
 
 

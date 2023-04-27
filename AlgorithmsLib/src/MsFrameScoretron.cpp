@@ -597,15 +597,15 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
-    const QString outputFilePath = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
+    const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
             pepStrWModsVsFrameIndexScoreResultOfTargets,
-            outputFilePath
+            outputFilePathFrameScores
     ); rree;
 
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
     e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
-            outputFilePath,
+            outputFilePathFrameScores,
             m_msFrame,
             params.returnPSMTopN,
             &topCansInFrameIndexVsScore
@@ -633,7 +633,7 @@ QPair<Err, QPair<UniqueMsInfoScanKey, QString>> MsFrameScoretron::scoreCandidate
 //                << row.uniqueMsInfoScanKey;
 //    }
 
-    return {e, {uniqueMsInfoScanKey, outputFilePath}};
+    return {e, {uniqueMsInfoScanKey, outputFilePathFrameScores}};
 }
 
 
@@ -668,7 +668,6 @@ Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
 #endif
 
     }
-
 
     ERR_RETURN
 }

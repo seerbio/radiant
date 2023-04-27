@@ -38,6 +38,7 @@ public:
 
 private:
 
+    Err buildCalibrationFiles(const QVector<FrameParallelInput> &frameParallelInputs);
 
     Err processDIAFramesParallel(const QVector<FrameParallelInput> &frameParallelInputs);
 
