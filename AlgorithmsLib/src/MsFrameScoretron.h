@@ -15,7 +15,7 @@
 
 using namespace Error;
 
-
+class FrameIndexScoreResultOfTarget;
 
 class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 
@@ -44,6 +44,13 @@ private:
             FrameIndex frameIndex,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
             );
+
+    Err buildPSMsReaderRows(
+            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
+            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
+            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> &topCansInFrameIndexVsDiscScore,
+            QVector<PSMsReaderRow> *psmsReaderRows
+    );
 
 private:
 

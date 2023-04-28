@@ -95,9 +95,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
-    e = buildCalibrationFiles(frameParallelInputs); ree;
-
-//    e = processDIAFramesParallel(frameParallelInputs); ree;
+//    e = buildCalibrationFiles(frameParallelInputs); ree;
+    e = processDIAFramesParallel(frameParallelInputs); ree;
 
     ERR_RETURN
 }
