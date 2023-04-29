@@ -368,7 +368,7 @@ public:
     static QMap<int, T> troughs(
             const Eigen::VectorX<T> &vec,
             int precision = 1e4
-    ){
+                    ){
 
         QMap<int, T> troughtIndicies;
 
@@ -437,7 +437,7 @@ public:
     static Eigen::VectorX<T> rowWiseKLDivergence(
             const Eigen::MatrixX<T> &mat1,
             const Eigen::MatrixX<T> &mat2
-    ) {
+            ) {
 
         Eigen::VectorX<T> mat1Sum = mat1.rowwise().sum();
         Eigen::VectorX<T> mat2Sum = mat2.rowwise().sum();
@@ -467,6 +467,48 @@ public:
             int precision,
             double valMax
             );
+
+    enum class ThresholderDirection {
+        Above = 0
+        , Below
+    };
+
+    template<typename T>
+    static void removeRowsAboveOrBelowThreshold(
+            T threshold,
+            int columnIdxToFilter,
+            ThresholderDirection thresholderDirection,
+            Eigen::MatrixX<T> *mat
+            ) {
+
+        Eigen::VectorXd thresholderVec;
+
+        if (thresholderDirection == ThresholderDirection::Below) {
+            const Eigen::VectorXd belowThreshold
+                    = (mat->col(columnIdxToFilter).array() < threshold).rowwise().any().template cast<double>();
+            thresholderVec = belowThreshold;
+        }
+
+        else {
+            const Eigen::VectorXd aboveThreshold
+                    = (mat->col(columnIdxToFilter).array() > threshold).rowwise().any().template cast<double>();
+            thresholderVec = aboveThreshold;
+        }
+
+        int numRows = mat->rows();
+        int numCols = mat->cols();
+
+        int newNumRows = (thresholderVec.array() == 0).count();
+        Eigen::MatrixX<T> newMatrix(newNumRows, numCols);
+        int newRowIdx = 0;
+        for (int i = 0; i < numRows; ++i) {
+            if (thresholderVec(i) == 0) {
+                newMatrix.row(newRowIdx) = mat->row(i);
+                ++newRowIdx;
+            }
+        }
+        *mat = newMatrix;
+    }
 };
 
 #endif //EIGENUTILS_H

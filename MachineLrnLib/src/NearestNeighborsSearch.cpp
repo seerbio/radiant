@@ -17,6 +17,7 @@
 #include <QFile>
 #include <QDataStream>
 
+
 class Q_DECL_HIDDEN NearestNeighborsSearch::Private
 {
 public:
@@ -234,7 +235,6 @@ Err NearestNeighborsSearch::Private::kNearestNeighborsSearch(
     for (const QVector<double> &coor : searchPointCoors) {
 
         std::vector<double> queryPt = coor.toStdVector();
-
         std::vector<long> retIndex(k);
         std::vector<double> outDistSqr(k);
 
@@ -262,9 +262,8 @@ Err NearestNeighborsSearch::Private::kNearestNeighborsSearch(
 
         NNSearchResult nnSearchResult(
                 coor,
-                retIndex,
-                outDistSqr,
-                vals
+                MathUtils::mean(outDistSqr),
+                MathUtils::mean(vals)
                 );
 
         result->push_back(nnSearchResult);
@@ -303,15 +302,20 @@ Err NearestNeighborsSearch::Private::radiusSearch(
                         params
                 );
 
-        NNSearchResult nnSearchResult;
-        nnSearchResult.values.reserve(foundPoints.size());
-        nnSearchResult.indexes.reserve(foundPoints.size());
-        nnSearchResult.distancesSquared.reserve(foundPoints.size());
+        QVector<double> values;
+        values.reserve(static_cast<int>(foundPoints.size()));
 
+        QVector<long> indexes;
+        indexes.reserve(static_cast<int>(foundPoints.size()));
+
+        QVector<double> distancesSquared;
+        distancesSquared.reserve(static_cast<int>(foundPoints.size()));
+
+        NNSearchResult nnSearchResult;
         for (const std::pair<Eigen::Index, double> &pr : foundPoints) {
-            nnSearchResult.indexes.push_back(pr.first);
-            nnSearchResult.values.push_back(m_pairValues.at(static_cast<int>(nnSearchResult.indexes.back())));
-            nnSearchResult.distancesSquared.push_back(pr.second);
+            indexes.push_back(pr.first);
+            values.push_back(m_pairValues.at(static_cast<int>(indexes.back())));
+            distancesSquared.push_back(pr.second);
         }
 
         result->push_back(nnSearchResult);
@@ -512,4 +516,3 @@ Err NearestNeighborsSearch::readNearestNeighbors(
             ); ree;
     ERR_RETURN
 }
-

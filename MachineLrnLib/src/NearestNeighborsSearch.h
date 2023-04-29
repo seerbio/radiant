@@ -6,32 +6,27 @@
 #define PYTHIADIACPP_NEARESTNEIGBHORSSEARCH_H
 
 #include "Error.h"
+#include "GlobalSettings.h"
 #include "MachineLrnLib_Exports.h"
-
-#include "Eigen/Dense"
 
 using namespace Error;
 
-
 struct NNSearchResult {
     QVector<double> searchedCoor;
-    std::vector<long> indexes;
-    std::vector<double> distancesSquared;
-    std::vector<double> values;
+    double distanceSquared;
+    double values;
 
     NNSearchResult() = default;
     ~NNSearchResult() = default;
 
     NNSearchResult(
             const QVector<double> &searchedCoor,
-            const std::vector<long> &indexes,
-            const std::vector<double> &distancesSquared,
-            const std::vector<double> &values
+            double distanceSquared,
+            double value
             )
             : searchedCoor(searchedCoor)
-            , indexes(indexes)
-            , distancesSquared(distancesSquared)
-            , values(values) {}
+            , distanceSquared(distanceSquared)
+            , values(value) {}
 };
 
 class MACHINELRNLIB_EXPORTS NearestNeighborsSearch {
@@ -41,7 +36,7 @@ public:
     ~NearestNeighborsSearch();
 
     Err init(
-            const QVector<QPair<double, QVector<double>>> &valuesVsTreePoints,
+            const QVector<QPair<double, Coors>> &valuesVsTreePoints,
             int maxTreeLeafSize = 30
             );
 

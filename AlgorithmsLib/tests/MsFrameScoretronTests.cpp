@@ -50,7 +50,7 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "474966";
 
     MsFrameScoretron msFrameScoretron;
-    QPair<Err, QPair<UniqueMsInfoScanKey, QString>> result = msFrameScoretron.scoreCandidates(
+    QPair<Err, QVector<PSMsReaderRow>> result = msFrameScoretron.scoreCandidates(
             pythiaParameters(),
             mzMLFileURI,
             fragLibPath,

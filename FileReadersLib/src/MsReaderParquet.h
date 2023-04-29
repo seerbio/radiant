@@ -17,7 +17,6 @@
 
 using namespace Error;
 
-
 namespace MsParquetReaderNamespace {
 
     const QString MS_LEVEL = QStringLiteral("msLevel");

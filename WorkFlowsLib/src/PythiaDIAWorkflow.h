@@ -19,6 +19,7 @@
 using namespace Error;
 
 class FrameParallelInput;
+class PSMsReaderRow;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -38,9 +39,15 @@ public:
 
 private:
 
-    Err buildCalibrationFiles(const QVector<FrameParallelInput> &frameParallelInputs);
+    Err buildPSMResultsForCalibrationFile(
+            const QVector<FrameParallelInput> &frameParallelInputs,
+            const QString &firstPassResultsFilePath
+            );
 
-    Err processDIAFramesParallel(const QVector<FrameParallelInput> &frameParallelInputs);
+    Err processDIAFramesParallel(
+            const QVector<FrameParallelInput> &frameParallelInputs,
+            QVector<PSMsReaderRow> *psmReaderRows
+            );
 
 
 

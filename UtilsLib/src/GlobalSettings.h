@@ -12,6 +12,7 @@
 #include <QVector>
 
 using Charge = int;
+using Coors = QVector<double>;
 using DiscScore = double;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
@@ -34,6 +35,7 @@ using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
 using PeptideString = QString;
 using PeptideStringWithMods = QString;
+using DiffPPM = double;
 using ProteinId = int;
 using ProteinSequence = QString;
 using ResidueIndex = int;

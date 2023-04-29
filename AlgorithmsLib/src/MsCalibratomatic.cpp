@@ -9,32 +9,22 @@
 #include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
+#include "PSMsReader.h"
 #include "TandemFragmentPredictotron.h"
 
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-#include <boost/serialization/vector.hpp>
+#include <Eigen/Dense>
 
 #include <QtConcurrent/QtConcurrent>
 
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-using rTreeCoor = bg::model::point<int, 1, bg::cs::cartesian>;
-using rTreePeakBox = bg::model::box<rTreeCoor>;
-using rTreeSearchBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreePeakBox, QString> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
-
 
 MsCalibratomatic::MsCalibratomatic()
-: m_calPointK(10)
+: m_calPointK(3)
 , m_stDevNew(-1.0)
 {}
 
 Err MsCalibratomatic::init(
-        const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
         const PythiaParameters &pythiaParameters,
+        const QString &firstPassSearchFilePath,
         int calPointK
         ) {
 
@@ -43,324 +33,260 @@ Err MsCalibratomatic::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_params = pythiaParameters;
 
-    e = ErrorUtils::isNotEqual(calPointK, 0); ree;
+    e = ErrorUtils::isAboveThreshold(
+            calPointK,
+            0,
+            ErrorUtilsParam::ExcludeThreshold
+            ); ree;
     m_calPointK = calPointK;
 
-    e = buildCalibrator(scoreVectorsVsScanFrameFilePaths); ree;
+    e = ErrorUtils::fileExists(firstPassSearchFilePath); ree;
+    m_firstPassSearchFilePath = firstPassSearchFilePath;
+
+    e = buildCalibrator(); ree;
 
     qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
 
     ERR_RETURN
 }
 
-Err MsCalibratomatic::init(
-        const QString &calFilePath,
-        const QString &matFilePath
-) {
+namespace{
 
-    ERR_INIT
+    void sortScoreDesc(QVector<PSMsReaderRow> *psmsReaderRows) {
 
-    e = m_nnSearch.readNearestNeighbors(
-            calFilePath,
-            matFilePath
-    ); ree;
+        const auto sortLogic = [](const PSMsReaderRow &l, const PSMsReaderRow &r){
+            return l.score < r.score;
+        };
 
-    ERR_RETURN
-}
+        std::sort(psmsReaderRows->rbegin(), psmsReaderRows->rend(), sortLogic);
+    }
 
-Err MsCalibratomatic::buildCalibrator(
-        const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths
-        ) {
+    Err buildNearestNeigbhorsDataMatrix(
+            const QString &firstPassSearchFilePath,
+            Eigen::MatrixX<double> *mat
+            ) {
+
+        ERR_INIT
+
+        QVector<PSMsReaderRow> psmsReaderRows;
+        e = ParquetReader::read(
+                firstPassSearchFilePath,
+                &psmsReaderRows
+        ); ree;
+        sortScoreDesc(&psmsReaderRows);
+
+        QVector<double> scanNumbers;
+        QVector<double> mzFounds;
+        QVector<double> ppms;
+
+        int decoyCount = 0;
+        int rowCounter = 0;
+        const double thresholdFDR = 0.01;
+        for(const PSMsReaderRow &row : psmsReaderRows) {
+
+            if (row.isDecoy) {
+                decoyCount++;
+            }
+
+            if (static_cast<double>(decoyCount) / ++rowCounter >= thresholdFDR) {
+                break;
+            }
+
+            const QVector<double> &mzFound = row.mzFound;
+            const QVector<double> &mzSearched = row.mzSearched;
+
+            e = ErrorUtils::isEqual(mzFound.size(), mzSearched.size()); ree;
+
+            const auto scanNumberDouble = static_cast<double>(row.scanNumber);
+
+            for (int i = 0; i < mzFound.size(); i++) {
+
+                const double mzSrch = mzSearched.at(i);
+                const double mzFnd = mzFound.at(i);
+
+                e = ErrorUtils::isFalse(MathUtils::tZero(mzSrch)); ree;
+
+                const double ppm = 1e6 * ((mzFnd - mzSrch) / mzSrch);
+
+                scanNumbers.push_back(scanNumberDouble);
+                mzFounds.push_back(mzFnd);
+                ppms.push_back(ppm);
+            }
+
+        }
+
+        e = ErrorUtils::isEqual(scanNumbers.size(), mzFounds.size());
+        e = ErrorUtils::isEqual(scanNumbers.size(), ppms.size());
+
+        const int colCount = 3;
+        mat->resize(mzFounds.size(), colCount);
+
+        const Eigen::VectorX<double> scanNumbersVec = EigenUtils::convertQVectorToEigenVector(scanNumbers);
+        const Eigen::VectorX<double> mzFoundsVec = EigenUtils::convertQVectorToEigenVector(mzFounds);
+        const Eigen::VectorX<double> ppmsVec = EigenUtils::convertQVectorToEigenVector(ppms);
+
+        mat->col(0) = scanNumbersVec;
+        mat->col(1) = mzFoundsVec;
+        mat->col(2) = ppmsVec;
+
+        ERR_RETURN
+    }
+
+    Err filterDataMatrix(Eigen::MatrixX<double> *dataMatrix) {
+
+        ERR_INIT
+
+        const int expectedColSize = 3;
+
+        e = ErrorUtils::isTrue(dataMatrix->rows()); ree;
+        e = ErrorUtils::isEqual(
+                static_cast<int>(dataMatrix->cols()),
+                expectedColSize
+                ); ree;
+
+        const Eigen::VectorX<double> ppmColumn = dataMatrix->col(2);
+
+        const double ppmMean = EigenUtils::calculateMeanOfVector(ppmColumn);
+        const double ppmStDev = EigenUtils::calculateStDevOfVector(ppmColumn);
+
+        qDebug() << "OG ppm:stDev" << ppmMean << ppmStDev;
+
+        const double absThresholdPPM = std::abs(ppmMean * ppmStDev);
+
+        const int thresholdColIdx = 2;
+        EigenUtils::removeRowsAboveOrBelowThreshold(
+                absThresholdPPM,
+                thresholdColIdx,
+                EigenUtils::ThresholderDirection::Above,
+                dataMatrix
+                );
+
+        EigenUtils::removeRowsAboveOrBelowThreshold(
+                -absThresholdPPM,
+                thresholdColIdx,
+                EigenUtils::ThresholderDirection::Below,
+                dataMatrix
+        );
+
+        ERR_RETURN
+    }
+
+
+    Err buildNNInput(
+            const Eigen::MatrixX<double> &mat,
+            QVector<QPair<double, Coors>> *valuesVsTreePoints
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(mat.rows() > 0); ree;
+
+        for (int row = 0; row < mat.rows(); row++) {
+
+            const Eigen::VectorX<double> matRowQVec = mat.row(row);
+            QVector<double> matRow = EigenUtils::convertEigenVectorToQVector(matRowQVec);
+
+            const double ppm = matRow.back();
+            matRow.pop_back();
+
+            valuesVsTreePoints->push_back({ppm, matRow});
+        }
+
+        ERR_RETURN
+    }
+
+    Err calculateNewAccuracyMetrics(
+            Eigen::MatrixX<double> dataMatrix,
+            int calPointK,
+            NearestNeighborsSearch *nnSearch,
+            double *stDevNew
+            ) {
+
+        ERR_INIT
+
+        e =  ErrorUtils::isTrue(dataMatrix.size() > 0); ree;
+
+        QVector<QPair<DiffPPM, Coors>> valuesVsTreePoints;
+
+        const int yValIdx = static_cast<int>(dataMatrix.cols()) - 1;
+        const Eigen::VectorX<double> vec = dataMatrix.col(yValIdx);
+        const QVector<double> ppmDiffVals = EigenUtils::convertEigenVectorToQVector(vec);
+
+        buildNNInput(
+                dataMatrix,
+                &valuesVsTreePoints
+        );
+
+        const double ppmMean = MathUtils::mean(ppmDiffVals);
+        const double stDev = MathUtils::stDev(ppmDiffVals);
+        qDebug() << "OG Mean / StDev" << ppmMean << stDev;
+
+        const QPair<QVector<DiffPPM>, QVector<QVector<double>>> unzippedTreePoints
+                = ParallelUtils::unZip(valuesVsTreePoints);
+
+        const int calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped = calPointK + 1;
+        QVector<NNSearchResult> searchResults;
+        e = nnSearch->kNearestNeighborsSearch(
+                unzippedTreePoints.second,
+                calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped,
+                &searchResults
+        ); ree;
+
+        QVector<double> adjustedPPMs;
+        for (int i = 0; i < searchResults.size(); i++) {
+
+            const NNSearchResult &sr = searchResults.at(i);
+            const double ogPPM = ppmDiffVals.at(i);
+
+            const double ppmCorrectionMean = sr.values;
+
+            adjustedPPMs.push_back(ogPPM - ppmCorrectionMean);
+        }
+
+        const double ppmMeanNew = MathUtils::mean(adjustedPPMs);
+        *stDevNew = MathUtils::stDev(adjustedPPMs);
+        qDebug() << "New Mean / StDev" << ppmMeanNew << *stDevNew;
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsCalibratomatic::buildCalibrator() {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_params.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(scoreVectorsVsScanFrameFilePaths); ree;
+    e = ErrorUtils::fileExists(m_firstPassSearchFilePath); ree;
 
-    for (
-        auto it = scoreVectorsVsScanFrameFilePaths.begin();
-        it != scoreVectorsVsScanFrameFilePaths.end();
-        it++
-        ) {
-
-        const QString &scoreVectorsFilePath = it.key();
-        const QString &msFrameScansFilePath = it.value();
-
-        qDebug() << "Processing files" << scoreVectorsFilePath;
-
-        e = processLogicForFrameScores(
-                scoreVectorsFilePath,
-                msFrameScansFilePath
-                ); ree;
-
-    }
-
-    e = loadCalibrationPointsToKDTree(); ree;
-
-    e = calculateNewAccuracyMetrics(); ree;
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::processLogicForFrameScores(
-        const QString &scoreVectorsFilePath,
-        const QString &msFrameScansFilePath
-        ) {
-
-    ERR_INIT
-
-
-    m_frameIndexVsScanPoints.clear();
-    m_peptideWithModsVsCharge.clear();
-    m_topCandidatesInFrameIndex.clear();
-
-    QVector<MsFrameScanPointRows> msFrameScanPointRows;
-    ParquetReader::read(
-            msFrameScansFilePath,
-            &msFrameScanPointRows
-    ); ree;
-
-    e = MsFrame::buildFrameIndexVsScanPoints(
-            msFrameScanPointRows,
-            &m_frameIndexVsScanPoints
-    ); ree;
-
-    const int topNPSMs = 1;
-    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
-            scoreVectorsFilePath,
-            msFrameScansFilePath,
-            topNPSMs,
-            &m_topCandidatesInFrameIndex
+    Eigen::MatrixX<double> dataMatrix;
+    e = buildNearestNeigbhorsDataMatrix(
+            m_firstPassSearchFilePath,
+            &dataMatrix
             ); ree;
 
-    e = buildPeptideSequenceWithModsVsCharge(scoreVectorsFilePath); ree;
+    e = filterDataMatrix(&dataMatrix); ree;
+    qDebug() << "Datapoints:" << dataMatrix.rows();
 
-    QVector<PeptideStringWithModsScoreResult> topScoringPSMs;
-    e = getScoredPSMsUntilFirstDecoyIsFound(&topScoringPSMs); ree;
-
-    e = buildCalibrationPoints(topScoringPSMs); ree;
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::buildPeptideSequenceWithModsVsCharge(const QString &scoreVectorsFilePath) {
-
-    ERR_INIT
-    m_peptideWithModsVsCharge.clear();
-
-    QVector<MsFrameScoreVectorReaderRow> scoreVectors;
-    ParquetReader::read(
-            scoreVectorsFilePath,
-            &scoreVectors
-    ); ree;
-
-    e = ErrorUtils::isNotEmpty(scoreVectors); ree;
-
-    for (const MsFrameScoreVectorReaderRow &row : scoreVectors) {
-        e = ErrorUtils::isFalse(m_peptideWithModsVsCharge.contains(row.peptideStringWithMods)); ree;
-        m_peptideWithModsVsCharge.insert(row.peptideStringWithMods, row.charge);
-    }
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringWithModsScoreResult> *scoreNoDecoys) {
-
-    ERR_INIT
-
-    QVector<PeptideStringWithModsScoreResult> scores;
-    for (auto it = m_topCandidatesInFrameIndex.begin(); it != m_topCandidatesInFrameIndex.end(); it++) {
-
-        const FrameIndex frameIndex = it.key();
-        const QVector<QPair<PeptideStringWithMods, Score>> &scorePair = it.value();
-
-        for (const QPair<PeptideStringWithMods, Score> &pr : scorePair) {
-
-            if (pr.first.isEmpty()) {
-                continue;
-            }
-
-            PeptideStringWithModsScoreResult res;
-            res.frameIndex = frameIndex;
-            res.peptideStringWithMods = pr.first;
-            res.score = pr.second;
-
-            e = ErrorUtils::isTrue(m_peptideWithModsVsCharge.contains(res.peptideStringWithMods));ree;
-            res.charge = m_peptideWithModsVsCharge.value(res.peptideStringWithMods);
-
-            scores.push_back(res);
-        }
-    }
-
-    using T = PeptideStringWithModsScoreResult;
-    std::sort(scores.rbegin(), scores.rend(), [](const T &l, const T &r){return l.score < r.score;});
-
-    for (const T &r : scores) {
-
-        bool isDecoy;
-//        e = m_fragLibraryTronDia->peptideStringWithModsIsDecoy(
-//                r.peptideStringWithMods,
-//                &isDecoy
-//        ); ree;
-
-        if (isDecoy) {
-            break;
-        }
-
-        scoreNoDecoys->push_back(r);
-    }
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scoresNoDecoys); ree;
-
-    for (const PeptideStringWithModsScoreResult &res : scoresNoDecoys) {
-
-        const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
-                res.peptideStringWithMods,
-                res.charge
-                );
-
-//        QVector<MS2Ion> theoTandemPrediction;
-//        e = m_fragLibraryTronDia->getMS2Ions(
-//                peptideSequenceChargeKey,
-//                &theoTandemPrediction
-//                ); ree
-//        e = ErrorUtils::isNotEmpty(theoTandemPrediction); ree;
-//        const ScanPoints theoTandemPredictionScanPoints
-//                = FragLibraryTronDIA::ms2IonsToScanPoints(theoTandemPrediction);
-
-        const ScanPoints &scanPoints = m_frameIndexVsScanPoints.value(res.frameIndex);
-        e = ErrorUtils::isNotEmpty(scanPoints); ree;
-
-//        const ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
-//                scanPoints,
-//                theoTandemPredictionScanPoints,
-//                m_params.ms2ExtractionWidthPPM
-//                );
-//
-//        m_calibrationPoints[res.frameIndex].push_back(extractPoints);
-
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    using DiffPPM = double;
-    using Coors = QVector<double>;
-
-    void buildNNInput(
-            const QMap<FrameIndex, QVector<ExtractPoints>> &calibrationPoints,
-            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
-            QVector<double> *ppmDiffVals
-            ) {
-
-        for (auto it = calibrationPoints.begin(); it != calibrationPoints.end(); it++) {
-
-            const FrameIndex frameIndex = it.key();
-            const auto frameIndexDouble = static_cast<double>(frameIndex);
-            const QVector<ExtractPoints> &eps = it.value();
-
-            for (const ExtractPoints &ep : eps) {
-
-                for (const QPointF &p : ep.mzFoundVsSearched) {
-
-                    const double mzFound = p.x();
-                    if (mzFound < 0) {
-                        continue;
-                    }
-
-                    const double mzTheo = p.y();
-                    const double ppmDiff = 1e6 * ((mzFound - mzTheo) / mzTheo);
-
-                    valuesVsTreePoints->push_back({ppmDiff, {frameIndexDouble, mzFound}});
-                    ppmDiffVals->push_back(ppmDiff);
-                }
-            }
-        }
-
-    }
-
-}//namespace
-Err MsCalibratomatic::loadCalibrationPointsToKDTree() {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_calibrationPoints); ree;
-
-    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePoints;
-    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePointsRemoved;
-    QVector<double> ppmDiffVals;
-
-    buildNNInput(
-            m_calibrationPoints,
-            &valuesVsTreePoints,
-            &ppmDiffVals
-            );
-
-    valuesVsTreePointsRemoved = valuesVsTreePoints;
-
-    qDebug() << "Calibration points count" << valuesVsTreePoints.size();
-    filterNNInput(
-            ppmDiffVals,
-            &valuesVsTreePoints,
-            &valuesVsTreePointsRemoved
-            );
-    qDebug() << "Calibration points filtered count" << valuesVsTreePoints.size();
+    QVector<QPair<double, Coors>> valuesVsTreePoints;
+    buildNNInput(dataMatrix, &valuesVsTreePoints);
 
     e = m_nnSearch.init(valuesVsTreePoints); ree;
 
+    e = calculateNewAccuracyMetrics(
+            dataMatrix,
+            m_calPointK,
+            &m_nnSearch,
+            &m_stDevNew
+            ); ree;
+
     ERR_RETURN
-}
-
-void MsCalibratomatic::filterNNInput(
-        const QVector<double> &ppmDiffVals,
-        QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
-        QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
-) {
-
-    const double ppmMean = MathUtils::mean(ppmDiffVals);
-    const double stDev = MathUtils::stDev(ppmDiffVals);
-
-    const double stDevMultiplier = 3.0;
-    const double ppmMin = ppmMean - (stDevMultiplier * stDev);
-    const double ppmMax = ppmMean + (stDevMultiplier * stDev);
-
-    const auto terminatorLogic = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
-        return !(ppmMin <= calPoint.first && calPoint.first <= ppmMax);
-    };
-
-    const auto terminator = std::remove_if(
-            valuesVsTreePoints->begin(),
-            valuesVsTreePoints->end(),
-            terminatorLogic
-    );
-
-    valuesVsTreePoints->erase(terminator, valuesVsTreePoints->end());
-
-    const auto terminatorLogicRemoved = [ppmMin, ppmMax](const QPair<DiffPPM, Coors> &calPoint){
-        return ppmMin <= calPoint.first && calPoint.first <= ppmMax;
-    };
-
-    const auto terminatorRemoved = std::remove_if(
-            valuesVsTreePointsRemoved->begin(),
-            valuesVsTreePointsRemoved->end(),
-            terminatorLogicRemoved
-    );
-
-    valuesVsTreePointsRemoved->erase(terminatorRemoved, valuesVsTreePointsRemoved->end());
 }
 
 namespace {
 
-    QVector<QVector<double>> buildNearestNeighborsInput(const QMap<FrameIndex, ScanPoints> &indexVsScanPoints) {
+    QVector<QVector<double>> buildNearestNeighborsInput(
+            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints
+            ) {
 
         QVector<QVector<double>> nnInputs;
 
@@ -438,7 +364,7 @@ namespace {
                         searchedFrameIndex
                         ); ree;
 
-                const double meanDiffPPM = MathUtils::mean(nnSearchResult.values);
+                const double meanDiffPPM = nnSearchResult.values;
                 const double mzCorrectionAmount = (ogMz * meanDiffPPM) / 1e6;
                 const double correctedMz = ogMz - mzCorrectionAmount;
 
@@ -475,146 +401,6 @@ Err MsCalibratomatic::recalibratePoints(
             nnSearchResults,
             recalIndexVsScanPoints
             ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    QPair<Err, QMap<ScanNumber, ScanPoints>> recalibrationLogicParallel(
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QString &calibrationMatFilePath,
-            const QString &calibarationCalFilePath
-
-    ) {
-
-        ERR_INIT
-
-        MsCalibratomatic calibratomatic;
-        e = calibratomatic.init(
-                calibarationCalFilePath,
-                calibrationMatFilePath
-                ); rree;
-
-        QMap<ScanNumber, ScanPoints> recalScanPoints;
-        e = calibratomatic.recalibratePoints(
-                scanPoints,
-                &recalScanPoints
-                ); rree;
-
-        return {e, recalScanPoints};
-}
-
-
-}//namespace
-Err MsCalibratomatic::recalibratePoints(
-        const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const QString &calibrationMatFilePath,
-        const QString &calibarationCalFilePath,
-        QMap<ScanNumber, ScanPoints> *recalScanPoints
-) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scanPoints); ree;
-    e = ErrorUtils::fileExists(calibrationMatFilePath); ree;
-    e = ErrorUtils::fileExists(calibarationCalFilePath); ree;
-
-    QVector<QMap<ScanNumber, ScanPoints>> tranchedScanPoints;
-    e = ParallelUtils::tranchMapForParallelizationInOrder<ScanNumber, ScanPoints>(
-            scanPoints,
-            ParallelUtils::numberOfAvailableSystemProcessors(),
-            &tranchedScanPoints
-            ); ree;
-
-    const auto recalLogicBinder = std::bind(
-        recalibrationLogicParallel,
-        std::placeholders::_1,
-        calibrationMatFilePath,
-        calibarationCalFilePath
-        );
-
-    QFuture<QPair<Err, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
-            tranchedScanPoints,
-            recalLogicBinder
-            );
-    futures.waitForFinished();
-
-    for (const QPair<Err, QMap<ScanNumber, ScanPoints>> &res : futures) {
-        e = res.first; ree;
-
-        const QMap<ScanNumber, ScanPoints> &map = res.second;
-        for (auto it = map.begin(); it != map.end(); it++) {
-
-            const ScanNumber scanNumber = it.key();
-            const ScanPoints &sp = it.value();
-            recalScanPoints->insert(scanNumber, sp);
-        }
-    }
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::writeCalibratomatic(
-        const QString &msDataFilePath,
-        QString *calibrationMatFilePath,
-        QString *calibarationCalFilePath
-        ) {
-
-    ERR_INIT
-    e = m_nnSearch.writeNearestNeighbors(
-            msDataFilePath,
-            calibrationMatFilePath,
-            calibarationCalFilePath
-            ); ree;
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::calculateNewAccuracyMetrics() {
-
-    ERR_INIT
-
-    e =  ErrorUtils::isNotEmpty(m_calibrationPoints);
-
-    QVector<QPair<DiffPPM, QVector<double>>> valuesVsTreePoints;
-    QVector<double> ppmDiffVals;
-    buildNNInput(
-            m_calibrationPoints,
-            &valuesVsTreePoints,
-            &ppmDiffVals
-    );
-
-    const double ppmMean = MathUtils::mean(ppmDiffVals);
-    const double stDev = MathUtils::stDev(ppmDiffVals);
-    qDebug() << "OG Mean / StDev" << ppmMean << stDev;
-
-    const QPair<QVector<DiffPPM>, QVector<QVector<double>>> unzippedTreePoints
-            = ParallelUtils::unZip(valuesVsTreePoints);
-
-    const int calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped = m_calPointK + 1;
-    QVector<NNSearchResult> searchResults;
-    e = m_nnSearch.kNearestNeighborsSearch(
-            unzippedTreePoints.second,
-            calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped,
-            &searchResults
-            ); ree;
-
-    QVector<double> adjustedPPMs;
-    for (int i = 0; i < searchResults.size(); i++) {
-
-        const NNSearchResult &sr = searchResults.at(i);
-        const double ogPPM = ppmDiffVals.at(i);
-
-        QVector<double> ppms = QVector<double>::fromStdVector(sr.values);
-        ppms.pop_front();
-
-        const double ppmCorrectionMean = MathUtils::mean(ppms);
-        adjustedPPMs.push_back(ogPPM - ppmCorrectionMean);
-    }
-
-    const double ppmMeanNew = MathUtils::mean(adjustedPPMs);
-    m_stDevNew = MathUtils::stDev(adjustedPPMs);
-    qDebug() << "New Mean / StDev" << ppmMeanNew << m_stDevNew;
 
     ERR_RETURN
 }

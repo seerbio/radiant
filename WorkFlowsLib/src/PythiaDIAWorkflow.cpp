@@ -81,6 +81,55 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildRecalibratedMsDataFile(
+            const QString &msDataFilePath,
+            const QString &firstPassResultsFilePath,
+            PythiaParameters *pythiaParameters,
+            QString *outputFilePath
+            ) {
+
+        ERR_INIT
+
+        const int calibrationPoints = 5; //TODO add this to params.
+        MsCalibratomatic msCalibratomatic;
+        e = msCalibratomatic.init(
+                *pythiaParameters,
+                firstPassResultsFilePath,
+                calibrationPoints
+                ); ree;
+
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(msDataFilePath); ree;
+
+        const QMap<ScanNumber, ScanPoints> scanPoints = msReaderParquet.getScanPoints();
+
+        QMap<ScanNumber, ScanPoints> scanPointsRecalibrated;
+        e = msCalibratomatic.recalibratePoints(
+                scanPoints,
+                &scanPointsRecalibrated
+                ); ree;
+
+        msReaderParquet.setScanPoints(scanPointsRecalibrated);
+
+        *outputFilePath = msDataFilePath + ".reCal";
+
+        e = MsReaderParquet::writeMsReaderToParquet(
+                *outputFilePath,
+                QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
+        ); ree;
+
+        const double ppmMultilplier = 4.0;
+        const double newPrecisionPPM = msCalibratomatic.newStDev() * ppmMultilplier;
+        const double oldPrecisionPPM = pythiaParameters->ms2ExtractionWidthPPM;
+
+        (*pythiaParameters).ms2ExtractionWidthPPM = newPrecisionPPM;
+        (*pythiaParameters).featureFinderTolerancePPM = newPrecisionPPM;
+
+        qDebug() << "PPM tolerance adjusted from" << oldPrecisionPPM << "->" << newPrecisionPPM;
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
@@ -95,13 +144,49 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
 
-//    e = buildCalibrationFiles(frameParallelInputs); ree;
-    e = processDIAFramesParallel(frameParallelInputs); ree;
+    const QString firstPassResultsFilePath = msDataFilePath + ".firstPass.pythiaDIA";
+
+    e = buildPSMResultsForCalibrationFile(
+            frameParallelInputs,
+            firstPassResultsFilePath
+            ); ree;
+
+    QString msDataFilePathRecalibrated;
+    e = buildRecalibratedMsDataFile(
+            msDataFilePath,
+            firstPassResultsFilePath,
+            &m_pythiaParameters,
+            &msDataFilePathRecalibrated
+            ); ree;
+
+    QVector<FrameParallelInput> frameParallelInputsRecal;
+    e = buildParallelInput(
+            m_pythiaParameters,
+            msDataFilePath,
+            m_fragLibUri,
+            &frameParallelInputsRecal
+    ); ree;
+    e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
+
+    QVector<PSMsReaderRow> psmReaderRowsRecal;
+    e = processDIAFramesParallel(
+            frameParallelInputsRecal,
+            &psmReaderRowsRecal
+            ); ree;
+
+    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    e = ParquetReader::write(
+            psmReaderRowsRecal,
+            resultsFilePath
+            ); ree;
 
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::buildCalibrationFiles(const QVector<FrameParallelInput> &frameParallelInputs) {
+Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
+        const QVector<FrameParallelInput> &frameParallelInputs,
+        const QString &firstPassResultsFilePath
+        ) {
 
     ERR_INIT
 
@@ -111,7 +196,17 @@ Err PythiaDIAWorkflow::buildCalibrationFiles(const QVector<FrameParallelInput> &
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
     frameParallelInputsCalibration.resize(calibrationResize);
 
-    e = processDIAFramesParallel(frameParallelInputsCalibration); ree;
+    QVector<PSMsReaderRow> psmReaderRows;
+    e = processDIAFramesParallel(
+            frameParallelInputsCalibration,
+            &psmReaderRows
+            ); ree;
+
+    qDebug() << "Rows to write:" << psmReaderRows.size();
+    e = ParquetReader::write(
+            psmReaderRows,
+            firstPassResultsFilePath
+            ); ree;
 
     ERR_RETURN
 }
@@ -138,11 +233,12 @@ namespace {
    }
 
 }//namespace
-Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput> &frameParallelInputs) {
+Err PythiaDIAWorkflow::processDIAFramesParallel(
+        const QVector<FrameParallelInput> &frameParallelInputs,
+        QVector<PSMsReaderRow> *psmReaderRows
+        ) {
 
     ERR_INIT
-
-    QVector<PSMsReaderRow> psmReaderRows;
 
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
@@ -154,7 +250,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
 
     for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
         e = result.first; ree;
-        psmReaderRows.append(result.second);
+        psmReaderRows->append(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
@@ -167,14 +263,9 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(const QVector<FrameParallelInput
                 = parallelFrameProcossingLogic(fpi); ree;
 
         e = result.first; ree;
-        psmReaderRows.append(result.second);
+        psmReaderRows->append(result.second);
     }
 #endif
-
-    ParquetReader::write(psmReaderRows, "test.prq");
-//    for (auto &r : psmReaderRows) {
-//        qDebug() << r.discScore;
-//    }
 
     ERR_RETURN
 }

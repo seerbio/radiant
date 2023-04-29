@@ -18,10 +18,6 @@
 using namespace Error;
 
 class PeptideSequence;
-class PeptideStringWithModsScoreResult;
-
-using DiffPPM = double;
-using Coors = QVector<double>;
 
 class ALGORITHMSLIB_EXPORTS MsCalibratomatic {
 
@@ -31,20 +27,9 @@ public:
     ~MsCalibratomatic() = default;
 
     Err init(
-            const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths,
             const PythiaParameters &pythiaParameters,
+            const QString &firstPassSearchFilePath,
             int calPointK
-            );
-
-    Err init(
-            const QString &calFilePath,
-            const QString &matFilePath
-            );
-
-    Err writeCalibratomatic(
-            const QString &msDataFilePath,
-            QString *calibrationMatFilePath,
-            QString *calibarationCalFilePath
             );
 
     // either FrameIndex, or ScanNumber can be key as they are both ints.
@@ -53,53 +38,21 @@ public:
             QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
             );
 
-    static Err recalibratePoints(
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QString &calibrationMatFilePath,
-            const QString &calibarationCalFilePath,
-            QMap<ScanNumber, ScanPoints> *recalScanPoints
-    );
-
     [[nodiscard]] double newStDev();
 
 private:
 
-    Err buildCalibrator(const QMap<QString, QString> &scoreVectorsVsScanFrameFilePaths);
+    Err buildCalibrator();
 
-    void filterNNInput(
-            const QVector<double> &ppmDiffVals,
-            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePoints,
-            QVector<QPair<DiffPPM, Coors>> *valuesVsTreePointsRemoved
-    );
-
-    Err processLogicForFrameScores(
-            const QString &scoreVectorsFilePath,
-            const QString &msFrameScansFilePath
-    );
-
-    Err getScoredPSMsUntilFirstDecoyIsFound(QVector<PeptideStringWithModsScoreResult> *scoresNoDecoys);
-
-    Err buildCalibrationPoints(const QVector<PeptideStringWithModsScoreResult> &scoresNoDecoys);
-
-    Err buildPeptideSequenceWithModsVsCharge(const QString &scoreVectorsFilePath);
-
-    Err loadCalibrationPointsToKDTree();
-
-    Err calculateNewAccuracyMetrics();
 
 private:
 
-    //Need to be cleared w/ each new ScoreFrame iteration
-    QMap<FrameIndex, ScanPoints> m_frameIndexVsScanPoints;
-    QMap<PeptideStringWithMods, Charge> m_peptideWithModsVsCharge;
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> m_topCandidatesInFrameIndex;
-
     //Never cleared
     PythiaParameters m_params;
-    QMap<FrameIndex, QVector<ExtractPoints>> m_calibrationPoints;
     NearestNeighborsSearch m_nnSearch;
     int m_calPointK;
     double m_stDevNew;
+    QString m_firstPassSearchFilePath;
 
 };
 
