@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/Ms1FeatureFinder.cpp
         src/MsCalibratomatic.cpp
         src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
@@ -44,6 +45,7 @@ SET(HEADER_FILES
         src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/Ms1FeatureFinder.h
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h

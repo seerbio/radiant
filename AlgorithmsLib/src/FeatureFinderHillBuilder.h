@@ -23,21 +23,21 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     int minScanCount = -1;
     bool useMeanMz = false;
 
-//    int filterLength = 7;
-//    int smoothCount = 3;
-//    double sigma = 1.0;
-//    double signalToNoiseRatio = 3;
+    int filterLength = 5;
+    int smoothCount = 1;
+    double sigma = 1.0;
+    double signalToNoiseRatio = 2;
 
 
 public:
     bool isValid() const {
         return tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount > 0;
-//            && filterLength > 4
-//            && smoothCount >0
-//            && sigma > 0
-//            && signalToNoiseRatio > 0;
+            && minScanCount > 0
+            && filterLength > 4
+            && smoothCount >0
+            && sigma > 0
+            && signalToNoiseRatio > 0;
     }
 
 };
@@ -62,12 +62,16 @@ public:
 
     void setRunParallel(bool runParallel);
 
+    /*
+     * destinationFilePath must end in .mzrt.csv extension
+     */
     static Err writeHillsToBatmassMzMrtFile(
-            const QMap<ScanNumber, double> &retentionTimeByScanNumber,
+            const QMap<ScanNumber, double> &scanNumberVsScanTime,
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath
     );
 
+    Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
 
 private:
 

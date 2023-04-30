@@ -111,6 +111,8 @@ public:
 
     [[nodiscard]] QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
 
+    [[nodiscard]] QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints() const;
+
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;

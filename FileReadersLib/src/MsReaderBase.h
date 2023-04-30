@@ -124,6 +124,7 @@ public:
                     );
 
     int getNearestScanNumberFromScanTime(double scanTime);
+
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
     static Err splitScanPoints(

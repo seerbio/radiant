@@ -5,6 +5,8 @@
 #include "MsFrame.h"
 
 #include "DeisotoperTandem.h"
+#include "EigenKernelUtils.h"
+#include "EigenSparseUtils.h"
 #include "MsReaderBase.h"
 #include "MsScansDenoiseTron.h"
 #include "ParallelUtils.h"
@@ -110,6 +112,8 @@ Err MsFrame::denoiseFrame() {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+
     MsScansDenoiseTron denoiser;
     e = denoiser.init(m_params); ree;
 
@@ -130,6 +134,8 @@ Err MsFrame::deisotopeFrame() {
 
     const bool runParallel = false;
 
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+
     QMap<ScanNumber, ScanPoints> deisotopedTandemScans;
     e = DeisotoperTandem::deisotopeTandemScansParallel(
             m_frame,
@@ -143,8 +149,58 @@ Err MsFrame::deisotopeFrame() {
     ERR_RETURN
 }
 
+namespace {
+
+    Eigen::SparseMatrix<double> rowWiseGaussianSmoothMatrix(const Eigen::SparseMatrix<double, Eigen::RowMajor> &mat) {
+
+        const int filterLen = 5;
+        const double sigma = 1;
+        Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
+                filterLen,
+                sigma
+                );
+
+        return EigenKernelUtils::applyKernelRowWiseToMatrix(
+                mat,
+                gaussianFilter,
+                false
+                );
+    }
+
+}//namespace
 Err MsFrame::smoothFrame() {
-    return Error::eFunctionNotImplemented;
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+
+    const int precision = 4;
+    const double mzMax = 2000;
+
+    const QMap<FrameIndex, ScanPoints> frame = frameIndexVsScanPoints();
+
+    Eigen::SparseMatrix<double, Eigen::RowMajor> mat = EigenSparseUtils::loadFrameToSparseMatrix(
+            frame,
+            precision,
+            mzMax
+            );
+
+    //TODO add smoothing params to pythiaParams.
+    mat = rowWiseGaussianSmoothMatrix(mat); ree;
+
+    QMap<FrameIndex, ScanPoints> frameSmooth
+        = EigenSparseUtils::loadSparseMatrixToFrame(mat, precision);
+
+    m_frame.clear();
+
+    for (auto it = frameSmooth.begin(); it != frameSmooth.end(); it++) {
+        const FrameIndex frameIndex = it.key();
+        const ScanPoints &scanPoints = it.value();
+        const ScanNumber scanNumber = m_frameIndexVsScanNumber.value(frameIndex);
+        m_frame.insert(scanNumber, scanPoints);
+    }
+
+    ERR_RETURN
 }
 
 QPair<double, double> MsFrame::precursorMzTargetStartEnd() const {
@@ -253,4 +309,8 @@ ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
 
 ScanPoints MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
     return m_frame.value(scanNumber);
+}
+
+QMap<ScanNumber, ScanPoints> MsFrame::scanNumberVsScanPoints() const {
+    return m_frame;
 }

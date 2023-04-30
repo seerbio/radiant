@@ -9,6 +9,7 @@
 #include "MathUtils.h"
 #include "MsReaderBase.h"
 #include "ParallelUtils.h"
+#include "PeakIntegratomatic.h"
 
 #include <Eigen/Dense>
 
@@ -43,7 +44,7 @@ public:
             QVector<FeatureFinderHill> *featureFinderHills
     );
 
-//    Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
+    Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
 
     void setRunParallel(bool runParallel);
 
@@ -559,144 +560,133 @@ Err FeatureFinderHillBuilder::Private::buildHills(
     ); ree;
 //    qDebug() << featureFinderHills->size() << "Centroids to hills" << et.restart() << "mSec";
 
-//    e = refineHills(featureFinderHills); ree;
-//    qDebug() << featureFinderHills->size() << "Hills refined in" << et.restart() << "mSec";
-
     ERR_RETURN
 }
 
 
-//namespace {
-//
-//
-//    struct RefineHillsInput {
-//        FeatureFinderHill featureFinderHill;
-//        FeatureFinderParameters params;
-//        int minScanCount = -1;
-//    };
-//
-//
-//    Err splitHill(
-//            const FeatureFinderHill &featureFinderHill,
-//            const QVector<PeakIntegrationIndex> &peakIntegrationIndexes,
-//            const QVector<double> &intensityVecSmoothed,
-//            int minHillScanCount,
-//            QVector<FeatureFinderHill> *refinedHills
-//    ) {
-//
-//        ERR_INIT
-//
-//        FeatureFinderHill refinedHill = featureFinderHill;
-//        refinedHill.updateIntensities(intensityVecSmoothed);
-//
-//        for (const PeakIntegrationIndex &pii : peakIntegrationIndexes) {
-//
-//            FeatureFinderHill splitHill = featureFinderHill;
-//            e = splitHill.refineHill(pii.first, pii.second); ree;
-//
-//            if (splitHill.scanCount() < minHillScanCount) {
-//                continue;
-//            }
-//
-//            refinedHills->push_back(splitHill);
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//
-//    QPair<Err, QVector<FeatureFinderHill>> refineHillsLogic(const RefineHillsInput &rhi) {
-//
-//        ERR_INIT
-//
-//        PeakIntegratomaticParameters params;
-//        params.smoothCount = rhi.params.smoothCount;
-//        params.filterLength = rhi.params.filterLength;
-//        params.sigma = rhi.params.sigma;
-//        params.signalToNoiseRatio = rhi.params.signalToNoiseRatio;
-//
-//        PeakIntegratomatic peakIntegratomatic;
-//        e = peakIntegratomatic.init(params);
-//        if (e != eNoError) {
-//            return {e, {}};
-//        }
-//
-//        QVector<PeakIntegrationIndex> peakLimits;
-//        QVector<double> intensityVecSmoothed;
-//        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
-//                rhi.featureFinderHill.intensities(),
-//                &peakLimits,
-//                &intensityVecSmoothed
-//        );
-//        if (e != eNoError) {
-//            return {e, {}};
-//        }
-//
-//        if (intensityVecSmoothed.isEmpty()) {
-//            return {e, {rhi.featureFinderHill}};
-//        }
-//
-//        QVector<FeatureFinderHill> newHills;
-//        e = splitHill(
-//                rhi.featureFinderHill,
-//                peakLimits,
-//                intensityVecSmoothed,
-//                rhi.minScanCount,
-//                &newHills
-//        );
-//        if (e != eNoError) {
-//            return {e, {}};
-//        }
-//
-//        return {e, newHills};
-//    }
-//
-//
-//} //namespace
-//Err FeatureFinderHillBuilder::Private::refineHills(QVector<FeatureFinderHill> *featureFinderHills) {
-//
-//    ERR_INIT
-//
-//    e = ErrorUtils::isNotEmpty(*featureFinderHills); ree;
-//
-//    QVector<RefineHillsInput> refineHillsInput;
-//    for (const FeatureFinderHill &ffh : (*featureFinderHills)) {
-//        RefineHillsInput rhi;
-//        rhi.params = m_featureFinderParameters;
-//        rhi.featureFinderHill = ffh;
-//        rhi.minScanCount = m_featureFinderParameters.minScanCount;
-//        refineHillsInput.push_back(rhi);
-//    }
-//
-//    QVector<FeatureFinderHill> refinedHills;
-//
-//    if (m_runParallel) {
-//
-//        QFuture<QPair<Err, QVector<FeatureFinderHill>>> futures
-//                = QtConcurrent::mapped(refineHillsInput, refineHillsLogic);
-//        futures.waitForFinished();
-//
-//        for (const QPair<Err, QVector<FeatureFinderHill>> &future: futures) {
-//            e = future.first; ree;
-//            refinedHills.append(future.second);
-//        }
-//    }
-//
-//    else {
-//
-//        for (const RefineHillsInput &rhi : refineHillsInput) {
-//
-//            const QPair<Err, QVector<FeatureFinderHill>> refinedHillResult = refineHillsLogic(rhi);
-//            e = refinedHillResult.first; ree;
-//
-//            refinedHills.append(refinedHillResult.second);
-//        }
-//
-//    }
-//
-//    *featureFinderHills = refinedHills;
-//    ERR_RETURN
-//}
+namespace {
+
+
+    struct RefineHillsInput {
+        FeatureFinderHill featureFinderHill;
+        FeatureFinderParameters params;
+        int minScanCount = -1;
+    };
+
+
+    Err splitHill(
+            const FeatureFinderHill &featureFinderHill,
+            const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            const QVector<double> &intensityVecSmoothed,
+            int minHillScanCount,
+            QVector<FeatureFinderHill> *refinedHills
+            ) {
+
+        ERR_INIT
+
+        FeatureFinderHill refinedHill = featureFinderHill;
+        refinedHill.updateIntensities(intensityVecSmoothed);
+
+        for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
+
+            FeatureFinderHill splitHill = featureFinderHill;
+            e = splitHill.refineHill(pii.first, pii.second); ree;
+
+            if (splitHill.scanCount() < minHillScanCount) {
+                continue;
+            }
+
+            refinedHills->push_back(splitHill);
+        }
+
+        ERR_RETURN
+    }
+
+
+    QPair<Err, QVector<FeatureFinderHill>> refineHillsLogic(const RefineHillsInput &rhi) {
+
+        ERR_INIT
+
+        PeakIntegratomaticParameters params;
+        params.smoothCount = rhi.params.smoothCount;
+        params.filterLength = rhi.params.filterLength;
+        params.sigma = rhi.params.sigma;
+        params.signalToNoiseRatio = rhi.params.signalToNoiseRatio;
+
+        PeakIntegratomatic peakIntegratomatic;
+        e = peakIntegratomatic.init(params); rree;
+
+        QVector<PeakIntegrationIndexes> peakLimits;
+        QVector<double> intensityVecSmoothed;
+        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
+                rhi.featureFinderHill.intensities(),
+                &peakLimits,
+                &intensityVecSmoothed
+        ); rree;
+
+        const int minSplitVal = 2;
+        if (peakLimits.size() < minSplitVal) {
+            return {e, {rhi.featureFinderHill}};
+        }
+
+        QVector<FeatureFinderHill> newHills;
+        e = splitHill(
+                rhi.featureFinderHill,
+                peakLimits,
+                intensityVecSmoothed,
+                rhi.minScanCount,
+                &newHills
+        ); rree;
+
+        return {e, newHills};
+    }
+
+
+} //namespace
+Err FeatureFinderHillBuilder::Private::refineHills(QVector<FeatureFinderHill> *featureFinderHills) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*featureFinderHills); ree;
+
+    QVector<RefineHillsInput> refineHillsInput;
+    for (const FeatureFinderHill &ffh : (*featureFinderHills)) {
+        RefineHillsInput rhi;
+        rhi.params = m_featureFinderParameters;
+        rhi.featureFinderHill = ffh;
+        rhi.minScanCount = m_featureFinderParameters.minScanCount;
+        refineHillsInput.push_back(rhi);
+    }
+
+    QVector<FeatureFinderHill> refinedHills;
+
+    if (m_runParallel) {
+
+        QFuture<QPair<Err, QVector<FeatureFinderHill>>> futures
+                = QtConcurrent::mapped(refineHillsInput, refineHillsLogic);
+        futures.waitForFinished();
+
+        for (const QPair<Err, QVector<FeatureFinderHill>> &future: futures) {
+            e = future.first; ree;
+            refinedHills.append(future.second);
+        }
+    }
+
+    else {
+
+        for (const RefineHillsInput &rhi : refineHillsInput) {
+
+            const QPair<Err, QVector<FeatureFinderHill>> refinedHillResult = refineHillsLogic(rhi);
+            e = refinedHillResult.first; ree;
+
+            refinedHills.append(refinedHillResult.second);
+        }
+
+    }
+
+    *featureFinderHills = refinedHills;
+    ERR_RETURN
+}
 
 
 void FeatureFinderHillBuilder::Private::setRunParallel(bool runParallel) {
@@ -784,7 +774,7 @@ Err FeatureFinderHillBuilder::buildHills(
 
 
 Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
-        const QMap<ScanNumber, double> &retentionTimeByScanNumber,
+        const QMap<ScanNumber, double> &scanNumberVsScanTime,
         const QVector<FeatureFinderHill> &featureFinderHills,
         const QString &destinationFilePath
         ) {
@@ -826,10 +816,10 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
         const QPair<int, int> scanNumberRange = ffh.minMaxScanNumber();
 
         MzRtRow mzRtRow;
-        mzRtRow.mzLo = mzRange.first;
-        mzRtRow.mzHi = mzRange.second;
-        mzRtRow.rtLo = retentionTimeByScanNumber.value(scanNumberRange.first);
-        mzRtRow.rtHi = retentionTimeByScanNumber.value(scanNumberRange.second);
+        mzRtRow.mzLo = mzRange.first - 0.025;
+        mzRtRow.mzHi = mzRange.second + 0.025;
+        mzRtRow.rtLo = scanNumberVsScanTime.value(scanNumberRange.first);
+        mzRtRow.rtHi = scanNumberVsScanTime.value(scanNumberRange.second);
 
         mzRtRows.push_back(mzRtRow);
     }
@@ -849,4 +839,12 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
 
 void FeatureFinderHillBuilder::setRunParallel(bool runParallel) {
     d_ptr->setRunParallel(runParallel);
+}
+
+Err FeatureFinderHillBuilder::refineHills(QVector<FeatureFinderHill> *featureFinderHills) {
+    ERR_INIT
+
+    e = d_ptr->refineHills(featureFinderHills); ree;
+
+    ERR_RETURN
 }

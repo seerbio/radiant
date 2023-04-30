@@ -28,7 +28,6 @@ public:
     PythiaDIAWorkflow() = default;
     ~PythiaDIAWorkflow() = default;
 
-
     Err init(
             const PythiaParameters &pythiaParameters,
             const QString &fragLibUri

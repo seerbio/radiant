@@ -744,7 +744,16 @@ public:
         return vec;
     }
 
+    static Eigen::SparseMatrix<double, Eigen::RowMajor> loadFrameToSparseMatrix(
+            const QMap<int, QVector<QPointF>> &frame,
+            int precision,
+            double maxRowValue
+            );
 
+    static QMap<int, QVector<QPointF>> loadSparseMatrixToFrame(
+            const Eigen::SparseMatrix<double> &mat,
+            int precision
+            );
 
 };
 

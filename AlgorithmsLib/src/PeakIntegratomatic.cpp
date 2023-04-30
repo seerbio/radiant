@@ -89,6 +89,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     const double filterToVecRejectionRatio = 1.5;
     if (intensityVec.size() < static_cast<int>(std::round(m_gaussFilter.size() * filterToVecRejectionRatio))) {
+        *peakLimits = {{0, intensityVec.size() -1}};
         ERR_RETURN
     }
 
@@ -100,6 +101,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     const double maxVal = smoothedVec.maxCoeff();
     if (MathUtils::tZero(maxVal)) {
+        *peakLimits = {{0, intensityVec.size() -1}};
         ERR_RETURN
     }
 

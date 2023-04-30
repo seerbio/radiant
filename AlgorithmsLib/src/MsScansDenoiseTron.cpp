@@ -11,10 +11,11 @@ Err MsScansDenoiseTron::init(const PythiaParameters &pythiaParameter) {
 
     ERR_INIT
 
+    //TODO make these all settable
     m_pythiaParameters = pythiaParameter;
     m_ffpParams.tolerancePPM = pythiaParameter.ms2ExtractionWidthPPM;
     m_ffpParams.skipScanCount = 2;
-    m_ffpParams.minScanCount = 3;
+    m_ffpParams.minScanCount = 2;
     m_ffpParams.useMeanMz = pythiaParameter.useMeanMz;
 
     e = ErrorUtils::isTrue(m_ffpParams.isValid()); ree;

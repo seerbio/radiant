@@ -15,6 +15,7 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         DeisotoperTandemTests
         FeatureFinderHillBuilderTests
+        Ms1FeatureFinderTests
         MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronTests
