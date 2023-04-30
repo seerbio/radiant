@@ -29,7 +29,6 @@ Err PythiaDIAWorkflow::init(
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
-
     ERR_RETURN
 }
 
@@ -90,7 +89,7 @@ namespace {
 
         ERR_INIT
 
-        const int calibrationPoints = 5; //TODO add this to params.
+        const int calibrationPoints = 3; //TODO add this to params.
         MsCalibratomatic msCalibratomatic;
         e = msCalibratomatic.init(
                 *pythiaParameters,
@@ -118,7 +117,7 @@ namespace {
                 QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
         ); ree;
 
-        const double ppmMultilplier = 4.0;
+        const double ppmMultilplier = 3.0;
         const double newPrecisionPPM = msCalibratomatic.newStDev() * ppmMultilplier;
         const double oldPrecisionPPM = pythiaParameters->ms2ExtractionWidthPPM;
 
@@ -190,7 +189,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
     ERR_INIT
 
-    const double calibrationFraction = 0.25;
+    const double calibrationFraction = 0.5;
     const int calibrationResize = static_cast<int>(std::round(frameParallelInputs.size() * calibrationFraction));
 
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;

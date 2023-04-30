@@ -265,15 +265,20 @@ Err MsCalibratomatic::buildCalibrator() {
             ); ree;
 
     e = filterDataMatrix(&dataMatrix); ree;
-    qDebug() << "Datapoints:" << dataMatrix.rows();
+
+    const double trainingFraction = 0.9;
+    const int trainSize = static_cast<int>(dataMatrix.rows() * trainingFraction);
+    Eigen::MatrixX<double> dataMatrixTrain = dataMatrix.topRows(trainSize);
+    Eigen::MatrixX<double> dataMatrixTest = dataMatrix.bottomRows(dataMatrix.rows() - trainSize);
+    qDebug() << "Datapoints:" << dataMatrixTrain.rows();
 
     QVector<QPair<double, Coors>> valuesVsTreePoints;
-    buildNNInput(dataMatrix, &valuesVsTreePoints);
+    buildNNInput(dataMatrixTrain, &valuesVsTreePoints);
 
     e = m_nnSearch.init(valuesVsTreePoints); ree;
 
     e = calculateNewAccuracyMetrics(
-            dataMatrix,
+            dataMatrixTest,
             m_calPointK,
             &m_nnSearch,
             &m_stDevNew
