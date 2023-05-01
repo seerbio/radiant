@@ -46,7 +46,6 @@ private:
 
 };
 
-
 void Ms1FeatureFinderTests::execTest() {
 
     ERR_INIT
@@ -61,10 +60,6 @@ void Ms1FeatureFinderTests::execTest() {
 
     e = featureFinder.exec(prqfilepath);
     QCOMPARE(e, eNoError);
-
-
-
-
 
 
 }

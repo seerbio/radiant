@@ -9,6 +9,20 @@
 #include "MsFrame.h"
 #include "MsReaderParquet.h"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+#include <QElapsedTimer>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+using rTreeSearchBox = bg::model::box<rTreeCoor>;
+using rTreePoint = std::pair<rTreeCoor, double> ;
+using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+
 Err Ms1FeatureFinder::init(const PythiaParameters &pythiaParameters) {
 
     ERR_INIT
@@ -52,7 +66,6 @@ namespace {
         ); ree;
 
 
-
         const bool denoise = true;
         const bool deisotope = false;
         const bool smooth = true;
@@ -68,6 +81,105 @@ namespace {
 
         ERR_RETURN
     }
+
+    void sortHillsIntensityHiLo(QVector<FeatureFinderHill> *hills) {
+
+        const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
+            return l.maxIntensityValue() < r.maxIntensityValue();
+        };
+
+        std::sort(hills->rbegin(), hills->rend(), sortLogic);
+    }
+
+    RTree buildHillMaximaRtree(const QVector<FeatureFinderHill> &featureFinderHillsSortedHiLo) {
+
+        QElapsedTimer et;
+        et.start();
+
+        std::vector<rTreePoint> cloudLoader;
+
+        const auto loadLogic = [&](const FeatureFinderHill &ffh) {
+            rTreeCoor coor(static_cast<double>(ffh.maxIntensityScanNumber()), ffh.mzMean());
+            return std::make_pair(coor, ffh.maxIntensityValue());
+        };
+
+        std::transform(
+                featureFinderHillsSortedHiLo.begin(),
+                featureFinderHillsSortedHiLo.end(),
+                back_inserter(cloudLoader),
+                loadLogic
+        );
+
+        const int maxElements = 16;
+        RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+
+        qDebug() << featureFinderHillsSortedHiLo.size()
+                 << "Hills loaded into rtree in"
+                 << et.restart()
+                 << "mSec";
+
+        return rTree;
+    }
+
+    void getTreePoints(
+            ScanNumber scanNumber,
+            int scanBuffer,
+            double mz,
+            double mzBuffer,
+            RTree *rTree
+            ) {
+
+        const double scanNumberMin = scanNumber - scanBuffer;
+        const double scanNumberMax = scanNumber + scanBuffer;
+
+        const double mzMin = mz - mzBuffer;
+        const double mzMax = mz + mzBuffer;
+
+        const rTreeSearchBox queryBox(
+                rTreeCoor(scanNumberMin, mzMin),
+                rTreeCoor(scanNumberMax, mzMax)
+        );
+
+        std::vector<rTreePoint> result;
+        rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+        for (const rTreePoint &rtp : result) {
+            qDebug() << rtp.first.get<0>() << rtp.first.get<1>() << rtp.second;
+        }
+    }
+
+    Err clusterHills(
+            const PythiaParameters &pythiaParameters,
+            const QVector<FeatureFinderHill> &featureFinderHills
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
+
+        RTree rTree = buildHillMaximaRtree(featureFinderHills);
+
+        for (const FeatureFinderHill &h : featureFinderHills) {
+
+            qDebug() << h.mzMean();
+
+            getTreePoints(
+                    h.maxIntensityScanNumber(),
+                    1,
+                    h.mzMean(),
+                    3.0,
+                    &rTree
+                    );
+
+            break;
+        }
+
+
+
+
+        ERR_RETURN
+    }
+
 
 
 }//namespace
@@ -103,11 +215,10 @@ Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
             &featureFinderHills
             ); ree;
 
-    qDebug() << featureFinderHills.size();
     e = hillBuilder.refineHills(&featureFinderHills); ree;
-    qDebug() << featureFinderHills.size();
+    sortHillsIntensityHiLo(&featureFinderHills);
 
-#define WRITE_HILLS
+//#define WRITE_HILLS
 #ifdef WRITE_HILLS
     const QString batmassHillsFilePath = msDataFilePath + ".newRefine" + ".mzrt.csv";
     e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
@@ -116,6 +227,11 @@ Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
             batmassHillsFilePath
             ); ree;
 #endif
+
+    e = clusterHills(
+            m_params,
+            featureFinderHills
+            ); ree;
 
     ERR_RETURN
 }

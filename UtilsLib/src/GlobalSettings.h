@@ -68,7 +68,7 @@ public:
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
     const int HASHING_PRECISION = 3;
-    const double ISO_DIFF = 1.0031;
+    const double ISO_DIFF = 1.003355;
     const int MAX_CHARGE_TANDEM_DEISOTOPING = 2;
     const QChar MODIFICATION_INTERNAL_SEP = '|';
     const QString MODIFICATION_STRING_FORMAT = QStringLiteral("%1%2%3");
@@ -77,7 +77,7 @@ public:
     const int POLYNOMIAL_DEGREE = 11;
     const int ROUNDING_PRECISION = 12;
     const QChar SEPARATOR = ';';
-    const double STDEV_MULTIPLIER = 2.5;
+    const double STDEV_MULTIPLIER = 3.0;
     const QString TAB = "\t";
 
     const QString CACHED_FILE_EXTENSION = QStringLiteral("cached");
