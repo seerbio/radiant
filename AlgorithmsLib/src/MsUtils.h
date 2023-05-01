@@ -36,6 +36,13 @@ public:
             QVector<QPointF> *delPoints
             );
 
+    static Err chargeDeterminator(
+            const QPointF &mzCenterPoint,
+            const QVector<QPointF> &scanPoints,
+            double ppmTol,
+            int *charge
+            );
+
 
 };
 

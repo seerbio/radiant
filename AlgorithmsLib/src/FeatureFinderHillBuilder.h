@@ -28,6 +28,9 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double sigma = 1.0;
     double signalToNoiseRatio = 2;
 
+    int scanBuffer = 1;
+    double mzBuffer = 3.0;
+
 
 public:
     bool isValid() const {

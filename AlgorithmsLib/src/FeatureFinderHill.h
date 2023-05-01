@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] QPair<double, double> mzMinMax() const;
 
-    [[nodiscard]] double maxIntensityScanNumber() const;
+    [[nodiscard]] int maxIntensityScanNumber() const;
 
     [[nodiscard]] double maxIntensityValue() const;
 

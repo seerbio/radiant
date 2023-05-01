@@ -47,8 +47,10 @@ Molecule AminoAcids::aminoAcid(QChar aminoAcid) const {
 }
 
 
-Err AminoAcids::addFixedModification(QChar aminoAcid,
-                                     MolecularFormula modificationFormula) {
+Err AminoAcids::addFixedModification(
+        QChar aminoAcid,
+        MolecularFormula modificationFormula
+        ) {
 
     ERR_INIT
 

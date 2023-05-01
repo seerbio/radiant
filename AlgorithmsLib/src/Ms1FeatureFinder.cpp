@@ -8,6 +8,7 @@
 #include "FeatureFinderHillBuilder.h"
 #include "MsFrame.h"
 #include "MsReaderParquet.h"
+#include "MsUtils.h"
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -121,7 +122,7 @@ namespace {
         return rTree;
     }
 
-    void getTreePoints(
+    std::vector<rTreePoint> getTreePoints(
             ScanNumber scanNumber,
             int scanBuffer,
             double mz,
@@ -143,13 +144,58 @@ namespace {
         std::vector<rTreePoint> result;
         rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
 
-        for (const rTreePoint &rtp : result) {
-            qDebug() << rtp.first.get<0>() << rtp.first.get<1>() << rtp.second;
+        return result;
+    }
+
+    ScanPoints convertTreePointsToScanPoints(const std::vector<rTreePoint> &rTreePoints) {
+
+        ScanPoints scanPoints;
+        for (const rTreePoint &rtp : rTreePoints) {
+            scanPoints.push_back({rtp.first.get<1>(), rtp.second});
         }
+
+        return scanPoints;
+    }
+
+    Err buildHillCluster(
+            const FeatureFinderHill &hill,
+            const FeatureFinderParameters &ffParams,
+            RTree *rTree
+            ) {
+
+        ERR_INIT
+
+        const std::vector<rTreePoint> treePoints = getTreePoints(
+                hill.maxIntensityScanNumber(),
+                ffParams.scanBuffer,
+                hill.mzMean(),
+                ffParams.mzBuffer,
+                rTree
+        );
+
+        const ScanPoints scanPoints = convertTreePointsToScanPoints(treePoints);
+        const QPointF mzCenterPoint = {hill.mzMean(), hill.maxIntensityValue()};
+
+        int charge;
+        e = MsUtils::chargeDeterminator(
+                mzCenterPoint,
+                scanPoints,
+                ffParams.tolerancePPM,
+                &charge
+        ); ree;
+
+        if (charge < 1) {
+            qDebug() << charge;
+            ERR_RETURN
+        }
+
+        qDebug() << charge * mzCenterPoint.x()  << hill.maxIntensityScanNumber() << mzCenterPoint << charge;
+
+        ERR_RETURN
     }
 
     Err clusterHills(
-            const PythiaParameters &pythiaParameters,
+            const FeatureFinderParameters &ffParams,
             const QVector<FeatureFinderHill> &featureFinderHills
             ) {
 
@@ -161,25 +207,20 @@ namespace {
 
         for (const FeatureFinderHill &h : featureFinderHills) {
 
-            qDebug() << h.mzMean();
+            if(h.maxIntensityScanNumber() !=  6742) {
+                continue;
+            }
 
-            getTreePoints(
-                    h.maxIntensityScanNumber(),
-                    1,
-                    h.mzMean(),
-                    3.0,
+            e = buildHillCluster(
+                    h,
+                    ffParams,
                     &rTree
-                    );
+                    ); ree;
 
-            break;
         }
-
-
-
 
         ERR_RETURN
     }
-
 
 
 }//namespace
@@ -202,7 +243,7 @@ Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
     FeatureFinderParameters ffParams;
     ffParams.tolerancePPM = m_params.featureFinderTolerancePPM;
     ffParams.skipScanCount = 0;
-    ffParams.minScanCount = 3;
+    ffParams.minScanCount = 2;
     ffParams.useMeanMz = true;
 
     FeatureFinderHillBuilder hillBuilder;
@@ -229,7 +270,7 @@ Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
 #endif
 
     e = clusterHills(
-            m_params,
+            ffParams,
             featureFinderHills
             ); ree;
 

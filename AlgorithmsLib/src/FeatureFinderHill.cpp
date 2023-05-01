@@ -28,7 +28,7 @@ double FeatureFinderHill::mzStDev() const {
     return MathUtils::stDev(m_mzVals);
 }
 
-double FeatureFinderHill::maxIntensityScanNumber() const {
+int FeatureFinderHill::maxIntensityScanNumber() const {
     return m_scanNumbers.at(MathUtils::findMaxIndexInVector(m_intensities));
 }
 

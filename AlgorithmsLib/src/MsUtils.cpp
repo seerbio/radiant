@@ -5,6 +5,7 @@
 #include "MsUtils.h"
 
 #include "ErrorUtils.h"
+#include "GlobalSettings.h"
 #include "ParallelUtils.h"
 
 namespace {
@@ -174,181 +175,172 @@ Err MsUtils::buildDeletionPoints(
     ERR_RETURN
 }
 
+namespace {
 
-//Eigen::MatrixXd MsUtils::convertQPointsToMatrix(const QVector<QPointF> &points) {
-//
-//    Eigen::MatrixXd mat(points.size(), 2);
-//    for (int i = 0; i < points.size(); i++) {
-//        const QPointF &p = points.at(i);
-//        mat.coeffRef(i, 0) = p.x();
-//        mat.coeffRef(i, 1) = 1.0;
-//    }
-//
-//    return mat;
-//}
-//
-//void MsUtils::convertQPointsToSparseMatrix(
-//        const QMap<int, QVector<QPointF>> &pointsMap,
-//        double maxValue,
-//        int precision,
-//        int expectedPointsPerRow,
-//        SparseMatrixD *output
-//) {
-//
-//    const int buffer = 10;
-//    const int maxValueHashed = MathUtils::hashDecimal(maxValue, precision);
-//
-//    const int rows = maxValueHashed + buffer;
-//    const int cols = pointsMap.size();
-//
-//    SparseMatrixD mat(rows, cols);
-//    mat.reserve(mat.rows() * expectedPointsPerRow);
-//
-//    for (auto it = pointsMap.begin(); it != pointsMap.end(); it++) {
-//
-//        const int index = it.key();
-//        const QVector<QPointF> &points = it.value();
-//
-//        for (const QPointF &p : points) {
-//
-//            const int xValHashed = MathUtils::hashDecimal(p.x(), precision);
-//
-//            if (xValHashed > maxValueHashed) {
-//                continue;
-//            }
-//
-//            mat.insert(xValHashed, index) = p.y();
-//        }
-//
-//    }
-//
-////    mat.conservativeResize(mat.rows(), mat.cols()); # TODO see if this helps w/ memory usuage.
-//    *output = mat;
-//}
-//
+    QPointF getMaxPoint(const QVector<QPointF> &scanPoints) {
 
-//namespace {
-//
-//    struct ParallelSmoothLogicInput {
-//        Eigen::MatrixXd kernelGauss;
-//        Eigen::SparseVector<double> ogVec;
-//        int index = -1;
-//    };
-//
-//    struct ParallelSmoothLogicOutput {
-//        Eigen::SparseVector<double> smoothedVec;
-//        int index = -1;
-//    };
-//
-//    ParallelSmoothLogicOutput parallelSmoothLogic(const ParallelSmoothLogicInput &input) {
-//
-//        const int kernelSize = static_cast<int>(input.kernelGauss.size());
-//
-//        const Eigen::SparseVector<double> newVec
-//                = EigenKernelUtils::addPaddingToSparseVector(input.ogVec, kernelSize);
-//
-//        const Eigen::SparseVector<double> vv
-//                = EigenKernelUtils::convolveVectorWithKernel(newVec, input.kernelGauss);
-//
-//        ParallelSmoothLogicOutput output;
-//        output.index = input.index;
-//        output.smoothedVec = vv;
-//
-//        return output;
-//    }
-//
-//} //NAMESPACE
-//Eigen::SparseMatrix<double> MsUtils::gaussianSmoothSparseMatrixColWise(
-//        const Eigen::SparseMatrix<double> &mat,
-//        int kernelLength,
-//        double kernelStDev,
-//        int expectedColObjects
-//) {
-//
-//    const Eigen::MatrixXd kernelGauss
-//            = EigenKernelUtils::buildGaussianFilter1D(kernelLength, kernelStDev);
-//
-//    QVector<ParallelSmoothLogicInput> matrixColumns;
-//    for(int i = 0; i < mat.cols(); i++) {
-//
-//        ParallelSmoothLogicInput psli;
-//        psli.kernelGauss = kernelGauss;
-//        psli.ogVec = mat.col(i);
-//        psli.index = i;
-//
-//        matrixColumns.push_back(psli);
-//    }
-//
-//    QFuture<ParallelSmoothLogicOutput> future = QtConcurrent::mapped(
-//            matrixColumns,
-//            parallelSmoothLogic
-//    );
-//    future.waitForFinished();
-//
-//    Eigen::SparseMatrix<double> matSmoothed(mat.rows(), mat.cols());
-//    matSmoothed.reserve(expectedColObjects * mat.cols());
-//
-//    for (const ParallelSmoothLogicOutput &op : future) {
-//
-//        const Eigen::SparseVector<double> &vec = op.smoothedVec;
-//
-//        for (Eigen::SparseVector<double>::InnerIterator it(vec); it; ++it) {
-//            const double &val = it.value();
-//            const int &ogIndex = it.index();
-//
-//            matSmoothed.insert(ogIndex, op.index) = val;
-//        }
-//
-//    }
-//
-//    return matSmoothed;
-//}
-//
-//
-//Eigen::SparseMatrix<double> MsUtils::gaussianSmoothSparseMatrixRowWise(
-//        const Eigen::SparseMatrix<double> &_mat,
-//        int kernelLength,
-//        double kernelStDev,
-//        int expectedRowObjects
-//) {
-//
-//    Eigen::SparseMatrix<double, Eigen::RowMajor> mat = _mat;
-//
-//    const Eigen::MatrixXd kernelGauss
-//            = EigenKernelUtils::buildGaussianFilter1D(kernelLength, kernelStDev);
-//
-//    QVector<ParallelSmoothLogicInput> matrixRows;
-//    for(int i = 0; i < mat.rows(); i++) {
-//
-//        ParallelSmoothLogicInput psli;
-//        psli.kernelGauss = kernelGauss;
-//        psli.ogVec = mat.row(i);
-//        psli.index = i;
-//
-//        matrixRows.push_back(psli);
-//    }
-//
-//    QFuture<ParallelSmoothLogicOutput> future = QtConcurrent::mapped(
-//            matrixRows,
-//            parallelSmoothLogic
-//    );
-//    future.waitForFinished();
-//
-//    Eigen::SparseMatrix<double, Eigen::RowMajor> matSmoothed(mat.rows(), mat.cols());
-//    matSmoothed.reserve(expectedRowObjects * mat.rows());
-//
-//    for (const ParallelSmoothLogicOutput &op : future) {
-//
-//        const Eigen::SparseVector<double> &vec = op.smoothedVec;
-//
-//        for (Eigen::SparseVector<double>::InnerIterator it(vec); it; ++it) {
-//            const double &val = it.value();
-//            const int &ogIndex = it.index();
-//            matSmoothed.insert(op.index, ogIndex) = val;
-//        }
-//
-//    }
-//
-//    Eigen::SparseMatrix<double> matSmoothedColMajor = matSmoothed;
-//    return matSmoothedColMajor;
-//}
+        const auto maxPointLogic = [](const QPointF &l, const QPointF &r){
+            return l.y() < r.y();
+        };
+
+        const QPointF maxPoint = *std::max_element(
+                scanPoints.begin(),
+                scanPoints.end(),
+                maxPointLogic
+                );
+
+        return maxPoint;
+    }
+
+    QVector<QPointF> calculateMzPointsFromMzStart(
+        double mzStart,
+        int numberOfIonsToGenerate,
+        int charge,
+        bool generateInLeftDirection
+    ) {
+
+        const int direction = generateInLeftDirection ? -1 : 1;
+        const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / charge;
+
+        QVector<QPointF> points;
+        for (int i = 1; i <= numberOfIonsToGenerate; i++) {
+
+            const double mz = mzStart + (i * chargeDistance * direction);
+            points.push_back({mz, 1});
+        }
+
+        return points;
+    }
+
+    Err chargeScorer(
+            const QPointF &mzCenterPoint,
+            const QVector<QPointF> &scanPoints,
+            int charge,
+            double ppmTol,
+            double *intensitySum
+            ) {
+
+        ERR_INIT
+
+        *intensitySum = 0.0;
+
+        int numberOfIonsToGenerateLeft = 3;
+
+        switch (charge) {
+
+            case 1:
+                numberOfIonsToGenerateLeft = 1;
+                break;
+            case 2:
+                numberOfIonsToGenerateLeft = 2;
+                break;
+            default:
+                numberOfIonsToGenerateLeft = 3;
+                break;
+        }
+
+        const int numberOfIonsToGenerateRight = 10;
+
+        const QVector<QPointF> leftPoints = calculateMzPointsFromMzStart(
+                mzCenterPoint.x(),
+                numberOfIonsToGenerateLeft,
+                charge,
+                true
+                );
+
+        const QVector<QPointF> rightPoints = calculateMzPointsFromMzStart(
+                mzCenterPoint.x(),
+                numberOfIonsToGenerateRight,
+                charge,
+                false
+        );
+
+        const ExtractPoints extractedPointsLeft
+                = MsUtils::extractPointsFromPoints(scanPoints, leftPoints, ppmTol);
+
+        const ExtractPoints extractedPointsRight
+                = MsUtils::extractPointsFromPoints(scanPoints, rightPoints, ppmTol);
+
+        if (extractedPointsRight.mzFoundVsSearched.isEmpty()) {
+            *intensitySum = -1.0;
+            ERR_RETURN
+        }
+
+
+        double currentIntensity = mzCenterPoint.y();
+        for (int i = 0; i < extractedPointsRight.mzFoundVsSearched.size(); i++) {
+
+            const QPointF pointMz = extractedPointsRight.mzFoundVsSearched.at(i);
+            const QPointF pointsIntensity = extractedPointsRight.intensityFoundVsSearched.at(i);
+
+            const double mzFound = pointMz.x();
+            const double intensityFound = pointsIntensity.x();
+
+            if (mzFound < 0 || intensityFound > currentIntensity) {
+                break;
+            }
+
+            *intensitySum += intensityFound;
+            currentIntensity = intensityFound;
+        }
+
+        currentIntensity = mzCenterPoint.y();
+        for (int i = 0; i < extractedPointsLeft.mzFoundVsSearched.size(); i++) {
+
+            const QPointF pointMz = extractedPointsLeft.mzFoundVsSearched.at(i);
+            const QPointF pointsIntensity = extractedPointsLeft.intensityFoundVsSearched.at(i);
+
+            const double mzFound = pointMz.x();
+            const double intensityFound = pointsIntensity.x();
+
+            if (mzFound < 0 || intensityFound > currentIntensity) {
+                break;
+            }
+
+            *intensitySum += intensityFound;
+            currentIntensity = intensityFound;
+        }
+
+        ERR_RETURN
+    }
+
+
+}
+Err MsUtils::chargeDeterminator(
+        const QPointF &mzCenterPoint,
+        const QVector<QPointF> &scanPoints,
+        double ppmTol,
+        int *charge
+        ) {
+
+    ERR_INIT
+
+    *charge = -1;
+
+    double currentBestScore = 0.0;
+
+    const int chargeMin = 1;
+    const int chargeMax = 5;
+
+    for (int chrg = chargeMin; chrg <= chargeMax; chrg++) {
+
+        double intensitySum;
+
+        e = chargeScorer(
+                mzCenterPoint,
+                scanPoints,
+                chrg,
+                ppmTol,
+                &intensitySum
+                ); ree;
+
+        if (intensitySum > currentBestScore) {
+            currentBestScore = intensitySum;
+            *charge = chrg;
+        }
+
+    }
+
+    ERR_RETURN
+}
+
