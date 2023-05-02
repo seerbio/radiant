@@ -495,10 +495,10 @@ public:
             thresholderVec = aboveThreshold;
         }
 
-        int numRows = mat->rows();
-        int numCols = mat->cols();
+        const int numRows = mat->rows();
+        const int numCols = mat->cols();
 
-        int newNumRows = (thresholderVec.array() == 0).count();
+        const int newNumRows = static_cast<int>((thresholderVec.array() == 0).count());
         Eigen::MatrixX<T> newMatrix(newNumRows, numCols);
         int newRowIdx = 0;
         for (int i = 0; i < numRows; ++i) {

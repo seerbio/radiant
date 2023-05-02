@@ -157,6 +157,27 @@ namespace {
         return scanPoints;
     }
 
+    void removePointsFromRTree(
+            const QVector<QPointF> &subtractionPoints,
+            ScanNumber scanNumber,
+            RTree *rTree
+            ) {
+
+        for (const QPointF &p : subtractionPoints) {
+
+            rTreeCoor deletePoint(static_cast<double>(scanNumber), p.x());
+
+            auto first = bgi::qbegin(*rTree, bgi::nearest(deletePoint, 1));
+            auto last  = bgi::qend(*rTree);
+
+            if (first != last) {
+                rTree->remove(*first); // assuming single result
+            }
+
+        }
+
+    }
+
     Err buildHillCluster(
             const FeatureFinderHill &hill,
             const FeatureFinderParameters &ffParams,
@@ -185,11 +206,30 @@ namespace {
         ); ree;
 
         if (charge < 1) {
-            qDebug() << charge;
+//            qDebug() << charge;
             ERR_RETURN
         }
 
-        qDebug() << charge * mzCenterPoint.x()  << hill.maxIntensityScanNumber() << mzCenterPoint << charge;
+        int monoIsoOffset;
+        QVector<QPointF> subtractionPoints;
+        e = MsUtils::monoIsotopeDeterminator(
+                mzCenterPoint,
+                scanPoints,
+                ffParams.tolerancePPM,
+                charge,
+                &monoIsoOffset,
+                &subtractionPoints
+                ); ree;
+
+        removePointsFromRTree(
+                subtractionPoints,
+                hill.maxIntensityScanNumber(),
+                rTree
+                );
+
+//        qDebug() << charge * mzCenterPoint.x()
+//                 << hill.maxIntensityScanNumber() << mzCenterPoint
+//                 << charge << monoIsoOffset;
 
         ERR_RETURN
     }
@@ -207,7 +247,14 @@ namespace {
 
         for (const FeatureFinderHill &h : featureFinderHills) {
 
-            if(h.maxIntensityScanNumber() !=  6742) {
+//            if(h.maxIntensityScanNumber() !=  6742 /*|| !MathUtils::tSame(h.mzMean(), 605.997)*/) {
+//                continue;
+//            }
+
+            rTreeCoor queryPoint(static_cast<double>(h.maxIntensityScanNumber()), h.mzMean());
+            auto firstFoundQueryPoint = bgi::qbegin(rTree, bgi::nearest(queryPoint, 1));
+
+            if(!MathUtils::tSame(firstFoundQueryPoint->first.get<1>(), h.mzMean())) {
                 continue;
             }
 
@@ -216,6 +263,7 @@ namespace {
                     ffParams,
                     &rTree
                     ); ree;
+//            break;
 
         }
 

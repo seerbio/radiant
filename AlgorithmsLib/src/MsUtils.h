@@ -43,6 +43,16 @@ public:
             int *charge
             );
 
+    static Err monoIsotopeDeterminator(
+            const QPointF &mzCenterPoint,
+            const QVector<QPointF> &scanPoints,
+            double ppmTol,
+            int charge,
+            int *monoIsoOffset,
+            QVector<QPointF> *subtractionPoints
+    );
+
+
 
 };
 
