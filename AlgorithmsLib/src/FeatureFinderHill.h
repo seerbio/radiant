@@ -6,6 +6,7 @@
 #define PYTHIACPP_FEATUREFINDERHILL_H
 
 #include "AlgorithmsLib_Exports.h"
+#include "BiophysicalCalcs.h"
 #include "CSVReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
@@ -15,6 +16,25 @@
 
 using namespace Error;
 
+
+struct ALGORITHMSLIB_EXPORTS FeatureFinderMS1Feature {
+
+    double mzFound = -1.0;
+    double cosineSim = -1.0;
+    Charge charge = -1;
+    int monoIsotopeOffset = 0;
+    QPair<ScanNumber, ScanNumber> scanNumberMinMax;
+    ScanPoints foundIsotopes;
+
+    [[nodiscard]] double featureMass() const {
+        return BiophysicalCalcs::calculateMassFromThomson(
+                mzFound,
+                charge,
+                monoIsotopeOffset
+                );
+    }
+
+};
 
 class ALGORITHMSLIB_EXPORTS FeatureFinderHill {
 
@@ -45,11 +65,11 @@ public:
 
     [[nodiscard]] int maxIntensityScanNumber() const;
 
-    [[nodiscard]] double maxIntensityValue() const;
+    [[nodiscard]] double intensityValueMax() const;
 
     [[nodiscard]] int scanCount() const;
 
-    [[nodiscard]] QPair<ScanNumber , ScanNumber> minMaxScanNumber() const;
+    [[nodiscard]] QPair<ScanNumber , ScanNumber> scanNumberMinMax() const;
 
     [[nodiscard]] QVector<int> scanNumbers() const;
 

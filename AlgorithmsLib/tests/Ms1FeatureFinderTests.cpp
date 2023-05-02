@@ -1,5 +1,6 @@
 #include "Ms1FeatureFinder.h"
 
+#include "FeatureFinderHill.h"
 #include "MsFrame.h"
 #include "MsReaderParquet.h"
 
@@ -22,28 +23,6 @@ private slots:
 
     void execTest();
 
-private:
-
-    static PythiaParameters pythiaParameters() {
-
-
-        PythiaParameters pythiaParameters;
-
-        pythiaParameters.returnPSMTopN = 1;
-        pythiaParameters.maxTandemPointCount = 2;
-        pythiaParameters.ms2ExtractionWidthPPM = 12.0;
-        pythiaParameters.precursorExtractionWindowThomsons = 1.0;
-        pythiaParameters.chargeStateMin = 2;
-        pythiaParameters.chargeStateMax = 3;
-
-        PythiaParameterReader::applyFixedModificationsToAminoAcids(
-                pythiaParameters,
-                &pythiaParameters.aminoAcids
-        );
-
-        return pythiaParameters;
-    }
-
 };
 
 void Ms1FeatureFinderTests::execTest() {
@@ -52,15 +31,15 @@ void Ms1FeatureFinderTests::execTest() {
 
     const QString prqfilepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.reCal");
-
+//            = "/home/anichols/Downloads/EXP20011_2023ms0452X12_B.raw.mzML.prq";
 
     Ms1FeatureFinder featureFinder;
-    e = featureFinder.init(pythiaParameters());
+    e = featureFinder.init(PythiaParameterReader::genericPythiaParametersForTests());
     QCOMPARE(e, eNoError);
 
-    e = featureFinder.exec(prqfilepath);
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinder.exec(prqfilepath, &featureFinderHills);
     QCOMPARE(e, eNoError);
-
 
 }
 

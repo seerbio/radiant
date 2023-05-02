@@ -78,7 +78,6 @@ Err MsFrame::init(
     ERR_RETURN
 }
 
-
 Err MsFrame::preprocessMsFrame(
         bool denoise,
         bool deisotope,
@@ -151,7 +150,9 @@ Err MsFrame::deisotopeFrame() {
 
 namespace {
 
-    Eigen::SparseMatrix<double> rowWiseGaussianSmoothMatrix(const Eigen::SparseMatrix<double, Eigen::RowMajor> &mat) {
+    Eigen::SparseMatrix<double> rowWiseGaussianSmoothMatrix(
+            const Eigen::SparseMatrix<double, Eigen::RowMajor> &mat
+            ) {
 
         const int filterLen = 5;
         const double sigma = 1;

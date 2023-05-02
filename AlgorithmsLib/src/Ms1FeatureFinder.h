@@ -14,6 +14,8 @@
 
 using namespace Error;
 
+class FeatureFinderHill;
+
 class ALGORITHMSLIB_EXPORTS Ms1FeatureFinder {
 
 public:
@@ -23,7 +25,10 @@ public:
 
     Err init(const PythiaParameters &pythiaParameters);
 
-    Err exec(const QString &msDataFilePath);
+    Err exec(
+            const QString &msDataFilePath,
+            QVector<FeatureFinderHill> *featureFinderHills
+            );
 
 private:
 

@@ -478,7 +478,8 @@ Err MsUtils::monoIsotopeDeterminator(
         double ppmTol,
         int charge,
         int *monoIsoOffset,
-        QVector<QPointF> *subtractionPoints
+        QVector<QPointF> *subtractionPoints,
+        double *bestCosineSim
         ) {
 
     ERR_INIT
@@ -543,7 +544,7 @@ Err MsUtils::monoIsotopeDeterminator(
         = EigenUtils::convertQVectorToEigenVector(isoDistribution);
 
     int bestCycle = 0;
-    double bestCosineSim = std::numeric_limits<double>::lowest();
+    *bestCosineSim = std::numeric_limits<double>::lowest();
 
     int cycleCount = 0;
     while (intensityFounds.size() > isoDistribution.size()) {
@@ -554,9 +555,9 @@ Err MsUtils::monoIsotopeDeterminator(
             = EigenUtils::convertQVectorToEigenVector(intensityFoundsSegment);
 
         const double cosineSim = EigenUtils::cosineSimilarity(vIso, vFound);
-        if (cosineSim > bestCosineSim) {
+        if (cosineSim > *bestCosineSim) {
             bestCycle = cycleCount;
-            bestCosineSim = cosineSim;
+            *bestCosineSim = cosineSim;
         }
 
 //        std::cout << Eigen::RowVectorXd(vFound / vFound.maxCoeff()) << std::endl;

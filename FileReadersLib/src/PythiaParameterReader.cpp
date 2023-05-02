@@ -337,3 +337,30 @@ Err PythiaParameterReader::applyFixedModificationsToAminoAcids(
 
     ERR_RETURN
 }
+
+PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
+
+    PythiaParameters pythiaParameters;
+
+    pythiaParameters.returnPSMTopN = 1;
+    pythiaParameters.maxTandemPointCount = 2;
+    pythiaParameters.ms2ExtractionWidthPPM = 12.0;
+    pythiaParameters.featureFinderTolerancePPM = 12.0;
+    pythiaParameters.precursorExtractionWindowThomsons = 1.0;
+    pythiaParameters.chargeStateMin = 2;
+    pythiaParameters.chargeStateMax = 3;
+    pythiaParameters.minScanCount = 2;
+    pythiaParameters.skipScanCount = 1;
+    pythiaParameters.useMeanMz = true;
+    pythiaParameters.filterLength = 5;
+    pythiaParameters.smoothCount = 1;
+    pythiaParameters.sigma = 1;
+    pythiaParameters.signalToNoiseRatio = 2;
+
+    PythiaParameterReader::applyFixedModificationsToAminoAcids(
+            pythiaParameters,
+            &pythiaParameters.aminoAcids
+    );
+
+    return pythiaParameters;
+}

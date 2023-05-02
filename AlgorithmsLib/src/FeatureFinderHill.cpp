@@ -71,11 +71,11 @@ QPair<double, double> FeatureFinderHill::mzMinMax() const {
     return {*minMaxMz.first, *minMaxMz.second};
 }
 
-QPair<ScanNumber , ScanNumber> FeatureFinderHill::minMaxScanNumber() const {
+QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberMinMax() const {
     return {m_scanNumbers.front(), m_scanNumbers.back()};
 }
 
-double FeatureFinderHill::maxIntensityValue() const {
+double FeatureFinderHill::intensityValueMax() const {
     return *std::max_element(m_intensities.begin(), m_intensities.end());
 }
 

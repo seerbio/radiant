@@ -126,11 +126,10 @@ struct PythiaParameters{
     int skipScanCount = 2;
     int minScanCount = 3;
     bool useMeanMz = true;
-
-    //TODO hook these up
-    bool denoise = true;
-    bool deisotope = true;
-    bool smooth = false;
+    int filterLength = -1;
+    int smoothCount = -1;
+    double sigma = -1.0;
+    double signalToNoiseRatio = -1.0;
 
     //TODO hook these up
     int topNMs2Ions = 12;
@@ -216,8 +215,12 @@ public:
 
     Err loadPythiaParameters(PythiaParameters *pythiaParameters);
 
-    static Err applyFixedModificationsToAminoAcids(const PythiaParameters &reader,
-                                                   AminoAcids *aminoAcids);
+    static Err applyFixedModificationsToAminoAcids(
+            const PythiaParameters &reader,
+            AminoAcids *aminoAcids
+            );
+
+    static PythiaParameters genericPythiaParametersForTests();
 
 private:
 

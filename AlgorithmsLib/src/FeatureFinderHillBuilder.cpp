@@ -70,7 +70,6 @@ Err FeatureFinderHillBuilder::Private::init(const FeatureFinderParameters &featu
     ERR_RETURN
 }
 
-
 namespace {
 
     struct ScanGroupingParallelInput {
@@ -802,7 +801,7 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
     const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
 
         if (MathUtils::tSame(l.mzMean(), r.mzMean())) {
-            return l.minMaxScanNumber().first < r.minMaxScanNumber().first;
+            return l.scanNumberMinMax().first < r.scanNumberMinMax().first;
         }
 
         return l.mzMean() < r.mzMean();
@@ -813,7 +812,7 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
     for (const FeatureFinderHill &ffh : featureFinderHills) {
 
         const QPair<double, double> mzRange = ffh.mzMinMax();
-        const QPair<int, int> scanNumberRange = ffh.minMaxScanNumber();
+        const QPair<int, int> scanNumberRange = ffh.scanNumberMinMax();
 
         MzRtRow mzRtRow;
         mzRtRow.mzLo = mzRange.first - 0.025;

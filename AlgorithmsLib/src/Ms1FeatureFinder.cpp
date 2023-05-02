@@ -17,6 +17,8 @@
 
 #include <QElapsedTimer>
 
+#include <iostream>
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
@@ -36,7 +38,7 @@ Err Ms1FeatureFinder::init(const PythiaParameters &pythiaParameters) {
 
 namespace {
 
-    Err buildMsFrame(
+    Err buildMs1Frame(
             const QString &msDataFilePath,
             const PythiaParameters &params,
             MsFrame *msFrame,
@@ -66,7 +68,6 @@ namespace {
                 {-1.0, -1.0}
         ); ree;
 
-
         const bool denoise = true;
         const bool deisotope = false;
         const bool smooth = true;
@@ -86,7 +87,7 @@ namespace {
     void sortHillsIntensityHiLo(QVector<FeatureFinderHill> *hills) {
 
         const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
-            return l.maxIntensityValue() < r.maxIntensityValue();
+            return l.intensityValueMax() < r.intensityValueMax();
         };
 
         std::sort(hills->rbegin(), hills->rend(), sortLogic);
@@ -101,7 +102,7 @@ namespace {
 
         const auto loadLogic = [&](const FeatureFinderHill &ffh) {
             rTreeCoor coor(static_cast<double>(ffh.maxIntensityScanNumber()), ffh.mzMean());
-            return std::make_pair(coor, ffh.maxIntensityValue());
+            return std::make_pair(coor, ffh.intensityValueMax());
         };
 
         std::transform(
@@ -181,7 +182,8 @@ namespace {
     Err buildHillCluster(
             const FeatureFinderHill &hill,
             const FeatureFinderParameters &ffParams,
-            RTree *rTree
+            RTree *rTree,
+            FeatureFinderMS1Feature *ms1Feature
             ) {
 
         ERR_INIT
@@ -194,35 +196,39 @@ namespace {
                 rTree
         );
 
-        const ScanPoints scanPoints = convertTreePointsToScanPoints(treePoints);
-        const QPointF mzCenterPoint = {hill.mzMean(), hill.maxIntensityValue()};
+        if (treePoints.size() < 2) {
+            ERR_RETURN
+        }
 
-        int charge;
+        const ScanPoints scanPoints = convertTreePointsToScanPoints(treePoints);
+        const QPointF mzCenterPoint = {hill.mzMean(), hill.intensityValueMax()};
+
         e = MsUtils::chargeDeterminator(
                 mzCenterPoint,
                 scanPoints,
                 ffParams.tolerancePPM,
-                &charge
+                &ms1Feature->charge
         ); ree;
 
-        if (charge < 1) {
-//            qDebug() << charge;
+        if (ms1Feature->charge < 1) {
             ERR_RETURN
         }
 
-        int monoIsoOffset;
-        QVector<QPointF> subtractionPoints;
         e = MsUtils::monoIsotopeDeterminator(
                 mzCenterPoint,
                 scanPoints,
                 ffParams.tolerancePPM,
-                charge,
-                &monoIsoOffset,
-                &subtractionPoints
+                ms1Feature->charge,
+                &ms1Feature->monoIsotopeOffset,
+                &ms1Feature->foundIsotopes,
+                &ms1Feature->cosineSim
                 ); ree;
 
+        ms1Feature->mzFound = hill.mzMean();
+        ms1Feature->scanNumberMinMax = hill.scanNumberMinMax();
+
         removePointsFromRTree(
-                subtractionPoints,
+                ms1Feature->foundIsotopes,
                 hill.maxIntensityScanNumber(),
                 rTree
                 );
@@ -236,7 +242,8 @@ namespace {
 
     Err clusterHills(
             const FeatureFinderParameters &ffParams,
-            const QVector<FeatureFinderHill> &featureFinderHills
+            const QVector<FeatureFinderHill> &featureFinderHills,
+            QVector<FeatureFinderMS1Feature> *ms1Features
             ) {
 
         ERR_INIT
@@ -245,34 +252,72 @@ namespace {
 
         RTree rTree = buildHillMaximaRtree(featureFinderHills);
 
+        const double sameNessTol = 0.001;
         for (const FeatureFinderHill &h : featureFinderHills) {
 
-//            if(h.maxIntensityScanNumber() !=  6742 /*|| !MathUtils::tSame(h.mzMean(), 605.997)*/) {
+//            if(h.maxIntensityScanNumber() != 6734
+//                /*|| !MathUtils::tSame(h.mzMean(), 605.997)*/) {
 //                continue;
 //            }
 
             rTreeCoor queryPoint(static_cast<double>(h.maxIntensityScanNumber()), h.mzMean());
             auto firstFoundQueryPoint = bgi::qbegin(rTree, bgi::nearest(queryPoint, 1));
 
-            if(!MathUtils::tSame(firstFoundQueryPoint->first.get<1>(), h.mzMean())) {
+            if(!MathUtils::tSame(firstFoundQueryPoint->first.get<1>(), h.mzMean(),sameNessTol)
+               || !MathUtils::tSame(static_cast<int>(firstFoundQueryPoint->first.get<0>()), h.maxIntensityScanNumber())
+            ) {
                 continue;
             }
+//            std::cout << "SDFSDFSD " << firstFoundQueryPoint->first.get<1>() << " " << h.mzMean()
+//                      << firstFoundQueryPoint->first.get<0>() << " " <<  h.maxIntensityScanNumber() << std::endl;
 
+            FeatureFinderMS1Feature ms1Feature;
             e = buildHillCluster(
                     h,
                     ffParams,
-                    &rTree
+                    &rTree,
+                    &ms1Feature
                     ); ree;
 //            break;
 
+            if (ms1Feature.charge < 1) {
+                continue;
+            }
+
+//            qDebug() << ms1Feature.mzFound << ms1Feature.charge << ms1Feature.cosineSim;
+
+            ms1Features->push_back(ms1Feature);
         }
 
         ERR_RETURN
     }
 
+    Err loadFeatureFinderParams(
+            const PythiaParameters &params,
+            FeatureFinderParameters *featureFinderParameters
+            ) {
+
+        ERR_INIT
+
+        featureFinderParameters->tolerancePPM = params.featureFinderTolerancePPM;
+        featureFinderParameters->skipScanCount = 0; //set to zero because MS1 scans are smoothed.
+        featureFinderParameters->minScanCount = params.minScanCount;
+        featureFinderParameters->useMeanMz = params.useMeanMz;
+        featureFinderParameters->filterLength = params.filterLength;
+        featureFinderParameters->smoothCount = params.smoothCount;
+        featureFinderParameters->sigma = params.sigma;
+        featureFinderParameters->signalToNoiseRatio = params.signalToNoiseRatio;
+
+        e = ErrorUtils::isTrue(featureFinderParameters->isValid()); ree;
+
+        ERR_RETURN
+    }
 
 }//namespace
-Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
+Err Ms1FeatureFinder::exec(
+        const QString &msDataFilePath,
+        QVector<FeatureFinderHill> *featureFinderHills
+        ) {
 
     ERR_INIT
 
@@ -280,47 +325,52 @@ Err Ms1FeatureFinder::exec(const QString &msDataFilePath) {
 
     MsFrame msFrame;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-    e = buildMsFrame(
+    e = buildMs1Frame(
             msDataFilePath,
             m_params,
             &msFrame,
             &scanNumberVsScanTime
     ); ree;
 
-    //TODO set these accordingly in PythiaParams file.
     FeatureFinderParameters ffParams;
-    ffParams.tolerancePPM = m_params.featureFinderTolerancePPM;
-    ffParams.skipScanCount = 0;
-    ffParams.minScanCount = 2;
-    ffParams.useMeanMz = true;
+    e = loadFeatureFinderParams(
+            m_params,
+            &ffParams
+            ); ree;
 
     FeatureFinderHillBuilder hillBuilder;
     e = hillBuilder.init(ffParams); ree;
     hillBuilder.setRunParallel(true);
 
-    QVector<FeatureFinderHill> featureFinderHills;
     e = hillBuilder.buildHills(
             msFrame.scanNumberVsScanPoints(),
-            &featureFinderHills
-            ); ree;
-
-    e = hillBuilder.refineHills(&featureFinderHills); ree;
-    sortHillsIntensityHiLo(&featureFinderHills);
-
-//#define WRITE_HILLS
-#ifdef WRITE_HILLS
-    const QString batmassHillsFilePath = msDataFilePath + ".newRefine" + ".mzrt.csv";
-    e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
-            scanNumberVsScanTime,
-            featureFinderHills,
-            batmassHillsFilePath
-            ); ree;
-#endif
-
-    e = clusterHills(
-            ffParams,
             featureFinderHills
             ); ree;
+
+    e = hillBuilder.refineHills(featureFinderHills); ree;
+
+    qDebug() << "Hill count" << featureFinderHills->size();
+
+//    sortHillsIntensityHiLo(&featureFinderHills);
+//
+////#define WRITE_HILLS
+//#ifdef WRITE_HILLS
+//    const QString batmassHillsFilePath = msDataFilePath + ".newRefine" + ".mzrt.csv";
+//    e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+//            scanNumberVsScanTime,
+//            featureFinderHills,
+//            batmassHillsFilePath
+//            ); ree;
+//#endif
+//
+//    QVector<FeatureFinderMS1Feature> ms1Features;
+//    e = clusterHills(
+//            ffParams,
+//            featureFinderHills,
+//            &ms1Features
+//            ); ree;
+//
+//    qDebug() << ms1Features.size();
 
     ERR_RETURN
 }

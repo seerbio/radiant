@@ -49,7 +49,8 @@ public:
             double ppmTol,
             int charge,
             int *monoIsoOffset,
-            QVector<QPointF> *subtractionPoints
+            QVector<QPointF> *subtractionPoints,
+            double *bestCosineSim
     );
 
 
