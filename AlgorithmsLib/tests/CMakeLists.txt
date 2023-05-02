@@ -24,7 +24,6 @@ SET(TEST_CLASSES
         MsScansDenoiseTronTests
         MsUtilsTests
         PeakIntegratomaticTests
-        PeptidesLibraryTronTests
         ProteinDigestomaticTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
