@@ -55,7 +55,7 @@ void FeatureFinderHillReaderTests::readWriteTestCombined() {
     QCOMPARE(readRow.intensityVals, intensityVals);
     QCOMPARE(readRow.scanNumbers, scanNumbers);
     QCOMPARE(readRow.scanNumberIndexes, scanNumberIndexes);
-    
+
 }
 
 QTEST_MAIN(FeatureFinderHillReaderTests)
