@@ -16,6 +16,7 @@ INCLUDE_DIRECTORIES(
 SET(TEST_CLASSES
         CSVReaderTests
         FastaReaderTests
+        FeatureFinderHillReaderTests
         FragLibReaderTests
         JsonParameterReaderTests
         MsReaderBaseTests

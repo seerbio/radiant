@@ -6,6 +6,7 @@
 #define PYTHIADIACPP_PARQUETREADER_H
 
 #include "Error.h"
+#include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
 #include "SqlUtils.h"
@@ -116,6 +117,8 @@ public:
         ERR_INIT
 
         readerRows->clear();
+
+        e = ErrorUtils::fileExists(fileURI); ree;
 
         ParquetReader reader;
 

@@ -4,8 +4,6 @@
 
 #include "ParquetReader.h"
 
-#include "ErrorUtils.h"
-
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
 #include <arrow/filesystem/localfs.h>

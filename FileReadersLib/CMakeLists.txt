@@ -23,6 +23,7 @@ SET(SOURCE_FILES
         src/CSVReader.cpp
         src/DIAMzTargetsReader.cpp
         src/FastaReader.cpp
+        src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
         src/JsonParametersReader.cpp
         src/MsFrameScoreVectorReader.cpp
@@ -39,6 +40,7 @@ SET(HEADER_FILES
         src/CSVReader.h
         src/DIAMzTargetsReader.h
         src/FastaReader.h
+        src/FeatureFinderHillReader.h
         src/FragLibReader.h
         src/JsonParametersReader.h
         src/MsFrameScoreVectorReader.h

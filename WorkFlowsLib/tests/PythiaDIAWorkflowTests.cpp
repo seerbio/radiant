@@ -33,7 +33,6 @@ private:
         pythiaParameters.topNMs2Ions = 12;
         pythiaParameters.ms2ExtractionWidthPPM = 12;
         pythiaParameters.featureFinderTolerancePPM = 12;
-//        pythiaParameters.ms2ExtractionWidthPPM = 20;
 
         return pythiaParameters;
     }
