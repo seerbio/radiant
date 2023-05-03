@@ -48,9 +48,6 @@ private:
             QVector<PSMsReaderRow> *psmReaderRows
             );
 
-
-
-
 private:
 
     PythiaParameters m_pythiaParameters;
