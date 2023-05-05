@@ -404,6 +404,11 @@ ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
 
+ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
+    return m_frameIndexVsScanNumber.key(scanNumber);
+}
+
+
 ScanPoints MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
     return m_frame.value(scanNumber);
 }

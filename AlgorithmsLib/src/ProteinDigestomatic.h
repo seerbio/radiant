@@ -14,7 +14,7 @@
 
 #include <QStringList>
 
-
+//TODO add function to excise N-term Methionine.
 using namespace Error;
 
 namespace PeptideSequenceNamespace {

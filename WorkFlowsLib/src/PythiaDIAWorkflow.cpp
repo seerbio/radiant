@@ -137,30 +137,30 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     QString msDataFilePathRecalibrated = msDataFilePath + ".reCal"; //drewholio remove this path but keep var
 
-    const bool applySmooth2DCalibration = false;
-    QVector<FrameParallelInput> frameParallelInputs;
-    e = buildParallelInput(
-            m_pythiaParameters,
-            msDataFilePath,
-            m_fragLibUri,
-            applySmooth2DCalibration,
-            &frameParallelInputs
-    ); ree;
-    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
-
-    const QString firstPassResultsFilePath = msDataFilePath + ".firstPass.pythiaDIA";
-
-    e = buildPSMResultsForCalibrationFile(
-            frameParallelInputs,
-            firstPassResultsFilePath
-            ); ree;
-
-    e = buildRecalibratedMsDataFile(
-            msDataFilePath,
-            firstPassResultsFilePath,
-            &m_pythiaParameters,
-            &msDataFilePathRecalibrated
-            ); ree;
+//    const bool applySmooth2DCalibration = false;
+//    QVector<FrameParallelInput> frameParallelInputs;
+//    e = buildParallelInput(
+//            m_pythiaParameters,
+//            msDataFilePath,
+//            m_fragLibUri,
+//            applySmooth2DCalibration,
+//            &frameParallelInputs
+//    ); ree;
+//    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
+//
+//    const QString firstPassResultsFilePath = msDataFilePath + ".firstPass.pythiaDIA";
+//
+//    e = buildPSMResultsForCalibrationFile(
+//            frameParallelInputs,
+//            firstPassResultsFilePath
+//            ); ree;
+//
+//    e = buildRecalibratedMsDataFile(
+//            msDataFilePath,
+//            firstPassResultsFilePath,
+//            &m_pythiaParameters,
+//            &msDataFilePathRecalibrated
+//            ); ree;
 
     const bool applySmooth2D = true;
     QVector<FrameParallelInput> frameParallelInputsRecal;
@@ -195,7 +195,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
     ERR_INIT
 
-    const double calibrationFraction = 0.5; //Drewholio fix this. Find a better way.
+    const double calibrationFraction = 0.5; //TODO fix this. Find a better way.
     const int calibrationResize = static_cast<int>(std::round(frameParallelInputs.size() * calibrationFraction));
 
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
@@ -261,7 +261,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-        if (fpi.uniqueMsInfoScanKey != "725079") {
+        if (fpi.uniqueMsInfoScanKey != "504979") {
             continue;
         }
 

@@ -17,14 +17,6 @@
 
 #include <QtConcurrent/QtConcurrent>
 
-struct FrameIndexScoreResultOfTarget {
-    QVector<double> cosineSimPerFrameIndexOfTargetVec;
-    QVector<double> intensityPerFrameIndexOfTargetVec;
-    QVector<int> foundIonsPerFrameIndexOfTargetVec;
-    QVector<double> scorePerFrameIndexOfTargetVec;
-    PeakIntegrationIndexes bestScorePeakLimits = {-1, -1};
-    int charge = -1;
-};
 
 namespace {
 
@@ -90,101 +82,6 @@ namespace {
         };
 
         std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
-    }
-
-    Err buildFragIonLibForTargetMz(
-            const PythiaParameters &params,
-            const QString &fragLibUri,
-            const QPair<double, double> &mzTargetStartStop,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *outputIons,
-            QMap<PeptideStringWithMods, bool> *outputDecoy
-            ) {
-
-        ERR_INIT
-
-        const int monoOffset = 0;
-        for (Charge charge = params.chargeStateMin; charge <= params.chargeStateMax; ++charge) {
-
-            const double massStart = BiophysicalCalcs::calculateMassFromThomson(
-                    mzTargetStartStop.first,
-                    charge,
-                    monoOffset
-                    );
-
-            const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
-                    mzTargetStartStop.second,
-                    charge,
-                    monoOffset
-            );
-
-            FragLibReader fragLibReader;
-            e = fragLibReader.init(fragLibUri); ree;
-
-            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
-            QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-            e = fragLibReader.getMS2Ions(
-                    massStart,
-                    massEnd,
-                    &peptideSequenceChargeKeyVsMS2Ions,
-                    &peptideSequenceChargeKeyVsIsDecoy
-                    ); ree;
-
-            for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
-
-                const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-                QVector<MS2Ion> &ms2Ions = it.value();
-
-                PeptideStringWithMods peptideStringWithMods;
-                e = peptideStringWithModsFromPeptideSequenceChargeKey(
-                        peptideSequenceChargeKey,
-                        &peptideStringWithMods
-                        ); ree;
-
-                e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
-
-                outputIons->insert(peptideStringWithMods, ms2Ions);
-                outputDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
-            }
-
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildMsFrame(
-            const QString &msDataFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const PythiaParameters &params,
-            const QPair<double, double> mzTargetStartStop,
-            bool applySmooth2D,
-            MsFrame *msFrame = Q_NULLPTR
-            ) {
-
-        ERR_INIT
-
-        MsReaderParquet msReaderParquet;
-        e = msReaderParquet.openFile(
-                msDataFilePath,
-                MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
-                {mzTargetStartStop.first, mzTargetStartStop.second}
-        ); ree;
-
-        const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
-        e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
-
-        e = msFrame->init(
-                params,
-                uniqueMsInfoScanKey,
-                targetScanPoints,
-                mzTargetStartStop
-        ); ree;
-
-        if (applySmooth2D) {
-            e = msFrame->gaussianSmooth2D(); ree;
-        }
-
-
-        ERR_RETURN
     }
 
     struct ScoringMatrices {
@@ -433,31 +330,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err processFrameLogic(
-            const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
-            const PythiaParameters &params,
-            const QString &msDataFilePath,
-            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
-    ) {
-
-        ERR_INIT
-
-        const MsFrame &frame = chunk.first;
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds = chunk.second;
-
-        const QPair<double, double> &mzTargetStartEnd = frame.precursorMzTargetStartEnd();
-        qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
-
-        e = scoreFrameTargets(
-                frame,
-                tandemPreds,
-                params,
-                pepStrWModsVsFrameIndexScoreResultOfTargets
-        ); ree;
-
-        ERR_RETURN
-    }
-
     void filterByFoundMzCount(
             int minFoundMzCount,
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
@@ -537,7 +409,6 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
     e = processFrameLogic(
             {m_msFrame, m_fragPreds},
             params,
-            msDataFilePath,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
     ); rree
 
@@ -545,8 +416,6 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             params.minFoundMzPeaks,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
-
-//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XTVVAGEHNXEETEHTEQK");
 
     const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
@@ -585,6 +454,123 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
     return {e, psmsReaderRows};
 }
 
+Err MsFrameScoretron::buildFragIonLibForTargetMz(
+        const PythiaParameters &params,
+        const QString &fragLibUri,
+        const QPair<double, double> &mzTargetStartStop,
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> *outputIons,
+        QMap<PeptideStringWithMods, bool> *outputDecoy
+) {
+
+    ERR_INIT
+
+    const int monoOffset = 0;
+    for (Charge charge = params.chargeStateMin; charge <= params.chargeStateMax; ++charge) {
+
+        const double massStart = BiophysicalCalcs::calculateMassFromThomson(
+                mzTargetStartStop.first,
+                charge,
+                monoOffset
+        );
+
+        const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
+                mzTargetStartStop.second,
+                charge,
+                monoOffset
+        );
+
+        FragLibReader fragLibReader;
+        e = fragLibReader.init(fragLibUri); ree;
+
+        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
+        e = fragLibReader.getMS2Ions(
+                massStart,
+                massEnd,
+                &peptideSequenceChargeKeyVsMS2Ions,
+                &peptideSequenceChargeKeyVsIsDecoy
+        ); ree;
+
+        for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+            QVector<MS2Ion> &ms2Ions = it.value();
+
+            PeptideStringWithMods peptideStringWithMods;
+            e = peptideStringWithModsFromPeptideSequenceChargeKey(
+                    peptideSequenceChargeKey,
+                    &peptideStringWithMods
+            ); ree;
+
+            e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
+
+            outputIons->insert(peptideStringWithMods, ms2Ions);
+            outputDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
+        }
+
+    }
+
+    ERR_RETURN
+}
+
+Err MsFrameScoretron::buildMsFrame(
+        const QString &msDataFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const PythiaParameters &params,
+        QPair<double, double> mzTargetStartStop,
+        bool applySmooth2D,
+        MsFrame *msFrame
+) {
+
+    ERR_INIT
+
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(
+            msDataFilePath,
+            MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
+            {mzTargetStartStop.first, mzTargetStartStop.second}
+    ); ree;
+
+    const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
+    e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
+
+    e = msFrame->init(
+            params,
+            uniqueMsInfoScanKey,
+            targetScanPoints,
+            mzTargetStartStop
+    ); ree;
+
+    if (applySmooth2D) {
+        e = msFrame->gaussianSmooth2D(); ree;
+    }
+
+    ERR_RETURN
+}
+
+Err MsFrameScoretron::processFrameLogic(
+        const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+        const PythiaParameters &params,
+        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+) {
+
+    ERR_INIT
+
+    const MsFrame &frame = chunk.first;
+    const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds = chunk.second;
+
+    const QPair<double, double> &mzTargetStartEnd = frame.precursorMzTargetStartEnd();
+    qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
+
+    e = scoreFrameTargets(
+            frame,
+            tandemPreds,
+            params,
+            pepStrWModsVsFrameIndexScoreResultOfTargets
+    ); ree;
+
+    ERR_RETURN
+}
 
 Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
         const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,

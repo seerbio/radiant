@@ -16,6 +16,7 @@ SET(TEST_CLASSES
         DeisotoperTandemTests
         FeatureFinderHillBuilderTests
         IsotopeDistributionBuilderTests
+        MissingPeptideManualTroubleshooter
         Ms1FeatureFinderTests
         MsCalibratomaticTests
         MsFrameTests

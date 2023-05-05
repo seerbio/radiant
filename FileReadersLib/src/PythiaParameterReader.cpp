@@ -359,6 +359,8 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.topNMs2Ions = 12;
     pythiaParameters.minFoundMzPeaks = 6;
     pythiaParameters.allowedMissedCleavages = 1;
+    pythiaParameters.mzMinDataStructure = 350.0;
+    pythiaParameters.mzMaxDataStructure = 1500.0;
 
     Modification carboxyAmidoMethyl(
             'C',

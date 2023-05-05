@@ -117,6 +117,8 @@ public:
 
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
+    [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
+
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
     static Err buildFrameIndexVsScanPoints(
