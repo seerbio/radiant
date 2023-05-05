@@ -61,8 +61,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     ERR_INIT
 
-    const QString missingPeptide = "YXXHYXVSXQNWXNR";
-    const double scanTime = 18.8078;
+    const QString missingPeptide = "XYPAAVDTXVAXMAEGK";
+    const double scanTime = 28.5445;
 
     const QString fragLibFilePath = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
     const QString msDataFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
@@ -128,7 +128,7 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     qDebug() << "FrameIndex" << frameIndex;
     qDebug() << "Target Scan Key" << uniqueMsInfoScanKey;
 
-    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(268);
+    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(261);
     qDebug() << "Alt ScanNumber If Diff From Above" << altScanNumber;
 
 
@@ -182,6 +182,21 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
             outputFilePathFrameScores
     );
     QCOMPARE(e, eNoError);
+
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
+    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
+            outputFilePathFrameScores,
+            msFrame,
+            params.returnPSMTopN,
+            &topCansInFrameIndexVsScore
+    );
+
+    const QVector<QPair<PeptideStringWithMods, Score>> &pr = topCansInFrameIndexVsScore.value(frameIndex);
+
+    for (const QPair<PeptideStringWithMods, Score> &p : pr) {
+        qDebug() << "drewholio" << p.first << p.second;
+    }
+    qDebug() << "HOW BIG" << pr.size();
 
     qDebug() << peptideScoreVecs.value(missingPeptide).foundIonsPerFrameIndexOfTargetVec;
 

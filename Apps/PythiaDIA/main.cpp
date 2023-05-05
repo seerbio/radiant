@@ -4,8 +4,8 @@
 
 #include "src/CommandLineParser.h"
 #include "Error.h"
-#include "LibraryBuilderWorkFlow.h"
 #include "PythiaParameterReader.h"
+#include "PythiaDIAWorkflow.h"
 #include "StringUtils.h"
 
 #include <QCoreApplication>
@@ -41,48 +41,30 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     CommandLineParser parser;
 
-    if (!parser.validateArguments(QCoreApplication::arguments())) {
-        return 1;
-    }
+    const QString mzMLFileURI
+            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
-    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
+    const QString fragLibPath
+            = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
 
-    PythiaParameters pythiaParameters;
-    e = buildPythiaParameters(
-            cliParameters.pythiaParametersFilePath,
-            &pythiaParameters
-            );
+    PythiaDIAWorkflow pythiaDiaWorkflow;
+    e = pythiaDiaWorkflow.init(
+            PythiaParameterReader::genericPythiaParametersForTests(),
+            fragLibPath
+    );
     if (e != eNoError) {
-        qDebug() << "Something went wrong";
+        qDebug() << "you done messed up";
+        //TODO properly handle error
     }
 
-    const QString model1FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
-    const QString model2FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
-    const QString model3FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_3.hdf5.json");
-    const QString model4FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
+    e = pythiaDiaWorkflow.processFile(mzMLFileURI);
+    if (e != eNoError) {
+        qDebug() << "you done messed up";
+        //TODO properly handle error
+    }
 
-    QString fragLibFilePath;
 
-    LibraryBuilderWorkFlow libraryBuilderWorkFlow;
-    e = libraryBuilderWorkFlow.init(
-            pythiaParameters,
-            model1FilePath,
-            model2FilePath,
-            model3FilePath,
-            model4FilePath
-    );
-    qDebug() << e;
-
-    e = libraryBuilderWorkFlow.exec(
-            cliParameters.peptidesCSVFilePath,
-            &fragLibFilePath
-    );
-    qDebug() << e;
-
+    qDebug() << "PSMing done in" << et.elapsed() << "mSec";
 
     return 0;
 
