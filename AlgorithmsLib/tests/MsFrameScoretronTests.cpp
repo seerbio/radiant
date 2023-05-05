@@ -55,8 +55,10 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             mzMLFileURI,
             fragLibPath,
             uniqueMsInfoScanKey,
-            {474.966 - 5.5, 474.966 + 5.5}
+            {474.966 - 5.5, 474.966 + 5.5},
+            false
             );
+    QCOMPARE(result.first, eNoError);
 
 }
 

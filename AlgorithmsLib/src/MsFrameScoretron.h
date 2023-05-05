@@ -85,6 +85,16 @@ private:
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     );
 
+    static void filterByFoundMzCount(
+            int minFoundMzCount,
+            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+    );
+
+    static Err writeFrameTargetScoreVectors(
+            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
+            const QString &outputFilePath
+    );
+
 private:
 
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;

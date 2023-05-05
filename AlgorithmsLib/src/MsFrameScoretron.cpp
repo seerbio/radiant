@@ -243,44 +243,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err writeFrameTargetScoreVectors(
-            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-            const QString &outputFilePath
-    ) {
-
-        ERR_INIT
-
-        int counter = 0;
-        QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
-        for (auto it = pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
-
-            const PeptideStringWithMods &peptideStringWithMods = it.key();
-            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
-
-            MsFrameScoreVectorReaderRow row;
-            row.peptideStringWithMods = peptideStringWithMods;
-            row.cosineSimPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec;
-            row.foundIonsPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
-            row.scorePerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
-            row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
-            row.scorePeakStart = frameIndexScoreResultOfTarget.bestScorePeakLimits.first;
-            row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
-            row.charge = frameIndexScoreResultOfTarget.charge;
-            msFrameScoreVectorReaderRows.push_back(row);
-            counter++;
-        }
-
-        e = ParquetReader::write(
-                msFrameScoreVectorReaderRows,
-                outputFilePath
-        ); ree;
-
-        qDebug() << "Found Targets:" << counter;
-        qDebug() << "Frame written to:" << outputFilePath;
-
-        ERR_RETURN
-    }
-
     Err scoreFrameTargets(
             const MsFrame &frame,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPreds,
@@ -330,33 +292,7 @@ namespace {
         ERR_RETURN
     }
 
-    void filterByFoundMzCount(
-            int minFoundMzCount,
-            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
-            ) {
 
-        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
-        for (
-            auto it = pepStrWModsVsFrameIndexScoreResultOfTargets->begin();
-            it != pepStrWModsVsFrameIndexScoreResultOfTargets->end();
-            it++
-            ) {
-
-            const PeptideStringWithMods &peptideStringWithMods = it.key();
-            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
-
-            const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
-            const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
-
-            if (maxFoundCount < minFoundMzCount) {
-                continue;
-            }
-
-            pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
-        }
-
-        *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
-    }
 
 }//namespace
 QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
@@ -412,10 +348,14 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             &pepStrWModsVsFrameIndexScoreResultOfTargets
     ); rree
 
+//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XVNEGGXDPXXR");
+
     filterByFoundMzCount(
             params.minFoundMzPeaks,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
+
+//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XVNEGGXDPXXR");
 
     const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
@@ -431,11 +371,22 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             &topCansInFrameIndexVsScore
             ); rree;
 
+//    const auto res = topCansInFrameIndexVsScore.value(268);
+//    for (const auto &r : res) {
+//        qDebug() << "drewholio" << r;
+//    }
+
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
     e = calculateDiscriminateScoreForFrameIndexes(
             topCansInFrameIndexVsScore,
             &topCansInFrameIndexVsDiscScore
             ); rree;
+
+//    qDebug() << "**********";
+//    const auto resw = topCansInFrameIndexVsDiscScore.value(268);
+//    for (const auto &r : resw) {
+//        qDebug() << "drewholio" << r;
+//    }
 
     QVector<PSMsReaderRow> psmsReaderRows;
     e = buildPSMsReaderRows(
@@ -568,6 +519,72 @@ Err MsFrameScoretron::processFrameLogic(
             params,
             pepStrWModsVsFrameIndexScoreResultOfTargets
     ); ree;
+
+    ERR_RETURN
+}
+
+void MsFrameScoretron::filterByFoundMzCount(
+        int minFoundMzCount,
+        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+) {
+
+    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
+    for (
+            auto it = pepStrWModsVsFrameIndexScoreResultOfTargets->begin();
+            it != pepStrWModsVsFrameIndexScoreResultOfTargets->end();
+            it++
+            ) {
+
+        const PeptideStringWithMods &peptideStringWithMods = it.key();
+        const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+        const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+        const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
+
+        if (maxFoundCount < minFoundMzCount) {
+            continue;
+        }
+
+        pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
+    }
+
+    *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
+}
+
+Err MsFrameScoretron::writeFrameTargetScoreVectors(
+        const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
+        const QString &outputFilePath
+) {
+
+    ERR_INIT
+
+    int counter = 0;
+    QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
+    for (auto it = pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
+
+        const PeptideStringWithMods &peptideStringWithMods = it.key();
+        const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+        MsFrameScoreVectorReaderRow row;
+        row.peptideStringWithMods = peptideStringWithMods;
+        row.cosineSimPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec;
+        row.foundIonsPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+        row.scorePerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
+        row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
+        row.scorePeakStart = frameIndexScoreResultOfTarget.bestScorePeakLimits.first;
+        row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
+        row.charge = frameIndexScoreResultOfTarget.charge;
+        msFrameScoreVectorReaderRows.push_back(row);
+        counter++;
+    }
+
+    e = ParquetReader::write(
+            msFrameScoreVectorReaderRows,
+            outputFilePath
+    ); ree;
+
+    qDebug() << "Found Targets:" << counter;
+    qDebug() << "Frame written to:" << outputFilePath;
 
     ERR_RETURN
 }

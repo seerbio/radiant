@@ -5,6 +5,7 @@
 #include "BiophysicalCalcs.h"
 #include "MsReaderParquet.h"
 #include "MsFrameScoretron.h"
+#include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "PythiaParameterReader.h"
 
@@ -60,8 +61,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     ERR_INIT
 
-    const QString missingPeptide = "AQXXGGVDEAWAXXQGXQSR";
-    const double scanTime = 29.1513;
+    const QString missingPeptide = "YXXHYXVSXQNWXNR";
+    const double scanTime = 18.8078;
 
     const QString fragLibFilePath = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
     const QString msDataFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
@@ -115,21 +116,34 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     );
     QCOMPARE(e, eNoError);
 
-    for (int i = 0; i < 400; i++) {
-        qDebug() << i << msFrame.scanNumberFromFrameIndex(i);
-    }
-
     const double peptideMass = BiophysicalCalcs::calculatePeptideMass(missingPeptide, params.aminoAcids, {});
     const int charge = BiophysicalCalcs::calculateChargeFromSequence(missingPeptide, params.aminoAcids, msScanInfo.precursorTargetMz);
+    const int frameIndex = msFrame.frameIndexFromScanNumber(scanNumber);
+
     qDebug() << "Theoretical Peptide Mass" << peptideMass;
     qDebug() << "Charge" << charge;
     qDebug() << "Theo Peptide Mz" << BiophysicalCalcs::calculateThomsonFromMass(peptideMass, charge);
     qDebug() << "Peptide is in frag Library" << fragPreds.contains(missingPeptide);
     qDebug() << "ScanNumber" << scanNumber;
-    qDebug() << "FrameIndex" << msFrame.frameIndexFromScanNumber(scanNumber);
+    qDebug() << "FrameIndex" << frameIndex;
     qDebug() << "Target Scan Key" << uniqueMsInfoScanKey;
 
-    const ScanPoints scanPoints = msFrame.getScanPointsByScanNumber(scanNumber);
+    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(268);
+    qDebug() << "Alt ScanNumber If Diff From Above" << altScanNumber;
+
+
+    ScanPoints scanPoints = msFrame.getScanPointsByScanNumber(scanNumber);
+
+    bool useAltScanNumber = false;
+    if (useAltScanNumber) {
+        qDebug() << "USING ALTERNATE SCAN NUMBER";
+        qDebug() << "USING ALTERNATE SCAN NUMBER";
+        qDebug() << "USING ALTERNATE SCAN NUMBER";
+        qDebug() << "USING ALTERNATE SCAN NUMBER";
+        qDebug() << "USING ALTERNATE SCAN NUMBER";
+        scanPoints = msFrame.getScanPointsByScanNumber(altScanNumber);
+    }
+
     const QVector<MS2Ion> predMs2Ions = fragPreds.value(missingPeptide);
 
     const QPair<QVector<double>, QVector<double>> mzIntensityUnzip = ParallelUtils::unZip(scanPoints);
@@ -156,6 +170,18 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
             params,
             &peptideScoreVecs
             );
+
+    MsFrameScoretron::filterByFoundMzCount(
+            params.minFoundMzPeaks,
+            &peptideScoreVecs
+    );
+
+    const QString outputFilePathFrameScores = msDataFilePath + "." + msFrame.uniqueMsInfoScanKey() + ".frameScores";
+    e = MsFrameScoretron::writeFrameTargetScoreVectors(
+            peptideScoreVecs,
+            outputFilePathFrameScores
+    );
+    QCOMPARE(e, eNoError);
 
     qDebug() << peptideScoreVecs.value(missingPeptide).foundIonsPerFrameIndexOfTargetVec;
 

@@ -41,7 +41,6 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
     ); ree;
     e = ErrorUtils::isNotEmpty(scoreVectors); ree;
 
-    topNPSMs = 50; //drewholio remove this.
     e = getTopNCandidatesPerFrameIndex(
             scoreVectors,
             msFrame.frameIndexVsScanPoints(),
