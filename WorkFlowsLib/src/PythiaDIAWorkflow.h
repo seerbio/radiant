@@ -43,7 +43,7 @@ private:
             const QString &firstPassResultsFilePath
             );
 
-    Err processDIAFramesParallel(
+    static Err processDIAFramesParallel(
             const QVector<FrameParallelInput> &frameParallelInputs,
             QVector<PSMsReaderRow> *psmReaderRows
             );

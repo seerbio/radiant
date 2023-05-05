@@ -38,6 +38,7 @@ struct FrameParallelInput {
     QString fragLibFilePath;
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     QPair<double, double> mzTargetStartStop;
+    bool applySmooth2D = false;
 };
 
 namespace {
@@ -46,6 +47,7 @@ namespace {
             const PythiaParameters &pythiaParameters,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
+            bool applySmooth2D,
             QVector<FrameParallelInput> *frameParallelInputs
     ) {
 
@@ -61,6 +63,7 @@ namespace {
         for (const MsScanInfo &si : uniqueScanInfos) {
 
             FrameParallelInput fpi;
+            fpi.applySmooth2D = applySmooth2D;
             fpi.msDataFilePath = msDataFilePath;
             fpi.params = pythiaParameters;
             fpi.fragLibFilePath = fragLibFilePath;
@@ -117,14 +120,12 @@ namespace {
                 QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
         ); ree;
 
-        const double ppmMultilplier = 3.0;
-        const double newPrecisionPPM = msCalibratomatic.newStDev() * ppmMultilplier;
-        const double oldPrecisionPPM = pythiaParameters->ms2ExtractionWidthPPM;
-
-        (*pythiaParameters).ms2ExtractionWidthPPM = newPrecisionPPM;
-        (*pythiaParameters).featureFinderTolerancePPM = newPrecisionPPM;
-
-        qDebug() << "PPM tolerance adjusted from" << oldPrecisionPPM << "->" << newPrecisionPPM;
+//        const double ppmMultilplier = 4.0;
+//        const double newPrecisionPPM = msCalibratomatic.newStDev() * ppmMultilplier;
+//        const double oldPrecisionPPM = pythiaParameters->ms2ExtractionWidthPPM;
+//        (*pythiaParameters).ms2ExtractionWidthPPM = newPrecisionPPM;
+//        (*pythiaParameters).featureFinderTolerancePPM = newPrecisionPPM;
+//        qDebug() << "PPM tolerance adjusted from" << oldPrecisionPPM << "->" << newPrecisionPPM;
 
         ERR_RETURN
     }
@@ -134,11 +135,15 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
+    QString msDataFilePathRecalibrated = msDataFilePath + ".reCal"; //drewholio remove this path but keep var
+
+    const bool applySmooth2DCalibration = false;
     QVector<FrameParallelInput> frameParallelInputs;
     e = buildParallelInput(
             m_pythiaParameters,
             msDataFilePath,
             m_fragLibUri,
+            applySmooth2DCalibration,
             &frameParallelInputs
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
@@ -150,7 +155,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             firstPassResultsFilePath
             ); ree;
 
-    QString msDataFilePathRecalibrated;
     e = buildRecalibratedMsDataFile(
             msDataFilePath,
             firstPassResultsFilePath,
@@ -158,11 +162,13 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &msDataFilePathRecalibrated
             ); ree;
 
+    const bool applySmooth2D = true;
     QVector<FrameParallelInput> frameParallelInputsRecal;
     e = buildParallelInput(
             m_pythiaParameters,
-            msDataFilePath,
+            msDataFilePathRecalibrated,
             m_fragLibUri,
+            applySmooth2D,
             &frameParallelInputsRecal
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
@@ -189,7 +195,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
     ERR_INIT
 
-    const double calibrationFraction = 0.5;
+    const double calibrationFraction = 0.5; //Drewholio fix this. Find a better way.
     const int calibrationResize = static_cast<int>(std::round(frameParallelInputs.size() * calibrationFraction));
 
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
@@ -225,7 +231,8 @@ namespace {
                 fpi.msDataFilePath,
                 fpi.fragLibFilePath,
                 fpi.uniqueMsInfoScanKey,
-                fpi.mzTargetStartStop
+                fpi.mzTargetStartStop,
+                fpi.applySmooth2D
                 ); rree;
 
         return result;
@@ -254,7 +261,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-        if (fpi.uniqueMsInfoScanKey != "474966") {
+        if (fpi.uniqueMsInfoScanKey != "725079") {
             continue;
         }
 

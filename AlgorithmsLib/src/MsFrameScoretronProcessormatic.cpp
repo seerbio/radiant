@@ -25,46 +25,6 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
         const QString &scoreVectorsFilePath,
-        const QString &msFrameScansFilePath,
-        int topNPSMs,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-        ) {
-
-    ERR_INIT
-
-    QVector<MsFrameScoreVectorReaderRow> scoreVectors;
-    ParquetReader::read(
-            scoreVectorsFilePath,
-            &scoreVectors
-    ); ree;
-    e = ErrorUtils::isNotEmpty(scoreVectors); ree;
-
-    QVector<MsFrameScanPointRows> msFrameScanPointRows;
-    ParquetReader::read(
-            msFrameScansFilePath,
-            &msFrameScanPointRows
-    ); ree;
-    e = ErrorUtils::isNotEmpty(msFrameScanPointRows); ree;
-
-    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints;
-    e = MsFrame::buildFrameIndexVsScanPoints(
-            msFrameScanPointRows,
-            &frameIndexVsScanPoints
-    ); ree;
-
-    topNPSMs = 20; //TODO remove this.
-    e = getTopNCandidatesPerFrameIndex(
-            scoreVectors,
-            frameIndexVsScanPoints,
-            topNPSMs,
-            topCansInFrameIndex
-    );ree;
-
-    ERR_RETURN
-}
-
-Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
-        const QString &scoreVectorsFilePath,
         const MsFrame &msFrame,
         int topNPSMs,
         QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
@@ -81,7 +41,7 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
     ); ree;
     e = ErrorUtils::isNotEmpty(scoreVectors); ree;
 
-    topNPSMs = 20; //TODO remove this.
+    topNPSMs = 50; //drewholio remove this.
     e = getTopNCandidatesPerFrameIndex(
             scoreVectors,
             msFrame.frameIndexVsScanPoints(),
@@ -231,9 +191,10 @@ Err MsFrameScoretronProcessormatic::getTopNCandidatesPerFrameIndex(
             continue;
         }
 
+        //TODO double check this return here drewholio
         const int topN = std::min(topNPSMs, peptideWithScoresDesc.size());
-
         peptideWithScoresDesc.resize(topN);
+
         topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
 
     }

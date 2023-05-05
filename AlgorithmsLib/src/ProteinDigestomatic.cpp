@@ -7,6 +7,8 @@
 #include "BiophysicalCalcs.h"
 #include "MathUtils.h"
 
+#include <iostream>
+
 
 ProteinDigestomatic::ProteinDigestomatic(const PythiaParameters &params)
 : m_pythiaParams(params)
@@ -123,6 +125,7 @@ Err ProteinDigestomatic::digestProtein(
             startIndex = i;
 
             peptideSequence.sequence += aa.toLatin1();
+
         }
 
         else if (m_pythiaParams.cTermCleavePoints.contains(aa) && i < proteinSequence.size() - 1){

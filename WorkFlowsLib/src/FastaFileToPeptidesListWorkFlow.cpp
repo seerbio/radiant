@@ -156,6 +156,8 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         }
     }
 
+    qDebug() << "SLKFJDSLFJSDL" << entered.value("YSHYNERDEXPHNDXAXXK");
+
     qDebug() << "Targets size" << peptideSequences->size();
     ERR_RETURN
 }

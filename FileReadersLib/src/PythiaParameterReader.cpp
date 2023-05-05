@@ -345,17 +345,28 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.returnPSMTopN = 1;
     pythiaParameters.maxTandemPointCount = 2;
     pythiaParameters.ms2ExtractionWidthPPM = 12.0;
-    pythiaParameters.featureFinderTolerancePPM = 12.0;
+    pythiaParameters.featureFinderTolerancePPM = 9.0;
     pythiaParameters.precursorExtractionWindowThomsons = 1.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
-    pythiaParameters.minScanCount = 2;
-    pythiaParameters.skipScanCount = 1;
+    pythiaParameters.minScanCount = 3;
+    pythiaParameters.skipScanCount = 2;
     pythiaParameters.useMeanMz = true;
     pythiaParameters.filterLength = 5;
     pythiaParameters.smoothCount = 1;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
+    pythiaParameters.topNMs2Ions = 12;
+    pythiaParameters.minFoundMzPeaks = 6;
+    pythiaParameters.allowedMissedCleavages = 1;
+
+    Modification carboxyAmidoMethyl(
+            'C',
+            "CAM",
+            ModificationType::FIXED,
+            "C2H3NO"
+    );
+    pythiaParameters.modifications = {carboxyAmidoMethyl};
 
     PythiaParameterReader::applyFixedModificationsToAminoAcids(
             pythiaParameters,

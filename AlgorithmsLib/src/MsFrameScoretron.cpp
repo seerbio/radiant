@@ -156,7 +156,8 @@ namespace {
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
             const QPair<double, double> mzTargetStartStop,
-            MsFrame *msFrame
+            bool applySmooth2D,
+            MsFrame *msFrame = Q_NULLPTR
             ) {
 
         ERR_INIT
@@ -178,14 +179,10 @@ namespace {
                 mzTargetStartStop
         ); ree;
 
-        const bool denoise = true;
-        const bool deisotope = true;
-        const bool smooth = false;
-        e = msFrame->preprocessMsFrame(
-                denoise,
-                deisotope,
-                smooth
-        ); ree;
+        if (applySmooth2D) {
+            e = msFrame->gaussianSmooth2D(); ree;
+        }
+
 
         ERR_RETURN
     }
@@ -221,7 +218,7 @@ namespace {
             const QVector<MS2Ion> &ms2IonsTandemPred,
             int frameScanCount,
             int topNMs2Ions,
-            double featureFinderTolerancePPM,
+            double ppmTolerance,
             TurboXIC *turboXic
     ) {
 
@@ -255,7 +252,7 @@ namespace {
             const double mz = ms2Ions.at(colIdx).mz;
             const double massTol = MathUtils::calculatePPM(
                     mz,
-                    featureFinderTolerancePPM
+                    ppmTolerance
             );
 
             const double mzMin = mz - massTol;
@@ -414,7 +411,7 @@ namespace {
                     ms2IonsTandemPred,
                     frame.scanCount(),
                     params.topNMs2Ions,
-                    params.featureFinderTolerancePPM,
+                    params.ms2ExtractionWidthPPM,
                     &turboXic
             );
 
@@ -495,7 +492,8 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
         const QString &msDataFilePath,
         const QString &fragLibFilePath,
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const QPair<double, double> &mzTargetStartStop
+        const QPair<double, double> &mzTargetStartStop,
+        bool applySmooth2D
         ) {
 
     ERR_INIT
@@ -512,13 +510,26 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             ); rree;
     e = ErrorUtils::isNotEmpty(m_fragPreds); rree;
 
+//    qDebug() << "Drewholio" << m_fragPreds.contains("XTVVAGEHNXEETEHTEQK");
+
     e = buildMsFrame(
             msDataFilePath,
             uniqueMsInfoScanKey,
             params,
             mzTargetStartStop,
+            applySmooth2D,
             &m_msFrame
             ); rree;
+
+//#define WRITE_FRAME
+#ifdef WRITE_FRAME
+//    for (int i = 0; i < 412; i++) {
+//        qDebug() << i << m_msFrame.scanNumberFromFrameIndex(i);
+//    }
+    const QString framesFilePath = msDataFilePath + ".frameScans";
+    e = m_msFrame.writeFramScans(framesFilePath);
+    qDebug() << e << "Drewholio" << framesFilePath;
+#endif
 
     qDebug() << uniqueMsInfoScanKey << m_msFrame.scanCount() << "Candidates:" << m_fragPreds.size();
 
@@ -534,6 +545,8 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             params.minFoundMzPeaks,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
+
+//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XTVVAGEHNXEETEHTEQK");
 
     const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(

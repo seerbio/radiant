@@ -154,8 +154,9 @@ namespace {
             const Eigen::SparseMatrix<double, Eigen::RowMajor> &mat
             ) {
 
-        const int filterLen = 5;
-        const double sigma = 1;
+        //TODO find a way to autoset filters
+        const int filterLen = 3;
+        const double sigma = 2;
         Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
                 filterLen,
                 sigma
@@ -166,6 +167,27 @@ namespace {
                 gaussianFilter,
                 false
                 );
+    }
+
+    Eigen::SparseMatrix<double> colWiseGaussianSmoothMatrix(
+            const Eigen::SparseMatrix<double> &mat,
+            double ppm
+    ) {
+
+       const auto ppmInt = static_cast<int>(std::round(ppm));
+
+        const int filterLen =  ppmInt % 2 == 0 ? ppmInt - 1 : ppmInt;
+        const double sigma = 2;
+        Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
+                filterLen,
+                sigma
+        );
+
+        return EigenKernelUtils::applyKernelColumnWiseToMatrix(
+                mat,
+                gaussianFilter,
+                false
+        );
     }
 
 }//namespace
@@ -180,7 +202,8 @@ Err MsFrame::smoothFrame() {
 
     const QMap<FrameIndex, ScanPoints> frame = frameIndexVsScanPoints();
 
-    Eigen::SparseMatrix<double, Eigen::RowMajor> mat = EigenSparseUtils::loadFrameToSparseMatrix(
+    Eigen::SparseMatrix<double, Eigen::RowMajor> mat
+        = EigenSparseUtils::loadFrameToSparseMatrixRowMajor(
             frame,
             precision,
             mzMax
@@ -200,6 +223,79 @@ Err MsFrame::smoothFrame() {
         const ScanNumber scanNumber = m_frameIndexVsScanNumber.value(frameIndex);
         m_frame.insert(scanNumber, scanPoints);
     }
+
+    ERR_RETURN
+}
+
+namespace {
+
+QMap<int, double> eigenUtilsApexWrapper(const Eigen::SparseVector<double> &vec) {
+    return EigenSparseUtils::apexes(vec);
+}
+
+}//namespace
+Err MsFrame::gaussianSmooth2D() {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+    e = ErrorUtils::isTrue(m_params.isValid()); ree;
+
+    const int precision = 3;
+    const double mzMax = 2000;
+
+    const QMap<FrameIndex, ScanPoints> frame = frameIndexVsScanPoints();
+
+    Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
+            frame,
+            precision,
+            mzMax
+    );
+
+    //TODO add smoothing params to pythiaParams.
+    mat = colWiseGaussianSmoothMatrix(mat, m_params.featureFinderTolerancePPM); ree;
+    mat = rowWiseGaussianSmoothMatrix(mat); ree;
+
+    QVector<Eigen::SparseVector<double>> vecs;
+    for (int i = 0; i < mat.cols(); ++i) {
+        Eigen::SparseVector<double> scanVec = mat.col(i);
+        vecs.push_back(scanVec);
+    }
+
+//#define PARALLEL_APEX_EXTRACT
+#ifdef PARALLEL_APEX_EXTRACT
+    QFuture<QMap<int, double>> apexVecs = QtConcurrent::mapped(
+            vecs,
+            eigenUtilsApexWrapper
+            );
+    apexVecs.waitForFinished();
+#else
+    QVector<QMap<int, double>> apexVecs;
+    for (const Eigen::SparseVector<double> &vec : vecs) {
+        apexVecs.push_back(eigenUtilsApexWrapper(vec));
+    }
+#endif
+
+    m_frame.clear();
+
+    FrameIndex frameIndex = 0;
+    for (const QMap<int, double> &res : apexVecs) {
+
+        for (auto it = res.begin(); it != res.end(); it++){
+            const int hashedMz = it.key();
+            const auto mz = MathUtils::unHashDecimal<double>(hashedMz, precision);
+            const double intensityVal = it.value();
+
+            m_frame[scanNumberFromFrameIndex(frameIndex)].push_back({mz, intensityVal});
+        }
+
+        frameIndex++;
+    }
+
+    qDebug() << "frame 2d smoothed in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }

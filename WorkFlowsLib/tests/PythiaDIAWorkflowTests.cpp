@@ -18,24 +18,6 @@ private slots:
 
     void execTest();
 
-private:
-
-    static PythiaParameters pythiaParameters() {
-
-        const QString &paramsFile
-                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
-
-        PythiaParameterReader reader;
-        PythiaParameters pythiaParameters;
-        reader.readFile(paramsFile);
-        reader.loadPythiaParameters(&pythiaParameters);
-
-        pythiaParameters.topNMs2Ions = 12;
-        pythiaParameters.ms2ExtractionWidthPPM = 12;
-        pythiaParameters.featureFinderTolerancePPM = 12;
-
-        return pythiaParameters;
-    }
 
 };
 
@@ -48,11 +30,12 @@ void PythiaDIAWorkflowTests::execTest() {
 
     const QString fragLibPath
 //            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/human_plasma_entrapment_super_trunc.fasta.fragLib");
-            = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
+//            = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
+            = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
 
     PythiaDIAWorkflow pythiaDiaWorkflow;
     e = pythiaDiaWorkflow.init(
-            pythiaParameters(),
+            PythiaParameterReader::genericPythiaParametersForTests(),
             fragLibPath
             );
     QCOMPARE(e, eNoError);

@@ -87,21 +87,21 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
 
     ERR_INIT
 
-    const QString scoreVectorsFilePath
-            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores");
-
-    const QString scansFilePath
-            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans");
-
-    const int topN = 10;
-
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
-    MsFrameScoretronProcessormatic::processLogicForFrameScores(
-            scoreVectorsFilePath,
-            scansFilePath,
-            topN,
-            &topCansInFrameIndex
-            );
+//    const QString scoreVectorsFilePath
+//            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores");
+//
+//    const QString scansFilePath
+//            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans");
+//
+//    const int topN = 10;
+//
+//    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
+//    MsFrameScoretronProcessormatic::processLogicForFrameScores(
+//            scoreVectorsFilePath,
+//            scansFilePath,
+//            topN,
+//            &topCansInFrameIndex
+//            );
 
 }
 

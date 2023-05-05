@@ -16,6 +16,7 @@ using Coors = QVector<double>;
 using DiscScore = double;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
+using Index = int;
 using Intensity = double;
 using IonLabel = QString;
 using IonLabels = QStringList;
@@ -50,6 +51,7 @@ using TARGETMZ = double;
 using Tranche = int;
 using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
+using Value = double;
 using XICPoint = QPair<ScanNumber, Intensity>;
 using XICPoints = QMap<ScanNumber, Intensity>;
 

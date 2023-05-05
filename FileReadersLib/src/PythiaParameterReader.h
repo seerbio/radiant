@@ -132,8 +132,8 @@ struct PythiaParameters{
     double signalToNoiseRatio = -1.0;
 
     //TODO hook these up
-    int topNMs2Ions = 12;
-    int minFoundMzPeaks = 4;
+    int topNMs2Ions = -1;
+    int minFoundMzPeaks = -1;
 
     [[nodiscard]] bool isValid() const {
 
@@ -165,6 +165,14 @@ struct PythiaParameters{
             print();
             return false;
         }
+        if (topNMs2Ions < 8) {
+            print();
+            return false;
+        }
+        if (minFoundMzPeaks < 3) {
+            print();
+            return false;
+        }
 
         return true;
     }
@@ -193,7 +201,16 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
         qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
         qDebug() << "topNMs2Ions" << topNMs2Ions;
-        qDebug() << featureFinderTolerancePPM << skipScanCount << minScanCount << useMeanMz; //TODO make this proper like the rest
+        qDebug() << "FeatureFinderTolPPM" << featureFinderTolerancePPM;
+        qDebug() << "Skip scan count" << skipScanCount;
+        qDebug() << "Min scan Count" << minScanCount;
+        qDebug() << "UseMeanMz" << useMeanMz; //TODO make this proper like the rest
+        qDebug() << "FilterLength" << filterLength;
+        qDebug() << "Smooth count" << smoothCount;
+        qDebug() << "sigma" << sigma;
+        qDebug() << "S/N" << signalToNoiseRatio;
+        qDebug() << "TopnMs2Ions" << topNMs2Ions;
+        qDebug() << "minFoundMzPeaks" << minFoundMzPeaks;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

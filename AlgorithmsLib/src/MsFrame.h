@@ -99,6 +99,8 @@ public:
             bool smooth
             );
 
+    Err gaussianSmooth2D();
+
     [[nodiscard]] Err writeFramScans(const QString &outputFilePath) const;
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;

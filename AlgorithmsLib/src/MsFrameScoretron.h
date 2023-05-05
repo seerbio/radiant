@@ -29,7 +29,8 @@ public:
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QPair<double, double> &mzTargetStartStop
+            const QPair<double, double> &mzTargetStartStop,
+            bool applySmooth2D
     );
 
 private:

@@ -13,10 +13,7 @@ void  EigenSparseUtils::sortApexesHiLoValue(QVector<SparseMatrixPoint> *apexes)
     std::sort(apexes->rbegin(), apexes->rend(), sortLogic);
 }
 
-namespace {
-
-}
-Eigen::SparseMatrix<double, Eigen::RowMajor> EigenSparseUtils::loadFrameToSparseMatrix(
+Eigen::SparseMatrix<double> EigenSparseUtils::loadFrameToSparseMatrixColMajor(
         const QMap<int, QVector<QPointF>> &frame,
         int precision,
         double maxRowValue
@@ -48,6 +45,23 @@ Eigen::SparseMatrix<double, Eigen::RowMajor> EigenSparseUtils::loadFrameToSparse
 
     return mat;
 }
+
+Eigen::SparseMatrix<double, Eigen::RowMajor> EigenSparseUtils::loadFrameToSparseMatrixRowMajor(
+        const QMap<int, QVector<QPointF>> &frame,
+        int precision,
+        double maxRowValue
+        ) {
+
+    const Eigen::SparseMatrix<double, Eigen::ColMajor> matColMaj = loadFrameToSparseMatrixColMajor(
+            frame,
+            precision,
+            maxRowValue
+            );
+
+    return {matColMaj};
+}
+
+
 
 namespace {
 
