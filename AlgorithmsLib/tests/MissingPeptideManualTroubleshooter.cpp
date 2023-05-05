@@ -81,7 +81,10 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     QCOMPARE(e, eNoError);
     params.print();
 
-    const QPair<double, double> mzTargetStartStop = {499.479, 510.479};
+    const QPair<double, double> mzTargetStartStop = {
+            msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower,
+            msScanInfo.precursorTargetMz + msScanInfo.isoWindowUpper
+            };
 
     QMap<PeptideStringWithMods, bool> fragPredsIsDecoy;
     QMap<PeptideStringWithMods, QVector<MS2Ion>> fragPreds;
@@ -121,9 +124,9 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     qDebug() << "Theoretical Peptide Mass" << peptideMass;
     qDebug() << "Charge" << charge;
     qDebug() << "Theo Peptide Mz" << BiophysicalCalcs::calculateThomsonFromMass(peptideMass, charge);
-    qDebug() << "Peptide is in frag Library" << fragPreds.contains(missingPeptide); //Why is this peptide not in frag lib
+    qDebug() << "Peptide is in frag Library" << fragPreds.contains(missingPeptide);
     qDebug() << "ScanNumber" << scanNumber;
-    qDebug() << "FrameIndex" << msFrame.frameIndexFromScanNumber(scanNumber); //Why is frame index == 0, i.e, this scan number is not in Frame even though it should be
+    qDebug() << "FrameIndex" << msFrame.frameIndexFromScanNumber(scanNumber);
     qDebug() << "Target Scan Key" << uniqueMsInfoScanKey;
 
     const ScanPoints scanPoints = msFrame.getScanPointsByScanNumber(scanNumber);

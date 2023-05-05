@@ -261,7 +261,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-        if (fpi.uniqueMsInfoScanKey != "504979") {
+        if (fpi.uniqueMsInfoScanKey != "705070") {
             continue;
         }
 

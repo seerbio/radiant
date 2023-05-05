@@ -779,12 +779,10 @@ Err MsFrameScoretron::buildPSMsReaderRows(
     const QList<FrameIndex> &scoreKeys = topCansInFrameIndex.keys();
     const QList<FrameIndex> &discScoreKeys = topCansInFrameIndexVsDiscScore.keys();
 
-
-
     e = ErrorUtils::isNotEmpty(scoreKeys); ree;
     e = ErrorUtils::isTrue(scoreKeys == discScoreKeys); ree;
-
-    for (FrameIndex frameIndex = 0; frameIndex < scoreKeys.size(); frameIndex++) {
+    
+    for (FrameIndex frameIndex : scoreKeys) {
 
         QMap<PeptideStringWithMods, PSMsReaderRow> psmReaderRowsForFrame;
 
