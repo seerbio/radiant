@@ -24,6 +24,8 @@ private Q_SLOTS:
 
     void buildSavitzkyGolayKernelTest();
 
+    void buildGaussianFilterTest();
+
 
 
 };
@@ -57,6 +59,19 @@ void EigenKernelUtilsTests::buildSavitzkyGolayKernelTest() {
     QVERIFY((savitskyGolayKernel(4) - 0.285714 < threshold));
     QVERIFY((savitskyGolayKernel(5) - 0.142857 < threshold));
     QVERIFY((savitskyGolayKernel(6) - -0.0952381 < threshold));
+
+}
+
+void EigenKernelUtilsTests::buildGaussianFilterTest() {
+
+    const int filterLen = 3;
+    const double sigma = 2.0;
+    Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
+            filterLen,
+            sigma
+    );
+
+    std::cout << gaussianFilter << std::endl;
 
 }
 

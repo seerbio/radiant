@@ -156,7 +156,7 @@ namespace {
 
         //TODO find a way to autoset filters
         const int filterLen = 3;
-        const double sigma = 2;
+        const double sigma = 2.0;
         Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
                 filterLen,
                 sigma

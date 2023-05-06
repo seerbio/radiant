@@ -19,8 +19,10 @@
 struct TroubleshootOutput : public ParquetReaderInputBase {
 
     QVector<double> mzScan;
+    QVector<double> mzScanAll;
     QVector<double> mzPred;
     QVector<double> intzScan;
+    QVector<double> intzScanAll;
     QVector<double> intzPred;
 
     QMap<QString, QVariant> map() override {
@@ -29,8 +31,10 @@ struct TroubleshootOutput : public ParquetReaderInputBase {
 
         return {
                 {"mzScan", QVariant(qVectorToQByteArray(mzScan))},
+                {"mzScanAll", QVariant(qVectorToQByteArray(mzScanAll))},
                 {"mzPred", QVariant(qVectorToQByteArray(mzPred))},
                 {"intzScan", QVariant(qVectorToQByteArray(intzScan))},
+                {"intzScanAll", QVariant(qVectorToQByteArray(intzScanAll))},
                 {"intzPred", QVariant(qVectorToQByteArray(intzPred))}
         };
     }
@@ -61,8 +65,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     ERR_INIT
 
-    const QString missingPeptide = "XYPAAVDTXVAXMAEGK";
-    const double scanTime = 28.5445;
+    const QString missingPeptide = "ATPEAANASEXAAXR";
+    const double scanTime = 16.3433;
 
     const QString fragLibFilePath = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
     const QString msDataFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
@@ -128,9 +132,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     qDebug() << "FrameIndex" << frameIndex;
     qDebug() << "Target Scan Key" << uniqueMsInfoScanKey;
 
-    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(261);
+    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(253);
     qDebug() << "Alt ScanNumber If Diff From Above" << altScanNumber;
-
 
     ScanPoints scanPoints = msFrame.getScanPointsByScanNumber(scanNumber);
 
@@ -148,9 +151,14 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     const QPair<QVector<double>, QVector<double>> mzIntensityUnzip = ParallelUtils::unZip(scanPoints);
 
+    const ScanPoints scanPointsAll = msFrame.getScanPointsByScanNumber(scanNumber);
+    QPair<QVector<double>, QVector<double>> unzippedScanPointsAll = ParallelUtils::unZip(scanPoints);
+
     TroubleshootOutput output;
     output.mzScan = mzIntensityUnzip.first;
     output.intzScan = mzIntensityUnzip.second;
+    output.mzScanAll = unzippedScanPointsAll.first;
+    output.intzScanAll = unzippedScanPointsAll.second;
 
     for (const MS2Ion &ms2Ion : predMs2Ions) {
         output.mzPred.push_back(ms2Ion.mz);
@@ -170,11 +178,13 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
             params,
             &peptideScoreVecs
             );
+    qDebug() << "Peptide is in Score Vecs" << peptideScoreVecs.contains(missingPeptide);
 
     MsFrameScoretron::filterByFoundMzCount(
             params.minFoundMzPeaks,
             &peptideScoreVecs
     );
+    qDebug() << "Peptide is in Filtered Score Vecs" << peptideScoreVecs.contains(missingPeptide);
 
     const QString outputFilePathFrameScores = msDataFilePath + "." + msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = MsFrameScoretron::writeFrameTargetScoreVectors(
@@ -190,14 +200,18 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
             params.returnPSMTopN,
             &topCansInFrameIndexVsScore
     );
+    QCOMPARE(e, eNoError);
 
     const QVector<QPair<PeptideStringWithMods, Score>> &pr = topCansInFrameIndexVsScore.value(frameIndex);
 
-    for (const QPair<PeptideStringWithMods, Score> &p : pr) {
-        qDebug() << "drewholio" << p.first << p.second;
-    }
+//    for (const QPair<PeptideStringWithMods, Score> &p : pr) {
+//        qDebug() << "drewholio" << p.first << p.second;
+//    }
     qDebug() << "HOW BIG" << pr.size();
 
+    ////////
+    const QVector<double> scoreVec = peptideScoreVecs.value(missingPeptide).scorePerFrameIndexOfTargetVec;
+    qDebug() << "Max score Frame Index" << MathUtils::findMaxIndexInVector(scoreVec);
     qDebug() << peptideScoreVecs.value(missingPeptide).foundIonsPerFrameIndexOfTargetVec;
 
 }
