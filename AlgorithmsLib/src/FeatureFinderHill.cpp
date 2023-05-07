@@ -32,12 +32,20 @@ int FeatureFinderHill::maxIntensityScanNumber() const {
     return m_scanNumbers.at(MathUtils::findMaxIndexInVector(m_intensities));
 }
 
+int FeatureFinderHill::maxIntensityScanNumberIndex() const {
+    return m_scanNumberIndexes.at(MathUtils::findMaxIndexInVector(m_intensities));
+}
+
 int FeatureFinderHill::scanCount() const {
     return m_scanNumbers.size();
 }
 
 QVector<int> FeatureFinderHill::scanNumbers() const {
     return m_scanNumbers;
+}
+
+QVector<int> FeatureFinderHill::scanNumberIndexes() const {
+    return m_scanNumberIndexes;
 }
 
 QVector<double> FeatureFinderHill::intensities() const {

@@ -352,7 +352,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.minScanCount = 3;
     pythiaParameters.skipScanCount = 2;
     pythiaParameters.useMeanMz = true;
-    pythiaParameters.filterLength = 5;
+    pythiaParameters.filterLength = 3;
     pythiaParameters.smoothCount = 1;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;

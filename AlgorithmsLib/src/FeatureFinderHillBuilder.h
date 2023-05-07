@@ -40,13 +40,14 @@ public:
     bool isValid() const {
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount > 0
-            && filterLength > 4
+            && minScanCount >= 0
+            && filterLength > 2
             && smoothCount >0
             && sigma > 0
             && signalToNoiseRatio > 0;
 
         if (!isValid) {
+           qDebug() << "tolerancePPM" << tolerancePPM;
            qDebug() << "skipScanCount" << skipScanCount ;
            qDebug() << "minScanCount" << minScanCount;
            qDebug() << "filterLentght" << filterLength;
@@ -87,6 +88,11 @@ public:
             const QMap<ScanNumber, double> &scanNumberVsScanTime,
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath
+    );
+
+    static Err featureFinderHillPoints(
+            const QVector<FeatureFinderHill> &featureFinderHills,
+            QVector<FeatureFinderHillPoint> *featureFinderHillPoints
     );
 
     Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);

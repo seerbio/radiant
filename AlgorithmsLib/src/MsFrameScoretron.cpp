@@ -335,7 +335,7 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
 //        qDebug() << i << m_msFrame.scanNumberFromFrameIndex(i);
 //    }
     const QString framesFilePath = msDataFilePath + ".frameScans";
-    e = m_msFrame.writeFramScans(framesFilePath);
+    e = m_msFrame.writeFrameScans(framesFilePath);
     qDebug() << e << "Drewholio" << framesFilePath;
 #endif
 

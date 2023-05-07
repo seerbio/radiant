@@ -83,25 +83,17 @@ public:
             const QPair<double, double> &frameMzStartStop
             );
 
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            double collisionEnergy,
-            double precursorTargetMz,
-            double isoWindowLower,
-            double isoWindowUpper
-    );
-
     Err preprocessMsFrame(
             bool denoise,
             bool deisotope,
             bool smooth
             );
 
+    Err deisotopeFrame();
+
     Err gaussianSmooth2D();
 
-    [[nodiscard]] Err writeFramScans(const QString &outputFilePath) const;
+    [[nodiscard]] Err writeFrameScans(const QString &outputFilePath) const;
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 
@@ -121,15 +113,10 @@ public:
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
-    static Err buildFrameIndexVsScanPoints(
-            const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
-            QMap<FrameIndex, ScanPoints> *frameIndexVsScanPoints
-            );
 
 private:
 
     Err denoiseFrame();
-    Err deisotopeFrame();
     Err smoothFrame();
     Err buildFrameIndexVsScanNumber();
 

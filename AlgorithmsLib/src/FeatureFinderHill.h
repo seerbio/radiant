@@ -36,6 +36,26 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderMS1Feature {
 
 };
 
+struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPoint {
+    FrameIndex frameIndex = -1;
+    double mz = -1.0;
+    double intensity = -1.0;
+
+    FeatureFinderHillPoint() = default;
+    ~FeatureFinderHillPoint() = default;
+
+    FeatureFinderHillPoint(
+            FrameIndex frameIndex,
+            double mz,
+            double intensity
+            )
+            : frameIndex(frameIndex)
+            , mz(mz)
+            , intensity(intensity)
+            {}
+
+};
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHill {
 
 public:
@@ -65,6 +85,8 @@ public:
 
     [[nodiscard]] int maxIntensityScanNumber() const;
 
+    [[nodiscard]] int maxIntensityScanNumberIndex() const;
+
     [[nodiscard]] double intensityValueMax() const;
 
     [[nodiscard]] int scanCount() const;
@@ -72,6 +94,8 @@ public:
     [[nodiscard]] QPair<ScanNumber , ScanNumber> scanNumberMinMax() const;
 
     [[nodiscard]] QVector<int> scanNumbers() const;
+
+    [[nodiscard]] QVector<int> scanNumberIndexes() const;
 
     [[nodiscard]] QVector<double> mzVals() const;
 

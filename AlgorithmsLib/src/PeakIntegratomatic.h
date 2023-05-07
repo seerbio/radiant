@@ -22,7 +22,7 @@ struct PeakIntegratomaticParameters {
     double signalToNoiseRatio = 3;
 
     [[nodiscard]] bool isValid() const {
-        return filterLength > 3
+        return filterLength > 2
             && smoothCount > 0
             && sigma > 0
             && signalToNoiseRatio > 0;
