@@ -348,14 +348,10 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             &pepStrWModsVsFrameIndexScoreResultOfTargets
     ); rree
 
-//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XVNEGGXDPXXR");
-
     filterByFoundMzCount(
             params.minFoundMzPeaks,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
-
-//    qDebug() << "Drewholio" << pepStrWModsVsFrameIndexScoreResultOfTargets.contains("XVNEGGXDPXXR");
 
     const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
@@ -371,22 +367,11 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             &topCansInFrameIndexVsScore
             ); rree;
 
-//    const auto res = topCansInFrameIndexVsScore.value(268);
-//    for (const auto &r : res) {
-//        qDebug() << "drewholio" << r;
-//    }
-
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
     e = calculateDiscriminateScoreForFrameIndexes(
             topCansInFrameIndexVsScore,
             &topCansInFrameIndexVsDiscScore
             ); rree;
-
-//    qDebug() << "**********";
-//    const auto resw = topCansInFrameIndexVsDiscScore.value(268);
-//    for (const auto &r : resw) {
-//        qDebug() << "drewholio" << r;
-//    }
 
     QVector<PSMsReaderRow> psmsReaderRows;
     e = buildPSMsReaderRows(
@@ -395,12 +380,6 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             topCansInFrameIndexVsDiscScore,
             &psmsReaderRows
             ); rree;
-
-//    for (auto &row : psmsReaderRows) {
-//        qDebug() << row.charge << row.peptideStringWithMods << row.discScore << row.frameRankDiscScore
-//                << row.frameIndex << row.scanNumber << row.frameRankScore << row.score << row.isDecoy
-//                << row.uniqueMsInfoScanKey;
-//    }
 
     return {e, psmsReaderRows};
 }
