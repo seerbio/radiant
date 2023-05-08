@@ -208,11 +208,19 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     );
     QCOMPARE(e, eNoError);
 
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
-    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
-            outputFilePathFrameScores,
+    MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
+    msFrameScoretronProcessormatic.init(
+            fragPreds,
             msFrame,
-            params.returnPSMTopN,
+            params,
+            outputFilePathFrameScores
+    );
+    QCOMPARE(e, eNoError);
+
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
+    e = msFrameScoretronProcessormatic.processLogicForFrameScores(
+            &topCansInFrameIndexVsDiscScore,
             &topCansInFrameIndexVsScore
     );
     QCOMPARE(e, eNoError);

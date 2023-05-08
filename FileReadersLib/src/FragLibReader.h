@@ -109,6 +109,17 @@ public:
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy
     );
 
+    static void filterMs2IonsByMz(
+            double mzStart,
+            double mzEnd,
+            QVector<MS2Ion> *ms2Ions
+    );
+
+    static void getTopNMostIntenseMs2Ions(
+            int topNMs2Ions,
+            QVector<MS2Ion> *ms2Ions
+    );
+
 private:
 
     QString m_fragLibFilePath;

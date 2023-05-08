@@ -41,21 +41,47 @@ public:
 
     friend class MsFrameScoretronProcessormaticTests;
 
-    static Err processLogicForFrameScores(
-            const QString &scoreVectorsFilePath,
+    MsFrameScoretronProcessormatic() = default;
+    ~MsFrameScoretronProcessormatic() = default;
+
+    Err init(
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
             const MsFrame &msFrame,
-            int topNPSMs,
+            const PythiaParameters &params,
+            const QString &scoreVectorsFilePath
+            );
+
+    Err processLogicForFrameScores(
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *topCansInFrameIndexVsDiscScore
+    );
+
+
+private:
+
+    Err getTopNCandidatesPerFrameIndex(
+            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
+            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
+    );
+
+    Err calculateDiscriminateScoreForFrameIndexes(
+            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
+    );
+
+    Err calculateDiscriminateScoreForFrame(
+            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+            FrameIndex frameIndex,
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
     );
 
 private:
 
-    static Err getTopNCandidatesPerFrameIndex(
-            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
-            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
-            int topNPSMs,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-    );
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
+    MsFrame m_msFrame;
+    PythiaParameters m_params;
+    QString m_scoreVectorsFilePath;
 
 };
 

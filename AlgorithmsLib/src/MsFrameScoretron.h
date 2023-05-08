@@ -30,6 +30,7 @@ class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 public:
 
     friend class MissingPeptideManualTroubleshooter;
+    friend class MsFrameScoretronProcessormaticTests;
 
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
@@ -44,17 +45,6 @@ public:
     );
 
 private:
-
-    Err calculateDiscriminateScoreForFrameIndexes(
-            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
-            );
-
-    Err calculateDiscriminateScoreForFrame(
-            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
-            FrameIndex frameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
-            );
 
     Err buildPSMsReaderRows(
             const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,

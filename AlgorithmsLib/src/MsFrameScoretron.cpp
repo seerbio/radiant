@@ -12,7 +12,6 @@
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
-#include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -41,47 +40,6 @@ namespace {
         *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
 
         ERR_RETURN
-    }
-
-    void filterMs2IonsByMz(
-            double mzStart,
-            double mzEnd,
-            QVector<MS2Ion> *ms2Ions
-            ) {
-
-        const auto terminatorLogic = [mzStart, mzEnd](const MS2Ion &ion){
-            return !(mzStart <= ion.mz && ion.mz <= mzEnd);
-        };
-
-        const auto terminator = std::remove_if(
-                ms2Ions->begin(),
-                ms2Ions->end(),
-                terminatorLogic
-                );
-
-        ms2Ions->erase(terminator, ms2Ions->end());
-    }
-
-    void getTopNMostIntenseMs2Ions(
-            int topNMs2Ions,
-            QVector<MS2Ion> *ms2Ions
-            ) {
-
-        const auto sortIntensityAsc = [](const MS2Ion &l, const MS2Ion &r){
-            return l.intensity < r.intensity;
-        };
-
-        std::sort(ms2Ions->rbegin(), ms2Ions->rend(), sortIntensityAsc);
-
-        topNMs2Ions = std::min(topNMs2Ions, ms2Ions->size());
-
-        ms2Ions->resize(topNMs2Ions);
-
-        const auto sortMzAsc = [](const MS2Ion &l, const MS2Ion &r) {
-            return l.mz < r.mz;
-        };
-
-        std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
     }
 
     struct ScoringMatrices {
@@ -127,13 +85,13 @@ namespace {
 
         QVector<MS2Ion> ms2Ions = ms2IonsTandemPred;
 
-        filterMs2IonsByMz(
+        FragLibReader::filterMs2IonsByMz(
                 params.mzMinDataStructure,
                 params.mzMaxDataStructure,
                 &ms2Ions
                 );
 
-        getTopNMostIntenseMs2Ions(
+        FragLibReader::getTopNMostIntenseMs2Ions(
                 params.topNMs2Ions,
                 &ms2Ions
                 );
@@ -292,8 +250,6 @@ namespace {
         ERR_RETURN
     }
 
-
-
 }//namespace
 QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
         const PythiaParameters &params,
@@ -357,20 +313,18 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             outputFilePathFrameScores
     ); rree;
 
-
-    /////////
-
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
-    e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
-            outputFilePathFrameScores,
+    MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
+    e = msFrameScoretronProcessormatic.init(
+            m_fragPreds,
             m_msFrame,
-            params.returnPSMTopN,
-            &topCansInFrameIndexVsScore
+            m_params,
+            outputFilePathFrameScores
             ); rree;
 
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
-    e = calculateDiscriminateScoreForFrameIndexes(
-            topCansInFrameIndexVsScore,
+    e = msFrameScoretronProcessormatic.processLogicForFrameScores(
+            &topCansInFrameIndexVsScore,
             &topCansInFrameIndexVsDiscScore
             ); rree;
 
@@ -573,144 +527,6 @@ Err MsFrameScoretron::writeFrameTargetScoreVectors(
     ERR_RETURN
 }
 
-Err MsFrameScoretron::calculateDiscriminateScoreForFrameIndexes(
-        const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
-        ) {
-
-    ERR_INIT
-
-    for (auto it = topCansInFrameIndex.begin(); it != topCansInFrameIndex.end(); it++) {
-
-        const FrameIndex frameIndex = it.key();
-        const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore = it.value();
-
-        e = calculateDiscriminateScoreForFrame(
-                peptideStringWithModsScore,
-                frameIndex,
-                topCansInFrameIndexVsDiscScore
-                ); ree;
-
-//#define DEBUG_DISC
-#ifdef DEBUG_DISC
-        if (frameIndex == 128) {
-            qDebug() << frameIndex;
-            const auto &discScores = topCansInFrameIndexVsDiscScore->value(frameIndex);
-            for (const QPair<PeptideStringWithMods, DiscScore > &pr : discScores) {
-                qDebug() << pr << m_fragPredsIsDecoy.value(pr.first) << pr.second;
-            }
-            qDebug() << "************";
-        }
-#endif
-
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    Err getFrameIndexMs2Ions(
-            const PythiaParameters &params,
-            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanPreds
-            ) {
-
-        ERR_INIT
-
-        for (const QPair<PeptideStringWithMods, Score> &pepScore : peptideStringWithModsScore) {
-
-            const PeptideStringWithMods &peptideStringWithMods = pepScore.first;
-
-            QVector<MS2Ion> ms2Ions = fragPreds.value(peptideStringWithMods);
-
-            const double mzMin = 0.0;
-            filterMs2IonsByMz(
-                    mzMin,
-                    params.mzMaxDataStructure,
-                    &ms2Ions
-                    );
-
-            e = ErrorUtils::isTrue(fragPreds.contains(peptideStringWithMods)); ree;
-            scanPreds->insert(peptideStringWithMods, ms2Ions);
-        }
-
-        ERR_RETURN
-    }
-
-    void sortDiscScoresDesc(
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
-            ) {
-
-        for (
-            auto it = frameIndexVsPeptideStringWithModsDiscScore->begin();
-            it != frameIndexVsPeptideStringWithModsDiscScore->end();
-            it++
-            ) {
-
-            QVector<QPair<PeptideStringWithMods, Score>> &scores = it.value();
-            using Sort = QPair<PeptideStringWithMods, Score>;
-            std::sort(scores.rbegin(), scores.rend(), [](const Sort &l, const Sort &r){
-                return l.second < r.second;
-            });
-
-        }
-
-    }
-
-}//namespace
-Err MsFrameScoretron::calculateDiscriminateScoreForFrame(
-        const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
-        FrameIndex frameIndex,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
-        ) {
-
-    ERR_INIT
-
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPreds;
-    e = getFrameIndexMs2Ions(
-            m_params,
-            peptideStringWithModsScore,
-            m_fragPreds,
-            &scanPreds
-            ); ree;
-
-    const QMap<FrameIndex, ScanPoints> &frame = m_msFrame.frameIndexVsScanPoints();
-    ScanPoints scanPoints = frame.value(frameIndex);
-
-    QMap<PeptideStringWithMods, DiscScore> pepSeqVsWeight;
-
-    TandemSpectraDeconvolvotron deconvolvotron;
-    const int precision = 2;
-    const int maxIters = 50;
-    const double stopTolerance = 1e-8;
-    e = deconvolvotron.init(
-            precision,
-            m_params.mzMaxDataStructure,
-            maxIters,
-            stopTolerance
-            ); ree;
-
-    e = deconvolvotron.deconvolveTandemSpectra(
-            scanPoints,
-            scanPreds,
-            &pepSeqVsWeight
-    ); ree;
-
-    for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
-
-        const PeptideStringWithMods &peptideStringWithMods = itt.key();
-        const double discriminateScore = itt.value();
-
-        (*frameIndexVsPeptideStringWithModsDiscScore)[frameIndex].push_back({peptideStringWithMods, discriminateScore});
-    }
-
-    sortDiscScoresDesc(frameIndexVsPeptideStringWithModsDiscScore);
-
-    ERR_RETURN
-}
-
 namespace {
 
     void deleteUnfoundPoints(QVector<QPointF> *points) {
@@ -738,7 +554,7 @@ namespace {
 
         const double mzMin = 0.0;
 
-        filterMs2IonsByMz(
+        FragLibReader::filterMs2IonsByMz(
                 mzMin,
                 mzMax,
                 ms2Ions

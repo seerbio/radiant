@@ -536,3 +536,8 @@ ScanPoints MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
 QMap<ScanNumber, ScanPoints> MsFrame::scanNumberVsScanPoints() const {
     return m_frame;
 }
+
+bool MsFrame::isValid() const {
+    const int minScanCount = 1;
+    return scanCount() > minScanCount;
+}

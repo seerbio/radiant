@@ -83,6 +83,8 @@ public:
             const QPair<double, double> &frameMzStartStop
             );
 
+    bool isValid() const ;
+
     Err preprocessMsFrame(
             bool denoise,
             bool deisotope,
