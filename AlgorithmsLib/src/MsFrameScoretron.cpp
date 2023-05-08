@@ -318,8 +318,6 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             ); rree;
     e = ErrorUtils::isNotEmpty(m_fragPreds); rree;
 
-//    qDebug() << "Drewholio" << m_fragPreds.contains("XTVVAGEHNXEETEHTEQK");
-
     e = buildMsFrame(
             msDataFilePath,
             uniqueMsInfoScanKey,
@@ -358,6 +356,9 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
             pepStrWModsVsFrameIndexScoreResultOfTargets,
             outputFilePathFrameScores
     ); rree;
+
+
+    /////////
 
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
     e = MsFrameScoretronProcessormatic::processLogicForFrameScores(
