@@ -91,6 +91,10 @@ public:
 
     Err deisotopeFrame();
 
+    Err denoiseFrame();
+
+    Err smoothFrame();
+
     Err gaussianSmooth2D();
 
     [[nodiscard]] Err writeFrameScans(const QString &outputFilePath) const;
@@ -116,8 +120,7 @@ public:
 
 private:
 
-    Err denoiseFrame();
-    Err smoothFrame();
+
     Err buildFrameIndexVsScanNumber();
 
 private:

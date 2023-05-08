@@ -493,7 +493,10 @@ Err MsFrameScoretron::buildMsFrame(
     ); ree;
 
     if (applySmooth2D) {
-        e = msFrame->gaussianSmooth2D(); ree;
+//        e = msFrame->denoiseFrame();
+//        e = msFrame->deisotopeFrame();
+//        e = msFrame->smoothFrame();
+//        e = msFrame->gaussianSmooth2D(); ree;
     }
 
     ERR_RETURN

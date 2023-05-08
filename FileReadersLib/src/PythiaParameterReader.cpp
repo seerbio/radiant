@@ -344,22 +344,22 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     pythiaParameters.returnPSMTopN = 300;
     pythiaParameters.maxTandemPointCount = 2;
-    pythiaParameters.ms2ExtractionWidthPPM = 12.0;
-    pythiaParameters.featureFinderTolerancePPM = 9.0;
+    pythiaParameters.ms2ExtractionWidthPPM = 15.0;
+    pythiaParameters.featureFinderTolerancePPM = 15.0;
     pythiaParameters.precursorExtractionWindowThomsons = 1.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
-    pythiaParameters.minScanCount = 3;
-    pythiaParameters.skipScanCount = 2;
+    pythiaParameters.minScanCount = 1;
+    pythiaParameters.skipScanCount = 1;
     pythiaParameters.useMeanMz = true;
-    pythiaParameters.filterLength = 3;
+    pythiaParameters.filterLength = 5;
     pythiaParameters.smoothCount = 1;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 12;
-    pythiaParameters.minFoundMzPeaks = 6;
+    pythiaParameters.topNMs2Ions = 13;
+    pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinDataStructure = 350.0;
+    pythiaParameters.mzMinDataStructure = 50.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
 
     Modification carboxyAmidoMethyl(

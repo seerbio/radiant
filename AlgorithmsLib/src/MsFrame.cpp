@@ -120,7 +120,7 @@ namespace {
 
         //TODO find a way to autoset filters
         const int filterLen = 3;
-        const double sigma = 2.0;
+        const double sigma = 1.0;
         Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
                 filterLen,
                 sigma
@@ -342,6 +342,12 @@ Err MsFrame::deisotopeFrame() {
             &rtree,
             &featureFinderHillApexes
             ); ree;
+
+    m_frame.clear();
+
+    for (const FeatureFinderHillPoint &ffhp : featureFinderHillApexes) {
+        m_frame[ffhp.frameIndex].push_back({ffhp.mz, ffhp.intensity});
+    }
 
     ERR_RETURN
 }
