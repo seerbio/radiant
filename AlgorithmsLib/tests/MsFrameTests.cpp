@@ -21,27 +21,6 @@ private slots:
 
     void preprocessMsFrame();
 
-private:
-
-    static PythiaParameters pythiaParameters() {
-
-
-        PythiaParameters pythiaParameters;
-
-        pythiaParameters.returnPSMTopN = 1;
-        pythiaParameters.maxTandemPointCount = 2;
-        pythiaParameters.ms2ExtractionWidthPPM = 12.0;
-        pythiaParameters.precursorExtractionWindowThomsons = 1.0;
-        pythiaParameters.chargeStateMin = 2;
-        pythiaParameters.chargeStateMax = 3;
-
-        PythiaParameterReader::applyFixedModificationsToAminoAcids(
-                pythiaParameters,
-                &pythiaParameters.aminoAcids
-        );
-
-        return pythiaParameters;
-    }
 
 };
 
@@ -52,7 +31,6 @@ void MsFrameTests::preprocessMsFrame() {
 
     const QString prqfilepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
-
 
     MsReaderParquet msReader;
     e = msReader.openFile(prqfilepath);
@@ -67,13 +45,18 @@ void MsFrameTests::preprocessMsFrame() {
     );
     QCOMPARE(e, eNoError);
 
-//    MsFrame msFrame;
-//    e = msFrame.init(
-//            pythiaParameters(),
-//            ms1Scans
-//            );
-//    QCOMPARE(e, eNoError);
-//
+    MsFrame msFrame;
+    e = msFrame.init(
+            PythiaParameterReader::genericPythiaParametersForTests(),
+            "-1000",
+            ms1Scans,
+            {0.0, 2000.0}
+            );
+    QCOMPARE(e, eNoError);
+
+    e = msFrame.deisotopeFrame();
+    QCOMPARE(e, eNoError);
+
 //    const bool denoise = true;
 //    const bool deisotope = true;
 //    const bool smooth = false; //TODO turn on when implemented

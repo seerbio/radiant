@@ -65,8 +65,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     ERR_INIT
 
-    const QString missingPeptide = "ATPEAANASEXAAXR";
-    const double scanTime = 16.3433;
+    const QString missingPeptide = "CQXEXNFNTXQTK";
+    const double scanTime = 20.5298;
 
     const QString fragLibFilePath = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
     const QString msDataFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
@@ -132,12 +132,12 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     qDebug() << "FrameIndex" << frameIndex;
     qDebug() << "Target Scan Key" << uniqueMsInfoScanKey;
 
-    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(253);
+    const ScanNumber altScanNumber = msFrame.scanNumberFromFrameIndex(252);
     qDebug() << "Alt ScanNumber If Diff From Above" << altScanNumber;
 
     ScanPoints scanPoints = msFrame.getScanPointsByScanNumber(scanNumber);
 
-    bool useAltScanNumber = false;
+    bool useAltScanNumber = true;
     if (useAltScanNumber) {
         qDebug() << "USING ALTERNATE SCAN NUMBER";
         qDebug() << "USING ALTERNATE SCAN NUMBER";
@@ -178,7 +178,22 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
             params,
             &peptideScoreVecs
             );
-    qDebug() << "Peptide is in Score Vecs" << peptideScoreVecs.contains(missingPeptide);
+    const bool inScoreVecs = peptideScoreVecs.contains(missingPeptide);
+    qDebug() << "Peptide is in Score Vecs" << inScoreVecs;
+    if (inScoreVecs) {
+        const QVector<int> foundIons = peptideScoreVecs.value(missingPeptide).foundIonsPerFrameIndexOfTargetVec;
+        qDebug() << foundIons;
+
+        const QVector<double> scores = peptideScoreVecs.value(missingPeptide).scorePerFrameIndexOfTargetVec;
+        const double indexOfTopScore = MathUtils::findMaxIndexInVector(scores);
+        qDebug() << "Best frame index score of unfound" << indexOfTopScore;
+
+        const ScanNumber scanNumberUnfound = msFrame.scanNumberFromFrameIndex(indexOfTopScore);
+        qDebug() << "Best scan number score of unfound" << scanNumberUnfound;
+
+        const ScanPoints scanPointsUnfound = msFrame.getScanPointsByScanNumber(scanNumber);
+
+    }
 
     MsFrameScoretron::filterByFoundMzCount(
             params.minFoundMzPeaks,

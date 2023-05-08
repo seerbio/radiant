@@ -7,12 +7,29 @@
 #include "DeisotoperTandem.h"
 #include "EigenKernelUtils.h"
 #include "EigenSparseUtils.h"
+#include "FeatureFinderHillBuilder.h"
+#include "GlobalSettings.h"
 #include "MsReaderBase.h"
 #include "MsScansDenoiseTron.h"
 #include "ParallelUtils.h"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
 #include <QElapsedTimer>
 
+using SparseMatrixPoint = EigenSparseUtils::SparseMatrixPoint;
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+using rTreeSearchBox = bg::model::box<rTreeCoor>;
+using rTreePoint = std::pair<rTreeCoor, double> ;
+using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+
+const int PRECISION = 3;
 
 MsFrame::MsFrame()
 : m_mzWindowLower(-1.0)
@@ -42,38 +59,6 @@ Err MsFrame::init(
     m_mzWindowUpper = frameMzStartStop.second;
 
     e = buildFrameIndexVsScanNumber(); ree;
-
-    ERR_RETURN
-}
-
-Err MsFrame::init(
-        const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        double collisionEnergy,
-        double precursorTargetMz,
-        double isoWindowLower,
-        double isoWindowUpper
-        ) {
-
-    ERR_INIT
-
-    e = init(
-            pythiaParameters,
-            uniqueMsInfoScanKey,
-            scanPoints,
-            {precursorTargetMz - isoWindowLower, precursorTargetMz + isoWindowUpper}
-            ); ree;
-
-    const double minVal = 0.0;
-
-    for (const double val : {collisionEnergy, precursorTargetMz, isoWindowLower, isoWindowUpper}) {
-        e = ErrorUtils::isAboveThreshold(
-                val,
-                minVal,
-                ErrorUtilsParam::ExcludeThreshold
-        ); ree;
-    }
 
     ERR_RETURN
 }
@@ -127,46 +112,25 @@ Err MsFrame::denoiseFrame() {
     ERR_RETURN
 }
 
-Err MsFrame::deisotopeFrame() {
-
-    ERR_INIT
-
-    const bool runParallel = false;
-
-    e = ErrorUtils::isNotEmpty(m_frame); ree;
-
-    QMap<ScanNumber, ScanPoints> deisotopedTandemScans;
-    e = DeisotoperTandem::deisotopeTandemScansParallel(
-            m_frame,
-            m_params.ms2ExtractionWidthPPM,
-            runParallel,
-            &deisotopedTandemScans
-    ); ree;
-
-    m_frame = deisotopedTandemScans;
-
-    ERR_RETURN
-}
-
 namespace {
 
     Eigen::SparseMatrix<double> rowWiseGaussianSmoothMatrix(
             const Eigen::SparseMatrix<double, Eigen::RowMajor> &mat
-            ) {
+    ) {
 
         //TODO find a way to autoset filters
         const int filterLen = 3;
-        const double sigma = 2.0;
+        const double sigma = 1.0;
         Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
                 filterLen,
                 sigma
-                );
+        );
 
         return EigenKernelUtils::applyKernelRowWiseToMatrix(
                 mat,
                 gaussianFilter,
                 false
-                );
+        );
     }
 
     Eigen::SparseMatrix<double> colWiseGaussianSmoothMatrix(
@@ -174,10 +138,10 @@ namespace {
             double ppm
     ) {
 
-       const auto ppmInt = static_cast<int>(std::round(ppm));
+        const auto ppmInt = static_cast<int>(std::round(ppm));
 
-        const int filterLen =  ppmInt % 2 == 0 ? ppmInt - 1 : ppmInt;
-        const double sigma = 2;
+        const int filterLen =  ppmInt % 2 == 0 ? ppmInt + 1 : ppmInt;
+        const double sigma = 1;
         Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
                 filterLen,
                 sigma
@@ -190,7 +154,204 @@ namespace {
         );
     }
 
+    Eigen::SparseMatrix<double> frameToSparseMatrixSmoothed(
+            const QMap<FrameIndex, ScanPoints> &frame,
+            double featureFinderTolerancePPM
+            ) {
+
+        const double mzMax = 2000;
+
+        Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
+                frame,
+                PRECISION,
+                mzMax
+        );
+
+        //TODO add smoothing params to pythiaParams.
+        mat = colWiseGaussianSmoothMatrix(mat, featureFinderTolerancePPM);
+        mat = rowWiseGaussianSmoothMatrix(mat);
+
+        return mat;
+    }
+
+    void sortHillsFrameIndexThenMzAsc(QVector<FeatureFinderHillPoint> *hillsPoints) {
+
+        const auto sortLogic = [](const FeatureFinderHillPoint &l, const FeatureFinderHillPoint &r){
+
+            if (l.frameIndex == r.frameIndex) {
+                return l.mz < r.mz;
+            }
+
+            return l.frameIndex < r.frameIndex;
+        };
+
+        std::sort(hillsPoints->begin(), hillsPoints->end(), sortLogic);
+    }
+
+    RTree loadRTree(QVector<FeatureFinderHillPoint> &featureFinderHillPoints) {
+
+        QElapsedTimer et;
+        et.start();
+
+        std::vector<rTreePoint> cloudLoader;
+
+        for (const FeatureFinderHillPoint &h : featureFinderHillPoints) {
+
+            rTreeCoor coor(h.frameIndex, h.mz);
+            cloudLoader.emplace_back(coor, h.intensity);
+        };
+
+        const int maxElements = 16;
+        RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+
+        qDebug() << rTree.size()
+                 << "Frame Apexes loaded into rtree in"
+                 << et.restart()
+                 << "mSec";
+
+        return rTree;
+    }
+
+    const auto rTreeMaxPointLogic = [](const rTreePoint &l, const rTreePoint &r){
+        return l.second < r.second;
+    };
+
+    rTreePoint getMaxRTreePointResultValue(const std::vector<rTreePoint> &result) {
+
+        const rTreePoint searchedMaxIntensityPoint = *std::max_element(
+                result.rbegin(),
+                result.rend(),
+                rTreeMaxPointLogic
+        );
+
+        return searchedMaxIntensityPoint;
+    }
+
+    Err iterativelyDeisotopeTree(
+            double featureFinderPPM,
+            RTree *rtree,
+            QVector<FeatureFinderHillPoint> *featureFinderHillApexes
+            ) {
+
+        ERR_INIT
+
+        const Charge chargeMax = 2;
+        const int maxSearchDepth = 4;
+        const int frameIndexBuffer = 1;
+
+        while (!rtree->empty()) {
+
+            const rTreePoint rTreeMaxPoint = *std::max_element(
+                    rtree->begin(),
+                    rtree->end(),
+                    rTreeMaxPointLogic
+                    );
+
+            FeatureFinderHillPoint searchPoint(
+                    static_cast<int>(rTreeMaxPoint.first.get<0>()),
+                    rTreeMaxPoint.first.get<1>(),
+                    rTreeMaxPoint.second
+                    );
+            featureFinderHillApexes->push_back(searchPoint);
+
+            for (int charge = chargeMax; charge > 0; charge--) {
+
+                const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / charge;
+                const double mzTol = MathUtils::calculatePPM(searchPoint.mz, featureFinderPPM);
+
+                double lastSearchedMaxIntensity = searchPoint.intensity;
+
+                for (int depth = 1; depth < maxSearchDepth; depth++) {
+
+                    const double mzMin = searchPoint.mz + (depth * chargeDistance) - mzTol;
+                    const double mzMax = searchPoint.mz + (depth * chargeDistance) + mzTol;
+                    const double frameIndexMin = searchPoint.frameIndex - frameIndexBuffer;
+                    const double frameIndexMax = searchPoint.frameIndex + frameIndexBuffer;
+
+                    const rTreeSearchBox queryBox(
+                            rTreeCoor(frameIndexMin, mzMin),
+                            rTreeCoor(frameIndexMax, mzMax)
+                    );
+
+                    std::vector<rTreePoint> result;
+                    rtree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+                    if (result.empty()) {
+                        break;
+                    }
+
+                    const rTreePoint searchedMaxIntensityPoint = getMaxRTreePointResultValue(result);
+                    const double searchedMaxIntensityPointValue = searchedMaxIntensityPoint.second;
+
+                    if (searchedMaxIntensityPointValue < lastSearchedMaxIntensity) {
+                        lastSearchedMaxIntensity = searchedMaxIntensityPointValue;
+                        rtree->remove(searchedMaxIntensityPoint);
+                        continue;
+                    }
+
+                    break;
+                }
+            }
+
+            rtree->remove(rTreeMaxPoint);
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
+Err MsFrame::deisotopeFrame() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_frame); ree;
+    e = ErrorUtils::isTrue(m_params.isValid()); ree;
+
+    FeatureFinderHillBuilder featureFinderHillBuilder;
+
+    FeatureFinderParameters ffParams;
+    ffParams.tolerancePPM = m_params.featureFinderTolerancePPM;
+    ffParams.minScanCount = 1;
+    ffParams.skipScanCount = 1;
+    ffParams.useMeanMz = true;
+    ffParams.filterLength = 3;
+    ffParams.smoothCount = 1;
+
+    e = featureFinderHillBuilder.init(ffParams); ree;
+    featureFinderHillBuilder.setRunParallel(false);
+
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinderHillBuilder.buildHills(
+            scanNumberVsScanPoints(),
+            &featureFinderHills
+    ); ree;
+
+//    e = featureFinderHillBuilder.refineHills(&featureFinderHills); ree;
+
+    QVector<FeatureFinderHillPoint> featureFinderHillPoints;
+    e = FeatureFinderHillBuilder::featureFinderHillPoints(
+            featureFinderHills,
+            &featureFinderHillPoints
+            ); ree;
+    sortHillsFrameIndexThenMzAsc(&featureFinderHillPoints);
+
+    RTree rtree = loadRTree(featureFinderHillPoints);
+    QVector<FeatureFinderHillPoint> featureFinderHillApexes;
+    e = iterativelyDeisotopeTree(
+            ffParams.tolerancePPM,
+            &rtree,
+            &featureFinderHillApexes
+            ); ree;
+
+    m_frame.clear();
+
+    for (const FeatureFinderHillPoint &ffhp : featureFinderHillApexes) {
+        m_frame[ffhp.frameIndex].push_back({ffhp.mz, ffhp.intensity});
+    }
+
+    ERR_RETURN
+}
+
 Err MsFrame::smoothFrame() {
 
     ERR_INIT
@@ -229,9 +390,9 @@ Err MsFrame::smoothFrame() {
 
 namespace {
 
-QMap<int, double> eigenUtilsApexWrapper(const Eigen::SparseVector<double> &vec) {
-    return EigenSparseUtils::apexes(vec);
-}
+    QMap<int, double> eigenUtilsApexWrapper(const Eigen::SparseVector<double> &vec) {
+        return EigenSparseUtils::apexes(vec);
+    }
 
 }//namespace
 Err MsFrame::gaussianSmooth2D() {
@@ -244,20 +405,10 @@ Err MsFrame::gaussianSmooth2D() {
     e = ErrorUtils::isNotEmpty(m_frame); ree;
     e = ErrorUtils::isTrue(m_params.isValid()); ree;
 
-    const int precision = 3;
-    const double mzMax = 2000;
-
-    const QMap<FrameIndex, ScanPoints> frame = frameIndexVsScanPoints();
-
-    Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
-            frame,
-            precision,
-            mzMax
-    );
-
-    //TODO add smoothing params to pythiaParams.
-    mat = colWiseGaussianSmoothMatrix(mat, m_params.featureFinderTolerancePPM); ree;
-    mat = rowWiseGaussianSmoothMatrix(mat); ree;
+    const Eigen::SparseMatrix<double> mat = frameToSparseMatrixSmoothed(
+            frameIndexVsScanPoints(),
+            m_params.featureFinderTolerancePPM
+            );
 
     QVector<Eigen::SparseVector<double>> vecs;
     for (int i = 0; i < mat.cols(); ++i) {
@@ -286,7 +437,7 @@ Err MsFrame::gaussianSmooth2D() {
 
         for (auto it = res.begin(); it != res.end(); it++){
             const int hashedMz = it.key();
-            const auto mz = MathUtils::unHashDecimal<double>(hashedMz, precision);
+            const auto mz = MathUtils::unHashDecimal<double>(hashedMz, PRECISION);
             const double intensityVal = it.value();
 
             m_frame[scanNumberFromFrameIndex(frameIndex)].push_back({mz, intensityVal});
@@ -336,7 +487,7 @@ QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
     return frameIndexVsScanPoints;
 }
 
-Err MsFrame::writeFramScans(const QString &outputFilePath) const {
+Err MsFrame::writeFrameScans(const QString &outputFilePath) const {
 
     ERR_INIT
 
@@ -370,36 +521,6 @@ double MsFrame::meanPrecursorRange() const {
     return (m_mzWindowLower + m_mzWindowUpper) / 2.0;
 }
 
-Err MsFrame::buildFrameIndexVsScanPoints(
-        const QVector<MsFrameScanPointRows> &msFrameScanPointRows,
-        QMap<FrameIndex, ScanPoints> *frameIndexVsScanPoints
-        ) {
-
-    ERR_INIT
-
-    frameIndexVsScanPoints->clear();
-    e = ErrorUtils::isNotEmpty(msFrameScanPointRows); ree;
-
-    for (const MsFrameScanPointRows &row : msFrameScanPointRows) {
-
-        e = ErrorUtils::isEqual(
-                row.mzVals.size(),
-                row.intensityVals.size()
-                ); ree;
-
-        ScanPoints scanPoints;
-        e = ParallelUtils::zip(
-                row.mzVals,
-                row.intensityVals,
-                &scanPoints
-        ); ree
-
-        frameIndexVsScanPoints->insert(row.frameIndex, scanPoints);
-    }
-
-    ERR_RETURN
-}
-
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
@@ -407,7 +528,6 @@ ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
 ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
     return m_frameIndexVsScanNumber.key(scanNumber);
 }
-
 
 ScanPoints MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
     return m_frame.value(scanNumber);

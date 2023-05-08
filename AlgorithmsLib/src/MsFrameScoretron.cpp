@@ -335,7 +335,7 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
 //        qDebug() << i << m_msFrame.scanNumberFromFrameIndex(i);
 //    }
     const QString framesFilePath = msDataFilePath + ".frameScans";
-    e = m_msFrame.writeFramScans(framesFilePath);
+    e = m_msFrame.writeFrameScans(framesFilePath);
     qDebug() << e << "Drewholio" << framesFilePath;
 #endif
 
@@ -493,7 +493,10 @@ Err MsFrameScoretron::buildMsFrame(
     ); ree;
 
     if (applySmooth2D) {
-        e = msFrame->gaussianSmooth2D(); ree;
+//        e = msFrame->denoiseFrame();
+//        e = msFrame->deisotopeFrame();
+//        e = msFrame->smoothFrame();
+//        e = msFrame->gaussianSmooth2D(); ree;
     }
 
     ERR_RETURN
