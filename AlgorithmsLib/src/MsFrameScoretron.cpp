@@ -556,6 +556,7 @@ Err MsFrameScoretron::writeFrameTargetScoreVectors(
         row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
         row.scorePeakStart = frameIndexScoreResultOfTarget.bestScorePeakLimits.first;
         row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
+        row.frameIndexMaxScore = MathUtils::findMaxIndexInVector(frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec);
         row.charge = frameIndexScoreResultOfTarget.charge;
         msFrameScoreVectorReaderRows.push_back(row);
         counter++;

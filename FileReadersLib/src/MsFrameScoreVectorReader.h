@@ -24,6 +24,7 @@ namespace MsFrameScoreVectorReaderNamespace {
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
     const QString SCORE_PEAK_START  = QStringLiteral("scorePeakStart");
     const QString SCORE_PEAK_END  = QStringLiteral("scorePeakEnd");
+    const QString FRAME_INDEX_MAX_SCORE = QStringLiteral("frameIndexMaxScore");
     const QString CHARGE = QStringLiteral("charge");
 
     const QStringList keysToCheck = {
@@ -34,6 +35,7 @@ namespace MsFrameScoreVectorReaderNamespace {
             PEP_STR_W_MODS,
             SCORE_PEAK_START,
             SCORE_PEAK_END,
+            FRAME_INDEX_MAX_SCORE,
             CHARGE
     };
 }
@@ -47,6 +49,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
     PeptideStringWithMods peptideStringWithMods;
     int scorePeakStart = -1;
     int scorePeakEnd = -1;
+    int frameIndexMaxScore = -1;
     int charge = -1;
 
     QMap<QString, QVariant> map() override {
@@ -61,6 +64,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
             {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
             {SCORE_PEAK_START, QVariant(scorePeakStart)},
             {SCORE_PEAK_END, QVariant(scorePeakEnd)},
+            {FRAME_INDEX_MAX_SCORE, QVariant(frameIndexMaxScore)},
             {CHARGE, QVariant(charge)}
         };
     }
@@ -86,6 +90,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
         scorePeakStart = dataMap.value(SCORE_PEAK_START).toInt();
         scorePeakEnd = dataMap.value(SCORE_PEAK_END).toInt();
+        frameIndexMaxScore = dataMap.value(FRAME_INDEX_MAX_SCORE).toInt();
         charge = dataMap.value(CHARGE).toInt();
 
         ERR_RETURN
