@@ -161,8 +161,8 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
     output.intzScanAll = unzippedScanPointsAll.second;
 
     for (const MS2Ion &ms2Ion : predMs2Ions) {
-        output.mzPred.push_back(ms2Ion.mz);
-        output.intzPred.push_back(ms2Ion.intensity);
+        output.mzPred.push_back(ms2Ion.x());
+        output.intzPred.push_back(ms2Ion.y());
     }
 
     const QString &outputFilePath

@@ -24,6 +24,7 @@ using IonMobilityIndex = int;
 using IsolationWindowKey = QString;
 using Mass = double;
 using ModificationMass = double;
+using MS2Ion = QPointF;
 using MsLevel = int;
 using MZION = double;
 using MzMin = double;

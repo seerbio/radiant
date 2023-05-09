@@ -14,7 +14,6 @@
 
 using namespace Error;
 
-class MS2Ion;
 
 class ALGORITHMSLIB_EXPORTS TandemSpectraDeconvolvotron {
 

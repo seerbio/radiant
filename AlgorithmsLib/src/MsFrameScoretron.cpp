@@ -59,7 +59,7 @@ namespace {
 
         Eigen::VectorX<double> theoIntensities(topNMs2Ions);
         for (int i = 0; i < topNMs2Ions; i++) {
-            theoIntensities(i) = ms2Ions.at(i).intensity;
+            theoIntensities(i) = ms2Ions.at(i).y();
         }
         for (int i = 0; i < frameScanCount; i++) {
             theoMat.row(i) = theoIntensities;
@@ -104,7 +104,7 @@ namespace {
 
         for (int colIdx = 0; colIdx < ms2Ions.size(); colIdx++) {
 
-            const double mz = ms2Ions.at(colIdx).mz;
+            const double mz = ms2Ions.at(colIdx).x();
             const double massTol = MathUtils::calculatePPM(
                     mz,
                     ppmTolerance
@@ -565,7 +565,7 @@ namespace {
                 ms2Ions->begin(),
                 ms2Ions->end(),
                 std::back_inserter(ms2IonsQPoints),
-                [](const MS2Ion &ion){return QPointF(ion.mz, ion.intensity);}
+                [](const MS2Ion &ion){return QPointF(ion.x(), ion.y());}
         );
 
         ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
