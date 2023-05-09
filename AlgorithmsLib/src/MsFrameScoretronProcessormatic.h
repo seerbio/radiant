@@ -72,6 +72,7 @@ private:
 
     Err calculateDiscriminateScoreForFrame(
             const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+            const ScanPoints &scanPoints,
             FrameIndex frameIndex,
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
     );

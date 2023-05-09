@@ -21,7 +21,6 @@ struct FrameIndexScoreResultOfTarget {
     QVector<int> foundIonsPerFrameIndexOfTargetVec;
     QVector<double> scorePerFrameIndexOfTargetVec;
     PeakIntegrationIndexes bestScorePeakLimits = {-1, -1};
-    int frameIndexMax;
     int charge = -1;
 };
 

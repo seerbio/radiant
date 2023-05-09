@@ -86,13 +86,18 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndexes(
 
     ERR_INIT
 
+    const QMap<FrameIndex, ScanPoints> &frame = m_msFrame.frameIndexVsScanPoints();
+
     for (auto it = topCansInFrameIndex.begin(); it != topCansInFrameIndex.end(); it++) {
 
         const FrameIndex frameIndex = it.key();
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore = it.value();
 
+        const ScanPoints &scanPoints = frame.value(frameIndex);
+
         e = calculateDiscriminateScoreForFrame(
                 peptideStringWithModsScore,
+                scanPoints,
                 frameIndex,
                 topCansInFrameIndexVsDiscScore
         ); ree;
@@ -129,6 +134,8 @@ namespace {
 
             const PeptideStringWithMods &peptideStringWithMods = pepScore.first;
 
+            e = ErrorUtils::isTrue(fragPreds.contains(peptideStringWithMods)); ree;
+
             QVector<MS2Ion> ms2Ions = fragPreds.value(peptideStringWithMods);
 
             const double mzMin = 0.0;
@@ -138,7 +145,6 @@ namespace {
                     &ms2Ions
             );
 
-            e = ErrorUtils::isTrue(fragPreds.contains(peptideStringWithMods)); ree;
             scanPreds->insert(peptideStringWithMods, ms2Ions);
         }
 
@@ -168,6 +174,7 @@ namespace {
 }//namespace
 Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+        const ScanPoints &scanPoints,
         FrameIndex frameIndex,
         QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
 ) {
@@ -181,9 +188,6 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
             m_fragPreds,
             &scanPreds
     ); ree;
-
-    const QMap<FrameIndex, ScanPoints> &frame = m_msFrame.frameIndexVsScanPoints();
-    ScanPoints scanPoints = frame.value(frameIndex);
 
     QMap<PeptideStringWithMods, DiscScore> pepSeqVsWeight;
 
@@ -291,6 +295,55 @@ namespace {
         ERR_RETURN
     }
 
+    Err getFrameIndexCandidateStats(
+            const QVector<QPair<PeptideStringWithMods, Score>> &peptideWithScoresDesc,
+            double *mean,
+            double *stDev,
+            double *median
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(peptideWithScoresDesc); ree;
+
+        QVector<Score> scores;
+
+        const auto insertionLogic = [](const QPair<PeptideStringWithMods, Score> &row){
+            return row.second;
+        };
+
+        std::transform(
+                peptideWithScoresDesc.begin(),
+                peptideWithScoresDesc.end(),
+                std::back_inserter(scores),
+                insertionLogic
+                );
+
+        *mean = MathUtils::mean(scores);
+        *stDev = MathUtils::stDev(scores);
+        *median = MathUtils::median(scores);
+
+        ERR_RETURN
+    }
+
+    void thresholdScoreCandidates(
+            double thresholdVal,
+            QVector<QPair<PeptideStringWithMods, Score>> *peptideWithScoresDesc
+            ) {
+
+        const auto terminatorLogic = [thresholdVal](const QPair<PeptideStringWithMods, Score> &r){
+            return r.second < thresholdVal;
+        };
+
+        const auto terminator = std::remove_if(
+                peptideWithScoresDesc->begin(),
+                peptideWithScoresDesc->end(),
+                terminatorLogic
+                );
+
+        peptideWithScoresDesc->erase(terminator, peptideWithScoresDesc->end());
+    }
+
 
 }//namespace
 Err MsFrameScoretronProcessormatic::getTopNCandidatesPerFrameIndex(
@@ -337,13 +390,39 @@ Err MsFrameScoretronProcessormatic::getTopNCandidatesPerFrameIndex(
             continue;
         }
 
-        //TODO double check this return here drewholio
-//        qDebug() << peptideWithScoresDesc.size();
-        const int topN = std::min(m_params.returnPSMTopN, peptideWithScoresDesc.size());
-        peptideWithScoresDesc.resize(topN);
+        const int minPeptidesCandidatesSizeToUseStats = 15;
+        if (peptideWithScoresDesc.size() < minPeptidesCandidatesSizeToUseStats) {
+            topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
+            continue;
+        }
+
+        double mean;
+        double stDev;
+        double median;
+        e = getFrameIndexCandidateStats(
+                peptideWithScoresDesc,
+                &mean,
+                &stDev,
+                &median
+        );
+
+        const double cutoff = median;
+        thresholdScoreCandidates(
+                cutoff,
+                &peptideWithScoresDesc
+                );
+
+//#define DEBUG_STATS_CANDS
+#ifdef DEBUG_STATS_CANDS
+        qDebug() << "Frame Index Stats FI" << frameIndex
+                 << "Sz Old" << peptidesFoundInFrameIndex.size()
+                 << "Sz New" << peptideWithScoresDesc.size()
+                 << "Mn" << mean
+                 << "Md" << median
+                 << "Sd" << stDev;
+#endif
 
         topCansInFrameIndex->insert(frameIndex, peptideWithScoresDesc);
-
     }
 
     ERR_RETURN
