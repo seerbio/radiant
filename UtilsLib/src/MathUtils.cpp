@@ -5,6 +5,8 @@
 #include "MathUtils.h"
 
 
+
+
 namespace MathUtilsConstants {
 
     const double PI = 3.14159265359;
@@ -18,20 +20,13 @@ double MathUtils::calculatePPM(double val, double ppmTolerance) {
 }
 
 
-unsigned long long MathUtils::factorial(int n) {
+double MathUtils::factorial(int n) {
 
     if (n < 0 ) {
         return 0;
     }
 
-    const long long f = !n ? 1 : n * factorial(n - 1);
+    const double f = !n ? static_cast<double>(1) : n * factorial(n - 1);
 
-    return f < 0 ? std::numeric_limits<long long>::max() : f;
+    return f < 0 ? std::numeric_limits<double>::max() : f;
 }
-
-
-double MathUtils::calculateHyperScore(long long int intensity, int bIonCount, int yIonsCount) {
-    return log(intensity * factorial(bIonCount) * factorial(yIonsCount));
-}
-
-

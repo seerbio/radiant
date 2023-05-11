@@ -14,6 +14,7 @@
 #include "MsFrameScoreVectorReader.h"
 #include "MsUtils.h"
 #include "PythiaParameterReader.h"
+#include "TandemSpectraDeconvolvotron.h"
 
 
 using namespace Error;
@@ -53,7 +54,7 @@ public:
 
     Err processLogicForFrameScores(
             QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *topCansInFrameIndexVsDiscScore
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *topCansInFrameIndexVsDiscScore
     );
 
 
@@ -67,14 +68,14 @@ private:
 
     Err calculateDiscriminateScoreForFrameIndexes(
             const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *topCansInFrameIndexVsDiscScore
     );
 
     Err calculateDiscriminateScoreForFrame(
             const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
             const ScanPoints &scanPoints,
             FrameIndex frameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
     );
 
 private:

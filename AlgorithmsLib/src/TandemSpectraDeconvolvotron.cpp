@@ -10,6 +10,10 @@
 
 #include <Eigen/Sparse>
 
+#include <boost/math/distributions/fisher_f.hpp>
+#include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/students_t.hpp>
+
 
 TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
 : m_precision(-1)
@@ -94,12 +98,70 @@ namespace {
         return mat;
     }
 
+    Err deconvolveStats(
+            const Eigen::SparseMatrix<double> &A,
+            const Eigen::VectorX<double> &x,
+            const Eigen::VectorX<double> &b,
+            double *fStat,
+            double *pValFTest,
+            QVector<double> *coeffsTTests,
+            QVector<double> *coeffsPVals
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(
+                static_cast<int>(A.nonZeros()),
+                0,
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree;
+
+        const double residualSumOfSquares = (b - A * x).squaredNorm();
+
+        const int n = static_cast<int>(b.size());
+        const int p = static_cast<int>(A.cols());
+        const int df1 = p - 1;
+        const int df2 = n - p;
+
+        //NOTE: not using numeric_limits::min() because that produces inf below.
+        const double nearZero = 1e-33;
+
+        double mse = residualSumOfSquares / df2;
+        mse = MathUtils::tZero(mse) ? nearZero : mse;
+
+        *fStat = (((x.transpose() * A.transpose() * A * x) / p) / mse)(0);
+        *pValFTest = 1 - boost::math::cdf(boost::math::fisher_f(df1, df2), *fStat);
+
+        const Eigen::SparseMatrix<double> AtA = A.transpose() * A;
+        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+        solver.compute(AtA);
+
+        const Eigen::MatrixX<double> cov = mse * solver.solve(Eigen::SparseMatrix<double>(AtA)).rhs();
+        const Eigen::VectorX<double> se = cov.diagonal().array().sqrt();
+        const Eigen::VectorX<double> t = x.array() / se.array();
+
+        std::vector<double> p_values_t(p);
+        for (int i = 0; i < p; i++) {
+            double abs_t = std::abs(t(i));
+            p_values_t[i] = 2 * (1 - boost::math::cdf(boost::math::students_t(df2), abs_t));
+        }
+
+        for (int i = 0; i < p; i++) {
+            coeffsTTests->push_back(t(i));
+            coeffsPVals->push_back(p_values_t[i]);
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
         const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-        QMap<PeptideStringWithMods, DiscScore> *pepSeqVsWeight
-        ) {
+        QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight,
+        double *fStat,
+        double *pValFTest
+        ) const {
 
     ERR_INIT
 
@@ -133,17 +195,55 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
     lscg.compute(mat);
     x = lscg.solve(vecScanPoints);
 
+    const int minScanSize = 2;
+    if (tandemPredictions.size() < minScanSize) {
+
+        TandemDeconvolverResult tdr;
+        tdr.discScore = x.coeff(0);
+        tdr.tTestVal = 1000;
+        tdr.pVal = 0;
+        *fStat = -1.0;
+        *pValFTest = -1.0;
+
+        const PeptideStringWithMods &peptideSequenceChargeKey = tandemPredictions.firstKey();
+        pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
+
+        ERR_RETURN
+    }
+
+    QVector<double> coeffsTTests;
+    QVector<double> coeffsPVal;
+    e = deconvolveStats(
+            mat,
+            x,
+            vecScanPoints,
+            fStat,
+            pValFTest,
+            &coeffsTTests,
+            &coeffsPVal
+            ); ree;
+
     const QList<PeptideStringWithMods> &keys = tandemPredictions.keys();
+    e = ErrorUtils::isEqual(coeffsTTests.size(), coeffsPVal.size()); ree;
+    e = ErrorUtils::isEqual(coeffsTTests.size(), keys.size()); ree;
 
     for (int i = 0; i < keys.size(); i++) {
 
         const PeptideStringWithMods &peptideSequenceChargeKey = keys.at(i);
-        const DiscScore discScore = x.coeff(i);
 
-        pepSeqVsWeight->insert(peptideSequenceChargeKey, discScore);
+        TandemDeconvolverResult tdr;
+        tdr.discScore = x.coeff(i);
+        tdr.tTestVal = coeffsTTests.at(i);
+        tdr.pVal = coeffsPVal.at(i);
+
+        pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
     }
 
-//    qDebug() << "#iterations:" << lscg.iterations() << "estimated error: " << lscg.error();
+//#define DEBUG_MAT_SOLVE
+#ifdef DEBUG_MAT_SOLVE
+    qDebug() << "#iterations:" << lscg.iterations()
+             << "estimated error: " << lscg.error();
+#endif
 
     ERR_RETURN
 }

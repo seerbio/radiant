@@ -98,7 +98,7 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
     QCOMPARE(e, eNoError);
 
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndex;
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> topCansInFrameIndexVsDiscScore;
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> topCansInFrameIndexVsDiscScore;
     msFrameScoretronProcessormatic.processLogicForFrameScores(
             &topCansInFrameIndex,
             &topCansInFrameIndexVsDiscScore

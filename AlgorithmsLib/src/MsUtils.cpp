@@ -80,6 +80,41 @@ ExtractPoints MsUtils::extractPointsFromPoints(
     return extractPointsOutput;
 }
 
+QVector<QPointF> MsUtils::extractPointsFromPoints(
+        const QVector <QPointF> &points,
+        const QVector<double> &extractionPoints,
+        double extractionPPM
+) {
+
+    QVector<QPointF> extractQPoints;
+    std::transform(
+            extractionPoints.begin(),
+            extractionPoints.end(),
+            std::back_inserter(extractQPoints),
+            [](double mz){return QPointF(mz, 1.0);}
+    );
+
+    const ExtractPoints ep = extractPointsFromPoints(
+            points,
+            extractQPoints,
+            extractionPPM
+            );
+
+    QVector<MS2Ion> extractedPoints;
+    for (int i = 0; i < ep.mzFoundVsSearched.size(); i++) {
+        const double mzFound = ep.mzFoundVsSearched.at(i).x();
+        const double intensityFound = ep.intensityFoundVsSearched.at(i).x();
+
+        if (mzFound < 0) {
+            continue;
+        }
+
+        extractedPoints.push_back({mzFound, intensityFound});
+    }
+
+    return extractedPoints;
+}
+
 namespace {
 
 

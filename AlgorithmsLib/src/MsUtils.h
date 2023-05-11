@@ -7,6 +7,7 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
+#include "GlobalSettings.h"
 #include "MathUtils.h"
 
 #include <QPointF>
@@ -25,8 +26,14 @@ class ALGORITHMSLIB_EXPORTS MsUtils {
 public:
 
     static ExtractPoints extractPointsFromPoints(
-            const QVector<QPointF> &vecToExtract,
+            const QVector<QPointF> &points,
             const QVector<QPointF> &extractionPoints,
+            double extractionPPM
+    );
+
+    static QVector<QPointF> extractPointsFromPoints(
+            const QVector<QPointF> &points,
+            const QVector<double> &extractionPoints,
             double extractionPPM
     );
 

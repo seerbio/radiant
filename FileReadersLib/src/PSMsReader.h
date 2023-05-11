@@ -32,6 +32,9 @@ namespace PSMsReaderRowNamespace {
     const QString MZ_SEARCHED = QStringLiteral("mzSearched");
     const QString INTENSITY_FOUND = QStringLiteral("intensityFound");
     const QString INTENSITY_SEARCHED = QStringLiteral("intensitySearched");
+    const QString RESCORE = QStringLiteral("rescore");
+    const QString T_TEST = QStringLiteral("tTest");
+    const QString P_VAL = QStringLiteral("pVal");
 
     const QStringList keysToCheck = {
             FRAME_INDEX,
@@ -47,7 +50,10 @@ namespace PSMsReaderRowNamespace {
             MZ_FOUND,
             MZ_SEARCHED,
             INTENSITY_FOUND,
-            INTENSITY_SEARCHED
+            INTENSITY_SEARCHED,
+            RESCORE,
+            P_VAL,
+            T_TEST
     };
 }
 
@@ -67,6 +73,10 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     int frameRankDiscScore = -1;
 
     bool isDecoy = false;
+    double rescore = -1.0;
+
+    double pVal = -1.0;
+    double tTest = -1.0;
 
     QVector<double> mzFound;
     QVector<double> mzSearched;
@@ -84,6 +94,7 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
                 {UNIQUE_TARGET_KEY, QVariant(uniqueMsInfoScanKey)},
                 {PEPTIDE_W_MODS, QVariant(peptideStringWithMods)},
                 {SCORE, QVariant(score)},
+                {RESCORE, QVariant(rescore)},
                 {FRAME_RANK_SCORE, QVariant(frameRankScore)},
                 {DISC_SCORE, QVariant(discScore)},
                 {FRAME_RANK_DISC_SCORE, QVariant(frameRankDiscScore)},
@@ -91,6 +102,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
                 {MZ_FOUND, QVariant(qVectorToQByteArray(mzFound))},
                 {MZ_SEARCHED, QVariant(qVectorToQByteArray(mzSearched))},
                 {INTENSITY_FOUND, QVariant(qVectorToQByteArray(intensityFound))},
+                {P_VAL, QVariant(pVal)},
+                {T_TEST, QVariant(tTest)},
                 {INTENSITY_SEARCHED, QVariant(qVectorToQByteArray(intensitySearched))}
         };
     }
@@ -115,8 +128,11 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         uniqueMsInfoScanKey = dataMap.value(UNIQUE_TARGET_KEY).toString();
         peptideStringWithMods = dataMap.value(PEPTIDE_W_MODS).toString();
         score = dataMap.value(SCORE).toDouble();
+        rescore = dataMap.value(RESCORE).toDouble();
         frameRankScore = dataMap.value(FRAME_RANK_SCORE).toInt();
         discScore = dataMap.value(DISC_SCORE).toDouble();
+        tTest = dataMap.value(T_TEST).toDouble();
+        pVal = dataMap.value(P_VAL).toDouble();
         frameRankDiscScore = dataMap.value(FRAME_RANK_DISC_SCORE).toInt();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         mzFound = bytesArrayToQVector<double>(dataMap.value(MZ_FOUND).toByteArray());

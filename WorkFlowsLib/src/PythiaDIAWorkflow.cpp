@@ -261,9 +261,9 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-        if (fpi.uniqueMsInfoScanKey != "645043") {
-            continue;
-        }
+//        if (fpi.uniqueMsInfoScanKey != "645043") {
+//            continue;
+//        }
 
         QPair<Err, QVector<PSMsReaderRow>> result
                 = parallelFrameProcossingLogic(fpi); ree;

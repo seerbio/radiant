@@ -14,6 +14,12 @@
 
 using namespace Error;
 
+struct TandemDeconvolverResult {
+    DiscScore discScore = -1.0;
+    double tTestVal = -1.0;
+    double pVal = -1.0;
+};
+
 
 class ALGORITHMSLIB_EXPORTS TandemSpectraDeconvolvotron {
 
@@ -32,8 +38,14 @@ public:
     Err deconvolveTandemSpectra(
             const ScanPoints &scanPoints,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-            QMap<PeptideStringWithMods, DiscScore> *pepSeqVsWeight
-            );
+            QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight,
+            double *fStat,
+            double *pValFTest
+            ) const;
+
+private:
+
+
 
 private:
 

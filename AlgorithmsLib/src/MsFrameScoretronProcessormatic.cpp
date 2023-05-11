@@ -8,7 +8,6 @@
 #include "ErrorUtils.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
-#include "TandemSpectraDeconvolvotron.h"
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -48,7 +47,7 @@ Err MsFrameScoretronProcessormatic::init(
 
 Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
         QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *topCansInFrameIndexVsDiscScore
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *topCansInFrameIndexVsDiscScore
         ) {
 
     ERR_INIT
@@ -81,7 +80,7 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
 
 Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndexes(
         const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore >>> *topCansInFrameIndexVsDiscScore
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult >>> *topCansInFrameIndexVsDiscScore
 ) {
 
     ERR_INIT
@@ -151,8 +150,37 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildUniqueMzVals(
+            const QList<QVector<MS2Ion>> &ms2Ions,
+            QVector<double> *ms2IonsUnique
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+
+        const int precision = 4;
+
+        QSet<int> mzHashedVals;
+
+        for (const QVector<MS2Ion> &ions : ms2Ions) {
+
+            for (const MS2Ion &ion : ions) {
+                const int mzHashed = MathUtils::hashDecimal(ion.x(), precision);
+                mzHashedVals.insert(mzHashed);
+            }
+
+            for (int mzHashed : mzHashedVals) {
+                const auto mzUnhashed = MathUtils::unHashDecimal<double>(mzHashed, precision);
+                ms2IonsUnique->push_back(mzUnhashed);
+            }
+        }
+
+        ERR_RETURN
+    }
+
     void sortDiscScoresDesc(
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
     ) {
 
         for (
@@ -161,10 +189,10 @@ namespace {
                 it++
                 ) {
 
-            QVector<QPair<PeptideStringWithMods, Score>> &scores = it.value();
-            using Sort = QPair<PeptideStringWithMods, Score>;
+            QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> &scores = it.value();
+            using Sort = QPair<PeptideStringWithMods, TandemDeconvolverResult>;
             std::sort(scores.rbegin(), scores.rend(), [](const Sort &l, const Sort &r){
-                return l.second < r.second;
+                return l.second.discScore < r.second.discScore;
             });
 
         }
@@ -176,7 +204,7 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
         const ScanPoints &scanPoints,
         FrameIndex frameIndex,
-        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> *frameIndexVsPeptideStringWithModsDiscScore
+        QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
 ) {
 
     ERR_INIT
@@ -189,7 +217,19 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
             &scanPreds
     ); ree;
 
-    QMap<PeptideStringWithMods, DiscScore> pepSeqVsWeight;
+    QVector<double> mzValsUnique;
+    e = buildUniqueMzVals(
+            scanPreds.values(),
+            &mzValsUnique
+            ); ree;
+
+    const ScanPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
+            scanPoints,
+            mzValsUnique,
+            m_params.ms2ExtractionWidthPPM
+            );
+    
+    QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsWeight;
 
     TandemSpectraDeconvolvotron deconvolvotron;
     const int precision = 2;
@@ -202,16 +242,22 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
             stopTolerance
     ); ree;
 
+    double fScore;
+    double pValFTest;
     e = deconvolvotron.deconvolveTandemSpectra(
-            scanPoints,
+            extractedScanPoints,
             scanPreds,
-            &pepSeqVsWeight
+            &pepSeqVsWeight,
+            &fScore,
+            &pValFTest
     ); ree;
+
+    qDebug() << extractedScanPoints.size() << fScore << pValFTest;
 
     for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
 
         const PeptideStringWithMods &peptideStringWithMods = itt.key();
-        const double discriminateScore = itt.value();
+        const TandemDeconvolverResult discriminateScore = itt.value();
 
         (*frameIndexVsPeptideStringWithModsDiscScore)[frameIndex].push_back({peptideStringWithMods, discriminateScore});
     }
@@ -411,6 +457,9 @@ Err MsFrameScoretronProcessormatic::getTopNCandidatesPerFrameIndex(
                 cutoff,
                 &peptideWithScoresDesc
                 );
+
+        const int maxSize = std::min(peptideWithScoresDesc.size(), m_params.returnPSMTopN);
+        peptideWithScoresDesc.resize(maxSize);
 
 //#define DEBUG_STATS_CANDS
 #ifdef DEBUG_STATS_CANDS

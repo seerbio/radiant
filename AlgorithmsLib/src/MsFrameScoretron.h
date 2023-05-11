@@ -15,6 +15,8 @@
 
 using namespace Error;
 
+class TandemDeconvolverResult;
+
 struct FrameIndexScoreResultOfTarget {
     QVector<double> cosineSimPerFrameIndexOfTargetVec;
     QVector<double> intensityPerFrameIndexOfTargetVec;
@@ -48,7 +50,7 @@ private:
     Err buildPSMsReaderRows(
             const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
             const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, DiscScore>>> &topCansInFrameIndexVsDiscScore,
+            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> &topCansInFrameIndexVsDiscScore,
             QVector<PSMsReaderRow> *psmsReaderRows
     );
 

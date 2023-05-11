@@ -14,7 +14,6 @@
 #include <cmath>
 #include <vector>
 
-
 using namespace Error;
 
 namespace MathUtilsConstants {
@@ -164,9 +163,7 @@ public:
 
     static double calculatePPM(double val, double ppmTolerance);
 
-    static unsigned long long factorial(int n);
-
-    static double calculateHyperScore(long long intensity, int bIonCount, int yIonsCount);
+    static double factorial(int n);
 
     template<typename T>
     static int closest(const QVector<T> &vec, T value) {
