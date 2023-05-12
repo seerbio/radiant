@@ -36,53 +36,34 @@ public:
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
-    QPair<Err, QVector<PSMsReaderRow>> scoreCandidates(
+    Err init(
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QPair<double, double> &mzTargetStartStop,
-            bool applySmooth2D
-    );
+            const QPair<double, double> &mzTargetStartStop
+            );
+
+    Err buildFrameScoreVectors(QString *frameScoreVectorsFilePath);
 
 private:
 
-    Err buildPSMsReaderRows(
-            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> &topCansInFrameIndexVsDiscScore,
-            QVector<PSMsReaderRow> *psmsReaderRows
-    );
+    Err buildFragIonLibForTargetMz(const QString &fragLibUri);
 
-    static Err buildFragIonLibForTargetMz(
-            const PythiaParameters &params,
-            const QString &fragLibUri,
-            const QPair<double, double> &mzTargetStartStop,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *outputIons,
-            QMap<PeptideStringWithMods, bool> *outputDecoy
-    );
+    Err buildMsFrame();
 
-    static Err buildMsFrame(
-            const QString &msDataFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const PythiaParameters &params,
-            QPair<double, double> mzTargetStartStop,
-            bool applySmooth2D,
-            MsFrame *msFrame
-    );
-
-    static Err processFrameLogic(
+    Err processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
             const PythiaParameters &params,
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     );
 
-    static void filterByFoundMzCount(
+    void filterByFoundMzCount(
             int minFoundMzCount,
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     );
 
-    static Err writeFrameTargetScoreVectors(
+    Err writeFrameTargetScoreVectors(
             const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
             const QString &outputFilePath
     );
@@ -92,7 +73,11 @@ private:
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
+
     PythiaParameters m_params;
+    QString m_msDataFilePath;
+    UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
+    QPair<double, double> m_mzTargetStartStop;
 
 };
 

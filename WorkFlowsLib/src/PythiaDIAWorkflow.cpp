@@ -173,17 +173,17 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
 
-    QVector<PSMsReaderRow> psmReaderRowsRecal;
+    QStringList frameScoreVectorsFilePaths;
     e = processDIAFramesParallel(
             frameParallelInputsRecal,
-            &psmReaderRowsRecal
+            &frameScoreVectorsFilePaths
             ); ree;
 
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(
-            psmReaderRowsRecal,
-            resultsFilePath
-            ); ree;
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(
+//            psmReaderRowsRecal,
+//            resultsFilePath
+//            ); ree;
 
     ERR_RETURN
 }
@@ -201,62 +201,61 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
     frameParallelInputsCalibration.resize(calibrationResize);
 
-    QVector<PSMsReaderRow> psmReaderRows;
+    QStringList frameScoreVectorsFilePaths;
     e = processDIAFramesParallel(
             frameParallelInputsCalibration,
-            &psmReaderRows
+            &frameScoreVectorsFilePaths
             ); ree;
 
-    qDebug() << "Rows to write:" << psmReaderRows.size();
-    e = ParquetReader::write(
-            psmReaderRows,
-            firstPassResultsFilePath
-            ); ree;
+//    qDebug() << "Rows to write:" << psmReaderRows.size(); //drewholio
+//    e = ParquetReader::write(
+//            psmReaderRows,
+//            firstPassResultsFilePath
+//            ); ree;
 
     ERR_RETURN
 }
 
 namespace {
 
-    QPair<Err, QVector<PSMsReaderRow>> parallelFrameProcossingLogic(
-            const FrameParallelInput &fpi
-            ) {
+    QPair<Err, QString> parallelFrameProcossingLogic(const FrameParallelInput &fpi) {
 
        ERR_INIT
 
-        MsFrameScoretron msFrameScoretron;
+       MsFrameScoretron msFrameScoretron;
+       e = msFrameScoretron.init(
+               fpi.params,
+               fpi.msDataFilePath,
+               fpi.fragLibFilePath,
+               fpi.uniqueMsInfoScanKey,
+               fpi.mzTargetStartStop
+               ); rree;
 
-        QPair<Err, QVector<PSMsReaderRow>> result = msFrameScoretron.scoreCandidates(
-                fpi.params,
-                fpi.msDataFilePath,
-                fpi.fragLibFilePath,
-                fpi.uniqueMsInfoScanKey,
-                fpi.mzTargetStartStop,
-                fpi.applySmooth2D
-                ); rree;
+       QString frameScoreVectorsFilePath;
+       e = msFrameScoretron.buildFrameScoreVectors(&frameScoreVectorsFilePath); rree;
 
-        return result;
+       return {e, frameScoreVectorsFilePath};
    }
 
 }//namespace
 Err PythiaDIAWorkflow::processDIAFramesParallel(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<PSMsReaderRow> *psmReaderRows
+        QStringList *psmReaderRows
         ) {
 
     ERR_INIT
 
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-    QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QString>> futures = QtConcurrent::mapped(
             frameParallelInputs, //.mid(20,8), //drewholio undu this
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();
 
-    for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
+    for (const QPair<Err, QString> &result : futures) {
         e = result.first; ree;
-        psmReaderRows->append(result.second);
+        psmReaderRows->push_back(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {

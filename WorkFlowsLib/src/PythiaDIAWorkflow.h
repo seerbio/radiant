@@ -45,7 +45,7 @@ private:
 
     static Err processDIAFramesParallel(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<PSMsReaderRow> *psmReaderRows
+            QStringList *psmReaderRows
             );
 
 private:

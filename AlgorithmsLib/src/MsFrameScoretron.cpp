@@ -175,10 +175,12 @@ namespace {
         const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
                 = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
 
-        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (foundIonsPerFrameIndexOfTargetFactorial.array()
-                                                                  * fractionFoundIonsPerFrameIndexOfTarget.array()
-                                                                  * mzProductPerFrameIndexOfTarget.array().sqrt()
-                                                                  * cosineSimPerFrameIndexOfTarget.array()).sqrt().sqrt();
+        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
+                foundIonsPerFrameIndexOfTargetFactorial.array()
+                * fractionFoundIonsPerFrameIndexOfTarget.array()
+                * mzProductPerFrameIndexOfTarget.array().sqrt()
+                * cosineSimPerFrameIndexOfTarget.array()
+                ).sqrt().sqrt();
 
         frameIndexScoreResultOfTarget->cosineSimPerFrameIndexOfTargetVec
                 = EigenUtils::convertEigenVectorToQVector(cosineSimPerFrameIndexOfTarget);
@@ -256,37 +258,9 @@ namespace {
     }
 
 }//namespace
-QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
-        const PythiaParameters &params,
-        const QString &msDataFilePath,
-        const QString &fragLibFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const QPair<double, double> &mzTargetStartStop,
-        bool applySmooth2D
-        ) {
+Err MsFrameScoretron::buildFrameScoreVectors(QString *frameScoreVectorsFilePath) {
 
     ERR_INIT
-
-    e = ErrorUtils::isTrue(params.isValid()); rree;
-    m_params = params;
-
-    e = buildFragIonLibForTargetMz(
-            params,
-            fragLibFilePath,
-            mzTargetStartStop,
-            &m_fragPreds,
-            &m_fragPredsIsDecoy
-            ); rree;
-    e = ErrorUtils::isNotEmpty(m_fragPreds); rree;
-
-    e = buildMsFrame(
-            msDataFilePath,
-            uniqueMsInfoScanKey,
-            params,
-            mzTargetStartStop,
-            applySmooth2D,
-            &m_msFrame
-            ); rree;
 
 //#define WRITE_FRAME
 #ifdef WRITE_FRAME
@@ -298,73 +272,43 @@ QPair<Err, QVector<PSMsReaderRow>> MsFrameScoretron::scoreCandidates(
     qDebug() << e << "Drewholio" << framesFilePath;
 #endif
 
-    qDebug() << uniqueMsInfoScanKey << m_msFrame.scanCount() << "Candidates:" << m_fragPreds.size();
-
     QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
     e = processFrameLogic(
             {m_msFrame, m_fragPreds},
-            params,
+            m_params,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
-    ); rree
+    ); ree
 
     filterByFoundMzCount(
-            params.minFoundMzPeaks,
+            m_params.minFoundMzPeaks,
             &pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
-    const QString outputFilePathFrameScores = msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
+    *frameScoreVectorsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
     e = writeFrameTargetScoreVectors(
             pepStrWModsVsFrameIndexScoreResultOfTargets,
-            outputFilePathFrameScores
-    ); rree;
+            *frameScoreVectorsFilePath
+    ); ree;
 
-    MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
-    e = msFrameScoretronProcessormatic.init(
-            m_fragPreds,
-            m_msFrame,
-            m_params,
-            outputFilePathFrameScores
-            ); rree;
 
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> topCansInFrameIndexVsScore;
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> topCansInFrameIndexVsDiscScore;
-    e = msFrameScoretronProcessormatic.processLogicForFrameScores(
-            &topCansInFrameIndexVsScore,
-            &topCansInFrameIndexVsDiscScore
-            ); rree;
-
-    QVector<PSMsReaderRow> psmsReaderRows;
-    e = buildPSMsReaderRows(
-            pepStrWModsVsFrameIndexScoreResultOfTargets,
-            topCansInFrameIndexVsScore,
-            topCansInFrameIndexVsDiscScore,
-            &psmsReaderRows
-            ); rree;
-
-    return {e, psmsReaderRows};
+    ERR_RETURN
 }
 
-Err MsFrameScoretron::buildFragIonLibForTargetMz(
-        const PythiaParameters &params,
-        const QString &fragLibUri,
-        const QPair<double, double> &mzTargetStartStop,
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> *outputIons,
-        QMap<PeptideStringWithMods, bool> *outputDecoy
-) {
+Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
 
     ERR_INIT
 
     const int monoOffset = 0;
-    for (Charge charge = params.chargeStateMin; charge <= params.chargeStateMax; ++charge) {
+    for (Charge charge = m_params.chargeStateMin; charge <= m_params.chargeStateMax; ++charge) {
 
         const double massStart = BiophysicalCalcs::calculateMassFromThomson(
-                mzTargetStartStop.first,
+                m_mzTargetStartStop.first,
                 charge,
                 monoOffset
         );
 
         const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
-                mzTargetStartStop.second,
+                m_mzTargetStartStop.second,
                 charge,
                 monoOffset
         );
@@ -394,8 +338,8 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(
 
             e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
 
-            outputIons->insert(peptideStringWithMods, ms2Ions);
-            outputDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
+            m_fragPreds.insert(peptideStringWithMods, ms2Ions);
+            m_fragPredsIsDecoy.insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
         }
 
     }
@@ -403,40 +347,26 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(
     ERR_RETURN
 }
 
-Err MsFrameScoretron::buildMsFrame(
-        const QString &msDataFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const PythiaParameters &params,
-        QPair<double, double> mzTargetStartStop,
-        bool applySmooth2D,
-        MsFrame *msFrame
-) {
+Err MsFrameScoretron::buildMsFrame() {
 
     ERR_INIT
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(
-            msDataFilePath,
+            m_msDataFilePath,
             MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
-            {mzTargetStartStop.first, mzTargetStartStop.second}
+            {m_mzTargetStartStop.first, m_mzTargetStartStop.second}
     ); ree;
 
     const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
     e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
 
-    e = msFrame->init(
-            params,
-            uniqueMsInfoScanKey,
+    e = m_msFrame.init(
+            m_params,
+            m_uniqueMsInfoScanKey,
             targetScanPoints,
-            mzTargetStartStop
+            m_mzTargetStartStop
     ); ree;
-
-    if (applySmooth2D) {
-//        e = msFrame->denoiseFrame();
-//        e = msFrame->deisotopeFrame();
-//        e = msFrame->smoothFrame();
-//        e = msFrame->gaussianSmooth2D(); ree;
-    }
 
     ERR_RETURN
 }
@@ -532,189 +462,44 @@ Err MsFrameScoretron::writeFrameTargetScoreVectors(
     ERR_RETURN
 }
 
-namespace {
-
-    void deleteUnfoundPoints(QVector<QPointF> *points) {
-
-        const auto terminatorLogic = [](const QPointF &p){
-            return p.x() < 0;
-        };
-
-        const auto terminator = std::remove_if(
-                points->begin(),
-                points->end(),
-                terminatorLogic
-                );
-
-        points->erase(terminator, points->end());
-    }
-
-    QVector<QPointF> buildExtractPoints(
-            const ScanPoints &scanPoints,
-            double mzMax,
-            double extractPPM,
-            bool extractIntensity,
-            QVector<MS2Ion> *ms2Ions
-            ) {
-
-        const double mzMin = 0.0;
-
-        FragLibReader::filterMs2IonsByMz(
-                mzMin,
-                mzMax,
-                ms2Ions
-        );
-
-        QVector<QPointF> ms2IonsQPoints;
-        std::transform(
-                ms2Ions->begin(),
-                ms2Ions->end(),
-                std::back_inserter(ms2IonsQPoints),
-                [](const MS2Ion &ion){return QPointF(ion.x(), ion.y());}
-        );
-
-        ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
-                scanPoints,
-                ms2IonsQPoints,
-                extractPPM
-                );
-
-        if (extractIntensity) {
-//            deleteUnfoundPoints(&extractPoints.intensityFoundVsSearched);
-            return extractPoints.intensityFoundVsSearched;
-        }
-
-//        deleteUnfoundPoints(&extractPoints.mzFoundVsSearched);
-        return extractPoints.mzFoundVsSearched;
-    }
-
-    double reCalculateScore(
-            const QVector<double> &mzFound,
-            const QVector<double> &intensityFound,
-            const QVector<double> &intensitySearched
-    ) {
-
-        const long foundMzCount = std::count_if(mzFound.begin(), mzFound.end(),[](double d){return d > 0;});
-        const double foundMzCountFactorial = MathUtils::factorial(static_cast<int>(foundMzCount));
-
-        const double fractionFound
-                = static_cast<double>(foundMzCount) / mzFound.size();
-
-        const auto multLogic = [](double prod, double mz){return mz < 0 ? prod : mz * prod;};
-        const double mzProduct = std::accumulate(mzFound.begin(), mzFound.end(), 1.0, multLogic);
-
-        const Eigen::VectorX<double> v1 = EigenUtils::convertQVectorToEigenVector(intensityFound);
-        const Eigen::VectorX<double> v2 = EigenUtils::convertQVectorToEigenVector(intensitySearched);
-        
-        const double cosineSim = EigenUtils::cosineSimilarity(v1, v2);
-
-        const double score
-            = std::log(foundMzCountFactorial * fractionFound * std::sqrt(mzProduct) * cosineSim);
-
-        return score;
-    }
-
-}//namespace
-Err MsFrameScoretron::buildPSMsReaderRows(
-        const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-        const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-        const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> &topCansInFrameIndexVsDiscScore,
-        QVector<PSMsReaderRow> *psmsReaderRows
-) {
+Err MsFrameScoretron::init(
+        const PythiaParameters &params,
+        const QString &msDataFilePath,
+        const QString &fragLibFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const QPair<double, double> &mzTargetStartStop
+        ) {
 
     ERR_INIT
 
-    const QList<FrameIndex> &scoreKeys = topCansInFrameIndex.keys();
-    const QList<FrameIndex> &discScoreKeys = topCansInFrameIndexVsDiscScore.keys();
+    e = ErrorUtils::fileExists(msDataFilePath); ree;
+    e = ErrorUtils::fileExists(fragLibFilePath); ree;
+    e = ErrorUtils::isTrue(params.isValid()); ree;
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::isAboveThreshold(
+            mzTargetStartStop.second,
+            mzTargetStartStop.first,
+            ErrorUtilsParam::ExcludeThreshold
+            ); ree;
 
-    e = ErrorUtils::isNotEmpty(scoreKeys); ree;
-//    e = ErrorUtils::isTrue(scoreKeys == discScoreKeys); ree;
-    
-    for (FrameIndex frameIndex : discScoreKeys) {
+    m_params = params;
+    m_msDataFilePath = msDataFilePath;
+    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+    m_mzTargetStartStop = mzTargetStartStop;
 
-        QMap<PeptideStringWithMods, PSMsReaderRow> psmReaderRowsForFrame;
+    e = buildFragIonLibForTargetMz(fragLibFilePath); ree;
+    e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
 
-        const QVector<QPair<PeptideStringWithMods, Score>> &frameCandidateScores
-                = topCansInFrameIndex.value(frameIndex);
+    e = buildMsFrame(); ree;
+    e = ErrorUtils::isAboveThreshold(
+            m_msFrame.scanCount(),
+            0,
+            ErrorUtilsParam::ExcludeThreshold
+            );ree;
 
-        int counter = 1;
-        for (const QPair<PeptideStringWithMods, Score> &scorePr : frameCandidateScores) {
-
-            const PeptideStringWithMods &peptideStringWithMods = scorePr.first;
-            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget
-                    = pepStrWModsVsFrameIndexScoreResultOfTargets.value(peptideStringWithMods);
-
-            PSMsReaderRow &psmsReaderRow = psmReaderRowsForFrame[peptideStringWithMods];
-            psmsReaderRow.score = scorePr.second;
-            psmsReaderRow.frameRankScore = counter++;
-            psmsReaderRow.frameIndex = frameIndex;
-            psmsReaderRow.scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
-            psmsReaderRow.charge = frameIndexScoreResultOfTarget.charge;
-            psmsReaderRow.peptideStringWithMods = peptideStringWithMods;
-            psmsReaderRow.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
-            psmsReaderRow.uniqueMsInfoScanKey = m_msFrame.uniqueMsInfoScanKey();
-
-            const ScanPoints &scanPoints = m_msFrame.getScanPointsByScanNumber(psmsReaderRow.scanNumber);
-
-            QVector<MS2Ion> ms2Ions = m_fragPreds.value(peptideStringWithMods);
-            const QVector<QPointF> mzFoundVsTheo = buildExtractPoints(
-                    scanPoints,
-                    m_params.mzMaxDataStructure,
-                    m_params.ms2ExtractionWidthPPM,
-                    false,
-                    &ms2Ions
-                    );
-            const QPair<QVector<double>, QVector<double>> extractedMz = ParallelUtils::unZip(mzFoundVsTheo);
-            psmsReaderRow.mzFound = extractedMz.first;
-            psmsReaderRow.mzSearched = extractedMz.second;
-
-            const QVector<QPointF> intensityFoundVsTheo = buildExtractPoints(
-                    scanPoints,
-                    m_params.mzMaxDataStructure,
-                    m_params.ms2ExtractionWidthPPM,
-                    true,
-                    &ms2Ions
-                    );
-            const QPair<QVector<double>, QVector<double>> extractedIntensity = ParallelUtils::unZip(intensityFoundVsTheo);
-            psmsReaderRow.intensityFound = extractedIntensity.first;
-            psmsReaderRow.intensitySearched = extractedIntensity.second;
-
-            while (psmsReaderRow.intensitySearched.back() < 0) {
-
-                psmsReaderRow.intensitySearched.pop_back();
-
-                e = ErrorUtils::isTrue(psmsReaderRow.mzSearched.back() < 0); ree;
-                psmsReaderRow.mzSearched.pop_back();
-            }
-
-            psmsReaderRow.rescore = reCalculateScore(
-                    psmsReaderRow.mzFound,
-                    psmsReaderRow.intensityFound,
-                    psmsReaderRow.intensitySearched
-                    );
-
-        }
-
-        const QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> &frameCandidateDiscScores
-                = topCansInFrameIndexVsDiscScore.value(frameIndex);
-
-        counter = 1;
-        for (const QPair<PeptideStringWithMods, TandemDeconvolverResult> &discScorePr : frameCandidateDiscScores) {
-
-            const PeptideStringWithMods &peptideStringWithMods = discScorePr.first;
-
-            PSMsReaderRow &psmsReaderRow = psmReaderRowsForFrame[peptideStringWithMods];
-            psmsReaderRow.discScore = discScorePr.second.discScore;
-            psmsReaderRow.pVal = discScorePr.second.pVal;
-            psmsReaderRow.tTest = discScorePr.second.tTestVal;
-            psmsReaderRow.frameRankDiscScore = counter++;
-            psmsReaderRow.frameFStat = discScorePr.second.frameFStat;
-            psmsReaderRow.pValFrameFtest = discScorePr.second.pValFrameFtest;
-            psmsReaderRow.frameError = discScorePr.second.frameError;
-        }
-
-        psmsReaderRows->append(psmReaderRowsForFrame.values().toVector());
-    }
+    qDebug() << "TargetKey" << uniqueMsInfoScanKey
+             << "Scan Count" << m_msFrame.scanCount()
+             << "Candidate Count:" << m_fragPreds.size();
 
     ERR_RETURN
 }
