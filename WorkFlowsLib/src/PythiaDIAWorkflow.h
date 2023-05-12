@@ -43,9 +43,13 @@ private:
             const QString &firstPassResultsFilePath
             );
 
-    static Err processDIAFramesParallel(
+    static Err buildFrameScoreVectors(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QStringList *psmReaderRows
+            QStringList *frameScoreVectorsFilePaths
+            );
+
+    static Err processFrameScoreVectors(
+            const QStringList &frameScoreVectorsFilePaths
             );
 
 private:

@@ -174,7 +174,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
 
     QStringList frameScoreVectorsFilePaths;
-    e = processDIAFramesParallel(
+    e = buildFrameScoreVectors(
             frameParallelInputsRecal,
             &frameScoreVectorsFilePaths
             ); ree;
@@ -202,7 +202,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
     frameParallelInputsCalibration.resize(calibrationResize);
 
     QStringList frameScoreVectorsFilePaths;
-    e = processDIAFramesParallel(
+    e = buildFrameScoreVectors(
             frameParallelInputsCalibration,
             &frameScoreVectorsFilePaths
             ); ree;
@@ -238,9 +238,9 @@ namespace {
    }
 
 }//namespace
-Err PythiaDIAWorkflow::processDIAFramesParallel(
+Err PythiaDIAWorkflow::buildFrameScoreVectors(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QStringList *psmReaderRows
+        QStringList *frameScoreVectorsFilePaths
         ) {
 
     ERR_INIT
@@ -248,14 +248,14 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
     QFuture<QPair<Err, QString>> futures = QtConcurrent::mapped(
-            frameParallelInputs, //.mid(20,8), //drewholio undu this
+            frameParallelInputs, //.mid(20,8),
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();
 
     for (const QPair<Err, QString> &result : futures) {
         e = result.first; ree;
-        psmReaderRows->push_back(result.second);
+        frameScoreVectorsFilePaths->push_back(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
@@ -274,3 +274,13 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 
     ERR_RETURN
 }
+
+
+Err PythiaDIAWorkflow::processFrameScoreVectors(const QStringList &frameScoreVectorsFilePaths) {
+
+    ERR_INIT
+
+
+    ERR_RETURN
+}
+
