@@ -17,6 +17,8 @@
 
 
 using namespace Error;
+using ScoreVecFilePath = QString;
+using ExtractsFilePath = QString;
 
 class FrameParallelInput;
 class PSMsReaderRow;
@@ -40,12 +42,12 @@ private:
 
     Err buildPSMResultsForCalibrationFile(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            const QString &firstPassResultsFilePath
+            QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
             );
 
     static Err buildFrameScoreVectors(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QStringList *frameScoreVectorsFilePaths
+            QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
             );
 
     static Err processFrameScoreVectors(

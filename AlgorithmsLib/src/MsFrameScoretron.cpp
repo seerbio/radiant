@@ -7,6 +7,7 @@
 #include "BiophysicalCalcs.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "ExtractedScansReader.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
@@ -272,23 +273,19 @@ Err MsFrameScoretron::buildFrameScoreVectors(QString *frameScoreVectorsFilePath)
     qDebug() << e << "Drewholio" << framesFilePath;
 #endif
 
-    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
     e = processFrameLogic(
             {m_msFrame, m_fragPreds},
             m_params,
-            &pepStrWModsVsFrameIndexScoreResultOfTargets
+            &m_pepStrWModsVsFrameIndexScoreResultOfTargets
     ); ree
 
     filterByFoundMzCount(
             m_params.minFoundMzPeaks,
-            &pepStrWModsVsFrameIndexScoreResultOfTargets
+            &m_pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
     *frameScoreVectorsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
-    e = writeFrameTargetScoreVectors(
-            pepStrWModsVsFrameIndexScoreResultOfTargets,
-            *frameScoreVectorsFilePath
-    ); ree;
+    e = writeFrameTargetScoreVectors(*frameScoreVectorsFilePath); ree;
 
 
     ERR_RETURN
@@ -423,16 +420,13 @@ void MsFrameScoretron::filterByFoundMzCount(
     *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
 }
 
-Err MsFrameScoretron::writeFrameTargetScoreVectors(
-        const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-        const QString &outputFilePath
-) {
+Err MsFrameScoretron::writeFrameTargetScoreVectors(const QString &outputFilePath) {
 
     ERR_INIT
 
     int counter = 0;
     QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
-    for (auto it = pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
+    for (auto it = m_pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != m_pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
@@ -500,6 +494,67 @@ Err MsFrameScoretron::init(
     qDebug() << "TargetKey" << uniqueMsInfoScanKey
              << "Scan Count" << m_msFrame.scanCount()
              << "Candidate Count:" << m_fragPreds.size();
+
+    ERR_RETURN
+}
+
+Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(QString *frameExtractedPointsFilePath) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_pepStrWModsVsFrameIndexScoreResultOfTargets); ree;
+    e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
+    e = ErrorUtils::isAboveThreshold(
+            m_msFrame.scanCount(),
+            0,
+            ErrorUtilsParam::ExcludeThreshold
+            ); ree;
+
+    const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &scoreResults
+            = m_pepStrWModsVsFrameIndexScoreResultOfTargets;
+
+    QVector<ExtractedScansReaderRow> extractedScanReaderRows;
+    for (auto it = scoreResults.begin(); it != scoreResults.end(); it++) {
+
+        const PeptideStringWithMods peptideStringWithMods = it.key();
+        const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+        const QVector<double> &scoreVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
+        const FrameIndex frameIndexOfScoreMax = MathUtils::findMaxIndexInVector(scoreVec);
+        const ScanNumber scanNumberOfScoreMax = m_msFrame.scanNumberFromFrameIndex(frameIndexOfScoreMax);
+        const ScanPoints &scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumberOfScoreMax);
+
+        e = ErrorUtils::isTrue(m_fragPreds.contains(peptideStringWithMods)); ree;
+        const QVector<MS2Ion> &predPointsForPeptide = m_fragPreds.value(peptideStringWithMods);
+
+        const QPair<QVector<double>, QVector<double>> predPointsForPeptideUnzipped
+                = ParallelUtils::unZip(predPointsForPeptide);
+
+        ExtractedScansReaderRow row;
+        row.peptideStringWithMods = peptideStringWithMods;
+        row.mzSearched = predPointsForPeptideUnzipped.first;
+        row.intensitySearched = predPointsForPeptideUnzipped.second;
+
+        const ScanPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
+                scanPoints,
+                row.mzSearched,
+                m_params.ms2ExtractionWidthPPM
+        );
+
+        const QPair<QVector<double>, QVector<double>> extractedScanPointsUnzipped
+                = ParallelUtils::unZip(extractedScanPoints);
+
+        row.mzFound = extractedScanPointsUnzipped.first;
+        row.intensityFound = extractedScanPointsUnzipped.first;
+
+        extractedScanReaderRows.push_back(row);
+    }
+
+    *frameExtractedPointsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".extracts";
+    e = ParquetReader::write(
+            extractedScanReaderRows,
+            *frameExtractedPointsFilePath
+            ); ree;
 
     ERR_RETURN
 }

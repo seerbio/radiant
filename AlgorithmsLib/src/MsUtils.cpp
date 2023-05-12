@@ -80,7 +80,7 @@ ExtractPoints MsUtils::extractPointsFromPoints(
     return extractPointsOutput;
 }
 
-QVector<QPointF> MsUtils::extractPointsFromPoints(
+ScanPoints MsUtils::extractPointsFromPoints(
         const QVector <QPointF> &points,
         const QVector<double> &extractionPoints,
         double extractionPPM

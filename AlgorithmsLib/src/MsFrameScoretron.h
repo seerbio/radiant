@@ -46,6 +46,8 @@ public:
 
     Err buildFrameScoreVectors(QString *frameScoreVectorsFilePath);
 
+    Err buildAllExtractedTheoriticalPointsFromTargetKeyFrame(QString *frameExtractedPointsFilePath);
+
 private:
 
     Err buildFragIonLibForTargetMz(const QString &fragLibUri);
@@ -63,13 +65,11 @@ private:
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     );
 
-    Err writeFrameTargetScoreVectors(
-            const QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> &pepStrWModsVsFrameIndexScoreResultOfTargets,
-            const QString &outputFilePath
-    );
+    Err writeFrameTargetScoreVectors(const QString &outputFilePath);
 
 private:
 
+    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> m_pepStrWModsVsFrameIndexScoreResultOfTargets;
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;

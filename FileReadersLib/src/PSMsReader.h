@@ -28,10 +28,6 @@ namespace PSMsReaderRowNamespace {
     const QString DISC_SCORE = QStringLiteral("discScore");
     const QString FRAME_RANK_DISC_SCORE = QStringLiteral("frameRankDiscScore");
     const QString IS_DECOY = QStringLiteral("isDecoy");
-    const QString MZ_FOUND = QStringLiteral("mzFound");
-    const QString MZ_SEARCHED = QStringLiteral("mzSearched");
-    const QString INTENSITY_FOUND = QStringLiteral("intensityFound");
-    const QString INTENSITY_SEARCHED = QStringLiteral("intensitySearched");
     const QString RESCORE = QStringLiteral("rescore");
     const QString T_TEST = QStringLiteral("tTest");
     const QString P_VAL = QStringLiteral("pVal");
@@ -50,10 +46,6 @@ namespace PSMsReaderRowNamespace {
             DISC_SCORE ,
             FRAME_RANK_DISC_SCORE,
             IS_DECOY,
-            MZ_FOUND,
-            MZ_SEARCHED,
-            INTENSITY_FOUND,
-            INTENSITY_SEARCHED,
             RESCORE,
             P_VAL,
             T_TEST,
@@ -108,15 +100,11 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
                 {DISC_SCORE, QVariant(discScore)},
                 {FRAME_RANK_DISC_SCORE, QVariant(frameRankDiscScore)},
                 {IS_DECOY, QVariant(isDecoy)},
-                {MZ_FOUND, QVariant(qVectorToQByteArray(mzFound))},
-                {MZ_SEARCHED, QVariant(qVectorToQByteArray(mzSearched))},
-                {INTENSITY_FOUND, QVariant(qVectorToQByteArray(intensityFound))},
                 {P_VAL, QVariant(pVal)},
                 {T_TEST, QVariant(tTest)},
                 {FRAME_F_STAT, QVariant(frameFStat)},
                 {P_VAL_FRAME_F_TEST, QVariant(pValFrameFtest)},
-                {FRAME_ERROR, QVariant(frameError)},
-                {INTENSITY_SEARCHED, QVariant(qVectorToQByteArray(intensitySearched))}
+                {FRAME_ERROR, QVariant(frameError)}
         };
     }
 
@@ -147,10 +135,6 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         pVal = dataMap.value(P_VAL).toDouble();
         frameRankDiscScore = dataMap.value(FRAME_RANK_DISC_SCORE).toInt();
         isDecoy = dataMap.value(IS_DECOY).toBool();
-        mzFound = bytesArrayToQVector<double>(dataMap.value(MZ_FOUND).toByteArray());
-        mzSearched = bytesArrayToQVector<double>(dataMap.value(MZ_SEARCHED).toByteArray());
-        intensityFound = bytesArrayToQVector<double>(dataMap.value(INTENSITY_FOUND).toByteArray());
-        intensitySearched = bytesArrayToQVector<double>(dataMap.value(INTENSITY_SEARCHED).toByteArray());
         frameFStat = dataMap.value(FRAME_F_STAT).toDouble();
         pValFrameFtest = dataMap.value(P_VAL_FRAME_F_TEST).toDouble();
         frameError = dataMap.value(FRAME_ERROR).toDouble();

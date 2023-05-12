@@ -31,7 +31,7 @@ public:
             double extractionPPM
     );
 
-    static QVector<QPointF> extractPointsFromPoints(
+    static ScanPoints extractPointsFromPoints(
             const QVector<QPointF> &points,
             const QVector<double> &extractionPoints,
             double extractionPPM

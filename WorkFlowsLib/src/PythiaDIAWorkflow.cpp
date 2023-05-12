@@ -38,7 +38,6 @@ struct FrameParallelInput {
     QString fragLibFilePath;
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     QPair<double, double> mzTargetStartStop;
-    bool applySmooth2D = false;
 };
 
 namespace {
@@ -63,7 +62,6 @@ namespace {
         for (const MsScanInfo &si : uniqueScanInfos) {
 
             FrameParallelInput fpi;
-            fpi.applySmooth2D = applySmooth2D;
             fpi.msDataFilePath = msDataFilePath;
             fpi.params = pythiaParameters;
             fpi.fragLibFilePath = fragLibFilePath;
@@ -173,10 +171,10 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
 
-    QStringList frameScoreVectorsFilePaths;
+    QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> frameScoreVectorsAndExtractFilePaths;
     e = buildFrameScoreVectors(
             frameParallelInputsRecal,
-            &frameScoreVectorsFilePaths
+            &frameScoreVectorsAndExtractFilePaths
             ); ree;
 
 //    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
@@ -190,7 +188,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
 Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        const QString &firstPassResultsFilePath
+        QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
@@ -204,7 +202,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
     QStringList frameScoreVectorsFilePaths;
     e = buildFrameScoreVectors(
             frameParallelInputsCalibration,
-            &frameScoreVectorsFilePaths
+            frameScoreVectorsAndExtractFilePaths
             ); ree;
 
 //    qDebug() << "Rows to write:" << psmReaderRows.size(); //drewholio
@@ -218,7 +216,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
 namespace {
 
-    QPair<Err, QString> parallelFrameProcossingLogic(const FrameParallelInput &fpi) {
+    QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> parallelFrameProcossingLogic(const FrameParallelInput &fpi) {
 
        ERR_INIT
 
@@ -234,41 +232,43 @@ namespace {
        QString frameScoreVectorsFilePath;
        e = msFrameScoretron.buildFrameScoreVectors(&frameScoreVectorsFilePath); rree;
 
-       return {e, frameScoreVectorsFilePath};
+       QString frameExtractedPointsFilePath;
+       e = msFrameScoretron.buildAllExtractedTheoriticalPointsFromTargetKeyFrame(&frameExtractedPointsFilePath); rree;
+
+       return {e, {frameScoreVectorsFilePath, frameExtractedPointsFilePath}};
    }
 
 }//namespace
 Err PythiaDIAWorkflow::buildFrameScoreVectors(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QStringList *frameScoreVectorsFilePaths
+        QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
 
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-    QFuture<QPair<Err, QString>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>>> futures = QtConcurrent::mapped(
             frameParallelInputs, //.mid(20,8),
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();
 
-    for (const QPair<Err, QString> &result : futures) {
+    for (const QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> &result : futures) {
         e = result.first; ree;
-        frameScoreVectorsFilePaths->push_back(result.second);
+        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
 
-//        if (fpi.uniqueMsInfoScanKey != "645043") {
-//            continue;
-//        }
+        if (fpi.uniqueMsInfoScanKey != "645043") {
+            continue;
+        }
 
-        QPair<Err, QVector<PSMsReaderRow>> result
+        const QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> result
                 = parallelFrameProcossingLogic(fpi); ree;
-
         e = result.first; ree;
-        psmReaderRows->append(result.second);
+        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
     }
 #endif
 
