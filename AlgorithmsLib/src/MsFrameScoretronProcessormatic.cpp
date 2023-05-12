@@ -94,6 +94,9 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndexes(
 
         const ScanPoints &scanPoints = frame.value(frameIndex);
 
+        double fScore;
+        double pValFTest;
+        double error;
         e = calculateDiscriminateScoreForFrame(
                 peptideStringWithModsScore,
                 scanPoints,
@@ -239,20 +242,15 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
             precision,
             m_params.mzMaxDataStructure,
             maxIters,
-            stopTolerance
+            stopTolerance,
+            m_params.pValThreshold
     ); ree;
 
-    double fScore;
-    double pValFTest;
     e = deconvolvotron.deconvolveTandemSpectra(
             extractedScanPoints,
             scanPreds,
-            &pepSeqVsWeight,
-            &fScore,
-            &pValFTest
+            &pepSeqVsWeight
     ); ree;
-
-    qDebug() << extractedScanPoints.size() << fScore << pValFTest;
 
     for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
 
@@ -263,6 +261,14 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
     }
 
     sortDiscScoresDesc(frameIndexVsPeptideStringWithModsDiscScore);
+
+//    for (const QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> &r : *frameIndexVsPeptideStringWithModsDiscScore) {
+//        qDebug() << "THEH SIZE" << r.size() << fScore << pValFTest;
+//        for (const QPair<PeptideStringWithMods, TandemDeconvolverResult> &rr : r) {
+//            qDebug() << "drewholio" << rr.first << rr.second.pVal << rr.second.discScore;
+//        }
+//        qDebug() << "**********";
+//    }
 
     ERR_RETURN
 }

@@ -361,6 +361,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 50.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
+    pythiaParameters.pValThreshold = 0.05;
 
     Modification carboxyAmidoMethyl(
             'C',

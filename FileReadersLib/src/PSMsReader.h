@@ -35,6 +35,9 @@ namespace PSMsReaderRowNamespace {
     const QString RESCORE = QStringLiteral("rescore");
     const QString T_TEST = QStringLiteral("tTest");
     const QString P_VAL = QStringLiteral("pVal");
+    const QString FRAME_F_STAT = QStringLiteral("frameFStat");
+    const QString P_VAL_FRAME_F_TEST = QStringLiteral("pValFrameFtest");
+    const QString FRAME_ERROR = QStringLiteral("frameError");
 
     const QStringList keysToCheck = {
             FRAME_INDEX,
@@ -53,7 +56,10 @@ namespace PSMsReaderRowNamespace {
             INTENSITY_SEARCHED,
             RESCORE,
             P_VAL,
-            T_TEST
+            T_TEST,
+            FRAME_F_STAT,
+            P_VAL_FRAME_F_TEST,
+            FRAME_ERROR
     };
 }
 
@@ -77,6 +83,9 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
 
     double pVal = -1.0;
     double tTest = -1.0;
+    double frameFStat = -1.0;
+    double pValFrameFtest = -1.0;
+    double frameError = -1.0;
 
     QVector<double> mzFound;
     QVector<double> mzSearched;
@@ -104,6 +113,9 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
                 {INTENSITY_FOUND, QVariant(qVectorToQByteArray(intensityFound))},
                 {P_VAL, QVariant(pVal)},
                 {T_TEST, QVariant(tTest)},
+                {FRAME_F_STAT, QVariant(frameFStat)},
+                {P_VAL_FRAME_F_TEST, QVariant(pValFrameFtest)},
+                {FRAME_ERROR, QVariant(frameError)},
                 {INTENSITY_SEARCHED, QVariant(qVectorToQByteArray(intensitySearched))}
         };
     }
@@ -139,6 +151,9 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         mzSearched = bytesArrayToQVector<double>(dataMap.value(MZ_SEARCHED).toByteArray());
         intensityFound = bytesArrayToQVector<double>(dataMap.value(INTENSITY_FOUND).toByteArray());
         intensitySearched = bytesArrayToQVector<double>(dataMap.value(INTENSITY_SEARCHED).toByteArray());
+        frameFStat = dataMap.value(FRAME_F_STAT).toDouble();
+        pValFrameFtest = dataMap.value(P_VAL_FRAME_F_TEST).toDouble();
+        frameError = dataMap.value(FRAME_ERROR).toDouble();
 
         ERR_RETURN
     }
@@ -153,10 +168,6 @@ public:
 
     PSMsReader() = default;
     ~PSMsReader() = default;
-
-
-
-
 
 };
 

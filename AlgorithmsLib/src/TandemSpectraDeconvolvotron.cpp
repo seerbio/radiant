@@ -27,7 +27,8 @@ Err TandemSpectraDeconvolvotron::init(
         int precision,
         double mzMax,
         int iterationsMax,
-        double stopTolerance
+        double stopTolerance,
+        double pValThreshold
         ) {
 
     ERR_INIT
@@ -58,6 +59,8 @@ Err TandemSpectraDeconvolvotron::init(
 
     const double stopTolMin = 1e-100;
     m_stopTolerance = std::max(stopTolerance, stopTolMin);
+
+    m_pValThreshold = pValThreshold;
 
     m_isInit = true;
 
@@ -158,12 +161,13 @@ namespace {
 Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
         const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-        QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight,
-        double *fStat,
-        double *pValFTest
+        QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
         ) const {
 
     ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::isNotEmpty(tandemPredictions); ree;
 
     pepSeqVsWeight->clear();
 
@@ -194,6 +198,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
 
     lscg.compute(mat);
     x = lscg.solve(vecScanPoints);
+    const double error = lscg.error();
 
     const int minScanSize = 2;
     if (tandemPredictions.size() < minScanSize) {
@@ -202,8 +207,9 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.discScore = x.coeff(0);
         tdr.tTestVal = 1000;
         tdr.pVal = 0;
-        *fStat = -1.0;
-        *pValFTest = -1.0;
+        tdr.frameFStat = -1.0;
+        tdr.pValFrameFtest = -1.0;
+        tdr.frameError = error;
 
         const PeptideStringWithMods &peptideSequenceChargeKey = tandemPredictions.firstKey();
         pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
@@ -213,12 +219,14 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
 
     QVector<double> coeffsTTests;
     QVector<double> coeffsPVal;
+    double fStat;
+    double pValFTest;
     e = deconvolveStats(
             mat,
             x,
             vecScanPoints,
-            fStat,
-            pValFTest,
+            &fStat,
+            &pValFTest,
             &coeffsTTests,
             &coeffsPVal
             ); ree;
@@ -235,6 +243,9 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.discScore = x.coeff(i);
         tdr.tTestVal = coeffsTTests.at(i);
         tdr.pVal = coeffsPVal.at(i);
+        tdr.frameFStat = fStat;
+        tdr.pValFrameFtest = pValFTest;
+        tdr.frameError = error;
 
         pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
     }

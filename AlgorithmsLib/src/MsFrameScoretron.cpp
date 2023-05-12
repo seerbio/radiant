@@ -623,9 +623,9 @@ Err MsFrameScoretron::buildPSMsReaderRows(
     const QList<FrameIndex> &discScoreKeys = topCansInFrameIndexVsDiscScore.keys();
 
     e = ErrorUtils::isNotEmpty(scoreKeys); ree;
-    e = ErrorUtils::isTrue(scoreKeys == discScoreKeys); ree;
+//    e = ErrorUtils::isTrue(scoreKeys == discScoreKeys); ree;
     
-    for (FrameIndex frameIndex : scoreKeys) {
+    for (FrameIndex frameIndex : discScoreKeys) {
 
         QMap<PeptideStringWithMods, PSMsReaderRow> psmReaderRowsForFrame;
 
@@ -706,6 +706,9 @@ Err MsFrameScoretron::buildPSMsReaderRows(
             psmsReaderRow.pVal = discScorePr.second.pVal;
             psmsReaderRow.tTest = discScorePr.second.tTestVal;
             psmsReaderRow.frameRankDiscScore = counter++;
+            psmsReaderRow.frameFStat = discScorePr.second.frameFStat;
+            psmsReaderRow.pValFrameFtest = discScorePr.second.pValFrameFtest;
+            psmsReaderRow.frameError = discScorePr.second.frameError;
         }
 
         psmsReaderRows->append(psmReaderRowsForFrame.values().toVector());

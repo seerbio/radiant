@@ -74,7 +74,7 @@ void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
     QMap<PeptideSequenceChargeKey, TandemDeconvolverResult> result;
 
     TandemSpectraDeconvolvotron deconvolvotron;
-    e = deconvolvotron.init(3, 1000, 20, 0.000000000000000001);
+    e = deconvolvotron.init(3, 1000, 20, 0.000000000000000001, 0.05);
     QCOMPARE(e, eNoError);
 
     double fStat;
@@ -82,9 +82,7 @@ void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
     e = deconvolvotron.deconvolveTandemSpectra(
             points,
             input,
-            &result,
-            &fStat,
-            &pValFTest
+            &result
             );
     QCOMPARE(e, eNoError);
 
