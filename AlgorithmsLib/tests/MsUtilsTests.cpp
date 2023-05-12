@@ -24,6 +24,7 @@ public:
 private Q_SLOTS:
 
     void extractPointsFromPointsTest();
+    void extractPointsFromPointsSimpleTest();
     void buildDeletionPointsTest();
     void chargeDeterminatorTest();
 
@@ -196,6 +197,8 @@ void MsUtilsTests::extractPointsFromPointsTest() {
         QCOMPARE(p.x(), p.y());
     }
 
+    qDebug() << extractPointsVector.intensityFoundVsSearched;
+
 }
 
 void MsUtilsTests::buildDeletionPointsTest() {
@@ -258,6 +261,19 @@ void MsUtilsTests::chargeDeterminatorTest() {
     MsUtils::chargeDeterminator({487.228, 6.80671e+06}, pointsCharge1, 20.0, &charge);
     qDebug() << charge;
 
+
+}
+
+void MsUtilsTests::extractPointsFromPointsSimpleTest() {
+
+    QVector<QPointF> p1 = {{1, 1}, {2,2}, {3,3}};
+    QVector<QPointF> p2 = {{1, 1}, {2,2}, {4,4}};
+
+    const ExtractPoints extractPointsVector
+            = MsUtils::extractPointsFromPoints(p1, p2, 10.0);
+
+    qDebug() << extractPointsVector.mzFoundVsSearched;
+    qDebug() << extractPointsVector.intensityFoundVsSearched;
 
 }
 

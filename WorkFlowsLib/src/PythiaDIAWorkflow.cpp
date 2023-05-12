@@ -249,7 +249,7 @@ Err PythiaDIAWorkflow::processDIAFramesParallel(
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
     QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
-            frameParallelInputs,
+            frameParallelInputs, //.mid(20,8), //drewholio undu this
             parallelFrameProcossingLogic
             );
     futures.waitForFinished();

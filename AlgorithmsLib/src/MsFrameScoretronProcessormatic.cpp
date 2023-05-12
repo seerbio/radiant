@@ -69,7 +69,6 @@ Err MsFrameScoretronProcessormatic::processLogicForFrameScores(
             topCansInFrameIndex
     );ree;
 
-
     e = calculateDiscriminateScoreForFrameIndexes(
             *topCansInFrameIndex,
             topCansInFrameIndexVsDiscScore
@@ -94,9 +93,6 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndexes(
 
         const ScanPoints &scanPoints = frame.value(frameIndex);
 
-        double fScore;
-        double pValFTest;
-        double error;
         e = calculateDiscriminateScoreForFrame(
                 peptideStringWithModsScore,
                 scanPoints,
@@ -202,6 +198,31 @@ namespace {
 
     }
 
+    Err removeNegativeScanPredsFromFirstPassTandemDeconResults(
+            const QMap<PeptideStringWithMods, TandemDeconvolverResult> &pepSeqVsWeight,
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &scanPreds,
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanPredsFiltered
+            ) {
+
+        ERR_INIT
+
+        for (auto it = pepSeqVsWeight.begin(); it != pepSeqVsWeight.end(); it++) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const TandemDeconvolverResult &tandemDeconvolverResult = it.value();
+
+            if (tandemDeconvolverResult.discScore < 0) {
+                continue;
+            }
+
+            e = ErrorUtils::isTrue(scanPreds.contains(peptideStringWithMods)); ree;
+
+            scanPredsFiltered->insert(peptideStringWithMods, scanPreds.value(peptideStringWithMods));
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
         const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
@@ -251,6 +272,19 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrame(
             scanPreds,
             &pepSeqVsWeight
     ); ree;
+
+//    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPredsFiltered;
+//    e = removeNegativeScanPredsFromFirstPassTandemDeconResults(
+//            pepSeqVsWeight,
+//            scanPreds,
+//            &scanPredsFiltered
+//            ); ree;
+//
+//    e = deconvolvotron.deconvolveTandemSpectra(
+//            extractedScanPoints,
+//            scanPredsFiltered,
+//            &pepSeqVsWeight
+//    ); ree;
 
     for (auto itt = pepSeqVsWeight.begin(); itt != pepSeqVsWeight.end(); itt++) {
 

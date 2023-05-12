@@ -131,6 +131,10 @@ namespace {
                 const FrameIndex frameIndex = it.key();
                 const Intensity intensity = it.value();
 
+                if (scoringMatIntensity.coeff(frameIndex, colIdx) > intensity) {
+                    continue;
+                }
+
                 scoringMatIntensity(frameIndex, colIdx) = intensity;
                 scoringMatMz(frameIndex, colIdx) = mz;
             }
@@ -576,31 +580,32 @@ namespace {
                 );
 
         if (extractIntensity) {
-            deleteUnfoundPoints(&extractPoints.intensityFoundVsSearched);
+//            deleteUnfoundPoints(&extractPoints.intensityFoundVsSearched);
             return extractPoints.intensityFoundVsSearched;
         }
 
-        deleteUnfoundPoints(&extractPoints.mzFoundVsSearched);
+//        deleteUnfoundPoints(&extractPoints.mzFoundVsSearched);
         return extractPoints.mzFoundVsSearched;
     }
 
     double reCalculateScore(
             const QVector<double> &mzFound,
             const QVector<double> &intensityFound,
-            const QVector<double> &intensitySearched,
-            const QVector<MS2Ion> &predMs2Ions
+            const QVector<double> &intensitySearched
     ) {
 
-        const int foundMzCount = mzFound.size();
-        const double foundMzCountFactorial = MathUtils::factorial(foundMzCount);
+        const long foundMzCount = std::count_if(mzFound.begin(), mzFound.end(),[](double d){return d > 0;});
+        const double foundMzCountFactorial = MathUtils::factorial(static_cast<int>(foundMzCount));
 
         const double fractionFound
-                = static_cast<double>(foundMzCount) / predMs2Ions.size();
+                = static_cast<double>(foundMzCount) / mzFound.size();
 
-        const double mzProduct = std::accumulate(mzFound.begin(), mzFound.end(), 1.0, std::multiplies<>());
+        const auto multLogic = [](double prod, double mz){return mz < 0 ? prod : mz * prod;};
+        const double mzProduct = std::accumulate(mzFound.begin(), mzFound.end(), 1.0, multLogic);
 
         const Eigen::VectorX<double> v1 = EigenUtils::convertQVectorToEigenVector(intensityFound);
         const Eigen::VectorX<double> v2 = EigenUtils::convertQVectorToEigenVector(intensitySearched);
+        
         const double cosineSim = EigenUtils::cosineSimilarity(v1, v2);
 
         const double score
@@ -674,21 +679,18 @@ Err MsFrameScoretron::buildPSMsReaderRows(
             psmsReaderRow.intensityFound = extractedIntensity.first;
             psmsReaderRow.intensitySearched = extractedIntensity.second;
 
-            e = ErrorUtils::isTrue(m_fragPreds.contains(psmsReaderRow.peptideStringWithMods)); ree;
-            QVector<MS2Ion> peptideStringWithModsPrediction = m_fragPreds.value(psmsReaderRow.peptideStringWithMods);
+            while (psmsReaderRow.intensitySearched.back() < 0) {
 
-            const double mzMin = 350.0;
-            FragLibReader::filterMs2IonsByMz(
-                    mzMin,
-                    m_params.mzMaxDataStructure,
-                    &peptideStringWithModsPrediction
-                    );
+                psmsReaderRow.intensitySearched.pop_back();
+
+                e = ErrorUtils::isTrue(psmsReaderRow.mzSearched.back() < 0); ree;
+                psmsReaderRow.mzSearched.pop_back();
+            }
 
             psmsReaderRow.rescore = reCalculateScore(
                     psmsReaderRow.mzFound,
                     psmsReaderRow.intensityFound,
-                    psmsReaderRow.intensitySearched,
-                    peptideStringWithModsPrediction
+                    psmsReaderRow.intensitySearched
                     );
 
         }
