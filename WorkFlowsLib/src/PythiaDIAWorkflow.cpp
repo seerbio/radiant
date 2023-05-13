@@ -276,7 +276,13 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 }
 
 
-Err PythiaDIAWorkflow::processFrameScoreVectors(const QStringList &frameScoreVectorsFilePaths) {
+namespace {
+
+    QPair<Err,
+}
+Err PythiaDIAWorkflow::processFrameScoreVectors(
+        const QPair<ScoreVecFilePath, ExtractsFilePath> &frameScoreVectorsFilePaths
+        ) {
 
     ERR_INIT
 

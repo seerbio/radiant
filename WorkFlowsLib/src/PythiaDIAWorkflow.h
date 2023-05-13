@@ -51,7 +51,7 @@ private:
             );
 
     static Err processFrameScoreVectors(
-            const QStringList &frameScoreVectorsFilePaths
+            const QPair<ScoreVecFilePath, ExtractsFilePath> &frameScoreVectorsFilePaths
             );
 
 private:
