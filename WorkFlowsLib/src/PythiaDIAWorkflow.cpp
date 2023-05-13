@@ -7,11 +7,19 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrameScoretron.h"
+#include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
 #include "PeakIntegratomatic.h"
 #include "PSMsReader.h"
 
 #include <QtConcurrent/QtConcurrent>
+
+struct ScoreVectorsOutput {
+    QString scoreVecFilePath;
+    QString extractsFilePath;
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    QPair<double, double> mzTargetStartStop = {-1.0, -1.0};
+};
 
 
 Err PythiaDIAWorkflow::init(
@@ -24,7 +32,7 @@ Err PythiaDIAWorkflow::init(
     pythiaParameters.print();
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(fragLibUri); ree;
+    e = ErrorUtils::fileExists(fragLibUri); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
@@ -46,7 +54,6 @@ namespace {
             const PythiaParameters &pythiaParameters,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
-            bool applySmooth2D,
             QVector<FrameParallelInput> *frameParallelInputs
     ) {
 
@@ -160,24 +167,30 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 //            &msDataFilePathRecalibrated
 //            ); ree;
 
-    const bool applySmooth2D = true;
     QVector<FrameParallelInput> frameParallelInputsRecal;
     e = buildParallelInput(
             m_pythiaParameters,
             msDataFilePathRecalibrated,
             m_fragLibUri,
-            applySmooth2D,
             &frameParallelInputsRecal
     ); ree;
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
 
-    QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> frameScoreVectorsAndExtractFilePaths;
+    QVector<ScoreVectorsOutput> frameScoreVectorOutput;
     e = buildFrameScoreVectors(
             frameParallelInputsRecal,
-            &frameScoreVectorsAndExtractFilePaths
+            &frameScoreVectorOutput
             ); ree;
 
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    QVector<PSMsReaderRow> psmReaderRowsRecal;
+    e = processFrameScoreVectors(
+            frameScoreVectorOutput,
+            msDataFilePath,
+            m_pythiaParameters,
+            &psmReaderRowsRecal
+            ); ree;
+
+    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
 //    e = ParquetReader::write(
 //            psmReaderRowsRecal,
 //            resultsFilePath
@@ -188,7 +201,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
 Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
+        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
@@ -199,7 +212,6 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
     QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
     frameParallelInputsCalibration.resize(calibrationResize);
 
-    QStringList frameScoreVectorsFilePaths;
     e = buildFrameScoreVectors(
             frameParallelInputsCalibration,
             frameScoreVectorsAndExtractFilePaths
@@ -216,7 +228,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
 namespace {
 
-    QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> parallelFrameProcossingLogic(const FrameParallelInput &fpi) {
+    QPair<Err, ScoreVectorsOutput> parallelBuildFrameScoreVectorLogic(const FrameParallelInput &fpi) {
 
        ERR_INIT
 
@@ -235,26 +247,32 @@ namespace {
        QString frameExtractedPointsFilePath;
        e = msFrameScoretron.buildAllExtractedTheoriticalPointsFromTargetKeyFrame(&frameExtractedPointsFilePath); rree;
 
-       return {e, {frameScoreVectorsFilePath, frameExtractedPointsFilePath}};
+       ScoreVectorsOutput output;
+       output.scoreVecFilePath = frameScoreVectorsFilePath;
+       output.extractsFilePath = frameExtractedPointsFilePath;
+       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
+       output.mzTargetStartStop = fpi.mzTargetStartStop;
+
+       return {e, output};
    }
 
 }//namespace
 Err PythiaDIAWorkflow::buildFrameScoreVectors(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
+        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
 
-#define PARALLEL_RUN_SCORE_VEC
+//#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-    QFuture<QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, ScoreVectorsOutput>> futures = QtConcurrent::mapped(
             frameParallelInputs, //.mid(20,8),
-            parallelFrameProcossingLogic
+            parallelBuildFrameScoreVectorLogic
             );
     futures.waitForFinished();
 
-    for (const QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> &result : futures) {
+    for (const QPair<Err, ScoreVectorsOutput> &result : futures) {
         e = result.first; ree;
         frameScoreVectorsAndExtractFilePaths->push_back(result.second);
     }
@@ -265,8 +283,7 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
             continue;
         }
 
-        const QPair<Err, QPair<ScoreVecFilePath, ExtractsFilePath>> result
-                = parallelFrameProcossingLogic(fpi); ree;
+        const QPair<Err, ScoreVectorsOutput> result = parallelBuildFrameScoreVectorLogic(fpi); ree;
         e = result.first; ree;
         frameScoreVectorsAndExtractFilePaths->push_back(result.second);
     }
@@ -278,14 +295,68 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
 namespace {
 
-    QPair<Err,
-}
+    QPair<Err, QVector<PSMsReaderRow>> processScoreVectorsParallelLogic(
+            const ScoreVectorsOutput &scoreVectorsOutput,
+            const QString &msDataFilePath,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        ERR_INIT
+
+        MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
+        e = msFrameScoretronProcessormatic.init(
+                scoreVectorsOutput.scoreVecFilePath,
+                scoreVectorsOutput.extractsFilePath,
+                pythiaParameters,
+                msDataFilePath,
+                scoreVectorsOutput.uniqueMsInfoScanKey,
+                scoreVectorsOutput.mzTargetStartStop
+                ); rree;
+
+        return {e, {}};
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::processFrameScoreVectors(
-        const QPair<ScoreVecFilePath, ExtractsFilePath> &frameScoreVectorsFilePaths
+        const QVector<ScoreVectorsOutput> &scoreVectorOutputs,
+        const QString &msDataFilePath,
+        const PythiaParameters &pythiaParameters,
+        QVector<PSMsReaderRow> *psmsPreaderRows
         ) {
 
     ERR_INIT
 
+#ifdef PARALLEL_RUN_SCORE_VEC
+    const auto scoreVecProcessorLogicBinder = std::bind(
+            processScoreVectorsParallelLogic,
+            std::placeholders::_1,
+            msDataFilePath,
+            pythiaParameters
+    );
+
+    QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
+            scoreVectorOutputs, //.mid(20,8),
+            scoreVecProcessorLogicBinder
+    );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
+        e = result.first; ree;
+        psmsPreaderRows->append(result.second);
+    }
+#else
+    for (const ScoreVectorsOutput &svo : scoreVectorOutputs) {
+
+        const QPair<Err, QVector<PSMsReaderRow>> result = processScoreVectorsParallelLogic(
+                svo,
+                msDataFilePath,
+                pythiaParameters
+                ); ree;
+
+        e = result.first; ree;
+        psmsPreaderRows->append(result.second);
+    }
+#endif
 
     ERR_RETURN
 }

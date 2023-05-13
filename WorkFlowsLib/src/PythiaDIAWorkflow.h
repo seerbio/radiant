@@ -17,11 +17,10 @@
 
 
 using namespace Error;
-using ScoreVecFilePath = QString;
-using ExtractsFilePath = QString;
 
 class FrameParallelInput;
 class PSMsReaderRow;
+class ScoreVectorsOutput;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -42,16 +41,19 @@ private:
 
     Err buildPSMResultsForCalibrationFile(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
+            QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
             );
 
     static Err buildFrameScoreVectors(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<QPair<ScoreVecFilePath, ExtractsFilePath>> *frameScoreVectorsAndExtractFilePaths
+            QVector<ScoreVectorsOutput> *scoreVectorsOutput
             );
 
     static Err processFrameScoreVectors(
-            const QPair<ScoreVecFilePath, ExtractsFilePath> &frameScoreVectorsFilePaths
+            const QVector<ScoreVectorsOutput> &scoreVectorsOutputs,
+            const QString &msDataFilePath,
+            const PythiaParameters &pythiaParameters,
+            QVector<PSMsReaderRow> *psmsPreaderRows
             );
 
 private:

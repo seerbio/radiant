@@ -62,19 +62,9 @@ namespace {
         ); ree;
 
         e = msFrame->init(
-                params,
                 "-1000",
                 ms1Scans,
                 {-1.0, -1.0}
-        ); ree;
-
-        const bool denoise = true;
-        const bool deisotope = false;
-        const bool smooth = true;
-        e = msFrame->preprocessMsFrame(
-                denoise,
-                deisotope,
-                smooth
         ); ree;
 
         *scanNumberVsScanTime = msReader.getScanNumberVsScanTime();

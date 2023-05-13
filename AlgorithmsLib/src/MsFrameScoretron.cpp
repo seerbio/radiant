@@ -344,30 +344,6 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
     ERR_RETURN
 }
 
-Err MsFrameScoretron::buildMsFrame() {
-
-    ERR_INIT
-
-    MsReaderParquet msReaderParquet;
-    e = msReaderParquet.openFile(
-            m_msDataFilePath,
-            MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
-            {m_mzTargetStartStop.first, m_mzTargetStartStop.second}
-    ); ree;
-
-    const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
-    e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
-
-    e = m_msFrame.init(
-            m_params,
-            m_uniqueMsInfoScanKey,
-            targetScanPoints,
-            m_mzTargetStartStop
-    ); ree;
-
-    ERR_RETURN
-}
-
 Err MsFrameScoretron::processFrameLogic(
         const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
         const PythiaParameters &params,
@@ -484,7 +460,13 @@ Err MsFrameScoretron::init(
     e = buildFragIonLibForTargetMz(fragLibFilePath); ree;
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
 
-    e = buildMsFrame(); ree;
+    e = MsFrame::buildMsFrame(
+            msDataFilePath,
+            uniqueMsInfoScanKey,
+            mzTargetStartStop,
+            &m_msFrame
+            ); ree;
+
     e = ErrorUtils::isAboveThreshold(
             m_msFrame.scanCount(),
             0,

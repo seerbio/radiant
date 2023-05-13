@@ -46,10 +46,12 @@ public:
     ~MsFrameScoretronProcessormatic() = default;
 
     Err init(
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
-            const MsFrame &msFrame,
-            const PythiaParameters &params,
-            const QString &scoreVectorsFilePath
+            const QString &frameScoreVecFilePath,
+            const QString &frameExtractedScansFilePath,
+            const PythiaParameters &pythiaParameters,
+            const QString &msDataFilePath,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            QPair<double, double> mzTargetStartStop
             );
 
     Err processLogicForFrameScores(

@@ -52,8 +52,6 @@ private:
 
     Err buildFragIonLibForTargetMz(const QString &fragLibUri);
 
-    Err buildMsFrame();
-
     Err processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
             const PythiaParameters &params,

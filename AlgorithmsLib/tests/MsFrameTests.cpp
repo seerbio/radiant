@@ -47,14 +47,10 @@ void MsFrameTests::preprocessMsFrame() {
 
     MsFrame msFrame;
     e = msFrame.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
             "-1000",
             ms1Scans,
             {0.0, 2000.0}
             );
-    QCOMPARE(e, eNoError);
-
-    e = msFrame.deisotopeFrame();
     QCOMPARE(e, eNoError);
 
 //    const bool denoise = true;

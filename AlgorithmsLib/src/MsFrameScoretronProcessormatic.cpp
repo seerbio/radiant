@@ -24,23 +24,24 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
 Err MsFrameScoretronProcessormatic::init(
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &fragPreds,
-        const MsFrame &msFrame,
-        const PythiaParameters &params,
-        const QString &scoreVectorsFilePath
+        const QString &frameScoreVecFilePath,
+        const QString &frameExtractedScansFilePath,
+        const PythiaParameters &pythiaParameters,
+        const QString &msDataFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        QPair<double, double> mzTargetStartStop
 ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(params.isValid()); ree;
-    e = ErrorUtils::isTrue(msFrame.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(fragPreds); ree;
-    e = ErrorUtils::fileExists(scoreVectorsFilePath); ree;
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::fileExists(msDataFilePath); ree;
+    e = ErrorUtils::fileExists(frameScoreVecFilePath); ree;
+    e = ErrorUtils::fileExists(frameExtractedScansFilePath); ree;
 
-    m_params = params;
-    m_fragPreds = fragPreds;
-    m_msFrame = msFrame;
-    m_scoreVectorsFilePath = scoreVectorsFilePath;
+    m_params = pythiaParameters;
+    m_scoreVectorsFilePath = frameScoreVecFilePath;
 
     ERR_RETURN
 }

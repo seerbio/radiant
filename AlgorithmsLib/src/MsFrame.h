@@ -77,27 +77,12 @@ public:
     ~MsFrame() = default;
 
     Err init(
-            const PythiaParameters &pythiaParameters,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QMap<ScanNumber, ScanPoints> &scanPoints,
             const QPair<double, double> &frameMzStartStop
             );
 
-    bool isValid() const ;
-
-    Err preprocessMsFrame(
-            bool denoise,
-            bool deisotope,
-            bool smooth
-            );
-
-    Err deisotopeFrame();
-
-    Err denoiseFrame();
-
-    Err smoothFrame();
-
-    Err gaussianSmooth2D();
+    [[nodiscard]] bool isValid() const ;
 
     [[nodiscard]] Err writeFrameScans(const QString &outputFilePath) const;
 
@@ -119,15 +104,19 @@ public:
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
+    static Err buildMsFrame(
+            const QString &msDataFilePath,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            QPair<double, double> mzTargetStartStop,
+            MsFrame *msFrame
+            );
 
 private:
-
 
     Err buildFrameIndexVsScanNumber();
 
 private:
 
-    PythiaParameters m_params;
     QMap<ScanNumber, ScanPoints> m_frame;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
     double m_mzWindowLower;
