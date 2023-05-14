@@ -53,6 +53,7 @@ SET(HEADER_FILES
         src/ParquetReader.h
         src/PSMsReader.h
         src/PythiaParameterReader.h
+        src/toml.hpp
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
