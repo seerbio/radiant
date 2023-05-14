@@ -264,7 +264,7 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
     ERR_INIT
 
-//#define PARALLEL_RUN_SCORE_VEC
+#define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
     QFuture<QPair<Err, ScoreVectorsOutput>> futures = QtConcurrent::mapped(
             frameParallelInputs, //.mid(20,8),
@@ -313,7 +313,9 @@ namespace {
                 scoreVectorsOutput.mzTargetStartStop
                 ); rree;
 
-        return {e, {}};
+        QVector<PSMsReaderRow> psmsReaderRows;
+
+        return {e, psmsReaderRows};
     }
 
 }//namespace

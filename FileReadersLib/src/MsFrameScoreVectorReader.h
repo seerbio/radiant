@@ -26,7 +26,7 @@ namespace MsFrameScoreVectorReaderNamespace {
     const QString SCORE_PEAK_END  = QStringLiteral("scorePeakEnd");
     const QString FRAME_INDEX_MAX_SCORE = QStringLiteral("frameIndexMaxScore");
     const QString CHARGE = QStringLiteral("charge");
-
+    const QString IS_DECOY = QStringLiteral("isDecoy");
     const QStringList keysToCheck = {
             COSINE_SIM_VEC,
             INTZ_FRM_IND,
@@ -36,6 +36,7 @@ namespace MsFrameScoreVectorReaderNamespace {
             SCORE_PEAK_START,
             SCORE_PEAK_END,
             FRAME_INDEX_MAX_SCORE,
+            IS_DECOY,
             CHARGE
     };
 }
@@ -47,6 +48,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
     QVector<int> foundIonsPerFrameIndexOfTargetVec;
     QVector<double> scorePerFrameIndexOfTargetVec;
     PeptideStringWithMods peptideStringWithMods;
+    bool isDecoy = false;
     int scorePeakStart = -1;
     int scorePeakEnd = -1;
     int frameIndexMaxScore = -1;
@@ -65,6 +67,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
             {SCORE_PEAK_START, QVariant(scorePeakStart)},
             {SCORE_PEAK_END, QVariant(scorePeakEnd)},
             {FRAME_INDEX_MAX_SCORE, QVariant(frameIndexMaxScore)},
+            {IS_DECOY, QVariant(isDecoy)},
             {CHARGE, QVariant(charge)}
         };
     }
@@ -92,6 +95,7 @@ struct FILEREADERSLIB_EXPORTS MsFrameScoreVectorReaderRow : public ParquetReader
         scorePeakEnd = dataMap.value(SCORE_PEAK_END).toInt();
         frameIndexMaxScore = dataMap.value(FRAME_INDEX_MAX_SCORE).toInt();
         charge = dataMap.value(CHARGE).toInt();
+        isDecoy = dataMap.value(IS_DECOY).toBool();
 
         ERR_RETURN
     }

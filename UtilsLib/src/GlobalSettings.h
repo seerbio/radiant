@@ -40,6 +40,7 @@ using PeptideStringWithMods = QString;
 using DiffPPM = double;
 using ProteinId = int;
 using ProteinSequence = QString;
+using ReScore = double;
 using ResidueIndex = int;
 using ScanNumber = int;
 using ScanNumberIndex = int;

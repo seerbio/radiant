@@ -92,26 +92,26 @@ namespace{
                 break;
             }
 
-            const QVector<double> &mzFound = row.mzFound;
-            const QVector<double> &mzSearched = row.mzSearched;
-
-            e = ErrorUtils::isEqual(mzFound.size(), mzSearched.size()); ree;
-
-            const auto scanNumberDouble = static_cast<double>(row.scanNumber);
-
-            for (int i = 0; i < mzFound.size(); i++) {
-
-                const double mzSrch = mzSearched.at(i);
-                const double mzFnd = mzFound.at(i);
-
-                e = ErrorUtils::isFalse(MathUtils::tZero(mzSrch)); ree;
-
-                const double ppm = 1e6 * ((mzFnd - mzSrch) / mzSrch);
-
-                scanNumbers.push_back(scanNumberDouble);
-                mzFounds.push_back(mzFnd);
-                ppms.push_back(ppm);
-            }
+//            const QVector<double> &mzFound = row.mzFound;
+//            const QVector<double> &mzSearched = row.mzSearched;
+//
+//            e = ErrorUtils::isEqual(mzFound.size(), mzSearched.size()); ree;
+//
+//            const auto scanNumberDouble = static_cast<double>(row.scanNumber);
+//
+//            for (int i = 0; i < mzFound.size(); i++) {
+//
+//                const double mzSrch = mzSearched.at(i);
+//                const double mzFnd = mzFound.at(i);
+//
+//                e = ErrorUtils::isFalse(MathUtils::tZero(mzSrch)); ree;
+//
+//                const double ppm = 1e6 * ((mzFnd - mzSrch) / mzSrch);
+//
+//                scanNumbers.push_back(scanNumberDouble);
+//                mzFounds.push_back(mzFnd);
+//                ppms.push_back(ppm);
+//            }
 
         }
 

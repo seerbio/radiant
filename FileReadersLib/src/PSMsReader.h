@@ -79,11 +79,6 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     double pValFrameFtest = -1.0;
     double frameError = -1.0;
 
-    QVector<double> mzFound;
-    QVector<double> mzSearched;
-    QVector<double> intensityFound;
-    QVector<double> intensitySearched;
-
     QMap<QString, QVariant> map() override {
 
         using namespace PSMsReaderRowNamespace;
