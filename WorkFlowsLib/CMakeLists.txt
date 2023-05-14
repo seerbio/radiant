@@ -20,14 +20,16 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/ConvertMzMLToParquetWorkFlow.cpp
+        src/FastaFileToPeptidesListWorkFlow.cpp
         src/LibraryBuilderWorkFlow.cpp
-        src/MsFraggerTronWorkFlow.cpp
         src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
+        src/ConvertMzMLToParquetWorkFlow.h
+        src/FastaFileToPeptidesListWorkFlow.h
         src/LibraryBuilderWorkFlow.h
-        src/MsFraggerTronWorkFlow.h
         src/PythiaDIAWorkflow.h
     )
 
@@ -46,10 +48,14 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${DLIB_DIRECTORY}
+        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
+        "${ARROW_DIRECTORY}"
+        ${EIGEN_DIRECTORY}
 )
 
 
 FIND_PACKAGE(Qt5 REQUIRED
+        Concurrent
         Core
         Test
         )
@@ -58,11 +64,16 @@ GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+        Qt5::Concurrent
         Qt5::Core
         Qt5::Test
         AlgorithmsLib
+        EigenLib
         FileReadersLib
         UtilsLib
+        ${ARROW_SHARED_LIBRARY}
+        ${ARROW_STATIC_LIBRARY_DEPS}
+        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

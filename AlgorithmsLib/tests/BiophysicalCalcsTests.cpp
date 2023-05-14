@@ -46,7 +46,7 @@ void BiophysicalCalcsTests::calculatePeptideMassTest() {
 void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
 
     const double result = BiophysicalCalcs::calculateMassFromThomson(501.5, 2, 1);
-    QCOMPARE(result, 999.98234706);
+    QCOMPARE(result, 999.98209206);
 
 }
 

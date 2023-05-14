@@ -84,15 +84,17 @@ class Q_DECL_HIDDEN MsReaderMzML::PrivateData  {
 
 public:
 
+    PrivateData(
+            QMap<ScanNumber, MsScanInfo> *msScanInfo,
+            QMap<ScanNumber, ScanPoints> *scanPoints
+                );
 
-    PrivateData(QMap<ScanNumber, MsScanInfo> *msScanInfo,
-                QVector<ScanIon> *scanIons);
     ~PrivateData();
 
     Err openFile(const QString& filename);
     Err closeFile();
 
-    bool isScanNumberValid(int scanNumber) const;
+    [[nodiscard]] bool isScanNumberValid(int scanNumber) const;
 
 
 private:
@@ -101,27 +103,23 @@ private:
     Err parseScan(QXmlStreamReader &reader);
 
 
-private:
-
+public:
     QScopedPointer<QFile> m_file;
     QMap<ScanNumber, MsScanInfo> *m_msScanInfo;
-    QVector<ScanIon> *m_scanIons;
-    QVector<QPointF> m_basePeak;
-    QVector<QPointF> m_tic;
+    QMap<ScanNumber, ScanPoints> *m_scanPoints;
 
 };
 
-MsReaderMzML::PrivateData::PrivateData(QMap<ScanNumber, MsScanInfo> *msScanInfo,
-                                       QVector<ScanIon> *scanIons)
+MsReaderMzML::PrivateData::PrivateData(
+        QMap<ScanNumber, MsScanInfo> *msScanInfo,
+        QMap<ScanNumber, ScanPoints> *scanPoints
+        )
 : m_msScanInfo(msScanInfo)
-, m_scanIons(scanIons){
-}
-
+, m_scanPoints(scanPoints) {}
 
 MsReaderMzML::PrivateData::~PrivateData() {
     closeFile();
 }
-
 
 Err MsReaderMzML::PrivateData::openFile(const QString &filename) {
 
@@ -137,25 +135,20 @@ Err MsReaderMzML::PrivateData::openFile(const QString &filename) {
     return parse(xmlReader);
 }
 
-
 Err MsReaderMzML::PrivateData::closeFile() {
 
     ERR_INIT
 
     m_msScanInfo->clear();
-    m_scanIons->clear();
-    m_basePeak.clear();
-    m_tic.clear();
+    m_scanPoints->clear();
     m_file.reset();
 
     ERR_RETURN
 }
 
-
 bool MsReaderMzML::PrivateData::isScanNumberValid(int scanNumber) const {
     return scanNumber >= 1 && scanNumber <= m_msScanInfo->size();
 }
-
 
 namespace {
 
@@ -189,7 +182,6 @@ Err MsReaderMzML::PrivateData::parse(QXmlStreamReader &reader) {
 
     ERR_RETURN
 }
-
 
 Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
 
@@ -230,7 +222,6 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
     ERR_RETURN
 }
 
-
 namespace {
 
     // pwiz
@@ -251,20 +242,17 @@ namespace {
                ((n & 0xff00000000000000ll) >> 56);
     }
 
-
     inline float endianize(float n) {
         static_assert(sizeof(unsigned int) == sizeof(float), "Wrong unsigned int/float size");
         unsigned int i = endianize(*reinterpret_cast<unsigned int *>(&n));
         return *reinterpret_cast<float *>(&i);
     }
 
-
     inline double endianize(double n) {
         static_assert(sizeof(unsigned long long) == sizeof(double), "Wrong unsigned long long/double size");
         unsigned long long l = endianize(*reinterpret_cast<unsigned long long *>(&n));
         return *reinterpret_cast<double *>(&l);
     }
-
 
     bool decompress(const QByteArray &input, QByteArray *output) {
 
@@ -342,7 +330,6 @@ namespace {
         return ret == Z_STREAM_END;
     }
 
-
     Err getScanNumber(const QXmlStreamReader &reader, int *scanNumber) {
 
         ERR_INIT
@@ -361,16 +348,13 @@ namespace {
         ERR_RETURN
     }
 
-
     bool stringMatch(const QString &s1, const QString &s2) {
         return (0 == QString::compare(s1, s2, Qt::CaseInsensitive) );
     }
 
-
     bool stringMatch(const QStringRef &s1, const QString &s2) {
         return (0 == QStringRef::compare(s1, s2, Qt::CaseInsensitive) );
     }
-
 
     void filterZeroIntensityQPoints(ScanPoints *vec) {
 
@@ -381,7 +365,6 @@ namespace {
         const auto terminator = std::remove_if(vec->begin(), vec->end(), terminatorLogic);
         vec->erase(terminator, vec->end());
     }
-
 
     Err processBinaryData(QXmlStreamReader &reader, QVector<ScanPoint> *scanPoints) {
 
@@ -478,7 +461,6 @@ namespace {
         ERR_RETURN
     }
 
-
     Err processScanData(QXmlStreamReader &reader, MsScanInfo *msScanInfo) {
 
         ERR_INIT
@@ -498,22 +480,7 @@ namespace {
                     msScanInfo->scanTime = attributesCurrentTag.value(VALUE).toDouble(&ok);
                     e = ErrorUtils::isTrue(ok); ree;
 
-//                    const QString unitAccession = attributesCurrentTag.value(UNIT_ACCESSION).toString();
-//
-//                    if (stringMatch(unitAccession, MILLISECOND)) {
-//                        scan->timeUnits = TIME_UNITS::MILLISECONDS;
-//                    }
-//                    else if (stringMatch(unitAccession, SECOND)) {
-//                        scan->timeUnits = TIME_UNITS::SECONDS;
-//                    }
-//                    else {
-//                        scan->timeUnits = TIME_UNITS::MINUTES;
-//                    }
-
                 }
-//                if (stringMatch(currentAccession, FILTER_STRING)) {
-//                    scan->filterString = attributesCurrentTag.value(VALUE).toString();
-//                }
 
                 continue;
             }
@@ -527,7 +494,6 @@ namespace {
 
         ERR_RETURN
     }
-
 
     Err processPrecursor(QXmlStreamReader &reader, MsScanInfo *msScanInfo) {
 
@@ -550,26 +516,19 @@ namespace {
 
                 if (stringMatch(currentAccession, PRECURSOR_LOWER_WINDOW_OFFSET)) {
                     bool ok = true;
-                    msScanInfo->precursorWindowOffsetLower = attributesCurrentTag.value(VALUE).toDouble(&ok);
+                    msScanInfo->isoWindowLower = attributesCurrentTag.value(VALUE).toDouble(&ok);
                     e = ErrorUtils::isTrue(ok); ree;
                 }
 
                 if (stringMatch(currentAccession, PRECURSOR_UPPER_WINDOW_OFFSET)) {
                     bool ok = true;
-                    msScanInfo->precursorWindowOffsetUpper = attributesCurrentTag.value(VALUE).toDouble(&ok);
+                    msScanInfo->isoWindowUpper = attributesCurrentTag.value(VALUE).toDouble(&ok);
                     e = ErrorUtils::isTrue(ok); ree;
                 }
 
                 if (stringMatch(currentAccession, COLLISION_ENERGY)) {
                     bool ok = true;
                     msScanInfo->collisionEnergy = static_cast<int>(attributesCurrentTag.value(VALUE).toDouble(&ok));
-                    e = ErrorUtils::isTrue(ok); ree;
-                }
-
-                if (stringMatch(currentAccession, CHARGE_STATE)) {
-                    bool ok = true;
-                    msScanInfo->precursorTargetCharge
-                        = static_cast<int>(attributesCurrentTag.value(VALUE).toInt(&ok));
                     e = ErrorUtils::isTrue(ok); ree;
                 }
 
@@ -613,20 +572,20 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
                 e = ErrorUtils::isTrue(ok); ree;
             }
 
-            if (stringMatch(currentAccession, FAIMS_VOLTAGE)) {
-                msScanInfo.faimsVoltage = static_cast<int>(currentValue.toDouble(&ok));
-                e = ErrorUtils::isTrue(ok); ree;
-            }
+//            if (stringMatch(currentAccession, FAIMS_VOLTAGE)) {
+//                msScanInfo.faimsVoltage = static_cast<int>(currentValue.toDouble(&ok));
+//                e = ErrorUtils::isTrue(ok); ree;
+//            }
 
-            if (stringMatch(currentAccession, TIC)) {
-                msScanInfo.TIC = currentValue.toDouble(&ok);
-                e = ErrorUtils::isTrue(ok); ree;
-            }
-
-            if (stringMatch(currentAccession, BASEPEAK_INTENSITY)) {
-                msScanInfo.basePeakIntensity = currentValue.toDouble(&ok);
-                e = ErrorUtils::isTrue(ok); ree;
-            }
+//            if (stringMatch(currentAccession, TIC)) {
+//                msScanInfo.TIC = currentValue.toDouble(&ok);
+//                e = ErrorUtils::isTrue(ok); ree;
+//            }
+//
+//            if (stringMatch(currentAccession, BASEPEAK_INTENSITY)) {
+//                msScanInfo.basePeakIntensity = currentValue.toDouble(&ok);
+//                e = ErrorUtils::isTrue(ok); ree;
+//            }
 
             if (stringMatch(currentReaderName, SCAN)) {
                 e = processScanData(reader, &msScanInfo);  ree;
@@ -641,9 +600,7 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
                 e = processBinaryData(reader, &scanPoints); ree;
 
                 for (const ScanPoint &sp : scanPoints) {
-
-                    ScanIon scanIon(msScanInfo.scanNumber, sp.x(), sp.y());
-                    m_scanIons->push_back(scanIon);
+                    (*m_scanPoints)[msScanInfo.scanNumber].push_back({sp.x(), sp.y()});
                 }
             }
 
@@ -667,37 +624,38 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
     ERR_RETURN
 }
 
-
 MsReaderMzML::MsReaderMzML() {
-    m_d.reset(new PrivateData(&this->m_msScanInfo, &this->m_scanIons));
+    m_d.reset(new PrivateData(
+            &this->m_msScanInfo,
+            &this->m_scanPoints)
+            );
 }
-
 
 MsReaderMzML::~MsReaderMzML() {
 }
 
-
-Err MsReaderMzML::openFile(
-        const QString &filePath,
-        bool useCache
-        ) {
+Err MsReaderMzML::openFile(const QString &filePath) {
 
     ERR_INIT
 
-    const QString cacheFileURI = filePath + S_GLOBAL_SETTINGS.DOT_CACHE;
-
-    if (cacheExists(cacheFileURI) && useCache) {
-        qDebug() << "Reading from" << cacheFileURI;
-        return readFromCache(cacheFileURI);
-    }
+    e = ErrorUtils::isNotEmpty(filePath); ree;
+    m_filePath = filePath;
 
     e = m_d->openFile(filePath); ree;
-    e = createMsReaderCache(cacheFileURI); ree;
 
+    e = printFileInfo(); ree;
     ERR_RETURN
 }
 
-
 Err MsReaderMzML::closeFile() {
     return m_d->closeFile();
+}
+
+MsReaderBase MsReaderMzML::msReaderBase() {
+
+    MsReaderBase msReaderBase;
+    msReaderBase.setScanPoints(*m_d->m_scanPoints);
+    msReaderBase.setMsScanInfo(*m_d->m_msScanInfo);
+
+    return msReaderBase;
 }

@@ -18,25 +18,45 @@ using namespace Error;
 
 struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
 
+    //Hill building
     double tolerancePPM = -1.0;
     int skipScanCount = -1;
     int minScanCount = -1;
+    bool useMeanMz = false;
 
-//    int filterLength = 7;
-//    int smoothCount = 3;
-//    double sigma = 1.0;
-//    double signalToNoiseRatio = 3;
+    //Hill Refinement Integration
+    int filterLength = 5;
+    int smoothCount = 1;
+    double sigma = 1.0;
+    double signalToNoiseRatio = 2;
+
+    //Clustering
+    int scanBuffer = 1;
+    double mzBuffer = 3.0;
 
 
 public:
+
     bool isValid() const {
-        return tolerancePPM > 0.0
+        const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount > 0;
-//            && filterLength > 4
-//            && smoothCount >0
-//            && sigma > 0
-//            && signalToNoiseRatio > 0;
+            && minScanCount >= 0
+            && filterLength > 2
+            && smoothCount >0
+            && sigma > 0
+            && signalToNoiseRatio > 0;
+
+        if (!isValid) {
+           qDebug() << "tolerancePPM" << tolerancePPM;
+           qDebug() << "skipScanCount" << skipScanCount ;
+           qDebug() << "minScanCount" << minScanCount;
+           qDebug() << "filterLentght" << filterLength;
+           qDebug() << "smoothCount" << smoothCount;
+           qDebug() << "Sigma" << sigma;
+           qDebug() << "signalToNoiseRatio" << signalToNoiseRatio ;
+        }
+
+        return isValid;
     }
 
 };
@@ -61,12 +81,21 @@ public:
 
     void setRunParallel(bool runParallel);
 
-    static void writeHillsToBatmassMzMrtFile(
-            const QMap<ScanNumber, double> &retentionTimeByScanNumber,
+    /*
+     * destinationFilePath must end in .mzrt.csv extension
+     */
+    static Err writeHillsToBatmassMzMrtFile(
+            const QMap<ScanNumber, double> &scanNumberVsScanTime,
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath
     );
 
+    static Err featureFinderHillPoints(
+            const QVector<FeatureFinderHill> &featureFinderHills,
+            QVector<FeatureFinderHillPoint> *featureFinderHillPoints
+    );
+
+    Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
 
 private:
 

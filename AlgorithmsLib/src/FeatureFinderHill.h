@@ -6,6 +6,8 @@
 #define PYTHIACPP_FEATUREFINDERHILL_H
 
 #include "AlgorithmsLib_Exports.h"
+#include "BiophysicalCalcs.h"
+#include "CSVReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 
@@ -15,6 +17,45 @@
 using namespace Error;
 
 
+struct ALGORITHMSLIB_EXPORTS FeatureFinderMS1Feature {
+
+    double mzFound = -1.0;
+    double cosineSim = -1.0;
+    Charge charge = -1;
+    int monoIsotopeOffset = 0;
+    QPair<ScanNumber, ScanNumber> scanNumberMinMax;
+    ScanPoints foundIsotopes;
+
+    [[nodiscard]] double featureMass() const {
+        return BiophysicalCalcs::calculateMassFromThomson(
+                mzFound,
+                charge,
+                monoIsotopeOffset
+                );
+    }
+
+};
+
+struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPoint {
+    FrameIndex frameIndex = -1;
+    double mz = -1.0;
+    double intensity = -1.0;
+
+    FeatureFinderHillPoint() = default;
+    ~FeatureFinderHillPoint() = default;
+
+    FeatureFinderHillPoint(
+            FrameIndex frameIndex,
+            double mz,
+            double intensity
+            )
+            : frameIndex(frameIndex)
+            , mz(mz)
+            , intensity(intensity)
+            {}
+
+};
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHill {
 
 public:
@@ -23,6 +64,7 @@ public:
     ~FeatureFinderHill() = default;
 
     void addPoint(
+        ScanNumberIndex scanNumberIndex,
         ScanNumber scanNumber,
         double mzVal,
         double intensityVal
@@ -41,15 +83,19 @@ public:
 
     [[nodiscard]] QPair<double, double> mzMinMax() const;
 
-    [[nodiscard]] double maxIntensityScanNumber() const;
+    [[nodiscard]] int maxIntensityScanNumber() const;
 
-    [[nodiscard]] double maxIntensityValue() const;
+    [[nodiscard]] int maxIntensityScanNumberIndex() const;
+
+    [[nodiscard]] double intensityValueMax() const;
 
     [[nodiscard]] int scanCount() const;
 
-    [[nodiscard]] QPair<ScanNumber , ScanNumber> minMaxScanNumber() const;
+    [[nodiscard]] QPair<ScanNumber , ScanNumber> scanNumberMinMax() const;
 
     [[nodiscard]] QVector<int> scanNumbers() const;
+
+    [[nodiscard]] QVector<int> scanNumberIndexes() const;
 
     [[nodiscard]] QVector<double> mzVals() const;
 
@@ -59,7 +105,8 @@ public:
 private:
 
     QVector<double> m_mzVals;
-    QVector<int> m_scanNumbers;
+    QVector<ScanNumberIndex> m_scanNumberIndexes;
+    QVector<ScanNumber> m_scanNumbers;
     QVector<double> m_intensities;
 
 };

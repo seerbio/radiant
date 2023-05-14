@@ -20,22 +20,40 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/CSVReader.cpp
+        src/DIAMzTargetsReader.cpp
+        src/ExtractedScansReader.cpp
         src/FastaReader.cpp
+        src/FeatureFinderHillReader.cpp
+        src/FragLibReader.cpp
         src/JsonParametersReader.cpp
-        src/MsFraggerTronResultsReader.cpp
+        src/MsFrameScoreVectorReader.cpp
+        src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
+        src/MsReaderPointerFactory.cpp
+        src/ParquetReader.cpp
+        src/PSMsReader.cpp
         src/PythiaParameterReader.cpp
-)
+        )
 
 SET(HEADER_FILES
+        src/CSVReader.h
+        src/DIAMzTargetsReader.h
+        src/ExtractedScansReader.h
         src/FastaReader.h
+        src/FeatureFinderHillReader.h
+        src/FragLibReader.h
         src/JsonParametersReader.h
-        src/MsFraggerTronResultsReader.h
+        src/MsFrameScoreVectorReader.h
+        src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
+        src/MsReaderPointerFactory.h
+        src/ParquetReader.h
+        src/PSMsReader.h
         src/PythiaParameterReader.h
-)
+        )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
@@ -51,11 +69,12 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${ZLIB_DIRECTORY}"
         "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
+        "${ARROW_DIRECTORY}"
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
+        Concurrent
         Core
         Test
         )
@@ -65,11 +84,14 @@ GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+        Qt5::Concurrent
         Qt5::Core
         Qt5::Test
         ChemLib
         UtilsLib
-        ${ZLIB_STATIC_LIBRARY}
+        ${ARROW_SHARED_LIBRARY}
+        ${ARROW_STATIC_LIBRARY_DEPS}
+        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

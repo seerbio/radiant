@@ -6,6 +6,7 @@
 #define EIGENSPARSEUTILS_H
 
 #include "EigenLib_Exports.h"
+#include "GlobalSettings.h"
 #include "MathUtils.h"
 
 #include <QMap>
@@ -521,6 +522,32 @@ public:
         return resultVec;
     }
 
+//    template<typename T>
+//    static QVector<QPair<Index, T>> findSparseVectorApexes(const Eigen::SparseVector<T> &vec) {
+//
+//        QVector<QPair<Index, T>> apexPoints;
+//
+//        const int vecSize = static_cast<int>(vec.size());
+//
+//        for (typename Eigen::SparseVector<T>::InnerIterator it(vec); it; ++it) {
+//
+//            const int index = it.index();
+//            const T val = it.value();
+//
+//            if(index < 1 || index >= vecSize - 1){
+//                continue;
+//            }
+//
+//            const T leftPointVal = vec.coeff(index - 1);
+//            const T rightPointVal = vec.coeff(index + 1);
+//
+//            if(val > leftPointVal && val > rightPointVal){
+//                apexPoints.push_back({static_cast<int>(index), val});
+//            }
+//        }
+//
+//        return apexPoints;
+//    }
 
     /*!
     * \brief Finds all apexes in a sparse vector.
@@ -529,8 +556,10 @@ public:
      *  the apex.
     */
     template <typename T>
-    static QMap<int, T> apexes(const Eigen::SparseVector<T> &vec,
-                               int precision = 1e4){
+    static QMap<int, T> apexes(
+            const Eigen::SparseVector<T> &vec,
+            int precision = 1e4
+                    ){
         QMap<int, T> apexIndicies;
 
         const int vecSize = static_cast<int>(vec.size());
@@ -554,12 +583,12 @@ public:
     }
 
 
-    template <typename T>
-    static QMap<int, T> apexes(const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
-                               int precision = 1e4){
-        Eigen::SparseVector<double> convertTemplateVec = vec.template cast<double>();
-        return apexes(convertTemplateVec, precision);
-    }
+//    template <typename T>
+//    static QMap<int, T> apexes(const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
+//                               int precision = 1e4){
+//        Eigen::SparseVector<double> convertTemplateVec = vec.template cast<double>();
+//        return apexes(convertTemplateVec, precision);
+//    }
 
 
     // helper method apexes(const Eigen::SparseMatrix<T> &mat)
@@ -645,18 +674,21 @@ public:
 
 
     template <typename T>
-    static QVector<SparseMatrixPoint> apexes(const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat,
-                                             int precision = 1e4){
+    static QVector<SparseMatrixPoint> apexes(
+            const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat,
+            int precision = 1e4
+                    ){
         const Eigen::SparseMatrix<T>  matConverted = mat.template cast<T>();
         return apexes(matConverted, precision);
     }
 
 
     template <typename T, typename T2>
-    static Eigen::SparseMatrix<T, Eigen::RowMajor> buildCombFilter(const QVector<T> &teethValues,
-                                                                   T tolerance,
-                                                                   T maxValue,
-                                                                   T2 precision) {
+    static Eigen::SparseMatrix<T, Eigen::RowMajor> buildCombFilter(
+            const QVector<T> &teethValues,
+            T tolerance,
+            T maxValue,
+            T2 precision) {
 
         const int hashedTolerance = MathUtils::hashDecimal(tolerance, precision);
         const int hashedMaxValue = MathUtils::hashDecimal(maxValue, precision);
@@ -684,10 +716,12 @@ public:
 
 
     template <typename T1, typename  T2, typename T3>
-    static Eigen::SparseVector<T2> vectorize(const QVector<T1> x,
-                                             const QVector<T2> y,
-                                             T1 maxXVal,
-                                             T3 precision) {
+    static Eigen::SparseVector<T2> vectorize(
+            const QVector<T1> x,
+            const QVector<T2> y,
+            T1 maxXVal,
+            T3 precision
+            ) {
 
         if (x.size() != y.size()) {
             return {};
@@ -743,6 +777,23 @@ public:
 
         return vec;
     }
+
+    static Eigen::SparseMatrix<double, Eigen::RowMajor> loadFrameToSparseMatrixRowMajor(
+            const QMap<int, QVector<QPointF>> &frame,
+            int precision,
+            double maxRowValue
+            );
+
+    static Eigen::SparseMatrix<double, Eigen::ColMajor> loadFrameToSparseMatrixColMajor(
+            const QMap<int, QVector<QPointF>> &frame,
+            int precision,
+            double maxRowValue
+    );
+
+    static QMap<int, QVector<QPointF>> loadSparseMatrixToFrame(
+            const Eigen::SparseMatrix<double> &mat,
+            int precision
+            );
 
 };
 

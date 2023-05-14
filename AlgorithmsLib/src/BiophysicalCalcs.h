@@ -22,10 +22,40 @@ public:
             const QHash<ResidueIndex, ModificationMass> &mods = {}
     );
 
+    static QVector<QPair<PeptideString, double>> calculatePeptideMasses(
+            const QVector<QPair<PeptideString,QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
+            const AminoAcids &aminoAcids
+    );
+
     static double calculateMassFromThomson(
             double mz,
             int charge,
             int monoOffset
+            );
+
+    static double calculateThomsonFromMass(
+            double mass,
+            int charge
+            );
+
+    static QVector<double> buildTandemFragmentMasses(
+            const QString &seq,
+            int charge,
+            double startMass,
+            int maxLength,
+            const AminoAcids &aa
+            );
+
+    static double calculateThomson(
+            const QString &sequence,
+            const AminoAcids &aminoAcids,
+            int charge
+            );
+
+    static int calculateChargeFromSequence(
+            const QString &peptideSequence,
+            const AminoAcids &aminoAcids,
+            double mz
             );
 };
 

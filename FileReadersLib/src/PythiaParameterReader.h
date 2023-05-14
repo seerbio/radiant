@@ -118,26 +118,61 @@ struct PythiaParameters{
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
 
+    double pValThreshold = -1.0;
+
+    bool replaceLeucinesWithX = true;
     bool addDecoys = true; //TODO change this to a number for rounds of decoys.
+
+    //TODO hook these up
+    double featureFinderTolerancePPM = 12;
+    int skipScanCount = 2;
+    int minScanCount = 3;
+    bool useMeanMz = true;
+    int filterLength = -1;
+    int smoothCount = -1;
+    double sigma = -1.0;
+    double signalToNoiseRatio = -1.0;
+
+    //TODO hook these up
+    int topNMs2Ions = -1;
+    int minFoundMzPeaks = -1;
 
     [[nodiscard]] bool isValid() const {
 
+        if (chargeStateMin > chargeStateMax) {
+            print();
+            return false;
+        }
         if (chargeStateMin < 1) {
+            print();
             return false;
         }
         if (chargeStateMax < 1) {
+            print();
             return false;
         }
         if (maxTandemPointCount < 0) {
+            print();
             return false;
         }
         if (returnPSMTopN < 0) {
+            print();
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
+            print();
             return false;
         }
         if (precursorExtractionWindowThomsons < 0) {
+            print();
+            return false;
+        }
+        if (topNMs2Ions < 8) {
+            print();
+            return false;
+        }
+        if (minFoundMzPeaks < 3) {
+            print();
             return false;
         }
 
@@ -167,6 +202,18 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
         qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
+        qDebug() << "topNMs2Ions" << topNMs2Ions;
+        qDebug() << "FeatureFinderTolPPM" << featureFinderTolerancePPM;
+        qDebug() << "Skip scan count" << skipScanCount;
+        qDebug() << "Min scan Count" << minScanCount;
+        qDebug() << "UseMeanMz" << useMeanMz; //TODO make this proper like the rest
+        qDebug() << "FilterLength" << filterLength;
+        qDebug() << "Smooth count" << smoothCount;
+        qDebug() << "sigma" << sigma;
+        qDebug() << "S/N" << signalToNoiseRatio;
+        qDebug() << "TopnMs2Ions" << topNMs2Ions;
+        qDebug() << "minFoundMzPeaks" << minFoundMzPeaks;
+
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {
             mod.print();
@@ -187,8 +234,12 @@ public:
 
     Err loadPythiaParameters(PythiaParameters *pythiaParameters);
 
-    static Err applyFixedModificationsToAminoAcids(const PythiaParameters &reader,
-                                                   AminoAcids *aminoAcids);
+    static Err applyFixedModificationsToAminoAcids(
+            const PythiaParameters &reader,
+            AminoAcids *aminoAcids
+            );
+
+    static PythiaParameters genericPythiaParametersForTests();
 
 private:
 

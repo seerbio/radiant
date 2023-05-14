@@ -4,262 +4,362 @@
 
 #include "PythiaDIAWorkflow.h"
 
+#include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "MsFraggerTronResultsReader.h"
-#include "MsFraggerTronWorkFlow.h"
-#include "MsReaderBase.h"
-#include "ParallelUtils.h"
+#include "MsFrameScoretron.h"
+#include "MsFrameScoretronProcessormatic.h"
+#include "MsReaderParquet.h"
+#include "PeakIntegratomatic.h"
+#include "PSMsReader.h"
+
+#include <QtConcurrent/QtConcurrent>
+
+struct ScoreVectorsOutput {
+    QString scoreVecFilePath;
+    QString extractsFilePath;
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    QPair<double, double> mzTargetStartStop = {-1.0, -1.0};
+};
 
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
-        const QString &fragLibUri,
-        const QString &pepLibUri
+        const QString &fragLibUri
         ) {
 
     ERR_INIT
 
+    pythiaParameters.print();
+
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(fragLibUri); ree;
-    e = ErrorUtils::isNotEmpty(pepLibUri); ree;
+    e = ErrorUtils::fileExists(fragLibUri); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
-    m_pepLibUri = pepLibUri;
-
-    ERR_RETURN
-
-}
-
-Err PythiaDIAWorkflow::processFile(const QString &mzmlFilePath) {
-
-    ERR_INIT
-
-    QString firstPassPSMsFilePath;
-    QVector<TandemScanIon> tandemScanIons;
-    e = runFirstPassMsFraggerTronWorkFlow(
-            mzmlFilePath,
-            &firstPassPSMsFilePath,
-            &tandemScanIons
-            ); ree;
-
-    e = initReCalibratomatic(firstPassPSMsFilePath); ree;
-    e = recalibrateTandemScanIons(&tandemScanIons); ree;
-    e = optimizePythiaParameters(); ree;
-
-    const QString outputFilePath
-        = mzmlFilePath + ".recal" + S_GLOBAL_SETTINGS.DOT_PSM + S_GLOBAL_SETTINGS.DOT_CSV;
-
-    e = runSecondPassMsFraggerTronWorkFlow(
-            tandemScanIons,
-            outputFilePath
-            ); ree;
-
-    qDebug() << "final output psm filepath" << outputFilePath;
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::runFirstPassMsFraggerTronWorkFlow(
-        const QString &mzmlFilePath,
-        QString *firstPassPSMsFilePath,
-        QVector<TandemScanIon> *tandemScanIons
-        ) {
-
-    ERR_INIT
-
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(
-            m_pythiaParameters,
-            m_fragLibUri,
-            m_pepLibUri
-    );ree;
-
-    e = msFraggerTronWorkFlow.processFile(
-            mzmlFilePath,
-            firstPassPSMsFilePath,
-            tandemScanIons
-    ); ree;
 
     ERR_RETURN
 }
+
+struct FrameParallelInput {
+    PythiaParameters params;
+    QString msDataFilePath;
+    QString fragLibFilePath;
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    QPair<double, double> mzTargetStartStop;
+};
 
 namespace {
 
-    Err buildRecalibrationData(
-            const QString &firstPassPSMCsvFilePath,
-            QVector<InputSVM> *data
+    Err buildParallelInput(
+            const PythiaParameters &pythiaParameters,
+            const QString &msDataFilePath,
+            const QString &fragLibFilePath,
+            QVector<FrameParallelInput> *frameParallelInputs
     ) {
 
         ERR_INIT
-
-        QVector<RowToWrite> rowsToWrite;
-        e = MsFraggerTronResultsReader::readCsv(
-                firstPassPSMCsvFilePath,
-                &rowsToWrite
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(
+                msDataFilePath,
+                MsParquetReaderNamespace::TARGET_KEY
         ); ree;
 
+        const QVector<MsScanInfo> uniqueScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
 
+        for (const MsScanInfo &si : uniqueScanInfos) {
 
-        int counter = 0;
-        for (const RowToWrite &rtw : rowsToWrite) {
+            FrameParallelInput fpi;
+            fpi.msDataFilePath = msDataFilePath;
+            fpi.params = pythiaParameters;
+            fpi.fragLibFilePath = fragLibFilePath;
+            fpi.uniqueMsInfoScanKey = si.targetScanKey();
+            fpi.mzTargetStartStop
+                    = {si.precursorTargetMz - si.isoWindowLower, si.precursorTargetMz + si.isoWindowUpper};
 
-            counter++;
+            e = ErrorUtils::isBelowThreshold(
+                    fpi.mzTargetStartStop.first,
+                    fpi.mzTargetStartStop.second,
+                    ErrorUtilsParam::ExcludeThreshold
+            ); ree;
 
-            if (rtw.isDecoy) {
-                break;
-            } //TODO think of a better stopping point.
-
-            const QVector<double> &scanIonMZs = rtw.scanIonMZs;
-            const QVector<double> &theoFragIonMZs = rtw.theoFragIonMZs;
-
-            e = ErrorUtils::isEqual(scanIonMZs.size(), theoFragIonMZs.size()); ree;
-
-            for (int i = 0; i < scanIonMZs.size(); i++) {
-
-                const double scanMz = scanIonMZs.at(i);
-                const double theoMz = theoFragIonMZs.at(i);
-                const double ppmDiff = 1e6 * (scanMz - theoMz) / theoMz;
-
-                InputSVM is;
-                is.scanNumber = rtw.scanNumber;
-                is.mzScan = scanMz;
-                is.mzTheo = theoMz;
-                is.ppmDiff = ppmDiff;
-
-                data->push_back(is);
-            }
+            frameParallelInputs->push_back(fpi);
         }
 
         ERR_RETURN
     }
 
+    Err buildRecalibratedMsDataFile(
+            const QString &msDataFilePath,
+            const QString &firstPassResultsFilePath,
+            PythiaParameters *pythiaParameters,
+            QString *outputFilePath
+            ) {
+
+        ERR_INIT
+
+        const int calibrationPoints = 3; //TODO add this to params.
+        MsCalibratomatic msCalibratomatic;
+        e = msCalibratomatic.init(
+                *pythiaParameters,
+                firstPassResultsFilePath,
+                calibrationPoints
+                ); ree;
+
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(msDataFilePath); ree;
+
+        const QMap<ScanNumber, ScanPoints> scanPoints = msReaderParquet.getScanPoints();
+
+        QMap<ScanNumber, ScanPoints> scanPointsRecalibrated;
+        e = msCalibratomatic.recalibratePoints(
+                scanPoints,
+                &scanPointsRecalibrated
+                ); ree;
+
+        msReaderParquet.setScanPoints(scanPointsRecalibrated);
+
+        *outputFilePath = msDataFilePath + ".reCal";
+
+        e = MsReaderParquet::writeMsReaderToParquet(
+                *outputFilePath,
+                QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
+        ); ree;
+
+//        const double ppmMultilplier = 4.0;
+//        const double newPrecisionPPM = msCalibratomatic.newStDev() * ppmMultilplier;
+//        const double oldPrecisionPPM = pythiaParameters->ms2ExtractionWidthPPM;
+//        (*pythiaParameters).ms2ExtractionWidthPPM = newPrecisionPPM;
+//        (*pythiaParameters).featureFinderTolerancePPM = newPrecisionPPM;
+//        qDebug() << "PPM tolerance adjusted from" << oldPrecisionPPM << "->" << newPrecisionPPM;
+
+        ERR_RETURN
+    }
+
 }//namespace
-Err PythiaDIAWorkflow::initReCalibratomatic(const QString &firstPassPSMsFilePath) {
+Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QVector<InputSVM> recalibrationData;
-    e = buildRecalibrationData(
-            firstPassPSMsFilePath,
-            &recalibrationData
-    ); ree;
+    QString msDataFilePathRecalibrated = msDataFilePath + ".reCal"; //drewholio remove this path but keep var
 
-    e = m_reCalibratomatic.initSVM(recalibrationData); ree;
+//    const bool applySmooth2DCalibration = false;
+//    QVector<FrameParallelInput> frameParallelInputs;
+//    e = buildParallelInput(
+//            m_pythiaParameters,
+//            msDataFilePath,
+//            m_fragLibUri,
+//            applySmooth2DCalibration,
+//            &frameParallelInputs
+//    ); ree;
+//    e = ErrorUtils::isNotEmpty(frameParallelInputs); ree;
+//
+//    const QString firstPassResultsFilePath = msDataFilePath + ".firstPass.pythiaDIA";
+//
+//    e = buildPSMResultsForCalibrationFile(
+//            frameParallelInputs,
+//            firstPassResultsFilePath
+//            ); ree;
+//
+//    e = buildRecalibratedMsDataFile(
+//            msDataFilePath,
+//            firstPassResultsFilePath,
+//            &m_pythiaParameters,
+//            &msDataFilePathRecalibrated
+//            ); ree;
+
+    QVector<FrameParallelInput> frameParallelInputsRecal;
+    e = buildParallelInput(
+            m_pythiaParameters,
+            msDataFilePathRecalibrated,
+            m_fragLibUri,
+            &frameParallelInputsRecal
+    ); ree;
+    e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
+
+    QVector<ScoreVectorsOutput> frameScoreVectorOutput;
+    e = buildFrameScoreVectors(
+            frameParallelInputsRecal,
+            &frameScoreVectorOutput
+            ); ree;
+
+    QVector<PSMsReaderRow> psmReaderRowsRecal;
+    e = processFrameScoreVectors(
+            frameScoreVectorOutput,
+            msDataFilePath,
+            m_pythiaParameters,
+            &psmReaderRowsRecal
+            ); ree;
+
+    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    e = ParquetReader::write(
+            psmReaderRowsRecal,
+            resultsFilePath
+            ); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
+        const QVector<FrameParallelInput> &frameParallelInputs,
+        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
+        ) {
+
+    ERR_INIT
+
+    const double calibrationFraction = 0.5; //TODO fix this. Find a better way.
+    const int calibrationResize = static_cast<int>(std::round(frameParallelInputs.size() * calibrationFraction));
+
+    QVector<FrameParallelInput> frameParallelInputsCalibration = frameParallelInputs;
+    frameParallelInputsCalibration.resize(calibrationResize);
+
+    e = buildFrameScoreVectors(
+            frameParallelInputsCalibration,
+            frameScoreVectorsAndExtractFilePaths
+            ); ree;
+
+//    qDebug() << "Rows to write:" << psmReaderRows.size(); //drewholio
+//    e = ParquetReader::write(
+//            psmReaderRows,
+//            firstPassResultsFilePath
+//            ); ree;
 
     ERR_RETURN
 }
 
 namespace {
 
-    QPair<Err, QVector<TandemScanIon>> reCalParallelLogic(
-            const QVector<TandemScanIon> &tandemScanIons,
-            ReCalibratomatic reCalibratomatic
-            ) {
+    QPair<Err, ScoreVectorsOutput> parallelBuildFrameScoreVectorLogic(const FrameParallelInput &fpi) {
 
-        ERR_INIT
+       ERR_INIT
 
-        QVector<TandemScanIon> reCalTandemScanIons;
-        for (const TandemScanIon &tsi : tandemScanIons) {
+       MsFrameScoretron msFrameScoretron;
+       e = msFrameScoretron.init(
+               fpi.params,
+               fpi.msDataFilePath,
+               fpi.fragLibFilePath,
+               fpi.uniqueMsInfoScanKey,
+               fpi.mzTargetStartStop
+               ); rree;
 
-            TandemScanIon reCalTsi = tsi;
+       QString frameScoreVectorsFilePath;
+       e = msFrameScoretron.buildFrameScoreVectors(&frameScoreVectorsFilePath); rree;
 
+       QString frameExtractedPointsFilePath;
+       e = msFrameScoretron.buildAllExtractedTheoriticalPointsFromTargetKeyFrame(&frameExtractedPointsFilePath); rree;
 
-            e = reCalibratomatic.recalibrateMz(
-                    tsi.scanNumber,
-                    tsi.mz,
-                    &reCalTsi.mz
-            );
-            if (e != eNoError) {
-                return {e, {}};
-            }
+       ScoreVectorsOutput output;
+       output.scoreVecFilePath = frameScoreVectorsFilePath;
+       output.extractsFilePath = frameExtractedPointsFilePath;
+       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
+       output.mzTargetStartStop = fpi.mzTargetStartStop;
 
-            reCalTandemScanIons.push_back(reCalTsi);
-        }
+       return {e, output};
+   }
 
-        return {e, reCalTandemScanIons};
-    }
-
-}
-Err PythiaDIAWorkflow::recalibrateTandemScanIons(QVector<TandemScanIon> *tandemScanIons) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(*tandemScanIons); ree;
-    e = ErrorUtils::isTrue(m_reCalibratomatic.isInit()); ree;
-
-    const int trancheBuffer = 0;
-
-    QVector<QVector<TandemScanIon>> tranchedTandemScanIons;
-    e = ParallelUtils::tranchVectorForParallelizationInOrder(
-            *tandemScanIons
-            , m_pythiaParameters.trancheSize,
-            trancheBuffer,
-            &tranchedTandemScanIons
-            ); ree;
-
-    const auto reCalBinder = std::bind(
-            reCalParallelLogic,
-            std::placeholders::_1,
-            m_reCalibratomatic
-    );
-
-    QFuture<QPair<Err, QVector<TandemScanIon>>> futures = QtConcurrent::mapped(
-            tranchedTandemScanIons,
-            reCalBinder
-            );
-    futures.waitForFinished();
-
-    tandemScanIons->clear();
-    for (const QPair<Err, QVector<TandemScanIon>> &future : futures) {
-
-        e = future.first; ree;
-        tandemScanIons->append(future.second);
-    }
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::optimizePythiaParameters() {
-
-    ERR_INIT
-
-    const QPair<double, double> oldVsNewPPMStDev = m_reCalibratomatic.oldVsNewPPMStDev();
-    const double oldPPMStDev = oldVsNewPPMStDev.first;
-    const double newPPMStDev = oldVsNewPPMStDev.second;
-
-    e = ErrorUtils::isTrue(oldPPMStDev > newPPMStDev); ree;
-    e = ErrorUtils::isNotEqual(oldPPMStDev, 0.0); ree;
-
-    const double ppmAdjustmentPostCal = newPPMStDev / oldPPMStDev;
-
-    const double oldMs2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-    m_pythiaParameters.ms2ExtractionWidthPPM *= ppmAdjustmentPostCal;
-    m_pythiaParameters.returnPSMTopN = 20; //TODO correct this.
-
-    qDebug() << "PPM Extraction value adjusted from:" << oldMs2ExtractionWidthPPM
-                << "to" << m_pythiaParameters.ms2ExtractionWidthPPM;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::runSecondPassMsFraggerTronWorkFlow(
-        const QVector<TandemScanIon> &tandemScanIons,
-        const QString &psmOutputFilePath
+}//namespace
+Err PythiaDIAWorkflow::buildFrameScoreVectors(
+        const QVector<FrameParallelInput> &frameParallelInputs,
+        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
 
-    MsFraggerTronWorkFlow msFraggerTronWorkFlow;
-    e = msFraggerTronWorkFlow.init(
-            m_pythiaParameters,
-            m_fragLibUri,
-            m_pepLibUri
-    );ree;
+#define PARALLEL_RUN_SCORE_VEC
+#ifdef PARALLEL_RUN_SCORE_VEC
+    QFuture<QPair<Err, ScoreVectorsOutput>> futures = QtConcurrent::mapped(
+            frameParallelInputs, //.mid(20,8),
+            parallelBuildFrameScoreVectorLogic
+            );
+    futures.waitForFinished();
 
-    e = msFraggerTronWorkFlow.processScanIons(
-            tandemScanIons,
-            psmOutputFilePath
-            ); ree;
+    for (const QPair<Err, ScoreVectorsOutput> &result : futures) {
+        e = result.first; ree;
+        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
+    }
+#else
+    for (const FrameParallelInput &fpi : frameParallelInputs) {
+
+        if (fpi.uniqueMsInfoScanKey != "645043") {
+            continue;
+        }
+
+        const QPair<Err, ScoreVectorsOutput> result = parallelBuildFrameScoreVectorLogic(fpi); ree;
+        e = result.first; ree;
+        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
+    }
+#endif
+
+    ERR_RETURN
+}
+
+
+namespace {
+
+    QPair<Err, QVector<PSMsReaderRow>> processScoreVectorsParallelLogic(
+            const ScoreVectorsOutput &scoreVectorsOutput,
+            const QString &msDataFilePath,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        ERR_INIT
+
+        MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
+        e = msFrameScoretronProcessormatic.init(
+                scoreVectorsOutput.scoreVecFilePath,
+                scoreVectorsOutput.extractsFilePath,
+                pythiaParameters,
+                msDataFilePath,
+                scoreVectorsOutput.uniqueMsInfoScanKey,
+                scoreVectorsOutput.mzTargetStartStop
+                ); rree;
+
+        QVector<PSMsReaderRow> psmsReaderRows;
+        e = msFrameScoretronProcessormatic.processFrameScoreVectors(&psmsReaderRows); rree;
+
+        return {e, psmsReaderRows};
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::processFrameScoreVectors(
+        const QVector<ScoreVectorsOutput> &scoreVectorOutputs,
+        const QString &msDataFilePath,
+        const PythiaParameters &pythiaParameters,
+        QVector<PSMsReaderRow> *psmsPreaderRows
+        ) {
+
+    ERR_INIT
+
+#ifdef PARALLEL_RUN_SCORE_VEC
+    const auto scoreVecProcessorLogicBinder = std::bind(
+            processScoreVectorsParallelLogic,
+            std::placeholders::_1,
+            msDataFilePath,
+            pythiaParameters
+    );
+
+    QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
+            scoreVectorOutputs, //.mid(20,8),
+            scoreVecProcessorLogicBinder
+    );
+    futures.waitForFinished();
+
+    for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
+        e = result.first; ree;
+        psmsPreaderRows->append(result.second);
+    }
+#else
+    for (const ScoreVectorsOutput &svo : scoreVectorOutputs) {
+
+        const QPair<Err, QVector<PSMsReaderRow>> result = processScoreVectorsParallelLogic(
+                svo,
+                msDataFilePath,
+                pythiaParameters
+                ); ree;
+
+        e = result.first; ree;
+        psmsPreaderRows->append(result.second);
+    }
+#endif
 
     ERR_RETURN
 }

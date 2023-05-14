@@ -11,10 +11,12 @@ Err MsScansDenoiseTron::init(const PythiaParameters &pythiaParameter) {
 
     ERR_INIT
 
+    //TODO make these all settable
     m_pythiaParameters = pythiaParameter;
     m_ffpParams.tolerancePPM = pythiaParameter.ms2ExtractionWidthPPM;
-    m_ffpParams.skipScanCount = 2;
-    m_ffpParams.minScanCount = 3;
+    m_ffpParams.skipScanCount = pythiaParameter.skipScanCount;
+    m_ffpParams.minScanCount = pythiaParameter.minScanCount;
+    m_ffpParams.useMeanMz = pythiaParameter.useMeanMz;
 
     e = ErrorUtils::isTrue(m_ffpParams.isValid()); ree;
     e = m_featureFinderHillBuilder.init(m_ffpParams);
@@ -49,7 +51,7 @@ Err MsScansDenoiseTron::denoiseScansFrame(
 
         for (int i = 0; i < scanNumbers.size(); i++) {
 
-            const double mz = mzVals.at(i);
+            const double mz = m_ffpParams.useMeanMz ? ffh.mzMean() : mzVals.at(i);
             const double intensity = intensities.at(i);
             const int scanNumber = scanNumbers.at(i);
 

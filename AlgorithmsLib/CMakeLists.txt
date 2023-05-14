@@ -24,12 +24,20 @@ SET(SOURCE_FILES
         src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
-        src/FragLibraryTron.cpp
-        src/FragmentLibraryRTree.cpp
+        src/IsotopicDistributionBuilder.cpp
+        src/Ms1FeatureFinder.cpp
+        src/MsCalibratomatic.cpp
         src/MsScansDenoiseTron.cpp
-        src/PeptidesLibraryTron.cpp
+        src/MsFrame.cpp
+        src/MsFrameScoretron.cpp
+        src/MsFrameScoretronProcessormatic.cpp
+        src/MsUtils.cpp
+        src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
-        src/ReCalibratomatic.cpp
+        src/TandemFragmentPredictotron.cpp
+        src/TandemPredictionUtils.cpp
+        src/TandemSpectraDeconvolvotron.cpp
+        src/TurboXIC.cpp
 )
 
 SET(HEADER_FILES
@@ -37,12 +45,20 @@ SET(HEADER_FILES
         src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
-        src/FragLibraryTron.h
-        src/FragmentLibraryRTree.h
+        src/IsotopicDistributionBuilder.h
+        src/Ms1FeatureFinder.h
+        src/MsCalibratomatic.h
+        src/MsFrame.h
+        src/MsFrameScoretron.h
+        src/MsFrameScoretronProcessormatic.h
         src/MsScansDenoiseTron.h
-        src/PeptidesLibraryTron.h
+        src/MsUtils.h
+        src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
-        src/ReCalibratomatic.h
+        src/TandemFragmentPredictotron.h
+        src/TandemPredictionUtils.h
+        src/TandemSpectraDeconvolvotron.h
+        src/TurboXIC.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -59,7 +75,6 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
-        ${DLIB_DIRECTORY}
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -79,6 +94,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         FileReadersLib
+        MachineLrnLib
         UtilsLib
         )
 

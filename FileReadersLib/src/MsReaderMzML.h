@@ -24,13 +24,11 @@ public:
 
     ~MsReaderMzML();
 
-    Err openFile(
-            const QString &filePath,
-            bool useCache = true
-            ) override;
+    Err openFile(const QString &filePath) override;
 
     Err closeFile() override;
 
+    MsReaderBase msReaderBase();
 
 private:
 

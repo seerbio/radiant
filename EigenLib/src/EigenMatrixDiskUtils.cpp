@@ -163,7 +163,7 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(
     ds << BLOB_MARK;
     ds << matrix;
 
-    QFile file(filePath + CACHE_SUFFIX);
+    QFile file(filePath);
     const bool isFileOpened = file.open(QIODevice::WriteOnly);
     e = ErrorUtils::isTrue(isFileOpened); ree;
 
@@ -182,7 +182,7 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(
 Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::SparseMatrix<double, Eigen::ColMajor> *matrix) {
     ERR_INIT;
 
-    QFile file(filePath + CACHE_SUFFIX);
+    QFile file(filePath);
     file.open(QIODevice::ReadOnly);
 
     QByteArray data = file.readAll();
@@ -237,6 +237,7 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(const Eigen::MatrixXd &matrix, const Q
 
 
 Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::MatrixXd *matrix) {
+
     ERR_INIT;
 
     Eigen::SparseMatrix<double, Eigen::ColMajor> m;

@@ -206,7 +206,7 @@ public:
     }
 
 
-    static Err fileExists(const QString &filePath, Err e = eFileError);
+    static Err fileExists(const QString &filePath);
 
 
     template<typename T> //TODO make unit test

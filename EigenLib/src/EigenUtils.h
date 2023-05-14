@@ -20,6 +20,15 @@ class EIGENLIB_EXPORTS EigenUtils {
 
 public:
 
+    template<typename T>
+    static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
+        mat->array().isNaN().select(replaceVal, mat->array());
+    }
+
+    template<typename T>
+    static void replaceInf(T replaceVal, Eigen::MatrixX<T> *mat){
+        *mat = mat->unaryExpr([replaceVal](double v) { return std::isinf(v) ? replaceVal : v; });
+    }
 
     /*!
     * @brief Returns the index of a vector nearest to a given value
@@ -50,7 +59,6 @@ public:
         return returnVec;
     }
 
-
     /*!
     * @brief Returns the index of a vector nearest to a given value
     */
@@ -66,7 +74,6 @@ public:
 
         return returnIndexNearestToCutoff(vec.template cast<double>(), static_cast<double>(value), topX);
     }
-
 
     /*!
     * @brief Calculates root mean squared error given two Eigen vectors
@@ -192,16 +199,25 @@ public:
 
 
     template <typename T>
-    static void thresholdMatrix(double thresholdValue,  Eigen::MatrixX<T> *mat) {
+    static void thresholdMatrix(T thresholdValue,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
+    }
+
+    template <typename T>
+    static void thresholdMatrix(T thresholdValue, T fillVal,  Eigen::MatrixX<T> *mat) {
+        *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
 
     template <typename T>
-    static void thresholdVector(double thresholdValue,  Eigen::VectorX<T> *vec) {
+    static void thresholdVector(T thresholdValue,  Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
     }
 
+    template <typename T>
+    static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
+        *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
+    }
 
     template <typename EigenMatrix>
     static double cosineSimilarity(const EigenMatrix &v1,  const EigenMatrix &v2) {
@@ -232,6 +248,33 @@ public:
         v2 = (v2.array() < 1e-5).select(1e-5, v2);
 
         return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
+    }
+
+    template<typename T>
+    static Eigen::VectorX<T> rowWiseKLDivergenceOfMatrices(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+    ) {
+
+        const double fillVal = 1.0;
+
+        Eigen::MatrixX<double> mat1Sum = mat1.array().rowwise().sum();
+        thresholdMatrix(0.0, fillVal, &mat1Sum);
+
+        Eigen::MatrixX<double> mat2Sum = mat2.array().rowwise().sum();
+        thresholdMatrix(0.0, fillVal, &mat2Sum);
+
+        mat1 /= mat1Sum;
+        mat2 /= mat2Sum;
+
+        mat1 = (mat1.array() < 1e-5).select(1e-5, mat1);
+        mat2 = (mat2.array() < 1e-5).select(1e-5, mat2);
+
+        const Eigen::MatrixX<double> mat1mat2Quotient = mat1.array() / mat2.array();
+        const Eigen::MatrixX<double> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
+        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
+
+        return mat1.array() * mat1mat2QuotientLog2Sum;
     }
 
 
@@ -352,7 +395,7 @@ public:
     static QMap<int, T> troughs(
             const Eigen::VectorX<T> &vec,
             int precision = 1e4
-    ){
+                    ){
 
         QMap<int, T> troughtIndicies;
 
@@ -395,7 +438,118 @@ public:
     }
 
 
+    template<typename T>
+    static Eigen::VectorX<T> rowWiseCosineSimilarOfMatrices(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+            ) {
+
+        const Eigen::MatrixX<double> matElementWiseProd = mat1.cwiseProduct(mat2);
+        const Eigen::MatrixX<double> matElementWiseProdSum = matElementWiseProd.rowwise().sum();
+
+        const Eigen::MatrixX<double> mat1Norm = mat1.array().rowwise().norm();
+        const Eigen::MatrixX<double> mat2Norm = mat2.array().rowwise().norm();
+
+        Eigen::MatrixX<double> mat1NormMat2NormProd = mat1Norm.array() * mat2Norm.array();
+
+        const double nearZero = 0.000001;
+        EigenUtils::thresholdMatrix(nearZero, nearZero, &mat1NormMat2NormProd);
+
+        const Eigen::MatrixX<double> rowWiseCosineSimilarity = matElementWiseProdSum.array() / mat1NormMat2NormProd.array();
+
+        return rowWiseCosineSimilarity;
+    }
+
+    template <typename T>
+    static Eigen::VectorX<T> rowWiseKLDivergence(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+            ) {
+
+        Eigen::VectorX<T> mat1Sum = mat1.rowwise().sum();
+        Eigen::VectorX<T> mat2Sum = mat2.rowwise().sum();
+
+        const double nearZero = 0.000001;
+        thresholdVector(nearZero, nearZero, &mat1Sum);
+        thresholdVector(nearZero, nearZero, &mat2Sum);
+
+        Eigen::MatrixX<T> m1 = mat1.array().colwise() / mat1Sum.array();
+        Eigen::MatrixX<T> m2 = mat2.array().colwise() / mat2Sum.array();
+
+        thresholdMatrix(nearZero, nearZero, &m1);
+        thresholdMatrix(nearZero, nearZero, &m1);
+
+        Eigen::MatrixX<double> klDivMat
+                = (m1.array() * Eigen::log2(m1.array() / m2.array())).rowwise().sum();
+
+        double infReplaceVal = 10000.0;
+        replaceNaN(nearZero, &klDivMat);
+        replaceInf(infReplaceVal, &klDivMat);
+
+        return klDivMat;
+    }
+
+    static Eigen::VectorX<double> convertQPointFVecToEigen(
+            const QVector<QPointF> &points,
+            int precision,
+            double valMax
+            );
+
+    enum class ThresholderDirection {
+        Above = 0
+        , Below
+    };
+
+    template<typename T>
+    static void removeRowsAboveOrBelowThreshold(
+            T threshold,
+            int columnIdxToFilter,
+            ThresholderDirection thresholderDirection,
+            Eigen::MatrixX<T> *mat
+            ) {
+
+        Eigen::VectorXd thresholderVec;
+
+        if (thresholderDirection == ThresholderDirection::Below) {
+            const Eigen::VectorXd belowThreshold
+                    = (mat->col(columnIdxToFilter).array() < threshold).rowwise().any().template cast<double>();
+            thresholderVec = belowThreshold;
+        }
+
+        else {
+            const Eigen::VectorXd aboveThreshold
+                    = (mat->col(columnIdxToFilter).array() > threshold).rowwise().any().template cast<double>();
+            thresholderVec = aboveThreshold;
+        }
+
+        const int numRows = mat->rows();
+        const int numCols = mat->cols();
+
+        const int newNumRows = static_cast<int>((thresholderVec.array() == 0).count());
+        Eigen::MatrixX<T> newMatrix(newNumRows, numCols);
+        int newRowIdx = 0;
+        for (int i = 0; i < numRows; ++i) {
+            if (thresholderVec(i) == 0) {
+                newMatrix.row(newRowIdx) = mat->row(i);
+                ++newRowIdx;
+            }
+        }
+        *mat = newMatrix;
+    }
 };
 
-
 #endif //EIGENUTILS_H
+
+
+
+
+
+
+
+
+
+
+
+
+
+

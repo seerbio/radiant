@@ -30,7 +30,7 @@ public:
             int order,
             int derivative,
             int rate,
-            Eigen::VectorXd *mat
+            Eigen::MatrixX<double> *mat
     );
 
 
@@ -119,6 +119,35 @@ public:
             const Eigen::VectorXd &kernel,
             bool matchOriginalMaximum
     );
+
+    static Err savitskyGolaySmooth(
+            int windowSize,
+            int order = 1,
+            int derivative = 0,
+            int rate = 1,
+            Eigen::VectorX<double> *smoothedVec = Q_NULLPTR
+            ) {
+
+        ERR_INIT
+
+        Eigen::MatrixX<double> savitskyGolayKernel;
+        e = buildSavitzkyGolayKernel(
+                windowSize,
+                order,
+                derivative,
+                rate,
+                &savitskyGolayKernel
+                ); ree;
+
+        Eigen::VectorX<double> vec = *smoothedVec;
+
+        *smoothedVec = convolveVectorWithKernel(
+                vec,
+                savitskyGolayKernel
+                );
+
+        ERR_RETURN
+    }
 
 };
 

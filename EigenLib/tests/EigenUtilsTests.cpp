@@ -35,6 +35,11 @@ private Q_SLOTS:
     void apexesTest();
     void troughtsTest();
 
+    void rowWiseCosineSimilarOfMatricesTest();
+    void rowWiseKLDivergeneceTest();
+
+    void removeRowsBelowThresholdTest();
+
 };
 
 
@@ -104,6 +109,89 @@ void EigenUtilsTests::troughtsTest() {
     QCOMPARE(troughsResult.lastKey(), 7);
     QCOMPARE(static_cast<int>(troughsResult.first()), 0);
     QCOMPARE(static_cast<int>(troughsResult.last()), 0);
+}
+
+void EigenUtilsTests::rowWiseCosineSimilarOfMatricesTest() {
+
+    Eigen::MatrixX<double> mat1(2,2);
+    Eigen::MatrixX<double> mat2(2,2);
+
+    mat1 << 1,2,3,4;
+    mat2 << 2,4,6,8;
+
+    Eigen::VectorX<double> cosineSim = EigenUtils::rowWiseCosineSimilarOfMatrices(mat1, mat2);
+
+    QCOMPARE(cosineSim.coeff(0), 1.0);
+    QCOMPARE(cosineSim.coeff(1), 1.0);
+
+}
+
+void EigenUtilsTests::rowWiseKLDivergeneceTest() {
+
+    Eigen::MatrixX<double> mat1(3,3);
+    Eigen::MatrixX<double> mat2(3,3);
+
+    mat1 << 1,2,3,4,5,6,7,8,9;
+    mat2 << 1,2,3,4,2.5,3,0,0,0;
+
+    Eigen::VectorX<double> res = EigenUtils::rowWiseKLDivergence(mat1, mat2);
+
+
+    EigenUtils::klDivergence(mat1.row(1), mat2.row(1));
+
+    //TODO make these resluts into a test.
+    for (int i = 0; i < 3; i++) {
+        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
+    }
+
+    std::cout << res << std::endl;
+
+}
+
+void EigenUtilsTests::removeRowsBelowThresholdTest() {
+
+    Eigen::MatrixX<double> mat(4,2);
+
+    mat << 1.0, 2.0, 3.0 , 4.0 , 5.0 , 6.0 , 7.0 , 8.0;
+    EigenUtils::removeRowsAboveOrBelowThreshold<double>(
+            3.5,
+            1,
+            EigenUtils::ThresholderDirection::Below,
+            &mat
+    );
+
+    QCOMPARE(mat.rows(), 3);
+    QCOMPARE(mat.coeffRef(0,0), 3.0);
+    QCOMPARE(mat.coeffRef(2,0), 7.0);
+
+    Eigen::MatrixX<int> matInt(4,2);
+
+    matInt << 1, 2, 3 , 4 , 5 , 6 , 7 , 8;
+    EigenUtils::removeRowsAboveOrBelowThreshold(
+            4,
+            0,
+            EigenUtils::ThresholderDirection::Below,
+            &matInt
+    );
+
+    QCOMPARE(matInt.rows(), 2);
+    QCOMPARE(matInt.coeffRef(0,0), 5);
+    QCOMPARE(matInt.coeffRef(1,0), 7);
+
+    Eigen::MatrixX<int> matIntAbove(4,2);
+
+    matIntAbove << 1, 2, 3 , 4 , 5 , 6 , 7 , 8;
+    EigenUtils::removeRowsAboveOrBelowThreshold(
+            4,
+            0,
+            EigenUtils::ThresholderDirection::Above,
+            &matIntAbove
+    );
+
+    QCOMPARE(matIntAbove.rows(), 2);
+    QCOMPARE(matIntAbove.coeffRef(0,0), 1);
+    QCOMPARE(matIntAbove.coeffRef(1,0), 3);
+
 }
 
 

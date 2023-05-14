@@ -4,11 +4,15 @@
 
 #include "ProteinDigestomatic.h"
 
-#include "ErrorUtils.h"
+#include "BiophysicalCalcs.h"
+#include "MathUtils.h"
+
+#include <iostream>
 
 
 ProteinDigestomatic::ProteinDigestomatic(const PythiaParameters &params)
-: m_pythiaParams(params){}
+: m_pythiaParams(params)
+{}
 
 
 namespace {
@@ -50,15 +54,48 @@ namespace {
         peptideSequences->erase(terminator, peptideSequences->end());
     }
 
+    void filterInvalidSequences(QVector<PeptideSequence> *peptideSequences) {
+
+        const QVector<QChar> invalidAminoAcidLetters = {'B', 'J', 'O', 'U', 'Z'};
+
+        const auto charInStringLogic = [invalidAminoAcidLetters](const QChar &c){
+            return invalidAminoAcidLetters.contains(c);
+        };
+
+        const auto terminatorLogic = [charInStringLogic](const PeptideSequence &ps){
+            return std::any_of(
+                    ps.sequence.begin(),
+                    ps.sequence.end(),
+                    charInStringLogic
+                    );
+        };
+
+        const auto terminator = std::remove_if(
+                peptideSequences->begin(),
+                peptideSequences->end(),
+                terminatorLogic
+                );
+
+        peptideSequences->erase(terminator, peptideSequences->end());
+    }
+
+
 }//END NAMESPACE
 Err ProteinDigestomatic::digestProtein(
-        const ProteinSequence &proteinSequence,
+        const ProteinSequence &_proteinSequence,
         QVector<PeptideSequence> *peptideSequences
         ) {
 
     ERR_INIT;
 
-    e = ErrorUtils::isNotEmpty(proteinSequence); ree;
+    e = ErrorUtils::isNotEmpty(_proteinSequence); ree;
+
+    ProteinSequence proteinSequence = _proteinSequence;
+
+    if (m_pythiaParams.replaceLeucinesWithX) {
+        proteinSequence = proteinSequence.replace('L', 'X');
+        proteinSequence = proteinSequence.replace('I', 'X');
+    }
 
     PeptideSequence peptideSequence;
 
@@ -74,10 +111,12 @@ Err ProteinDigestomatic::digestProtein(
 
             if(!peptideSequence.sequence.isEmpty()){
 
-                setPeptideSequenceAux(startIndex,
-                                      aaPrev,
-                                      aaPost,
-                                      &peptideSequence);
+                setPeptideSequenceAux(
+                        startIndex,
+                        aaPrev,
+                        aaPost,
+                        &peptideSequence
+                        );
 
                 peptideSequences->push_back(peptideSequence);
             }
@@ -86,6 +125,7 @@ Err ProteinDigestomatic::digestProtein(
             startIndex = i;
 
             peptideSequence.sequence += aa.toLatin1();
+
         }
 
         else if (m_pythiaParams.cTermCleavePoints.contains(aa) && i < proteinSequence.size() - 1){
@@ -95,10 +135,12 @@ Err ProteinDigestomatic::digestProtein(
 
             peptideSequence.sequence += aa.toLatin1();
 
-            setPeptideSequenceAux(startIndex,
-                                  aaPrev,
-                                  aaPost,
-                                  &peptideSequence);
+            setPeptideSequenceAux(
+                    startIndex,
+                    aaPrev,
+                    aaPost,
+                    &peptideSequence
+                    );
 
             peptideSequences->push_back(peptideSequence);
 
@@ -132,6 +174,9 @@ Err ProteinDigestomatic::digestProtein(
     filterSequenceLength(m_pythiaParams.peptideLengthMin,
                          m_pythiaParams.peptideLengthMax,
                          peptideSequences);
+
+    filterInvalidSequences(peptideSequences);
+    calculateMasses(peptideSequences);
 
     ERR_RETURN;
 }
@@ -257,4 +302,17 @@ Err ProteinDigestomatic::createRaggedSegments(QVector<PeptideSequence> *peptideS
 
     peptideSequences->append(tempPeptideSequence);
     ERR_RETURN;
+}
+
+void ProteinDigestomatic::calculateMasses(QVector<PeptideSequence> *peptideSequences) {
+
+    for (int i = 0; i < peptideSequences->size(); i++) {
+
+        PeptideSequence &ps = (*peptideSequences)[i];
+        ps.mass = MathUtils::pRound(BiophysicalCalcs::calculatePeptideMass(
+                ps.sequence,
+                m_pythiaParams.aminoAcids
+                ), 4);
+    }
+
 }

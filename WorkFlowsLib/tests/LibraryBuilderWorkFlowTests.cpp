@@ -1,8 +1,6 @@
 #include "LibraryBuilderWorkFlow.h"
 
 #include "Error.h"
-#include "PeptidesLibraryTron.h"
-#include "PythiaParameterReader.h"
 
 #include <QtTest>
 
@@ -18,8 +16,6 @@ public:
 private slots:
 
     void execTest();
-    void testPeptideFragmentationTest();
-
 
 private:
 
@@ -33,55 +29,55 @@ private:
         reader.readFile(paramsFile);
         reader.loadPythiaParameters(&pythiaParameters);
 
+        pythiaParameters.topNMs2Ions = 12;
+//        pythiaParameters.ms2ExtractionWidthPPM = 20;
+
         return pythiaParameters;
     }
 
-    static QString fastaFilePath() {
-        return QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
-    }
 };
 
 void LibraryBuilderWorkFlowTests::execTest() {
 
     ERR_INIT
 
-    LibraryBuilderWorkFlow libraryBuilderWorkFlow;
+    const QString peptidesCSVFilePath = QDir(qApp->applicationDirPath()).filePath("peptides.csv");
 
+    const QString model1FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
+    const QString model2FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
+    const QString model3FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_3.hdf5.json");
+    const QString model4FilePath
+            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
+
+    QString fragLibFilePath;
+
+    LibraryBuilderWorkFlow libraryBuilderWorkFlow;
     e = libraryBuilderWorkFlow.exec(
+            peptidesCSVFilePath,
+            &fragLibFilePath
+            );
+    QCOMPARE(e, eError);
+
+    e = libraryBuilderWorkFlow.init(
             pythiaParameters(),
-            fastaFilePath(),
-            true
+            model1FilePath,
+            model2FilePath,
+            model3FilePath,
+            model4FilePath
             );
     QCOMPARE(e, eNoError);
 
-    const QString fragLibFilePath = fastaFilePath() + S_GLOBAL_SETTINGS.DOT_FRAGLIB;
+    e = libraryBuilderWorkFlow.exec(
+            peptidesCSVFilePath,
+            &fragLibFilePath
+            );
+    QCOMPARE(e, eNoError);
+
     QFileInfo fi(fragLibFilePath);
     QCOMPARE(fi.exists(), true);
-
-}
-
-void LibraryBuilderWorkFlowTests::testPeptideFragmentationTest() {
-
-    const QString peptideSeq = QStringLiteral("VTAK");
-    QHash<ResidueIndex, ModificationMass> mods = {
-            {1, 10.0}
-    };
-
-    const QVector<double> frags
-        = LibraryBuilderWorkFlow::testPeptideFragmentation(peptideSeq, mods);
-
-    const QVector<double> expectedFrags = {
-            50.5415, 74.06, 100.076, 106.065, 109.579,
-            141.584, 147.113, 165.102, 211.123, 218.15, 282.16, 329.198
-    };
-
-    QCOMPARE(frags.size(), expectedFrags.size());
-
-    for (int i = 0; i < frags.size(); i++) {
-        const int expectedMz = static_cast<int>(expectedFrags.at(i));
-        const int foundMz = static_cast<int>(frags.at(i));
-        QCOMPARE(foundMz, expectedMz);
-    }
 
 }
 

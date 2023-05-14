@@ -4,12 +4,10 @@
 
 #include "MsReaderMzML.h"
 #include "FastaReader.h"
-#include "GlobalSettings.h"
 
 #include <QString>
 #include <QtTest/QtTest>
 #include <QXmlStreamReader>
-
 
 
 class MsReaderMZMLTests : public QObject
@@ -28,7 +26,7 @@ private Q_SLOTS:
 
 private:
 
-    //TODO use proper path procedures.
+    //TODO use proper path procedures after finding small file.
     const QString m_filepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
 
@@ -37,30 +35,43 @@ private:
 
 void MsReaderMZMLTests::openFileTest() {
 
-//    QSKIP("Waiting for small file");
-    ERR_INIT
+//    const QString &msParquetFilePath
+//            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
 
-    const QString cacheName = m_filepath + S_GLOBAL_SETTINGS.DOT_CACHE;
+    ERR_INIT
 
     MsReaderMzML reader;
     e = reader.openFile(m_filepath);
     QCOMPARE(e, Error::eNoError);
+    QCOMPARE(reader.m_msScanInfo.size(), 26010);
+    QCOMPARE(reader.m_scanPoints.size(), 26010);
 
-////    e = reader.createTandemScanIonsCache(cacheName);
-////    QCOMPARE(e, Error::eNoError);
-//
-//    e = reader.readFromCache(cacheName);
-//    QCOMPARE(e, Error::eNoError);
-//
-////    e = reader.buildUniqueTandemScanIons();
-////    QCOMPARE(e, Error::eNoError);
-//
-//    qDebug() << "IONS SIZE" << reader.m_tandemScanIons.size();
-//    qDebug() << "UNIQUES IONS SIZE" << reader.m_uniqueTandemScanIons.size();
+    MsScanInfo msScanInfo;
+    e = reader.getMsScanInfo(666, &msScanInfo);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(msScanInfo.scanNumber, 666);
+    QCOMPARE(msScanInfo.msLevel, 2);
+    QCOMPARE(msScanInfo.collisionEnergy, 28);
+    QCOMPARE(QString::number(msScanInfo.scanTime), "0.826693");
+    QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "725.079");
+    QCOMPARE(msScanInfo.isoWindowLower, 5.5);
+    QCOMPARE(msScanInfo.isoWindowUpper, 5.5);
+
+    ScanPoints scanPoints;
+    e = reader.getScanPoints(
+            msScanInfo.scanNumber,
+            &scanPoints
+            );
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(int(149.045), int(scanPoints.first().x()));
+    QCOMPARE(int(3574.26), int(scanPoints.first().y()));
+    QCOMPARE(int(1166.42), int(scanPoints.last().x()));
+    QCOMPARE(int(1360.38), int(scanPoints.last().y()));
+    qDebug() << scanPoints.last();
+    QCOMPARE(scanPoints.size(), 35);
 
 }
-
-
 
 QTEST_MAIN(MsReaderMZMLTests)
 #include "MsReaderMZMLTests.moc"

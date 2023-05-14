@@ -7,12 +7,14 @@
 
 #include "UtilsLib_Exports.h"
 
+#include "Error.h"
+
 #include <QDebug>
 
 #include <cmath>
 #include <vector>
 
-
+using namespace Error;
 
 namespace MathUtilsConstants {
 
@@ -60,13 +62,47 @@ public:
     }
 
     template <typename Vector>
-    static double mean(const Vector &vec)
-    {
+    static double mean(const Vector &vec) {
         if(vec.empty()){
             return 0.0;
         }
 
         return std::accumulate(vec.begin(), vec.end(), 0.0) / static_cast<double>(vec.size());
+    }
+
+    //TODO write test for this
+    template <typename T>
+    static Err weightedMean(
+            const std::vector<T> &vecVals,
+            const std::vector<T> &vecWeights,
+            bool inverseWeights,
+            double *weightedAverage
+            ) {
+
+        ERR_INIT
+
+        if (vecVals.size() != vecWeights.size()) {
+            rrr(eValueError);
+        }
+
+        double sum = 0;
+        double weightSum = 0;
+
+        for(int i = 0; i < vecVals.size(); i++) {
+
+            T w = std::max(std::abs(vecWeights.at(i)), 0.01); //TODO figure out a better solution.
+
+            const double weightVal = inverseWeights ? (1.0 / w) : w;
+            sum += vecVals.at(i) * weightVal;
+            weightSum += vecWeights.at(i);
+        }
+
+        if (MathUtils::tZero(weightSum)) {
+            rrr(eValueError);
+        }
+
+        *weightedAverage = sum / weightSum;
+        ERR_RETURN
     }
 
     template <typename Vector>
@@ -127,9 +163,7 @@ public:
 
     static double calculatePPM(double val, double ppmTolerance);
 
-    static unsigned long long factorial(int n);
-
-    static double calculateHyperScore(long long intensity, int bIonCount, int yIonsCount);
+    static double factorial(int n);
 
     template<typename T>
     static int closest(const QVector<T> &vec, T value) {

@@ -9,13 +9,14 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "PythiaParameterReader.h"
+#include "TandemFragmentPredictotron.h"
 
 
 using namespace Error;
 
 
 class Peptide;
+
 
 class WORKFLOWSLIB_EXPORTS LibraryBuilderWorkFlow {
 
@@ -24,30 +25,31 @@ public:
     friend class LibraryBuilderWorkFlowTests;
 
     LibraryBuilderWorkFlow() = default;
-    ~LibraryBuilderWorkFlow() = default;
+    ~LibraryBuilderWorkFlow();
+
+    Err init(
+            const PythiaParameters &pythiaParameters,
+            const QString &modelCharge1,
+            const QString &modelCharge2,
+            const QString &modelCharge3,
+            const QString &modelCharge4
+    );
 
     Err exec(
-            const PythiaParameters &pythiaParameters,
-            const QString &fastaFilePath,
-            bool theoreticalFrags
+            const QString &peptidesCSVFilePath,
+            QString *returnFilePath
             );
 
 private:
 
-    Err buildTheoreticalMzFragsForPeptides(
-            const QVector<Peptide> &peptides,
-            QVector<QPair<Peptide, QVector<double>>> *mzFrags
-            );
-
-    static QVector<double> testPeptideFragmentation(
-            const QString &peptideSequence,
-            const QHash<ResidueIndex, ModificationMass> &mods
-            );
+    Err buildPeptideSequenceChargeKeyVsIsDecoy(const QVector<PeptidePredictionInput> &peptidePredictionInputs);
 
 private:
 
+    QMap<Charge, QString> m_modelFilePaths;
+    QMap<Charge, TandemFragmentPredictotron*> m_tandemPredictionModels;
     PythiaParameters m_pythiaParameters;
-
+    QHash<PeptideSequenceChargeKey, bool> m_peptideSequenceChargeKeyVsIsDecoy;
 
 };
 

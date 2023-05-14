@@ -8,14 +8,19 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
-
 #include "GlobalSettings.h"
+#include "MsCalibratomatic.h"
+#include "MsFrame.h"
+#include "MsReaderPointerFactory.h"
+#include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
-#include "ReCalibratomatic.h"
 
 
 using namespace Error;
 
+class FrameParallelInput;
+class PSMsReaderRow;
+class ScoreVectorsOutput;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -24,43 +29,38 @@ public:
     PythiaDIAWorkflow() = default;
     ~PythiaDIAWorkflow() = default;
 
-
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri,
-            const QString &pepLibUri
+            const QString &fragLibUri
             );
 
-    Err processFile(const QString &mzmlFilePath);
+    Err processFile(const QString &msDataFilePath);
 
 
 private:
 
-    Err runFirstPassMsFraggerTronWorkFlow(
-            const QString &mzmlFilePath,
-            QString *firstPassPSMsFilePath,
-            QVector<TandemScanIon> *tandemScanIons
+    Err buildPSMResultsForCalibrationFile(
+            const QVector<FrameParallelInput> &frameParallelInputs,
+            QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
             );
 
-    Err initReCalibratomatic(const QString &firstPassPSMsFilePath);
-
-    Err recalibrateTandemScanIons(QVector<TandemScanIon> *tandemScanIons);
-
-    Err optimizePythiaParameters();
-
-    Err runSecondPassMsFraggerTronWorkFlow(
-            const QVector<TandemScanIon> &tandemScanIons,
-            const QString &psmOutputFilePath
+    static Err buildFrameScoreVectors(
+            const QVector<FrameParallelInput> &frameParallelInputs,
+            QVector<ScoreVectorsOutput> *scoreVectorsOutput
             );
 
+    static Err processFrameScoreVectors(
+            const QVector<ScoreVectorsOutput> &scoreVectorsOutputs,
+            const QString &msDataFilePath,
+            const PythiaParameters &pythiaParameters,
+            QVector<PSMsReaderRow> *psmsPreaderRows
+            );
 
 private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
-    QString m_pepLibUri;
 
-    ReCalibratomatic m_reCalibratomatic;
 
 };
 

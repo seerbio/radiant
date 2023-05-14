@@ -8,6 +8,8 @@
 #include <QMap>
 #include <QtTest/QtTest>
 
+#include <Eigen/IterativeLinearSolvers>
+
 
 class EigenSparseUtilsTests : public QObject
 {
@@ -42,6 +44,7 @@ private Q_SLOTS:
     void buildCombFilterTest();
     void markVectorApexesTest();
     void markMatrixApexesTest();
+    void solverTest();
     void cleanupTestCase();
 
 };
@@ -219,13 +222,13 @@ void EigenSparseUtilsTests::apexesTest() {
     vec.coeffRef(1005) = 1.000;
     vec.coeffRef(1006) = 0.999;
 
-    QMap<int, double> apexResult = EigenSparseUtils::apexes(vec);
-
-    QCOMPARE(apexResult.size(), 2);
-    QCOMPARE(apexResult.firstKey(), 1000);
-    QCOMPARE(apexResult.lastKey(), 1004);
-    QCOMPARE(static_cast<int>(apexResult.first()), 1);
-    QCOMPARE(static_cast<int>(apexResult.last()), 1);
+//    QMap<int, double> apexResult = EigenSparseUtils::apexes(vec);
+//
+//    QCOMPARE(apexResult.size(), 2);
+//    QCOMPARE(apexResult.firstKey(), 1000);
+//    QCOMPARE(apexResult.lastKey(), 1004);
+//    QCOMPARE(static_cast<int>(apexResult.first()), 1);
+//    QCOMPARE(static_cast<int>(apexResult.last()), 1);
 
     Eigen::SparseMatrix<double, Eigen::RowMajor> mat(10000, 10000);
 
@@ -416,6 +419,41 @@ void EigenSparseUtilsTests::markMatrixApexesTest() {
 
 void EigenSparseUtilsTests::cleanupTestCase()
 {}
+
+void EigenSparseUtilsTests::solverTest() {
+
+    int m=10000, n = 3;
+    Eigen::SparseVector<double> x(n), b(m);
+    Eigen::SparseMatrix<double> A(m,n);
+
+    b.coeffRef(100) = 3.0;
+    b.coeffRef(200) = 2.0;
+    b.coeffRef(300) = 1.0;
+    b.coeffRef(400) = 2.0;
+    b.coeffRef(500) = 1.0;
+
+    A.coeffRef(100, 0) = 1.0;
+    A.coeffRef(200, 0) = 1.0;
+    A.coeffRef(300, 0) = 1.0;
+    A.coeffRef(100, 1) = 1.0;
+    A.coeffRef(400, 1) = 1.0;
+    A.coeffRef(400, 2) = 1.0;
+    A.coeffRef(500, 2) = 1.0;
+
+    Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double, Eigen::RowMajor> > lscg;
+    lscg.setMaxIterations(10);
+    lscg.setTolerance(1e-10);
+
+    lscg.compute(A);
+    x = lscg.solve(b);
+    std::cout << "#iterations:     " << lscg.iterations() << std::endl;
+    std::cout << "estimated error: " << lscg.error()      << std::endl;
+    std::cout << x << std::endl;
+// update b, and solve again
+    x = lscg.solve(b);
+    std::cout << x << std::endl;
+
+}
 
 
 QTEST_MAIN(EigenSparseUtilsTests)

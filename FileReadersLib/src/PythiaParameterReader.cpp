@@ -5,7 +5,6 @@
 #include "PythiaParameterReader.h"
 #include "ErrorUtils.h"
 
-#include <utility>
 #include <QDebug>
 #include <QJsonValue>
 
@@ -337,4 +336,45 @@ Err PythiaParameterReader::applyFixedModificationsToAminoAcids(
     }
 
     ERR_RETURN
+}
+
+PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
+
+    PythiaParameters pythiaParameters;
+
+    pythiaParameters.returnPSMTopN = 500;
+    pythiaParameters.maxTandemPointCount = 2;
+    pythiaParameters.ms2ExtractionWidthPPM = 15.0;
+    pythiaParameters.featureFinderTolerancePPM = 15.0;
+    pythiaParameters.precursorExtractionWindowThomsons = 1.0;
+    pythiaParameters.chargeStateMin = 2;
+    pythiaParameters.chargeStateMax = 3;
+    pythiaParameters.minScanCount = 1;
+    pythiaParameters.skipScanCount = 1;
+    pythiaParameters.useMeanMz = true;
+    pythiaParameters.filterLength = 5;
+    pythiaParameters.smoothCount = 1;
+    pythiaParameters.sigma = 1;
+    pythiaParameters.signalToNoiseRatio = 2;
+    pythiaParameters.topNMs2Ions = 13;
+    pythiaParameters.minFoundMzPeaks = 4;
+    pythiaParameters.allowedMissedCleavages = 1;
+    pythiaParameters.mzMinDataStructure = 50.0;
+    pythiaParameters.mzMaxDataStructure = 1500.0;
+    pythiaParameters.pValThreshold = 0.05;
+
+    Modification carboxyAmidoMethyl(
+            'C',
+            "CAM",
+            ModificationType::FIXED,
+            "C2H3NO"
+    );
+    pythiaParameters.modifications = {carboxyAmidoMethyl};
+
+    PythiaParameterReader::applyFixedModificationsToAminoAcids(
+            pythiaParameters,
+            &pythiaParameters.aminoAcids
+    );
+
+    return pythiaParameters;
 }

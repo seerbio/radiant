@@ -6,32 +6,105 @@
 #define PYTHIACPP_PROTEINDIGESTOMATIC_H
 
 #include "AlgorithmsLib_Exports.h"
-#include "GlobalSettings.h"
-#include "PythiaParameterReader.h"
 #include "Error.h"
+#include "ErrorUtils.h"
+#include "GlobalSettings.h"
+#include "ParquetReader.h"
+#include "PythiaParameterReader.h"
 
 #include <QStringList>
 
-
+//TODO add function to excise N-term Methionine.
 using namespace Error;
 
+namespace PeptideSequenceNamespace {
 
-class ALGORITHMSLIB_EXPORTS PeptideSequence {
+    const QString SEQUENCE = QStringLiteral("sequence");
+    const QString PREV_RES = QStringLiteral("previousResidue");
+    const QString FIRST_RES = QStringLiteral("firstResidue");
+    const QString LAST_RES = QStringLiteral("lastResidue");
+    const QString POST_RES = QStringLiteral("postResidue");
+    const QString MASS = QStringLiteral("mass");
+    const QString IS_DECOY = QStringLiteral("isDecoy");
+    const QString START_IND = QStringLiteral("startIndex");
+    const QString END_IND = QStringLiteral("endIndex");
+    const QString SIZE = QStringLiteral("size");
+
+    const QStringList keysToCheck = {
+            SEQUENCE,
+            PREV_RES,
+            FIRST_RES,
+            LAST_RES,
+            POST_RES,
+            MASS,
+            IS_DECOY,
+            START_IND,
+            END_IND,
+            SIZE
+    };
+}
+
+
+class ALGORITHMSLIB_EXPORTS PeptideSequence : public ParquetReaderInputBase {
 
 public:
-        QString sequence;
-        QChar previousResidue;
-        QChar firstResidue;
-        QChar lastResidue;
-        QChar postResidue;
 
-        bool isDecoy = false;
-        int startIndex = -1;
-        int endIndex = -1;
+    QString sequence;
+    QChar previousResidue;
+    QChar firstResidue;
+    QChar lastResidue;
+    QChar postResidue;
 
-        [[nodiscard]] int size() const {
-            return sequence.size();
-        }
+    double mass = -1.0;
+
+    bool isDecoy = false;
+    int startIndex = -1;
+    int endIndex = -1;
+
+    [[nodiscard]] int size() const {
+        return sequence.size();
+    }
+
+    QMap<QString, QVariant> map() override {
+
+        return {
+            {PeptideSequenceNamespace::SEQUENCE, QVariant(sequence)},
+            {PeptideSequenceNamespace::PREV_RES, QVariant(previousResidue)},
+            {PeptideSequenceNamespace::FIRST_RES, QVariant(firstResidue)},
+            {PeptideSequenceNamespace::LAST_RES, QVariant(lastResidue)},
+            {PeptideSequenceNamespace::POST_RES, QVariant(postResidue)},
+            {PeptideSequenceNamespace::MASS, QVariant(mass)},
+            {PeptideSequenceNamespace::IS_DECOY, QVariant(isDecoy)},
+            {PeptideSequenceNamespace::START_IND, QVariant(startIndex)},
+            {PeptideSequenceNamespace::END_IND, QVariant(endIndex)},
+            {PeptideSequenceNamespace::SIZE, QVariant(size())}
+        };
+    }
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                PeptideSequenceNamespace::keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        sequence = dataMap.value(PeptideSequenceNamespace::SEQUENCE).toString();
+        previousResidue = dataMap.value(PeptideSequenceNamespace::PREV_RES).toChar();
+        firstResidue = dataMap.value(PeptideSequenceNamespace::FIRST_RES).toChar();
+        lastResidue = dataMap.value(PeptideSequenceNamespace::LAST_RES).toChar();
+        postResidue = dataMap.value(PeptideSequenceNamespace::POST_RES).toChar();
+        mass = dataMap.value(PeptideSequenceNamespace::MASS).toDouble();
+        isDecoy = dataMap.value(PeptideSequenceNamespace::IS_DECOY).toBool();
+        startIndex = dataMap.value(PeptideSequenceNamespace::START_IND).toInt();
+        endIndex = dataMap.value(PeptideSequenceNamespace::END_IND).toInt();
+
+        ERR_RETURN
+    }
 };
 
 
@@ -50,6 +123,7 @@ private:
 
     Err createPartialDigestPeptides(QVector<PeptideSequence> *peptideSequences) const;
     Err createRaggedSegments(QVector<PeptideSequence> *peptideSequences) const;
+    void calculateMasses(QVector<PeptideSequence> *peptideSequences);
 
 private:
 

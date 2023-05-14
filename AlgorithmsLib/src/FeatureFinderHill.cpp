@@ -9,10 +9,12 @@
 
 
 void FeatureFinderHill::addPoint(
+        ScanNumberIndex scanNumberIndex,
         ScanNumber scanNumber,
         double mzVal,
         double intensityVal
 ) {
+    m_scanNumberIndexes.push_back(scanNumberIndex);
     m_mzVals.push_back(mzVal);
     m_scanNumbers.push_back(scanNumber);
     m_intensities.push_back(intensityVal);
@@ -26,8 +28,12 @@ double FeatureFinderHill::mzStDev() const {
     return MathUtils::stDev(m_mzVals);
 }
 
-double FeatureFinderHill::maxIntensityScanNumber() const {
+int FeatureFinderHill::maxIntensityScanNumber() const {
     return m_scanNumbers.at(MathUtils::findMaxIndexInVector(m_intensities));
+}
+
+int FeatureFinderHill::maxIntensityScanNumberIndex() const {
+    return m_scanNumberIndexes.at(MathUtils::findMaxIndexInVector(m_intensities));
 }
 
 int FeatureFinderHill::scanCount() const {
@@ -36,6 +42,10 @@ int FeatureFinderHill::scanCount() const {
 
 QVector<int> FeatureFinderHill::scanNumbers() const {
     return m_scanNumbers;
+}
+
+QVector<int> FeatureFinderHill::scanNumberIndexes() const {
+    return m_scanNumberIndexes;
 }
 
 QVector<double> FeatureFinderHill::intensities() const {
@@ -69,11 +79,11 @@ QPair<double, double> FeatureFinderHill::mzMinMax() const {
     return {*minMaxMz.first, *minMaxMz.second};
 }
 
-QPair<ScanNumber , ScanNumber> FeatureFinderHill::minMaxScanNumber() const {
+QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberMinMax() const {
     return {m_scanNumbers.front(), m_scanNumbers.back()};
 }
 
-double FeatureFinderHill::maxIntensityValue() const {
+double FeatureFinderHill::intensityValueMax() const {
     return *std::max_element(m_intensities.begin(), m_intensities.end());
 }
 
