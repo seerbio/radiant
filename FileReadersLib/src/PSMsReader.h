@@ -35,6 +35,26 @@ namespace PSMsReaderRowNamespace {
     const QString P_VAL_FRAME_F_TEST = QStringLiteral("pValFrameFtest");
     const QString FRAME_ERROR = QStringLiteral("frameError");
 
+    const QString SCORE_MEAN = QStringLiteral("scoreMean");
+    const QString SCORE_MEDIAN = QStringLiteral("scoreMedian");
+    const QString SCORE_STDEV = QStringLiteral("scoreStDev");
+    const QString SCORE_MIN = QStringLiteral("scoreMin");
+    const QString SCORE_MAX = QStringLiteral("scoreMax");
+    const QString DISC_SCORE_MEAN = QStringLiteral("discScoreMean");
+    const QString DISC_SCORE_MEDIAN = QStringLiteral("discScoreMedian");
+    const QString DISC_SCORE_STDEV = QStringLiteral("discScoreStDev");
+    const QString DISC_SCORE_MIN = QStringLiteral("discScoreMin");
+    const QString DISC_SCORE_MAX = QStringLiteral("discScoreMax");
+    const QString COSINE_SIM = QStringLiteral("cosineSim");
+    const QString KL_DIV = QStringLiteral("klDiv");
+    const QString FRACTION_FOUND = QStringLiteral("fractionFound");
+
+    const QString IONS_FOUND = QStringLiteral("ionsFound");
+    const QString FRAME_CAND_COUNT = QStringLiteral("frameCandidateCount");
+    const QString PEPTIDE_SIZE = QStringLiteral("peptideSize");
+
+
+
     const QStringList keysToCheck = {
             FRAME_INDEX,
             SCAN_NUMBER ,
@@ -51,7 +71,23 @@ namespace PSMsReaderRowNamespace {
             T_TEST,
             FRAME_F_STAT,
             P_VAL_FRAME_F_TEST,
-            FRAME_ERROR
+            FRAME_ERROR,
+            SCORE_MEAN,
+            SCORE_MEDIAN,
+            SCORE_STDEV,
+            SCORE_MIN,
+            SCORE_MAX,
+            DISC_SCORE_MEAN,
+            DISC_SCORE_MEDIAN,
+            DISC_SCORE_STDEV,
+            DISC_SCORE_MIN,
+            DISC_SCORE_MAX,
+            COSINE_SIM,
+            KL_DIV,
+            FRACTION_FOUND,
+            IONS_FOUND,
+            FRAME_CAND_COUNT,
+            PEPTIDE_SIZE
     };
 }
 
@@ -85,20 +121,17 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     double scoreStDev = -1.0;
     double scoreMin = -1.0;
     double scoreMax = -1.0;
-
     double discScoreMean = -1.0;
     double discScoreMedian = -1.0;
     double discScoreStDev = -1.0;
     double discScoreMin = -1.0;
     double discScoreMax = -1.0;
-
-    int frameCandidateCount = -1;
-
     double cosineSim = -1.0;
     double klDiv = -1.0;
     double fractionFound = -1.0;
-    int ionsFound = -1;
 
+    int ionsFound = -1;
+    int frameCandidateCount = -1;
     int peptideSize = -1;
 
     QMap<QString, QVariant> map() override {
@@ -106,22 +139,38 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         using namespace PSMsReaderRowNamespace;
 
         return {
-                {FRAME_INDEX, QVariant(frameIndex)},
-                {SCAN_NUMBER, QVariant(scanNumber)},
-                {CHARGE, QVariant(charge)},
-                {UNIQUE_TARGET_KEY, QVariant(uniqueMsInfoScanKey)},
-                {PEPTIDE_W_MODS, QVariant(peptideStringWithMods)},
-                {SCORE, QVariant(score)},
-                {RESCORE, QVariant(rescore)},
-                {FRAME_RANK_SCORE, QVariant(frameRankScore)},
-                {DISC_SCORE, QVariant(discScore)},
-                {FRAME_RANK_DISC_SCORE, QVariant(frameRankDiscScore)},
-                {IS_DECOY, QVariant(isDecoy)},
-                {P_VAL, QVariant(pVal)},
-                {T_TEST, QVariant(tTest)},
-                {FRAME_F_STAT, QVariant(frameFStat)},
-                {P_VAL_FRAME_F_TEST, QVariant(pValFrameFtest)},
-                {FRAME_ERROR, QVariant(frameError)}
+            {FRAME_INDEX, QVariant(frameIndex)},
+            {SCAN_NUMBER, QVariant(scanNumber)},
+            {CHARGE, QVariant(charge)},
+            {UNIQUE_TARGET_KEY, QVariant(uniqueMsInfoScanKey)},
+            {PEPTIDE_W_MODS, QVariant(peptideStringWithMods)},
+            {SCORE, QVariant(score)},
+            {RESCORE, QVariant(rescore)},
+            {FRAME_RANK_SCORE, QVariant(frameRankScore)},
+            {DISC_SCORE, QVariant(discScore)},
+            {FRAME_RANK_DISC_SCORE, QVariant(frameRankDiscScore)},
+            {IS_DECOY, QVariant(isDecoy)},
+            {P_VAL, QVariant(pVal)},
+            {T_TEST, QVariant(tTest)},
+            {FRAME_F_STAT, QVariant(frameFStat)},
+            {P_VAL_FRAME_F_TEST, QVariant(pValFrameFtest)},
+            {FRAME_ERROR, QVariant(frameError)},
+            {SCORE_MEAN , QVariant(scoreMean)},
+            {SCORE_MEDIAN , QVariant(scoreMedian)},
+            {SCORE_STDEV , QVariant(scoreStDev)},
+            {SCORE_MAX , QVariant(scoreMin)},
+            {SCORE_MAX , QVariant(scoreMax)},
+            {DISC_SCORE_MEAN , QVariant(discScoreMean)},
+            {DISC_SCORE_MEDIAN , QVariant(discScoreMedian)},
+            {DISC_SCORE_STDEV , QVariant(discScoreStDev)},
+            {DISC_SCORE_MIN , QVariant(discScoreMin)},
+            {DISC_SCORE_MAX , QVariant(discScoreMax)},
+            {COSINE_SIM , QVariant(cosineSim)},
+            {KL_DIV , QVariant(klDiv)},
+            {FRACTION_FOUND , QVariant(fractionFound)},
+            {IONS_FOUND, QVariant(ionsFound)},
+            {FRAME_CAND_COUNT, QVariant(frameCandidateCount)},
+            {PEPTIDE_SIZE, QVariant(peptideSize)}
         };
     }
 
@@ -155,6 +204,22 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         frameFStat = dataMap.value(FRAME_F_STAT).toDouble();
         pValFrameFtest = dataMap.value(P_VAL_FRAME_F_TEST).toDouble();
         frameError = dataMap.value(FRAME_ERROR).toDouble();
+        scoreMean = dataMap.value(SCORE_MEAN).toDouble();
+        scoreMedian = dataMap.value(SCORE_MEDIAN).toDouble();
+        scoreStDev = dataMap.value(SCORE_STDEV).toDouble();
+        scoreMin = dataMap.value(SCORE_MIN).toDouble();
+        scoreMax = dataMap.value(SCORE_MAX).toDouble();
+        discScoreMean = dataMap.value(DISC_SCORE_MEAN).toDouble();
+        discScoreMedian = dataMap.value(DISC_SCORE_MEDIAN).toDouble();
+        discScoreStDev = dataMap.value(DISC_SCORE_STDEV).toDouble();
+        discScoreMin = dataMap.value(DISC_SCORE_MIN).toDouble();
+        discScoreMax = dataMap.value(DISC_SCORE_MAX).toDouble();
+        cosineSim = dataMap.value(COSINE_SIM).toDouble();
+        klDiv = dataMap.value(KL_DIV).toDouble();
+        fractionFound = dataMap.value(FRACTION_FOUND).toDouble();
+        ionsFound = dataMap.value(IONS_FOUND).toInt();
+        frameCandidateCount = dataMap.value(FRAME_CAND_COUNT).toInt();
+        peptideSize = dataMap.value(PEPTIDE_SIZE).toInt();
 
         ERR_RETURN
     }
