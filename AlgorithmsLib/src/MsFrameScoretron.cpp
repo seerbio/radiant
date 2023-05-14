@@ -176,6 +176,12 @@ namespace {
         const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
                 = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
 
+//        const ReScore reScore = std::sqrt(MathUtils::pRound((cosineSim / klDiv)
+//                                                            * std::pow(ionsFound, 2)
+//                                                            * fractionFound
+//                                                            * std::pow(ionsFound, 3),
+//                                                            S_GLOBAL_SETTINGS.ROUNDING_PRECISION));
+
         const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
                 foundIonsPerFrameIndexOfTargetFactorial.array()
                 * fractionFoundIonsPerFrameIndexOfTarget.array()
@@ -400,6 +406,8 @@ Err MsFrameScoretron::writeFrameTargetScoreVectors(const QString &outputFilePath
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(m_fragPredsIsDecoy); ree;
+
     int counter = 0;
     QVector<MsFrameScoreVectorReaderRow> msFrameScoreVectorReaderRows;
     for (auto it = m_pepStrWModsVsFrameIndexScoreResultOfTargets.begin(); it != m_pepStrWModsVsFrameIndexScoreResultOfTargets.end(); it++) {
@@ -409,14 +417,15 @@ Err MsFrameScoretron::writeFrameTargetScoreVectors(const QString &outputFilePath
 
         MsFrameScoreVectorReaderRow row;
         row.peptideStringWithMods = peptideStringWithMods;
-        row.cosineSimPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec;
-        row.foundIonsPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+        row.cosineSimPerFrameIndexOfTargetVec = {};//frameIndexScoreResultOfTarget.cosineSimPerFrameIndexOfTargetVec;
+        row.foundIonsPerFrameIndexOfTargetVec = {}; //frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
         row.scorePerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
         row.intensityPerFrameIndexOfTargetVec = frameIndexScoreResultOfTarget.intensityPerFrameIndexOfTargetVec;
         row.scorePeakStart = frameIndexScoreResultOfTarget.bestScorePeakLimits.first;
         row.scorePeakEnd = frameIndexScoreResultOfTarget.bestScorePeakLimits.second;
         row.frameIndexMaxScore = MathUtils::findMaxIndexInVector(frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec);
         row.charge = frameIndexScoreResultOfTarget.charge;
+        row.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
         msFrameScoreVectorReaderRows.push_back(row);
         counter++;
     }
@@ -480,7 +489,9 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
-Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(QString *frameExtractedPointsFilePath) {
+Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(
+        QString *frameExtractedPointsFilePath
+        ) {
 
     ERR_INIT
 
