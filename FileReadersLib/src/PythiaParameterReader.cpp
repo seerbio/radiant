@@ -342,7 +342,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     PythiaParameters pythiaParameters;
 
-    pythiaParameters.returnPSMTopN = 300;
+    pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
     pythiaParameters.ms2ExtractionWidthPPM = 15.0;
     pythiaParameters.featureFinderTolerancePPM = 15.0;

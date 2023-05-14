@@ -5,9 +5,9 @@
 #ifndef PYTHIADIACPP_MSFRAMESCORETRONPROCESSORMATIC_H
 #define PYTHIADIACPP_MSFRAMESCORETRONPROCESSORMATIC_H
 
-
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
+#include "ExtractedScansReader.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
@@ -19,20 +19,33 @@
 
 using namespace Error;
 
+class PSMsReaderRow;
 
-struct PeptideStringWithModsScoreResult {
-    PeptideStringWithMods peptideStringWithMods;
-    Score score = -1.0;
-    FrameIndex frameIndex = -1;
-    Charge charge = -1;
+struct FrameStats {
+
+    double scoreMean = -1.0;
+    double scoreMedian = -1.0;
+    double scoreStDev = -1.0;
+    double scoreMin = -1.0;
+    double scoreMax = -1.0;
+
+    double discScoreMean = -1.0;
+    double discScoreMedian = -1.0;
+    double discScoreStDev = -1.0;
+    double discScoreMin = -1.0;
+    double discScoreMax = -1.0;
+
+    int frameCandidateCount = -1;
+
 };
 
-
-struct ScoredPSM : public ParquetReaderInputBase {
-    FrameIndex frameIndex = -1;
-    PeptideStringWithMods peptideStringWithMods;
-    ExtractPoints extractPoints;
-
+struct ReScoreVals {
+    ReScore reScore = -1.0;
+    Score score = -1.0;
+    double cosineSim = -1.0;
+    double klDiv = -1.0;
+    double fractionFound = -1.0;
+    int ionsFound = -1;
 };
 
 
@@ -54,38 +67,60 @@ public:
             QPair<double, double> mzTargetStartStop
             );
 
-    Err processLogicForFrameScores(
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *topCansInFrameIndexVsDiscScore
-    );
+    Err processFrameScoreVectors(QVector<PSMsReaderRow> *psmReaderRows);
 
 
 private:
 
-    Err getTopNCandidatesPerFrameIndex(
-            const QVector<MsFrameScoreVectorReaderRow> &scoreVectors,
-            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> *topCansInFrameIndex
-    );
+    Err buildPepStrWModsVsExtractedScanRow();
 
-    Err calculateDiscriminateScoreForFrameIndexes(
-            const QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, Score>>> &topCansInFrameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *topCansInFrameIndexVsDiscScore
-    );
+    Err buildFrameIndexVsApexScorePeptideStringWithMods();
 
-    Err calculateDiscriminateScoreForFrame(
-            const QVector<QPair<PeptideStringWithMods, Score>> &peptideStringWithModsScore,
+    Err buildPepStringWithModsVsMS2Ions();
+
+    Err rescoreCandidatesWithFullPrediction();
+
+    Err processorLogic(
+            const QVector<PeptideStringWithMods> &peptideStringWithMods,
+            FrameIndex frameIndex
+            );
+
+    Err collateMS2IonsByPepStrWithModsForFrameIndex(
+            const QVector<PeptideStringWithMods> &peptideStringWithMods,
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideByExtractedPoints
+            );
+
+    Err calculateDiscriminateScoreForFrameIndex(
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideByExtractedPoints,
             const ScanPoints &scanPoints,
-            FrameIndex frameIndex,
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
+            FrameIndex frameIndex
     );
+
+    Err buildFrameIndexVsFrameStats();
+
+
+    Err compileScores(QVector<PSMsReaderRow> *psmReaderRows);
+
+
+
 
 private:
 
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
-    MsFrame m_msFrame;
     PythiaParameters m_params;
     QString m_scoreVectorsFilePath;
+    QString m_frameExtractedScansFilePath;
+    TandemSpectraDeconvolvotron m_deconvolvotron;
+
+    MsFrame m_msFrame;
+    QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_pepStrWModsVsMS2Ions;
+    QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
+    QMap<PeptideStringWithMods, Score> m_pepStrWModsVsCharge;
+    QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;
+    QMap<FrameIndex, QVector<PeptideStringWithMods>> m_frameIndexVsApexScorePeptideStringWithMods;
+    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> m_frameIndexVsPeptideDeconResult;
+    QMap<PeptideStringWithMods, ReScoreVals> m_pepStringModsVsRescore;
+    QMap<FrameIndex, FrameStats> m_frameIndexVsPeptideFrameStats;
 
 };
 

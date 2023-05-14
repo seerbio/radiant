@@ -163,6 +163,11 @@ namespace {
                 scoringMatrices.theoMatrixMatrixIntensity
         );
 
+        const Eigen::VectorX<double> klDivPerFrameIndexOfTarget = EigenUtils::rowWiseKLDivergence(
+                scoringMatrices.scoringMatrixIntensity,
+                scoringMatrices.theoMatrixMatrixIntensity
+        );
+
         const Eigen::VectorX<double> mzProductPerFrameIndexOfTarget = scoringMatrices.scoringMatrixMz.rowwise().prod();
 
         const Eigen::VectorX<double> intensityPerFrameIndexOfTarget = scoringMatrices.scoringMatrixIntensity.rowwise().sum();
@@ -182,12 +187,22 @@ namespace {
 //                                                            * std::pow(ionsFound, 3),
 //                                                            S_GLOBAL_SETTINGS.ROUNDING_PRECISION));
 
+        const Eigen::VectorX<double> cosineSimKLDivRatio
+                = cosineSimPerFrameIndexOfTarget.array() / klDivPerFrameIndexOfTarget.array();
+
         const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
-                foundIonsPerFrameIndexOfTargetFactorial.array()
+                cosineSimKLDivRatio.array()
+                * foundIonsPerFrameIndexOfTarget.array().square().cast<double>()
                 * fractionFoundIonsPerFrameIndexOfTarget.array()
-                * mzProductPerFrameIndexOfTarget.array().sqrt()
-                * cosineSimPerFrameIndexOfTarget.array()
-                ).sqrt().sqrt();
+                * foundIonsPerFrameIndexOfTarget.array().pow(3).cast<double>()
+                ).sqrt();
+
+//        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
+//                foundIonsPerFrameIndexOfTargetFactorial.array()
+//                * fractionFoundIonsPerFrameIndexOfTarget.array()
+//                * mzProductPerFrameIndexOfTarget.array().sqrt()
+//                * cosineSimPerFrameIndexOfTarget.array()
+//                ).sqrt().sqrt();
 
         frameIndexScoreResultOfTarget->cosineSimPerFrameIndexOfTargetVec
                 = EigenUtils::convertEigenVectorToQVector(cosineSimPerFrameIndexOfTarget);

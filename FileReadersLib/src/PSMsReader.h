@@ -73,11 +73,33 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     bool isDecoy = false;
     double rescore = -1.0;
 
+    /////
     double pVal = -1.0;
     double tTest = -1.0;
     double frameFStat = -1.0;
     double pValFrameFtest = -1.0;
     double frameError = -1.0;
+
+    double scoreMean = -1.0;
+    double scoreMedian = -1.0;
+    double scoreStDev = -1.0;
+    double scoreMin = -1.0;
+    double scoreMax = -1.0;
+
+    double discScoreMean = -1.0;
+    double discScoreMedian = -1.0;
+    double discScoreStDev = -1.0;
+    double discScoreMin = -1.0;
+    double discScoreMax = -1.0;
+
+    int frameCandidateCount = -1;
+
+    double cosineSim = -1.0;
+    double klDiv = -1.0;
+    double fractionFound = -1.0;
+    int ionsFound = -1;
+
+    int peptideSize = -1;
 
     QMap<QString, QVariant> map() override {
 

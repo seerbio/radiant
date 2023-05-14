@@ -250,6 +250,33 @@ public:
         return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
     }
 
+    template<typename T>
+    static Eigen::VectorX<T> rowWiseKLDivergenceOfMatrices(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2
+    ) {
+
+        const double fillVal = 1.0;
+
+        Eigen::MatrixX<double> mat1Sum = mat1.array().rowwise().sum();
+        thresholdMatrix(0.0, fillVal, &mat1Sum);
+
+        Eigen::MatrixX<double> mat2Sum = mat2.array().rowwise().sum();
+        thresholdMatrix(0.0, fillVal, &mat2Sum);
+
+        mat1 /= mat1Sum;
+        mat2 /= mat2Sum;
+
+        mat1 = (mat1.array() < 1e-5).select(1e-5, mat1);
+        mat2 = (mat2.array() < 1e-5).select(1e-5, mat2);
+
+        const Eigen::MatrixX<double> mat1mat2Quotient = mat1.array() / mat2.array();
+        const Eigen::MatrixX<double> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
+        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
+
+        return mat1.array() * mat1mat2QuotientLog2Sum;
+    }
+
 
     template <typename EigenMatrix>
     static int nonZeros(EigenMatrix v1) {
