@@ -182,19 +182,19 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &frameScoreVectorOutput
             ); ree;
 
-//    QVector<PSMsReaderRow> psmReaderRowsRecal;
-//    e = processFrameScoreVectors(
-//            frameScoreVectorOutput,
-//            msDataFilePath,
-//            m_pythiaParameters,
-//            &psmReaderRowsRecal
-//            ); ree;
+    QVector<PSMsReaderRow> psmReaderRowsRecal;
+    e = processFrameScoreVectors(
+            frameScoreVectorOutput,
+            msDataFilePath,
+            m_pythiaParameters,
+            &psmReaderRowsRecal
+            ); ree;
 
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(
-//            psmReaderRowsRecal,
-//            resultsFilePath
-//            ); ree;
+    e = ParquetReader::write(
+            psmReaderRowsRecal,
+            resultsFilePath
+            ); ree;
 
     ERR_RETURN
 }
@@ -314,6 +314,7 @@ namespace {
                 ); rree;
 
         QVector<PSMsReaderRow> psmsReaderRows;
+        e = msFrameScoretronProcessormatic.processFrameScoreVectors(&psmsReaderRows); rree;
 
         return {e, psmsReaderRows};
     }

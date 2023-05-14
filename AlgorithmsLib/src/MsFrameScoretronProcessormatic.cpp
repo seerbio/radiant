@@ -420,7 +420,7 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
 
     QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPredsFiltered;
 
-#define REMOVE_NEG_DISC_SCORES
+//#define REMOVE_NEG_DISC_SCORES
 #ifdef REMOVE_NEG_DISC_SCORES
     e = removeNegativeScanPredsFromFirstPassTandemDeconResults(
             pepSeqVsTandemDeconvolverResult,
