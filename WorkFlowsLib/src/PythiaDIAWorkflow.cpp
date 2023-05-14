@@ -182,13 +182,13 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &frameScoreVectorOutput
             ); ree;
 
-    QVector<PSMsReaderRow> psmReaderRowsRecal;
-    e = processFrameScoreVectors(
-            frameScoreVectorOutput,
-            msDataFilePath,
-            m_pythiaParameters,
-            &psmReaderRowsRecal
-            ); ree;
+//    QVector<PSMsReaderRow> psmReaderRowsRecal;
+//    e = processFrameScoreVectors(
+//            frameScoreVectorOutput,
+//            msDataFilePath,
+//            m_pythiaParameters,
+//            &psmReaderRowsRecal
+//            ); ree;
 
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
 //    e = ParquetReader::write(

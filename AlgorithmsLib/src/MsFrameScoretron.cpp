@@ -181,28 +181,26 @@ namespace {
         const Eigen::VectorX<double> foundIonsPerFrameIndexOfTargetFactorial
                 = foundIonsPerFrameIndexOfTarget.unaryExpr([](int x) { return MathUtils::factorial(x); }).cast<double>();
 
-//        const ReScore reScore = std::sqrt(MathUtils::pRound((cosineSim / klDiv)
-//                                                            * std::pow(ionsFound, 2)
-//                                                            * fractionFound
-//                                                            * std::pow(ionsFound, 3),
-//                                                            S_GLOBAL_SETTINGS.ROUNDING_PRECISION));
-
         const Eigen::VectorX<double> cosineSimKLDivRatio
                 = cosineSimPerFrameIndexOfTarget.array() / klDivPerFrameIndexOfTarget.array();
 
+//#define USE_OLD_SCORING
+#ifdef USE_OLD_SCORING
+        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
+                foundIonsPerFrameIndexOfTargetFactorial.array()
+                * fractionFoundIonsPerFrameIndexOfTarget.array()
+                * mzProductPerFrameIndexOfTarget.array().sqrt()
+                * cosineSimPerFrameIndexOfTarget.array()
+                ).sqrt().sqrt();
+#else
         const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
                 cosineSimKLDivRatio.array()
                 * foundIonsPerFrameIndexOfTarget.array().square().cast<double>()
                 * fractionFoundIonsPerFrameIndexOfTarget.array()
                 * foundIonsPerFrameIndexOfTarget.array().pow(3).cast<double>()
-                ).sqrt();
+        ).sqrt();
 
-//        const Eigen::VectorX<double> scorePerFrameIndexOfTarget = (
-//                foundIonsPerFrameIndexOfTargetFactorial.array()
-//                * fractionFoundIonsPerFrameIndexOfTarget.array()
-//                * mzProductPerFrameIndexOfTarget.array().sqrt()
-//                * cosineSimPerFrameIndexOfTarget.array()
-//                ).sqrt().sqrt();
+#endif
 
         frameIndexScoreResultOfTarget->cosineSimPerFrameIndexOfTargetVec
                 = EigenUtils::convertEigenVectorToQVector(cosineSimPerFrameIndexOfTarget);
