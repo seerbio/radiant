@@ -31,28 +31,6 @@ Err buildPythiaParameters(const QString &pythiaParametersFilePath,
     ERR_RETURN
 }
 
-Err generatePeptidesFromFasta(
-        const PythiaParameters &pythiaParameters,
-        const QString &fastaFilePath,
-        const QString &targetMzCollisionCSVFilePath,
-        QString *outputFilePath
-        ) {
-
-    ERR_INIT
-
-    FastaFileToPeptidesListWorkFlow fastaFileToPeptidesListWorkFlow;
-
-    e = fastaFileToPeptidesListWorkFlow.init(pythiaParameters); ree;
-
-    e = fastaFileToPeptidesListWorkFlow.exec(
-            fastaFilePath,
-            targetMzCollisionCSVFilePath,
-            outputFilePath
-            ); ree;
-
-    ERR_RETURN
-}
-
 
 int main(int argc, char *argv[]) {
 
@@ -79,17 +57,6 @@ int main(int argc, char *argv[]) {
         qDebug() << "Error reading Pythia Parameters file!";
     }
 
-    QString outputPepLibBuilderCSVFilePath;
-    e = generatePeptidesFromFasta(
-            pythiaParameters,
-            cliParameters.fastaFilePath,
-            cliParameters.targetMzCollisionCSVFilePath,
-            &outputPepLibBuilderCSVFilePath
-            );
-    if (e != eNoError) {
-        qDebug() << "Error generating peptides from fasta";
-    }
-
     const QString model1FilePath
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
     const QString model2FilePath
@@ -113,13 +80,13 @@ int main(int argc, char *argv[]) {
         qDebug() << "buiding Library builder input succeeded";
     }
 
-    e = libraryBuilderWorkFlow.exec(
-            outputPepLibBuilderCSVFilePath,
-            &fragLibFilePath
-    );
-    if (e != eNoError) {
-        qDebug() << "Building library failed";
-    }
+//    e = libraryBuilderWorkFlow.exec(
+//            outputPepLibBuilderCSVFilePath,
+//            &fragLibFilePath
+//    );
+//    if (e != eNoError) {
+//        qDebug() << "Building library failed";
+//    }
 
     return 0;
 

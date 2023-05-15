@@ -44,7 +44,8 @@ FROM base AS build
 #
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y ca-certificates wget build-essential qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools libhdf5-dev libboost-all-dev \
+    && apt-get install --no-install-recommends -y ca-certificates wget build-essential  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools  \
+    libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -59,11 +60,11 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
 # Copy project source into the container
-COPY ./ /src/PythiaCpp/
+COPY ./ /src/PythiaDIACpp/
 
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaCpp/ -B /app/ \
+RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
     && make
 
 ################################################
@@ -85,7 +86,7 @@ WORKDIR /app/
 CMD ["ctest"]
 
 
-################################################
+###############################################
 #
 # Deploy stage
 #
@@ -110,59 +111,60 @@ RUN apt-get update \
 
 # Copy some extra contents into /app/
 RUN cp \
-    /src/PythiaCpp/control \
-    /src/PythiaCpp/build_deb.sh \
-    /src/PythiaCpp/s3_package_uploader.py \
+    /src/PythiaDIACpp/control \
+    /src/PythiaDIACpp/build_deb.sh \
+    /src/PythiaDIACpp/s3_package_uploader.py \
     /app/
+
+RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /app/bin/libarrow.so.1100
+
 
 WORKDIR /app/
 
-ARG pythia_version=1.0
-ENV package_dir=pythia_${pythia_version}
+ARG pythia_dia_version=0.01
+ENV package_dir=pythia_dia_${pythia_dia_version}
 ENV PACKAGE_NAME=${package_dir}.deb
 
 # This should work with the default entrypoint to build and deploy.
 CMD ["/bin/bash", "-c", "./build_deb.sh && python s3_package_uploader.py"]
 
-# (Drew Nichols, 2022-07-25)
-# I was imagining this container just for CI purposes only.
-# not to run the app in production.  ie, use this to make a deb package
-# that can be used in pipelines.  But now that I think about it, I'm
-# considering actually just using this container in production.
-# need to weigh the pros and cons.
-################################################
+#################################################
+##
+## App stage
+##
+## Here we build the final container used to run the app in production.
+## Must be the last stage for compatibility with GitHub Actions build.
+##
+#################################################
+#FROM base AS app
 #
-# App stage
+##
+## Set labels
+##
+#LABEL author="Seer, Inc."
+#LABEL description="PythiaDIACpp"
 #
-# Here we build the final container used to run the app in production.
-# Must be the last stage for compatibility with GitHub Actions build.
+#RUN apt-get update \
+#    && apt-get install --no-install-recommends -y build-essential cmake qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools  \
+#    hdf5-tools libhdf5-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 libcurl4-openssl-dev  libbrotli-dev \
+#    && apt-get autoremove -y \
+#    && apt-get clean \
+#    && rm -rf /var/lib/apt/lists/*
 #
-################################################
-FROM base AS app
-
+#COPY --from=build /app/ /app/
+##COPY --from=build /app/AlgorithmsLib/ /app/AlgorithmsLib/
+##COPY --from=build /app/ChemLib/ /app/ChemLib/
+##COPY --from=build /app/EigenLib/ /app/EigenLib/
+##COPY --from=build /app/FileReadersLib/ /app/FileReadersLib/
+##COPY --from=build /app/MachineLrnLib/ /app/MachineLrnLib/
+##COPY --from=build /app/UtilsLib/ /app/UtilsLib/
+##COPY --from=build /app/WorkFlowsLib/ /app/WorkFlowsLib/
+##COPY --from=build /app/ThirdPartyLibs/arrow_parquet/release/. /app/bin/
 #
-# Set labels
+## Set up a dedicated folder as the normal working dir
+#WORKDIR /work/
 #
-LABEL author="Seer, Inc."
-LABEL description="PythiaCpp"
-
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y build-essential cmake qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools libhdf5-dev libboost-all-dev \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /app/bin/ /app/bin/
-COPY --from=build /app/ChemLib/ /app/ChemLib/
-COPY --from=build /app/EigenLib/ /app/EigenLib/
-COPY --from=build /app/FileReadersLib/ /app/FileReadersLib/
-COPY --from=build /app/MachineLrnLib/ /app/MachineLrnLib/
-COPY --from=build /app/UtilsLib/ /app/UtilsLib/
-
-# Set up a dedicated folder as the normal working dir
-WORKDIR /work/
-
-# Using this entrypoint means the "command" passed to `docker run` will be arguments to
-# this binary (e.g. `docker run seer/pythia -h`). To run a different binary requires
-# overriding the entrypoint (e.g. `docker run --entrypoint /app/bin/Pythia)
-ENTRYPOINT ["/app/bin/PythiaFragger"]
+## Using this entrypoint means the "command" passed to `docker run` will be arguments to
+## this binary (e.g. `docker run seer/pythia -h`). To run a different binary requires
+## overriding the entrypoint (e.g. `docker run --entrypoint /app/bin/Pythia)
+#ENTRYPOINT ["/app/bin/PythiaDIACpp"]

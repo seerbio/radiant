@@ -67,7 +67,7 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     e = wf.exec(
             fastaFilePath,
             targetMzCEFilePath,
-            &outputFilePath
+            outputFilePath
             );
     QCOMPARE(e, eNoError);
 

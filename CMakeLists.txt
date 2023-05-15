@@ -14,6 +14,7 @@ PROJECT(PythiaDIACpp)
 # cmake .. -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON
 # make
 
+### INSTRUCTIONS TO PULL FILES FROM DOCKER CONTAINER
 # zip the release directory
 
 # Open separate termial window
@@ -28,6 +29,7 @@ PROJECT(PythiaDIACpp)
 
 # sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip -
 # sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip - > arrow_parquet.zip
+########################################################
 
 # LIBRARIES TO ADD TO FRESH INSTALL
 # sudo apt-get install libutf8proc2
