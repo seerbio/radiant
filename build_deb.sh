@@ -16,7 +16,7 @@ set -eu -o pipefail
 # Required argument (as env var)
 package_dir=${package_dir}
 
-pythia_bin=${pythia_bin:=${package_dir}/usr/local/bin/PythiaCPP}
+pythia_bin=${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}
 pythia_lib=${pythia_lib:=${package_dir}/usr/lib}
 
 mkdir -p ${pythia_bin}
