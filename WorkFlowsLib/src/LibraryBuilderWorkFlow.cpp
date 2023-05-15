@@ -62,31 +62,6 @@ Err LibraryBuilderWorkFlow::init(
 
 namespace {
 
-    Err readCSV(
-            const QString &peptidesCSVFilePath,
-            QVector<PeptidePredictionInput> *peptidePredictionInputs
-            ) {
-
-        ERR_INIT
-
-        qDebug() << "Reading csv" << peptidesCSVFilePath;
-
-        CSVReader csvReader;
-
-        QVector<CSVReaderInputBase> readRows;
-        e = csvReader.readDataFromCSV(
-                peptidesCSVFilePath,
-                &readRows
-                ); ree
-
-        e =  CSVReaderInputBase::convertSharedPointersToInputStruct(
-                readRows,
-                peptidePredictionInputs
-        ); ree;
-
-        ERR_RETURN
-    }
-
     Err buildTandemPredictionInputs(
             const AminoAcids &aminoAcids,
             QVector<PeptidePredictionInput> *peptidePredictionInputs
@@ -257,7 +232,7 @@ Err LibraryBuilderWorkFlow::exec(
     e = ErrorUtils::isNotEmpty(m_tandemPredictionModels); ree;
 
     QVector<PeptidePredictionInput> peptidePredictionInputs;
-    e = readCSV(
+    e = CSVReader::read(
             peptidesCSVFilePath,
             &peptidePredictionInputs
             ); ree;

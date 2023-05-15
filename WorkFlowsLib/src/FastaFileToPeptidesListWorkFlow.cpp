@@ -29,7 +29,6 @@ Err FastaFileToPeptidesListWorkFlow::init(const PythiaParameters &pythiaParamete
     ERR_RETURN
 }
 
-
 namespace {
 
     Err writePeptideListToParquet(
@@ -61,8 +60,8 @@ namespace {
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::exec(
         const QString &fastaFilePath,
-        const QString &targetMzCollisionCSV,
-        QString *outputFilePath
+        const QString &targetMzCollisionCSVFilePath,
+        const QString &outputFilePath
         ) {
 
     ERR_INIT
@@ -87,12 +86,7 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
     e = writeLibraryBuilderCSV(
             peptideSequences,
-            targetMzCollisionCSV
-            ); ree;
-
-    e = writePeptideListToParquet(
-            fastaFilePath,
-            peptideSequences,
+            targetMzCollisionCSVFilePath,
             outputFilePath
             ); ree;
 
@@ -155,8 +149,6 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
             peptideSequences->push_back(ps);
         }
     }
-
-    qDebug() << "SLKFJDSLFJSDL" << entered.value("YSHYNERDEXPHNDXAXXK");
 
     qDebug() << "Targets size" << peptideSequences->size();
     ERR_RETURN
@@ -272,7 +264,6 @@ namespace {
 
         ERR_INIT
 
-
         QVector<DIAMzTargetsReaderRow> diaMzTargetRows;
 
         e = CSVReader::read(
@@ -301,7 +292,8 @@ namespace {
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
         const QVector<PeptideSequence> &peptideSequences,
-        const QString &targetMzCollisionCSV
+        const QString &targetMzCollisionCSV,
+        const QString &outputFilePath
 ) {
 
     ERR_INIT
@@ -316,12 +308,6 @@ Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
 
     const QVector<double> ceLookUpVecKey = targetMzVsCollisionEnergy.keys().toVector();
     const QVector<double> ceLookUpVecVals = targetMzVsCollisionEnergy.values().toVector();
-
-    QString outputFilePath = targetMzCollisionCSV;
-    outputFilePath = outputFilePath.replace(
-            S_GLOBAL_SETTINGS.DOT_CSV,
-            S_GLOBAL_SETTINGS.DOT_LIB + S_GLOBAL_SETTINGS.DOT_CSV
-    );
 
     QVector<PeptidePredictionInput> rowsToWrite;
 
@@ -347,14 +333,7 @@ Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
         }
     }
 
-    QVector<QSharedPointer<CSVReaderInputBase>> sharedPtrs
-            = CSVReaderInputBase::convertInputStructToSharedPointers(rowsToWrite); ree;
-
-    CSVReader reader;
-    e = reader.writeDataToCSV(
-            outputFilePath,
-            sharedPtrs
-            ); ree;
+    e = CSVReader::write(rowsToWrite, outputFilePath); ree;
 
     qDebug() << "Library build csv written to:" << outputFilePath;
     ERR_RETURN

@@ -113,6 +113,8 @@ public:
 
         ERR_INIT
 
+        qDebug() << "Reading filepath" << fileURI;
+
         readerRows->clear();
 
         CSVReader reader;

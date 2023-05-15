@@ -141,38 +141,47 @@ struct PythiaParameters{
 
         if (chargeStateMin > chargeStateMax) {
             print();
+            qDebug() << chargeStateMin << chargeStateMax << "Charge state min greater than max";
             return false;
         }
         if (chargeStateMin < 1) {
             print();
+            qDebug() << chargeStateMin << "charge state min";
             return false;
         }
         if (chargeStateMax < 1) {
             print();
+            qDebug() << chargeStateMax << "charge state max";
             return false;
         }
         if (maxTandemPointCount < 0) {
             print();
+            qDebug() << maxTandemPointCount << "max tandem point count";
             return false;
         }
         if (returnPSMTopN < 0) {
             print();
+            qDebug() << returnPSMTopN << "return PSM Top N";
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
             print();
+            qDebug() << ms2ExtractionWidthPPM << "ms2ExtractPPM";
             return false;
         }
         if (precursorExtractionWindowThomsons < 0) {
             print();
+            qDebug() << precursorExtractionWindowThomsons << "precursorExtractWindowThompsons";
             return false;
         }
         if (topNMs2Ions < 8) {
             print();
+            qDebug() << topNMs2Ions << "topNMS2Ions";
             return false;
         }
         if (minFoundMzPeaks < 3) {
             print();
+            qDebug() << minFoundMzPeaks << "minFoundMzPeaks";
             return false;
         }
 

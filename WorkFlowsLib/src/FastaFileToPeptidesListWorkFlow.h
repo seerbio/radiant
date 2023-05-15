@@ -25,11 +25,13 @@ public:
     ~FastaFileToPeptidesListWorkFlow() = default;
 
     Err init(const PythiaParameters &pythiaParameters);
+
     Err exec(
             const QString &fastaFilePath,
-            const QString &targetMzCollisionCSV,
-            QString *outputFilePath
+            const QString &targetMzCollisionCSVFilePath,
+            const QString &outputFilePath
             );
+
 
 private:
 
@@ -45,7 +47,8 @@ private:
 
     Err writeLibraryBuilderCSV(
             const QVector<PeptideSequence> &peptideSequences,
-            const QString &targetMzCollisionCSV
+            const QString &targetMzCollisionCSV,
+            const QString &outputFilePath
     );
 
 private:

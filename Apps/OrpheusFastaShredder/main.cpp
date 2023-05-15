@@ -35,7 +35,7 @@ Err generatePeptidesFromFasta(
         const PythiaParameters &pythiaParameters,
         const QString &fastaFilePath,
         const QString &targetMzCollisionCSVFilePath,
-        QString *outputFilePath
+        const QString &outputFilePath
         ) {
 
     ERR_INIT
@@ -79,50 +79,19 @@ int main(int argc, char *argv[]) {
         qDebug() << "Error reading Pythia Parameters file!";
     }
 
-    QString outputPepLibBuilderCSVFilePath;
+    const QString outputPepLibBuilderCSVFilePath
+        = cliParameters.fastaFilePath + S_GLOBAL_SETTINGS.DOT_CSV;
+
     e = generatePeptidesFromFasta(
             pythiaParameters,
             cliParameters.fastaFilePath,
             cliParameters.targetMzCollisionCSVFilePath,
-            &outputPepLibBuilderCSVFilePath
+            outputPepLibBuilderCSVFilePath
             );
     if (e != eNoError) {
         qDebug() << "Error generating peptides from fasta";
     }
 
-    const QString model1FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_1.hdf5.json");
-    const QString model2FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_2.hdf5.json");
-    const QString model3FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_3.hdf5.json");
-    const QString model4FilePath
-            = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
-
-    QString fragLibFilePath;
-
-    LibraryBuilderWorkFlow libraryBuilderWorkFlow;
-    e = libraryBuilderWorkFlow.init(
-            pythiaParameters,
-            model1FilePath,
-            model2FilePath,
-            model3FilePath,
-            model4FilePath
-    );
-    if (e != eNoError) {
-        qDebug() << "buiding Library builder input succeeded";
-    }
-
-    e = libraryBuilderWorkFlow.exec(
-            outputPepLibBuilderCSVFilePath,
-            &fragLibFilePath
-    );
-    if (e != eNoError) {
-        qDebug() << "Building library failed";
-    }
-
     return 0;
 
 }
-
-
