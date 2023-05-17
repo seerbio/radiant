@@ -65,8 +65,6 @@ int main(int argc, char *argv[]) {
     const QString model4FilePath
             = QDir(qApp->applicationDirPath()).filePath("rnn_linear_charge_w_precursors_nce_4.hdf5.json");
 
-    QString fragLibFilePath;
-
     LibraryBuilderWorkFlow libraryBuilderWorkFlow;
     e = libraryBuilderWorkFlow.init(
             pythiaParameters,
@@ -76,16 +74,18 @@ int main(int argc, char *argv[]) {
             model4FilePath
     );
     if (e != eNoError) {
-        qDebug() << "buiding Library builder input succeeded";
+        qDebug() << e;
+        qDebug() << "Istros initialization failed";
     }
 
-//    e = libraryBuilderWorkFlow.exec(
-//            outputPepLibBuilderCSVFilePath,
-//            &fragLibFilePath
-//    );
-//    if (e != eNoError) {
-//        qDebug() << "Building library failed";
-//    }
+    QString fragLibFilePath;
+    e = libraryBuilderWorkFlow.exec(
+            cliParameters.peptideLibBuilderCSVFilePath,
+            &fragLibFilePath
+    );
+    if (e != eNoError) {
+        qDebug() << "Building library failed";
+    }
 
     return 0;
 

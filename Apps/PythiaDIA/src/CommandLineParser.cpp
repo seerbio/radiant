@@ -20,28 +20,6 @@ CommandLineParser::CommandLineParser() {
 }
 
 
-namespace {
-
-    bool checkFileNameExtension(
-            const QString &filePath,
-            const QString &expectedFileExtension
-            ) {
-
-        QFileInfo fi(filePath);
-        const QString fileSuffix = fi.suffix();
-
-        if (StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false) && fi.isFile()) {
-            return true;
-        }
-
-        else if (fi.isDir()) {
-            return true;
-        }
-
-        return false;
-    }
-
-}//namespace
 bool CommandLineParser::validateArguments(const QStringList &args) {
 
     QStringList argumentsLocal(args);

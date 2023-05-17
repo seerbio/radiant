@@ -20,6 +20,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
         src/DIAMzTargetsReader.cpp
         src/ExtractedScansReader.cpp
@@ -38,6 +39,7 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
+        src/CommandLineParserUtils.h
         src/CSVReader.h
         src/DIAMzTargetsReader.h
         src/ExtractedScansReader.h

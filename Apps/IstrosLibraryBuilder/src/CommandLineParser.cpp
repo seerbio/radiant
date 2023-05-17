@@ -2,6 +2,8 @@
 // Created by Drucifer on 11/24/2021.
 //
 #include "CommandLineParser.h"
+
+#include "CommandLineParserUtils.h"
 #include "GlobalSettings.h"
 #include "StringUtils.h"
 
@@ -9,59 +11,30 @@
 
 
 namespace {
-    const QString ARG_FASTA_PATH = QStringLiteral("fasta-path");
-    const QString ARG_TARGET_CE_CSV_PATH = QStringLiteral("target-mz-ce-csv-path");
+    const QString ARG_PEPTIDES_CSV_PATH = QStringLiteral("peptides-csv-path");
     const QString ARG_PYTHIA_PARAMS = QStringLiteral("pythia-path");
 }//END NAMESPACE
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
-    addPositionalArgument(ARG_TARGET_CE_CSV_PATH, QObject::tr("*.csv file"));
+    addPositionalArgument(ARG_PEPTIDES_CSV_PATH, QObject::tr("*.csv file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.pythia file"));
 }
 
-namespace {
-
-    bool checkFileNameExtension(
-            const QString &filePath,
-            const QString &expectedFileExtension
-            ) {
-
-        QFileInfo fi(filePath);
-        const QString fileSuffix = fi.suffix();
-
-        qDebug() << "drewholio" << fileSuffix << expectedFileExtension;
-        qDebug() << StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false);
-        qDebug() << fi.isFile();
-        qDebug() << fi.isDir();
-
-        if (StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false) && fi.isFile()) {
-            return true;
-        }
-
-        else if (fi.isDir()) {
-            return true;
-        }
-
-        return false;
-    }
-
-}//namespace
 bool CommandLineParser::validateArguments(const QStringList &args) {
 
     QStringList argumentsLocal(args);
-    if (argumentsLocal.size() != 4) {
+    if (argumentsLocal.size() != 3) {
         qCritical() << QStringLiteral("Expected 3 arguments.  Received %1").arg(argumentsLocal.size() - 1);
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
     }
 
-    m_cliParams.fastaFilePath = args[1];
+    m_cliParams.peptideLibBuilderCSVFilePath = args[1];
 
     const bool fastaFilePathIsValid
-        = checkFileNameExtension(m_cliParams.fastaFilePath, "fasta");
+        = CommandLineParserUtils::checkFileNameExtension(m_cliParams.peptideLibBuilderCSVFilePath, "csv");
 
     if (!fastaFilePathIsValid) {
         qCritical() << QStringLiteral("First command line argument *.fasta, argument invalid");
@@ -70,21 +43,10 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    m_cliParams.targetMzCollisionCSVFilePath = args[2];
-
-    const bool targetMzCollisionCSVFilePathValid
-            = checkFileNameExtension(m_cliParams.targetMzCollisionCSVFilePath, "csv");
-    if (!targetMzCollisionCSVFilePathValid) {
-        qCritical() << QStringLiteral("Second command line argument *.csv argument invalid");
-        argumentsLocal.append("-h");
-        process(argumentsLocal);
-        return false;
-    }
-
-    m_cliParams.pythiaParametersFilePath = args[3];
+    m_cliParams.pythiaParametersFilePath = args[2];
 
     const bool pythiaPathIsValid
-            = checkFileNameExtension(m_cliParams.pythiaParametersFilePath, "pythia");
+            = CommandLineParserUtils::checkFileNameExtension(m_cliParams.pythiaParametersFilePath, "pythia");
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Second command line argument *.pythia argument invalid");
         argumentsLocal.append("-h");
@@ -99,8 +61,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
 const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const {
 
-    qDebug() << ARG_FASTA_PATH << m_cliParams.fastaFilePath;
-    qDebug() << ARG_TARGET_CE_CSV_PATH << m_cliParams.targetMzCollisionCSVFilePath;
+    qDebug() << ARG_PEPTIDES_CSV_PATH << m_cliParams.peptideLibBuilderCSVFilePath;
     qDebug() << ARG_PYTHIA_PARAMS  << m_cliParams.pythiaParametersFilePath;
 
     return m_cliParams;
