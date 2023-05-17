@@ -116,8 +116,8 @@ RUN cp \
     /src/PythiaDIACpp/s3_package_uploader.py \
     /app/
 
-RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /app/bin/libarrow.so.1100
-
+RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
+RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
 
 WORKDIR /app/
 
@@ -126,7 +126,7 @@ ENV package_dir=pythia_dia_${pythia_dia_version}
 ENV PACKAGE_NAME=${package_dir}.deb
 
 # This should work with the default entrypoint to build and deploy.
-CMD ["/bin/bash", "-c", "./build_deb.sh && python s3_package_uploader.py"]
+CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
 
 #################################################
 ##
@@ -151,7 +151,7 @@ CMD ["/bin/bash", "-c", "./build_deb.sh && python s3_package_uploader.py"]
 #    && apt-get clean \
 #    && rm -rf /var/lib/apt/lists/*
 #
-#COPY --from=build /app/ /app/
+#COPY --from=deploy /app/ /app/
 ##COPY --from=build /app/AlgorithmsLib/ /app/AlgorithmsLib/
 ##COPY --from=build /app/ChemLib/ /app/ChemLib/
 ##COPY --from=build /app/EigenLib/ /app/EigenLib/

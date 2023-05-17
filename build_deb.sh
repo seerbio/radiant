@@ -38,6 +38,8 @@ cp FileReadersLib/libFileReadersLib.so $pythia_lib/libFileReadersLib.so
 cp MachineLrnLib/libMachineLrnLib.so $pythia_lib/libMachineLrnLib.so
 cp UtilsLib/libUtilsLib.so $pythia_lib/libUtilsLib.so
 cp WorkFlowsLib/libWorkFlowsLib.so $pythia_lib/libWorkFlowsLib.so
+cp /usr/lib/libarrow.so.1100 $pythia_lib/libarrow.so.1100
+cp /usr/lib/libparquet.so.1100 $pythia_lib/libparquet.so.1100
 
 mkdir -p ${package_dir}/DEBIAN/
 cp control $package_dir/DEBIAN/control

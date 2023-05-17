@@ -49,7 +49,7 @@ private:
             const QVector<PeptideSequence> &peptideSequences,
             const QString &targetMzCollisionCSV,
             const QString &outputFilePath
-    );
+    ) const;
 
 private:
 

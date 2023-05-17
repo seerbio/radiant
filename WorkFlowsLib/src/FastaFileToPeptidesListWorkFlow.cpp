@@ -294,7 +294,7 @@ Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
         const QVector<PeptideSequence> &peptideSequences,
         const QString &targetMzCollisionCSV,
         const QString &outputFilePath
-) {
+) const {
 
     ERR_INIT
 
