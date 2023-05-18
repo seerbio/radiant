@@ -33,8 +33,10 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.peptideLibBuilderCSVFilePath = args[1];
 
-    const bool fastaFilePathIsValid
-        = CommandLineParserUtils::checkFileNameExtension(m_cliParams.peptideLibBuilderCSVFilePath, "csv");
+    const bool fastaFilePathIsValid = CommandLineParserUtils::checkFileNameExtension(
+            m_cliParams.peptideLibBuilderCSVFilePath,
+            S_GLOBAL_SETTINGS.CSV_FILE_EXTENSION
+            );
 
     if (!fastaFilePathIsValid) {
         qCritical() << QStringLiteral("First command line argument *.fasta, argument invalid");
@@ -45,8 +47,11 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.pythiaParametersFilePath = args[2];
 
-    const bool pythiaPathIsValid
-            = CommandLineParserUtils::checkFileNameExtension(m_cliParams.pythiaParametersFilePath, "pythia");
+    const bool pythiaPathIsValid = CommandLineParserUtils::checkFileNameExtension(
+            m_cliParams.pythiaParametersFilePath,
+            S_GLOBAL_SETTINGS.PYTHIA_FILE_EXTENSION
+            );
+
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Second command line argument *.pythia argument invalid");
         argumentsLocal.append("-h");

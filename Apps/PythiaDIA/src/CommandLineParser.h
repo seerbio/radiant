@@ -15,9 +15,9 @@ class CommandLineParser  : public QCommandLineParser
 public:
 
     struct CliParameters{
-        QString peptidesCSVFilePath;
+        QString fragLibFilePath;
         QString pythiaParametersFilePath;
-        QString fastaFilePath;
+        QString msDataFilesDirectory;
     };
 
     CommandLineParser();

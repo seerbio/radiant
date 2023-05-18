@@ -47,8 +47,11 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.targetMzCollisionCSVFilePath = args[2];
 
-    const bool targetMzCollisionCSVFilePathValid
-            = CommandLineParserUtils::checkFileNameExtension(m_cliParams.targetMzCollisionCSVFilePath, "csv");
+    const bool targetMzCollisionCSVFilePathValid = CommandLineParserUtils::checkFileNameExtension(
+            m_cliParams.targetMzCollisionCSVFilePath,
+            S_GLOBAL_SETTINGS.CSV_FILE_EXTENSION
+            );
+
     if (!targetMzCollisionCSVFilePathValid) {
         qCritical() << QStringLiteral("Second command line argument *.csv argument invalid");
         argumentsLocal.append("-h");
@@ -58,8 +61,11 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.pythiaParametersFilePath = args[3];
 
-    const bool pythiaPathIsValid
-            = CommandLineParserUtils::checkFileNameExtension(m_cliParams.pythiaParametersFilePath, "pythia");
+    const bool pythiaPathIsValid = CommandLineParserUtils::checkFileNameExtension(
+            m_cliParams.pythiaParametersFilePath,
+            S_GLOBAL_SETTINGS.PYTHIA_FILE_EXTENSION
+            );
+
     if (!pythiaPathIsValid) {
         qCritical() << QStringLiteral("Second command line argument *.pythia argument invalid");
         argumentsLocal.append("-h");

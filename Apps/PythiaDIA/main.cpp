@@ -16,8 +16,10 @@
 using namespace Error;
 
 
-Err buildPythiaParameters(const QString &pythiaParametersFilePath,
-                          PythiaParameters *pythiaParameters) {
+Err buildPythiaParameters(
+        const QString &pythiaParametersFilePath,
+        PythiaParameters *pythiaParameters
+        ) {
 
     ERR_INIT
 
@@ -30,6 +32,29 @@ Err buildPythiaParameters(const QString &pythiaParametersFilePath,
     ERR_RETURN
 }
 
+Err getDataFilesFromDirectory(
+        const QString &dataFilesDirectory,
+        QStringList *dataFiles
+        ) {
+
+    ERR_INIT
+
+    QDirIterator it(dataFilesDirectory);
+    while (it.hasNext()) {
+
+        const QString &dataFilePath = it.next();
+        const QFileInfo fi(dataFilePath);
+        const QString fileExtension = fi.suffix();
+
+        const QString prqSuffix = S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION;
+
+        if (StringUtils::stringsMatch(prqSuffix, fileExtension, false)) {
+            dataFiles->push_back(dataFilePath);
+        }
+    }
+
+    ERR_RETURN
+}
 
 int main(int argc, char *argv[]) {
 
@@ -41,33 +66,55 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     CommandLineParser parser;
 
-    const QString mzMLFileURI
-            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
+    if (!parser.validateArguments(QCoreApplication::arguments())) {
+        return 1;
+    }
 
-    const QString fragLibPath
-            = "/home/anichols/Desktop/2022_02_22_Homo_sapiens_UP000005640.fragLib";
+    const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
+
+    const QString fragLibPath = cliParameters.fragLibFilePath;
+    const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
+    const QString msDataFilesDirectory = cliParameters.msDataFilesDirectory;
+
+    PythiaParameters pythiaParameters;
+    e = buildPythiaParameters(
+            pythiaParamsFilePath,
+            &pythiaParameters
+            );
+    if (e != eNoError) {
+        qDebug() << "Error reading pythia parameters";
+        return 1;
+    }
 
     PythiaDIAWorkflow pythiaDiaWorkflow;
     e = pythiaDiaWorkflow.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            pythiaParameters,
             fragLibPath
     );
     if (e != eNoError) {
-        qDebug() << "you done messed up";
-        //TODO properly handle error
+        qDebug() << "Error initializing Pythia Workflow Libraries";
+        return 1;
     }
 
-    e = pythiaDiaWorkflow.processFile(mzMLFileURI);
-    if (e != eNoError) {
-        qDebug() << "you done messed up";
-        //TODO properly handle error
-    }
+    QStringList dataFiles;
+    e = getDataFilesFromDirectory(
+            msDataFilesDirectory,
+            &dataFiles
+            ); ree;
 
+    e = ErrorUtils::isNotEmpty(dataFiles); ree;
+
+    for (const QString &dataFilePath : dataFiles) {
+
+        e = pythiaDiaWorkflow.processFile(dataFilePath);
+        if (e != eNoError) {
+            qDebug() << dataFilePath << "Did not run completely";
+            return 1;
+        }
+    }
 
     qDebug() << "PSMing done in" << et.elapsed() << "mSec";
 
     return 0;
 
 }
-
-
