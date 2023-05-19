@@ -3,58 +3,18 @@
 //
 
 #include "src/CommandLineParser.h"
+#include "CommandLineParserUtils.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
 #include "PythiaDIAWorkflow.h"
 #include "StringUtils.h"
 
 #include <QCoreApplication>
-#include <QDirIterator>
 #include <QElapsedTimer>
 
 
 using namespace Error;
 
-
-Err buildPythiaParameters(
-        const QString &pythiaParametersFilePath,
-        PythiaParameters *pythiaParameters
-        ) {
-
-    ERR_INIT
-
-    PythiaParameterReader pythiaParameterReader;
-    e = pythiaParameterReader.readFile(pythiaParametersFilePath); ree;
-
-    e = pythiaParameterReader.loadPythiaParameters(pythiaParameters); ree;
-    pythiaParameters->print();
-
-    ERR_RETURN
-}
-
-Err getDataFilesFromDirectory(
-        const QString &dataFilesDirectory,
-        QStringList *dataFiles
-        ) {
-
-    ERR_INIT
-
-    QDirIterator it(dataFilesDirectory);
-    while (it.hasNext()) {
-
-        const QString &dataFilePath = it.next();
-        const QFileInfo fi(dataFilePath);
-        const QString fileExtension = fi.suffix();
-
-        const QString prqSuffix = S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION;
-
-        if (StringUtils::stringsMatch(prqSuffix, fileExtension, false)) {
-            dataFiles->push_back(dataFilePath);
-        }
-    }
-
-    ERR_RETURN
-}
 
 int main(int argc, char *argv[]) {
 
@@ -77,7 +37,7 @@ int main(int argc, char *argv[]) {
     const QString msDataFilesDirectory = cliParameters.msDataFilesDirectory;
 
     PythiaParameters pythiaParameters;
-    e = buildPythiaParameters(
+    e = PythiaParameterReader::buildPythiaParameters(
             pythiaParamsFilePath,
             &pythiaParameters
             );
@@ -97,12 +57,20 @@ int main(int argc, char *argv[]) {
     }
 
     QStringList dataFiles;
-    e = getDataFilesFromDirectory(
+    e = CommandLineParserUtils::getDataFilesFromDirectory(
             msDataFilesDirectory,
             &dataFiles
-            ); ree;
+            );
+    if (e != eNoError) {
+        qDebug() << "Error reading data files.";
+        return 1;
+    }
 
     e = ErrorUtils::isNotEmpty(dataFiles); ree;
+    if (e != eNoError) {
+        qDebug() << "No data files found.";
+        return 1;
+    }
 
     for (const QString &dataFilePath : dataFiles) {
 

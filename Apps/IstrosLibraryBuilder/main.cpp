@@ -16,21 +16,6 @@
 using namespace Error;
 
 
-Err buildPythiaParameters(const QString &pythiaParametersFilePath,
-                          PythiaParameters *pythiaParameters) {
-
-    ERR_INIT
-
-    PythiaParameterReader pythiaParameterReader;
-    e = pythiaParameterReader.readFile(pythiaParametersFilePath); ree;
-
-    e = pythiaParameterReader.loadPythiaParameters(pythiaParameters); ree;
-    pythiaParameters->print();
-
-    ERR_RETURN
-}
-
-
 int main(int argc, char *argv[]) {
 
     ERR_INIT
@@ -48,7 +33,7 @@ int main(int argc, char *argv[]) {
     const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
     PythiaParameters pythiaParameters;
-    e = buildPythiaParameters(
+    e = PythiaParameterReader::buildPythiaParameters(
             cliParameters.pythiaParametersFilePath,
             &pythiaParameters
             );

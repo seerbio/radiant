@@ -388,3 +388,19 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     return pythiaParameters;
 }
+
+Err PythiaParameterReader::buildPythiaParameters(
+        const QString &pythiaParametersFilePath,
+        PythiaParameters *pythiaParameters
+) {
+
+    ERR_INIT
+
+    PythiaParameterReader pythiaParameterReader;
+    e = pythiaParameterReader.readFile(pythiaParametersFilePath); ree;
+
+    e = pythiaParameterReader.loadPythiaParameters(pythiaParameters); ree;
+    pythiaParameters->print();
+
+    ERR_RETURN
+}

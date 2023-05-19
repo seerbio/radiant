@@ -250,6 +250,11 @@ public:
 
     static PythiaParameters genericPythiaParametersForTests();
 
+    static Err buildPythiaParameters(
+            const QString &pythiaParametersFilePath,
+            PythiaParameters *pythiaParameters
+    );
+
 private:
 
     Err validateJsonKeys();

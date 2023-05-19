@@ -370,6 +370,8 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << "File is DIA" << isDIA();
 
+//#define WRITE_TARGET_CE_FILE
+#ifdef WRITE_TARGET_CE_FILE
     if (isDIA()) {
         qDebug() << "Mean Scan Count Per MS2 Target (DIA)" << static_cast<double>(ms2ScanSize) / uniqueTandemScanInfos.size();
 
@@ -396,6 +398,7 @@ Err MsReaderBase::printFileInfo() {
 
         qDebug() << "Target CSV written to" << outputFileName;
     }
+#endif
 
     ERR_RETURN
 }

@@ -62,6 +62,7 @@ SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/r
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
+ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 ADD_SUBDIRECTORY("Apps/OrpheusFastaShredder")
 ADD_SUBDIRECTORY("Apps/PythiaDIA")
 ADD_SUBDIRECTORY("ChemLib")

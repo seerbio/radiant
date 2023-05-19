@@ -22,6 +22,11 @@ public:
             const QString &expectedFileExtension
     );
 
+    static Err getDataFilesFromDirectory(
+            const QString &dataFilesDirectory,
+            QStringList *dataFiles
+    );
+
 
 };
 
