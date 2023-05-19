@@ -24,9 +24,10 @@ mkdir -p ${pythia_lib}
 
 echo "Copying DEB contents to package_dir…"
 
-cp bin/PythiaDIA $pythia_bin/PythiaDIA
-cp bin/OrpheusFastaShredder $pythia_bin/OrpheusFastaShredder
 cp bin/IstrosLibraryBuilder $pythia_bin/IstrosLibraryBuilder
+cp bin/LycaonMzMLTransmorgitron $pythia_bin/LycaonMzMLTransmorgitron
+cp bin/OrpheusFastaShredder $pythia_bin/OrpheusFastaShredder
+cp bin/PythiaDIA $pythia_bin/PythiaDIA
 cp bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json
 cp bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json
 cp bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json

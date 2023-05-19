@@ -66,13 +66,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    e = ErrorUtils::isNotEmpty(dataFiles); ree;
+    e = ErrorUtils::isNotEmpty(dataFiles);
     if (e != eNoError) {
         qDebug() << "No data files found.";
         return 1;
     }
 
     for (const QString &dataFilePath : dataFiles) {
+
+        qDebug() << "Processing file:" << dataFilePath;
 
         e = pythiaDiaWorkflow.processFile(dataFilePath);
         if (e != eNoError) {

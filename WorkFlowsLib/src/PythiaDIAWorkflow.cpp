@@ -140,7 +140,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QString msDataFilePathRecalibrated = msDataFilePath + ".reCal"; //drewholio remove this path but keep var
+    QString msDataFilePathRecalibrated = msDataFilePath; //drewholio remove this path but keep var
 
 //    const bool applySmooth2DCalibration = false;
 //    QVector<FrameParallelInput> frameParallelInputs;

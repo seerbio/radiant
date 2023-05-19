@@ -43,7 +43,7 @@ public:
             QVector<ParquetReaderInputBase> *rowsRead
     );
 
-    arrow::Status readDataFromParquetUniqueByColumn(
+    static arrow::Status readDataFromParquetUniqueByColumn(
             const QString &parquetFilePath,
             const QString &uniqueColumn,
             QVector<ParquetReaderInputBase> *rowsRead
@@ -800,11 +800,12 @@ namespace {
 
         ERR_RETURN
     }
-}
+}//namespace
 arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
         const QString &parquetFilePath,
         const QString &uniqueColumn,
-        QVector<ParquetReaderInputBase> *rowsRead) {
+        QVector<ParquetReaderInputBase> *rowsRead
+        ) {
 
     ERR_INIT
 
