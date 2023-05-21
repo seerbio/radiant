@@ -57,6 +57,14 @@ public:
             const AminoAcids &aminoAcids,
             double mz
             );
+
+    static QVector<double> calculateIsotopesFromMz(
+            double mz,
+            double charge,
+            int ionCountLeft,
+            int ionCountRight
+            );
+
 };
 
 

@@ -10,6 +10,7 @@
 #include "Error.h"
 
 #include <QDebug>
+#include <QPointF>
 
 #include <cmath>
 #include <vector>
@@ -179,6 +180,9 @@ public:
 
         return it - vec.begin();
     }
+
+
+    static QPointF closestXValPoint(const QVector<QPointF> &vec, double value);
 
     template<typename T>
     static int findMaxIndexInVector(const QVector<T> &vec) {

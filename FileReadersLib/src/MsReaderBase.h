@@ -125,6 +125,8 @@ public:
 
     int getNearestScanNumberFromScanTime(double scanTime);
 
+    int getNearestScanNumberFromScanNumber(int scanNumber);
+
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
     static Err splitScanPoints(
@@ -149,6 +151,9 @@ protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
+
+    QVector<ScanNumber> m_scanNumbers;
+    QVector<ScanTime> m_scanTimes;
 
     QString m_filePath;
 

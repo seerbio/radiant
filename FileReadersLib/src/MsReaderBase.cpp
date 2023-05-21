@@ -108,16 +108,36 @@ Err MsReaderBase::closeFile() {
 
 int MsReaderBase::getNearestScanNumberFromScanTime(double scanTime) {
 
-    QVector<double> scanTimes;
-    for (const MsScanInfo &si : m_msScanInfo) {
-        scanTimes.push_back(si.scanTime);
+    if (m_scanTimes.isEmpty()) {
+        std::transform(
+                m_msScanInfo.begin(),
+                m_msScanInfo.end(),
+                std::back_inserter(m_scanTimes),
+                [](const MsScanInfo &si){return si.scanTime;}
+        );
     }
 
-    const int nearestIndex = MathUtils::closest(scanTimes, scanTime);
+    const int nearestIndex = MathUtils::closest(m_scanTimes, scanTime);
 
-    const QList<int> &keys = m_msScanInfo.keys();
+    const QVector<ScanNumber> keys = m_msScanInfo.keys().toVector();
 
     return keys.at(nearestIndex);
+}
+
+int MsReaderBase::getNearestScanNumberFromScanNumber(int scanNumber) {
+
+    if (m_scanNumbers.isEmpty()) {
+        std::transform(
+                m_msScanInfo.begin(),
+                m_msScanInfo.end(),
+                std::back_inserter(m_scanNumbers),
+                [](const MsScanInfo &si){return si.scanNumber;}
+        );
+    }
+
+    const int nearestIndex = MathUtils::closest(m_scanNumbers, scanNumber);
+
+    return m_scanNumbers.at(nearestIndex);
 }
 
 QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
@@ -410,5 +430,3 @@ QString MsReaderBase::filePath() {
 int MsReaderBase::getFrameCount() {
     return getUniqueTandemMsScanInfos().size();
 }
-
-

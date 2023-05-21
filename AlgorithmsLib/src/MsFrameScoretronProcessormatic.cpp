@@ -4,6 +4,7 @@
 
 #include "MsFrameScoretronProcessormatic.h"
 
+#include "BiophysicalCalcs.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsUtils.h"
@@ -39,6 +40,13 @@ Err MsFrameScoretronProcessormatic::init(
             mzTargetStartStop,
             &m_msFrame
     ); ree;
+
+    const MsLevel msLevel = 1;
+    e = m_msReaderMS1ScansOnly.openFile(
+            msDataFilePath,
+            MsParquetReaderNamespace::MS_LEVEL,
+            {msLevel, msLevel}
+            ); ree;
 
     e = buildPepStrWModsVsExtractedScanRow(); ree;
     e = buildFrameIndexVsApexScorePeptideStringWithMods(); ree;
@@ -209,7 +217,7 @@ Err MsFrameScoretronProcessormatic::processFrameScoreVectors(QVector<PSMsReaderR
             continue;
         }
 
-        e = processorLogic(peptideStringWithMods, frameIndex); ree;
+        e = processorLogicForFrameIndex(peptideStringWithMods, frameIndex); ree;
     }
 
     sortDiscScoresDesc(&m_frameIndexVsPeptideDeconResult);
@@ -219,7 +227,7 @@ Err MsFrameScoretronProcessormatic::processFrameScoreVectors(QVector<PSMsReaderR
     ERR_RETURN
 }
 
-Err MsFrameScoretronProcessormatic::processorLogic(
+Err MsFrameScoretronProcessormatic::processorLogicForFrameIndex(
         const QVector<PeptideStringWithMods> &peptideStringWithMods,
         FrameIndex frameIndex
         ) {
@@ -546,7 +554,107 @@ namespace {
         return std::max(0, cleavePointCount);
     }
 
-}
+    Err extractMs1ForCandidate(
+        const ScanPoints &scanPoints,
+        double mz,
+        Charge charge,
+        double ppmTol,
+        double *cosineSim,
+        double *ppmDiff,
+        double *intensity,
+        int *monoOffset,
+        int *isotopesFoundCount
+            ){
+
+        ERR_INIT
+
+        *cosineSim = -1.0;
+        *ppmDiff = -1.0;
+        *intensity = -1.0;
+        *monoOffset = -1000;
+        *isotopesFoundCount = -1;
+
+        e = ErrorUtils::isNotEmpty(scanPoints); ree;
+        e = ErrorUtils::isAboveThreshold(
+                charge,
+                0,
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree;
+
+        const int leftIonCount = 2;
+        const int rightIonCount = 5;
+        const QVector<double> ms1Isotopes = BiophysicalCalcs::calculateIsotopesFromMz(
+                mz,
+                charge,
+                leftIonCount,
+                rightIonCount
+                );
+
+        const ScanPoints ms1ScanPoints = MsUtils::extractPointsFromPoints(
+                scanPoints,
+                ms1Isotopes,
+                ppmTol
+                );
+
+        const int minIsotopeCount = 2;
+        if (ms1ScanPoints.size() < minIsotopeCount) {
+            ERR_RETURN
+        }
+
+        const ScanPoint mzCenterPoint = MathUtils::closestXValPoint(
+                ms1ScanPoints,
+                mz
+                );
+
+        *ppmDiff = ((mzCenterPoint.x() - mz) / mz) * 1e6;
+
+        if (std::abs(*ppmDiff) > ppmTol) {
+            *ppmDiff = -1.0;
+            ERR_RETURN
+        }
+
+        if (static_cast<int>(mzCenterPoint.x()) == -1) {
+            ERR_RETURN
+        }
+
+        QVector<QPointF> subtractionPoints;
+        e = MsUtils::monoIsotopeDeterminator(
+                mzCenterPoint,
+                ms1ScanPoints,
+                ppmTol,
+                charge,
+                monoOffset,
+                &subtractionPoints,
+                cosineSim
+                ); ree
+
+        *isotopesFoundCount = subtractionPoints.size();
+
+        if (*isotopesFoundCount < minIsotopeCount) {
+            *cosineSim = -1.0;
+            *ppmDiff = -1.0;
+            *intensity = -1.0;
+            *monoOffset = -1000;
+            *isotopesFoundCount = -1;
+            ERR_RETURN
+        }
+
+        *intensity = std::accumulate(
+                subtractionPoints.begin(),
+                subtractionPoints.end(),
+                0.0,
+                [](double sum, const QPointF &p){return sum + p.y();}
+                );
+
+        qDebug() << mz << mzCenterPoint;
+        qDebug() << subtractionPoints;
+        qDebug() << *cosineSim << *monoOffset << *ppmDiff << *intensity;
+        qDebug() << "*******";
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmReaderRows) {
     
     ERR_INIT
@@ -570,9 +678,20 @@ Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmRea
             it++) {
         
         const FrameIndex frameIndex = it.key();
+        const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
+
         QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> prs = it.value();
 
         std::sort(prs.rbegin(), prs.rend(), sortDiscScoresDescLogic);
+
+        const ScanNumber bestMS1ScanNumber
+                = m_msReaderMS1ScansOnly.getNearestScanNumberFromScanNumber(scanNumber);
+
+        ScanPoints ms1ScanPoints;
+        e = m_msReaderMS1ScansOnly.getScanPoints(
+                bestMS1ScanNumber,
+                &ms1ScanPoints
+                ); ree
 
         const FrameStats &frameStats = m_frameIndexVsPeptideFrameStats.value(frameIndex);
         QVector<PSMsReaderRow> psmReaderRowsFrameIndex;
@@ -586,7 +705,7 @@ Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmRea
             
             PSMsReaderRow row;
             row.frameIndex = frameIndex;
-            row.scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
+            row.scanNumber = scanNumber;
             row.charge = m_pepStrWModsVsCharge.value(peptideStringWithMods);
             row.uniqueMsInfoScanKey = m_msFrame.uniqueMsInfoScanKey();
 
@@ -631,6 +750,34 @@ Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmRea
                     row.peptideStringWithMods,
                     m_params.cTermCleavePoints
                     );
+
+            row.mass = BiophysicalCalcs::calculatePeptideMass(
+                    row.peptideStringWithMods,
+                    m_params.aminoAcids
+                    );
+
+            row.mz = BiophysicalCalcs::calculateThomson(
+                    row.peptideStringWithMods,
+                    m_params.aminoAcids,
+                    row.charge
+                    );
+
+            double ms1CosineSim;
+            double ppmDiff;
+            double ms1Intensity;
+            int monoOffset;
+            int isotopesFoundCount;
+            e = extractMs1ForCandidate(
+                    ms1ScanPoints,
+                    row.mz,
+                    row.charge,
+                    m_params.ms2ExtractionWidthPPM,
+                    &ms1CosineSim,
+                    &ppmDiff,
+                    &ms1Intensity,
+                    &monoOffset,
+                    &isotopesFoundCount
+                    ); ree
 
             psmReaderRowsFrameIndex.push_back(row);
         }

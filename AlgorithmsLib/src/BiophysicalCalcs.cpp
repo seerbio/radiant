@@ -131,4 +131,25 @@ int BiophysicalCalcs::calculateChargeFromSequence(
 
 }
 
+QVector<double> BiophysicalCalcs::calculateIsotopesFromMz(
+        double mz,
+        double charge,
+        int ionCountLeft,
+        int ionCountRight
+        ) {
+
+    ionCountLeft = std::max(ionCountLeft, 0);
+    ionCountRight = std::max(ionCountRight, 0);
+
+    QVector<double> isotopes;
+    const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / charge;
+
+    for (int i = -ionCountLeft; i <= ionCountRight; i++) {
+        const double isotopeIsoDiff = i * chargeDistance;
+        isotopes.push_back(mz + isotopeIsoDiff);
+    }
+
+    return isotopes;
+}
+
 

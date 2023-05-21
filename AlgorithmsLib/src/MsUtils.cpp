@@ -447,17 +447,16 @@ namespace {
             currentMax = p.y();
         }
 
-        currentMax = mzCenterPoint.y();
+
         for (int i = centerPointIndex - 1; i >= 0; i--) {
 
             const QPointF &p = points.at(i);
 
-            if (p.y() > currentMax || p.x() < 0) {
+            if (p.x() < 0) {
                 break;
             }
 
             filteredPoints.push_back(p);
-            currentMax = p.y();
         }
 
         std::sort(
@@ -508,6 +507,45 @@ namespace {
                 foundScanPoints
                 ); ree;
 
+        const int mzCenterPointIndex = getCenterPointIndex(
+                *foundScanPoints,
+                mzCenterPoint
+                );
+
+        QVector<QPointF> filteredScanPoints;
+
+        QPointF lastScanPoint = foundScanPoints->at(mzCenterPointIndex);
+        //TODO abstract this.
+        for (int i = mzCenterPointIndex + 1; i < foundScanPoints->size(); i++) {
+
+            const QPointF &currentScanPoint = foundScanPoints->at(i);
+
+            if (currentScanPoint.y() > lastScanPoint.y() || currentScanPoint.y() < 0) {
+                break;
+            }
+
+            filteredScanPoints.push_back(currentScanPoint);
+            lastScanPoint = currentScanPoint;
+        }
+
+        for (int i = mzCenterPointIndex - 1; i >= 0; i--) {
+
+            const QPointF &currentScanPoint = foundScanPoints->at(i);
+            if (currentScanPoint.y() < 0) {
+                break;
+            }
+
+            filteredScanPoints.push_back(currentScanPoint);
+        }
+
+        std::sort(
+                filteredScanPoints.begin(),
+                filteredScanPoints.end(),
+                [](const QPointF &l, const QPointF &r){return l.x() < r.x();}
+                );
+
+        *foundScanPoints = filteredScanPoints;
+
         ERR_RETURN
     }
 
@@ -542,7 +580,6 @@ Err MsUtils::monoIsotopeDeterminator(
     QVector<double> isoDistribution
             = IsotopicDistributionBuilder::getIsotopicDistribution(roughMass);
 
-
     QVector<QPointF> foundScanPoints;
     e = buildFoundScanPoints(
             extractedPointsLeft,
@@ -566,7 +603,9 @@ Err MsUtils::monoIsotopeDeterminator(
     const int bufferedLeftPoints = calcNumberOfIonsToGenerateLeft(charge);
     QVector<QPointF> bufferedFoundPoints(bufferedLeftPoints, nullPoint);
     bufferedFoundPoints.append(foundScanPointsTrimmed);
-    bufferedFoundPoints.append(QVector<QPointF>(8,nullPoint));
+
+    const int excessBufferCount = 8;
+    bufferedFoundPoints.append(QVector<QPointF>(excessBufferCount, nullPoint));
 
     QVector<double> intensityFounds;
     std::transform(

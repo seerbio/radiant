@@ -12,6 +12,7 @@
 #include "GlobalSettings.h"
 #include "MsFrame.h"
 #include "MsFrameScoreVectorReader.h"
+#include "MsReaderParquet.h"
 #include "MsUtils.h"
 #include "PythiaParameterReader.h"
 #include "TandemSpectraDeconvolvotron.h"
@@ -78,7 +79,7 @@ private:
 
     Err rescoreCandidatesWithFullPrediction();
 
-    Err processorLogic(
+    Err processorLogicForFrameIndex(
             const QVector<PeptideStringWithMods> &peptideStringWithMods,
             FrameIndex frameIndex
             );
@@ -109,7 +110,9 @@ private:
     QString m_frameExtractedScansFilePath;
     TandemSpectraDeconvolvotron m_deconvolvotron;
 
+
     MsFrame m_msFrame;
+    MsReaderParquet m_msReaderMS1ScansOnly;
     QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
     QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
     QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;

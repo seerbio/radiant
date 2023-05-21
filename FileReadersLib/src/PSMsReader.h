@@ -53,7 +53,8 @@ namespace PSMsReaderRowNamespace {
     const QString IONS_FOUND = QStringLiteral("ionsFound");
     const QString FRAME_CAND_COUNT = QStringLiteral("frameCandidateCount");
     const QString PEPTIDE_SIZE = QStringLiteral("peptideSize");
-
+    const QString MZ = QStringLiteral("mz");
+    const QString MASS = QStringLiteral("mass");
 
 
     const QStringList keysToCheck = {
@@ -89,6 +90,8 @@ namespace PSMsReaderRowNamespace {
             IONS_FOUND,
             FRAME_CAND_COUNT,
             PEPTIDE_SIZE,
+            MZ,
+            MASS,
             MISSED_CLEAVAGES
     };
 }
@@ -131,6 +134,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     double cosineSim = -1.0;
     double klDiv = -1.0;
     double fractionFound = -1.0;
+    double mz = -1.0;
+    double mass = -1.0;
 
     int ionsFound = -1;
     int frameCandidateCount = -1;
@@ -175,6 +180,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
             {IONS_FOUND, QVariant(ionsFound)},
             {FRAME_CAND_COUNT, QVariant(frameCandidateCount)},
             {PEPTIDE_SIZE, QVariant(peptideSize)},
+            {MZ, QVariant(mz)},
+            {MASS, QVariant(mass)},
             {MISSED_CLEAVAGES, QVariant(missedCleavages)}
         };
     }
@@ -226,6 +233,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         frameCandidateCount = dataMap.value(FRAME_CAND_COUNT).toInt();
         peptideSize = dataMap.value(PEPTIDE_SIZE).toInt();
         missedCleavages = dataMap.value(MISSED_CLEAVAGES).toInt();
+        mz = dataMap.value(MZ).toDouble();
+        mass = dataMap.value(MASS).toDouble();
 
         ERR_RETURN
     }

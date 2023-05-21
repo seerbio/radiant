@@ -30,3 +30,18 @@ double MathUtils::factorial(int n) {
 
     return f < 0 ? std::numeric_limits<double>::max() : f;
 }
+
+
+QPointF MathUtils::closestXValPoint(const QVector<QPointF> &vec, double value) {
+
+    assert(!vec.isEmpty());
+    auto it = std::min_element(vec.begin(), vec.end(), [value] (const QPointF &a, const QPointF &b) {
+        return std::abs(a.x() - value) <= std::abs(b.x() - value);
+    });
+
+    if(it == vec.end()) {
+        return {-1, -1};
+    }
+
+    return *it;
+}
