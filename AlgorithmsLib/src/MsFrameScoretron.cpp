@@ -522,7 +522,7 @@ Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(
     QVector<ExtractedScansReaderRow> extractedScanReaderRows;
     for (auto it = scoreResults.begin(); it != scoreResults.end(); it++) {
 
-        const PeptideStringWithMods peptideStringWithMods = it.key();
+        const PeptideStringWithMods &peptideStringWithMods = it.key();
         const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
 
         const QVector<double> &scoreVec = frameIndexScoreResultOfTarget.scorePerFrameIndexOfTargetVec;
@@ -531,27 +531,34 @@ Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(
         const ScanPoints &scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumberOfScoreMax);
 
         e = ErrorUtils::isTrue(m_fragPreds.contains(peptideStringWithMods)); ree;
-        const QVector<MS2Ion> &predPointsForPeptide = m_fragPreds.value(peptideStringWithMods);
+        QVector<MS2Ion> predPointsForPeptide = m_fragPreds.value(peptideStringWithMods);
+        std::sort(
+                predPointsForPeptide.begin(),
+                predPointsForPeptide.end(),
+                [](const MS2Ion &l, const MS2Ion &r){return l.x() < r.x();}
+                );
 
-        const QPair<QVector<double>, QVector<double>> predPointsForPeptideUnzipped
-                = ParallelUtils::unZip(predPointsForPeptide);
-
-        ExtractedScansReaderRow row;
-        row.peptideStringWithMods = peptideStringWithMods;
-        row.mzSearched = predPointsForPeptideUnzipped.first;
-        row.intensitySearched = predPointsForPeptideUnzipped.second;
-
-        const ScanPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
+        const ExtractPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
                 scanPoints,
-                row.mzSearched,
+                predPointsForPeptide,
                 m_params.ms2ExtractionWidthPPM
         );
 
-        const QPair<QVector<double>, QVector<double>> extractedScanPointsUnzipped
-                = ParallelUtils::unZip(extractedScanPoints);
+        const QPair<QVector<double>, QVector<double>> extractedMzUnzipped
+                = ParallelUtils::unZip(extractedScanPoints.mzFoundVsSearched);
 
-        row.mzFound = extractedScanPointsUnzipped.first;
-        row.intensityFound = extractedScanPointsUnzipped.second;
+        const QPair<QVector<double>, QVector<double>> extractedIntensityUnzipped
+                = ParallelUtils::unZip(extractedScanPoints.intensityFoundVsSearched);
+
+        ExtractedScansReaderRow row;
+        row.peptideStringWithMods = peptideStringWithMods;
+        row.mzFound = extractedMzUnzipped.first;
+        row.mzSearched = extractedMzUnzipped.second;
+        row.intensityFound = extractedIntensityUnzipped.first;
+        row.intensitySearched = extractedIntensityUnzipped.second;
+
+        e = ErrorUtils::isEqual(row.mzFound.size(), row.mzSearched.size()); ree;
+        e = ErrorUtils::isEqual(row.intensityFound.size(), row.intensitySearched.size()); ree;
 
         extractedScanReaderRows.push_back(row);
     }

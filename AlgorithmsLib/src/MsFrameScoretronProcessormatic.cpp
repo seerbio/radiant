@@ -11,19 +11,6 @@
 #include "ParquetReader.h"
 #include "PSMsReader.h"
 
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-#include <boost/serialization/vector.hpp>
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-using rTreeCoor = bg::model::point<int, 1, bg::cs::cartesian>;
-using rTreePeakBox = bg::model::box<rTreeCoor>;
-using rTreeSearchBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreePeakBox, QString> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
-
 
 Err MsFrameScoretronProcessormatic::init(
         const QString &frameScoreVecFilePath,
@@ -55,7 +42,6 @@ Err MsFrameScoretronProcessormatic::init(
 
     e = buildPepStrWModsVsExtractedScanRow(); ree;
     e = buildFrameIndexVsApexScorePeptideStringWithMods(); ree;
-    e = buildPepStringWithModsVsMS2Ions(); ree;
     e = rescoreCandidatesWithFullPrediction(); ree;
 
     const int precision = 2;
@@ -116,86 +102,37 @@ Err MsFrameScoretronProcessormatic::buildFrameIndexVsApexScorePeptideStringWithM
 }
 
 
-namespace {
-
-    Err getFrameIndexMs2Ions(
-            double mzMin,
-            double mzMax,
-            const QList<ExtractedScansReaderRow> &extractedScansReaderRows,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanPreds
-    ) {
-
-        ERR_INIT
-
-        for (const ExtractedScansReaderRow &row : extractedScansReaderRows) {
-
-            QVector<MS2Ion> pepPred;
-            e = ParallelUtils::zip(
-                    row.mzSearched,
-                    row.intensitySearched,
-                    &pepPred
-            ); ree;
-
-            FragLibReader::filterMs2IonsByMz(
-                    mzMin,
-                    mzMax,
-                    &pepPred
-            );
-
-            scanPreds->insert(row.peptideStringWithMods, pepPred);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err MsFrameScoretronProcessormatic::buildPepStringWithModsVsMS2Ions() {
-
-    ERR_INIT
-
-    e = getFrameIndexMs2Ions(
-            m_params.mzMinDataStructure,
-            m_params.mzMaxDataStructure,
-            m_pepStrWModsVsExtractedScanRow.values(),
-            &m_pepStrWModsVsMS2Ions
-    ); ree;
-
-    ERR_RETURN
-}
-
 Err MsFrameScoretronProcessormatic::rescoreCandidatesWithFullPrediction() {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_frameIndexVsApexScorePeptideStringWithMods); ree;
     e = ErrorUtils::isNotEmpty(m_pepStrWModsVsOgScore); ree;
-    e = ErrorUtils::isNotEmpty(m_pepStrWModsVsMS2Ions); ree;
+    e = ErrorUtils::isNotEmpty(m_pepStrWModsVsExtractedScanRow); ree;
 
     for (auto it = m_frameIndexVsApexScorePeptideStringWithMods.begin(); it != m_frameIndexVsApexScorePeptideStringWithMods.end(); it++) {
 
         const FrameIndex frameIndex = it.key();
         const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
-        const ScanPoints &scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumber);
         const QVector<PeptideStringWithMods> &PeptideStringWithModsVec = it.value();
 
         for (const PeptideStringWithMods &peptideStringWithMods : PeptideStringWithModsVec) {
 
-            e = ErrorUtils::isTrue(m_pepStrWModsVsMS2Ions.contains(peptideStringWithMods)); ree;
-            const QVector<MS2Ion> &ms2Ions = m_pepStrWModsVsMS2Ions.value(peptideStringWithMods);
+            e = ErrorUtils::isTrue(m_pepStrWModsVsExtractedScanRow.contains(peptideStringWithMods)); ree;
+            const ExtractedScansReaderRow &extractedScansReaderRow = m_pepStrWModsVsExtractedScanRow.value(peptideStringWithMods);
 
-            const ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
-                    scanPoints,
-                    ms2Ions,
-                    m_params.ms2ExtractionWidthPPM
-            );
+            const Eigen::VectorX<double> intensityFound
+                    = EigenUtils::convertQVectorToEigenVector(extractedScansReaderRow.intensityFound);
 
-            const QPair<QVector<double>, QVector<double>> intensitiesUnzipped
-                    = ParallelUtils::unZip(extractPoints.intensityFoundVsSearched);
+            const Eigen::VectorX<double> intensitySearched
+                    = EigenUtils::convertQVectorToEigenVector(extractedScansReaderRow.intensitySearched);
 
-            const Eigen::VectorX<double> intensityFound = EigenUtils::convertQVectorToEigenVector(intensitiesUnzipped.first);
-            const Eigen::VectorX<double> intensitySearched = EigenUtils::convertQVectorToEigenVector(intensitiesUnzipped.second);
-
-            const QVector<QPointF> &mzFoundVsSearched = extractPoints.mzFoundVsSearched;
+            QVector<QPointF> mzFoundVsSearched;
+            e = ParallelUtils::zip(
+                    extractedScansReaderRow.mzFound,
+                    extractedScansReaderRow.mzSearched,
+                    &mzFoundVsSearched
+                    ); ree;
 
             const double cosineSim = EigenUtils::cosineSimilarity(intensityFound, intensitySearched);
             const double klDiv = EigenUtils::klDivergence(intensityFound, intensitySearched);
@@ -258,7 +195,6 @@ Err MsFrameScoretronProcessormatic::processFrameScoreVectors(QVector<PSMsReaderR
     psmReaderRows->clear();
 
     e = ErrorUtils::isTrue(m_msFrame.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(m_pepStrWModsVsExtractedScanRow); ree;
     e = ErrorUtils::isNotEmpty(m_frameIndexVsApexScorePeptideStringWithMods); ree;
 
     for (auto it = m_frameIndexVsApexScorePeptideStringWithMods.begin();
@@ -293,8 +229,8 @@ Err MsFrameScoretronProcessormatic::processorLogic(
     const ScanNumber &scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
     const ScanPoints &scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumber);
 
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideByExtractedPoints;
-    e = collateMS2IonsByPepStrWithModsForFrameIndex(
+    QMap<PeptideStringWithMods, ExtractedScansReaderRow> peptideByExtractedPoints;
+    e = collateExtractedScansReaderRowByPepStrWithModsForFrameIndex(
             peptideStringWithMods,
             &peptideByExtractedPoints
             ); ree;
@@ -310,9 +246,9 @@ Err MsFrameScoretronProcessormatic::processorLogic(
     ERR_RETURN
 }
 
-Err MsFrameScoretronProcessormatic::collateMS2IonsByPepStrWithModsForFrameIndex(
+Err MsFrameScoretronProcessormatic::collateExtractedScansReaderRowByPepStrWithModsForFrameIndex(
         const QVector<PeptideStringWithMods> &peptideStringWithMods,
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideByExtractedPoints
+        QMap<PeptideStringWithMods, ExtractedScansReaderRow> *peptideByExtractedPoints
                 ) {
 
     ERR_INIT
@@ -335,7 +271,7 @@ Err MsFrameScoretronProcessormatic::collateMS2IonsByPepStrWithModsForFrameIndex(
 
     for (const SRT &pr : sortingPairVec) {
         const PeptideStringWithMods &pswm = pr.first;
-        peptideByExtractedPoints->insert(pswm, m_pepStrWModsVsMS2Ions.value(pswm));
+        peptideByExtractedPoints->insert(pswm, m_pepStrWModsVsExtractedScanRow.value(pswm));
     }
 
     ERR_RETURN
@@ -344,7 +280,7 @@ Err MsFrameScoretronProcessormatic::collateMS2IonsByPepStrWithModsForFrameIndex(
 namespace {
 
     Err buildUniqueMzVals(
-            const QList<QVector<MS2Ion>> &ms2Ions,
+            const QList<ExtractedScansReaderRow> &ms2Ions,
             QVector<double> *ms2IonsUnique
             ) {
 
@@ -356,18 +292,25 @@ namespace {
 
         QSet<int> mzHashedVals;
 
-        for (const QVector<MS2Ion> &ions : ms2Ions) {
+        for (const ExtractedScansReaderRow &ions : ms2Ions) {
 
-            for (const MS2Ion &ion : ions) {
-                const int mzHashed = MathUtils::hashDecimal(ion.x(), precision);
+            for (const double mzSearched : ions.mzSearched) {
+                const int mzHashed = MathUtils::hashDecimal(mzSearched, precision);
+
+                if (mzHashed < 0) {
+                    continue;
+                }
+
                 mzHashedVals.insert(mzHashed);
             }
-
-            for (int mzHashed : mzHashedVals) {
-                const auto mzUnhashed = MathUtils::unHashDecimal<double>(mzHashed, precision);
-                ms2IonsUnique->push_back(mzUnhashed);
-            }
         }
+
+        for (int mzHashed : mzHashedVals) {
+            const auto mzUnhashed = MathUtils::unHashDecimal<double>(mzHashed, precision);
+            ms2IonsUnique->push_back(mzUnhashed);
+        }
+
+        std::sort(ms2IonsUnique->begin(), ms2IonsUnique->end());
 
         ERR_RETURN
     }
@@ -397,9 +340,62 @@ namespace {
         ERR_RETURN
     }
 
+    void filterMs2Ions(
+            double mzMin,
+            double mzMax,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto terminatorLogic = [mzMin, mzMax](const MS2Ion &ion){
+            return !(mzMin <= ion.x() && ion.x() <= mzMax);
+        };
+
+        const auto terminator = std::remove_if(
+                ms2Ions->begin(),
+                ms2Ions->end(),
+                terminatorLogic
+                );
+
+        ms2Ions->erase(terminator, ms2Ions->end());
+    }
+
+    Err convertExtractsToMS2Ions(
+            const QMap<PeptideStringWithMods, ExtractedScansReaderRow> &peptideByExtractedPoints,
+            double mzMin,
+            double mzMax,
+            QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideByMS2Ions
+            ) {
+
+        ERR_INIT
+
+        for (auto it = peptideByExtractedPoints.begin(); it != peptideByExtractedPoints.end(); it++) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const ExtractedScansReaderRow &extractedScansReaderRow = it.value();
+
+            QVector<MS2Ion> ms2Ions;
+            e = ParallelUtils::zip(
+                    extractedScansReaderRow.mzSearched,
+                    extractedScansReaderRow.intensitySearched,
+                    &ms2Ions
+                    ); ree;
+
+            filterMs2Ions(
+                    mzMin,
+                    mzMax,
+                    &ms2Ions
+                    );
+
+            peptideByMS2Ions->insert(peptideStringWithMods, ms2Ions);
+
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideByExtractedPoints,
+        const QMap<PeptideStringWithMods, ExtractedScansReaderRow> &peptideByExtractedPoints,
         const ScanPoints &scanPoints,
         FrameIndex frameIndex
 ) {
@@ -422,10 +418,18 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
         extractedScanPoints.push_back({0, 1});
     }
 
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideByMS2Ions;
+    e = convertExtractsToMS2Ions(
+            peptideByExtractedPoints,
+            m_params.mzMinDataStructure,
+            m_params.mzMaxDataStructure,
+            &peptideByMS2Ions
+            ); ree
+
     QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsTandemDeconvolverResult;
     e = m_deconvolvotron.deconvolveTandemSpectra(
             extractedScanPoints,
-            peptideByExtractedPoints,
+            peptideByMS2Ions,
             &pepSeqVsTandemDeconvolverResult
     ); ree;
 

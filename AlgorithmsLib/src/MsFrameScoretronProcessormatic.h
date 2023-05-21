@@ -76,8 +76,6 @@ private:
 
     Err buildFrameIndexVsApexScorePeptideStringWithMods();
 
-    Err buildPepStringWithModsVsMS2Ions();
-
     Err rescoreCandidatesWithFullPrediction();
 
     Err processorLogic(
@@ -85,13 +83,13 @@ private:
             FrameIndex frameIndex
             );
 
-    Err collateMS2IonsByPepStrWithModsForFrameIndex(
+    Err collateExtractedScansReaderRowByPepStrWithModsForFrameIndex(
             const QVector<PeptideStringWithMods> &peptideStringWithMods,
-            QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideByExtractedPoints
+            QMap<PeptideStringWithMods, ExtractedScansReaderRow> *peptideByExtractedPoints
             );
 
     Err calculateDiscriminateScoreForFrameIndex(
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideByExtractedPoints,
+            const QMap<PeptideStringWithMods, ExtractedScansReaderRow> &peptideByExtractedPoints,
             const ScanPoints &scanPoints,
             FrameIndex frameIndex
     );
@@ -113,7 +111,6 @@ private:
 
     MsFrame m_msFrame;
     QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_pepStrWModsVsMS2Ions;
     QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
     QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;
     QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;

@@ -35,11 +35,12 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
     ERR_INIT
 
     const QString scoreVectorsFilePath
-            = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.reCal.805116.frameScores";
+            = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.385214.frameScores";
 
-    const QString extractsFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.reCal.805116.extracts";
+    const QString extractsFilePath
+            = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.385214.extracts";
 
-    const QString msDataFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+    const QString msDataFilePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
 
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "805116";
     const QPair<double, double> mzTargetStartStop = {804.0, 806.0};
