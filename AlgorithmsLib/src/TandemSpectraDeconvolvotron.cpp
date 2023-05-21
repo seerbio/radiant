@@ -21,6 +21,7 @@ TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
 , m_iterationsMax(-1)
 , m_stopTolerance(-1.0)
 , m_isInit(false)
+, m_pValThreshold(-1.0)
 {}
 
 Err TandemSpectraDeconvolvotron::init(

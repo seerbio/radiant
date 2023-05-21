@@ -77,6 +77,11 @@ ExtractPoints MsUtils::extractPointsFromPoints(
         }
     }
 
+    while (extractPointsOutput.intensityFoundVsSearched.back().y() < 0) {
+        extractPointsOutput.mzFoundVsSearched.pop_back();
+        extractPointsOutput.intensityFoundVsSearched.pop_back();
+    }
+
     return extractPointsOutput;
 }
 

@@ -234,6 +234,8 @@ public:
     template <typename EigenMatrix>
     static double klDivergence(EigenMatrix v1, EigenMatrix v2) {
 
+        const double nearZero = 1e-5;
+
         const double v1Sum = v1.sum();
         const double v2Sum = v2.sum();
 
@@ -244,8 +246,8 @@ public:
         v1 /= v1Sum;
         v2 /= v2Sum;
 
-        v1 = (v1.array() < 1e-5).select(1e-5, v1);
-        v2 = (v2.array() < 1e-5).select(1e-5, v2);
+        v1 = (v1.array() < nearZero).select(nearZero, v1);
+        v2 = (v2.array() < nearZero).select(nearZero, v2);
 
         return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
     }
@@ -256,19 +258,19 @@ public:
             const Eigen::MatrixX<T> &mat2
     ) {
 
-        const double fillVal = 1.0;
+        const double nearZero = 1e-5;
 
         Eigen::MatrixX<double> mat1Sum = mat1.array().rowwise().sum();
-        thresholdMatrix(0.0, fillVal, &mat1Sum);
+        thresholdMatrix(0.0, nearZero, &mat1Sum);
 
         Eigen::MatrixX<double> mat2Sum = mat2.array().rowwise().sum();
-        thresholdMatrix(0.0, fillVal, &mat2Sum);
+        thresholdMatrix(0.0, nearZero, &mat2Sum);
 
         mat1 /= mat1Sum;
         mat2 /= mat2Sum;
 
-        mat1 = (mat1.array() < 1e-5).select(1e-5, mat1);
-        mat2 = (mat2.array() < 1e-5).select(1e-5, mat2);
+        mat1 = (mat1.array() < nearZero).select(nearZero, mat1);
+        mat2 = (mat2.array() < nearZero).select(nearZero, mat2);
 
         const Eigen::MatrixX<double> mat1mat2Quotient = mat1.array() / mat2.array();
         const Eigen::MatrixX<double> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();

@@ -115,7 +115,7 @@ private:
     QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_pepStrWModsVsMS2Ions;
     QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
-    QMap<PeptideStringWithMods, Score> m_pepStrWModsVsCharge;
+    QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;
     QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;
     QMap<FrameIndex, QVector<PeptideStringWithMods>> m_frameIndexVsApexScorePeptideStringWithMods;
     QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> m_frameIndexVsPeptideDeconResult;

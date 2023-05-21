@@ -205,11 +205,13 @@ Err MsFrameScoretronProcessormatic::rescoreCandidatesWithFullPrediction() {
 
             const double fractionFound = static_cast<double>(ionsFound) / mzFoundVsSearched.size();
 
-            const ReScore reScore = std::sqrt(MathUtils::pRound((cosineSim / klDiv)
-                                                                * std::pow(ionsFound, 2)
-                                                                * fractionFound
-                                                                * std::pow(ionsFound, 3),
-                                                                S_GLOBAL_SETTINGS.ROUNDING_PRECISION));
+            const ReScore reScore = std::sqrt(MathUtils::pRound(
+                    (cosineSim / klDiv)
+                    * std::pow(ionsFound, 2)
+                    * fractionFound
+                    * std::pow(ionsFound, 3),
+                    S_GLOBAL_SETTINGS.ROUNDING_PRECISION)
+                            );
 
             ReScoreVals reScoreVals;
             reScoreVals.reScore = reScore;
@@ -227,6 +229,28 @@ Err MsFrameScoretronProcessormatic::rescoreCandidatesWithFullPrediction() {
     ERR_RETURN
 }
 
+namespace {
+
+    void sortDiscScoresDesc(
+            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
+    ) {
+
+        for (auto it = frameIndexVsPeptideStringWithModsDiscScore->begin();
+             it != frameIndexVsPeptideStringWithModsDiscScore->end();
+             it++
+                ) {
+
+            QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> &scores = it.value();
+            using Sort = QPair<PeptideStringWithMods, TandemDeconvolverResult>;
+            std::sort(scores.rbegin(), scores.rend(), [](const Sort &l, const Sort &r){
+                return l.second.discScore < r.second.discScore;
+            });
+
+        }
+
+    }
+
+}//namespace
 Err MsFrameScoretronProcessormatic::processFrameScoreVectors(QVector<PSMsReaderRow> *psmReaderRows) {
 
     ERR_INIT
@@ -251,7 +275,9 @@ Err MsFrameScoretronProcessormatic::processFrameScoreVectors(QVector<PSMsReaderR
 
         e = processorLogic(peptideStringWithMods, frameIndex); ree;
     }
-    
+
+    sortDiscScoresDesc(&m_frameIndexVsPeptideDeconResult);
+
     e = compileScores(psmReaderRows); ree;
 
     ERR_RETURN
@@ -371,25 +397,6 @@ namespace {
         ERR_RETURN
     }
 
-    void sortDiscScoresDesc(
-            QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> *frameIndexVsPeptideStringWithModsDiscScore
-    ) {
-
-        for (auto it = frameIndexVsPeptideStringWithModsDiscScore->begin();
-             it != frameIndexVsPeptideStringWithModsDiscScore->end();
-             it++
-                ) {
-
-            QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>> &scores = it.value();
-            using Sort = QPair<PeptideStringWithMods, TandemDeconvolverResult>;
-            std::sort(scores.rbegin(), scores.rend(), [](const Sort &l, const Sort &r){
-                return l.second.discScore < r.second.discScore;
-            });
-
-        }
-
-    }
-
 }//namespace
 Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
         const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideByExtractedPoints,
@@ -405,11 +412,15 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
             &mzValsUnique
             ); ree;
 
-    const ScanPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
+    ScanPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
             scanPoints,
             mzValsUnique,
             m_params.ms2ExtractionWidthPPM
             );
+
+    if (extractedScanPoints.isEmpty()) {
+        extractedScanPoints.push_back({0, 1});
+    }
 
     QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsTandemDeconvolverResult;
     e = m_deconvolvotron.deconvolveTandemSpectra(
@@ -418,10 +429,10 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
             &pepSeqVsTandemDeconvolverResult
     ); ree;
 
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPredsFiltered;
 
 //#define REMOVE_NEG_DISC_SCORES
 #ifdef REMOVE_NEG_DISC_SCORES
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanPredsFiltered;
     e = removeNegativeScanPredsFromFirstPassTandemDeconResults(
             pepSeqVsTandemDeconvolverResult,
             peptideByExtractedPoints,
@@ -442,8 +453,6 @@ Err MsFrameScoretronProcessormatic::calculateDiscriminateScoreForFrameIndex(
 
         m_frameIndexVsPeptideDeconResult[frameIndex].push_back({peptideStringWithMods, discriminateScore});
     }
-
-    sortDiscScoresDesc(&m_frameIndexVsPeptideDeconResult);
 
     ERR_RETURN
 }
@@ -468,6 +477,9 @@ Err MsFrameScoretronProcessormatic::buildFrameIndexVsFrameStats() {
         reScores.reserve(peptideStringWithMods.size());
         
         for (const PeptideStringWithMods &pep : peptideStringWithMods) {
+
+            e = ErrorUtils::isTrue(m_pepStringModsVsRescore.contains(pep)); ree;
+
             const ReScoreVals &reScoreVals = m_pepStringModsVsRescore.value(pep);
             reScores.push_back(reScoreVals.reScore);
         }
@@ -509,6 +521,28 @@ Err MsFrameScoretronProcessormatic::buildFrameIndexVsFrameStats() {
     ERR_RETURN
 }
 
+namespace {
+
+    //TODO make this also viable for n-terminal cleave points
+    int calculateMissedCleavages(
+            const QString &peptideStringWithMods,
+            const QStringList &cTermCleavePoints
+            ) {
+
+        int cleavePointCount = 0;
+
+        for (const QString &cleavePoint : cTermCleavePoints) {
+            cleavePointCount += peptideStringWithMods.count(cleavePoint);
+        }
+
+        cleavePointCount = cTermCleavePoints.contains(peptideStringWithMods.back())
+                ? cleavePointCount - 1
+                : cleavePointCount;
+
+        return std::max(0, cleavePointCount);
+    }
+
+}
 Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmReaderRows) {
     
     ERR_INIT
@@ -588,6 +622,11 @@ Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmRea
             row.ionsFound = reScoreVals.ionsFound;
 
             row.peptideSize = row.peptideStringWithMods.size();
+
+            row.missedCleavages = calculateMissedCleavages(
+                    row.peptideStringWithMods,
+                    m_params.cTermCleavePoints
+                    );
 
             psmReaderRowsFrameIndex.push_back(row);
         }

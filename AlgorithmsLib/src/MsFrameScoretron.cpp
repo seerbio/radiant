@@ -551,7 +551,7 @@ Err MsFrameScoretron::buildAllExtractedTheoriticalPointsFromTargetKeyFrame(
                 = ParallelUtils::unZip(extractedScanPoints);
 
         row.mzFound = extractedScanPointsUnzipped.first;
-        row.intensityFound = extractedScanPointsUnzipped.first;
+        row.intensityFound = extractedScanPointsUnzipped.second;
 
         extractedScanReaderRows.push_back(row);
     }

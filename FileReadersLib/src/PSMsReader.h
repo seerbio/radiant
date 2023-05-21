@@ -34,6 +34,7 @@ namespace PSMsReaderRowNamespace {
     const QString FRAME_F_STAT = QStringLiteral("frameFStat");
     const QString P_VAL_FRAME_F_TEST = QStringLiteral("pValFrameFtest");
     const QString FRAME_ERROR = QStringLiteral("frameError");
+    const QString MISSED_CLEAVAGES = QStringLiteral("missedCleavages");
 
     const QString SCORE_MEAN = QStringLiteral("scoreMean");
     const QString SCORE_MEDIAN = QStringLiteral("scoreMedian");
@@ -87,7 +88,8 @@ namespace PSMsReaderRowNamespace {
             FRACTION_FOUND,
             IONS_FOUND,
             FRAME_CAND_COUNT,
-            PEPTIDE_SIZE
+            PEPTIDE_SIZE,
+            MISSED_CLEAVAGES
     };
 }
 
@@ -134,6 +136,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     int frameCandidateCount = -1;
     int peptideSize = -1;
 
+    int missedCleavages= -1;
+
     QMap<QString, QVariant> map() override {
 
         using namespace PSMsReaderRowNamespace;
@@ -170,7 +174,8 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
             {FRACTION_FOUND , QVariant(fractionFound)},
             {IONS_FOUND, QVariant(ionsFound)},
             {FRAME_CAND_COUNT, QVariant(frameCandidateCount)},
-            {PEPTIDE_SIZE, QVariant(peptideSize)}
+            {PEPTIDE_SIZE, QVariant(peptideSize)},
+            {MISSED_CLEAVAGES, QVariant(missedCleavages)}
         };
     }
 
@@ -220,6 +225,7 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         ionsFound = dataMap.value(IONS_FOUND).toInt();
         frameCandidateCount = dataMap.value(FRAME_CAND_COUNT).toInt();
         peptideSize = dataMap.value(PEPTIDE_SIZE).toInt();
+        missedCleavages = dataMap.value(MISSED_CLEAVAGES).toInt();
 
         ERR_RETURN
     }

@@ -26,7 +26,8 @@ void PythiaDIAWorkflowTests::execTest() {
     ERR_INIT
 
     const QString mzMLFileURI
-        = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
+//        = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
+        = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq.reCal");
 
     const QString fragLibPath
 //            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/human_plasma_entrapment_super_trunc.fasta.fragLib");
