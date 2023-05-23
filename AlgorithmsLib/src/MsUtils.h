@@ -34,7 +34,8 @@ public:
     static ScanPoints extractPointsFromPoints(
             const QVector<QPointF> &points,
             const QVector<double> &extractionPoints,
-            double extractionPPM
+            double extractionPPM,
+            bool removeZeroPoints = true
     );
 
     static Err buildDeletionPoints(

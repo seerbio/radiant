@@ -27,6 +27,8 @@ private Q_SLOTS:
     void extractPointsFromPointsSimpleTest();
     void buildDeletionPointsTest();
     void chargeDeterminatorTest();
+    void monoIsotopeDeterminatorTest();
+
 
 private:
 
@@ -274,6 +276,40 @@ void MsUtilsTests::extractPointsFromPointsSimpleTest() {
 
     qDebug() << extractPointsVector.mzFoundVsSearched;
     qDebug() << extractPointsVector.intensityFoundVsSearched;
+
+}
+
+void MsUtilsTests::monoIsotopeDeterminatorTest() {
+
+    ERR_INIT
+
+    const QVector<QPointF> pointsCharge3 = {
+            QPointF(483.5, 6.80671e+03),
+            QPointF(484.0, 6.80671e+06),
+            QPointF(484.5, 3.8741e+06),
+            QPointF(484.75, 8.8741e+06),
+            QPointF(485.0,8.87976e+05)
+    };
+
+    int monoIsoOffset;
+    QVector<QPointF> subtractionPoints;
+    double bestCosineSim;
+
+    const int centerPointIndex = 2;
+    e = MsUtils::monoIsotopeDeterminator(
+            pointsCharge3.at(centerPointIndex),
+            pointsCharge3,
+            300.0,
+            2,
+            &monoIsoOffset,
+            &subtractionPoints,
+            &bestCosineSim
+            );
+    QCOMPARE(e, eNoError);
+
+    qDebug() << monoIsoOffset;
+    qDebug() << subtractionPoints;
+    qDebug() << bestCosineSim;
 
 }
 

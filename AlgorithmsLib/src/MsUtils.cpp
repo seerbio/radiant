@@ -4,6 +4,7 @@
 
 #include "MsUtils.h"
 
+#include "BiophysicalCalcs.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
@@ -88,7 +89,8 @@ ExtractPoints MsUtils::extractPointsFromPoints(
 ScanPoints MsUtils::extractPointsFromPoints(
         const QVector <QPointF> &points,
         const QVector<double> &extractionPoints,
-        double extractionPPM
+        double extractionPPM,
+        bool removeZeroPoints
 ) {
 
     QVector<QPointF> extractQPoints;
@@ -110,7 +112,7 @@ ScanPoints MsUtils::extractPointsFromPoints(
         const double mzFound = ep.mzFoundVsSearched.at(i).x();
         const double intensityFound = ep.intensityFoundVsSearched.at(i).x();
 
-        if (mzFound < 0) {
+        if (mzFound < 0 && removeZeroPoints) {
             continue;
         }
 
@@ -358,11 +360,12 @@ namespace {
                 extractedPointsRight
         );
 
+
         ERR_RETURN
     }
 
 
-}
+}//namespace
 Err MsUtils::chargeDeterminator(
         const QPointF &mzCenterPoint,
         const QVector<QPointF> &scanPoints,
@@ -421,135 +424,89 @@ namespace {
         return MathUtils::closest(mzVals, mzCenterPoint.x());
     }
 
-    QVector<QPointF> trimScanPoints(
-            const QVector<QPointF> &points,
-            const QPointF &mzCenterPoint
-
-            ) {
-
-        const int centerPointIndex = getCenterPointIndex(
-                points,
-                mzCenterPoint
-                );
-
-        QVector<QPointF> filteredPoints = {points.at(centerPointIndex)};
-
-        double currentMax = mzCenterPoint.y();
-        for (int i = centerPointIndex + 1; i < points.size(); i++) {
-
-            const QPointF &p = points.at(i);
-
-            if (p.y() > currentMax || p.x() < 0) {
-                break;
-            }
-
-            filteredPoints.push_back(p);
-            currentMax = p.y();
-        }
-
-
-        for (int i = centerPointIndex - 1; i >= 0; i--) {
-
-            const QPointF &p = points.at(i);
-
-            if (p.x() < 0) {
-                break;
-            }
-
-            filteredPoints.push_back(p);
-        }
-
-        std::sort(
-                filteredPoints.begin(),
-                filteredPoints.end(),
-                [](const QPointF &l, const QPointF &r){return l.x() < r.x();}
-                );
-
-        return filteredPoints;
-    }
-
-    Err buildFoundScanPoints(
-            const ExtractPoints &extractedPointsLeft,
-            const ExtractPoints &extractedPointsRight,
+    Err buildExtractedPoints(
             const QPointF &mzCenterPoint,
-            QVector<QPointF> *foundScanPoints
+            const QVector<QPointF> &scanPoints,
+            double ppmTol,
+            int charge,
+            int *startCenterPointIdxOG,
+            QVector<QPointF> *extractedPointsFilled
             ) {
 
         ERR_INIT
 
-        QVector<QPointF> allFoundIntensityPoints = extractedPointsLeft.intensityFoundVsSearched;
-        allFoundIntensityPoints.push_back({mzCenterPoint.y(), mzCenterPoint.y()});
-        allFoundIntensityPoints.append(extractedPointsRight.intensityFoundVsSearched);
+        const int leftPointCount = 5;
+        const int rightPointCount = 11;
 
-        QVector<double> intensityFounds;
-        std::transform(
-                allFoundIntensityPoints.begin(),
-                allFoundIntensityPoints.end(),
-                std::back_inserter(intensityFounds),
-                [](const QPointF &p){return p.x();}
+        const QVector<double> mzTheoPoints
+                = BiophysicalCalcs::calculateIsotopesFromMz(mzCenterPoint.x(), charge, leftPointCount, rightPointCount);
+
+        const bool removeZeroPoints = false;
+        QVector<QPointF> extractedScanPoints = MsUtils::extractPointsFromPoints(
+                scanPoints,
+                mzTheoPoints,
+                ppmTol,
+                removeZeroPoints
         );
 
-        QVector<QPointF> allFoundMzPoints = extractedPointsLeft.mzFoundVsSearched;
-        allFoundMzPoints.push_back({mzCenterPoint.x(), mzCenterPoint.x()});
-        allFoundMzPoints.append(extractedPointsRight.mzFoundVsSearched);
+        QVector<QPointF> extractedPointsFilledTemp(mzTheoPoints.size(), {0,0});
+        *extractedPointsFilled = extractedPointsFilledTemp;
 
-        QVector<double> mzFounds;
-        std::transform(
-                allFoundMzPoints.begin(),
-                allFoundMzPoints.end(),
-                std::back_inserter(mzFounds),
-                [](const QPointF &p){return p.x();}
-        );
+        std::copy(extractedScanPoints.begin(), extractedScanPoints.end(), extractedPointsFilled->begin());
 
-        e = ParallelUtils::zip(
-                mzFounds,
-                intensityFounds,
-                foundScanPoints
-                ); ree;
+        *startCenterPointIdxOG = getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
 
-        const int mzCenterPointIndex = getCenterPointIndex(
-                *foundScanPoints,
-                mzCenterPoint
-                );
-
-        QVector<QPointF> filteredScanPoints;
-
-        QPointF lastScanPoint = foundScanPoints->at(mzCenterPointIndex);
-        //TODO abstract this.
-        for (int i = mzCenterPointIndex + 1; i < foundScanPoints->size(); i++) {
-
-            const QPointF &currentScanPoint = foundScanPoints->at(i);
-
-            if (currentScanPoint.y() > lastScanPoint.y() || currentScanPoint.y() < 0) {
-                break;
-            }
-
-            filteredScanPoints.push_back(currentScanPoint);
-            lastScanPoint = currentScanPoint;
-        }
-
-        for (int i = mzCenterPointIndex - 1; i >= 0; i--) {
-
-            const QPointF &currentScanPoint = foundScanPoints->at(i);
-            if (currentScanPoint.y() < 0) {
-                break;
-            }
-
-            filteredScanPoints.push_back(currentScanPoint);
-        }
-
-        std::sort(
-                filteredScanPoints.begin(),
-                filteredScanPoints.end(),
-                [](const QPointF &l, const QPointF &r){return l.x() < r.x();}
-                );
-
-        *foundScanPoints = filteredScanPoints;
+        e = ErrorUtils::isTrue(
+                MathUtils::tZero(extractedPointsFilled->at(*startCenterPointIdxOG).x() - mzCenterPoint.x())
+        ); ree;
 
         ERR_RETURN
     }
 
-}
+    Eigen::VectorX<double> convertQPointsYToVec(const QVector<QPointF> &vec) {
+
+        QVector<double> yVals;
+        yVals.reserve(vec.size());
+
+        std::transform(
+                vec.begin(),
+                vec.end(),
+                std::back_inserter(yVals),
+                [](const QPointF &p){return p.y();}
+                );
+
+        return EigenUtils::convertQVectorToEigenVector(yVals);
+    }
+
+QVector<QPointF> buildSubractionPoints(
+        const QVector<QPointF> &extractedPointsFilled,
+        int startCenterPointIdx,
+        int monoOffset
+        ) {
+
+        QVector<QPointF> subtractPoints;
+
+        const int return4Points = 4;
+        for (int i = startCenterPointIdx - monoOffset; i < extractedPointsFilled.size(); i++) {
+
+            const QPointF &p = extractedPointsFilled.at(i);
+            if (p.x() < 0) {
+                continue;
+            }
+
+            subtractPoints.push_back(p);
+
+            if (subtractPoints.size() >= return4Points) {
+                break;
+            }
+
+        }
+
+
+        return subtractPoints;
+    }
+
+}//namespace
 Err MsUtils::monoIsotopeDeterminator(
         const QPointF &mzCenterPoint,
         const QVector<QPointF> &scanPoints,
@@ -564,91 +521,59 @@ Err MsUtils::monoIsotopeDeterminator(
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
-    ExtractPoints extractedPointsLeft;
-    ExtractPoints extractedPointsRight;
-    extractPoints(
+    *bestCosineSim = 0;
+    *monoIsoOffset = 1000;
+
+    int startCenterPointIdxOG;
+    QVector<QPointF> extractedPointsFilled;
+    e = buildExtractedPoints(
+            mzCenterPoint,
             scanPoints,
-            charge,
-            mzCenterPoint.x(),
             ppmTol,
-            &extractedPointsLeft,
-            &extractedPointsRight
-    );
-    e = ErrorUtils::isNotEmpty(extractedPointsRight.mzFoundVsSearched); ree;
+            charge,
+            &startCenterPointIdxOG,
+            &extractedPointsFilled
+            ); ree;
+
+    const Eigen::VectorX<double> extractedPointsFilledVec = convertQPointsYToVec(extractedPointsFilled);
 
     const double roughMass = mzCenterPoint.x() * charge;
     QVector<double> isoDistribution
             = IsotopicDistributionBuilder::getIsotopicDistribution(roughMass);
 
-    QVector<QPointF> foundScanPoints;
-    e = buildFoundScanPoints(
-            extractedPointsLeft,
-            extractedPointsRight,
-            mzCenterPoint,
-            &foundScanPoints
-    ); ree;
+    const int maxIsotopeToUse = 7;
+    isoDistribution.resize(std::min(maxIsotopeToUse, isoDistribution.size()));
 
-    const QVector<QPointF> foundScanPointsTrimmed = trimScanPoints(
-            foundScanPoints,
-            mzCenterPoint
-            );
+    int startCenterPointIdx = startCenterPointIdxOG;
 
-    const int centerPointIndex = getCenterPointIndex(
-            foundScanPointsTrimmed,
-            mzCenterPoint
-    );
+    int cycle = 0;
+    while (startCenterPointIdx >= 0) {
 
-    const QPointF nullPoint = {-1.0, -1.0};
+        QVector<double> isoDistributionPointsFilled(extractedPointsFilled.size(), 0);
+        std::copy(isoDistribution.begin(), isoDistribution.end(), isoDistributionPointsFilled.begin() + startCenterPointIdx);
 
-    const int bufferedLeftPoints = calcNumberOfIonsToGenerateLeft(charge);
-    QVector<QPointF> bufferedFoundPoints(bufferedLeftPoints, nullPoint);
-    bufferedFoundPoints.append(foundScanPointsTrimmed);
+        const Eigen::VectorX<double> isoDistributionPointsFilledVec
+                = EigenUtils::convertQVectorToEigenVector(isoDistributionPointsFilled);
 
-    const int excessBufferCount = 8;
-    bufferedFoundPoints.append(QVector<QPointF>(excessBufferCount, nullPoint));
+        const double cosineSim = EigenUtils::cosineSimilarity(
+                extractedPointsFilledVec,
+                isoDistributionPointsFilledVec
+                );
 
-    QVector<double> intensityFounds;
-    std::transform(
-            bufferedFoundPoints.begin(),
-            bufferedFoundPoints.end(),
-            std::back_inserter(intensityFounds),
-            [](const QPointF &p){return p.y();}
-            );
-
-    if (isoDistribution.size() > intensityFounds.size()) {
-        isoDistribution.resize(intensityFounds.size());
-    }
-
-    const Eigen::VectorX<double> vIso
-        = EigenUtils::convertQVectorToEigenVector(isoDistribution);
-
-    int bestCycle = 0;
-    *bestCosineSim = std::numeric_limits<double>::lowest();
-
-    int cycleCount = 0;
-    while (intensityFounds.size() > isoDistribution.size()) {
-
-        const QVector<double> intensityFoundsSegment = intensityFounds.mid(0, isoDistribution.size());
-
-        const Eigen::VectorX<double> vFound
-            = EigenUtils::convertQVectorToEigenVector(intensityFoundsSegment);
-
-        const double cosineSim = EigenUtils::cosineSimilarity(vIso, vFound);
         if (cosineSim > *bestCosineSim) {
-            bestCycle = cycleCount;
             *bestCosineSim = cosineSim;
+            *monoIsoOffset = cycle;
         }
 
-//        std::cout << Eigen::RowVectorXd(vFound / vFound.maxCoeff()) << std::endl;
-//        std::cout << Eigen::RowVectorXd(vIso) << std::endl;
-//        std::cout << cosineSim << std::endl;
-
-        intensityFounds.pop_front();
-        cycleCount++;
+        cycle++;
+        startCenterPointIdx--;
     }
 
-    *monoIsoOffset = bufferedLeftPoints - bestCycle + centerPointIndex;
-    *subtractionPoints = foundScanPoints;
+    *subtractionPoints = buildSubractionPoints(
+            extractedPointsFilled,
+            startCenterPointIdxOG,
+            *monoIsoOffset
+            );
 
     ERR_RETURN
 }

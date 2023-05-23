@@ -54,7 +54,14 @@ namespace PSMsReaderRowNamespace {
     const QString FRAME_CAND_COUNT = QStringLiteral("frameCandidateCount");
     const QString PEPTIDE_SIZE = QStringLiteral("peptideSize");
     const QString MZ = QStringLiteral("mz");
-    const QString MASS = QStringLiteral("mass");
+    const QString MASS_THEO = QStringLiteral("massTheoretical");
+    const QString MASS_FOUND = QStringLiteral("massFound");
+    const QString MS1COSINE_SIM = QStringLiteral("ms1CosineSim");
+    const QString PPM_DIFF_MS1 = QStringLiteral("ppmDiffMs1");
+    const QString MS1_INTENSITY = QStringLiteral("ms1Intensity");
+    const QString MONO_ISO_OFFSET = QStringLiteral("monoIsoOffset");
+    const QString ISOTOPE_FOUND_CNT = QStringLiteral("isotopeFoundCount");
+    const QString MZ_FOUND = QStringLiteral("mzFound");
 
 
     const QStringList keysToCheck = {
@@ -91,8 +98,15 @@ namespace PSMsReaderRowNamespace {
             FRAME_CAND_COUNT,
             PEPTIDE_SIZE,
             MZ,
-            MASS,
-            MISSED_CLEAVAGES
+            MASS_THEO,
+            MASS_FOUND,
+            MISSED_CLEAVAGES,
+            MS1COSINE_SIM,
+            PPM_DIFF_MS1,
+            MS1_INTENSITY,
+            MONO_ISO_OFFSET,
+            ISOTOPE_FOUND_CNT,
+            MZ_FOUND
     };
 }
 
@@ -135,11 +149,19 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     double klDiv = -1.0;
     double fractionFound = -1.0;
     double mz = -1.0;
-    double mass = -1.0;
+    double massTheoretical = -1.0;
 
     int ionsFound = -1;
     int frameCandidateCount = -1;
     int peptideSize = -1;
+
+    double ms1CosineSim = -1.0;
+    double ppmDiffMs1 = -1.0;
+    double ms1Intensity = -1.0;
+    double massFound = -1.0;
+    double mzFound = -1.0;
+    int monoOffset = -1;
+    int isotopesFoundCount = -1;
 
     int missedCleavages= -1;
 
@@ -181,8 +203,16 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
             {FRAME_CAND_COUNT, QVariant(frameCandidateCount)},
             {PEPTIDE_SIZE, QVariant(peptideSize)},
             {MZ, QVariant(mz)},
-            {MASS, QVariant(mass)},
-            {MISSED_CLEAVAGES, QVariant(missedCleavages)}
+            {MASS_THEO, QVariant(massTheoretical)},
+            {MISSED_CLEAVAGES, QVariant(missedCleavages)},
+            {MS1COSINE_SIM, QVariant(ms1CosineSim)},
+            {PPM_DIFF_MS1, QVariant(ppmDiffMs1)},
+            {MS1_INTENSITY, QVariant(ms1Intensity)},
+            {MASS_FOUND, QVariant(massFound)},
+            {MONO_ISO_OFFSET, QVariant(monoOffset)},
+            {ISOTOPE_FOUND_CNT, QVariant(isotopesFoundCount)},
+            {MZ_FOUND, QVariant(mzFound)}
+
         };
     }
 
@@ -234,7 +264,14 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
         peptideSize = dataMap.value(PEPTIDE_SIZE).toInt();
         missedCleavages = dataMap.value(MISSED_CLEAVAGES).toInt();
         mz = dataMap.value(MZ).toDouble();
-        mass = dataMap.value(MASS).toDouble();
+        massTheoretical = dataMap.value(MASS_THEO).toDouble();
+        ms1Intensity = dataMap.value(MS1_INTENSITY).toDouble();
+        ppmDiffMs1 = dataMap.value(PPM_DIFF_MS1).toDouble();
+        ms1Intensity = dataMap.value(MS1_INTENSITY).toDouble();
+        massFound = dataMap.value(MASS_FOUND).toDouble();
+        monoOffset = dataMap.value(MONO_ISO_OFFSET).toInt();
+        isotopesFoundCount = dataMap.value(ISOTOPE_FOUND_CNT).toInt();
+        mzFound = dataMap.value(MZ_FOUND).toDouble();
 
         ERR_RETURN
     }
