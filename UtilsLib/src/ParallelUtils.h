@@ -210,6 +210,18 @@ public:
         return {v1, v2};
     }
 
+    template <typename T>
+    static QMap<int, T> convertVectorToMap(const QVector<T> &vec) {
+
+        QMap<int, T> vMap;
+
+        for (const T &v : vec) {
+            vMap.insert(vMap.size(), v);
+        }
+
+        return vMap;
+    }
+
 };
 
 

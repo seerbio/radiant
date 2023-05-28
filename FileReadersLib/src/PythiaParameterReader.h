@@ -137,6 +137,8 @@ struct PythiaParameters{
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
 
+    double theoMs2IonIntensityThreshold = 0.05;
+
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin > chargeStateMax) {

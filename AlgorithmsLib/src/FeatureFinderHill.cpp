@@ -83,10 +83,27 @@ QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberMinMax() const {
     return {m_scanNumbers.front(), m_scanNumbers.back()};
 }
 
+QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberIndexMinMax() const {
+    return {m_scanNumberIndexes.front(), m_scanNumberIndexes.back()};
+}
+
 double FeatureFinderHill::intensityValueMax() const {
     return *std::max_element(m_intensities.begin(), m_intensities.end());
 }
 
 QVector<double> FeatureFinderHill::mzVals() const {
     return m_mzVals;
+}
+
+void FeatureFinderHillUtils::sortFeatureFinderHillsIntensityDesc(QVector<FeatureFinderHill> *featureFinderHills) {
+
+    const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
+        return l.intensityValueMax() < r.intensityValueMax();
+    };
+
+    std::sort(
+            featureFinderHills->rbegin(),
+            featureFinderHills->rend(),
+            sortLogic
+            );
 }

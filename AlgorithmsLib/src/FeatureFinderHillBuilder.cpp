@@ -849,36 +849,3 @@ Err FeatureFinderHillBuilder::refineHills(QVector<FeatureFinderHill> *featureFin
 
     ERR_RETURN
 }
-
-Err FeatureFinderHillBuilder::featureFinderHillPoints(
-        const QVector<FeatureFinderHill> &featureFinderHills,
-        QVector<FeatureFinderHillPoint> *featureFinderHillPoints
-) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(featureFinderHills);
-    ree;
-
-    const auto insertLogic = [](const FeatureFinderHill &h) {
-
-        FeatureFinderHillPoint p;
-        p.mz = h.mzMean();
-        p.frameIndex = h.maxIntensityScanNumberIndex();
-        p.intensity = h.intensityValueMax();
-
-        return p;
-    };
-
-    std::transform(
-            featureFinderHills.begin(),
-            featureFinderHills.end(),
-            std::back_inserter(*featureFinderHillPoints),
-            insertLogic
-    );
-
-    e = ErrorUtils::isEqual(featureFinderHills.size(), featureFinderHillPoints->size());
-    ree;
-
-    ERR_RETURN
-}

@@ -197,6 +197,8 @@ namespace {
                 mzCenterPoint,
                 scanPoints,
                 ffParams.tolerancePPM,
+                1,
+                5,
                 &ms1Feature->charge
         ); ree;
 

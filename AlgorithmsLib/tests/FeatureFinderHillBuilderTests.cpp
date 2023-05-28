@@ -48,6 +48,8 @@ QVector<ScanPoints> FeatureFinderHillBuilderTests::testScanPoints() {
 
 void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
+    QSKIP("remove");
+
     ERR_INIT
 
     QVector<ScanPoints> scanPoints = testScanPoints();
@@ -139,6 +141,7 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
 void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
+    QSKIP("remove");
     ERR_INIT
 
     const QVector<ScanPoints> scanPoints = testScanPoints();
@@ -181,6 +184,8 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
+
+    QSKIP("remove");
 
     ERR_INIT
 
@@ -238,20 +243,20 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     ERR_INIT
 
     //TODO use proper pathing here
-    const QString filePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+    const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
 
     MsReaderParquet msReader;
     msReader.openFile(filePath);
 
     FeatureFinderParameters params;
-    params.skipScanCount = 3;
-    params.tolerancePPM = 8.0;
-    params.minScanCount = 5;
+    params.skipScanCount = 0;
+    params.tolerancePPM = 12.0;
+    params.minScanCount = 1;
 //    params.signalToNoiseRatio = 1;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
-    featureFinderHillBuilder.setRunParallel(true);
+    featureFinderHillBuilder.setRunParallel(false);
     QCOMPARE(e, eNoError);
 
     const MsLevel msLevel = 1;

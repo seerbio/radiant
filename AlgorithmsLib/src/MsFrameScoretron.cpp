@@ -5,6 +5,7 @@
 #include "MsFrameScoretron.h"
 
 #include "BiophysicalCalcs.h"
+#include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "ExtractedScansReader.h"
@@ -70,26 +71,51 @@ namespace {
         return theoMat;
     }
 
+    void smoothIntensityMatrixRowWise(Eigen::MatrixX<double> *scoringMatIntensity) {
+
+        const int gaussFilterLength = 3;
+        const double sigma = 0.5;
+        const bool normalize = true;
+
+        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(
+                gaussFilterLength,
+                sigma,
+                normalize
+                );
+
+        Eigen::MatrixX<double> scoringMatIntensitySmoothed = EigenKernelUtils::applyKernelRowumnWiseToMatrix(
+                *scoringMatIntensity,
+                gaussKernel
+                );
+
+        *scoringMatIntensity = scoringMatIntensitySmoothed;
+    }
+
     ScoringMatrices buildTargetScoringMatrices(
             const PythiaParameters &params,
             const QVector<MS2Ion> &ms2IonsTandemPred,
             int frameScanCount,
-            int topNMs2Ions,
-            double ppmTolerance,
             TurboXIC *turboXic
     ) {
 
-        Eigen::MatrixX<double> scoringMatIntensity(frameScanCount, topNMs2Ions);
+        Eigen::MatrixX<double> scoringMatIntensity(frameScanCount,  params.topNMs2Ions);
         scoringMatIntensity.setZero();
 
-        Eigen::MatrixX<double> scoringMatMz(frameScanCount, topNMs2Ions);
+        Eigen::MatrixX<double> scoringMatMz(frameScanCount, params.topNMs2Ions);
         scoringMatMz.setOnes();
 
         QVector<MS2Ion> ms2Ions = ms2IonsTandemPred;
 
+        const double mzMinBase = 230.0; //TODO make this settable.
+
         FragLibReader::filterMs2IonsByMz(
-                params.mzMinDataStructure,
+                mzMinBase,
                 params.mzMaxDataStructure,
+                &ms2Ions
+                );
+
+        FragLibReader::filterMs2IonsByIntensity(
+                params.theoMs2IonIntensityThreshold,
                 &ms2Ions
                 );
 
@@ -101,7 +127,7 @@ namespace {
         const Eigen::MatrixX<double> theoMat = buildTheoMat(
                 ms2Ions,
                 frameScanCount,
-                topNMs2Ions
+                params.topNMs2Ions
         );
 
         for (int colIdx = 0; colIdx < ms2Ions.size(); colIdx++) {
@@ -109,7 +135,7 @@ namespace {
             const double mz = ms2Ions.at(colIdx).x();
             const double massTol = MathUtils::calculatePPM(
                     mz,
-                    ppmTolerance
+                    params.ms2ExtractionWidthPPM
             );
 
             const double mzMin = mz - massTol;
@@ -141,6 +167,16 @@ namespace {
             }
         }
 
+        scoringMatIntensity /= scoringMatIntensity.maxCoeff();
+
+        std::cout << scoringMatIntensity << std::endl;
+        smoothIntensityMatrixRowWise(&scoringMatIntensity);
+        std::cout << "*********" << std::endl;
+
+        scoringMatIntensity /= scoringMatIntensity.maxCoeff();
+        std::cout << scoringMatIntensity << std::endl;
+        qDebug() << ms2Ions;
+
         ScoringMatrices sm;
         sm.scoringMatrixIntensity = scoringMatIntensity;
         sm.theoMatrixMatrixIntensity = theoMat;
@@ -156,7 +192,7 @@ namespace {
 
         ERR_INIT
 
-        const double numberOfSearchedFrags = static_cast<double>(scoringMatrices.scoringMatrixIntensity.cols());
+        const auto numberOfSearchedFrags = static_cast<double>(scoringMatrices.scoringMatrixIntensity.cols());
 
         const Eigen::VectorX<double> cosineSimPerFrameIndexOfTarget = EigenUtils::rowWiseCosineSimilarOfMatrices(
                 scoringMatrices.scoringMatrixIntensity,
@@ -250,14 +286,19 @@ namespace {
             const PeptideStringWithMods &peptideStringWithMods = it.key();
             const QVector<MS2Ion> &ms2IonsTandemPred = it.value();
 
+            //drewholio
+            if (peptideStringWithMods != "VSEQNVCVEAK") {
+                continue;
+            }
+
             const ScoringMatrices targetScoringMatrices = buildTargetScoringMatrices(
                     params,
                     ms2IonsTandemPred,
                     frame.scanCount(),
-                    params.topNMs2Ions,
-                    params.ms2ExtractionWidthPPM,
                     &turboXic
             );
+
+            break; //drewholio
 
             FrameIndexScoreResultOfTarget frameIndexScoreResultOfTarget;
             e = buildPerFrameIndexScoreVectors(
@@ -277,6 +318,35 @@ namespace {
         ERR_RETURN
     }
 
+    void filterByFoundMzCount(
+            int minFoundMzCount,
+            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+    ) {
+
+        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
+        for (
+                auto it = pepStrWModsVsFrameIndexScoreResultOfTargets->begin();
+                it != pepStrWModsVsFrameIndexScoreResultOfTargets->end();
+                it++
+                ) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
+
+            const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
+            const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
+
+            if (maxFoundCount < minFoundMzCount) {
+                continue;
+            }
+
+            pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
+        }
+
+        *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
+    }
+
+
 }//namespace
 Err MsFrameScoretron::buildFrameScoreVectors(QString *frameScoreVectorsFilePath) {
 
@@ -294,7 +364,6 @@ Err MsFrameScoretron::buildFrameScoreVectors(QString *frameScoreVectorsFilePath)
 
     e = processFrameLogic(
             {m_msFrame, m_fragPreds},
-            m_params,
             &m_pepStrWModsVsFrameIndexScoreResultOfTargets
     ); ree
 
@@ -365,7 +434,6 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
 
 Err MsFrameScoretron::processFrameLogic(
         const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
-        const PythiaParameters &params,
         QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
 ) {
 
@@ -380,40 +448,13 @@ Err MsFrameScoretron::processFrameLogic(
     e = scoreFrameTargets(
             frame,
             tandemPreds,
-            params,
+            m_params,
             pepStrWModsVsFrameIndexScoreResultOfTargets
     ); ree;
 
     ERR_RETURN
 }
 
-void MsFrameScoretron::filterByFoundMzCount(
-        int minFoundMzCount,
-        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
-) {
-
-    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
-    for (
-            auto it = pepStrWModsVsFrameIndexScoreResultOfTargets->begin();
-            it != pepStrWModsVsFrameIndexScoreResultOfTargets->end();
-            it++
-            ) {
-
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const FrameIndexScoreResultOfTarget &frameIndexScoreResultOfTarget = it.value();
-
-        const QVector<int> &founds = frameIndexScoreResultOfTarget.foundIonsPerFrameIndexOfTargetVec;
-        const int maxFoundCount = *std::max_element(founds.begin(), founds.end());
-
-        if (maxFoundCount < minFoundMzCount) {
-            continue;
-        }
-
-        pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered.insert(peptideStringWithMods, frameIndexScoreResultOfTarget);
-    }
-
-    *pepStrWModsVsFrameIndexScoreResultOfTargets = pepStrWModsVsFrameIndexScoreResultOfTargetsFiltered;
-}
 
 Err MsFrameScoretron::writeFrameTargetScoreVectors(const QString &outputFilePath) {
 

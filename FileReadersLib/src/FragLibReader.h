@@ -99,6 +99,11 @@ public:
             QVector<MS2Ion> *ms2Ions
     );
 
+    static void filterMs2IonsByIntensity(
+            double intensityThreshold,
+            QVector<MS2Ion> *ms2Ions
+            );
+
     static void getTopNMostIntenseMs2Ions(
             int topNMs2Ions,
             QVector<MS2Ion> *ms2Ions

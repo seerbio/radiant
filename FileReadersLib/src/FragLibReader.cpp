@@ -107,7 +107,7 @@ Err FragLibReader::getMS2Ions(
             peptideSequenceChargeKeyVsIsDecoy
             ); ree;
 
-    qDebug() << peptideSequenceChargeKeyVsMS2Ions->size() << "retrieved in" << et.elapsed() << "mSec";
+    qDebug() << "MS2 Predictions count:" << peptideSequenceChargeKeyVsMS2Ions->size() << "retrieved in" << et.elapsed() << "mSec";
     ERR_RETURN
 }
 
@@ -131,6 +131,7 @@ void FragLibReader::filterMs2IonsByMz(
     ms2Ions->erase(terminator, ms2Ions->end());
 }
 
+
 void FragLibReader::getTopNMostIntenseMs2Ions(
         int topNMs2Ions,
         QVector<MS2Ion> *ms2Ions
@@ -151,4 +152,23 @@ void FragLibReader::getTopNMostIntenseMs2Ions(
     };
 
     std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
+}
+
+void FragLibReader::filterMs2IonsByIntensity(
+        double intensityThreshold,
+        QVector<MS2Ion> *ms2Ions
+        ) {
+
+    const auto terminatorLogic = [intensityThreshold](const MS2Ion &ion){
+        return ion.y() < intensityThreshold;
+    };
+
+    const auto terminator = std::remove_if(
+            ms2Ions->begin(),
+            ms2Ions->end(),
+            terminatorLogic
+            );
+
+    ms2Ions->erase(terminator, ms2Ions->end());
+
 }

@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/FeatureFinderHillClusterTron.cpp
         src/IsotopicDistributionBuilder.cpp
         src/Ms1FeatureFinder.cpp
         src/MsCalibratomatic.cpp
@@ -45,6 +46,7 @@ SET(HEADER_FILES
         src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/FeatureFinderHillClusterTron.h
         src/IsotopicDistributionBuilder.h
         src/Ms1FeatureFinder.h
         src/MsCalibratomatic.h

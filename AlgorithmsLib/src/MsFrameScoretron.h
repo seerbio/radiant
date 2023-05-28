@@ -32,6 +32,7 @@ public:
 
     friend class MissingPeptideManualTroubleshooter;
     friend class MsFrameScoretronProcessormaticTests;
+    friend class MsFrameScoretronTests;
 
     MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
@@ -54,12 +55,6 @@ private:
 
     Err processFrameLogic(
             const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
-            const PythiaParameters &params,
-            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
-    );
-
-    void filterByFoundMzCount(
-            int minFoundMzCount,
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
     );
 

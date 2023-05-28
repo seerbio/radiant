@@ -56,7 +56,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScan
 
     e = ErrorUtils::isNotEmpty(scanPointsByScanNumber); ree;
 
-    std::vector<rTreePoint> cloudLouder;
+    std::vector<rTreePoint> cloudLoader;
 
     for (auto it = scanPointsByScanNumber.begin(); it != scanPointsByScanNumber.end(); it++) {
 
@@ -65,12 +65,12 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScan
 
         for (const ScanPoint &sp : scanPoints) {
             rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
-            cloudLouder.emplace_back(coor, sp.y());
+            cloudLoader.emplace_back(coor, sp.y());
         }
     }
 
     const int maxElements = 16;
-    m_rTree = new RTree(cloudLouder, bgi::dynamic_quadratic(maxElements));
+    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
     ERR_RETURN
 }

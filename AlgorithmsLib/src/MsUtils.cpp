@@ -370,6 +370,8 @@ Err MsUtils::chargeDeterminator(
         const QPointF &mzCenterPoint,
         const QVector<QPointF> &scanPoints,
         double ppmTol,
+        int chargeMin,
+        int chargeMax,
         int *charge
         ) {
 
@@ -380,9 +382,6 @@ Err MsUtils::chargeDeterminator(
     *charge = -1;
 
     double currentBestScore = 0.0;
-
-    const int chargeMin = 1;
-    const int chargeMax = 5;
 
     for (int chrg = chargeMin; chrg <= chargeMax; chrg++) {
 

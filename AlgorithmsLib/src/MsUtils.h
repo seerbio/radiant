@@ -48,6 +48,8 @@ public:
             const QPointF &mzCenterPoint,
             const QVector<QPointF> &scanPoints,
             double ppmTol,
+            int chargeMin,
+            int chargeMax,
             int *charge
             );
 

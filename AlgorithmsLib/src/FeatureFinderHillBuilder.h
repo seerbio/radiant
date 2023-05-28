@@ -29,10 +29,14 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     int smoothCount = 1;
     double sigma = 1.0;
     double signalToNoiseRatio = 2;
+    double cosineSimThreshold = 0.8;
 
     //Clustering
     int scanBuffer = 1;
     double mzBuffer = 3.0;
+
+    int chargeMin = 1;
+    int chargeMax = 3;
 
 
 public:
@@ -41,7 +45,7 @@ public:
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
             && minScanCount >= 0
-            && filterLength > 2
+            && filterLength >= 2
             && smoothCount >0
             && sigma > 0
             && signalToNoiseRatio > 0;
@@ -88,11 +92,6 @@ public:
             const QMap<ScanNumber, double> &scanNumberVsScanTime,
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath
-    );
-
-    static Err featureFinderHillPoints(
-            const QVector<FeatureFinderHill> &featureFinderHills,
-            QVector<FeatureFinderHillPoint> *featureFinderHillPoints
     );
 
     Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
