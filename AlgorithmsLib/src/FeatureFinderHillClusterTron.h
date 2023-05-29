@@ -31,13 +31,19 @@ public:
 
     Err init(const FeatureFinderParameters &params);
 
-    Err clusterHills(
+    Err clusterHillsMS1(
             const QVector<FeatureFinderHill> &featureFinderHills,
             bool isMs2Hills,
             QVector<HillsClustering> *hillClusterings,
             QMap<int, FeatureFinderHill> *featureFinderHillsMap
             );
 
+    static Err writeClustersToMzRt(
+            const QMap<ScanNumber, double> &scanNumberVsScanTime,
+            const QVector<HillsClustering> &hillClustersByIndexs,
+            const QMap<int, FeatureFinderHill> &featureFinderHillsMap,
+            const QString &destinationFilePath
+            );
 
 private:
 

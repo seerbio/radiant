@@ -64,8 +64,13 @@ Err FeatureFinderHill::refineHill(
     const int truncDistance = endIndex - startIndex + 1;
 
     m_scanNumbers = m_scanNumbers.mid(startIndex, truncDistance);
+    m_scanNumberIndexes = m_scanNumberIndexes.mid(startIndex, truncDistance);
     m_intensities = m_intensities.mid(startIndex, truncDistance);
     m_mzVals = m_mzVals.mid(startIndex, truncDistance);
+
+    e = ErrorUtils::isEqual(m_scanNumbers.size(), m_scanNumberIndexes.size()); ree
+    e = ErrorUtils::isEqual(m_scanNumbers.size(), m_intensities.size()); ree
+    e = ErrorUtils::isEqual(m_scanNumbers.size(), m_mzVals.size()); ree
 
     ERR_RETURN
 }

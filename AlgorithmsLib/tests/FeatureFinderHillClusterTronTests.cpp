@@ -118,7 +118,7 @@ void FeatureFinderHillClusterTronTests::clusterHillsToyDataTest() {
 
     QVector<HillsClustering> hillClustersByIndexs;
     QMap<int, FeatureFinderHill> featureFinderHillsMap;
-    e = featureFinderHillClusterTron.clusterHills(
+    e = featureFinderHillClusterTron.clusterHillsMS1(
             featureFinderHills,
             true,
             &hillClustersByIndexs,
@@ -152,8 +152,6 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
 
     ERR_INIT
 
-    QSKIP("later");
-
     //TODO use proper pathing here
     const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
 
@@ -161,10 +159,14 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
     msReader.openFile(filePath);
 
     FeatureFinderParameters params;
+    params.tolerancePPM = 15.0;
     params.skipScanCount = 0;
-    params.tolerancePPM = 12.0;
     params.minScanCount = 1;
-//    params.signalToNoiseRatio = 1;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 1.0;
+    params.cosineSimThreshold = 0.8;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -186,14 +188,33 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
             );
     QCOMPARE(e, eNoError);
 
+    e = featureFinderHillBuilder.refineHills(&featureFinderHills);
+    QCOMPARE(e, eNoError);
+
     qDebug() << "Hills found to write" << featureFinderHills.size();
+
+    FeatureFinderHillClusterTron featureFinderHillClusterTron;
+    e = featureFinderHillClusterTron.init(params);
+    QCOMPARE(e, eNoError);
+
+    QVector<HillsClustering> hillClustersByIndexs;
+    QMap<int, FeatureFinderHill> featureFinderHillsMap;
+    e = featureFinderHillClusterTron.clusterHillsMS1(
+            featureFinderHills,
+            true,
+            &hillClustersByIndexs,
+            &featureFinderHillsMap
+    );
+    QCOMPARE(e, eNoError);
+
 
 #define WRITE_TO_MZRT
 #ifdef WRITE_TO_MZRT
-    e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+    e = FeatureFinderHillClusterTron::writeClustersToMzRt(
             msReader.getScanNumberVsScanTime(),
-            featureFinderHills,
-            "hills.mzrt.csv"
+            hillClustersByIndexs,
+            featureFinderHillsMap,
+            "clusters.mzrt.csv"
     );
     QCOMPARE(e, eNoError);
 #endif

@@ -18,8 +18,6 @@ bool CommandLineParserUtils::checkFileNameExtension(
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
 
-    qDebug() << "drewholio" << filePath << expectedFileExtension << fi.isFile() << fi.isDir();
-
     if (fi.isFile()) {
         return StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false);
     }

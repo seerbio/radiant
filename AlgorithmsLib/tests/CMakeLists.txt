@@ -18,7 +18,6 @@ SET(TEST_CLASSES
         FeatureFinderHillClusterTronTests
         IsotopeDistributionBuilderTests
         MissingPeptideManualTroubleshooter
-        Ms1FeatureFinderTests
         MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronTests

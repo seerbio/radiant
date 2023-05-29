@@ -483,8 +483,13 @@ QVector<QPointF> buildSubractionPoints(
         int monoOffset
         ) {
 
+        if (monoOffset == -1) {
+            return {extractedPointsFilled.at(startCenterPointIdx)};
+        }
+
         QVector<QPointF> subtractPoints;
 
+        //TODO change this return points based on averagine envelope.
         const int return4Points = 4;
         for (int i = startCenterPointIdx - monoOffset; i < extractedPointsFilled.size(); i++) {
 
@@ -500,7 +505,6 @@ QVector<QPointF> buildSubractionPoints(
             }
 
         }
-
 
         return subtractPoints;
     }
@@ -521,7 +525,7 @@ Err MsUtils::monoIsotopeDeterminator(
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
     *bestCosineSim = 0;
-    *monoIsoOffset = 1000;
+    *monoIsoOffset = -1;
 
     int startCenterPointIdxOG;
     QVector<QPointF> extractedPointsFilled;

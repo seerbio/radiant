@@ -31,10 +31,6 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double signalToNoiseRatio = 2;
     double cosineSimThreshold = 0.8;
 
-    //Clustering
-    int scanBuffer = 1;
-    double mzBuffer = 3.0;
-
     int chargeMin = 1;
     int chargeMax = 3;
 
@@ -54,7 +50,7 @@ public:
            qDebug() << "tolerancePPM" << tolerancePPM;
            qDebug() << "skipScanCount" << skipScanCount ;
            qDebug() << "minScanCount" << minScanCount;
-           qDebug() << "filterLentght" << filterLength;
+           qDebug() << "filterLength" << filterLength;
            qDebug() << "smoothCount" << smoothCount;
            qDebug() << "Sigma" << sigma;
            qDebug() << "signalToNoiseRatio" << signalToNoiseRatio ;

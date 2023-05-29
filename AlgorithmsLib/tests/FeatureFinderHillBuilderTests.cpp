@@ -48,8 +48,6 @@ QVector<ScanPoints> FeatureFinderHillBuilderTests::testScanPoints() {
 
 void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
-    QSKIP("remove");
-
     ERR_INIT
 
     QVector<ScanPoints> scanPoints = testScanPoints();
@@ -141,7 +139,6 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
 void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
-    QSKIP("remove");
     ERR_INIT
 
     const QVector<ScanPoints> scanPoints = testScanPoints();
@@ -184,8 +181,6 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
-
-    QSKIP("remove");
 
     ERR_INIT
 
@@ -230,6 +225,9 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
         const FeatureFinderHill &ffh = featureFinderHills.at(i);
         const double expectedMz = expectedMzVals.at(i);
         const QVector<int> &expectedScanNumbers = expectedScanNumbersAll.at(i);
+
+        qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
+
 
         QCOMPARE(ffh.mzMean(), expectedMz);
         QCOMPARE(ffh.scanCount(), expectedScanNumbers.size());

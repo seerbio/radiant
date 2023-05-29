@@ -260,7 +260,14 @@ void MsUtilsTests::chargeDeterminatorTest() {
             QPointF(484.258,1.87976e+06)
     };
 
-    MsUtils::chargeDeterminator({487.228, 6.80671e+06}, pointsCharge1, 20.0, &charge);
+    MsUtils::chargeDeterminator(
+            {487.228, 6.80671e+06},
+            pointsCharge1,
+            20.0,
+            2,
+            3,
+            &charge
+            );
     qDebug() << charge;
 
 

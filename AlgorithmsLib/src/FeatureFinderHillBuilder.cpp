@@ -541,7 +541,6 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &groupedMzVals,
             &groupedIntensityVals
     ); ree;
-//    qDebug() << "Scans grouped in" << et.restart() << "mSec";
 
     QVector<Eigen::MatrixX<int>> connectedCentroidsMats;
     e = connectCentroidsInGroupedMzVals(
@@ -549,7 +548,6 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             m_featureFinderParameters.tolerancePPM,
             &connectedCentroidsMats
     ); ree;
-//    qDebug() << connectedCentroidsMats.size() << "Centroid pairs connected" << et.restart() << "mSec";
 
     e = groupConnectedCentroidsToHills(
             connectedCentroidsMats,
@@ -557,7 +555,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             m_featureFinderParameters.minScanCount,
             featureFinderHills
     ); ree;
-//    qDebug() << featureFinderHills->size() << "Centroids to hills" << et.restart() << "mSec";
+
 
     ERR_RETURN
 }
@@ -625,8 +623,19 @@ namespace {
 
         const int minSplitVal = 2;
         if (peakLimits.size() < minSplitVal) {
+
             FeatureFinderHill smoothedHill = rhi.featureFinderHill;
-            smoothedHill.updateIntensities(intensityVecSmoothed);
+
+            //TODO this is a hack.  The root of the problem is probs the vec is too small to smooth.
+            // consider implementing some limit on smoothing vs filter size, if that is not already implemented.
+            if (intensityVecSmoothed.size() == smoothedHill.intensities().size()) {
+                smoothedHill.updateIntensities(intensityVecSmoothed);
+            }
+
+            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.scanNumberIndexes().size()); rree
+            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.intensities().size()); rree
+            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.mzVals().size()); rree
+
             return {e, {smoothedHill}};
         }
 
@@ -650,14 +659,21 @@ Err FeatureFinderHillBuilder::Private::refineHills(QVector<FeatureFinderHill> *f
 
     e = ErrorUtils::isNotEmpty(*featureFinderHills); ree;
 
-    QVector<RefineHillsInput> refineHillsInput;
-    for (const FeatureFinderHill &ffh : (*featureFinderHills)) {
+    const auto transformLogic = [&](const FeatureFinderHill &ffh){
         RefineHillsInput rhi;
         rhi.params = m_featureFinderParameters;
         rhi.featureFinderHill = ffh;
         rhi.minScanCount = m_featureFinderParameters.minScanCount;
-        refineHillsInput.push_back(rhi);
-    }
+        return rhi;
+    };
+
+    QVector<RefineHillsInput> refineHillsInput;
+    std::transform(
+            featureFinderHills->begin(),
+            featureFinderHills->end(),
+            std::back_inserter(refineHillsInput),
+            transformLogic
+            );
 
     QVector<FeatureFinderHill> refinedHills;
 
@@ -825,14 +841,10 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
         mzRtRows.push_back(mzRtRow);
     }
 
-    const QVector<QSharedPointer<CSVReaderInputBase>> ptrs
-            = CSVReaderInputBase::convertInputStructToSharedPointers(mzRtRows);
-
-    CSVReader csvReader;
-    e = csvReader.writeDataToCSV(
-            destinationFilePath,
-            ptrs
-            ); ree;
+    e = CSVReader::write(
+            mzRtRows,
+            destinationFilePath
+            ); ree
 
     ERR_RETURN
 }

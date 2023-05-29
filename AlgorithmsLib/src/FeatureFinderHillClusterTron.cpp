@@ -11,7 +11,6 @@
 
 #include <Eigen/Dense>
 
-
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -215,7 +214,7 @@ namespace {
 
 
 }//namespace
-Err FeatureFinderHillClusterTron::clusterHills(
+Err FeatureFinderHillClusterTron::clusterHillsMS1(
         const QVector<FeatureFinderHill> &featureFinderHills,
         bool isMs2Hills,
         QVector<HillsClustering> *hillClusterings,
@@ -236,7 +235,7 @@ Err FeatureFinderHillClusterTron::clusterHills(
     const double leftDistanceThomsons = 2.1;
     const double rightDistanceThomsons = 3.1;
 
-    for (const FeatureFinderHill &ffh : featureFinderHills) {
+    for (const FeatureFinderHill &ffh : hillsSortedHiLoIntensity) {
 
         const int maxIntensityScanNumberIndex = ffh.maxIntensityScanNumberIndex();
         const double mzMean = ffh.mzMean();
@@ -335,4 +334,80 @@ Err FeatureFinderHillClusterTron::clusterHills(
     }
 
     ERR_RETURN
+}
+
+Err FeatureFinderHillClusterTron::writeClustersToMzRt(
+        const QMap<ScanNumber, double> &scanNumberVsScanTime,
+        const QVector<HillsClustering> &hillClustersByIndexs,
+        const QMap<int, FeatureFinderHill> &featureFinderHillsMap,
+        const QString &destinationFilePath
+        ) {
+
+    ERR_INIT
+
+    struct MzRtRow : public CSVReaderInputBase {
+        double mzLo = -1.0;
+        double mzHi = -1.0;
+        double rtLo = -1.0;
+        double rtHi = -1.0;
+
+        QMap<QString, QVariant> map() override {
+            return {
+                    {"mzLo", mzLo},
+                    {"mzHi", mzHi},
+                    {"rtLo", rtLo},
+                    {"rtHi", rtHi}
+            };
+        }
+    };
+
+    QVector<MzRtRow> mzRtRows;
+    for (const HillsClustering &hc : hillClustersByIndexs) {
+
+        const QVector<int> &hillIndexes = hc.hillsMapIndexes;
+
+        const auto insertLogic = [featureFinderHillsMap](int ind){
+            return featureFinderHillsMap.value(ind);
+        };
+
+        QVector<FeatureFinderHill> ffhs;
+        std::transform(
+                hillIndexes.begin(),
+                hillIndexes.end(),
+                std::back_inserter(ffhs),
+                insertLogic
+                );
+
+        const FeatureFinderHill maxIntensityHill = *std::max_element(
+                ffhs.rbegin(),
+                ffhs.rend(),
+                [](const FeatureFinderHill &l, const FeatureFinderHill &r){
+                    return l.intensityValueMax() < r.intensityValueMax();
+                }
+        );
+
+        const auto minMaxMzHills = std::minmax_element(
+                ffhs.begin(),
+                ffhs.end(),
+                [](const FeatureFinderHill &l, const FeatureFinderHill &r){
+                    return l.mzMean() < r.mzMean();
+                }
+        );
+
+        MzRtRow mzRtRow;
+        mzRtRow.mzLo = minMaxMzHills.first->mzMean() - 0.025;
+        mzRtRow.mzHi = minMaxMzHills.second->mzMean() + 0.025;
+        mzRtRow.rtLo = scanNumberVsScanTime.value(maxIntensityHill.scanNumberMinMax().first);
+        mzRtRow.rtHi = scanNumberVsScanTime.value(maxIntensityHill.scanNumberMinMax().second);
+
+        mzRtRows.push_back(mzRtRow);
+    }
+
+    e = CSVReader::write(
+            mzRtRows,
+            destinationFilePath
+    ); ree
+
+    ERR_RETURN
+
 }
