@@ -242,16 +242,18 @@ namespace {
                ); rree;
 
        QString frameScoreVectorsFilePath;
-       e = msFrameScoretron.buildFrameScoreVectors(&frameScoreVectorsFilePath); rree;
+       e = msFrameScoretron.extractHillsForCandidtates(&frameScoreVectorsFilePath); rree;
 
-       QString frameExtractedPointsFilePath;
-       e = msFrameScoretron.buildAllExtractedTheoriticalPointsFromTargetKeyFrame(&frameExtractedPointsFilePath); rree;
+       //drewholio
+//       QString frameExtractedPointsFilePath;
+//       e = msFrameScoretron.buildAllExtractedTheoriticalPointsFromTargetKeyFrame(&frameExtractedPointsFilePath); rree;
 
        ScoreVectorsOutput output;
-       output.scoreVecFilePath = frameScoreVectorsFilePath;
-       output.extractsFilePath = frameExtractedPointsFilePath;
-       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
-       output.mzTargetStartStop = fpi.mzTargetStartStop;
+       //drewholio
+//       output.scoreVecFilePath = frameScoreVectorsFilePath;
+//       output.extractsFilePath = frameExtractedPointsFilePath;
+//       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
+//       output.mzTargetStartStop = fpi.mzTargetStartStop;
 
        return {e, output};
    }

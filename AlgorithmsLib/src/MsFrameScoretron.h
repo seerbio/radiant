@@ -7,11 +7,14 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
+#include "FeatureFinderHillBuilder.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
+#include "PeakIntegratomatic.h"
 #include "PSMsReader.h"
 #include "PythiaParameterReader.h"
+
 
 using namespace Error;
 
@@ -45,20 +48,17 @@ public:
             const QPair<double, double> &mzTargetStartStop
             );
 
-    Err buildFrameScoreVectors(QString *frameScoreVectorsFilePath);
+    Err extractHillsForCandidtates(QString *frameHillsFilePath);
 
-    Err buildAllExtractedTheoriticalPointsFromTargetKeyFrame(QString *frameExtractedPointsFilePath);
 
 private:
 
     Err buildFragIonLibForTargetMz(const QString &fragLibUri);
 
-    Err processFrameLogic(
-            const QPair<MsFrame, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &chunk,
+    Err groupHillsForFrameCandidates(
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
-    );
+            );
 
-    Err writeFrameTargetScoreVectors(const QString &outputFilePath);
 
 private:
 
@@ -66,6 +66,7 @@ private:
     QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
+    FeatureFinderHillBuilder m_featureFinderHillBuilder;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

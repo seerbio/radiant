@@ -26,11 +26,37 @@ using rTreeBox = bg::model::box<rTreeCoor>;
 using rTreePoint = std::pair<rTreeBox, int> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
-Err FeatureFinderHillClusterTron::init(const FeatureFinderParameters &params) {
+
+FeatureFinderHillClusterTron::FeatureFinderHillClusterTron()
+: m_cosineSimThreshold(0.8)
+, m_chargeMin(1)
+, m_chargeMax(5)
+{}
+
+Err FeatureFinderHillClusterTron::init(
+        const FeatureFinderParameters &params,
+        double cosineSimThreshold,
+        int chargeMin,
+        int chargeMax
+        ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(params.isValid()); ree;
+    e = ErrorUtils::isTrue(params.isValid()); ree
+
+    const double minCosineSim = 0.0;
+    const double maxCosineSim = 1.0;
+    e = ErrorUtils::isWithinRange(
+            cosineSimThreshold,
+            minCosineSim,
+            maxCosineSim,
+            ErrorUtilsParam::IncludeThreshold
+            ); ree
+    m_cosineSimThreshold = cosineSimThreshold;
+
+    e = ErrorUtils::isTrue(chargeMin < chargeMax); ree
+    e = ErrorUtils::isTrue(chargeMin > 0); ree
+    e = ErrorUtils::isTrue(chargeMax > 0); ree
 
     m_params = params;
 
@@ -279,7 +305,7 @@ Err FeatureFinderHillClusterTron::clusterHillsMS1(
                 ffh,
                 *featureFinderHillsMap,
                 rTreeSearchResult,
-                m_params.cosineSimThreshold,
+                m_cosineSimThreshold,
                 &correlatedHills
         ); ree;
 
@@ -292,8 +318,8 @@ Err FeatureFinderHillClusterTron::clusterHillsMS1(
                 centerPoint,
                 hillApexPoints,
                 m_params.tolerancePPM,
-                m_params.chargeMin,
-                m_params.chargeMax,
+                m_chargeMin,
+                m_chargeMax,
                 &charge
                 ); ree
 

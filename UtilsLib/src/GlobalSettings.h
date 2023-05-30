@@ -16,6 +16,7 @@ using Coors = QVector<double>;
 using DiscScore = double;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
+using Id = int;
 using Index = int;
 using Intensity = double;
 using IonLabel = QString;

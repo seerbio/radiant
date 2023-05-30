@@ -27,7 +27,6 @@ SET(SOURCE_FILES
         src/FeatureFinderHillClusterTron.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MsCalibratomatic.cpp
-        src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
         src/MsFrameScoretronProcessormatic.cpp
@@ -51,7 +50,6 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsFrameScoretron.h
         src/MsFrameScoretronProcessormatic.h
-        src/MsScansDenoiseTron.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h

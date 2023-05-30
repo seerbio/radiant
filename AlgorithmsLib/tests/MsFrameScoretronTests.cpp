@@ -44,7 +44,7 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
     QCOMPARE(e, eNoError);
 
     QString frameScoreVectorsFilePath;
-    e = msFrameScoretron.buildFrameScoreVectors(&frameScoreVectorsFilePath);
+    e = msFrameScoretron.extractHillsForCandidtates(&frameScoreVectorsFilePath);
     QCOMPARE(e, eNoError);
 
 }

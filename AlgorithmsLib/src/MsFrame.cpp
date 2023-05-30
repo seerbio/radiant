@@ -11,7 +11,6 @@
 #include "GlobalSettings.h"
 #include "MsReaderBase.h"
 #include "MsReaderParquet.h"
-#include "MsScansDenoiseTron.h"
 #include "ParallelUtils.h"
 
 #include <boost/geometry.hpp>

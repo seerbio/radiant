@@ -23,13 +23,27 @@ struct HillsClustering {
 };
 
 
+struct HillsClusteringMS2 {
+
+    QVector<int> hillsMapIndexes;
+    double cosineSimSum = -1.0;
+    Charge charge = -1;
+
+};
+
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHillClusterTron {
 
 public:
-    FeatureFinderHillClusterTron() = default;
+    FeatureFinderHillClusterTron();
     ~FeatureFinderHillClusterTron() = default;
 
-    Err init(const FeatureFinderParameters &params);
+    Err init(
+            const FeatureFinderParameters &params,
+            double cosineSimThreshold,
+            int chargeMin,
+            int chargeMax
+            );
 
     Err clusterHillsMS1(
             const QVector<FeatureFinderHill> &featureFinderHills,
@@ -48,6 +62,10 @@ public:
 private:
 
     FeatureFinderParameters m_params;
+
+    double m_cosineSimThreshold;
+    int m_chargeMin;
+    int m_chargeMax;
 
 };
 

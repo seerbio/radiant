@@ -110,10 +110,14 @@ void FeatureFinderHillClusterTronTests::clusterHillsToyDataTest() {
     featureFinderParameters.smoothCount = 1;
     featureFinderParameters.sigma = 1;
     featureFinderParameters.signalToNoiseRatio = 1.0;
-    featureFinderParameters.cosineSimThreshold = 0.8;
 
     FeatureFinderHillClusterTron featureFinderHillClusterTron;
-    e = featureFinderHillClusterTron.init(featureFinderParameters);
+    e = featureFinderHillClusterTron.init(
+            featureFinderParameters,
+            0.8,
+            1,
+            5
+            );
     QCOMPARE(e, eNoError);
 
     QVector<HillsClustering> hillClustersByIndexs;
@@ -166,7 +170,6 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
     params.smoothCount = 1;
     params.sigma = 1;
     params.signalToNoiseRatio = 1.0;
-    params.cosineSimThreshold = 0.8;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -194,7 +197,12 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
     qDebug() << "Hills found to write" << featureFinderHills.size();
 
     FeatureFinderHillClusterTron featureFinderHillClusterTron;
-    e = featureFinderHillClusterTron.init(params);
+    e = featureFinderHillClusterTron.init(
+            params,
+            0.8,
+            1,
+            5
+            );
     QCOMPARE(e, eNoError);
 
     QVector<HillsClustering> hillClustersByIndexs;
