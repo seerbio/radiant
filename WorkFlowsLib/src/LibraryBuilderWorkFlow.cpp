@@ -52,6 +52,7 @@ Err LibraryBuilderWorkFlow::init(
                 m_modelFilePaths.value(charge),
                 charge
                 ); ree;
+        model->setIntensityThreshold(pythiaParameters.fragIntensityThreshold);
 
         m_tandemPredictionModels.insert(charge, model);
     }
@@ -179,6 +180,7 @@ namespace {
             row.mass = BiophysicalCalcs::calculatePeptideMass(peptideString, aminoAcids);
             row.intensityVals = intensities;
             row.isDecoy = peptideSeqChargeKeyVsIsDecoy.value(row.peptideSequenceChargeKey);
+            row.ionLabels = ionLabels.join(S_GLOBAL_SETTINGS.SEPARATOR);
 
             tlrs.push_back(row);
         }

@@ -37,7 +37,7 @@ public:
     friend class MsFrameScoretronProcessormaticTests;
     friend class MsFrameScoretronTests;
 
-    MsFrameScoretron() = default;
+    MsFrameScoretron();
     ~MsFrameScoretron() = default;
 
     Err init(
@@ -59,6 +59,11 @@ private:
             QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
+    Err getCandidateHills(
+            const QVector<MS2Ion> &ms2IonsTandemPred,
+            QVector<FeatureFinderHill> *featureFinderHills
+            );
+
 
 private:
 
@@ -67,6 +72,8 @@ private:
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
     FeatureFinderHillBuilder m_featureFinderHillBuilder;
+    FrameIndex m_frameIndexMin;
+    FrameIndex m_frameIndexMax;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

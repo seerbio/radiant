@@ -790,6 +790,8 @@ Err FeatureFinderHillBuilder::Private::getHills(
 
     ERR_INIT
 
+    e = ErrorUtils::isFalse(m_rtree->empty()); ree;
+
     const double mzTolerance = MathUtils::calculatePPM(mz, ppmTolerance);
     const double mzLo = mz - mzTolerance;
     const double mzHi = mz + mzTolerance;

@@ -9,6 +9,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "ExtractedScansReader.h"
+#include "FeatureFinderHillClusterTron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
@@ -19,6 +20,10 @@
 
 #include <iostream>
 
+MsFrameScoretron::MsFrameScoretron()
+: m_frameIndexMin(0)
+, m_frameIndexMax(-1)
+{}
 
 
 namespace {
@@ -59,6 +64,8 @@ Err MsFrameScoretron::init(
 
     ERR_INIT
 
+    params.print();
+
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
     e = ErrorUtils::isTrue(params.isValid()); ree;
@@ -89,6 +96,8 @@ Err MsFrameScoretron::init(
             0,
             ErrorUtilsParam::ExcludeThreshold
     );ree;
+
+    m_frameIndexMax = m_msFrame.scanCount();
 
     FeatureFinderParameters featureFinderParameters;
     e = setFeatureFinderParams(
@@ -228,16 +237,6 @@ namespace {
 
 
 
-
-
-
-
-
-
-
-
-
-
 }//namespace
 Err MsFrameScoretron::groupHillsForFrameCandidates(
         QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
@@ -245,7 +244,7 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
 
     ERR_INIT
 
-    qDebug() << "Clustring Candidate Hills" << m_msFrame.uniqueMsInfoScanKey();
+    qDebug() << "Clustring Candidate Hills for target key:" << m_msFrame.uniqueMsInfoScanKey();
     qDebug() << "Frame size" << m_msFrame.scanCount();
 
 
@@ -254,18 +253,62 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const QVector<MS2Ion> &ms2IonsTandemPred = it.value();
 
-        //drewholio
-        if (peptideStringWithMods != "VSEQNVCVEAK") {
-            continue;
-        }
-        //drewholio
+//        //drewholio
+//        if (peptideStringWithMods != "VSEQNVCVEAK") {
+//            continue;
+//        }
+//        //drewholio
 
+        QVector<FeatureFinderHill> candidateFeatureFinderHills;
+        e = getCandidateHills(
+                ms2IonsTandemPred,
+                &candidateFeatureFinderHills
+                ); ree
 
+        HillsClusteringMS2 bestHillsClusteringMS2;
+        e = FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
+                candidateFeatureFinderHills,
+                m_params.mzMinDataStructure,
+                m_params.mzMaxDataStructure,
+                m_params.cosineSimThreshold,
+                &bestHillsClusteringMS2
+                ); ree;
 
-        break; //drewholio
+//        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHill.scanNumberIndexMinMax();
+//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
+//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
+//        break; //drewholio
 
     }
 
     ERR_RETURN
 }
+
+Err MsFrameScoretron::getCandidateHills(
+        const QVector<MS2Ion> &ms2IonsTandemPred,
+        QVector<FeatureFinderHill> *featureFinderHills
+        ) {
+
+    ERR_INIT
+
+    for (const MS2Ion &ion : ms2IonsTandemPred) {
+
+        QVector<FeatureFinderHill> ionHills;
+        e = m_featureFinderHillBuilder.getHills(
+                m_frameIndexMin,
+                m_frameIndexMax,
+                ion.x(),
+                m_params.ms2ExtractionWidthPPM,
+                &ionHills
+        ); ree
+
+        featureFinderHills->append(ionHills);
+    }
+
+    ERR_RETURN
+}
+
+
+
+
 

@@ -20,13 +20,15 @@ namespace FragLibReaderNamespace {
     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
     const QString MASS = QStringLiteral("mass");
     const QString IS_DECOY = QStringLiteral("isDecoy");
+    const QString ION_LABLES = QStringLiteral("ionLabels");
 
     const QStringList keysToCheck = {
             PEP_SEQ_CHRG_KEY,
             MZ_VALS,
             INTENSITY_VALS,
             MASS,
-            IS_DECOY
+            IS_DECOY,
+            ION_LABLES
     };
 }
 
@@ -35,6 +37,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
     PeptideSequenceChargeKey peptideSequenceChargeKey;
     QVector<double> mzVals;
     QVector<double> intensityVals;
+    QString ionLabels;
     double mass = -1.0;
     int isDecoy = 0;
 
@@ -48,6 +51,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
             {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
             {MASS, QVariant(mass)},
             {IS_DECOY, QVariant(isDecoy)},
+            {ION_LABLES, QVariant(ionLabels)}
         };
     }
 
@@ -70,6 +74,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
         intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
         mass = dataMap.value(MASS).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toInt();
+        ionLabels = dataMap.value(ION_LABLES).toString();
 
         ERR_RETURN
     }
