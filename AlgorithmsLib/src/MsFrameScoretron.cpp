@@ -172,19 +172,19 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
                 monoOffset
         );
 
-        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+        QMap<PeptideSequenceChargeKey, MS2IonsSeparated> peptideSequenceChargeKeyVsMS2IonsSeparated;
         QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
         e = fragLibReader.getMS2Ions(
                 massStart,
                 massEnd,
-                &peptideSequenceChargeKeyVsMS2Ions,
+                &peptideSequenceChargeKeyVsMS2IonsSeparated,
                 &peptideSequenceChargeKeyVsIsDecoy
         ); ree
 
-        for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+        for (auto it = peptideSequenceChargeKeyVsMS2IonsSeparated.begin(); it != peptideSequenceChargeKeyVsMS2IonsSeparated.end(); it++) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            QVector<MS2Ion> &ms2Ions = it.value();
+            const MS2IonsSeparated &ms2IonsSeparated = it.value();
 
             PeptideStringWithMods peptideStringWithMods;
             Charge chargeFromPeptideSequenceChargeKey;
@@ -200,7 +200,7 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
 
             e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
 
-            m_fragPreds.insert(peptideStringWithMods, ms2Ions);
+            m_fragPreds.insert(peptideStringWithMods, ms2IonsSeparated);
             m_fragPredsIsDecoy.insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
         }
 
@@ -251,19 +251,24 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
     for (auto it = m_fragPreds.begin(); it != m_fragPreds.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const QVector<MS2Ion> &ms2IonsTandemPred = it.value();
+        const MS2IonsSeparated &ms2IonsTandemPred = it.value();
 
-        //drewholio
-        if (peptideStringWithMods != "PGQDTCQGDSGGPXTCEK") {
-            continue;
-        }
-        //drewholio
+//        //drewholio
+//        if (peptideStringWithMods != "PGQDTCQGDSGGPXTCEK") {
+//            continue;
+//        }
+//        //drewholio
 
-        QVector<FeatureFinderHill> candidateFeatureFinderHills;
+        QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> candidateFeatureFinderHills;
         e = getCandidateHills(
                 ms2IonsTandemPred,
                 &candidateFeatureFinderHills
                 ); ree
+
+        if (candidateFeatureFinderHills.isEmpty()){
+            pepStrWModsVsFrameIndexScoreResultOfTargets->insert(peptideStringWithMods, {});
+            continue;
+        }
 
         HillsClusteringMS2 bestHillsClusteringMS2;
         e = FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
@@ -274,9 +279,9 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
                 &bestHillsClusteringMS2
                 ); ree;
 
-        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHill.scanNumberIndexMinMax();
-        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
-        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
+//        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHillPlus.featureFinderHill.scanNumberIndexMinMax();
+//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
+//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
 //        break; //drewholio
 
     }
@@ -285,30 +290,111 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
 }
 
 Err MsFrameScoretron::getCandidateHills(
-        const QVector<MS2Ion> &ms2IonsTandemPred,
-        QVector<FeatureFinderHill> *featureFinderHills
+        const MS2IonsSeparated &ms2IonsTandemPred,
+        QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> *featureFinderHills
         ) {
 
     ERR_INIT
 
-    for (const MS2Ion &ion : ms2IonsTandemPred) {
+
+    QMap<IonIndex, QVector<FeatureFinderHill>> featureFinderHillsIonType;
+
+    e = getHillsIonType(
+            ms2IonsTandemPred.yIons,
+            &featureFinderHillsIonType
+            ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.bIons,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.y2Ions,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y2_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.b2Ions,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.B2_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.aIons,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.A_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.yNH3Ions,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_NH3_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.yH2OIons,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_H2O_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.bNH3Ions,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_NH3_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.bH2OIons,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_H2O_IONS, featureFinderHillsIonType);
+
+    featureFinderHillsIonType.clear();
+    e = getHillsIonType(
+            ms2IonsTandemPred.precursorIons,
+            &featureFinderHillsIonType
+    ); ree
+    featureFinderHills->insert(S_GLOBAL_SETTINGS.PRECURSOR_IONS, featureFinderHillsIonType);
+
+    ERR_RETURN
+}
+
+Err MsFrameScoretron::getHillsIonType(
+        const QMap<IonIndex, MS2Ion> &ions,
+        QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
+) {
+
+    ERR_INIT
+
+    for (auto it = ions.begin(); it != ions.end(); it++) {
+
+        const IonIndex ionIndex = it.key();
+        const MS2Ion &ion = it.value();
 
         QVector<FeatureFinderHill> ionHills;
         e = m_featureFinderHillBuilder.getHills(
                 m_frameIndexMin,
                 m_frameIndexMax,
-                ion.x(),
+                ion.mz,
                 m_params.ms2ExtractionWidthPPM,
                 &ionHills
         ); ree
 
-        featureFinderHills->append(ionHills);
+        featureFinderHills->insert(ionIndex, ionHills);
+
     }
 
     ERR_RETURN
 }
-
-
-
-
-

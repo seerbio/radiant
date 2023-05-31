@@ -100,10 +100,10 @@ QVector<double> FeatureFinderHill::mzVals() const {
     return m_mzVals;
 }
 
-void FeatureFinderHillUtils::sortFeatureFinderHillsIntensityDesc(QVector<FeatureFinderHill> *featureFinderHills) {
+void FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(QVector<FeatureFinderHillPlus> *featureFinderHills) {
 
-    const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
-        return l.intensityValueMax() < r.intensityValueMax();
+    const auto sortLogic = [](const FeatureFinderHillPlus &l, const FeatureFinderHillPlus &r){
+        return l.featureFinderHill.intensityValueMax() < r.featureFinderHill.intensityValueMax();
     };
 
     std::sort(

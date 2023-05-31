@@ -107,7 +107,7 @@ ScanPoints MsUtils::extractPointsFromPoints(
             extractionPPM
             );
 
-    QVector<MS2Ion> extractedPoints;
+    QVector<QPointF> extractedPoints;
     for (int i = 0; i < ep.mzFoundVsSearched.size(); i++) {
         const double mzFound = ep.mzFoundVsSearched.at(i).x();
         const double intensityFound = ep.intensityFoundVsSearched.at(i).x();

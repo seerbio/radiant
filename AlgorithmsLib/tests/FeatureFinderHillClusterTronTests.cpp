@@ -185,13 +185,10 @@ void FeatureFinderHillClusterTronTests::clusterHillsRealDataTest() {
     QCOMPARE(e, eNoError);
 
     QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(
-            scanNumberVsScanPoints,
-            &featureFinderHills
-            );
+    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
-    e = featureFinderHillBuilder.refineHills(&featureFinderHills);
+    e = featureFinderHillBuilder.refineHills();
     QCOMPARE(e, eNoError);
 
     qDebug() << "Hills found to write" << featureFinderHills.size();

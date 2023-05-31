@@ -22,12 +22,11 @@ struct HillsClustering {
 
 };
 
-
 struct HillsClusteringMS2 {
 
     ScanPoints bestCosineSimScanPoints;
     double cosineSimSum = -1.0;
-    FeatureFinderHill apexFeatureFinderHill;
+    FeatureFinderHillPlus apexFeatureFinderHillPlus;
 };
 
 //TODO use this to deisotope feature finder hills.
@@ -59,7 +58,7 @@ public:
             );
 
     static Err clusterHillsByFrameIndex(
-            const QVector<FeatureFinderHill> &featureFinderHills,
+            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
             double mzMin,
             double mzMax,
             double cosineSimThreshold,

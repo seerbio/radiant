@@ -7,9 +7,14 @@
 
 #include "UtilsLib_Exports.h"
 
+#include "Error.h"
+#include "ErrorUtils.h"
+
 #include <QPointF>
 #include <QString>
 #include <QVector>
+
+using namespace Error;
 
 using Charge = int;
 using Coors = QVector<double>;
@@ -19,14 +24,15 @@ using FrameIndex = int;
 using Id = int;
 using Index = int;
 using Intensity = double;
+using IonIndex = int;
 using IonLabel = QString;
 using IonLabels = QStringList;
 using IonMobilityIndex = int;
+using IonType = QString;
 using IsolationWindowKey = QString;
 using Mass = double;
 using ModificationMass = double;
 using MonoOffset = int;
-using MS2Ion = QPointF;
 using MsLevel = int;
 using MZION = double;
 using MzMin = double;
@@ -58,6 +64,145 @@ using UniqueHashedMzAndTarget = QString;
 using Value = double;
 using XICPoint = QPair<ScanNumber, Intensity>;
 using XICPoints = QMap<ScanNumber, Intensity>;
+
+struct UTILSLIB_EXPORTS MS2Ion {
+
+    double mz = -1.0;
+    double intensity = -1.0;
+    QString ionLabel;
+
+    MS2Ion() = default;
+
+    MS2Ion(
+            double mz,
+            double intensity,
+            QString ionLabel
+    )
+            :mz(mz)
+            , intensity(intensity)
+            , ionLabel(std::move(ionLabel))
+    {}
+
+    Err getIonLabelInfo(QPair<IonIndex, IonType> *ionInfo) const {
+
+        ERR_INIT
+
+        const int expectedSplitSize = 2;
+
+        IonIndex ionIndex;
+
+        if (ionLabel.contains("p")) {
+             *ionInfo = {0, ionLabel};
+             ERR_RETURN
+        }
+        else if (ionLabel.contains("p-H2O")) {
+            *ionInfo = {1, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-NH3")) {
+            *ionInfo = {2, ionLabel};
+            ERR_RETURN
+        }
+        if (ionLabel.contains("p^2")) {
+            *ionInfo = {3, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-H2O^2")) {
+            *ionInfo = {4, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-NH3^2")) {
+            *ionInfo = {5, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("y")) {
+
+            QStringList ionLabelSplit;
+            if (ionLabel.contains("-")) {
+
+                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("y", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "y-" + labelBack};
+                ERR_RETURN
+            }
+            else if (ionLabel.contains("^")) {
+                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("y", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "y^" + labelBack};
+                ERR_RETURN
+            }
+            else {
+
+                QString ionLabelCopy = ionLabel;
+                ionLabelCopy = ionLabelCopy.replace("y", "");
+                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+                *ionInfo = {ionIndex, "y"};
+                ERR_RETURN
+            }
+        }
+
+        else if (ionLabel.contains("b")) {
+
+            QStringList ionLabelSplit;
+            if (ionLabel.contains("-")) {
+
+                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("b", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "b-" + labelBack};
+                ERR_RETURN
+            }
+            else if (ionLabel.contains("^")) {
+                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("b", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "b^" + labelBack};
+                ERR_RETURN
+            }
+            else {
+
+                QString ionLabelCopy = ionLabel;
+                ionLabelCopy = ionLabelCopy.replace("b", "");
+                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+                *ionInfo = {ionIndex, "b"};
+                ERR_RETURN
+            }
+        }
+
+        else if (ionLabel.contains("a")) {
+            QString ionLabelCopy = ionLabel;
+            ionLabelCopy = ionLabelCopy.replace("a", "");
+            e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+            *ionInfo = {ionIndex, "a"};
+            ERR_RETURN
+        }
+
+        rrr(eValueError);
+    }
+
+};
 
 class UTILSLIB_EXPORTS GlobalSettings {
 
@@ -96,6 +241,17 @@ public:
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");
+
+    const QString Y_IONS =  QStringLiteral("yIons");
+    const QString B_IONS =  QStringLiteral("bIons");
+    const QString Y2_IONS =  QStringLiteral("y2Ions");
+    const QString B2_IONS =  QStringLiteral("b2Ions");
+    const QString A_IONS =  QStringLiteral("aIons");
+    const QString Y_NH3_IONS =  QStringLiteral("yNH3");
+    const QString Y_H2O_IONS =  QStringLiteral("yH20");
+    const QString B_NH3_IONS=  QStringLiteral("bNH3");
+    const QString B_H2O_IONS =  QStringLiteral("bH20");
+    const QString PRECURSOR_IONS =  QStringLiteral("precursorIons");
 
     static QString VERSION();
 };

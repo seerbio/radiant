@@ -27,13 +27,18 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(row.mzVals); ree;
-        e = ErrorUtils::isEqual(
-                row.mzVals.size(),
-                row.intensityVals.size()
-                ); ree;
+        e = ErrorUtils::isEqual(row.mzVals.size(), row.intensityVals.size()); ree;
+
+        const QStringList ionLabels = row.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+
+        e = ErrorUtils::isEqual(row.mzVals.size(), ionLabels.size()); ree;
 
         for (int i = 0; i < row.mzVals.size(); i++) {
-            ms2Ions->push_back({row.mzVals.at(i), row.intensityVals.at(i)});
+            MS2Ion ion;
+            ion.mz = row.mzVals.at(i);
+            ion.intensity = row.intensityVals.at(i);
+            ion.ionLabel = ionLabels.at(i);
+            ms2Ions->push_back(ion);
         }
 
         ERR_RETURN
@@ -72,14 +77,6 @@ namespace {
         ERR_RETURN
     }
 
-//    void filterMs2IonsByNMostIntense(QVector<FragLibReaderRow> *fragLibReaderRows) {
-//
-//        const auto terminatorLogic = [](const FragLibReader &row){
-//            return
-//        };
-//
-//    }
-
 }//namespace
 Err FragLibReader::getMS2Ions(
         double massStart,
@@ -111,6 +108,73 @@ Err FragLibReader::getMS2Ions(
     ERR_RETURN
 }
 
+Err FragLibReader::getMS2Ions(
+        double massStart,
+        double massEnd,
+        QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2IonsSeparated,
+        QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy
+) {
+
+    ERR_INIT
+
+    QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+    e = getMS2Ions(
+            massStart,
+            massEnd,
+            &peptideSequenceChargeKeyVsMS2Ions,
+            peptideSequenceChargeKeyVsIsDecoy
+            ); ree
+
+    for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin();
+                it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+        const QVector<MS2Ion> &ms2Ions = it.value();
+
+        MS2IonsSeparated ms2IonsSeparated;
+        for (const MS2Ion &ion : ms2Ions) {
+
+            QPair<IonIndex, IonType> ionInfo;
+            e = ion.getIonLabelInfo(&ionInfo); ree
+
+            if (ionInfo.second == "y") {
+                ms2IonsSeparated.yIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y-H2O") {
+                ms2IonsSeparated.yH2OIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y-NH3") {
+                ms2IonsSeparated.yNH3Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y^2") {
+                ms2IonsSeparated.y2Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b") {
+                ms2IonsSeparated.bIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b-H2O") {
+                ms2IonsSeparated.bH2OIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b-NH3") {
+                ms2IonsSeparated.bNH3Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b^2") {
+                ms2IonsSeparated.b2Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "a") {
+                ms2IonsSeparated.aIons.insert(ionInfo.first, ion);
+            }
+            else {
+                rrr(eValueError);
+            }
+        }
+
+        peptideSequenceChargeKeyVsMS2IonsSeparated->insert(peptideSequenceChargeKey, ms2IonsSeparated);
+
+    }
+
+    ERR_RETURN
+}
 
 void FragLibReader::filterMs2IonsByMz(
         double mzStart,
@@ -119,7 +183,7 @@ void FragLibReader::filterMs2IonsByMz(
 ) {
 
     const auto terminatorLogic = [mzStart, mzEnd](const MS2Ion &ion){
-        return !(mzStart <= ion.x() && ion.x() <= mzEnd);
+        return !(mzStart <= ion.mz && ion.intensity <= mzEnd);
     };
 
     const auto terminator = std::remove_if(
@@ -138,7 +202,7 @@ void FragLibReader::getTopNMostIntenseMs2Ions(
 ) {
 
     const auto sortIntensityAsc = [](const MS2Ion &l, const MS2Ion &r){
-        return l.y() < r.y();
+        return l.intensity < r.intensity;
     };
 
     std::sort(ms2Ions->rbegin(), ms2Ions->rend(), sortIntensityAsc);
@@ -148,7 +212,7 @@ void FragLibReader::getTopNMostIntenseMs2Ions(
     ms2Ions->resize(topNMs2Ions);
 
     const auto sortMzAsc = [](const MS2Ion &l, const MS2Ion &r) {
-        return l.x() < r.x();
+        return l.mz < r.mz;
     };
 
     std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
@@ -160,7 +224,7 @@ void FragLibReader::filterMs2IonsByIntensity(
         ) {
 
     const auto terminatorLogic = [intensityThreshold](const MS2Ion &ion){
-        return ion.y() < intensityThreshold;
+        return ion.intensity < intensityThreshold;
     };
 
     const auto terminator = std::remove_if(

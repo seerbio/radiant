@@ -60,15 +60,20 @@ private:
             );
 
     Err getCandidateHills(
-            const QVector<MS2Ion> &ms2IonsTandemPred,
-            QVector<FeatureFinderHill> *featureFinderHills
+            const MS2IonsSeparated &ms2IonsTandemPred,
+            QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> *featureFinderHills
             );
+
+    Err getHillsIonType(
+            const QMap<IonIndex, MS2Ion> &ions,
+            QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
+    );
 
 
 private:
 
     QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> m_pepStrWModsVsFrameIndexScoreResultOfTargets;
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPreds;
+    QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
     FeatureFinderHillBuilder m_featureFinderHillBuilder;

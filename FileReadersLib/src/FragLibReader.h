@@ -5,6 +5,8 @@
 #ifndef PYTHIADIACPP_FRAGLIBREADER_H
 #define PYTHIADIACPP_FRAGLIBREADER_H
 
+#include <utility>
+
 #include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
@@ -12,6 +14,7 @@
 #include "ParquetReader.h"
 
 using namespace Error;
+using IonIndexes = QVector<int>;
 
 namespace FragLibReaderNamespace {
 
@@ -81,6 +84,22 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
 };
 
+struct MS2IonsSeparated {
+
+    QMap<IonIndex, MS2Ion> yIons;
+    QMap<IonIndex, MS2Ion> bIons;
+    QMap<IonIndex, MS2Ion> y2Ions;
+    QMap<IonIndex, MS2Ion> b2Ions;
+    QMap<IonIndex, MS2Ion> aIons;
+    QMap<IonIndex, MS2Ion> yNH3Ions;
+    QMap<IonIndex, MS2Ion> yH2OIons;
+    QMap<IonIndex, MS2Ion> bNH3Ions;
+    QMap<IonIndex, MS2Ion> bH2OIons;
+    QMap<IonIndex, MS2Ion> precursorIons;
+
+};
+
+
 class FILEREADERSLIB_EXPORTS FragLibReader {
 
 
@@ -96,6 +115,13 @@ public:
             double massEnd,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy
+    );
+
+    Err getMS2Ions(
+            double massStart,
+            double massEnd,
+            QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2Ions,
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated
     );
 
     static void filterMs2IonsByMz(

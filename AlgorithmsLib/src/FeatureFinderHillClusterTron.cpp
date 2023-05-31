@@ -65,17 +65,17 @@ Err FeatureFinderHillClusterTron::init(
 
 namespace {
 
-    RTree buildHillsRTree(const QMap<int, FeatureFinderHill> &featureFinderHills) {
+    RTree buildHillsRTree(const QMap<int, FeatureFinderHillPlus> &featureFinderHills) {
 
         std::vector<rTreePoint> cloudLoader;
 
         for (auto it = featureFinderHills.begin(); it != featureFinderHills.end(); it++) {
 
             const int id = it.key();
-            const FeatureFinderHill &ffh = it.value();
+            const FeatureFinderHillPlus &ffhp = it.value();
 
-            const QPair<int, int> frameIndexMinMax = ffh.scanNumberIndexMinMax();
-            const double mz = ffh.mzMean();
+            const QPair<int, int> frameIndexMinMax = ffhp.featureFinderHill.scanNumberIndexMinMax();
+            const double mz = ffhp.featureFinderHill.mzMean();
 
             rTreeBox box(
                     {static_cast<double>(frameIndexMinMax.first), mz},
@@ -204,12 +204,12 @@ namespace {
         ERR_RETURN
     }
 
-    ScanPoints convertHillApexesToScanPoints(const QVector<FeatureFinderHill> &featureFinderHills) {
+    ScanPoints convertHillApexesToScanPoints(const QVector<FeatureFinderHillPlus> &featureFinderHills) {
 
         ScanPoints hillApexes;
 
-        const auto transformLogic = [](const FeatureFinderHill &ffh){
-            return ScanPoint (ffh.mzMean(), ffh.intensityValueMax());
+        const auto transformLogic = [](const FeatureFinderHillPlus &ffh){
+            return ScanPoint (ffh.featureFinderHill.mzMean(), ffh.featureFinderHill.intensityValueMax());
         };
 
         std::transform(
@@ -224,13 +224,13 @@ namespace {
 
     rTreePoint findNearestRTreePoint(
             const std::vector<rTreePoint> &rTreeResults,
-            const QMap<int, FeatureFinderHill> &featureFinderHillMap,
+            const QMap<int, FeatureFinderHillPlus> &featureFinderHillPlussesMap,
             double mz
             ) {
 
         for (const rTreePoint &rtp : rTreeResults){
 
-            if (MathUtils::tZero(featureFinderHillMap.value(rtp.second).mzMean() - mz)) {
+            if (MathUtils::tZero(featureFinderHillPlussesMap.value(rtp.second).featureFinderHill.mzMean() - mz)) {
                 return rtp;
             }
         }
@@ -252,112 +252,112 @@ Err FeatureFinderHillClusterTron::clusterHillsMS1(
     e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
 
     QVector<FeatureFinderHill> hillsSortedHiLoIntensity = featureFinderHills;
-    FeatureFinderHillUtils::sortFeatureFinderHillsIntensityDesc(&hillsSortedHiLoIntensity);
-
-    *featureFinderHillsMap = ParallelUtils::convertVectorToMap(featureFinderHills);
-
-    RTree featureFinderHillRTree = buildHillsRTree(*featureFinderHillsMap);
-
-    const double leftDistanceThomsons = 2.1;
-    const double rightDistanceThomsons = 3.1;
-
-    for (const FeatureFinderHill &ffh : hillsSortedHiLoIntensity) {
-
-        const int maxIntensityScanNumberIndex = ffh.maxIntensityScanNumberIndex();
-        const double mzMean = ffh.mzMean();
-
-        const rTreeBox queryBox(
-                rTreeCoor(maxIntensityScanNumberIndex, mzMean - leftDistanceThomsons),
-                rTreeCoor(maxIntensityScanNumberIndex, mzMean + rightDistanceThomsons)
-        );
-
-        std::vector<rTreePoint> rTreeSearchResult;
-        featureFinderHillRTree.query(
-                bgi::intersects(queryBox),
-                std::back_inserter(rTreeSearchResult)
-                );
-
-        const rTreePoint rtpSearched = findNearestRTreePoint(
-                rTreeSearchResult,
-                *featureFinderHillsMap,
-                ffh.mzMean()
-                );
-
-        if (!MathUtils::tZero(ffh.mzMean() - featureFinderHillsMap->value(rtpSearched.second).mzMean())) {
-            continue;
-        }
-
-        if (rTreeSearchResult.size() == 1) {
-            featureFinderHillRTree.remove(rtpSearched);
-
-            if (isMs2Hills) {
-
-                HillsClustering hillsClustering;
-                hillsClustering.hillsMapIndexes.push_back(rtpSearched.second);
-                hillClusterings->push_back(hillsClustering);
-            }
-
-            continue;
-        }
-
-        QVector<FeatureFinderHill> correlatedHills;
-        e = removePointsBelowCosineSimCorrThreshold(
-                ffh,
-                *featureFinderHillsMap,
-                rTreeSearchResult,
-                m_cosineSimThreshold,
-                &correlatedHills
-        ); ree;
-
-        const ScanPoints hillApexPoints = convertHillApexesToScanPoints(correlatedHills);
-
-        const ScanPoint centerPoint = {ffh.mzMean(), ffh.intensityValueMax()};
-
-        int charge;
-        e = MsUtils::chargeDeterminator(
-                centerPoint,
-                hillApexPoints,
-                m_params.tolerancePPM,
-                m_chargeMin,
-                m_chargeMax,
-                &charge
-                ); ree
-
-        int monoOffset;
-        ScanPoints subtractPoints;
-        double bestCosineSim;
-        e = MsUtils::monoIsotopeDeterminator(
-                centerPoint,
-                hillApexPoints,
-                m_params.tolerancePPM,
-                charge,
-                &monoOffset,
-                &subtractPoints,
-                &bestCosineSim
-                ); ree;
-
-        HillsClustering hillCluster;
-        hillCluster.monoOffset = monoOffset;
-        hillCluster.cosineSim = bestCosineSim;
-        hillCluster.charge = charge;
-        for (const ScanPoint &sp : subtractPoints) {
-
-            if (sp.x() < 1) {
-                continue;
-            }
-
-            const rTreePoint rtp = findNearestRTreePoint(
-                    rTreeSearchResult,
-                    *featureFinderHillsMap,
-                    sp.x()
-                    );
-
-            hillCluster.hillsMapIndexes.push_back(rtp.second);
-            featureFinderHillRTree.remove(rtp);
-        }
-
-        hillClusterings->push_back(hillCluster);
-    }
+//    FeatureFinderHillUtils::sortFeatureFinderHillsIntensityDesc(&hillsSortedHiLoIntensity);
+//
+//    *featureFinderHillsMap = ParallelUtils::convertVectorToMap(featureFinderHills);
+//
+//    RTree featureFinderHillRTree = buildHillsRTree(*featureFinderHillsMap);
+//
+//    const double leftDistanceThomsons = 2.1;
+//    const double rightDistanceThomsons = 3.1;
+//
+//    for (const FeatureFinderHill &ffh : hillsSortedHiLoIntensity) {
+//
+//        const int maxIntensityScanNumberIndex = ffh.maxIntensityScanNumberIndex();
+//        const double mzMean = ffh.mzMean();
+//
+//        const rTreeBox queryBox(
+//                rTreeCoor(maxIntensityScanNumberIndex, mzMean - leftDistanceThomsons),
+//                rTreeCoor(maxIntensityScanNumberIndex, mzMean + rightDistanceThomsons)
+//        );
+//
+//        std::vector<rTreePoint> rTreeSearchResult;
+//        featureFinderHillRTree.query(
+//                bgi::intersects(queryBox),
+//                std::back_inserter(rTreeSearchResult)
+//                );
+//
+//        const rTreePoint rtpSearched = findNearestRTreePoint(
+//                rTreeSearchResult,
+//                *featureFinderHillsMap,
+//                ffh.mzMean()
+//                );
+//
+//        if (!MathUtils::tZero(ffh.mzMean() - featureFinderHillsMap->value(rtpSearched.second).mzMean())) {
+//            continue;
+//        }
+//
+//        if (rTreeSearchResult.size() == 1) {
+//            featureFinderHillRTree.remove(rtpSearched);
+//
+//            if (isMs2Hills) {
+//
+//                HillsClustering hillsClustering;
+//                hillsClustering.hillsMapIndexes.push_back(rtpSearched.second);
+//                hillClusterings->push_back(hillsClustering);
+//            }
+//
+//            continue;
+//        }
+//
+//        QVector<FeatureFinderHill> correlatedHills;
+//        e = removePointsBelowCosineSimCorrThreshold(
+//                ffh,
+//                *featureFinderHillsMap,
+//                rTreeSearchResult,
+//                m_cosineSimThreshold,
+//                &correlatedHills
+//        ); ree;
+//
+//        const ScanPoints hillApexPoints = convertHillApexesToScanPoints(correlatedHills);
+//
+//        const ScanPoint centerPoint = {ffh.mzMean(), ffh.intensityValueMax()};
+//
+//        int charge;
+//        e = MsUtils::chargeDeterminator(
+//                centerPoint,
+//                hillApexPoints,
+//                m_params.tolerancePPM,
+//                m_chargeMin,
+//                m_chargeMax,
+//                &charge
+//                ); ree
+//
+//        int monoOffset;
+//        ScanPoints subtractPoints;
+//        double bestCosineSim;
+//        e = MsUtils::monoIsotopeDeterminator(
+//                centerPoint,
+//                hillApexPoints,
+//                m_params.tolerancePPM,
+//                charge,
+//                &monoOffset,
+//                &subtractPoints,
+//                &bestCosineSim
+//                ); ree;
+//
+//        HillsClustering hillCluster;
+//        hillCluster.monoOffset = monoOffset;
+//        hillCluster.cosineSim = bestCosineSim;
+//        hillCluster.charge = charge;
+//        for (const ScanPoint &sp : subtractPoints) {
+//
+//            if (sp.x() < 1) {
+//                continue;
+//            }
+//
+//            const rTreePoint rtp = findNearestRTreePoint(
+//                    rTreeSearchResult,
+//                    *featureFinderHillsMap,
+//                    sp.x()
+//                    );
+//
+//            hillCluster.hillsMapIndexes.push_back(rtp.second);
+//            featureFinderHillRTree.remove(rtp);
+//        }
+//
+//        hillClusterings->push_back(hillCluster);
+//    }
 
     ERR_RETURN
 }
@@ -442,20 +442,20 @@ Err FeatureFinderHillClusterTron::writeClustersToMzRt(
 namespace {
 
     bool isHillNotFoundInRTreeSearch(
-            const FeatureFinderHill &ffh,
+            const FeatureFinderHillPlus &ffhp,
             const rTreePoint &rtpSearched,
-            const QMap<Id, FeatureFinderHill> &featureFinderHillsMap
+            const QMap<Id, FeatureFinderHillPlus> &featureFinderHillsMap
             ) {
-        return !MathUtils::tZero(ffh.mzMean() - featureFinderHillsMap.value(rtpSearched.second).mzMean());
+        return !MathUtils::tZero(ffhp.featureFinderHill.mzMean() - featureFinderHillsMap.value(rtpSearched.second).featureFinderHill.mzMean());
     }
 
     Err removePointsBelowCosineSimCorrThresholdMS2(
-            const FeatureFinderHill &featureFinderHillAnchor,
-            const QMap<int, FeatureFinderHill> &featureFinderHillMap,
+            const FeatureFinderHillPlus &featureFinderHillAnchor,
+            const QMap<int, FeatureFinderHillPlus> &featureFinderHillMap,
             const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
             double cosineSimThreshold,
             double *cosineSimSum,
-            QVector<FeatureFinderHill> *correlatedHills
+            QVector<FeatureFinderHillPlus> *correlatedHills
     ) {
 
         ERR_INIT
@@ -468,8 +468,8 @@ namespace {
 
             double cosineSim;
             e = calculateCosineSimBetweenHills(
-                    featureFinderHillAnchor,
-                    featureFinderHillMap.value(ffhId),
+                    featureFinderHillAnchor.featureFinderHill,
+                    featureFinderHillMap.value(ffhId).featureFinderHill,
                     &cosineSim
             ); ree
 
@@ -484,9 +484,47 @@ namespace {
         ERR_RETURN
     }
 
+    QVector<FeatureFinderHillPlus> buildFeatureFinderHillPlussesSortedHiLo(
+            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills
+            ) {
+
+        QVector<FeatureFinderHillPlus> featureFinderHillsPlusses;
+
+        for (auto it = featureFinderHills.begin(); it != featureFinderHills.end(); it++) {
+
+            const IonType &ionType = it.key();
+            const QMap<IonIndex, QVector<FeatureFinderHill>> &hills = it.value();
+
+            for (auto itt = hills.begin(); itt != hills.end(); itt++) {
+
+                const IonIndex ionIndex = itt.key();
+                const QVector<FeatureFinderHill> &ffhs = itt.value();
+
+                for (const FeatureFinderHill &ffh : ffhs) {
+
+                    FeatureFinderHillPlus ffhp;
+                    ffhp.featureFinderHill = ffh;
+                    ffhp.ionType = ionType;
+                    ffhp.ionIndex = ionIndex;
+
+                    featureFinderHillsPlusses.push_back(ffhp);
+                }
+
+            }
+
+
+        }
+
+        FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(&featureFinderHillsPlusses);
+
+        return featureFinderHillsPlusses;
+    }
+
+
+
 }//namespace
 Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
-        const QVector<FeatureFinderHill> &featureFinderHills,
+        const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
         double mzMin,
         double mzMax,
         double cosineSimThreshold,
@@ -497,16 +535,18 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
 
     e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
 
-    QVector<FeatureFinderHill> hillsSortedHiLoIntensity = featureFinderHills;
-    FeatureFinderHillUtils::sortFeatureFinderHillsIntensityDesc(&hillsSortedHiLoIntensity);
+    QVector<FeatureFinderHillPlus> hillsSortedHiLoIntensity
+            = buildFeatureFinderHillPlussesSortedHiLo(featureFinderHills);
 
-    const QMap<Id, FeatureFinderHill> featureFinderHillsMap = ParallelUtils::convertVectorToMap(hillsSortedHiLoIntensity);
-    RTree featureFinderHillRTree = buildHillsRTree(featureFinderHillsMap);
+    const QMap<Id, FeatureFinderHillPlus> featureFinderHillsPlussesMap
+            = ParallelUtils::convertVectorToMap(hillsSortedHiLoIntensity);
+
+    RTree featureFinderHillRTree = buildHillsRTree(featureFinderHillsPlussesMap);
 
     bestHillsClusteringMS2->cosineSimSum = 0.0;
-    for (const FeatureFinderHill &ffh : hillsSortedHiLoIntensity) {
+    for (const FeatureFinderHillPlus &ffhp : hillsSortedHiLoIntensity) {
 
-        const int maxIntensityScanNumberIndex = ffh.maxIntensityScanNumberIndex();
+        const int maxIntensityScanNumberIndex = ffhp.featureFinderHill.maxIntensityScanNumberIndex();
 
         const rTreeBox queryBox(
                 rTreeCoor(maxIntensityScanNumberIndex, mzMin),
@@ -521,14 +561,14 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
 
         const rTreePoint rtpSearched = findNearestRTreePoint(
                 rTreeSearchResult,
-                featureFinderHillsMap,
-                ffh.mzMean()
+                featureFinderHillsPlussesMap,
+                ffhp.featureFinderHill.mzMean()
         );
 
         const bool hillIsNotFoundInSearch = isHillNotFoundInRTreeSearch(
-                ffh,
+                ffhp,
                 rtpSearched,
-                featureFinderHillsMap
+                featureFinderHillsPlussesMap
         );
 
         if (hillIsNotFoundInSearch) {
@@ -540,11 +580,11 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
             continue;
         }
 
-        QVector<FeatureFinderHill> correlatedHills;
+        QVector<FeatureFinderHillPlus> correlatedHills;
         double cosineSimSum;
         e = removePointsBelowCosineSimCorrThresholdMS2(
-                ffh,
-                featureFinderHillsMap,
+                ffhp,
+                featureFinderHillsPlussesMap,
                 rTreeSearchResult,
                 cosineSimThreshold,
                 &cosineSimSum,
@@ -552,7 +592,7 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
         ); ree;
 
         if (cosineSimSum > bestHillsClusteringMS2->cosineSimSum) {
-            bestHillsClusteringMS2->apexFeatureFinderHill = ffh;
+            bestHillsClusteringMS2->apexFeatureFinderHillPlus = ffhp;
             bestHillsClusteringMS2->cosineSimSum = cosineSimSum;
             bestHillsClusteringMS2->bestCosineSimScanPoints = convertHillApexesToScanPoints(correlatedHills);
         }

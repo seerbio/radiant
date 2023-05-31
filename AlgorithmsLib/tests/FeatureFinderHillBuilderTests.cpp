@@ -202,7 +202,7 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     QCOMPARE(e, eNoError);
 
     QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber, &featureFinderHills);
+    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber);
     QCOMPARE(e, eNoError);
 
     const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
@@ -266,10 +266,7 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     QCOMPARE(e, eNoError);
 
     QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(
-            scanNumberVsScanPoints,
-            &featureFinderHills
-            );
+    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
     qDebug() << "Hills found to write" << featureFinderHills.size();

@@ -355,7 +355,7 @@ namespace {
             ) {
 
         const auto terminatorLogic = [mzMin, mzMax](const MS2Ion &ion){
-            return !(mzMin <= ion.x() && ion.x() <= mzMax);
+            return !(mzMin <= ion.mz && ion.mz <= mzMax);
         };
 
         const auto terminator = std::remove_if(
@@ -380,21 +380,21 @@ namespace {
 
             const PeptideStringWithMods &peptideStringWithMods = it.key();
             const ExtractedScansReaderRow &extractedScansReaderRow = it.value();
-
-            QVector<MS2Ion> ms2Ions;
-            e = ParallelUtils::zip(
-                    extractedScansReaderRow.mzSearched,
-                    extractedScansReaderRow.intensitySearched,
-                    &ms2Ions
-                    ); ree;
-
-            filterMs2Ions(
-                    mzMin,
-                    mzMax,
-                    &ms2Ions
-                    );
-
-            peptideByMS2Ions->insert(peptideStringWithMods, ms2Ions);
+//
+//            QVector<MS2Ion> ms2Ions;
+//            e = ParallelUtils::zip(
+//                    extractedScansReaderRow.mzSearched,
+//                    extractedScansReaderRow.intensitySearched,
+//                    &ms2Ions
+//                    ); ree;
+//
+//            filterMs2Ions(
+//                    mzMin,
+//                    mzMax,
+//                    &ms2Ions
+//                    );
+//
+//            peptideByMS2Ions->insert(peptideStringWithMods, ms2Ions);
 
         }
 

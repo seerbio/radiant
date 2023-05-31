@@ -101,10 +101,16 @@ private:
 
 };
 
+struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPlus {
+    FeatureFinderHill featureFinderHill;
+    IonType ionType;
+    IonIndex ionIndex = -1;
+};
+
 namespace FeatureFinderHillUtils {
 
-    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsIntensityDesc(
-            QVector<FeatureFinderHill> *featureFinderHills
+    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesIntensityDesc(
+            QVector<FeatureFinderHillPlus> *featureFinderHills
             );
 
 }
