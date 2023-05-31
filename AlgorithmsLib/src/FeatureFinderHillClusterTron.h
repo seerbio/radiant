@@ -23,10 +23,9 @@ struct HillsClustering {
 };
 
 struct HillsClusteringMS2 {
-
-    ScanPoints bestCosineSimScanPoints;
     double cosineSimSum = -1.0;
     FeatureFinderHillPlus apexFeatureFinderHillPlus;
+    QVector<FeatureFinderHillPlus> correlatedHills;
 };
 
 //TODO use this to deisotope feature finder hills.

@@ -204,23 +204,23 @@ namespace {
         ERR_RETURN
     }
 
-    ScanPoints convertHillApexesToScanPoints(const QVector<FeatureFinderHillPlus> &featureFinderHills) {
-
-        ScanPoints hillApexes;
-
-        const auto transformLogic = [](const FeatureFinderHillPlus &ffh){
-            return ScanPoint (ffh.featureFinderHill.mzMean(), ffh.featureFinderHill.intensityValueMax());
-        };
-
-        std::transform(
-                featureFinderHills.begin(),
-                featureFinderHills.end(),
-                std::back_inserter(hillApexes),
-                transformLogic
-                );
-
-        return hillApexes;
-    }
+//    ScanPoints convertHillApexesToScanPoints(const QVector<FeatureFinderHillPlus> &featureFinderHills) {
+//
+//        ScanPoints hillApexes;
+//
+//        const auto transformLogic = [](const FeatureFinderHillPlus &ffh){
+//            return ScanPoint (ffh.featureFinderHill.mzMean(), ffh.featureFinderHill.intensityValueMax());
+//        };
+//
+//        std::transform(
+//                featureFinderHills.begin(),
+//                featureFinderHills.end(),
+//                std::back_inserter(hillApexes),
+//                transformLogic
+//                );
+//
+//        return hillApexes;
+//    }
 
     rTreePoint findNearestRTreePoint(
             const std::vector<rTreePoint> &rTreeResults,
@@ -478,7 +478,10 @@ namespace {
             }
 
             *cosineSimSum += cosineSim;
-            correlatedHills->push_back(featureFinderHillMap.value(ffhId));
+
+            FeatureFinderHillPlus ffhp = featureFinderHillMap.value(ffhId);
+            ffhp.cosineSimToAnchor = cosineSim;
+            correlatedHills->push_back(ffhp);
         }
 
         ERR_RETURN
@@ -511,7 +514,6 @@ namespace {
                 }
 
             }
-
 
         }
 
@@ -594,7 +596,7 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
         if (cosineSimSum > bestHillsClusteringMS2->cosineSimSum) {
             bestHillsClusteringMS2->apexFeatureFinderHillPlus = ffhp;
             bestHillsClusteringMS2->cosineSimSum = cosineSimSum;
-            bestHillsClusteringMS2->bestCosineSimScanPoints = convertHillApexesToScanPoints(correlatedHills);
+            bestHillsClusteringMS2->correlatedHills = correlatedHills;
         }
 
     }

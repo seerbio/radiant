@@ -105,6 +105,7 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPlus {
     FeatureFinderHill featureFinderHill;
     IonType ionType;
     IonIndex ionIndex = -1;
+    double cosineSimToAnchor = -1.0;
 };
 
 namespace FeatureFinderHillUtils {

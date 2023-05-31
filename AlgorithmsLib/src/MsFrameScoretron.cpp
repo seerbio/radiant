@@ -9,7 +9,6 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "ExtractedScansReader.h"
-#include "FeatureFinderHillClusterTron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
@@ -217,29 +216,20 @@ Err MsFrameScoretron::extractHillsForCandidtates(QString *frameHillsFilePath) {
     const QPair<double, double> &mzTargetStartEnd = m_msFrame.precursorMzTargetStartEnd();
     qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
 
-    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> pepStrWModsVsFrameIndexScoreResultOfTargets;
-    e = groupHillsForFrameCandidates(&pepStrWModsVsFrameIndexScoreResultOfTargets); ree
+    QMap<PeptideStringWithMods, HillsClusteringMS2> pepStrWModsVsHillsClusteringMS2;
+    e = groupHillsForFrameCandidates(&pepStrWModsVsHillsClusteringMS2); ree
 
-//    filterByFoundMzCount(
-//            m_params.minFoundMzPeaks,
-//            &m_pepStrWModsVsFrameIndexScoreResultOfTargets
-//    );
-//
-//    *frameScoreVectorsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameScores";
-//    e = writeFrameTargetScoreVectors(*frameScoreVectorsFilePath); ree;
-
+    *frameHillsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameExtractions";
+    e = writeFrameExtracts(
+            pepStrWModsVsHillsClusteringMS2,
+            *frameHillsFilePath
+            ); ree;
 
     ERR_RETURN
 }
 
-namespace {
-
-
-
-
-}//namespace
 Err MsFrameScoretron::groupHillsForFrameCandidates(
-        QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+        QMap<PeptideStringWithMods, HillsClusteringMS2> *pepStrWModsVsHillsClusteringMS2
 ) {
 
     ERR_INIT
@@ -266,7 +256,6 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
                 ); ree
 
         if (candidateFeatureFinderHills.isEmpty()){
-            pepStrWModsVsFrameIndexScoreResultOfTargets->insert(peptideStringWithMods, {});
             continue;
         }
 
@@ -279,10 +268,11 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
                 &bestHillsClusteringMS2
                 ); ree;
 
-//        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHillPlus.featureFinderHill.scanNumberIndexMinMax();
-//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
-//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
-//        break; //drewholio
+        if (bestHillsClusteringMS2.correlatedHills.size() < m_params.minFoundMzPeaks) {
+            continue;
+        }
+
+        pepStrWModsVsHillsClusteringMS2->insert(peptideStringWithMods, bestHillsClusteringMS2);
 
     }
 
@@ -295,7 +285,6 @@ Err MsFrameScoretron::getCandidateHills(
         ) {
 
     ERR_INIT
-
 
     QMap<IonIndex, QVector<FeatureFinderHill>> featureFinderHillsIonType;
 
@@ -393,8 +382,51 @@ Err MsFrameScoretron::getHillsIonType(
         ); ree
 
         featureFinderHills->insert(ionIndex, ionHills);
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    QMap<IonType, QVector<FeatureFinderHillPlus>> separateHillsByIonType(const HillsClusteringMS2 &hillsClusteringMs2) {
+
+        QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills;
+        
+        for (const FeatureFinderHillPlus &ffhp : hillsClusteringMs2.correlatedHills) {
+            separatedHills[ffhp.ionType].push_back(ffhp);
+        }
+        
+        return separatedHills;
+    }
+
+}//namespace
+Err MsFrameScoretron::writeFrameExtracts(
+        const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,
+        const QString &destinationFilePath
+        ) {
+
+    ERR_INIT
+
+    qDebug() << pepStrWModsVsHillsClusteringMS2.size();
+
+    for (auto it = pepStrWModsVsHillsClusteringMS2.begin(); it != pepStrWModsVsHillsClusteringMS2.end(); it++) {
+
+        const PeptideStringWithMods &peptideStringWithMods = it.key();
+        const HillsClusteringMS2 &hillsClusteringMs2 = it.value();
+        const MS2IonsSeparated &ms2IonsSeparated = m_fragPreds.value(peptideStringWithMods);
+        const bool isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
+
+        const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(
+                hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex()
+                );
+
+        const QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills = separateHillsByIonType(hillsClusteringMs2);
+
 
     }
+
+
 
     ERR_RETURN
 }

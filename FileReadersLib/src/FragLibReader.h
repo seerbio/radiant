@@ -14,7 +14,6 @@
 #include "ParquetReader.h"
 
 using namespace Error;
-using IonIndexes = QVector<int>;
 
 namespace FragLibReaderNamespace {
 

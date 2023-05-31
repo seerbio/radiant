@@ -8,6 +8,7 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "FeatureFinderHillBuilder.h"
+#include "FeatureFinderHillClusterTron.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
@@ -20,14 +21,6 @@ using namespace Error;
 
 class TandemDeconvolverResult;
 
-struct FrameIndexScoreResultOfTarget {
-    QVector<double> cosineSimPerFrameIndexOfTargetVec;
-    QVector<double> intensityPerFrameIndexOfTargetVec;
-    QVector<int> foundIonsPerFrameIndexOfTargetVec;
-    QVector<double> scorePerFrameIndexOfTargetVec;
-    PeakIntegrationIndexes bestScorePeakLimits = {-1, -1};
-    int charge = -1;
-};
 
 class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 
@@ -56,7 +49,7 @@ private:
     Err buildFragIonLibForTargetMz(const QString &fragLibUri);
 
     Err groupHillsForFrameCandidates(
-            QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> *pepStrWModsVsFrameIndexScoreResultOfTargets
+            QMap<PeptideStringWithMods, HillsClusteringMS2> *pepStrWModsVsFrameIndexScoreResultOfTargets
             );
 
     Err getCandidateHills(
@@ -69,10 +62,14 @@ private:
             QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
     );
 
+    Err writeFrameExtracts(
+            const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,
+            const QString &destinationFilePath
+            );
+
 
 private:
 
-    QMap<PeptideStringWithMods, FrameIndexScoreResultOfTarget> m_pepStrWModsVsFrameIndexScoreResultOfTargets;
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
