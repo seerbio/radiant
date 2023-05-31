@@ -253,11 +253,11 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const QVector<MS2Ion> &ms2IonsTandemPred = it.value();
 
-//        //drewholio
-//        if (peptideStringWithMods != "VSEQNVCVEAK") {
-//            continue;
-//        }
-//        //drewholio
+        //drewholio
+        if (peptideStringWithMods != "PGQDTCQGDSGGPXTCEK") {
+            continue;
+        }
+        //drewholio
 
         QVector<FeatureFinderHill> candidateFeatureFinderHills;
         e = getCandidateHills(
@@ -274,9 +274,9 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
                 &bestHillsClusteringMS2
                 ); ree;
 
-//        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHill.scanNumberIndexMinMax();
-//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
-//        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
+        qDebug() << bestHillsClusteringMS2.apexFeatureFinderHill.scanNumberIndexMinMax();
+        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints.size() << bestHillsClusteringMS2.cosineSimSum;
+        qDebug() << bestHillsClusteringMS2.bestCosineSimScanPoints;
 //        break; //drewholio
 
     }
