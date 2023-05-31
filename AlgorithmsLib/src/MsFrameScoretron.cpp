@@ -8,7 +8,7 @@
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "ExtractedScansReader.h"
+#include "FrameExtractsReader.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
@@ -208,7 +208,6 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
     ERR_RETURN
 }
 
-
 Err MsFrameScoretron::extractHillsForCandidtates(QString *frameHillsFilePath) {
 
     ERR_INIT
@@ -400,6 +399,295 @@ namespace {
         return separatedHills;
     }
 
+    Err unzipFeatureFinderHillPlusVector(
+            const QVector<FeatureFinderHillPlus> &featureFinderHillsPlus,
+            QVector<IonIndex> *ionIndexes,
+            QVector<double> *mzVals,
+            QVector<double> *intensities,
+            QVector<double> *cosineSimToAnchors,
+            QVector<int> *hillLength,
+            QVector<double> *mzStd
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(featureFinderHillsPlus); ree
+
+        for(const FeatureFinderHillPlus &ffhp : featureFinderHillsPlus) {
+            ionIndexes->push_back(ffhp.ionIndex);
+            mzVals->push_back(ffhp.featureFinderHill.mzMean());
+            intensities->push_back(ffhp.featureFinderHill.intensityValueMax());
+            cosineSimToAnchors->push_back(ffhp.cosineSimToAnchor);
+            hillLength->push_back(ffhp.featureFinderHill.scanCount());
+            mzStd->push_back(ffhp.featureFinderHill.mzStDev());
+        }
+
+        e = ErrorUtils::isNotEmpty(*mzVals); ree
+        e = ErrorUtils::isEqual(mzVals->size(), ionIndexes->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), intensities->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), cosineSimToAnchors->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), hillLength->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), mzStd->size()); ree
+
+        ERR_RETURN
+    }
+
+    Err loadFeatureFinderHillsPlusVectors(
+            const HillsClusteringMS2 &hillsClusteringMs2,
+            FrameExtractsReaderRow *frameExtractsReaderRow
+            ) {
+
+        ERR_INIT
+
+        const QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills = separateHillsByIonType(hillsClusteringMs2);
+
+        for (auto it = separatedHills.begin(); it != separatedHills.end(); it++) {
+
+            const IonType &ionType = it.key();
+            const QVector<FeatureFinderHillPlus> &featureFinderHillsPlusses = it.value();
+
+            QVector<IonIndex> ionIndexes;
+            QVector<double> mzVals;
+            QVector<double> intensities;
+            QVector<double> cosineSimToAnchor;
+            QVector<int> hillLength;
+            QVector<double> mzStd;
+            e = unzipFeatureFinderHillPlusVector(
+                    featureFinderHillsPlusses,
+                    &ionIndexes,
+                    &mzVals,
+                    &intensities,
+                    &cosineSimToAnchor,
+                    &hillLength,
+                    &mzStd
+                    ); ree
+
+            if (ionType == S_GLOBAL_SETTINGS.Y_IONS) {
+                frameExtractsReaderRow->yIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->yIonMzValsActual = mzVals;
+                frameExtractsReaderRow->yIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->yIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->yIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->yIonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.Y2_IONS) {
+                frameExtractsReaderRow->y2IonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->y2IonMzValsActual = mzVals;
+                frameExtractsReaderRow->y2IonIntesitiesActual = intensities;
+                frameExtractsReaderRow->y2IonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->y2IonHillLengthActual = hillLength;
+                frameExtractsReaderRow->y2IonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.Y_NH3_IONS) {
+                frameExtractsReaderRow->yNH3IonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->yNH3IonMzValsActual = mzVals;
+                frameExtractsReaderRow->yNH3IonIntesitiesActual = intensities;
+                frameExtractsReaderRow->yNH3IonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->yNH3IonHillLengthActual = hillLength;
+                frameExtractsReaderRow->yNH3IonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.Y_H2O_IONS) {
+                frameExtractsReaderRow->yH2OIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->yH2OIonMzValsActual = mzVals;
+                frameExtractsReaderRow->yH2OIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->yH2OIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->yH2OIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->yH2OIonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.B_IONS) {
+                frameExtractsReaderRow->bIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->bIonMzValsActual = mzVals;
+                frameExtractsReaderRow->bIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->bIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->bIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->bIonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.B2_IONS) {
+                frameExtractsReaderRow->b2IonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->b2IonMzValsActual = mzVals;
+                frameExtractsReaderRow->b2IonIntesitiesActual = intensities;
+                frameExtractsReaderRow->b2IonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->b2IonHillLengthActual = hillLength;
+                frameExtractsReaderRow->b2IonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.B_NH3_IONS) {
+                frameExtractsReaderRow->bNH3IonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->bNH3IonMzValsActual = mzVals;
+                frameExtractsReaderRow->bNH3IonIntesitiesActual = intensities;
+                frameExtractsReaderRow->bNH3IonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->bNH3IonHillLengthActual = hillLength;
+                frameExtractsReaderRow->bNH3IonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.B_H2O_IONS) {
+                frameExtractsReaderRow->bH2OIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->bH2OIonMzValsActual = mzVals;
+                frameExtractsReaderRow->bH2OIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->bH2OIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->bH2OIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->bH2OIonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.A_IONS) {
+                frameExtractsReaderRow->aIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->aIonMzValsActual = mzVals;
+                frameExtractsReaderRow->aIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->aIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->aIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->aIonMzStdActual = mzStd;
+            }
+
+            else if (ionType == S_GLOBAL_SETTINGS.PRECURSOR_IONS) {
+                frameExtractsReaderRow->precursorIonIndexesActual = ionIndexes;
+                frameExtractsReaderRow->precursorIonMzValsActual = mzVals;
+                frameExtractsReaderRow->precursorIonIntesitiesActual = intensities;
+                frameExtractsReaderRow->precursorIonHillCosineSims = cosineSimToAnchor;
+                frameExtractsReaderRow->precursorIonHillLengthActual = hillLength;
+                frameExtractsReaderRow->precursorIonMzStdActual = mzStd;
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    Err unzipTheoretical(
+            const QMap<IonIndex, MS2Ion> &ions,
+            QVector<IonIndex> *ionIndexes,
+            QVector<double> *mzVals,
+            QVector<double> *intensities
+            ) {
+
+        ERR_INIT
+
+        if (ions.isEmpty()) {
+            ERR_RETURN
+        }
+
+        for (auto it = ions.begin(); it != ions.end(); it++) {
+
+            const IonIndex ionIndex = it.key();
+            const MS2Ion &ms2Ion = it.value();
+
+            ionIndexes->push_back(ionIndex);
+            mzVals->push_back(ms2Ion.mz);
+            intensities->push_back(ms2Ion.intensity);
+        }
+
+        e = ErrorUtils::isNotEmpty(*mzVals); ree
+        e = ErrorUtils::isEqual(mzVals->size(), ionIndexes->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), intensities->size()); ree
+
+        ERR_RETURN
+    }
+
+    Err loadTheoreticalFrags(
+            const MS2IonsSeparated &ms2IonsSeparated,
+            FrameExtractsReaderRow *frameExtractsReaderRow
+            ){
+
+        ERR_INIT
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.yIons,
+                &frameExtractsReaderRow->yIonIndexesTheo,
+                &frameExtractsReaderRow->yIonMzValsTheo,
+                &frameExtractsReaderRow->yIonIntesitiesTheo
+                ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.y2Ions,
+                &frameExtractsReaderRow->y2IonIndexesTheo,
+                &frameExtractsReaderRow->y2IonMzValsTheo,
+                &frameExtractsReaderRow->y2IonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.yNH3Ions,
+                &frameExtractsReaderRow->yNH3IonIndexesTheo,
+                &frameExtractsReaderRow->yNH3IonMzValsTheo,
+                &frameExtractsReaderRow->yNH3IonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.yH2OIons,
+                &frameExtractsReaderRow->yH2OIonIndexesTheo,
+                &frameExtractsReaderRow->yH2OIonMzValsTheo,
+                &frameExtractsReaderRow->yH2OIonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.bIons,
+                &frameExtractsReaderRow->bIonIndexesTheo,
+                &frameExtractsReaderRow->bIonMzValsTheo,
+                &frameExtractsReaderRow->bIonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.b2Ions,
+                &frameExtractsReaderRow->b2IonIndexesTheo,
+                &frameExtractsReaderRow->b2IonMzValsTheo,
+                &frameExtractsReaderRow->b2IonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.bNH3Ions,
+                &frameExtractsReaderRow->bNH3IonIndexesTheo,
+                &frameExtractsReaderRow->bNH3IonMzValsTheo,
+                &frameExtractsReaderRow->bNH3IonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.bH2OIons,
+                &frameExtractsReaderRow->bH2OIonIndexesTheo,
+                &frameExtractsReaderRow->bH2OIonMzValsTheo,
+                &frameExtractsReaderRow->bH2OIonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.aIons,
+                &frameExtractsReaderRow->aIonIndexesTheo,
+                &frameExtractsReaderRow->aIonMzValsTheo,
+                &frameExtractsReaderRow->aIonIntesitiesTheo
+        ); ree
+
+        e = unzipTheoretical(
+                ms2IonsSeparated.precursorIons,
+                &frameExtractsReaderRow->precursorIonIndexesTheo,
+                &frameExtractsReaderRow->precursorIonMzValsTheo,
+                &frameExtractsReaderRow->precursorIonIntesitiesTheo
+        ); ree
+
+        ERR_RETURN
+    }
+
+    Err buildFrameExtractsReaderRow(
+            const PeptideStringWithMods &peptideStringWithMods,
+            const HillsClusteringMS2 &hillsClusteringMs2,
+            const MS2IonsSeparated &ms2IonsSeparated,
+            FrameExtractsReaderRow *frameExtractsReaderRow
+            ) {
+
+        ERR_INIT
+
+        e = loadFeatureFinderHillsPlusVectors(
+                hillsClusteringMs2,
+                frameExtractsReaderRow
+                ); ree
+
+        e = loadTheoreticalFrags(
+                ms2IonsSeparated,
+                frameExtractsReaderRow
+                ); ree
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err MsFrameScoretron::writeFrameExtracts(
         const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,
@@ -408,25 +696,37 @@ Err MsFrameScoretron::writeFrameExtracts(
 
     ERR_INIT
 
-    qDebug() << pepStrWModsVsHillsClusteringMS2.size();
+    QVector<FrameExtractsReaderRow> frameExtractsReaderRows;
 
     for (auto it = pepStrWModsVsHillsClusteringMS2.begin(); it != pepStrWModsVsHillsClusteringMS2.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const HillsClusteringMS2 &hillsClusteringMs2 = it.value();
         const MS2IonsSeparated &ms2IonsSeparated = m_fragPreds.value(peptideStringWithMods);
-        const bool isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
 
-        const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(
-                hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex()
-                );
+        FrameExtractsReaderRow frameExtractsReaderRow;
+        frameExtractsReaderRow.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
+        frameExtractsReaderRow.cosineSum = hillsClusteringMs2.cosineSimSum;
 
-        const QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills = separateHillsByIonType(hillsClusteringMs2);
+        frameExtractsReaderRow.frameIndexApex
+            = hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex();
 
+        frameExtractsReaderRow.scanNumberApex = m_msFrame.scanNumberFromFrameIndex(frameExtractsReaderRow.frameIndexApex );
 
+        e = buildFrameExtractsReaderRow(
+                peptideStringWithMods,
+                hillsClusteringMs2,
+                ms2IonsSeparated,
+                &frameExtractsReaderRow
+                ); ree
+
+        frameExtractsReaderRows.push_back(frameExtractsReaderRow);
     }
 
-
+    e = ParquetReader::write(
+            frameExtractsReaderRows,
+            destinationFilePath
+            ); ree
 
     ERR_RETURN
 }

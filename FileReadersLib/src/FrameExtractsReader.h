@@ -22,6 +22,7 @@ namespace FrameExtractsReaderNamespace {
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
     const QString FRAME_INDEX = QStringLiteral("frameIndex");
+    const QString COSINE_SUM = QStringLiteral("cosineSim");
 
     const QString A_IND_THEO = QStringLiteral("aIonIndexesTheo");
     const QString A_MZ_THEO = QStringLiteral("aIonMzValsTheo");
@@ -94,11 +95,33 @@ namespace FrameExtractsReaderNamespace {
     const QString PREC_INTZ_ACT = QStringLiteral("precursorIonIntesitiesActual");
     const QString PREC_HILL_COS_SIM = QStringLiteral("precursorIonHillCosineSims");
 
+    const QString Y_MZ_STD_ACT = QStringLiteral("yIonMzStdActual");
+    const QString Y_HILL_LEN_ACT = QStringLiteral("yIonHillLengthActual");
+    const QString Y2_MZ_STD_ACT = QStringLiteral("y2IonMzStdActual");
+    const QString Y2_HILL_LEN_ACT = QStringLiteral("y2IonHillLengthActual");
+    const QString YNH3_MZ_STD_ACT = QStringLiteral("yNH3IonMzStdActual");
+    const QString YNH3_HILL_LEN_ACT = QStringLiteral("yNH3IonHillLengthActual");
+    const QString YH2O_MZ_STD_ACT = QStringLiteral("yH2OIonMzStdActual");
+    const QString YH2O_HILL_LEN_ACT = QStringLiteral("yH2OIonHillLengthActual");
+    const QString B_MZ_STD_ACT = QStringLiteral("bIonMzStdActual");
+    const QString B_HILL_LEN_ACT = QStringLiteral("bIonHillLengthActual");
+    const QString B2_MZ_STD_ACT = QStringLiteral("b2IonMzStdActual");
+    const QString B2_HILL_LEN_ACT = QStringLiteral("b2IonHillLengthActual");
+    const QString BNH3_MZ_STD_ACT = QStringLiteral("bNH3IonMzStdActual");
+    const QString BNH3_HILL_LEN_ACT = QStringLiteral("bNH3IonHillLengthActual");
+    const QString BH2O_MZ_STD_ACT = QStringLiteral("bH2OIonMzStdActual");
+    const QString BH2O_HILL_LEN_ACT = QStringLiteral("bH2OIonHillLengthActual");
+    const QString A_MZ_STD_ACT = QStringLiteral("aIonMzStdActual");
+    const QString A_HILL_LEN_ACT = QStringLiteral("aIonHillLengthActual");
+    const QString PREC_MZ_STD_ACT = QStringLiteral("precursorIonMzStdActual");
+    const QString PREC_HILL_LEN_ACT = QStringLiteral("precursorIonHillLengthActual");
+
     const QStringList keysToCheck = {
             PEP_WITH_MODS,
             IS_DECOY,
             SCAN_NUMBER,
             FRAME_INDEX,
+            COSINE_SUM,
             A_IND_THEO,
             A_MZ_THEO,
             A_INTZ_THEO,
@@ -168,18 +191,40 @@ namespace FrameExtractsReaderNamespace {
             PREC_IND_ACT,
             PREC_MZ_ACT,
             PREC_INTZ_ACT,
-            PREC_HILL_COS_SIM
+            PREC_HILL_COS_SIM,
+
+            Y_MZ_STD_ACT,
+            Y_HILL_LEN_ACT,
+            Y2_MZ_STD_ACT,
+            Y2_HILL_LEN_ACT,
+            YNH3_MZ_STD_ACT,
+            YNH3_HILL_LEN_ACT,
+            YH2O_MZ_STD_ACT,
+            YH2O_HILL_LEN_ACT,
+            B_MZ_STD_ACT,
+            B_HILL_LEN_ACT,
+            B2_MZ_STD_ACT,
+            B2_HILL_LEN_ACT,
+            BNH3_MZ_STD_ACT,
+            BNH3_HILL_LEN_ACT,
+            BH2O_MZ_STD_ACT,
+            BH2O_HILL_LEN_ACT,
+            A_MZ_STD_ACT,
+            A_HILL_LEN_ACT,
+            PREC_MZ_STD_ACT,
+            PREC_HILL_LEN_ACT
     };
 
 }
 
 
-struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBase {
+struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;
     bool isDecoy = false;
     ScanNumber scanNumberApex = -1;
     FrameIndex frameIndexApex = -1;
+    double cosineSum = -1.0;
 
     QVector<IonIndex> aIonIndexesTheo;
     QVector<double> aIonMzValsTheo;
@@ -261,6 +306,28 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBa
     QVector<double> precursorIonIntesitiesActual;
     QVector<double> precursorIonHillCosineSims;
 
+    QVector<double> aIonMzStdActual;
+    QVector<int> aIonHillLengthActual;
+    QVector<double> yIonMzStdActual;
+    QVector<int> yIonHillLengthActual;
+    QVector<double> y2IonMzStdActual;
+    QVector<int> y2IonHillLengthActual;
+    QVector<double> yNH3IonMzStdActual;
+    QVector<int> yNH3IonHillLengthActual;
+    QVector<double> yH2OIonMzStdActual;
+    QVector<int> yH2OIonHillLengthActual;
+    QVector<double> bIonMzStdActual;
+    QVector<int> bIonHillLengthActual;
+    QVector<double> b2IonMzStdActual;
+    QVector<int> b2IonHillLengthActual;
+    QVector<double> bNH3IonMzStdActual;
+    QVector<int> bNH3IonHillLengthActual;
+    QVector<double> bH2OIonMzStdActual;
+    QVector<int> bH2OIonHillLengthActual;
+    QVector<double> precursorIonMzStdActual;
+    QVector<int> precursorIonHillLengthActual;
+
+
     QMap<QString, QVariant> map() override {
 
         using namespace FrameExtractsReaderNamespace;
@@ -270,6 +337,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBa
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUMBER, QVariant(scanNumberApex)},
                 {FRAME_INDEX, QVariant(frameIndexApex)},
+                {COSINE_SUM, QVariant(cosineSum)},
 
                 {A_IND_THEO, QVariant(qVectorToQByteArray(aIonIndexesTheo))},
                 {A_MZ_THEO, QVariant(qVectorToQByteArray(aIonMzValsTheo))},
@@ -349,7 +417,28 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBa
                 {PREC_IND_ACT, QVariant(qVectorToQByteArray(precursorIonIndexesActual))},
                 {PREC_MZ_ACT, QVariant(qVectorToQByteArray(precursorIonMzValsActual))},
                 {PREC_INTZ_ACT, QVariant(qVectorToQByteArray(precursorIonIntesitiesActual))},
-                {PREC_HILL_COS_SIM,QVariant(qVectorToQByteArray(precursorIonIntesitiesActual))}
+                {PREC_HILL_COS_SIM,QVariant(qVectorToQByteArray(precursorIonIntesitiesActual))},
+
+                {A_MZ_STD_ACT, QVariant(qVectorToQByteArray(aIonMzStdActual))},
+                {A_HILL_LEN_ACT, QVariant(qVectorToQByteArray(aIonHillLengthActual))},
+                {Y_MZ_STD_ACT, QVariant(qVectorToQByteArray(yIonMzStdActual))},
+                {Y_HILL_LEN_ACT, QVariant(qVectorToQByteArray(yIonHillLengthActual))},
+                {Y2_MZ_STD_ACT, QVariant(qVectorToQByteArray(y2IonMzStdActual))},
+                {Y2_HILL_LEN_ACT, QVariant(qVectorToQByteArray(y2IonHillLengthActual))},
+                {YNH3_MZ_STD_ACT, QVariant(qVectorToQByteArray(yNH3IonMzStdActual))},
+                {YNH3_HILL_LEN_ACT, QVariant(qVectorToQByteArray(yNH3IonHillLengthActual))},
+                {YH2O_MZ_STD_ACT, QVariant(qVectorToQByteArray(yH2OIonMzStdActual))},
+                {YH2O_HILL_LEN_ACT, QVariant(qVectorToQByteArray(yH2OIonHillLengthActual))},
+                {B_MZ_STD_ACT, QVariant(qVectorToQByteArray(bIonMzStdActual))},
+                {B_HILL_LEN_ACT, QVariant(qVectorToQByteArray(bIonHillLengthActual))},
+                {B2_MZ_STD_ACT, QVariant(qVectorToQByteArray(b2IonMzStdActual))},
+                {B2_HILL_LEN_ACT, QVariant(qVectorToQByteArray(b2IonHillLengthActual))},
+                {BNH3_MZ_STD_ACT, QVariant(qVectorToQByteArray(bNH3IonMzStdActual))},
+                {BNH3_HILL_LEN_ACT, QVariant(qVectorToQByteArray(bNH3IonHillLengthActual))},
+                {BH2O_MZ_STD_ACT, QVariant(qVectorToQByteArray(bH2OIonMzStdActual))},
+                {BH2O_HILL_LEN_ACT, QVariant(qVectorToQByteArray(bH2OIonHillLengthActual))},
+                {PREC_MZ_STD_ACT, QVariant(qVectorToQByteArray(precursorIonMzStdActual))},
+                {PREC_HILL_LEN_ACT, QVariant(qVectorToQByteArray(precursorIonHillLengthActual))}
         };
     }
 
@@ -371,6 +460,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBa
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumberApex = dataMap.value(SCAN_NUMBER).toInt();
         frameIndexApex = dataMap.value(FRAME_INDEX).toInt();
+        cosineSum = dataMap.value(COSINE_SUM).toDouble();
         aIonIndexesTheo = bytesArrayToQVector<int>(dataMap.value(A_IND_THEO).toByteArray());
         aIonMzValsTheo = bytesArrayToQVector<double>(dataMap.value(A_MZ_THEO).toByteArray());
         aIonIntesitiesTheo = bytesArrayToQVector<double>(dataMap.value(A_INTZ_THEO).toByteArray());
@@ -441,6 +531,27 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReader : public ParquetReaderInputBa
         precursorIonMzValsActual = bytesArrayToQVector<double>(dataMap.value(PREC_MZ_ACT).toByteArray());
         precursorIonIntesitiesActual = bytesArrayToQVector<double>(dataMap.value(PREC_INTZ_ACT).toByteArray());
         precursorIonHillCosineSims = bytesArrayToQVector<double>(dataMap.value(PREC_HILL_COS_SIM).toByteArray());
+
+        aIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(A_MZ_STD_ACT).toByteArray());
+        aIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(A_HILL_LEN_ACT).toByteArray());
+        yIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(Y_MZ_STD_ACT).toByteArray());
+        yIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(Y_HILL_LEN_ACT).toByteArray());
+        y2IonMzStdActual = bytesArrayToQVector<double>(dataMap.value(Y2_MZ_STD_ACT).toByteArray());
+        y2IonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(Y2_HILL_LEN_ACT).toByteArray());
+        yNH3IonMzStdActual = bytesArrayToQVector<double>(dataMap.value(YNH3_MZ_STD_ACT).toByteArray());
+        yNH3IonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(YNH3_HILL_LEN_ACT).toByteArray());
+        yH2OIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(YH2O_MZ_STD_ACT).toByteArray());
+        yH2OIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(YH2O_HILL_LEN_ACT).toByteArray());
+        bIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(B_MZ_STD_ACT).toByteArray());
+        bIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(B_HILL_LEN_ACT).toByteArray());
+        b2IonMzStdActual = bytesArrayToQVector<double>(dataMap.value(B2_MZ_STD_ACT).toByteArray());
+        b2IonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(B2_HILL_LEN_ACT).toByteArray());
+        bNH3IonMzStdActual = bytesArrayToQVector<double>(dataMap.value(BNH3_MZ_STD_ACT).toByteArray());
+        bNH3IonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(BNH3_HILL_LEN_ACT).toByteArray());
+        bH2OIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(BH2O_MZ_STD_ACT).toByteArray());
+        bH2OIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(BH2O_HILL_LEN_ACT).toByteArray());
+        precursorIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(PREC_MZ_STD_ACT).toByteArray());
+        precursorIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(PREC_HILL_LEN_ACT).toByteArray());
 
         ERR_RETURN
     }

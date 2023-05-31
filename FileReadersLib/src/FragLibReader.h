@@ -95,7 +95,6 @@ struct MS2IonsSeparated {
     QMap<IonIndex, MS2Ion> bNH3Ions;
     QMap<IonIndex, MS2Ion> bH2OIons;
     QMap<IonIndex, MS2Ion> precursorIons;
-
 };
 
 
