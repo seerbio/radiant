@@ -114,6 +114,10 @@ namespace FeatureFinderHillUtils {
             QVector<FeatureFinderHillPlus> *featureFinderHills
             );
 
+    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesMzAsc(
+            QVector<FeatureFinderHillPlus> *featureFinderHills
+    );
+
 }
 
 

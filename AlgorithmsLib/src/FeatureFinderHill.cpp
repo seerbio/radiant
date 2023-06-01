@@ -112,3 +112,18 @@ void FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(QVector<
             sortLogic
             );
 }
+
+void ALGORITHMSLIB_EXPORTS FeatureFinderHillUtils::sortFeatureFinderHillsPlussesMzAsc(
+        QVector<FeatureFinderHillPlus>*featureFinderHills
+        ){
+
+    const auto sortLogic = [](const FeatureFinderHillPlus &l, const FeatureFinderHillPlus &r){
+        return l.featureFinderHill.mzMean() < r.featureFinderHill.mzMean();
+    };
+
+    std::sort(
+            featureFinderHills->begin(),
+            featureFinderHills->end(),
+            sortLogic
+            );
+}

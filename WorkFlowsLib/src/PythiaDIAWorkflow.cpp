@@ -182,19 +182,19 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &frameScoreVectorOutput
             ); ree;
 
-    QVector<PSMsReaderRow> psmReaderRowsRecal;
-    e = processFrameScoreVectors(
-            frameScoreVectorOutput,
-            msDataFilePath,
-            m_pythiaParameters,
-            &psmReaderRowsRecal
-            ); ree;
-
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(
-            psmReaderRowsRecal,
-            resultsFilePath
-            ); ree;
+//    QVector<PSMsReaderRow> psmReaderRowsRecal;
+//    e = processFrameScoreVectors(
+//            frameScoreVectorOutput,
+//            msDataFilePath,
+//            m_pythiaParameters,
+//            &psmReaderRowsRecal
+//            ); ree;
+//
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(
+//            psmReaderRowsRecal,
+//            resultsFilePath
+//            ); ree;
 
     ERR_RETURN
 }
@@ -261,7 +261,7 @@ namespace {
 }//namespace
 Err PythiaDIAWorkflow::buildFrameScoreVectors(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
+        QVector<ScoreVectorsOutput> *scoreVectorsOutputs
         ) {
 
     ERR_INIT
@@ -276,7 +276,7 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
     for (const QPair<Err, ScoreVectorsOutput> &result : futures) {
         e = result.first; ree;
-        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
+        scoreVectorsOutputs->push_back(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
@@ -287,7 +287,7 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
         const QPair<Err, ScoreVectorsOutput> result = parallelBuildFrameScoreVectorLogic(fpi); ree;
         e = result.first; ree;
-        frameScoreVectorsAndExtractFilePaths->push_back(result.second);
+        scoreVectorsOutputs->push_back(result.second);
     }
 #endif
 

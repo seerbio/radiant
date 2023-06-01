@@ -594,6 +594,9 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
         ); ree;
 
         if (cosineSimSum > bestHillsClusteringMS2->cosineSimSum) {
+
+            FeatureFinderHillUtils::sortFeatureFinderHillsPlussesMzAsc(&correlatedHills);
+
             bestHillsClusteringMS2->apexFeatureFinderHillPlus = ffhp;
             bestHillsClusteringMS2->cosineSimSum = cosineSimSum;
             bestHillsClusteringMS2->correlatedHills = correlatedHills;
