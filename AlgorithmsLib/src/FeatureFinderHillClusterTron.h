@@ -64,6 +64,12 @@ public:
             HillsClusteringMS2 *bestHillsClusteringMS2
             );
 
+    static Err calculateCosineSimBetweenHills(
+            const FeatureFinderHill &h1,
+            const FeatureFinderHill &h2,
+            double *cosineSim
+    );
+
 private:
 
     FeatureFinderParameters m_params;

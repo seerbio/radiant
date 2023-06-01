@@ -115,6 +115,36 @@ namespace FrameExtractsReaderNamespace {
     const QString A_HILL_LEN_ACT = QStringLiteral("aIonHillLengthActual");
     const QString PREC_MZ_STD_ACT = QStringLiteral("precursorIonMzStdActual");
     const QString PREC_HILL_LEN_ACT = QStringLiteral("precursorIonHillLengthActual");
+    const QString A_ISO_COS_ACT = QStringLiteral("aIonsIsotopologueCosineSimActual");
+    const QString A_ISO_CHRG_ACT = QStringLiteral("aIonsIsotopologueChargeActual");
+    const QString A_ISO_INTZ_ACT = QStringLiteral("aIonsIsotopologueIntensityActual");
+    const QString Y_ISO_COS_ACT = QStringLiteral("yIonsIsotopologueCosineSimActual");
+    const QString Y_ISO_CHRG_ACT = QStringLiteral("yIonsIsotopologueChargeActual");
+    const QString Y_ISO_INTZ_ACT = QStringLiteral("yIonsIsotopologueIntensityActual");
+    const QString Y2_ISO_COS_ACT = QStringLiteral("y2IonsIsotopologueCosineSimActual");
+    const QString Y2_ISO_CHRG_ACT = QStringLiteral("y2IonsIsotopologueChargeActual");
+    const QString Y2_ISO_INTZ_ACT = QStringLiteral("y2IonsIsotopologueIntensityActual");
+    const QString YNH3_ISO_COS_ACT = QStringLiteral("yNH3IonsIsotopologueCosineSimActual");
+    const QString YNH3_ISO_CHRG_ACT = QStringLiteral("yNH3IonsIsotopologueChargeActual");
+    const QString YNH3_ISO_INTZ_ACT = QStringLiteral("yNH3IonsIsotopologueIntensityActual");
+    const QString YH2O_ISO_COS_ACT = QStringLiteral("yH2OIonsIsotopologueCosineSimActual");
+    const QString YH2O_ISO_CHRG_ACT = QStringLiteral("yH2OIonsIsotopologueChargeActual");
+    const QString YH2O_ISO_INTZ_ACT = QStringLiteral("yH2OIonsIsotopologueIntensityActual");
+    const QString B_ISO_COS_ACT = QStringLiteral("bIonsIsotopologueCosineSimActual");
+    const QString B_ISO_CHRG_ACT = QStringLiteral("bIonsIsotopologueChargeActual");
+    const QString B_ISO_INTZ_ACT = QStringLiteral("bIonsIsotopologueIntensityActual");
+    const QString B2_ISO_COS_ACT = QStringLiteral("b2IonsIsotopologueCosineSimActual");
+    const QString B2_ISO_CHRG_ACT = QStringLiteral("b2IonsIsotopologueChargeActual");
+    const QString B2_ISO_INTZ_ACT = QStringLiteral("b2IonsIsotopologueIntensityActual");
+    const QString BNH3_ISO_COS_ACT = QStringLiteral("bNH3IonsIsotopologueCosineSimActual");
+    const QString BNH3_ISO_CHRG_ACT = QStringLiteral("bNH3IonsIsotopologueChargeActual");
+    const QString BNH3_ISO_INTZ_ACT = QStringLiteral("bNH3IonsIsotopologueIntensityActual");
+    const QString BH2O_ISO_COS_ACT = QStringLiteral("bH2OIonsIsotopologueCosineSimActual");
+    const QString BH2O_ISO_CHRG_ACT = QStringLiteral("bH2OIonsIsotopologueChargeActual");
+    const QString BH2O_ISO_INTZ_ACT = QStringLiteral("bH2OIonsIsotopologueIntensityActual");
+    const QString PREC_ISO_COS_ACT = QStringLiteral("precursorIonsIsotopologueCosineSimActual");
+    const QString PREC_ISO_CHRG_ACT = QStringLiteral("precursorIonsIsotopologueChargeActual");
+    const QString PREC_ISO_INTZ_ACT = QStringLiteral("precursorIonsIsotopologueIntensityActual");
 
     const QStringList keysToCheck = {
             PEP_WITH_MODS,
@@ -212,7 +242,38 @@ namespace FrameExtractsReaderNamespace {
             A_MZ_STD_ACT,
             A_HILL_LEN_ACT,
             PREC_MZ_STD_ACT,
-            PREC_HILL_LEN_ACT
+            PREC_HILL_LEN_ACT,
+
+            A_ISO_COS_ACT,
+            A_ISO_CHRG_ACT,
+            A_ISO_INTZ_ACT,
+            Y_ISO_COS_ACT,
+            Y_ISO_CHRG_ACT,
+            Y_ISO_INTZ_ACT,
+            Y2_ISO_COS_ACT,
+            Y2_ISO_CHRG_ACT,
+            Y2_ISO_INTZ_ACT,
+            YNH3_ISO_COS_ACT,
+            YNH3_ISO_CHRG_ACT,
+            YNH3_ISO_INTZ_ACT,
+            YH2O_ISO_COS_ACT,
+            YH2O_ISO_CHRG_ACT,
+            YH2O_ISO_INTZ_ACT,
+            B_ISO_COS_ACT,
+            B_ISO_CHRG_ACT,
+            B_ISO_INTZ_ACT,
+            B2_ISO_COS_ACT,
+            B2_ISO_CHRG_ACT,
+            B2_ISO_INTZ_ACT,
+            BNH3_ISO_COS_ACT,
+            BNH3_ISO_CHRG_ACT,
+            BNH3_ISO_INTZ_ACT,
+            BH2O_ISO_COS_ACT,
+            BH2O_ISO_CHRG_ACT,
+            BH2O_ISO_INTZ_ACT,
+            PREC_ISO_COS_ACT,
+            PREC_ISO_CHRG_ACT,
+            PREC_ISO_INTZ_ACT
     };
 
 }
@@ -327,6 +388,37 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
     QVector<double> precursorIonMzStdActual;
     QVector<int> precursorIonHillLengthActual;
 
+    QVector<double> aIonsIsotopologueCosineSimActual;
+    QVector<int> aIonsIsotopologueChargeActual;
+    QVector<double> aIonsIsotopologueIntensityActual;
+    QVector<double> yIonsIsotopologueCosineSimActual;
+    QVector<int> yIonsIsotopologueChargeActual;
+    QVector<double> yIonsIsotopologueIntensityActual;
+    QVector<double> y2IonsIsotopologueCosineSimActual;
+    QVector<int> y2IonsIsotopologueChargeActual;
+    QVector<double> y2IonsIsotopologueIntensityActual;
+    QVector<double> yNH3IonsIsotopologueCosineSimActual;
+    QVector<int> yNH3IonsIsotopologueChargeActual;
+    QVector<double> yNH3IonsIsotopologueIntensityActual;
+    QVector<double> yH2OIonsIsotopologueCosineSimActual;
+    QVector<int> yH2OIonsIsotopologueChargeActual;
+    QVector<double> yH2OIonsIsotopologueIntensityActual;
+    QVector<double> bIonsIsotopologueCosineSimActual;
+    QVector<int> bIonsIsotopologueChargeActual;
+    QVector<double> bIonsIsotopologueIntensityActual;
+    QVector<double> b2IonsIsotopologueCosineSimActual;
+    QVector<int> b2IonsIsotopologueChargeActual;
+    QVector<double> b2IonsIsotopologueIntensityActual;
+    QVector<double> bNH3IonsIsotopologueCosineSimActual;
+    QVector<int> bNH3IonsIsotopologueChargeActual;
+    QVector<double> bNH3IonsIsotopologueIntensityActual;
+    QVector<double> bH2OIonsIsotopologueCosineSimActual;
+    QVector<int> bH2OIonsIsotopologueChargeActual;
+    QVector<double> bH2OIonsIsotopologueIntensityActual;
+    QVector<double> precursorIonsIsotopologueCosineSimActual;
+    QVector<int> precursorIonsIsotopologueChargeActual;
+    QVector<double> precursorIonsIsotopologueIntensityActual;
+
 
     QMap<QString, QVariant> map() override {
 
@@ -438,7 +530,38 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
                 {BH2O_MZ_STD_ACT, QVariant(qVectorToQByteArray(bH2OIonMzStdActual))},
                 {BH2O_HILL_LEN_ACT, QVariant(qVectorToQByteArray(bH2OIonHillLengthActual))},
                 {PREC_MZ_STD_ACT, QVariant(qVectorToQByteArray(precursorIonMzStdActual))},
-                {PREC_HILL_LEN_ACT, QVariant(qVectorToQByteArray(precursorIonHillLengthActual))}
+                {PREC_HILL_LEN_ACT, QVariant(qVectorToQByteArray(precursorIonHillLengthActual))},
+
+                {A_ISO_COS_ACT, QVariant(qVectorToQByteArray(aIonsIsotopologueCosineSimActual))},
+                {A_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(aIonsIsotopologueChargeActual))},
+                {A_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(aIonsIsotopologueIntensityActual))},
+                {Y_ISO_COS_ACT, QVariant(qVectorToQByteArray(yIonsIsotopologueCosineSimActual))},
+                {Y_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(yIonsIsotopologueChargeActual))},
+                {Y_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(yIonsIsotopologueIntensityActual))},
+                {Y2_ISO_COS_ACT, QVariant(qVectorToQByteArray(y2IonsIsotopologueCosineSimActual))},
+                {Y2_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(y2IonsIsotopologueChargeActual))},
+                {Y2_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(y2IonsIsotopologueIntensityActual))},
+                {YNH3_ISO_COS_ACT, QVariant(qVectorToQByteArray(yNH3IonsIsotopologueCosineSimActual))},
+                {YNH3_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(yNH3IonsIsotopologueChargeActual))},
+                {YNH3_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(yNH3IonsIsotopologueIntensityActual))},
+                {YH2O_ISO_COS_ACT, QVariant(qVectorToQByteArray(yH2OIonsIsotopologueCosineSimActual))},
+                {YH2O_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(yH2OIonsIsotopologueChargeActual))},
+                {YH2O_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(yH2OIonsIsotopologueIntensityActual))},
+                {B_ISO_COS_ACT, QVariant(qVectorToQByteArray(bIonsIsotopologueCosineSimActual))},
+                {B_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(bIonsIsotopologueChargeActual))},
+                {B_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(bIonsIsotopologueIntensityActual))},
+                {B2_ISO_COS_ACT, QVariant(qVectorToQByteArray(b2IonsIsotopologueCosineSimActual))},
+                {B2_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(b2IonsIsotopologueChargeActual))},
+                {B2_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(b2IonsIsotopologueIntensityActual))},
+                {BNH3_ISO_COS_ACT, QVariant(qVectorToQByteArray(bNH3IonsIsotopologueCosineSimActual))},
+                {BNH3_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(bNH3IonsIsotopologueChargeActual))},
+                {BNH3_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(bNH3IonsIsotopologueIntensityActual))},
+                {BH2O_ISO_COS_ACT, QVariant(qVectorToQByteArray(bH2OIonsIsotopologueCosineSimActual))},
+                {BH2O_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(bH2OIonsIsotopologueChargeActual))},
+                {BH2O_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(bH2OIonsIsotopologueIntensityActual))},
+                {PREC_ISO_COS_ACT, QVariant(qVectorToQByteArray(precursorIonsIsotopologueCosineSimActual))},
+                {PREC_ISO_CHRG_ACT, QVariant(qVectorToQByteArray(precursorIonsIsotopologueChargeActual))},
+                {PREC_ISO_INTZ_ACT, QVariant(qVectorToQByteArray(precursorIonsIsotopologueIntensityActual))},
         };
     }
 
@@ -552,6 +675,37 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
         bH2OIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(BH2O_HILL_LEN_ACT).toByteArray());
         precursorIonMzStdActual = bytesArrayToQVector<double>(dataMap.value(PREC_MZ_STD_ACT).toByteArray());
         precursorIonHillLengthActual = bytesArrayToQVector<int>(dataMap.value(PREC_HILL_LEN_ACT).toByteArray());
+
+        aIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(A_ISO_COS_ACT).toByteArray());
+        aIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(A_ISO_CHRG_ACT).toByteArray());
+        aIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(A_ISO_INTZ_ACT).toByteArray());
+        yIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(Y_ISO_COS_ACT).toByteArray());
+        yIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(Y_ISO_CHRG_ACT).toByteArray());
+        yIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(Y_ISO_INTZ_ACT).toByteArray());
+        y2IonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(Y2_ISO_COS_ACT).toByteArray());
+        y2IonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(Y2_ISO_CHRG_ACT).toByteArray());
+        y2IonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(Y2_ISO_INTZ_ACT).toByteArray());
+        yNH3IonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(YNH3_ISO_COS_ACT).toByteArray());
+        yNH3IonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(YNH3_ISO_CHRG_ACT).toByteArray());
+        yNH3IonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(YNH3_ISO_INTZ_ACT).toByteArray());
+        yH2OIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(YH2O_ISO_COS_ACT).toByteArray());
+        yH2OIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(YH2O_ISO_CHRG_ACT).toByteArray());
+        yH2OIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(YH2O_ISO_INTZ_ACT).toByteArray());
+        bIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(B_ISO_COS_ACT).toByteArray());
+        bIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(B_ISO_CHRG_ACT).toByteArray());
+        bIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(B_ISO_INTZ_ACT).toByteArray());
+        b2IonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(B2_ISO_COS_ACT).toByteArray());
+        b2IonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(B2_ISO_CHRG_ACT).toByteArray());
+        b2IonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(B2_ISO_INTZ_ACT).toByteArray());
+        bNH3IonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(BNH3_ISO_COS_ACT).toByteArray());
+        bNH3IonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(BNH3_ISO_CHRG_ACT).toByteArray());
+        bNH3IonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(BNH3_ISO_INTZ_ACT).toByteArray());
+        bH2OIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(BH2O_ISO_COS_ACT).toByteArray());
+        bH2OIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(BH2O_ISO_CHRG_ACT).toByteArray());
+        bH2OIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(BH2O_ISO_INTZ_ACT).toByteArray());
+        precursorIonsIsotopologueCosineSimActual = bytesArrayToQVector<double>(dataMap.value(PREC_ISO_COS_ACT).toByteArray());
+        precursorIonsIsotopologueChargeActual = bytesArrayToQVector<int>(dataMap.value(PREC_ISO_CHRG_ACT).toByteArray());
+        precursorIonsIsotopologueIntensityActual = bytesArrayToQVector<double>(dataMap.value(PREC_ISO_INTZ_ACT).toByteArray());
 
         ERR_RETURN
     }

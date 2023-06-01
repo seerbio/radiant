@@ -106,6 +106,10 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPlus {
     IonType ionType;
     IonIndex ionIndex = -1;
     double cosineSimToAnchor = -1.0;
+
+    double bestIsotopologueCosineSim = -1.0;
+    Charge isotopologueCharge = -1;
+    double isotopologueIntensity = -1.0;
 };
 
 namespace FeatureFinderHillUtils {

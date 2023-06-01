@@ -153,26 +153,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err calculateCosineSimBetweenHills(
-            const FeatureFinderHill &h1,
-            const FeatureFinderHill &h2,
-            double *cosineSim
-            ) {
-
-        ERR_INIT
-
-        Eigen::MatrixX<double> comparisonMatrix;
-        e = buildComparisonMatrix(
-                h1,
-                h2,
-                &comparisonMatrix
-                ); ree
-
-        *cosineSim = EigenUtils::cosineSimilarity(comparisonMatrix.col(0), comparisonMatrix.col(1));
-
-        ERR_RETURN
-    }
-
     Err removePointsBelowCosineSimCorrThreshold(
             const FeatureFinderHill &featureFinderHillAnchor,
             const QMap<int, FeatureFinderHill> &featureFinderHillMap,
@@ -188,7 +168,7 @@ namespace {
             const int &ffhId = rtp.second;
 
             double cosineSim;
-            e = calculateCosineSimBetweenHills(
+            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
                     featureFinderHillAnchor,
                     featureFinderHillMap.value(ffhId),
                     &cosineSim
@@ -467,7 +447,7 @@ namespace {
             const int &ffhId = rtp.second;
 
             double cosineSim;
-            e = calculateCosineSimBetweenHills(
+            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
                     featureFinderHillAnchor.featureFinderHill,
                     featureFinderHillMap.value(ffhId).featureFinderHill,
                     &cosineSim
@@ -607,7 +587,25 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
     ERR_RETURN
 }
 
+Err FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
+        const FeatureFinderHill &h1,
+        const FeatureFinderHill &h2,
+        double *cosineSim
+) {
 
+    ERR_INIT
+
+    Eigen::MatrixX<double> comparisonMatrix;
+    e = buildComparisonMatrix(
+            h1,
+            h2,
+            &comparisonMatrix
+    ); ree
+
+    *cosineSim = EigenUtils::cosineSimilarity(comparisonMatrix.col(0), comparisonMatrix.col(1));
+
+    ERR_RETURN
+}
 
 
 

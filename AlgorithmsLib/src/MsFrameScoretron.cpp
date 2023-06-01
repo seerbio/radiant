@@ -271,6 +271,10 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
             continue;
         }
 
+        if (m_params.findIsotopologues) {
+            e = findIsotopologues(&bestHillsClusteringMS2); ree
+        }
+
         pepStrWModsVsHillsClusteringMS2->insert(peptideStringWithMods, bestHillsClusteringMS2);
 
     }
@@ -287,70 +291,70 @@ Err MsFrameScoretron::getCandidateHills(
 
     QMap<IonIndex, QVector<FeatureFinderHill>> featureFinderHillsIonType;
 
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.yIons,
             &featureFinderHillsIonType
             ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.bIons,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.B_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.y2Ions,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.Y2_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.b2Ions,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.B2_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.aIons,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.A_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.yNH3Ions,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_NH3_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.yH2OIons,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_H2O_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.bNH3Ions,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.B_NH3_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.bH2OIons,
             &featureFinderHillsIonType
     ); ree
     featureFinderHills->insert(S_GLOBAL_SETTINGS.B_H2O_IONS, featureFinderHillsIonType);
 
     featureFinderHillsIonType.clear();
-    e = getHillsIonType(
+    e = getHillsForIonType(
             ms2IonsTandemPred.precursorIons,
             &featureFinderHillsIonType
     ); ree
@@ -359,7 +363,7 @@ Err MsFrameScoretron::getCandidateHills(
     ERR_RETURN
 }
 
-Err MsFrameScoretron::getHillsIonType(
+Err MsFrameScoretron::getHillsForIonType(
         const QMap<IonIndex, MS2Ion> &ions,
         QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
 ) {
@@ -386,6 +390,59 @@ Err MsFrameScoretron::getHillsIonType(
     ERR_RETURN
 }
 
+Err MsFrameScoretron::findIsotopologues(HillsClusteringMS2 *bestHillsClusteringMS2) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(bestHillsClusteringMS2->correlatedHills); ree
+
+    for (int i = 0; i < bestHillsClusteringMS2->correlatedHills.size(); ++i) {
+
+        FeatureFinderHillPlus &ffhPlus = bestHillsClusteringMS2->correlatedHills[i];
+
+        double bestIsotopologueCosineSim = -1;
+        Charge bestIsotopologueCharge = -1;
+        double bestIsotopologueIntensity = -1.0;
+
+        for (Charge z = 1; z <= m_params.maxIsotopologueCharge; z++) {
+
+            const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / z;
+
+            QVector<FeatureFinderHill> isotopologueHills;
+            e = m_featureFinderHillBuilder.getHills(
+                    ffhPlus.featureFinderHill.maxIntensityScanNumberIndex(),
+                    ffhPlus.featureFinderHill.maxIntensityScanNumberIndex(),
+                    ffhPlus.featureFinderHill.mzMean() - chargeDistance,
+                    m_params.ms2ExtractionWidthPPM,
+                    &isotopologueHills
+            ); ree
+
+            for (const FeatureFinderHill &ffh : isotopologueHills) {
+
+                double cosineSimIsotopologue;
+                e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
+                        ffh,
+                        ffhPlus.featureFinderHill,
+                        &cosineSimIsotopologue
+                        ); ree
+
+                if (cosineSimIsotopologue > bestIsotopologueCosineSim) {
+                    bestIsotopologueCosineSim = cosineSimIsotopologue;
+                    bestIsotopologueCharge = z;
+                    bestIsotopologueIntensity = ffh.intensityValueMax();
+                }
+            }
+        }
+
+        ffhPlus.bestIsotopologueCosineSim = bestIsotopologueCosineSim;
+        ffhPlus.isotopologueCharge = bestIsotopologueCharge;
+        ffhPlus.isotopologueIntensity = bestIsotopologueIntensity;
+    }
+
+    ERR_RETURN
+}
+
+//TOOD consider moving this monster code elsewhere, i.e., FrameExtractsReader.
 namespace {
 
     QMap<IonType, QVector<FeatureFinderHillPlus>> separateHillsByIonType(const HillsClusteringMS2 &hillsClusteringMs2) {
@@ -406,7 +463,10 @@ namespace {
             QVector<double> *intensities,
             QVector<double> *cosineSimToAnchors,
             QVector<int> *hillLength,
-            QVector<double> *mzStd
+            QVector<double> *mzStd,
+            QVector<double> *isotopologueCosineSim,
+            QVector<int> *isotopologueCharge,
+            QVector<double> *isotopologueIntensity
             ) {
 
         ERR_INIT
@@ -420,6 +480,9 @@ namespace {
             cosineSimToAnchors->push_back(ffhp.cosineSimToAnchor);
             hillLength->push_back(ffhp.featureFinderHill.scanCount());
             mzStd->push_back(ffhp.featureFinderHill.mzStDev());
+            isotopologueCosineSim->push_back(ffhp.bestIsotopologueCosineSim);
+            isotopologueCharge->push_back(ffhp.isotopologueCharge);
+            isotopologueIntensity->push_back(ffhp.isotopologueIntensity);
         }
 
         e = ErrorUtils::isNotEmpty(*mzVals); ree
@@ -428,6 +491,9 @@ namespace {
         e = ErrorUtils::isEqual(mzVals->size(), cosineSimToAnchors->size()); ree
         e = ErrorUtils::isEqual(mzVals->size(), hillLength->size()); ree
         e = ErrorUtils::isEqual(mzVals->size(), mzStd->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), isotopologueCharge->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), isotopologueCharge->size()); ree
+        e = ErrorUtils::isEqual(mzVals->size(), isotopologueIntensity->size()); ree
 
         ERR_RETURN
     }
@@ -452,6 +518,9 @@ namespace {
             QVector<double> cosineSimToAnchor;
             QVector<int> hillLength;
             QVector<double> mzStd;
+            QVector<double> isotopologueCosineSim;
+            QVector<int> isotopologueCharge;
+            QVector<double> isotopologueIntensity;
             e = unzipFeatureFinderHillPlusVector(
                     featureFinderHillsPlusses,
                     &ionIndexes,
@@ -459,7 +528,10 @@ namespace {
                     &intensities,
                     &cosineSimToAnchor,
                     &hillLength,
-                    &mzStd
+                    &mzStd,
+                    &isotopologueCosineSim,
+                    &isotopologueCharge,
+                    &isotopologueIntensity
                     ); ree
 
             if (ionType == S_GLOBAL_SETTINGS.Y_IONS) {
@@ -469,6 +541,9 @@ namespace {
                 frameExtractsReaderRow->yIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yIonMzStdActual = mzStd;
+                frameExtractsReaderRow->yIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y2_IONS) {
@@ -478,6 +553,9 @@ namespace {
                 frameExtractsReaderRow->y2IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->y2IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->y2IonMzStdActual = mzStd;
+                frameExtractsReaderRow->y2IonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->y2IonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->y2IonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y_NH3_IONS) {
@@ -487,6 +565,9 @@ namespace {
                 frameExtractsReaderRow->yNH3IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yNH3IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yNH3IonMzStdActual = mzStd;
+                frameExtractsReaderRow->yNH3IonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yNH3IonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yNH3IonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y_H2O_IONS) {
@@ -496,6 +577,9 @@ namespace {
                 frameExtractsReaderRow->yH2OIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yH2OIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yH2OIonMzStdActual = mzStd;
+                frameExtractsReaderRow->yH2OIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yH2OIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yH2OIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_IONS) {
@@ -505,6 +589,9 @@ namespace {
                 frameExtractsReaderRow->bIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bIonMzStdActual = mzStd;
+                frameExtractsReaderRow->bIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B2_IONS) {
@@ -514,6 +601,9 @@ namespace {
                 frameExtractsReaderRow->b2IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->b2IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->b2IonMzStdActual = mzStd;
+                frameExtractsReaderRow->b2IonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->b2IonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->b2IonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_NH3_IONS) {
@@ -523,6 +613,9 @@ namespace {
                 frameExtractsReaderRow->bNH3IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bNH3IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bNH3IonMzStdActual = mzStd;
+                frameExtractsReaderRow->bNH3IonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bNH3IonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bNH3IonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_H2O_IONS) {
@@ -532,6 +625,9 @@ namespace {
                 frameExtractsReaderRow->bH2OIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bH2OIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bH2OIonMzStdActual = mzStd;
+                frameExtractsReaderRow->bH2OIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bH2OIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bH2OIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.A_IONS) {
@@ -541,6 +637,9 @@ namespace {
                 frameExtractsReaderRow->aIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->aIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->aIonMzStdActual = mzStd;
+                frameExtractsReaderRow->aIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->aIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->aIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.PRECURSOR_IONS) {
@@ -550,6 +649,9 @@ namespace {
                 frameExtractsReaderRow->precursorIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->precursorIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->precursorIonMzStdActual = mzStd;
+                frameExtractsReaderRow->precursorIonsIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->precursorIonsIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->precursorIonsIsotopologueIntensityActual = isotopologueIntensity;
             }
         }
 
@@ -728,5 +830,8 @@ Err MsFrameScoretron::writeFrameExtracts(
             destinationFilePath
             ); ree
 
+    qDebug() << frameExtractsReaderRows.size() << "rows written";
+
     ERR_RETURN
 }
+

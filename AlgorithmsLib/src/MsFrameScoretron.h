@@ -57,10 +57,12 @@ private:
             QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> *featureFinderHills
             );
 
-    Err getHillsIonType(
+    Err getHillsForIonType(
             const QMap<IonIndex, MS2Ion> &ions,
             QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
     );
+
+    Err findIsotopologues(HillsClusteringMS2 *bestHillsClusteringMS2);
 
     Err writeFrameExtracts(
             const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,

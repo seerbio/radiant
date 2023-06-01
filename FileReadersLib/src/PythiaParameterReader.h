@@ -146,6 +146,8 @@ struct PythiaParameters{
     int minFoundMzPeaks = -1;
 
     double theoMs2IonIntensityThreshold = 0.05;
+    bool findIsotopologues = true; //TODO make this settable
+    int maxIsotopologueCharge = 2; //TODO make this settable
 
     [[nodiscard]] bool isValid() const {
 
