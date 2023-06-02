@@ -75,10 +75,6 @@ Err FeatureFinderHill::refineHill(
     ERR_RETURN
 }
 
-void FeatureFinderHill::updateIntensities(const QVector<double> &newIntensities) {
-    m_intensities = newIntensities;
-}
-
 QPair<double, double> FeatureFinderHill::mzMinMax() const {
     const auto minMaxMz = std::minmax_element(m_mzVals.begin(), m_mzVals.end());
     return {*minMaxMz.first, *minMaxMz.second};

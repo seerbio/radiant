@@ -603,7 +603,6 @@ namespace {
     Err splitHill(
             const FeatureFinderHill &featureFinderHill,
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
-            const QVector<double> &intensityVecSmoothed,
             int minHillScanCount,
             QVector<FeatureFinderHill> *refinedHills
             ) {
@@ -611,7 +610,6 @@ namespace {
         ERR_INIT
 
         FeatureFinderHill refinedHill = featureFinderHill;
-        refinedHill.updateIntensities(intensityVecSmoothed);
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
@@ -655,12 +653,6 @@ namespace {
 
             FeatureFinderHill smoothedHill = rhi.featureFinderHill;
 
-            //TODO this is a hack.  The root of the problem is probs the vec is too small to smooth.
-            // consider implementing some limit on smoothing vs filter size, if that is not already implemented.
-            if (intensityVecSmoothed.size() == smoothedHill.intensities().size()) {
-                smoothedHill.updateIntensities(intensityVecSmoothed);
-            }
-
             e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.scanNumberIndexes().size()); rree
             e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.intensities().size()); rree
             e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.mzVals().size()); rree
@@ -672,7 +664,6 @@ namespace {
         e = splitHill(
                 rhi.featureFinderHill,
                 peakLimits,
-                intensityVecSmoothed,
                 rhi.minScanCount,
                 &newHills
         ); rree;

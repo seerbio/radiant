@@ -63,8 +63,6 @@ public:
             int endIndex
     );
 
-    void updateIntensities(const QVector<double> &newIntensities);
-
     [[nodiscard]] double mzMean() const;
 
     [[nodiscard]] double mzStDev() const;

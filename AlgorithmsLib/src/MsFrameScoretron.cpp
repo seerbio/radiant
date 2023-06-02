@@ -5,14 +5,10 @@
 #include "MsFrameScoretron.h"
 
 #include "BiophysicalCalcs.h"
-#include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FrameExtractsReader.h"
 #include "MsFrameScoretronProcessormatic.h"
-#include "MsFrameScoreVectorReader.h"
-#include "MsReaderParquet.h"
-#include "ParallelUtils.h"
 #include "TandemSpectraDeconvolvotron.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -541,9 +537,9 @@ namespace {
                 frameExtractsReaderRow->yIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yIonMzStdActual = mzStd;
-                frameExtractsReaderRow->yIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->yIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yIonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y2_IONS) {
@@ -553,9 +549,9 @@ namespace {
                 frameExtractsReaderRow->y2IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->y2IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->y2IonMzStdActual = mzStd;
-                frameExtractsReaderRow->y2IonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->y2IonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->y2IonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->y2IonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->y2IonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->y2IonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y_NH3_IONS) {
@@ -565,9 +561,9 @@ namespace {
                 frameExtractsReaderRow->yNH3IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yNH3IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yNH3IonMzStdActual = mzStd;
-                frameExtractsReaderRow->yNH3IonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yNH3IonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yNH3IonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->yNH3IonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yNH3IonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yNH3IonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.Y_H2O_IONS) {
@@ -577,9 +573,9 @@ namespace {
                 frameExtractsReaderRow->yH2OIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->yH2OIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->yH2OIonMzStdActual = mzStd;
-                frameExtractsReaderRow->yH2OIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yH2OIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yH2OIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->yH2OIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->yH2OIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->yH2OIonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_IONS) {
@@ -589,9 +585,9 @@ namespace {
                 frameExtractsReaderRow->bIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bIonMzStdActual = mzStd;
-                frameExtractsReaderRow->bIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->bIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bIonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B2_IONS) {
@@ -601,9 +597,9 @@ namespace {
                 frameExtractsReaderRow->b2IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->b2IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->b2IonMzStdActual = mzStd;
-                frameExtractsReaderRow->b2IonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->b2IonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->b2IonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->b2IonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->b2IonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->b2IonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_NH3_IONS) {
@@ -613,9 +609,9 @@ namespace {
                 frameExtractsReaderRow->bNH3IonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bNH3IonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bNH3IonMzStdActual = mzStd;
-                frameExtractsReaderRow->bNH3IonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bNH3IonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bNH3IonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->bNH3IonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bNH3IonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bNH3IonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.B_H2O_IONS) {
@@ -625,9 +621,9 @@ namespace {
                 frameExtractsReaderRow->bH2OIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->bH2OIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->bH2OIonMzStdActual = mzStd;
-                frameExtractsReaderRow->bH2OIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bH2OIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bH2OIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->bH2OIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->bH2OIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->bH2OIonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.A_IONS) {
@@ -637,9 +633,9 @@ namespace {
                 frameExtractsReaderRow->aIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->aIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->aIonMzStdActual = mzStd;
-                frameExtractsReaderRow->aIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->aIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->aIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->aIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->aIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->aIonIsotopologueIntensityActual = isotopologueIntensity;
             }
 
             else if (ionType == S_GLOBAL_SETTINGS.PRECURSOR_IONS) {
@@ -649,9 +645,9 @@ namespace {
                 frameExtractsReaderRow->precursorIonHillCosineSims = cosineSimToAnchor;
                 frameExtractsReaderRow->precursorIonHillLengthActual = hillLength;
                 frameExtractsReaderRow->precursorIonMzStdActual = mzStd;
-                frameExtractsReaderRow->precursorIonsIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->precursorIonsIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->precursorIonsIsotopologueIntensityActual = isotopologueIntensity;
+                frameExtractsReaderRow->precursorIonIsotopologueCosineSimActual = isotopologueCosineSim;
+                frameExtractsReaderRow->precursorIonIsotopologueChargeActual = isotopologueCharge;
+                frameExtractsReaderRow->precursorIonIsotopologueIntensityActual = isotopologueIntensity;
             }
         }
 
