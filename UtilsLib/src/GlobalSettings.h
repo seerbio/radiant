@@ -211,6 +211,42 @@ struct UTILSLIB_EXPORTS MS2Ion {
         std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
     }
 
+    static void filterMS2IonsByMz(
+            double mzMin,
+            double mzMax,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto terminatorLogic = [mzMin, mzMax](const MS2Ion &ion){
+            return !(mzMin < ion.mz && ion.mz <= mzMax);
+        };
+
+        const auto terminator = std::remove_if(
+                ms2Ions->begin(),
+                ms2Ions->end(),
+                terminatorLogic
+                );
+
+        ms2Ions->erase(terminator, ms2Ions->end());
+    }
+
+    static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions) {
+
+        const auto convLog = [](const MS2Ion &ion){
+            return QPointF(ion.mz, ion.intensity);
+        };
+
+        ScanPoints predPoints;
+        std::transform(
+                ms2Ions.begin(),
+                ms2Ions.end(),
+                std::back_inserter(predPoints),
+                convLog
+                );
+
+        return predPoints;
+    }
+
 };
 
 class UTILSLIB_EXPORTS GlobalSettings {

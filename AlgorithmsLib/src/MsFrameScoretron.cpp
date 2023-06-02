@@ -773,6 +773,8 @@ namespace {
 
         ERR_INIT
 
+        frameExtractsReaderRow->peptideStringWithMods = peptideStringWithMods;
+
         e = loadFeatureFinderHillsPlusVectors(
                 hillsClusteringMs2,
                 frameExtractsReaderRow

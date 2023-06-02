@@ -306,14 +306,7 @@ namespace {
         ERR_INIT
 
         MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
-        e = msFrameScoretronProcessormatic.init(
-                scoreVectorsOutput.scoreVecFilePath,
-                scoreVectorsOutput.extractsFilePath,
-                pythiaParameters,
-                msDataFilePath,
-                scoreVectorsOutput.uniqueMsInfoScanKey,
-                scoreVectorsOutput.mzTargetStartStop
-                ); rree;
+        e = msFrameScoretronProcessormatic.init(pythiaParameters); rree;
 
         QVector<PSMsReaderRow> psmsReaderRows;
         e = msFrameScoretronProcessormatic.processFrameScoreVectors(&psmsReaderRows); rree;

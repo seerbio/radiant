@@ -770,36 +770,12 @@ Err MsFrameScoretronProcessormatic::compileScores(QVector<PSMsReaderRow> *psmRea
 
 namespace {
 
-    Err buildIonIndexesVsMzTheo(
-            const QVector<double> &mzValsTheo,
-            const QVector<IonIndex> &ionIndexesTheo,
-            QMap<IonIndex, MZION> *ionIndexVsMz
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isEqual(mzValsTheo.size(), ionIndexesTheo.size());
-
-        for (int i = 0; i < mzValsTheo.size(); i++) {
-
-            const double mzTheo = mzValsTheo.at(i);
-            const IonIndex ionInd = ionIndexesTheo.at(i);
-
-            ionIndexVsMz->insert(ionInd, mzTheo);
-        }
-
-        ERR_RETURN
-    }
-
     Err zipScanPoints(
             const QVector<double> &mzValsActual,
             const QVector<double> &intensityValsActual,
-            const QVector<IonIndex> &ionIndexesActual,
             const QVector<double> &isotopologueCosineSim,
-            const QVector<double> &mzValsTheo,
-            const QVector<IonIndex> &ionIndexesTheo,
+            const QVector<double> &isotopologueIntensityVals,
             bool filterIsotopologues,
-            double ppmTolerance,
             ScanPoints *foundScanPoints
             ) {
 
@@ -808,38 +784,26 @@ namespace {
         e = ErrorUtils::isEqual(mzValsActual.size(), intensityValsActual.size()); ree
         e = ErrorUtils::isEqual(mzValsActual.size(), isotopologueCosineSim.size()); ree
 
-        QMap<IonIndex, MZION> ionIndexVsMz;
-        e = buildIonIndexesVsMzTheo(
-                mzValsTheo,
-                ionIndexesTheo,
-                &ionIndexVsMz
-                ); ree
-
         const double minCosineSimThreshold = 0.8; //TODO consider making this settable.
+        const double minIntensityRatio = 0.1; //TODO consider using charge of isotopologue to set this ratio.
 
         for (int i = 0; i < mzValsActual.size(); i++) {
 
             const double mzActual = mzValsActual.at(i);
-            const IonIndex ionIndexActual = ionIndexesActual.at(i);
+            const double intensityActual = intensityValsActual.at(i);
 
             if (filterIsotopologues) {
 
+                const double isotopologueIntensity = isotopologueIntensityVals.at(i);
                 const double cosineSim = isotopologueCosineSim.at(i);
+                const double isoTopoIntzToIntzActualRatio = isotopologueIntensity / (isotopologueIntensity + intensityActual);
 
-                if (cosineSim >= minCosineSimThreshold) {
+                if (cosineSim >= minCosineSimThreshold && isoTopoIntzToIntzActualRatio > minIntensityRatio) {
                     continue;
                 }
             }
 
-            const double intensity = intensityValsActual.at(i);
-            
-            e = ErrorUtils::isTrue(ionIndexesActual.contains(ionIndexActual)); ree
-            const double mzTheo = ionIndexVsMz.value(ionIndexActual);
-
-            const double ppmDiff = 1e6 * ((mzActual - mzTheo) / mzTheo);
-            e = ErrorUtils::isTrue(std::abs(ppmDiff) <= ppmTolerance); ree
-
-            foundScanPoints->push_back({mzTheo, intensity});
+            foundScanPoints->push_back({mzActual, intensityActual});
         }
 
         ERR_RETURN
@@ -848,7 +812,6 @@ namespace {
     Err extractActualPoints(
             const FrameExtractsReaderRow &frameExtractsReaderRow,
             bool filterIsotopologues,
-            double ppmTolerance,
             ScanPoints *foundScanPoints
             ) {
 
@@ -858,12 +821,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.yIonMzValsActual,
                 frameExtractsReaderRow.yIonIntesitiesActual,
-                frameExtractsReaderRow.yIonIndexesActual,
                 frameExtractsReaderRow.yIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.yIonMzValsTheo,
-                frameExtractsReaderRow.yIonIndexesTheo,
+                frameExtractsReaderRow.yIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &yFoundScanPoints
         ); ree
         foundScanPoints->append(yFoundScanPoints);
@@ -872,12 +832,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.y2IonMzValsActual,
                 frameExtractsReaderRow.y2IonIntesitiesActual,
-                frameExtractsReaderRow.y2IonIndexesActual,
                 frameExtractsReaderRow.y2IonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.y2IonMzValsTheo,
-                frameExtractsReaderRow.y2IonIndexesTheo,
+                frameExtractsReaderRow.y2IonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &y2FoundScanPoints
         ); ree
         foundScanPoints->append(y2FoundScanPoints);
@@ -886,12 +843,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.yNH3IonMzValsActual,
                 frameExtractsReaderRow.yNH3IonIntesitiesActual,
-                frameExtractsReaderRow.yNH3IonIndexesActual,
                 frameExtractsReaderRow.yNH3IonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.yNH3IonMzValsTheo,
-                frameExtractsReaderRow.yNH3IonIndexesTheo,
+                frameExtractsReaderRow.yNH3IonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &yNH3FoundScanPoints
         ); ree
         foundScanPoints->append(yNH3FoundScanPoints);
@@ -900,12 +854,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.yH2OIonMzValsActual,
                 frameExtractsReaderRow.yH2OIonIntesitiesActual,
-                frameExtractsReaderRow.yH2OIonIndexesActual,
                 frameExtractsReaderRow.yH2OIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.yH2OIonMzValsTheo,
-                frameExtractsReaderRow.yH2OIonIndexesTheo,
+                frameExtractsReaderRow.yH2OIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &yH2OFoundScanPoints
         ); ree
         foundScanPoints->append(yH2OFoundScanPoints);
@@ -914,12 +865,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.bIonMzValsActual,
                 frameExtractsReaderRow.bIonIntesitiesActual,
-                frameExtractsReaderRow.bIonIndexesActual,
                 frameExtractsReaderRow.bIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.bIonMzValsTheo,
-                frameExtractsReaderRow.bIonIndexesTheo,
+                frameExtractsReaderRow.bIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &bFoundScanPoints
         ); ree
         foundScanPoints->append(bFoundScanPoints);
@@ -928,12 +876,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.b2IonMzValsActual,
                 frameExtractsReaderRow.b2IonIntesitiesActual,
-                frameExtractsReaderRow.b2IonIndexesActual,
                 frameExtractsReaderRow.b2IonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.b2IonMzValsTheo,
-                frameExtractsReaderRow.b2IonIndexesTheo,
+                frameExtractsReaderRow.b2IonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &b2FoundScanPoints
         ); ree
         foundScanPoints->append(b2FoundScanPoints);
@@ -942,12 +887,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.bNH3IonMzValsActual,
                 frameExtractsReaderRow.bNH3IonIntesitiesActual,
-                frameExtractsReaderRow.bNH3IonIndexesActual,
                 frameExtractsReaderRow.bNH3IonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.bNH3IonMzValsTheo,
-                frameExtractsReaderRow.bNH3IonIndexesTheo,
+                frameExtractsReaderRow.bNH3IonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &bNH3FoundScanPoints
         ); ree
         foundScanPoints->append(bNH3FoundScanPoints);
@@ -956,12 +898,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.bH2OIonMzValsActual,
                 frameExtractsReaderRow.bH2OIonIntesitiesActual,
-                frameExtractsReaderRow.bH2OIonIndexesActual,
                 frameExtractsReaderRow.bH2OIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.bH2OIonMzValsTheo,
-                frameExtractsReaderRow.bH2OIonIndexesTheo,
+                frameExtractsReaderRow.bH2OIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &bH2OFoundScanPoints
         ); ree
         foundScanPoints->append(bH2OFoundScanPoints);
@@ -970,12 +909,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.aIonMzValsActual,
                 frameExtractsReaderRow.aIonIntesitiesActual,
-                frameExtractsReaderRow.aIonIndexesActual,
                 frameExtractsReaderRow.aIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.aIonMzValsTheo,
-                frameExtractsReaderRow.aIonIndexesTheo,
+                frameExtractsReaderRow.aIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &aFoundScanPoints
         ); ree
         foundScanPoints->append(aFoundScanPoints);
@@ -984,12 +920,9 @@ namespace {
         e = zipScanPoints(
                 frameExtractsReaderRow.precursorIonMzValsActual,
                 frameExtractsReaderRow.precursorIonIntesitiesActual,
-                frameExtractsReaderRow.precursorIonIndexesActual,
                 frameExtractsReaderRow.precursorIonIsotopologueCosineSimActual,
-                frameExtractsReaderRow.precursorIonMzValsTheo,
-                frameExtractsReaderRow.precursorIonIndexesTheo,
+                frameExtractsReaderRow.precursorIonIsotopologueIntensityActual,
                 filterIsotopologues,
-                ppmTolerance,
                 &precursorFoundScanPoints
         ); ree
         foundScanPoints->append(precursorFoundScanPoints);
@@ -1028,7 +961,6 @@ namespace {
             const QVector<FrameExtractsReaderRow> &frameExtractsReaderRows,
             const int precision,
             bool filterIsotopologues,
-            double ppmTolerance,
             ScanPoints *scanPoints
             ) {
 
@@ -1043,7 +975,6 @@ namespace {
             e = extractActualPoints(
                     fer,
                     filterIsotopologues,
-                    ppmTolerance,
                     &frameIndexScanPoints
                     ); ree
 
@@ -1063,7 +994,6 @@ namespace {
     Err zipTheoPoints(
             const QVector<double> &mzValsTheo,
             const QVector<double> &intensityValsTheo,
-
             QVector<MS2Ion> *ms2Ions
             ) {
 
@@ -1083,8 +1013,46 @@ namespace {
         ERR_RETURN
     }
 
+    Err replaceTheoreticalMzValsWithActualIfFound(
+            const ScanPoints &uniqueFoundScanPoints,
+            double ppmTolerance,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        ERR_INIT
+
+        const ScanPoints ms2IonsAsScanPoints = MS2Ion::ms2IonsToScanPoints(*ms2Ions);
+        ExtractPoints extractPoints = MsUtils::extractPointsFromPoints(
+                uniqueFoundScanPoints,
+                ms2IonsAsScanPoints,
+                ppmTolerance
+        );
+
+        e = ErrorUtils::isBelowThreshold(
+                extractPoints.mzFoundVsSearched.size(),
+                ms2Ions->size(),
+                ErrorUtilsParam::IncludeThreshold
+                ); ree
+
+        for (int i = 0; i < extractPoints.mzFoundVsSearched.size(); i++) {
+
+            const double mz = extractPoints.mzFoundVsSearched.at(i).x();
+
+            if (mz > 0) {
+                (*ms2Ions)[i].mz = mz;
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
     Err buildCandidateTheoreticalFragments(
+            const ScanPoints &uniqueFoundScanPoints,
             const QVector<FrameExtractsReaderRow> &frameExtractsReaderRows,
+            double mzMin,
+            double mzMax,
+            double ppmTolerance,
             QMap<PeptideStringWithMods, QVector<MS2Ion>> *tandemPredictions
             ) {
 
@@ -1179,6 +1147,17 @@ namespace {
             tandemPred.append(precursorMs2Ions);
 
             MS2Ion::sortMS2IonsMzAsc(&tandemPred);
+            MS2Ion::filterMS2IonsByMz(
+                    mzMin,
+                    mzMax,
+                    &tandemPred
+                    );
+
+            e = replaceTheoreticalMzValsWithActualIfFound(
+                    uniqueFoundScanPoints,
+                    ppmTolerance,
+                    &tandemPred
+                    ); ree
 
             tandemPredictions->insert(peptideStringWithMods, tandemPred);
         }
@@ -1197,21 +1176,30 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
             frameExtractsReaderRows,
             m_precision,
             m_params.filterIsotopologuesForDeconvolution,
-            m_params.ms2ExtractionWidthPPM,
             &uniqueFoundScanPoints
             ); ree
 
-//    QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions;
-//    e = buildCandidateTheoreticalFragments(
-//            frameExtractsReaderRows,
-//            &tandemPredictions
-//            ); ree;
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions;
+    e = buildCandidateTheoreticalFragments(
+            uniqueFoundScanPoints,
+            frameExtractsReaderRows,
+            m_params.mzMinDataStructure,
+            m_params.mzMaxDataStructure,
+            m_params.ms2ExtractionWidthPPM,
+            &tandemPredictions
+            ); ree;
 
 
 #define WRITE_POINTS
 #ifdef WRITE_POINTS
 
     e = MsUtils::writePointsToCSV(uniqueFoundScanPoints, "scanPoints.csv"); ree;
+
+    const QList<QVector<MS2Ion>> &preds = tandemPredictions.values();
+    const QVector<MS2Ion> &pred = preds.at(4);
+    const ScanPoints predPoints = MS2Ion::ms2IonsToScanPoints(pred);
+
+    e = MsUtils::writePointsToCSV(predPoints, "scanPointsPred.csv"); ree;
 
 
 #endif
