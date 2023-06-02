@@ -43,31 +43,32 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
             frameExtractionFilepath,
             &frameExtracts
             );
-
     QCOMPARE(e, eNoError);
 
+    MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
+    e = msFrameScoretronProcessormatic.init(PythiaParameterReader::genericPythiaParametersForTests());
+    QCOMPARE(e, eNoError);
+
+    QVector<FrameExtractsReaderRow> frameIndexFrameExtractsReaderRows;
     for (const FrameExtractsReaderRow &fer : frameExtracts) {
 
         if (fer.frameIndexApex != 191) {
             continue;
         }
 
-        if (fer.yIonMzStdActual.isEmpty()) {
-            continue;
-        }
-
-        ScanPoints scanPoints;
-        e = ParallelUtils::zip(
-                fer.yIonMzValsActual,
-                fer.yIonIntesitiesActual,
-                &scanPoints
-                );
-        QCOMPARE(e, eNoError);
-
-        qDebug() << scanPoints;
+        frameIndexFrameExtractsReaderRows.push_back(fer);
     }
 
+    e = msFrameScoretronProcessormatic.deconvolveScanCandidate(frameIndexFrameExtractsReaderRows);
+    QCOMPARE(e, eNoError);
 
+//        ScanPoints scanPoints;
+//        e = ParallelUtils::zip(
+//                fer.yIonMzValsActual,
+//                fer.yIonIntesitiesActual,
+//                &scanPoints
+//                );
+//        QCOMPARE(e, eNoError);
 
 
 }

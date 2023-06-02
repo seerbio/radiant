@@ -202,6 +202,15 @@ struct UTILSLIB_EXPORTS MS2Ion {
         rrr(eValueError);
     }
 
+    static void sortMS2IonsMzAsc(QVector<MS2Ion> *ms2Ions) {
+
+        const auto sortMzAsc = [](const MS2Ion &l, const MS2Ion &r){
+            return l.mz < r.mz;
+        };
+
+        std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
+    }
+
 };
 
 class UTILSLIB_EXPORTS GlobalSettings {

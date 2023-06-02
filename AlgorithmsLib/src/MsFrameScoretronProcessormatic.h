@@ -7,11 +7,10 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
-#include "ExtractedScansReader.h"
 #include "FragLibReader.h"
+#include "FrameExtractsReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
-#include "MsFrameScoreVectorReader.h"
 #include "MsReaderParquet.h"
 #include "MsUtils.h"
 #include "PythiaParameterReader.h"
@@ -56,17 +55,12 @@ public:
 
     friend class MsFrameScoretronProcessormaticTests;
 
-    MsFrameScoretronProcessormatic() = default;
+    MsFrameScoretronProcessormatic();
     ~MsFrameScoretronProcessormatic() = default;
 
-    Err init(
-            const QString &frameScoreVecFilePath,
-            const QString &frameExtractedScansFilePath,
-            const PythiaParameters &pythiaParameters,
-            const QString &msDataFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            QPair<double, double> mzTargetStartStop
-            );
+    Err init(const PythiaParameters &pythiaParameters);
+
+    Err deconvolveScanCandidate(const QVector<FrameExtractsReaderRow> &frameExtractsReaderRows) const;
 
     Err processFrameScoreVectors(QVector<PSMsReaderRow> *psmReaderRows);
 
@@ -84,16 +78,16 @@ private:
             FrameIndex frameIndex
             );
 
-    Err collateExtractedScansReaderRowByPepStrWithModsForFrameIndex(
-            const QVector<PeptideStringWithMods> &peptideStringWithMods,
-            QMap<PeptideStringWithMods, ExtractedScansReaderRow> *peptideByExtractedPoints
-            );
-
-    Err calculateDiscriminateScoreForFrameIndex(
-            const QMap<PeptideStringWithMods, ExtractedScansReaderRow> &peptideByExtractedPoints,
-            const ScanPoints &scanPoints,
-            FrameIndex frameIndex
-    );
+//    Err collateExtractedScansReaderRowByPepStrWithModsForFrameIndex(
+//            const QVector<PeptideStringWithMods> &peptideStringWithMods,
+//            QMap<PeptideStringWithMods, ExtractedScansReaderRow> *peptideByExtractedPoints
+//            );
+//
+//    Err calculateDiscriminateScoreForFrameIndex(
+//            const QMap<PeptideStringWithMods, ExtractedScansReaderRow> &peptideByExtractedPoints,
+//            const ScanPoints &scanPoints,
+//            FrameIndex frameIndex
+//    );
 
     Err buildFrameIndexVsFrameStats();
 
@@ -110,10 +104,12 @@ private:
     QString m_frameExtractedScansFilePath;
     TandemSpectraDeconvolvotron m_deconvolvotron;
 
+    const int m_precision;
+
 
     MsFrame m_msFrame;
     MsReaderParquet m_msReaderMS1ScansOnly;
-    QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
+//    QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
     QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
     QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;
     QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;

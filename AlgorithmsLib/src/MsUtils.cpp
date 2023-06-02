@@ -5,15 +5,14 @@
 #include "MsUtils.h"
 
 #include "BiophysicalCalcs.h"
+#include "CSVReader.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "IsotopicDistributionBuilder.h"
 #include "ParallelUtils.h"
 
-namespace {
-    const auto sortAscMz = [](const QPointF &l, const QPointF &r){return l.x() < r.x();};
-}
+
 ExtractPoints MsUtils::extractPointsFromPoints(
         const QVector<QPointF> &_points,
         const QVector<QPointF> &_pointsToExtract,
@@ -25,10 +24,10 @@ ExtractPoints MsUtils::extractPointsFromPoints(
     extractPointsOutput.intensityFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
 
     QVector<QPointF> pointsToExtract = _pointsToExtract;
-    std::sort(pointsToExtract.begin(), pointsToExtract.end(), sortAscMz);
+    std::sort(pointsToExtract.begin(), pointsToExtract.end(), MsUtilsNamespace::sortAscMz);
 
     QVector<QPointF> points = _points;
-    std::sort(points.begin(), points.end(), sortAscMz);
+    std::sort(points.begin(), points.end(), MsUtilsNamespace::sortAscMz);
 
     int currentExtractionIndex = 0;
     double extractionPointX = pointsToExtract.at(currentExtractionIndex).x();
@@ -577,6 +576,49 @@ Err MsUtils::monoIsotopeDeterminator(
             startCenterPointIdxOG,
             *monoIsoOffset
             );
+
+    ERR_RETURN
+}
+
+Err MsUtils::writePointsToCSV(
+        const QVector<QPointF> &points,
+        const QString &destFilePath
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(points); ree
+
+    struct PointRow : CSVReaderInputBase {
+
+        double x = -1.0;
+        double y = -1.0;
+
+        QMap<QString, QVariant> map() override {
+            return {
+                    {"x", x},
+                    {"y", y}
+            };
+        }
+    };
+
+    const auto transformLogic = [](const QPointF &p){
+        PointRow pr;
+        pr.x = p.x();
+        pr.y = p.y();
+        return pr;
+    };
+
+    QVector<PointRow> pointRows;
+
+    std::transform(
+            points.begin(),
+            points.end(),
+            std::back_inserter(pointRows),
+            transformLogic
+            );
+
+    e = CSVReader::write(pointRows, destFilePath); ree;
 
     ERR_RETURN
 }

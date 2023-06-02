@@ -163,7 +163,7 @@ public:
             ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(z1); ree;
+
         e = ErrorUtils::isEqual(z1.size(), z2.size());
 
         for (int i = 0; i < z1.size(); i++) {
@@ -181,7 +181,7 @@ public:
     ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(z1); ree;
+
         e = ErrorUtils::isEqual(z1.size(), z2.size());
 
         for (int i = 0; i < z1.size(); i++) {
