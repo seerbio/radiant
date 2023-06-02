@@ -1189,19 +1189,15 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
             &tandemPredictions
             ); ree;
 
-
-#define WRITE_POINTS
+//#define WRITE_POINTS
 #ifdef WRITE_POINTS
-
     e = MsUtils::writePointsToCSV(uniqueFoundScanPoints, "scanPoints.csv"); ree;
 
     const QList<QVector<MS2Ion>> &preds = tandemPredictions.values();
-    const QVector<MS2Ion> &pred = preds.at(4);
+    const QVector<MS2Ion> &pred = preds.at(6);
     const ScanPoints predPoints = MS2Ion::ms2IonsToScanPoints(pred);
 
     e = MsUtils::writePointsToCSV(predPoints, "scanPointsPred.csv"); ree;
-
-
 #endif
 
     ERR_RETURN
