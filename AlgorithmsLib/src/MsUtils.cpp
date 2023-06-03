@@ -589,6 +589,18 @@ Err MsUtils::writePointsToCSV(
 
     e = ErrorUtils::isNotEmpty(points); ree
 
+    // Check if the file exists
+    if (QFile::exists(destFilePath)) {
+        // Delete the file
+        if (QFile::remove(destFilePath)) {
+            qDebug() << "File deleted successfully.";
+        } else {
+            qDebug() << "Failed to delete file.";
+        }
+    } else {
+        qDebug() << "File does not exist.";
+    }
+
     struct PointRow : CSVReaderInputBase {
 
         double x = -1.0;

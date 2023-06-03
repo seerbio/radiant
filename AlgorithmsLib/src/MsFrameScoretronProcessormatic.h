@@ -100,23 +100,23 @@ private:
 private:
 
     PythiaParameters m_params;
-    QString m_scoreVectorsFilePath;
-    QString m_frameExtractedScansFilePath;
+//    QString m_scoreVectorsFilePath;
+//    QString m_frameExtractedScansFilePath;
     TandemSpectraDeconvolvotron m_deconvolvotron;
 
     const int m_precision;
 
 
-    MsFrame m_msFrame;
-    MsReaderParquet m_msReaderMS1ScansOnly;
-//    QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
-    QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
-    QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;
-    QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;
-    QMap<FrameIndex, QVector<PeptideStringWithMods>> m_frameIndexVsApexScorePeptideStringWithMods;
-    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> m_frameIndexVsPeptideDeconResult;
-    QMap<PeptideStringWithMods, ReScoreVals> m_pepStringModsVsRescore;
-    QMap<FrameIndex, FrameStats> m_frameIndexVsPeptideFrameStats;
+//    MsFrame m_msFrame;
+//    MsReaderParquet m_msReaderMS1ScansOnly;
+////    QMap<PeptideStringWithMods, ExtractedScansReaderRow> m_pepStrWModsVsExtractedScanRow;
+//    QMap<PeptideStringWithMods, Score> m_pepStrWModsVsOgScore;
+//    QMap<PeptideStringWithMods, Charge> m_pepStrWModsVsCharge;
+//    QMap<PeptideStringWithMods, bool> m_pepStrWModsVsIsDecoy;
+//    QMap<FrameIndex, QVector<PeptideStringWithMods>> m_frameIndexVsApexScorePeptideStringWithMods;
+//    QMap<FrameIndex, QVector<QPair<PeptideStringWithMods, TandemDeconvolverResult>>> m_frameIndexVsPeptideDeconResult;
+//    QMap<PeptideStringWithMods, ReScoreVals> m_pepStringModsVsRescore;
+//    QMap<FrameIndex, FrameStats> m_frameIndexVsPeptideFrameStats;
 
 };
 

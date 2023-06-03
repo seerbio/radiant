@@ -49,15 +49,31 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
     e = msFrameScoretronProcessormatic.init(PythiaParameterReader::genericPythiaParametersForTests());
     QCOMPARE(e, eNoError);
 
+
+    std::sort(
+            frameExtracts.begin(),
+            frameExtracts.end(),
+            [](const FrameExtractsReaderRow &l, const FrameExtractsReaderRow &r){return l.frameIndexApex < r.frameIndexApex;}
+    );
+
+    QMap<int, bool> debugged;
     QVector<FrameExtractsReaderRow> frameIndexFrameExtractsReaderRows;
     for (const FrameExtractsReaderRow &fer : frameExtracts) {
 
-        if (fer.frameIndexApex != 191) {
+        if (!debugged.value(fer.scanNumberApex)) {
+            qDebug() << fer.scanNumberApex << fer.frameIndexApex;
+        }
+        debugged.insert(fer.scanNumberApex, true);
+
+        if (fer.scanNumberApex != 7650) {
             continue;
         }
 
         frameIndexFrameExtractsReaderRows.push_back(fer);
     }
+
+
+    qDebug() << "candidate size" << frameIndexFrameExtractsReaderRows.size();
 
     e = msFrameScoretronProcessormatic.deconvolveScanCandidate(frameIndexFrameExtractsReaderRows);
     QCOMPARE(e, eNoError);

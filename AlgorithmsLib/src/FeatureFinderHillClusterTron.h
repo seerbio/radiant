@@ -28,7 +28,7 @@ struct HillsClusteringMS2 {
     QVector<FeatureFinderHillPlus> correlatedHills;
 };
 
-//TODO use this to deisotope feature finder hills.
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHillClusterTron {
 
 public:

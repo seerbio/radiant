@@ -133,9 +133,8 @@ namespace {
     QVector<QVector<float>> normalizePredictions(const QVector<QVector<float>> &predictions) {
 
         QVector<QVector<float>> returnVecs;
-        for (QVector<float> vec : predictions) {
-            //TODO replace w/ EigenUtils::convertQvectorToEigenVector
-            Eigen::VectorX<float> eVec = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(vec.data(), vec.size());
+        for (const QVector<float> &vec : predictions) {
+            Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
             EigenUtils::normalizeVector<Eigen::VectorX<float>, float>(&eVec);
             EigenUtils::thresholdVector(static_cast<float>(1e-2), &eVec);
 
