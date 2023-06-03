@@ -31,6 +31,7 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 const int PRECISION = 3;
 
+
 MsFrame::MsFrame()
 : m_mzWindowLower(-1.0)
 , m_mzWindowUpper(-1.0)
@@ -174,6 +175,94 @@ Err MsFrame::buildMsFrame(
             targetScanPoints,
             mzTargetStartStop
     ); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err smoothEigenMatrix(
+            int gaussFilterLength,
+            double sigma,
+            int smoothCount,
+            Eigen::SparseMatrix<double, Eigen::ColMajor> *mat
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(mat->nonZeros() > 0); ree
+
+        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(
+                gaussFilterLength,
+                sigma,
+                false
+                );
+
+        for (int i = 0; i <= smoothCount; i++) {
+
+            *mat = EigenKernelUtils::applyKernelColumnWiseToMatrix(
+                    *mat,
+                    gaussKernel,
+                    false
+                    );
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrame::smoothFrame(
+        int gaussFilterLength,
+        double sigma,
+        int smoothCount,
+        double mzMax
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(isValid()); ree
+
+    const QMap<FrameIndex, ScanPoints> scanPoints = frameIndexVsScanPoints();
+
+    Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
+            scanPoints,
+            PRECISION,
+            mzMax
+            );
+
+    e = smoothEigenMatrix(
+            gaussFilterLength,
+            sigma,
+            smoothCount,
+            &mat
+            ); ree
+
+    const QMap<int, ScanPoints> reFrame = EigenSparseUtils::loadSparseMatrixToFrame(
+            mat,
+            PRECISION
+            );
+
+    e = reloadMFrame(reFrame); ree;
+
+    ERR_RETURN
+}
+
+Err MsFrame::reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scanPoints); ree
+
+    m_frame.clear();
+
+    for (auto it = scanPoints.begin(); it != scanPoints.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        const ScanNumber scanNumber = scanNumberFromFrameIndex(frameIndex);
+        const ScanPoints &fiScanPoints = it.value();
+
+        m_frame.insert(scanNumber, fiScanPoints);
+    }
 
     ERR_RETURN
 }

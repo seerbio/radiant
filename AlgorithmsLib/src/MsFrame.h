@@ -104,6 +104,13 @@ public:
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
+    Err smoothFrame(
+            int gaussFilterLength,
+            double sigma,
+            int smoothCount,
+            double mzMax
+            );
+
     static Err buildMsFrame(
             const QString &msDataFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
@@ -114,6 +121,8 @@ public:
 private:
 
     Err buildFrameIndexVsScanNumber();
+
+    Err reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints);
 
 private:
 

@@ -125,7 +125,7 @@ public:
             bool matchOriginalMaximum
     );
 
-    static Eigen::MatrixX<double> applyKernelRowumnWiseToMatrix(
+    static Eigen::MatrixX<double> applyKernelRowWiseToMatrix(
             const Eigen::MatrixX<double> &_mat,
             const Eigen::VectorXd &kernel
     );

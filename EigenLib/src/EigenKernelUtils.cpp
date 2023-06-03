@@ -192,8 +192,8 @@ Eigen::VectorXd EigenKernelUtils::convolveVectorWithKernel(
     Eigen::VectorXd vecResized(vec.size() + paddingAmount);
 
     const int halfWindow = std::floor(paddingAmount / 2.0);
-    const float frontPadding = EigenUtils::calculateMeanOfVector(vec.head(halfWindow + 1));
-    const float backPadding = EigenUtils::calculateMeanOfVector(vec.tail(halfWindow + 1));
+    const float frontPadding = static_cast<float>(EigenUtils::calculateMeanOfVector(vec.head(halfWindow + 1)));
+    const float backPadding = static_cast<float>(EigenUtils::calculateMeanOfVector(vec.tail(halfWindow + 1)));
     for(int i = 0; i < halfWindow; i++){
         vecResized.coeffRef(i) = frontPadding;
         vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
@@ -201,7 +201,7 @@ Eigen::VectorXd EigenKernelUtils::convolveVectorWithKernel(
 
     vecResized.segment(halfWindow, vec.size()) = vec;
 
-    const int filterLength = kernel.size();
+    const int filterLength = static_cast<int>(kernel.size());
 
     Eigen::MatrixXd convolutionMatrix(vec.size(), filterLength);
     convolutionMatrix.setZero();
@@ -404,7 +404,7 @@ Eigen::SparseMatrix<double> EigenKernelUtils::applyKernelColumnWiseToMatrix(
     return resultMatrix;
 }
 
-Eigen::MatrixX<double> EigenKernelUtils::applyKernelRowumnWiseToMatrix(
+Eigen::MatrixX<double> EigenKernelUtils::applyKernelRowWiseToMatrix(
         const Eigen::MatrixX<double> &_mat,
         const Eigen::VectorXd &kernel
         ) {
