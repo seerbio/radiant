@@ -222,6 +222,22 @@ public:
         return vMap;
     }
 
+    template <typename T, typename U>
+    static QVector<QPointF> convertMapToPoints(const QMap<T, U> &vec) {
+
+        QVector<QPointF> points;
+
+        for (auto it = vec.begin(); it != vec.end(); it++) {
+
+            const U x = static_cast<U>(it.key());
+            const U y = it.value();
+
+            points.push_back({x, y});
+        }
+
+        return points;
+    }
+
 };
 
 

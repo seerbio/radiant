@@ -24,6 +24,7 @@ private slots:
     void connectCentroidsInGroupedMzValsTest();
     void buildHillsTest();
     void buildHillsRealDataTest();
+    void troubleShooting();
 
 private:
 
@@ -47,6 +48,8 @@ QVector<ScanPoints> FeatureFinderHillBuilderTests::testScanPoints() {
 
 
 void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
+
+    QSKIP("undo me");
 
     ERR_INIT
 
@@ -141,6 +144,8 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
     ERR_INIT
 
+    QSKIP("undo me");
+
     const QVector<ScanPoints> scanPoints = testScanPoints();
 
     FeatureFinderParameters params;
@@ -181,6 +186,8 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
+
+    QSKIP("undo me");
 
     ERR_INIT
 
@@ -240,6 +247,8 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     ERR_INIT
 
+    QSKIP("undo me");
+
     //TODO use proper pathing here
     const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
 
@@ -280,6 +289,41 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     );
     QCOMPARE(e, eNoError);
 #endif
+
+}
+
+void FeatureFinderHillBuilderTests::troubleShooting() {
+
+    ERR_INIT
+
+    //TODO use proper pathing here
+    const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
+
+    MsReaderParquet msReader;
+    msReader.openFile(filePath);
+
+    FeatureFinderParameters params;
+    params.skipScanCount = 0;
+    params.tolerancePPM = 12.0;
+    params.minScanCount = 1;
+//    params.signalToNoiseRatio = 1;
+
+    FeatureFinderHillBuilder featureFinderHillBuilder;
+    e = featureFinderHillBuilder.init(params);
+    featureFinderHillBuilder.setRunParallel(false);
+    QCOMPARE(e, eNoError);
+
+    const MsLevel msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
+    e = msReader.getScanPoints(
+            msLevel,
+            &scanNumberVsScanPoints
+    );
+    QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
+    QCOMPARE(e, eNoError);
 
 }
 

@@ -104,7 +104,7 @@ Err MsFrameScoretron::init(
     e = m_featureFinderHillBuilder.buildHills(
             m_msFrame.scanNumberVsScanPoints()
             ); ree
-    e = m_featureFinderHillBuilder.refineHills();
+//    e = m_featureFinderHillBuilder.refineHills();
 
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
@@ -238,11 +238,11 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const MS2IonsSeparated &ms2IonsTandemPred = it.value();
 
-//        //drewholio
-//        if (peptideStringWithMods != "PGQDTCQGDSGGPXTCEK") {
-//            continue;
-//        }
-//        //drewholio
+        //drewholio
+        if (peptideStringWithMods != "EAADGYQR") {
+            continue;
+        }
+        //drewholio
 
         QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> candidateFeatureFinderHills;
         e = getCandidateHills(
@@ -253,6 +253,21 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
         if (candidateFeatureFinderHills.isEmpty()){
             continue;
         }
+
+#define DEBUG_HILL_FIND
+#ifdef DEBUG_HILL_FIND
+        QVector<FeatureFinderHill> hills;
+        for (const QMap<IonIndex, QVector<FeatureFinderHill>> &l : candidateFeatureFinderHills) {
+            for (const QVector<FeatureFinderHill> &hs : l.values()) {
+                hills.append(hs);
+            }
+        }
+        std::sort(hills.begin(), hills.end(),
+                  [](const FeatureFinderHill &l, const FeatureFinderHill &r){return l.maxIntensityScanNumber() < r.maxIntensityScanNumber();});
+        for (const FeatureFinderHill &h : hills) {
+            qDebug() << "drewholio" << h.maxIntensityScanNumber() << h.mzMean() << h.intensityValueMax();
+        }
+#endif
 
         HillsClusteringMS2 bestHillsClusteringMS2;
         e = FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
@@ -269,6 +284,12 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
 
         if (m_params.findIsotopologues) {
             e = findIsotopologues(&bestHillsClusteringMS2); ree
+        }
+
+        for (const auto &h :bestHillsClusteringMS2.correlatedHills) {
+            qDebug() << "drewholio" << h.featureFinderHill.mzMean() << h.cosineSimToAnchor
+                    << h.featureFinderHill.intensityValueMax() << h.featureFinderHill.maxIntensityScanNumber();
+
         }
 
         pepStrWModsVsHillsClusteringMS2->insert(peptideStringWithMods, bestHillsClusteringMS2);
