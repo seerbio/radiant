@@ -296,34 +296,7 @@ void FeatureFinderHillBuilderTests::troubleShooting() {
 
     ERR_INIT
 
-    //TODO use proper pathing here
-    const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
 
-    MsReaderParquet msReader;
-    msReader.openFile(filePath);
-
-    FeatureFinderParameters params;
-    params.skipScanCount = 0;
-    params.tolerancePPM = 12.0;
-    params.minScanCount = 1;
-//    params.signalToNoiseRatio = 1;
-
-    FeatureFinderHillBuilder featureFinderHillBuilder;
-    e = featureFinderHillBuilder.init(params);
-    featureFinderHillBuilder.setRunParallel(false);
-    QCOMPARE(e, eNoError);
-
-    const MsLevel msLevel = 1;
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
-    e = msReader.getScanPoints(
-            msLevel,
-            &scanNumberVsScanPoints
-    );
-    QCOMPARE(e, eNoError);
-
-    QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
-    QCOMPARE(e, eNoError);
 
 }
 

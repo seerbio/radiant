@@ -52,9 +52,9 @@ public:
             QVector<Eigen::MatrixX<int>> *connectedCentroids
     ) const;
 
-    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
+    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
 
-    Err refineHills();
+    Err refineHills(bool useSmoothing);
 
     Err loadHillsToRTree();
 
@@ -548,7 +548,7 @@ namespace {
 
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildHills(
-        const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints
 ) {
 
     delete m_rtree;
@@ -559,12 +559,12 @@ Err FeatureFinderHillBuilder::Private::buildHills(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanPointsByScanNumber); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
 
     QVector<QVector<QVector<double>>> groupedMzVals;
     QVector<QVector<QVector<double>>> groupedIntensityVals;
     e = buildScanPointGroups(
-            scanPointsByScanNumber.values().toVector(),
+            scanNumberVsScanPoints.values().toVector(),
             &groupedMzVals,
             &groupedIntensityVals
     ); ree;
@@ -578,7 +578,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
 
     e = groupConnectedCentroidsToHills(
             connectedCentroidsMats,
-            scanPointsByScanNumber,
+            scanNumberVsScanPoints,
             m_featureFinderParameters.minScanCount,
             &m_featureFinderHills
     ); ree;
@@ -627,12 +627,15 @@ namespace {
     }
 
 
-    QPair<Err, QVector<FeatureFinderHill>> refineHillsLogic(const RefineHillsInput &rhi) {
+    QPair<Err, QVector<FeatureFinderHill>> refineHillsLogic(
+            const RefineHillsInput &rhi,
+            bool useSmoothing
+            ) {
 
         ERR_INIT
 
         PeakIntegratomaticParameters params;
-        params.smoothCount = rhi.params.smoothCount;
+        params.smoothCount = useSmoothing ? rhi.params.smoothCount : 0;
         params.filterLength = rhi.params.filterLength;
         params.sigma = rhi.params.sigma;
         params.signalToNoiseRatio = rhi.params.signalToNoiseRatio;
@@ -673,7 +676,7 @@ namespace {
 
 
 } //namespace
-Err FeatureFinderHillBuilder::Private::refineHills() {
+Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
 
     ERR_INIT
 
@@ -702,8 +705,14 @@ Err FeatureFinderHillBuilder::Private::refineHills() {
 
     if (m_runParallel) {
 
+        const auto refineHillsLogicBinder = std::bind(
+                refineHillsLogic,
+                std::placeholders::_1,
+                useSmoothing
+        );
+
         QFuture<QPair<Err, QVector<FeatureFinderHill>>> futures
-                = QtConcurrent::mapped(refineHillsInput, refineHillsLogic);
+                = QtConcurrent::mapped(refineHillsInput, refineHillsLogicBinder);
         futures.waitForFinished();
 
         for (const QPair<Err, QVector<FeatureFinderHill>> &future: futures) {
@@ -716,7 +725,11 @@ Err FeatureFinderHillBuilder::Private::refineHills() {
 
         for (const RefineHillsInput &rhi : refineHillsInput) {
 
-            const QPair<Err, QVector<FeatureFinderHill>> refinedHillResult = refineHillsLogic(rhi);
+            const QPair<Err, QVector<FeatureFinderHill>> refinedHillResult = refineHillsLogic(
+                    rhi,
+                    useSmoothing
+                    );
+
             e = refinedHillResult.first; ree;
 
             refinedHills.append(refinedHillResult.second);
@@ -878,9 +891,9 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
+Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
     ERR_INIT
-    e = d_ptr->buildHills(scanPointsByScanNumber); ree;
+    e = d_ptr->buildHills(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
@@ -947,9 +960,9 @@ void FeatureFinderHillBuilder::setRunParallel(bool runParallel) {
     d_ptr->setRunParallel(runParallel);
 }
 
-Err FeatureFinderHillBuilder::refineHills() {
+Err FeatureFinderHillBuilder::refineHills(bool useSmoothing) {
     ERR_INIT
-    e = d_ptr->refineHills(); ree;
+    e = d_ptr->refineHills(useSmoothing); ree;
     ERR_RETURN
 }
 

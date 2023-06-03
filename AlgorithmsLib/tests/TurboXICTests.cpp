@@ -90,6 +90,8 @@ void TurboXICTests::turboXICUtility() {
 
     ERR_INIT
 
+    QSKIP("uncomment for troubleshooting");
+
     const QString msDataFilePath
             = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
 
@@ -104,6 +106,14 @@ void TurboXICTests::turboXICUtility() {
             {target - window, target + window},
             &msFrame
     );
+    QCOMPARE(e, eNoError);
+
+    e = msFrame.smoothFrame(
+            3,
+            1.0,
+            2,
+            1500.0
+            );
     QCOMPARE(e, eNoError);
 
     const QMap<int, QVector<QPointF>> &points = msFrame.scanNumberVsScanPoints();

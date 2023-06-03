@@ -74,9 +74,9 @@ public:
 
     Err init(const FeatureFinderParameters &featureFinderParameters);
 
-    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
+    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
 
-    Err refineHills();
+    Err refineHills(bool useSmoothing);
 
     Err getHills(
             FrameIndex frameIndexStart,
