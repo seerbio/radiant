@@ -252,8 +252,8 @@ namespace {
        //drewholio
 //       output.scoreVecFilePath = frameScoreVectorsFilePath;
 //       output.extractsFilePath = frameExtractedPointsFilePath;
-//       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
-//       output.mzTargetStartStop = fpi.mzTargetStartStop;
+       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
+       output.mzTargetStartStop = fpi.mzTargetStartStop;
 
        return {e, output};
    }

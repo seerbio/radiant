@@ -721,6 +721,10 @@ Err FeatureFinderHillClusterTron::clusterHillsByBestMS2IonAnchor(
             &featureFinderHillsPlussesMap
             );
 
+    if (featureFinderHillsPlussesMap.isEmpty()) {
+        ERR_RETURN
+    }
+
     const double mzMin = featureFinderHillRTree.bounds().min_corner().get<1>();
     const double mzMax = featureFinderHillRTree.bounds().max_corner().get<1>();
 
