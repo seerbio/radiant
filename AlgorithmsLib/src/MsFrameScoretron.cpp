@@ -241,7 +241,7 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
     qDebug() << "Frame size" << m_msFrame.scanCount();
 
     const int topXMs2IonAnchors = 6; //TODO move to pythia params
-    const int ionIndexThreshold = 3; //TODO consider movingthis to pythia params.
+    const int ionIndexThreshold = 3; //TODO consider moving this to pythia params.
 
     FeatureFinderHillClusterTron featureFinderHillClusterTron;
     e = featureFinderHillClusterTron.init(FeatureFinderParameters(m_params)); ree

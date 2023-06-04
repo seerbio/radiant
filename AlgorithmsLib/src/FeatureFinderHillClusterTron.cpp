@@ -65,7 +65,9 @@ Err FeatureFinderHillClusterTron::init(const FeatureFinderParameters &params) {
 
     ERR_INIT
 
-    e = init(params, 1, 666); ree
+    const int chargeMinDummy = 1;
+    const int chargeMaxDummy = 666;
+    e = init(params, chargeMinDummy, chargeMaxDummy); ree
 
     ERR_RETURN
 }
