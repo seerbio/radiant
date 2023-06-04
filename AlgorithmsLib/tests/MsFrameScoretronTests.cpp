@@ -33,7 +33,8 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
 
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
-    double target = 454.957;
+    const double target = 454.957;
+    const double targetWindowSize = 5.5;
 
     MsFrameScoretron msFrameScoretron;
     e = msFrameScoretron.init(
@@ -41,7 +42,7 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             msDataFilePath,
             fragLibPath,
             uniqueMsInfoScanKey,
-            {target - 5.5, target + 5.5}
+            {target - targetWindowSize, target + targetWindowSize}
             );
     QCOMPARE(e, eNoError);
 
