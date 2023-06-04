@@ -107,7 +107,7 @@ void EigenKernelUtilsTests::applyKernelRowumnWiseToMatrixTest() {
     Eigen::MatrixX<double> mat(5,2);
     mat << 1,1,2,2,3,3,4,4,5,5;
 
-    const Eigen::MatrixX<double> matSmoothed = EigenKernelUtils::applyKernelRowumnWiseToMatrix(
+    const Eigen::MatrixX<double> matSmoothed = EigenKernelUtils::applyKernelRowWiseToMatrix(
             mat,
             kernel
             ) ;

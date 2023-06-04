@@ -13,6 +13,8 @@
 
 using namespace Error;
 
+class MS2IonsSeparated;
+
 struct HillsClustering {
 
     QVector<int> hillsMapIndexes;
@@ -23,7 +25,7 @@ struct HillsClustering {
 };
 
 struct HillsClusteringMS2 {
-    double cosineSimSum = -1.0;
+    double cosineSimSumWeighted = -1.0;
     FeatureFinderHillPlus apexFeatureFinderHillPlus;
     QVector<FeatureFinderHillPlus> correlatedHills;
 };
@@ -37,10 +39,11 @@ public:
 
     Err init(
             const FeatureFinderParameters &params,
-            double cosineSimThreshold,
             int chargeMin,
             int chargeMax
             );
+
+    Err init(const FeatureFinderParameters &params);
 
     Err clusterHillsMS1(
             const QVector<FeatureFinderHill> &featureFinderHills,
@@ -49,19 +52,18 @@ public:
             QMap<int, FeatureFinderHill> *featureFinderHillsMap
             );
 
+    Err clusterHillsByBestMS2IonAnchor(
+            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
+            const QVector<MS2Ion> &ms2IonsAnchors,
+            const MS2IonsSeparated &ms2IonsTandemPred,
+            HillsClusteringMS2 *bestHillsClusteringMS2
+    ) const;
+
     static Err writeClustersToMzRt(
             const QMap<ScanNumber, double> &scanNumberVsScanTime,
             const QVector<HillsClustering> &hillClustersByIndexs,
             const QMap<int, FeatureFinderHill> &featureFinderHillsMap,
             const QString &destinationFilePath
-            );
-
-    static Err clusterHillsByFrameIndex(
-            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
-            double mzMin,
-            double mzMax,
-            double cosineSimThreshold,
-            HillsClusteringMS2 *bestHillsClusteringMS2
             );
 
     static Err calculateCosineSimBetweenHills(
@@ -74,7 +76,6 @@ private:
 
     FeatureFinderParameters m_params;
 
-    double m_cosineSimThreshold;
     int m_chargeMin;
     int m_chargeMax;
 

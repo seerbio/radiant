@@ -6,6 +6,7 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "FragLibReader.h"
 #include "MsUtils.h"
 #include "ParallelUtils.h"
 
@@ -28,14 +29,12 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
 FeatureFinderHillClusterTron::FeatureFinderHillClusterTron()
-: m_cosineSimThreshold(0.8)
-, m_chargeMin(1)
+: m_chargeMin(1)
 , m_chargeMax(5)
 {}
 
 Err FeatureFinderHillClusterTron::init(
         const FeatureFinderParameters &params,
-        double cosineSimThreshold,
         int chargeMin,
         int chargeMax
         ) {
@@ -47,12 +46,11 @@ Err FeatureFinderHillClusterTron::init(
     const double minCosineSim = 0.0;
     const double maxCosineSim = 1.0;
     e = ErrorUtils::isWithinRange(
-            cosineSimThreshold,
+            params.cosineSimThreshold,
             minCosineSim,
             maxCosineSim,
             ErrorUtilsParam::IncludeThreshold
             ); ree
-    m_cosineSimThreshold = cosineSimThreshold;
 
     e = ErrorUtils::isTrue(chargeMin < chargeMax); ree
     e = ErrorUtils::isTrue(chargeMin > 0); ree
@@ -63,13 +61,65 @@ Err FeatureFinderHillClusterTron::init(
     ERR_RETURN
 }
 
+Err FeatureFinderHillClusterTron::init(const FeatureFinderParameters &params) {
+
+    ERR_INIT
+
+    e = init(params, 1, 666); ree
+
+    ERR_RETURN
+}
+
+
 namespace {
 
-    RTree buildHillsRTree(const QMap<int, FeatureFinderHillPlus> &featureFinderHills) {
+    QVector<FeatureFinderHillPlus> buildFeatureFinderHillPlussesSortedHiLo(
+            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills
+    ) {
+
+        QVector<FeatureFinderHillPlus> featureFinderHillsPlusses;
+
+        for (auto it = featureFinderHills.begin(); it != featureFinderHills.end(); it++) {
+
+            const IonType &ionType = it.key();
+            const QMap<IonIndex, QVector<FeatureFinderHill>> &hills = it.value();
+
+            for (auto itt = hills.begin(); itt != hills.end(); itt++) {
+
+                const IonIndex ionIndex = itt.key();
+                const QVector<FeatureFinderHill> &ffhs = itt.value();
+
+                for (const FeatureFinderHill &ffh : ffhs) {
+
+                    FeatureFinderHillPlus ffhp;
+                    ffhp.featureFinderHill = ffh;
+                    ffhp.ionType = ionType;
+                    ffhp.ionIndex = ionIndex;
+
+                    featureFinderHillsPlusses.push_back(ffhp);
+                }
+
+            }
+
+        }
+
+        FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(&featureFinderHillsPlusses);
+
+        return featureFinderHillsPlusses;
+    }
+
+    RTree buildHillsRTree(
+            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
+            QMap<Id, FeatureFinderHillPlus> *featureFinderHillsPlussesMap
+            ) {
+
+        QVector<FeatureFinderHillPlus> hillsSortedHiLoIntensity = buildFeatureFinderHillPlussesSortedHiLo(featureFinderHills);
+
+        *featureFinderHillsPlussesMap = ParallelUtils::convertVectorToMap(hillsSortedHiLoIntensity);
 
         std::vector<rTreePoint> cloudLoader;
 
-        for (auto it = featureFinderHills.begin(); it != featureFinderHills.end(); it++) {
+        for (auto it = featureFinderHillsPlussesMap->begin(); it != featureFinderHillsPlussesMap->end(); it++) {
 
             const int id = it.key();
             const FeatureFinderHillPlus &ffhp = it.value();
@@ -153,36 +203,36 @@ namespace {
         ERR_RETURN
     }
 
-    Err removePointsBelowCosineSimCorrThreshold(
-            const FeatureFinderHill &featureFinderHillAnchor,
-            const QMap<int, FeatureFinderHill> &featureFinderHillMap,
-            const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
-            double cosineSimThreshold,
-            QVector<FeatureFinderHill> *correlatedHills
-            ) {
-
-        ERR_INIT
-
-        for (const rTreePoint &rtp : foundRTreeFeatureFinderHills) {
-
-            const int &ffhId = rtp.second;
-
-            double cosineSim;
-            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
-                    featureFinderHillAnchor,
-                    featureFinderHillMap.value(ffhId),
-                    &cosineSim
-                    ); ree
-
-            if (cosineSim < cosineSimThreshold) {
-                continue;
-            }
-
-            correlatedHills->push_back(featureFinderHillMap.value(ffhId));
-        }
-
-        ERR_RETURN
-    }
+//    Err removePointsBelowCosineSimCorrThreshold(
+//            const FeatureFinderHill &featureFinderHillAnchor,
+//            const QMap<int, FeatureFinderHill> &featureFinderHillMap,
+//            const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
+//            double cosineSimThreshold,
+//            QVector<FeatureFinderHill> *correlatedHills
+//            ) {
+//
+//        ERR_INIT
+//
+//        for (const rTreePoint &rtp : foundRTreeFeatureFinderHills) {
+//
+//            const int &ffhId = rtp.second;
+//
+//            double cosineSim;
+//            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
+//                    featureFinderHillAnchor,
+//                    featureFinderHillMap.value(ffhId),
+//                    &cosineSim
+//                    ); ree
+//
+//            if (cosineSim < cosineSimThreshold) {
+//                continue;
+//            }
+//
+//            correlatedHills->push_back(featureFinderHillMap.value(ffhId));
+//        }
+//
+//        ERR_RETURN
+//    }
 
 //    ScanPoints convertHillApexesToScanPoints(const QVector<FeatureFinderHillPlus> &featureFinderHills) {
 //
@@ -201,22 +251,22 @@ namespace {
 //
 //        return hillApexes;
 //    }
-
-    rTreePoint findNearestRTreePoint(
-            const std::vector<rTreePoint> &rTreeResults,
-            const QMap<int, FeatureFinderHillPlus> &featureFinderHillPlussesMap,
-            double mz
-            ) {
-
-        for (const rTreePoint &rtp : rTreeResults){
-
-            if (MathUtils::tZero(featureFinderHillPlussesMap.value(rtp.second).featureFinderHill.mzMean() - mz)) {
-                return rtp;
-            }
-        }
-
-        return {};
-    }
+//
+//    rTreePoint findNearestRTreePoint(
+//            const std::vector<rTreePoint> &rTreeResults,
+//            const QMap<int, FeatureFinderHillPlus> &featureFinderHillPlussesMap,
+//            double mz
+//            ) {
+//
+//        for (const rTreePoint &rtp : rTreeResults){
+//
+//            if (MathUtils::tZero(featureFinderHillPlussesMap.value(rtp.second).featureFinderHill.mzMean() - mz)) {
+//                return rtp;
+//            }
+//        }
+//
+//        return {};
+//    }
 
 
 }//namespace
@@ -421,118 +471,18 @@ Err FeatureFinderHillClusterTron::writeClustersToMzRt(
 
 namespace {
 
-    bool isHillNotFoundInRTreeSearch(
-            const FeatureFinderHillPlus &ffhp,
-            const rTreePoint &rtpSearched,
-            const QMap<Id, FeatureFinderHillPlus> &featureFinderHillsMap
+    std::vector<rTreePoint> searchRTree(
+            double minScanNumberIndex,
+            double maxScanNumberIndex,
+            double mzSearchMin,
+            double mzSearchMax,
+            const RTree &featureFinderHillRTree,
+            const QMap<Id, FeatureFinderHillPlus> &featureFinderHillsPlussesMap
             ) {
-        return !MathUtils::tZero(ffhp.featureFinderHill.mzMean() - featureFinderHillsMap.value(rtpSearched.second).featureFinderHill.mzMean());
-    }
-
-    Err removePointsBelowCosineSimCorrThresholdMS2(
-            const FeatureFinderHillPlus &featureFinderHillAnchor,
-            const QMap<int, FeatureFinderHillPlus> &featureFinderHillMap,
-            const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
-            double cosineSimThreshold,
-            double *cosineSimSum,
-            QVector<FeatureFinderHillPlus> *correlatedHills
-    ) {
-
-        ERR_INIT
-
-        *cosineSimSum = 0;
-
-        for (const rTreePoint &rtp : foundRTreeFeatureFinderHills) {
-
-            const int &ffhId = rtp.second;
-
-            double cosineSim;
-            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
-                    featureFinderHillAnchor.featureFinderHill,
-                    featureFinderHillMap.value(ffhId).featureFinderHill,
-                    &cosineSim
-            ); ree
-
-            if (cosineSim < cosineSimThreshold) {
-                continue;
-            }
-
-            *cosineSimSum += cosineSim;
-
-            FeatureFinderHillPlus ffhp = featureFinderHillMap.value(ffhId);
-            ffhp.cosineSimToAnchor = cosineSim;
-            correlatedHills->push_back(ffhp);
-        }
-
-        ERR_RETURN
-    }
-
-    QVector<FeatureFinderHillPlus> buildFeatureFinderHillPlussesSortedHiLo(
-            const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills
-            ) {
-
-        QVector<FeatureFinderHillPlus> featureFinderHillsPlusses;
-
-        for (auto it = featureFinderHills.begin(); it != featureFinderHills.end(); it++) {
-
-            const IonType &ionType = it.key();
-            const QMap<IonIndex, QVector<FeatureFinderHill>> &hills = it.value();
-
-            for (auto itt = hills.begin(); itt != hills.end(); itt++) {
-
-                const IonIndex ionIndex = itt.key();
-                const QVector<FeatureFinderHill> &ffhs = itt.value();
-
-                for (const FeatureFinderHill &ffh : ffhs) {
-
-                    FeatureFinderHillPlus ffhp;
-                    ffhp.featureFinderHill = ffh;
-                    ffhp.ionType = ionType;
-                    ffhp.ionIndex = ionIndex;
-
-                    featureFinderHillsPlusses.push_back(ffhp);
-                }
-
-            }
-
-        }
-
-        FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(&featureFinderHillsPlusses);
-
-        return featureFinderHillsPlusses;
-    }
-
-
-
-}//namespace
-Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
-        const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
-        double mzMin,
-        double mzMax,
-        double cosineSimThreshold,
-        HillsClusteringMS2 *bestHillsClusteringMS2
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
-
-    QVector<FeatureFinderHillPlus> hillsSortedHiLoIntensity
-            = buildFeatureFinderHillPlussesSortedHiLo(featureFinderHills);
-
-    const QMap<Id, FeatureFinderHillPlus> featureFinderHillsPlussesMap
-            = ParallelUtils::convertVectorToMap(hillsSortedHiLoIntensity);
-
-    RTree featureFinderHillRTree = buildHillsRTree(featureFinderHillsPlussesMap);
-
-    bestHillsClusteringMS2->cosineSimSum = 0.0;
-    for (const FeatureFinderHillPlus &ffhp : hillsSortedHiLoIntensity) {
-
-        const int maxIntensityScanNumberIndex = ffhp.featureFinderHill.maxIntensityScanNumberIndex();
 
         const rTreeBox queryBox(
-                rTreeCoor(maxIntensityScanNumberIndex, mzMin),
-                rTreeCoor(maxIntensityScanNumberIndex, mzMax)
+                rTreeCoor(minScanNumberIndex, mzSearchMin),
+                rTreeCoor(maxScanNumberIndex, mzSearchMax)
         );
 
         std::vector<rTreePoint> rTreeSearchResult;
@@ -541,44 +491,292 @@ Err FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
                 std::back_inserter(rTreeSearchResult)
         );
 
-        const rTreePoint rtpSearched = findNearestRTreePoint(
-                rTreeSearchResult,
-                featureFinderHillsPlussesMap,
-                ffhp.featureFinderHill.mzMean()
-        );
+        return rTreeSearchResult;
+    }
 
-        const bool hillIsNotFoundInSearch = isHillNotFoundInRTreeSearch(
-                ffhp,
-                rtpSearched,
-                featureFinderHillsPlussesMap
-        );
+    Err removePointsBelowCosineSimCorrThresholdMS2(
+            const FeatureFinderHillPlus &featureFinderHillAnchor,
+            const QMap<int, FeatureFinderHillPlus> &featureFinderHillMap,
+            const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
+            double cosineSimThreshold,
+            QVector<FeatureFinderHillPlus> *correlatedHills
+    ) {
 
-        if (hillIsNotFoundInSearch) {
-            continue;
+        ERR_INIT
+
+        using MZKEY = int;
+        using BEST_COSINE_SIM = double;
+
+        QMap<MZKEY, BEST_COSINE_SIM> mzKeyVsBestCosineSim;
+        QMap<MZKEY, FeatureFinderHillPlus> mzKeyVsBestFeatureFinderHillPlus;
+
+        for (const rTreePoint &rtp : foundRTreeFeatureFinderHills) {
+
+            const int &ffhpId = rtp.second;
+            const FeatureFinderHillPlus &ffhp = featureFinderHillMap.value(ffhpId);
+
+            double cosineSim;
+            e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
+                    featureFinderHillAnchor.featureFinderHill,
+                    ffhp.featureFinderHill,
+                    &cosineSim
+            ); ree
+
+            if (cosineSim < cosineSimThreshold) {
+                continue;
+            }
+
+            const int mzKey = MathUtils::hashDecimal(ffhp.featureFinderHill.mzMean(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            if (cosineSim > mzKeyVsBestCosineSim.value(mzKey)) {
+                mzKeyVsBestCosineSim[mzKey] = cosineSim;
+                mzKeyVsBestFeatureFinderHillPlus[mzKey] = ffhp;
+            }
+
         }
 
+        const QList<double> &bestCosineSims = mzKeyVsBestCosineSim.values();
+        const QList<MZKEY> &mzKeys = mzKeyVsBestCosineSim.keys();
+
+        const QList<FeatureFinderHillPlus> &bestFeatureFinderHillsPlus = mzKeyVsBestFeatureFinderHillPlus.values();
+
+        const auto transformLogic = [&](const FeatureFinderHillPlus &ffhp){
+
+            FeatureFinderHillPlus ffhpNew = ffhp;
+            const int mzKey = MathUtils::hashDecimal(
+                    ffhp.featureFinderHill.mzMean(),
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+            );
+
+            ffhpNew.cosineSimToAnchor = mzKeyVsBestCosineSim.value(mzKey);
+            return ffhpNew;
+        };
+
+        std::transform(
+                bestFeatureFinderHillsPlus.begin(),
+                bestFeatureFinderHillsPlus.end(),
+                std::back_inserter(*correlatedHills),
+                transformLogic
+                );
+
+        ERR_RETURN
+    }
+
+    Err findBestMS2IonAnchor(
+            const QVector<MS2Ion> &ms2IonsAnchors,
+            const QMap<Id, FeatureFinderHillPlus> &featureFinderHillsPlussesMap,
+            const RTree &featureFinderHillRTree,
+            double ppmTolerance,
+            QVector<FeatureFinderHillPlus> *ffhp
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2IonsAnchors); ree
+        e = ErrorUtils::isFalse(featureFinderHillRTree.empty()); ree
+
+        const double minScanNumberIndex = 0.0;
+        const double maxScanNumberIndex = featureFinderHillRTree.bounds().max_corner().get<0>();
+
+        const auto transformLogic
+            = [featureFinderHillsPlussesMap](const rTreePoint &p){return featureFinderHillsPlussesMap.value(p.second);};
+
+        for (const MS2Ion &potentialMS2Anchor : ms2IonsAnchors) {
+
+            const double mzPotentialAnchor = potentialMS2Anchor.mz;
+
+            const double massTolerance = MathUtils::calculatePPM(
+                    mzPotentialAnchor,
+                    ppmTolerance
+                    );
+
+            const double mzSearchMin = mzPotentialAnchor - massTolerance;
+            const double mzSearchMax = mzPotentialAnchor + massTolerance;
+
+            std::vector<rTreePoint> searchResultPoints = searchRTree(
+                    minScanNumberIndex,
+                    maxScanNumberIndex,
+                    mzSearchMin,
+                    mzSearchMax,
+                    featureFinderHillRTree,
+                    featureFinderHillsPlussesMap
+                    );
+
+            if (searchResultPoints.empty()) {
+                continue;
+            }
+
+            std::transform(
+                    searchResultPoints.begin(),
+                    searchResultPoints.end(),
+                    std::back_inserter(*ffhp),
+                    transformLogic
+                    );
+
+            ERR_RETURN
+        }
+
+        ERR_RETURN
+    }
+
+    Err getClosestMS2Ion(
+            const QVector<MS2Ion> &ms2Ions,
+            const FeatureFinderHillPlus &ffhp,
+            MS2Ion *foundIon
+            ) {
+
+        ERR_INIT
+
+        auto it = std::min_element(ms2Ions.begin(), ms2Ions.end(), [ffhp] (const MS2Ion &a, const MS2Ion &b) {
+            return std::abs(a.mz - ffhp.featureFinderHill.mzMean()) <= std::abs(b.mz - ffhp.featureFinderHill.mzMean());
+        });
+
+        if(it == ms2Ions.end()) {
+            rrr(eValueError);
+        }
+
+        *foundIon = *it;
+
+        ERR_RETURN
+    }
+
+    Err removeDuplicateCorrelatedHills(
+            const MS2IonsSeparated &ms2IonsTandemPred,
+            QVector<FeatureFinderHillPlus> *correlatedHills
+            ) {
+
+        ERR_INIT
+
+        const int ionIndexThreshold = 0;
+        const int topX = 500;
+        const QVector<MS2Ion> ms2Ions = ms2IonsTandemPred.getTopXMS2Ions(topX, ionIndexThreshold);
+
+        using MZIONKEY = int;
+        QMap<MZIONKEY, QVector<FeatureFinderHillPlus>> mzKeyVsFeatureFinderHillPlusses;
+
+        for (const FeatureFinderHillPlus &ffhp : *correlatedHills) {
+
+            MS2Ion closestMS2Ion;
+            e = getClosestMS2Ion(
+                    ms2Ions,
+                    ffhp,
+                    &closestMS2Ion
+            ); ree
+
+            const MZIONKEY mzKey = MathUtils::hashDecimal(closestMS2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            mzKeyVsFeatureFinderHillPlusses[mzKey].push_back(ffhp);
+        }
+
+        QVector<FeatureFinderHillPlus> correlatedHillsFiltered;
+
+        const auto cosineSimSortLogic = [](const FeatureFinderHillPlus &l, const FeatureFinderHillPlus &r){
+            return l.cosineSimToAnchor < r.cosineSimToAnchor;
+        };
+
+        for (const QVector<FeatureFinderHillPlus> &ffhps : mzKeyVsFeatureFinderHillPlusses) {
+
+            if (ffhps.size() == 1) {
+                correlatedHillsFiltered.push_back(ffhps.front());
+                continue;
+            }
+
+            const FeatureFinderHillPlus ffhpMaxCosineSim = *std::max_element(ffhps.begin(), ffhps.end(), cosineSimSortLogic);
+            correlatedHillsFiltered.push_back(ffhpMaxCosineSim);
+        }
+
+        *correlatedHills = correlatedHillsFiltered;
+
+        ERR_RETURN
+    }
+
+    double calculateWeightedHillCosineSimSum(const QVector<FeatureFinderHillPlus> &correlatedHills) {
+
+        const auto accLogic = [](double weightedSum, const FeatureFinderHillPlus &ffhp){
+            return weightedSum + (ffhp.cosineSimToAnchor * ffhp.featureFinderHill.mzMean());
+        };
+
+        return std::accumulate(correlatedHills.begin(), correlatedHills.end(), 0.0, accLogic);
+    }
+
+
+}//namespace
+Err FeatureFinderHillClusterTron::clusterHillsByBestMS2IonAnchor(
+        const QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> &featureFinderHills,
+        const QVector<MS2Ion> &ms2IonsAnchors,
+        const MS2IonsSeparated &ms2IonsTandemPred,
+        HillsClusteringMS2 *bestHillsClusteringMS2
+        ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(featureFinderHills); ree
+    e = ErrorUtils::isNotEmpty(ms2IonsAnchors); ree
+
+    bestHillsClusteringMS2->cosineSimSumWeighted = 0.0;
+
+    QMap<Id, FeatureFinderHillPlus> featureFinderHillsPlussesMap;
+    RTree featureFinderHillRTree = buildHillsRTree(
+            featureFinderHills,
+            &featureFinderHillsPlussesMap
+            );
+
+    const double mzMin = featureFinderHillRTree.bounds().min_corner().get<1>();
+    const double mzMax = featureFinderHillRTree.bounds().max_corner().get<1>();
+
+    QVector<FeatureFinderHillPlus> anchorHillsAtBestMz;
+    e = findBestMS2IonAnchor(
+            ms2IonsAnchors,
+            featureFinderHillsPlussesMap,
+            featureFinderHillRTree,
+            m_params.tolerancePPM,
+            &anchorHillsAtBestMz
+            ); ree
+
+    if (anchorHillsAtBestMz.isEmpty()) {
+        ERR_RETURN
+    }
+
+    for (const FeatureFinderHillPlus &bestMS2IonAnchor : anchorHillsAtBestMz) {
+
+        const double maxIntensityScanNumberIndex
+                = bestMS2IonAnchor.featureFinderHill.maxIntensityScanNumberIndex();
+
+        std::vector<rTreePoint> rTreeSearchResult = searchRTree(
+                maxIntensityScanNumberIndex,
+                maxIntensityScanNumberIndex,
+                mzMin,
+                mzMax,
+                featureFinderHillRTree,
+                featureFinderHillsPlussesMap
+                );
+
         if (rTreeSearchResult.size() == 1) {
-            featureFinderHillRTree.remove(rtpSearched);
             continue;
         }
 
         QVector<FeatureFinderHillPlus> correlatedHills;
-        double cosineSimSum;
         e = removePointsBelowCosineSimCorrThresholdMS2(
-                ffhp,
+                bestMS2IonAnchor,
                 featureFinderHillsPlussesMap,
                 rTreeSearchResult,
-                cosineSimThreshold,
-                &cosineSimSum,
+                m_params.cosineSimThreshold,
                 &correlatedHills
         ); ree;
 
-        if (cosineSimSum > bestHillsClusteringMS2->cosineSimSum) {
+        e = removeDuplicateCorrelatedHills(
+                ms2IonsTandemPred,
+                &correlatedHills
+                ); ree
+
+        const double cosineSimSumWeighted = calculateWeightedHillCosineSimSum(correlatedHills);
+
+        if (cosineSimSumWeighted > bestHillsClusteringMS2->cosineSimSumWeighted) {
 
             FeatureFinderHillUtils::sortFeatureFinderHillsPlussesMzAsc(&correlatedHills);
 
-            bestHillsClusteringMS2->apexFeatureFinderHillPlus = ffhp;
-            bestHillsClusteringMS2->cosineSimSum = cosineSimSum;
+            bestHillsClusteringMS2->apexFeatureFinderHillPlus = bestMS2IonAnchor;
+            bestHillsClusteringMS2->cosineSimSumWeighted = cosineSimSumWeighted;
             bestHillsClusteringMS2->correlatedHills = correlatedHills;
         }
 
@@ -606,8 +804,3 @@ Err FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
 
     ERR_RETURN
 }
-
-
-
-
-

@@ -86,6 +86,13 @@ Err MsFrameScoretron::init(
             &m_msFrame
     ); ree;
 
+    e = m_msFrame.smoothFrame(
+            m_params.filterLength,
+            m_params.sigma,
+            m_params.smoothCount,
+            m_params.mzMaxDataStructure
+            ); ree
+
     e = ErrorUtils::isAboveThreshold(
             m_msFrame.scanCount(),
             0,
@@ -104,7 +111,8 @@ Err MsFrameScoretron::init(
     e = m_featureFinderHillBuilder.buildHills(
             m_msFrame.scanNumberVsScanPoints()
             ); ree
-//    e = m_featureFinderHillBuilder.refineHills();
+
+    e = m_featureFinderHillBuilder.refineHills(false);
 
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
@@ -232,17 +240,23 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
     qDebug() << "Clustring Candidate Hills for target key:" << m_msFrame.uniqueMsInfoScanKey();
     qDebug() << "Frame size" << m_msFrame.scanCount();
 
+    const int topXMs2IonAnchors = 6; //TODO move to pythia params
+    const int ionIndexThreshold = 3; //TODO consider movingthis to pythia params.
+
+    FeatureFinderHillClusterTron featureFinderHillClusterTron;
+    e = featureFinderHillClusterTron.init(FeatureFinderParameters(m_params)); ree
 
     for (auto it = m_fragPreds.begin(); it != m_fragPreds.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const MS2IonsSeparated &ms2IonsTandemPred = it.value();
 
-        //drewholio
+//#define DEBUG_HILL_FIND0
+#ifdef DEBUG_HILL_FIND0
         if (peptideStringWithMods != "EAADGYQR") {
             continue;
         }
-        //drewholio
+#endif
 
         QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> candidateFeatureFinderHills;
         e = getCandidateHills(
@@ -254,8 +268,15 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
             continue;
         }
 
-#define DEBUG_HILL_FIND
+        QVector<MS2Ion> topCandidateMS2Ions = ms2IonsTandemPred.getTopXMS2Ions(
+                topXMs2IonAnchors,
+                ionIndexThreshold
+                );
+
+//#define DEBUG_HILL_FIND
 #ifdef DEBUG_HILL_FIND
+        qDebug() << topCandidateMS2Ions;
+
         QVector<FeatureFinderHill> hills;
         for (const QMap<IonIndex, QVector<FeatureFinderHill>> &l : candidateFeatureFinderHills) {
             for (const QVector<FeatureFinderHill> &hs : l.values()) {
@@ -270,11 +291,10 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
 #endif
 
         HillsClusteringMS2 bestHillsClusteringMS2;
-        e = FeatureFinderHillClusterTron::clusterHillsByFrameIndex(
+        e = featureFinderHillClusterTron.clusterHillsByBestMS2IonAnchor(
                 candidateFeatureFinderHills,
-                m_params.mzMinDataStructure,
-                m_params.mzMaxDataStructure,
-                m_params.cosineSimThreshold,
+                topCandidateMS2Ions,
+                ms2IonsTandemPred,
                 &bestHillsClusteringMS2
                 ); ree;
 
@@ -286,11 +306,17 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
             e = findIsotopologues(&bestHillsClusteringMS2); ree
         }
 
+//#define DEBUG_HILL_FIND2
+#ifdef DEBUG_HILL_FIND2
+        qDebug() << topCandidateMS2Ions;
+
         for (const auto &h :bestHillsClusteringMS2.correlatedHills) {
             qDebug() << "drewholio" << h.featureFinderHill.mzMean() << h.cosineSimToAnchor
-                    << h.featureFinderHill.intensityValueMax() << h.featureFinderHill.maxIntensityScanNumber();
+                    << h.featureFinderHill.intensityValueMax() << h.featureFinderHill.scanNumberIndexMinMax()
+                    << h.featureFinderHill.maxIntensityScanNumber();
 
         }
+#endif
 
         pepStrWModsVsHillsClusteringMS2->insert(peptideStringWithMods, bestHillsClusteringMS2);
 
@@ -827,7 +853,7 @@ Err MsFrameScoretron::writeFrameExtracts(
 
         FrameExtractsReaderRow frameExtractsReaderRow;
         frameExtractsReaderRow.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
-        frameExtractsReaderRow.cosineSum = hillsClusteringMs2.cosineSimSum;
+        frameExtractsReaderRow.cosineSum = hillsClusteringMs2.cosineSimSumWeighted;
 
         frameExtractsReaderRow.frameIndexApex
             = hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex();

@@ -9,6 +9,7 @@
 #include "Error.h"
 #include "FeatureFinderHill.h"
 #include "GlobalSettings.h"
+#include "PythiaParameterReader.h"
 
 #include <QScopedPointer>
 
@@ -29,6 +30,21 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double sigma = -1.0;
     double signalToNoiseRatio = -1.0;
 
+    double cosineSimThreshold = 0.8; //TODO make this settable
+
+    FeatureFinderParameters() = default;
+    ~FeatureFinderParameters() = default;
+
+    FeatureFinderParameters(const PythiaParameters &pythiaParameters)
+    : tolerancePPM(pythiaParameters.ms2ExtractionWidthPPM)
+    , skipScanCount(pythiaParameters.skipScanCount)
+    , minScanCount(pythiaParameters.minScanCount)
+    , filterLength(pythiaParameters.filterLength)
+    , smoothCount(pythiaParameters.smoothCount)
+    , sigma(pythiaParameters.sigma)
+    , signalToNoiseRatio(pythiaParameters.signalToNoiseRatio)
+    {}
+
 public:
 
     void printParams() const {
@@ -43,7 +59,7 @@ public:
         qDebug() << "signalToNoiseRatio" << signalToNoiseRatio ;
     }
 
-    bool isValid() const {
+    [[nodiscard]] bool isValid() const {
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
             && minScanCount >= 2

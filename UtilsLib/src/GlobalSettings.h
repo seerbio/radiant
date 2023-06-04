@@ -83,6 +83,11 @@ struct UTILSLIB_EXPORTS MS2Ion {
             , ionLabel(std::move(ionLabel))
     {}
 
+    friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
+        dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ")";
+        return dbg;
+    }
+
     Err getIonLabelInfo(QPair<IonIndex, IonType> *ionInfo) const {
 
         ERR_INIT
