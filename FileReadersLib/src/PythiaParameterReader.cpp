@@ -409,7 +409,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
     pythiaParameters.ms2ExtractionWidthPPM = 15.0;
-    pythiaParameters.precursorExtractionWindowThomsons = 1.0;
+    pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;

@@ -615,7 +615,7 @@ namespace {
                     transformLogic
                     );
 
-            ERR_RETURN
+//            ERR_RETURN
         }
 
         ERR_RETURN

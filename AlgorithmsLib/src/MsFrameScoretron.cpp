@@ -178,8 +178,8 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
         QMap<PeptideSequenceChargeKey, MS2IonsSeparated> peptideSequenceChargeKeyVsMS2IonsSeparated;
         QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
         e = fragLibReader.getMS2Ions(
-                massStart,
-                massEnd,
+                massStart - m_params.precursorExtractionWindowThomsons,
+                massEnd + m_params.precursorExtractionWindowThomsons,
                 &peptideSequenceChargeKeyVsMS2IonsSeparated,
                 &peptideSequenceChargeKeyVsIsDecoy
         ); ree
@@ -241,7 +241,7 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
     qDebug() << "Frame size" << m_msFrame.scanCount();
 
     const int topXMs2IonAnchors = 6; //TODO move to pythia params
-    const int ionIndexThreshold = 3; //TODO consider moving this to pythia params.
+    const int ionIndexThreshold = 2; //TODO consider moving this to pythia params.
 
     FeatureFinderHillClusterTron featureFinderHillClusterTron;
     e = featureFinderHillClusterTron.init(FeatureFinderParameters(m_params)); ree
@@ -251,9 +251,13 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const MS2IonsSeparated &ms2IonsTandemPred = it.value();
 
-//#define DEBUG_HILL_FIND0
-#ifdef DEBUG_HILL_FIND0
-        if (peptideStringWithMods != "EAADGYQR") {
+//#define DEBUG_HILL_FIND2
+#ifdef DEBUG_HILL_FIND2
+//        const QString peptide = "QQGSGVPSR";
+//        const QString peptide = "QSWSVCK";
+//        const QString peptide = "EAADGYQR";
+        const QString peptide = "RVAWHYDEEK";
+        if (peptideStringWithMods != peptide) {
             continue;
         }
 #endif
@@ -306,10 +310,9 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
             e = findIsotopologues(&bestHillsClusteringMS2); ree
         }
 
-//#define DEBUG_HILL_FIND2
+#define DEBUG_HILL_FIND2
 #ifdef DEBUG_HILL_FIND2
         qDebug() << topCandidateMS2Ions;
-
         for (const auto &h :bestHillsClusteringMS2.correlatedHills) {
             qDebug() << "drewholio" << h.featureFinderHill.mzMean() << h.cosineSimToAnchor
                     << h.featureFinderHill.intensityValueMax() << h.featureFinderHill.scanNumberIndexMinMax()
