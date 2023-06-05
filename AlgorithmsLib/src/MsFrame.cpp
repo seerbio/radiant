@@ -266,3 +266,23 @@ Err MsFrame::reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints) {
 
     ERR_RETURN
 }
+
+Err MsFrame::filterFrameByMz(
+        double mzMin,
+        double mzMax
+        ) {
+
+    ERR_INIT
+
+    const auto terminatorLogic = [&](const ScanPoint &p){return !(mzMin < p.x() && p.x() < mzMax);};
+
+    for (ScanPoints &pnts : m_frame) {
+
+        const auto terminator = std::remove_if(pnts.begin(), pnts.end(), terminatorLogic);
+
+        pnts.erase(terminator, pnts.end());
+    }
+
+
+    ERR_RETURN
+}

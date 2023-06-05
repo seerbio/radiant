@@ -111,6 +111,11 @@ public:
             double mzMax
             );
 
+    Err filterFrameByMz(
+            double mzMin,
+            double mzMax
+            );
+
     static Err buildMsFrame(
             const QString &msDataFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,

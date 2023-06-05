@@ -1222,7 +1222,6 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
 //TODO confirm this helps or not.
 #define REMOVE_NEG_DISC_SCORES
 #ifdef REMOVE_NEG_DISC_SCORES
-
     bool negativesArePresent = true;
     int iters = 0;
     int maxIters = 10;
@@ -1270,7 +1269,7 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
 
     e = MsUtils::writePointsToCSV(uniqueFoundScanPoints, "scanPoints.csv"); ree;
 
-    const QString pep = "PDRMXVGETXK";
+    const QString pep = "SXNHECK";
     const QVector<MS2Ion> &pred = tandemPredictions.value(pep);
 
     TandemDeconvolverResult res = pepSeqVsTandemDeconvolverResult.value(pep);
@@ -1286,5 +1285,3 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
 
     ERR_RETURN
 }
-
-

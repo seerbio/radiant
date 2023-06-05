@@ -36,7 +36,7 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
     ERR_INIT
 
     const QString frameExtractionFilepath
-        = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.635039.frameExtractions";
+        = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.444952.frameExtractions";
 
     QVector<FrameExtractsReaderRow> frameExtracts;
     e = ParquetReader::read(
@@ -65,10 +65,11 @@ void MsFrameScoretronProcessormaticTests::rescoreMsFrameTest() {
         }
         debugged.insert(fer.scanNumberApex, true);
 
-        if (fer.scanNumberApex != 7650) {
+        if (fer.scanNumberApex != 8261) {
             continue;
         }
 
+        qDebug() << fer.peptideStringWithMods;
         frameIndexFrameExtractsReaderRows.push_back(fer);
     }
 

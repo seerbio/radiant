@@ -86,6 +86,11 @@ Err MsFrameScoretron::init(
             &m_msFrame
     ); ree;
 
+    e = m_msFrame.filterFrameByMz(
+            m_params.mzMinDataStructure,
+            m_params.mzMaxDataStructure
+            ); ree;
+
     e = m_msFrame.smoothFrame(
             m_params.filterLength,
             m_params.sigma,
