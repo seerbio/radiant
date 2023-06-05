@@ -310,7 +310,7 @@ Err MsFrameScoretron::groupHillsForFrameCandidates(
             e = findIsotopologues(&bestHillsClusteringMS2); ree
         }
 
-#define DEBUG_HILL_FIND2
+//#define DEBUG_HILL_FIND2
 #ifdef DEBUG_HILL_FIND2
         qDebug() << topCandidateMS2Ions;
         for (const auto &h :bestHillsClusteringMS2.correlatedHills) {
