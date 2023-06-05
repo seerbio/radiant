@@ -861,7 +861,7 @@ Err MsFrameScoretron::writeFrameExtracts(
 
         FrameExtractsReaderRow frameExtractsReaderRow;
         frameExtractsReaderRow.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
-        frameExtractsReaderRow.cosineSum = hillsClusteringMs2.cosineSimSumWeighted;
+        frameExtractsReaderRow.cosineSimSumWeighted = hillsClusteringMs2.cosineSimSumWeighted;
 
         frameExtractsReaderRow.frameIndexApex
             = hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex();

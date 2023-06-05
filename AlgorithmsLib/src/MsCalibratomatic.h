@@ -9,7 +9,6 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
-#include "MsFrameScoreVectorReader.h"
 #include "MsUtils.h"
 #include "NearestNeighborsSearch.h"
 #include "ProteinDigestomatic.h"

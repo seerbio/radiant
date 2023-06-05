@@ -22,7 +22,7 @@ namespace FrameExtractsReaderNamespace {
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
     const QString FRAME_INDEX = QStringLiteral("frameIndex");
-    const QString COSINE_SUM = QStringLiteral("cosineSim");
+    const QString COSINE_SUM_WEIGHTED = QStringLiteral("cosineSimSumWeighted");
 
     const QString A_IND_THEO = QStringLiteral("aIonIndexesTheo");
     const QString A_MZ_THEO = QStringLiteral("aIonMzValsTheo");
@@ -152,7 +152,7 @@ namespace FrameExtractsReaderNamespace {
             IS_DECOY,
             SCAN_NUMBER,
             FRAME_INDEX,
-            COSINE_SUM,
+            COSINE_SUM_WEIGHTED,
             A_IND_THEO,
             A_MZ_THEO,
             A_INTZ_THEO,
@@ -286,7 +286,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
     bool isDecoy = false;
     ScanNumber scanNumberApex = -1;
     FrameIndex frameIndexApex = -1;
-    double cosineSum = -1.0;
+    double cosineSimSumWeighted = -1.0;
 
     QVector<IonIndex> aIonIndexesTheo;
     QVector<double> aIonMzValsTheo;
@@ -430,7 +430,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUMBER, QVariant(scanNumberApex)},
                 {FRAME_INDEX, QVariant(frameIndexApex)},
-                {COSINE_SUM, QVariant(cosineSum)},
+                {COSINE_SUM_WEIGHTED, QVariant(cosineSimSumWeighted)},
 
                 {A_IND_THEO, QVariant(qVectorToQByteArray(aIonIndexesTheo))},
                 {A_MZ_THEO, QVariant(qVectorToQByteArray(aIonMzValsTheo))},
@@ -584,7 +584,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumberApex = dataMap.value(SCAN_NUMBER).toInt();
         frameIndexApex = dataMap.value(FRAME_INDEX).toInt();
-        cosineSum = dataMap.value(COSINE_SUM).toDouble();
+        cosineSimSumWeighted = dataMap.value(COSINE_SUM_WEIGHTED).toDouble();
         aIonIndexesTheo = bytesArrayToQVector<int>(dataMap.value(A_IND_THEO).toByteArray());
         aIonMzValsTheo = bytesArrayToQVector<double>(dataMap.value(A_MZ_THEO).toByteArray());
         aIonIntesitiesTheo = bytesArrayToQVector<double>(dataMap.value(A_INTZ_THEO).toByteArray());
