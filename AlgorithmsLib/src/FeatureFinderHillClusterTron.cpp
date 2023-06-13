@@ -43,14 +43,14 @@ Err FeatureFinderHillClusterTron::init(
 
     e = ErrorUtils::isTrue(params.isValid()); ree
 
-    const double minCosineSim = 0.0;
-    const double maxCosineSim = 1.0;
-    e = ErrorUtils::isWithinRange(
-            params.cosineSimThreshold,
-            minCosineSim,
-            maxCosineSim,
-            ErrorUtilsParam::IncludeThreshold
-            ); ree
+//    const double minCosineSim = 0.0;
+//    const double maxCosineSim = 1.0;
+//    e = ErrorUtils::isWithinRange(
+//            params.cosineSimThreshold,
+//            minCosineSim,
+//            maxCosineSim,
+//            ErrorUtilsParam::IncludeThreshold
+//            ); ree
 
     e = ErrorUtils::isTrue(chargeMin < chargeMax); ree
     e = ErrorUtils::isTrue(chargeMin > 0); ree
@@ -500,7 +500,7 @@ namespace {
             const FeatureFinderHillPlus &featureFinderHillAnchor,
             const QMap<int, FeatureFinderHillPlus> &featureFinderHillMap,
             const std::vector<rTreePoint> &foundRTreeFeatureFinderHills,
-            double cosineSimThreshold,
+//            double cosineSimThreshold,
             QVector<FeatureFinderHillPlus> *correlatedHills
     ) {
 
@@ -524,9 +524,9 @@ namespace {
                     &cosineSim
             ); ree
 
-            if (cosineSim < cosineSimThreshold) {
-                continue;
-            }
+//            if (cosineSim < cosineSimThreshold) {
+//                continue;
+//            }
 
             const int mzKey = MathUtils::hashDecimal(ffhp.featureFinderHill.mzMean(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
@@ -536,9 +536,6 @@ namespace {
             }
 
         }
-
-        const QList<double> &bestCosineSims = mzKeyVsBestCosineSim.values();
-        const QList<MZKEY> &mzKeys = mzKeyVsBestCosineSim.keys();
 
         const QList<FeatureFinderHillPlus> &bestFeatureFinderHillsPlus = mzKeyVsBestFeatureFinderHillPlus.values();
 
@@ -766,7 +763,7 @@ Err FeatureFinderHillClusterTron::clusterHillsByBestMS2IonAnchor(
                 bestMS2IonAnchor,
                 featureFinderHillsPlussesMap,
                 rTreeSearchResult,
-                m_params.cosineSimThreshold,
+//                m_params.cosineSimThreshold,
                 &correlatedHills
         ); ree;
 

@@ -867,6 +867,8 @@ Err MsFrameScoretron::writeFrameExtracts(
             = hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex();
 
         frameExtractsReaderRow.scanNumberApex = m_msFrame.scanNumberFromFrameIndex(frameExtractsReaderRow.frameIndexApex );
+        frameExtractsReaderRow.scanTimeApex
+            = MathUtils::pRound(m_msFrame.scanTimeFromScanNumber(frameExtractsReaderRow.scanNumberApex), 4);
 
         e = buildFrameExtractsReaderRow(
                 peptideStringWithMods,

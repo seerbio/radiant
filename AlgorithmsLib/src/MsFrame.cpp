@@ -41,21 +41,25 @@ MsFrame::MsFrame()
 Err MsFrame::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const QPair<double, double> &frameMzStartStop
+        const QPair<double, double> &frameMzStartStop,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::isNotEmpty(scanPoints); ree
     m_frame = scanPoints;
 
-    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree
+    m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     m_mzWindowLower = frameMzStartStop.first;
     m_mzWindowUpper = frameMzStartStop.second;
 
-    e = buildFrameIndexVsScanNumber(); ree;
+    e = buildFrameIndexVsScanNumber(); ree
 
     ERR_RETURN
 }
@@ -134,6 +138,10 @@ ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
 
+ScanTime MsFrame::scanTimeFromScanNumber(ScanNumber scanNumber) const {
+    return m_scanNumberVsScanTime.value(scanNumber);
+}
+
 ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
     return m_frameIndexVsScanNumber.key(scanNumber);
 }
@@ -170,10 +178,13 @@ Err MsFrame::buildMsFrame(
     const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
     e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
 
+    const QMap<ScanNumber, ScanTime> scanNumberVsScanTime = msReaderParquet.getScanNumberVsScanTime();
+
     e = msFrame->init(
             uniqueMsInfoScanKey,
             targetScanPoints,
-            mzTargetStartStop
+            mzTargetStartStop,
+            scanNumberVsScanTime
     ); ree;
 
     ERR_RETURN

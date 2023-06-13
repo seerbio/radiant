@@ -79,7 +79,8 @@ public:
     Err init(
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QPair<double, double> &frameMzStartStop
+            const QPair<double, double> &frameMzStartStop,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
     [[nodiscard]] bool isValid() const ;
@@ -99,6 +100,8 @@ public:
     [[nodiscard]] QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints() const;
 
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
+
+    [[nodiscard]] ScanTime scanTimeFromScanNumber(ScanNumber scanNumber) const;
 
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
@@ -136,6 +139,7 @@ private:
     double m_mzWindowLower;
     double m_mzWindowUpper;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
 };
 

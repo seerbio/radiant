@@ -21,6 +21,7 @@ namespace FrameExtractsReaderNamespace {
     const QString PEP_WITH_MODS= QStringLiteral("peptideStringWithMods");
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
+    const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString FRAME_INDEX = QStringLiteral("frameIndex");
     const QString COSINE_SUM_WEIGHTED = QStringLiteral("cosineSimSumWeighted");
 
@@ -151,6 +152,7 @@ namespace FrameExtractsReaderNamespace {
             PEP_WITH_MODS,
             IS_DECOY,
             SCAN_NUMBER,
+            SCAN_TIME,
             FRAME_INDEX,
             COSINE_SUM_WEIGHTED,
             A_IND_THEO,
@@ -285,6 +287,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
     PeptideStringWithMods peptideStringWithMods;
     bool isDecoy = false;
     ScanNumber scanNumberApex = -1;
+    ScanTime scanTimeApex = -1.0;
     FrameIndex frameIndexApex = -1;
     double cosineSimSumWeighted = -1.0;
 
@@ -429,6 +432,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
                 {PEP_WITH_MODS, QVariant(peptideStringWithMods)},
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUMBER, QVariant(scanNumberApex)},
+                {SCAN_TIME, QVariant(scanTimeApex)},
                 {FRAME_INDEX, QVariant(frameIndexApex)},
                 {COSINE_SUM_WEIGHTED, QVariant(cosineSimSumWeighted)},
 
@@ -583,6 +587,7 @@ struct  FILEREADERSLIB_EXPORTS FrameExtractsReaderRow : public ParquetReaderInpu
         peptideStringWithMods = dataMap.value(PEP_WITH_MODS).toString();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumberApex = dataMap.value(SCAN_NUMBER).toInt();
+        scanTimeApex = dataMap.value(SCAN_TIME).toDouble();
         frameIndexApex = dataMap.value(FRAME_INDEX).toInt();
         cosineSimSumWeighted = dataMap.value(COSINE_SUM_WEIGHTED).toDouble();
         aIonIndexesTheo = bytesArrayToQVector<int>(dataMap.value(A_IND_THEO).toByteArray());

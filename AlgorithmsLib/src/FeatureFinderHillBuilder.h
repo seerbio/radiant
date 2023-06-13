@@ -30,7 +30,7 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double sigma = -1.0;
     double signalToNoiseRatio = -1.0;
 
-    double cosineSimThreshold = 0.8; //TODO make this settable
+//    double cosineSimThreshold = 0.8; //TODO make this settable
 
     FeatureFinderParameters() = default;
     ~FeatureFinderParameters() = default;
