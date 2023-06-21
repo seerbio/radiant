@@ -121,7 +121,7 @@ RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100
 
 WORKDIR /app/
 
-ARG pythia_dia_version=0.01
+ARG pythia_dia_version=0.1
 ENV package_dir=pythia_dia_${pythia_dia_version}
 ENV PACKAGE_NAME=${package_dir}.deb
 
