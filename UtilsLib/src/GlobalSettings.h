@@ -72,6 +72,7 @@ public:
     const QString DOT_PRQ = QStringLiteral(".prq");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
+    const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
     const int HASHING_PRECISION = 3;
     const double ISO_DIFF = 1.003355;
     const int MAX_CHARGE_TANDEM_DEISOTOPING = 2;

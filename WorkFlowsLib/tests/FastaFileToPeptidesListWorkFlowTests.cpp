@@ -63,7 +63,7 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     e = wf.init(params);
     QCOMPARE(e, eNoError);
 
-    QString outputFilePath;
+    const QString outputFilePath = QStringLiteral("test.csv");
     e = wf.exec(
             fastaFilePath,
             targetMzCEFilePath,
