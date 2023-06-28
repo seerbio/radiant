@@ -32,11 +32,11 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
 //            = QStringLiteral("/home/anichols/Desktop/Testing/2022_02_22_Homo_sapiens_UP000005640.fragLib");
             = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
 
-    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "444952";
-    const double target = 444.952;
+//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "444952";
+//    const double target = 444.952;
 
-//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
-//    const double target = 454.957;
+    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+    const double target = 454.957;
 
     const double targetWindowSize = 5.5;
 

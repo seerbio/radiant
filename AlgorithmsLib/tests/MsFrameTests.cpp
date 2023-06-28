@@ -49,7 +49,8 @@ void MsFrameTests::preprocessMsFrame() {
     e = msFrame.init(
             "-1000",
             ms1Scans,
-            {0.0, 2000.0}
+            {0.0, 2000.0},
+            msReader.getScanNumberVsScanTime()
             );
     QCOMPARE(e, eNoError);
 
