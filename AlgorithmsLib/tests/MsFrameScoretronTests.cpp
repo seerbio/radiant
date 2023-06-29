@@ -50,8 +50,8 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             );
     QCOMPARE(e, eNoError);
 
-    QString frameScoreVectorsFilePath;
-    e = msFrameScoretron.extractHillsForCandidtates(&frameScoreVectorsFilePath);
+    QVector<ScoredCandidate> scoredCandidates;
+    e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates);
     QCOMPARE(e, eNoError);
 
 }

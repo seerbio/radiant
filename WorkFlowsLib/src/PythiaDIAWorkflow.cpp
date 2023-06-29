@@ -242,7 +242,7 @@ namespace {
                ); rree;
 
        QString frameScoreVectorsFilePath;
-       e = msFrameScoretron.extractHillsForCandidtates(&frameScoreVectorsFilePath); rree;
+//       e = msFrameScoretron.extractHillsForCandidtates(&frameScoreVectorsFilePath); rree;
 
        //drewholio
 //       QString frameExtractedPointsFilePath;

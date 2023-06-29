@@ -94,6 +94,8 @@ public:
 
     Err refineHills(bool useSmoothing);
 
+    Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
+
     Err getHills(
             FrameIndex frameIndexStart,
             FrameIndex frameIndexEnd,

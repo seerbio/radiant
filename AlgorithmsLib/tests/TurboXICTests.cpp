@@ -73,14 +73,14 @@ void TurboXICTests::extractPointsTest() {
     e = turboXIC.init(points);
     QCOMPARE(e, eNoError);
 
-    const XICPoints xicPoints = turboXIC.extractPoints(100.0, 100.13, 2, 4);
+    const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
     QCOMPARE(xicPoints.size(), 2);
     QCOMPARE(xicPoints.firstKey(), 2);
     QCOMPARE(xicPoints.first(), 100.2);
     QCOMPARE(xicPoints.lastKey(), 3);
     QCOMPARE(xicPoints.last(), 100.3);
 
-    const XICPoints xicPointsSum = turboXIC.extractPoints(100.0, 100.17, 2, 5);
+    const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
     QCOMPARE(xicPointsSum.size(), 4);
     QCOMPARE(xicPointsSum.last(), 201.);
 
@@ -126,7 +126,7 @@ void TurboXICTests::turboXICUtility() {
     const double ppmTol = 50;
     const double massTol = MathUtils::calculatePPM(mzCenter, ppmTol);
 
-    const XICPoints xicPoints = turboXIC.extractPoints(
+    const XICPoints xicPoints = turboXIC.extractPointsXIC(
             mzCenter - massTol,
             mzCenter + massTol,
             0,

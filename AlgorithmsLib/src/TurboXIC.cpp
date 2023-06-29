@@ -4,7 +4,9 @@
 
 #include "TurboXIC.h"
 
+#include "EigenSparseUtils.h"
 #include "ErrorUtils.h"
+#include "MsUtils.h"
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -28,21 +30,38 @@ public:
 
     Err init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
 
-    XICPoints extractPoints(
+    XICPoints extractPointsXIC(
             double mzMin,
             double mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
     );
 
+    ScanPoints extractSpectrum(
+            double mzMin,
+            double mzMax,
+            ScanNumber scanNumberMin,
+            ScanNumber scanNumberMax
+    );
+
+    Err getRTreeLimits(
+            double *scanNumberMin,
+            double *scanNumberMax,
+            double *mzMin,
+            double *mzMax
+            );
+
 private:
 
     RTree *m_rTree;
+    int m_defaultPrecision;
 
 };
 
 
-TurboXIC::Private::Private() {}
+TurboXIC::Private::Private()
+: m_defaultPrecision(4)
+, m_rTree(Q_NULLPTR) {}
 
 
 TurboXIC::Private::~Private() {
@@ -76,7 +95,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScan
 }
 
 
-XICPoints TurboXIC::Private::extractPoints(
+XICPoints TurboXIC::Private::extractPointsXIC(
         double mzMin,
         double mzMax,
         ScanNumber scanNumberMin,
@@ -100,6 +119,73 @@ XICPoints TurboXIC::Private::extractPoints(
     return xicPoints;
 }
 
+Err TurboXIC::Private::getRTreeLimits(
+        double *scanNumberMin,
+        double *scanNumberMax,
+        double *mzMin,
+        double *mzMax
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(m_rTree->empty()); ree
+
+    *scanNumberMin = m_rTree->bounds().min_corner().get<0>();
+    *scanNumberMax = m_rTree->bounds().max_corner().get<0>();
+    *mzMin = m_rTree->bounds().min_corner().get<1>();
+    *mzMax = m_rTree->bounds().max_corner().get<1>();
+
+
+    ERR_RETURN
+}
+
+ScanPoints TurboXIC::Private::extractSpectrum(
+        double mzMin,
+        double mzMax,
+        ScanNumber scanNumberMin,
+        ScanNumber scanNumberMax
+        ) {
+
+    const rTreeSearchBox queryBox(
+            rTreeCoor(scanNumberMin, mzMin),
+            rTreeCoor(scanNumberMax, mzMax)
+    );
+
+    std::vector<rTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    const int buffer = 1;
+    const int vecSize = MathUtils::hashDecimal(
+            mzMax + buffer,
+            m_defaultPrecision
+            );
+
+    Eigen::SparseVector<double> vec(vecSize);
+    vec.setZero();
+
+    for (const rTreePoint &rtp : result) {
+
+        const double mz = rtp.first.get<1>();
+        const int mzHashed = MathUtils::hashDecimal(mz, m_defaultPrecision);
+
+        vec.coeffRef(mzHashed) += rtp.second;
+    }
+
+    ScanPoints scanPoints;
+
+    for (Eigen::SparseVector<double>::InnerIterator it(vec); it; ++it) {
+
+        const auto mz = MathUtils::unHashDecimal<double>(it.index(), m_defaultPrecision);
+        const double intensity = it.value();
+
+        scanPoints.push_back({mz, intensity});
+    }
+
+    std::sort(scanPoints.begin(), scanPoints.end(), MsUtilsNamespace::sortAscMz);
+
+    return scanPoints;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -119,16 +205,44 @@ Err TurboXIC::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
 }
 
 
-XICPoints TurboXIC::extractPoints(
+XICPoints TurboXIC::extractPointsXIC(
         double mzMin,
         double mzMax,
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMax
 ) {
-    return d_ptr->extractPoints(
+    return d_ptr->extractPointsXIC(
             mzMin,
             mzMax,
             scanNumberMin,
             scanNumberMax
     );
+}
+
+Err TurboXIC::getRTreeLimits(
+        double *scanNumberMin,
+        double *scanNumberMax,
+        double *mzMin,
+        double *mzMax
+        ) const {
+    ERR_INIT
+
+    e = d_ptr->getRTreeLimits(
+            scanNumberMin,
+            scanNumberMax,
+            mzMin,
+            mzMax
+            ); ree
+
+    ERR_RETURN
+}
+
+ScanPoints TurboXIC::extractSpectrum(
+        double mzMin,
+        double mzMax,
+        ScanNumber scanNumberMin,
+        ScanNumber scanNumberMax
+        ) const {
+
+    return d_ptr->extractSpectrum(mzMin, mzMax, scanNumberMin, scanNumberMax);
 }

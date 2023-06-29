@@ -69,6 +69,8 @@ public:
 
     void setRunParallel(bool runParallel);
 
+    Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
+
 private:
 
     QVector<FeatureFinderHill> m_featureFinderHills;
@@ -825,6 +827,14 @@ Err FeatureFinderHillBuilder::Private::getHills(
     ERR_RETURN
 }
 
+Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree
+    *featureFinderHills = m_featureFinderHills;
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -984,5 +994,11 @@ Err FeatureFinderHillBuilder::getHills(
             featureFinderHills
             ); ree
 
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
+    ERR_INIT
+    e = d_ptr->featureFinderHills(featureFinderHills); ree
     ERR_RETURN
 }

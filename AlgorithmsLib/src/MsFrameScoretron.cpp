@@ -5,20 +5,17 @@
 #include "MsFrameScoretron.h"
 
 #include "BiophysicalCalcs.h"
+#include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FrameExtractsReader.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "TandemSpectraDeconvolvotron.h"
+#include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
-
-MsFrameScoretron::MsFrameScoretron()
-: m_frameIndexMin(0)
-, m_frameIndexMax(-1)
-{}
 
 
 namespace {
@@ -76,48 +73,14 @@ Err MsFrameScoretron::init(
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
     m_mzTargetStartStop = mzTargetStartStop;
 
-    e = buildFragIonLibForTargetMz(fragLibFilePath); ree;
-    e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
+    e = buildFragIonLibForTargetMz(fragLibFilePath); ree
+    e = ErrorUtils::isNotEmpty(m_fragPreds); ree
 
-    e = MsFrame::buildMsFrame(
-            msDataFilePath,
-            uniqueMsInfoScanKey,
-            mzTargetStartStop,
-            &m_msFrame
-    ); ree;
-
-    e = m_msFrame.filterFrameByMz(
-            m_params.mzMinDataStructure,
-            m_params.mzMaxDataStructure
-            ); ree;
-
-    e = m_msFrame.smoothFrame(
-            m_params.filterLength,
-            m_params.sigma,
-            m_params.smoothCount,
-            m_params.mzMaxDataStructure
-            ); ree
-
-    e = ErrorUtils::isAboveThreshold(
-            m_msFrame.scanCount(),
-            0,
-            ErrorUtilsParam::ExcludeThreshold
-    );ree;
-
-    m_frameIndexMax = m_msFrame.scanCount();
-
-    FeatureFinderParameters featureFinderParameters;
-    e = setFeatureFinderParams(
-            m_params,
-            &featureFinderParameters
-    ); ree
-
-    e = m_featureFinderHillBuilder.init(featureFinderParameters); ree;
-    e = m_featureFinderHillBuilder.buildHills(
-            m_msFrame.scanNumberVsScanPoints()
-            ); ree
-
-    e = m_featureFinderHillBuilder.refineHills(false);
+    e = initMsFrame(
+        msDataFilePath,
+        uniqueMsInfoScanKey,
+        mzTargetStartStop
+        ); ree
 
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
@@ -217,676 +180,173 @@ Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
     ERR_RETURN
 }
 
-Err MsFrameScoretron::extractHillsForCandidtates(QString *frameHillsFilePath) {
-
-    ERR_INIT
-
-    const QPair<double, double> &mzTargetStartEnd = m_msFrame.precursorMzTargetStartEnd();
-    qDebug() << "Processing window" << mzTargetStartEnd.first << mzTargetStartEnd.second;
-
-    QMap<PeptideStringWithMods, HillsClusteringMS2> pepStrWModsVsHillsClusteringMS2;
-    e = groupHillsForFrameCandidates(&pepStrWModsVsHillsClusteringMS2); ree
-
-    *frameHillsFilePath = m_msDataFilePath + "." + m_msFrame.uniqueMsInfoScanKey() + ".frameExtractions";
-    e = writeFrameExtracts(
-            pepStrWModsVsHillsClusteringMS2,
-            *frameHillsFilePath
-            ); ree;
-
-    ERR_RETURN
-}
-
-Err MsFrameScoretron::groupHillsForFrameCandidates(
-        QMap<PeptideStringWithMods, HillsClusteringMS2> *pepStrWModsVsHillsClusteringMS2
+Err MsFrameScoretron::initMsFrame(
+        const QString &msDataFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const QPair<double, double> &mzTargetStartStop
 ) {
 
     ERR_INIT
 
-    qDebug() << "Clustring Candidate Hills for target key:" << m_msFrame.uniqueMsInfoScanKey();
-    qDebug() << "Frame size" << m_msFrame.scanCount();
+    e = MsFrame::buildMsFrame(
+            msDataFilePath,
+            uniqueMsInfoScanKey,
+            mzTargetStartStop,
+            &m_msFrame
+    ); ree;
 
-    const int topXMs2IonAnchors = 6; //TODO move to pythia params
-    const int ionIndexThreshold = 2; //TODO consider moving this to pythia params.
+    e = m_msFrame.filterFrameByMz(
+            m_params.mzMinDataStructure,
+            m_params.mzMaxDataStructure
+    ); ree;
 
-    FeatureFinderHillClusterTron featureFinderHillClusterTron;
-    e = featureFinderHillClusterTron.init(FeatureFinderParameters(m_params)); ree
+    e = m_msFrame.smoothFrame(
+            m_params.filterLength,
+            m_params.sigma,
+            m_params.smoothCount,
+            m_params.mzMaxDataStructure
+    ); ree
 
-    for (auto it = m_fragPreds.begin(); it != m_fragPreds.end(); it++) {
+    e = ErrorUtils::isAboveThreshold(
+            m_msFrame.scanCount(),
+            0,
+            ErrorUtilsParam::ExcludeThreshold
+    );ree;
 
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const MS2IonsSeparated &ms2IonsTandemPred = it.value();
 
-//#define DEBUG_HILL_FIND2
-#ifdef DEBUG_HILL_FIND2
-//        const QString peptide = "QQGSGVPSR";
-//        const QString peptide = "QSWSVCK";
-//        const QString peptide = "EAADGYQR";
-        const QString peptide = "RVAWHYDEEK";
-        if (peptideStringWithMods != peptide) {
-            continue;
-        }
-#endif
 
-        QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> candidateFeatureFinderHills;
-        e = getCandidateHills(
-                ms2IonsTandemPred,
-                &candidateFeatureFinderHills
-                ); ree
-
-        if (candidateFeatureFinderHills.isEmpty()){
-            continue;
-        }
-
-        QVector<MS2Ion> topCandidateMS2Ions = ms2IonsTandemPred.getTopXMS2Ions(
-                topXMs2IonAnchors,
-                ionIndexThreshold
-                );
-
-//#define DEBUG_HILL_FIND
-#ifdef DEBUG_HILL_FIND
-        qDebug() << topCandidateMS2Ions;
-
-        QVector<FeatureFinderHill> hills;
-        for (const QMap<IonIndex, QVector<FeatureFinderHill>> &l : candidateFeatureFinderHills) {
-            for (const QVector<FeatureFinderHill> &hs : l.values()) {
-                hills.append(hs);
-            }
-        }
-        std::sort(hills.begin(), hills.end(),
-                  [](const FeatureFinderHill &l, const FeatureFinderHill &r){return l.maxIntensityScanNumber() < r.maxIntensityScanNumber();});
-        for (const FeatureFinderHill &h : hills) {
-            qDebug() << "drewholio" << h.maxIntensityScanNumber() << h.mzMean() << h.intensityValueMax();
-        }
-#endif
-
-        HillsClusteringMS2 bestHillsClusteringMS2;
-        e = featureFinderHillClusterTron.clusterHillsByBestMS2IonAnchor(
-                candidateFeatureFinderHills,
-                topCandidateMS2Ions,
-                ms2IonsTandemPred,
-                &bestHillsClusteringMS2
-                ); ree;
-
-        if (bestHillsClusteringMS2.correlatedHills.size() < m_params.minFoundMzPeaks) {
-            continue;
-        }
-
-        if (m_params.findIsotopologues) {
-            e = findIsotopologues(&bestHillsClusteringMS2); ree
-        }
-
-//#define DEBUG_HILL_FIND2
-#ifdef DEBUG_HILL_FIND2
-        qDebug() << topCandidateMS2Ions;
-        for (const auto &h :bestHillsClusteringMS2.correlatedHills) {
-            qDebug() << "drewholio" << h.featureFinderHill.mzMean() << h.cosineSimToAnchor
-                    << h.featureFinderHill.intensityValueMax() << h.featureFinderHill.scanNumberIndexMinMax()
-                    << h.featureFinderHill.maxIntensityScanNumber();
-
-        }
-#endif
-
-        pepStrWModsVsHillsClusteringMS2->insert(peptideStringWithMods, bestHillsClusteringMS2);
-
-    }
 
     ERR_RETURN
 }
 
-Err MsFrameScoretron::getCandidateHills(
-        const MS2IonsSeparated &ms2IonsTandemPred,
-        QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> *featureFinderHills
-        ) {
-
-    ERR_INIT
-
-    QMap<IonIndex, QVector<FeatureFinderHill>> featureFinderHillsIonType;
-
-    e = getHillsForIonType(
-            ms2IonsTandemPred.yIons,
-            &featureFinderHillsIonType
-            ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.bIons,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.y2Ions,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y2_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.b2Ions,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.B2_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.aIons,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.A_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.yNH3Ions,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_NH3_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.yH2OIons,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.Y_H2O_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.bNH3Ions,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_NH3_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.bH2OIons,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.B_H2O_IONS, featureFinderHillsIonType);
-
-    featureFinderHillsIonType.clear();
-    e = getHillsForIonType(
-            ms2IonsTandemPred.precursorIons,
-            &featureFinderHillsIonType
-    ); ree
-    featureFinderHills->insert(S_GLOBAL_SETTINGS.PRECURSOR_IONS, featureFinderHillsIonType);
-
-    ERR_RETURN
-}
-
-Err MsFrameScoretron::getHillsForIonType(
-        const QMap<IonIndex, MS2Ion> &ions,
-        QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
-) {
-
-    ERR_INIT
-
-    for (auto it = ions.begin(); it != ions.end(); it++) {
-
-        const IonIndex ionIndex = it.key();
-        const MS2Ion &ion = it.value();
-
-        QVector<FeatureFinderHill> ionHills;
-        e = m_featureFinderHillBuilder.getHills(
-                m_frameIndexMin,
-                m_frameIndexMax,
-                ion.mz,
-                m_params.ms2ExtractionWidthPPM,
-                &ionHills
-        ); ree
-
-        featureFinderHills->insert(ionIndex, ionHills);
-    }
-
-    ERR_RETURN
-}
-
-Err MsFrameScoretron::findIsotopologues(HillsClusteringMS2 *bestHillsClusteringMS2) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(bestHillsClusteringMS2->correlatedHills); ree
-
-    for (int i = 0; i < bestHillsClusteringMS2->correlatedHills.size(); ++i) {
-
-        FeatureFinderHillPlus &ffhPlus = bestHillsClusteringMS2->correlatedHills[i];
-
-        double bestIsotopologueCosineSim = -1;
-        Charge bestIsotopologueCharge = -1;
-        double bestIsotopologueIntensity = -1.0;
-
-        for (Charge z = 1; z <= m_params.maxIsotopologueCharge; z++) {
-
-            const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / z;
-
-            QVector<FeatureFinderHill> isotopologueHills;
-            e = m_featureFinderHillBuilder.getHills(
-                    ffhPlus.featureFinderHill.maxIntensityScanNumberIndex(),
-                    ffhPlus.featureFinderHill.maxIntensityScanNumberIndex(),
-                    ffhPlus.featureFinderHill.mzMean() - chargeDistance,
-                    m_params.ms2ExtractionWidthPPM,
-                    &isotopologueHills
-            ); ree
-
-            for (const FeatureFinderHill &ffh : isotopologueHills) {
-
-                double cosineSimIsotopologue;
-                e = FeatureFinderHillClusterTron::calculateCosineSimBetweenHills(
-                        ffh,
-                        ffhPlus.featureFinderHill,
-                        &cosineSimIsotopologue
-                        ); ree
-
-                if (cosineSimIsotopologue > bestIsotopologueCosineSim) {
-                    bestIsotopologueCosineSim = cosineSimIsotopologue;
-                    bestIsotopologueCharge = z;
-                    bestIsotopologueIntensity = ffh.intensityValueMax();
-                }
-            }
-        }
-
-        ffhPlus.bestIsotopologueCosineSim = bestIsotopologueCosineSim;
-        ffhPlus.isotopologueCharge = bestIsotopologueCharge;
-        ffhPlus.isotopologueIntensity = bestIsotopologueIntensity;
-    }
-
-    ERR_RETURN
-}
-
-//TOOD consider moving this monster code elsewhere, i.e., FrameExtractsReader.
 namespace {
 
-    QMap<IonType, QVector<FeatureFinderHillPlus>> separateHillsByIonType(const HillsClusteringMS2 &hillsClusteringMs2) {
-
-        QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills;
-        
-        for (const FeatureFinderHillPlus &ffhp : hillsClusteringMs2.correlatedHills) {
-            separatedHills[ffhp.ionType].push_back(ffhp);
-        }
-        
-        return separatedHills;
-    }
-
-    Err unzipFeatureFinderHillPlusVector(
-            const QVector<FeatureFinderHillPlus> &featureFinderHillsPlus,
-            QVector<IonIndex> *ionIndexes,
-            QVector<double> *mzVals,
-            QVector<double> *intensities,
-            QVector<double> *cosineSimToAnchors,
-            QVector<int> *hillLength,
-            QVector<double> *mzStd,
-            QVector<double> *isotopologueCosineSim,
-            QVector<int> *isotopologueCharge,
-            QVector<double> *isotopologueIntensity
+    Err buildMsFrameApexTurboXIC(
+            const PythiaParameters &pythiaParameters,
+            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
+            TurboXIC *turboXic
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(featureFinderHillsPlus); ree
+        FeatureFinderParameters featureFinderParameters;
+        e = setFeatureFinderParams(pythiaParameters, &featureFinderParameters); ree
 
-        for(const FeatureFinderHillPlus &ffhp : featureFinderHillsPlus) {
-            ionIndexes->push_back(ffhp.ionIndex);
-            mzVals->push_back(ffhp.featureFinderHill.mzMean());
-            intensities->push_back(ffhp.featureFinderHill.intensityValueMax());
-            cosineSimToAnchors->push_back(ffhp.cosineSimToAnchor);
-            hillLength->push_back(ffhp.featureFinderHill.scanCount());
-            mzStd->push_back(ffhp.featureFinderHill.mzStDev());
-            isotopologueCosineSim->push_back(ffhp.bestIsotopologueCosineSim);
-            isotopologueCharge->push_back(ffhp.isotopologueCharge);
-            isotopologueIntensity->push_back(ffhp.isotopologueIntensity);
+        FeatureFinderHillBuilder featureFinderHillBuilder;
+        e = featureFinderHillBuilder.init(featureFinderParameters); ree
+
+        e = featureFinderHillBuilder.buildHills(frameIndexVsScanPoints); ree
+
+        QVector<FeatureFinderHill> featureFinderHills;
+        e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills); ree
+
+        //TODO consider making these settable in parameters
+        const int smoothCount = 2;
+        const int filterLength = 5;
+        const int order = 1;
+        const int derivative = 0;
+        const int rate = 1;
+
+        QMap<FrameIndex, ScanPoints> frameApexes;
+
+        for (const FeatureFinderHill &ffh : featureFinderHills) {
+
+            Eigen::VectorX<double> intensitiesVec = EigenUtils::convertQVectorToEigenVector(ffh.intensities());
+
+            for (int i = 0; i < smoothCount; i++) {
+                e = EigenKernelUtils::savitskyGolaySmooth(
+                        filterLength,
+                        order,
+                        derivative,
+                        rate,
+                        &intensitiesVec
+                        ); ree
+            }
+
+            const QVector<FrameIndex> &frameIndexes = ffh.scanNumbers();
+            const double mzMean = ffh.mzMean();
+            const QVector<double> &originalIntensities = ffh.intensities();
+
+            const QMap<int, double> apexes = EigenUtils::apexes(intensitiesVec, 1);
+
+            for (auto it = apexes.begin(); it != apexes.end(); it++) {
+
+                const int apexIndex = it.key();
+                const double _smoothedIntensityApexValue = it.value();
+                const int frameIndex = frameIndexes.at(apexIndex);
+                const double originalIntensity = originalIntensities.at(apexIndex);
+
+                frameApexes[frameIndex].push_back({mzMean, originalIntensity});
+            }
+
         }
 
-        e = ErrorUtils::isNotEmpty(*mzVals); ree
-        e = ErrorUtils::isEqual(mzVals->size(), ionIndexes->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), intensities->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), cosineSimToAnchors->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), hillLength->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), mzStd->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), isotopologueCharge->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), isotopologueCharge->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), isotopologueIntensity->size()); ree
+        turboXic->init(frameApexes); ree
 
         ERR_RETURN
+
     }
 
-    Err loadFeatureFinderHillsPlusVectors(
-            const HillsClusteringMS2 &hillsClusteringMs2,
-            FrameExtractsReaderRow *frameExtractsReaderRow
+    Err buildApexSpectra(
+            const TurboXIC &frameApexesTurboXIC,
+            QMap<FrameIndex, ScanPoints> *apexScanPoints
             ) {
 
         ERR_INIT
 
-        const QMap<IonType, QVector<FeatureFinderHillPlus>> separatedHills = separateHillsByIonType(hillsClusteringMs2);
+        double frameIndexMin;
+        double frameIndexMax;
+        double mzMin;
+        double mzMax;
 
-        for (auto it = separatedHills.begin(); it != separatedHills.end(); it++) {
-
-            const IonType &ionType = it.key();
-            const QVector<FeatureFinderHillPlus> &featureFinderHillsPlusses = it.value();
-
-            QVector<IonIndex> ionIndexes;
-            QVector<double> mzVals;
-            QVector<double> intensities;
-            QVector<double> cosineSimToAnchor;
-            QVector<int> hillLength;
-            QVector<double> mzStd;
-            QVector<double> isotopologueCosineSim;
-            QVector<int> isotopologueCharge;
-            QVector<double> isotopologueIntensity;
-            e = unzipFeatureFinderHillPlusVector(
-                    featureFinderHillsPlusses,
-                    &ionIndexes,
-                    &mzVals,
-                    &intensities,
-                    &cosineSimToAnchor,
-                    &hillLength,
-                    &mzStd,
-                    &isotopologueCosineSim,
-                    &isotopologueCharge,
-                    &isotopologueIntensity
-                    ); ree
-
-            if (ionType == S_GLOBAL_SETTINGS.Y_IONS) {
-                frameExtractsReaderRow->yIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->yIonMzValsActual = mzVals;
-                frameExtractsReaderRow->yIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->yIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->yIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->yIonMzStdActual = mzStd;
-                frameExtractsReaderRow->yIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.Y2_IONS) {
-                frameExtractsReaderRow->y2IonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->y2IonMzValsActual = mzVals;
-                frameExtractsReaderRow->y2IonIntesitiesActual = intensities;
-                frameExtractsReaderRow->y2IonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->y2IonHillLengthActual = hillLength;
-                frameExtractsReaderRow->y2IonMzStdActual = mzStd;
-                frameExtractsReaderRow->y2IonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->y2IonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->y2IonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.Y_NH3_IONS) {
-                frameExtractsReaderRow->yNH3IonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->yNH3IonMzValsActual = mzVals;
-                frameExtractsReaderRow->yNH3IonIntesitiesActual = intensities;
-                frameExtractsReaderRow->yNH3IonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->yNH3IonHillLengthActual = hillLength;
-                frameExtractsReaderRow->yNH3IonMzStdActual = mzStd;
-                frameExtractsReaderRow->yNH3IonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yNH3IonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yNH3IonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.Y_H2O_IONS) {
-                frameExtractsReaderRow->yH2OIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->yH2OIonMzValsActual = mzVals;
-                frameExtractsReaderRow->yH2OIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->yH2OIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->yH2OIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->yH2OIonMzStdActual = mzStd;
-                frameExtractsReaderRow->yH2OIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->yH2OIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->yH2OIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.B_IONS) {
-                frameExtractsReaderRow->bIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->bIonMzValsActual = mzVals;
-                frameExtractsReaderRow->bIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->bIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->bIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->bIonMzStdActual = mzStd;
-                frameExtractsReaderRow->bIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.B2_IONS) {
-                frameExtractsReaderRow->b2IonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->b2IonMzValsActual = mzVals;
-                frameExtractsReaderRow->b2IonIntesitiesActual = intensities;
-                frameExtractsReaderRow->b2IonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->b2IonHillLengthActual = hillLength;
-                frameExtractsReaderRow->b2IonMzStdActual = mzStd;
-                frameExtractsReaderRow->b2IonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->b2IonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->b2IonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.B_NH3_IONS) {
-                frameExtractsReaderRow->bNH3IonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->bNH3IonMzValsActual = mzVals;
-                frameExtractsReaderRow->bNH3IonIntesitiesActual = intensities;
-                frameExtractsReaderRow->bNH3IonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->bNH3IonHillLengthActual = hillLength;
-                frameExtractsReaderRow->bNH3IonMzStdActual = mzStd;
-                frameExtractsReaderRow->bNH3IonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bNH3IonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bNH3IonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.B_H2O_IONS) {
-                frameExtractsReaderRow->bH2OIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->bH2OIonMzValsActual = mzVals;
-                frameExtractsReaderRow->bH2OIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->bH2OIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->bH2OIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->bH2OIonMzStdActual = mzStd;
-                frameExtractsReaderRow->bH2OIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->bH2OIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->bH2OIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.A_IONS) {
-                frameExtractsReaderRow->aIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->aIonMzValsActual = mzVals;
-                frameExtractsReaderRow->aIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->aIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->aIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->aIonMzStdActual = mzStd;
-                frameExtractsReaderRow->aIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->aIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->aIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-
-            else if (ionType == S_GLOBAL_SETTINGS.PRECURSOR_IONS) {
-                frameExtractsReaderRow->precursorIonIndexesActual = ionIndexes;
-                frameExtractsReaderRow->precursorIonMzValsActual = mzVals;
-                frameExtractsReaderRow->precursorIonIntesitiesActual = intensities;
-                frameExtractsReaderRow->precursorIonHillCosineSims = cosineSimToAnchor;
-                frameExtractsReaderRow->precursorIonHillLengthActual = hillLength;
-                frameExtractsReaderRow->precursorIonMzStdActual = mzStd;
-                frameExtractsReaderRow->precursorIonIsotopologueCosineSimActual = isotopologueCosineSim;
-                frameExtractsReaderRow->precursorIonIsotopologueChargeActual = isotopologueCharge;
-                frameExtractsReaderRow->precursorIonIsotopologueIntensityActual = isotopologueIntensity;
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    Err unzipTheoretical(
-            const QMap<IonIndex, MS2Ion> &ions,
-            QVector<IonIndex> *ionIndexes,
-            QVector<double> *mzVals,
-            QVector<double> *intensities
-            ) {
-
-        ERR_INIT
-
-        if (ions.isEmpty()) {
-            ERR_RETURN
-        }
-
-        for (auto it = ions.begin(); it != ions.end(); it++) {
-
-            const IonIndex ionIndex = it.key();
-            const MS2Ion &ms2Ion = it.value();
-
-            ionIndexes->push_back(ionIndex);
-            mzVals->push_back(ms2Ion.mz);
-            intensities->push_back(ms2Ion.intensity);
-        }
-
-        e = ErrorUtils::isNotEmpty(*mzVals); ree
-        e = ErrorUtils::isEqual(mzVals->size(), ionIndexes->size()); ree
-        e = ErrorUtils::isEqual(mzVals->size(), intensities->size()); ree
-
-        ERR_RETURN
-    }
-
-    Err loadTheoreticalFrags(
-            const MS2IonsSeparated &ms2IonsSeparated,
-            FrameExtractsReaderRow *frameExtractsReaderRow
-            ){
-
-        ERR_INIT
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.yIons,
-                &frameExtractsReaderRow->yIonIndexesTheo,
-                &frameExtractsReaderRow->yIonMzValsTheo,
-                &frameExtractsReaderRow->yIonIntesitiesTheo
+        e = frameApexesTurboXIC.getRTreeLimits(
+                &frameIndexMin,
+                &frameIndexMax,
+                &mzMin,
+                &mzMax
                 ); ree
 
-        e = unzipTheoretical(
-                ms2IonsSeparated.y2Ions,
-                &frameExtractsReaderRow->y2IonIndexesTheo,
-                &frameExtractsReaderRow->y2IonMzValsTheo,
-                &frameExtractsReaderRow->y2IonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.yNH3Ions,
-                &frameExtractsReaderRow->yNH3IonIndexesTheo,
-                &frameExtractsReaderRow->yNH3IonMzValsTheo,
-                &frameExtractsReaderRow->yNH3IonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.yH2OIons,
-                &frameExtractsReaderRow->yH2OIonIndexesTheo,
-                &frameExtractsReaderRow->yH2OIonMzValsTheo,
-                &frameExtractsReaderRow->yH2OIonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.bIons,
-                &frameExtractsReaderRow->bIonIndexesTheo,
-                &frameExtractsReaderRow->bIonMzValsTheo,
-                &frameExtractsReaderRow->bIonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.b2Ions,
-                &frameExtractsReaderRow->b2IonIndexesTheo,
-                &frameExtractsReaderRow->b2IonMzValsTheo,
-                &frameExtractsReaderRow->b2IonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.bNH3Ions,
-                &frameExtractsReaderRow->bNH3IonIndexesTheo,
-                &frameExtractsReaderRow->bNH3IonMzValsTheo,
-                &frameExtractsReaderRow->bNH3IonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.bH2OIons,
-                &frameExtractsReaderRow->bH2OIonIndexesTheo,
-                &frameExtractsReaderRow->bH2OIonMzValsTheo,
-                &frameExtractsReaderRow->bH2OIonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.aIons,
-                &frameExtractsReaderRow->aIonIndexesTheo,
-                &frameExtractsReaderRow->aIonMzValsTheo,
-                &frameExtractsReaderRow->aIonIntesitiesTheo
-        ); ree
-
-        e = unzipTheoretical(
-                ms2IonsSeparated.precursorIons,
-                &frameExtractsReaderRow->precursorIonIndexesTheo,
-                &frameExtractsReaderRow->precursorIonMzValsTheo,
-                &frameExtractsReaderRow->precursorIonIntesitiesTheo
-        ); ree
-
-        ERR_RETURN
-    }
-
-    Err buildFrameExtractsReaderRow(
-            const PeptideStringWithMods &peptideStringWithMods,
-            const HillsClusteringMS2 &hillsClusteringMs2,
-            const MS2IonsSeparated &ms2IonsSeparated,
-            FrameExtractsReaderRow *frameExtractsReaderRow
+        for (
+            auto frameIndex = static_cast<int>(frameIndexMin);
+            frameIndex <= static_cast<int>(frameIndexMax);
+            ++frameIndex
             ) {
 
-        ERR_INIT
+            const int frameIndexLo = std::max(0, frameIndex - 1);
+            const int frameIndexHi = std::min(static_cast<int>(frameIndexMax), frameIndex + 1);
 
-        frameExtractsReaderRow->peptideStringWithMods = peptideStringWithMods;
+            const ScanPoints frameIndexScanPoints = frameApexesTurboXIC.extractSpectrum(
+                    mzMin,
+                    mzMax,
+                    frameIndexLo,
+                    frameIndexHi
+                    );
 
-        e = loadFeatureFinderHillsPlusVectors(
-                hillsClusteringMs2,
-                frameExtractsReaderRow
-                ); ree
-
-        e = loadTheoreticalFrags(
-                ms2IonsSeparated,
-                frameExtractsReaderRow
-                ); ree
+            apexScanPoints->insert(frameIndex, frameIndexScanPoints);
+        }
 
         ERR_RETURN
     }
+
 
 }//namespace
-Err MsFrameScoretron::writeFrameExtracts(
-        const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,
-        const QString &destinationFilePath
-        ) {
+Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
     ERR_INIT
 
-    QVector<FrameExtractsReaderRow> frameExtractsReaderRows;
+    TurboXIC frameApexesTurboXIC;
 
-    for (auto it = pepStrWModsVsHillsClusteringMS2.begin(); it != pepStrWModsVsHillsClusteringMS2.end(); it++) {
-
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const HillsClusteringMS2 &hillsClusteringMs2 = it.value();
-        const MS2IonsSeparated &ms2IonsSeparated = m_fragPreds.value(peptideStringWithMods);
-
-        FrameExtractsReaderRow frameExtractsReaderRow;
-        frameExtractsReaderRow.isDecoy = m_fragPredsIsDecoy.value(peptideStringWithMods);
-        frameExtractsReaderRow.cosineSimSumWeighted = hillsClusteringMs2.cosineSimSumWeighted;
-
-        frameExtractsReaderRow.frameIndexApex
-            = hillsClusteringMs2.apexFeatureFinderHillPlus.featureFinderHill.maxIntensityScanNumberIndex();
-
-        frameExtractsReaderRow.scanNumberApex = m_msFrame.scanNumberFromFrameIndex(frameExtractsReaderRow.frameIndexApex );
-        frameExtractsReaderRow.scanTimeApex
-            = MathUtils::pRound(m_msFrame.scanTimeFromScanNumber(frameExtractsReaderRow.scanNumberApex), 4);
-
-        e = buildFrameExtractsReaderRow(
-                peptideStringWithMods,
-                hillsClusteringMs2,
-                ms2IonsSeparated,
-                &frameExtractsReaderRow
-                ); ree
-
-        frameExtractsReaderRows.push_back(frameExtractsReaderRow);
-    }
-
-    e = ParquetReader::write(
-            frameExtractsReaderRows,
-            destinationFilePath
+    e = buildMsFrameApexTurboXIC(
+            m_params,
+            m_msFrame.frameIndexVsScanPoints(),
+            &frameApexesTurboXIC
             ); ree
 
-    qDebug() << frameExtractsReaderRows.size() << "rows written";
+    QMap<FrameIndex, ScanPoints> apexScanPoints;
+    e = buildApexSpectra(
+            frameApexesTurboXIC,
+            &apexScanPoints
+            ); ree
 
     ERR_RETURN
 }
-

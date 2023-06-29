@@ -8,7 +8,6 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "FeatureFinderHillBuilder.h"
-#include "FeatureFinderHillClusterTron.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
@@ -21,6 +20,10 @@ using namespace Error;
 
 class TandemDeconvolverResult;
 
+struct ScoredCandidate {
+
+};
+
 
 class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 
@@ -30,7 +33,7 @@ public:
     friend class MsFrameScoretronProcessormaticTests;
     friend class MsFrameScoretronTests;
 
-    MsFrameScoretron();
+    MsFrameScoretron() = default;
     ~MsFrameScoretron() = default;
 
     Err init(
@@ -41,32 +44,17 @@ public:
             const QPair<double, double> &mzTargetStartStop
             );
 
-    Err extractHillsForCandidtates(QString *frameHillsFilePath);
+    Err scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates);
 
 
 private:
 
     Err buildFragIonLibForTargetMz(const QString &fragLibUri);
 
-    Err groupHillsForFrameCandidates(
-            QMap<PeptideStringWithMods, HillsClusteringMS2> *pepStrWModsVsFrameIndexScoreResultOfTargets
-            );
-
-    Err getCandidateHills(
-            const MS2IonsSeparated &ms2IonsTandemPred,
-            QMap<IonType, QMap<IonIndex, QVector<FeatureFinderHill>>> *featureFinderHills
-            );
-
-    Err getHillsForIonType(
-            const QMap<IonIndex, MS2Ion> &ions,
-            QMap<IonIndex, QVector<FeatureFinderHill>> *featureFinderHills
-    );
-
-    Err findIsotopologues(HillsClusteringMS2 *bestHillsClusteringMS2);
-
-    Err writeFrameExtracts(
-            const QMap<PeptideStringWithMods, HillsClusteringMS2> &pepStrWModsVsHillsClusteringMS2,
-            const QString &destinationFilePath
+    Err initMsFrame(
+            const QString &msDataFilePath,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            const QPair<double, double> &mzTargetStartStop
             );
 
 
@@ -75,9 +63,6 @@ private:
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
-    FeatureFinderHillBuilder m_featureFinderHillBuilder;
-    FrameIndex m_frameIndexMin;
-    FrameIndex m_frameIndexMax;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;
