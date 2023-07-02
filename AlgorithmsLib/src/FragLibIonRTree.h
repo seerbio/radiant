@@ -9,6 +9,7 @@
 #include "GlobalSettings.h"
 #include "Error.h"
 
+#include <QMap>
 
 using namespace Error;
 
@@ -23,6 +24,7 @@ struct FragLibIon {
     IonIndex ionIndex = -1;
     IonType ionType;
     Charge charge = -1;
+    bool isIsotope = false;
 };
 
 
@@ -34,6 +36,19 @@ public:
     ~FragLibIonRTree();
 
     Err init(const QMap<PeptideStringWithMods, MS2IonsSeparated> &fragPreds);
+
+    Err buildMzHashedVsFragLibIonFrequencePercentages(
+            double ppmTolerance,
+            QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
+            );
+
+    Err getFragLibIons(
+            double mzMin,
+            double mzMax,
+            double iRTMin,
+            double iRTMax,
+            QVector<FragLibIon> *foundFragLibIons
+    );
 
 private:
 

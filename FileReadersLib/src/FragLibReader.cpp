@@ -134,6 +134,10 @@ Err FragLibReader::getMS2Ions(
         MS2IonsSeparated ms2IonsSeparated;
         for (const MS2Ion &ion : ms2Ions) {
 
+            if (ion.mz < 0) {
+                continue; //TODO make sure no sub zeros are entered when building the library in IstrosLibBuilder workflow
+            }
+
             QPair<IonIndex, IonType> ionInfo;
             e = ion.getIonLabelInfo(&ionInfo); ree
 
@@ -194,7 +198,6 @@ void FragLibReader::filterMs2IonsByMz(
 
     ms2Ions->erase(terminator, ms2Ions->end());
 }
-
 
 void FragLibReader::getTopNMostIntenseMs2Ions(
         int topNMs2Ions,
@@ -313,7 +316,11 @@ Err FragLibReader::buildFragIonLibForCandidates(
                 &peptideSequenceChargeKeyVsIsDecoy
         ); ree
 
-        for (auto it = peptideSequenceChargeKeyVsMS2IonsSeparated.begin(); it != peptideSequenceChargeKeyVsMS2IonsSeparated.end(); it++) {
+        for (
+            auto it = peptideSequenceChargeKeyVsMS2IonsSeparated.begin();
+            it != peptideSequenceChargeKeyVsMS2IonsSeparated.end();
+            it++
+            ) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
             const MS2IonsSeparated &ms2IonsSeparated = it.value();

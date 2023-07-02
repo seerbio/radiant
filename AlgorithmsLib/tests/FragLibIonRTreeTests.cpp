@@ -34,6 +34,10 @@ void FragLibIonRTreeTests::initTest() {
     const QString fragLibPath
             = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
 
+    //TODO update this fragLib file
+//    const QString &fragLibPath
+//            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta.csv.fragLib");
+
     const double target = 454.957;
     const double targetWindowSize = 5.5;
 
@@ -57,12 +61,46 @@ void FragLibIonRTreeTests::initTest() {
 
 }
 
-
 void FragLibIonRTreeTests::extractPointsTest() {
 
     ERR_INIT
 
+    const QString fragLibPath
+            = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
 
+    //TODO update this fragLib file
+//    const QString &fragLibPath
+//            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta.csv.fragLib");
+
+    const double target = 454.957;
+    const double targetWindowSize = 5.5;
+
+    QMap<PeptideStringWithMods, MS2IonsSeparated> fragPreds;
+    QMap<PeptideStringWithMods, bool> fragPredsIsDecoy;
+
+    e = FragLibReader::buildFragIonLibForCandidates(
+            fragLibPath,
+            2,
+            3,
+            target - targetWindowSize,
+            target + targetWindowSize,
+            &fragPreds,
+            &fragPredsIsDecoy
+    );
+    QCOMPARE(e, eNoError);
+
+    FragLibIonRTree fragLibIonRTree;
+    e = fragLibIonRTree.init(fragPreds);
+    QCOMPARE(e, eNoError);
+
+    const double ppmTolerance = 15.0;
+    QMap<MzHashed, FrequencyPercent> mzHashVsFreqPct;
+    e = fragLibIonRTree.buildMzHashedVsFragLibIonFrequencePercentages(
+            ppmTolerance,
+            &mzHashVsFreqPct
+            );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(static_cast<int>(mzHashVsFreqPct.value(147113) * 10000000), 97953);
 
 }
 

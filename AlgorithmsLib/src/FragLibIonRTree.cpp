@@ -4,11 +4,9 @@
 
 #include "FragLibIonRTree.h"
 
-
-#include "EigenSparseUtils.h"
 #include "ErrorUtils.h"
 #include "FragLibReader.h"
-#include "MsUtils.h"
+#include "IsotopicDistributionBuilder.h"
 
 #include <QElapsedTimer>
 
@@ -24,7 +22,7 @@ class Q_DECL_HIDDEN FragLibIonRTree::Private
 {
     using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
-    using rTreePoint = std::pair<rTreeCoor, double> ;
+    using rTreePoint = std::pair<rTreeCoor, int> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 public:
@@ -44,10 +42,28 @@ public:
 
     Err loadRTree();
 
+    Err buildMzHashedVsFragLibIonFrequencePercentages(
+            double ppmTolerance,
+            QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
+            );
+
+    Err getFragLibIons(
+        double mzMin,
+        double mzMax,
+        double iRTMin,
+        double iRTMax,
+        QVector<FragLibIon> *foundFragLibIons
+            );
+
 private:
 
     RTree *m_rTree;
     int m_defaultPrecision;
+
+    double m_mzMin;
+    double m_mzMax;
+    double m_iRTMin;
+    double m_iRTMax;
 
     QMap<Id, FragLibIon> m_fragLibIons;
     QMap<PeptideId, PeptideStringWithMods> m_peptideIdVsPeptideStringWithMods;
@@ -56,8 +72,13 @@ private:
 
 
 FragLibIonRTree::Private::Private()
-: m_defaultPrecision(4)
-, m_rTree(Q_NULLPTR) {}
+: m_defaultPrecision(3)
+, m_rTree(Q_NULLPTR)
+, m_mzMin(-1.0)
+, m_mzMax(-1.0)
+, m_iRTMin(-1.0)
+, m_iRTMax(-1.0)
+{}
 
 
 FragLibIonRTree::Private::~Private() {
@@ -153,6 +174,7 @@ Err FragLibIonRTree::Private::init(const QMap<PeptideStringWithMods, MS2IonsSepa
     e = loadRTree(); ree
 
     qDebug() << "FragLibIon RTree loaded in" << et.elapsed() << "mSec";
+    qDebug() << "Peptide Count" << m_peptideIdVsPeptideStringWithMods.size() << fragPreds.size();
 
     ERR_RETURN
 }
@@ -183,12 +205,81 @@ void FragLibIonRTree::Private::insertMs2IonsSeparatedToFragLibIons(
 
 }
 
+namespace {
+
+    void thresholdIsotopes(QVector<double> *vec) {
+
+        const double isotopePercentThreshold = 0.1;
+
+        const auto terminatorLogic = [isotopePercentThreshold](double pct){
+            return pct < isotopePercentThreshold;
+        };
+
+        const auto terminator = std::remove_if(vec->begin(), vec->end(), terminatorLogic);
+
+        vec->erase(terminator, vec->end());
+    }
+
+    QMap<int, QVector<double>> buildIsotopicDistributionTable() {
+
+        QMap<int, QVector<double>> isoDistTable;
+
+        const int massMax = 10000;
+        for (int mass = 0; mass < massMax; mass += 100) {
+
+            QVector<double> isoDist
+                = IsotopicDistributionBuilder::getIsotopicDistribution(static_cast<double>(mass));
+
+            thresholdIsotopes(&isoDist);
+
+            isoDistTable.insert(mass, isoDist);
+        }
+
+        return isoDistTable;
+    }
+
+}//namespace
 Err FragLibIonRTree::Private::addIsotopes() {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_fragLibIons); ree
     e = ErrorUtils::isNotEmpty(m_peptideIdVsPeptideStringWithMods); ree
+
+    const double fragIonPercentMin = 0.025;
+
+    const QMap<int, QVector<double>> isoDistTable = buildIsotopicDistributionTable();
+    e = ErrorUtils::isNotEmpty(isoDistTable); ree
+
+    const int indexMultiplier = 100;
+
+    for (const FragLibIon &fli : m_fragLibIons) {
+
+        const double fragMassApprox = fli.mz * fli.charge;
+
+        const int isoDistTableInd
+            = indexMultiplier * static_cast<int>(std::round(fragMassApprox / indexMultiplier));
+
+        const QVector<double> &isoDist = isoDistTable.value(isoDistTableInd);
+
+        for (int isoIndex = 1; isoIndex < isoDist.size(); isoIndex++) {
+
+            const double isotopePercent = isoDist.at(isoIndex);
+            const double isoIntensity = fli.intensity * isotopePercent;
+
+            if (isoIntensity < fragIonPercentMin) {
+                continue;
+            }
+
+            FragLibIon fragLibIonIso = fli;
+            fragLibIonIso.isIsotope = true;
+            fragLibIonIso.intensity = isoIntensity;
+            fragLibIonIso.mz += (isoIndex * S_GLOBAL_SETTINGS.ISO_DIFF) / fli.charge;
+
+            m_fragLibIons.insert(m_fragLibIons.size(), fragLibIonIso);
+        }
+
+    }
 
     ERR_RETURN
 }
@@ -214,6 +305,88 @@ Err FragLibIonRTree::Private::loadRTree() {
     const int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
+    m_mzMin = m_rTree->bounds().min_corner().get<0>();
+    m_iRTMin = m_rTree->bounds().min_corner().get<1>();
+    m_mzMax = m_rTree->bounds().max_corner().get<0>();
+    m_iRTMax = m_rTree->bounds().max_corner().get<1>();
+
+    qDebug() << "mz range" << m_mzMin << "to" << m_mzMax;
+    qDebug() << "iRT range" << m_iRTMin << "to" << m_iRTMax;
+    qDebug() << "FragLibIon RTree size:" << m_rTree->size();
+
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::Private::buildMzHashedVsFragLibIonFrequencePercentages(
+        double ppmTolerance,
+        QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
+        ) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    e = ErrorUtils::isNotEmpty(m_fragLibIons); ree;
+
+    const auto fragLibIonsSize = static_cast<double>(m_fragLibIons.size());
+
+    for (const FragLibIon &fli : m_fragLibIons) {
+
+        const int mzHashed = MathUtils::hashDecimal(fli.mz, m_defaultPrecision);
+
+        if (mzHashVsFreqPct->contains(mzHashed)) {
+            continue;
+        }
+
+        const double mzTol = MathUtils::calculatePPM(fli.mz, ppmTolerance);
+        const double mzMin = fli.mz - mzTol;
+        const double mzMax = fli.mz + mzTol;
+
+        QVector<FragLibIon> foundFragLibIons;
+
+        e = getFragLibIons(
+                mzMin,
+                mzMax,
+                m_iRTMin,
+                m_iRTMax,
+                &foundFragLibIons
+                ); ree
+
+        const double fragIonFrequencyPct = foundFragLibIons.size() / fragLibIonsSize;
+        mzHashVsFreqPct->insert(mzHashed, fragIonFrequencyPct);
+    }
+
+    qDebug() << "Fragment frequencies built in:" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::Private::getFragLibIons(
+        double mzMin,
+        double mzMax,
+        double iRTMin,
+        double iRTMax,
+        QVector<FragLibIon> *foundFragLibIons
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(m_rTree->empty()); ree
+
+    const rTreeSearchBox queryBox(
+            rTreeCoor(mzMin, iRTMin),
+            rTreeCoor(mzMax, iRTMax)
+    );
+
+    std::vector<rTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    for (const rTreePoint &rtp : result) {
+        const Id fragLibIonId = rtp.second;
+        foundFragLibIons->push_back(m_fragLibIons.value(fragLibIonId));
+    }
+
     ERR_RETURN
 }
 
@@ -230,5 +403,37 @@ FragLibIonRTree::~FragLibIonRTree() {}
 Err FragLibIonRTree::init(const QMap<PeptideStringWithMods, MS2IonsSeparated> &fragPreds) {
     ERR_INIT
     d_ptr->init(fragPreds); ree;
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::buildMzHashedVsFragLibIonFrequencePercentages(
+        double ppmTolerance,
+        QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
+        ) {
+    ERR_INIT
+    e = d_ptr->buildMzHashedVsFragLibIonFrequencePercentages(
+            ppmTolerance,
+            mzHashVsFreqPct
+            ); ree
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::getFragLibIons(
+        double mzMin,
+        double mzMax,
+        double iRTMin,
+        double iRTMax,
+        QVector<FragLibIon> *foundFragLibIons
+) {
+    ERR_INIT
+
+    e = d_ptr->getFragLibIons(
+            mzMin,
+            mzMax,
+            iRTMin,
+            iRTMax,
+            foundFragLibIons
+            ); ree
+
     ERR_RETURN
 }
