@@ -25,6 +25,7 @@ SET(SOURCE_FILES
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/FeatureFinderHillClusterTron.cpp
+        src/FragLibIonRTree.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
@@ -45,6 +46,7 @@ SET(HEADER_FILES
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/FeatureFinderHillClusterTron.h
+        src/FragLibIonRTree.h
         src/IsotopicDistributionBuilder.h
         src/MsCalibratomatic.h
         src/MsFrame.h

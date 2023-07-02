@@ -244,6 +244,17 @@ public:
             QVector<MS2Ion> *ms2Ions
     );
 
+    static Err buildFragIonLibForCandidates(
+            const QString &fragLibUri,
+            int chargeMin,
+            int chargeMax,
+            double mzTargetMin,
+            double mzTargetMax,
+            QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
+            QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy
+            );
+
+
 private:
 
     QString m_fragLibFilePath;

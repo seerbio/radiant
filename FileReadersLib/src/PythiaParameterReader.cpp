@@ -413,7 +413,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;
-    pythiaParameters.skipScanCount = 0;
+    pythiaParameters.skipScanCount = 1;
     pythiaParameters.useMeanMz = true;
     pythiaParameters.filterLength = 3;
     pythiaParameters.smoothCount = 1;

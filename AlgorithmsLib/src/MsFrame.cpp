@@ -100,11 +100,12 @@ QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
     return frameIndexVsScanPoints;
 }
 
-Err MsFrame::writeFrameScans(const QString &outputFilePath) const {
+Err MsFrame::writeFrameScans(
+        const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
+        const QString &outputFilePath
+        ) {
 
     ERR_INIT
-
-    const QMap<FrameIndex, ScanPoints> framesVsScanPoints = frameIndexVsScanPoints();
 
     QVector<MsFrameScanPointRows> rowsToWrite;
     for (auto it = framesVsScanPoints.begin(); it != framesVsScanPoints.end(); it++) {
@@ -112,6 +113,10 @@ Err MsFrame::writeFrameScans(const QString &outputFilePath) const {
         row.frameIndex = it.key();
 
         const ScanPoints &sp = it.value();
+
+        if (sp.isEmpty()) {
+            continue;
+        }
 
         e = MsReaderBase::splitScanPoints(
                 sp,

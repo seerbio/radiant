@@ -236,3 +236,107 @@ void FragLibReader::filterMs2IonsByIntensity(
     ms2Ions->erase(terminator, ms2Ions->end());
 
 }
+
+namespace {
+
+    double calculateMassFromThomson(
+            double mz,
+            int charge
+    ) {
+        const double PROTON = 1.0072;
+        return (mz * charge) - (charge * PROTON);
+    }
+
+    Err peptideStringWithModsFromPeptideSequenceChargeKey(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            PeptideStringWithMods *peptideStringWithMods,
+            Charge *charge
+    ){
+
+        ERR_INIT
+
+        const int expectedSplitSize = 2;
+
+        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                QString::SkipEmptyParts
+        );
+
+        e = ErrorUtils::isEqual(
+                peptideSequenceChargeKeySplit.size(),
+                expectedSplitSize); ree;
+
+        *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
+
+        e = ErrorUtils::toInt(
+                peptideSequenceChargeKeySplit.back(),
+                charge
+        ); ree
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err FragLibReader::buildFragIonLibForCandidates(
+        const QString &fragLibUri,
+        int chargeMin,
+        int chargeMax,
+        double mzTargetMin,
+        double mzTargetMax,
+        QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
+        QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy
+        ) {
+
+    ERR_INIT
+
+    FragLibReader fragLibReader;
+    e = fragLibReader.init(fragLibUri); ree;
+
+    for (Charge charge = chargeMin; charge <= chargeMax; ++charge) {
+
+        const double massStart = calculateMassFromThomson(
+                mzTargetMin,
+                charge
+        );
+
+        const double massEnd = calculateMassFromThomson(
+                mzTargetMax,
+                charge
+        );
+
+        QMap<PeptideSequenceChargeKey, MS2IonsSeparated> peptideSequenceChargeKeyVsMS2IonsSeparated;
+        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
+        e = fragLibReader.getMS2Ions(
+                massStart,
+                massEnd,
+                &peptideSequenceChargeKeyVsMS2IonsSeparated,
+                &peptideSequenceChargeKeyVsIsDecoy
+        ); ree
+
+        for (auto it = peptideSequenceChargeKeyVsMS2IonsSeparated.begin(); it != peptideSequenceChargeKeyVsMS2IonsSeparated.end(); it++) {
+
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+            const MS2IonsSeparated &ms2IonsSeparated = it.value();
+
+            PeptideStringWithMods peptideStringWithMods;
+            Charge chargeFromPeptideSequenceChargeKey;
+            e = peptideStringWithModsFromPeptideSequenceChargeKey(
+                    peptideSequenceChargeKey,
+                    &peptideStringWithMods,
+                    &chargeFromPeptideSequenceChargeKey
+            ); ree;
+
+            if (charge != chargeFromPeptideSequenceChargeKey) {
+                continue;
+            }
+
+            e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
+
+            fragPreds->insert(peptideStringWithMods, ms2IonsSeparated);
+            fragPredsIsDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
+        }
+
+    }
+
+    ERR_RETURN
+}

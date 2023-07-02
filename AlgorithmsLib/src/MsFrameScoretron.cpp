@@ -73,7 +73,16 @@ Err MsFrameScoretron::init(
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
     m_mzTargetStartStop = mzTargetStartStop;
 
-    e = buildFragIonLibForTargetMz(fragLibFilePath); ree
+    e = FragLibReader::buildFragIonLibForCandidates(
+            fragLibFilePath,
+            m_params.chargeStateMin,
+            m_params.chargeStateMax,
+            m_mzTargetStartStop.first,
+            m_mzTargetStartStop.second,
+            &m_fragPreds,
+            &m_fragPredsIsDecoy
+            ); ree
+
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree
 
     e = initMsFrame(
@@ -89,96 +98,7 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
-namespace {
 
-    Err peptideStringWithModsFromPeptideSequenceChargeKey(
-            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
-            PeptideStringWithMods *peptideStringWithMods,
-            Charge *charge
-    ){
-
-        ERR_INIT
-
-        const int expectedSplitSize = 2;
-
-        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
-                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
-                QString::SkipEmptyParts
-        );
-
-        e = ErrorUtils::isEqual(
-                peptideSequenceChargeKeySplit.size(),
-                expectedSplitSize); ree;
-
-        *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
-
-        e = ErrorUtils::toInt(
-                peptideSequenceChargeKeySplit.back(),
-                charge
-                ); ree
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err MsFrameScoretron::buildFragIonLibForTargetMz(const QString &fragLibUri) {
-
-    ERR_INIT
-
-    FragLibReader fragLibReader;
-    e = fragLibReader.init(fragLibUri); ree;
-
-    const int monoOffset = 0;
-    for (Charge charge = m_params.chargeStateMin; charge <= m_params.chargeStateMax; ++charge) {
-
-        const double massStart = BiophysicalCalcs::calculateMassFromThomson(
-                m_mzTargetStartStop.first,
-                charge,
-                monoOffset
-        );
-
-        const double massEnd = BiophysicalCalcs::calculateMassFromThomson(
-                m_mzTargetStartStop.second,
-                charge,
-                monoOffset
-        );
-
-        QMap<PeptideSequenceChargeKey, MS2IonsSeparated> peptideSequenceChargeKeyVsMS2IonsSeparated;
-        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-        e = fragLibReader.getMS2Ions(
-                massStart - m_params.precursorExtractionWindowThomsons,
-                massEnd + m_params.precursorExtractionWindowThomsons,
-                &peptideSequenceChargeKeyVsMS2IonsSeparated,
-                &peptideSequenceChargeKeyVsIsDecoy
-        ); ree
-
-        for (auto it = peptideSequenceChargeKeyVsMS2IonsSeparated.begin(); it != peptideSequenceChargeKeyVsMS2IonsSeparated.end(); it++) {
-
-            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            const MS2IonsSeparated &ms2IonsSeparated = it.value();
-
-            PeptideStringWithMods peptideStringWithMods;
-            Charge chargeFromPeptideSequenceChargeKey;
-            e = peptideStringWithModsFromPeptideSequenceChargeKey(
-                    peptideSequenceChargeKey,
-                    &peptideStringWithMods,
-                    &chargeFromPeptideSequenceChargeKey
-            ); ree;
-
-            if (charge != chargeFromPeptideSequenceChargeKey) {
-                continue;
-            }
-
-            e = ErrorUtils::isTrue(peptideSequenceChargeKeyVsIsDecoy.contains(peptideSequenceChargeKey)); ree;
-
-            m_fragPreds.insert(peptideStringWithMods, ms2IonsSeparated);
-            m_fragPredsIsDecoy.insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
-        }
-
-    }
-
-    ERR_RETURN
-}
 
 Err MsFrameScoretron::initMsFrame(
         const QString &msDataFilePath,
@@ -200,12 +120,12 @@ Err MsFrameScoretron::initMsFrame(
             m_params.mzMaxDataStructure
     ); ree;
 
-    e = m_msFrame.smoothFrame(
-            m_params.filterLength,
-            m_params.sigma,
-            m_params.smoothCount,
-            m_params.mzMaxDataStructure
-    ); ree
+//    e = m_msFrame.smoothFrame(
+//            m_params.filterLength,
+//            m_params.sigma,
+//            m_params.smoothCount,
+//            m_params.mzMaxDataStructure
+//    ); ree
 
     e = ErrorUtils::isAboveThreshold(
             m_msFrame.scanCount(),
@@ -347,6 +267,17 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             frameApexesTurboXIC,
             &apexScanPoints
             ); ree
+
+//#define WRITE_SCAN_FRAME
+#ifdef WRITE_SCAN_FRAME
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
+    for(auto it = apexScanPoints.begin(); it != apexScanPoints.end(); it++) {
+        const ScanNumber sn = m_msFrame.scanNumberFromFrameIndex(it.key());
+        scanNumberVsScanPoints.insert(sn, it.value());
+    }
+
+    e = MsFrame::writeFrameScans(scanNumberVsScanPoints, "frame.prq"); ree
+#endif
 
     ERR_RETURN
 }

@@ -85,7 +85,10 @@ public:
 
     [[nodiscard]] bool isValid() const ;
 
-    [[nodiscard]] Err writeFrameScans(const QString &outputFilePath) const;
+    static Err writeFrameScans(
+            const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
+            const QString &outputFilePath
+            );
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 

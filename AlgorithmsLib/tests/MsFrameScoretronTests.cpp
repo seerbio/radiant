@@ -18,7 +18,6 @@ private slots:
 
     void scoreCandidatesTest();
 
-
 };
 
 void MsFrameScoretronTests::scoreCandidatesTest() {

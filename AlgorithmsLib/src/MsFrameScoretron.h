@@ -49,8 +49,6 @@ public:
 
 private:
 
-    Err buildFragIonLibForTargetMz(const QString &fragLibUri);
-
     Err initMsFrame(
             const QString &msDataFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
