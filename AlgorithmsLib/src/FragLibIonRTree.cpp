@@ -15,6 +15,8 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+#include <iostream>
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -40,6 +42,7 @@ public:
 
     Err addIsotopes();
 
+    Err loadpeptideIdVsFragLibIons();
     Err loadRTree();
 
     Err buildMzHashedVsFragLibIonFrequencePercentages(
@@ -67,6 +70,7 @@ private:
     int m_defaultPrecision;
 
     QMap<Id, FragLibIon> m_fragLibIons;
+    QMap<PeptideId, QVector<FragLibIon>> m_peptideIdVsFragLibIons;
     QMap<PeptideId, PeptideStringWithMods> m_peptideIdVsPeptideStringWithMods;
 
 };
@@ -172,6 +176,7 @@ Err FragLibIonRTree::Private::init(const QMap<PeptideStringWithMods, MS2IonsSepa
 
     e = addIsotopes(); ree
 
+    e = loadpeptideIdVsFragLibIons(); ree
     e = loadRTree(); ree
 
     qDebug() << "FragLibIon RTree loaded in" << et.elapsed() << "mSec";
@@ -280,6 +285,18 @@ Err FragLibIonRTree::Private::addIsotopes() {
             m_fragLibIons.insert(m_fragLibIons.size(), fragLibIonIso);
         }
 
+    }
+
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::Private::loadpeptideIdVsFragLibIons() {
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_fragLibIons); ree
+
+    for (const FragLibIon &fli : m_fragLibIons) {
+        m_peptideIdVsFragLibIons[fli.peptideId].push_back(fli);
     }
 
     ERR_RETURN
@@ -450,7 +467,7 @@ Err FragLibIonRTree::getFragLibIons(
     e = d_ptr->getFragLibIons(
             mzMin,
             mzMax,
-            d_ptr->m_mzMin,
+            d_ptr->m_iRTMin,
             d_ptr->m_iRTMax,
             foundFragLibIons
     ); ree

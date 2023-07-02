@@ -8,6 +8,7 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "FeatureFinderHillBuilder.h"
+#include "FragLibIonRTree.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
@@ -55,12 +56,18 @@ private:
             const QPair<double, double> &mzTargetStartStop
             );
 
+    Err iterateApexScanPoints(
+            const QMap<FrameIndex, ScanPoints> &apexScanPoints,
+            QVector<ScoredCandidate> *scoredCandidates
+            );
+
 
 private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     MsFrame m_msFrame;
+    FragLibIonRTree m_fragLibIonRTree;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

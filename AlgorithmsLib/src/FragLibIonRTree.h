@@ -16,6 +16,7 @@ using namespace Error;
 class MS2IonsSeparated;
 
 struct FragLibIon {
+
     PeptideId peptideId = -1;
     double mz = -1.0;
     double iRT = -1.0;
@@ -25,6 +26,9 @@ struct FragLibIon {
     IonType ionType;
     Charge charge = -1;
     bool isIsotope = false;
+
+    double mzSearched = -1.0;
+    double intensitySearched = -1.0;
 };
 
 

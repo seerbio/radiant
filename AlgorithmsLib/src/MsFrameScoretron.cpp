@@ -84,6 +84,7 @@ Err MsFrameScoretron::init(
             ); ree
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree
+    e = m_fragLibIonRTree.init(m_fragPreds); ree
 
     e = initMsFrame(
         msDataFilePath,
@@ -97,8 +98,6 @@ Err MsFrameScoretron::init(
 
     ERR_RETURN
 }
-
-
 
 Err MsFrameScoretron::initMsFrame(
         const QString &msDataFilePath,
@@ -255,7 +254,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     ERR_INIT
 
     TurboXIC frameApexesTurboXIC;
-
     e = buildMsFrameApexTurboXIC(
             m_params,
             m_msFrame.frameIndexVsScanPoints(),
@@ -278,6 +276,96 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
     e = MsFrame::writeFrameScans(scanNumberVsScanPoints, "frame.prq"); ree
 #endif
+
+    e = iterateApexScanPoints(
+            apexScanPoints,
+            scoredCandidates
+            ); ree
+
+
+    ERR_RETURN
+}
+
+namespace {
+
+    QMap<PeptideId, QVector<FragLibIon>> filterPeptideIdVsFragLibIonsForFrameIndex(
+            const QMap<PeptideId, QVector<FragLibIon>> &peptideIdVsFragLibIonsForFrameIndex,
+            int fragLibIonCountForCandidateMin
+            ) {
+
+        QMap<PeptideId, QVector<FragLibIon>> peptideIdVsFragLibIonsForFrameIndexFiltered;
+
+        for (
+            auto it = peptideIdVsFragLibIonsForFrameIndex.begin();
+            it != peptideIdVsFragLibIonsForFrameIndex.end();
+            it++
+            ) {
+
+            const PeptideId peptideId = it.key();
+            const QVector<FragLibIon> &flis = it.value();
+
+            if (flis.size() < fragLibIonCountForCandidateMin) {
+                continue;
+            }
+
+            peptideIdVsFragLibIonsForFrameIndexFiltered.insert(peptideId, flis);
+        }
+
+        return peptideIdVsFragLibIonsForFrameIndexFiltered;
+    }
+
+
+}//namespace
+Err MsFrameScoretron::iterateApexScanPoints(
+        const QMap<FrameIndex, ScanPoints> &apexScanPoints,
+        QVector<ScoredCandidate> *scoredCandidates
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(apexScanPoints); ree
+
+    for (auto it = apexScanPoints.begin(); it != apexScanPoints.end(); it++) {
+
+        QMap<PeptideId, QVector<FragLibIon>> peptideIdVsFragLibIonsForFrameIndex;
+
+        const FrameIndex frameIndex = it.key();
+        const ScanPoints &scanPoints = it.value();
+
+        qDebug() << "processing frame index:" << frameIndex;
+
+        for (const ScanPoint &sp : scanPoints) {
+
+            if (sp.x() < m_params.mzMinDataStructure) {
+                continue;
+            }
+
+            const double mzTol = MathUtils::calculatePPM(sp.x(), m_params.ms2ExtractionWidthPPM);
+            const double mzMin = sp.x() - mzTol;
+            const double mzMax = sp.x() + mzTol;
+
+            QVector<FragLibIon> foundFragLibIonsForMz;
+
+            // TODO when iRT is incorporated, use other overloaded function that takes iRT min/max as args
+            e = m_fragLibIonRTree.getFragLibIons(
+                    mzMin,
+                    mzMax,
+                    &foundFragLibIonsForMz
+                    ); ree
+
+            for (FragLibIon &fli : foundFragLibIonsForMz) {
+                fli.mzSearched = sp.x();
+                fli.intensitySearched = sp.y();
+                peptideIdVsFragLibIonsForFrameIndex[fli.peptideId].push_back(fli);
+            }
+        }
+
+        peptideIdVsFragLibIonsForFrameIndex = filterPeptideIdVsFragLibIonsForFrameIndex(
+                peptideIdVsFragLibIonsForFrameIndex,
+                m_params.minFoundMzPeaks
+                );
+
+    }
 
     ERR_RETURN
 }
