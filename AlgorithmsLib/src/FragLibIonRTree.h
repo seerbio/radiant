@@ -50,6 +50,12 @@ public:
             QVector<FragLibIon> *foundFragLibIons
     );
 
+    Err getFragLibIons(
+            double mzMin,
+            double mzMax,
+            QVector<FragLibIon> *foundFragLibIons
+    );
+
 private:
 
     Q_DISABLE_COPY(FragLibIonRTree) class Private;

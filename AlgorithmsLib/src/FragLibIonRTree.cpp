@@ -55,15 +55,16 @@ public:
         QVector<FragLibIon> *foundFragLibIons
             );
 
-private:
-
-    RTree *m_rTree;
-    int m_defaultPrecision;
-
+public:
     double m_mzMin;
     double m_mzMax;
     double m_iRTMin;
     double m_iRTMax;
+
+private:
+
+    RTree *m_rTree;
+    int m_defaultPrecision;
 
     QMap<Id, FragLibIon> m_fragLibIons;
     QMap<PeptideId, PeptideStringWithMods> m_peptideIdVsPeptideStringWithMods;
@@ -434,6 +435,25 @@ Err FragLibIonRTree::getFragLibIons(
             iRTMax,
             foundFragLibIons
             ); ree
+
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::getFragLibIons(
+        double mzMin,
+        double mzMax,
+        QVector<FragLibIon> *foundFragLibIons
+        ) {
+
+    ERR_INIT
+
+    e = d_ptr->getFragLibIons(
+            mzMin,
+            mzMax,
+            d_ptr->m_mzMin,
+            d_ptr->m_iRTMax,
+            foundFragLibIons
+    ); ree
 
     ERR_RETURN
 }
