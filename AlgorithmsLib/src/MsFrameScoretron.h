@@ -23,6 +23,13 @@ class TandemDeconvolverResult;
 
 struct ScoredCandidate {
 
+    double frequencyPercentSum = -1.0;
+    double frequencyPercentSumBestPossible = -1.0;
+    double klDivergence = -1.0;
+    double cosineSim = -1.0;
+    bool isDecoy = false;
+    PeptideStringWithMods peptideStringWithMods;
+
 };
 
 
@@ -46,7 +53,7 @@ public:
             const QPair<double, double> &mzTargetStartStop
             );
 
-    Err scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates);
+    Err scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates);
 
 
 private:
@@ -59,8 +66,19 @@ private:
 
     Err iterateApexScanPoints(
             const QMap<FrameIndex, ScanPoints> &apexScanPoints,
-            QVector<ScoredCandidate> *scoredCandidates
+            QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates
             );
+
+    Err extractFragLibIonsForScanPoints(
+            const ScanPoints &scanPoints,
+            FragLibIonRTree *fragLibIonRTree,
+            QMap<PeptideId, QVector<FragLibIon>> *peptideIdVsFragLibIonsForFrameIndexOutput
+            ) const;
+
+    Err extractScores(
+            const QMap<PeptideId, QVector<FragLibIon>> &peptideIdVsFragLibIonsForFrameIndex,
+            QVector<ScoredCandidate> *scoredCandidates
+    );
 
 
 private:

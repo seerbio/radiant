@@ -13,21 +13,9 @@
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
 #include <QElapsedTimer>
 
 using SparseMatrixPoint = EigenSparseUtils::SparseMatrixPoint;
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
-using rTreeSearchBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreeCoor, double> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 const int PRECISION = 3;
 

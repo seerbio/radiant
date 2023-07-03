@@ -60,6 +60,16 @@ public:
         QVector<FragLibIon> *foundFragLibIons
             );
 
+    Err getFragLibIonsByPeptideId(
+            PeptideId peptideId,
+            QVector<FragLibIon> *foundFragLibIons
+            );
+
+    Err getPeptideSequenceWithMods(
+            PeptideId peptideId,
+            PeptideStringWithMods *peptideStringWithMods
+            );
+
 public:
     double m_mzMin;
     double m_mzMax;
@@ -446,6 +456,32 @@ Err FragLibIonRTree::Private::addFrequencyPercentagesToFragLibIons(const QMap<Mz
     ERR_RETURN
 }
 
+Err FragLibIonRTree::Private::getFragLibIonsByPeptideId(
+        PeptideId peptideId,
+        QVector<FragLibIon> *foundFragLibIons
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_peptideIdVsFragLibIons.contains(peptideId)); ree
+
+    *foundFragLibIons = m_peptideIdVsFragLibIons.value(peptideId);
+
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::Private::getPeptideSequenceWithMods(
+        PeptideId peptideId,
+        PeptideStringWithMods *peptideStringWithMods
+        ) {
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_peptideIdVsPeptideStringWithMods.contains(peptideId)); ree
+
+
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -516,5 +552,23 @@ Err FragLibIonRTree::getFragLibIons(
 Err FragLibIonRTree::addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct) {
     ERR_INIT
     e = d_ptr->addFrequencyPercentagesToFragLibIons(mzHashVsFreqPct); ree
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::getFragLibIonsByPeptideId(
+        PeptideId peptideId,
+        QVector<FragLibIon> *fragLibIons
+        ) {
+
+    ERR_INIT
+    e = d_ptr->getFragLibIonsByPeptideId(peptideId, fragLibIons); ree
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::getPeptideSequenceWithMods(
+        PeptideId peptideId,
+        PeptideStringWithMods *peptideStringWithMods) {
+    ERR_INIT
+    e = d_ptr->getPeptideSequenceWithMods(peptideId, peptideStringWithMods); ree
     ERR_RETURN
 }

@@ -422,7 +422,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.topNMs2Ions = 13;
     pythiaParameters.minFoundMzPeaks = 6;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinDataStructure = 187.0;
+    pythiaParameters.mzMinDataStructure = 330.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
     pythiaParameters.pValThreshold = 0.05;
 

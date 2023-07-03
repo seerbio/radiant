@@ -44,6 +44,7 @@ struct FrameParallelInput {
     PythiaParameters params;
     QString msDataFilePath;
     QString fragLibFilePath;
+    QString fragLibBackgroundFilePath;
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     QPair<double, double> mzTargetStartStop;
 };
@@ -237,6 +238,7 @@ namespace {
                fpi.params,
                fpi.msDataFilePath,
                fpi.fragLibFilePath,
+               fpi.fragLibBackgroundFilePath,
                fpi.uniqueMsInfoScanKey,
                fpi.mzTargetStartStop
                ); rree;

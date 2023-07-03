@@ -63,6 +63,16 @@ public:
             QVector<FragLibIon> *foundFragLibIons
     );
 
+    Err getFragLibIonsByPeptideId(
+            PeptideId peptideId,
+            QVector<FragLibIon> *fragLibIons
+            );
+
+    Err getPeptideSequenceWithMods(
+            PeptideId peptideId,
+            PeptideStringWithMods *peptideStringWithMods
+            );
+
 private:
 
     Q_DISABLE_COPY(FragLibIonRTree) class Private;

@@ -52,8 +52,8 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             );
     QCOMPARE(e, eNoError);
 
-    QVector<ScoredCandidate> scoredCandidates;
-    e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates);
+    QMap<FrameIndex , QVector<ScoredCandidate>> frameIndexVsScoredCandidates;
+    e = msFrameScoretron.scoreFrameCandidates(&frameIndexVsScoredCandidates);
     QCOMPARE(e, eNoError);
 
 }
