@@ -50,6 +50,8 @@ public:
             QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
             );
 
+    Err addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct);
+
     Err getFragLibIons(
         double mzMin,
         double mzMax,
@@ -306,6 +308,9 @@ Err FragLibIonRTree::Private::loadRTree() {
 
     ERR_INIT
 
+    delete m_rTree;
+    m_rTree = nullptr;
+
     e = ErrorUtils::isNotEmpty(m_fragLibIons); ree
     e = ErrorUtils::isNotEmpty(m_peptideIdVsPeptideStringWithMods); ree
 
@@ -408,6 +413,36 @@ Err FragLibIonRTree::Private::getFragLibIons(
     ERR_RETURN
 }
 
+Err FragLibIonRTree::Private::addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(mzHashVsFreqPct); ree;
+    e = ErrorUtils::isNotEmpty(m_fragLibIons); ree;
+
+    const QList<FrequencyPercent> &freqPcts = mzHashVsFreqPct.values();
+
+    const double frequencyPercentMinLowerer = 10.0;
+    const double frequencyPercentMin = *std::min(freqPcts.begin(), freqPcts.end()) / frequencyPercentMinLowerer;
+
+    for (auto it = m_fragLibIons.begin(); it != m_fragLibIons.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        FragLibIon newFli = it.value();
+
+        const int mzHashed = MathUtils::hashDecimal(newFli.mz, m_defaultPrecision);
+        const double mzFrequencyPercent = mzHashVsFreqPct.value(mzHashed);
+
+        newFli.frequencyPercent = std::max(mzFrequencyPercent, frequencyPercentMin);
+
+        m_fragLibIons[frameIndex] = newFli;
+    }
+
+    e = loadRTree(); ree
+
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -472,5 +507,11 @@ Err FragLibIonRTree::getFragLibIons(
             foundFragLibIons
     ); ree
 
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct) {
+    ERR_INIT
+    e = d_ptr->addFrequencyPercentagesToFragLibIons(mzHashVsFreqPct); ree
     ERR_RETURN
 }

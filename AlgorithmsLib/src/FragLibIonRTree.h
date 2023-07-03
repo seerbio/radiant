@@ -26,6 +26,7 @@ struct FragLibIon {
     IonType ionType;
     Charge charge = -1;
     bool isIsotope = false;
+    double frequencyPercent = -1.0;
 
     double mzSearched = -1.0;
     double intensitySearched = -1.0;
@@ -45,6 +46,8 @@ public:
             double ppmTolerance,
             QMap<MzHashed, FrequencyPercent> *mzHashVsFreqPct
             );
+
+    Err addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct);
 
     Err getFragLibIons(
             double mzMin,

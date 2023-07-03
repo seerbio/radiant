@@ -100,6 +100,14 @@ Err MsFrameScoretron::init(
     e = ErrorUtils::isNotEmpty(m_fragPredsBackground); ree
     e = m_fragLibIonRTreeBackground.init(m_fragPredsBackground); ree
 
+    QMap<MzHashed, FrequencyPercent> mzHashVsFreqPctBackground;
+    e = m_fragLibIonRTreeBackground.buildMzHashedVsFragLibIonFrequencePercentages(
+            m_params.ms2ExtractionWidthPPM,
+            &mzHashVsFreqPctBackground
+            ); ree
+
+    e = m_fragLibIonRTree.addFrequencyPercentagesToFragLibIons(mzHashVsFreqPctBackground); ree
+
     e = initMsFrame(
         msDataFilePath,
         uniqueMsInfoScanKey,
