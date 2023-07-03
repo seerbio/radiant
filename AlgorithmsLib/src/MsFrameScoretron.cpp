@@ -50,6 +50,7 @@ Err MsFrameScoretron::init(
         const PythiaParameters &params,
         const QString &msDataFilePath,
         const QString &fragLibFilePath,
+        const QString &fragLibBackgroundFilePath,
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const QPair<double, double> &mzTargetStartStop
 ) {
@@ -81,10 +82,23 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.second,
             &m_fragPreds,
             &m_fragPredsIsDecoy
-            ); ree
+    ); ree
+
+    e = FragLibReader::buildFragIonLibForCandidates(
+            fragLibBackgroundFilePath,
+            m_params.chargeStateMin,
+            m_params.chargeStateMax,
+            m_mzTargetStartStop.first,
+            m_mzTargetStartStop.second,
+            &m_fragPredsBackground,
+            &m_fragPredsBackgroundIsDecoy
+    ); ree
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree
     e = m_fragLibIonRTree.init(m_fragPreds); ree
+
+    e = ErrorUtils::isNotEmpty(m_fragPredsBackground); ree
+    e = m_fragLibIonRTreeBackground.init(m_fragPredsBackground); ree
 
     e = initMsFrame(
         msDataFilePath,
@@ -332,8 +346,6 @@ Err MsFrameScoretron::iterateApexScanPoints(
         const FrameIndex frameIndex = it.key();
         const ScanPoints &scanPoints = it.value();
 
-        qDebug() << "processing frame index:" << frameIndex;
-
         for (const ScanPoint &sp : scanPoints) {
 
             if (sp.x() < m_params.mzMinDataStructure) {
@@ -365,6 +377,7 @@ Err MsFrameScoretron::iterateApexScanPoints(
                 m_params.minFoundMzPeaks
                 );
 
+        qDebug() << "processing frame index:" << frameIndex << peptideIdVsFragLibIonsForFrameIndex.size() << "trainers";
     }
 
     ERR_RETURN

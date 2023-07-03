@@ -27,8 +27,10 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
     const QString msDataFilePath
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
 
+    const QString fragLibBackgroundPath
+            = QStringLiteral("/home/anichols/Downloads/uniparc_upid_UP000027126_2023_07_02.fasta.csv.fragLib");
+
     const QString fragLibPath
-//            = QStringLiteral("/home/anichols/Desktop/Testing/2022_02_22_Homo_sapiens_UP000005640.fragLib");
             = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
 
 //    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "444952";
@@ -44,6 +46,7 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             PythiaParameterReader::genericPythiaParametersForTests(),
             msDataFilePath,
             fragLibPath,
+            fragLibBackgroundPath,
             uniqueMsInfoScanKey,
             {target - targetWindowSize, target + targetWindowSize}
             );

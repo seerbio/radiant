@@ -95,7 +95,7 @@ void FragLibIonRTreeTests::extractPointsTest() {
 
     const double ppmTolerance = 15.0;
     QMap<MzHashed, FrequencyPercent> mzHashVsFreqPct;
-    e = fragLibIonRTree.buildMzHashedVsFragLibIonFrequencePercentages(
+    e = fragLibIonRTree.addFrequencePercentagesToFragLibIons(
             ppmTolerance,
             &mzHashVsFreqPct
             );

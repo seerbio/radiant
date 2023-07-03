@@ -41,6 +41,7 @@ public:
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
+            const QString &fragLibBackgroundFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QPair<double, double> &mzTargetStartStop
             );
@@ -66,8 +67,14 @@ private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
-    MsFrame m_msFrame;
+
+    QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPredsBackground;
+    QMap<PeptideStringWithMods, bool> m_fragPredsBackgroundIsDecoy;
+
     FragLibIonRTree m_fragLibIonRTree;
+    FragLibIonRTree m_fragLibIonRTreeBackground;
+
+    MsFrame m_msFrame;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;
