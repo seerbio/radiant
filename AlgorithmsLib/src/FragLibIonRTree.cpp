@@ -297,6 +297,8 @@ Err FragLibIonRTree::Private::loadpeptideIdVsFragLibIons() {
 
     e = ErrorUtils::isNotEmpty(m_fragLibIons); ree
 
+    m_peptideIdVsFragLibIons.clear();
+
     for (const FragLibIon &fli : m_fragLibIons) {
         m_peptideIdVsFragLibIons[fli.peptideId].push_back(fli);
     }
@@ -438,6 +440,7 @@ Err FragLibIonRTree::Private::addFrequencyPercentagesToFragLibIons(const QMap<Mz
         m_fragLibIons[frameIndex] = newFli;
     }
 
+    e = loadpeptideIdVsFragLibIons(); ree
     e = loadRTree(); ree
 
     ERR_RETURN
