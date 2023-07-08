@@ -218,14 +218,16 @@ public:
             double massStart,
             double massEnd,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
     );
 
     Err getMS2Ions(
             double massStart,
             double massEnd,
             QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
     );
 
     static void filterMs2IonsByMz(
@@ -251,7 +253,8 @@ public:
             double mzTargetMin,
             double mzTargetMax,
             QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
-            QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy
+            QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
+            QMap<PeptideStringWithMods, double> *fragPredsMass
             );
 
 

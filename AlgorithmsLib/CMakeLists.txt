@@ -27,6 +27,8 @@ SET(SOURCE_FILES
         src/FeatureFinderHillClusterTron.cpp
         src/FragLibIonRTree.cpp
         src/IsotopicDistributionBuilder.cpp
+        src/MS2ChargeDeconvolvotron.cpp
+        src/MS2PointsExtractomatic.cpp
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
@@ -48,6 +50,8 @@ SET(HEADER_FILES
         src/FeatureFinderHillClusterTron.h
         src/FragLibIonRTree.h
         src/IsotopicDistributionBuilder.h
+        src/MS2ChargeDeconvolvotron.h
+        src/MS2PointsExtractomatic.h
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h

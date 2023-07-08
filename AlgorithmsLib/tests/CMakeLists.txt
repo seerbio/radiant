@@ -20,6 +20,7 @@ SET(TEST_CLASSES
         IsotopeDistributionBuilderTests
         MissingPeptideManualTroubleshooter
         MsCalibratomaticTests
+        MS2PointsExtractomaticTests
         MsFrameTests
         MsFrameScoretronTests
         MsFrameScoretronProcessormaticTests

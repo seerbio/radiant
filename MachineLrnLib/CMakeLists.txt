@@ -128,5 +128,6 @@ CONFIGURE_FILE(${MODELS_DIRECTORY}/rnn_linear_charge_w_precursors_nce_1.hdf5.jso
 CONFIGURE_FILE(${MODELS_DIRECTORY}/rnn_linear_charge_w_precursors_nce_2.hdf5.json ${CMAKE_BINARY_DIR}/bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json  COPYONLY)
 CONFIGURE_FILE(${MODELS_DIRECTORY}/rnn_linear_charge_w_precursors_nce_3.hdf5.json ${CMAKE_BINARY_DIR}/bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json  COPYONLY)
 CONFIGURE_FILE(${MODELS_DIRECTORY}/rnn_linear_charge_w_precursors_nce_4.hdf5.json ${CMAKE_BINARY_DIR}/bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json  COPYONLY)
+CONFIGURE_FILE(${MODELS_DIRECTORY}/MS2_Charge_Model.hdf5.json ${CMAKE_BINARY_DIR}/bin/MS2_Charge_Model.hdf5.json  COPYONLY)
 
 ADD_SUBDIRECTORY("tests")

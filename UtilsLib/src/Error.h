@@ -16,6 +16,7 @@ namespace Error{
     enum UTILSLIB_EXPORTS Err {
         eNoError = 0,
         eError,
+        eEmptyContainerError,
         eValueError,
         eMemoryError,
         eFileError,

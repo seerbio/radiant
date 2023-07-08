@@ -186,7 +186,7 @@ Err FragLibIonRTree::Private::init(const QMap<PeptideStringWithMods, MS2IonsSepa
         );
     }
 
-    e = addIsotopes(); ree
+//    e = addIsotopes(); ree
 
     e = loadpeptideIdVsFragLibIons(); ree
     e = loadRTree(); ree
@@ -477,7 +477,7 @@ Err FragLibIonRTree::Private::getPeptideSequenceWithMods(
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_peptideIdVsPeptideStringWithMods.contains(peptideId)); ree
-
+    *peptideStringWithMods = m_peptideIdVsPeptideStringWithMods.value(peptideId);
 
     ERR_RETURN
 }

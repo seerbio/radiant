@@ -81,7 +81,8 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.first,
             m_mzTargetStartStop.second,
             &m_fragPreds,
-            &m_fragPredsIsDecoy
+            &m_fragPredsIsDecoy,
+            &m_fragPredsMass
     ); ree
 
     e = FragLibReader::buildFragIonLibForCandidates(
@@ -91,7 +92,8 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.first,
             m_mzTargetStartStop.second,
             &m_fragPredsBackground,
-            &m_fragPredsBackgroundIsDecoy
+            &m_fragPredsBackgroundIsDecoy,
+            &m_fragPredsMass
     ); ree
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree
@@ -114,6 +116,8 @@ Err MsFrameScoretron::init(
         uniqueMsInfoScanKey,
         mzTargetStartStop
         ); ree
+
+    m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
@@ -261,8 +265,8 @@ namespace {
             const ScanPoints frameIndexScanPoints = frameApexesTurboXIC.extractSpectrum(
                     mzMin,
                     mzMax,
-                    frameIndex,
-                    frameIndex
+                    frameIndexLo,
+                    frameIndexHi
                     );
 
             apexScanPoints->insert(frameIndex, frameIndexScanPoints);
@@ -290,7 +294,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandi
             &apexScanPoints
             ); ree
 
-//#define WRITE_SCAN_FRAME
+#define WRITE_SCAN_FRAME
 #ifdef WRITE_SCAN_FRAME
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
     for(auto it = apexScanPoints.begin(); it != apexScanPoints.end(); it++) {
@@ -435,6 +439,7 @@ Err MsFrameScoretron::iterateApexScanPoints(
         QVector<ScoredCandidate> scoredCandidatesTarget;
         e = extractScores(
                 peptideIdVsFragLibIonsCandidatesForFrameIndex,
+                frameIndex,
                 &scoredCandidatesTarget
         ); ree
 
@@ -478,9 +483,24 @@ Err MsFrameScoretron::extractFragLibIonsForScanPoints(
         for (FragLibIon &fli : foundFragLibIonsForMz) {
             fli.mzSearched = sp.x();
             fli.intensitySearched = sp.y();
+
             peptideIdVsFragLibIonsForFrameIndex[fli.peptideId].push_back(fli);
         }
+
     }
+
+//#define DEBUG_EXTRACTS
+#ifdef DEBUG_EXTRACTS
+    for (auto it = peptideIdVsFragLibIonsForFrameIndex.begin(); it != peptideIdVsFragLibIonsForFrameIndex.end(); it++) {
+        const PeptideId peptideId  = it.key();
+        const QVector<FragLibIon> &flis = it.value();
+
+        PeptideStringWithMods peptideStringWithMods;
+        e = fragLibIonRTree->getPeptideSequenceWithMods(peptideId, &peptideStringWithMods); ree
+
+        std::cout << peptideStringWithMods.toStdString() << " " << flis.size() << std::endl;
+    }
+#endif
 
     *peptideIdVsFragLibIonsForFrameIndexOutput = filterPeptideIdVsFragLibIonsForFrameIndex(
             peptideIdVsFragLibIonsForFrameIndex,
@@ -493,6 +513,7 @@ Err MsFrameScoretron::extractFragLibIonsForScanPoints(
 
 Err MsFrameScoretron::extractScores(
         const QMap<PeptideId, QVector<FragLibIon>> &peptideIdVsFragLibIonsForFrameIndex,
+        FrameIndex frameIndex,
         QVector<ScoredCandidate> *scoredCandidates
 ) {
 
@@ -528,6 +549,25 @@ Err MsFrameScoretron::extractScores(
         scoredCandidate.cosineSim = klDivergenceVsCosineSim.second;
         e = m_fragLibIonRTree.getPeptideSequenceWithMods(peptideId, &scoredCandidate.peptideStringWithMods); ree
         scoredCandidate.isDecoy = m_fragPredsIsDecoy.value(scoredCandidate.peptideStringWithMods);
+        scoredCandidate.mass = m_fragPredsMass.value(scoredCandidate.peptideStringWithMods);
+        scoredCandidate.charge = BiophysicalCalcs::calculateChargeFromSequence(
+                scoredCandidate.peptideStringWithMods,
+                m_params.aminoAcids,
+                m_mzStartStopMean
+                );
+        scoredCandidate.scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
+        scoredCandidate.scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate.scanNumber);
+
+//        if (scoredCandidate.klDivergence < 40
+//            && scoredCandidate.scanNumber == 6435
+//            && scoredCandidate.peptideStringWithMods[0] == 'F'
+//        ) {
+//            qDebug() << scoredCandidate.scanTime << scoredCandidate.scanNumber << scoredCandidate.mass << scoredCandidate.isDecoy
+//                     << scoredCandidate.charge << scoredCandidate.peptideStringWithMods << scoredCandidate.charge
+//                     << scoredCandidate.klDivergence << scoredCandidate.cosineSim << scoredCandidate.frequencyPercentSum << scoredCandidate.frequencyPercentSumBestPossible;
+//
+//        }
+
 
         scoredCandidates->push_back(scoredCandidate);
     }
