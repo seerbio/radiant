@@ -173,10 +173,10 @@ public:
         ERR_RETURN
     }
 
-    template <typename T, typename U>
+    template <typename T>
     static Err zip(
             const T &z1,
-            const U &z2,
+            const T &z2,
             QVector<QPointF> *zipResult
     ) {
 

@@ -105,8 +105,18 @@ void MS2PointsExtractomaticTests::updateScanPointsTest() {
 
     foundIdVsScanPoints[0].ry() = 666.0;
 
-    e = ms2PointsExtractomatic.updatedScanPoints(foundIdVsScanPoints);
+    e = ms2PointsExtractomatic.updateScanPoints(foundIdVsScanPoints);
     QCOMPARE(e, eNoError);
+
+    foundIdVsScanPoints.clear();
+    e = ms2PointsExtractomatic.findScanPoints(
+            1000.0,
+            1000.101,
+            &foundIdVsScanPoints
+    );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(foundIdVsScanPoints.firstKey(), 0);
+    QCOMPARE(foundIdVsScanPoints.first().y(), 666.0);
 
 }
 

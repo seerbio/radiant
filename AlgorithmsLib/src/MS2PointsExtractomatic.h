@@ -21,6 +21,8 @@ public:
 
     Err init(const QVector<ScanPoints> &scanPoints);
 
+    QMap<Id, ScanPoint> idVsScanPoints();
+
     Err findScanPoints(
             double mzMin,
             double mzMax,
@@ -29,7 +31,7 @@ public:
 
     Err removeScanPoints(const QMap<Id, ScanPoint> &scanPoints);
 
-    Err updatedScanPoints(const QMap<Id, ScanPoint> &scanPoints);
+    Err updateScanPoints(const QMap<Id, ScanPoint> &scanPoints);
 
 private:
 

@@ -19,8 +19,9 @@ SET(TEST_CLASSES
         FragLibIonRTreeTests
         IsotopeDistributionBuilderTests
         MissingPeptideManualTroubleshooter
-        MsCalibratomaticTests
+        MS2ChargeDeconvolvotronTests
         MS2PointsExtractomaticTests
+        MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronTests
         MsFrameScoretronProcessormaticTests

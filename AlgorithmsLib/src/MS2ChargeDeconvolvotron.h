@@ -16,6 +16,8 @@ class ALGORITHMSLIB_EXPORTS MS2ChargeDeconvolvotron {
 
 public:
 
+    friend class MS2ChargeDeconvolvotronTests;
+
     MS2ChargeDeconvolvotron();
     ~MS2ChargeDeconvolvotron();
 
@@ -24,10 +26,20 @@ public:
             double ppmTolerance
             );
 
-    Err predictMS2Charge(
+    Err deisotopeScanPoints(
             const ScanPoints &scanPoints,
-            int *charge
+            ScanPoints *scanPointsDeisotoped
             );
+
+private:
+
+    QVector<double> buildMzValsForChargeMono(double mzMaxIntensity);
+
+    Err testChargeMonoCaller(
+            const ScanPoints &scanPoints,
+            double mzVal,
+            QVector<float> *predVec
+    );
 
 private:
 

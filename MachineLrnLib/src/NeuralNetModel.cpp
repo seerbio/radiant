@@ -18,20 +18,31 @@ class Q_DECL_HIDDEN NeuralNetModel::Private
 public:
 
     Private();
-    ~Private() = default;
+    ~Private();
 
     Err init(const QString &modelFilePath);
 
     QVector<QVector<float>> batchPredict(const QVector<Eigen::MatrixXd> &mats);
+
+    QVector<float> predict(const Eigen::VectorX<double> &vec);
 
 
 private:
 
     QString m_modelFilePath;
 
+    fdeep::model *m_model;
+
 };
 
-NeuralNetModel::Private::Private() : m_modelFilePath("") {}
+NeuralNetModel::Private::Private()
+: m_modelFilePath("")
+, m_model(nullptr)
+{}
+
+NeuralNetModel::Private::~Private() {
+    delete m_model;
+}
 
 
 Err NeuralNetModel::Private::init(const QString &modelFilePath) {
@@ -44,6 +55,8 @@ Err NeuralNetModel::Private::init(const QString &modelFilePath) {
     e = ErrorUtils::isTrue(fi.exists() && fi.isFile()); ree;
 
     m_modelFilePath = modelFilePath;
+
+    m_model = new fdeep::model(fdeep::load_model(m_modelFilePath.toStdString(), true, fdeep::dev_null_logger));
 
     ERR_RETURN
 }
@@ -64,6 +77,21 @@ namespace {
             for (int j = 0; j < cols; ++j) {
                 matrixTensor.set(fdeep::tensor_pos(i, j), static_cast<float>(mat.coeff(i, j)));
             }
+        }
+
+        return matrixTensor;
+    }
+
+    fdeep::tensor eigenVecToFDeepTensor(const Eigen::VectorX<double> vec) {
+
+        const int channels = 0;
+        const int rows = static_cast<int>(vec.rows());
+
+        fdeep::tensor_shape tensorShape(rows);
+        fdeep::tensor matrixTensor(tensorShape, 0.0f);
+
+        for (int i = 0; i < rows; ++i) {
+            matrixTensor.set(fdeep::tensor_pos(i), static_cast<float>(vec.coeff(i)));
         }
 
         return matrixTensor;
@@ -136,6 +164,17 @@ QVector<QVector<float>> NeuralNetModel::Private::batchPredict(const QVector<Eige
     return results;
 }
 
+QVector<float> NeuralNetModel::Private::predict(const Eigen::VectorX<double> &vec) {
+
+    const fdeep::tensor t = eigenVecToFDeepTensor(vec);
+
+    const fdeep::tensors pred = m_model->predict({t});
+
+    const QVector<float> vecRet = QVector<float>::fromStdVector(pred.front().to_vector());
+
+    return vecRet;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -154,4 +193,8 @@ Err NeuralNetModel::init(const QString &modelFilePath) {
 // TODO change this to handle errors.
 QVector<QVector<float>> NeuralNetModel::batchPredict(const QVector<Eigen::MatrixXd> &mats) {
     return d_ptr->batchPredict(mats);
+}
+
+QVector<float> NeuralNetModel::predict(const Eigen::VectorX<double> &mat) {
+    return d_ptr->predict(mat);
 }

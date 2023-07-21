@@ -36,7 +36,9 @@ public:
 
     Err removeScanPoints(const QMap<Id, ScanPoint> &scanPoints);
 
-    Err updatedScanPoints(const QMap<Id, ScanPoint> &scanPoints);
+    Err updateScanPoints(const QMap<Id, ScanPoint> &scanPoints);
+
+    QMap<Id, ScanPoint> idVsScanPoints();
 
 private:
 
@@ -125,7 +127,7 @@ Err MS2PointsExtractomatic::Private::removeScanPoints(const QMap<Id, ScanPoint> 
     ERR_RETURN
 }
 
-Err MS2PointsExtractomatic::Private::updatedScanPoints(const QMap<Id, ScanPoint> &scanPoints) {
+Err MS2PointsExtractomatic::Private::updateScanPoints(const QMap<Id, ScanPoint> &scanPoints) {
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree
@@ -139,9 +141,14 @@ Err MS2PointsExtractomatic::Private::updatedScanPoints(const QMap<Id, ScanPoint>
 
         rTreeCoor coor(sp.x(), m_defaultYVal);
         m_rTree->insert(rTreePoint(coor, id));
+        m_idVsScanPoints[id] = sp;
     }
 
     ERR_RETURN
+}
+
+QMap<Id, ScanPoint> MS2PointsExtractomatic::Private::idVsScanPoints() {
+    return m_idVsScanPoints;
 }
 
 
@@ -181,8 +188,12 @@ Err MS2PointsExtractomatic::removeScanPoints(const QMap<Id, ScanPoint> &scanPoin
     ERR_RETURN
 }
 
-Err MS2PointsExtractomatic::updatedScanPoints(const QMap<Id, ScanPoint> &scanPoints) {
+Err MS2PointsExtractomatic::updateScanPoints(const QMap<Id, ScanPoint> &scanPoints) {
     ERR_INIT
-    e = d_ptr->updatedScanPoints(scanPoints); ree
+    e = d_ptr->updateScanPoints(scanPoints); ree
     ERR_RETURN
+}
+
+QMap<Id, ScanPoint> MS2PointsExtractomatic::idVsScanPoints() {
+    return d_ptr->idVsScanPoints();
 }
