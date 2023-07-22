@@ -324,7 +324,7 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
                 &unusedPredVecCharge,
                 &unusedPredVecMono
                 ); ree
-                
+
         qDebug() << mzExtract << charge << monoOffset;
 
         if (charge < 1 || charge == 3) {
