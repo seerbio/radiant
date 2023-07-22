@@ -9,6 +9,7 @@
 #include "ErrorUtils.h"
 #include "IsotopicDistributionBuilder.h"
 #include "MS2PointsExtractomatic.h"
+#include "MsUtils.h"
 #include "NeuralNetModel.h"
 #include "ParallelUtils.h"
 
@@ -23,7 +24,8 @@ public:
     ~Private();
 
     Err init(
-            const QString &modelFilePath,
+            const QString &chargeModelFilePath,
+            const QString &monoModelFilePath,
             double ppmTolerance
     );
 
@@ -46,13 +48,15 @@ public:
             const QVector<QPair<Id, ScanPoint>> &foundScanPoints,
             int *charge,
             int *monoOffset,
-            QVector<float> *predVec
+            QVector<float> *predVec,
+            QVector<float> *predVecMono
     );
 
     Err testChargeMonoCaller(
             const ScanPoints &scanPoints,
             double mzVal,
-            QVector<float> *predVec
+            QVector<float> *predVecCharge,
+            QVector<float> *predVecMono
             );
 
     Err buildSubtractionPoints(
@@ -63,7 +67,8 @@ public:
 
 private:
 
-    NeuralNetModel* m_model;
+    NeuralNetModel *m_modelCharge;
+    NeuralNetModel *m_modelMonoOffset;
     int m_chargeMin;
     int m_chargeMax;
     double m_ppmTolerance;
@@ -76,18 +81,21 @@ MS2ChargeDeconvolvotron::Private::Private()
 : m_chargeMin(1)
 , m_chargeMax(3)
 , m_ppmTolerance(15.0)
-, m_model(nullptr)
+, m_modelCharge(nullptr)
+, m_modelMonoOffset(nullptr)
 , m_isInit(false)
 {}
 
 MS2ChargeDeconvolvotron::Private::~Private() {
     if(m_isInit){
-        delete m_model;
+        delete m_modelCharge;
+        delete m_modelMonoOffset;
     }
 }
 
 Err MS2ChargeDeconvolvotron::Private::init(
-        const QString &modelFilePath,
+        const QString &chargeModelFilePath,
+        const QString &monoModelFilePath,
         double ppmTolerance
         ) {
 
@@ -95,7 +103,8 @@ Err MS2ChargeDeconvolvotron::Private::init(
 
     const double ppmToleranceMin = 0.0;
 
-    e = ErrorUtils::fileExists(modelFilePath); ree
+    e = ErrorUtils::fileExists(chargeModelFilePath); ree
+    e = ErrorUtils::fileExists(monoModelFilePath); ree
     e = ErrorUtils::isAboveThreshold(
             ppmTolerance,
             ppmToleranceMin,
@@ -104,8 +113,11 @@ Err MS2ChargeDeconvolvotron::Private::init(
 
     m_ppmTolerance = ppmTolerance;
 
-    m_model = new NeuralNetModel();
-    e = m_model->init(modelFilePath); ree
+    m_modelCharge = new NeuralNetModel();
+    e = m_modelCharge->init(chargeModelFilePath); ree
+
+    m_modelMonoOffset = new NeuralNetModel();
+    e = m_modelMonoOffset->init(monoModelFilePath); ree
 
     e = buildMzIntVsAveragineRatios(); ree
 
@@ -197,7 +209,7 @@ namespace {
                 idxEnd = 4;
         }
 
-        *outScanPoints = extractedPoints.mid(idxStart, idxEnd - idxStart - 1);
+        *outScanPoints = extractedPoints.mid(idxStart, idxEnd - idxStart);
 
         ERR_RETURN
     }
@@ -280,6 +292,18 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
 
         const QVector<double> mzValsToExtract = buildMzValsForChargeMono(mzExtract);
 
+        QVector<QPair<Id, ScanPoint>> extractedMzExtract;
+        e = extractScanPointsFromScan(
+                {mzExtract},
+                &ms2PointsExtractomatic,
+                &extractedMzExtract
+        ); ree
+
+        const QPair<Id, ScanPoint> &mzExtractScanPoint = extractedMzExtract.front();
+        if (mzExtractScanPoint.second.y() < 0 || MathUtils::tZero(mzExtractScanPoint.second.y())) {
+            continue;
+        }
+
         QVector<QPair<Id, ScanPoint>> extractedScanPoints;
         e = extractScanPointsFromScan(
                 mzValsToExtract,
@@ -287,32 +311,28 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
                 &extractedScanPoints
                 ); ree
 
-        const double maxIntensity = std::max_element(
-                extractedScanPoints.rbegin(),
-                extractedScanPoints.rend(),
-                maxLogicIntensity
-                )->second.y();
-
-        if (maxIntensity <= 0 || MathUtils::tZero(maxIntensity)) {
-            continue;
-        }
-
         e = ErrorUtils::isEqual(mzValsToExtract.size(), extractedScanPoints.size()); ree
 
         int charge;
         int monoOffset;
-        QVector<float> unusedPredVec;
+        QVector<float> unusedPredVecCharge;
+        QVector<float> unusedPredVecMono;
         e = predictChargeAnMonoOffset(
                 extractedScanPoints,
                 &charge,
                 &monoOffset,
-                &unusedPredVec
+                &unusedPredVecCharge,
+                &unusedPredVecMono
                 ); ree
-
-        qDebug() << "drewholio extract mz" << mzExtract << charge << monoOffset;
+                
+        qDebug() << mzExtract << charge << monoOffset;
 
         if (charge < 1 || charge == 3) {
             continue;
+        }
+
+        if (charge == 1) { //TODO, fix the model so you don't need this.
+            monoOffset = 0;
         }
 
         QVector<QPair<Id, ScanPoint>> chargePoints;
@@ -329,7 +349,7 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
 
         const QPair<Id, ScanPoint> &chargePointsMonoIsotope = chargePoints.at(0);
         const double mzMin = 1.0;
-        if (chargePointsMonoIsotope.second.x() < mzMin) {
+        if (chargePointsMonoIsotope.second.x() < mzMin || MathUtils::tZero(chargePointsMonoIsotope.second.y())) {
             continue;
         }
 
@@ -338,8 +358,9 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
         QVector<QPair<Id, ScanPoint>> chargePointsSubtracted;
         e = buildSubtractionPoints(chargePoints, charge, &chargePointsSubtracted); ree
         e = updateScanPoints(chargePointsSubtracted, &ms2PointsExtractomatic); ree
-
     }
+
+    std::sort(scanPointsDeisotoped->begin(), scanPointsDeisotoped->end(), MsUtilsNamespace::sortAscMz);
 
     ERR_RETURN
 }
@@ -364,19 +385,13 @@ Err MS2ChargeDeconvolvotron::Private::buildSubtractionPoints(
     QPair<QVector<double>, QVector<double>> mzValsintensityValsSplit = ParallelUtils::unZip(scanPoints);
     const QVector<double> &mzVals = mzValsintensityValsSplit.first;
     const QVector<double> &intensityVals = mzValsintensityValsSplit.second;
+    const double intensityValsMax = *std::max_element(intensityVals.begin(), intensityVals.end());
 
-    QVector<double> intensityValsMaxBuffered;
-    std::transform(
-            intensityVals.begin(),
-            intensityVals.end(),
-            std::back_inserter(intensityValsMaxBuffered),
-            [subtractionBufferFactor](double intz){return intz * subtractionBufferFactor;}
-    );
 
     const auto roughMass = static_cast<MassInt>(mzVals.at(0) * charge);
     Eigen::VectorX<double> mzAveragine = m_mzIntVsAveragineRatios.value(roughMass);
     mzAveragine.conservativeResize(chargePoints.size());
-    mzAveragine *= subtractionBufferFactor;
+    mzAveragine *= (subtractionBufferFactor * intensityValsMax);
 
     Eigen::VectorX<double> intensityValsVec = EigenUtils::convertQVectorToEigenVector(intensityVals);
     intensityValsVec -= mzAveragine;
@@ -487,7 +502,8 @@ Err MS2ChargeDeconvolvotron::Private::predictChargeAnMonoOffset(
         const QVector<QPair<Id, ScanPoint>> &foundScanPoints,
         int *charge,
         int *monoOffset,
-        QVector<float> *predVec
+        QVector<float> *predVecCharge,
+        QVector<float> *predVecMono
         ) {
 
     ERR_INIT
@@ -523,28 +539,35 @@ Err MS2ChargeDeconvolvotron::Private::predictChargeAnMonoOffset(
     mzIntensityCombined.append(mzValsNorm);
     mzIntensityCombined.append(intensityValsNorm);
 
-    const Eigen::VectorX<double> vec = EigenUtils::convertQVectorToEigenVector(mzIntensityCombined);
+    const Eigen::VectorX<double> chargeVec = EigenUtils::convertQVectorToEigenVector(intensityValsNorm);
+    const Eigen::VectorX<double> monoVec = EigenUtils::convertQVectorToEigenVector(mzIntensityCombined);
 
-    std::cout << vec << std::endl;
+//    std::cout << vec << std::endl;
 
-    *predVec = m_model->predict(vec);
+    *predVecCharge = m_modelCharge->predict(chargeVec);
+//    qDebug() << intensityValsNorm;
+//    qDebug() << *predVecCharge;
 
     double bestChargeScore = 0;
     for (int i = 0; i < 3; i++) {
 
-        const double scoreAtIndex = predVec->at(i);
+        const double scoreAtIndex = predVecCharge->at(i);
         if (scoreAtIndex > bestChargeScore) {
             *charge = i + 1;
             bestChargeScore = scoreAtIndex;
         }
     }
 
+    *predVecMono = m_modelMonoOffset->predict(monoVec);
+//    qDebug() << mzIntensityCombined;
+//    qDebug() << *predVecMono;
+
     double bestMonoOffsetScore = 0;
-    const int indexOffset = 3;
-    for (int i = indexOffset; i < predVec->size(); i++) {
-        const double scoreAtIndex = predVec->at(i);
+
+    for (int i = 0; i < predVecMono->size(); i++) {
+        const double scoreAtIndex = predVecMono->at(i);
         if (scoreAtIndex > bestMonoOffsetScore) {
-            *monoOffset = i - indexOffset;
+            *monoOffset = i;
             bestMonoOffsetScore = scoreAtIndex;
         }
     }
@@ -555,7 +578,8 @@ Err MS2ChargeDeconvolvotron::Private::predictChargeAnMonoOffset(
 Err MS2ChargeDeconvolvotron::Private::testChargeMonoCaller(
         const ScanPoints &scanPoints,
         double mzVal,
-        QVector<float> *predVec
+        QVector<float> *predVecCharge,
+        QVector<float> *predVecMono
         ) {
 
     ERR_INIT
@@ -580,7 +604,8 @@ Err MS2ChargeDeconvolvotron::Private::testChargeMonoCaller(
             foundScanPoints,
             &charge,
             &monoOffset,
-            predVec
+            predVecCharge,
+            predVecMono
     ); ree
 
     ERR_RETURN
@@ -598,11 +623,12 @@ MS2ChargeDeconvolvotron::MS2ChargeDeconvolvotron()
 MS2ChargeDeconvolvotron::~MS2ChargeDeconvolvotron() {}
 
 Err MS2ChargeDeconvolvotron::init(
-        const QString &modelFilePath,
+        const QString &chargeModelFilePath,
+        const QString &monoModelFilePath,
         double ppmTolerance
         ) {
     ERR_INIT
-    e = d_ptr->init(modelFilePath, ppmTolerance); ree
+    e = d_ptr->init(chargeModelFilePath, monoModelFilePath, ppmTolerance); ree
     ERR_RETURN
 }
 
@@ -625,14 +651,16 @@ QVector<double> MS2ChargeDeconvolvotron::buildMzValsForChargeMono(double mzMaxIn
 Err MS2ChargeDeconvolvotron::testChargeMonoCaller(
         const ScanPoints &scanPoints,
         double mzVal,
-        QVector<float> *predVec
+        QVector<float> *predVecCharge,
+        QVector<float> *predVecMono
         ) {
     ERR_INIT
 
     e = d_ptr->testChargeMonoCaller(
             scanPoints,
             mzVal,
-            predVec
+            predVecCharge,
+            predVecMono
             ); ree
 
     ERR_RETURN

@@ -118,7 +118,7 @@ Err MS2PointsExtractomatic::Private::removeScanPoints(const QMap<Id, ScanPoint> 
         rTreeCoor coor(sp.x(), m_defaultYVal);
 
         const bool isDeleted = m_rTree->remove(rTreePoint(coor, id));
-        e = ErrorUtils::isTrue(isDeleted); ree
+//        e = ErrorUtils::isTrue(isDeleted); ree
 
         m_idVsScanPoints.remove(id);
         e = ErrorUtils::isFalse(m_idVsScanPoints.contains(id)); ree

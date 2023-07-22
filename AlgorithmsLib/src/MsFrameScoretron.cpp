@@ -119,6 +119,18 @@ Err MsFrameScoretron::init(
 
     m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
+    const QString &chargeModelFilePath
+            = QDir(qApp->applicationDirPath()).filePath("MS2_Charge_Model.json");
+
+    const QString &monoModelFilePath
+            = QDir(qApp->applicationDirPath()).filePath("MS2_Mono_Model.json");
+
+    e = m_ms2ChargeDeconvolvotron.init(
+            chargeModelFilePath,
+            monoModelFilePath,
+            m_params.ms2ExtractionWidthPPM
+            ); ree
+
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
     qDebug() << "Candidate Count:" << m_fragPreds.size();
@@ -158,9 +170,6 @@ Err MsFrameScoretron::initMsFrame(
             0,
             ErrorUtilsParam::ExcludeThreshold
     );ree;
-
-
-
 
     ERR_RETURN
 }
@@ -294,7 +303,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandi
             &apexScanPoints
             ); ree
 
-#define WRITE_SCAN_FRAME
+//#define WRITE_SCAN_FRAME
 #ifdef WRITE_SCAN_FRAME
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
     for(auto it = apexScanPoints.begin(); it != apexScanPoints.end(); it++) {
@@ -429,9 +438,19 @@ Err MsFrameScoretron::iterateApexScanPoints(
         const FrameIndex frameIndex = it.key();
         const ScanPoints &scanPoints = it.value();
 
+        if (scanPoints.isEmpty()) {
+            continue;
+        }
+
+        ScanPoints scanPointsDeisotoped;
+        e = m_ms2ChargeDeconvolvotron.deisotopeScanPoints(
+                scanPoints,
+                &scanPointsDeisotoped
+        ); ree
+
         QMap<PeptideId, QVector<FragLibIon>> peptideIdVsFragLibIonsCandidatesForFrameIndex;
         e = extractFragLibIonsForScanPoints(
-                scanPoints,
+                scanPointsDeisotoped,
                 &m_fragLibIonRTree,
                 &peptideIdVsFragLibIonsCandidatesForFrameIndex
                 ); ree

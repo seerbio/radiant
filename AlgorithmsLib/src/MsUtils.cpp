@@ -404,23 +404,23 @@ Err MsUtils::chargeDeterminator(
     ERR_RETURN
 }
 
+int MsUtils::getCenterPointIndex(
+        const QVector<QPointF> &points,
+        const QPointF &mzCenterPoint
+) {
+
+    QVector<double> mzVals;
+    std::transform(
+            points.begin(),
+            points.end(),
+            std::back_inserter(mzVals),
+            [](const QPointF &p){return p.x();}
+    );
+
+    return MathUtils::closest(mzVals, mzCenterPoint.x());
+}
+
 namespace {
-
-    int getCenterPointIndex(
-            const QVector<QPointF> &points,
-            const QPointF &mzCenterPoint
-            ) {
-
-        QVector<double> mzVals;
-        std::transform(
-                points.begin(),
-                points.end(),
-                std::back_inserter(mzVals),
-                [](const QPointF &p){return p.x();}
-        );
-
-        return MathUtils::closest(mzVals, mzCenterPoint.x());
-    }
 
     Err buildExtractedPoints(
             const QPointF &mzCenterPoint,
@@ -452,7 +452,7 @@ namespace {
 
         std::copy(extractedScanPoints.begin(), extractedScanPoints.end(), extractedPointsFilled->begin());
 
-        *startCenterPointIdxOG = getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
+        *startCenterPointIdxOG = MsUtils::getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
 
         e = ErrorUtils::isTrue(
                 MathUtils::tZero(extractedPointsFilled->at(*startCenterPointIdxOG).x() - mzCenterPoint.x())

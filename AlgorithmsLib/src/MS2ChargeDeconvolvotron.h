@@ -22,7 +22,8 @@ public:
     ~MS2ChargeDeconvolvotron();
 
     Err init(
-            const QString &modelFilePath,
+            const QString &chargeModelFilePath,
+            const QString &monoModelFilePath,
             double ppmTolerance
             );
 
@@ -38,7 +39,8 @@ private:
     Err testChargeMonoCaller(
             const ScanPoints &scanPoints,
             double mzVal,
-            QVector<float> *predVec
+            QVector<float> *predVec,
+            QVector<float> *predVecMono
     );
 
 private:

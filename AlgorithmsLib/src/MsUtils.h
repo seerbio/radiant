@@ -60,6 +60,11 @@ public:
             int *charge
             );
 
+    static int getCenterPointIndex(
+            const QVector<QPointF> &points,
+            const QPointF &mzCenterPoint
+    );
+
     static Err monoIsotopeDeterminator(
             const QPointF &mzCenterPoint,
             const QVector<QPointF> &scanPoints,

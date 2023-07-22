@@ -11,6 +11,7 @@
 #include "FragLibIonRTree.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
+#include "MS2ChargeDeconvolvotron.h"
 #include "MsFrame.h"
 #include "ParquetReader.h"
 #include "PeakIntegratomatic.h"
@@ -171,6 +172,8 @@ private:
 
     FragLibIonRTree m_fragLibIonRTree;
     FragLibIonRTree m_fragLibIonRTreeBackground;
+
+    MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
     MsFrame m_msFrame;
 
