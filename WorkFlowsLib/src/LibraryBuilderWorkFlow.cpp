@@ -121,7 +121,7 @@ namespace {
 
         return sortedPeptidePredictionInputs;
     };
-    
+
     QVector<FragLibReaderRow> buildFragLibReaderRows(
             const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy,
