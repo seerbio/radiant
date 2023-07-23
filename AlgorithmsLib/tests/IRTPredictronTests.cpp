@@ -18,8 +18,7 @@ private Q_SLOTS:
 
 };
 
-void IRTPredictronTests::loadModelTest()
-{
+void IRTPredictronTests::loadModelTest() {
 
     ERR_INIT
 
