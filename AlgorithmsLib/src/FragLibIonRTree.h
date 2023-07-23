@@ -25,7 +25,6 @@ struct FragLibIon {
     IonIndex ionIndex = -1;
     IonType ionType;
     Charge charge = -1;
-    bool isIsotope = false;
     double frequencyPercent = -1.0;
 
     double mzSearched = -1.0;

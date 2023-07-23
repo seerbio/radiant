@@ -22,7 +22,7 @@
 using namespace Error;
 
 class TandemDeconvolverResult;
-
+class TurboXIC;
 
 namespace ScoredCandidateNamespace {
 
@@ -143,6 +143,8 @@ private:
             const QPair<double, double> &mzTargetStartStop
             );
 
+    Err buildMsFrameApexTurboXIC(TurboXIC *turboXic);
+
     Err iterateApexScanPoints(
             const QMap<FrameIndex, ScanPoints> &apexScanPoints,
             QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates
@@ -176,6 +178,8 @@ private:
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
     MsFrame m_msFrame;
+    QVector<FeatureFinderHill> m_featureFinderHills;
+    FeatureFinderHillBuilder m_featureFinderHillBuilder;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

@@ -325,7 +325,8 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
                 &unusedPredVecMono
                 ); ree
 
-        qDebug() << mzExtract << charge << monoOffset;
+//        qDebug() << mzExtract << charge << monoOffset << mzValsToExtract;
+//        qDebug() << unusedPredVecCharge;
 
         if (charge < 1 || charge == 3) {
             continue;
@@ -542,14 +543,14 @@ Err MS2ChargeDeconvolvotron::Private::predictChargeAnMonoOffset(
     const Eigen::VectorX<double> chargeVec = EigenUtils::convertQVectorToEigenVector(intensityValsNorm);
     const Eigen::VectorX<double> monoVec = EigenUtils::convertQVectorToEigenVector(mzIntensityCombined);
 
-//    std::cout << vec << std::endl;
+//    std::cout << chargeVec << std::endl;
 
     *predVecCharge = m_modelCharge->predict(chargeVec);
 //    qDebug() << intensityValsNorm;
 //    qDebug() << *predVecCharge;
 
     double bestChargeScore = 0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < predVecCharge->size(); i++) {
 
         const double scoreAtIndex = predVecCharge->at(i);
         if (scoreAtIndex > bestChargeScore) {

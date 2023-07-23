@@ -220,7 +220,7 @@ void MS2ChargeDeconvolvotronTests::deisotopeScanPointsTest() {
     QCOMPARE(e, eNoError);
 
     QVERIFY(MathUtils::tSame(scanPointsDeisotoped.front().x(), 1000.0));
-    QVERIFY(MathUtils::tSame(scanPointsDeisotoped.front().y(), 0.9));
+    QVERIFY(MathUtils::tSame(scanPointsDeisotoped.front().y(), 0.92));
 
 }
 
@@ -246,12 +246,15 @@ void MS2ChargeDeconvolvotronTests::deisotopeScanPointsRealDataTest() {
             &scanPointsDeisotoped
     );
     QCOMPARE(e, eNoError);
-//
-//    e = MsUtils::writePointsToCSV(scanPointsDeisotoped, "/home/anichols/Desktop/deiso.csv");
-//    QCOMPARE(e, eNoError);
-//
-//    e = MsUtils::writePointsToCSV(m_scanPoints, "/home/anichols/Desktop/points.csv");
-//    QCOMPARE(e, eNoError);
+
+//#define WRITE_SPECTRA
+#ifdef WRITE_SPECTRA
+    e = MsUtils::writePointsToCSV(scanPointsDeisotoped, "/home/anichols/Desktop/deiso.csv");
+    QCOMPARE(e, eNoError);
+
+    e = MsUtils::writePointsToCSV(m_scanPoints, "/home/anichols/Desktop/points.csv");
+    QCOMPARE(e, eNoError);
+#endif
 
     QCOMPARE(scanPointsDeisotoped.size(), 271);
     QCOMPARE(m_scanPoints.size(), 352);

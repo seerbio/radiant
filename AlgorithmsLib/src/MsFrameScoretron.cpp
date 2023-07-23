@@ -131,6 +131,13 @@ Err MsFrameScoretron::init(
             m_params.ms2ExtractionWidthPPM
             ); ree
 
+    FeatureFinderParameters featureFinderParameters;
+    e = setFeatureFinderParams(m_params, &featureFinderParameters); ree
+
+    e = m_featureFinderHillBuilder.init(featureFinderParameters); ree
+    e = m_featureFinderHillBuilder.buildHills(m_msFrame.frameIndexVsScanPoints()); ree
+    e = m_featureFinderHillBuilder.featureFinderHills(&m_featureFinderHills); ree
+
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
     qDebug() << "Candidate Count:" << m_fragPreds.size();
@@ -158,13 +165,6 @@ Err MsFrameScoretron::initMsFrame(
             m_params.mzMaxDataStructure
     ); ree;
 
-//    e = m_msFrame.smoothFrame(
-//            m_params.filterLength,
-//            m_params.sigma,
-//            m_params.smoothCount,
-//            m_params.mzMaxDataStructure
-//    ); ree
-
     e = ErrorUtils::isAboveThreshold(
             m_msFrame.scanCount(),
             0,
@@ -175,72 +175,6 @@ Err MsFrameScoretron::initMsFrame(
 }
 
 namespace {
-
-    Err buildMsFrameApexTurboXIC(
-            const PythiaParameters &pythiaParameters,
-            const QMap<FrameIndex, ScanPoints> &frameIndexVsScanPoints,
-            TurboXIC *turboXic
-            ) {
-
-        ERR_INIT
-
-        FeatureFinderParameters featureFinderParameters;
-        e = setFeatureFinderParams(pythiaParameters, &featureFinderParameters); ree
-
-        FeatureFinderHillBuilder featureFinderHillBuilder;
-        e = featureFinderHillBuilder.init(featureFinderParameters); ree
-
-        e = featureFinderHillBuilder.buildHills(frameIndexVsScanPoints); ree
-
-        QVector<FeatureFinderHill> featureFinderHills;
-        e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills); ree
-
-        //TODO consider making these settable in parameters
-        const int smoothCount = 2;
-        const int filterLength = 5;
-        const int order = 1;
-        const int derivative = 0;
-        const int rate = 1;
-
-        QMap<FrameIndex, ScanPoints> frameApexes;
-
-        for (const FeatureFinderHill &ffh : featureFinderHills) {
-
-            Eigen::VectorX<double> intensitiesVec = EigenUtils::convertQVectorToEigenVector(ffh.intensities());
-
-            for (int i = 0; i < smoothCount; i++) {
-                e = EigenKernelUtils::savitskyGolaySmooth(
-                        filterLength,
-                        order,
-                        derivative,
-                        rate,
-                        &intensitiesVec
-                        ); ree
-            }
-
-            const QVector<FrameIndex> &frameIndexes = ffh.scanNumbers();
-            const double mzMean = ffh.mzMean();
-            const QVector<double> &originalIntensities = ffh.intensities();
-
-            const QMap<int, double> apexes = EigenUtils::apexes(intensitiesVec, 1);
-
-            for (auto it = apexes.begin(); it != apexes.end(); it++) {
-
-                const int apexIndex = it.key();
-                const double _smoothedIntensityApexValue = it.value();
-                const int frameIndex = frameIndexes.at(apexIndex);
-                const double originalIntensity = originalIntensities.at(apexIndex);
-
-                frameApexes[frameIndex].push_back({mzMean, originalIntensity});
-            }
-
-        }
-
-        turboXic->init(frameApexes); ree
-
-        ERR_RETURN
-
-    }
 
     Err buildApexSpectra(
             const TurboXIC &frameApexesTurboXIC,
@@ -291,11 +225,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandi
     ERR_INIT
 
     TurboXIC frameApexesTurboXIC;
-    e = buildMsFrameApexTurboXIC(
-            m_params,
-            m_msFrame.frameIndexVsScanPoints(),
-            &frameApexesTurboXIC
-            ); ree
+    e = buildMsFrameApexTurboXIC(&frameApexesTurboXIC); ree
 
     QMap<FrameIndex, ScanPoints> apexScanPoints;
     e = buildApexSpectra(
@@ -319,9 +249,61 @@ Err MsFrameScoretron::scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandi
             frameIndexVsScoredCandidates
             ); ree
 
-
     ERR_RETURN
 }
+
+Err MsFrameScoretron::buildMsFrameApexTurboXIC(TurboXIC *turboXic) {
+
+    ERR_INIT
+
+
+    //TODO consider making these settable in parameters
+    const int smoothCount = 2;
+    const int filterLength = 5;
+    const int order = 1;
+    const int derivative = 0;
+    const int rate = 1;
+
+    QMap<FrameIndex, ScanPoints> frameApexes;
+
+    for (const FeatureFinderHill &ffh : m_featureFinderHills) {
+
+        Eigen::VectorX<double> intensitiesVec = EigenUtils::convertQVectorToEigenVector(ffh.intensities());
+
+        for (int i = 0; i < smoothCount; i++) {
+            e = EigenKernelUtils::savitskyGolaySmooth(
+                    filterLength,
+                    order,
+                    derivative,
+                    rate,
+                    &intensitiesVec
+            ); ree
+        }
+
+        const QVector<FrameIndex> &frameIndexes = ffh.scanNumbers();
+        const double mzMean = ffh.mzMean();
+        const QVector<double> &originalIntensities = ffh.intensities();
+
+        const QMap<int, double> apexes = EigenUtils::apexes(intensitiesVec, 1);
+
+        for (auto it = apexes.begin(); it != apexes.end(); it++) {
+
+            const int apexIndex = it.key();
+            const double _smoothedIntensityApexValue = it.value();
+            const int frameIndex = frameIndexes.at(apexIndex);
+            const double originalIntensity = originalIntensities.at(apexIndex);
+
+            frameApexes[frameIndex].push_back({mzMean, originalIntensity});
+        }
+
+    }
+
+    turboXic->init(frameApexes); ree
+
+    ERR_RETURN
+
+}
+
 
 namespace {
 
@@ -349,36 +331,6 @@ namespace {
         }
 
         return peptideIdVsFragLibIonsForFrameIndexFiltered;
-    }
-
-    QVector<FragLibIon> removeIsotopeFragLibsWithoutMatchingMonoIsotope(const QVector<FragLibIon> &foundFragLibIons) {
-
-        QVector<FragLibIon> foundFragLibIonsSortedByIsIsotope = foundFragLibIons;
-
-        const auto sortLogicIsIso = [](const FragLibIon &l, const FragLibIon &r){return l.isIsotope < r.isIsotope;};
-        std::sort(foundFragLibIonsSortedByIsIsotope.begin(), foundFragLibIonsSortedByIsIsotope.end(), sortLogicIsIso);
-
-        QHash<QString, bool> monoIsotopeIndexes;
-        QVector<FragLibIon> filteredIsotopes;
-        for (const FragLibIon &fli : foundFragLibIonsSortedByIsIsotope) {
-
-            const QString indexHash = fli.ionType + QString::number(fli.ionIndex);
-
-            if (!fli.isIsotope) {
-                filteredIsotopes.push_back(fli);
-                monoIsotopeIndexes.insert(indexHash, true);
-                continue;
-            }
-
-            if (monoIsotopeIndexes.value(indexHash)) {
-                filteredIsotopes.push_back(fli);
-            }
-        }
-
-        const auto sortLogicMzAsc = [](const FragLibIon &l, const FragLibIon &r){return l.mz < r.mz;};
-        std::sort(filteredIsotopes.begin(), filteredIsotopes.end(), sortLogicMzAsc);
-
-        return filteredIsotopes;
     }
 
     double sumFragLibIonFrequencyPercent(const QVector<FragLibIon> &fragLibIons) {
@@ -432,6 +384,10 @@ Err MsFrameScoretron::iterateApexScanPoints(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(apexScanPoints); ree
+
+    //NOTE hills are refined here so TurboXIC in scoreFrameCandidates() can work w/ unsmoothed hills.
+    // but it is necessary to refine hills eventually for cosine sim clustering between MS2 Frag hills.
+    e = m_featureFinderHillBuilder.refineHills(true); ree
 
     for (auto it = apexScanPoints.begin(); it != apexScanPoints.end(); it++) {
 
@@ -551,14 +507,11 @@ Err MsFrameScoretron::extractScores(
 
         const double bestPossibleFreqPctScore = sumFragLibIonFrequencyPercent(tandemPredictionFragLibIons);
 
-        const QVector<FragLibIon> foundFragLibIonsFiltered
-                = removeIsotopeFragLibsWithoutMatchingMonoIsotope(foundFragLibIons);
-
-        const double foundFreqPctScore = sumFragLibIonFrequencyPercent(foundFragLibIonsFiltered);
+        const double foundFreqPctScore = sumFragLibIonFrequencyPercent(foundFragLibIons);
 
         const QPair<double, double> klDivergenceVsCosineSim = calcKLDivergenceCosineSim(
                 tandemPredictionFragLibIons,
-                foundFragLibIonsFiltered
+                foundFragLibIons
         );
 
         ScoredCandidate scoredCandidate;
@@ -576,17 +529,6 @@ Err MsFrameScoretron::extractScores(
                 );
         scoredCandidate.scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
         scoredCandidate.scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate.scanNumber);
-
-//        if (scoredCandidate.klDivergence < 40
-//            && scoredCandidate.scanNumber == 6435
-//            && scoredCandidate.peptideStringWithMods[0] == 'F'
-//        ) {
-//            qDebug() << scoredCandidate.scanTime << scoredCandidate.scanNumber << scoredCandidate.mass << scoredCandidate.isDecoy
-//                     << scoredCandidate.charge << scoredCandidate.peptideStringWithMods << scoredCandidate.charge
-//                     << scoredCandidate.klDivergence << scoredCandidate.cosineSim << scoredCandidate.frequencyPercentSum << scoredCandidate.frequencyPercentSumBestPossible;
-//
-//        }
-
 
         scoredCandidates->push_back(scoredCandidate);
     }
