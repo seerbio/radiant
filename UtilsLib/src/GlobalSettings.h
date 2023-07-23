@@ -30,6 +30,7 @@ using IonLabel = QString;
 using IonLabels = QStringList;
 using IonMobilityIndex = int;
 using IonType = QString;
+using IRT = float;
 using IsolationWindowKey = QString;
 using Mass = double;
 using ModificationMass = double;

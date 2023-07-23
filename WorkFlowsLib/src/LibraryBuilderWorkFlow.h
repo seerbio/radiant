@@ -24,7 +24,7 @@ public:
 
     friend class LibraryBuilderWorkFlowTests;
 
-    LibraryBuilderWorkFlow() = default;
+    LibraryBuilderWorkFlow();
     ~LibraryBuilderWorkFlow();
 
     Err init(
@@ -44,12 +44,22 @@ private:
 
     Err buildPeptideSequenceChargeKeyVsIsDecoy(const QVector<PeptidePredictionInput> &peptidePredictionInputs);
 
+    Err buildPeptideStringWithModsVsIRT(const QVector<PeptidePredictionInput> &peptidePredictionInputs);
+
+    Err writePredictionsToParquet(
+            const QHash<PeptideSequenceChargeKey, TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+            const QString &outputFilePath
+    );
+
 private:
 
     QMap<Charge, QString> m_modelFilePaths;
     QMap<Charge, TandemFragmentPredictotron*> m_tandemPredictionModels;
     PythiaParameters m_pythiaParameters;
     QHash<PeptideSequenceChargeKey, bool> m_peptideSequenceChargeKeyVsIsDecoy;
+    QHash<PeptideStringWithMods, IRT> m_peptideStringWithModsVsIRT;
+
+    const int m_maxPeptideLength;
 
 };
 
