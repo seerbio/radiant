@@ -121,52 +121,7 @@ namespace {
 
         return sortedPeptidePredictionInputs;
     };
-
-    Err writePredictionsToCSV(
-            const QHash<PeptideSequenceChargeKey,
-                    TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
-            const QString &outputFilePath
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(outputFilePath); ree;
-        e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
-
-        const QStringList rowHeader = {
-                QStringLiteral("Peptide"),
-                QStringLiteral("IonLabel"),
-                QStringLiteral("Intensity")
-        };
-
-        QFile file(outputFilePath);
-        if (file.open(QIODevice::ReadWrite)) {
-
-            QTextStream stream(&file);
-            stream << rowHeader.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-
-            for (auto itt = tandemPredictionsAllCharges.begin(); itt != tandemPredictionsAllCharges.end(); itt++) {
-
-                const PeptideSequenceChargeKey &key = itt.key();
-                TandemFragmentPredictotron::TandemPrediction pred = itt.value();
-
-                for (const FragmentIon &fli : pred) {
-
-                    const QStringList row = {
-                            key,
-                            fli.ionLabel,
-                            QString::number(fli.intensity)};
-
-                    stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-                }
-            }
-        }
-
-        qDebug() << "FragLib file written to" << outputFilePath;
-        file.close();
-        ERR_RETURN
-    }
-
+    
     QVector<FragLibReaderRow> buildFragLibReaderRows(
             const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy,
