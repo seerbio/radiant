@@ -17,6 +17,7 @@ SET(TEST_CLASSES
         FeatureFinderHillBuilderTests
         FeatureFinderHillClusterTronTests
         FragLibIonRTreeTests
+        IRTPredictronTests
         IsotopeDistributionBuilderTests
         MissingPeptideManualTroubleshooter
         MS2ChargeDeconvolvotronTests
