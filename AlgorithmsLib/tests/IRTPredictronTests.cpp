@@ -9,7 +9,7 @@ class IRTPredictronTests : public QObject
 
 public:
     IRTPredictronTests() = default;
-    ~IRTPredictronTests() = default;
+    ~IRTPredictronTests() override = default;
 
 private Q_SLOTS:
     void loadModelTest();
@@ -55,7 +55,8 @@ void IRTPredictronTests::testPrediction() {
     e = predictotron.batchPredictIRT(peptideStringWithModsList, &rawPredictionResults);
     QCOMPARE(e, eNoError);
 
-    qDebug() << rawPredictionResults;
+    QVERIFY(MathUtils::tSame(rawPredictionResults.front(), static_cast<float>(14.3491)));
+    QVERIFY(MathUtils::tSame(rawPredictionResults.back(), static_cast<float>(11.9481)));
 
 }
 
