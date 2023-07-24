@@ -103,6 +103,8 @@ public:
     QMap<IonIndex, MS2Ion> bH2OIons;
     QMap<IonIndex, MS2Ion> precursorIons;
 
+    double iRT = -1.0;
+
     [[nodiscard]] QVector<MS2Ion> getTopXMS2Ions(
             int topX,
             int ionIndexCutoffThreshold

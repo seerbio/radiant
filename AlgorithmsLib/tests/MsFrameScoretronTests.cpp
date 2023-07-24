@@ -28,10 +28,10 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
 
     const QString fragLibBackgroundPath
-            = QStringLiteral("/home/anichols/Downloads/uniparc_upid_UP000027126_2023_07_02.fasta.csv.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Libraries/uniparc_upid_UP000027126_2023_07_02.fasta.csv.fragLib");
 
     const QString fragLibPath
-            = QStringLiteral("/home/anichols/Downloads/2022-04-23-decoys-contam-UP000005640_9606.target.20210602.human_plasma.fasta.csv.025.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
 
 //    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "444952";
 //    const double target = 444.952;

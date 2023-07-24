@@ -437,7 +437,7 @@ NearestNeighborsSearch::NearestNeighborsSearch() : d_ptr(new Private()) {}
 NearestNeighborsSearch::~NearestNeighborsSearch() {}
 
 Err NearestNeighborsSearch::init(
-        const QVector<QPair<double, QVector<double>>> &valuesVsTreePoints,
+        const QVector<QPair<double, Coors>> &valuesVsTreePoints,
         int maxTreeLeafSize
         ) {
     ERR_INIT
@@ -451,7 +451,7 @@ Err NearestNeighborsSearch::init(
 }
 
 Err NearestNeighborsSearch::kNearestNeighborsSearch(
-        const QVector<QVector<double>> &searchPointCoors,
+        const QVector<Coors> &searchPointCoors,
         int k,
         QVector<NNSearchResult> *result
         ) {
@@ -468,7 +468,7 @@ Err NearestNeighborsSearch::kNearestNeighborsSearch(
 }
 
 Err NearestNeighborsSearch::radiusSearch(
-        const QVector<QVector<double>> &searchPointCoors,
+        const QVector<Coors> &searchPointCoors,
         double searchRadiusSquared,
         QVector<NNSearchResult> *result
         ) {

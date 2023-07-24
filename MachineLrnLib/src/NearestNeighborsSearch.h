@@ -41,13 +41,13 @@ public:
             );
 
     Err kNearestNeighborsSearch(
-            const QVector<QVector<double>> &searchPointCoors,
+            const QVector<Coors> &searchPointCoors,
             int k,
             QVector<NNSearchResult> *result
             );
 
     Err radiusSearch(
-            const QVector<QVector<double>> &searchPointCoors,
+            const QVector<Coors> &searchPointCoors,
             double searchRadiusSquared,
             QVector<NNSearchResult> *result
     );

@@ -38,6 +38,7 @@ namespace {
             ion.mz = row.mzVals.at(i);
             ion.intensity = row.intensityVals.at(i);
             ion.ionLabel = ionLabels.at(i);
+            ion.iRT = row.iRT;
             ms2Ions->push_back(ion);
         }
 
@@ -149,6 +150,8 @@ Err FragLibReader::getMS2Ions(
 
             QPair<IonIndex, IonType> ionInfo;
             e = ion.getIonLabelInfo(&ionInfo); ree
+
+            ms2IonsSeparated.iRT = ion.iRT;
 
             if (ionInfo.second == "y") {
                 ms2IonsSeparated.yIons.insert(ionInfo.first, ion);

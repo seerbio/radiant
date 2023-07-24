@@ -20,6 +20,7 @@ struct FragLibIon {
     PeptideId peptideId = -1;
     double mz = -1.0;
     double iRT = -1.0;
+    double rt = -1.0;
     double iMobility = -1.0;
     double intensity = -1.0;
     IonIndex ionIndex = -1;
@@ -48,11 +49,13 @@ public:
 
     Err addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct);
 
+    Err updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath);
+
     Err getFragLibIons(
             double mzMin,
             double mzMax,
-            double iRTMin,
-            double iRTMax,
+            double rtMin,
+            double rtMax,
             QVector<FragLibIon> *foundFragLibIons
     );
 

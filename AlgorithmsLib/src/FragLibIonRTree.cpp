@@ -52,11 +52,13 @@ public:
 
     Err addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct);
 
+    Err updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath);
+
     Err getFragLibIons(
         double mzMin,
         double mzMax,
-        double iRTMin,
-        double iRTMax,
+        double rtMin,
+        double rtMax,
         QVector<FragLibIon> *foundFragLibIons
             );
 
@@ -73,8 +75,8 @@ public:
 public:
     double m_mzMin;
     double m_mzMax;
-    double m_iRTMin;
-    double m_iRTMax;
+    double m_rtMin;
+    double m_rtMax;
 
 private:
 
@@ -93,8 +95,8 @@ FragLibIonRTree::Private::Private()
 , m_rTree(Q_NULLPTR)
 , m_mzMin(-1.0)
 , m_mzMax(-1.0)
-, m_iRTMin(-1.0)
-, m_iRTMax(-1.0)
+, m_rtMin(-1.0)
+, m_rtMax(-1.0)
 {}
 
 
@@ -214,7 +216,7 @@ void FragLibIonRTree::Private::insertMs2IonsSeparatedToFragLibIons(
         fragLibIon.intensity = ms2Ion.intensity;
         fragLibIon.ionIndex = ionIndex;
         fragLibIon.ionType = ionType;
-        fragLibIon.iRT = 0.0; //TODO replace w/ predicted iRT when you can predict this.
+        fragLibIon.iRT = ms2Ion.iRT;
 //        fragLibIon.iMobility = 0.0; //TODO turn this on when using ion mobility and then use 3d rtree
         fragLibIon.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
@@ -262,12 +264,12 @@ Err FragLibIonRTree::Private::loadRTree() {
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
     m_mzMin = m_rTree->bounds().min_corner().get<0>();
-    m_iRTMin = m_rTree->bounds().min_corner().get<1>();
+    m_rtMin = m_rTree->bounds().min_corner().get<1>();
     m_mzMax = m_rTree->bounds().max_corner().get<0>();
-    m_iRTMax = m_rTree->bounds().max_corner().get<1>();
+    m_rtMax = m_rTree->bounds().max_corner().get<1>();
 
     qDebug() << "mz range" << m_mzMin << "to" << m_mzMax;
-    qDebug() << "iRT range" << m_iRTMin << "to" << m_iRTMax;
+    qDebug() << "iRT range" << m_rtMin << "to" << m_rtMax;
     qDebug() << "FragLibIon RTree size:" << m_rTree->size();
 
     ERR_RETURN
@@ -304,8 +306,8 @@ Err FragLibIonRTree::Private::buildMzHashedVsFragLibIonFrequencePercentages(
         e = getFragLibIons(
                 mzMin,
                 mzMax,
-                m_iRTMin,
-                m_iRTMax,
+                m_rtMin,
+                m_rtMax,
                 &foundFragLibIons
                 ); ree
 
@@ -321,8 +323,8 @@ Err FragLibIonRTree::Private::buildMzHashedVsFragLibIonFrequencePercentages(
 Err FragLibIonRTree::Private::getFragLibIons(
         double mzMin,
         double mzMax,
-        double iRTMin,
-        double iRTMax,
+        double rtMin,
+        double rtMax,
         QVector<FragLibIon> *foundFragLibIons
         ) {
 
@@ -331,8 +333,8 @@ Err FragLibIonRTree::Private::getFragLibIons(
     e = ErrorUtils::isFalse(m_rTree->empty()); ree
 
     const rTreeSearchBox queryBox(
-            rTreeCoor(mzMin, iRTMin),
-            rTreeCoor(mzMax, iRTMax)
+            rTreeCoor(mzMin, rtMin),
+            rTreeCoor(mzMax, rtMax)
     );
 
     std::vector<rTreePoint> result;
@@ -403,6 +405,15 @@ Err FragLibIonRTree::Private::getPeptideSequenceWithMods(
     ERR_RETURN
 }
 
+Err FragLibIonRTree::Private::updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath) {
+
+    ERR_INIT
+
+
+
+    ERR_RETURN
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -434,8 +445,8 @@ Err FragLibIonRTree::buildMzHashedVsFragLibIonFrequencePercentages(
 Err FragLibIonRTree::getFragLibIons(
         double mzMin,
         double mzMax,
-        double iRTMin,
-        double iRTMax,
+        double rtMin,
+        double rtMax,
         QVector<FragLibIon> *foundFragLibIons
 ) {
     ERR_INIT
@@ -443,8 +454,8 @@ Err FragLibIonRTree::getFragLibIons(
     e = d_ptr->getFragLibIons(
             mzMin,
             mzMax,
-            iRTMin,
-            iRTMax,
+            rtMin,
+            rtMax,
             foundFragLibIons
             ); ree
 
@@ -462,8 +473,8 @@ Err FragLibIonRTree::getFragLibIons(
     e = d_ptr->getFragLibIons(
             mzMin,
             mzMax,
-            d_ptr->m_iRTMin,
-            d_ptr->m_iRTMax,
+            d_ptr->m_rtMin,
+            d_ptr->m_rtMax,
             foundFragLibIons
     ); ree
 
@@ -491,5 +502,11 @@ Err FragLibIonRTree::getPeptideSequenceWithMods(
         PeptideStringWithMods *peptideStringWithMods) {
     ERR_INIT
     e = d_ptr->getPeptideSequenceWithMods(peptideId, peptideStringWithMods); ree
+    ERR_RETURN
+}
+
+Err FragLibIonRTree::updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath) {
+    ERR_INIT
+    e = d_ptr->updateFragLibIonsRTValues(firstPassPeptidesFilePath); ree
     ERR_RETURN
 }
