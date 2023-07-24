@@ -40,7 +40,6 @@ public:
             PeptideId peptideId
     );
 
-    Err addIsotopes();
 
     Err loadpeptideIdVsFragLibIons();
     Err loadRTree();
@@ -187,8 +186,6 @@ Err FragLibIonRTree::Private::init(const QMap<PeptideStringWithMods, MS2IonsSepa
                 newPeptideId
         );
     }
-
-//    e = addIsotopes(); ree
 
     e = loadpeptideIdVsFragLibIons(); ree
     e = loadRTree(); ree
