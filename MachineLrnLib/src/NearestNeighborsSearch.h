@@ -32,6 +32,7 @@ struct NNSearchResult {
 class MACHINELRNLIB_EXPORTS NearestNeighborsSearch {
 
 public:
+
     NearestNeighborsSearch();
     ~NearestNeighborsSearch();
 
