@@ -51,6 +51,8 @@ public:
 
     Err updateFragLibIonsRTValues(const QString &iRTRecalibrationFilePath);
 
+    [[nodiscard]] bool rtValsLoaded() const;
+
     Err getFragLibIons(
             double mzMin,
             double mzMax,

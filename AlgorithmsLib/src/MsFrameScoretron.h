@@ -162,6 +162,7 @@ private:
 
     Err extractFragLibIonsForScanPoints(
             const ScanPoints &scanPoints,
+            ScanTime scanTime,
             FragLibIonRTree *fragLibIonRTree,
             QMap<PeptideId, QVector<FragLibIon>> *peptideIdVsFragLibIonsForFrameIndexOutput
             ) const;

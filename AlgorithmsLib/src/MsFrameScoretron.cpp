@@ -422,6 +422,8 @@ Err MsFrameScoretron::iterateApexScanPoints(
 
         const FrameIndex frameIndex = it.key();
         const ScanPoints &scanPoints = it.value();
+        const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndex);
+        const ScanTime scanTime = m_msFrame.scanTimeFromScanNumber(scanNumber);
 
         if (scanPoints.isEmpty()) {
             continue;
@@ -436,6 +438,7 @@ Err MsFrameScoretron::iterateApexScanPoints(
         QMap<PeptideId, QVector<FragLibIon>> peptideIdVsFragLibIonsCandidatesForFrameIndex;
         e = extractFragLibIonsForScanPoints(
                 scanPointsDeisotoped,
+                scanTime,
                 &m_fragLibIonRTree,
                 &peptideIdVsFragLibIonsCandidatesForFrameIndex
                 ); ree
@@ -449,7 +452,7 @@ Err MsFrameScoretron::iterateApexScanPoints(
 
         frameIndexVsScoredCandidates->insert(frameIndex, scoredCandidatesTarget);
 
-        qDebug() << "processed frame index:" << frameIndex;
+        qDebug() << "processed frame index:" << frameIndex << "target count" << scoredCandidatesTarget.size();
     }
 
     ERR_RETURN
@@ -457,6 +460,7 @@ Err MsFrameScoretron::iterateApexScanPoints(
 
 Err MsFrameScoretron::extractFragLibIonsForScanPoints(
         const ScanPoints &scanPoints,
+        ScanTime scanTime,
         FragLibIonRTree *fragLibIonRTree,
         QMap<PeptideId, QVector<FragLibIon>> *peptideIdVsFragLibIonsForFrameIndexOutput
         ) const {
@@ -464,6 +468,8 @@ Err MsFrameScoretron::extractFragLibIonsForScanPoints(
     ERR_INIT
 
     QMap<PeptideId, QVector<FragLibIon>> peptideIdVsFragLibIonsForFrameIndex;
+
+    const double scanTimeWindowMinutes = 5.0;
 
     for (const ScanPoint &sp : scanPoints) {
 
@@ -475,14 +481,30 @@ Err MsFrameScoretron::extractFragLibIonsForScanPoints(
         const double mzMin = sp.x() - mzTol;
         const double mzMax = sp.x() + mzTol;
 
+        const double rtMin = scanTime - scanTimeWindowMinutes;
+        const double rtMax = scanTime + scanTimeWindowMinutes;
+
         QVector<FragLibIon> foundFragLibIonsForMz;
 
-        // TODO when iRT is incorporated, use other overloaded function that takes iRT min/max as args
-        e = fragLibIonRTree->getFragLibIons(
-                mzMin,
-                mzMax,
-                &foundFragLibIonsForMz
-        ); ree
+        if (m_fragLibIonRTree.rtValsLoaded()) {
+            e = fragLibIonRTree->getFragLibIons(
+                    mzMin,
+                    mzMax,
+                    rtMin,
+                    rtMax,
+                    &foundFragLibIonsForMz
+            ); ree
+
+        }
+
+        else {
+            e = fragLibIonRTree->getFragLibIons(
+                    mzMin,
+                    mzMax,
+                    &foundFragLibIonsForMz
+            ); ree
+        }
+
 
         for (FragLibIon &fli : foundFragLibIonsForMz) {
             fli.mzSearched = sp.x();

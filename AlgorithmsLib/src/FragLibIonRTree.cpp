@@ -78,6 +78,7 @@ public:
     double m_mzMax;
     double m_rtMin;
     double m_rtMax;
+    bool m_rtValLoaded;
 
 private:
 
@@ -98,6 +99,7 @@ FragLibIonRTree::Private::Private()
 , m_mzMax(-1.0)
 , m_rtMin(-1.0)
 , m_rtMax(-1.0)
+, m_rtValLoaded(false)
 {}
 
 
@@ -461,6 +463,8 @@ Err FragLibIonRTree::Private::updateFragLibIonsRTValues(const QString &iRTRecali
 
     e = loadRTree(); ree;
 
+    m_rtValLoaded = true;
+
     ERR_RETURN
 }
 
@@ -559,4 +563,8 @@ Err FragLibIonRTree::updateFragLibIonsRTValues(const QString &iRTRecalibrationFi
     ERR_INIT
     e = d_ptr->updateFragLibIonsRTValues(iRTRecalibrationFilePath); ree
     ERR_RETURN
+}
+
+bool FragLibIonRTree::rtValsLoaded() const {
+    return d_ptr->m_rtValLoaded;
 }
