@@ -38,7 +38,7 @@ namespace {
             ion.mz = row.mzVals.at(i);
             ion.intensity = row.intensityVals.at(i);
             ion.ionLabel = ionLabels.at(i);
-//            ion.rt = row.rt; TODO Add iRT to RT conversion here.
+            ion.iRT = static_cast<float>(row.iRT);
             ms2Ions->push_back(ion);
         }
 
@@ -310,7 +310,8 @@ Err FragLibReader::buildFragIonLibForCandidates(
         double mzTargetMax,
         QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
         QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
-        QMap<PeptideStringWithMods, double> *fragPredsMass
+        QMap<PeptideStringWithMods, double> *fragPredsMass,
+        QMap<PeptideStringWithMods, IRT> *fragPredIRT
         ) {
 
     ERR_INIT
@@ -369,6 +370,7 @@ Err FragLibReader::buildFragIonLibForCandidates(
             fragPreds->insert(peptideStringWithMods, ms2IonsSeparated);
             fragPredsIsDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
             fragPredsMass->insert(peptideStringWithMods, peptideSequenceChargeKeyVsMass.value(peptideSequenceChargeKey));
+            fragPredIRT->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIRT.value(peptideSequenceChargeKey));
         }
 
     }

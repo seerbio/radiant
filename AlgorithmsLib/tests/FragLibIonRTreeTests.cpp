@@ -44,6 +44,7 @@ void FragLibIonRTreeTests::initTest() {
     QMap<PeptideStringWithMods, MS2IonsSeparated> fragPreds;
     QMap<PeptideStringWithMods, bool> fragPredsIsDecoy;
     QMap<PeptideStringWithMods, double> fragPredsMass;
+    QMap<PeptideStringWithMods, IRT> fragPredsIRT;
 
     e = FragLibReader::buildFragIonLibForCandidates(
             fragLibPath,
@@ -53,7 +54,8 @@ void FragLibIonRTreeTests::initTest() {
             target + targetWindowSize,
             &fragPreds,
             &fragPredsIsDecoy,
-            &fragPredsMass
+            &fragPredsMass,
+            &fragPredsIRT
     );
     QCOMPARE(e, eNoError);
 

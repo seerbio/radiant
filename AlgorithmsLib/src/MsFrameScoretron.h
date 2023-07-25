@@ -132,6 +132,16 @@ public:
             const QPair<double, double> &mzTargetStartStop
             );
 
+    Err init(
+            const PythiaParameters &params,
+            const QString &msDataFilePath,
+            const QString &fragLibFilePath,
+            const QString &fragLibBackgroundFilePath,
+            const QString &iRTRecalibrationFilePath,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            const QPair<double, double> &mzTargetStartStop
+    );
+
     Err scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates);
 
 
@@ -168,6 +178,7 @@ private:
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     QMap<PeptideStringWithMods, double> m_fragPredsMass;
+    QMap<PeptideStringWithMods, IRT> m_fragPredsIRT;
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPredsBackground;
     QMap<PeptideStringWithMods, bool> m_fragPredsBackgroundIsDecoy;

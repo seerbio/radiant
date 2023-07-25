@@ -82,9 +82,11 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.second,
             &m_fragPreds,
             &m_fragPredsIsDecoy,
-            &m_fragPredsMass
+            &m_fragPredsMass,
+            &m_fragPredsIRT
     ); ree
 
+    QMap<PeptideStringWithMods, IRT> unused;
     e = FragLibReader::buildFragIonLibForCandidates(
             fragLibBackgroundFilePath,
             m_params.chargeStateMin,
@@ -93,7 +95,8 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.second,
             &m_fragPredsBackground,
             &m_fragPredsBackgroundIsDecoy,
-            &m_fragPredsMass
+            &m_fragPredsMass,
+            &unused
     ); ree
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree
@@ -144,6 +147,32 @@ Err MsFrameScoretron::init(
 
     ERR_RETURN
 }
+
+Err MsFrameScoretron::init(
+        const PythiaParameters &params,
+        const QString &msDataFilePath,
+        const QString &fragLibFilePath,
+        const QString &fragLibBackgroundFilePath,
+        const QString &iRTRecalibrationFilePath,
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const QPair<double, double> &mzTargetStartStop
+        ) {
+    ERR_INIT
+
+    e = init(
+            params,
+            msDataFilePath,
+            fragLibFilePath,
+            fragLibBackgroundFilePath,
+            uniqueMsInfoScanKey,
+            mzTargetStartStop
+            ); ree;
+
+    e = m_fragLibIonRTree.updateFragLibIonsRTValues(iRTRecalibrationFilePath); ree;
+
+    ERR_RETURN
+}
+
 
 Err MsFrameScoretron::initMsFrame(
         const QString &msDataFilePath,
@@ -535,3 +564,4 @@ Err MsFrameScoretron::extractScores(
 
     ERR_RETURN
 }
+

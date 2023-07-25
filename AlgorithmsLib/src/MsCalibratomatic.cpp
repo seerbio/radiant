@@ -201,7 +201,7 @@ namespace{
             const NNSearchResult &sr = searchResults.at(i);
             const double ogPPM = ppmDiffVals.at(i);
 
-            const double ppmCorrectionMean = sr.values;
+            const double ppmCorrectionMean = sr.meanValues;
 
             adjustedPPMs.push_back(ogPPM - ppmCorrectionMean);
         }
@@ -447,7 +447,7 @@ namespace {
                         searchedFrameIndex
                         ); ree;
 
-                const double meanDiffPPM = nnSearchResult.values;
+                const double meanDiffPPM = nnSearchResult.meanValues;
                 const double mzCorrectionAmount = (ogMz * meanDiffPPM) / 1e6;
                 const double correctedMz = ogMz - mzCorrectionAmount;
 

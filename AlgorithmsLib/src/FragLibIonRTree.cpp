@@ -4,9 +4,11 @@
 
 #include "FragLibIonRTree.h"
 
+#include "CalibrationReader.h"
 #include "ErrorUtils.h"
 #include "FragLibReader.h"
 #include "IsotopicDistributionBuilder.h"
+#include "NearestNeighborsSearch.h"
 
 #include <QElapsedTimer>
 
@@ -51,7 +53,7 @@ public:
 
     Err addFrequencyPercentagesToFragLibIons(const QMap<MzHashed, FrequencyPercent> &mzHashVsFreqPct);
 
-    Err updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath);
+    Err updateFragLibIonsRTValues(const QString &iRTRecalibrationFilePath);
 
     Err getFragLibIons(
         double mzMin,
@@ -210,11 +212,10 @@ void FragLibIonRTree::Private::insertMs2IonsSeparatedToFragLibIons(
         FragLibIon fragLibIon;
         fragLibIon.peptideId = peptideId;
         fragLibIon.mz = ms2Ion.mz;
+        fragLibIon.iRT = ms2Ion.iRT;
         fragLibIon.intensity = ms2Ion.intensity;
         fragLibIon.ionIndex = ionIndex;
         fragLibIon.ionType = ionType;
-        fragLibIon.rt = ms2Ion.rt;
-//        fragLibIon.iMobility = 0.0; //TODO turn this on when using ion mobility and then use 3d rtree
         fragLibIon.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
         m_fragLibIons.insert(m_fragLibIons.size(), fragLibIon);
@@ -266,7 +267,7 @@ Err FragLibIonRTree::Private::loadRTree() {
     m_rtMax = m_rTree->bounds().max_corner().get<1>();
 
     qDebug() << "mz range" << m_mzMin << "to" << m_mzMax;
-    qDebug() << "iRT range" << m_rtMin << "to" << m_rtMax;
+    qDebug() << "RT range" << m_rtMin << "to" << m_rtMax;
     qDebug() << "FragLibIon RTree size:" << m_rTree->size();
 
     ERR_RETURN
@@ -402,11 +403,63 @@ Err FragLibIonRTree::Private::getPeptideSequenceWithMods(
     ERR_RETURN
 }
 
-Err FragLibIonRTree::Private::updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath) {
+namespace {
+
+    Err buildNearestNeighborsIRTData(
+            const QString &iRTRecalibrationFilePath,
+            QVector<QPair<double, Coors>> *nnInputData
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree
+
+        QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
+        e  = CSVReader::read(
+                iRTRecalibrationFilePath,
+                &iRTReCalibrationReaderRows
+                ); ree;
+
+        for (const IRTReCalibrationRow &row : iRTReCalibrationReaderRows) {
+            nnInputData->push_back({row.scanTime, {row.iRT, 0.0}});
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err FragLibIonRTree::Private::updateFragLibIonsRTValues(const QString &iRTRecalibrationFilePath) {
 
     ERR_INIT
 
+    qDebug() << "updating rt vals in fraglib r-tree";
 
+    QVector<QPair<double, Coors>> nnInputData;
+    e = buildNearestNeighborsIRTData(
+            iRTRecalibrationFilePath,
+            &nnInputData
+            );
+
+    NearestNeighborsSearch nearestNeighborsSearch;
+    e = nearestNeighborsSearch.init(nnInputData); ree
+
+    const int kNearestPoints = 10;
+
+    for (int i = 0; i < m_fragLibIons.size(); i++) {
+
+        FragLibIon &fli = m_fragLibIons[i];
+
+        QVector<NNSearchResult> nnSearchResult;
+        nearestNeighborsSearch.kNearestNeighborsSearch(
+                {{fli.iRT, 0.0}},
+                kNearestPoints,
+                &nnSearchResult
+                );
+
+        fli.rt = nnSearchResult.front().meanValues;
+    }
+
+    e = loadRTree(); ree;
 
     ERR_RETURN
 }
@@ -502,8 +555,8 @@ Err FragLibIonRTree::getPeptideSequenceWithMods(
     ERR_RETURN
 }
 
-Err FragLibIonRTree::updateFragLibIonsRTValues(const QString &firstPassPeptidesFilePath) {
+Err FragLibIonRTree::updateFragLibIonsRTValues(const QString &iRTRecalibrationFilePath) {
     ERR_INIT
-    e = d_ptr->updateFragLibIonsRTValues(firstPassPeptidesFilePath); ree
+    e = d_ptr->updateFragLibIonsRTValues(iRTRecalibrationFilePath); ree
     ERR_RETURN
 }
