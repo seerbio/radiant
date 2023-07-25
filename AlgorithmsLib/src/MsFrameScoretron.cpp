@@ -82,11 +82,9 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.second,
             &m_fragPreds,
             &m_fragPredsIsDecoy,
-            &m_fragPredsMass,
-            &m_fragPredsIRT
+            &m_fragPredsMass
     ); ree
 
-    QMap<PeptideStringWithMods, IRT> unused;
     e = FragLibReader::buildFragIonLibForCandidates(
             fragLibBackgroundFilePath,
             m_params.chargeStateMin,
@@ -95,8 +93,7 @@ Err MsFrameScoretron::init(
             m_mzTargetStartStop.second,
             &m_fragPredsBackground,
             &m_fragPredsBackgroundIsDecoy,
-            &m_fragPredsMass,
-            &unused
+            &m_fragPredsMass
     ); ree
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree

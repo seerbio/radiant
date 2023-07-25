@@ -298,8 +298,7 @@ namespace {
         e = fragLibReader.getMS2Ions(
                 &peptideSequenceChargeKeyVsMS2Ions,
                 &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass,
-                &peptideSequenceChargeKeyVsIRT
+                &peptideSequenceChargeKeyVsMass
                 ); ree
 
         QMap<PeptideStringWithMods, IRT> peptideStringWithModsVsIRT;
