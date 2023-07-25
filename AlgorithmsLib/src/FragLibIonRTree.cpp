@@ -213,7 +213,7 @@ void FragLibIonRTree::Private::insertMs2IonsSeparatedToFragLibIons(
         fragLibIon.intensity = ms2Ion.intensity;
         fragLibIon.ionIndex = ionIndex;
         fragLibIon.ionType = ionType;
-        fragLibIon.iRT = ms2Ion.iRT;
+        fragLibIon.rt = ms2Ion.rt;
 //        fragLibIon.iMobility = 0.0; //TODO turn this on when using ion mobility and then use 3d rtree
         fragLibIon.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
@@ -253,7 +253,7 @@ Err FragLibIonRTree::Private::loadRTree() {
         const Id id = it.key();
         const FragLibIon &fragLibIon = it.value();
 
-        rTreeCoor coor(fragLibIon.mz, fragLibIon.iRT);
+        rTreeCoor coor(fragLibIon.mz, fragLibIon.rt);
         cloudLoader.emplace_back(coor, id);
     }
 

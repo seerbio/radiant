@@ -4,8 +4,10 @@
 
 #include "MsCalibratomatic.h"
 
+#include "CalibrationReader.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "FragLibReader.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
@@ -25,27 +27,34 @@ MsCalibratomatic::MsCalibratomatic()
 Err MsCalibratomatic::init(
         const PythiaParameters &pythiaParameters,
         const QString &firstPassSearchFilePath,
+        const QString &fragLibFilePath,
+        const QString &msReaderParquetFilePath,
         int calPointK
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree
     m_params = pythiaParameters;
+
+    e = ErrorUtils::fileExists(firstPassSearchFilePath); ree
+    e = ErrorUtils::fileExists(fragLibFilePath); ree
 
     e = ErrorUtils::isAboveThreshold(
             calPointK,
             0,
             ErrorUtilsParam::ExcludeThreshold
-            ); ree;
+            ); ree
     m_calPointK = calPointK;
 
-    e = ErrorUtils::fileExists(firstPassSearchFilePath); ree;
-    m_firstPassSearchFilePath = firstPassSearchFilePath;
+    e = buildMzCalibrator(firstPassSearchFilePath); ree
+    e = buildIRTCalibrator(
+            fragLibFilePath,
+            firstPassSearchFilePath,
+            msReaderParquetFilePath
+            ); ree
 
-    e = buildCalibrator(); ree;
-
-    qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
+//    qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
 
     ERR_RETURN
 }
@@ -68,66 +77,21 @@ namespace{
 
         ERR_INIT
 
-        QVector<PSMsReaderRow> psmsReaderRows;
-        e = ParquetReader::read(
-                firstPassSearchFilePath,
-                &psmsReaderRows
-        ); ree;
-        sortScoreDesc(&psmsReaderRows);
+        //TODO redo this for calibration
 
-        QVector<double> scanNumbers;
-        QVector<double> mzFounds;
-        QVector<double> ppms;
-
-        int decoyCount = 0;
-        int rowCounter = 0;
-        const double thresholdFDR = 0.01;
-        for(const PSMsReaderRow &row : psmsReaderRows) {
-
-            if (row.isDecoy) {
-                decoyCount++;
-            }
-
-            if (static_cast<double>(decoyCount) / ++rowCounter >= thresholdFDR) {
-                break;
-            }
-
-//            const QVector<double> &mzFound = row.mzFound;
-//            const QVector<double> &mzSearched = row.mzSearched;
+//        e = ErrorUtils::isEqual(scanNumbers.size(), mzFounds.size());
+//        e = ErrorUtils::isEqual(scanNumbers.size(), ppms.size());
 //
-//            e = ErrorUtils::isEqual(mzFound.size(), mzSearched.size()); ree;
+//        const int colCount = 3;
+//        mat->resize(mzFounds.size(), colCount);
 //
-//            const auto scanNumberDouble = static_cast<double>(row.scanNumber);
+//        const Eigen::VectorX<double> scanNumbersVec = EigenUtils::convertQVectorToEigenVector(scanNumbers);
+//        const Eigen::VectorX<double> mzFoundsVec = EigenUtils::convertQVectorToEigenVector(mzFounds);
+//        const Eigen::VectorX<double> ppmsVec = EigenUtils::convertQVectorToEigenVector(ppms);
 //
-//            for (int i = 0; i < mzFound.size(); i++) {
-//
-//                const double mzSrch = mzSearched.at(i);
-//                const double mzFnd = mzFound.at(i);
-//
-//                e = ErrorUtils::isFalse(MathUtils::tZero(mzSrch)); ree;
-//
-//                const double ppm = 1e6 * ((mzFnd - mzSrch) / mzSrch);
-//
-//                scanNumbers.push_back(scanNumberDouble);
-//                mzFounds.push_back(mzFnd);
-//                ppms.push_back(ppm);
-//            }
-
-        }
-
-        e = ErrorUtils::isEqual(scanNumbers.size(), mzFounds.size());
-        e = ErrorUtils::isEqual(scanNumbers.size(), ppms.size());
-
-        const int colCount = 3;
-        mat->resize(mzFounds.size(), colCount);
-
-        const Eigen::VectorX<double> scanNumbersVec = EigenUtils::convertQVectorToEigenVector(scanNumbers);
-        const Eigen::VectorX<double> mzFoundsVec = EigenUtils::convertQVectorToEigenVector(mzFounds);
-        const Eigen::VectorX<double> ppmsVec = EigenUtils::convertQVectorToEigenVector(ppms);
-
-        mat->col(0) = scanNumbersVec;
-        mat->col(1) = mzFoundsVec;
-        mat->col(2) = ppmsVec;
+//        mat->col(0) = scanNumbersVec;
+//        mat->col(1) = mzFoundsVec;
+//        mat->col(2) = ppmsVec;
 
         ERR_RETURN
     }
@@ -170,7 +134,6 @@ namespace{
 
         ERR_RETURN
     }
-
 
     Err buildNNInput(
             const Eigen::MatrixX<double> &mat,
@@ -251,38 +214,153 @@ namespace{
     }
 
 }//namespace
-Err MsCalibratomatic::buildCalibrator() {
+Err MsCalibratomatic::buildMzCalibrator(const QString &firstPassCSVFilePath) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_params.isValid()); ree;
-    e = ErrorUtils::fileExists(m_firstPassSearchFilePath); ree;
+    e = ErrorUtils::fileExists(firstPassCSVFilePath); ree;
 
-    Eigen::MatrixX<double> dataMatrix;
-    e = buildNearestNeigbhorsDataMatrix(
-            m_firstPassSearchFilePath,
-            &dataMatrix
-            ); ree;
+//    Eigen::MatrixX<double> dataMatrix;
+//    e = buildNearestNeigbhorsDataMatrix(
+//            m_firstPassSearchFilePath,
+//            &dataMatrix
+//            ); ree;
+//
+//    e = filterDataMatrix(&dataMatrix); ree;
+//
+//    const double trainingFraction = 0.9;
+//    const int trainSize = static_cast<int>(dataMatrix.rows() * trainingFraction);
+//    Eigen::MatrixX<double> dataMatrixTrain = dataMatrix.topRows(trainSize);
+//    Eigen::MatrixX<double> dataMatrixTest = dataMatrix.bottomRows(dataMatrix.rows() - trainSize);
+//    qDebug() << "Datapoints:" << dataMatrixTrain.rows();
+//
+//    QVector<QPair<double, Coors>> valuesVsTreePoints;
+//    buildNNInput(dataMatrixTrain, &valuesVsTreePoints);
+//
+//    e = m_nnSearch.init(valuesVsTreePoints); ree;
+//
+//    e = calculateNewAccuracyMetrics(
+//            dataMatrixTest,
+//            m_calPointK,
+//            &m_nnSearch,
+//            &m_stDevNew
+//            ); ree;
 
-    e = filterDataMatrix(&dataMatrix); ree;
+    ERR_RETURN
+}
 
-    const double trainingFraction = 0.9;
-    const int trainSize = static_cast<int>(dataMatrix.rows() * trainingFraction);
-    Eigen::MatrixX<double> dataMatrixTrain = dataMatrix.topRows(trainSize);
-    Eigen::MatrixX<double> dataMatrixTest = dataMatrix.bottomRows(dataMatrix.rows() - trainSize);
-    qDebug() << "Datapoints:" << dataMatrixTrain.rows();
+namespace {
 
-    QVector<QPair<double, Coors>> valuesVsTreePoints;
-    buildNNInput(dataMatrixTrain, &valuesVsTreePoints);
+    Err buildPeptideStringWithModsVsIRT(
+            const QMap<PeptideSequenceChargeKey, IRT> &peptideSequenceChargeKeyVsIRT,
+            QMap<PeptideStringWithMods, IRT> *peptideStringWithModsVsIRT
+            ) {
 
-    e = m_nnSearch.init(valuesVsTreePoints); ree;
+        ERR_INIT
 
-    e = calculateNewAccuracyMetrics(
-            dataMatrixTest,
-            m_calPointK,
-            &m_nnSearch,
-            &m_stDevNew
-            ); ree;
+        for (auto it = peptideSequenceChargeKeyVsIRT.begin(); it != peptideSequenceChargeKeyVsIRT.end(); it++) {
+
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+            const IRT iRT = it.value();
+
+            Charge charge;
+            PeptideStringWithMods peptideStringWithMods;
+            e = FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
+                    peptideSequenceChargeKey,
+                    &peptideStringWithMods,
+                    &charge
+                    ); ree
+
+            peptideStringWithModsVsIRT->insert(peptideStringWithMods, iRT);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildRTCalibrationData(
+            const QString &fragLibReaderFilePath,
+            const QString &firstPassCSVFilePath,
+            const QString &msReaderParquetFilePath,
+            QString *iRTOutputFilePath
+            ) {
+
+        ERR_INIT
+
+        FragLibReader fragLibReader;
+        e = fragLibReader.init(fragLibReaderFilePath); ree
+
+        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
+        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
+        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
+        QMap<PeptideSequenceChargeKey, IRT> peptideSequenceChargeKeyVsIRT;
+
+        e = fragLibReader.getMS2Ions(
+                &peptideSequenceChargeKeyVsMS2Ions,
+                &peptideSequenceChargeKeyVsIsDecoy,
+                &peptideSequenceChargeKeyVsMass,
+                &peptideSequenceChargeKeyVsIRT
+                ); ree
+
+        QMap<PeptideStringWithMods, IRT> peptideStringWithModsVsIRT;
+        e = buildPeptideStringWithModsVsIRT(
+                peptideSequenceChargeKeyVsIRT,
+                &peptideStringWithModsVsIRT
+                ); ree;
+
+        QVector<CalibarationReaderRow> calibarationReaderRows;
+        e = CSVReader::read(
+                firstPassCSVFilePath,
+                &calibarationReaderRows
+                ); ree;
+
+        QVector<IRTReCalibrationRow> iRTReCalibrationRows;
+        for (const CalibarationReaderRow &row : calibarationReaderRows) {
+
+            PeptideStringWithMods peptideStringWithMods = row.peptideStringWithMods;
+            peptideStringWithMods = peptideStringWithMods.replace('L', 'X');
+            peptideStringWithMods = peptideStringWithMods.replace('I', 'X');
+
+            if (!peptideStringWithModsVsIRT.contains(peptideStringWithMods)) {
+                qDebug() << "Not found" << peptideStringWithMods;
+                continue;
+            }
+
+            IRTReCalibrationRow reCalRow;
+            reCalRow.iRT = peptideStringWithModsVsIRT.value(peptideStringWithMods);
+            reCalRow.scanTime = row.scanTime;
+
+            iRTReCalibrationRows.push_back(reCalRow);
+        }
+
+        *iRTOutputFilePath = msReaderParquetFilePath + ".iRT";
+
+        e = CSVReader::write(
+                iRTReCalibrationRows,
+                *iRTOutputFilePath
+                );
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsCalibratomatic::buildIRTCalibrator(
+        const QString &fragLibReaderFilePath,
+        const QString &firstPassCSVFilePath,
+        const QString &msReaderParquetFilePath
+        ) {
+
+    ERR_INIT
+
+    e = buildRTCalibrationData(
+            fragLibReaderFilePath,
+            firstPassCSVFilePath,
+            msReaderParquetFilePath,
+            &m_iRTCalibrationFilePath
+            ); ree
+
+
+
 
     ERR_RETURN
 }

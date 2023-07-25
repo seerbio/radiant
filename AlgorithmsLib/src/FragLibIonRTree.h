@@ -19,7 +19,6 @@ struct FragLibIon {
 
     PeptideId peptideId = -1;
     double mz = -1.0;
-    double iRT = -1.0;
     double rt = -1.0;
     double iMobility = -1.0;
     double intensity = -1.0;

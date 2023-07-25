@@ -103,8 +103,6 @@ public:
     QMap<IonIndex, MS2Ion> bH2OIons;
     QMap<IonIndex, MS2Ion> precursorIons;
 
-    double iRT = -1.0;
-
     [[nodiscard]] QVector<MS2Ion> getTopXMS2Ions(
             int topX,
             int ionIndexCutoffThreshold
@@ -222,11 +220,19 @@ public:
     Err init(const QString &fragLibFilePath);
 
     Err getMS2Ions(
+            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, IRT> *peptideSequenceChargeKeyVsIRT
+            );
+
+    Err getMS2Ions(
             double massStart,
             double massEnd,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, IRT> *peptideSequenceChargeKeyVsIRT
     );
 
     Err getMS2Ions(
@@ -234,7 +240,8 @@ public:
             double massEnd,
             QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, IRT> *peptideSequenceChargeKeyVsIRT
     );
 
     static void filterMs2IonsByMz(
@@ -263,6 +270,12 @@ public:
             QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
             QMap<PeptideStringWithMods, double> *fragPredsMass
             );
+
+    static Err peptideStringWithModsFromPeptideSequenceChargeKey(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            PeptideStringWithMods *peptideStringWithMods,
+            Charge *charge
+    );
 
 
 private:
