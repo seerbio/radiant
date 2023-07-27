@@ -54,8 +54,7 @@ void FragLibIonRTreeTests::initTest() {
             target + targetWindowSize,
             &fragPreds,
             &fragPredsIsDecoy,
-            &fragPredsMass,
-            &fragPredsIRT
+            &fragPredsMass
     );
     QCOMPARE(e, eNoError);
 

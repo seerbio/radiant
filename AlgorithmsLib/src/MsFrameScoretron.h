@@ -64,6 +64,11 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
 
+    double discScore = -1.0;
+    double pVal = -1.0;
+    double frameError = -1.0;
+    double tTestVal = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;
@@ -153,6 +158,8 @@ private:
             const QPair<double, double> &mzTargetStartStop
             );
 
+    Err loadRragPredsFlattened();
+
     Err buildMsFrameApexTurboXIC(TurboXIC *turboXic);
 
     Err iterateApexScanPoints(
@@ -173,10 +180,17 @@ private:
             QVector<ScoredCandidate> *scoredCandidates
     );
 
+    Err deconvolveScan(
+            const QVector<ScoredCandidate> &scoredCandidatesTargets,
+            const ScanPoints &scanPointsDeisotoped,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFiltered
+            );
+
 
 private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPredsFlattened;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     QMap<PeptideStringWithMods, double> m_fragPredsMass;
     QMap<PeptideStringWithMods, IRT> m_fragPredsIRT;

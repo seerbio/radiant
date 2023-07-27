@@ -61,7 +61,6 @@ void MsFrameScoretronTests::scoreCandidatesTest() {
 
 }
 
-
 void MsFrameScoretronTests::scoreCandidatesRecalTest() {
 
     ERR_INIT
