@@ -8,7 +8,6 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "FeatureFinderHillBuilder.h"
-#include "FragLibIonRTree.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MS2ChargeDeconvolvotron.h"
@@ -132,7 +131,6 @@ public:
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
-            const QString &fragLibBackgroundFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QPair<double, double> &mzTargetStartStop
             );
@@ -141,7 +139,6 @@ public:
             const PythiaParameters &params,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
-            const QString &fragLibBackgroundFilePath,
             const QString &iRTRecalibrationFilePath,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QPair<double, double> &mzTargetStartStop
@@ -158,54 +155,28 @@ private:
             const QPair<double, double> &mzTargetStartStop
             );
 
-    Err loadRragPredsFlattened();
+    Err loadFragPredsTopN(int n);
 
-    Err buildMsFrameApexTurboXIC(TurboXIC *turboXic);
-
-    Err iterateApexScanPoints(
-            const QMap<FrameIndex, ScanPoints> &apexScanPoints,
-            QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates
-            );
-
-    Err extractFragLibIonsForScanPoints(
-            const ScanPoints &scanPoints,
-            ScanTime scanTime,
-            FragLibIonRTree *fragLibIonRTree,
-            QMap<PeptideId, QVector<FragLibIon>> *peptideIdVsFragLibIonsForFrameIndexOutput
-            ) const;
-
-    Err extractScores(
-            const QMap<PeptideId, QVector<FragLibIon>> &peptideIdVsFragLibIonsForFrameIndex,
-            FrameIndex frameIndex,
-            QVector<ScoredCandidate> *scoredCandidates
-    );
-
-    Err deconvolveScan(
-            const QVector<ScoredCandidate> &scoredCandidatesTargets,
-            const ScanPoints &scanPointsDeisotoped,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFiltered
-            );
+//    Err deconvolveScan(
+//            const QVector<ScoredCandidate> &scoredCandidatesTargets,
+//            const ScanPoints &scanPointsDeisotoped,
+//            QVector<ScoredCandidate> *scoredCandidatesTargetsFiltered
+//            );
 
 
 private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPredsFlattened;
+    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPredsTopN;
     QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
     QMap<PeptideStringWithMods, double> m_fragPredsMass;
-    QMap<PeptideStringWithMods, IRT> m_fragPredsIRT;
-
-    QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPredsBackground;
-    QMap<PeptideStringWithMods, bool> m_fragPredsBackgroundIsDecoy;
-
-    FragLibIonRTree m_fragLibIonRTree;
-    FragLibIonRTree m_fragLibIonRTreeBackground;
+    QMap<PeptideStringWithMods, double> m_fragPredsIRT;
+    QMap<PeptideStringWithMods, double> m_fragPredsPredictedScanTime;
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
     MsFrame m_msFrame;
-    QVector<FeatureFinderHill> m_featureFinderHills;
-    FeatureFinderHillBuilder m_featureFinderHillBuilder;
+
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

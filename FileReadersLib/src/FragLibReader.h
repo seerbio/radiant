@@ -224,7 +224,8 @@ public:
     Err getMS2Ions(
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
             );
 
     Err getMS2Ions(
@@ -232,7 +233,8 @@ public:
             double massEnd,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
     );
 
     Err getMS2Ions(
@@ -240,7 +242,8 @@ public:
             double massEnd,
             QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
     );
 
     static void filterMs2IonsByMz(
@@ -267,7 +270,8 @@ public:
             double mzTargetMax,
             QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
             QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
-            QMap<PeptideStringWithMods, double> *fragPredsMass
+            QMap<PeptideStringWithMods, double> *fragPredsMass,
+            QMap<PeptideStringWithMods, double> *fragPredsIRT
             );
 
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(

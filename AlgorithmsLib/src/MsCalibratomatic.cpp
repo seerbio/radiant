@@ -253,8 +253,8 @@ Err MsCalibratomatic::buildMzCalibrator(const QString &firstPassCSVFilePath) {
 namespace {
 
     Err buildPeptideStringWithModsVsIRT(
-            const QMap<PeptideSequenceChargeKey, IRT> &peptideSequenceChargeKeyVsIRT,
-            QMap<PeptideStringWithMods, IRT> *peptideStringWithModsVsIRT
+            const QMap<PeptideSequenceChargeKey, double> &peptideSequenceChargeKeyVsIRT,
+            QMap<PeptideStringWithMods, double> *peptideStringWithModsVsIRT
             ) {
 
         ERR_INIT
@@ -262,7 +262,7 @@ namespace {
         for (auto it = peptideSequenceChargeKeyVsIRT.begin(); it != peptideSequenceChargeKeyVsIRT.end(); it++) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            const IRT iRT = it.value();
+            const double iRT = it.value();
 
             Charge charge;
             PeptideStringWithMods peptideStringWithMods;
@@ -293,15 +293,16 @@ namespace {
         QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
         QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
         QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
-        QMap<PeptideSequenceChargeKey, IRT> peptideSequenceChargeKeyVsIRT;
+        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsIRT;
 
         e = fragLibReader.getMS2Ions(
                 &peptideSequenceChargeKeyVsMS2Ions,
                 &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass
+                &peptideSequenceChargeKeyVsMass,
+                &peptideSequenceChargeKeyVsIRT
                 ); ree
 
-        QMap<PeptideStringWithMods, IRT> peptideStringWithModsVsIRT;
+        QMap<PeptideStringWithMods, double> peptideStringWithModsVsIRT;
         e = buildPeptideStringWithModsVsIRT(
                 peptideSequenceChargeKeyVsIRT,
                 &peptideStringWithModsVsIRT
@@ -326,7 +327,7 @@ namespace {
             }
 
             IRTReCalibrationRow reCalRow;
-            reCalRow.iRT = peptideStringWithModsVsIRT.value(peptideStringWithMods);
+            reCalRow.iRT = static_cast<float>(peptideStringWithModsVsIRT.value(peptideStringWithMods));
             reCalRow.scanTime = row.scanTime;
 
             iRTReCalibrationRows.push_back(reCalRow);

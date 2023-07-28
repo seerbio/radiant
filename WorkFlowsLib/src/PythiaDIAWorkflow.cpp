@@ -360,7 +360,6 @@ namespace {
                    fpi.params,
                    fpi.msDataFilePath,
                    fpi.fragLibFilePath,
-                   fpi.fragLibBackgroundFilePath,
                    fpi.iRTReCalFilePath,
                    fpi.uniqueMsInfoScanKey,
                    fpi.mzTargetStartStop

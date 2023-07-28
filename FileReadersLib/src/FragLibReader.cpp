@@ -49,7 +49,8 @@ namespace {
             const QVector<FragLibReaderRow> &fragLibReaderRows,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
             ) {
 
         ERR_INIT
@@ -78,6 +79,11 @@ namespace {
                     row.peptideSequenceChargeKey,
                     row.mass
                     );
+
+            peptideSequenceChargeKeyVsIRT->insert(
+                    row.peptideSequenceChargeKey,
+                    row.iRT
+                    );
         }
 
         ERR_RETURN
@@ -89,7 +95,8 @@ Err FragLibReader::getMS2Ions(
         double massEnd,
         QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
         QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
         ) {
 
     ERR_INIT
@@ -109,7 +116,8 @@ Err FragLibReader::getMS2Ions(
             fragLibReaderRows,
             peptideSequenceChargeKeyVsMS2Ions,
             peptideSequenceChargeKeyVsIsDecoy,
-            peptideSequenceChargeKeyVsMass
+            peptideSequenceChargeKeyVsMass,
+            peptideSequenceChargeKeyVsIRT
             ); ree;
 
     qDebug() << "MS2 Predictions count:" << peptideSequenceChargeKeyVsMS2Ions->size() << "retrieved in" << et.elapsed() << "mSec";
@@ -121,7 +129,8 @@ Err FragLibReader::getMS2Ions(
         double massEnd,
         QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2IonsSeparated,
         QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
 ) {
 
     ERR_INIT
@@ -132,7 +141,8 @@ Err FragLibReader::getMS2Ions(
             massEnd,
             &peptideSequenceChargeKeyVsMS2Ions,
             peptideSequenceChargeKeyVsIsDecoy,
-            peptideSequenceChargeKeyVsMass
+            peptideSequenceChargeKeyVsMass,
+            peptideSequenceChargeKeyVsIRT
             ); ree
 
     for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin();
@@ -193,7 +203,8 @@ Err FragLibReader::getMS2Ions(
 Err FragLibReader::getMS2Ions(
         QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
         QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
         ) {
 
     ERR_INIT
@@ -211,7 +222,8 @@ Err FragLibReader::getMS2Ions(
             fragLibReaderRows,
             peptideSequenceChargeKeyVsMS2Ions,
             peptideSequenceChargeKeyVsIsDecoy,
-            peptideSequenceChargeKeyVsMass
+            peptideSequenceChargeKeyVsMass,
+            peptideSequenceChargeKeyVsIRT
     ); ree
 
     qDebug() << "All MS2 Predictions count:" << peptideSequenceChargeKeyVsMS2Ions->size() << "retrieved in" << et.elapsed() << "mSec";
@@ -298,7 +310,8 @@ Err FragLibReader::buildFragIonLibForCandidates(
         double mzTargetMax,
         QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
         QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
-        QMap<PeptideStringWithMods, double> *fragPredsMass
+        QMap<PeptideStringWithMods, double> *fragPredsMass,
+        QMap<PeptideStringWithMods, double> *fragPredsIRT
         ) {
 
     ERR_INIT
@@ -321,13 +334,15 @@ Err FragLibReader::buildFragIonLibForCandidates(
         QMap<PeptideSequenceChargeKey, MS2IonsSeparated> peptideSequenceChargeKeyVsMS2IonsSeparated;
         QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
         QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
+        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsIRT;
 
         e = fragLibReader.getMS2Ions(
                 massStart,
                 massEnd,
                 &peptideSequenceChargeKeyVsMS2IonsSeparated,
                 &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass
+                &peptideSequenceChargeKeyVsMass,
+                &peptideSequenceChargeKeyVsIRT
         ); ree
 
         for (
@@ -356,6 +371,7 @@ Err FragLibReader::buildFragIonLibForCandidates(
             fragPreds->insert(peptideStringWithMods, ms2IonsSeparated);
             fragPredsIsDecoy->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIsDecoy.value(peptideSequenceChargeKey));
             fragPredsMass->insert(peptideStringWithMods, peptideSequenceChargeKeyVsMass.value(peptideSequenceChargeKey));
+            fragPredsIRT->insert(peptideStringWithMods, peptideSequenceChargeKeyVsIRT.value(peptideSequenceChargeKey));
         }
 
     }

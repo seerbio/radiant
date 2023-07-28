@@ -87,7 +87,6 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             PythiaParameterReader::genericPythiaParametersForTests(),
             msDataFilePath,
             fragLibPath,
-            fragLibBackgroundPath,
             iRTReCalFilePath,
             uniqueMsInfoScanKey,
             {target - targetWindowSize, target + targetWindowSize}
