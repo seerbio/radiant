@@ -741,7 +741,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
 
     m_featureFinderHills.clear();
     m_featureFinderHills = refinedHills;
-    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
+    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills);
     e = loadHillsToRTree(); ree;
 
     qDebug() << "Refined Hill Count" << m_idVsFeatureFinderHills.size();

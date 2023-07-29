@@ -115,6 +115,79 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     }
 };
 
+namespace MS2IonPeakNamespace {
+
+    const QString FRAME_IND_START = QStringLiteral("frameIndexStart");
+    const QString FRAME_IND_END = QStringLiteral("frameIndexEnd");
+    const QString FRAME_IND_MAX = QStringLiteral("frameIndexMax");
+    const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
+    const QString MZ = QStringLiteral("mz");
+    const QString INTENSITY_VALS = QStringLiteral("intensityVals");
+    const QString COSINE_SIM_ANCH = QStringLiteral("cosineSimToAnchor");
+
+    const QStringList keysToCheck = {
+            FRAME_IND_START,
+            FRAME_IND_END,
+            FRAME_IND_MAX,
+            PEP_STR_W_MODS,
+            MZ,
+            INTENSITY_VALS,
+            COSINE_SIM_ANCH
+    };
+}
+
+struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
+
+    PeptideStringWithMods peptideStringWithMods;
+    double mz = -1.0;
+    int frameIndexMax = -1;
+    int frameIndexStart = -1;
+    int frameIndexEnd = -1;
+    QVector<double> intensityVals;
+    double cosineSimToAnchor = -1.0;
+
+    QMap<QString, QVariant> map() override {
+
+        using namespace MS2IonPeakNamespace;
+
+        return {
+                {FRAME_IND_START, QVariant(frameIndexStart)},
+                {FRAME_IND_END, QVariant(frameIndexEnd)},
+                {FRAME_IND_MAX, QVariant(frameIndexMax)},
+                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
+                {MZ, QVariant(mz)},
+                {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
+                {COSINE_SIM_ANCH, QVariant(cosineSimToAnchor)}
+        };
+    }
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        using namespace MS2IonPeakNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        frameIndexStart = dataMap.value(FRAME_IND_START).toInt();
+        frameIndexEnd = dataMap.value(FRAME_IND_END).toInt();
+        frameIndexMax = dataMap.value(FRAME_IND_MAX).toInt();
+        peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
+        mz = dataMap.value(MZ).toDouble();
+        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        cosineSimToAnchor = dataMap.value(COSINE_SIM_ANCH).toDouble();
+
+        ERR_RETURN
+    }
+
+};
+
 
 class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 
@@ -156,6 +229,8 @@ private:
             );
 
     Err loadFragPredsTopN(int n);
+
+    Err buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks);
 
 //    Err deconvolveScan(
 //            const QVector<ScoredCandidate> &scoredCandidatesTargets,

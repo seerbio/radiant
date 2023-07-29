@@ -250,10 +250,36 @@ void FragLibReader::filterMs2IonsByMz(
     ms2Ions->erase(terminator, ms2Ions->end());
 }
 
+namespace {
+
+    void removeMzVals(
+            double mzMin,
+            double mzMax,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        const auto terminatorLogic = [mzMin, mzMax](const MS2Ion &ms2Ion){
+            return ms2Ion.mz < mzMin || ms2Ion.mz > mzMax;
+        };
+
+        const auto terminator = std::remove_if(
+                ms2Ions->begin(),
+                ms2Ions->end(),
+                terminatorLogic
+                );
+
+        ms2Ions->erase(terminator, ms2Ions->end());
+    }
+
+}//namespace
 void FragLibReader::getTopNMostIntenseMs2Ions(
         int topNMs2Ions,
+        double mzMin,
+        double mzMax,
         QVector<MS2Ion> *ms2Ions
 ) {
+
+    removeMzVals(mzMin, mzMax, ms2Ions);
 
     const auto sortIntensityAsc = [](const MS2Ion &l, const MS2Ion &r){
         return l.intensity < r.intensity;
@@ -265,11 +291,6 @@ void FragLibReader::getTopNMostIntenseMs2Ions(
 
     ms2Ions->resize(topNMs2Ions);
 
-    const auto sortMzAsc = [](const MS2Ion &l, const MS2Ion &r) {
-        return l.mz < r.mz;
-    };
-
-    std::sort(ms2Ions->begin(), ms2Ions->end(), sortMzAsc);
 }
 
 void FragLibReader::filterMs2IonsByIntensity(

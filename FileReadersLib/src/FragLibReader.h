@@ -259,6 +259,8 @@ public:
 
     static void getTopNMostIntenseMs2Ions(
             int topNMs2Ions,
+            double mzMin,
+            double mzMax,
             QVector<MS2Ion> *ms2Ions
     );
 

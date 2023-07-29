@@ -4,11 +4,11 @@
 
 #include "MsFrame.h"
 
-#include "DeisotoperTandem.h"
 #include "EigenKernelUtils.h"
 #include "EigenSparseUtils.h"
-#include "FeatureFinderHillBuilder.h"
+#include "EigenUtils.h"
 #include "GlobalSettings.h"
+#include "MS2ChargeDeconvolvotron.h"
 #include "MsReaderBase.h"
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
@@ -23,8 +23,8 @@ const int PRECISION = 3;
 MsFrame::MsFrame()
 : m_mzWindowLower(-1.0)
 , m_mzWindowUpper(-1.0)
-
 {}
+
 
 Err MsFrame::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
@@ -36,6 +36,7 @@ Err MsFrame::init(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree
+
     m_frame = scanPoints;
 
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree
@@ -287,6 +288,48 @@ Err MsFrame::filterFrameByMz(
         pnts.erase(terminator, pnts.end());
     }
 
+    ERR_RETURN
+}
+
+ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {
+
+    const QVector<ScanNumber> scanNumbers = m_scanNumberVsScanTime.keys().toVector();
+    const QVector<ScanTime> scanTimes = m_scanNumberVsScanTime.values().toVector();
+
+    const int closestIndex = MathUtils::closest(scanTimes, scanTime);
+
+    return scanNumbers.at(closestIndex);
+}
+
+Err MsFrame::deisotopeMsFrame(double ppmTol) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_frame);
+
+    const QString &chargeModelFilePath
+            = QDir(qApp->applicationDirPath()).filePath("MS2_Charge_Model.json");
+
+    const QString &monoModelFilePath
+            = QDir(qApp->applicationDirPath()).filePath("MS2_Mono_Model.json");
+
+    MS2ChargeDeconvolvotron ms2ChargeDeconvolvotron;
+    e = ms2ChargeDeconvolvotron.init(chargeModelFilePath, monoModelFilePath, ppmTol);
+
+    QMap<ScanNumber, ScanPoints> scanPointsDeisotoped;
+    for (auto it = m_frame.begin(); it != m_frame.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const ScanPoints &scanPointsIter = it.value();
+
+        ScanPoints scanPointsIterDeisotoped;
+        e = ms2ChargeDeconvolvotron.deisotopeScanPoints(scanPointsIter, &scanPointsIterDeisotoped);
+
+        scanPointsDeisotoped.insert(scanNumber, scanPointsIterDeisotoped);
+    }
+
+    m_frame = scanPointsDeisotoped;
+    e = buildFrameIndexVsScanNumber(); ree
 
     ERR_RETURN
 }

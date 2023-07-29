@@ -85,6 +85,8 @@ public:
 
     [[nodiscard]] bool isValid() const ;
 
+    Err deisotopeMsFrame(double ppmTol);
+
     static Err writeFrameScans(
             const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
             const QString &outputFilePath
@@ -105,6 +107,8 @@ public:
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
     [[nodiscard]] ScanTime scanTimeFromScanNumber(ScanNumber scanNumber) const;
+
+    [[nodiscard]] ScanNumber scanNumberFromScanTime(ScanTime scanTime) const;
 
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
