@@ -18,6 +18,7 @@ using namespace Error;
 
 using Charge = int;
 using Coors = QVector<double>;
+using CosineSimSum = double;
 using DiscScore = double;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
@@ -66,7 +67,6 @@ using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
 using Value = double;
 using XICPoint = QPair<ScanNumber, Intensity>;
-using XICPoints = QMap<ScanNumber, Intensity>;
 
 struct UTILSLIB_EXPORTS MS2Ion {
 

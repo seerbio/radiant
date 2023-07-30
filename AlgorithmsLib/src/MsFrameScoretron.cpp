@@ -259,8 +259,8 @@ namespace {
             frameIndexMaxesUnique->insert(ms2ip.frameIndexMax);
 
             rTreeBox box(
-                    {static_cast<double>(ms2ip.frameIndexStart), ms2ip.mz},
-                    {static_cast<double>(ms2ip.frameIndexEnd), ms2ip.mz}
+                    {static_cast<double>(ms2ip.frameIndexStart), ms2ip.mzSearched},
+                    {static_cast<double>(ms2ip.frameIndexEnd), ms2ip.mzSearched}
             );
 
             cloudLoader.push_back(rTreePoint({box, id}));
@@ -517,44 +517,70 @@ namespace {
     }
 
 }//namespace
-Err MsFrameScoretron::scoreFrameCandidates(
-        QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates
-        ) {
+Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
     ERR_INIT
 
     QVector<MS2IonPeak> ms2IonPeaks;
     e = buildMS2Peaks(&ms2IonPeaks); ree;
 
-    QMap<PeptideStringWithMods, QPair<double, QVector<MS2IonPeak>>> bestClusters;
+    QMap<PeptideStringWithMods, QPair<CosineSimSum, QVector<MS2IonPeak>>> bestCosineSimSumVsClusters;
     e = findBestClusterGroupingPerPeptideStringWithMods(
             ms2IonPeaks,
             m_params.minFoundMzPeaks,
-            &bestClusters
+            &bestCosineSimSumVsClusters
             ); ree
 
-    int falsers = 0;
-    int trueers = 0;
-    for (auto it = bestClusters.begin(); it != bestClusters.end(); it++) {
+    for (auto it = bestCosineSimSumVsClusters.begin(); it != bestCosineSimSumVsClusters.end(); it++) {
 
-        if (it.value().first < 6) {
-            continue;
-        }
+        const PeptideStringWithMods &peptideStringWithMods = it.key();
+        const QPair<CosineSimSum, QVector<MS2IonPeak>> &bestCluster = it.value();
+        const CosineSimSum cosineSimSum = bestCluster.first;
+        QVector<MS2IonPeak> ms2IonPeaksMap = bestCluster.second;
 
-        qDebug() << "drewholio" << it.key() << it.value().first << m_fragPredsIsDecoy.value(it.key())
-                << it.value().second.size() << it.value().first / it.value().second.size();
+        const double frameIndexMaxMean = std::accumulate(
+                ms2IonPeaksMap.rbegin(),
+                ms2IonPeaksMap.rend(),
+                0.0,
+                [](double sum, const MS2IonPeak &m){return sum + m.frameIndexMax;}) / ms2IonPeaksMap.size();
 
-        if (m_fragPredsIsDecoy.value(it.key())) {
-            trueers++;
-        }
-        else{
-            falsers++;
-        }
+        const ScanNumber scanNumber
+                = m_msFrame.scanNumberFromFrameIndex(static_cast<int>(std::round(frameIndexMaxMean)));
+
+        const ScanTime scanTime = m_msFrame.scanTimeFromScanNumber(scanNumber);
+
+        ScoredCandidate sc;
+        sc.cosineSim = cosineSimSum;
+        sc.peptideStringWithMods = peptideStringWithMods;
+        sc.scanNumber = scanNumber;
+        sc.scanTime = scanTime;
+        sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
+
+        scoredCandidates->push_back(sc);
     }
 
-    qDebug() << "drewholio" << falsers << trueers;
 
-#define WRITE_MS2_ION_PEAKS
+//    int falsers = 0;
+//    int trueers = 0;
+//    for (auto it = bestClusters.begin(); it != bestClusters.end(); it++) {
+//
+//        if (it.value().first < 6) {
+//            continue;
+//        }
+//
+//        qDebug() << "drewholio" << it.key() << it.value().first << m_fragPredsIsDecoy.value(it.key())
+//                << it.value().second.size() << it.value().first / it.value().second.size();
+//
+//        if (m_fragPredsIsDecoy.value(it.key())) {
+//            trueers++;
+//        }
+//        else{
+//            falsers++;
+//        }
+//    }
+//    qDebug() << "drewholio" << falsers << trueers;
+
+//#define WRITE_MS2_ION_PEAKS
 #ifdef WRITE_MS2_ION_PEAKS
     e = ParquetReader::write(ms2IonPeaks, "ms2IonPeaks.prq"); ree
 #endif
@@ -569,15 +595,24 @@ Err MsFrameScoretron::scoreFrameCandidates(
 
 namespace {
 
-    QVector<double> convertXicLimitsToVec(
+    struct ConversionXICVecs {
+        QVector<double> intensityVals;
+        QVector<double> mzValsMeans;
+        QVector<double> mzValsStDevs;
+    };
+
+    ConversionXICVecs convertXicLimitsToVec(
             const XICPoints &xicPoints,
             MsFrame *msFrame
             ) {
 
-        const int frameIndexVecSize = msFrame->frameIndexFromScanNumber(xicPoints.lastKey()) + 10;
+        const int buffer = 1;
+        const int frameIndexVecSize = msFrame->frameIndexFromScanNumber(xicPoints.scanNumbersVsIntensityVals.lastKey()) + buffer;
         QVector<double> intensityVals(frameIndexVecSize, 0.0);
+        QVector<double> mzValsMeans(frameIndexVecSize, 0.0);
+        QVector<double> mzValsStDevs(frameIndexVecSize, 0.0);
 
-        for (auto it = xicPoints.begin(); it != xicPoints.end(); it++) {
+        for (auto it = xicPoints.scanNumbersVsIntensityVals.begin(); it != xicPoints.scanNumbersVsIntensityVals.end(); it++) {
 
             const ScanNumber scanNumber = it.key();
             const FrameIndex frameIndex = msFrame->frameIndexFromScanNumber(scanNumber);
@@ -586,7 +621,22 @@ namespace {
             intensityVals[frameIndex] = intensity;
         }
 
-        return intensityVals;
+        for (auto it = xicPoints.scanNumberVsMzVals.begin(); it != xicPoints.scanNumberVsMzVals.end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const FrameIndex frameIndex = msFrame->frameIndexFromScanNumber(scanNumber);
+            const QVector<double> &mzVals = it.value();
+
+            mzValsMeans[frameIndex] = MathUtils::mean(mzVals);
+            mzValsStDevs[frameIndex] = MathUtils::stDev(mzVals);
+        }
+
+        ConversionXICVecs cv;
+        cv.intensityVals = intensityVals;
+        cv.mzValsMeans = mzValsMeans;
+        cv.mzValsStDevs = mzValsStDevs;
+
+        return cv;
     }
 
 }//namespace
@@ -643,11 +693,11 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
                     scanNumberMax
             );
 
-            if (xicPoints.isEmpty()) {
+            if (xicPoints.scanNumbersVsIntensityVals.isEmpty()) {
                 continue;
             }
 
-            const QVector<double> intensityVals = convertXicLimitsToVec(
+            const ConversionXICVecs cxv = convertXicLimitsToVec(
                     xicPoints,
                     &m_msFrame
                     );
@@ -655,7 +705,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
             QVector<PeakIntegrationIndexes> peakLimits;
             QVector<double> intensityVecSmoothed;
             e = peakIntegratomatic.findAllPeaksLimitsInXIC(
-                    intensityVals,
+                    cxv.intensityVals,
                     &peakLimits,
                     &intensityVecSmoothed
             ); ree;
@@ -668,13 +718,18 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
 
                 e = ErrorUtils::isTrue(pii.second > pii.first); ree;
 
+                const int pointsLength = pii.second - pii.first + 1;
+
                 MS2IonPeak ms2IonPeak;
                 ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
-                ms2IonPeak.mz = ms2Ion.mz;
+                ms2IonPeak.mzSearched = ms2Ion.mz;
+                ms2IonPeak.theoIntensity = ms2Ion.intensity;
                 ms2IonPeak.frameIndexStart = pii.first;
                 ms2IonPeak.frameIndexEnd = pii.second;
-                ms2IonPeak.intensityVals = intensityVals.mid(pii.first, pii.second - pii.first + 1);
+                ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
                 ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
+                ms2IonPeak.mzFoundMean = MathUtils::mean(cxv.mzValsMeans.mid(pii.first, pointsLength));
+                ms2IonPeak.mzFoundStDev = MathUtils::stDev(cxv.mzValsMeans.mid(pii.first, pointsLength));
 
                 if (ms2IonPeak.intensityVals.isEmpty()) {
                     continue;

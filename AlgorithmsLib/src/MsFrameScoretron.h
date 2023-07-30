@@ -121,30 +121,40 @@ namespace MS2IonPeakNamespace {
     const QString FRAME_IND_END = QStringLiteral("frameIndexEnd");
     const QString FRAME_IND_MAX = QStringLiteral("frameIndexMax");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
-    const QString MZ = QStringLiteral("mz");
+    const QString MZ_SEARCHED = QStringLiteral("mzSearched");
+    const QString THEO_INTZ = QStringLiteral("theoIntensity");
     const QString INTENSITY_VALS = QStringLiteral("intensityVals");
     const QString COSINE_SIM_ANCH = QStringLiteral("cosineSimToAnchor");
+    const QString MZ_FOUND_MEAN = QStringLiteral("mzFoundMean");
+    const QString MZ_FOUND_STD = QStringLiteral("mzFoundStd");
 
     const QStringList keysToCheck = {
             FRAME_IND_START,
             FRAME_IND_END,
             FRAME_IND_MAX,
             PEP_STR_W_MODS,
-            MZ,
+            MZ_SEARCHED,
+            THEO_INTZ,
             INTENSITY_VALS,
-            COSINE_SIM_ANCH
+            COSINE_SIM_ANCH,
+            MZ_FOUND_MEAN,
+            MZ_FOUND_STD
     };
 }
 
 struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;
-    double mz = -1.0;
+    double mzSearched = -1.0;
+    double theoIntensity = -1.0;
     int frameIndexMax = -1;
     int frameIndexStart = -1;
     int frameIndexEnd = -1;
     QVector<double> intensityVals;
     double cosineSimToAnchor = -1.0;
+
+    double mzFoundMean = -1.0;
+    double mzFoundStDev = -1.0;
 
     QMap<QString, QVariant> map() override {
 
@@ -155,7 +165,10 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
                 {FRAME_IND_END, QVariant(frameIndexEnd)},
                 {FRAME_IND_MAX, QVariant(frameIndexMax)},
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {MZ, QVariant(mz)},
+                {MZ_SEARCHED, QVariant(mzSearched)},
+                {THEO_INTZ, theoIntensity},
+                {MZ_FOUND_MEAN, mzFoundMean},
+                {MZ_FOUND_STD, mzFoundStDev},
                 {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
                 {COSINE_SIM_ANCH, QVariant(cosineSimToAnchor)}
         };
@@ -179,9 +192,12 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
         frameIndexEnd = dataMap.value(FRAME_IND_END).toInt();
         frameIndexMax = dataMap.value(FRAME_IND_MAX).toInt();
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
-        mz = dataMap.value(MZ).toDouble();
+        mzSearched = dataMap.value(MZ_SEARCHED).toDouble();
+        theoIntensity = dataMap.value(THEO_INTZ).toDouble();
         intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
         cosineSimToAnchor = dataMap.value(COSINE_SIM_ANCH).toDouble();
+        mzFoundMean = dataMap.value(MZ_FOUND_MEAN).toDouble();
+        mzFoundStDev = dataMap.value(MZ_FOUND_STD).toDouble();
 
         ERR_RETURN
     }
@@ -217,7 +233,7 @@ public:
             const QPair<double, double> &mzTargetStartStop
     );
 
-    Err scoreFrameCandidates(QMap<FrameIndex , QVector<ScoredCandidate>> *frameIndexVsScoredCandidates);
+    Err scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates);
 
 
 private:

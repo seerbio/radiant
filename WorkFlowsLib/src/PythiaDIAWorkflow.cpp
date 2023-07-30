@@ -15,7 +15,7 @@
 #include <QtConcurrent/QtConcurrent>
 
 struct ScoreVectorsOutput {
-    QMap<FrameIndex , QVector<ScoredCandidate>> frameIndexVsScoredCandidates;
+    QVector<ScoredCandidate> scoredCandidates;
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     QPair<double, double> mzTargetStartStop = {-1.0, -1.0};
 };
@@ -366,11 +366,11 @@ namespace {
            ); rree;
        }
 
-        QMap<FrameIndex , QVector<ScoredCandidate>> frameIndexVsScoredCandidates;
-        e = msFrameScoretron.scoreFrameCandidates(&frameIndexVsScoredCandidates); rree;
+        QVector<ScoredCandidate> scoredCandidates;
+        e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
 
        ScoreVectorsOutput output;
-       output.frameIndexVsScoredCandidates = frameIndexVsScoredCandidates;
+       output.scoredCandidates = scoredCandidates;
        output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
        output.mzTargetStartStop = fpi.mzTargetStartStop;
 
@@ -399,26 +399,20 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
         QVector<PSMsReaderRow> psmReaderRowsRecal;
 
-        const QMap<FrameIndex , QVector<ScoredCandidate>> &fivsc = result.second.frameIndexVsScoredCandidates;
+        const QVector<ScoredCandidate> &fivsc = result.second.scoredCandidates;
 
-        for (auto it = fivsc.begin(); it != fivsc.end(); it++) {
+        for (const ScoredCandidate &sc : fivsc) {
 
-            const FrameIndex frameIndex = it.key();
-            const QVector<ScoredCandidate> &scs = it.value();
+            PSMsReaderRow psMsReaderRow;
 
-            for (const ScoredCandidate &sc : scs) {
-                PSMsReaderRow psMsReaderRow;
+            psMsReaderRow.scanTime = sc.scanTime;
+            psMsReaderRow.scanNumber = sc.scanNumber;
+            psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
+            psMsReaderRow.isDecoy = sc.isDecoy;
+            psMsReaderRow.score = sc.frequencyPercentSum;
+            psMsReaderRow.charge = sc.charge;
 
-                psMsReaderRow.scanTime = sc.scanTime;
-                psMsReaderRow.scanNumber = sc.scanNumber;
-                psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
-                psMsReaderRow.isDecoy = sc.isDecoy;
-                psMsReaderRow.score = sc.frequencyPercentSum;
-                psMsReaderRow.charge = sc.charge;
-
-                psmReaderRowsRecal.push_back(psMsReaderRow);
-
-            }
+            psmReaderRowsRecal.push_back(psMsReaderRow);
         }
 
         const QString resultsFilePath = result.second.uniqueMsInfoScanKey + ".pythiaDIA";

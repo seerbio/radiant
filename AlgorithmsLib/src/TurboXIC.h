@@ -12,6 +12,11 @@
 
 using namespace Error;
 
+struct XICPoints {
+    QMap<ScanNumber, double> scanNumbersVsIntensityVals;
+    QMap<ScanNumber, QVector<double>> scanNumberVsMzVals;
+};
+
 
 class ALGORITHMSLIB_EXPORTS TurboXIC {
 
