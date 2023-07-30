@@ -45,50 +45,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err fragLibReaderRowsToMs2IonsMap(
-            const QVector<FragLibReaderRow> &fragLibReaderRows,
-            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
-            ) {
-
-        ERR_INIT
-
-        for (const FragLibReaderRow &row : fragLibReaderRows) {
-
-            QVector<MS2Ion> ms2Ions;
-            e = buildMzIons(
-                    row,
-                    &ms2Ions
-                    ); ree;
-
-            e = ErrorUtils::isFalse(peptideStringWithModsVsMS2Ions->contains(row.peptideSequenceChargeKey)); ree;
-
-            peptideStringWithModsVsMS2Ions->insert(
-                    row.peptideSequenceChargeKey,
-                    ms2Ions
-                    );
-
-            peptideSequenceChargeKeyVsIsDecoy->insert(
-                    row.peptideSequenceChargeKey,
-                    row.isDecoy
-                    );
-
-            peptideSequenceChargeKeyVsMass->insert(
-                    row.peptideSequenceChargeKey,
-                    row.mass
-                    );
-
-            peptideSequenceChargeKeyVsIRT->insert(
-                    row.peptideSequenceChargeKey,
-                    row.iRT
-                    );
-        }
-
-        ERR_RETURN
-    }
-
 }//namespace
 Err FragLibReader::getMS2Ions(
         double massStart,
@@ -145,57 +101,10 @@ Err FragLibReader::getMS2Ions(
             peptideSequenceChargeKeyVsIRT
             ); ree
 
-    for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin();
-                it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
-
-        const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-        const QVector<MS2Ion> &ms2Ions = it.value();
-
-        MS2IonsSeparated ms2IonsSeparated;
-        for (const MS2Ion &ion : ms2Ions) {
-
-            if (ion.mz < 0) {
-                continue; //TODO make sure no sub zeros are entered when building the library in IstrosLibBuilder workflow
-            }
-
-            QPair<IonIndex, IonType> ionInfo;
-            e = ion.getIonLabelInfo(&ionInfo); ree
-
-            if (ionInfo.second == "y") {
-                ms2IonsSeparated.yIons.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "y-H2O") {
-                ms2IonsSeparated.yH2OIons.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "y-NH3") {
-                ms2IonsSeparated.yNH3Ions.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "y^2") {
-                ms2IonsSeparated.y2Ions.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "b") {
-                ms2IonsSeparated.bIons.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "b-H2O") {
-                ms2IonsSeparated.bH2OIons.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "b-NH3") {
-                ms2IonsSeparated.bNH3Ions.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "b^2") {
-                ms2IonsSeparated.b2Ions.insert(ionInfo.first, ion);
-            }
-            else if (ionInfo.second == "a") {
-                ms2IonsSeparated.aIons.insert(ionInfo.first, ion);
-            }
-            else {
-                rrr(eValueError);
-            }
-        }
-
-        peptideSequenceChargeKeyVsMS2IonsSeparated->insert(peptideSequenceChargeKey, ms2IonsSeparated);
-
-    }
+    e = buildMS2IonsSeparated(
+            peptideSequenceChargeKeyVsMS2Ions,
+            peptideSequenceChargeKeyVsMS2IonsSeparated
+            ); ree;
 
     ERR_RETURN
 }
@@ -425,6 +334,113 @@ Err FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
             peptideSequenceChargeKeySplit.back(),
             charge
     ); ree
+
+    ERR_RETURN
+}
+
+
+Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
+        const QVector<FragLibReaderRow> &fragLibReaderRows,
+        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
+        QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
+) {
+
+    ERR_INIT
+
+    for (const FragLibReaderRow &row : fragLibReaderRows) {
+
+        QVector<MS2Ion> ms2Ions;
+        e = buildMzIons(
+                row,
+                &ms2Ions
+        ); ree;
+
+        e = ErrorUtils::isFalse(peptideStringWithModsVsMS2Ions->contains(row.peptideSequenceChargeKey)); ree;
+
+        peptideStringWithModsVsMS2Ions->insert(
+                row.peptideSequenceChargeKey,
+                ms2Ions
+        );
+
+        peptideSequenceChargeKeyVsIsDecoy->insert(
+                row.peptideSequenceChargeKey,
+                row.isDecoy
+        );
+
+        peptideSequenceChargeKeyVsMass->insert(
+                row.peptideSequenceChargeKey,
+                row.mass
+        );
+
+        peptideSequenceChargeKeyVsIRT->insert(
+                row.peptideSequenceChargeKey,
+                row.iRT
+        );
+    }
+
+    ERR_RETURN
+}
+
+Err FragLibReader::buildMS2IonsSeparated(
+        const QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> &peptideSequenceChargeKeyVsMS2Ions,
+        QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2IonsSeparated
+        ) {
+
+    ERR_INIT
+
+    for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin();
+         it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+        const QVector<MS2Ion> &ms2Ions = it.value();
+
+        MS2IonsSeparated ms2IonsSeparated;
+        for (const MS2Ion &ion : ms2Ions) {
+
+            if (ion.mz < 0) {
+                continue; //TODO make sure no sub zeros are entered when building the library in IstrosLibBuilder workflow
+            }
+
+            QPair<IonIndex, IonType> ionInfo;
+            e = ion.getIonLabelInfo(&ionInfo); ree
+
+            if (ionInfo.second == "y") {
+                ms2IonsSeparated.yIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y-H2O") {
+                ms2IonsSeparated.yH2OIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y-NH3") {
+                ms2IonsSeparated.yNH3Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "y^2") {
+                ms2IonsSeparated.y2Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b") {
+                ms2IonsSeparated.bIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b-H2O") {
+                ms2IonsSeparated.bH2OIons.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b-NH3") {
+                ms2IonsSeparated.bNH3Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "b^2") {
+                ms2IonsSeparated.b2Ions.insert(ionInfo.first, ion);
+            }
+            else if (ionInfo.second == "a") {
+                ms2IonsSeparated.aIons.insert(ionInfo.first, ion);
+            }
+            else {
+                rrr(eValueError);
+            }
+        }
+
+        peptideSequenceChargeKeyVsMS2IonsSeparated->insert(peptideSequenceChargeKey, ms2IonsSeparated);
+
+    }
 
     ERR_RETURN
 }

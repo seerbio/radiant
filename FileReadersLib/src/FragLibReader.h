@@ -282,6 +282,19 @@ public:
             Charge *charge
     );
 
+    static Err fragLibReaderRowsToMs2IonsMap(
+            const QVector<FragLibReaderRow> &fragLibReaderRows,
+            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
+    );
+
+    static Err buildMS2IonsSeparated(
+            const QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> &peptideSequenceChargeKeyVsMS2Ions,
+            QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2IonsSeparated
+            );
+
 
 private:
 
