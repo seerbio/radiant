@@ -428,6 +428,10 @@ namespace {
                 frameIndexMaxesUnique
                 );
 
+        if (uniqueIDs.isEmpty()) {
+            ERR_RETURN
+        }
+
         QVector<QVector<MS2IonPeak>> clusteredMs2IonPeaksForCosineSimCalc;
         const auto transformLogic = [&](const QVector<Id> &ids){
             QVector<MS2IonPeak> peaks;
@@ -508,6 +512,10 @@ namespace {
                     &bestMS2IonPeaksClustering,
                     &bestCosineSimSum
                     ); ree
+
+            if (bestMS2IonPeaksClustering.size() < mzPeaksFoundMin) {
+                continue;
+            }
 
             bestClusters->insert(peptideStringWithMods, {bestCosineSimSum, bestMS2IonPeaksClustering});
         }

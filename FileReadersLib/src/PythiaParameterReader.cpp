@@ -420,7 +420,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.topNMs2Ions = 12;
-    pythiaParameters.minFoundMzPeaks = 7;
+    pythiaParameters.minFoundMzPeaks = 4;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
