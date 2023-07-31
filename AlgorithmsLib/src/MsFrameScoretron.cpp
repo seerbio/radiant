@@ -93,10 +93,6 @@ Err MsFrameScoretron::init(
             &fragmentFrequencies
             ); ree
 
-    for (const FrequencyPercent pf : fragmentFrequencies) {
-        qDebug() << pf;
-    }
-
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
     qDebug() << "Candidate Count:" << m_fragPreds.size();
