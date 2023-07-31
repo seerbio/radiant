@@ -8,6 +8,22 @@
 
 #include <QElapsedTimer>
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+#include <iostream>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+using rTreeSearchBox = bg::model::box<rTreeCoor>;
+using rTreePoint = std::pair<rTreeCoor, int> ;
+using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+
+
 Err FragLibReader::init(const QString &fragLibFilePath) {
     ERR_INIT
 
@@ -440,6 +456,125 @@ Err FragLibReader::buildMS2IonsSeparated(
 
         peptideSequenceChargeKeyVsMS2IonsSeparated->insert(peptideSequenceChargeKey, ms2IonsSeparated);
 
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    RTree loadRtree(const QMap<PeptideString, QVector<MS2Ion>> &peptideSequenceVsMS2Ions) {
+
+        std::vector<rTreePoint> cloudLoader;
+
+        for (auto it = peptideSequenceVsMS2Ions.begin(); it != peptideSequenceVsMS2Ions.end(); it++) {
+
+            const PeptideString &peptideStr = it.key();
+            const QVector<MS2Ion> &ms2Ions = it.value();
+
+            for (const MS2Ion &ms2Ion : ms2Ions) {
+                rTreeCoor coor(ms2Ion.mz, 0.0);
+                cloudLoader.emplace_back(coor, -1);
+            }
+        }
+
+        const int maxElements = 16;
+        return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    }
+
+    QMap<MzHashed, MZION> buildMzHashedVsMzIon(const QList<QVector<MS2Ion>> &ms2IonVecs) {
+
+        QMap<MzHashed, MZION> mzHashedVsMzIon;
+
+        const int precision = S_GLOBAL_SETTINGS.HASHING_PRECISION;
+
+        for (const QVector<MS2Ion> &ms2Ions : ms2IonVecs) {
+
+            for (const MS2Ion &ms2Ion : ms2Ions) {
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, precision);
+                const MZION mzIon = MathUtils::pRound(ms2Ion.mz, precision);
+
+                mzHashedVsMzIon.insert(mzHashed, mzIon);
+            }
+        }
+
+        return mzHashedVsMzIon;
+    }
+
+}
+Err FragLibReader::generateFragmentFrequencies(
+        const QMap<PeptideString, QVector<MS2Ion>> &peptideStringVsMS2Ions,
+        double ppmTol,
+        QMap<MzHashed, FrequencyPercent> *fragmentFrequencies
+        ) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    e = ErrorUtils::isNotEmpty(peptideStringVsMS2Ions); ree
+    fragmentFrequencies->clear();
+
+    RTree rTree = loadRtree(peptideStringVsMS2Ions);
+    const QMap<MzHashed, MZION> mzIonHashedVsMzIon = buildMzHashedVsMzIon(peptideStringVsMS2Ions.values());
+
+    const int rTreeIonCount = rTree.size();
+    e = ErrorUtils::isNotEqual(rTreeIonCount, 0); ree
+
+    for (auto it = mzIonHashedVsMzIon.begin(); it != mzIonHashedVsMzIon.end(); it++) {
+
+        const MzHashed mzHashed = it.key();
+        const MZION mzIon = it.value();
+
+        const double mzTol = MathUtils::calculatePPM(mzIon, ppmTol);
+        const double mzMin = mzIon - mzTol;
+        const double mzMax = mzIon + mzTol;
+
+        const rTreeSearchBox queryBox(
+                rTreeCoor(mzMin, 0.0),
+                rTreeCoor(mzMax, 0.0)
+        );
+
+        std::vector<rTreePoint> result;
+        rTree.query(bgi::intersects(queryBox), std::back_inserter(result));
+
+        const double fragmentFreq = static_cast<double>(result.size()) / rTreeIonCount;
+
+        fragmentFrequencies->insert(mzHashed, fragmentFreq);
+    }
+
+    qDebug() << "Frequences calculated in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err FragLibReader::unseparateMS2IonsSeparated(
+        const QMap<PeptideString, MS2IonsSeparated> &peptideSequenceVsMS2IonsSeparated,
+        QMap<PeptideString, QVector<MS2Ion>> *peptideSequenceVsMS2Ions) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(peptideSequenceVsMS2IonsSeparated); ree
+
+    for (auto it = peptideSequenceVsMS2IonsSeparated.begin(); it != peptideSequenceVsMS2IonsSeparated.end(); it++) {
+
+        const PeptideString &peptideString = it.key();
+        const MS2IonsSeparated &ms2IonsSeparated = it.value();
+
+        QVector<MS2Ion> ms2IonsConcat;
+        ms2IonsConcat.append(ms2IonsSeparated.yIons.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.y2Ions.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.bIons.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.b2Ions.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.yNH3Ions.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.yH2OIons.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.bNH3Ions.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.bH2OIons.values().toVector());
+        ms2IonsConcat.append(ms2IonsSeparated.aIons.values().toVector());
+
+        peptideSequenceVsMS2Ions->insert(peptideString, ms2IonsConcat);
     }
 
     ERR_RETURN

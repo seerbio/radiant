@@ -23,8 +23,7 @@ struct ScoreVectorsOutput {
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
-        const QString &fragLibUri,
-        const QString &fragLibBackgroundUri
+        const QString &fragLibUri
         ) {
 
     ERR_INIT
@@ -33,11 +32,9 @@ Err PythiaDIAWorkflow::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::fileExists(fragLibUri); ree;
-    e = ErrorUtils::fileExists(fragLibBackgroundUri); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
-    m_fragLibBackgroundUri = fragLibBackgroundUri;
 
     ERR_RETURN
 }
@@ -45,7 +42,6 @@ Err PythiaDIAWorkflow::init(
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri,
-        const QString &fragLibBackgroundUri,
         const QString &iRTReCalFilePath
 ) {
 
@@ -53,8 +49,7 @@ Err PythiaDIAWorkflow::init(
 
     e = init(
             pythiaParameters,
-            fragLibUri,
-            fragLibBackgroundUri
+            fragLibUri
             ); ree;
 
     e = ErrorUtils::fileExists(iRTReCalFilePath); ree;
@@ -68,7 +63,6 @@ struct FrameParallelInput {
     PythiaParameters params;
     QString msDataFilePath;
     QString fragLibFilePath;
-    QString fragLibBackgroundFilePath;
     QString iRTReCalFilePath;
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     QPair<double, double> mzTargetStartStop;
@@ -80,7 +74,6 @@ namespace {
             const PythiaParameters &pythiaParameters,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
-            const QString &fragLibFileBackroundPath,
             QVector<FrameParallelInput> *frameParallelInputs
     ) {
 
@@ -99,7 +92,6 @@ namespace {
             fpi.msDataFilePath = msDataFilePath;
             fpi.params = pythiaParameters;
             fpi.fragLibFilePath = fragLibFilePath;
-            fpi.fragLibBackgroundFilePath = fragLibFileBackroundPath;
             fpi.uniqueMsInfoScanKey = si.targetScanKey();
             fpi.mzTargetStartStop
                     = {si.precursorTargetMz - si.isoWindowLower, si.precursorTargetMz + si.isoWindowUpper};
@@ -120,7 +112,6 @@ namespace {
             const PythiaParameters &pythiaParameters,
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
-            const QString &fragLibFileBackroundPath,
             const QString &iRTReCalFilePath,
             QVector<FrameParallelInput> *frameParallelInputs
     ) {
@@ -131,7 +122,6 @@ namespace {
                 pythiaParameters,
                 msDataFilePath,
                 fragLibFilePath,
-                fragLibFileBackroundPath,
                 frameParallelInputs
                 ); ree;
 
@@ -230,7 +220,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
                 m_pythiaParameters,
                 msDataFilePathRecalibrated,
                 m_fragLibUri,
-                m_fragLibBackgroundUri,
                 &frameParallelInputsRecal
         ); ree;
 
@@ -242,7 +231,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
                 m_pythiaParameters,
                 msDataFilePathRecalibrated,
                 m_fragLibUri,
-                m_fragLibBackgroundUri,
                 m_iRTReCalFilePath,
                 &frameParallelInputsRecal
         ); ree;
@@ -349,7 +337,6 @@ namespace {
                    fpi.params,
                    fpi.msDataFilePath,
                    fpi.fragLibFilePath,
-                   fpi.fragLibBackgroundFilePath,
                    fpi.uniqueMsInfoScanKey,
                    fpi.mzTargetStartStop
            ); rree;

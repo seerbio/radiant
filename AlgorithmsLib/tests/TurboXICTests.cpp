@@ -74,15 +74,15 @@ void TurboXICTests::extractPointsTest() {
     QCOMPARE(e, eNoError);
 
     const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
-    QCOMPARE(xicPoints.size(), 2);
-    QCOMPARE(xicPoints.firstKey(), 2);
-    QCOMPARE(xicPoints.first(), 100.2);
-    QCOMPARE(xicPoints.lastKey(), 3);
-    QCOMPARE(xicPoints.last(), 100.3);
+    QCOMPARE(xicPoints.scanNumbersVsIntensityVals.size(), 2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensityVals.firstKey(), 2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensityVals.first(), 100.2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensityVals.lastKey(), 3);
+    QCOMPARE(xicPoints.scanNumbersVsIntensityVals.last(), 100.3);
 
     const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
-    QCOMPARE(xicPointsSum.size(), 4);
-    QCOMPARE(xicPointsSum.last(), 201.);
+    QCOMPARE(xicPointsSum.scanNumbersVsIntensityVals.size(), 4);
+    QCOMPARE(xicPointsSum.scanNumbersVsIntensityVals.last(), 201.);
 
 }
 
@@ -133,8 +133,8 @@ void TurboXICTests::turboXICUtility() {
             26000
             );
 
-    qDebug() << xicPoints.size();
-    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints);
+    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
+    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
 
     for (const QPointF &p : vec) {
         qDebug() << p;

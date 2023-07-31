@@ -86,6 +86,17 @@ Err MsFrameScoretron::init(
 
     m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
+    QMap<MzHashed, FrequencyPercent> fragmentFrequencies;
+    e = FragLibReader::generateFragmentFrequencies(
+            m_fragPredsTopN,
+            m_params.ms2ExtractionWidthPPM,
+            &fragmentFrequencies
+            ); ree
+
+    for (const FrequencyPercent pf : fragmentFrequencies) {
+        qDebug() << pf;
+    }
+
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
     qDebug() << "Scan Count" << m_msFrame.scanCount();
     qDebug() << "Candidate Count:" << m_fragPreds.size();
@@ -410,6 +421,7 @@ namespace {
     Err clusterLogic(
             const QVector<MS2IonPeak> &ms2ip,
             int mzPeaksFoundMin,
+            double cosineSimMinThreshold,
             QVector<MS2IonPeak> *bestMS2IonPeaksClusteringOutput,
             double *bestCosineSimSumOutput
             ) {
@@ -447,8 +459,6 @@ namespace {
                 transformLogic
                 );
 
-        const double cosineSimMinThresold = 0.8;
-
         QVector<MS2IonPeak> bestMS2IonPeaksClustering;
         double bestCosineSimSum = 0.0;
 
@@ -464,7 +474,7 @@ namespace {
                     double cosineSim;
                     e = calculateCosineSimBetweenPeaks(ms2IonPeakAnchor, ms2IonPeak, &cosineSim); ree
 
-                    if (cosineSim < cosineSimMinThresold) {
+                    if (cosineSim < cosineSimMinThreshold) {
                         continue;
                     }
 
@@ -491,6 +501,7 @@ namespace {
     Err findBestClusterGroupingPerPeptideStringWithMods(
             const QVector<MS2IonPeak> &ms2IonPeaks,
             int mzPeaksFoundMin,
+            double cosineSimMinThreshold,
             QMap<PeptideStringWithMods, QPair<double, QVector<MS2IonPeak>>> *bestClusters
             ) {
 
@@ -509,6 +520,7 @@ namespace {
             e = clusterLogic(
                     ms2ip,
                     mzPeaksFoundMin,
+                    cosineSimMinThreshold,
                     &bestMS2IonPeaksClustering,
                     &bestCosineSimSum
                     ); ree
@@ -536,6 +548,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     e = findBestClusterGroupingPerPeptideStringWithMods(
             ms2IonPeaks,
             m_params.minFoundMzPeaks,
+            m_params.cosineSimThreshold,
             &bestCosineSimSumVsClusters
             ); ree
 

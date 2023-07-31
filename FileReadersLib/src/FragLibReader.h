@@ -295,6 +295,17 @@ public:
             QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2IonsSeparated
             );
 
+    static Err unseparateMS2IonsSeparated(
+            const QMap<PeptideString, MS2IonsSeparated> &peptideSequenceVsMS2IonsSeparated,
+            QMap<PeptideString, QVector<MS2Ion>> *peptideSequenceVsMS2Ions
+    );
+
+    static Err generateFragmentFrequencies(
+            const QMap<PeptideString, QVector<MS2Ion>> &peptideStringVsMS2Ions,
+            double ppmTol,
+            QMap<MzHashed, FrequencyPercent> *fragmentFrequencies
+    );
+
 
 private:
 

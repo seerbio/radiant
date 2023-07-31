@@ -56,7 +56,6 @@ int main(int argc, char *argv[]) {
     e = pythiaDiaWorkflow.init(
             pythiaParameters,
             fragLibPath,
-            fragLibBackgroundPath,
             iRTReCalFilePath
     );
     if (e != eNoError) {

@@ -408,7 +408,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
-    pythiaParameters.ms2ExtractionWidthPPM = 15.0;
+    pythiaParameters.ms2ExtractionWidthPPM = 17.0;
     pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
@@ -420,7 +420,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.topNMs2Ions = 12;
-    pythiaParameters.minFoundMzPeaks = 5;
+    pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
