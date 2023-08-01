@@ -86,11 +86,10 @@ Err MsFrameScoretron::init(
 
     m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
-    QMap<MzHashed, FrequencyPercent> fragmentFrequencies;
     e = FragLibReader::generateFragmentFrequencies(
             m_fragPredsTopN,
             m_params.ms2ExtractionWidthPPM,
-            &fragmentFrequencies
+            &m_fragmentFrequencies
             ); ree
 
     qDebug() << "TargetKey" << uniqueMsInfoScanKey;
@@ -532,6 +531,51 @@ namespace {
         ERR_RETURN
     }
 
+    Err fillUnFoundMS2IonPeaks(
+            const QVector<MS2IonPeak> &bestClusterPeaks,
+            const QVector<MS2Ion> &fragPredTopNOfCluster,
+            QVector<MS2IonPeak> *bestClusterPeaksComplete
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(fragPredTopNOfCluster); ree
+        e = ErrorUtils::isNotEmpty(bestClusterPeaks); ree
+
+        QMap<MzHashed, MS2IonPeak> completeCluster;
+
+        for (const MS2Ion &ms2Ion : fragPredTopNOfCluster) {
+            const MzHashed mzHashed
+                    = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            MS2IonPeak ms2IonPeakUnfound;
+            ms2IonPeakUnfound.mzSearched = ms2Ion.mz;
+            ms2IonPeakUnfound.theoIntensity = ms2Ion.intensity;
+            ms2IonPeakUnfound.pointCountFound = 0;
+
+            completeCluster.insert(mzHashed, ms2IonPeakUnfound);
+        }
+
+        for (const MS2IonPeak &ms2IonPeak : bestClusterPeaks) {
+
+            const MzHashed &mzHashed
+                    = MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            e = ErrorUtils::isTrue(completeCluster.contains(mzHashed)); ree
+
+            completeCluster[mzHashed] = ms2IonPeak;
+        }
+
+        *bestClusterPeaksComplete = completeCluster.values().toVector();
+
+        const auto sortLogicIntensityAsc
+                = [](const MS2IonPeak &l, const MS2IonPeak &r){return l.theoIntensity < r.theoIntensity;};
+
+        std::sort(bestClusterPeaksComplete->rbegin(), bestClusterPeaksComplete->rend(), sortLogicIntensityAsc);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
@@ -553,18 +597,28 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const QPair<CosineSimSum, QVector<MS2IonPeak>> &bestCluster = it.value();
         const CosineSimSum cosineSimSum = bestCluster.first;
-        QVector<MS2IonPeak> ms2IonPeaksMap = bestCluster.second;
+        QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
 
         const double frameIndexMaxMean = std::accumulate(
-                ms2IonPeaksMap.rbegin(),
-                ms2IonPeaksMap.rend(),
+                ms2IonPeaksBestCluster.rbegin(),
+                ms2IonPeaksBestCluster.rend(),
                 0.0,
-                [](double sum, const MS2IonPeak &m){return sum + m.frameIndexMax;}) / ms2IonPeaksMap.size();
+                [](double sum, const MS2IonPeak &m){return sum + m.frameIndexMax;}) / ms2IonPeaksBestCluster.size();
 
         const ScanNumber scanNumber
                 = m_msFrame.scanNumberFromFrameIndex(static_cast<int>(std::round(frameIndexMaxMean)));
 
         const ScanTime scanTime = m_msFrame.scanTimeFromScanNumber(scanNumber);
+        const ScanPoints scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumber);
+
+        const QVector<MS2Ion> &fragPred = m_fragPredsTopN.value(peptideStringWithMods);
+
+        //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
+        e = fillUnFoundMS2IonPeaks(
+                ms2IonPeaksBestCluster,
+                fragPred,
+                &ms2IonPeaksBestCluster
+                ); ree
 
         ScoredCandidate sc;
         sc.cosineSim = cosineSimSum;
@@ -572,6 +626,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.scanNumber = scanNumber;
         sc.scanTime = scanTime;
         sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
+        sc.scanIonCount = scanPoints.size();
 
         scoredCandidates->push_back(sc);
     }
@@ -655,6 +710,14 @@ namespace {
 
         return cv;
     }
+
+    void removeZerosFromVec(QVector<double> *v) {
+
+        const auto terminatorLogic = [](double d){return d <=0;};
+        const auto terminator = std::remove_if(v->begin(), v->end(), terminatorLogic);
+        v->erase(terminator, v->end());
+    }
+
 
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
@@ -745,8 +808,15 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
                 ms2IonPeak.frameIndexEnd = pii.second;
                 ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
                 ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
-                ms2IonPeak.mzFoundMean = MathUtils::mean(cxv.mzValsMeans.mid(pii.first, pointsLength));
-                ms2IonPeak.mzFoundStDev = MathUtils::stDev(cxv.mzValsMeans.mid(pii.first, pointsLength));
+
+                QVector<double> mzValsSliced = cxv.mzValsMeans.mid(pii.first, pointsLength);
+                removeZerosFromVec(&mzValsSliced);
+
+                ms2IonPeak.mzFoundMean = MathUtils::mean(mzValsSliced);
+                ms2IonPeak.mzFoundStDev = MathUtils::stDev(mzValsSliced);
+                ms2IonPeak.pointCountFound = mzValsSliced.size();
+                ms2IonPeak.fragmentFrequency
+                    = m_fragmentFrequencies.value(MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
 
                 if (ms2IonPeak.intensityVals.isEmpty()) {
                     continue;

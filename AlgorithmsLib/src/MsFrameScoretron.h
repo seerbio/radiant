@@ -62,6 +62,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double mass = -1.0;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
+    int scanIonCount = -1;
 
     double discScore = -1.0;
     double pVal = -1.0;
@@ -155,6 +156,8 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
 
     double mzFoundMean = -1.0;
     double mzFoundStDev = -1.0;
+    int pointCountFound = -1;
+    double fragmentFrequency = -1.0;
 
     QMap<QString, QVariant> map() override {
 
@@ -263,6 +266,7 @@ private:
     QMap<PeptideStringWithMods, double> m_fragPredsMass;
     QMap<PeptideStringWithMods, double> m_fragPredsIRT;
     QMap<PeptideStringWithMods, double> m_fragPredsPredictedScanTime;
+    QMap<MzHashed, FrequencyPercent> m_fragmentFrequencies;
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
