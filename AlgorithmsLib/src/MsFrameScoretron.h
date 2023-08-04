@@ -28,62 +28,105 @@ namespace ScoredCandidateNamespace {
     const QString FREQ_PCT_SUM = QStringLiteral("frequencyPercentSum");
     const QString FREQ_PCT_SUM_POSSIBLE = QStringLiteral("frequencyPercentSumBestPossible");
     const QString KL_DIV = QStringLiteral("klDivergence");
-    const QString COS_SIM = QStringLiteral("cosineSim");
+    const QString COS_SIM_SUM = QStringLiteral("cosineSimSum");
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
     const QString CHARGE = QStringLiteral("charge");
     const QString MASS = QStringLiteral("mass");
     const QString SCAN_NUM = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
+    const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
+
+    const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
+    const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
+    const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
+    const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
+    const QString INTZ_FND_MAX_V = QStringLiteral("intensityFoundMaxVec");
+    const QString FRAME_IND_MAX_DIV_ANCH_V = QStringLiteral("frameIndexMaxDiffFromAnchorVec");
+    const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
+    const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
+    const QString FRAG_FRQ_V = QStringLiteral("fragmenFrequencyVec");
+    const QString RANK_V = QStringLiteral("rankVec");
 
     const QStringList keysToCheck = {
             FREQ_PCT_SUM,
             FREQ_PCT_SUM_POSSIBLE,
             KL_DIV,
-            COS_SIM,
+            COS_SIM_SUM,
             IS_DECOY,
             PEP_STR_W_MODS,
             CHARGE,
             MASS,
             SCAN_NUM,
-            SCAN_TIME
+            SCAN_TIME,
+            SCAN_ION_CNT,
+            MZ_SRCH_V,
+            THEO_INTZ_V,
+            MZ_FND_MEAN_V,
+            MZ_FND_STDEV_V,
+            INTZ_FND_MAX_V,
+            FRAME_IND_MAX_DIV_ANCH_V,
+            COS_SIM_SUM_ANCH_V,
+            PK_PNT_CNT_FND_V,
+            FRAG_FRQ_V,
+            RANK_V
     };
 }
 
 struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
+    PeptideStringWithMods peptideStringWithMods;
     double frequencyPercentSum = -1.0;
     double frequencyPercentSumBestPossible = -1.0;
-    double klDivergence = -1.0;
-    double cosineSim = -1.0;
+    double cosineSimSum = -1.0;
     bool isDecoy = false;
-    PeptideStringWithMods peptideStringWithMods;
     Charge charge = -1;
     double mass = -1.0;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
 
-    double discScore = -1.0;
-    double pVal = -1.0;
-    double frameError = -1.0;
-    double tTestVal = -1.0;
+    QVector<int> rankVec;
+    QVector<double> mzSearchedVec;
+    QVector<double> theoIntensityVec;
+    QVector<double> mzFoundMeanVec;
+    QVector<double> mzFoundStDevVec;
+    QVector<double> intensityFoundMaxVec;
+    QVector<int> frameIndexMaxDiffFromAnchorVec;
+    QVector<double> cosineSimToAnchorVec;
+    QVector<int> peakPointCountFoundVec;
+    QVector<double> fragmentFrequencyVec;
+
+//    double discScore = -1.0;
+//    double pVal = -1.0;
+//    double frameError = -1.0;
+//    double tTestVal = -1.0;
 
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;
 
         return {
+                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
                 {FREQ_PCT_SUM, QVariant(frequencyPercentSum)},
                 {FREQ_PCT_SUM_POSSIBLE, QVariant(frequencyPercentSumBestPossible)},
-                {KL_DIV, QVariant(klDivergence)},
-                {COS_SIM, QVariant(cosineSim)},
+                {COS_SIM_SUM, QVariant(cosineSimSum)},
                 {IS_DECOY, QVariant(isDecoy)},
-                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
                 {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
                 {SCAN_NUM, QVariant(scanNumber)},
-                {SCAN_TIME, QVariant(scanTime)}
+                {SCAN_TIME, QVariant(scanTime)},
+                {SCAN_ION_CNT, QVariant(scanIonCount)},
+                {MZ_SRCH_V, QVariant(qVectorToQByteArray(mzSearchedVec))},
+                {THEO_INTZ_V, QVariant(qVectorToQByteArray(theoIntensityVec))},
+                {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
+                {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
+                {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
+                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
+                {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
+                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
+                {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
+                {RANK_V, QVariant(qVectorToQByteArray(rankVec))}
         };
     }
 
@@ -103,47 +146,32 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
         frequencyPercentSum = dataMap.value(FREQ_PCT_SUM).toDouble();
         frequencyPercentSumBestPossible = dataMap.value(FREQ_PCT_SUM_POSSIBLE).toDouble();
-        klDivergence = dataMap.value(KL_DIV).toDouble();
-        cosineSim = dataMap.value(COS_SIM).toDouble();
+        cosineSimSum = dataMap.value(COS_SIM_SUM).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
         charge = dataMap.value(CHARGE).toInt();
         mass = dataMap.value(MASS).toDouble();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toDouble();
+        scanIonCount = dataMap.value(SCAN_ION_CNT).toInt();
+
+        mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
+        theoIntensityVec = bytesArrayToQVector<double>(dataMap.value(THEO_INTZ_V).toByteArray());
+        mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
+        mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
+        intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
+        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
+        cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
+        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
+        fragmentFrequencyVec = bytesArrayToQVector<double>(dataMap.value(FRAG_FRQ_V).toByteArray());
+        rankVec = bytesArrayToQVector<int>(dataMap.value(RANK_V).toByteArray());
 
         ERR_RETURN
     }
 };
 
-namespace MS2IonPeakNamespace {
 
-    const QString FRAME_IND_START = QStringLiteral("frameIndexStart");
-    const QString FRAME_IND_END = QStringLiteral("frameIndexEnd");
-    const QString FRAME_IND_MAX = QStringLiteral("frameIndexMax");
-    const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
-    const QString MZ_SEARCHED = QStringLiteral("mzSearched");
-    const QString THEO_INTZ = QStringLiteral("theoIntensity");
-    const QString INTENSITY_VALS = QStringLiteral("intensityVals");
-    const QString COSINE_SIM_ANCH = QStringLiteral("cosineSimToAnchor");
-    const QString MZ_FOUND_MEAN = QStringLiteral("mzFoundMean");
-    const QString MZ_FOUND_STD = QStringLiteral("mzFoundStd");
-
-    const QStringList keysToCheck = {
-            FRAME_IND_START,
-            FRAME_IND_END,
-            FRAME_IND_MAX,
-            PEP_STR_W_MODS,
-            MZ_SEARCHED,
-            THEO_INTZ,
-            INTENSITY_VALS,
-            COSINE_SIM_ANCH,
-            MZ_FOUND_MEAN,
-            MZ_FOUND_STD
-    };
-}
-
-struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
+struct FILEREADERSLIB_EXPORTS MS2IonPeak {
 
     PeptideStringWithMods peptideStringWithMods;
     double mzSearched = -1.0;
@@ -153,57 +181,13 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak : public ParquetReaderInputBase {
     int frameIndexEnd = -1;
     QVector<double> intensityVals;
     double cosineSimToAnchor = -1.0;
+    int frameIndexMaxDiffFromAnchor = 0;
+    int rank = -1;
 
     double mzFoundMean = -1.0;
     double mzFoundStDev = -1.0;
     int pointCountFound = -1;
     double fragmentFrequency = -1.0;
-
-    QMap<QString, QVariant> map() override {
-
-        using namespace MS2IonPeakNamespace;
-
-        return {
-                {FRAME_IND_START, QVariant(frameIndexStart)},
-                {FRAME_IND_END, QVariant(frameIndexEnd)},
-                {FRAME_IND_MAX, QVariant(frameIndexMax)},
-                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {MZ_SEARCHED, QVariant(mzSearched)},
-                {THEO_INTZ, theoIntensity},
-                {MZ_FOUND_MEAN, mzFoundMean},
-                {MZ_FOUND_STD, mzFoundStDev},
-                {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
-                {COSINE_SIM_ANCH, QVariant(cosineSimToAnchor)}
-        };
-    }
-
-    Err initFromRead(const ParquetReaderInputBase &row) override {
-
-        using namespace MS2IonPeakNamespace;
-
-        ERR_INIT
-
-        const QMap<QString, QVariant> &dataMap = row.dataMap();
-        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
-                dataMap,
-                keysToCheck
-        );
-
-        e = ErrorUtils::isTrue(allKeysPresent); ree;
-
-        frameIndexStart = dataMap.value(FRAME_IND_START).toInt();
-        frameIndexEnd = dataMap.value(FRAME_IND_END).toInt();
-        frameIndexMax = dataMap.value(FRAME_IND_MAX).toInt();
-        peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
-        mzSearched = dataMap.value(MZ_SEARCHED).toDouble();
-        theoIntensity = dataMap.value(THEO_INTZ).toDouble();
-        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
-        cosineSimToAnchor = dataMap.value(COSINE_SIM_ANCH).toDouble();
-        mzFoundMean = dataMap.value(MZ_FOUND_MEAN).toDouble();
-        mzFoundStDev = dataMap.value(MZ_FOUND_STD).toDouble();
-
-        ERR_RETURN
-    }
 
 };
 

@@ -357,9 +357,15 @@ namespace {
         e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
 
        ScoreVectorsOutput output;
-       output.scoredCandidates = scoredCandidates;
-       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
-       output.mzTargetStartStop = fpi.mzTargetStartStop;
+//       output.scoredCandidates = scoredCandidates;
+//       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
+//       output.mzTargetStartStop = fpi.mzTargetStartStop;
+
+       const QString resultsFilePath = fpi.msDataFilePath + "." +fpi.uniqueMsInfoScanKey + ".pythiaDIA";
+       e = ParquetReader::write(
+               scoredCandidates,
+               resultsFilePath
+       ); rree;
 
        return {e, output};
    }
@@ -382,31 +388,31 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
     for (const QPair<Err, ScoreVectorsOutput> &result : futures) {
         e = result.first; ree;
-        scoreVectorsOutputs->push_back(result.second);
-
-        QVector<PSMsReaderRow> psmReaderRowsRecal;
-
-        const QVector<ScoredCandidate> &fivsc = result.second.scoredCandidates;
-
-        for (const ScoredCandidate &sc : fivsc) {
-
-            PSMsReaderRow psMsReaderRow;
-
-            psMsReaderRow.scanTime = sc.scanTime;
-            psMsReaderRow.scanNumber = sc.scanNumber;
-            psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
-            psMsReaderRow.isDecoy = sc.isDecoy;
-            psMsReaderRow.score = sc.frequencyPercentSum;
-            psMsReaderRow.charge = sc.charge;
-
-            psmReaderRowsRecal.push_back(psMsReaderRow);
-        }
-
-        const QString resultsFilePath = result.second.uniqueMsInfoScanKey + ".pythiaDIA";
-        e = ParquetReader::write(
-                psmReaderRowsRecal,
-                resultsFilePath
-        ); ree;
+//        scoreVectorsOutputs->push_back(result.second);
+//
+//        QVector<PSMsReaderRow> psmReaderRowsRecal;
+//
+//        const QVector<ScoredCandidate> &fivsc = result.second.scoredCandidates;
+//
+//        for (const ScoredCandidate &sc : fivsc) {
+//
+//            PSMsReaderRow psMsReaderRow;
+//
+//            psMsReaderRow.scanTime = sc.scanTime;
+//            psMsReaderRow.scanNumber = sc.scanNumber;
+//            psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
+//            psMsReaderRow.isDecoy = sc.isDecoy;
+//            psMsReaderRow.score = sc.frequencyPercentSum;
+//            psMsReaderRow.charge = sc.charge;
+//
+//            psmReaderRowsRecal.push_back(psMsReaderRow);
+//        }
+//
+//        const QString resultsFilePath = result.second.uniqueMsInfoScanKey + ".pythiaDIA";
+//        e = ParquetReader::write(
+//                psmReaderRowsRecal,
+//                resultsFilePath
+//        ); ree;
 
     }
 #else

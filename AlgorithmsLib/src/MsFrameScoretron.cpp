@@ -454,12 +454,18 @@ namespace {
                 transformLogic
                 );
 
+        const int maxRank = 5;
+
         QVector<MS2IonPeak> bestMS2IonPeaksClustering;
         double bestCosineSimSum = 0.0;
 
         for (const QVector<MS2IonPeak> &ms2ips : clusteredMs2IonPeaksForCosineSimCalc) {
 
             for (const MS2IonPeak &ms2IonPeakAnchor : ms2ips) {
+
+                if (ms2IonPeakAnchor.rank > maxRank) {
+                    continue;
+                }
 
                 double cosineSimSum = 0.0;
                 QVector<MS2IonPeak> clustering;
@@ -475,6 +481,7 @@ namespace {
 
                     MS2IonPeak ms2IonPeakNew = ms2IonPeak;
                     ms2IonPeakNew.cosineSimToAnchor = cosineSim;
+                    ms2IonPeakNew.frameIndexMaxDiffFromAnchor = ms2IonPeakAnchor.frameIndexMax - ms2IonPeak.frameIndexMax;
 
                     clustering.push_back(ms2IonPeakNew);
                     cosineSimSum += cosineSim;
@@ -534,6 +541,7 @@ namespace {
     Err fillUnFoundMS2IonPeaks(
             const QVector<MS2IonPeak> &bestClusterPeaks,
             const QVector<MS2Ion> &fragPredTopNOfCluster,
+            const QMap<MzHashed, double> &fragFrequencies,
             QVector<MS2IonPeak> *bestClusterPeaksComplete
             ) {
 
@@ -552,6 +560,8 @@ namespace {
             ms2IonPeakUnfound.mzSearched = ms2Ion.mz;
             ms2IonPeakUnfound.theoIntensity = ms2Ion.intensity;
             ms2IonPeakUnfound.pointCountFound = 0;
+            ms2IonPeakUnfound.fragmentFrequency
+                = fragFrequencies.value(MathUtils::hashDecimal(ms2IonPeakUnfound.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
 
             completeCluster.insert(mzHashed, ms2IonPeakUnfound);
         }
@@ -572,6 +582,72 @@ namespace {
                 = [](const MS2IonPeak &l, const MS2IonPeak &r){return l.theoIntensity < r.theoIntensity;};
 
         std::sort(bestClusterPeaksComplete->rbegin(), bestClusterPeaksComplete->rend(), sortLogicIntensityAsc);
+
+        ERR_RETURN
+    }
+
+    double calculateFrameIndexMaxMax(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
+
+        const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
+            return l.cosineSimToAnchor < r.cosineSimToAnchor;
+        };
+
+        const int frameIndexMaxMax = std::max_element(
+                ms2IonPeaksBestCluster.rbegin(),
+                ms2IonPeaksBestCluster.rend(),
+                sortLogic
+        )->frameIndexMax;
+
+        return frameIndexMaxMax;
+    }
+
+    QPair<double, double> calculateFreqPercentFoundVsBest(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
+
+        double frequencyPercentFound = 0.0;
+        double frequencyPercentBestPossible = 0.0;
+
+        for (const MS2IonPeak &ms2IonPeak : ms2IonPeaksBestCluster) {
+
+            if (ms2IonPeak.pointCountFound > 0) {
+                frequencyPercentFound += ms2IonPeak.fragmentFrequency;
+            }
+
+            frequencyPercentBestPossible += ms2IonPeak.fragmentFrequency;
+        }
+
+        return {frequencyPercentFound, frequencyPercentBestPossible};
+    }
+
+    Err extractMs2PeakToVectors(
+            const QVector<MS2IonPeak> &ms2IonPeaksBestCluster,
+            QVector<double> *mzSearchedVec,
+            QVector<double> *theoIntensityVec,
+            QVector<double> *mzFoundMeanVec,
+            QVector<double> *mzFoundStDevVec,
+            QVector<double> *intensityFoundMaxVec,
+            QVector<int> *frameIndexMaxDiffFromAnchorVec,
+            QVector<double> *cosineSimToAnchorVec,
+            QVector<int> *peakPointCountFoundVec,
+            QVector<double> *fragmentFrequencyVec,
+            QVector<int> *rankVec
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2IonPeaksBestCluster); ree
+
+        for (const MS2IonPeak &mip : ms2IonPeaksBestCluster) {
+            mzSearchedVec->push_back(mip.mzSearched);
+            theoIntensityVec->push_back(mip.theoIntensity);
+            mzFoundMeanVec->push_back(mip.mzFoundMean);
+            mzFoundStDevVec->push_back(mip.mzFoundStDev);
+            intensityFoundMaxVec->push_back(*std::max_element(mip.intensityVals.begin(), mip.intensityVals.end()));
+            frameIndexMaxDiffFromAnchorVec->push_back(mip.frameIndexMaxDiffFromAnchor);
+            cosineSimToAnchorVec->push_back(mip.cosineSimToAnchor);
+            peakPointCountFoundVec->push_back(mip.pointCountFound);
+            fragmentFrequencyVec->push_back(mip.fragmentFrequency);
+            rankVec->push_back(mip.rank);
+        }
 
         ERR_RETURN
     }
@@ -599,14 +675,10 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         const CosineSimSum cosineSimSum = bestCluster.first;
         QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
 
-        const double frameIndexMaxMean = std::accumulate(
-                ms2IonPeaksBestCluster.rbegin(),
-                ms2IonPeaksBestCluster.rend(),
-                0.0,
-                [](double sum, const MS2IonPeak &m){return sum + m.frameIndexMax;}) / ms2IonPeaksBestCluster.size();
+        const double frameIndexMaxMax = calculateFrameIndexMaxMax(ms2IonPeaksBestCluster);
 
         const ScanNumber scanNumber
-                = m_msFrame.scanNumberFromFrameIndex(static_cast<int>(std::round(frameIndexMaxMean)));
+                = m_msFrame.scanNumberFromFrameIndex(static_cast<int>(std::round(frameIndexMaxMax)));
 
         const ScanTime scanTime = m_msFrame.scanTimeFromScanNumber(scanNumber);
         const ScanPoints scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumber);
@@ -617,45 +689,40 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         e = fillUnFoundMS2IonPeaks(
                 ms2IonPeaksBestCluster,
                 fragPred,
+                m_fragmentFrequencies,
                 &ms2IonPeaksBestCluster
                 ); ree
 
+        const QPair<double, double> freqScores = calculateFreqPercentFoundVsBest(ms2IonPeaksBestCluster);
+
         ScoredCandidate sc;
-        sc.cosineSim = cosineSimSum;
         sc.peptideStringWithMods = peptideStringWithMods;
+        sc.frequencyPercentSum = freqScores.first;
+        sc.frequencyPercentSumBestPossible = freqScores.second;
+        sc.cosineSimSum = cosineSimSum;
+        sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
+        sc.mass = m_fragPredsMass.value(sc.peptideStringWithMods);
+        sc.charge = static_cast<int>(std::round(sc.mass / m_msFrame.precursorMzTargetStartEnd().second));
         sc.scanNumber = scanNumber;
         sc.scanTime = scanTime;
-        sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
         sc.scanIonCount = scanPoints.size();
+
+        e = extractMs2PeakToVectors(
+                ms2IonPeaksBestCluster,
+                &sc.mzSearchedVec,
+                &sc.theoIntensityVec,
+                &sc.mzFoundMeanVec,
+                &sc.mzFoundStDevVec,
+                &sc.intensityFoundMaxVec,
+                &sc.frameIndexMaxDiffFromAnchorVec,
+                &sc.cosineSimToAnchorVec,
+                &sc.peakPointCountFoundVec,
+                &sc.fragmentFrequencyVec,
+                &sc.rankVec
+        ); ree
 
         scoredCandidates->push_back(sc);
     }
-
-
-//    int falsers = 0;
-//    int trueers = 0;
-//    for (auto it = bestClusters.begin(); it != bestClusters.end(); it++) {
-//
-//        if (it.value().first < 6) {
-//            continue;
-//        }
-//
-//        qDebug() << "drewholio" << it.key() << it.value().first << m_fragPredsIsDecoy.value(it.key())
-//                << it.value().second.size() << it.value().first / it.value().second.size();
-//
-//        if (m_fragPredsIsDecoy.value(it.key())) {
-//            trueers++;
-//        }
-//        else{
-//            falsers++;
-//        }
-//    }
-//    qDebug() << "drewholio" << falsers << trueers;
-
-//#define WRITE_MS2_ION_PEAKS
-#ifdef WRITE_MS2_ION_PEAKS
-    e = ParquetReader::write(ms2IonPeaks, "ms2IonPeaks.prq"); ree
-#endif
 
 //#define WRITE_SCAN_FRAME
 #ifdef WRITE_SCAN_FRAME
@@ -808,6 +875,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
                 ms2IonPeak.frameIndexEnd = pii.second;
                 ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
                 ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
+                ms2IonPeak.rank = ms2Ion.rank;
 
                 QVector<double> mzValsSliced = cxv.mzValsMeans.mid(pii.first, pointsLength);
                 removeZerosFromVec(&mzValsSliced);

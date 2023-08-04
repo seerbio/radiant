@@ -216,6 +216,10 @@ void FragLibReader::getTopNMostIntenseMs2Ions(
 
     ms2Ions->resize(topNMs2Ions);
 
+    for (int i = 0; i < ms2Ions->size(); i++) {
+        (*ms2Ions)[i].rank = i;
+    }
+
 }
 
 void FragLibReader::filterMs2IonsByIntensity(

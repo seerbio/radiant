@@ -74,6 +74,7 @@ struct UTILSLIB_EXPORTS MS2Ion {
     double intensity = -1.0;
     IRT iRT = -1.0;
     QString ionLabel;
+    int rank = -1;
 
     MS2Ion() = default;
 
