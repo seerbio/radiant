@@ -184,6 +184,24 @@ public:
         return allMS2Ions;
     }
 
+    [[nodiscard]] int theoreticalFragmentIonCount() const {
+
+        int count = 0;
+
+        count += yIons.size();
+        count += bIons.size();
+        count += y2Ions.size();
+        count += b2Ions.size();
+        count += aIons.size();
+        count += yNH3Ions.size();
+        count += yH2OIons.size();
+        count += bNH3Ions.size();
+        count += bH2OIons.size();
+        count += precursorIons.size();
+
+        return count;
+    }
+
 private:
 
     static QVector<MS2Ion> returnMS2IonAboveIonIndexCutoff(

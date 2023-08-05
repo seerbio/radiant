@@ -706,6 +706,9 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.scanNumber = scanNumber;
         sc.scanTime = scanTime;
         sc.scanIonCount = scanPoints.size();
+        sc.theoreticalFragmentCount = m_fragPreds.value(peptideStringWithMods).theoreticalFragmentIonCount();
+        sc.iRTPredicted = m_fragPredsIRT.value(peptideStringWithMods);
+        sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
 
         e = extractMs2PeakToVectors(
                 ms2IonPeaksBestCluster,

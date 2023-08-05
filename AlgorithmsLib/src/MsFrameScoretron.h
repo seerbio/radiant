@@ -27,7 +27,6 @@ namespace ScoredCandidateNamespace {
 
     const QString FREQ_PCT_SUM = QStringLiteral("frequencyPercentSum");
     const QString FREQ_PCT_SUM_POSSIBLE = QStringLiteral("frequencyPercentSumBestPossible");
-    const QString KL_DIV = QStringLiteral("klDivergence");
     const QString COS_SIM_SUM = QStringLiteral("cosineSimSum");
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
@@ -36,6 +35,10 @@ namespace ScoredCandidateNamespace {
     const QString SCAN_NUM = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
+
+    const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
+    const QString IRT_PRED = QStringLiteral("iRTPredicted");
+    const QString THEO_FRAG_CNT = QStringLiteral("theoreticalFragmentCount");
 
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
     const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
@@ -51,7 +54,6 @@ namespace ScoredCandidateNamespace {
     const QStringList keysToCheck = {
             FREQ_PCT_SUM,
             FREQ_PCT_SUM_POSSIBLE,
-            KL_DIV,
             COS_SIM_SUM,
             IS_DECOY,
             PEP_STR_W_MODS,
@@ -69,7 +71,10 @@ namespace ScoredCandidateNamespace {
             COS_SIM_SUM_ANCH_V,
             PK_PNT_CNT_FND_V,
             FRAG_FRQ_V,
-            RANK_V
+            RANK_V,
+            THEO_FRAG_CNT,
+            SCAN_TIME_PRED,
+            IRT_PRED
     };
 }
 
@@ -85,6 +90,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
+    int theoreticalFragmentCount;
+
+    ScanTime scanTimePredicted = -1.0;
+    double iRTPredicted = -1.0;
 
     QVector<int> rankVec;
     QVector<double> mzSearchedVec;
@@ -117,6 +126,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {SCAN_NUM, QVariant(scanNumber)},
                 {SCAN_TIME, QVariant(scanTime)},
                 {SCAN_ION_CNT, QVariant(scanIonCount)},
+                {THEO_FRAG_CNT, QVariant(theoreticalFragmentCount)},
                 {MZ_SRCH_V, QVariant(qVectorToQByteArray(mzSearchedVec))},
                 {THEO_INTZ_V, QVariant(qVectorToQByteArray(theoIntensityVec))},
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
@@ -126,6 +136,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
                 {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
                 {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
+                {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
+                {IRT_PRED , QVariant(iRTPredicted)},
                 {RANK_V, QVariant(qVectorToQByteArray(rankVec))}
         };
     }
@@ -154,6 +166,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toDouble();
         scanIonCount = dataMap.value(SCAN_ION_CNT).toInt();
+        theoreticalFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
+
+        scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toDouble();
+        iRTPredicted = dataMap.value(IRT_PRED).toDouble();
 
         mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
         theoIntensityVec = bytesArrayToQVector<double>(dataMap.value(THEO_INTZ_V).toByteArray());
