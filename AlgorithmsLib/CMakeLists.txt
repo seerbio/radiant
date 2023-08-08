@@ -21,7 +21,6 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
-        src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/FeatureFinderHillClusterTron.cpp
@@ -37,7 +36,7 @@ SET(SOURCE_FILES
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
-        src/TandemFragmentPredictotron.cpp
+        src/TandemFragmentPredictotron.cpp213
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
         src/TurboXIC.cpp
@@ -45,7 +44,6 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
-        src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/FeatureFinderHillClusterTron.h
