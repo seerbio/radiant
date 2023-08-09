@@ -82,7 +82,7 @@ Err MsFrameScoretron::init(
         mzTargetStartStop
         ); ree
 
-    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM);
+    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree
 
     m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
