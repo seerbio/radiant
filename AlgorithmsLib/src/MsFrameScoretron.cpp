@@ -685,6 +685,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.theoreticalFragmentCount = m_fragPreds.value(peptideStringWithMods).theoreticalFragmentIonCount();
         sc.iRTPredicted = m_fragPredsIRT.value(peptideStringWithMods);
         sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
+        sc.targetKey = m_uniqueMsInfoScanKey;
 
         e = extractMs2PeakToVectors(
                 ms2IonPeaksBestCluster,
@@ -764,6 +765,72 @@ namespace {
         v->erase(terminator, v->end());
     }
 
+    Err integratePoints(
+            const XICPoints &xicPoints,
+            const PeptideStringWithMods &peptideStringWithMods,
+            const MS2Ion &ms2Ion,
+            MsFrame *msFrame,
+            PeakIntegratomatic *peakIntegratomatic,
+            QMap<MzHashed, FrequencyPercent> *fragmentFrequencies,
+            QVector<MS2IonPeak> *ms2IonPeaks
+            ) {
+
+        ERR_INIT
+
+        const ConversionXICVecs cxv = convertXicLimitsToVec(
+                xicPoints,
+                msFrame
+        );
+
+        QVector<PeakIntegrationIndexes> peakLimits;
+        QVector<double> intensityVecSmoothed;
+        e = peakIntegratomatic->findAllPeaksLimitsInXIC(
+                cxv.intensityVals,
+                &peakLimits,
+                &intensityVecSmoothed
+        ); ree;
+
+        for (const PeakIntegrationIndexes &pii : peakLimits) {
+
+            if (pii.second <= 0) {
+                continue;
+            }
+
+            e = ErrorUtils::isTrue(pii.second > pii.first); ree;
+
+            const int pointsLength = pii.second - pii.first + 1;
+
+            MS2IonPeak ms2IonPeak;
+            ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
+            ms2IonPeak.mzSearched = ms2Ion.mz;
+            ms2IonPeak.theoIntensity = ms2Ion.intensity;
+            ms2IonPeak.frameIndexStart = pii.first;
+            ms2IonPeak.frameIndexEnd = pii.second;
+            ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
+            ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
+            ms2IonPeak.rank = ms2Ion.rank;
+
+            QVector<double> mzValsSliced = cxv.mzValsMeans.mid(pii.first, pointsLength);
+            removeZerosFromVec(&mzValsSliced);
+
+            QVector<double> mzStDevsSliced = cxv.mzValsStDevs.mid(pii.first, pointsLength);
+            removeZerosFromVec(&mzStDevsSliced);
+
+            ms2IonPeak.mzFoundMean = MathUtils::mean(mzValsSliced);
+            ms2IonPeak.mzFoundStDev = MathUtils::mean(mzStDevsSliced);
+            ms2IonPeak.pointCountFound = mzValsSliced.size();
+            ms2IonPeak.fragmentFrequency
+                    = fragmentFrequencies->value(MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
+
+            if (ms2IonPeak.intensityVals.isEmpty()) {
+                continue;
+            }
+
+            ms2IonPeaks->push_back(ms2IonPeak);
+        }
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
@@ -823,54 +890,16 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
                 continue;
             }
 
-            const ConversionXICVecs cxv = convertXicLimitsToVec(
+            e = integratePoints(
                     xicPoints,
-                    &m_msFrame
-                    );
+                    peptideStringWithMods,
+                    ms2Ion,
+                    &m_msFrame,
+                    &peakIntegratomatic,
+                    &m_fragmentFrequencies,
+                    ms2IonPeaks
+                    ); ree;
 
-            QVector<PeakIntegrationIndexes> peakLimits;
-            QVector<double> intensityVecSmoothed;
-            e = peakIntegratomatic.findAllPeaksLimitsInXIC(
-                    cxv.intensityVals,
-                    &peakLimits,
-                    &intensityVecSmoothed
-            ); ree;
-
-            for (const PeakIntegrationIndexes &pii : peakLimits) {
-
-                if (pii.second <= 0) {
-                    continue;
-                }
-
-                e = ErrorUtils::isTrue(pii.second > pii.first); ree;
-
-                const int pointsLength = pii.second - pii.first + 1;
-
-                MS2IonPeak ms2IonPeak;
-                ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
-                ms2IonPeak.mzSearched = ms2Ion.mz;
-                ms2IonPeak.theoIntensity = ms2Ion.intensity;
-                ms2IonPeak.frameIndexStart = pii.first;
-                ms2IonPeak.frameIndexEnd = pii.second;
-                ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
-                ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
-                ms2IonPeak.rank = ms2Ion.rank;
-
-                QVector<double> mzValsSliced = cxv.mzValsMeans.mid(pii.first, pointsLength);
-                removeZerosFromVec(&mzValsSliced);
-
-                ms2IonPeak.mzFoundMean = MathUtils::mean(mzValsSliced);
-                ms2IonPeak.mzFoundStDev = MathUtils::stDev(mzValsSliced);
-                ms2IonPeak.pointCountFound = mzValsSliced.size();
-                ms2IonPeak.fragmentFrequency
-                    = m_fragmentFrequencies.value(MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
-
-                if (ms2IonPeak.intensityVals.isEmpty()) {
-                    continue;
-                }
-
-                ms2IonPeaks->push_back(ms2IonPeak);
-            }
         }
     }
 

@@ -50,6 +50,7 @@ namespace ScoredCandidateNamespace {
     const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
     const QString FRAG_FRQ_V = QStringLiteral("fragmenFrequencyVec");
     const QString RANK_V = QStringLiteral("rankVec");
+    const QString TARGET_KEY = QStringLiteral("targetKey");
 
     const QStringList keysToCheck = {
             FREQ_PCT_SUM,
@@ -74,7 +75,8 @@ namespace ScoredCandidateNamespace {
             RANK_V,
             THEO_FRAG_CNT,
             SCAN_TIME_PRED,
-            IRT_PRED
+            IRT_PRED,
+            TARGET_KEY
     };
 }
 
@@ -105,6 +107,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> cosineSimToAnchorVec;
     QVector<int> peakPointCountFoundVec;
     QVector<double> fragmentFrequencyVec;
+    QString targetKey;
 
 //    double discScore = -1.0;
 //    double pVal = -1.0;
@@ -138,7 +141,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
-                {RANK_V, QVariant(qVectorToQByteArray(rankVec))}
+                {RANK_V, QVariant(qVectorToQByteArray(rankVec))},
+                {TARGET_KEY, QVariant(targetKey)}
         };
     }
 
@@ -181,6 +185,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         fragmentFrequencyVec = bytesArrayToQVector<double>(dataMap.value(FRAG_FRQ_V).toByteArray());
         rankVec = bytesArrayToQVector<int>(dataMap.value(RANK_V).toByteArray());
+        targetKey = dataMap.value(TARGET_KEY).toString();
 
         ERR_RETURN
     }
