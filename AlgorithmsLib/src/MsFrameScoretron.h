@@ -251,7 +251,7 @@ private:
 
     Err buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks);
 
-    
+
 private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;

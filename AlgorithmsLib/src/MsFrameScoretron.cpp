@@ -795,7 +795,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
             &mzMaxRTree
     );
 
-    const double scanTimeBuffer = 5.0; //TODO make this settable.
+    const double scanTimeBuffer = 6.0; //TODO make this settable.
 
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
