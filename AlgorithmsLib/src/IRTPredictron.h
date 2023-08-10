@@ -27,6 +27,11 @@ public:
             QVector<float> *rawPredictionResults
     );
 
+    static Err buildNearestNeighborsIRTData(
+            const QString &iRTRecalibrationFilePath,
+            QVector<QPair<double, Coors>> *nnInputData
+    );
+
 private:
 
     Q_DISABLE_COPY(IRTPredictron) class Private;

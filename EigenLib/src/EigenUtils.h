@@ -135,8 +135,11 @@ public:
     /*!
     * @brief Fits a polynomial to an eigen vector given an order.
     */
-    static void fitPolynomialQRDecomposition(const Eigen::MatrixXd points, int order,
-                                             QVector<double> *coeff) {
+    static void fitPolynomialQRDecomposition(
+            const Eigen::MatrixXd &points,
+            int order,
+            QVector<double> *coeff
+            ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
         Eigen::VectorXd yv_mapped = points.col(1);

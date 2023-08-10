@@ -272,13 +272,13 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QString msDataFilePathRecalibrated; //drewholio remove this path but keep var
+    const QString &msDataFilePathRecalibrated = msDataFilePath; //drewholio remove this path but keep var
 
-    e = parallelDeisotopeMsFile(
-            msDataFilePath,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &msDataFilePathRecalibrated
-            ); ree;
+//    e = parallelDeisotopeMsFile(
+//            msDataFilePath,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &msDataFilePathRecalibrated
+//            ); ree;
 
 //    const bool applySmooth2DCalibration = false;
 //    QVector<FrameParallelInput> frameParallelInputs;

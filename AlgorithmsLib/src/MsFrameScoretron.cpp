@@ -10,6 +10,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FrameExtractsReader.h"
+#include "IRTPredictron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "NearestNeighborsSearch.h"
 #include "ParallelUtils.h"
@@ -82,7 +83,7 @@ Err MsFrameScoretron::init(
         mzTargetStartStop
         ); ree
 
-//    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree
+    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree
 
     m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
 
@@ -99,31 +100,6 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
-namespace {
-
-    Err buildNearestNeighborsIRTData(
-            const QString &iRTRecalibrationFilePath,
-            QVector<QPair<double, Coors>> *nnInputData
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree
-
-        QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
-        e  = CSVReader::read(
-                iRTRecalibrationFilePath,
-                &iRTReCalibrationReaderRows
-        ); ree;
-
-        for (const IRTReCalibrationRow &row : iRTReCalibrationReaderRows) {
-            nnInputData->push_back({row.scanTime, {row.iRT, 0.0}});
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
         const QString &msDataFilePath,
@@ -145,7 +121,7 @@ Err MsFrameScoretron::init(
     qDebug() << "updating rt vals from iRT";
 
     QVector<QPair<double, Coors>> nnInputData;
-    e = buildNearestNeighborsIRTData(
+    e = IRTPredictron::buildNearestNeighborsIRTData(
             iRTRecalibrationFilePath,
             &nnInputData
     );

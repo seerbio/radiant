@@ -186,12 +186,12 @@ struct PythiaParameters{
             qDebug() << precursorExtractionWindowThomsons << "precursorExtractWindowThompsons";
             return false;
         }
-        if (topNMs2Ions < 8) {
+        if (topNMs2Ions < 6) {
             print();
             qDebug() << topNMs2Ions << "topNMS2Ions";
             return false;
         }
-        if (minFoundMzPeaks < 3) {
+        if (minFoundMzPeaks < 2) {
             print();
             qDebug() << minFoundMzPeaks << "minFoundMzPeaks";
             return false;
