@@ -251,13 +251,7 @@ private:
 
     Err buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks);
 
-//    Err deconvolveScan(
-//            const QVector<ScoredCandidate> &scoredCandidatesTargets,
-//            const ScanPoints &scanPointsDeisotoped,
-//            QVector<ScoredCandidate> *scoredCandidatesTargetsFiltered
-//            );
-
-
+    
 private:
 
     QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
