@@ -9,6 +9,7 @@
 #include "MsFrameScoretron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
+#include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
 #include "PSMsReader.h"
 
@@ -180,12 +181,104 @@ namespace {
         ERR_RETURN
     }
 
+    QPair<Err, QPair<ScanNumber, ScanPoints>>  deisotopeLogic(
+            const QPair<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            double ppmTol
+            ) {
+
+        ERR_INIT
+
+        const QString &chargeModelFilePath
+                = QDir(qApp->applicationDirPath()).filePath("MS2_Charge_Model.json");
+
+        const QString &monoModelFilePath
+                = QDir(qApp->applicationDirPath()).filePath("MS2_Mono_Model.json");
+
+        MS2ChargeDeconvolvotron ms2ChargeDeconvolvotron;
+        e = ms2ChargeDeconvolvotron.init(chargeModelFilePath, monoModelFilePath, ppmTol);
+
+        ScanPoints scanPointsIterDeisotoped;
+        e = ms2ChargeDeconvolvotron.deisotopeScanPoints(
+                scanNumberVsScanPoints.second,
+                &scanPointsIterDeisotoped
+                ); rree
+
+        return {e, {scanNumberVsScanPoints.first, scanPointsIterDeisotoped}};
+    }
+
+    Err parallelDeisotopeMsFile(
+            const QString &msFilePath,
+            double ppmTol,
+            QString *outputFilePath
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::fileExists(msFilePath); ree;
+
+        *outputFilePath = msFilePath;
+        *outputFilePath = outputFilePath->replace(".prq", ".deiso.prq");
+        e = ErrorUtils::fileExists(*outputFilePath);
+        if (e == eNoError) {
+            ERR_RETURN
+        }
+
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(msFilePath); ree;
+
+        const QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints = msReaderParquet.getScanPoints();
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+
+        const QVector<QPair<ScanNumber, ScanPoints>> scanNumberVsScanPointsVector
+                = ParallelUtils::convertMapToVectorPairs(scanNumberVsScanPoints);
+
+        const auto digestLogicBinder = std::bind(
+                deisotopeLogic,
+                std::placeholders::_1,
+                ppmTol
+        );
+
+        QFuture<QPair<Err, QPair<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
+                scanNumberVsScanPointsVector,
+                digestLogicBinder
+        );
+        futures.waitForFinished();
+
+        QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsDeisotoped;
+        for (const QPair<Err, QPair<ScanNumber, ScanPoints>> &result : futures) {
+            e = result.first;
+            ree;
+
+            const QPair<ScanNumber, ScanPoints> &res = result.second;
+            scanNumberVsScanPointsDeisotoped.insert(res.first, res.second);
+        }
+
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsDeisotoped); ree;
+        msReaderParquet.setScanPoints(scanNumberVsScanPointsDeisotoped);
+
+        MsReaderBase msReaderBase;
+        msReaderBase.setScanPoints(msReaderParquet.getScanPoints());
+        msReaderBase.setMsScanInfo(msReaderParquet.getMsScanInfos());
+
+        e = MsReaderParquet::writeMsReaderToParquet(
+                *outputFilePath,
+                QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderBase))
+                ); ree;
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QString msDataFilePathRecalibrated = msDataFilePath; //drewholio remove this path but keep var
+    QString msDataFilePathRecalibrated; //drewholio remove this path but keep var
+
+    e = parallelDeisotopeMsFile(
+            msDataFilePath,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &msDataFilePathRecalibrated
+            ); ree;
 
 //    const bool applySmooth2DCalibration = false;
 //    QVector<FrameParallelInput> frameParallelInputs;

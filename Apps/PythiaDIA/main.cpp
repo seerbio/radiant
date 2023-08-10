@@ -83,6 +83,12 @@ int main(int argc, char *argv[]) {
 
         qDebug() << "Processing file:" << dataFilePath;
 
+        //TODO fix this behavior.  instead of iterating directory, just specify file.
+        // let what ever calls this do the iteration.  Remove this conditional when that is done.
+        if (dataFilePath.contains("deiso")) {
+            continue;
+        }
+
         e = pythiaDiaWorkflow.processFile(dataFilePath);
         if (e != eNoError) {
             qDebug() << dataFilePath << "Did not run completely";
