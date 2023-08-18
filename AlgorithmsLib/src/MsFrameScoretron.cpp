@@ -185,7 +185,7 @@ Err MsFrameScoretron::loadFragPredsTopN(int n) {
 
     e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
 
-    const double mzMin = 300.0;
+    const double mzMin = 200.0;
     const double mzMax = 2000.0;
 
     for (auto it = m_fragPreds.begin(); it != m_fragPreds.end(); it++) {
@@ -460,7 +460,7 @@ namespace {
                     ms2IonPeakNew.frameIndexMaxDiffFromAnchor = ms2IonPeakAnchor.frameIndexMax - ms2IonPeak.frameIndexMax;
 
                     clustering.push_back(ms2IonPeakNew);
-                    cosineSimSum += cosineSim;
+                    cosineSimSum += ms2IonPeakNew.cosineSimToAnchor;
                 }
 
                 if (cosineSimSum > bestCosineSimSum) {
@@ -817,7 +817,7 @@ namespace {
             removeZerosFromVec(&mzStDevsSliced);
 
             ms2IonPeak.mzFoundMean = MathUtils::mean(mzValsSliced);
-            ms2IonPeak.mzFoundStDev = MathUtils::mean(mzStDevsSliced);
+            ms2IonPeak.mzFoundStDev = MathUtils::stDev(mzValsSliced);
             ms2IonPeak.pointCountFound = mzValsSliced.size();
             ms2IonPeak.fragmentFrequency
                     = fragmentFrequencies->value(MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
@@ -867,6 +867,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
+
         const QVector<MS2Ion> &ms2IonsTopN = it.value();
         const ScanTime scanTime = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
 

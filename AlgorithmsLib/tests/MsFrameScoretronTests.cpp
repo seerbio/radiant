@@ -77,8 +77,11 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
     const QString fragLibPath
             = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
 
-    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
-    const double target = 454.957;
+//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+//    const double target = 454.957;
+
+    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "865143";
+    const double target = 865.143;
 
     const double targetWindowSize = 5.5;
 

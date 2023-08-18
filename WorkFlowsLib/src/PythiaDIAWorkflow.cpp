@@ -15,12 +15,6 @@
 
 #include <QtConcurrent/QtConcurrent>
 
-struct ScoreVectorsOutput {
-    QVector<ScoredCandidate> scoredCandidates;
-    UniqueMsInfoScanKey uniqueMsInfoScanKey;
-    QPair<double, double> mzTargetStartStop = {-1.0, -1.0};
-};
-
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
@@ -332,67 +326,24 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
 
-    QVector<ScoreVectorsOutput> frameScoreVectorOutput;
+    QVector<ScoredCandidate> scoredCandidates;
     e = buildFrameScoreVectors(
             frameParallelInputsRecal,
-            &frameScoreVectorOutput
+            &scoredCandidates
             ); ree;
 
-//    QVector<PSMsReaderRow> psmReaderRowsRecal;
-//
-//    for (const ScoreVectorsOutput &svo  : frameScoreVectorOutput) {
-//
-//        const QMap<FrameIndex , QVector<ScoredCandidate>> &fivsc = svo.frameIndexVsScoredCandidates;
-//
-//        for (auto it = fivsc.begin(); it != fivsc.end(); it++) {
-//
-//            const FrameIndex frameIndex = it.key();
-//            const QVector<ScoredCandidate> &scs = it.value();
-//
-//            for (const ScoredCandidate &sc : scs) {
-//                PSMsReaderRow psMsReaderRow;
-//
-////                std::cout << sc.scanTime << " "
-////                        << sc.scanNumber << " "
-////                        << sc.peptideStringWithMods.toStdString() << " "
-////                        << sc.isDecoy << " "
-////                        << sc.frequencyPercentSum << " "
-////                        << sc.charge << " " << std::endl;
-//
-//                psMsReaderRow.scanTime = sc.scanTime;
-//                psMsReaderRow.scanNumber = sc.scanNumber;
-//                psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
-//                psMsReaderRow.isDecoy = sc.isDecoy;
-//                psMsReaderRow.score = sc.frequencyPercentSum;
-//                psMsReaderRow.charge = sc.charge;
-//
-//                psmReaderRowsRecal.push_back(psMsReaderRow);
-//
-//
-//            }
-//
-//        }
-//    }
-//
-////    e = processFrameScoreVectors(
-////            frameScoreVectorOutput,
-////            msDataFilePath,
-////            m_pythiaParameters,
-////            &psmReaderRowsRecal
-////            ); ree;
-//
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(
-//            psmReaderRowsRecal,
-//            resultsFilePath
-//            ); ree;
+    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    e = ParquetReader::write(
+            scoredCandidates,
+            resultsFilePath
+            ); ree;
 
     ERR_RETURN
 }
 
 Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
+        QVector<ScoredCandidate> *frameScoreVectorsAndExtractFilePaths
         ) {
 
     ERR_INIT
@@ -419,7 +370,7 @@ Err PythiaDIAWorkflow::buildPSMResultsForCalibrationFile(
 
 namespace {
 
-    QPair<Err, ScoreVectorsOutput> parallelBuildFrameScoreVectorLogic(const FrameParallelInput &fpi) {
+    QPair<Err, QVector<ScoredCandidate>> parallelBuildFrameScoreVectorLogic(const FrameParallelInput &fpi) {
 
        ERR_INIT
 
@@ -446,67 +397,31 @@ namespace {
            ); rree;
        }
 
-        QVector<ScoredCandidate> scoredCandidates;
-        e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
-
-       ScoreVectorsOutput output;
-//       output.scoredCandidates = scoredCandidates;
-//       output.uniqueMsInfoScanKey = fpi.uniqueMsInfoScanKey;
-//       output.mzTargetStartStop = fpi.mzTargetStartStop;
-
-       const QString resultsFilePath = fpi.msDataFilePath + "." +fpi.uniqueMsInfoScanKey + ".pythiaDIA";
-       e = ParquetReader::write(
-               scoredCandidates,
-               resultsFilePath
-       ); rree;
-
-       return {e, output};
+       QVector<ScoredCandidate> scoredCandidates;
+       e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
+        
+       return {e, scoredCandidates};
    }
 
 }//namespace
 Err PythiaDIAWorkflow::buildFrameScoreVectors(
         const QVector<FrameParallelInput> &frameParallelInputs,
-        QVector<ScoreVectorsOutput> *scoreVectorsOutputs
+        QVector<ScoredCandidate> *scoredCandidates
         ) {
 
     ERR_INIT
 
 #define PARALLEL_RUN_SCORE_VEC
 #ifdef PARALLEL_RUN_SCORE_VEC
-    QFuture<QPair<Err, ScoreVectorsOutput>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QVector<ScoredCandidate>>> futures = QtConcurrent::mapped(
             frameParallelInputs, //.mid(20,8),
             parallelBuildFrameScoreVectorLogic
             );
     futures.waitForFinished();
 
-    for (const QPair<Err, ScoreVectorsOutput> &result : futures) {
+    for (const QPair<Err, QVector<ScoredCandidate>> &result : futures) {
         e = result.first; ree;
-//        scoreVectorsOutputs->push_back(result.second);
-//
-//        QVector<PSMsReaderRow> psmReaderRowsRecal;
-//
-//        const QVector<ScoredCandidate> &fivsc = result.second.scoredCandidates;
-//
-//        for (const ScoredCandidate &sc : fivsc) {
-//
-//            PSMsReaderRow psMsReaderRow;
-//
-//            psMsReaderRow.scanTime = sc.scanTime;
-//            psMsReaderRow.scanNumber = sc.scanNumber;
-//            psMsReaderRow.peptideStringWithMods = sc.peptideStringWithMods;
-//            psMsReaderRow.isDecoy = sc.isDecoy;
-//            psMsReaderRow.score = sc.frequencyPercentSum;
-//            psMsReaderRow.charge = sc.charge;
-//
-//            psmReaderRowsRecal.push_back(psMsReaderRow);
-//        }
-//
-//        const QString resultsFilePath = result.second.uniqueMsInfoScanKey + ".pythiaDIA";
-//        e = ParquetReader::write(
-//                psmReaderRowsRecal,
-//                resultsFilePath
-//        ); ree;
-
+        scoredCandidates->append(result.second);
     }
 #else
     for (const FrameParallelInput &fpi : frameParallelInputs) {
@@ -523,68 +438,3 @@ Err PythiaDIAWorkflow::buildFrameScoreVectors(
 
     ERR_RETURN
 }
-
-namespace {
-
-    QPair<Err, QVector<PSMsReaderRow>> processScoreVectorsParallelLogic(
-            const ScoreVectorsOutput &scoreVectorsOutput,
-            const QString &msDataFilePath,
-            const PythiaParameters &pythiaParameters
-            ) {
-
-        ERR_INIT
-
-        MsFrameScoretronProcessormatic msFrameScoretronProcessormatic;
-        e = msFrameScoretronProcessormatic.init(pythiaParameters); rree;
-
-        QVector<PSMsReaderRow> psmsReaderRows;
-        e = msFrameScoretronProcessormatic.processFrameScoreVectors(&psmsReaderRows); rree;
-
-        return {e, psmsReaderRows};
-    }
-
-}//namespace
-Err PythiaDIAWorkflow::processFrameScoreVectors(
-        const QVector<ScoreVectorsOutput> &scoreVectorOutputs,
-        const QString &msDataFilePath,
-        const PythiaParameters &pythiaParameters,
-        QVector<PSMsReaderRow> *psmsPreaderRows
-        ) {
-
-    ERR_INIT
-
-#ifdef PARALLEL_RUN_SCORE_VEC
-    const auto scoreVecProcessorLogicBinder = std::bind(
-            processScoreVectorsParallelLogic,
-            std::placeholders::_1,
-            msDataFilePath,
-            pythiaParameters
-    );
-
-    QFuture<QPair<Err, QVector<PSMsReaderRow>>> futures = QtConcurrent::mapped(
-            scoreVectorOutputs, //.mid(20,8),
-            scoreVecProcessorLogicBinder
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Err, QVector<PSMsReaderRow>> &result : futures) {
-        e = result.first; ree;
-        psmsPreaderRows->append(result.second);
-    }
-#else
-    for (const ScoreVectorsOutput &svo : scoreVectorOutputs) {
-
-        const QPair<Err, QVector<PSMsReaderRow>> result = processScoreVectorsParallelLogic(
-                svo,
-                msDataFilePath,
-                pythiaParameters
-                ); ree;
-
-        e = result.first; ree;
-        psmsPreaderRows->append(result.second);
-    }
-#endif
-
-    ERR_RETURN
-}
-

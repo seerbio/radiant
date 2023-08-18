@@ -20,7 +20,7 @@ using namespace Error;
 
 class FrameParallelInput;
 class PSMsReaderRow;
-class ScoreVectorsOutput;
+class ScoredCandidate;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -47,19 +47,12 @@ private:
 
     Err buildPSMResultsForCalibrationFile(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
+            QVector<ScoredCandidate> *frameScoreVectorsAndExtractFilePaths
             );
 
     static Err buildFrameScoreVectors(
             const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoreVectorsOutput> *scoreVectorsOutput
-            );
-
-    static Err processFrameScoreVectors(
-            const QVector<ScoreVectorsOutput> &scoreVectorsOutputs,
-            const QString &msDataFilePath,
-            const PythiaParameters &pythiaParameters,
-            QVector<PSMsReaderRow> *psmsPreaderRows
+            QVector<ScoredCandidate> *scoreVectorsOutput
             );
 
 private:
