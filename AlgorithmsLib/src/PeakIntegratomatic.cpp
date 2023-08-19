@@ -72,6 +72,22 @@ namespace {
         return *std::max_element(vecTrunc.begin(), vecTrunc.end());
     }
 
+    Eigen::VectorX<double> addPaddingToVector(
+            const Eigen::VectorX<double> &vec,
+            int paddingCount
+            ) {
+
+        const int finalPaddingSize = vec.size() > paddingCount ? paddingCount : 2 * paddingCount;
+
+        Eigen::VectorX<double> vecPadded(vec.size() + finalPaddingSize);
+        vecPadded.setZero();
+
+        const int vecInsertPoint = vec.size() > paddingCount ? 0 : paddingCount;
+        vecPadded.segment(vecInsertPoint, vec.size()) = vec;
+
+        return vecPadded;
+    }
+
 }//namespace
 Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
         const QVector<double> &intensityVec,
@@ -87,16 +103,18 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
     peakLimits->clear();
     intensityVecSmoothed->clear();
 
-    const double filterToVecRejectionRatio = 1.5;
-    if (intensityVec.size() < static_cast<int>(std::round(m_gaussFilter.size() * filterToVecRejectionRatio))) {
-        *peakLimits = {{0, intensityVec.size() -1}};
-        ERR_RETURN
-    }
+    const Eigen::VectorX<double> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
 
-    Eigen::VectorX<double> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
+    const int paddingMultiplier = 1;
+    const int paddingSize = static_cast<int>(m_gaussFilter.size()) * paddingMultiplier;
+
+    Eigen::VectorX<double> smoothedVecPadded = addPaddingToVector(
+            smoothedVec,
+            paddingSize
+            );
 
     for (int i = 0; i < m_params.smoothCount; i++) {
-        smoothedVec = EigenKernelUtils::convolveVectorWithKernel(smoothedVec, m_gaussFilter);
+        smoothedVecPadded = EigenKernelUtils::convolveVectorWithKernel(smoothedVecPadded, m_gaussFilter);
     }
 
     const double maxVal = smoothedVec.maxCoeff();
@@ -105,11 +123,12 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
         ERR_RETURN
     }
 
-    smoothedVec /= maxVal;
-    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVec);
+    smoothedVecPadded /= maxVal;
+
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
 
     Eigen::VectorX<double> mexicanHatsmoothedVec
-        = EigenKernelUtils::convolveVectorWithKernel(smoothedVec, m_mexicanHatFilter);
+        = EigenKernelUtils::convolveVectorWithKernel(smoothedVecPadded, m_mexicanHatFilter);
 
 //#define PRINT_VECS
 #ifdef PRINT_VECS
@@ -131,7 +150,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     int startIndex = 0;
     const double signalToNoiseThreshold
-        = m_params.signalToNoiseRatio * MathUtils::median(smoothedVec);
+        = m_params.signalToNoiseRatio * MathUtils::median(smoothedVecPadded);
 
     for (int mx : maximaKeys) {
 
@@ -156,13 +175,23 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
             const double maxOfVecSegment = maxOfVectorSegment(*intensityVecSmoothed, startVal, endVal);
 
             if (maxOfVecSegment > signalToNoiseThreshold) {
-                peakLimits->push_back({startVal, endVal});
+
+                const bool sizeCheck = intensityVec.size() > paddingSize;
+
+                const int startValCorrected = sizeCheck ? startVal : startVal - paddingSize;
+                const int endValCorrected = sizeCheck ? endVal : endVal - paddingSize;
+
+                peakLimits->push_back({startValCorrected, endValCorrected});
             }
 
             startIndex = endIndex;
             break;
         }
     }
+
+    smoothedVecPadded /= smoothedVecPadded.maxCoeff();
+    smoothedVecPadded *= maxVal;
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
 
     ERR_RETURN
 }

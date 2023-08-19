@@ -51,7 +51,7 @@ void PeakIntegratomaticTests::findAllPeakLimitsInXICTest() {
     };
 
     PeakIntegratomaticParameters params;
-    params.filterLength = 7;
+    params.filterLength = 3;
     params.sigma = 1.0;
     params.signalToNoiseRatio = 1;
     params.smoothCount = 3;
@@ -68,17 +68,24 @@ void PeakIntegratomaticTests::findAllPeakLimitsInXICTest() {
             &intensityVecSmoothed
     );
     QCOMPARE(e, eNoError);
+    QCOMPARE(peakLimits.size(), 1);
+    QCOMPARE(peakLimits.back().first, 4);
+    QCOMPARE(peakLimits.back().second, 23);
 
-    qDebug() << peakLimits << peakLimits.size();
-    QCOMPARE(peakLimits.back().first, 5);
-    QCOMPARE(peakLimits.back().second, 19);
+    e = peakIntegratomatic.findAllPeaksLimitsInXIC(
+            {xic.front()},
+            &peakLimits,
+            &intensityVecSmoothed
+    );
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(peakLimits.size(), 1);
+    QCOMPARE(peakLimits.back().first, -3);
+    QCOMPARE(peakLimits.back().second, 3);
 
 }
 
-
 void PeakIntegratomaticTests::troubleshoot() {
-
-//    QSKIP("SKIP");
 
     ERR_INIT
 
@@ -87,7 +94,7 @@ void PeakIntegratomaticTests::troubleshoot() {
     };
 
     PeakIntegratomaticParameters params;
-    params.filterLength = 7;
+    params.filterLength = 3;
     params.sigma = 1.0;
     params.signalToNoiseRatio = 1;
     params.smoothCount = 3;
@@ -104,10 +111,6 @@ void PeakIntegratomaticTests::troubleshoot() {
             &intensityVecSmoothed
     );
     QCOMPARE(e, eNoError);
-
-    qDebug() << peakLimits;
-
-
 }
 
 QTEST_MAIN(PeakIntegratomaticTests)
