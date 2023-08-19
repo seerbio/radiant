@@ -260,6 +260,8 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     QCOMPARE(e, eNoError);
     QCOMPARE(featureFinderHillsSingle.size(), 15);
 
+    std::sort(featureFinderHillsSingle.begin(), featureFinderHillsSingle.end(), sortLogic);
+
     for (int i = 0; i < featureFinderHillsSingle.size(); i++) {
 
         const FeatureFinderHill &ffh = featureFinderHillsSingle.at(i);
