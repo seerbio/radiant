@@ -610,8 +610,8 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &m_featureFinderHills
     ); ree;
 
-//    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
-//    e = loadHillsToRTree(); ree
+    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
+    e = loadHillsToRTree(); ree
 
     qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
 
@@ -978,7 +978,7 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
         mzRtRow.mzLo = mzRange.first - 0.025;
         mzRtRow.mzHi = mzRange.second + 0.025;
         mzRtRow.rtLo = scanNumberVsScanTime.value(scanNumberRange.first);
-        mzRtRow.rtHi = scanNumberVsScanTime.value(scanNumberRange.second);
+        mzRtRow.rtHi = scanNumberVsScanTime.value(scanNumberRange.second) + 0.1;
 
         mzRtRows.push_back(mzRtRow);
     }
