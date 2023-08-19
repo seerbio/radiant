@@ -62,7 +62,7 @@ public:
     [[nodiscard]] bool isValid() const {
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount >= 2
+            && minScanCount >= 1
             && filterLength >= 2
             && smoothCount > 0
             && sigma > 0.0

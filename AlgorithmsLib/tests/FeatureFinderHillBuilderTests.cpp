@@ -187,7 +187,7 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
 
-    QSKIP("undo me");
+//    QSKIP("undo me");
 
     ERR_INIT
 
@@ -201,16 +201,24 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
     FeatureFinderParameters params;
     params.skipScanCount = 2;
-    params.tolerancePPM = 10.0;
+    params.tolerancePPM = 100.0;
     params.minScanCount = 2;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-    QVector<FeatureFinderHill> featureFinderHills;
     e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber);
     QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(featureFinderHills.size(), 5);
 
     const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
         return l.mzMean() < r.mzMean();
@@ -235,9 +243,28 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
         qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
 
-
         QCOMPARE(ffh.mzMean(), expectedMz);
         QCOMPARE(ffh.scanCount(), expectedScanNumbers.size());
+    }
+
+    params.minScanCount = 1;
+    FeatureFinderHillBuilder featureFinderHillBuilderSingle;
+    e = featureFinderHillBuilderSingle.init(params);
+    QCOMPARE(e, eNoError);
+
+    e = featureFinderHillBuilderSingle.buildHills(scanPointsByScanNumber);
+    QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHillsSingle;
+    e = featureFinderHillBuilderSingle.featureFinderHills(&featureFinderHillsSingle);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(featureFinderHillsSingle.size(), 15);
+
+    for (int i = 0; i < featureFinderHillsSingle.size(); i++) {
+
+        const FeatureFinderHill &ffh = featureFinderHillsSingle.at(i);
+        qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
+
     }
 
 }

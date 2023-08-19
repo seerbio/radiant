@@ -440,11 +440,12 @@ namespace {
             nextScanIndex += 1;
 
             if (nextVal < 0) {
+                (*connectedCentroidsMats)[currentScanIndex].coeffRef(row, currentIndexVal) = -2;
                 continue;
             }
 
             for (int rowIndexEraser = 0; rowIndexEraser < currentCentroids.rows(); ++rowIndexEraser) {
-                (*connectedCentroidsMats)[currentScanIndex].coeffRef(rowIndexEraser, currentIndexVal) = -1;
+                (*connectedCentroidsMats)[currentScanIndex].coeffRef(rowIndexEraser, currentIndexVal) = -2;
             }
 
             break;
@@ -470,6 +471,7 @@ namespace {
 
         const QVector<ScanNumber> scanNumbers = scanPointsByScanNumber.keys().toVector();
 
+        //NOTE: This is not const because the next index function modifies it to zero out terminals
         QVector<Eigen::MatrixX<int>> connectedCentroidsMats = _connectedCentroidsMats;
 
         const QList<ScanPoints> &scanPoints = scanPointsByScanNumber.values();
@@ -478,7 +480,30 @@ namespace {
 
             const Eigen::MatrixX<int> &baseCentroids = connectedCentroidsMats.at(baseScanIndex);
 
-            for (int baseCentroidsColInd = 0; baseCentroidsColInd< baseCentroids.cols(); ++baseCentroidsColInd) {
+            for (int baseCentroidsColInd = 0; baseCentroidsColInd < baseCentroids.cols(); ++baseCentroidsColInd) {
+
+                const Eigen::VectorX<int> colVec = baseCentroids.col(baseCentroidsColInd);
+                const int colVecMaxForSinglePointAddition = colVec.maxCoeff();
+
+                if (colVecMaxForSinglePointAddition == -1) {
+
+                    ScanPoint currentScanPoint = scanPoints.at(baseScanIndex).at(baseCentroidsColInd);
+                    ScanNumberIndex currentScanIndex = baseScanIndex;
+
+                    FeatureFinderHill featureFinderHill;
+                    featureFinderHill.addPoint(
+                            currentScanIndex,
+                            scanNumbers.at(currentScanIndex),
+                            currentScanPoint.x(),
+                            currentScanPoint.y()
+                    );
+
+                    if (featureFinderHill.scanCount() >= minScanCount) {
+                        featureFinderHills->push_back(featureFinderHill);
+                    }
+
+                    continue;
+                }
 
                 for (int baseCentroidsRowInd = 0; baseCentroidsRowInd < baseCentroids.rows(); ++baseCentroidsRowInd) {
 
@@ -502,7 +527,7 @@ namespace {
                             currentScanPoint.y()
                     );
 
-                    while (nextIndexVal != -1) {
+                    while (nextIndexVal >= 0) {
 
                         getNextIndex(
                                 nextScanIndex,
@@ -514,7 +539,7 @@ namespace {
                                 &nextIndexVal
                         );
 
-                        if (nextIndexVal == -1) {
+                        if (nextIndexVal <= -1) {
                             break;
                         }
 
@@ -585,8 +610,8 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &m_featureFinderHills
     ); ree;
 
-    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
-    e = loadHillsToRTree(); ree
+//    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
+//    e = loadHillsToRTree(); ree
 
     qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
 

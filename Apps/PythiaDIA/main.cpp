@@ -63,38 +63,28 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QStringList dataFiles;
-    e = CommandLineParserUtils::getDataFilesFromDirectory(
-            msDataFilesDirectory,
-            &dataFiles
-            );
-    if (e != eNoError) {
-        qDebug() << "Error reading data files.";
-        return 1;
-    }
+//    QStringList dataFiles;
+//    e = CommandLineParserUtils::getDataFilesFromDirectory(
+//            msDataFilesDirectory,
+//            &dataFiles
+//            );
+//    if (e != eNoError) {
+//        qDebug() << "Error reading data files.";
+//        return 1;
+//    }
 
-    e = ErrorUtils::isNotEmpty(dataFiles);
-    if (e != eNoError) {
-        qDebug() << "No data files found.";
-        return 1;
-    }
+//    e = ErrorUtils::isNotEmpty(dataFiles);
+//    if (e != eNoError) {
+//        qDebug() << "No data files found.";
+//        return 1;
+//    }
 
-    for (const QString &dataFilePath : dataFiles) {
-
-        qDebug() << "Processing file:" << dataFilePath;
-
-        //TODO fix this behavior.  instead of iterating directory, just specify file.
-        // let what ever calls this do the iteration.  Remove this conditional when that is done.
-        if (dataFilePath.contains("deiso")) {
-            continue;
-        }
-
-        e = pythiaDiaWorkflow.processFile(dataFilePath);
-        if (e != eNoError) {
-            qDebug() << dataFilePath << "Did not run completely";
-            return 1;
-        }
-    }
+    qDebug() << "DKFJDSL" << cliParameters.msDataFilesDirectory;
+    e = pythiaDiaWorkflow.processFile(cliParameters.msDataFilesDirectory);
+//    if (e != eNoError) {
+//        qDebug() << cliParameters.msDataFilesDirectory << "Did not run completely";
+//        return 1;
+//    }
 
     qDebug() << "PSMing done in" << et.elapsed() << "mSec";
 

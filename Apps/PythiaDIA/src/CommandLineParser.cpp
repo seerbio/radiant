@@ -86,7 +86,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     const bool dataFilesPathIsValid = CommandLineParserUtils::checkFileNameExtension(
             m_cliParams.msDataFilesDirectory,
-            ""
+            "prq"
             );
 
     if (!dataFilesPathIsValid) {

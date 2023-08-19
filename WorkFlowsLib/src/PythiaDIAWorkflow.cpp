@@ -6,6 +6,7 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "FeatureFinderHillBuilder.h"
 #include "MsFrameScoretron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
@@ -261,12 +262,77 @@ namespace {
         ERR_RETURN
     }
 
+    Err separateTargetWindows(
+            const QString &msFilePath,
+            QVector<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> *frames
+            ) {
+
+        ERR_INIT
+
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(msFilePath); ree;
+
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
+        e = msReaderParquet.collateTandemPrecursorTargetsDIA(&diaTargetFrame); ree
+
+        *frames = ParallelUtils::convertMapToVectorPairs(diaTargetFrame);
+
+        ERR_RETURN
+    }
+
+
+    Err parallelFeatureFind(
+            const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &frame,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        ERR_INIT
+
+        FeatureFinderParameters ffParams;
+        ffParams.tolerancePPM = pythiaParameters.ms2ExtractionWidthPPM;
+        ffParams.skipScanCount = pythiaParameters.skipScanCount;
+        ffParams.minScanCount = pythiaParameters.minScanCount;
+        ffParams.filterLength = pythiaParameters.filterLength;
+        ffParams.smoothCount = pythiaParameters.smoothCount;
+        ffParams.sigma = pythiaParameters.sigma;
+        ffParams.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
+
+        FeatureFinderHillBuilder featureFinderHillBuilder;
+        e = featureFinderHillBuilder.init(ffParams); ree;
+        e = featureFinderHillBuilder.buildHills(frame.second); ree;
+        e = featureFinderHillBuilder.refineHills(true); ree;
+
+        ERR_RETURN
+    }
+
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
     const QString &msDataFilePathRecalibrated = msDataFilePath; //drewholio remove this path but keep var
+    qDebug() << msDataFilePathRecalibrated;
+
+    QVector<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> diaTargetFrame;
+    e = separateTargetWindows(
+            msDataFilePathRecalibrated,
+            &diaTargetFrame
+            ); ree;
+
+    const auto featureFinderLogicBinder = std::bind(
+            parallelFeatureFind,
+            std::placeholders::_1,
+            m_pythiaParameters
+    );
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            diaTargetFrame,
+            featureFinderLogicBinder
+    );
+    futures.waitForFinished();
+
+
 
 //    e = parallelDeisotopeMsFile(
 //            msDataFilePath,
@@ -299,44 +365,44 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 //            &msDataFilePathRecalibrated
 //            ); ree;
 
-    QVector<FrameParallelInput> frameParallelInputsRecal;
-
-    if (m_iRTReCalFilePath.isEmpty()) {
-
-        e = buildParallelInput(
-                m_pythiaParameters,
-                msDataFilePathRecalibrated,
-                m_fragLibUri,
-                &frameParallelInputsRecal
-        ); ree;
-
-    }
-
-    else {
-
-        e = buildParallelInput(
-                m_pythiaParameters,
-                msDataFilePathRecalibrated,
-                m_fragLibUri,
-                m_iRTReCalFilePath,
-                &frameParallelInputsRecal
-        ); ree;
-
-    }
-
-    e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
-
-    QVector<ScoredCandidate> scoredCandidates;
-    e = buildFrameScoreVectors(
-            frameParallelInputsRecal,
-            &scoredCandidates
-            ); ree;
-
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(
-            scoredCandidates,
-            resultsFilePath
-            ); ree;
+//    QVector<FrameParallelInput> frameParallelInputsRecal;
+//
+//    if (m_iRTReCalFilePath.isEmpty()) {
+//
+//        e = buildParallelInput(
+//                m_pythiaParameters,
+//                msDataFilePathRecalibrated,
+//                m_fragLibUri,
+//                &frameParallelInputsRecal
+//        ); ree;
+//
+//    }
+//
+//    else {
+//
+//        e = buildParallelInput(
+//                m_pythiaParameters,
+//                msDataFilePathRecalibrated,
+//                m_fragLibUri,
+//                m_iRTReCalFilePath,
+//                &frameParallelInputsRecal
+//        ); ree;
+//
+//    }
+//
+//    e = ErrorUtils::isNotEmpty(frameParallelInputsRecal); ree;
+//
+//    QVector<ScoredCandidate> scoredCandidates;
+//    e = buildFrameScoreVectors(
+//            frameParallelInputsRecal,
+//            &scoredCandidates
+//            ); ree;
+//
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(
+//            scoredCandidates,
+//            resultsFilePath
+//            ); ree;
 
     ERR_RETURN
 }
