@@ -253,16 +253,16 @@ Err MsCalibratomatic::buildMzCalibrator(const QString &firstPassCSVFilePath) {
 namespace {
 
     Err buildPeptideStringWithModsVsIRT(
-            const QMap<PeptideSequenceChargeKey, double> &peptideSequenceChargeKeyVsIRT,
+            const QMap<PeptideSequenceChargeKey, CandidatePeptide> &peptideSequenceChargeKeyVsCandidatePeptide,
             QMap<PeptideStringWithMods, double> *peptideStringWithModsVsIRT
             ) {
 
         ERR_INIT
 
-        for (auto it = peptideSequenceChargeKeyVsIRT.begin(); it != peptideSequenceChargeKeyVsIRT.end(); it++) {
+        for (auto it = peptideSequenceChargeKeyVsCandidatePeptide.begin(); it != peptideSequenceChargeKeyVsCandidatePeptide.end(); it++) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            const double iRT = it.value();
+            const double iRT = it.value().iRt;
 
             Charge charge;
             PeptideStringWithMods peptideStringWithMods;
@@ -290,21 +290,13 @@ namespace {
         FragLibReader fragLibReader;
         e = fragLibReader.init(fragLibReaderFilePath); ree
 
-        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
-        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
-        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsIRT;
+        QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
 
-        e = fragLibReader.getMS2Ions(
-                &peptideSequenceChargeKeyVsMS2Ions,
-                &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass,
-                &peptideSequenceChargeKeyVsIRT
-                ); ree
+        e = fragLibReader.getMS2Ions(&peptideSequenceChargeKeyVsCandidatePeptide); ree
 
         QMap<PeptideStringWithMods, double> peptideStringWithModsVsIRT;
         e = buildPeptideStringWithModsVsIRT(
-                peptideSequenceChargeKeyVsIRT,
+                peptideSequenceChargeKeyVsCandidatePeptide,
                 &peptideStringWithModsVsIRT
                 ); ree;
 

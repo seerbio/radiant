@@ -127,7 +127,7 @@ struct PythiaParameters{
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
-    double cosineSimThreshold = 0.9667;
+    double cosineSimThreshold = 0.5;
     double fragIntensityThreshold = 0.025;
 
     double pValThreshold = -1.0;
@@ -233,6 +233,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
         qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
+        qDebug() << "cosineSimThreshold" << cosineSimThreshold;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

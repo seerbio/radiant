@@ -18,10 +18,12 @@ Modification::Modification(QChar residue,
 , formula(formula){}
 
 
-Modification::Modification(const QString &positionalLocation,
-                           const QString &name,
-                           const ModificationType &type,
-                           const QString &formula)
+Modification::Modification(
+        const QString &positionalLocation,
+        const QString &name,
+        const ModificationType &type,
+        const QString &formula
+        )
 : positionalLocation(positionalLocation)
 , name(name)
 , type(type)
@@ -413,10 +415,10 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;
-    pythiaParameters.skipScanCount = 1;
+    pythiaParameters.skipScanCount = 0;
     pythiaParameters.useMeanMz = true;
     pythiaParameters.filterLength = 3;
-    pythiaParameters.smoothCount = 1;
+    pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.topNMs2Ions = 12;

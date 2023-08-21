@@ -228,7 +228,7 @@ public:
     Err init(
             const PythiaParameters &params,
             const QVector<FeatureFinderHill> &featureFinderHills,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+            const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QString &iRTRecalibrationFilePath
     );
@@ -236,7 +236,7 @@ public:
     Err init(
             const PythiaParameters &params,
             const QVector<FeatureFinderHill> &featureFinderHills,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+            const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsMS2Ions,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
@@ -250,25 +250,19 @@ private:
 
 private:
 
-    QMap<PeptideStringWithMods, MS2IonsSeparated> m_fragPreds;
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> m_fragPredsTopN;
-    QMap<PeptideStringWithMods, bool> m_fragPredsIsDecoy;
-    QMap<PeptideStringWithMods, double> m_fragPredsMass;
-    QMap<PeptideStringWithMods, double> m_fragPredsIRT;
-    QMap<PeptideStringWithMods, double> m_fragPredsPredictedScanTime;
+    QMap<PeptideStringWithMods, CandidatePeptide> m_fragPredsTopN;
     QMap<MzHashed, FrequencyPercent> m_fragmentFrequencies;
+    QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
     QVector<FeatureFinderHill> m_featureFinderHills;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
-
     PythiaParameters m_params;
     QString m_msDataFilePath;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
-    QPair<double, double> m_mzTargetStartStop;
-    double m_mzStartStopMean;
+
 };
 
 

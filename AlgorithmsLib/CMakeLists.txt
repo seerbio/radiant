@@ -23,8 +23,6 @@ SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
-        src/FeatureFinderHillClusterTron.cpp
-        src/FragLibIonRTree.cpp
         src/IRTPredictron.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2ChargeDeconvolvotron.cpp
@@ -46,8 +44,6 @@ SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
-        src/FeatureFinderHillClusterTron.h
-        src/FragLibIonRTree.h
         src/IRTPredictron.h
         src/IsotopicDistributionBuilder.h
         src/MS2ChargeDeconvolvotron.h

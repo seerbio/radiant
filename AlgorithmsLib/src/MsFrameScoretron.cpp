@@ -39,7 +39,7 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
         const QVector<FeatureFinderHill> &featureFinderHills,
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+        const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
 ) {
 
@@ -47,12 +47,12 @@ Err MsFrameScoretron::init(
 
     e = ErrorUtils::isTrue(params.isValid()); ree;
     e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
-    e = ErrorUtils::isNotEmpty(peptideStringWithModsVsMS2Ions); ree;
+    e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
 
     m_params = params;
     m_featureFinderHills = featureFinderHills;
-    m_fragPredsTopN = peptideStringWithModsVsMS2Ions;
+    m_fragPredsTopN = peptideStringWithModsVsCandidatePeptide;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     e = FragLibReader::generateFragmentFrequencies(
@@ -67,7 +67,7 @@ Err MsFrameScoretron::init(
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
         const QVector<FeatureFinderHill> &featureFinderHills,
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+        const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const QString &iRTRecalibrationFilePath
         ) {
@@ -77,7 +77,7 @@ Err MsFrameScoretron::init(
     e = init(
             params,
             featureFinderHills,
-            peptideStringWithModsVsMS2Ions,
+            peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime
             ); ree;
 
@@ -94,10 +94,10 @@ Err MsFrameScoretron::init(
 
     const int kNearestPoints = 10;
 
-    for (auto it = m_fragPredsIRT.begin(); it != m_fragPredsIRT.end(); it++) {
+    for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const double iRT = it.value();
+        const double iRT = it.value().iRt;
 
         QVector<NNSearchResult> nnSearchResult;
         nearestNeighborsSearch.kNearestNeighborsSearch(
@@ -546,8 +546,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             &bestCosineSimSumVsClusters
             ); ree
 
-    qDebug() << ms2IonPeaks.size() << bestCosineSimSumVsClusters.size() << "drewholio";
-
     for (auto it = bestCosineSimSumVsClusters.begin(); it != bestCosineSimSumVsClusters.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
@@ -556,12 +554,12 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
 
         const int frameIndexMaxMax = calculateFrameIndexMaxMax(ms2IonPeaksBestCluster);
-        const QVector<MS2Ion> &fragPred = m_fragPredsTopN.value(peptideStringWithMods);
+        const CandidatePeptide &candidatePeptide = m_fragPredsTopN.value(peptideStringWithMods);
 
         //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
         e = fillUnFoundMS2IonPeaks(
                 ms2IonPeaksBestCluster,
-                fragPred,
+                candidatePeptide.ms2Ions,
                 m_fragmentFrequencies,
                 &ms2IonPeaksBestCluster
                 ); ree
@@ -573,13 +571,13 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.frequencyPercentSum = freqScores.first;
         sc.frequencyPercentSumBestPossible = freqScores.second;
         sc.cosineSimSum = cosineSimSum;
-        sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
-        sc.mass = m_fragPredsMass.value(sc.peptideStringWithMods);
+        sc.isDecoy = candidatePeptide.isDecoy;
+        sc.mass = candidatePeptide.mass;
 //        sc.charge = static_cast<int>(std::round(sc.mass / m_msFrame.precursorMzTargetStartEnd().second));
 //        sc.scanNumber = scanNumber;
 //        sc.scanTime = scanTime;
-        sc.theoreticalFragmentCount = m_fragPreds.value(peptideStringWithMods).theoreticalFragmentIonCount();
-        sc.iRTPredicted = m_fragPredsIRT.value(peptideStringWithMods);
+        sc.theoreticalFragmentCount = candidatePeptide.totalFragmentCount;
+        sc.iRTPredicted = candidatePeptide.iRt;
         sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
         sc.targetKey = m_uniqueMsInfoScanKey;
 
@@ -596,7 +594,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 &sc.fragmentFrequencyVec,
                 &sc.rankVec
         ); ree
-
+        
         scoredCandidates->push_back(sc);
     }
 
@@ -660,7 +658,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
 
-        const QVector<MS2Ion> &ms2IonsTopN = it.value();
+        const QVector<MS2Ion> &ms2IonsTopN = it.value().ms2Ions;
         const ScanTime scanTime = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
 
         for (const MS2Ion &ms2Ion : ms2IonsTopN) {
