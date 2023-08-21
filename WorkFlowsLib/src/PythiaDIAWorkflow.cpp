@@ -102,7 +102,7 @@ namespace {
             const QString &msDataFilePath,
             const QString &fragLibFilePath,
             int topNMs2Ions,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *uniqueInfoScanKeyVsMs2Ions
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
             ) {
 
         ERR_INIT
@@ -116,23 +116,18 @@ namespace {
         FragLibReader fragLibReader;
         e = fragLibReader.init(fragLibFilePath); ree;
 
-        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
-        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
-        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsIR;
+        QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
+
 
         e = fragLibReader.getMS2IonsTopN(
                 topNMs2Ions,
-                &peptideSequenceChargeKeyVsMS2Ions,
-                &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass,
-                &peptideSequenceChargeKeyVsIR
+                &peptideSequenceChargeKeyVsCandidatePeptide
                 ); ree;
 
-        for (auto it = peptideSequenceChargeKeyVsMS2Ions.begin(); it != peptideSequenceChargeKeyVsMS2Ions.end(); it++) {
+        for (auto it = peptideSequenceChargeKeyVsCandidatePeptide.begin(); it != peptideSequenceChargeKeyVsCandidatePeptide.end(); it++) {
 
             const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            const QVector<MS2Ion> &ms2IonsTopN = it.value();
+            const CandidatePeptide &candidatePeptide = it.value();
 
             PeptideStringWithMods peptideStringWithMods;
             Charge charge;
@@ -142,8 +137,7 @@ namespace {
                     &charge
                     ); ree;
 
-            const double mass = peptideSequenceChargeKeyVsMass.value(peptideSequenceChargeKey);
-            const double mz = BiophysicalCalcs::calculateThomsonFromMass(mass, charge);
+            const double mz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, charge);
 
             const rTreeBox queryBox(
                     rTreeCoor(mz, 0.0),
@@ -156,7 +150,7 @@ namespace {
             for (const rTreePoint &rtp : rTreeSearchResult) {
                 const UniqueMsInfoScanKey &uniqueMsInfoScanKey = rtp.second;
 
-                (*uniqueInfoScanKeyVsMs2Ions)[uniqueMsInfoScanKey].insert(peptideStringWithMods, ms2IonsTopN);
+                (*uniqueInfoScanKeyVsCandidatePeptide)[uniqueMsInfoScanKey].insert(peptideStringWithMods, candidatePeptide);
             }
 
         }
@@ -170,24 +164,31 @@ namespace {
         QString iRTReCalFilePath;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
         QVector<FeatureFinderHill> *featureFinderHills = nullptr;
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions = nullptr;
+        QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptide = nullptr;
     };
 
     QPair<Err, QVector<ScoredCandidate>> parallelProciessingLogic(const ParallelProcessingInput &ppi) {
 
         ERR_INIT
 
+        QElapsedTimer et;
+        et.start();
+
+        qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
+
         MsFrameScoretron msFrameScoretron;
         e = msFrameScoretron.init(
                 ppi.pythiaParameters,
                 *ppi.featureFinderHills,
-                *ppi.peptideStringWithModsVsMS2Ions,
+                *ppi.peptideStringWithModsVsCandidatePeptide,
                 ppi.scanNumberVsScanTime,
                 ppi.iRTReCalFilePath
                 ); rree;
 
         QVector<ScoredCandidate> scoredCandidates;
         e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
+
+        qDebug() << "Processed" << ppi.uniqueMsInfoScanKey << "Count" << scoredCandidates.size() << et.elapsed() << "mSec";
 
         return {e, scoredCandidates};
     }
@@ -209,23 +210,23 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &scanNumberVsScanTime
             ); ree;
 
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, QVector<MS2Ion>>> uniqueInfoScanKeyVsMs2Ions;
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptide;
     e = buildLibrary(
             msDataFilePathRecalibrated,
             m_fragLibUri,
             m_pythiaParameters.topNMs2Ions,
-            &uniqueInfoScanKeyVsMs2Ions
+            &uniqueInfoScanKeyVsCandidatePeptide
             ); ree;
 
     QVector<ParallelProcessingInput> parallelProcessingInputs;
-    for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueInfoScanKeyVsMs2Ions.keys()) {
+    for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueInfoScanKeyVsCandidatePeptide.keys()) {
         ParallelProcessingInput ppi;
         ppi.uniqueMsInfoScanKey = uniqueMsInfoScanKey;
         ppi.scanNumberVsScanTime = scanNumberVsScanTime;
         ppi.iRTReCalFilePath = m_iRTReCalFilePath;
         ppi.pythiaParameters = m_pythiaParameters;
         ppi.featureFinderHills = &uniqueInfoScanKeyVsFeatureFinderHills[uniqueMsInfoScanKey];
-        ppi.peptideStringWithModsVsMS2Ions = &uniqueInfoScanKeyVsMs2Ions[uniqueMsInfoScanKey];
+        ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptide[uniqueMsInfoScanKey];
 
         parallelProcessingInputs.push_back(ppi);
     }

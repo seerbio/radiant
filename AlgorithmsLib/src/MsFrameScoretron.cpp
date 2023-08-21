@@ -594,7 +594,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 &sc.fragmentFrequencyVec,
                 &sc.rankVec
         ); ree
-        
+
         scoredCandidates->push_back(sc);
     }
 
