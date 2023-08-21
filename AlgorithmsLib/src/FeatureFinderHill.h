@@ -58,11 +58,6 @@ public:
         double intensityVal
     );
 
-    Err refineHill(
-            int startIndex,
-            int endIndex
-    );
-
     [[nodiscard]] double mzMean() const;
 
     [[nodiscard]] double mzStDev() const;

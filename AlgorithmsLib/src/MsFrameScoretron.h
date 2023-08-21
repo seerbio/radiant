@@ -201,14 +201,15 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak {
     int frameIndexStart = -1;
     int frameIndexEnd = -1;
     QVector<double> intensityVals;
-    double cosineSimToAnchor = -1.0;
-    int frameIndexMaxDiffFromAnchor = 0;
     int rank = -1;
 
     double mzFoundMean = -1.0;
     double mzFoundStDev = -1.0;
     int pointCountFound = -1;
     double fragmentFrequency = -1.0;
+
+    double cosineSimToAnchor = -1.0;
+    int frameIndexMaxDiffFromAnchor = 0;
 
 };
 
@@ -226,33 +227,23 @@ public:
 
     Err init(
             const PythiaParameters &params,
-            const QString &msDataFilePath,
-            const QString &fragLibFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QPair<double, double> &mzTargetStartStop
-            );
+            const QVector<FeatureFinderHill> &featureFinderHills,
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            const QString &iRTRecalibrationFilePath
+    );
 
     Err init(
             const PythiaParameters &params,
-            const QString &msDataFilePath,
-            const QString &fragLibFilePath,
-            const QString &iRTRecalibrationFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QPair<double, double> &mzTargetStartStop
-    );
+            const QVector<FeatureFinderHill> &featureFinderHills,
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+            );
 
     Err scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates);
 
 
 private:
-
-    Err initMsFrame(
-            const QString &msDataFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QPair<double, double> &mzTargetStartStop
-            );
-
-    Err loadFragPredsTopN(int n);
 
     Err buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks);
 
@@ -269,7 +260,8 @@ private:
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 
-    MsFrame m_msFrame;
+    QVector<FeatureFinderHill> m_featureFinderHills;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
 
     PythiaParameters m_params;

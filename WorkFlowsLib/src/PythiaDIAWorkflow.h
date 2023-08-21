@@ -21,6 +21,7 @@ using namespace Error;
 class FrameParallelInput;
 class PSMsReaderRow;
 class ScoredCandidate;
+class FeatureFinderHill;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -45,15 +46,21 @@ public:
 
 private:
 
-    Err buildPSMResultsForCalibrationFile(
-            const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoredCandidate> *frameScoreVectorsAndExtractFilePaths
+    Err buildUniqueInfoScanKeyVsFeatureFinderHills(
+            const QString &msDataFilePath,
+            QMap<UniqueMsInfoScanKey, QVector<FeatureFinderHill>> *uniqueInfoScanKeyVsFeatureFinderHills,
+            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
             );
 
-    static Err buildFrameScoreVectors(
-            const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoredCandidate> *scoreVectorsOutput
-            );
+//    Err buildPSMResultsForCalibrationFile(
+//            const QVector<FrameParallelInput> &frameParallelInputs,
+//            QVector<ScoredCandidate> *frameScoreVectorsAndExtractFilePaths
+//            );
+//
+//    static Err buildFrameScoreVectors(
+//            const QVector<FrameParallelInput> &frameParallelInputs,
+//            QVector<ScoredCandidate> *scoreVectorsOutput
+//            );
 
 private:
 

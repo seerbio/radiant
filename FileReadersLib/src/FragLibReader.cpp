@@ -24,6 +24,10 @@ using rTreePoint = std::pair<rTreeCoor, int> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
+FragLibReader::FragLibReader()
+: m_mzMin(200.0)
+, m_mzMax(2000.0) {}
+
 Err FragLibReader::init(const QString &fragLibFilePath) {
     ERR_INIT
 
@@ -84,8 +88,10 @@ Err FragLibReader::getMS2Ions(
             &fragLibReaderRows
             ); ree;
 
+    const int maxMs2Ions = 300;
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
+            maxMs2Ions,
             peptideSequenceChargeKeyVsMS2Ions,
             peptideSequenceChargeKeyVsIsDecoy,
             peptideSequenceChargeKeyVsMass,
@@ -134,6 +140,28 @@ Err FragLibReader::getMS2Ions(
 
     ERR_INIT
 
+    const int maxMs2Ions = 300;
+    e = getMS2IonsTopN(
+            maxMs2Ions,
+            peptideSequenceChargeKeyVsMS2Ions,
+            peptideSequenceChargeKeyVsIsDecoy,
+            peptideSequenceChargeKeyVsMass,
+            peptideSequenceChargeKeyVsIRT
+            ); ree;
+
+    ERR_RETURN
+}
+
+Err FragLibReader::getMS2IonsTopN(
+        int topNMs2Ions,
+        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
+        QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+        QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
+        ) {
+
+    ERR_INIT
+
     QElapsedTimer et;
     et.start();
 
@@ -145,6 +173,7 @@ Err FragLibReader::getMS2Ions(
 
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
+            topNMs2Ions,
             peptideSequenceChargeKeyVsMS2Ions,
             peptideSequenceChargeKeyVsIsDecoy,
             peptideSequenceChargeKeyVsMass,
@@ -361,11 +390,12 @@ Err FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
 
 Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
         const QVector<FragLibReaderRow> &fragLibReaderRows,
+        int topNMs2Ions,
         QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
         QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
         QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
         QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
-) {
+) const {
 
     ERR_INIT
 
@@ -376,6 +406,13 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
                 row,
                 &ms2Ions
         ); ree;
+
+        getTopNMostIntenseMs2Ions(
+                topNMs2Ions,
+                m_mzMin,
+                m_mzMax,
+                &ms2Ions
+                ); ree
 
         e = ErrorUtils::isFalse(peptideStringWithModsVsMS2Ions->contains(row.peptideSequenceChargeKey)); ree;
 
@@ -583,3 +620,4 @@ Err FragLibReader::unseparateMS2IonsSeparated(
 
     ERR_RETURN
 }
+

@@ -56,8 +56,6 @@ public:
 
     Err refineHills(bool useSmoothing);
 
-    Err loadHillsToRTree();
-
     Err getHills(
             FrameIndex
             frameIndexStart,
@@ -78,6 +76,7 @@ private:
     FeatureFinderParameters m_featureFinderParameters;
     bool m_runParallel;
 
+    QMap<ScanNumberIndex, ScanNumber> m_scanNumberIndexVsScanNumber;
     RTree *m_rtree;
 
 };
@@ -572,6 +571,21 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildScanNumberIndexVsScanNumber(
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            QMap<ScanNumberIndex, ScanNumber> *scanNumberIndexVsScanNumbers
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+
+        for (const ScanNumber &sn : scanNumberVsScanPoints.keys()) {
+            scanNumberIndexVsScanNumbers->insert(scanNumberIndexVsScanNumbers->size(), sn);
+        }
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildHills(
@@ -587,6 +601,11 @@ Err FeatureFinderHillBuilder::Private::buildHills(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+
+    e = buildScanNumberIndexVsScanNumber(
+            scanNumberVsScanPoints,
+            &m_scanNumberIndexVsScanNumber
+            ); ree;
 
     QVector<QVector<QVector<double>>> groupedMzVals;
     QVector<QVector<QVector<double>>> groupedIntensityVals;
@@ -611,7 +630,6 @@ Err FeatureFinderHillBuilder::Private::buildHills(
     ); ree;
 
     m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
-    e = loadHillsToRTree(); ree
 
     qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
 
@@ -628,7 +646,9 @@ namespace {
 
 
     Err splitHill(
+            const QMap<ScanNumberIndex, ScanNumber> &scanNumberIndexVsScanNumber,
             const FeatureFinderHill &featureFinderHill,
+            const QVector<double> &_intensityVecSmoothed,
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
             int minHillScanCount,
             QVector<FeatureFinderHill> *refinedHills
@@ -636,25 +656,40 @@ namespace {
 
         ERR_INIT
 
-        FeatureFinderHill refinedHill = featureFinderHill;
+        QVector<double> intensityVecSmoothed = _intensityVecSmoothed;
+
+//        if (peakIntegrationIndexes.size() > 1 || featureFinderHill.scanNumbers().front() < 1000) {
+//            ERR_RETURN
+//        }
+
+        if (peakIntegrationIndexes.size() != 0) {
+            ERR_RETURN
+        }
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
-            FeatureFinderHill splitHill = featureFinderHill;
-            e = splitHill.refineHill(pii.first, pii.second); ree;
 
-            if (splitHill.scanCount() < minHillScanCount) {
-                continue;
-            }
 
-            refinedHills->push_back(splitHill);
+
         }
+
+
+        qDebug() << featureFinderHill.intensities();
+        qDebug() << intensityVecSmoothed;
+        qDebug() << peakIntegrationIndexes;
+        qDebug() << featureFinderHill.scanNumberIndexes();
+        qDebug() << featureFinderHill.scanNumbers();
+        qDebug() << featureFinderHill.intensities().size() << featureFinderHill.scanNumberIndexes().size();
+        qDebug() << intensityVecSmoothed.size();
+        qDebug() << "****";
+
+
 
         ERR_RETURN
     }
 
-
     QPair<Err, QVector<FeatureFinderHill>> refineHillsLogic(
+            const QMap<ScanNumberIndex, ScanNumber> &scanNumberIndexVsScanNumber,
             const RefineHillsInput &rhi,
             bool useSmoothing
             ) {
@@ -678,21 +713,24 @@ namespace {
                 &intensityVecSmoothed
         ); rree;
 
-        const int minSplitVal = 2;
-        if (peakLimits.size() < minSplitVal) {
+        if (peakLimits.isEmpty()) {
 
-            FeatureFinderHill smoothedHill = rhi.featureFinderHill;
+            FeatureFinderHill ffh = rhi.featureFinderHill;
 
-            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.scanNumberIndexes().size()); rree
-            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.intensities().size()); rree
-            e = ErrorUtils::isEqual(smoothedHill.scanNumbers().size(), smoothedHill.mzVals().size()); rree
+//            qDebug() << intensityVecSmoothed;
+//            qDebug() << ffh.intensities();
+//            qDebug() << ffh.scanNumberIndexes();
+//            qDebug() << ffh.scanNumbers();
+//            qDebug() << "**";
 
-            return {e, {smoothedHill}};
+            return {e, {rhi.featureFinderHill}};
         }
 
         QVector<FeatureFinderHill> newHills;
         e = splitHill(
+                scanNumberIndexVsScanNumber,
                 rhi.featureFinderHill,
+                intensityVecSmoothed,
                 peakLimits,
                 rhi.minScanCount,
                 &newHills
@@ -734,6 +772,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
 
         const auto refineHillsLogicBinder = std::bind(
                 refineHillsLogic,
+                m_scanNumberIndexVsScanNumber,
                 std::placeholders::_1,
                 useSmoothing
         );
@@ -753,6 +792,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
         for (const RefineHillsInput &rhi : refineHillsInput) {
 
             const QPair<Err, QVector<FeatureFinderHill>> refinedHillResult = refineHillsLogic(
+                    m_scanNumberIndexVsScanNumber,
                     rhi,
                     useSmoothing
                     );
@@ -767,7 +807,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
     m_featureFinderHills.clear();
     m_featureFinderHills = refinedHills;
     m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills);
-    e = loadHillsToRTree(); ree;
+
 
     qDebug() << "Refined Hill Count" << m_idVsFeatureFinderHills.size();
 
@@ -778,38 +818,7 @@ void FeatureFinderHillBuilder::Private::setRunParallel(bool runParallel) {
     m_runParallel = runParallel;
 }
 
-Err FeatureFinderHillBuilder::Private::loadHillsToRTree() {
 
-    ERR_INIT
-
-    delete m_rtree;
-    m_rtree = nullptr;
-
-    e = ErrorUtils::isNotEmpty(m_idVsFeatureFinderHills); ree;
-
-    std::vector<rTreePoint> cloudLoader;
-
-    for (auto it = m_idVsFeatureFinderHills.begin(); it != m_idVsFeatureFinderHills.end(); it++) {
-
-        const Id id = it.key();
-        const FeatureFinderHill &ffh = it.value();
-
-        const QPair<int, int> frameIndexMinMax = ffh.scanNumberIndexMinMax();
-        const double mz = ffh.mzMean();
-
-        rTreeBox box(
-                {static_cast<double>(frameIndexMinMax.first), mz},
-                {static_cast<double>(frameIndexMinMax.second), mz}
-        );
-
-        cloudLoader.push_back(rTreePoint({box, id}));
-    }
-
-    const int maxElements = 16;
-    m_rtree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-
-    ERR_RETURN
-}
 
 Err FeatureFinderHillBuilder::Private::getHills(
         FrameIndex frameIndexStart,
@@ -856,6 +865,7 @@ Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderH
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree
+    featureFinderHills->reserve(m_featureFinderHills.size());
     *featureFinderHills = m_featureFinderHills;
     ERR_RETURN
 }

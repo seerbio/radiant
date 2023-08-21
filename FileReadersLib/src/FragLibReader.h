@@ -234,7 +234,7 @@ class FILEREADERSLIB_EXPORTS FragLibReader {
 
 public:
 
-    FragLibReader() = default;
+    FragLibReader();
     ~FragLibReader() = default;
 
     Err init(const QString &fragLibFilePath);
@@ -245,6 +245,14 @@ public:
             QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
             QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
             );
+
+    Err getMS2IonsTopN(
+            int topNMs2Ions,
+            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
+            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
+            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
+    );
 
     Err getMS2Ions(
             double massStart,
@@ -300,13 +308,14 @@ public:
             Charge *charge
     );
 
-    static Err fragLibReaderRowsToMs2IonsMap(
+    Err fragLibReaderRowsToMs2IonsMap(
             const QVector<FragLibReaderRow> &fragLibReaderRows,
+            int topNMs2Ions,
             QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideStringWithModsVsMS2Ions,
             QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
             QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass,
             QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsIRT
-    );
+    ) const;
 
     static Err buildMS2IonsSeparated(
             const QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> &peptideSequenceChargeKeyVsMS2Ions,
@@ -328,6 +337,8 @@ public:
 private:
 
     QString m_fragLibFilePath;
+    double m_mzMin;
+    double m_mzMax;
 
 };
 

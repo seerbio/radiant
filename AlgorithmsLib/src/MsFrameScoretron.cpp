@@ -38,84 +38,47 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
-        const QString &msDataFilePath,
-        const QString &fragLibFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const QPair<double, double> &mzTargetStartStop
+        const QVector<FeatureFinderHill> &featureFinderHills,
+        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
 ) {
 
     ERR_INIT
 
-    params.print();
-
-    e = ErrorUtils::fileExists(msDataFilePath); ree;
-    e = ErrorUtils::fileExists(fragLibFilePath); ree;
     e = ErrorUtils::isTrue(params.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
-    e = ErrorUtils::isAboveThreshold(
-            mzTargetStartStop.second,
-            mzTargetStartStop.first,
-            ErrorUtilsParam::ExcludeThreshold
-    ); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
+    e = ErrorUtils::isNotEmpty(peptideStringWithModsVsMS2Ions); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
 
     m_params = params;
-    m_msDataFilePath = msDataFilePath;
-    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
-    m_mzTargetStartStop = mzTargetStartStop;
-
-    e = FragLibReader::buildFragIonLibForCandidates(
-            fragLibFilePath,
-            m_params.chargeStateMin,
-            m_params.chargeStateMax,
-            m_mzTargetStartStop.first,
-            m_mzTargetStartStop.second,
-            &m_fragPreds,
-            &m_fragPredsIsDecoy,
-            &m_fragPredsMass,
-            &m_fragPredsIRT
-    ); ree
-
-    e = loadFragPredsTopN(m_params.topNMs2Ions); ree
-
-    e = initMsFrame(
-        msDataFilePath,
-        uniqueMsInfoScanKey,
-        mzTargetStartStop
-        ); ree
-
-    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree
-
-    m_mzStartStopMean = (mzTargetStartStop.second + mzTargetStartStop.first) / 2.0;
+    m_featureFinderHills = featureFinderHills;
+    m_fragPredsTopN = peptideStringWithModsVsMS2Ions;
+    m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     e = FragLibReader::generateFragmentFrequencies(
             m_fragPredsTopN,
             m_params.ms2ExtractionWidthPPM,
             &m_fragmentFrequencies
-            ); ree
-
-    qDebug() << "TargetKey" << uniqueMsInfoScanKey;
-    qDebug() << "Scan Count" << m_msFrame.scanCount();
-    qDebug() << "Candidate Count:" << m_fragPreds.size();
+    ); ree
 
     ERR_RETURN
 }
 
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
-        const QString &msDataFilePath,
-        const QString &fragLibFilePath,
-        const QString &iRTRecalibrationFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const QPair<double, double> &mzTargetStartStop
+        const QVector<FeatureFinderHill> &featureFinderHills,
+        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &peptideStringWithModsVsMS2Ions,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        const QString &iRTRecalibrationFilePath
         ) {
+
     ERR_INIT
 
     e = init(
             params,
-            msDataFilePath,
-            fragLibFilePath,
-            uniqueMsInfoScanKey,
-            mzTargetStartStop
+            featureFinderHills,
+            peptideStringWithModsVsMS2Ions,
+            scanNumberVsScanTime
             ); ree;
 
     qDebug() << "updating rt vals from iRT";
@@ -149,67 +112,6 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
-
-Err MsFrameScoretron::initMsFrame(
-        const QString &msDataFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        const QPair<double, double> &mzTargetStartStop
-) {
-
-    ERR_INIT
-
-    e = MsFrame::buildMsFrame(
-            msDataFilePath,
-            uniqueMsInfoScanKey,
-            mzTargetStartStop,
-            &m_msFrame
-    ); ree;
-
-    e = m_msFrame.filterFrameByMz(
-            m_params.mzMinDataStructure,
-            m_params.mzMaxDataStructure
-    ); ree;
-
-    e = ErrorUtils::isAboveThreshold(
-            m_msFrame.scanCount(),
-            0,
-            ErrorUtilsParam::ExcludeThreshold
-    );ree;
-
-    ERR_RETURN
-}
-
-Err MsFrameScoretron::loadFragPredsTopN(int n) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_fragPreds); ree;
-
-    const double mzMin = 200.0;
-    const double mzMax = 2000.0;
-
-    for (auto it = m_fragPreds.begin(); it != m_fragPreds.end(); it++) {
-
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const MS2IonsSeparated &ms2IonsSeparated = it.value();
-
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.yIons.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.bIons.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.y2Ions.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.b2Ions.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.aIons.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.yNH3Ions.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.yH2OIons.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.bNH3Ions.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.bH2OIons.values().toVector());
-        m_fragPredsTopN[peptideStringWithMods].append(ms2IonsSeparated.precursorIons.values().toVector());
-
-        QVector<MS2Ion> *ms2Ions = &m_fragPredsTopN[peptideStringWithMods];
-        FragLibReader::getTopNMostIntenseMs2Ions(n, mzMin, mzMax, ms2Ions);
-    }
-
-    ERR_RETURN
-}
 
 namespace {
 
@@ -562,7 +464,7 @@ namespace {
         ERR_RETURN
     }
 
-    double calculateFrameIndexMaxMax(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
+    int calculateFrameIndexMaxMax(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
 
         const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
             return l.cosineSimToAnchor < r.cosineSimToAnchor;
@@ -644,6 +546,8 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             &bestCosineSimSumVsClusters
             ); ree
 
+    qDebug() << ms2IonPeaks.size() << bestCosineSimSumVsClusters.size() << "drewholio";
+
     for (auto it = bestCosineSimSumVsClusters.begin(); it != bestCosineSimSumVsClusters.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
@@ -651,14 +555,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         const CosineSimSum cosineSimSum = bestCluster.first;
         QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
 
-        const double frameIndexMaxMax = calculateFrameIndexMaxMax(ms2IonPeaksBestCluster);
-
-        const ScanNumber scanNumber
-                = m_msFrame.scanNumberFromFrameIndex(static_cast<int>(std::round(frameIndexMaxMax)));
-
-        const ScanTime scanTime = m_msFrame.scanTimeFromScanNumber(scanNumber);
-        const ScanPoints scanPoints = m_msFrame.getScanPointsByScanNumber(scanNumber);
-
+        const int frameIndexMaxMax = calculateFrameIndexMaxMax(ms2IonPeaksBestCluster);
         const QVector<MS2Ion> &fragPred = m_fragPredsTopN.value(peptideStringWithMods);
 
         //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
@@ -678,10 +575,9 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.cosineSimSum = cosineSimSum;
         sc.isDecoy = m_fragPredsIsDecoy.value(sc.peptideStringWithMods);
         sc.mass = m_fragPredsMass.value(sc.peptideStringWithMods);
-        sc.charge = static_cast<int>(std::round(sc.mass / m_msFrame.precursorMzTargetStartEnd().second));
-        sc.scanNumber = scanNumber;
-        sc.scanTime = scanTime;
-        sc.scanIonCount = scanPoints.size();
+//        sc.charge = static_cast<int>(std::round(sc.mass / m_msFrame.precursorMzTargetStartEnd().second));
+//        sc.scanNumber = scanNumber;
+//        sc.scanTime = scanTime;
         sc.theoreticalFragmentCount = m_fragPreds.value(peptideStringWithMods).theoreticalFragmentIonCount();
         sc.iRTPredicted = m_fragPredsIRT.value(peptideStringWithMods);
         sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
@@ -714,122 +610,32 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
 namespace {
 
-    struct ConversionXICVecs {
-        QVector<double> intensityVals;
-        QVector<double> mzValsMeans;
-        QVector<double> mzValsStDevs;
-    };
-
-    ConversionXICVecs convertXicLimitsToVec(
-            const XICPoints &xicPoints,
-            MsFrame *msFrame
+    RTree loadHillsToRTree(
+            const QMap<Id, FeatureFinderHill> &idVsFeatureFinderHills,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             ) {
 
-        const int buffer = 1;
-        const int frameIndexVecSize = msFrame->frameIndexFromScanNumber(xicPoints.scanNumbersVsIntensityVals.lastKey()) + buffer;
-        QVector<double> intensityVals(frameIndexVecSize, 0.0);
-        QVector<double> mzValsMeans(frameIndexVecSize, 0.0);
-        QVector<double> mzValsStDevs(frameIndexVecSize, 0.0);
+        std::vector<rTreePoint> cloudLoader;
 
-        for (auto it = xicPoints.scanNumbersVsIntensityVals.begin(); it != xicPoints.scanNumbersVsIntensityVals.end(); it++) {
+        for (auto it = idVsFeatureFinderHills.begin(); it != idVsFeatureFinderHills.end(); it++) {
 
-            const ScanNumber scanNumber = it.key();
-            const FrameIndex frameIndex = msFrame->frameIndexFromScanNumber(scanNumber);
-            const double intensity = it.value();
+            const Id id = it.key();
+            const FeatureFinderHill &ffh = it.value();
 
-            intensityVals[frameIndex] = intensity;
+            const QPair<int, int> scanNumberMinMax = ffh.scanNumberMinMax();
+            const double mz = ffh.mzMean();
+
+            rTreeBox box(
+                    {mz, scanNumberVsScanTime.value(scanNumberMinMax.first)},
+                    {mz, scanNumberVsScanTime.value(scanNumberMinMax.second)}
+            );
+
+            cloudLoader.push_back(rTreePoint({box, id}));
         }
 
-        for (auto it = xicPoints.scanNumberVsMzVals.begin(); it != xicPoints.scanNumberVsMzVals.end(); it++) {
+        const int maxElements = 16;
+        return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
-            const ScanNumber scanNumber = it.key();
-            const FrameIndex frameIndex = msFrame->frameIndexFromScanNumber(scanNumber);
-            const QVector<double> &mzVals = it.value();
-
-            mzValsMeans[frameIndex] = MathUtils::mean(mzVals);
-            mzValsStDevs[frameIndex] = MathUtils::stDev(mzVals);
-        }
-
-        ConversionXICVecs cv;
-        cv.intensityVals = intensityVals;
-        cv.mzValsMeans = mzValsMeans;
-        cv.mzValsStDevs = mzValsStDevs;
-
-        return cv;
-    }
-
-    void removeZerosFromVec(QVector<double> *v) {
-
-        const auto terminatorLogic = [](double d){return d <=0;};
-        const auto terminator = std::remove_if(v->begin(), v->end(), terminatorLogic);
-        v->erase(terminator, v->end());
-    }
-
-    Err integratePoints(
-            const XICPoints &xicPoints,
-            const PeptideStringWithMods &peptideStringWithMods,
-            const MS2Ion &ms2Ion,
-            MsFrame *msFrame,
-            PeakIntegratomatic *peakIntegratomatic,
-            QMap<MzHashed, FrequencyPercent> *fragmentFrequencies,
-            QVector<MS2IonPeak> *ms2IonPeaks
-            ) {
-
-        ERR_INIT
-
-        const ConversionXICVecs cxv = convertXicLimitsToVec(
-                xicPoints,
-                msFrame
-        );
-
-        QVector<PeakIntegrationIndexes> peakLimits;
-        QVector<double> intensityVecSmoothed;
-        e = peakIntegratomatic->findAllPeaksLimitsInXIC(
-                cxv.intensityVals,
-                &peakLimits,
-                &intensityVecSmoothed
-        ); ree;
-
-        for (const PeakIntegrationIndexes &pii : peakLimits) {
-
-            if (pii.second <= 0) {
-                continue;
-            }
-
-            e = ErrorUtils::isTrue(pii.second > pii.first); ree;
-
-            const int pointsLength = pii.second - pii.first + 1;
-
-            MS2IonPeak ms2IonPeak;
-            ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
-            ms2IonPeak.mzSearched = ms2Ion.mz;
-            ms2IonPeak.theoIntensity = ms2Ion.intensity;
-            ms2IonPeak.frameIndexStart = pii.first;
-            ms2IonPeak.frameIndexEnd = pii.second;
-            ms2IonPeak.intensityVals = cxv.intensityVals.mid(pii.first, pointsLength);
-            ms2IonPeak.frameIndexMax = MathUtils::findMaxIndexInVector(ms2IonPeak.intensityVals) + pii.first;
-            ms2IonPeak.rank = ms2Ion.rank;
-
-            QVector<double> mzValsSliced = cxv.mzValsMeans.mid(pii.first, pointsLength);
-            removeZerosFromVec(&mzValsSliced);
-
-            QVector<double> mzStDevsSliced = cxv.mzValsStDevs.mid(pii.first, pointsLength);
-            removeZerosFromVec(&mzStDevsSliced);
-
-            ms2IonPeak.mzFoundMean = MathUtils::mean(mzValsSliced);
-            ms2IonPeak.mzFoundStDev = MathUtils::stDev(mzValsSliced);
-            ms2IonPeak.pointCountFound = mzValsSliced.size();
-            ms2IonPeak.fragmentFrequency
-                    = fragmentFrequencies->value(MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
-
-            if (ms2IonPeak.intensityVals.isEmpty()) {
-                continue;
-            }
-
-            ms2IonPeaks->push_back(ms2IonPeak);
-        }
-
-        ERR_RETURN
     }
 
 }//namespace
@@ -839,30 +645,16 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
 
     e = ErrorUtils::isNotEmpty(m_fragPredsTopN); ree;
 
-    TurboXIC turboXic;
-    e = turboXic.init(m_msFrame.scanNumberVsScanPoints()); ree
+    const QMap<Id, FeatureFinderHill> idVsFeatureFinderHills
+        = ParallelUtils::convertVectorToMap(m_featureFinderHills);
 
-    PeakIntegratomaticParameters params;
-    params.smoothCount = 2;
-    params.filterLength = 5;
-    params.sigma = 1;
-    params.signalToNoiseRatio = 1;
+    e = ErrorUtils::isNotEmpty(idVsFeatureFinderHills); ree;
+    const RTree rTreeHills = loadHillsToRTree(
+            idVsFeatureFinderHills,
+            m_scanNumberVsScanTime
+            );
 
-    PeakIntegratomatic peakIntegratomatic;
-    e = peakIntegratomatic.init(params); ree;
-
-    double scanNumberMinRTree;
-    double scanNumberMaxRTree;
-    double mzMinRTree;
-    double mzMaxRTree;
-    e = turboXic.getRTreeLimits(
-            &scanNumberMinRTree,
-            &scanNumberMaxRTree,
-            &mzMinRTree,
-            &mzMaxRTree
-    );
-
-    const double scanTimeBuffer = 6.0; //TODO make this settable.
+    const double scanTimeBuffer = 5.0; //TODO make this settable.
 
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
@@ -871,143 +663,50 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
         const QVector<MS2Ion> &ms2IonsTopN = it.value();
         const ScanTime scanTime = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
 
-        const ScanNumber scanNumberMin = m_msFrame.scanNumberFromScanTime(scanTime - scanTimeBuffer);
-        const ScanNumber scanNumberMax = m_msFrame.scanNumberFromScanTime(scanTime + scanTimeBuffer);
-
         for (const MS2Ion &ms2Ion : ms2IonsTopN) {
 
             const double mzTol = MathUtils::calculatePPM(ms2Ion.mz, m_params.ms2ExtractionWidthPPM);
             const double mzMin = ms2Ion.mz - mzTol;
             const double mzMax = ms2Ion.mz + mzTol;
 
-            const XICPoints xicPoints = turboXic.extractPointsXIC(
-                    mzMin,
-                    mzMax,
-                    scanNumberMin,
-                    scanNumberMax
+            const rTreeBox queryBox(
+                    rTreeCoor(mzMin, scanTime - scanTimeBuffer),
+                    rTreeCoor(mzMax, scanTime + scanTimeBuffer)
             );
 
-            if (xicPoints.scanNumbersVsIntensityVals.isEmpty()) {
-                continue;
-            }
+            std::vector<rTreePoint> rTreeSearchResult;
+            rTreeHills.query(
+                    bgi::intersects(queryBox),
+                    std::back_inserter(rTreeSearchResult)
+            );
 
-            e = integratePoints(
-                    xicPoints,
-                    peptideStringWithMods,
-                    ms2Ion,
-                    &m_msFrame,
-                    &peakIntegratomatic,
-                    &m_fragmentFrequencies,
-                    ms2IonPeaks
-                    ); ree;
+            for (const rTreePoint &rtp : rTreeSearchResult) {
+
+                const FeatureFinderHill &ffh = idVsFeatureFinderHills.value(rtp.second);
+
+                MS2IonPeak ms2IonPeak;
+                ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
+                ms2IonPeak.mzSearched = ms2Ion.mz;
+                ms2IonPeak.theoIntensity = ms2Ion.intensity;
+                ms2IonPeak.rank = ms2Ion.rank;
+                ms2IonPeak.frameIndexMax = ffh.maxIntensityScanNumberIndex();
+                ms2IonPeak.frameIndexStart = ffh.scanNumberIndexMinMax().first;
+                ms2IonPeak.frameIndexEnd = ffh.scanNumberIndexMinMax().second;
+                ms2IonPeak.intensityVals = ffh.intensities();
+
+                ms2IonPeak.mzFoundMean = ffh.mzMean();
+                ms2IonPeak.mzFoundStDev = ffh.mzStDev();
+                ms2IonPeak.pointCountFound = ffh.scanCount();
+                ms2IonPeak.fragmentFrequency = m_fragmentFrequencies.value(MathUtils::hashDecimal(
+                        ms2IonPeak.mzSearched,
+                        S_GLOBAL_SETTINGS.HASHING_PRECISION
+                        ));
+
+                ms2IonPeaks->push_back(ms2IonPeak);
+            }
 
         }
     }
 
     ERR_RETURN
 }
-
-
-
-//namespace{
-//
-//    Err buildScanFragPreds(
-//            const QVector<ScoredCandidate> &scoredCandidatesTargets,
-//            QMap<PeptideStringWithMods, QVector<MS2Ion>> *fragPredsFlattened,
-//            QMap<PeptideStringWithMods, QVector<MS2Ion>> *scanFragPredsFlattened
-//            ) {
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isNotEmpty(*fragPredsFlattened); ree;
-//
-//        for (const ScoredCandidate &sc : scoredCandidatesTargets) {
-//
-//            e = ErrorUtils::isTrue(fragPredsFlattened->contains(sc.peptideStringWithMods)); ree;
-//
-//            const QVector<MS2Ion> &pred = fragPredsFlattened->value(sc.peptideStringWithMods);
-//
-//            scanFragPredsFlattened->insert(sc.peptideStringWithMods, pred);
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//    void removeNegativeDiscScores(QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight) {
-//
-//        QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsWeightFiltered;
-//        for (auto it = pepSeqVsWeight->begin(); it != pepSeqVsWeight->end(); it++) {
-//
-//            const PeptideStringWithMods &peptideStringWithMods = it.key();
-//            const TandemDeconvolverResult &res = it.value();
-//
-//            if (res.discScore < 0 || res.pVal > 0.05) {
-//                continue;
-//            }
-//
-//            pepSeqVsWeightFiltered.insert(peptideStringWithMods, res);
-//        }
-//
-//        *pepSeqVsWeight = pepSeqVsWeightFiltered;
-//    }
-//
-//}//namespace
-//Err MsFrameScoretron::deconvolveScan(
-//        const QVector<ScoredCandidate> &scoredCandidatesTargets,
-//        const ScanPoints &scanPointsDeisotoped,
-//        QVector<ScoredCandidate> *scoredCandidatesTargetsFiltered
-//        ) {
-//
-//    ERR_INIT
-//
-//    QMap<PeptideStringWithMods, QVector<MS2Ion>> scanFragPredsTopN;
-//    e = buildScanFragPreds(
-//            scoredCandidatesTargets,
-//            &m_fragPredsTopN,
-//            &scanFragPredsTopN
-//            ); ree
-//
-//    const int precision = 2;
-//    const double mzMax = 1400.0;
-//    const int iters = 4;
-//    const double stopTol = 1e-8;
-//    const double pVal = 0.05;
-//
-//    if (scanFragPredsTopN.isEmpty()) {
-//        ERR_RETURN
-//    }
-//
-//    TandemSpectraDeconvolvotron decon;
-//    e = decon.init(
-//            precision,
-//            mzMax,
-//            iters,
-//            stopTol,
-//            pVal
-//            ); ree
-//
-//    QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsWeight;
-//    e = decon.deconvolveTandemSpectra(scanPointsDeisotoped, scanFragPredsTopN, &pepSeqVsWeight); ree
-//
-//    removeNegativeDiscScores(&pepSeqVsWeight);
-//
-//    for (const ScoredCandidate &sc : scoredCandidatesTargets) {
-//
-//        if (!pepSeqVsWeight.contains(sc.peptideStringWithMods)) {
-//            continue;
-//        }
-//
-//        const TandemDeconvolverResult &tdr = pepSeqVsWeight.value(sc.peptideStringWithMods);
-//
-//        ScoredCandidate scNew = sc;
-//
-//        scNew.discScore = tdr.discScore;
-//        scNew.pVal = tdr.pVal;
-//        scNew.frameError = tdr.frameError;
-//        scNew.tTestVal = tdr.tTestVal;
-//
-//        scoredCandidatesTargetsFiltered->push_back(scNew);
-//    }
-//
-//    ERR_RETURN
-//}

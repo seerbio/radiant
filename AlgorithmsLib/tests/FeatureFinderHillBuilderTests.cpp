@@ -310,6 +310,9 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
+    e = featureFinderHillBuilder.refineHills(true);
+    QCOMPARE(e, eNoError);
+
     e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
     QCOMPARE(e, eNoError);
 

@@ -78,6 +78,7 @@ public:
 };
 
 
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHillBuilder {
 
 
@@ -86,6 +87,7 @@ public:
     friend class FeatureFinderHillBuilderTests;
 
     FeatureFinderHillBuilder();
+
     ~FeatureFinderHillBuilder();
 
     Err init(const FeatureFinderParameters &featureFinderParameters);
