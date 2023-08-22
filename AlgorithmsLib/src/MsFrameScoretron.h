@@ -200,6 +200,9 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak {
     int frameIndexMax = -1;
     int frameIndexStart = -1;
     int frameIndexEnd = -1;
+    int scanNumberMax = -1;
+    int scanNumberStart = -1;
+    int scanNumberEnd = -1;
     QVector<double> intensityVals;
     int rank = -1;
 

@@ -310,6 +310,14 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
 
         e = ErrorUtils::isFalse(peptideSequenceChargeKeyVsCandidatePeptide->contains(row.peptideSequenceChargeKey)); ree;
 
+        PeptideStringWithMods peptideStringWithMods;
+        Charge charge;
+        e = FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
+                row.peptideSequenceChargeKey,
+                &peptideStringWithMods,
+                &charge
+                ); ree;
+
         QVector<MS2Ion> ms2Ions;
         e = buildMzIons(
                 row,
@@ -318,6 +326,7 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
 
         CandidatePeptide candidatePeptide;
         candidatePeptide.totalFragmentCount = ms2Ions.size();
+        candidatePeptide.peptideStringWithMods = peptideStringWithMods;
 
         getTopNMostIntenseMs2Ions(
                 topNMs2Ions,
@@ -331,9 +340,9 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
         candidatePeptide.mass = row.mass;
         candidatePeptide.iRt = row.iRT;
         candidatePeptide.isDecoy = row.isDecoy;
+        candidatePeptide.charge = charge;
 
         peptideSequenceChargeKeyVsCandidatePeptide->insert(row.peptideSequenceChargeKey, candidatePeptide);
-
     }
 
     ERR_RETURN

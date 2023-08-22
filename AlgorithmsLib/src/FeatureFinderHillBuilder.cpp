@@ -15,20 +15,7 @@
 
 #include <QtConcurrent/QtConcurrent>
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
 #include <iostream>
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
-using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
-using rTreeBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreeBox, int> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
 class Q_DECL_HIDDEN FeatureFinderHillBuilder::Private
@@ -77,17 +64,14 @@ private:
     bool m_runParallel;
 
     QMap<ScanNumberIndex, ScanNumber> m_scanNumberIndexVsScanNumber;
-    RTree *m_rtree;
+
 
 };
 
 FeatureFinderHillBuilder::Private::Private()
-: m_runParallel(false)
-, m_rtree(nullptr){}
+: m_runParallel(false) {}
 
-FeatureFinderHillBuilder::Private::~Private(){
-    delete m_rtree;
-}
+FeatureFinderHillBuilder::Private::~Private(){}
 
 Err FeatureFinderHillBuilder::Private::init(const FeatureFinderParameters &featureFinderParameters) {
 
@@ -592,9 +576,6 @@ Err FeatureFinderHillBuilder::Private::buildHills(
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints
 ) {
 
-    delete m_rtree;
-    m_rtree = nullptr;
-
     QElapsedTimer et;
     et.start();
 
@@ -656,34 +637,35 @@ namespace {
 
         ERR_INIT
 
-        QVector<double> intensityVecSmoothed = _intensityVecSmoothed;
 
-//        if (peakIntegrationIndexes.size() > 1 || featureFinderHill.scanNumbers().front() < 1000) {
-//            ERR_RETURN
-//        }
-
-        if (peakIntegrationIndexes.size() != 0) {
+        if (peakIntegrationIndexes.isEmpty()) {
+            refinedHills->push_back(featureFinderHill);
             ERR_RETURN
         }
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
+            const int distance = pii.second - pii.first + 1;
 
+            const QVector<ScanNumberIndex> scanNumberIndexes
+                = featureFinderHill.scanNumberIndexes().mid(pii.first, distance);
+            const QVector<ScanNumber> scanNumbers
+                = featureFinderHill.scanNumbers().mid(pii.first, distance);
+            const QVector<double> intensities = featureFinderHill.intensities().mid(pii.first, distance);
 
+            FeatureFinderHill splitHill;
+            for (int i = 0; i < scanNumbers.size(); i++) {
 
+                splitHill.addPoint(
+                        scanNumberIndexes.at(i),
+                        scanNumbers.at(i),
+                        featureFinderHill.mzMean(),
+                        intensities.at(i)
+                        );
+            }
+
+            refinedHills->push_back(splitHill);
         }
-
-
-        qDebug() << featureFinderHill.intensities();
-        qDebug() << intensityVecSmoothed;
-        qDebug() << peakIntegrationIndexes;
-        qDebug() << featureFinderHill.scanNumberIndexes();
-        qDebug() << featureFinderHill.scanNumbers();
-        qDebug() << featureFinderHill.intensities().size() << featureFinderHill.scanNumberIndexes().size();
-        qDebug() << intensityVecSmoothed.size();
-        qDebug() << "****";
-
-
 
         ERR_RETURN
     }
@@ -744,9 +726,6 @@ namespace {
 Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
 
     ERR_INIT
-
-    delete m_rtree;
-    m_rtree = nullptr;
 
     e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree;
 
@@ -820,46 +799,7 @@ void FeatureFinderHillBuilder::Private::setRunParallel(bool runParallel) {
 
 
 
-Err FeatureFinderHillBuilder::Private::getHills(
-        FrameIndex frameIndexStart,
-        FrameIndex frameIndexEnd,
-        double mz,
-        double ppmTolerance,
-        QVector<FeatureFinderHill> *featureFinderHills
-        ) {
 
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(m_rtree->empty()); ree;
-
-    const double mzTolerance = MathUtils::calculatePPM(mz, ppmTolerance);
-    const double mzLo = mz - mzTolerance;
-    const double mzHi = mz + mzTolerance;
-
-    const rTreeBox queryBox(
-            rTreeCoor(frameIndexStart, mzLo),
-            rTreeCoor(frameIndexEnd, mzHi)
-    );
-
-    std::vector<rTreePoint> rTreeSearchResult;
-    m_rtree->query(
-            bgi::intersects(queryBox),
-            std::back_inserter(rTreeSearchResult)
-    );
-
-    const auto transformLogic = [&](const rTreePoint &p){
-        return m_idVsFeatureFinderHills.value(p.second);
-    };
-
-    std::transform(
-            rTreeSearchResult.begin(),
-            rTreeSearchResult.end(),
-            std::back_inserter(*featureFinderHills),
-            transformLogic
-            );
-
-    ERR_RETURN
-}
 
 Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
     ERR_INIT
@@ -1008,27 +948,6 @@ void FeatureFinderHillBuilder::setRunParallel(bool runParallel) {
 Err FeatureFinderHillBuilder::refineHills(bool useSmoothing) {
     ERR_INIT
     e = d_ptr->refineHills(useSmoothing); ree;
-    ERR_RETURN
-}
-
-Err FeatureFinderHillBuilder::getHills(
-        FrameIndex frameIndexStart,
-        FrameIndex frameIndexEnd,
-        double mz,
-        double ppmTolerance,
-        QVector<FeatureFinderHill> *featureFinderHills
-        ) {
-
-    ERR_INIT
-
-    e = d_ptr->getHills(
-            frameIndexStart,
-            frameIndexEnd,
-            mz,
-            ppmTolerance,
-            featureFinderHills
-            ); ree
-
     ERR_RETURN
 }
 

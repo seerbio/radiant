@@ -464,17 +464,17 @@ namespace {
         ERR_RETURN
     }
 
-    int calculateFrameIndexMaxMax(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
+    MS2IonPeak findBestMS2IonPeak(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
 
         const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
             return l.cosineSimToAnchor < r.cosineSimToAnchor;
         };
 
-        const int frameIndexMaxMax = std::max_element(
+        const MS2IonPeak frameIndexMaxMax = *std::max_element(
                 ms2IonPeaksBestCluster.rbegin(),
                 ms2IonPeaksBestCluster.rend(),
                 sortLogic
-        )->frameIndexMax;
+        );
 
         return frameIndexMaxMax;
     }
@@ -530,6 +530,8 @@ namespace {
         ERR_RETURN
     }
 
+
+
 }//namespace
 Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
@@ -553,7 +555,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         const CosineSimSum cosineSimSum = bestCluster.first;
         QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
 
-        const int frameIndexMaxMax = calculateFrameIndexMaxMax(ms2IonPeaksBestCluster);
+        const MS2IonPeak anchorMS2IonPeak = findBestMS2IonPeak(ms2IonPeaksBestCluster);
         const CandidatePeptide &candidatePeptide = m_fragPredsTopN.value(peptideStringWithMods);
 
         //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
@@ -573,9 +575,9 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         sc.cosineSimSum = cosineSimSum;
         sc.isDecoy = candidatePeptide.isDecoy;
         sc.mass = candidatePeptide.mass;
-//        sc.charge = static_cast<int>(std::round(sc.mass / m_msFrame.precursorMzTargetStartEnd().second));
-//        sc.scanNumber = scanNumber;
-//        sc.scanTime = scanTime;
+        sc.charge = candidatePeptide.charge;
+        sc.scanNumber = anchorMS2IonPeak.scanNumberMax;
+        sc.scanTime = m_scanNumberVsScanTime.value(sc.scanNumber);
         sc.theoreticalFragmentCount = candidatePeptide.totalFragmentCount;
         sc.iRTPredicted = candidatePeptide.iRt;
         sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
@@ -690,6 +692,9 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
                 ms2IonPeak.frameIndexMax = ffh.maxIntensityScanNumberIndex();
                 ms2IonPeak.frameIndexStart = ffh.scanNumberIndexMinMax().first;
                 ms2IonPeak.frameIndexEnd = ffh.scanNumberIndexMinMax().second;
+                ms2IonPeak.scanNumberMax = ffh.maxIntensityScanNumber();
+                ms2IonPeak.scanNumberStart = ffh.scanNumberMinMax().first;
+                ms2IonPeak.scanNumberEnd = ffh.scanNumberMinMax().second;
                 ms2IonPeak.intensityVals = ffh.intensities();
 
                 ms2IonPeak.mzFoundMean = ffh.mzMean();

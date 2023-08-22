@@ -4,7 +4,6 @@
 
 #include "FeatureFinderHill.h"
 
-#include "ErrorUtils.h"
 #include "MathUtils.h"
 
 
@@ -71,32 +70,4 @@ double FeatureFinderHill::intensityValueMax() const {
 
 QVector<double> FeatureFinderHill::mzVals() const {
     return m_mzVals;
-}
-
-void FeatureFinderHillUtils::sortFeatureFinderHillsPlussesIntensityDesc(QVector<FeatureFinderHillPlus> *featureFinderHills) {
-
-    const auto sortLogic = [](const FeatureFinderHillPlus &l, const FeatureFinderHillPlus &r){
-        return l.featureFinderHill.intensityValueMax() < r.featureFinderHill.intensityValueMax();
-    };
-
-    std::sort(
-            featureFinderHills->rbegin(),
-            featureFinderHills->rend(),
-            sortLogic
-            );
-}
-
-void ALGORITHMSLIB_EXPORTS FeatureFinderHillUtils::sortFeatureFinderHillsPlussesMzAsc(
-        QVector<FeatureFinderHillPlus>*featureFinderHills
-        ){
-
-    const auto sortLogic = [](const FeatureFinderHillPlus &l, const FeatureFinderHillPlus &r){
-        return l.featureFinderHill.mzMean() < r.featureFinderHill.mzMean();
-    };
-
-    std::sort(
-            featureFinderHills->begin(),
-            featureFinderHills->end(),
-            sortLogic
-            );
 }

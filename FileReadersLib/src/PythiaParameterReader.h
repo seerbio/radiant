@@ -127,7 +127,7 @@ struct PythiaParameters{
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
-    double cosineSimThreshold = 0.5;
+    double cosineSimThreshold = 0.9;
     double fragIntensityThreshold = 0.025;
 
     double pValThreshold = -1.0;

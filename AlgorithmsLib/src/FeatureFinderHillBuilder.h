@@ -98,14 +98,6 @@ public:
 
     Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
 
-    Err getHills(
-            FrameIndex frameIndexStart,
-            FrameIndex frameIndexEnd,
-            double mz,
-            double ppmTolerance,
-            QVector<FeatureFinderHill> *featureFinderHills
-            );
-
     void setRunParallel(bool runParallel);
 
     /*

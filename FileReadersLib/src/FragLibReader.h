@@ -89,6 +89,8 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 };
 
 struct CandidatePeptide {
+    PeptideStringWithMods peptideStringWithMods;
+    Charge charge = -1;
     QVector<MS2Ion> ms2Ions;
     bool isDecoy = false;
     double mass = -1.0;
