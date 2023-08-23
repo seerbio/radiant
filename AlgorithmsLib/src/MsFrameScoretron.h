@@ -197,6 +197,7 @@ struct FILEREADERSLIB_EXPORTS MS2IonPeak {
     PeptideStringWithMods peptideStringWithMods;
     double mzSearched = -1.0;
     double theoIntensity = -1.0;
+    double scanTimeApex = -1.0;
     int frameIndexMax = -1;
     int frameIndexStart = -1;
     int frameIndexEnd = -1;

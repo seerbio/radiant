@@ -669,9 +669,12 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
             const double mzMin = ms2Ion.mz - mzTol;
             const double mzMax = ms2Ion.mz + mzTol;
 
+            const double scanTimeMin = scanTime - scanTimeBuffer;
+            const double scanTimeMax = scanTime + scanTimeBuffer;
+
             const rTreeBox queryBox(
-                    rTreeCoor(mzMin, scanTime - scanTimeBuffer),
-                    rTreeCoor(mzMax, scanTime + scanTimeBuffer)
+                    rTreeCoor(mzMin, scanTimeMin),
+                    rTreeCoor(mzMax, scanTimeMax)
             );
 
             std::vector<rTreePoint> rTreeSearchResult;
@@ -684,9 +687,16 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
 
                 const FeatureFinderHill &ffh = idVsFeatureFinderHills.value(rtp.second);
 
+                const double scanTimeApexHill = m_scanNumberVsScanTime.value(ffh.maxIntensityScanNumber());
+
+                if (std::abs(scanTime - scanTimeApexHill) > scanTimeBuffer) {
+                    continue;
+                }
+
                 MS2IonPeak ms2IonPeak;
                 ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
                 ms2IonPeak.mzSearched = ms2Ion.mz;
+                ms2IonPeak.scanTimeApex = scanTimeApexHill;
                 ms2IonPeak.theoIntensity = ms2Ion.intensity;
                 ms2IonPeak.rank = ms2Ion.rank;
                 ms2IonPeak.frameIndexMax = ffh.maxIntensityScanNumberIndex();
