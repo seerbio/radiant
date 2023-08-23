@@ -36,9 +36,9 @@ Uncomment "#define _NO_THERMORAW" in RAWReader.cpp, MSReader.cpp and MSReader.h 
 #define Min(x, y) ((x) < (y) ? (x) : (y))
 #define Max(x, y) ((x) > (y) ? (x) : (y))
 #define Abs(x) ((x) >= 0 ? (x) : (-(x)))
-#define Sgn(x) ((x) >= 0.0 ? (1) : (-1))
+
 #define Sqr(x) ((x) * (x))
-#define Cube(x) ((x) * Sqr(x))
+
 
 #define Throw(x) { qDebug() << "ERROR: " << __FILE__ << ": " << __LINE__ << ": " << x << "\n"; exit(-1); }
 #define Warning(x) { if (Verbose >= 1) qDebug() << "WARNING: " << x << "\n"; }
@@ -61,158 +61,45 @@ const double INF = 10000000.0;
 
 int Threads = 1;
 int iN = 12;
-int nnIter = 11;
 
-bool LCAllScores = false;
-
-bool Standardise = true;
-float StandardisationScale = 1.0;
-
-int QuantMode = 0; // 0 - full peak integration, 1 - fixed window
-double PeakBoundary = 5.0;
-bool NoIfsRemoval = false;
 bool NoFragmentSelectionForQuant = false;
-bool QuantFitProfiles = false;
-bool QuantAdjacentBins = true;
+
 bool RestrictFragments = false;
 
-bool BatchMode = true;
-int MinBatch = 2000;
-int MaxBatches = 10000;
-int Batches = 1;
 
 const int MaxLibSize = 1000000;
 
-bool RTProfiling = false;
-
-int ScanFactor = 150;
-int WindowRadius = 0;
-double ScanScale = 2.2;
-bool InferWindow = true;
-bool IndividualWindows = false;
-bool Calibrate = true;
-
-const int MaxCycleLength = 2000;
-double MinPeakHeight = 0.01;
-
-int iRTTargetTopPrecursors = 50;
-int iRTTopPrecursors;
-int iRTRefTopPrecursors = 250;
-double iRTMaxQvalue = 0.1; // only precursors with lower q-value are used for iRT estimation
-double MassCalQvalue = 0.1;
-double MassCalMs1Corr = 0.90;
-int MassCalBinsMax = 1;
-int MassCalBins = 1;
-int MassCalBinsMs1 = 1;
-int MinMassCalBin = 500;
-bool MassCalFilter = true;
-
-int RTSegments = 20;
-int MinRTPredBin = 20;
-
-bool ForceScanningSWATH = false;
-bool ForceNormalSWATH = false;
-bool UseQ1 = true;
-bool ForceQ1 = false;
-bool Q1Cal = false;
-bool Q1CalLinear = false;
-int MaxQ1Bins = 3;
-int MaxIfsSpan = 4;
-bool ForceQ1Apex = false;
-
-bool RefCal = false;
-int RTWindowIter = 4;
-const int RTRefWindowFactor = 10;
-const int RTWindowFactor = 40;
-const double RTWindowLoss = 0.20;
-const double RTWindowMargin = 2.0;
-double MinRTWinFactor = 1.0;
-int RTWinSearchMinRef = 10;
-int RTWinSearchMinCal = 100;
-
-int nnBagging = 12;
-int nnEpochs = 1;
-int nnHidden = 5;
-double nnLearning = 0.003;
-double Regularisation = E;
-bool nnFilter = true;
-bool nnCrossVal = false;
-
-bool TightMassAcc = true;
-bool TightMassAauxForCal = false;
-double TightMassAccRatioOne = 0.45;
-double TightMassAccRatioTwo = 0.2;
 
 bool UseIsotopes = true;
-int IDsInterference = 1;
-double InterferenceCorrMargin = 3.0;
-bool StrictIntRemoval = false;
-bool MS2Range = true;
-bool GuideClassifier = false;
 
-bool RTWindowedSearch = true;
-bool DisableRT = false;
-
-const int CalibrationIter = 4;
-bool ForceMassAcc = false;
-bool IndividualMassAcc = false;
-double CalibrationMassAccuracy = 100.0 / 1000000.0;
 double GlobalMassAccuracy = 20.0 / 1000000.0;
 double GlobalMassAccuracyMs1 = 20.0 / 1000000.0;
 double GeneratorAccuracy = 5.0 / 1000000.0;
 double SptxtMassAccuracy = 5.0 / 1000000.0;
-double MaxProfilingQvalue = 0.001;
 double MaxQuantQvalue = 0.01;
-double ProteinQuantQvalue = 0.01;
 double ProteinIDQvalue = 0.01;
 double ProteinQCalcQvalue = 0.02; // must be 0.01 or greater
-double PeakApexEvidence = 0.99; // force peak apexes to be close to the detection evidence maxima
-double MinCorrScore = 0.5;
-double MinMs1Corr = -INF;
-double MaxCorrDiff = 2.0;
-bool ForceMs1 = false;
-bool MS1PeakSelection = true;
 bool MaxLFQ = true;
-int TopN = 1;
+
 
 bool TranslatePeaks = false; // translate peaks between precursors belonging to the same elution group
 bool ExcludeSharedFragments = true; // exclude from quantification fragments that are shared between light and heavy labelled peptides
 
-int MinMassDeltaCal = 20;
-int MinMassDeltaCalRef = 8;
 
-int MinCalRec = 100;
-int MinCal = 1000;
-int MinClassifier = 2000;
-
-double FilterFactor = 1.5;
 
 bool Convert = false;
-bool MGF = false;
-bool Reannotate = false;
-bool UseRTInfo = false; // use .quant files created previously for RT profiling
-bool UseQuant = false; // use .quant files created previously; implies UseRTInfo
-bool QuantOnly = false; // quantification will be performed anew using identification info from .quant files
-bool ReportOnly = false; // generate report from quant files
-bool GenRef = false; // update the .ref file with newly computed data
-std::string args, lib_file, learn_lib_file, out_file = "report.tsv", prosit_file = "lib.prosit.csv", predictor_file = "lib.predicted.speclib", out_lib_file = "lib.tsv", out_dir = "", out_gene_file = "report.genes.tsv", temp_folder = "";
-std::string ref_file, gen_ref_file, all_fastas;
-std::vector<std::string> ms_files, fasta_files, fasta_filter_files;
-std::set<std::string> failed_files;
+std::string args, lib_file, prosit_file = "lib.prosit.csv", predictor_file = "lib.predicted.speclib", out_lib_file = "lib.tsv", temp_folder = "";
+std::vector<std::string> ms_files, fasta_files;
+
 bool FastaSearch = false;
 bool GenSpecLib = false;
-bool ProfileQValue = true;
-bool RTLearnLib = false;
+
 bool SaveOriginalLib = false;
-bool SaveCalInfo = false;
-bool iRTOutputLibrary = true;
+
 bool PredictorSaved = false;
-bool LibrarySaveRT = false;
+
 
 int Verbose = 1;
-bool ExportWindows = false;
-bool ExportLibrary = false;
-bool ExportDecoys = false;
 bool GuideLibrary = false;
 bool OverwriteLibraryPGs = true;
 bool InSilicoRTPrediction = true;
@@ -223,10 +110,6 @@ bool GenFrExclusionInfo = false;
 
 bool ExportProsit = false;
 
-int VisWindowRadius = 8;
-std::vector<std::string> Visualise;
-bool SaveXICs = false;
-int XICRadius = 20;
 
 enum {
     loss_none, loss_H2O, loss_NH3, loss_CO,
@@ -262,9 +145,6 @@ const double Loss[loss_other + 1] = { 0.0, 18.011113035, 17.026548, 27.994915, 0
 int MaxRecCharge = 19;
 int MaxRecLoss = loss_N;
 
-double MinMs1RangeOverlap = 0.25;
-double QuadrupoleError = 1.0;
-
 std::vector<int16_t> Cut = { ('K' << 8) | '*', ('R' << 8) | '*' }, NoCut;
 
 int MissedCleavages = 1;
@@ -272,57 +152,32 @@ int MinPeptideLength = 7;
 int MaxPeptideLength = 30;
 bool NMetExcision = false;
 bool AddLosses = false;
-bool OriginalModNames = false;
 int MaxVarMods = 1;
 int MinFrAAs = 3;
 double MinFrMz = 200.0, MaxFrMz = 1800.0;
 double MinPrMz = 300.0, MaxPrMz = 1800.0;
 double MinGenFrInt = 0.00001;
-double MinRelFrHeight = 0.00001;
-double MinGenFrCorr = 0.5;
-double MinRareFrCorr = 0.95;
-double FrCorrBSeriesPenalty = 0.1;
 int MinPrCharge = 1;
 int MaxPrCharge = 10;
 int MinGenFrNum = 4;
-int MinOutFrNum = 4;
-int MinSearchFrNum = 3;
 const int MaxGenCharge = 4;
-
-double QFilter = 1.0;
-double RubbishFilter = 0.5;
-int MinRubbishFactor = 5;
-int MinNonRubbish = 5000;
-
 bool InferPGs = true;
 bool PGsInferred = false;
 
 double ReportQValue = 0.01;
-double ReportProteinQValue = 1.0;
 double MatrixQValue = 0.01;
 int PGLevel = 2, PGLevelSet = PGLevel; // 0 - ids, 1 - names, 2 - genes
-std::vector<std::string> ImplicitProteinGrouping = { "isoform IDs", "protein names", "genes" };
 bool IndividualReports = false;
 bool SwissProtPriority = true;
 bool ForceSwissProt = false;
 bool FastaProtDuplicates = false;
 bool SpeciesGenes = false;
 
-bool ExtendedReport = true;
-bool ReportLibraryInfo = false;
-bool DecoyReport = false;
-bool SaveCandidatePSMs = false;
-bool MobilityReport = false;
-bool SaveMatrices = false;
-
-bool RemoveQuant = false;
 bool QuantInMem = false;
 
 #define Q1 true
 #define AAS true
-#define LOGSC false
 #define REPORT_SCORES false
-#define EXTERNAL 1
 #define ELUTION_PROFILE false
 const int ElutionProfileRadius = 10;
 
@@ -602,7 +457,6 @@ std::vector<std::string> oh = { // output headers
 };
 
 double NormalisationQvalue = 0.01;
-double NormalisationPeptidesFraction = 0.4;
 bool LocalNormalisation = true;
 bool NoRTDepNorm = false;
 bool NoSigDepNorm = true;
@@ -610,46 +464,9 @@ int LocNormRadius = 250;
 double LocNormMax = 2.0;
 
 #define HASH 0
-#if (HASH > 0)
-unsigned int hash_map[0x10000];
-void init_hash() {
-	std::mt19937_64 gen(1);
-	for (int i = 0; i < 0x10000; i++) hash_map[i] = gen();
-}
-template<class T> inline unsigned int hashS(T x) { // T mist be 32-bit
-	assert(sizeof(T) == 4);
-	int y = *((int*)(&x));
-	return hash_map[(unsigned int)(y & 0xFFFF)] ^ hash_map[(unsigned int)((y >> 16) & 0xFFFF)];
-}
-inline unsigned int hashA(int * data, int n) {
-	unsigned int res = 0;
-	for (int i = 0; i < n; i++) res ^= hash_map[(unsigned int)(data[i] & 0xFFFF)] ^ hash_map[(unsigned int)((data[i] >> 16) & 0xFFFF)];
-	return res;
-}
-unsigned int hashD(float **dataset, int n, int m) {
-	unsigned int res = 0;
-	for (int i = 0; i < n; i++) res ^= hashA((int*)(dataset[i]), m);
-	return res;
-}
-#endif
+
 
 bool Predictor = false;
-#ifdef PREDICTOR
-namespace predictor {
-	extern void init_predictor(int id_range, int threads);
-	extern bool code_from_precursor(vector<long long> &code, const string &precursor, string &temp_s, vector<string> &temp_sv, const vector<pair<string, int> > &dict);
-
-	class Predictor {
-	public:
-		Predictor();
-		void set_instance(int instance_id);
-		map<string, int> get_aa_indices();
-		void predict(vector<vector<float> > &spectra, vector<pair<vector<long long>, int> > &codes, int mode, bool verbose = false);
-	};
-}
-
-predictor::Predictor P;
-#endif
 
 class Parameter {
 public:
@@ -949,42 +766,6 @@ int AA_index[256];
 const char * AAs = "GAVLIFMPWSCTYHKRQEND";
 const char * MutateAAto = "LLLVVLLLLTSSSSLLNDQE";
 
-void init_all() {
-    for (int i = 0; i < 256; i++) AA_index[i] = 0, AA[i] = 0.0;
-
-    AA['G'] = 57.021464;
-    AA['A'] = 71.037114;
-    AA['V'] = 99.068414;
-    AA['L'] = 113.084064;
-    AA['I'] = 113.084064;
-
-    AA['F'] = 147.068414;
-    AA['M'] = 131.040485;
-    AA['P'] = 97.052764;
-    AA['W'] = 186.079313;
-    AA['S'] = 87.032028;
-
-    AA['C'] = 103.009185;
-    AA['T'] = 101.047679;
-    AA['Y'] = 163.06332;
-    AA['H'] = 137.058912;
-    AA['K'] = 128.094963;
-
-    AA['R'] = 156.101111;
-    AA['Q'] = 128.058578;
-    AA['E'] = 129.042593;
-    AA['N'] = 114.042927;
-    AA['D'] = 115.026943;
-
-    AA['U'] = 150.95363;
-    AA['X'] = 196.995499;
-
-    for (int i = 0; i < 20; i++)
-        AA_index[AAs[i]] = i;
-    AA_index['U'] = AA_index['C'];
-    AA_index['X'] = AA_index['M'];
-}
-
 inline bool do_cut(char aa, char next) {
     bool cut = false;
     int16_t query = (aa << 8) | '*';
@@ -1277,30 +1058,6 @@ inline std::string pep_name(const std::string &pr_name) {
     for (i = result.size() - 1; i >= 0; i--) if (result[i] < '0' || result[i] > '9') break;
     result.resize(i + 1);
     return result;
-}
-
-void count_rt_aas(std::vector<double> &count, const std::string &name) {
-    int i, pos, l = peptide_length(name);
-    double scale = 1.0 / (double)l;
-
-    for (i = pos = 0; i < name.size(); i++) {
-        char symbol = name[i];
-        if (symbol < 'A' || symbol > 'Z') {
-            if (symbol != '(' && symbol != '[') continue;
-            i++;
-
-            int end = closing_bracket(name, symbol, i);
-            if (end == std::string::npos) qDebug() << QStringLiteral("incorrect peptide name format: ");
-            count[mod_rt_index(name.substr(i, end - i))]++;
-            i = end;
-            continue;
-        }
-        count[aa_rt_nterm(symbol, pos)] += 1.0;
-        count[aa_pointsterm(symbol, l - 1 - pos)] += 1.0;
-        count[aa_rt_nterm_scaled(symbol, pos)] += scale;
-        count[aa_pointsterm_scaled(symbol, l - 1 - pos)] += scale;
-        pos++;
-    }
 }
 
 double predict_irt(const std::string &name) {
@@ -2140,6 +1897,7 @@ std::vector<Quant> quants;
 
 
 class Peptide {
+
 public:
     int index = 0, charge = 0, length = 0, no_cal = 0;
     float mz = 0.0, iRT = 0.0, sRT = 0.0, lib_qvalue = 0.0;
@@ -2527,31 +2285,6 @@ struct NormInfo {
 };
 std::vector<NormInfo> norm_ind;
 
-struct XIC { // for visualisation
-    float RT = 0.0; // apex RT
-    float qvalue = 0.0;
-    float pr_mz = 0.0, fr_mz = 0.0; // masses used for extraction (i.e. mass corrected), not reference masses
-    int run = -1, pr = -1, level = 0; // run index, precursor index in the library, MS level
-    Product fr; // fragment info, if MS2 XIC
-    std::vector<std::pair<float, float> > peaks; // RT, intensity pairs
-
-    XIC() {}
-    inline friend bool operator < (const XIC& left, const XIC& right) {
-        if (left.pr < right.pr) return true;
-        if (left.pr == right.pr) {
-            if (left.run < right.run) return true;
-            if (left.run == right.run && left.fr < right.fr) return true;
-        }
-        return false;
-    }
-    inline friend bool operator == (const XIC& left, const XIC& right) {
-        return (left.pr == right.pr && left.run == right.run && !(left.fr < right.fr) && !(right.fr < left.fr));
-    }
-
-    inline int size_in_bytes() { return ((char*)&peaks) - ((char*)&RT) + sizeof(int) + peaks.size() * sizeof(std::pair<float, float>); }
-};
-
-
 const int fFromFasta = 1 << 0;
 const int fPredictedSpectrum = 1 << 1;
 const int fPredictedRT = 1 << 2;
@@ -2818,155 +2551,6 @@ public:
         if (version <= -1 && in.peek() != std::char_traits<char>::eof()) read_vector(in, elution_groups);
     }
 
-    void generate_spectra() {
-        for (int i = 0; i < entries.size(); i++)
-            if (entries[i].lock.set()) entries[i].generate();
-    }
-
-    void generate_all() {
-        int i;
-        if (Threads > 1) {
-            std::vector<std::thread> threads;
-            for (i = 0; i < Threads; i++) threads.push_back(std::thread(&Library::generate_spectra, this));
-            for (i = 0; i < Threads; i++) threads[i].join();
-        } else generate_spectra();
-        for (i = 0; i < entries.size(); i++) entries[i].lock.free();
-    }
-
-#ifdef PREDICTOR
-    void smp_generate_codes(std::vector<std::pair<std::vector<long long>, int> > *_codes, std::vector<std::pair<std::string, int> > *_dict, std::vector<Lock> *_locks) {
-		std::string temp_s;
-		std::vector<std::string> temp_sv;
-		auto &codes = *_codes;
-		auto &dict = *_dict;
-		auto &locks = *_locks;
-
-		int skipped = 0;
-		for (int i = 0; i < entries.size(); i++) if (locks[i].set()) {
-			auto &e = entries[i];
-			predictor::code_from_precursor(codes[i].first, to_charged_eg(e.name, e.target.charge), temp_s, temp_sv, dict);
-			codes[i].second = i;
-		}
-	}
-
-	void smp_decode_spectra(std::vector<std::vector<float> > *_spectra, std::vector<int> *_decoder, int max_frc, std::vector<Lock> *_locks) {
-		auto &spectra = *_spectra;
-		auto &decoder = *_decoder;
-		auto &locks = *_locks;
-		int i, j, cnt;
-
-		std::vector<Ion> ions, filtered;
-		for (i = 0; i < entries.size(); i++) if (locks[i].set()) {
-			int ind = decoder[i];
-			if (ind < 0) continue;
-
-			auto &e = entries[i];
-			auto &sp = spectra[ind];
-
-			int tot = sp.size(), L = tot / (2 * max_frc);
-			if (tot < MinGenFrNum) continue;
-
-			ions.resize(tot); memset(&(ions[0]), 0, tot * sizeof(Ion));
-			for (int c = 1; c <= max_frc; c++) for (j = 0; j < L; j++) {
-				int index = L * (c - 1) + j;
-				ions[index] = Ion(fTypeY, j + 1, loss_none, c, sp[index]); // trick with writing intensity in the m/z field of class Ion for later sorting
-				index += L * max_frc;
-				ions[index] = Ion(fTypeB, j + 3, loss_none, c, sp[index]);
-			}
-
-			std::sort(ions.begin(), ions.end(), [&](const Ion &x, const Ion &y) { return x.mz > y.mz; });
-			if (ions[MinGenFrNum - 1].mz - E <= E) continue;
-			double margin = Min(ions[0].mz * 0.001, ions[MinGenFrNum - 1].mz - E);
-			filtered.clear(); for (auto &ion : ions) if (ion.mz > margin && (ion.type == fTypeY ? (L + 3 - ion.index) : ion.index) >= MinFrAAs) filtered.push_back(ion);
-			auto frs = generate_fragments(get_sequence(e.name), filtered, e.target.charge);
-			for (j = cnt = 0; j < frs.size(); j++) if (frs[j].mz >= MinFrMz && frs[j].mz <= MaxFrMz) cnt++;
-			e.target.fragments.resize(Min(cnt, auxF));
-			for (j = cnt = 0; j < frs.size(); j++) if (frs[j].mz >= MinFrMz && frs[j].mz <= MaxFrMz) {
-				e.target.fragments[cnt++] = Product(frs[j].mz, filtered[j].mz, filtered[j].charge, filtered[j].type, filtered[j].index, loss_none);
-				if (cnt >= auxF) break;
-			}
-			e.entry_flags |= fPredictedSpectrum;
-
-			e.generate_decoy();
-			e.init();
-		}
-	}
-
-	void generate_predictions() {
-		if (!entries.size()) return;
-		predictor::init_predictor(1, Threads);
-		P.set_instance(0);
-		int i, j;
-
-		if (Verbose >= 1) Time(), std::cout << "Encoding peptides for spectra and RTs prediction\n";
-		auto dict_map = P.get_aa_indices();
-		std::vector<std::pair<std::string, int> > dict(dict_map.begin(), dict_map.end());
-		std::vector<std::pair<std::vector<long long>, int> > codes(entries.size());
-		std::vector<Lock> locks(entries.size());
-
-		{
-			std::vector<std::thread> threads;
-			for (i = 0; i < Threads; i++) threads.push_back(std::thread(&Library::smp_generate_codes, this, &codes, &dict, &locks));
-			for (i = 0; i < Threads; i++) threads[i].join();
-			for (auto &L : locks) L.free();
-		}
-
-		int skipped = 0;
-		for (auto &c : codes) if (!c.first.size()) skipped++;
-		if (skipped) cout << "WARNING: skipping " << skipped << " precursors; unrecognised modifications?\n";
-
-		auto rt_codes = codes;
-		std::sort(codes.begin(), codes.end(), [](auto &x, auto &y) { return x.first < y.first; });
-		for (auto &c : rt_codes) if (c.first.size()) c.first[0] = 0;
-		std::sort(rt_codes.begin(), rt_codes.end(), [](auto &x, auto &y) { return x.first < y.first; });
-		std::vector<int> fr_decoder(entries.size(), -1), rt_decoder(entries.size(), -1);
-		int last_fr = 0, last_rt = 0;
-		auto *code = &codes[0], *rt_code = &rt_codes[0];
-		for (i = 0; i < codes.size(); i++) {
-			auto *curr = &codes[i];
-			bool flag = (i == 0);
-			if (!curr->first.size()) goto rt;
-			if (!flag) if (curr->first != code->first) flag = true;
-			if (!flag) curr->first.clear();
-			else last_fr = i, code = curr;
-			fr_decoder[curr->second] = last_fr;
-
-		rt:
-			curr = &rt_codes[i];
-			if (!curr->first.size()) continue;
-			flag = (i == 0);
-			if (!flag) if (curr->first != rt_code->first) flag = true;
-			if (!flag) curr->first.clear();
-			else last_rt = i, rt_code = curr;
-			rt_decoder[curr->second] = last_rt;
-		}
-
-		std::vector<std::vector<float> > spectra, rts;
-		try {
-			if (Verbose >= 1) Time(), std::cout << "Predicting spectra\n";
-			P.predict(spectra, codes, 1, Verbose >= 3);
-			if (Verbose >= 1) Time(), std::cout << "Predicting RTs\n";
-			P.predict(rts, rt_codes, 2, Verbose >= 3);
-		} catch (std::exception &e) { std::cout << "ERROR: " << e.what() << '\n'; }
-
-		if (Verbose >= 1) Time(), std::cout << "Decoding predicted spectra\n";
-		{
-			std::vector<std::thread> threads;
-			for (i = 0; i < Threads; i++) threads.push_back(std::thread(&Library::smp_decode_spectra, this, &spectra, &fr_decoder, 3, &locks));
-			for (i = 0; i < Threads; i++) threads[i].join();
-		}
-
-		if (Verbose >= 1) Time(), std::cout << "Decoding RTs\n";
-		for (i = 0; i < entries.size(); i++) {
-			int ind = rt_decoder[i];
-			if (ind >= 0) if (rts[ind].size()) {
-				entries[i].target.iRT = entries[i].target.sRT = rts[ind][0] * 243.19 - 58.4;
-				entries[i].entry_flags |= fPredictedRT;
-			}
-		}
-	}
-#endif
-
     class Info {
     public:
         Library * lib;
@@ -3105,334 +2689,6 @@ public:
             index();
         }
 
-        void quantify() {
-            int i, j, k, m, pos;
-
-            if (Verbose >= 1) Time(), qDebug() << "Quantifying peptides\n";
-            std::vector<std::pair<float, int> > fr_score(1000), fr_ordered(1000);
-            std::vector<bool> exclude(1024);
-            for (auto it = map.begin(); it != map.end(); it++) {
-                auto v = &(it->second);
-                int pr_index = it->first;
-                auto &lib_e = lib->entries[pr_index].target;
-
-                fr_score.clear();
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) if (jt->second.pr.qvalue <= MaxQuantQvalue) {
-                        for (i = 0; i < jt->second.fr_n; i++) {
-                            int ind = jt->second.fr[i].index;
-                            if (ind >= fr_score.size()) fr_score.resize(ind + 1, std::pair<float, int>(0.0, 0));
-                            fr_score[ind].first += jt->second.fr[i].corr;
-                            fr_score[ind].second++;
-                        }
-                    }
-                for (auto &s : fr_score) if (s.second) s.first /= (double)s.second;
-
-                if (ExcludeSharedFragments) { // exclude (from quantification) fragments shared by peptides in the same elution group
-                    int eg = lib->elution_groups[pr_index];
-                    auto &ce = lib->co_elution_index[eg];
-                    for (int pos = ce.first; pos < ce.first + ce.second; pos++) {
-                        int next = lib->co_elution[pos];
-                        if (next != pr_index && lib->entries[next].target.charge == lib->entries[pr_index].target.charge) { // difference only in the label
-                            auto &lf = lib_e;
-                            auto &ls = lib->entries[next].target;
-                            for (i = 0; i < lf.fragments.size(); i++) {
-                                double margin = GeneratorAccuracy * lf.fragments[i].mz;
-                                bool flag = false;
-                                for (j = 0; j < ls.fragments.size(); j++)
-                                    if (Abs(lf.fragments[i].mz - ls.fragments[j].mz) < margin) {
-                                        flag = true;
-                                        break;
-                                    }
-                                if (flag) fr_score[i].first -= 2.0;
-                            }
-                        }
-                    }
-                }
-
-                if (RestrictFragments) { // exclude fragments from quantification based on their library annotation
-                    auto &frs = lib_e.fragments;
-                    assert(fr_score.size() <= frs.size());
-                    for (j = 0; j < fr_score.size(); j++) if (frs[j].type & fExclude) fr_score[j].first -= INF;
-                }
-
-                fr_ordered.resize(fr_score.size());
-                fr_ordered.assign(fr_score.begin(), fr_score.end());
-                std::sort(fr_ordered.begin(), fr_ordered.end());
-                for (pos = fr_ordered.size() - 3; pos < fr_ordered.size() - 1; pos++) if (fr_ordered[pos].first > -1.0 + E) break;
-                double margin = Max(-INF / 2.0, fr_ordered[pos].first - E);
-                if (NoFragmentSelectionForQuant) margin = -INF / 2.0;
-                if (GenFrExclusionInfo) for (j = 0; j < fr_score.size(); j++) if (fr_score[j].second) {
-                            auto &fr = lib_e.fragments[j];
-                            if (fr_score[j].first >= margin) fr.type &= ~fExclude;
-                            else fr.type |= fExclude;
-                        }
-
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    for (i = 0, jt->second.pr.quantity = jt->second.pr.ratio = jt->second.pr.quality = 0.0; i < jt->second.fr_n; i++) {
-                        int ind = jt->second.fr[i].index;
-                        if (fr_score[ind].first >= margin) {
-                            jt->second.pr.quantity += jt->second.fr[i].quantity[qFiltered];
-                            jt->second.pr.quality += jt->second.fr[i].corr * jt->second.fr[i].quantity[qFiltered];
-                        }
-                    }
-                    if (jt->second.pr.quantity > E) jt->second.pr.quality /= jt->second.pr.quantity;
-                    jt->second.pr.norm = jt->second.pr.level = jt->second.pr.quantity;
-                }
-            }
-
-            if (TranslatePeaks) { // calculate ratios between labelled and unlabelled peptides; requires TranslatePeaks to ensure co-elution
-                for (auto it = map.begin(); it != map.end(); it++) {
-                    auto v = &(it->second);
-                    int pr_index = it->first;
-                    auto &lib_e = lib->entries[pr_index].target;
-
-                    if (lib->entries[pr_index].entry_flags & fFromFasta) continue; // only spectral library entries
-
-                    int eg = lib->elution_groups[pr_index];
-                    auto &ce = lib->co_elution_index[eg];
-
-                    exclude.clear();
-                    if (ExcludeSharedFragments) { // exclude (from quantification) fragments shared by peptides in the same elution group
-                        int eg = lib->elution_groups[pr_index];
-                        auto &ce = lib->co_elution_index[eg];
-                        for (int pos = ce.first; pos < ce.first + ce.second; pos++) {
-                            int next = lib->co_elution[pos];
-                            if (next != pr_index && lib->entries[next].target.charge == lib->entries[pr_index].target.charge) { // difference only in the label
-                                auto &lf = lib_e;
-                                auto &ls = lib->entries[next].target;
-                                for (i = 0; i < lf.fragments.size(); i++) {
-                                    double margin = GeneratorAccuracy * lf.fragments[i].mz;
-                                    bool flag = false;
-                                    for (j = 0; j < ls.fragments.size(); j++)
-                                        if (Abs(lf.fragments[i].mz - ls.fragments[j].mz) < margin) {
-                                            flag = true;
-                                            break;
-                                        }
-                                    if (flag) {
-                                        if (i >= exclude.size()) exclude.resize(i + 1, false);
-                                        exclude[i] = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    const int fr_n = 3;
-                    std::vector<float> fratio(fr_n);
-                    for (int pos = ce.first; pos < ce.first + ce.second; pos++) {
-                        int next = lib->co_elution[pos];
-                        if (next != pr_index) if (lib->entries[next].target.charge == lib->entries[pr_index].target.charge) {
-                                auto p = map.find(next);
-                                if (p != map.end()) if (p->first == next) {
-                                        auto nv = &(p->second);
-                                        auto kt = (*nv).begin();
-                                        for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                                            for (; kt != (*nv).end(); kt++) if (kt->first >= jt->first) break;
-                                            if (kt->first == jt->first) {
-                                                fr_score.clear();
-                                                for (i = 0; i < jt->second.fr_n; i++) {
-                                                    int ind = jt->second.fr[i].index;
-                                                    if (ind >= fr_score.size()) fr_score.resize(ind + 1, std::pair<float, int>(0.0, 0));
-                                                    fr_score[ind].first = jt->second.fr[i].corr, fr_score[ind].second = lib->entries[pr_index].target.fragments[ind].ion_code();
-                                                }
-                                                for (i = 0; i < kt->second.fr_n; i++) {
-                                                    int ind = kt->second.fr[i].index;
-                                                    if (ind >= fr_score.size()) fr_score.resize(ind + 1, std::pair<float, int>(0.0, 0));
-                                                    if (fr_score[ind].second != lib->entries[next].target.fragments[ind].ion_code()) fr_score[i].first = -INF;
-                                                    else if (kt->second.fr[i].corr < fr_score[ind].first) fr_score[ind].first = kt->second.fr[i].corr;
-                                                }
-                                                for (i = 0; i < fr_score.size(); i++) {
-                                                    fr_score[i].second = i;
-                                                    if (i < exclude.size()) if (exclude[i]) fr_score[i].first -= INF * 0.5;
-                                                }
-                                                std::sort(fr_score.begin(), fr_score.end());
-                                                if (fr_score.size()) if (fr_score[fr_score.size() - 1].first > E) {
-                                                        int fcnt = 0;
-                                                        float f1 = 0.0, f2 = 0.0, f1f[fr_n], f2f[fr_n];
-                                                        for (i = 0; i < fr_n; i++) f1f[i] = f2f[i] = 0.0;
-                                                        for (int ifr = fr_score.size() - 1; ifr >= 0 && ifr >= fr_score.size() - fr_n; ifr--) {
-                                                            if (ifr < fr_score.size() - 1) if (fr_score[ifr].first < 0.8) break;
-                                                            int fr = fr_score[ifr].second;
-                                                            for (i = 0; i < jt->second.fr_n; i++) if (jt->second.fr[i].index == fr) {
-                                                                    f1f[fcnt] += jt->second.fr[i].quantity[qFiltered];
-                                                                    break;
-                                                                }
-                                                            for (i = 0; i < kt->second.fr_n; i++) if (kt->second.fr[i].index == fr) {
-                                                                    f2f[fcnt] += kt->second.fr[i].quantity[qFiltered];
-                                                                    break;
-                                                                }
-                                                            fcnt++;
-                                                            if (fcnt >= fr_n) break;
-                                                        }
-                                                        fratio.resize(fr_n);
-                                                        for (i = fcnt = 0; i < fr_n; i++) if (f1f[i] > E) fratio[fcnt++] = f2f[i] / f1f[i];
-                                                        if (fcnt <= 2) {
-                                                            for (i = 0; i < fr_n; i++) f1 += f1f[i], f2 += f2f[i];
-                                                            if (f1 > E) jt->second.pr.ratio += (jt->second.pr.quantity * f2) / f1;
-                                                        } else {
-                                                            fratio.resize(fcnt); std::sort(fratio.begin(), fratio.end());
-                                                            jt->second.pr.ratio += jt->second.pr.quantity * fratio[fcnt / 2];
-                                                        }
-                                                        continue;
-                                                    }
-                                                jt->second.pr.ratio += kt->second.pr.quantity;
-                                            }
-                                        }
-                                    }
-                            }
-                    }
-                    for (auto jt = (*v).begin(); jt != (*v).end(); jt++) jt->second.pr.ratio = (jt->second.pr.ratio > E ? (jt->second.pr.quantity / jt->second.pr.ratio) : -1.0);
-                }
-            }
-
-            if (ms_files.size() <= 1 || IndividualReports) return;
-
-            // simple normalisation by the total signal first
-            double av = 0.0;
-            std::vector<float> sums(ms_files.size());
-            for (auto it = map.begin(); it != map.end(); it++) {
-                auto v = &(it->second);
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    int index = jt->first;
-                    if (jt->second.pr.qvalue <= NormalisationQvalue) sums[index] += jt->second.pr.quantity;
-                }
-            }
-            for (i = k = 0; i < sums.size(); i++) if (sums[i] > E) av += sums[i], k++;
-            if (k) av /= (double)k;
-            if (av <= E) {
-                Warning("not enough peptides for normalisation");
-                return;
-            }
-
-            for (i = 0; i < sums.size(); i++) if (sums[i] <= E) sums[i] = av;
-            for (auto it = map.begin(); it != map.end(); it++) {
-                auto v = &(it->second);
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    int index = jt->first;
-                    jt->second.pr.level = (jt->second.pr.quantity * av) / sums[index];
-                }
-            }
-
-            // advanced normalisation
-            std::vector<float> score(map.size());
-            std::vector<float> x(ms_files.size());
-            i = m = 0;
-            for (auto it = map.begin(); it != map.end(); it++, i++) {
-                auto v = &(it->second);
-
-                k = 0;
-                memset(&x[0], 0, x.size() * sizeof(float));
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    int index = jt->first;
-                    if (jt->second.pr.qvalue <= NormalisationQvalue) x[index] = jt->second.pr.level, k++, m++;
-                }
-                if (k >= 2) {
-                    double u = mean(&(x[0]), x.size());
-                    if (u > E) score[i] = sqrt(var(&(x[0]), x.size())) / u;
-                    else score[i] = INF;
-                }
-                else score[i] = INF;
-            }
-            if (!m) {
-                Warning("not enough peptides for normalisation");
-                return;
-            }
-
-            auto ordered = score;
-            std::sort(ordered.begin(), ordered.end());
-            int average_number = m / ms_files.size();
-            int used = Max(1, int(NormalisationPeptidesFraction * (double)average_number));
-            double margin = ordered[used] + E;
-
-            for (i = 0; i < sums.size(); i++) sums[i] = 0.0;
-            i = 0;
-            for (auto it = map.begin(); it != map.end(); it++, i++) {
-                auto v = &(it->second);
-                if (score[i] > margin) continue;
-
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    int index = jt->first;
-                    if (jt->second.pr.qvalue <= NormalisationQvalue) sums[index] += jt->second.pr.level;
-                }
-            }
-
-            for (i = k = 0, av = 0.0; i < sums.size(); i++) if (sums[i] > E) av += sums[i], k++;
-            if (k) av /= (double)k;
-            if (av < E) {
-                Warning("cannot perform normalisation");
-                return;
-            }
-            for (i = 0; i < sums.size(); i++) if (sums[i] <= E) sums[i] = av;
-            for (auto it = map.begin(); it != map.end(); it++) {
-                auto v = &(it->second);
-
-                for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                    int index = jt->first;
-                    jt->second.pr.norm = (jt->second.pr.level * av) / sums[index];
-                }
-            }
-
-            if (LocalNormalisation) for (int iter = 0; iter < 2; iter++) { // iter = 0: RT-dependent, iter = 1: signal-dependent normalisation
-                    if (iter == 0 && NoRTDepNorm) continue;
-                    if (iter == 1 && NoSigDepNorm) continue;
-
-                    norm_totals.clear(), norm_shares.clear();
-                    norm_totals.resize(map.size(), 0.0), norm_shares.resize(map.size(), 0.0);
-                    std::vector<int> map_index(lib->entries.size(), 0);
-
-                    i = 0;
-                    for (auto it = map.begin(); it != map.end(); it++, i++) {
-                        auto v = &(it->second);
-                        int cnt = 0;
-                        map_index[it->first] = i;
-                        for (auto jt = (*v).begin(); jt != (*v).end(); jt++)
-                            if (jt->second.pr.qvalue <= NormalisationQvalue) norm_totals[i] += jt->second.pr.norm, cnt++;
-                        if (cnt) norm_shares[i] = 1.0 / (double)cnt;
-                    }
-
-                    norm_ind.resize(map.size()), norm_saved_ratios.resize(map.size());
-                    norm_ratios.resize(2 * LocNormRadius + 1);
-
-                    for (k = 0; k < ms_files.size(); k++) {
-                        norm_ind.clear(), norm_saved_ratios.clear();
-
-                        assert(runs.size() > k);
-                        for (auto it = runs[k].begin(); it != runs[k].end(); it++) {
-                            auto jt = *it;
-                            i = map_index[jt->pr.index];
-                            if (jt->pr.qvalue <= NormalisationQvalue && norm_shares[i] > E) if (norm_shares[i] * (double)ms_files.size() <= 2.0)
-                                    norm_ind.push_back(NormInfo(iter == 0 ? jt->pr.RT : jt->pr.norm, i, jt->pr.norm));
-                        }
-
-                        std::sort(norm_ind.begin(), norm_ind.end());
-                        norm_saved_ratios.resize(norm_ind.size(), 0.0);
-
-                        for (auto it = runs[k].begin(); it != runs[k].end(); it++) {
-                            auto jt = *it;
-
-                            float ratio = 1.0;
-                            auto pos = std::lower_bound(norm_ind.begin(), norm_ind.end(), NormInfo(iter == 0 ? jt->pr.RT : jt->pr.norm, 0, 0.0));
-                            int ind = std::distance(norm_ind.begin(), pos), low = Max(0, ind - LocNormRadius), high = low + 2 * LocNormRadius;
-                            if (high > norm_ind.size()) high = norm_ind.size(), low = Max(0, high - 2 * LocNormRadius);
-                            if (norm_saved_ratios[Min(ind, norm_ind.size() - 1)] > E) ratio = norm_saved_ratios[Min(ind, norm_ind.size() - 1)];
-                            else if (high - low <= Max(16, LocNormRadius / 16)) ratio = 1.0;
-                            else {
-                                norm_ratios.clear();
-                                for (j = low; j < high; j++) {
-                                    float tot = norm_totals[norm_ind[j].index] * norm_shares[norm_ind[j].index];
-                                    float r = tot / Max(E, norm_ind[j].signal);
-                                    norm_ratios.push_back(r);
-                                }
-                                std::sort(norm_ratios.begin(), norm_ratios.end());
-                                if (norm_ratios.size() & 1) ratio = norm_ratios[norm_ratios.size() / 2];
-                                else ratio = 0.5 * (norm_ratios[(norm_ratios.size() / 2) - 1] + norm_ratios[norm_ratios.size() / 2]);
-                                norm_saved_ratios[Min(ind, norm_ind.size() - 1)] = ratio = Min(LocNormMax, Max(1.0 / LocNormMax, ratio));
-                            }
-                            jt->pr.norm *= ratio;
-                        }
-                    }
-                }
-        }
     };
 
     Info info;
@@ -4040,19 +3296,6 @@ public:
         if (Verbose >= 1) Time(), qDebug() << "Library contains " << ns << " proteins, and " << gs << " genes\n";
     }
 
-    void annotate() {
-        std::set<std::string> name(names.begin(), names.end()), gene(genes.begin(), genes.end());
-        for (auto &p : proteins) name.insert(p.name), gene.insert(p.gene);
-        names.clear(), genes.clear();
-        names.insert(names.begin(), name.begin(), name.end());
-        genes.insert(genes.begin(), gene.begin(), gene.end());
-        for (auto &p : proteins) {
-            p.name_index = std::distance(names.begin(), std::lower_bound(names.begin(), names.end(), p.name));
-            p.gene_index = std::distance(genes.begin(), std::lower_bound(genes.begin(), genes.end(), p.gene));
-        }
-        library_protein_stats();
-    }
-
     void annotate_pgs(std::vector<PG> &pgs) {
         for (auto &pid : pgs) pid.annotate(proteins, names, genes);
     }
@@ -4214,34 +3457,6 @@ public:
                 it->init();
             }
         if (corrected_charge) qDebug() << "WARNING: at least one library precursor had non-positive charge; corrected to charge = 2\n";
-    }
-
-    void initialise(bool decoys) {
-        int i;
-
-        if (Predictor) {
-#ifdef PREDICTOR
-            generate_predictions();
-			predictor_file = remove_extension(out_lib_file) + std::string(".predicted.speclib");
-
-			// save the full list of precursors to the .predicted.speclib file
-			auto old_precursors = precursors;
-			precursors.resize(entries.size());
-			for (i = 0; i < entries.size(); i++) precursors[i] = entries[i].name;
-
-			PredictorSaved = save(predictor_file);
-			precursors = old_precursors;
-#endif
-        }
-        skipped = 0;
-        if (Verbose >= 1) Time(), qDebug() << "Initialising library\n";
-
-        init(decoys);
-
-        for (i = 0; i < entries.size(); i++) entries[i].lock.free();
-//        if (skipped) qDebug() << "WARNING: " << skipped
-//                           << " library precursors were skipped due to unrecognised fragments when generating decoys.\n";
-//        if (ExportLibrary) save(out_lib_file, NULL, false, ExportDecoys);
     }
 
     void infer_proteins() { // filters precursors and proteins at q_cutoff level and infers protein groups
@@ -4575,288 +3790,8 @@ public:
         else group_qvalues();
     }
 
-    void report_pr_matrix(const std::string &file_name) { // must only be called after the regular report() below
-        if (Verbose >= 1) Time(), qDebug() << "Saving precursor levels matrix\n";
-        std::ofstream out(file_name, std::ofstream::out);
-
-        out << "Protein.Group\tProtein.Ids\tProtein.Names\tGenes\tFirst.Protein.Description\tProteotypic\tStripped.Sequence\tModified.Sequence\tPrecursor.Charge\tPrecursor.Id";
-        for (auto &f : ms_files) out << '\t' << f; out << '\n';
-
-        auto &prot = InferPGs ? protein_groups : protein_ids;
-        std::vector<std::pair<int, float> > quants;
-
-        for (auto it = info.map.begin(); it != info.map.end(); it++) {
-            auto v = &(it->second);
-            auto entry = &(entries[it->first]);
-            int pg = InferPGs ? entry->pg_index : entry->pid_index;
-
-            quants.clear();
-            for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                double q = Max(jt->second.pr.qvalue, jt->second.pr.pg_qvalue);
-                if (q <= MatrixQValue) quants.push_back(std::pair<int, float>(jt->first, jt->second.pr.norm));
-            }
-            if (!quants.size()) continue;
-
-            out << prot[pg].ids.c_str() << '\t'
-                << protein_ids[entry->pid_index].ids.c_str() << '\t'
-                << prot[pg].names.c_str() << '\t'
-                << prot[pg].genes.c_str() << '\t';
-            if (prot[pg].proteins.size()) out << proteins[*(prot[pg].proteins.begin())].description.c_str() << '\t';
-            else out << '\t';
-            out << (int)entry->proteotypic << '\t'
-                << get_aas(entry->name).c_str() << '\t'
-                << pep_name(entry->name).c_str() << '\t'
-                << entry->target.charge << '\t'
-                << entry->name.c_str();
-
-            int pos = 0;
-            std::sort(quants.begin(), quants.end());
-            for (auto &q : quants) {
-                for (; pos < q.first; pos++) out << '\t'; pos++;
-                out << '\t' << q.second;
-            }
-            for (; pos < ms_files.size(); pos++) out << '\t';
-            out << '\n';
-        }
-
-        out.close();
-
-
-    }
-
-    void report_pg_matrix(const std::string &file_name, bool genes = false, bool unique = false) { // must only be called after the regular report() below
-        if (Verbose >= 1) {
-            if (!genes) Time(), qDebug() << "Saving protein group levels matrix\n";
-            else if (!unique) Time(), qDebug() << "Saving gene group levels matrix\n";
-            else Time(), qDebug() << "Saving unique genes levels matrix\n";
-        }
-        std::ofstream out(file_name, std::ofstream::out);
-
-        out << "Protein.Group\tProtein.Ids\tProtein.Names\tGenes\tFirst.Protein.Description";
-        for (auto &f : ms_files) out << '\t' << f; out << '\n';
-        if (ms_files.size() != info.n_s) {
-            qDebug() << "ERROR: algorithmic error: info.n_s == " << info.n_s << ", while ms_files.size() == " << ms_files.size() << "\n";
-            assert(ms_files.size() == info.n_s);
-        }
-
-        double q, qt;
-        auto &prot = InferPGs ? protein_groups : protein_ids;
-        std::vector<std::pair<int, float> > quants(ms_files.size());
-
-        int i, j, n_pg = 0;
-        for (auto it = info.map.begin(); it != info.map.end(); it++) {
-            auto entry = &(entries[it->first]);
-            int pg = InferPGs ? entry->pg_index : entry->pid_index;
-            if (pg >= n_pg) n_pg = pg + 1;
-        }
-        if (!n_pg) {
-            out.close();
-            return;
-        }
-        std::vector<float> PG(n_pg * info.n_s, 0.0);
-        std::vector<int> pid_index(n_pg, 0);
-
-        for (auto it = info.map.begin(); it != info.map.end(); it++) {
-            auto v = &(it->second);
-            auto entry = &(entries[it->first]);
-            int pg = InferPGs ? entry->pg_index : entry->pid_index;
-            pid_index[pg] = entry->pid_index;
-            int shift = pg * info.n_s;
-
-            if (genes && unique) if (!entry->proteotypic) continue;
-
-            for (auto jt = (*v).begin(); jt != (*v).end(); jt++) {
-                if (PG[shift + jt->first] > E) continue;
-                if (!genes) q = Max(jt->second.pr.qvalue, jt->second.pr.pg_qvalue), qt = jt->second.pr.pg_norm;
-                else if (!unique) q = Max(jt->second.pr.qvalue, jt->second.pr.gg_qvalue), qt = jt->second.pr.max_lfq;
-                else q = Max(jt->second.pr.qvalue, jt->second.pr.protein_qvalue), qt = jt->second.pr.max_lfq_unique;
-                if (q <= MatrixQValue) PG[shift + jt->first] = qt;
-            }
-        }
-
-        for (i = 0; i < n_pg; i++) {
-            bool found = false;
-            int shift = i * info.n_s;
-            for (j = 0; j < info.n_s; j++) if (PG[shift + j] > E) {
-                    found = true;
-                    break;
-                }
-            if (!found) continue;
-
-            out << prot[i].ids.c_str() << '\t'
-                << protein_ids[pid_index[i]].ids.c_str() << '\t'
-                << prot[i].names.c_str() << '\t'
-                << prot[i].genes.c_str();
-            if (prot[i].proteins.size()) out << '\t' << proteins[*(prot[i].proteins.begin())].description.c_str();
-            else out << '\t';
-
-            for (j = 0; j < info.n_s; j++) {
-                if (PG[shift + j] > E) out << '\t' << PG[shift + j];
-                else out << '\t';
-            }
-            out << '\n';
-        }
-
-        out.close();
-
-    }
-
-
-#if (HASH > 0)
-    unsigned int hash() {
-		unsigned int res = 0;
-		for (int i = 0; i < entries.size(); i++) res ^= entries[i].hash();
-		return res;
-	}
-#endif
 };
 
-class Profile {
-public:
-    std::vector<QuantEntry> entries;
-    std::vector<float> tq, dq;
-
-    void gen_decoy_list() {
-        std::sort(dq.begin(), dq.end());
-        auto pos = std::lower_bound(dq.begin(), dq.end(), ReportQValue);
-        dq.resize(std::distance(dq.begin(), pos));
-        std::sort(tq.begin(), tq.end());
-        pos = std::lower_bound(tq.begin(), tq.end(), ReportQValue);
-        tq.resize(std::distance(tq.begin(), pos));
-
-        std::map<float, float> cs_qv;
-
-        for (int i = 0; i < tq.size(); i++) {
-            int n_targets = i + 1;
-            int n_decoys = std::distance(dq.begin(), std::lower_bound(dq.begin(), dq.end(), tq[i]));
-            float q = Min(1.0, ((double)Max(1, n_decoys)) / (double)Max(1, n_targets));
-
-            auto pair = std::pair<float, float>(-tq[i], q);
-            auto pos = cs_qv.insert(pair);
-            if (pos.second) {
-                if (pos.first != cs_qv.begin() && std::prev(pos.first)->second < pair.second) pos.first->second = std::prev(pos.first)->second;
-                else for (auto jt = std::next(pos.first); jt != cs_qv.end() && jt->second > pair.second; jt++) jt->second = pair.second;
-            }
-        }
-
-        for (auto &e : entries) {
-            if (e.index < 0) continue;
-            auto pos = cs_qv.lower_bound(-(e.pr.qvalue + e.pr.lib_qvalue));
-            if (pos == cs_qv.end()) e.pr.profile_qvalue = 1.0;
-            else e.pr.profile_qvalue = pos->second;
-        }
-    }
-
-    Profile(std::vector<std::string> &files, int lib_size = 0) {
-        entries.resize(MaxLibSize);
-
-        bool decoy_list = FastaSearch || GenSpecLib;
-        if (decoy_list) dq.resize(MaxLibSize, 1.0), tq.resize(MaxLibSize, 1.0);
-
-        for (int i = 0; i < files.size(); i++) {
-            Quant Qt;
-            auto Q = &Qt;
-            if (!QuantInMem) {
-                std::ifstream in(files[i] + std::string(".quant"), std::ifstream::binary);
-                if (in.fail() || temp_folder.size()) in = std::ifstream(location_to_file_name(files[i]) + std::string(".quant"), std::ifstream::binary);
-                Q->read(in, lib_size);
-                in.close();
-            } else Q = &(quants[i]);
-
-            for (auto it = Q->entries.begin(); it != Q->entries.end(); it++) {
-                auto pos = it->pr.index;
-                if (pos >= entries.size()) entries.resize(pos + 1 + pos / 2);
-                if (entries[pos].index < 0) entries[pos] = *it;
-                else if (it->pr.qvalue < entries[pos].pr.qvalue) entries[pos].pr = it->pr;
-
-                if (decoy_list) {
-                    float sc = Max(it->pr.qvalue, it->pr.lib_qvalue) + it->pr.lib_qvalue;
-                    if (pos >= tq.size()) tq.resize(pos + 1 + pos / 2, 1.0);
-                    if (sc <= ReportQValue && sc < tq[pos]) tq[pos] = sc;
-                }
-            }
-            if (decoy_list) {
-                for (auto it = Q->decoys.begin(); it != Q->decoys.end(); it++) {
-                    auto pos = it->index;
-                    float sc = Max(it->qvalue, it->lib_qvalue) + it->lib_qvalue;
-                    if (pos >= dq.size()) dq.resize(pos + 1 + pos / 2, 1.0);
-                    if (sc <= ReportQValue && sc < dq[pos]) dq[pos] = sc;
-                }
-            }
-            if (!QuantInMem) std::vector<QuantEntry>().swap(Q->entries), std::vector<DecoyEntry>().swap(Q->decoys);
-        }
-
-        if (decoy_list) gen_decoy_list();
-        std::vector<float>().swap(tq); std::vector<float>().swap(dq);
-    }
-
-    Profile(Library * lib) {
-        entries.resize(MaxLibSize);
-
-        bool decoy_list = FastaSearch || GenSpecLib;
-        if (decoy_list) dq.resize(MaxLibSize, 1.0), tq.resize(MaxLibSize, 1.0);
-
-        auto &info = lib->info;
-        for (auto it = info.map.begin(); it != info.map.end(); it++) {
-            auto v = &(it->second);
-
-            for (auto jt = v->begin(); jt != v->end(); jt++) {
-                int s = jt->first;
-                auto &qr = jt->second;
-                auto pos = qr.pr.index;
-                if (pos >= entries.size()) entries.resize(pos + 1 + pos / 2);
-                if (entries[pos].index < 0) entries[pos] = qr;
-                else if (qr.pr.qvalue < entries[pos].pr.qvalue) entries[pos] = qr;
-
-                if (decoy_list) {
-                    float sc = Max(qr.pr.qvalue, qr.pr.lib_qvalue) + qr.pr.lib_qvalue;
-                    if (pos >= tq.size()) tq.resize(pos + 1 + pos / 2, 1.0);
-                    if (sc <= ReportQValue && sc < tq[pos]) tq[pos] = sc;
-                }
-            }
-        }
-
-        if (decoy_list) {
-            for (auto it = info.decoy_map.begin(); it != info.decoy_map.end(); it++) {
-                auto v = &(it->second);
-
-                for (auto jt = v->begin(); jt != v->end(); jt++) {
-                    int s = jt->first;
-                    auto pr = &(jt->second);
-                    int pos = pr->index;
-                    float sc = Max(pr->qvalue, pr->lib_qvalue) + pr->lib_qvalue;
-                    if (pos >= dq.size()) dq.resize(pos + 1 + pos / 2, 1.0);
-                    if (sc <= ReportQValue && sc < dq[pos]) dq[pos] = sc;
-                }
-            }
-        }
-
-        if (decoy_list) gen_decoy_list();
-        std::vector<float>().swap(tq); std::vector<float>().swap(dq);
-    }
-};
-
-void annotate_library(Library &lib, Fasta &fasta) {
-    for (auto &e : lib.proteins) {
-        auto pos = std::lower_bound(fasta.proteins.begin(), fasta.proteins.end(), e);
-        if (pos != fasta.proteins.end()) if (pos->id == e.id) e.name = pos->name, e.gene = pos->gene, e.description = pos->description, e.swissprot = pos->swissprot;
-    }
-    lib.annotate();
-    lib.annotate_pgs(lib.protein_ids);
-    for (auto &le : lib.entries) {
-        if (lib.protein_ids[le.pid_index].proteins.size() == 1) le.proteotypic = true;
-        else {
-            if (PGLevel == 0) le.proteotypic = false;
-            else if (PGLevel == 1) le.proteotypic = (lib.protein_ids[le.pid_index].name_indices.size() == 1);
-            else if (PGLevel == 2) le.proteotypic = (lib.protein_ids[le.pid_index].gene_indices.size() == 1);
-        }
-    }
-}
-
-const int fFound = 1;
-const int fDecoy = 1 << 1;
-const int fInit = 1 << 2;
-const int fTranslated = 1 << 3;
 
 
 #endif //PYTHIADIACPP_MSFRAME_H
