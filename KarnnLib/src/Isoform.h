@@ -9,6 +9,7 @@
 
 #include "ReadWriteCommonFunctons.h"
 
+#include <fstream>
 #include <set>
 #include <string>
 
@@ -17,63 +18,42 @@ class KARNNLIB_EXPORTS Isoform {
 
 public:
 
-    std::string id;
-    mutable std::string name;
-    mutable std::string gene;
-    mutable std::string description;
-    mutable std::set<int> precursors; // precursor indices in the library
-    int name_index = 0;
-    int gene_index = 0;
-    bool swissprot = true;
+    Isoform();
+    ~Isoform() = default;
 
-    Isoform() = default;
-    Isoform(const std::string &id);
+    explicit Isoform(const std::string &id);
+
     Isoform(
-            const std::string &id,
-            const std::string &name,
-            const std::string &gene,
-            const std::string &description,
-            bool swissprot
-            );
+        const std::string &id,
+        const std::string &name,
+        const std::string &gene,
+        const std::string &description,
+        bool swissprot
+        );
 
-    friend inline bool operator < (const Isoform &left, const Isoform &right) { return left.id < right.id; }
+    [[nodiscard]] std::string getId() const;
 
-    template <class F>
-    void write(F &out) {
-        int sp = swissprot;
-        int size = static_cast<int>(precursors.size());
-        out.write((char*)&sp, sizeof(int));
-        out.write((char*)&size, sizeof(int));
-        ReadWriteCommonFunctons::write_string(out, id);
-        ReadWriteCommonFunctons::write_string(out, name);
-        ReadWriteCommonFunctons::write_string(out, gene);
-        out.write((char*)&name_index, sizeof(int));
-        out.write((char*)&gene_index, sizeof(int));
+    [[nodiscard]] int getNameIndex() const;
 
-        for (auto it = precursors.begin(); it != precursors.end(); it++) {
-            out.write((char*)&(*it), sizeof(int));
-        }
-    }
+    [[nodiscard]] int getGeneIndex() const;
 
-    template <class F>
-    void read(F &in) {
-        int sp = 0, size = 0;
-        in.read((char*)&sp, sizeof(int));
-        in.read((char*)&size, sizeof(int));
-        swissprot = sp;
+    friend inline bool operator < (const Isoform &l, const Isoform &r) { return l.getId() < r.getId(); }
 
-        ReadWriteCommonFunctons::read_string(in, id);
-        ReadWriteCommonFunctons::read_string(in, name);
-        ReadWriteCommonFunctons::read_string(in, gene);
-        in.read((char*)&name_index, sizeof(int));
-        in.read((char*)&gene_index, sizeof(int));
-        precursors.clear();
-        for (int i = 0; i < size; i++) {
-            int pr = -1;
-            in.read((char*)&pr, sizeof(int));
-            if (pr >= 0) precursors.insert(pr);
-        }
-    }
+    void read(std::ifstream &in);
+
+private:
+
+    std::string m_id;
+
+private:
+    std::string m_name;
+    std::string m_gene;
+    std::string m_description;
+    std::set<int> m_precursors;
+    int m_nameIndex;
+    int m_geneIndex;
+    bool m_swissprot;
+
 };
 
 

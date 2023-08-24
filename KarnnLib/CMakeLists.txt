@@ -25,7 +25,6 @@ SET(SOURCE_FILES
         src/Entry.cpp
         src/Ion.cpp
         src/Isoform.cpp
-#        src/Library.cpp
         src/LibraryCommon.cpp
         src/LibraryReader.cpp
         src/Modifications.cpp
@@ -42,7 +41,6 @@ SET(HEADER_FILES
         src/Entry.h
         src/Ion.cpp
         src/Isoform.h
-#        src/Library.h
         src/LibraryCommon.h
         src/LibraryReader.h
         src/Modifications.h

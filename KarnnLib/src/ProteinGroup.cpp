@@ -25,8 +25,8 @@ void ProteinGroup::annotate(
     if (!_names.empty()) {
 
         for (auto &p : proteins) {
-            if (!_names[_proteins[p].name_index].empty()) {
-                name.insert(_proteins[p].name_index);
+            if (!_names[_proteins[p].getNameIndex()].empty()) {
+                name.insert(_proteins[p].getNameIndex());
             }
         }
 
@@ -52,8 +52,8 @@ void ProteinGroup::annotate(
     }
     if (!_genes.empty()) {
         for (auto &p : proteins) {
-            if (!_genes[_proteins[p].gene_index].empty()) {
-                gene.insert(_proteins[p].gene_index);
+            if (!_genes[_proteins[p].getGeneIndex()].empty()) {
+                gene.insert(_proteins[p].getGeneIndex());
             }
         }
         if (genes.size() && !proteins.size()) {
