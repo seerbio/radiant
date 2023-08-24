@@ -1,3 +1,6 @@
+#ifndef PYTHIADIACPP_CPUINFO
+#define PYTHIADIACPP_CPUINFO
+
 /*
 The MIT License(MIT)
 Copyright(c) Microsoft Corporation
@@ -319,3 +322,4 @@ void cpu_info(DStream &outstream)
 }
 #endif
 
+#endif //PYTHIADIACPP_CPU_INFO

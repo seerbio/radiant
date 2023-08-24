@@ -46,7 +46,7 @@ struct KARNNLIB_EXPORTS MOD {
 
 namespace ModificationsNamespace {
 
-    std::vector<MOD> FixedMods, VarMods;
+//    std::vector<MOD> FixedMods, VarMods;
 
     extern const KARNNLIB_EXPORTS std::vector<MOD> Modifications;
 
