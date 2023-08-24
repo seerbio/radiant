@@ -22,6 +22,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/Entry.cpp
         src/Ion.cpp
         src/Isoform.cpp
 #        src/Library.cpp
@@ -38,6 +39,7 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
+        src/Entry.h
         src/Ion.cpp
         src/Isoform.h
 #        src/Library.h

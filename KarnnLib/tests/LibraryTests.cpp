@@ -4,6 +4,8 @@
 
 #include "LibraryReader.h"
 
+#include "LibraryCommon.h"
+
 #include <QDebug>
 #include <QtTest/QtTest>
 
@@ -29,10 +31,10 @@ void LibraryTests::readLibrary() {
 
     const QString diannLibraryFile = "/home/anichols/Desktop/Testing/lib.predicted.speclib";
 
-    Library lib;
+    LibraryReader lib;
     lib.load(diannLibraryFile.toStdString().c_str());
 
-    for (const Library::Entry &entry : lib.entries) {
+    for (const Entry &entry : lib.getEntries()) {
 
         qDebug() << QString::fromStdString(entry.name) << entry.target.iRT << entry.target.sRT;
         for (const Product &pr : entry.target.fragments) {
@@ -41,8 +43,6 @@ void LibraryTests::readLibrary() {
         }
 
     }
-
-    qDebug() << lib.entries.size();
 
 
 }

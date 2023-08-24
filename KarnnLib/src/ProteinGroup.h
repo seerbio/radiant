@@ -32,6 +32,8 @@ public:
 
     ProteinGroup() = default;
 
+    ~ProteinGroup() = default;
+
     explicit ProteinGroup(std::string ids);
 
     friend inline bool operator < (const PG &left, const PG &right) { return left.ids < right.ids; }
