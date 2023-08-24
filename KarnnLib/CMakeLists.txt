@@ -22,12 +22,29 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/Isoform.cpp
         src/Library.cpp
+        src/LibraryCommon.cpp
+        src/LibraryReader.cpp
+        src/Modifications.cpp
+        src/Peptide.cpp
+        src/Product.cpp
+        src/ProteinGroup.cpp
+        src/ReadWriteCommonFunctons.cpp
+
         src/cpu_info.h
         )
 
 SET(HEADER_FILES
+        src/Isoform.h
         src/Library.h
+        src/LibraryCommon.h
+        src/LibraryReader.h
+        src/Modifications.h
+        src/Peptide.h
+        src/Product.h
+        src/ProteinGroup.h
+        src/ReadWriteCommonFunctons.h
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

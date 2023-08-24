@@ -231,6 +231,7 @@ struct MOD {
     void init(const std::string &_name, const std::string &_aas, float _mass, int _label = 0) { name = _name, aas = _aas, mass = _mass; label = _label;  }
     friend bool operator < (const MOD &left, const MOD &right) { return left.name < right.name || (left.name == right.name && left.mass < right.mass); }
 };
+
 std::vector<MOD> FixedMods, VarMods;
 
 std::vector<MOD> Modifications = {
