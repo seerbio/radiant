@@ -11,13 +11,13 @@ LibraryReader::LibraryReader()
 , m_iRT_max(0.0)
 {}
 
-bool LibraryReader::load(const char *file_name) {
+bool LibraryReader::load(const std::string &fileName) {
 
-    m_name = std::string(file_name);
+    m_name = fileName;
 
     if (LibraryCommon::get_extension(m_name) == std::string(".speclib")) {
 
-        std::ifstream speclib(file_name, std::ifstream::binary);
+        std::ifstream speclib(fileName.c_str(), std::ifstream::binary);
 
         if (speclib.fail()) {
             qDebug() << "cannot read the file\n";

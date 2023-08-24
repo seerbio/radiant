@@ -29,7 +29,7 @@ public:
     LibraryReader();
     ~LibraryReader() = default;
 
-    bool load(const char *file_name);
+    bool load(const std::string &fileName);
 
     [[nodiscard]] const std::vector<Entry> &getEntries() const;
 

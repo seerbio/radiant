@@ -18,36 +18,33 @@ public:
     LibraryTests() = default;
     ~LibraryTests() override = default;
 
-
 private Q_SLOTS:
 
     void readLibrary();
 
-
 };
-
 
 void LibraryTests::readLibrary() {
 
     const QString diannLibraryFile = "/home/anichols/Desktop/Testing/lib.predicted.speclib";
 
     LibraryReader lib;
-    lib.load(diannLibraryFile.toStdString().c_str());
+    lib.load(diannLibraryFile.toStdString());
 
     for (const Entry &entry : lib.getEntries()) {
 
-        qDebug() << QString::fromStdString(entry.name) << entry.target.iRT << entry.target.sRT;
-        for (const Product &pr : entry.target.fragments) {
-            qDebug() << pr.mz << pr.height << toascii(pr.charge) << toascii(pr.index)
-                     << toascii(pr.type) << QString::fromStdString(LibraryCommon::getLoss(static_cast<int>(toascii(pr.loss))));
+        qDebug() << QString::fromStdString(entry.getName()) << entry.getTarget().iRT << entry.getTarget().sRT;
+        for (const Product &pr : entry.getTarget().fragments) {
+            qDebug() << pr.mz
+                     << pr.height
+                     << toascii(pr.charge)
+                     << toascii(pr.index)
+                     << toascii(pr.type)
+                     << QString::fromStdString(LibraryCommon::getLoss(static_cast<int>(toascii(pr.loss))));
         }
 
     }
-
-
 }
-
-
 
 
 QTEST_MAIN(LibraryTests)

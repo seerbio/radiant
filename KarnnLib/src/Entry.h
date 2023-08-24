@@ -5,10 +5,12 @@
 #ifndef PYTHIADIACPP_ENTRY_H
 #define PYTHIADIACPP_ENTRY_H
 
-
 #include "Peptide.h"
 #include "ProteinGroup.h"
 
+#include <QDebug>
+
+#include <fstream>
 #include <set>
 
 
@@ -18,26 +20,27 @@ class Entry {
 
 public:
 
-    Peptide target;
-    Peptide decoy;
-    std::string name; // precursor id
-    std::set<PG>::iterator prot;
-    int pid_index = 0;
+    Entry() = default;
+    ~Entry() = default;
 
-    friend bool operator < (const Entry &left, const Entry &right) { return left.name < right.name; }
+    [[nodiscard]] std::string getName() const;
 
-    template <class F>
-    void read(F &in) {
-        target.read(in);
-        int dc = 0; in.read((char*)&dc, sizeof(int));
-        if (dc) decoy.read(in);
+    [[nodiscard]] Peptide getTarget() const;
 
-        int ff = 0, prt = 0;
-        in.read((char*)&ff, sizeof(int));
-        in.read((char*)&prt, sizeof(int));
-        in.read((char*)&pid_index, sizeof(int));
-        ReadWriteCommonFunctons::read_string(in, name);
-    }
+    [[nodiscard]] Peptide getDecoy() const;
+
+    friend bool operator < (const Entry &l, const Entry &r) {return l.getName() < r.getName();}
+
+    void read(std::ifstream &in);
+
+private:
+
+    Peptide m_target;
+    Peptide m_decoy;
+    std::string m_name;
+    std::set<PG>::iterator m_prot;
+    int m_pidIndex = 0;
+
 };
 
 
