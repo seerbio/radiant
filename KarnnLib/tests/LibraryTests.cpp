@@ -33,8 +33,8 @@ void LibraryTests::readLibrary() {
 
     for (const Entry &entry : lib.getEntries()) {
 
-        qDebug() << QString::fromStdString(entry.getName()) << entry.getTarget().iRT << entry.getTarget().sRT;
-        for (const Product &pr : entry.getTarget().fragments) {
+        qDebug() << QString::fromStdString(entry.getName()) << entry.getTarget().getIRT() << entry.getTarget().getSRT();
+        for (const Product &pr : entry.getTarget().getFragments()) {
             qDebug() << pr.mz
                      << pr.height
                      << toascii(pr.charge)

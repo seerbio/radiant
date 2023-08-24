@@ -14,8 +14,8 @@
 
 namespace LibraryCommon {
 
-    const char * AAs = "GAVLIFMPWSCTYHKRQEND";
-    const char * MutateAAto = "LLLVVLLLLTSSSSLLNDQE";
+    const char *AAs = "GAVLIFMPWSCTYHKRQEND";
+    const char *MutateAAto = "LLLVVLLLLTSSSSLLNDQE";
 
     const double PROTON = 1.007825035;
     const double OH = 17.003288;
@@ -348,7 +348,8 @@ namespace LibraryCommon {
             ) {
 
         int i, j, charge = 1, loss = loss_none, cnt = 0, tot = 0;
-        double s = sum(&(sequence[0]), sequence.size());
+        double s = std::accumulate(sequence.begin(), sequence.end(), 0.0);
+
         std::vector<Ion> result(pattern.size());
         std::vector<Ion> v;
 

@@ -10,60 +10,50 @@
 #include "Product.h"
 #include "ReadWriteCommonFunctons.h"
 
+#include <fstream>
 #include <vector>
 
 class KARNNLIB_EXPORTS Peptide {
 
 public:
 
-    int index = 0;
-    int charge = 0;
-    int length = 0;
-    int no_cal = 0;
-    float mz = 0.0;
-    float iRT = 0.0;
-    float sRT = 0.0;
-    float lib_qvalue = 0.0;
+    Peptide();
+    ~Peptide() = default;
 
-    std::vector<Product> fragments;
+    void init(
+            float _mz,
+            float _iRT,
+            int _charge,
+            int _index
+            );
 
-    void init(float _mz, float _iRT, int _charge, int _index) {
-        mz = _mz;
-        iRT = _iRT;
-        sRT = 0.0;
-        charge = _charge;
-        index = _index;
-    }
+    void free();
 
-    inline void free() {
-        std::vector<Product>().swap(fragments);
-    }
+    void read(std::ifstream &in);
 
-    template <class F>
-    void write(F &out) {
-        out.write((char*)&index, sizeof(int));
-        out.write((char*)&charge, sizeof(int));
-        out.write((char*)&length, sizeof(int));
+    [[nodiscard]] int getIndex() const;
+    [[nodiscard]] int getCharge() const;
+    [[nodiscard]] int getLength() const;
+    [[nodiscard]] int getNoCal() const;
+    [[nodiscard]] float getMz() const;
+    [[nodiscard]] float getIRT() const;
+    [[nodiscard]] float getSRT() const;
+    [[nodiscard]] float getLibQValue() const;
 
-        out.write((char*)&mz, sizeof(float));
-        out.write((char*)&iRT, sizeof(float));
-        out.write((char*)&sRT, sizeof(float));
+    [[nodiscard]] std::vector<Product> getFragments() const;
 
-        ReadWriteCommonFunctons::write_vector(out, fragments);
-    }
+private:
 
-    template <class F>
-    void read(F &in) {
-        in.read((char*)&index, sizeof(int));
-        in.read((char*)&charge, sizeof(int));
-        in.read((char*)&length, sizeof(int));
+    int m_index;
+    int m_charge;
+    int m_length;
+    int m_noCal;
+    float m_mz;
+    float m_iRT;
+    float m_sRT;
+    float m_libQvalue;
 
-        in.read((char*)&mz, sizeof(float));
-        in.read((char*)&iRT, sizeof(float));
-        in.read((char*)&sRT, sizeof(float));
-
-        ReadWriteCommonFunctons::read_vector(in, fragments);
-    }
+    std::vector<Product> m_fragments;
 
 };
 

@@ -97,7 +97,9 @@ namespace LibraryCommon {
     template <class T>
     double KARNNLIB_EXPORTS sum(T *x, int n) {
         double ex = 0.0;
-        for (int i = 0; i < n; i++) ex += x[i];
+        for (int i = 0; i < n; i++) {
+            ex += x[i];
+        }
         return ex;
     }
 
