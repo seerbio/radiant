@@ -37,7 +37,7 @@ public:
 
     [[nodiscard]] int getGeneIndex() const;
 
-    friend inline bool operator < (const Isoform &l, const Isoform &r) { return l.getId() < r.getId(); }
+    friend inline bool operator < (const Isoform &l, const Isoform &r) { return l.getId() < r.getId();}
 
     void read(std::ifstream &in);
 
