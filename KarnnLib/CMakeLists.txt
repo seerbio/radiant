@@ -31,7 +31,7 @@ SET(SOURCE_FILES
         src/Peptide.cpp
         src/Product.cpp
         src/ProteinGroup.cpp
-        src/QuantEntry.cpp
+#        src/QuantEntry.cpp
         src/ReadWriteCommonFunctons.cpp
 
         src/cpu_info.h
@@ -47,7 +47,7 @@ SET(HEADER_FILES
         src/Peptide.h
         src/Product.h
         src/ProteinGroup.h
-        src/QuantEntry.h
+#        src/QuantEntry.h
         src/ReadWriteCommonFunctons.h
         )
 

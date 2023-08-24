@@ -158,7 +158,7 @@ namespace LibraryCommon {
         start:
         v = generate_fragments(sequence, charge, loss, &cnt);
         if (charge == 1) {
-            v.push_back(Ion(fTypeY, sequence.size(), loss, pr_charge, (s + OH + (1.0 + double(pr_charge)) * PROTON - Loss[loss]) / static_cast<double>(pr_charge))); // non-fragmented
+            v.emplace_back(fTypeY, sequence.size(), loss, pr_charge, (s + OH + (1.0 + double(pr_charge)) * PROTON - Loss[loss]) / static_cast<double>(pr_charge)); // non-fragmented
         }
 
         for (i = 0; i < fragments.size(); i++) {

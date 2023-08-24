@@ -10,6 +10,7 @@
 
 #include "ReadWriteCommonFunctons.h"
 
+#include <fstream>
 #include <set>
 #include <string>
 #include <vector>
@@ -18,25 +19,14 @@ class Isoform;
 
 class KARNNLIB_EXPORTS ProteinGroup {
 
-public:
-
     using PG = ProteinGroup;
 
-    std::string ids;
-    mutable std::string names;
-    mutable std::string genes;
-    mutable std::vector<int> precursors; // precursor indices in the library
-    mutable std::set<int> proteins;
-    std::vector<int> name_indices;
-    std::vector<int> gene_indices;
+public:
 
     ProteinGroup() = default;
-
     ~ProteinGroup() = default;
 
     explicit ProteinGroup(std::string ids);
-
-    friend inline bool operator < (const PG &left, const PG &right) { return left.ids < right.ids; }
 
     void annotate(
             std::vector<Isoform> &proteins,
@@ -44,39 +34,29 @@ public:
             std::vector<std::string> &genes
             );
 
-    template <class F>
-    void write(F &out) {
-        int size_p = proteins.size();
-        out.write((char*)&size_p, sizeof(int));
-        ReadWriteCommonFunctons::write_string(out, ids);
-        ReadWriteCommonFunctons::write_string(out, names);
-        ReadWriteCommonFunctons::write_string(out, genes);
-        ReadWriteCommonFunctons::write_vector(out, name_indices);
-        ReadWriteCommonFunctons::write_vector(out, gene_indices);
-        ReadWriteCommonFunctons::write_vector(out, precursors);
+    void read(std::ifstream &in);
 
-        for (auto it = proteins.begin(); it != proteins.end(); it++) {
-            out.write((char*)&(*it), sizeof(int));
-        }
-    }
+    [[nodiscard]] std::string getIds() const;
+    [[nodiscard]] std::string getNames() const;
+    [[nodiscard]] std::string getGenes() const;
+    [[nodiscard]] std::vector<int> getPrecursors() const;
+    [[nodiscard]] std::set<int> getProteins() const;
+    [[nodiscard]] std::vector<int> getNameIndices() const;
+    [[nodiscard]] std::vector<int> getGeneIndices() const;
 
-    template <class F>
-    void read(F &in) {
-        int sp = 0, size_p = 0;
-        in.read((char*)&size_p, sizeof(int));
+public:
+    friend inline bool operator < (const PG &left, const PG &right) { return left.getIds() < right.getIds();}
 
-        ReadWriteCommonFunctons::read_string(in, ids);
-        ReadWriteCommonFunctons::read_string(in, names);
-        ReadWriteCommonFunctons::read_string(in, genes);
-        ReadWriteCommonFunctons::read_vector(in, name_indices);
-        ReadWriteCommonFunctons::read_vector(in, gene_indices);
-        ReadWriteCommonFunctons::read_vector(in, precursors);
-        for (int i = 0; i < size_p; i++) {
-            int p = -1;
-            in.read((char*)&p, sizeof(int));
-            if (p >= 0) proteins.insert(p);
-        }
-    }
+private:
+
+    std::string m_ids;
+    std::string m_names;
+    std::string m_genes;
+    std::vector<int> m_precursors;
+    std::set<int> m_proteins;
+    std::vector<int> m_nameIndices;
+    std::vector<int> m_geneIndices;
+
 };
 
 #endif //PYTHIADIACPP_PROTEINGROUP_H
