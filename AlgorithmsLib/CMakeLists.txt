@@ -34,6 +34,7 @@ SET(SOURCE_FILES
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
+        src/ScanTimeFromIRtMapper.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
@@ -55,6 +56,7 @@ SET(HEADER_FILES
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
+        src/ScanTimeFromIRtMapper.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
         src/TandemSpectraDeconvolvotron.h
