@@ -27,10 +27,10 @@ public:
             QVector<float> *rawPredictionResults
     );
 
-    static Err buildNearestNeighborsIRTData(
-            const QString &iRTRecalibrationFilePath,
-            QVector<QPair<double, Coors>> *nnInputData
-    );
+//    static Err buildNearestNeighborsIRTData(
+//            const QString &iRTRecalibrationFilePath,
+//            QVector<QPair<double, Coors>> *nnInputData
+//    );
 
 private:
 

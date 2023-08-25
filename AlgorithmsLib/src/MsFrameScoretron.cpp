@@ -15,6 +15,7 @@
 #include "NearestNeighborsSearch.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
+#include "ScanTimeFromIRtMapper.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
@@ -83,30 +84,18 @@ Err MsFrameScoretron::init(
 
     qDebug() << "updating rt vals from iRT";
 
-    QVector<QPair<double, Coors>> nnInputData;
-    e = IRTPredictron::buildNearestNeighborsIRTData(
-            iRTRecalibrationFilePath,
-            &nnInputData
-    );
-
-    NearestNeighborsSearch nearestNeighborsSearch;
-    e = nearestNeighborsSearch.init(nnInputData); ree
-
-    const int kNearestPoints = 10;
+    ScanTimeFromIRtMapper scanTimeFromIRtMapper;
+    e = scanTimeFromIRtMapper.init(iRTRecalibrationFilePath); ree;
 
     for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const double iRT = it.value().iRt;
 
-        QVector<NNSearchResult> nnSearchResult;
-        nearestNeighborsSearch.kNearestNeighborsSearch(
-                {{iRT, 0.0}},
-                kNearestPoints,
-                &nnSearchResult
-        );
+        double predictedScanTime;
+        e = scanTimeFromIRtMapper.predictScanTime(iRT, &predictedScanTime); ree;
 
-        m_fragPredsPredictedScanTime.insert(peptideStringWithMods, nnSearchResult.front().meanValues);
+        m_fragPredsPredictedScanTime.insert(peptideStringWithMods, predictedScanTime);
     }
 
     ERR_RETURN
@@ -654,7 +643,7 @@ Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
             m_scanNumberVsScanTime
             );
 
-    const double scanTimeBuffer = 5.0; //TODO make this settable.
+    const double scanTimeBuffer = 3.0; //TODO make this settable.
 
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 

@@ -38,8 +38,7 @@ int main(int argc, char *argv[]) {
     const QString msDataFilesDirectory = cliParameters.msDataFilesDirectory;
 
     //TODO make sure this optional argument works.
-    const QString iRTReCalFilePath
-            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
+    const QString iRTReCalFilePath = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/TestData.iRT");
 
 
     PythiaParameters pythiaParameters;

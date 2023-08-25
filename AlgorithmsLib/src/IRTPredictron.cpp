@@ -164,25 +164,25 @@ Err IRTPredictron::batchPredictIRT(
     ERR_RETURN
 }
 
-Err IRTPredictron::buildNearestNeighborsIRTData(
-        const QString &iRTRecalibrationFilePath,
-        QVector<QPair<double, Coors>> *nnInputData
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree
-
-    QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
-    e  = CSVReader::read(
-            iRTRecalibrationFilePath,
-            &iRTReCalibrationReaderRows
-    ); ree;
-
-    for (const IRTReCalibrationRow &row : iRTReCalibrationReaderRows) {
-        nnInputData->push_back({row.scanTime, {row.iRT, 0.0}});
-    }
-
-    ERR_RETURN
-
-}
+//Err IRTPredictron::buildNearestNeighborsIRTData(
+//        const QString &iRTRecalibrationFilePath,
+//        QVector<QPair<double, Coors>> *nnInputData
+//        ) {
+//
+//    ERR_INIT
+//
+//    e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree
+//
+//    QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
+//    e  = CSVReader::read(
+//            iRTRecalibrationFilePath,
+//            &iRTReCalibrationReaderRows
+//    ); ree;
+//
+//    for (const IRTReCalibrationRow &row : iRTReCalibrationReaderRows) {
+//        nnInputData->push_back({row.scanTime, {row.iRT, 0.0}});
+//    }
+//
+//    ERR_RETURN
+//
+//}

@@ -220,18 +220,28 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
         parallelProcessingInputs.push_back(ppi);
     }
 
+    QVector<ScoredCandidate> combinedResults;
+
+//#define PROCESS_PARALLEL
+#ifdef PROCESS_PARALLEL
     QFuture<QPair<Err, QVector<ScoredCandidate>>> futures = QtConcurrent::mapped(
             parallelProcessingInputs,
             parallelProciessingLogic
     );
     futures.waitForFinished();
 
-    QVector<ScoredCandidate> combinedResults;
     for (const QPair<Err, QVector<ScoredCandidate>> &res : futures) {
 
         e = res.first; ree;
         combinedResults.append(res.second);
     }
+#else
+    for (const ParallelProcessingInput &inp : parallelProcessingInputs) {
+        const QPair<Err, QVector<ScoredCandidate>> res = parallelProciessingLogic(inp);
+        e = res.first; ree;
+        combinedResults.append(res.second);
+    }
+#endif
 
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
     e = ParquetReader::write(combinedResults, resultsFilePath); ree;

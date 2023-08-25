@@ -26,6 +26,7 @@ SET(TEST_CLASSES
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests
+        ScanTimeFromIRtMapperTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
         TandemSpectraDeconvolvotronTests

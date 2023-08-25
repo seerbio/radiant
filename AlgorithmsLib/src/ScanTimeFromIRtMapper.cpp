@@ -10,6 +10,8 @@
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 
+#include <iostream>
+
 ScanTimeFromIRtMapper::ScanTimeFromIRtMapper()
 : m_segments(0)
 , m_rtSegments(20)
@@ -29,6 +31,8 @@ Err ScanTimeFromIRtMapper::init(const QString &iRTRecalibrationFilePath) {
             &iRTReCalibrationReaderRows
     ); ree;
 
+    qDebug() << iRTReCalibrationReaderRows.size() << "iRT Rows";
+
     const auto insertLogic
         = [](const IRTReCalibrationRow &r){return QPair<double, double>(r.iRT, r.scanTime);};
 
@@ -40,9 +44,14 @@ Err ScanTimeFromIRtMapper::init(const QString &iRTRecalibrationFilePath) {
             insertLogic
             );
 
+    const auto sortLogicIRtAsc
+        = [](const QPair<double, double> &l, const QPair<double, double> &r){return l.first < r.first;};
+
+    std::sort(data.begin(), data.end(), sortLogicIRtAsc);
+
     m_segments = std::min(
             m_rtSegments,
-            static_cast<int>(std::max(1.0, 2.0 * sqrt(data.size() / m_minRtPredBin)))
+            static_cast<int>(std::max(1.0, 2.0 * sqrt(data.size() / static_cast<double>(m_minRtPredBin))))
             );
 
     e = mapRT(data); ree;
@@ -143,8 +152,8 @@ namespace {
         QVector<double> rte;
         QVector<double> rts;
 
-        QVector<QPair<double, double>> pava;
-        e = PAVA(data, &pava); ree;
+//        QVector<QPair<double, double>> pava;
+//        e = PAVA(data, &pava); ree;
 
         rtp.resize(dataSize);
         rte.resize(dataSize);
@@ -157,7 +166,8 @@ namespace {
         points->resize(m);
 
         for (i = 0; i < dataSize; i++) {
-            rtp[i] = data[i].second, rte[i] = data[i].first;
+            rtp[i] = data[i].second;
+            rte[i] = data[i].first;
         }
 
         e = ErrorUtils::isNotEqual(m, 0); ree
@@ -175,7 +185,7 @@ namespace {
         for (i = 1; i < m; i++) {
             if (points->at(i) - points->at(i - 1) < std::numeric_limits<double>::min()) {
                 for (k = i - 1; k < m - 1; k++) {
-                    points[k] = points[k + 1];
+                    (*points)[k] = points->at(k + 1);
                 }
                 m--;
             }
@@ -186,28 +196,29 @@ namespace {
         for (i = k = 0; i < dataSize; i++) {
             double x = rte[i];
 
-            if (!k && x <= points->at(i)) {
+            if (!k && x <= points->at(0)) {
+
                 TrL.emplace_back(i, 0, 1.0);
-                TrL.emplace_back(i, 1, x - points->at(0));
+                TrL.emplace_back(i, 1, static_cast<double>(x - points->at(0)));
             }
             else {
                 for (; k < m && points->at(k) < x; k++);
                 if (k == m) {
                     TrL.emplace_back(i, (k - 1) * 2, 1.0);
-                    TrL.emplace_back(i, (k - 1) * 2 + 1, x - points->at(k - 1));
+                    TrL.emplace_back(i, (k - 1) * 2 + 1, static_cast<double>(x - points->at(k - 1)));
                 }
                 else {
+
                     w = points->at(k) - points->at(k - 1);
                     e = ErrorUtils::isFalse(MathUtils::tZero(w)); ree
 
                     const double u = (x - points->at(k - 1)) / w;
                     const double v = u - 1.0;
 
-                    TrL.emplace_back(i, (k - 1) * 2, (1.0 + 2.0 * u) * std::pow(v, 2));
-                    TrL.emplace_back(i, (k - 1) * 2 + 1, w * u * std::pow(v, 2));
-
-                    TrL.emplace_back(i, k * 2, std::pow(u, 2) * (1.0 - 2.0 * v));
-                    TrL.emplace_back(i, k * 2 + 1, w * std::pow(u, 2) * v);
+                    TrL.emplace_back(i, (k - 1) * 2, static_cast<double>((1.0 + 2.0 * u) * std::pow(v, 2)));
+                    TrL.emplace_back(i, (k - 1) * 2 + 1, static_cast<double>(w * u * std::pow(v, 2)));
+                    TrL.emplace_back(i, k * 2, static_cast<double>(std::pow(u, 2) * (1.0 - 2.0 * v)));
+                    TrL.emplace_back(i, k * 2 + 1, static_cast<double>(w * std::pow(u, 2) * v));
                 }
             }
         }
@@ -215,7 +226,16 @@ namespace {
         const Eigen::VectorXd B = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(rtp.data(), rtp.size());
 
         Eigen::SparseMatrix<double, Eigen::RowMajor> A(dataSize, coeffs->size());
-        A.setFromTriplets(TrL.begin(), TrL.end());
+        for (const Triplet &t : TrL) {
+
+            const bool coorIsOutOfRange = t.row() >= dataSize || t.col() >= coeffs->size() || t.row() < 0 || t.col() < 0;
+            if (coorIsOutOfRange) {
+                qDebug() << t.row() << t.col() << dataSize << coeffs->size() << "OOR Error";
+            }
+
+            e = ErrorUtils::isFalse(coorIsOutOfRange); ree;
+            A.coeffRef(t.row(), t.col()) = t.value();
+        }
 
         Eigen::SparseQR <Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int> > SQR;
         SQR.compute(A);
@@ -254,6 +274,7 @@ namespace {
             r += coeff.at((m - 1) * 2);
             r += coeff.at((m - 1) * 2 + 1) * (x - points.at(m - 1));
             *y = r;
+            ERR_RETURN
         }
 
         int low = 0;
@@ -280,7 +301,6 @@ namespace {
         r += coeff.at(k * 2 + 1) * w * std::pow(u, 2) * v;
 
         *y = r;
-
         ERR_RETURN
     }
 
@@ -311,7 +331,6 @@ Err ScanTimeFromIRtMapper::mapRT(const QVector<QPair<double, double>> &data) {
     tempData.reserve(data.size());
 
     for (const QPair<double, double> &p : data) {
-
         double y;
         e = calcSpline(m_coeffs, m_points, p.first, &y); ree;
         rtDiff.push_back(std::abs(p.second - y));
@@ -339,5 +358,27 @@ Err ScanTimeFromIRtMapper::predictScanTime(double iRT, double *scanTime) {
     e = ErrorUtils::isNotEmpty(m_coeffs); ree;
     e = calcSpline(m_coeffs, m_points, iRT, scanTime); ree;
 
+    ERR_RETURN
+}
+
+Err ScanTimeFromIRtMapper::_pavaTestAccess(
+        const QVector<QPair<double, double>> &data,
+        QVector<QPair<double, double>> *resultOutput
+        ) {
+
+    ERR_INIT
+    e = PAVA(data, resultOutput); ree;
+    ERR_RETURN
+}
+
+Err ScanTimeFromIRtMapper::_splineTestAcces(
+        const QVector<QPair<double, double>> &data,
+        int segments,
+        QVector<double> *coeffs,
+        QVector<double> *points
+        ) {
+
+    ERR_INIT
+    e = spline(data, segments, coeffs, points); ree
     ERR_RETURN
 }

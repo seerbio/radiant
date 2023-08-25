@@ -23,6 +23,8 @@ class ALGORITHMSLIB_EXPORTS ScanTimeFromIRtMapper {
 
 public:
 
+    friend class ScanTimeFromIRtMapperTests;
+
     ScanTimeFromIRtMapper();
     ~ScanTimeFromIRtMapper() = default;
 
@@ -35,6 +37,18 @@ private:
 
     Err mapRT(const QVector<QPair<double, double>> &data);
 
+    static Err _pavaTestAccess(
+            const QVector<QPair<double, double>> &data,
+            QVector<QPair<double, double>> *resultOutput
+            );
+
+    static Err _splineTestAcces(
+            const QVector<QPair<double, double>> &data,
+            int segments,
+            QVector<double> *coeffs,
+            QVector<double> *points
+            );
+
 private:
 
     QVector<double> m_coeffs;
@@ -43,8 +57,6 @@ private:
     int m_segments;
     int m_rtSegments;
     int m_minRtPredBin;
-
-
 
 };
 
