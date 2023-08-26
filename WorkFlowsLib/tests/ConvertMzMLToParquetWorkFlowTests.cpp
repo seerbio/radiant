@@ -29,7 +29,7 @@ void ConvertMzMLToParquetWorkFlowTests::convertMzMLToParquetRunTest() {
 
     //TODO use proper path procedures after finding small file.
     const QString mzMLFilepath
-            = QStringLiteral("/home/anichols/Downloads/EXP20011_2023ms0452X12_B.raw.mzML");
+            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML");
 
     const QString expectedOutputFilePath
             = mzMLFilepath + S_GLOBAL_SETTINGS.DOT_PRQ;

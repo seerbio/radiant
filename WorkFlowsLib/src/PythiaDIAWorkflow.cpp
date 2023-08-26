@@ -331,7 +331,7 @@ namespace {
                 {{-1, -1.0}}
                 ); ree;
 
-        e = msFrame.deisotopeMsFrame(ppmTol); ree;
+//        e = msFrame.deisotopeMsFrame(ppmTol); ree;
         e = msFrame.smoothFrame(
                 ffParams.filterLength,
                 ffParams.sigma,

@@ -100,7 +100,7 @@ void FragLibReaderTests::convertDIANNLibToFragLibTest() {
 
     ERR_INIT
 
-    const QString diannLibraryFile = "/home/anichols/Desktop/Testing/lib.predicted.speclib";
+    const QString diannLibraryFile = "/home/anichols/Desktop/Testing/LatestStuff/predicted_lib.predicted.speclib";
 
     e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile);
     QCOMPARE(e, eNoError);
