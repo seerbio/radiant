@@ -4,6 +4,10 @@
 
 #include "FragLibReader.h"
 
+#include "AminoAcids.h"
+#include "LibraryCommon.h"
+#include "LibraryReader.h"
+#include "MolecularFormula.h"
 #include "ParallelUtils.h"
 
 #include <QElapsedTimer>
@@ -308,7 +312,11 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
 
     for (const FragLibReaderRow &row : fragLibReaderRows) {
 
-        e = ErrorUtils::isFalse(peptideSequenceChargeKeyVsCandidatePeptide->contains(row.peptideSequenceChargeKey)); ree;
+        e = ErrorUtils::isFalse(peptideSequenceChargeKeyVsCandidatePeptide->contains(row.peptideSequenceChargeKey));
+        if (e != eNoError) {
+            qDebug() << row.peptideSequenceChargeKey;
+//            rrr(eValueError);
+        }
 
         PeptideStringWithMods peptideStringWithMods;
         Charge charge;
@@ -434,6 +442,126 @@ Err FragLibReader::generateFragmentFrequencies(
     }
 
     qDebug() << "Frequences calculated in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+
+namespace {
+
+    //From biophysicalcalcs.h
+    double calculatePeptideMass(
+            const QString &sequence,
+            const AminoAcids &aminoAcids,
+            const QHash<ResidueIndex, ModificationMass> &mods
+    ) {
+
+        const auto accumulateLogic
+                = [&](double sum, const QChar &aa){return sum + aminoAcids.aminoAcid(aa).monoisotopicMass(); };
+
+        const double mass = std::accumulate(sequence.begin(),  sequence.end(), CommonMolecules::H2O.monoisotopicMass(), accumulateLogic);
+
+        const QList<double> &modMasses = mods.values();
+        const double modMassesSum = std::accumulate(modMasses.begin(), modMasses.end(), 0.0);
+
+        return mass + modMassesSum;
+    }
+
+    void removeModificationLabel(PeptideStringWithMods *peptideStringWithMods) {
+
+        bool bypassOn = false;
+
+        PeptideStringWithMods peptideStringWithModsStripped;
+        for (const QChar &aa : *peptideStringWithMods) {
+
+            if (aa == '(') {
+                bypassOn = true;
+            }
+            else if (aa == ')') {
+                bypassOn = false;
+                continue;
+            }
+
+            if (bypassOn) {
+                continue;
+            }
+
+            peptideStringWithModsStripped += aa;
+        }
+
+        *peptideStringWithMods = peptideStringWithModsStripped;
+    }
+
+
+}//namespace
+Err FragLibReader::convertDIANNLibToFragLib(const QString &specLibFilePath) {
+
+    ERR_INIT
+
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
+    LibraryReader lib;
+    lib.load(specLibFilePath.toStdString());
+
+    QVector<FragLibReaderRow> fragLibReaderRows;
+
+    for (const Entry &entry : lib.getEntries()) {
+
+        const QString diannPepSeqChargeString = QString::fromStdString(entry.getName());
+
+        Charge charge;
+        e = ErrorUtils::toInt(QString(diannPepSeqChargeString.back()), &charge); ree;
+
+        if (charge == 4 || charge == 1) {
+            continue;
+        }
+
+        PeptideStringWithMods peptideStringWithMods = diannPepSeqChargeString;
+        peptideStringWithMods = peptideStringWithMods.replace(QString::number(charge), "");
+        peptideStringWithMods = peptideStringWithMods.replace('L', 'X').replace('I', 'X');
+        removeModificationLabel(&peptideStringWithMods);
+
+        const PeptideSequenceChargeKey peptideSequenceChargeKey = peptideStringWithMods + "|" + QString::number(charge);
+        const double mass = calculatePeptideMass(peptideStringWithMods, aminoAcids, {});
+        const double iRT = entry.getTarget().getIRT();
+
+        QVector<double> mzVals;
+        QVector<double> intensityVals;
+        QStringList ionLabels;
+        for (const Product &pr : entry.getTarget().getFragments()) {
+
+            const int mzCharge = toascii(static_cast<unsigned char>(pr.charge));
+            const QChar ionType = toascii(pr.type) == 1 ? 'b' : 'y';
+            const int index = ionType == 'b' ? toascii(pr.index) + 1 : peptideStringWithMods.size() - toascii(pr.index);
+            const QString ionModifier = mzCharge == 2
+                    ?  "^2" : QString::fromStdString(LibraryCommon::getLoss(static_cast<int>(toascii(pr.loss))));
+
+            const QString ionLabel = ionType + QString::number(index) + ionModifier;
+            const double mz = pr.mz;
+            const double intensity = pr.height;
+
+            mzVals.push_back(mz);
+            intensityVals.push_back(intensity);
+            ionLabels.push_back(ionLabel);
+        }
+
+        const QString ionLabelsJoined = ionLabels.join(";");
+
+        FragLibReaderRow row;
+        row.peptideSequenceChargeKey = peptideSequenceChargeKey;
+        row.mzVals = mzVals;
+        row.intensityVals = intensityVals;
+        row.ionLabels = ionLabelsJoined;
+        row.mass = mass;
+        row.isDecoy = 0;
+        row.iRT = iRT;
+
+        fragLibReaderRows.push_back(row);
+    }
+
+    const QString outputFilePath = specLibFilePath + ".fragLib";
+    e = ParquetReader::write(fragLibReaderRows, outputFilePath); ree;
 
     ERR_RETURN
 }

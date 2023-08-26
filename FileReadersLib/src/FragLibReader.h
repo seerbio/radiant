@@ -167,6 +167,9 @@ public:
             QMap<MzHashed, FrequencyPercent> *fragmentFrequencies
     );
 
+    static Err convertDIANNLibToFragLib(const QString &specLibFilePath);
+
+
 
 private:
 

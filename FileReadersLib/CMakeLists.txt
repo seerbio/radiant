@@ -92,6 +92,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         ChemLib
         UtilsLib
+        KarnnLib
         ${ARROW_SHARED_LIBRARY}
         ${ARROW_STATIC_LIBRARY_DEPS}
         ${PARQUET_SHARED_LIBRARY}

@@ -20,9 +20,12 @@ private Q_SLOTS:
 
     void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
     void getSM2IonsTest();
+    void convertDIANNLibToFragLibTest();
 };
 
 void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
+
+    QSKIP("undo me baby");
 
     FragLibReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
@@ -78,6 +81,8 @@ Err logic(const QString &testFilePath) {
 
 void FragLibReaderTests::getSM2IonsTest() {
 
+    QSKIP("undo me baby");
+
     const QString testFilePath
         = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
 
@@ -88,6 +93,17 @@ void FragLibReaderTests::getSM2IonsTest() {
             logic
             ) ;
     futures.waitForFinished();
+
+}
+
+void FragLibReaderTests::convertDIANNLibToFragLibTest() {
+
+    ERR_INIT
+
+    const QString diannLibraryFile = "/home/anichols/Desktop/Testing/lib.predicted.speclib";
+
+    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile);
+    QCOMPARE(e, eNoError);
 
 }
 

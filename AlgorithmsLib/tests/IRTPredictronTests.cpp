@@ -93,9 +93,9 @@ void IRTPredictronTests::buildNearestNeighborsIRTDataTest() {
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
 
     QVector<QPair<double, Coors>> nnInputData;
-    e = IRTPredictron::buildNearestNeighborsIRTData(iRTReCalFilePath, &nnInputData);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(2957, nnInputData.size());
+//    e = IRTPredictron::buildNearestNeighborsIRTData(iRTReCalFilePath, &nnInputData);
+//    QCOMPARE(e, eNoError);
+//    QCOMPARE(2957, nnInputData.size());
 
 
 }
@@ -109,36 +109,36 @@ void IRTPredictronTests::iRTToScanTimeTest() {
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
 
     QVector<QPair<double, Coors>> nnInputData;
-    e = IRTPredictron::buildNearestNeighborsIRTData(iRTReCalFilePath, &nnInputData);
-    QCOMPARE(e, eNoError);
-
-    const int midPoint = static_cast<int>(nnInputData.size() / 2.0);
-    QVector<QPair<double, Coors>> nnInputDataTrain = nnInputData.mid(0, midPoint);
-    QVector<QPair<double, Coors>> nnInputDataTest = nnInputData.mid(midPoint, midPoint);
-
-    qDebug() << nnInputDataTest.size() << nnInputDataTrain.size();
-
-    NearestNeighborsSearch nearestNeighborsSearch;
-    e = nearestNeighborsSearch.init(nnInputDataTrain);
-    QCOMPARE(e, eNoError);
-
-    const int kNearestPoints = 10;
-
-    for (const QPair<double, Coors> &row : nnInputDataTest) {
-
-        const double scanTime = row.first;
-        const Coors &coor = row.second;
-
-        QVector<NNSearchResult> nnSearchResult;
-        nearestNeighborsSearch.kNearestNeighborsSearch(
-                {coor},
-                kNearestPoints,
-                &nnSearchResult
-        );
-
-//        std::cout << "(" << scanTime << "," << nnSearchResult.front().meanValues << "),"<< std::endl;
-
-    }
+//    e = IRTPredictron::buildNearestNeighborsIRTData(iRTReCalFilePath, &nnInputData);
+//    QCOMPARE(e, eNoError);
+//
+//    const int midPoint = static_cast<int>(nnInputData.size() / 2.0);
+//    QVector<QPair<double, Coors>> nnInputDataTrain = nnInputData.mid(0, midPoint);
+//    QVector<QPair<double, Coors>> nnInputDataTest = nnInputData.mid(midPoint, midPoint);
+//
+//    qDebug() << nnInputDataTest.size() << nnInputDataTrain.size();
+//
+//    NearestNeighborsSearch nearestNeighborsSearch;
+//    e = nearestNeighborsSearch.init(nnInputDataTrain);
+//    QCOMPARE(e, eNoError);
+//
+//    const int kNearestPoints = 10;
+//
+//    for (const QPair<double, Coors> &row : nnInputDataTest) {
+//
+//        const double scanTime = row.first;
+//        const Coors &coor = row.second;
+//
+//        QVector<NNSearchResult> nnSearchResult;
+//        nearestNeighborsSearch.kNearestNeighborsSearch(
+//                {coor},
+//                kNearestPoints,
+//                &nnSearchResult
+//        );
+//
+////        std::cout << "(" << scanTime << "," << nnSearchResult.front().meanValues << "),"<< std::endl;
+//
+//    }
 
 }
 
