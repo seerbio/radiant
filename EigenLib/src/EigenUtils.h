@@ -13,6 +13,7 @@
 
 #include <QFile>
 #include <QVector>
+#include <QMap>
 
 #include <Eigen/Dense>
 
@@ -341,6 +342,36 @@ public:
         return QVector<T>::fromStdVector(vecReturn);
     }
 
+    template <typename T>
+    static Eigen::VectorX<T> convertQMapToEigenVector(
+            const QMap<int, T> &m,
+            int pointCount
+            ) {
+
+        Eigen::VectorX<T> vec(pointCount);
+        vec.setZero();
+
+        for (auto it = m.begin(); it != m.end(); it++) {
+
+            const int vecIndex = it.key();
+            const double val = it.value();
+
+            if (vecIndex < 0 || vecIndex >= pointCount) {
+                continue;
+            }
+
+            vec.coeffRef(vecIndex) = val;
+        }
+
+        return vec;
+    }
+
+    template <typename T>
+    static Eigen::VectorX<T> setNANToZero(const Eigen::VectorX<T> &vec) {
+        return vec.array().isNaN().select(0.0, vec);
+    }
+
+
     /*!
     * \brief Finds all apexes in a eigen vector.
      *
@@ -445,7 +476,6 @@ public:
 
         return troughtIndicies;
     }
-
 
     template<typename T>
     static Eigen::VectorX<T> rowWiseCosineSimilarOfMatrices(

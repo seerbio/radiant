@@ -107,6 +107,26 @@ public:
         ERR_RETURN;
     }
 
+    template <typename T>
+    static QVector<T> convertMapToVector(const QMap<int, T> &m, int vecSize){
+
+        QVector<double> vec(vecSize);
+
+        for (auto it = m.begin(); it != m.end(); it++) {
+
+            const int key = it.key();
+            const T val = it.value();
+
+            if (key <= vecSize) {
+                continue;
+            }
+
+            vec[key] = val;
+        }
+
+        return vec;
+    }
+
     template <typename T, typename U>
     static Err tranchMapForParallelizationInOrder(
             const QMap<T, U> &map,

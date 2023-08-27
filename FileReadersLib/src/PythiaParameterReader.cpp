@@ -417,11 +417,11 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.minScanCount = 2;
     pythiaParameters.skipScanCount = 0;
     pythiaParameters.useMeanMz = true;
-    pythiaParameters.filterLength = 3;
+    pythiaParameters.filterLength = 5;
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 12;
+    pythiaParameters.topNMs2Ions = 6;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;

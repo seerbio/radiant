@@ -155,7 +155,7 @@ namespace {
         PythiaParameters pythiaParameters;
         QString iRTReCalFilePath;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-        QVector<FeatureFinderHill> *featureFinderHills = nullptr;
+        QMap<ScanNumber , ScanPoints> *scanPoints = nullptr;
         QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptide = nullptr;
     };
 
@@ -171,7 +171,7 @@ namespace {
         MsFrameScoretron msFrameScoretron;
         e = msFrameScoretron.init(
                 ppi.pythiaParameters,
-                *ppi.featureFinderHills,
+                *ppi.scanPoints,
                 *ppi.peptideStringWithModsVsCandidatePeptide,
                 ppi.scanNumberVsScanTime,
                 ppi.iRTReCalFilePath
@@ -185,17 +185,16 @@ namespace {
         return {e, scoredCandidates};
     }
 
-
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QMap<UniqueMsInfoScanKey, QVector<FeatureFinderHill>> uniqueInfoScanKeyVsFeatureFinderHills;
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-    e = buildUniqueInfoScanKeyVsFeatureFinderHills(
+    e = buildUniqueMsInfoScanKeyVsScanPoints(
             msDataFilePath,
-            &uniqueInfoScanKeyVsFeatureFinderHills,
+            &uniqueInfoScanKeyVsScanPoints,
             &scanNumberVsScanTime
             ); ree;
 
@@ -214,7 +213,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
         ppi.scanNumberVsScanTime = scanNumberVsScanTime;
         ppi.iRTReCalFilePath = m_iRTReCalFilePath;
         ppi.pythiaParameters = m_pythiaParameters;
-        ppi.featureFinderHills = &uniqueInfoScanKeyVsFeatureFinderHills[uniqueMsInfoScanKey];
+        ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
         ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptide[uniqueMsInfoScanKey];
 
         parallelProcessingInputs.push_back(ppi);
@@ -222,7 +221,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     QVector<ScoredCandidate> combinedResults;
 
-//#define PROCESS_PARALLEL
+#define PROCESS_PARALLEL
 #ifdef PROCESS_PARALLEL
     QFuture<QPair<Err, QVector<ScoredCandidate>>> futures = QtConcurrent::mapped(
             parallelProcessingInputs,
@@ -244,195 +243,162 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
+//    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
 
     ERR_RETURN
 }
 
 namespace {
 
-    Err separateTargetWindows(
-            const QString &msFilePath,
-            QVector<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> *frames,
-            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
-    ) {
+//    Err separateTargetWindows(
+//            const QString &msFilePath,
+//            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
+//            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
+//    ) {
+//
+//        ERR_INIT
+//
+//        MsReaderParquet msReaderParquet;
+//        e = msReaderParquet.openFile(msFilePath); ree;
+//
+//        e = msReaderParquet.collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
+//
+//        const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet.getMsScanInfos();
+//        for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
+//            scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
+//        }
+//
+//        ERR_RETURN
+//    }
 
-        ERR_INIT
-
-        MsReaderParquet msReaderParquet;
-        e = msReaderParquet.openFile(msFilePath); ree;
-
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
-        e = msReaderParquet.collateTandemPrecursorTargetsDIA(&diaTargetFrame); ree
-
-        *frames = ParallelUtils::convertMapToVectorPairs(diaTargetFrame);
-
-        const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet.getMsScanInfos();
-        for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
-            scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
-        }
-
-        ERR_RETURN
-    }
-
-    Err loadHillsToScanNumberVsScanPoints(
-            const QVector<FeatureFinderHill> &featureFinderHills,
-            QMap<ScanNumber, ScanPoints> *scanNumberScanPointsHills
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
-
-        for (const FeatureFinderHill &ffh : featureFinderHills) {
-
-            const double mzMean = ffh.mzMean();
-            const QVector<ScanNumber> &scanNumbers = ffh.scanNumbers();
-            const QVector<double> &intensities = ffh.intensities();
-
-            e = ErrorUtils::isEqual(scanNumbers.size(), intensities.size()); ree
-
-            for (int i = 0; i < scanNumbers.size(); i++) {
-
-                const ScanNumber scanNumber = scanNumbers.at(i);
-                const double intensity = intensities.at(i);
-
-                if (MathUtils::tZero(intensity)) {
-                    continue;
-                }
-
-                (*scanNumberScanPointsHills)[scanNumber].push_back({mzMean, intensity});
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildSmoothedScanNumberVsScanPoints(
-            const QVector<FeatureFinderHill> &featureFinderHills,
-            const FeatureFinderParameters &ffParams,
-            double mzMax,
-            double ppmTol,
-            QMap<ScanNumber, ScanPoints> *smoothedScanNumberVsScanPoints
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
-
-        QMap<ScanNumber, ScanPoints> scanNumberScanPointsHills;
-        e = loadHillsToScanNumberVsScanPoints(featureFinderHills, &scanNumberScanPointsHills); ree;
-
-        MsFrame msFrame;
-        msFrame.init(
-                "KalliopeAndBellatrix",
-                scanNumberScanPointsHills,
-                {-1.0, -1.0},
-                {{-1, -1.0}}
-                ); ree;
-
-//        e = msFrame.deisotopeMsFrame(ppmTol); ree;
-        e = msFrame.smoothFrame(
-                ffParams.filterLength,
-                ffParams.sigma,
-                ffParams.smoothCount,
-                mzMax
-                ); ree;
-
-        *smoothedScanNumberVsScanPoints = msFrame.scanNumberVsScanPoints();
-
-        ERR_RETURN
-    }
-
-    QPair<Err, QPair<UniqueMsInfoScanKey, QVector<FeatureFinderHill>>> parallelFeatureFind(
-            const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &frame,
-            const PythiaParameters &pythiaParameters
-    ) {
-
-        ERR_INIT
-
-        FeatureFinderParameters ffParams;
-        ffParams.tolerancePPM = pythiaParameters.ms2ExtractionWidthPPM;
-        ffParams.skipScanCount = pythiaParameters.skipScanCount;
-        ffParams.minScanCount = pythiaParameters.minScanCount;
-        ffParams.filterLength = pythiaParameters.filterLength;
-        ffParams.smoothCount = pythiaParameters.smoothCount;
-        ffParams.sigma = pythiaParameters.sigma;
-        ffParams.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
-
-        FeatureFinderHillBuilder featureFinderHillBuilder;
-        e = featureFinderHillBuilder.init(ffParams); rree;
-        e = featureFinderHillBuilder.buildHills(frame.second); rree;
-
-        QVector<FeatureFinderHill> featureFinderHills;
-        e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills); rree;
-
-        QMap<ScanNumber, ScanPoints> smoothedScanNumberVsScanPoints;
-        e = buildSmoothedScanNumberVsScanPoints(
-                featureFinderHills,
-                ffParams,
-                pythiaParameters.mzMaxDataStructure,
-                pythiaParameters.ms2ExtractionWidthPPM,
-                &smoothedScanNumberVsScanPoints
-                ); rree;
-
-        e = featureFinderHillBuilder.buildHills(smoothedScanNumberVsScanPoints); rree;
-        e = featureFinderHillBuilder.refineHills(false); rree;
-
-        QVector<FeatureFinderHill> smoothedFeatureFinderHills;
-        e = featureFinderHillBuilder.featureFinderHills(&smoothedFeatureFinderHills); rree;
-
-        return {e, {frame.first, smoothedFeatureFinderHills}};
-    }
+//    Err loadHillsToScanNumberVsScanPoints(
+//            const QVector<FeatureFinderHill> &featureFinderHills,
+//            QMap<ScanNumber, ScanPoints> *scanNumberScanPointsHills
+//            ) {
+//
+//        ERR_INIT
+//
+//        e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
+//
+//        for (const FeatureFinderHill &ffh : featureFinderHills) {
+//
+//            const double mzMean = ffh.mzMean();
+//            const QVector<ScanNumber> &scanNumbers = ffh.scanNumbers();
+//            const QVector<double> &intensities = ffh.intensities();
+//
+//            e = ErrorUtils::isEqual(scanNumbers.size(), intensities.size()); ree
+//
+//            for (int i = 0; i < scanNumbers.size(); i++) {
+//
+//                const ScanNumber scanNumber = scanNumbers.at(i);
+//                const double intensity = intensities.at(i);
+//
+//                if (MathUtils::tZero(intensity)) {
+//                    continue;
+//                }
+//
+//                (*scanNumberScanPointsHills)[scanNumber].push_back({mzMean, intensity});
+//            }
+//        }
+//
+//        ERR_RETURN
+//    }
+//
+//    Err buildSmoothedScanNumberVsScanPoints(
+//            const QVector<FeatureFinderHill> &featureFinderHills,
+//            const FeatureFinderParameters &ffParams,
+//            double mzMax,
+//            double ppmTol,
+//            QMap<ScanNumber, ScanPoints> *smoothedScanNumberVsScanPoints
+//            ) {
+//
+//        ERR_INIT
+//
+//        e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
+//
+//        QMap<ScanNumber, ScanPoints> scanNumberScanPointsHills;
+//        e = loadHillsToScanNumberVsScanPoints(featureFinderHills, &scanNumberScanPointsHills); ree;
+//
+//        MsFrame msFrame;
+//        msFrame.init(
+//                "KalliopeAndBellatrix",
+//                scanNumberScanPointsHills,
+//                {-1.0, -1.0},
+//                {{-1, -1.0}}
+//                ); ree;
+//
+////        e = msFrame.deisotopeMsFrame(ppmTol); ree;
+//        e = msFrame.smoothFrame(
+//                ffParams.filterLength,
+//                ffParams.sigma,
+//                ffParams.smoothCount,
+//                mzMax
+//                ); ree;
+//
+//        *smoothedScanNumberVsScanPoints = msFrame.scanNumberVsScanPoints();
+//
+//        ERR_RETURN
+//    }
+//
+//    QPair<Err, QPair<UniqueMsInfoScanKey, QVector<FeatureFinderHill>>> parallelFeatureFind(
+//            const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &frame,
+//            const PythiaParameters &pythiaParameters
+//    ) {
+//
+//        ERR_INIT
+//
+//        FeatureFinderParameters ffParams;
+//        ffParams.tolerancePPM = pythiaParameters.ms2ExtractionWidthPPM;
+//        ffParams.skipScanCount = pythiaParameters.skipScanCount;
+//        ffParams.minScanCount = pythiaParameters.minScanCount;
+//        ffParams.filterLength = pythiaParameters.filterLength;
+//        ffParams.smoothCount = pythiaParameters.smoothCount;
+//        ffParams.sigma = pythiaParameters.sigma;
+//        ffParams.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
+//
+//        FeatureFinderHillBuilder featureFinderHillBuilder;
+//        e = featureFinderHillBuilder.init(ffParams); rree;
+//        e = featureFinderHillBuilder.buildHills(frame.second); rree;
+//
+//        QVector<FeatureFinderHill> featureFinderHills;
+//        e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills); rree;
+//
+//        QMap<ScanNumber, ScanPoints> smoothedScanNumberVsScanPoints;
+//        e = buildSmoothedScanNumberVsScanPoints(
+//                featureFinderHills,
+//                ffParams,
+//                pythiaParameters.mzMaxDataStructure,
+//                pythiaParameters.ms2ExtractionWidthPPM,
+//                &smoothedScanNumberVsScanPoints
+//                ); rree;
+//
+//        e = featureFinderHillBuilder.buildHills(smoothedScanNumberVsScanPoints); rree;
+//        e = featureFinderHillBuilder.refineHills(false); rree;
+//
+//        QVector<FeatureFinderHill> smoothedFeatureFinderHills;
+//        e = featureFinderHillBuilder.featureFinderHills(&smoothedFeatureFinderHills); rree;
+//
+//        return {e, {frame.first, smoothedFeatureFinderHills}};
+//    }
 
 }//namespace
-Err PythiaDIAWorkflow::buildUniqueInfoScanKeyVsFeatureFinderHills(
+Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
         const QString &msDataFilePath,
-        QMap<UniqueMsInfoScanKey, QVector<FeatureFinderHill>> *uniqueInfoScanKeyVsFeatureFinderHills,
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
         QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
         ) {
 
     ERR_INIT
 
-    QVector<QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>>> diaTargetFrames;
-    e = separateTargetWindows(
-            msDataFilePath,
-            &diaTargetFrames,
-            scanNumberVsScanTime
-    ); ree;
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(msDataFilePath); ree;
 
-#define RUN_PYTHIA_PARALLEL
-#ifdef RUN_PYTHIA_PARALLEL
+    e = msReaderParquet.collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
 
-    const auto featureFinderLogicBinder = std::bind(
-            parallelFeatureFind,
-            std::placeholders::_1,
-            m_pythiaParameters
-    );
-
-    QFuture<QPair<Err, QPair<UniqueMsInfoScanKey, QVector<FeatureFinderHill>>>> futures = QtConcurrent::mapped(
-            diaTargetFrames,
-            featureFinderLogicBinder
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Err, QPair<UniqueMsInfoScanKey, QVector<FeatureFinderHill>>> &res: futures) {
-
-        e = res.first; ree;
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey = res.second.first;
-        const QVector<FeatureFinderHill> &featureFinderHills = res.second.second;
-
-        uniqueInfoScanKeyVsFeatureFinderHills->insert(uniqueMsInfoScanKey, featureFinderHills);
+    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet.getMsScanInfos();
+    for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
+        scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
     }
-
-#else
-    for (const QPair<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> &targetFrame : diaTargetFrames) {
-        QPair<Err, QPair<UniqueMsInfoScanKey, QVector<FeatureFinderHill>>> result = parallelFeatureFind(targetFrame, m_pythiaParameters); ree;
-    }
-#endif
 
     ERR_RETURN
 }
-
-
-

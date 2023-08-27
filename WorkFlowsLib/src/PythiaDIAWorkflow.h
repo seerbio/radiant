@@ -46,9 +46,9 @@ public:
 
 private:
 
-    Err buildUniqueInfoScanKeyVsFeatureFinderHills(
+    Err buildUniqueMsInfoScanKeyVsScanPoints(
             const QString &msDataFilePath,
-            QMap<UniqueMsInfoScanKey, QVector<FeatureFinderHill>> *uniqueInfoScanKeyVsFeatureFinderHills,
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
             QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
             );
 

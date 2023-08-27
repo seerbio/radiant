@@ -15,6 +15,7 @@
 #include "NearestNeighborsSearch.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
+#include "PeakIntegratomatic.h"
 #include "ScanTimeFromIRtMapper.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
@@ -39,7 +40,7 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
-        const QVector<FeatureFinderHill> &featureFinderHills,
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
 ) {
@@ -47,12 +48,11 @@ Err MsFrameScoretron::init(
     ERR_INIT
 
     e = ErrorUtils::isTrue(params.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(featureFinderHills); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
     e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
 
     m_params = params;
-    m_featureFinderHills = featureFinderHills;
     m_fragPredsTopN = peptideStringWithModsVsCandidatePeptide;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
@@ -62,12 +62,26 @@ Err MsFrameScoretron::init(
             &m_fragmentFrequencies
     ); ree
 
+    m_msFrame.init(
+            scanNumberVsScanPoints,
+            scanNumberVsScanTime
+            ); ree;
+
+//    e = msFrame.deisotopeMsFrame(ppmTol); ree;
+//    e = msFrame.smoothFrame(
+//            ffParams.filterLength,
+//            ffParams.sigma,
+//            ffParams.smoothCount,
+//            mzMax
+//            ); ree;
+
+
     ERR_RETURN
 }
 
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
-        const QVector<FeatureFinderHill> &featureFinderHills,
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const QString &iRTRecalibrationFilePath
@@ -77,7 +91,7 @@ Err MsFrameScoretron::init(
 
     e = init(
             params,
-            featureFinderHills,
+            scanNumberVsScanPoints,
             peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime
             ); ree;
@@ -107,9 +121,9 @@ namespace {
     QMap<PeptideStringWithMods, QVector<MS2IonPeak>> buildScanNumberVsMS2IonPeaks(const QVector<MS2IonPeak> &ms2IonPeaks) {
 
         QMap<PeptideStringWithMods , QVector<MS2IonPeak>> scanNumberVsMS2IonPeaks;
-        for (const MS2IonPeak &ms2IonPeak : ms2IonPeaks) {
-            scanNumberVsMS2IonPeaks[ms2IonPeak.peptideStringWithMods].push_back(ms2IonPeak);
-        }
+//        for (const MS2IonPeak &ms2IonPeak : ms2IonPeaks) {
+//            scanNumberVsMS2IonPeaks[ms2IonPeak.peptideStringWithMods].push_back(ms2IonPeak);
+//        }
 
         return scanNumberVsMS2IonPeaks;
     }
@@ -124,20 +138,20 @@ namespace {
 
         std::vector<rTreePoint> cloudLoader;
 
-        for (auto it = idVsMs2IonPeak->begin(); it != idVsMs2IonPeak->end(); it++) {
-
-            const Id id = it.key();
-            const MS2IonPeak &ms2ip = it.value();
-
-            frameIndexMaxesUnique->insert(ms2ip.frameIndexMax);
-
-            rTreeBox box(
-                    {static_cast<double>(ms2ip.frameIndexStart), ms2ip.mzSearched},
-                    {static_cast<double>(ms2ip.frameIndexEnd), ms2ip.mzSearched}
-            );
-
-            cloudLoader.push_back(rTreePoint({box, id}));
-        }
+//        for (auto it = idVsMs2IonPeak->begin(); it != idVsMs2IonPeak->end(); it++) {
+//
+//            const Id id = it.key();
+//            const MS2IonPeak &ms2ip = it.value();
+//
+//            frameIndexMaxesUnique->insert(ms2ip.frameIndexMax);
+//
+//            rTreeBox box(
+//                    {static_cast<double>(ms2ip.frameIndexStart), ms2ip.mzSearched},
+//                    {static_cast<double>(ms2ip.frameIndexEnd), ms2ip.mzSearched}
+//            );
+//
+//            cloudLoader.push_back(rTreePoint({box, id}));
+//        }
 
         const int maxElements = 16;
         return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
@@ -211,8 +225,8 @@ namespace {
         Eigen::MatrixX<double> mat(upperScanNumberIndex + rowBuffer, colCount);
         mat.setZero();
 
-        const QVector<double> p1Intensities = p1.intensityVals;
-        const QVector<double> p2Intensities = p2.intensityVals;
+        const QVector<double> p1Intensities = p1.intensityValsSmoothed;
+        const QVector<double> p2Intensities = p2.intensityValsSmoothed;
         QVector<int> p1ScanNumberIndexes(p1Intensities.size());
         std::iota(p1ScanNumberIndexes.begin(), p1ScanNumberIndexes.end(), p1ScanNumberIndexMinMax.first);
 
@@ -292,77 +306,77 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(ms2ip); ree
 
-        QMap<Id, MS2IonPeak> idVsMs2IonPeak;
-        QSet<int> frameIndexMaxesUnique;
-        const RTree rtree = loadRTree(ms2ip, &idVsMs2IonPeak, &frameIndexMaxesUnique);
-
-        const QSet<QVector<Id>> uniqueIDs = buildUniqueIDs(
-                rtree,
-                mzPeaksFoundMin,
-                frameIndexMaxesUnique
-                );
-
-        if (uniqueIDs.isEmpty()) {
-            ERR_RETURN
-        }
-
-        QVector<QVector<MS2IonPeak>> clusteredMs2IonPeaksForCosineSimCalc;
-        const auto transformLogic = [&](const QVector<Id> &ids){
-            QVector<MS2IonPeak> peaks;
-            for (Id id : ids) {
-                peaks.push_back(idVsMs2IonPeak.value(id));
-            }
-            return peaks;
-        };
-        std::transform(
-                uniqueIDs.begin(),
-                uniqueIDs.end(),
-                std::back_inserter(clusteredMs2IonPeaksForCosineSimCalc),
-                transformLogic
-                );
-
-        const int maxRank = 5;
-
-        QVector<MS2IonPeak> bestMS2IonPeaksClustering;
-        double bestCosineSimSum = 0.0;
-
-        for (const QVector<MS2IonPeak> &ms2ips : clusteredMs2IonPeaksForCosineSimCalc) {
-
-            for (const MS2IonPeak &ms2IonPeakAnchor : ms2ips) {
-
-                if (ms2IonPeakAnchor.rank > maxRank) {
-                    continue;
-                }
-
-                double cosineSimSum = 0.0;
-                QVector<MS2IonPeak> clustering;
-
-                for (const MS2IonPeak &ms2IonPeak : ms2ips) {
-
-                    double cosineSim;
-                    e = calculateCosineSimBetweenPeaks(ms2IonPeakAnchor, ms2IonPeak, &cosineSim); ree
-
-                    if (cosineSim < cosineSimMinThreshold) {
-                        continue;
-                    }
-
-                    MS2IonPeak ms2IonPeakNew = ms2IonPeak;
-                    ms2IonPeakNew.cosineSimToAnchor = cosineSim;
-                    ms2IonPeakNew.frameIndexMaxDiffFromAnchor = ms2IonPeakAnchor.frameIndexMax - ms2IonPeak.frameIndexMax;
-
-                    clustering.push_back(ms2IonPeakNew);
-                    cosineSimSum += ms2IonPeakNew.cosineSimToAnchor;
-                }
-
-                if (cosineSimSum > bestCosineSimSum) {
-                    bestCosineSimSum = cosineSimSum;
-                    bestMS2IonPeaksClustering = clustering;
-                }
-            }
-        }
-
-        *bestMS2IonPeaksClusteringOutput = bestMS2IonPeaksClustering;
-        *bestCosineSimSumOutput = bestCosineSimSum;
+//        QMap<Id, MS2IonPeak> idVsMs2IonPeak;
+//        QSet<int> frameIndexMaxesUnique;
+//        const RTree rtree = loadRTree(ms2ip, &idVsMs2IonPeak, &frameIndexMaxesUnique);
+//
+//        const QSet<QVector<Id>> uniqueIDs = buildUniqueIDs(
+//                rtree,
+//                mzPeaksFoundMin,
+//                frameIndexMaxesUnique
+//                );
+//
+//        if (uniqueIDs.isEmpty()) {
+//            ERR_RETURN
+//        }
+//
+//        QVector<QVector<MS2IonPeak>> clusteredMs2IonPeaksForCosineSimCalc;
+//        const auto transformLogic = [&](const QVector<Id> &ids){
+//            QVector<MS2IonPeak> peaks;
+//            for (Id id : ids) {
+//                peaks.push_back(idVsMs2IonPeak.value(id));
+//            }
+//            return peaks;
+//        };
+//        std::transform(
+//                uniqueIDs.begin(),
+//                uniqueIDs.end(),
+//                std::back_inserter(clusteredMs2IonPeaksForCosineSimCalc),
+//                transformLogic
+//                );
+//
+//        const int maxRank = 5;
+//
+//        QVector<MS2IonPeak> bestMS2IonPeaksClustering;
+//        double bestCosineSimSum = 0.0;
+//
+//        for (const QVector<MS2IonPeak> &ms2ips : clusteredMs2IonPeaksForCosineSimCalc) {
+//
+//            for (const MS2IonPeak &ms2IonPeakAnchor : ms2ips) {
+//
+//                if (ms2IonPeakAnchor.rank > maxRank) {
+//                    continue;
+//                }
+//
+//                double cosineSimSum = 0.0;
+//                QVector<MS2IonPeak> clustering;
+//
+//                for (const MS2IonPeak &ms2IonPeak : ms2ips) {
+//
+//                    double cosineSim;
+//                    e = calculateCosineSimBetweenPeaks(ms2IonPeakAnchor, ms2IonPeak, &cosineSim); ree
+//
+//                    if (cosineSim < cosineSimMinThreshold) {
+//                        continue;
+//                    }
+//
+//                    MS2IonPeak ms2IonPeakNew = ms2IonPeak;
+//                    ms2IonPeakNew.cosineSimToAnchor = cosineSim;
+//                    ms2IonPeakNew.frameIndexMaxDiffFromAnchor = ms2IonPeakAnchor.frameIndexMax - ms2IonPeak.frameIndexMax;
+//
+//                    clustering.push_back(ms2IonPeakNew);
+//                    cosineSimSum += ms2IonPeakNew.cosineSimToAnchor;
+//                }
+//
+//                if (cosineSimSum > bestCosineSimSum) {
+//                    bestCosineSimSum = cosineSimSum;
+//                    bestMS2IonPeaksClustering = clustering;
+//                }
+//            }
+//        }
+//
+//        *bestMS2IonPeaksClusteringOutput = bestMS2IonPeaksClustering;
+//        *bestCosineSimSumOutput = bestCosineSimSum;
 
         ERR_RETURN
     }
@@ -414,59 +428,59 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(fragPredTopNOfCluster); ree
-        e = ErrorUtils::isNotEmpty(bestClusterPeaks); ree
-
-        QMap<MzHashed, MS2IonPeak> completeCluster;
-
-        for (const MS2Ion &ms2Ion : fragPredTopNOfCluster) {
-            const MzHashed mzHashed
-                    = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-            MS2IonPeak ms2IonPeakUnfound;
-            ms2IonPeakUnfound.mzSearched = ms2Ion.mz;
-            ms2IonPeakUnfound.theoIntensity = ms2Ion.intensity;
-            ms2IonPeakUnfound.pointCountFound = 0;
-            ms2IonPeakUnfound.fragmentFrequency
-                = fragFrequencies.value(MathUtils::hashDecimal(ms2IonPeakUnfound.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
-
-            completeCluster.insert(mzHashed, ms2IonPeakUnfound);
-        }
-
-        for (const MS2IonPeak &ms2IonPeak : bestClusterPeaks) {
-
-            const MzHashed &mzHashed
-                    = MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-            e = ErrorUtils::isTrue(completeCluster.contains(mzHashed)); ree
-
-            completeCluster[mzHashed] = ms2IonPeak;
-        }
-
-        *bestClusterPeaksComplete = completeCluster.values().toVector();
-
-        const auto sortLogicIntensityAsc
-                = [](const MS2IonPeak &l, const MS2IonPeak &r){return l.theoIntensity < r.theoIntensity;};
-
-        std::sort(bestClusterPeaksComplete->rbegin(), bestClusterPeaksComplete->rend(), sortLogicIntensityAsc);
+//        e = ErrorUtils::isNotEmpty(fragPredTopNOfCluster); ree
+//        e = ErrorUtils::isNotEmpty(bestClusterPeaks); ree
+//
+//        QMap<MzHashed, MS2IonPeak> completeCluster;
+//
+//        for (const MS2Ion &ms2Ion : fragPredTopNOfCluster) {
+//            const MzHashed mzHashed
+//                    = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//
+//            MS2IonPeak ms2IonPeakUnfound;
+//            ms2IonPeakUnfound.mzSearched = ms2Ion.mz;
+//            ms2IonPeakUnfound.theoIntensity = ms2Ion.intensity;
+//            ms2IonPeakUnfound.pointCountFound = 0;
+//            ms2IonPeakUnfound.fragmentFrequency
+//                = fragFrequencies.value(MathUtils::hashDecimal(ms2IonPeakUnfound.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
+//
+//            completeCluster.insert(mzHashed, ms2IonPeakUnfound);
+//        }
+//
+//        for (const MS2IonPeak &ms2IonPeak : bestClusterPeaks) {
+//
+//            const MzHashed &mzHashed
+//                    = MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//
+//            e = ErrorUtils::isTrue(completeCluster.contains(mzHashed)); ree
+//
+//            completeCluster[mzHashed] = ms2IonPeak;
+//        }
+//
+//        *bestClusterPeaksComplete = completeCluster.values().toVector();
+//
+//        const auto sortLogicIntensityAsc
+//                = [](const MS2IonPeak &l, const MS2IonPeak &r){return l.theoIntensity < r.theoIntensity;};
+//
+//        std::sort(bestClusterPeaksComplete->rbegin(), bestClusterPeaksComplete->rend(), sortLogicIntensityAsc);
 
         ERR_RETURN
     }
 
-    MS2IonPeak findBestMS2IonPeak(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
-
-        const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
-            return l.cosineSimToAnchor < r.cosineSimToAnchor;
-        };
-
-        const MS2IonPeak frameIndexMaxMax = *std::max_element(
-                ms2IonPeaksBestCluster.rbegin(),
-                ms2IonPeaksBestCluster.rend(),
-                sortLogic
-        );
-
-        return frameIndexMaxMax;
-    }
+//    MS2IonPeak findBestMS2IonPeak(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
+//
+//        const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
+//            return l.cosineSimToAnchor < r.cosineSimToAnchor;
+//        };
+//
+//        const MS2IonPeak frameIndexMaxMax = *std::max_element(
+//                ms2IonPeaksBestCluster.rbegin(),
+//                ms2IonPeaksBestCluster.rend(),
+//                sortLogic
+//        );
+//
+//        return frameIndexMaxMax;
+//    }
 
     QPair<double, double> calculateFreqPercentFoundVsBest(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
 
@@ -485,40 +499,79 @@ namespace {
         return {frequencyPercentFound, frequencyPercentBestPossible};
     }
 
-    Err extractMs2PeakToVectors(
-            const QVector<MS2IonPeak> &ms2IonPeaksBestCluster,
-            QVector<double> *mzSearchedVec,
-            QVector<double> *theoIntensityVec,
-            QVector<double> *mzFoundMeanVec,
-            QVector<double> *mzFoundStDevVec,
-            QVector<double> *intensityFoundMaxVec,
-            QVector<int> *frameIndexMaxDiffFromAnchorVec,
-            QVector<double> *cosineSimToAnchorVec,
-            QVector<int> *peakPointCountFoundVec,
-            QVector<double> *fragmentFrequencyVec,
-            QVector<int> *rankVec
+//    Err extractMs2PeakToVectors(
+//            const QVector<MS2IonPeak> &ms2IonPeaksBestCluster,
+//            QVector<double> *mzSearchedVec,
+//            QVector<double> *theoIntensityVec,
+//            QVector<double> *mzFoundMeanVec,
+//            QVector<double> *mzFoundStDevVec,
+//            QVector<double> *intensityFoundMaxVec,
+//            QVector<int> *frameIndexMaxDiffFromAnchorVec,
+//            QVector<double> *cosineSimToAnchorVec,
+//            QVector<int> *peakPointCountFoundVec,
+//            QVector<double> *fragmentFrequencyVec,
+//            QVector<int> *rankVec
+//            ) {
+//
+//        ERR_INIT
+//
+//        e = ErrorUtils::isNotEmpty(ms2IonPeaksBestCluster); ree
+//
+//        for (const MS2IonPeak &mip : ms2IonPeaksBestCluster) {
+//            mzSearchedVec->push_back(mip.mzSearched);
+//            theoIntensityVec->push_back(mip.theoIntensity);
+//            mzFoundMeanVec->push_back(mip.mzFoundMean);
+//            mzFoundStDevVec->push_back(mip.mzFoundStDev);
+//            intensityFoundMaxVec->push_back(*std::max_element(mip.intensityVals.begin(), mip.intensityVals.end()));
+//            frameIndexMaxDiffFromAnchorVec->push_back(mip.frameIndexMaxDiffFromAnchor);
+//            cosineSimToAnchorVec->push_back(mip.cosineSimToAnchor);
+//            peakPointCountFoundVec->push_back(mip.pointCountFound);
+//            fragmentFrequencyVec->push_back(mip.fragmentFrequency);
+//            rankVec->push_back(mip.rank);
+//        }
+//
+//        ERR_RETURN
+//    }
+
+    Err processCandidate(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(ms2IonPeaksBestCluster); ree
+        e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
 
-        for (const MS2IonPeak &mip : ms2IonPeaksBestCluster) {
-            mzSearchedVec->push_back(mip.mzSearched);
-            theoIntensityVec->push_back(mip.theoIntensity);
-            mzFoundMeanVec->push_back(mip.mzFoundMean);
-            mzFoundStDevVec->push_back(mip.mzFoundStDev);
-            intensityFoundMaxVec->push_back(*std::max_element(mip.intensityVals.begin(), mip.intensityVals.end()));
-            frameIndexMaxDiffFromAnchorVec->push_back(mip.frameIndexMaxDiffFromAnchor);
-            cosineSimToAnchorVec->push_back(mip.cosineSimToAnchor);
-            peakPointCountFoundVec->push_back(mip.pointCountFound);
-            fragmentFrequencyVec->push_back(mip.fragmentFrequency);
-            rankVec->push_back(mip.rank);
+        const int rows = candidatePeptide.ms2Ions.size();
+        const int cols = mzHashedVsIonPresence.first().size();
+
+        Eigen::MatrixX<double> mat(rows, cols);
+        mat.setZero();
+
+        for (int i = 0; i < candidatePeptide.ms2Ions.size(); i++) {
+
+            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const QVector<double> ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+
+            if (ionPresenceVec.isEmpty()) {
+                continue;
+            }
+
+            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
+            mat.row(i) = eVec;
+
         }
 
+        Eigen::VectorX<double> summedMat = mat.colwise().sum();
+
+        if (summedMat.maxCoeff() < 6) {
+            ERR_RETURN
+        }
+        
         ERR_RETURN
     }
-
 
 
 }//namespace
@@ -526,68 +579,78 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
     ERR_INIT
 
-    QVector<MS2IonPeak> ms2IonPeaks;
-    e = buildMS2Peaks(&ms2IonPeaks); ree;
+    QMap<MzHashed, QVector<MS2IonPeak>> ms2IonPeaks;
+    QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
+    e = buildMS2Peaks(&ms2IonPeaks, &mzHashedVsIonPresence); ree;
 
-    QMap<PeptideStringWithMods, QPair<CosineSimSum, QVector<MS2IonPeak>>> bestCosineSimSumVsClusters;
-    e = findBestClusterGroupingPerPeptideStringWithMods(
-            ms2IonPeaks,
-            m_params.minFoundMzPeaks,
-            m_params.cosineSimThreshold,
-            &bestCosineSimSumVsClusters
-            ); ree
-
-    for (auto it = bestCosineSimSumVsClusters.begin(); it != bestCosineSimSumVsClusters.end(); it++) {
+    for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const QPair<CosineSimSum, QVector<MS2IonPeak>> &bestCluster = it.value();
-        const CosineSimSum cosineSimSum = bestCluster.first;
-        QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
+        const CandidatePeptide &candidatePeptide = it.value();
 
-        const MS2IonPeak anchorMS2IonPeak = findBestMS2IonPeak(ms2IonPeaksBestCluster);
-        const CandidatePeptide &candidatePeptide = m_fragPredsTopN.value(peptideStringWithMods);
+        e = processCandidate(candidatePeptide, mzHashedVsIonPresence); ree;
 
-        //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
-        e = fillUnFoundMS2IonPeaks(
-                ms2IonPeaksBestCluster,
-                candidatePeptide.ms2Ions,
-                m_fragmentFrequencies,
-                &ms2IonPeaksBestCluster
-                ); ree
-
-        const QPair<double, double> freqScores = calculateFreqPercentFoundVsBest(ms2IonPeaksBestCluster);
-
-        ScoredCandidate sc;
-        sc.peptideStringWithMods = peptideStringWithMods;
-        sc.frequencyPercentSum = freqScores.first;
-        sc.frequencyPercentSumBestPossible = freqScores.second;
-        sc.cosineSimSum = cosineSimSum;
-        sc.isDecoy = candidatePeptide.isDecoy;
-        sc.mass = candidatePeptide.mass;
-        sc.charge = candidatePeptide.charge;
-        sc.scanNumber = anchorMS2IonPeak.scanNumberMax;
-        sc.scanTime = m_scanNumberVsScanTime.value(sc.scanNumber);
-        sc.theoreticalFragmentCount = candidatePeptide.totalFragmentCount;
-        sc.iRTPredicted = candidatePeptide.iRt;
-        sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
-        sc.targetKey = m_uniqueMsInfoScanKey;
-
-        e = extractMs2PeakToVectors(
-                ms2IonPeaksBestCluster,
-                &sc.mzSearchedVec,
-                &sc.theoIntensityVec,
-                &sc.mzFoundMeanVec,
-                &sc.mzFoundStDevVec,
-                &sc.intensityFoundMaxVec,
-                &sc.frameIndexMaxDiffFromAnchorVec,
-                &sc.cosineSimToAnchorVec,
-                &sc.peakPointCountFoundVec,
-                &sc.fragmentFrequencyVec,
-                &sc.rankVec
-        ); ree
-
-        scoredCandidates->push_back(sc);
     }
+
+//    QMap<PeptideStringWithMods, QPair<CosineSimSum, QVector<MS2IonPeak>>> bestCosineSimSumVsClusters;
+//    e = findBestClusterGroupingPerPeptideStringWithMods(
+//            ms2IonPeaks,
+//            m_params.minFoundMzPeaks,
+//            m_params.cosineSimThreshold,
+//            &bestCosineSimSumVsClusters
+//            ); ree
+//
+//    for (auto it = bestCosineSimSumVsClusters.begin(); it != bestCosineSimSumVsClusters.end(); it++) {
+//
+//        const PeptideStringWithMods &peptideStringWithMods = it.key();
+//        const QPair<CosineSimSum, QVector<MS2IonPeak>> &bestCluster = it.value();
+//        const CosineSimSum cosineSimSum = bestCluster.first;
+//        QVector<MS2IonPeak> ms2IonPeaksBestCluster = bestCluster.second;
+//
+//        const MS2IonPeak anchorMS2IonPeak = findBestMS2IonPeak(ms2IonPeaksBestCluster);
+//        const CandidatePeptide &candidatePeptide = m_fragPredsTopN.value(peptideStringWithMods);
+//
+//        //NOTE: this is placed here so that unfound peaks are not included in frameIndexmaxMean calculation
+//        e = fillUnFoundMS2IonPeaks(
+//                ms2IonPeaksBestCluster,
+//                candidatePeptide.ms2Ions,
+//                m_fragmentFrequencies,
+//                &ms2IonPeaksBestCluster
+//                ); ree
+//
+//        const QPair<double, double> freqScores = calculateFreqPercentFoundVsBest(ms2IonPeaksBestCluster);
+//
+//        ScoredCandidate sc;
+//        sc.peptideStringWithMods = peptideStringWithMods;
+//        sc.frequencyPercentSum = freqScores.first;
+//        sc.frequencyPercentSumBestPossible = freqScores.second;
+//        sc.cosineSimSum = cosineSimSum;
+//        sc.isDecoy = candidatePeptide.isDecoy;
+//        sc.mass = candidatePeptide.mass;
+//        sc.charge = candidatePeptide.charge;
+//        sc.scanNumber = anchorMS2IonPeak.scanNumberMax;
+//        sc.scanTime = m_scanNumberVsScanTime.value(sc.scanNumber);
+//        sc.theoreticalFragmentCount = candidatePeptide.totalFragmentCount;
+//        sc.iRTPredicted = candidatePeptide.iRt;
+//        sc.scanTimePredicted = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
+//        sc.targetKey = m_uniqueMsInfoScanKey;
+//
+//        e = extractMs2PeakToVectors(
+//                ms2IonPeaksBestCluster,
+//                &sc.mzSearchedVec,
+//                &sc.theoIntensityVec,
+//                &sc.mzFoundMeanVec,
+//                &sc.mzFoundStDevVec,
+//                &sc.intensityFoundMaxVec,
+//                &sc.frameIndexMaxDiffFromAnchorVec,
+//                &sc.cosineSimToAnchorVec,
+//                &sc.peakPointCountFoundVec,
+//                &sc.fragmentFrequencyVec,
+//                &sc.rankVec
+//        ); ree
+//
+//        scoredCandidates->push_back(sc);
+//    }
 
 //#define WRITE_SCAN_FRAME
 #ifdef WRITE_SCAN_FRAME
@@ -599,115 +662,291 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
 namespace {
 
-    RTree loadHillsToRTree(
-            const QMap<Id, FeatureFinderHill> &idVsFeatureFinderHills,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+    Err buildMzHashedVsMzIon(
+            const QMap<PeptideStringWithMods, CandidatePeptide> &fragPredsTopN,
+            QMap<MzHashed, MZION> *mzHashedVsMzIon
             ) {
 
-        std::vector<rTreePoint> cloudLoader;
+        ERR_INIT
 
-        for (auto it = idVsFeatureFinderHills.begin(); it != idVsFeatureFinderHills.end(); it++) {
+        e = ErrorUtils::isNotEmpty(fragPredsTopN); ree;
+        mzHashedVsMzIon->clear();
 
-            const Id id = it.key();
-            const FeatureFinderHill &ffh = it.value();
+        for (auto it = fragPredsTopN.begin(); it != fragPredsTopN.end(); it++) {
 
-            const QPair<int, int> scanNumberMinMax = ffh.scanNumberMinMax();
-            const double mz = ffh.mzMean();
+            const QVector<MS2Ion> &ms2IonsTopN = it.value().ms2Ions;
 
-            rTreeBox box(
-                    {mz, scanNumberVsScanTime.value(scanNumberMinMax.first)},
-                    {mz, scanNumberVsScanTime.value(scanNumberMinMax.second)}
-            );
-
-            cloudLoader.push_back(rTreePoint({box, id}));
+            for (const MS2Ion &ms2Ion: ms2IonsTopN) {
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                mzHashedVsMzIon->insert(mzHashed, ms2Ion.mz);
+            }
         }
 
-        const int maxElements = 16;
-        return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+        ERR_RETURN
+    }
 
+    Err buildMzHashedVsXICPoints(
+            const QMap<MzHashed, MZION> &mzHashedVsMzIon,
+            const MsFrame &msFrame,
+            double ppmTol,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPoints
+            ) {
+
+        ERR_INIT
+
+        TurboXIC turboXic;
+        e = turboXic.init(msFrame.frameIndexVsScanPoints()); ree;
+
+        double scanNumberMin;
+        double scanNumberMax;
+        double mzMinRTree;
+        double mzMaxRTree;
+        e = turboXic.getRTreeLimits(
+                &scanNumberMin,
+                &scanNumberMax,
+                &mzMinRTree,
+                &mzMaxRTree
+        ); ree;
+
+        for (auto it = mzHashedVsMzIon.begin(); it != mzHashedVsMzIon.end(); it++) {
+
+            const MzHashed mzHashed = it.key();
+            const MZION mz = it.value();
+            const double mzTol = MathUtils::calculatePPM(mz, ppmTol);
+
+            const double mzMin = mz - mzTol;
+            const double mzMax = mz + mzTol;
+
+            const XICPoints xicPoints = turboXic.extractPointsXIC(
+                    mzMin,
+                    mzMax,
+                    static_cast<int>(scanNumberMin),
+                    static_cast<int>(scanNumberMax)
+            );
+
+            mzHashedVsXICPoints->insert(mzHashed, xicPoints);
+
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildMzHashedVsXICPointsNormalized(
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            int scanCount,
+            QMap<MzHashed, Eigen::VectorX<double>> *mzHashedVsXICPointsNormalized
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+
+        for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
+
+            const MzHashed mzHashed = it.key();
+            const XICPoints &xicPoints = it.value();
+
+            if (xicPoints.scanNumbersVsIntensityVals.isEmpty()) {
+                mzHashedVsXICPointsNormalized->insert(mzHashed, {});
+                continue;
+            }
+
+            Eigen::VectorX<double> vecNormalized = EigenUtils::convertQMapToEigenVector(
+                    xicPoints.scanNumbersVsIntensityVals,
+                    scanCount
+            );
+            const double denom = vecNormalized.maxCoeff();
+            vecNormalized = vecNormalized.array() / denom;
+
+            mzHashedVsXICPointsNormalized->insert(mzHashed, vecNormalized);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildMzHashedVsIonPresence(
+            const QMap<MzHashed, Eigen::VectorX<double>> &mzHashedVsXICPointsNormalized,
+            QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsNormalized); ree;
+
+        for (auto it = mzHashedVsXICPointsNormalized.begin(); it != mzHashedVsXICPointsNormalized.end(); it++) {
+
+            const MzHashed mzHashed = it.key();
+            const Eigen::VectorX<double> &normVec = it.value();
+
+            Eigen::VectorX<double> vecPresence = normVec.array() / normVec.array();
+            vecPresence = EigenUtils::setNANToZero(vecPresence);
+            mzHashedVsIonPresence->insert(mzHashed, EigenUtils::convertEigenVectorToQVector(vecPresence));
+        }
+
+        ERR_RETURN
+    }
+
+    PeakIntegratomaticParameters buildPeakIntegratomaticParams(const PythiaParameters  &pythiaParameters) {
+
+        PeakIntegratomaticParameters params;
+        params.smoothCount = pythiaParameters.smoothCount;
+        params.filterLength = pythiaParameters.filterLength;
+        params.sigma = pythiaParameters.sigma;
+        params.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
+
+        return params;
     }
 
 }//namespace
-Err MsFrameScoretron::buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks) {
+Err MsFrameScoretron::buildMS2Peaks(
+        QMap<MzHashed, QVector<MS2IonPeak>> *ms2IonPeaks,
+        QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
+        ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_fragPredsTopN); ree;
 
-    const QMap<Id, FeatureFinderHill> idVsFeatureFinderHills
-        = ParallelUtils::convertVectorToMap(m_featureFinderHills);
+    QMap<MzHashed, MZION> mzHashedVsMzIon;
+    e = buildMzHashedVsMzIon(m_fragPredsTopN, &mzHashedVsMzIon); ree;
 
-    e = ErrorUtils::isNotEmpty(idVsFeatureFinderHills); ree;
-    const RTree rTreeHills = loadHillsToRTree(
-            idVsFeatureFinderHills,
-            m_scanNumberVsScanTime
-            );
+    qDebug() << "Extracting" << mzHashedVsMzIon.size() << "XICs";
 
-    const double scanTimeBuffer = 55.0; //TODO make this settable.
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
+    e = buildMzHashedVsXICPoints(
+            mzHashedVsMzIon,
+            m_msFrame,
+            m_params.ms2ExtractionWidthPPM,
+            &mzHashedVsXICPoints
+            ); ree;
 
-    for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
+    QMap<MzHashed, Eigen::VectorX<double>> mzHashedVsXICPointsNormalized;
+    e = buildMzHashedVsXICPointsNormalized(
+            mzHashedVsXICPoints,
+            m_msFrame.scanCount(),
+            &mzHashedVsXICPointsNormalized
+            ); ree;
 
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
+    e = buildMzHashedVsIonPresence(
+            mzHashedVsXICPointsNormalized,
+            mzHashedVsIonPresence
+            );ree
 
-        const QVector<MS2Ion> &ms2IonsTopN = it.value().ms2Ions;
-        const ScanTime scanTime = m_fragPredsPredictedScanTime.value(peptideStringWithMods);
+    const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_params);
+    PeakIntegratomatic peakIntegratomatic;
+    e = peakIntegratomatic.init(ffParams); ree;
 
-        for (const MS2Ion &ms2Ion : ms2IonsTopN) {
+    for (auto it = mzHashedVsXICPointsNormalized.begin(); it != mzHashedVsXICPointsNormalized.end(); it++) {
 
-            const double mzTol = MathUtils::calculatePPM(ms2Ion.mz, m_params.ms2ExtractionWidthPPM);
-            const double mzMin = ms2Ion.mz - mzTol;
-            const double mzMax = ms2Ion.mz + mzTol;
+        const MzHashed mzHashed = it.key();
+        const Eigen::VectorX<double> &vecNormalized = it.value();
 
-            const double scanTimeMin = scanTime - scanTimeBuffer;
-            const double scanTimeMax = scanTime + scanTimeBuffer;
-
-            const rTreeBox queryBox(
-                    rTreeCoor(mzMin, scanTimeMin),
-                    rTreeCoor(mzMax, scanTimeMax)
-            );
-
-            std::vector<rTreePoint> rTreeSearchResult;
-            rTreeHills.query(
-                    bgi::intersects(queryBox),
-                    std::back_inserter(rTreeSearchResult)
-            );
-
-            for (const rTreePoint &rtp : rTreeSearchResult) {
-
-                const FeatureFinderHill &ffh = idVsFeatureFinderHills.value(rtp.second);
-
-                const double scanTimeApexHill = m_scanNumberVsScanTime.value(ffh.maxIntensityScanNumber());
-
-                if (std::abs(scanTime - scanTimeApexHill) > scanTimeBuffer) {
-                    continue;
-                }
-
-                MS2IonPeak ms2IonPeak;
-                ms2IonPeak.peptideStringWithMods = peptideStringWithMods;
-                ms2IonPeak.mzSearched = ms2Ion.mz;
-                ms2IonPeak.scanTimeApex = scanTimeApexHill;
-                ms2IonPeak.theoIntensity = ms2Ion.intensity;
-                ms2IonPeak.rank = ms2Ion.rank;
-                ms2IonPeak.frameIndexMax = ffh.maxIntensityScanNumberIndex();
-                ms2IonPeak.frameIndexStart = ffh.scanNumberIndexMinMax().first;
-                ms2IonPeak.frameIndexEnd = ffh.scanNumberIndexMinMax().second;
-                ms2IonPeak.scanNumberMax = ffh.maxIntensityScanNumber();
-                ms2IonPeak.scanNumberStart = ffh.scanNumberMinMax().first;
-                ms2IonPeak.scanNumberEnd = ffh.scanNumberMinMax().second;
-                ms2IonPeak.intensityVals = ffh.intensities();
-
-                ms2IonPeak.mzFoundMean = ffh.mzMean();
-                ms2IonPeak.mzFoundStDev = ffh.mzStDev();
-                ms2IonPeak.pointCountFound = ffh.scanCount();
-                ms2IonPeak.fragmentFrequency = m_fragmentFrequencies.value(MathUtils::hashDecimal(
-                        ms2IonPeak.mzSearched,
-                        S_GLOBAL_SETTINGS.HASHING_PRECISION
-                        ));
-
-                ms2IonPeaks->push_back(ms2IonPeak);
-            }
-
+        if (vecNormalized.size() == 0) {
+            ms2IonPeaks->insert(mzHashed, {});
+            continue;
         }
+
+        const QVector<double> vecNormalzedConverted = EigenUtils::convertEigenVectorToQVector(vecNormalized);
+
+        QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+        QVector<double> intensityVecSmoothed;
+        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
+                vecNormalzedConverted,
+                &peakIntegrationIndexes,
+                &intensityVecSmoothed
+                ); ree;
+
+        QVector<MS2IonPeak> ms2IonPeaksIntegrated;
+        e = extractMS2IonPeaks(
+                peakIntegrationIndexes,
+                mzHashedVsXICPoints.value(mzHashed),
+                intensityVecSmoothed,
+                &ms2IonPeaksIntegrated
+                ); ree;
+    }
+
+    ERR_RETURN
+}
+
+
+namespace {
+
+    Err calculatePeakStats(
+            const XICPoints &xicPoints,
+            double *mzValsMean,
+            double *mzValsStd
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(xicPoints.scanNumberVsMzVals); ree;
+
+        QVector<double> mzVals;
+        for (const QVector<double> &v : xicPoints.scanNumberVsMzVals) {
+            mzVals.append(v);
+        }
+
+        *mzValsMean = MathUtils::mean(mzVals);
+        *mzValsStd = MathUtils::stDev(mzVals);
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrameScoretron::extractMS2IonPeaks(
+        const QVector<PeakIntegrationIndexes> &peakLimits,
+        const XICPoints &xicPoints,
+        const QVector<double> &intensityVecSmoothed,
+        QVector<MS2IonPeak> *ms2IonPeaks
+) {
+
+    ERR_INIT
+
+    const int peakLenMin = 3;
+
+    for (const PeakIntegrationIndexes &pl : peakLimits) {
+
+        const int peakLen = pl.second - pl.first;
+        if (peakLen < peakLenMin) {
+            continue;
+        }
+
+        const QVector<double> rawXICVec
+                = ParallelUtils::convertMapToVector(xicPoints.scanNumbersVsIntensityVals, m_msFrame.scanCount());
+
+        const QVector<double> rawVecExtracted = rawXICVec.mid(pl.first, peakLen);
+        const QVector<double> smoothedVecExtracted = intensityVecSmoothed.mid(pl.first, peakLen);
+
+        const FrameIndex frameIndexApex = MathUtils::findMaxIndexInVector(smoothedVecExtracted);
+        const ScanNumber scanNumberApex = m_msFrame.scanNumberFromFrameIndex(frameIndexApex);
+
+
+        MS2IonPeak ms2IonPeak;
+        ms2IonPeak.scanTimeApex = m_msFrame.scanTimeFromScanNumber(scanNumberApex);;
+        ms2IonPeak.frameIndexApex = frameIndexApex;
+        ms2IonPeak.frameIndexStart = pl.first;
+        ms2IonPeak.frameIndexEnd = pl.second;
+        ms2IonPeak.scanNumberApex = scanNumberApex;
+        ms2IonPeak.scanNumberStart = m_msFrame.scanNumberFromFrameIndex(ms2IonPeak.frameIndexStart);
+        ms2IonPeak.scanNumberEnd = m_msFrame.scanNumberFromFrameIndex(ms2IonPeak.frameIndexEnd);
+
+        ms2IonPeak.intensityValsRaw = rawVecExtracted;
+        ms2IonPeak.intensityValsSmoothed = smoothedVecExtracted;
+        ms2IonPeak.pointCountFound = smoothedVecExtracted.size();
+
+        e = calculatePeakStats(
+                xicPoints,
+                &ms2IonPeak.mzValsMean,
+                &ms2IonPeak.mzValsStDev
+        ); ree;
+
+        ms2IonPeak.fragmentFrequency = m_fragmentFrequencies.value(MathUtils::hashDecimal(
+                ms2IonPeak.mzValsMean,
+                S_GLOBAL_SETTINGS.HASHING_PRECISION
+        ));
+
+        ms2IonPeaks->push_back(ms2IonPeak);
+
     }
 
     ERR_RETURN

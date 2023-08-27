@@ -21,7 +21,7 @@
 using namespace Error;
 
 class TandemDeconvolverResult;
-class TurboXIC;
+class XICPoints;
 
 namespace ScoredCandidateNamespace {
 
@@ -193,28 +193,19 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
 
 struct FILEREADERSLIB_EXPORTS MS2IonPeak {
-
-    PeptideStringWithMods peptideStringWithMods;
-    double mzSearched = -1.0;
-    double theoIntensity = -1.0;
     double scanTimeApex = -1.0;
-    int frameIndexMax = -1;
+    int frameIndexApex = -1;
     int frameIndexStart = -1;
     int frameIndexEnd = -1;
-    int scanNumberMax = -1;
+    int scanNumberApex = -1;
     int scanNumberStart = -1;
     int scanNumberEnd = -1;
-    QVector<double> intensityVals;
-    int rank = -1;
-
-    double mzFoundMean = -1.0;
-    double mzFoundStDev = -1.0;
+    double mzValsMean = -1.0;
+    double mzValsStDev = -1.0;
+    QVector<double> intensityValsRaw;
+    QVector<double> intensityValsSmoothed;
     int pointCountFound = -1;
     double fragmentFrequency = -1.0;
-
-    double cosineSimToAnchor = -1.0;
-    int frameIndexMaxDiffFromAnchor = 0;
-
 };
 
 
@@ -231,7 +222,7 @@ public:
 
     Err init(
             const PythiaParameters &params,
-            const QVector<FeatureFinderHill> &featureFinderHills,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QString &iRTRecalibrationFilePath
@@ -239,7 +230,7 @@ public:
 
     Err init(
             const PythiaParameters &params,
-            const QVector<FeatureFinderHill> &featureFinderHills,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsMS2Ions,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
@@ -249,7 +240,17 @@ public:
 
 private:
 
-    Err buildMS2Peaks(QVector<MS2IonPeak> *ms2IonPeaks);
+    Err buildMS2Peaks(
+            QMap<MzHashed, QVector<MS2IonPeak>> *ms2IonPeaks,
+            QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
+            );
+
+    Err extractMS2IonPeaks(
+            const QVector<PeakIntegrationIndexes> &peakLimits,
+            const XICPoints &xicPoints,
+            const QVector<double> &intensityVecSmoothed,
+            QVector<MS2IonPeak> *ms2IonPeaks
+    );
 
 
 private:
@@ -259,8 +260,8 @@ private:
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
+    MsFrame m_msFrame;
 
-    QVector<FeatureFinderHill> m_featureFinderHills;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
     PythiaParameters m_params;

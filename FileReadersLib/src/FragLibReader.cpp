@@ -89,7 +89,7 @@ Err FragLibReader::getMS2Ions(
             &fragLibReaderRows
             ); ree;
 
-    const int maxMs2Ions = 12; //TODO change this
+    const int maxMs2Ions = 6; //TODO change this
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
             maxMs2Ions,
@@ -312,11 +312,11 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
 
     for (const FragLibReaderRow &row : fragLibReaderRows) {
 
-        e = ErrorUtils::isFalse(peptideSequenceChargeKeyVsCandidatePeptide->contains(row.peptideSequenceChargeKey));
-        if (e != eNoError) {
-            qDebug() << row.peptideSequenceChargeKey;
-//            rrr(eValueError);
-        }
+//        e = ErrorUtils::isFalse(peptideSequenceChargeKeyVsCandidatePeptide->contains(row.peptideSequenceChargeKey));
+//        if (e != eNoError) {
+////            qDebug() << row.peptideSequenceChargeKey; //TODO correct this.
+////            rrr(eValueError);
+//        }
 
         PeptideStringWithMods peptideStringWithMods;
         Charge charge;

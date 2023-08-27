@@ -20,16 +20,8 @@ using SparseMatrixPoint = EigenSparseUtils::SparseMatrixPoint;
 const int PRECISION = 3;
 
 
-MsFrame::MsFrame()
-: m_mzWindowLower(-1.0)
-, m_mzWindowUpper(-1.0)
-{}
-
-
 Err MsFrame::init(
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const QPair<double, double> &frameMzStartStop,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 
@@ -39,26 +31,12 @@ Err MsFrame::init(
 
     m_frame = scanPoints;
 
-    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree
-    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
-
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree
     m_scanNumberVsScanTime = scanNumberVsScanTime;
-
-    m_mzWindowLower = frameMzStartStop.first;
-    m_mzWindowUpper = frameMzStartStop.second;
 
     e = buildFrameIndexVsScanNumber(); ree
 
     ERR_RETURN
-}
-
-QPair<double, double> MsFrame::precursorMzTargetStartEnd() const {
-    return {m_mzWindowLower, m_mzWindowUpper};
-}
-
-UniqueMsInfoScanKey MsFrame::uniqueMsInfoScanKey() const {
-    return m_uniqueMsInfoScanKey;
 }
 
 Err MsFrame::buildFrameIndexVsScanNumber() {
@@ -124,10 +102,6 @@ Err MsFrame::writeFrameScans(
     ERR_RETURN
 }
 
-double MsFrame::meanPrecursorRange() const {
-    return (m_mzWindowLower + m_mzWindowUpper) / 2.0;
-}
-
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
@@ -151,37 +125,6 @@ QMap<ScanNumber, ScanPoints> MsFrame::scanNumberVsScanPoints() const {
 bool MsFrame::isValid() const {
     const int minScanCount = 1;
     return scanCount() > minScanCount;
-}
-
-Err MsFrame::buildMsFrame(
-        const QString &msDataFilePath,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-        QPair<double, double> mzTargetStartStop,
-        MsFrame *msFrame
-        ) {
-
-    ERR_INIT
-
-    MsReaderParquet msReaderParquet;
-    e = msReaderParquet.openFile(
-            msDataFilePath,
-            MsParquetReaderNamespace::PERCURSOR_TARGET_MZ,
-            {mzTargetStartStop.first, mzTargetStartStop.second}
-    ); ree;
-
-    const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
-    e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
-
-    const QMap<ScanNumber, ScanTime> scanNumberVsScanTime = msReaderParquet.getScanNumberVsScanTime();
-
-    e = msFrame->init(
-            uniqueMsInfoScanKey,
-            targetScanPoints,
-            mzTargetStartStop,
-            scanNumberVsScanTime
-    ); ree;
-
-    ERR_RETURN
 }
 
 namespace {

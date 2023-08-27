@@ -92,56 +92,56 @@ void TurboXICTests::turboXICUtility() {
 
     QSKIP("uncomment for troubleshooting");
 
-    const QString msDataFilePath
-            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
-
-    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
-    double target = 454.957;
-    double window = 5.5;
-
-    MsFrame msFrame;
-    e = MsFrame::buildMsFrame(
-            msDataFilePath,
-            uniqueMsInfoScanKey,
-            {target - window, target + window},
-            &msFrame
-    );
-    QCOMPARE(e, eNoError);
-
-    e = msFrame.smoothFrame(
-            3,
-            1.0,
-            2,
-            1500.0
-            );
-    QCOMPARE(e, eNoError);
-
-    const QMap<int, QVector<QPointF>> &points = msFrame.scanNumberVsScanPoints();
-
-    TurboXIC turboXIC;
-    e = turboXIC.init(points);
-    QCOMPARE(e, eNoError);
-
-    const double mzCenter = 523.26232347;
-    const double ppmTol = 50;
-    const double massTol = MathUtils::calculatePPM(mzCenter, ppmTol);
-
-    const XICPoints xicPoints = turboXIC.extractPointsXIC(
-            mzCenter - massTol,
-            mzCenter + massTol,
-            0,
-            26000
-            );
-
-    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
-    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
-
-    for (const QPointF &p : vec) {
-        qDebug() << p;
-    }
-
-    e = MsUtils::writePointsToCSV(vec, "xic.csv");
-    QCOMPARE(e, eNoError);
+//    const QString msDataFilePath
+//            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
+//
+//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+//    double target = 454.957;
+//    double window = 5.5;
+//
+//    MsFrame msFrame;
+//    e = MsFrame::buildMsFrame(
+//            msDataFilePath,
+//            uniqueMsInfoScanKey,
+//            {target - window, target + window},
+//            &msFrame
+//    );
+//    QCOMPARE(e, eNoError);
+//
+//    e = msFrame.smoothFrame(
+//            3,
+//            1.0,
+//            2,
+//            1500.0
+//            );
+//    QCOMPARE(e, eNoError);
+//
+//    const QMap<int, QVector<QPointF>> &points = msFrame.scanNumberVsScanPoints();
+//
+//    TurboXIC turboXIC;
+//    e = turboXIC.init(points);
+//    QCOMPARE(e, eNoError);
+//
+//    const double mzCenter = 523.26232347;
+//    const double ppmTol = 50;
+//    const double massTol = MathUtils::calculatePPM(mzCenter, ppmTol);
+//
+//    const XICPoints xicPoints = turboXIC.extractPointsXIC(
+//            mzCenter - massTol,
+//            mzCenter + massTol,
+//            0,
+//            26000
+//            );
+//
+//    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
+//    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
+//
+//    for (const QPointF &p : vec) {
+//        qDebug() << p;
+//    }
+//
+//    e = MsUtils::writePointsToCSV(vec, "xic.csv");
+//    QCOMPARE(e, eNoError);
 
 }
 

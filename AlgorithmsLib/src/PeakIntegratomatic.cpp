@@ -242,6 +242,9 @@ namespace {
 
         ERR_INIT
 
+        const int filterLengthMin = 5;
+        filterLength = std::max(filterLength, filterLengthMin);
+
         const int order = 2;
         const int derivative = 0;
         const int rate = 1;
@@ -266,31 +269,7 @@ Err PeakIntegratomatic::simpleIntegrator(
         double stopThresholdFraction,
         int filterLength,
         int smoothCount,
-        PeakIntegrationIndexes *peakIntegrationIndexes
-        ) {
-
-    ERR_INIT
-
-    QVector<double> smoothedVecNoReturn;
-    e = simpleIntegrator(
-            vec,
-            stopThresholdFraction,
-            filterLength,
-            smoothCount,
-            peakIntegrationIndexes,
-            &smoothedVecNoReturn
-            ); ree;
-
-    ERR_RETURN
-}
-
-
-Err PeakIntegratomatic::simpleIntegrator(
-        const QVector<double> &vec,
-        double stopThresholdFraction,
-        int filterLength,
-        int smoothCount,
-        PeakIntegrationIndexes *peakIntegrationIndexes,
+        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes,
         QVector<double> *smoothedVec
 ) {
 
@@ -319,57 +298,67 @@ Err PeakIntegratomatic::simpleIntegrator(
             &eVec
     ); ree;
 
-    const QVector<QPair<int, double>> vecApex = EigenUtils::returnTopXIndexAndValues(eVec, 1);
-    const int apexIndex = vecApex.front().first;
-    const double apexValue = vecApex.front().second;
-    const double stopThreshold = apexValue * stopThresholdFraction;
+    const int topNApexes = std::numeric_limits<int>::max();
+    const QVector<QPair<int, double>> vecApexs = EigenUtils::returnTopXIndexAndValues(eVec, topNApexes);
 
-    double rightStopVal = apexValue;
-    int rightStopIndex = apexIndex;
-
-    int rightCurrentIndex = apexIndex;
-    while (rightCurrentIndex < eVec.size()) {
-
-        const double currentValue = eVec(rightCurrentIndex);
-        if (currentValue < stopThreshold) {
-            rightStopIndex = rightCurrentIndex;
-            break;
-        }
-
-        if (currentValue <= rightStopVal) {
-            rightStopVal = currentValue;
-            rightStopIndex = rightCurrentIndex;
-            rightCurrentIndex++;
-            continue;
-        }
-
-        break;
+    for (const auto &v : vecApexs) {
+        qDebug() << v;
     }
+    qDebug() << vecApexs.size();
 
-    double leftStopVal = apexValue;
-    int leftStopIndex = apexIndex;
+    for (const QPair<int, double> &vecApex : vecApexs) {
+        const int apexIndex = vecApex.first;
+        const double apexValue = vecApex.second;
+        const double stopThreshold = apexValue * stopThresholdFraction;
 
-    int leftCurrentIndex = apexIndex;
-    while (leftCurrentIndex < eVec.size()) {
+        double rightStopVal = apexValue;
+        int rightStopIndex = apexIndex;
 
-        const double currentValue = eVec(leftCurrentIndex);
-        if (currentValue < stopThreshold) {
-            leftStopIndex = leftCurrentIndex;
+        int rightCurrentIndex = apexIndex;
+        while (rightCurrentIndex < eVec.size()) {
+
+            const double currentValue = eVec(rightCurrentIndex);
+            if (currentValue < stopThreshold) {
+                rightStopIndex = rightCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= rightStopVal) {
+                rightStopVal = currentValue;
+                rightStopIndex = rightCurrentIndex;
+                rightCurrentIndex++;
+                continue;
+            }
+
             break;
         }
 
-        if (currentValue <= leftStopVal) {
-            leftStopVal = currentValue;
-            leftStopIndex = leftCurrentIndex;
-            leftCurrentIndex--;
-            continue;
+        double leftStopVal = apexValue;
+        int leftStopIndex = apexIndex;
+
+        int leftCurrentIndex = apexIndex;
+        while (leftCurrentIndex < eVec.size()) {
+
+            const double currentValue = eVec(leftCurrentIndex);
+            if (currentValue < stopThreshold) {
+                leftStopIndex = leftCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= leftStopVal) {
+                leftStopVal = currentValue;
+                leftStopIndex = leftCurrentIndex;
+                leftCurrentIndex--;
+                continue;
+            }
+
+            break;
         }
 
-        break;
+        peakIntegrationIndexes->push_back({leftStopIndex, rightStopIndex});
     }
 
     *smoothedVec = EigenUtils::convertEigenVectorToQVector(eVec);
-    *peakIntegrationIndexes = {leftStopIndex, rightStopIndex};
 
     ERR_RETURN
 }

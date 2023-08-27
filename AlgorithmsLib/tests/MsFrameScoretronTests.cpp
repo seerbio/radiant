@@ -129,10 +129,10 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
         = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
 
     const QString msDataFilePath
-            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
+            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
     const QString fragLibPath
-            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib.predicted.speclib.fragLib");
 
     const double target = 454.957;
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
@@ -155,26 +155,6 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
     const PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
     pythiaParameters.print();
 
-    FeatureFinderParameters ffParams;
-    ffParams.tolerancePPM = pythiaParameters.ms2ExtractionWidthPPM;
-    ffParams.skipScanCount = pythiaParameters.skipScanCount;
-    ffParams.minScanCount = pythiaParameters.minScanCount;
-    ffParams.filterLength = pythiaParameters.filterLength;
-    ffParams.smoothCount = pythiaParameters.smoothCount;
-    ffParams.sigma = pythiaParameters.sigma;
-    ffParams.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
-
-    FeatureFinderHillBuilder featureFinderHillBuilder;
-    e = featureFinderHillBuilder.init(ffParams);
-    QCOMPARE(e, eNoError);
-    e = featureFinderHillBuilder.buildHills(diaTargetFrame.value(uniqueMsInfoScanKey));
-    QCOMPARE(e, eNoError);
-//        e = featureFinderHillBuilder.refineHills(true); ree;
-
-    QVector<FeatureFinderHill> featureFinderHills;
-    e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
-    QCOMPARE(e, eNoError);
-
     QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsCandidatePeptide;
     e = buildFragLib(
             fragLibPath,
@@ -188,7 +168,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
     MsFrameScoretron msFrameScoretron;
     e = msFrameScoretron.init(
             pythiaParameters,
-            featureFinderHills,
+            diaTargetFrame.value(uniqueMsInfoScanKey),
             peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime,
             iRTReCalFilePath
