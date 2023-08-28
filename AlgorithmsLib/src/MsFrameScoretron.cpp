@@ -961,9 +961,206 @@ namespace {
         return mat;
     }
 
+    Eigen::MatrixX<double> applyGaussSmoothRowWiseToMatrix(const Eigen::MatrixX<double> &mat) {
+
+        const int filterLength = 3;
+        const double sigma = 1.0;
+        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(filterLength, sigma);
+
+        return EigenKernelUtils::applyKernelRowWiseToMatrix(mat, gaussKernel);
+    }
+
+    Err findBestApexRowInMatrix(
+            const Eigen::MatrixX<double> &intensityMatrixIntegratedLimits,
+            const QVector<double> &peakCountsPerRow,
+            int *bestApexRowIndex
+            ) {
+
+        ERR_INIT
+
+        using RowMax = double;
+        using RowSum = double;
+
+        struct SearchObject {
+            RowMax rowMax = -1.0;
+            RowSum rowSum = -1.0;
+            int index = -1;
+        };
+
+        const Eigen::VectorX<double> rowSums = intensityMatrixIntegratedLimits.rowwise().sum();
+        const QVector<double> rowSumsVec = EigenUtils::convertEigenVectorToQVector(rowSums);
+
+//        std::cout << intensityMatrixIntegratedLimits << std::endl;
+//        std::cout << std::endl;
+//        std::cout << Eigen::RowVectorXd(rowSums) << std::endl;
+//        std::cout << std::endl;
+//        std::cout << Eigen::RowVectorXd(EigenUtils::convertQVectorToEigenVector(peakCountsPerRow)) << std::endl;
+
+        QVector<QPair<RowMax, RowSum>> rowMaxVsRowSum;
+        e = ParallelUtils::zip(peakCountsPerRow, rowSumsVec, &rowMaxVsRowSum); ree;
+
+        int counter = 0;
+        const auto insertLogic = [&counter](const QPair<RowMax, RowSum> &item){
+            SearchObject so;
+            so.rowMax = item.first;
+            so.rowSum = item.second;
+            so.index = counter++;
+            return so;
+        };
+
+        QVector<SearchObject> searchObjects;
+        std::transform(
+                rowMaxVsRowSum.begin(),
+                rowMaxVsRowSum.end(),
+                std::back_inserter(searchObjects),
+                insertLogic
+                );
+
+        const auto sortRowMaxThenRowSumDescLogic = [](const SearchObject &l, const SearchObject &r){
+            if (static_cast<int>(l.rowMax) == static_cast<int>(r.rowMax)) {
+                return l.rowSum < r.rowSum;
+            }
+            return static_cast<int>(l.rowMax) < static_cast<int>(r.rowMax);
+        };
+
+        std::sort(searchObjects.rbegin(), searchObjects.rend(), sortRowMaxThenRowSumDescLogic);
+
+        *bestApexRowIndex = searchObjects.front().index;
+
+        ERR_RETURN
+    }
+
+    Err removeInterferingPeaksInColumn(
+            int bestApexRowIndex,
+            Eigen::VectorX<double> *vec) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isBelowThreshold(
+                bestApexRowIndex,
+                static_cast<int>(vec->rows()),
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree;
+
+        const double kindaNearZero = 0.0001;
+
+        int leftStartIndex = bestApexRowIndex;
+        bool startZeroingLeft = false;
+        while (--leftStartIndex >= 0) {
+
+            if (vec->coeff(leftStartIndex) > kindaNearZero && !startZeroingLeft) {
+                continue;
+            }
+
+            startZeroingLeft = true;
+
+            vec->coeffRef(leftStartIndex) = 0.0;
+        }
+
+        int rightStartIndex = bestApexRowIndex;
+        bool startZeroingRight = false;
+        while (++rightStartIndex < vec->rows()) {
+
+            if (vec->coeff(rightStartIndex) > kindaNearZero && !startZeroingRight) {
+                continue;
+            }
+
+            startZeroingRight = true;
+
+            vec->coeffRef(rightStartIndex) = 0.0;
+        }
+
+        ERR_RETURN
+    }
+
+    Err removeInterferingPeaksInMatrix(
+            const Eigen::MatrixX<double> &_intensityMatrixIntegratedLimits,
+            const QVector<double> &peakCountsPerRow,
+            Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(peakCountsPerRow); ree;
+        e = ErrorUtils::isTrue(_intensityMatrixIntegratedLimits.maxCoeff() > 0);
+
+        Eigen::MatrixX<double> intensityMatrixIntegratedLimits = _intensityMatrixIntegratedLimits;
+
+        int bestApexRowIndex;
+        e = findBestApexRowInMatrix(intensityMatrixIntegratedLimits, peakCountsPerRow, &bestApexRowIndex); ree;
+
+        for (int col = 0; col < intensityMatrixIntegratedLimits.cols(); col++) {
+
+            Eigen::VectorX<double> colVec = intensityMatrixIntegratedLimits.col(col);
+            e = removeInterferingPeaksInColumn(bestApexRowIndex, &colVec); ree;
+            intensityMatrixIntegratedLimits.col(col) = colVec;
+
+        }
+
+        *intensityMatrixIntegratedLimitsNoInterference = intensityMatrixIntegratedLimits;
+
+        ERR_RETURN
+    }
+
+    Err calcBestCosineSimAndKLDivSum(
+            const Eigen::MatrixX<double> &intensityMatrixIntegratedLimits,
+            QVector<double> *bestCosineSimsIndividual,
+            double *bestCosineSimSum,
+            QVector<double> *bestKLDivIndividual,
+            double *bestKLDivSum
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(intensityMatrixIntegratedLimits.rows() > 0); ree;
+
+        *bestCosineSimSum = 0.0;
+        *bestKLDivSum = std::numeric_limits<double>::max();
+
+        const Eigen::MatrixX<double> intensityMatrixIntegratedLimitsSmoothed
+                = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimits);
+
+        for (int i = 0; i < intensityMatrixIntegratedLimitsSmoothed.cols(); i++) {
+
+            QVector<double> bestCosineSimsIndividualAnchor;
+            QVector<double> bestKLDivIndividualAnchor;
+            const Eigen::VectorX<double> anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
+
+            for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
+
+                const Eigen::VectorX<double> altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
+
+                const double cosineSim = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
+                bestCosineSimsIndividualAnchor.push_back(cosineSim);
+
+                const double klDiv = EigenUtils::klDivergence(anchorColumn, altColumn);
+                bestKLDivIndividualAnchor.push_back(klDiv);
+            }
+
+            const double cosineSimSumAnchor
+                = std::accumulate(bestCosineSimsIndividualAnchor.begin(), bestCosineSimsIndividualAnchor.end(), 0.0);
+
+            const double klDivSumAnchor
+                    = std::accumulate(bestKLDivIndividualAnchor.begin(), bestKLDivIndividualAnchor.end(), 0.0);
+
+            if (cosineSimSumAnchor > *bestCosineSimSum) {
+                *bestCosineSimSum = cosineSimSumAnchor;
+                *bestCosineSimsIndividual = bestCosineSimsIndividualAnchor;
+            }
+
+            if (klDivSumAnchor < *bestKLDivSum) {
+                *bestKLDivSum = klDivSumAnchor;
+                *bestKLDivIndividual = bestKLDivIndividualAnchor;
+            }
+        }
+
+        ERR_RETURN
+    }
+
     Err calculateCandidateAllignementMetrics(
             const Eigen::MatrixX<double> &intensityMatrix,
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks
     ) {
 
@@ -971,26 +1168,51 @@ namespace {
 
         e = ErrorUtils::isTrue(intensityMatrix.nonZeros() > 1); ree;
         e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
+        e = ErrorUtils::isNotEmpty(summedMatToVec); ree;
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
             const int rowStart = pii.first;
-            const int rowCount = pii.second - pii.first + 1;
+            const int rowCount = pii.second < intensityMatrix.rows()
+                    ? pii.second - pii.first + 1
+                    : static_cast<int>(intensityMatrix.rows()) - pii.first;
 
             const int colStart = 0;
             const int colCount = topNMs2FragPeaks;
 
-            Eigen::MatrixXd intensityMatrixIntegratedLimits = intensityMatrix.block(
+            const Eigen::MatrixX<double> intensityMatrixIntegratedLimits = intensityMatrix.block(
                     rowStart,
                     colStart,
                     rowCount,
                     colCount
                     );
 
-//            std::cout << intensityMatrixIntegratedLimits << std::endl;
-//            std::cout << std::endl;
+            const QVector<double> peakCountsPerRow = summedMatToVec.mid(rowStart, rowCount);
+
+            Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterference;
+            e = removeInterferingPeaksInMatrix(
+                    intensityMatrixIntegratedLimits,
+                    peakCountsPerRow,
+                    &intensityMatrixIntegratedLimitsNoInterference
+                    ); ree;
+
+            QVector<double> cosineSimsIndividual;
+            double bestCosineSimSum;
+            QVector<double> klDivsIndividual;
+            double bestKlDivSimSum;
+            e = calcBestCosineSimAndKLDivSum(
+                    intensityMatrixIntegratedLimits,
+                    &cosineSimsIndividual,
+                    &bestCosineSimSum,
+                    &klDivsIndividual,
+                    &bestKlDivSimSum
+                    ); ree;
+
+//            qDebug() << bestCosineSimSum << cosineSimsIndividual;
+//            qDebug() << bestKlDivSimSum << klDivsIndividual;
+//            qDebug() << "";
+
         }
-//        std::cout << "*********" << std::endl;
 
         ERR_RETURN
     }
@@ -1064,6 +1286,7 @@ Err MsFrameScoretron::processCandidate(
     e = calculateCandidateAllignementMetrics(
             intensityMatrix,
             peakIntegrationIndexes,
+            summedMatToVec,
             m_params.topNMs2Ions
             ); ree;
 

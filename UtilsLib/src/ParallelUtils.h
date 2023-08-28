@@ -177,8 +177,8 @@ public:
 
     template <typename T, typename U>
     static Err zip(
-            const T &z1,
-            const U &z2,
+            const QVector<T> &z1,
+            const QVector<U> &z2,
             QVector<QPair<T, U>> *zipResult
             ) {
 
@@ -193,11 +193,31 @@ public:
         ERR_RETURN
     }
 
+    template <typename T, typename U>
+    static Err zip(
+            const QVector<T> &z1,
+            const QVector<U> &z2,
+            QVector<QPointF> *zipResult
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isEqual(z1.size(), z2.size());
+
+        for (int i = 0; i < z1.size(); i++) {
+            zipResult->push_back({z1.at(i), z2.at(i)});
+        }
+
+        ERR_RETURN
+    }
+
+
+
     template <typename T>
     static Err zip(
-            const T &z1,
-            const T &z2,
-            QVector<QPointF> *zipResult
+            const QVector<T> &z1,
+            const QVector<T> &z2,
+            QVector<QPair<T, T>> *zipResult
     ) {
 
         ERR_INIT
