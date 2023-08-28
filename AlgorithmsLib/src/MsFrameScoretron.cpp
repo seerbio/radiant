@@ -15,7 +15,6 @@
 #include "NearestNeighborsSearch.h"
 #include "ParallelUtils.h"
 #include "ParquetReader.h"
-#include "PeakIntegratomatic.h"
 #include "ScanTimeFromIRtMapper.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
@@ -38,6 +37,20 @@ using rTreePoint = std::pair<rTreeBox, int> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
+namespace{
+
+    PeakIntegratomaticParameters buildPeakIntegratomaticParams(const PythiaParameters  &pythiaParameters) {
+
+        PeakIntegratomaticParameters params;
+        params.smoothCount = pythiaParameters.smoothCount;
+        params.filterLength = pythiaParameters.filterLength;
+        params.sigma = pythiaParameters.sigma;
+        params.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
+
+        return params;
+    }
+
+}//namespace
 Err MsFrameScoretron::init(
         const PythiaParameters &params,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
@@ -66,6 +79,9 @@ Err MsFrameScoretron::init(
             scanNumberVsScanPoints,
             scanNumberVsScanTime
             ); ree;
+
+    const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_params);
+    e = m_peakIntegratomatic.init(ffParams); ree;
 
 //    e = msFrame.deisotopeMsFrame(ppmTol); ree;
 //    e = msFrame.smoothFrame(
@@ -114,7 +130,6 @@ Err MsFrameScoretron::init(
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -533,62 +548,34 @@ namespace {
 //        ERR_RETURN
 //    }
 
-    Err processCandidate(
-            const CandidatePeptide &candidatePeptide,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
-
-        const int rows = candidatePeptide.ms2Ions.size();
-        const int cols = mzHashedVsIonPresence.first().size();
-
-        Eigen::MatrixX<double> mat(rows, cols);
-        mat.setZero();
-
-        for (int i = 0; i < candidatePeptide.ms2Ions.size(); i++) {
-
-            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
-
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QVector<double> ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-
-            if (ionPresenceVec.isEmpty()) {
-                continue;
-            }
-
-            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
-            mat.row(i) = eVec;
-
-        }
-
-        Eigen::VectorX<double> summedMat = mat.colwise().sum();
-
-        if (summedMat.maxCoeff() < 6) {
-            ERR_RETURN
-        }
-        
-        ERR_RETURN
-    }
-
-
 }//namespace
 Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
     ERR_INIT
 
-    QMap<MzHashed, QVector<MS2IonPeak>> ms2IonPeaks;
+    QMap<MzHashed, QVector<MS2IonPeak>> mzHashedVsMs2IonPeaks;
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
-    e = buildMS2Peaks(&ms2IonPeaks, &mzHashedVsIonPresence); ree;
+    e = buildMS2Peaks(&mzHashedVsMs2IonPeaks, &mzHashedVsIonPresence); ree;
 
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
         const PeptideStringWithMods &peptideStringWithMods = it.key();
         const CandidatePeptide &candidatePeptide = it.value();
 
-        e = processCandidate(candidatePeptide, mzHashedVsIonPresence); ree;
+//#define TROUBLESHOOT_CANDIDATE
+#ifdef TROUBLESHOOT_CANDIDATE
+        qDebug() << "troubleshoot cand" << candidatePeptide.peptideStringWithMods;
+        const PeptideStringWithMods peptideStringWithModsTroubleshoot = "SLDFKDSJL";
+        if (peptideStringWithModsTroubleshoot != candidatePeptide.peptideStringWithMods) {
+            continue;
+        }
+#endif
+
+        e = processCandidate(
+                candidatePeptide,
+                mzHashedVsMs2IonPeaks,
+                mzHashedVsIonPresence
+                ); ree;
 
     }
 
@@ -786,20 +773,9 @@ namespace {
         ERR_RETURN
     }
 
-    PeakIntegratomaticParameters buildPeakIntegratomaticParams(const PythiaParameters  &pythiaParameters) {
-
-        PeakIntegratomaticParameters params;
-        params.smoothCount = pythiaParameters.smoothCount;
-        params.filterLength = pythiaParameters.filterLength;
-        params.sigma = pythiaParameters.sigma;
-        params.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
-
-        return params;
-    }
-
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(
-        QMap<MzHashed, QVector<MS2IonPeak>> *ms2IonPeaks,
+        QMap<MzHashed, QVector<MS2IonPeak>> *mzHashedVsMs2IonPeaks,
         QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
         ) {
 
@@ -832,17 +808,13 @@ Err MsFrameScoretron::buildMS2Peaks(
             mzHashedVsIonPresence
             );ree
 
-    const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_params);
-    PeakIntegratomatic peakIntegratomatic;
-    e = peakIntegratomatic.init(ffParams); ree;
-
     for (auto it = mzHashedVsXICPointsNormalized.begin(); it != mzHashedVsXICPointsNormalized.end(); it++) {
 
         const MzHashed mzHashed = it.key();
         const Eigen::VectorX<double> &vecNormalized = it.value();
 
         if (vecNormalized.size() == 0) {
-            ms2IonPeaks->insert(mzHashed, {});
+            mzHashedVsMs2IonPeaks->insert(mzHashed, {});
             continue;
         }
 
@@ -850,7 +822,7 @@ Err MsFrameScoretron::buildMS2Peaks(
 
         QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
         QVector<double> intensityVecSmoothed;
-        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
+        e = m_peakIntegratomatic.findAllPeaksLimitsInXIC(
                 vecNormalzedConverted,
                 &peakIntegrationIndexes,
                 &intensityVecSmoothed
@@ -867,7 +839,6 @@ Err MsFrameScoretron::buildMS2Peaks(
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -948,6 +919,189 @@ Err MsFrameScoretron::extractMS2IonPeaks(
         ms2IonPeaks->push_back(ms2IonPeak);
 
     }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Eigen::MatrixX<double> buildSummingMatrix(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+            ) {
+
+        const int rows = candidatePeptide.ms2Ions.size();
+        const int cols = mzHashedVsIonPresence.first().size();
+
+        Eigen::MatrixX<double> mat(rows, cols);
+        mat.setZero();
+
+        for (int i = 0; i < candidatePeptide.ms2Ions.size(); i++) {
+
+            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const QVector<double> ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+
+            if (ionPresenceVec.isEmpty()) {
+                continue;
+            }
+
+            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
+            mat.row(i) = eVec;
+        }
+
+        return mat;
+    }
+
+    void filterSummedVecPeakIntegrations(
+            const QVector<double> &summedMatToVec,
+            int summedMzPresenceMin,
+            int peakWidthMin,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            ) {
+
+        const auto terminatorLogic = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const PeakIntegrationIndexes &pii){
+
+            const int peakWidth = pii.second - pii.first;
+            if (peakWidth < peakWidthMin) {
+                return true;
+            }
+
+            const QVector<double> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
+            const double summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
+
+            return summedPresenceIntegrationMax < summedMzPresenceMin;
+        };
+
+        const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
+        peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
+    }
+
+    void sortPeakIntegrationsDescMaxSumFound(
+            const QVector<double> &summedMatToVec,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            ) {
+
+        const auto sortLogic = [summedMatToVec](const PeakIntegrationIndexes &l, const PeakIntegrationIndexes &r){
+
+            const int peakWidthL = l.second - l.first;
+            const int peakWidthR = r.second - r.first;
+
+            const QVector<double> summedMatVecMaxL = summedMatToVec.mid(l.first, peakWidthL);
+            const QVector<double> summedMatVecMaxR = summedMatToVec.mid(r.first, peakWidthR);
+
+            const double summedPresenceIntegrationMaxL = *std::max_element(summedMatVecMaxL.begin(), summedMatVecMaxL.end());
+            const double summedPresenceIntegrationMaxR = *std::max_element(summedMatVecMaxR.begin(), summedMatVecMaxR.end());
+
+            if (MathUtils::tSame(summedPresenceIntegrationMaxL, summedPresenceIntegrationMaxR)) {
+                return std::accumulate(summedMatVecMaxL.begin(), summedMatVecMaxL.end(), 0.0)
+                     < std::accumulate(summedMatVecMaxR.begin(), summedMatVecMaxR.end(), 0.0);
+            }
+
+            return summedPresenceIntegrationMaxL < summedPresenceIntegrationMaxR;
+        };
+
+        std::sort(peakIntegrationIndexes->rbegin(), peakIntegrationIndexes->rend(), sortLogic);
+    }
+
+    Err collateMS2IonPeaksByPeakIntegrationLimits(
+            const QVector<MS2Ion> &ms2IonsCandidate,
+            const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+            const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            QMap<PeakIntegrationIndexes, QVector<MS2IonPeak>> *peakIntegratinIndexesVsMS2IonPeaks
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsMs2IonPeaks); ree;
+
+        for (const PeakIntegrationIndexes pii : peakIntegrationIndexes) {
+            peakIntegratinIndexesVsMS2IonPeaks->insert(pii, {});
+        }
+
+        for (const MS2Ion &ms2Ion : ms2IonsCandidate) {
+
+            const MzHashed mzHashed
+                = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            if (!mzHashedVsMs2IonPeaks.contains(mzHashed)) {
+                continue;
+            }
+
+            const QVector<MS2IonPeak> &ms2IonPeaksCandidate = mzHashedVsMs2IonPeaks.value(mzHashed);
+
+            for (const MS2IonPeak &ms2IonPeak : ms2IonPeaksCandidate) {
+
+                for (auto it = peakIntegratinIndexesVsMS2IonPeaks->begin(); it != peakIntegratinIndexesVsMS2IonPeaks->end(); it++) {
+
+                    const PeakIntegrationIndexes &pii = it.key();
+                    QVector<MS2IonPeak> &ms2IonPeaksMzHashed = it.value();
+
+                    if (pii.first <= ms2IonPeak.frameIndexApex <= ms2IonPeak.frameIndexApex) {
+                        ms2IonPeaksMzHashed.push_back(ms2IonPeak);
+                        break;
+                    }
+                }
+            }
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrameScoretron::processCandidate(
+        const CandidatePeptide &candidatePeptide,
+        const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+        const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsMs2IonPeaks); ree;
+
+    const Eigen::MatrixX<double> mat = buildSummingMatrix(
+            candidatePeptide,
+            mzHashedVsIonPresence
+            );
+
+    const Eigen::VectorX<double> summedMat = mat.colwise().sum();
+    const QVector<double> summedMatToVec = EigenUtils::convertEigenVectorToQVector(summedMat);
+
+    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+    QVector<double> summedPresenceVecSmoothed;
+    e = m_peakIntegratomatic.findAllPeaksLimitsInXIC(
+            summedMatToVec,
+            &peakIntegrationIndexes,
+            &summedPresenceVecSmoothed
+    ); ree;
+
+    const int peakWidthMin = 3;
+    filterSummedVecPeakIntegrations(
+            summedMatToVec,
+            m_params.minFoundMzPeaks,
+            peakWidthMin,
+            &peakIntegrationIndexes
+            );
+
+    if (peakIntegrationIndexes.isEmpty()) {
+        ERR_RETURN
+    }
+
+    sortPeakIntegrationsDescMaxSumFound(
+            summedMatToVec,
+            &peakIntegrationIndexes
+            );
+    
+    QMap<PeakIntegrationIndexes, QVector<MS2IonPeak>> peakIntegratinIndexesVsMS2IonPeaks;
+    e = collateMS2IonPeaksByPeakIntegrationLimits(
+            candidatePeptide.ms2Ions,
+            mzHashedVsMs2IonPeaks,
+            peakIntegrationIndexes,
+            &peakIntegratinIndexesVsMS2IonPeaks
+            ); ree;
+
 
     ERR_RETURN
 }

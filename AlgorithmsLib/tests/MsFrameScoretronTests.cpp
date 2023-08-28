@@ -1,5 +1,6 @@
 #include "MsFrameScoretron.h"
 
+#include "BiophysicalCalcs.h"
 #include "FragLibReader.h"
 #include "MsReaderParquet.h"
 
@@ -132,7 +133,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
     const QString fragLibPath
-            = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib.predicted.speclib.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib_found.speclib.fragLib");
 
     const double target = 454.957;
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";

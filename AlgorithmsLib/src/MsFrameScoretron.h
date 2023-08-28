@@ -7,7 +7,6 @@
 
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
-#include "FeatureFinderHillBuilder.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MS2ChargeDeconvolvotron.h"
@@ -252,6 +251,12 @@ private:
             QVector<MS2IonPeak> *ms2IonPeaks
     );
 
+    Err processCandidate(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+    );
+
 
 private:
 
@@ -268,6 +273,7 @@ private:
     QString m_msDataFilePath;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
 
+    PeakIntegratomatic m_peakIntegratomatic;
 };
 
 
