@@ -119,6 +119,7 @@ public:
     Err getMS2Ions(
             double massStart,
             double massEnd,
+            int topNMs2Ions,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 

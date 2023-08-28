@@ -553,9 +553,9 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
     ERR_INIT
 
-    QMap<MzHashed, QVector<MS2IonPeak>> mzHashedVsMs2IonPeaks;
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
-    e = buildMS2Peaks(&mzHashedVsMs2IonPeaks, &mzHashedVsIonPresence); ree;
+    e = buildMS2Peaks(&mzHashedVsXICPoints, &mzHashedVsIonPresence); ree;
 
     for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
 
@@ -573,7 +573,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
         e = processCandidate(
                 candidatePeptide,
-                mzHashedVsMs2IonPeaks,
+                mzHashedVsXICPoints,
                 mzHashedVsIonPresence
                 ); ree;
 
@@ -775,7 +775,7 @@ namespace {
 
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(
-        QMap<MzHashed, QVector<MS2IonPeak>> *mzHashedVsMs2IonPeaks,
+        QMap<MzHashed, XICPoints> *mzHashedVsXICPoints,
         QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
         ) {
 
@@ -788,17 +788,16 @@ Err MsFrameScoretron::buildMS2Peaks(
 
     qDebug() << "Extracting" << mzHashedVsMzIon.size() << "XICs";
 
-    QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
     e = buildMzHashedVsXICPoints(
             mzHashedVsMzIon,
             m_msFrame,
             m_params.ms2ExtractionWidthPPM,
-            &mzHashedVsXICPoints
+            mzHashedVsXICPoints
             ); ree;
 
     QMap<MzHashed, Eigen::VectorX<double>> mzHashedVsXICPointsNormalized;
     e = buildMzHashedVsXICPointsNormalized(
-            mzHashedVsXICPoints,
+            *mzHashedVsXICPoints,
             m_msFrame.scanCount(),
             &mzHashedVsXICPointsNormalized
             ); ree;
@@ -808,149 +807,65 @@ Err MsFrameScoretron::buildMS2Peaks(
             mzHashedVsIonPresence
             );ree
 
-    for (auto it = mzHashedVsXICPointsNormalized.begin(); it != mzHashedVsXICPointsNormalized.end(); it++) {
-
-        const MzHashed mzHashed = it.key();
-        const Eigen::VectorX<double> &vecNormalized = it.value();
-
-        if (vecNormalized.size() == 0) {
-            mzHashedVsMs2IonPeaks->insert(mzHashed, {});
-            continue;
-        }
-
-        const QVector<double> vecNormalzedConverted = EigenUtils::convertEigenVectorToQVector(vecNormalized);
-
-        QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-        QVector<double> intensityVecSmoothed;
-        e = m_peakIntegratomatic.findAllPeaksLimitsInXIC(
-                vecNormalzedConverted,
-                &peakIntegrationIndexes,
-                &intensityVecSmoothed
-                ); ree;
-
-        QVector<MS2IonPeak> ms2IonPeaksIntegrated;
-        e = extractMS2IonPeaks(
-                peakIntegrationIndexes,
-                mzHashedVsXICPoints.value(mzHashed),
-                intensityVecSmoothed,
-                &ms2IonPeaksIntegrated
-                ); ree;
-
-        mzHashedVsMs2IonPeaks->insert(mzHashed, ms2IonPeaksIntegrated);
-    }
 
     ERR_RETURN
 }
 
 namespace {
 
-    Err calculatePeakStats(
-            const XICPoints &xicPoints,
-            double *mzValsMean,
-            double *mzValsStd
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(xicPoints.scanNumberVsMzVals); ree;
-
-        QVector<double> mzVals;
-        for (const QVector<double> &v : xicPoints.scanNumberVsMzVals) {
-            mzVals.append(v);
-        }
-
-        *mzValsMean = MathUtils::mean(mzVals);
-        *mzValsStd = MathUtils::stDev(mzVals);
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err MsFrameScoretron::extractMS2IonPeaks(
-        const QVector<PeakIntegrationIndexes> &peakLimits,
-        const XICPoints &xicPoints,
-        const QVector<double> &intensityVecSmoothed,
-        QVector<MS2IonPeak> *ms2IonPeaks
-) {
-
-    ERR_INIT
-
-    const int peakLenMin = 3;
-
-    for (const PeakIntegrationIndexes &pl : peakLimits) {
-
-        const int peakLen = pl.second - pl.first;
-        if (peakLen < peakLenMin) {
-            continue;
-        }
-
-        const QVector<double> rawXICVec
-                = ParallelUtils::convertMapToVector(xicPoints.scanNumbersVsIntensityVals, m_msFrame.scanCount());
-
-        const QVector<double> rawVecExtracted = rawXICVec.mid(pl.first, peakLen);
-        const QVector<double> smoothedVecExtracted = intensityVecSmoothed.mid(pl.first, peakLen);
-
-        const FrameIndex frameIndexApex = MathUtils::findMaxIndexInVector(smoothedVecExtracted);
-        const ScanNumber scanNumberApex = m_msFrame.scanNumberFromFrameIndex(frameIndexApex);
-
-
-        MS2IonPeak ms2IonPeak;
-        ms2IonPeak.scanTimeApex = m_msFrame.scanTimeFromScanNumber(scanNumberApex);;
-        ms2IonPeak.frameIndexApex = frameIndexApex;
-        ms2IonPeak.frameIndexStart = pl.first;
-        ms2IonPeak.frameIndexEnd = pl.second;
-        ms2IonPeak.scanNumberApex = scanNumberApex;
-        ms2IonPeak.scanNumberStart = m_msFrame.scanNumberFromFrameIndex(ms2IonPeak.frameIndexStart);
-        ms2IonPeak.scanNumberEnd = m_msFrame.scanNumberFromFrameIndex(ms2IonPeak.frameIndexEnd);
-
-        ms2IonPeak.intensityValsRaw = rawVecExtracted;
-        ms2IonPeak.intensityValsSmoothed = smoothedVecExtracted;
-        ms2IonPeak.pointCountFound = smoothedVecExtracted.size();
-
-        e = calculatePeakStats(
-                xicPoints,
-                &ms2IonPeak.mzValsMean,
-                &ms2IonPeak.mzValsStDev
-        ); ree;
-
-        ms2IonPeak.fragmentFrequency = m_fragmentFrequencies.value(MathUtils::hashDecimal(
-                ms2IonPeak.mzValsMean,
-                S_GLOBAL_SETTINGS.HASHING_PRECISION
-        ));
-
-        ms2IonPeaks->push_back(ms2IonPeak);
-
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    Eigen::MatrixX<double> buildSummingMatrix(
+    int getMaxRowCount(
             const CandidatePeptide &candidatePeptide,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
             ) {
 
-        const int rows = candidatePeptide.ms2Ions.size();
-        const int cols = mzHashedVsIonPresence.first().size();
+        int maxRowCount = 0;
+        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+
+            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
+        }
+
+        return maxRowCount;
+    }
+
+    Eigen::MatrixX<double> buildSummingMatrix(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
+            int topNMs2Ions
+            ) {
+
+        const int cols = topNMs2Ions;
+        const int rows = getMaxRowCount(
+                candidatePeptide,
+                mzHashedVsIonPresence
+                );
+
+        if (rows == 0) {
+            return {};
+        }
 
         Eigen::MatrixX<double> mat(rows, cols);
         mat.setZero();
 
-        for (int i = 0; i < candidatePeptide.ms2Ions.size(); i++) {
+        for (int i = 0; i < cols; i++) {
+
+            if (i >= candidatePeptide.ms2Ions.size()) {
+                break;
+            }
 
             const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
 
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QVector<double> ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
 
             if (ionPresenceVec.isEmpty()) {
                 continue;
             }
 
             const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
-            mat.row(i) = eVec;
+            mat.col(i) = eVec;
         }
 
         return mat;
@@ -1007,46 +922,75 @@ namespace {
         std::sort(peakIntegrationIndexes->rbegin(), peakIntegrationIndexes->rend(), sortLogic);
     }
 
-    Err collateMS2IonPeaksByPeakIntegrationLimits(
-            const QVector<MS2Ion> &ms2IonsCandidate,
-            const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+    Eigen::MatrixX<double> buildIntensityVecMatrix(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            int vecSize,
+            int topNMzFrags
+    ) {
+
+        const int cols = topNMzFrags;
+        const int rows = vecSize;
+
+        Eigen::MatrixX<double> mat(rows, cols);
+        mat.setZero();
+
+        for (int i = 0; i < cols; i++) {
+
+            if (i >= candidatePeptide.ms2Ions.size()) {
+                break;
+            }
+
+            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            QVector<double> intensityVals = ParallelUtils::convertMapToVector(
+                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals,
+                    rows
+                    );
+
+            if (intensityVals.isEmpty()) {
+                intensityVals = QVector<double>(vecSize, 0.0);
+            }
+
+            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(intensityVals);
+            mat.col(i) = eVec;
+        }
+
+        return mat;
+    }
+
+    Err calculateCandidateAllignementMetrics(
+            const Eigen::MatrixX<double> &intensityMatrix,
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
-            QMap<PeakIntegrationIndexes, QVector<MS2IonPeak>> *peakIntegratinIndexesVsMS2IonPeaks
-            ) {
+            int topNMs2FragPeaks
+    ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(mzHashedVsMs2IonPeaks); ree;
+        e = ErrorUtils::isTrue(intensityMatrix.nonZeros() > 1); ree;
+        e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
 
-        for (const PeakIntegrationIndexes pii : peakIntegrationIndexes) {
-            peakIntegratinIndexesVsMS2IonPeaks->insert(pii, {});
+        for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
+
+            const int rowStart = pii.first;
+            const int rowCount = pii.second - pii.first + 1;
+
+            const int colStart = 0;
+            const int colCount = topNMs2FragPeaks;
+
+            Eigen::MatrixXd intensityMatrixIntegratedLimits = intensityMatrix.block(
+                    rowStart,
+                    colStart,
+                    rowCount,
+                    colCount
+                    );
+
+//            std::cout << intensityMatrixIntegratedLimits << std::endl;
+//            std::cout << std::endl;
         }
-
-        for (const MS2Ion &ms2Ion : ms2IonsCandidate) {
-
-            const MzHashed mzHashed
-                = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-            if (!mzHashedVsMs2IonPeaks.contains(mzHashed)) {
-                continue;
-            }
-
-            const QVector<MS2IonPeak> &ms2IonPeaksCandidate = mzHashedVsMs2IonPeaks.value(mzHashed);
-
-            for (const MS2IonPeak &ms2IonPeak : ms2IonPeaksCandidate) {
-
-                for (auto it = peakIntegratinIndexesVsMS2IonPeaks->begin(); it != peakIntegratinIndexesVsMS2IonPeaks->end(); it++) {
-
-                    const PeakIntegrationIndexes &pii = it.key();
-                    QVector<MS2IonPeak> &ms2IonPeaksMzHashed = it.value();
-
-                    if (pii.first <= ms2IonPeak.frameIndexApex <= ms2IonPeak.frameIndexApex) {
-                        ms2IonPeaksMzHashed.push_back(ms2IonPeak);
-                        break;
-                    }
-                }
-            }
-        }
+//        std::cout << "*********" << std::endl;
 
         ERR_RETURN
     }
@@ -1054,21 +998,27 @@ namespace {
 }//namespace
 Err MsFrameScoretron::processCandidate(
         const CandidatePeptide &candidatePeptide,
-        const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
 ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
-    e = ErrorUtils::isNotEmpty(mzHashedVsMs2IonPeaks); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
 
-    const Eigen::MatrixX<double> mat = buildSummingMatrix(
+    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
             candidatePeptide,
-            mzHashedVsIonPresence
+            mzHashedVsIonPresence,
+            m_params.topNMs2Ions
             );
 
-    const Eigen::VectorX<double> summedMat = mat.colwise().sum();
+    if (presenceMatrix.rows() == 0) {
+        // TODO when you figue out what to return here, add it here for null result.
+        ERR_RETURN
+    }
+
+    const Eigen::VectorX<double> summedMat = presenceMatrix.rowwise().sum();
     const QVector<double> summedMatToVec = EigenUtils::convertEigenVectorToQVector(summedMat);
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
@@ -1095,13 +1045,26 @@ Err MsFrameScoretron::processCandidate(
             summedMatToVec,
             &peakIntegrationIndexes
             );
-    
-    QMap<PeakIntegrationIndexes, QVector<MS2IonPeak>> peakIntegratinIndexesVsMS2IonPeaks;
-    e = collateMS2IonPeaksByPeakIntegrationLimits(
-            candidatePeptide.ms2Ions,
-            mzHashedVsMs2IonPeaks,
+
+//#define TROUBLESHOOT_MATRICIES
+#ifdef TROUBLESHOOT_MATRICIES
+    for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
+        qDebug() << pii << summedMatToVec.mid(pii.first, pii.second - pii.first + 1);
+    }
+    qDebug() << "****";
+#endif
+
+    const Eigen::MatrixX<double> intensityMatrix = buildIntensityVecMatrix(
+            candidatePeptide,
+            mzHashedVsXICPoints,
+            static_cast<int>(summedMat.size()),
+            m_params.topNMs2Ions
+    );
+
+    e = calculateCandidateAllignementMetrics(
+            intensityMatrix,
             peakIntegrationIndexes,
-            &peakIntegratinIndexesVsMS2IonPeaks
+            m_params.topNMs2Ions
             ); ree;
 
 

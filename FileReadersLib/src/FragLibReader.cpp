@@ -73,6 +73,7 @@ namespace {
 Err FragLibReader::getMS2Ions(
         double massStart,
         double massEnd,
+        int topNMs2Ions,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
 
@@ -89,10 +90,9 @@ Err FragLibReader::getMS2Ions(
             &fragLibReaderRows
             ); ree;
 
-    const int maxMs2Ions = 6; //TODO change this
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
-            maxMs2Ions,
+            topNMs2Ions,
             peptideSequenceChargeKeyVsCandidatePeptide
             ); ree;
 
@@ -250,6 +250,8 @@ Err FragLibReader::buildFragIonLibForCandidates(
     FragLibReader fragLibReader;
     e = fragLibReader.init(fragLibUri); ree;
 
+    const int topNMs2Ions = 1000;
+
     for (Charge charge = chargeMin; charge <= chargeMax; ++charge) {
 
         const double massStart = calculateMassFromThomson(
@@ -265,6 +267,7 @@ Err FragLibReader::buildFragIonLibForCandidates(
         e = fragLibReader.getMS2Ions(
                 massStart,
                 massEnd,
+                topNMs2Ions,
                 peptideSequenceChargeKeyVsCandidatePeptide
         ); ree
 

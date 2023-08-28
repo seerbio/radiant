@@ -117,7 +117,7 @@ public:
             const int key = it.key();
             const T val = it.value();
 
-            if (key <= vecSize) {
+            if (key >= vecSize) {
                 continue;
             }
 

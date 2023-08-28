@@ -240,7 +240,7 @@ public:
 private:
 
     Err buildMS2Peaks(
-            QMap<MzHashed, QVector<MS2IonPeak>> *ms2IonPeaks,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPoints,
             QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
             );
 
@@ -253,7 +253,7 @@ private:
 
     Err processCandidate(
             const CandidatePeptide &candidatePeptide,
-            const QMap<MzHashed, QVector<MS2IonPeak>> &mzHashedVsMs2IonPeaks,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
     );
 

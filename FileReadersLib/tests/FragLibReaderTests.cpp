@@ -73,6 +73,7 @@ Err logic(const QString &testFilePath) {
     e = fragLibReader.getMS2Ions(
             massStart,
             massEnd,
+            1000,
             &peptideSequenceChargeKeyVsCandidatePeptide
     ); ree;
 

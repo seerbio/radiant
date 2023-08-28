@@ -73,6 +73,7 @@ namespace {
             double targetMz,
             double isoWinMin,
             double isoWinMax,
+            int topNMs2Ions,
             QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptide
             ) {
 
@@ -91,6 +92,7 @@ namespace {
             e = fragLibReader.getMS2Ions(
                     massMin,
                     massMax,
+                    topNMs2Ions,
                     &peptideSequenceChargeKeyVsCandidatePeptide
                     ); ree;
 
@@ -134,6 +136,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
 
     const QString fragLibPath
             = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib_found.speclib.fragLib");
+//            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
 
     const double target = 454.957;
     const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
@@ -162,6 +165,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             target,
             isoWinWidth,
             isoWinWidth,
+            pythiaParameters.topNMs2Ions,
             &peptideStringWithModsVsCandidatePeptide
             );
     QCOMPARE(e, eNoError);
