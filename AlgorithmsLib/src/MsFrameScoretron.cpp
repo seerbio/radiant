@@ -835,6 +835,8 @@ Err MsFrameScoretron::buildMS2Peaks(
                 intensityVecSmoothed,
                 &ms2IonPeaksIntegrated
                 ); ree;
+
+        mzHashedVsMs2IonPeaks->insert(mzHashed, ms2IonPeaksIntegrated);
     }
 
     ERR_RETURN
