@@ -244,19 +244,11 @@ private:
             QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
             );
 
-    Err extractMS2IonPeaks(
-            const QVector<PeakIntegrationIndexes> &peakLimits,
-            const XICPoints &xicPoints,
-            const QVector<double> &intensityVecSmoothed,
-            QVector<MS2IonPeak> *ms2IonPeaks
-    );
-
     Err processCandidate(
             const CandidatePeptide &candidatePeptide,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
     );
-
 
 private:
 

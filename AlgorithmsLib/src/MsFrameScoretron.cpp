@@ -19,22 +19,9 @@
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
-#include <QtConcurrent/QtConcurrent>
-
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
 #include <iostream>
 
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
 
-using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
-using rTreeBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreeBox, int> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
 namespace{
@@ -133,370 +120,6 @@ Err MsFrameScoretron::init(
 
 namespace {
 
-    QMap<PeptideStringWithMods, QVector<MS2IonPeak>> buildScanNumberVsMS2IonPeaks(const QVector<MS2IonPeak> &ms2IonPeaks) {
-
-        QMap<PeptideStringWithMods , QVector<MS2IonPeak>> scanNumberVsMS2IonPeaks;
-//        for (const MS2IonPeak &ms2IonPeak : ms2IonPeaks) {
-//            scanNumberVsMS2IonPeaks[ms2IonPeak.peptideStringWithMods].push_back(ms2IonPeak);
-//        }
-
-        return scanNumberVsMS2IonPeaks;
-    }
-
-    RTree loadRTree(
-            const QVector<MS2IonPeak> &ms2IonPeaks,
-            QMap<Id, MS2IonPeak> *idVsMs2IonPeak,
-            QSet<int> *frameIndexMaxesUnique
-            ) {
-
-        *idVsMs2IonPeak =  ParallelUtils::convertVectorToMap(ms2IonPeaks);
-
-        std::vector<rTreePoint> cloudLoader;
-
-//        for (auto it = idVsMs2IonPeak->begin(); it != idVsMs2IonPeak->end(); it++) {
-//
-//            const Id id = it.key();
-//            const MS2IonPeak &ms2ip = it.value();
-//
-//            frameIndexMaxesUnique->insert(ms2ip.frameIndexMax);
-//
-//            rTreeBox box(
-//                    {static_cast<double>(ms2ip.frameIndexStart), ms2ip.mzSearched},
-//                    {static_cast<double>(ms2ip.frameIndexEnd), ms2ip.mzSearched}
-//            );
-//
-//            cloudLoader.push_back(rTreePoint({box, id}));
-//        }
-
-        const int maxElements = 16;
-        return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    }
-
-    QSet<QVector<Id>> buildUniqueIDs(
-            const RTree &rtree,
-            int mzPeaksFoundMin,
-            const QSet<int> &frameIndexMaxesUnique
-            ) {
-
-        const double mzMin = 0.0;
-        const double mzMax = 2000.0;
-
-        QSet<QVector<Id>> idsUnique;
-        for (int frameIndexMax : frameIndexMaxesUnique) {
-
-            const rTreeBox queryBox(
-                    rTreeCoor(frameIndexMax, mzMin),
-                    rTreeCoor(frameIndexMax, mzMax)
-            );
-
-            std::vector<rTreePoint> rTreeSearchResult;
-            rtree.query(
-                    bgi::intersects(queryBox),
-                    std::back_inserter(rTreeSearchResult)
-            );
-
-            QVector<Id> ids;
-            std::transform(
-                    rTreeSearchResult.begin(),
-                    rTreeSearchResult.end(),
-                    std::back_inserter(ids),
-                    [&](const rTreePoint &p){return p.second;}
-            );
-
-            if (ids.size() < mzPeaksFoundMin) {
-                continue;
-            }
-
-            std::sort(ids.begin(), ids.end());
-            idsUnique.insert(ids);
-        }
-
-        return idsUnique;
-    }
-
-    Err buildComparisonMatrix(
-            const MS2IonPeak &p1,
-            const MS2IonPeak &p2,
-            Eigen::MatrixX<double> *comparisonMatrix
-    ) {
-
-        ERR_INIT
-
-        const QPair<int,int> p1ScanNumberIndexMinMax = {p1.frameIndexStart, p1.frameIndexEnd};
-        const QPair<int,int> p2ScanNumberIndexMinMax = {p2.frameIndexStart, p2.frameIndexEnd};
-
-        const int lowerScanNumberIndex = std::min(
-                p1ScanNumberIndexMinMax.first,
-                p2ScanNumberIndexMinMax.first
-        );
-
-        const int upperScanNumberIndex = std::max(
-                p1ScanNumberIndexMinMax.second,
-                p2ScanNumberIndexMinMax.second
-        );
-
-        const int colCount = 2;
-        const int rowBuffer = 1;
-        Eigen::MatrixX<double> mat(upperScanNumberIndex + rowBuffer, colCount);
-        mat.setZero();
-
-        const QVector<double> p1Intensities = p1.intensityValsSmoothed;
-        const QVector<double> p2Intensities = p2.intensityValsSmoothed;
-        QVector<int> p1ScanNumberIndexes(p1Intensities.size());
-        std::iota(p1ScanNumberIndexes.begin(), p1ScanNumberIndexes.end(), p1ScanNumberIndexMinMax.first);
-
-        QVector<int> p2ScanNumberIndexes(p2Intensities.size());
-        std::iota(p2ScanNumberIndexes.begin(), p2ScanNumberIndexes.end(), p2ScanNumberIndexMinMax.first);
-
-        e = ErrorUtils::isEqual(p1Intensities.size(), p1ScanNumberIndexes.size()); ree
-        e = ErrorUtils::isEqual(p2Intensities.size(), p2ScanNumberIndexes.size()); ree
-
-        const int insertColumn1 = 0;
-        for (int i = 0; i < p1Intensities.size(); i++) {
-
-            const int scanNumberIndex = p1ScanNumberIndexes.at(i);
-            const double intensity = p1Intensities.at(i);
-
-            mat.coeffRef(scanNumberIndex, insertColumn1) = intensity;
-        }
-
-        const int insertColumn2 = 1;
-        for (int i = 0; i < p2Intensities.size(); i++) {
-
-            const int scanNumberIndex = p2ScanNumberIndexes.at(i);
-            const double intensity = p2Intensities.at(i);
-
-            mat.coeffRef(scanNumberIndex, insertColumn2) = intensity;
-        }
-
-        const int filterLength = 3;
-        const double sigma = 1.0;
-        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(
-                filterLength,
-                sigma,
-                false
-        );
-
-        mat = EigenKernelUtils::applyKernelRowWiseToMatrix(mat, gaussKernel);
-
-        *comparisonMatrix = mat.block(
-                lowerScanNumberIndex,
-                insertColumn1,
-                (upperScanNumberIndex - lowerScanNumberIndex + rowBuffer),
-                colCount
-        );
-
-        ERR_RETURN
-    }
-
-    Err calculateCosineSimBetweenPeaks(
-            const MS2IonPeak &p1,
-            const MS2IonPeak &p2,
-            double *cosineSim
-    ) {
-
-        ERR_INIT
-
-        Eigen::MatrixX<double> comparisonMatrix;
-        e = buildComparisonMatrix(
-                p1,
-                p2,
-                &comparisonMatrix
-        ); ree
-
-        *cosineSim = EigenUtils::cosineSimilarity(comparisonMatrix.col(0), comparisonMatrix.col(1));
-
-        ERR_RETURN
-    }
-
-    Err clusterLogic(
-            const QVector<MS2IonPeak> &ms2ip,
-            int mzPeaksFoundMin,
-            double cosineSimMinThreshold,
-            QVector<MS2IonPeak> *bestMS2IonPeaksClusteringOutput,
-            double *bestCosineSimSumOutput
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(ms2ip); ree
-
-//        QMap<Id, MS2IonPeak> idVsMs2IonPeak;
-//        QSet<int> frameIndexMaxesUnique;
-//        const RTree rtree = loadRTree(ms2ip, &idVsMs2IonPeak, &frameIndexMaxesUnique);
-//
-//        const QSet<QVector<Id>> uniqueIDs = buildUniqueIDs(
-//                rtree,
-//                mzPeaksFoundMin,
-//                frameIndexMaxesUnique
-//                );
-//
-//        if (uniqueIDs.isEmpty()) {
-//            ERR_RETURN
-//        }
-//
-//        QVector<QVector<MS2IonPeak>> clusteredMs2IonPeaksForCosineSimCalc;
-//        const auto transformLogic = [&](const QVector<Id> &ids){
-//            QVector<MS2IonPeak> peaks;
-//            for (Id id : ids) {
-//                peaks.push_back(idVsMs2IonPeak.value(id));
-//            }
-//            return peaks;
-//        };
-//        std::transform(
-//                uniqueIDs.begin(),
-//                uniqueIDs.end(),
-//                std::back_inserter(clusteredMs2IonPeaksForCosineSimCalc),
-//                transformLogic
-//                );
-//
-//        const int maxRank = 5;
-//
-//        QVector<MS2IonPeak> bestMS2IonPeaksClustering;
-//        double bestCosineSimSum = 0.0;
-//
-//        for (const QVector<MS2IonPeak> &ms2ips : clusteredMs2IonPeaksForCosineSimCalc) {
-//
-//            for (const MS2IonPeak &ms2IonPeakAnchor : ms2ips) {
-//
-//                if (ms2IonPeakAnchor.rank > maxRank) {
-//                    continue;
-//                }
-//
-//                double cosineSimSum = 0.0;
-//                QVector<MS2IonPeak> clustering;
-//
-//                for (const MS2IonPeak &ms2IonPeak : ms2ips) {
-//
-//                    double cosineSim;
-//                    e = calculateCosineSimBetweenPeaks(ms2IonPeakAnchor, ms2IonPeak, &cosineSim); ree
-//
-//                    if (cosineSim < cosineSimMinThreshold) {
-//                        continue;
-//                    }
-//
-//                    MS2IonPeak ms2IonPeakNew = ms2IonPeak;
-//                    ms2IonPeakNew.cosineSimToAnchor = cosineSim;
-//                    ms2IonPeakNew.frameIndexMaxDiffFromAnchor = ms2IonPeakAnchor.frameIndexMax - ms2IonPeak.frameIndexMax;
-//
-//                    clustering.push_back(ms2IonPeakNew);
-//                    cosineSimSum += ms2IonPeakNew.cosineSimToAnchor;
-//                }
-//
-//                if (cosineSimSum > bestCosineSimSum) {
-//                    bestCosineSimSum = cosineSimSum;
-//                    bestMS2IonPeaksClustering = clustering;
-//                }
-//            }
-//        }
-//
-//        *bestMS2IonPeaksClusteringOutput = bestMS2IonPeaksClustering;
-//        *bestCosineSimSumOutput = bestCosineSimSum;
-
-        ERR_RETURN
-    }
-
-    Err findBestClusterGroupingPerPeptideStringWithMods(
-            const QVector<MS2IonPeak> &ms2IonPeaks,
-            int mzPeaksFoundMin,
-            double cosineSimMinThreshold,
-            QMap<PeptideStringWithMods, QPair<double, QVector<MS2IonPeak>>> *bestClusters
-            ) {
-
-        ERR_INIT
-
-        const QMap<PeptideStringWithMods, QVector<MS2IonPeak>> scanNumberVsMS2IonPeaks
-            = buildScanNumberVsMS2IonPeaks(ms2IonPeaks);
-
-        for (auto it = scanNumberVsMS2IonPeaks.begin(); it != scanNumberVsMS2IonPeaks.end(); it++) {
-
-            const PeptideStringWithMods &peptideStringWithMods = it.key();
-            const QVector<MS2IonPeak> &ms2ip = it.value();
-
-            QVector<MS2IonPeak> bestMS2IonPeaksClustering;
-            double bestCosineSimSum;
-            e = clusterLogic(
-                    ms2ip,
-                    mzPeaksFoundMin,
-                    cosineSimMinThreshold,
-                    &bestMS2IonPeaksClustering,
-                    &bestCosineSimSum
-                    ); ree
-
-            if (bestMS2IonPeaksClustering.size() < mzPeaksFoundMin) {
-                continue;
-            }
-
-            bestClusters->insert(peptideStringWithMods, {bestCosineSimSum, bestMS2IonPeaksClustering});
-        }
-
-
-        ERR_RETURN
-    }
-
-    Err fillUnFoundMS2IonPeaks(
-            const QVector<MS2IonPeak> &bestClusterPeaks,
-            const QVector<MS2Ion> &fragPredTopNOfCluster,
-            const QMap<MzHashed, double> &fragFrequencies,
-            QVector<MS2IonPeak> *bestClusterPeaksComplete
-            ) {
-
-        ERR_INIT
-
-//        e = ErrorUtils::isNotEmpty(fragPredTopNOfCluster); ree
-//        e = ErrorUtils::isNotEmpty(bestClusterPeaks); ree
-//
-//        QMap<MzHashed, MS2IonPeak> completeCluster;
-//
-//        for (const MS2Ion &ms2Ion : fragPredTopNOfCluster) {
-//            const MzHashed mzHashed
-//                    = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-//
-//            MS2IonPeak ms2IonPeakUnfound;
-//            ms2IonPeakUnfound.mzSearched = ms2Ion.mz;
-//            ms2IonPeakUnfound.theoIntensity = ms2Ion.intensity;
-//            ms2IonPeakUnfound.pointCountFound = 0;
-//            ms2IonPeakUnfound.fragmentFrequency
-//                = fragFrequencies.value(MathUtils::hashDecimal(ms2IonPeakUnfound.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION));
-//
-//            completeCluster.insert(mzHashed, ms2IonPeakUnfound);
-//        }
-//
-//        for (const MS2IonPeak &ms2IonPeak : bestClusterPeaks) {
-//
-//            const MzHashed &mzHashed
-//                    = MathUtils::hashDecimal(ms2IonPeak.mzSearched, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-//
-//            e = ErrorUtils::isTrue(completeCluster.contains(mzHashed)); ree
-//
-//            completeCluster[mzHashed] = ms2IonPeak;
-//        }
-//
-//        *bestClusterPeaksComplete = completeCluster.values().toVector();
-//
-//        const auto sortLogicIntensityAsc
-//                = [](const MS2IonPeak &l, const MS2IonPeak &r){return l.theoIntensity < r.theoIntensity;};
-//
-//        std::sort(bestClusterPeaksComplete->rbegin(), bestClusterPeaksComplete->rend(), sortLogicIntensityAsc);
-
-        ERR_RETURN
-    }
-
-//    MS2IonPeak findBestMS2IonPeak(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
-//
-//        const auto sortLogic = [](const MS2IonPeak &l, const MS2IonPeak &r){
-//            return l.cosineSimToAnchor < r.cosineSimToAnchor;
-//        };
-//
-//        const MS2IonPeak frameIndexMaxMax = *std::max_element(
-//                ms2IonPeaksBestCluster.rbegin(),
-//                ms2IonPeaksBestCluster.rend(),
-//                sortLogic
-//        );
-//
-//        return frameIndexMaxMax;
-//    }
-
     QPair<double, double> calculateFreqPercentFoundVsBest(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
 
         double frequencyPercentFound = 0.0;
@@ -514,40 +137,6 @@ namespace {
         return {frequencyPercentFound, frequencyPercentBestPossible};
     }
 
-//    Err extractMs2PeakToVectors(
-//            const QVector<MS2IonPeak> &ms2IonPeaksBestCluster,
-//            QVector<double> *mzSearchedVec,
-//            QVector<double> *theoIntensityVec,
-//            QVector<double> *mzFoundMeanVec,
-//            QVector<double> *mzFoundStDevVec,
-//            QVector<double> *intensityFoundMaxVec,
-//            QVector<int> *frameIndexMaxDiffFromAnchorVec,
-//            QVector<double> *cosineSimToAnchorVec,
-//            QVector<int> *peakPointCountFoundVec,
-//            QVector<double> *fragmentFrequencyVec,
-//            QVector<int> *rankVec
-//            ) {
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isNotEmpty(ms2IonPeaksBestCluster); ree
-//
-//        for (const MS2IonPeak &mip : ms2IonPeaksBestCluster) {
-//            mzSearchedVec->push_back(mip.mzSearched);
-//            theoIntensityVec->push_back(mip.theoIntensity);
-//            mzFoundMeanVec->push_back(mip.mzFoundMean);
-//            mzFoundStDevVec->push_back(mip.mzFoundStDev);
-//            intensityFoundMaxVec->push_back(*std::max_element(mip.intensityVals.begin(), mip.intensityVals.end()));
-//            frameIndexMaxDiffFromAnchorVec->push_back(mip.frameIndexMaxDiffFromAnchor);
-//            cosineSimToAnchorVec->push_back(mip.cosineSimToAnchor);
-//            peakPointCountFoundVec->push_back(mip.pointCountFound);
-//            fragmentFrequencyVec->push_back(mip.fragmentFrequency);
-//            rankVec->push_back(mip.rank);
-//        }
-//
-//        ERR_RETURN
-//    }
-
 }//namespace
 Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
@@ -564,11 +153,11 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
 //#define TROUBLESHOOT_CANDIDATE
 #ifdef TROUBLESHOOT_CANDIDATE
-        qDebug() << "troubleshoot cand" << candidatePeptide.peptideStringWithMods;
-        const PeptideStringWithMods peptideStringWithModsTroubleshoot = "SLDFKDSJL";
+        const PeptideStringWithMods peptideStringWithModsTroubleshoot = "XDWDDDK";
         if (peptideStringWithModsTroubleshoot != candidatePeptide.peptideStringWithMods) {
             continue;
         }
+        qDebug() << "troubleshoot cand" << candidatePeptide.peptideStringWithMods;
 #endif
 
         e = processCandidate(
@@ -807,7 +396,6 @@ Err MsFrameScoretron::buildMS2Peaks(
             mzHashedVsIonPresence
             );ree
 
-
     ERR_RETURN
 }
 
@@ -990,12 +578,6 @@ namespace {
         const Eigen::VectorX<double> rowSums = intensityMatrixIntegratedLimits.rowwise().sum();
         const QVector<double> rowSumsVec = EigenUtils::convertEigenVectorToQVector(rowSums);
 
-//        std::cout << intensityMatrixIntegratedLimits << std::endl;
-//        std::cout << std::endl;
-//        std::cout << Eigen::RowVectorXd(rowSums) << std::endl;
-//        std::cout << std::endl;
-//        std::cout << Eigen::RowVectorXd(EigenUtils::convertQVectorToEigenVector(peakCountsPerRow)) << std::endl;
-
         QVector<QPair<RowMax, RowSum>> rowMaxVsRowSum;
         e = ParallelUtils::zip(peakCountsPerRow, rowSumsVec, &rowMaxVsRowSum); ree;
 
@@ -1161,7 +743,13 @@ namespace {
             const Eigen::MatrixX<double> &intensityMatrix,
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
             const QVector<double> &summedMatToVec,
-            int topNMs2FragPeaks
+            int topNMs2FragPeaks,
+            QVector<double> *cosineSimsIndividual,
+            double *bestCosineSimSum,
+            QVector<double> *klDivsIndividual,
+            double *bestKlDivSimSum,
+            FrameIndex *frameIndexIntensityApex,
+            PeakIntegrationIndexes *bestPeakIntegrationIndexes
     ) {
 
         ERR_INIT
@@ -1169,6 +757,8 @@ namespace {
         e = ErrorUtils::isTrue(intensityMatrix.nonZeros() > 1); ree;
         e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
         e = ErrorUtils::isNotEmpty(summedMatToVec); ree;
+
+        *bestCosineSimSum = 0.0;
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
@@ -1188,6 +778,7 @@ namespace {
                     );
 
             const QVector<double> peakCountsPerRow = summedMatToVec.mid(rowStart, rowCount);
+            const FrameIndex frameIndexIntensityApexIntegration = MathUtils::findMaxIndexInVector(peakCountsPerRow) + rowStart;
 
             Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterference;
             e = removeInterferingPeaksInMatrix(
@@ -1196,22 +787,125 @@ namespace {
                     &intensityMatrixIntegratedLimitsNoInterference
                     ); ree;
 
-            QVector<double> cosineSimsIndividual;
-            double bestCosineSimSum;
-            QVector<double> klDivsIndividual;
-            double bestKlDivSimSum;
+//#define CHECK_ALIGNMENT
+#ifdef CHECK_ALIGNMENT
+            std::cout << "FrameIndex " << frameIndexIntensityApexIntegration << std::endl;
+            std::cout << intensityMatrixIntegratedLimits << std::endl;
+            std::cout << "no interference" << std::endl;
+            std::cout << intensityMatrixIntegratedLimitsNoInterference << std::endl;
+#endif
+
+            QVector<double> cosineSimsIndividualIntegration;
+            double bestCosineSimSumIntegration;
+            QVector<double> klDivsIndividualIntegration;
+            double bestKlDivSimSumIntegration;
             e = calcBestCosineSimAndKLDivSum(
                     intensityMatrixIntegratedLimits,
-                    &cosineSimsIndividual,
-                    &bestCosineSimSum,
-                    &klDivsIndividual,
-                    &bestKlDivSimSum
+                    &cosineSimsIndividualIntegration,
+                    &bestCosineSimSumIntegration,
+                    &klDivsIndividualIntegration,
+                    &bestKlDivSimSumIntegration
                     ); ree;
 
-//            qDebug() << bestCosineSimSum << cosineSimsIndividual;
-//            qDebug() << bestKlDivSimSum << klDivsIndividual;
-//            qDebug() << "";
+            if (bestCosineSimSumIntegration > *bestCosineSimSum) {
+                *cosineSimsIndividual = cosineSimsIndividualIntegration;
+                *bestCosineSimSum = bestCosineSimSumIntegration;
+                *klDivsIndividual = klDivsIndividualIntegration;
+                *bestKlDivSimSum = bestKlDivSimSumIntegration;
+                *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
+                *bestPeakIntegrationIndexes = pii;
+            }
+        }
 
+        ERR_RETURN
+    }
+
+    Err calculateSpectrumMetrics(
+            const Eigen::VectorX<double> &intensityApexVector,
+            const QVector<MS2Ion> &ms2IonsCandidate,
+            double *cosineSimSpectrum,
+            double *klDivSpectrum
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2IonsCandidate); ree;
+        e = ErrorUtils::isTrue(intensityApexVector.rows() > 0); ree;
+
+        QVector<double> intensityVals;
+        std::transform(
+                ms2IonsCandidate.begin(),
+                ms2IonsCandidate.end(),
+                std::back_inserter(intensityVals),
+                [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+                );
+
+        const Eigen::VectorX<double> intensityValsTheo = EigenUtils::convertQVectorToEigenVector(intensityVals);
+
+        *cosineSimSpectrum = EigenUtils::cosineSimilarity(intensityApexVector, intensityValsTheo);
+        *klDivSpectrum = EigenUtils::klDivergence(intensityApexVector, intensityValsTheo);
+
+        ERR_RETURN
+    }
+
+    Err calculateMassAccuracyMetrics(
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            const CandidatePeptide &candidatePeptide,
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
+            QVector<double> *mzMeanValsFound,
+            QVector<double> *stdMeanValsFound,
+            QVector<double> *mzValsSearched
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+        e = ErrorUtils::isNotEmpty(candidatePeptide.ms2Ions); ree;
+        e = ErrorUtils::isFalse(MathUtils::tSame(peakIntegrationIndexes.first, peakIntegrationIndexes.second)); ree
+
+        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
+
+            mzValsSearched->push_back(ms2Ion.mz);
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+            if (!mzHashedVsXICPoints.contains(mzHashed)) {
+                mzMeanValsFound->push_back(0.0);
+                stdMeanValsFound->push_back(0.0);
+                break;
+            }
+
+            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
+
+            QVector<double> mzValsForMz;
+            for (int i = peakIntegrationIndexes.first; i < peakIntegrationIndexes.second; i++) {
+
+                if (i >= peakIntegrationIndexes.second) {
+                    const double mzMean = MathUtils::mean(mzValsForMz);
+                    const double mzStd = MathUtils::stDev(mzValsForMz);
+                    mzMeanValsFound->push_back(mzMean);
+                    stdMeanValsFound->push_back(mzStd);
+                    break;
+                }
+
+                const QVector<double> &mzVals = xicPoints.scanNumberVsMzVals.value(i);
+                if (mzVals.isEmpty()) {
+                    continue;
+                }
+
+                mzValsForMz.append(mzVals);
+            }
+
+            if (mzValsForMz.isEmpty()) {
+                mzMeanValsFound->push_back(0.0);
+                stdMeanValsFound->push_back(0.0);
+                break;
+            }
+
+            const double mzMean = MathUtils::mean(mzValsForMz);
+            const double mzStd = MathUtils::stDev(mzValsForMz);
+            mzMeanValsFound->push_back(mzMean);
+            stdMeanValsFound->push_back(mzStd);
         }
 
         ERR_RETURN
@@ -1268,14 +962,6 @@ Err MsFrameScoretron::processCandidate(
             &peakIntegrationIndexes
             );
 
-//#define TROUBLESHOOT_MATRICIES
-#ifdef TROUBLESHOOT_MATRICIES
-    for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
-        qDebug() << pii << summedMatToVec.mid(pii.first, pii.second - pii.first + 1);
-    }
-    qDebug() << "****";
-#endif
-
     const Eigen::MatrixX<double> intensityMatrix = buildIntensityVecMatrix(
             candidatePeptide,
             mzHashedVsXICPoints,
@@ -1283,13 +969,64 @@ Err MsFrameScoretron::processCandidate(
             m_params.topNMs2Ions
     );
 
+    QVector<double> cosineSimsIndividual;
+    double bestCosineSimSum;
+    QVector<double> klDivsIndividual;
+    double bestKlDivSimSum;
+    FrameIndex frameIndexIntensityApex;
+    PeakIntegrationIndexes bestPeakIntegrationIndexes;
     e = calculateCandidateAllignementMetrics(
             intensityMatrix,
             peakIntegrationIndexes,
             summedMatToVec,
-            m_params.topNMs2Ions
+            m_params.topNMs2Ions,
+            &cosineSimsIndividual,
+            &bestCosineSimSum,
+            &klDivsIndividual,
+            &bestKlDivSimSum,
+            &frameIndexIntensityApex,
+            &bestPeakIntegrationIndexes
             ); ree;
 
+    const QVector<double> intensityApexVals = EigenUtils::convertEigenVectorToQVector(
+            Eigen::VectorX<double>(intensityMatrix.row(frameIndexIntensityApex))
+                    );
+
+    double cosineSimSpectrum;
+    double klDivSpectrum;
+    e = calculateSpectrumMetrics(
+            intensityMatrix.row(frameIndexIntensityApex),
+            candidatePeptide.ms2Ions,
+            &cosineSimSpectrum,
+            &klDivSpectrum
+            ); ree;
+
+    QVector<double> mzMeanValsFound;
+    QVector<double> stdMeanValsFound;
+    QVector<double> mzValsSearched;
+    e = calculateMassAccuracyMetrics(
+            mzHashedVsXICPoints,
+            candidatePeptide,
+            bestPeakIntegrationIndexes,
+            &mzMeanValsFound,
+            &stdMeanValsFound,
+            &mzValsSearched
+            ); ree;
+
+
+//#define CHECK_METRICS
+#ifdef CHECK_METRICS
+    const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
+    qDebug() << candidatePeptide.peptideStringWithMods << candidatePeptide.charge
+                << m_msFrame.scanTimeFromScanNumber(scanNumber) << frameIndexIntensityApex;
+    qDebug() << bestCosineSimSum << cosineSimsIndividual;
+    qDebug() << bestKlDivSimSum << klDivsIndividual;
+    qDebug() << "Spectrum CS KL" <<  cosineSimSpectrum << klDivSpectrum;
+    qDebug() << intensityApexVals;
+    qDebug() << mzMeanValsFound;
+    qDebug() << stdMeanValsFound;
+    qDebug() << mzValsSearched;
+#endif
 
     ERR_RETURN
 }
