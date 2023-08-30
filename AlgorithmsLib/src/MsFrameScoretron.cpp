@@ -704,13 +704,12 @@ namespace {
             QVector<int> frameIndexMaxDiffFromAnchorVec;
             const Eigen::VectorX<double> anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
 
-            const QPair<int, double> anchorFrameIndexMaxVsVal = EigenUtils::returnTopXIndexAndValues(anchorColumn, 1).front();
+            const QPair<int, double> anchorFrameIndexMaxVsVal = EigenUtils::returnTopIndexAndValue(anchorColumn);
 
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
 
                 const Eigen::VectorX<double> altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
-                const QPair<int, double> altColumnFrameIndexMaxVsVal
-                    = EigenUtils::returnTopXIndexAndValues(anchorColumn, 1).front();
+                const QPair<int, double> altColumnFrameIndexMaxVsVal = EigenUtils::returnTopIndexAndValue(altColumn);
 
                 frameIndexMaxDiffFromAnchorVec.push_back(anchorFrameIndexMaxVsVal.first - altColumnFrameIndexMaxVsVal.first);
 

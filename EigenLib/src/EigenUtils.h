@@ -303,11 +303,30 @@ public:
         return nonZeros;
     }
 
+    template <typename T>
+    static QPair<int, T> returnTopIndexAndValue(const Eigen::VectorX<T> &vec) {
+
+
+        QPair<int, T> maxIndex = {-1, std::numeric_limits<T>::min()};
+
+        for (int i = 0; i < vec.size(); i++) {
+
+            const T currentVal = vec.coeff(i);
+
+            if (currentVal > maxIndex.second) {
+                maxIndex = {i, currentVal};
+            }
+        }
+
+        return maxIndex;
+    }
+
 
     template <typename T>
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
-        topX = std::min(topX, static_cast<int>(vec.size()));
+//        topX = std::min(topX, static_cast<int>(vec.size()));
+        topX = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
 
         std::vector<double> stdVec(vec.data(), vec.data() + vec.size());
 
@@ -317,7 +336,7 @@ public:
         }
 
         const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
-        std::sort(ogIndexPoints.rbegin(), ogIndexPoints.rend(), sortLogic);
+        std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + topX, ogIndexPoints.end(), sortLogic);
 
         ogIndexPoints.resize(topX);
 
