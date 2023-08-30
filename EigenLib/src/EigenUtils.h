@@ -380,11 +380,18 @@ public:
     */
     template <typename T>
     static QMap<int, T> apexes(
-            const Eigen::VectorX<T> &vec,
+            const Eigen::VectorX<T> &_vec,
             int precision = 1e4
     ){
 
         QMap<int, T> apexIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
 
         const int vecSize = static_cast<int>(vec.size());
         for (int index = 0; index < vecSize; index++) {
@@ -396,7 +403,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue >= rightPointValue) {
-                    apexIndicies.insert(index,  vec.coeff(index));
+                    apexIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -407,7 +414,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue > leftPointValue) {
-                    apexIndicies.insert(index,  vec.coeff(index));
+                    apexIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -417,7 +424,7 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
-                apexIndicies.insert(index,  vec.coeff(index));
+                apexIndicies.insert(index,  _vec.coeff(index));
             }
         }
 
@@ -433,11 +440,18 @@ public:
     */
     template <typename T>
     static QMap<int, T> troughs(
-            const Eigen::VectorX<T> &vec,
+            const Eigen::VectorX<T> &_vec,
             int precision = 1e4
                     ){
 
         QMap<int, T> troughtIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
 
         const int vecSize = static_cast<int>(vec.size());
         for (int index = 0; index < vecSize; index++) {
@@ -449,7 +463,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue <= rightPointValue) {
-                    troughtIndicies.insert(index,  vec.coeff(index));
+                    troughtIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -460,7 +474,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue < leftPointValue) {
-                    troughtIndicies.insert(index,  vec.coeff(index));
+                    troughtIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -470,7 +484,7 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue < leftPointValue && centerPointValue <= rightPointValue){
-                troughtIndicies.insert(index,  vec.coeff(index));
+                troughtIndicies.insert(index,  _vec.coeff(index));
             }
         }
 

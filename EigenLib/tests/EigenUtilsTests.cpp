@@ -88,6 +88,34 @@ void EigenUtilsTests::apexesTest() {
     QCOMPARE(apexResult.lastKey(), 5);
     QCOMPARE(static_cast<int>(apexResult.first()), 1);
     QCOMPARE(static_cast<int>(apexResult.last()), 1);
+
+
+    Eigen::VectorX<double> vec2(14);
+    vec2.coeffRef(0) = 9465.27;
+    vec2.coeffRef(1) = 0.0;
+    vec2.coeffRef(2) = 54665.6;
+    vec2.coeffRef(3) = 539886.0;
+    vec2.coeffRef(4) = 47320.7;
+    vec2.coeffRef(5) = 7205.26;
+    vec2.coeffRef(6) = 19682.5 ;
+    vec2.coeffRef(7) = 13817.7;
+    vec2.coeffRef(8) = 23367.9;
+    vec2.coeffRef(9) = 20809.4;
+    vec2.coeffRef(10) = 0;
+    vec2.coeffRef(11) = 0;
+    vec2.coeffRef(12) = 7581.3;
+    vec2.coeffRef(13) = 0;
+
+    QMap<int, double> apexResult2 = EigenUtils::apexes(vec2);
+
+    QCOMPARE(apexResult2.size(), 5);
+    QCOMPARE(apexResult2.firstKey(), 0);
+    QCOMPARE(apexResult2.lastKey(), 12);
+    QCOMPARE(static_cast<int>(apexResult2.first()), 9465);
+    QCOMPARE(static_cast<int>(apexResult2.last()), 7581);
+
+    qDebug() << apexResult2;
+
 }
 
 void EigenUtilsTests::troughtsTest() {

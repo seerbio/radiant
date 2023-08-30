@@ -170,6 +170,7 @@ namespace {
 
         MsFrameScoretron msFrameScoretron;
         e = msFrameScoretron.init(
+                ppi.uniqueMsInfoScanKey,
                 ppi.pythiaParameters,
                 *ppi.scanPoints,
                 *ppi.peptideStringWithModsVsCandidatePeptide,
