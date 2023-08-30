@@ -630,8 +630,7 @@ namespace {
         bool startZeroingRight = false;
         double previousValRightStartIndex = vec->coeff(rightStartIndex);
         while (++rightStartIndex < vec->rows()) {
-
-<<<<<<< HEAD
+            
             const double currentVal = vec->coeff(rightStartIndex);
             if (currentVal > kindaNearZero && !startZeroingRight && currentVal < previousValRightStartIndex) {
                 previousValRightStartIndex = currentVal;
