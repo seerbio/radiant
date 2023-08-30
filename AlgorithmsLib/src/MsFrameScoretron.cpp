@@ -39,6 +39,7 @@ namespace{
 
 }//namespace
 Err MsFrameScoretron::init(
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -51,10 +52,12 @@ Err MsFrameScoretron::init(
     e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
     e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
 
     m_params = params;
     m_fragPredsTopN = peptideStringWithModsVsCandidatePeptide;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
+    m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
 
     e = FragLibReader::generateFragmentFrequencies(
             m_fragPredsTopN,
@@ -83,6 +86,7 @@ Err MsFrameScoretron::init(
 }
 
 Err MsFrameScoretron::init(
+        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -93,6 +97,7 @@ Err MsFrameScoretron::init(
     ERR_INIT
 
     e = init(
+            uniqueMsInfoScanKey,
             params,
             scanNumberVsScanPoints,
             peptideStringWithModsVsCandidatePeptide,
@@ -118,26 +123,6 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
-namespace {
-
-    QPair<double, double> calculateFreqPercentFoundVsBest(const QVector<MS2IonPeak> &ms2IonPeaksBestCluster) {
-
-        double frequencyPercentFound = 0.0;
-        double frequencyPercentBestPossible = 0.0;
-
-        for (const MS2IonPeak &ms2IonPeak : ms2IonPeaksBestCluster) {
-
-            if (ms2IonPeak.pointCountFound > 0) {
-                frequencyPercentFound += ms2IonPeak.fragmentFrequency;
-            }
-
-            frequencyPercentBestPossible += ms2IonPeak.fragmentFrequency;
-        }
-
-        return {frequencyPercentFound, frequencyPercentBestPossible};
-    }
-
-}//namespace
 Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates) {
 
     ERR_INIT
@@ -153,7 +138,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
 //#define TROUBLESHOOT_CANDIDATE
 #ifdef TROUBLESHOOT_CANDIDATE
-        const PeptideStringWithMods peptideStringWithModsTroubleshoot = "XDWDDDK";
+        const PeptideStringWithMods peptideStringWithModsTroubleshoot = "SXHPAQVR";
         if (peptideStringWithModsTroubleshoot != candidatePeptide.peptideStringWithMods) {
             continue;
         }
@@ -628,27 +613,31 @@ namespace {
 
         int leftStartIndex = bestApexRowIndex;
         bool startZeroingLeft = false;
+        double previousValLeftStartIndex = vec->coeff(leftStartIndex);
         while (--leftStartIndex >= 0) {
 
-            if (vec->coeff(leftStartIndex) > kindaNearZero && !startZeroingLeft) {
+            const double currentVal = vec->coeff(leftStartIndex);
+            if (currentVal > kindaNearZero && !startZeroingLeft && currentVal < previousValLeftStartIndex) {
+                previousValLeftStartIndex = currentVal;
                 continue;
             }
 
             startZeroingLeft = true;
-
             vec->coeffRef(leftStartIndex) = 0.0;
         }
 
         int rightStartIndex = bestApexRowIndex;
         bool startZeroingRight = false;
+        double previousValRightStartIndex = vec->coeff(rightStartIndex);
         while (++rightStartIndex < vec->rows()) {
 
-            if (vec->coeff(rightStartIndex) > kindaNearZero && !startZeroingRight) {
+            const double currentVal = vec->coeff(rightStartIndex);
+            if (currentVal > kindaNearZero && !startZeroingRight && currentVal < previousValRightStartIndex) {
+                previousValRightStartIndex = currentVal;
                 continue;
             }
 
             startZeroingRight = true;
-
             vec->coeffRef(rightStartIndex) = 0.0;
         }
 
@@ -674,7 +663,12 @@ namespace {
         for (int col = 0; col < intensityMatrixIntegratedLimits.cols(); col++) {
 
             Eigen::VectorX<double> colVec = intensityMatrixIntegratedLimits.col(col);
-            e = removeInterferingPeaksInColumn(bestApexRowIndex, &colVec); ree;
+            const QMap<int, double> columnApexes = EigenUtils::apexes(colVec);
+
+            const QList<int> &keys = columnApexes.keys();
+            const int bestApexIndexColumn = keys.at(MathUtils::closest(keys.toVector(), bestApexRowIndex));
+
+            e = removeInterferingPeaksInColumn(bestApexIndexColumn, &colVec); ree;
             intensityMatrixIntegratedLimits.col(col) = colVec;
 
         }
@@ -689,7 +683,8 @@ namespace {
             QVector<double> *bestCosineSimsIndividual,
             double *bestCosineSimSum,
             QVector<double> *bestKLDivIndividual,
-            double *bestKLDivSum
+            double *bestKLDivSum,
+            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec
             ) {
 
         ERR_INIT
@@ -706,11 +701,18 @@ namespace {
 
             QVector<double> bestCosineSimsIndividualAnchor;
             QVector<double> bestKLDivIndividualAnchor;
+            QVector<int> frameIndexMaxDiffFromAnchorVec;
             const Eigen::VectorX<double> anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
+
+            const QPair<int, double> anchorFrameIndexMaxVsVal = EigenUtils::returnTopXIndexAndValues(anchorColumn, 1).front();
 
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
 
                 const Eigen::VectorX<double> altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
+                const QPair<int, double> altColumnFrameIndexMaxVsVal
+                    = EigenUtils::returnTopXIndexAndValues(anchorColumn, 1).front();
+
+                frameIndexMaxDiffFromAnchorVec.push_back(anchorFrameIndexMaxVsVal.first - altColumnFrameIndexMaxVsVal.first);
 
                 const double cosineSim = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
                 bestCosineSimsIndividualAnchor.push_back(cosineSim);
@@ -728,12 +730,11 @@ namespace {
             if (cosineSimSumAnchor > *bestCosineSimSum) {
                 *bestCosineSimSum = cosineSimSumAnchor;
                 *bestCosineSimsIndividual = bestCosineSimsIndividualAnchor;
-            }
-
-            if (klDivSumAnchor < *bestKLDivSum) {
                 *bestKLDivSum = klDivSumAnchor;
                 *bestKLDivIndividual = bestKLDivIndividualAnchor;
+                *bestFrameIndexMaxDiffFromAnchorVec = frameIndexMaxDiffFromAnchorVec;
             }
+
         }
 
         ERR_RETURN
@@ -745,11 +746,10 @@ namespace {
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
             QVector<double> *cosineSimsIndividual,
-            double *bestCosineSimSum,
             QVector<double> *klDivsIndividual,
-            double *bestKlDivSimSum,
             FrameIndex *frameIndexIntensityApex,
-            PeakIntegrationIndexes *bestPeakIntegrationIndexes
+            PeakIntegrationIndexes *bestPeakIntegrationIndexes,
+            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec
     ) {
 
         ERR_INIT
@@ -758,7 +758,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
         e = ErrorUtils::isNotEmpty(summedMatToVec); ree;
 
-        *bestCosineSimSum = 0.0;
+        double bestCosineSimSum = 0.0;
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
@@ -787,34 +787,43 @@ namespace {
                     &intensityMatrixIntegratedLimitsNoInterference
                     ); ree;
 
+            QVector<double> cosineSimsIndividualIntegration;
+            double bestCosineSimSumIntegration;
+            QVector<double> klDivsIndividualIntegration;
+            double bestKlDivSimSumIntegration;
+            QVector<int> bestFrameIndexMaxDiffFromAnchorVecIntegration;
+            e = calcBestCosineSimAndKLDivSum(
+                    intensityMatrixIntegratedLimitsNoInterference,
+                    &cosineSimsIndividualIntegration,
+                    &bestCosineSimSumIntegration,
+                    &klDivsIndividualIntegration,
+                    &bestKlDivSimSumIntegration,
+                    &bestFrameIndexMaxDiffFromAnchorVecIntegration
+                    ); ree;
+
 //#define CHECK_ALIGNMENT
 #ifdef CHECK_ALIGNMENT
             std::cout << "FrameIndex " << frameIndexIntensityApexIntegration << std::endl;
             std::cout << intensityMatrixIntegratedLimits << std::endl;
             std::cout << "no interference" << std::endl;
             std::cout << intensityMatrixIntegratedLimitsNoInterference << std::endl;
+            for (const double v : cosineSimsIndividualIntegration) {
+                std::cout << v << " ";
+            }
+            std::cout << std::endl;
+            std::cout << bestCosineSimSumIntegration << std::endl;
+            std::cout << pii.first << ", " << pii.second << std::endl;
 #endif
 
-            QVector<double> cosineSimsIndividualIntegration;
-            double bestCosineSimSumIntegration;
-            QVector<double> klDivsIndividualIntegration;
-            double bestKlDivSimSumIntegration;
-            e = calcBestCosineSimAndKLDivSum(
-                    intensityMatrixIntegratedLimits,
-                    &cosineSimsIndividualIntegration,
-                    &bestCosineSimSumIntegration,
-                    &klDivsIndividualIntegration,
-                    &bestKlDivSimSumIntegration
-                    ); ree;
-
-            if (bestCosineSimSumIntegration > *bestCosineSimSum) {
+            if (bestCosineSimSumIntegration > bestCosineSimSum) {
+                bestCosineSimSum = bestCosineSimSumIntegration;
                 *cosineSimsIndividual = cosineSimsIndividualIntegration;
-                *bestCosineSimSum = bestCosineSimSumIntegration;
                 *klDivsIndividual = klDivsIndividualIntegration;
-                *bestKlDivSimSum = bestKlDivSimSumIntegration;
                 *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
                 *bestPeakIntegrationIndexes = pii;
+                *bestFrameIndexMaxDiffFromAnchorVec = bestFrameIndexMaxDiffFromAnchorVecIntegration;
             }
+
         }
 
         ERR_RETURN
@@ -872,7 +881,6 @@ namespace {
             if (!mzHashedVsXICPoints.contains(mzHashed)) {
                 mzMeanValsFound->push_back(0.0);
                 stdMeanValsFound->push_back(0.0);
-                break;
             }
 
             const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
@@ -899,7 +907,7 @@ namespace {
             if (mzValsForMz.isEmpty()) {
                 mzMeanValsFound->push_back(0.0);
                 stdMeanValsFound->push_back(0.0);
-                break;
+                continue;
             }
 
             const double mzMean = MathUtils::mean(mzValsForMz);
@@ -970,25 +978,24 @@ Err MsFrameScoretron::processCandidate(
     );
 
     QVector<double> cosineSimsIndividual;
-    double bestCosineSimSum;
     QVector<double> klDivsIndividual;
-    double bestKlDivSimSum;
+
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
+    QVector<int> bestFrameIndexMaxDiffFromAnchorVec;
     e = calculateCandidateAllignementMetrics(
             intensityMatrix,
             peakIntegrationIndexes,
             summedMatToVec,
             m_params.topNMs2Ions,
             &cosineSimsIndividual,
-            &bestCosineSimSum,
             &klDivsIndividual,
-            &bestKlDivSimSum,
             &frameIndexIntensityApex,
-            &bestPeakIntegrationIndexes
+            &bestPeakIntegrationIndexes,
+            &bestFrameIndexMaxDiffFromAnchorVec
             ); ree;
 
-    const QVector<double> intensityApexVals = EigenUtils::convertEigenVectorToQVector(
+    QVector<double> intensityApexVals = EigenUtils::convertEigenVectorToQVector(
             Eigen::VectorX<double>(intensityMatrix.row(frameIndexIntensityApex))
                     );
 
@@ -1013,19 +1020,65 @@ Err MsFrameScoretron::processCandidate(
             &mzValsSearched
             ); ree;
 
+    QVector<QPair<double, double>> mzFoundVsMzSearched;
+    e = ParallelUtils::zip(
+            mzMeanValsFound,
+            mzValsSearched,
+            &mzFoundVsMzSearched
+            ); ree
+
+    QVector<double> ppmDifference;
+    std::transform(
+            mzFoundVsMzSearched.begin(),
+            mzFoundVsMzSearched.end(),
+            std::back_inserter(ppmDifference),
+            [](const QPair<double, double> &p){return 1e6 * (p.first - p.second) / p.second;}
+            );
+
+    QVector<double> theoApexIntensity;
+    std::transform(
+            candidatePeptide.ms2Ions.begin(),
+            candidatePeptide.ms2Ions.end(),
+            std::back_inserter(theoApexIntensity),
+            [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+            );
+
+    QVector<double> fragmentFrequencies;
+    std::transform(
+            candidatePeptide.ms2Ions.begin(),
+            candidatePeptide.ms2Ions.end(),
+            std::back_inserter(fragmentFrequencies),
+            [&](const MS2Ion &ms2Ion){
+                return m_fragmentFrequencies.value(MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION));
+            }
+    );
+
+    cosineSimsIndividual.resize(mzValsSearched.size());
+    klDivsIndividual.resize(mzValsSearched.size());
+    intensityApexVals.resize(mzValsSearched.size());
+
+    const double bestCosineSimSum = std::accumulate(cosineSimsIndividual.begin(), cosineSimsIndividual.end(), 0.0);
+    const double bestKlDivSimSum = std::accumulate(klDivsIndividual.begin(), klDivsIndividual.end(), 0.0);
+    const double scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
 
 //#define CHECK_METRICS
 #ifdef CHECK_METRICS
     const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
     qDebug() << candidatePeptide.peptideStringWithMods << candidatePeptide.charge
-                << m_msFrame.scanTimeFromScanNumber(scanNumber) << frameIndexIntensityApex;
+                << m_msFrame.scanTimeFromScanNumber(scanNumber) << scanTimePredicted << frameIndexIntensityApex  << candidatePeptide.iRt;
+    qDebug() << peakIntegrationIndexes;
+    qDebug() << bestPeakIntegrationIndexes;
+    qDebug() << bestFrameIndexMaxDiffFromAnchorVec;
     qDebug() << bestCosineSimSum << cosineSimsIndividual;
     qDebug() << bestKlDivSimSum << klDivsIndividual;
     qDebug() << "Spectrum CS KL" <<  cosineSimSpectrum << klDivSpectrum;
     qDebug() << intensityApexVals;
+    qDebug() << theoApexIntensity;
+    qDebug() << mzValsSearched;
     qDebug() << mzMeanValsFound;
     qDebug() << stdMeanValsFound;
-    qDebug() << mzValsSearched;
+    qDebug() << ppmDifference;
+    qDebug() << fragmentFrequencies;
 #endif
 
     ERR_RETURN

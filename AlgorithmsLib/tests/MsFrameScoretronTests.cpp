@@ -172,6 +172,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
 
     MsFrameScoretron msFrameScoretron;
     e = msFrameScoretron.init(
+            uniqueMsInfoScanKey,
             pythiaParameters,
             diaTargetFrame.value(uniqueMsInfoScanKey),
             peptideStringWithModsVsCandidatePeptide,

@@ -37,7 +37,6 @@ namespace ScoredCandidateNamespace {
 
     const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
-    const QString THEO_FRAG_CNT = QStringLiteral("theoreticalFragmentCount");
 
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
     const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
@@ -48,7 +47,6 @@ namespace ScoredCandidateNamespace {
     const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
     const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
     const QString FRAG_FRQ_V = QStringLiteral("fragmenFrequencyVec");
-    const QString RANK_V = QStringLiteral("rankVec");
     const QString TARGET_KEY = QStringLiteral("targetKey");
 
     const QStringList keysToCheck = {
@@ -71,8 +69,6 @@ namespace ScoredCandidateNamespace {
             COS_SIM_SUM_ANCH_V,
             PK_PNT_CNT_FND_V,
             FRAG_FRQ_V,
-            RANK_V,
-            THEO_FRAG_CNT,
             SCAN_TIME_PRED,
             IRT_PRED,
             TARGET_KEY
@@ -91,12 +87,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
-    int theoreticalFragmentCount;
 
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
 
-    QVector<int> rankVec;
     QVector<double> mzSearchedVec;
     QVector<double> theoIntensityVec;
     QVector<double> mzFoundMeanVec;
@@ -128,7 +122,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {SCAN_NUM, QVariant(scanNumber)},
                 {SCAN_TIME, QVariant(scanTime)},
                 {SCAN_ION_CNT, QVariant(scanIonCount)},
-                {THEO_FRAG_CNT, QVariant(theoreticalFragmentCount)},
                 {MZ_SRCH_V, QVariant(qVectorToQByteArray(mzSearchedVec))},
                 {THEO_INTZ_V, QVariant(qVectorToQByteArray(theoIntensityVec))},
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
@@ -140,7 +133,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
-                {RANK_V, QVariant(qVectorToQByteArray(rankVec))},
                 {TARGET_KEY, QVariant(targetKey)}
         };
     }
@@ -169,7 +161,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toDouble();
         scanIonCount = dataMap.value(SCAN_ION_CNT).toInt();
-        theoreticalFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
 
         scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toDouble();
         iRTPredicted = dataMap.value(IRT_PRED).toDouble();
@@ -183,7 +174,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
         peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         fragmentFrequencyVec = bytesArrayToQVector<double>(dataMap.value(FRAG_FRQ_V).toByteArray());
-        rankVec = bytesArrayToQVector<int>(dataMap.value(RANK_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
 
         ERR_RETURN
@@ -220,6 +210,7 @@ public:
     ~MsFrameScoretron() = default;
 
     Err init(
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -228,6 +219,7 @@ public:
     );
 
     Err init(
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsMS2Ions,
