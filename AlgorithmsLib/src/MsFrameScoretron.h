@@ -24,8 +24,6 @@ class XICPoints;
 
 namespace ScoredCandidateNamespace {
 
-    const QString FREQ_PCT_SUM = QStringLiteral("frequencyPercentSum");
-    const QString FREQ_PCT_SUM_POSSIBLE = QStringLiteral("frequencyPercentSumBestPossible");
     const QString COS_SIM_SUM = QStringLiteral("cosineSimSum");
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
@@ -34,7 +32,7 @@ namespace ScoredCandidateNamespace {
     const QString SCAN_NUM = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
-
+    const QString X_CORR = QStringLiteral("xCorr");
     const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
 
@@ -49,9 +47,12 @@ namespace ScoredCandidateNamespace {
     const QString FRAG_FRQ_V = QStringLiteral("fragmenFrequencyVec");
     const QString TARGET_KEY = QStringLiteral("targetKey");
 
+    const QString KL_DIV_SUM = QStringLiteral("klDivSum");
+    const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
+    const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
+    const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
+
     const QStringList keysToCheck = {
-            FREQ_PCT_SUM,
-            FREQ_PCT_SUM_POSSIBLE,
             COS_SIM_SUM,
             IS_DECOY,
             PEP_STR_W_MODS,
@@ -71,15 +72,18 @@ namespace ScoredCandidateNamespace {
             FRAG_FRQ_V,
             SCAN_TIME_PRED,
             IRT_PRED,
-            TARGET_KEY
+            TARGET_KEY,
+            X_CORR,
+            KL_DIV_SUM,
+            KL_DIV_TO_ANCHOR,
+            KL_DIV_SPECTRUM,
+            COSINE_SIM_SPECTRUM
     };
 }
 
 struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;
-    double frequencyPercentSum = -1.0;
-    double frequencyPercentSumBestPossible = -1.0;
     double cosineSimSum = -1.0;
     bool isDecoy = false;
     Charge charge = -1;
@@ -87,10 +91,12 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
-
+    double xCorr = -1.0;
+    double klDivSum = -1.0;
+    double klDivSpectrum = -1.0;
+    double cosineSimSpectrum = -1.0;
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
-
     QVector<double> mzSearchedVec;
     QVector<double> theoIntensityVec;
     QVector<double> mzFoundMeanVec;
@@ -98,6 +104,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> intensityFoundMaxVec;
     QVector<int> frameIndexMaxDiffFromAnchorVec;
     QVector<double> cosineSimToAnchorVec;
+    QVector<double> klDivToAnchorVec;
     QVector<int> peakPointCountFoundVec;
     QVector<double> fragmentFrequencyVec;
     QString targetKey;
@@ -113,8 +120,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
         return {
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {FREQ_PCT_SUM, QVariant(frequencyPercentSum)},
-                {FREQ_PCT_SUM_POSSIBLE, QVariant(frequencyPercentSumBestPossible)},
                 {COS_SIM_SUM, QVariant(cosineSimSum)},
                 {IS_DECOY, QVariant(isDecoy)},
                 {CHARGE, QVariant(charge)},
@@ -133,7 +138,12 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
-                {TARGET_KEY, QVariant(targetKey)}
+                {TARGET_KEY, QVariant(targetKey)},
+                {X_CORR, QVariant(xCorr)},
+                {KL_DIV_SUM, QVariant(klDivSum)},
+                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
+                {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
+                {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)}
         };
     }
 
@@ -151,8 +161,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
-        frequencyPercentSum = dataMap.value(FREQ_PCT_SUM).toDouble();
-        frequencyPercentSumBestPossible = dataMap.value(FREQ_PCT_SUM_POSSIBLE).toDouble();
         cosineSimSum = dataMap.value(COS_SIM_SUM).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
@@ -161,10 +169,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toDouble();
         scanIonCount = dataMap.value(SCAN_ION_CNT).toInt();
-
         scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toDouble();
         iRTPredicted = dataMap.value(IRT_PRED).toDouble();
-
         mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
         theoIntensityVec = bytesArrayToQVector<double>(dataMap.value(THEO_INTZ_V).toByteArray());
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
@@ -175,26 +181,14 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         fragmentFrequencyVec = bytesArrayToQVector<double>(dataMap.value(FRAG_FRQ_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
+        xCorr = dataMap.value(X_CORR).toDouble();
+        klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
+        klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
+        cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
+        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
 
         ERR_RETURN
     }
-};
-
-
-struct FILEREADERSLIB_EXPORTS MS2IonPeak {
-    double scanTimeApex = -1.0;
-    int frameIndexApex = -1;
-    int frameIndexStart = -1;
-    int frameIndexEnd = -1;
-    int scanNumberApex = -1;
-    int scanNumberStart = -1;
-    int scanNumberEnd = -1;
-    double mzValsMean = -1.0;
-    double mzValsStDev = -1.0;
-    QVector<double> intensityValsRaw;
-    QVector<double> intensityValsSmoothed;
-    int pointCountFound = -1;
-    double fragmentFrequency = -1.0;
 };
 
 
@@ -239,7 +233,8 @@ private:
     Err processCandidate(
             const CandidatePeptide &candidatePeptide,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
+            QVector<ScoredCandidate> *scoredCandidates
     );
 
 private:
