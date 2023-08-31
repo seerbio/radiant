@@ -181,7 +181,6 @@ public:
         return it - vec.begin();
     }
 
-
     static QPointF closestXValPoint(const QVector<QPointF> &vec, double value);
 
     template<typename T>
@@ -205,6 +204,7 @@ public:
 
         return std::sqrt(squaredDiffs / actualVsPredicted.size());
     }
+
 };
 
 

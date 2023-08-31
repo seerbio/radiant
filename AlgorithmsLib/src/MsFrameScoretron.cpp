@@ -714,9 +714,9 @@ namespace {
                 frameIndexMaxDiffFromAnchorVec.push_back(anchorFrameIndexMaxVsVal.first - altColumnFrameIndexMaxVsVal.first);
 
                 const double cosineSim = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
-                bestCosineSimsIndividualAnchor.push_back(cosineSim);
-
                 const double klDiv = EigenUtils::klDivergence(anchorColumn, altColumn);
+
+                bestCosineSimsIndividualAnchor.push_back(cosineSim);
                 bestKLDivIndividualAnchor.push_back(klDiv);
             }
 
@@ -1060,13 +1060,24 @@ Err MsFrameScoretron::processCandidate(
     const double bestKlDivSimSum = std::accumulate(klDivsIndividual.begin(), klDivsIndividual.end(), 0.0);
     const double scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
 
+    double xCorr;
+    e = MsUtils::calcXCorr(
+            mzMeanValsFound,
+            mzValsSearched,
+            intensityApexVals,
+            theoApexIntensity,
+            m_params.ms2ExtractionWidthPPM,
+            &xCorr
+    ); ree;
+
 //#define CHECK_METRICS
 #ifdef CHECK_METRICS
     const ScanNumber scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
     qDebug() << candidatePeptide.peptideStringWithMods << candidatePeptide.charge
-                << m_msFrame.scanTimeFromScanNumber(scanNumber) << scanTimePredicted << frameIndexIntensityApex  << candidatePeptide.iRt;
+                << m_msFrame.scanTimeFromScanNumber(scanNumber) << scanTimePredicted
+                << frameIndexIntensityApex  << candidatePeptide.iRt << xCorr;
     qDebug() << peakIntegrationIndexes;
-    qDebug() << bestPeakIntegrationIndexes;
+//    qDebug() << bestPeakIntegrationIndexes;
     qDebug() << bestFrameIndexMaxDiffFromAnchorVec;
     qDebug() << bestCosineSimSum << cosineSimsIndividual;
     qDebug() << bestKlDivSimSum << klDivsIndividual;
@@ -1079,6 +1090,6 @@ Err MsFrameScoretron::processCandidate(
     qDebug() << ppmDifference;
     qDebug() << fragmentFrequencies;
 #endif
-
+    
     ERR_RETURN
 }
