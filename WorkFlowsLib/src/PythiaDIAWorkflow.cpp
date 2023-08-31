@@ -169,14 +169,23 @@ namespace {
         qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
 
         MsFrameScoretron msFrameScoretron;
+        
         e = msFrameScoretron.init(
                 ppi.uniqueMsInfoScanKey,
                 ppi.pythiaParameters,
                 *ppi.scanPoints,
                 *ppi.peptideStringWithModsVsCandidatePeptide,
-                ppi.scanNumberVsScanTime,
-                ppi.iRTReCalFilePath
-                ); rree;
+                ppi.scanNumberVsScanTime
+        ); rree;
+
+//        e = msFrameScoretron.init(
+//                ppi.uniqueMsInfoScanKey,
+//                ppi.pythiaParameters,
+//                *ppi.scanPoints,
+//                *ppi.peptideStringWithModsVsCandidatePeptide,
+//                ppi.scanNumberVsScanTime,
+//                ppi.iRTReCalFilePath
+//                ); rree;
 
         QVector<ScoredCandidate> scoredCandidates;
         e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;

@@ -920,16 +920,16 @@ Err MsFrameScoretron::processCandidate(
             &peakIntegrationIndexes
             );
 
-//    if (!m_fragPredsPredictedScanTime.isEmpty()) {
-//
-//        const double predScanTimeWindow = 5.0; //TODO make this settable
-//
-//        filterSummedVecPeakIntegrationsByPredictedScanTime(
-//                scanTimePredicted,
-//                predScanTimeWindow,
-//                &peakIntegrationIndexes
-//                );
-//    }
+    if (!m_fragPredsPredictedScanTime.isEmpty()) {
+
+        const double predScanTimeWindow = 5.0; //TODO make this settable from first pass
+
+        filterSummedVecPeakIntegrationsByPredictedScanTime(
+                scanTimePredicted,
+                predScanTimeWindow,
+                &peakIntegrationIndexes
+                );
+    }
 
     if (peakIntegrationIndexes.isEmpty()) {
         ERR_RETURN
