@@ -4,24 +4,17 @@
 
 #include "MsFrameScoretron.h"
 
-#include "BiophysicalCalcs.h"
-#include "CalibrationReader.h"
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FrameExtractsReader.h"
 #include "IRTPredictron.h"
 #include "MsFrameScoretronProcessormatic.h"
-#include "NearestNeighborsSearch.h"
 #include "ParallelUtils.h"
-#include "ParquetReader.h"
 #include "ScanTimeFromIRtMapper.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
 #include <iostream>
-
-
 
 
 namespace{
@@ -385,7 +378,7 @@ namespace {
         return mat;
     }
 
-    void filterSummedVecPeakIntegrations(
+    void filterSummedVecPeakIntegrationsByPeakWidth(
             const QVector<double> &summedMatToVec,
             int summedMzPresenceMin,
             int peakWidthMin,
@@ -917,13 +910,26 @@ Err MsFrameScoretron::processCandidate(
             &summedPresenceVecSmoothed
     ); ree;
 
+    const double scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
+
     const int peakWidthMin = 3;
-    filterSummedVecPeakIntegrations(
+    filterSummedVecPeakIntegrationsByPeakWidth(
             summedMatToVec,
             m_params.minFoundMzPeaks,
             peakWidthMin,
             &peakIntegrationIndexes
             );
+
+//    if (!m_fragPredsPredictedScanTime.isEmpty()) {
+//
+//        const double predScanTimeWindow = 5.0; //TODO make this settable
+//
+//        filterSummedVecPeakIntegrationsByPredictedScanTime(
+//                scanTimePredicted,
+//                predScanTimeWindow,
+//                &peakIntegrationIndexes
+//                );
+//    }
 
     if (peakIntegrationIndexes.isEmpty()) {
         ERR_RETURN
@@ -1024,7 +1030,6 @@ Err MsFrameScoretron::processCandidate(
 
     const double bestCosineSimSum = std::accumulate(cosineSimsIndividual.begin(), cosineSimsIndividual.end(), 0.0);
     const double bestKlDivSimSum = std::accumulate(klDivsIndividual.begin(), klDivsIndividual.end(), 0.0);
-    const double scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
 
     double xCorr;
     e = MsUtils::calcXCorr(
@@ -1087,3 +1092,33 @@ Err MsFrameScoretron::processCandidate(
 
     ERR_RETURN
 }
+
+void MsFrameScoretron::filterSummedVecPeakIntegrationsByPredictedScanTime(
+        ScanTime predictedScanTime,
+        double windowWidthMinutes,
+        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+) {
+
+    const auto terminatorLogic = [&](const PeakIntegrationIndexes &pii){
+
+        const ScanNumber scanNumberStart = m_msFrame.scanNumberFromFrameIndex(pii.first);
+        const ScanNumber scanNumberEnd = m_msFrame.scanNumberFromFrameIndex(pii.second);
+        const ScanTime scanTimeStart = m_scanNumberVsScanTime.value(scanNumberStart);
+        const ScanTime scanTimeEnd = m_scanNumberVsScanTime.value(scanNumberEnd);
+        const ScanTime meanScanTime = (scanTimeStart + scanTimeEnd) / 2.0;
+
+        const ScanTime scanTimePredStart = predictedScanTime - windowWidthMinutes;
+        const ScanTime scanTimePredEnd = predictedScanTime + windowWidthMinutes;
+
+        return meanScanTime < scanTimePredStart || meanScanTime > scanTimePredEnd;
+    };
+
+    const auto terminator = std::remove_if(
+            peakIntegrationIndexes->begin(),
+            peakIntegrationIndexes->end(),
+            terminatorLogic
+            );
+
+    peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
+}
+

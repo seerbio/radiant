@@ -132,7 +132,6 @@ public:
         return vec;
     }
 
-
     /*!
     * @brief Fits a polynomial to an eigen vector given an order.
     */
@@ -205,7 +204,6 @@ public:
         return mat;
     }
 
-
     template <typename T>
     static void thresholdMatrix(T thresholdValue,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
@@ -215,7 +213,6 @@ public:
     static void thresholdMatrix(T thresholdValue, T fillVal,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
-
 
     template <typename T>
     static void thresholdVector(T thresholdValue,  Eigen::VectorX<T> *vec) {
@@ -287,7 +284,6 @@ public:
         return mat1.array() * mat1mat2QuotientLog2Sum;
     }
 
-
     template <typename EigenMatrix>
     static int nonZeros(EigenMatrix v1) {
 
@@ -321,7 +317,6 @@ public:
         return maxIndex;
     }
 
-
     template <typename T>
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
@@ -343,7 +338,6 @@ public:
         return ogIndexPoints;
     }
 
-
     template <typename T>
     static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
 
@@ -353,7 +347,6 @@ public:
 
         return ev;
     }
-
 
     template <typename T>
     static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
@@ -389,7 +382,6 @@ public:
     static Eigen::VectorX<T> setNANToZero(const Eigen::VectorX<T> &vec) {
         return vec.array().isNaN().select(0.0, vec);
     }
-
 
     /*!
     * \brief Finds all apexes in a eigen vector.
@@ -449,7 +441,6 @@ public:
 
         return apexIndicies;
     }
-
 
     /*!
     * \brief Finds all troughs in a eigen vector.

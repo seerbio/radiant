@@ -244,7 +244,7 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
+    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
 
     ERR_RETURN
 }

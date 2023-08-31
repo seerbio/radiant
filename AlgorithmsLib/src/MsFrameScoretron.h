@@ -237,6 +237,12 @@ private:
             QVector<ScoredCandidate> *scoredCandidates
     );
 
+    void filterSummedVecPeakIntegrationsByPredictedScanTime(
+            ScanTime predictedScanTime,
+            double windowWidthMinutes,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+    );
+
 private:
 
     QMap<PeptideStringWithMods, CandidatePeptide> m_fragPredsTopN;
