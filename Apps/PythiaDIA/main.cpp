@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
 //        return 1;
 //    }
 
-    qDebug() << "DKFJDSL" << cliParameters.msDataFilesDirectory;
     e = pythiaDiaWorkflow.processFile(cliParameters.msDataFilesDirectory);
 //    if (e != eNoError) {
 //        qDebug() << cliParameters.msDataFilesDirectory << "Did not run completely";

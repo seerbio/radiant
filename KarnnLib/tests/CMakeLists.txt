@@ -15,6 +15,7 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
+        ClassifierWeightsManagerTests
         LibraryTests
         )
 

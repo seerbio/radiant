@@ -169,7 +169,7 @@ namespace {
         qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
 
         MsFrameScoretron msFrameScoretron;
-        
+
         e = msFrameScoretron.init(
                 ppi.uniqueMsInfoScanKey,
                 ppi.pythiaParameters,
