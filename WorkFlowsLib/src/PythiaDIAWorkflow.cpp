@@ -231,6 +231,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
             );
 
+    qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments";
+
     QVector<ScoredCandidate> scoredCandidatesCalibration;
     e = extractTargetDecoyData(
             msDataFilePath,
@@ -245,8 +247,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
 
 
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
+    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 
     ERR_RETURN
 }
