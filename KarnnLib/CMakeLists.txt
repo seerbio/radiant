@@ -22,7 +22,6 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/ClassifierWeightsManager.cpp
         src/Entry.cpp
         src/Ion.cpp
         src/Isoform.cpp
@@ -39,7 +38,6 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
-        src/ClassifierWeightsManager.h
         src/Entry.h
         src/Ion.cpp
         src/Isoform.h

@@ -5,6 +5,7 @@
 #include "ClassifierWeightsManager.h"
 
 #include "ErrorUtils.h"
+#include "EigenUtils.h"
 
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
@@ -86,31 +87,13 @@ namespace {
         return mat;
     }
 
-    // From EigenUtils.h
-    template <typename T>
-    static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
-
-        std::vector<T> vec = _vec.toStdVector();
-        Eigen::VectorX<T> ev
-                = Eigen::Map<Eigen::VectorX<T>, Eigen::Unaligned>(vec.data(), vec.size());
-
-        return ev;
-    }
-
-    // From EigenUtils.h
-    template <typename T>
-    static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
-        std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
-        return QVector<T>::fromStdVector(vecReturn);
-    }
-
     QVector<QVector<double>> convertEigenMatrixToQVectors(const Eigen::MatrixX<double> &mat) {
 
         QVector<QVector<double>> vecs;
         for (int row = 0; row < mat.rows(); row++) {
 
             Eigen::VectorX<double> v = mat.row(row);
-            vecs.push_back(convertEigenVectorToQVector(v));
+            vecs.push_back(EigenUtils::convertEigenVectorToQVector(v));
         }
 
         return vecs;
@@ -131,10 +114,10 @@ Err ClassifierWeightsManager::fitWeights(
     e = ErrorUtils::isEqual(matA.front().size(), vecB.size()); ree;
 
     const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
-    const Eigen::VectorX<double> b = convertQVectorToEigenVector(vecB);
+    const Eigen::VectorX<double> b = EigenUtils::convertQVectorToEigenVector(vecB);
 
     Eigen::VectorXd X = A.fullPivHouseholderQr().solve(b);
-    *weights = convertEigenVectorToQVector(X);
+    *weights = EigenUtils::convertEigenVectorToQVector(X);
 
     ERR_RETURN
 }
@@ -159,7 +142,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
     const Eigen::VectorX<double> meanMat = subtractionMatSum / matTargets.rows();
 
-    *b = convertEigenVectorToQVector(meanMat);
+    *b = EigenUtils::convertEigenVectorToQVector(meanMat);
 
     const int rows = targets.size();
     const int cols = targets.front().size();
@@ -199,11 +182,11 @@ Err ClassifierWeightsManager::applyWeights(
     e = ErrorUtils::isEqual(matA.front().size(), weights.size()); ree;
 
     const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
-    const Eigen::VectorX<double> x = convertQVectorToEigenVector(weights);
+    const Eigen::VectorX<double> x = EigenUtils::convertQVectorToEigenVector(weights);
 
     const Eigen::VectorX<double> b = A * x;
 
-    *results = convertEigenVectorToQVector(b);
+    *results = EigenUtils::convertEigenVectorToQVector(b);
 
     ERR_RETURN
 }

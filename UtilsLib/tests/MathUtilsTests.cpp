@@ -168,8 +168,6 @@ void MathUtilsTests::calculateQValuesTest() {
     QList<double> qVals = identifierVsQValue.values();
     std::sort(qVals.begin(), qVals.end());
 
-
-
 }
 
 

@@ -5,13 +5,13 @@
 #ifndef PYTHIADIACPP_CLASSIFIERWEIGHTSMANAGER_H
 #define PYTHIADIACPP_CLASSIFIERWEIGHTSMANAGER_H
 
-#include "KarnnLib_Exports.h"
+#include "AlgorithmsLib_Exports.h"
 
 #include "Error.h"
 
 using namespace Error;
 
-class KARNNLIB_EXPORTS ClassifierWeightsManager {
+class ALGORITHMSLIB_EXPORTS ClassifierWeightsManager {
 
 public:
 
