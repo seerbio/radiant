@@ -11,6 +11,55 @@
 
 #include <iostream>
 
+
+const QVector<double> &ClassifierWeightsManager::getWeights() const {
+    return m_weights;
+}
+
+void ClassifierWeightsManager::setWeights(const QVector<double> &weights) {
+    m_weights = weights;
+}
+
+const QVector<double> &ClassifierWeightsManager::getWeightsBest() const {
+    return m_weightsBest;
+}
+
+void ClassifierWeightsManager::setWeightsBest(const QVector<double> &weightsBest) {
+    m_weightsBest = weightsBest;
+}
+
+const QVector<double> &ClassifierWeightsManager::getGuideWeights() const {
+    return m_guideWeights;
+}
+
+void ClassifierWeightsManager::setGuideWeights(const QVector<double> &guideWeights) {
+    m_guideWeights = guideWeights;
+}
+
+const QVector<double> &ClassifierWeightsManager::getGuideWeightsBest() const {
+    return m_guideWeightsBest;
+}
+
+void ClassifierWeightsManager::setGuideWeightsBest(const QVector<double> &guideWeightsBest) {
+    m_guideWeightsBest = guideWeightsBest;
+}
+
+const QVector<double> &ClassifierWeightsManager::getSelectionWeights() const {
+    return m_selectionWeights;
+}
+
+void ClassifierWeightsManager::setSelectionWeights(const QVector<double> &selectionWeights) {
+    m_selectionWeights = selectionWeights;
+}
+
+const QVector<double> &ClassifierWeightsManager::getSelectionWeightsBest() const {
+    return m_selectionWeightsBest;
+}
+
+void ClassifierWeightsManager::setSelectionWeightsBest(const QVector<double> &selectionWeightsBest) {
+    m_selectionWeightsBest = selectionWeightsBest;
+}
+
 namespace {
 
     bool allMatAInputsAreSameSize(const QVector<QVector<double>> &matA) {
@@ -21,7 +70,7 @@ namespace {
         return std::all_of(matA.begin(), matA.end(), allOfLogic);
     }
 
-    Eigen::MatrixX<double> convertMatFromQVectors(const QVector<QVector<double>> &matA) {
+    Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<double>> &matA) {
 
         const int rows = matA.size();
         const int columns = matA.front().size();
@@ -37,14 +86,31 @@ namespace {
         return mat;
     }
 
-    QVector<QVector<double>> convertQVectorsFromMat(const Eigen::MatrixX<double> &mat) {
+    // From EigenUtils.h
+    template <typename T>
+    static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
+
+        std::vector<T> vec = _vec.toStdVector();
+        Eigen::VectorX<T> ev
+                = Eigen::Map<Eigen::VectorX<T>, Eigen::Unaligned>(vec.data(), vec.size());
+
+        return ev;
+    }
+
+    // From EigenUtils.h
+    template <typename T>
+    static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
+        std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
+        return QVector<T>::fromStdVector(vecReturn);
+    }
+
+    QVector<QVector<double>> convertEigenMatrixToQVectors(const Eigen::MatrixX<double> &mat) {
 
         QVector<QVector<double>> vecs;
         for (int row = 0; row < mat.rows(); row++) {
 
             Eigen::VectorX<double> v = mat.row(row);
-            const std::vector<double> vecReturn(v.data(), v.data() + v.size());
-            vecs.push_back(QVector<double>::fromStdVector(vecReturn));
+            vecs.push_back(convertEigenVectorToQVector(v));
         }
 
         return vecs;
@@ -54,7 +120,7 @@ namespace {
 Err ClassifierWeightsManager::fitWeights(
         const QVector<QVector<double>> &matA,
         const QVector<double> &vecB,
-        QVector<double> *x
+        QVector<double> *weights
         ) {
 
     ERR_INIT
@@ -64,14 +130,11 @@ Err ClassifierWeightsManager::fitWeights(
     e = ErrorUtils::isTrue(allMatAInputsAreSameSize(matA)); ree;
     e = ErrorUtils::isEqual(matA.front().size(), vecB.size()); ree;
 
-    const Eigen::MatrixX<double> A = convertMatFromQVectors(matA);
-
-    QVector<double> _vecB = vecB;
-    const Eigen::VectorX<double> b = Eigen::Map<Eigen::VectorX<double>, Eigen::Unaligned>(_vecB.data(), _vecB.size());
+    const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
+    const Eigen::VectorX<double> b = convertQVectorToEigenVector(vecB);
 
     Eigen::VectorXd X = A.fullPivHouseholderQr().solve(b);
-    const std::vector<double> vecReturn(X.data(), X.data() + X.size());
-    *x = QVector<double>::fromStdVector(vecReturn);
+    *weights = convertEigenVectorToQVector(X);
 
     ERR_RETURN
 }
@@ -89,15 +152,14 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
     e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
 
-    const Eigen::MatrixX<double> matTargets = convertMatFromQVectors(targets);
-    const Eigen::MatrixX<double> matDecoys = convertMatFromQVectors(decoys);
+    const Eigen::MatrixX<double> matTargets = convertQVectorsToEigenMatrix(targets);
+    const Eigen::MatrixX<double> matDecoys = convertQVectorsToEigenMatrix(decoys);
 
     const Eigen::MatrixX<double> subtractionMat = matTargets - matDecoys;
     const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
     const Eigen::VectorX<double> meanMat = subtractionMatSum / matTargets.rows();
 
-    const std::vector<double> vecReturn(meanMat.data(), meanMat.data() + meanMat.size());
-    *b = QVector<double>::fromStdVector(vecReturn);
+    *b = convertEigenVectorToQVector(meanMat);
 
     const int rows = targets.size();
     const int cols = targets.front().size();
@@ -119,7 +181,29 @@ Err ClassifierWeightsManager::buildDataClassifier1(
         matA.coeffRef(i, i) += std::numeric_limits<double>::min();
     }
 
-    *A = convertQVectorsFromMat(matA);
+    *A = convertEigenMatrixToQVectors(matA);
+
+    ERR_RETURN
+}
+
+Err ClassifierWeightsManager::applyWeights(
+        const QVector<QVector<double>> &matA,
+        const QVector<double> &weights,
+        QVector<double> *results
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(matA); ree;
+    e = ErrorUtils::isNotEmpty(matA.front()); ree;
+    e = ErrorUtils::isEqual(matA.front().size(), weights.size()); ree;
+
+    const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
+    const Eigen::VectorX<double> x = convertQVectorToEigenVector(weights);
+
+    const Eigen::VectorX<double> b = A * x;
+
+    *results = convertEigenVectorToQVector(b);
 
     ERR_RETURN
 }

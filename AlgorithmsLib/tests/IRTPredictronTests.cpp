@@ -1,4 +1,5 @@
 #include "IRTPredictron.h"
+#include "MathUtils.h"
 #include "NearestNeighborsSearch.h"
 
 #include <QtTest/QtTest>
