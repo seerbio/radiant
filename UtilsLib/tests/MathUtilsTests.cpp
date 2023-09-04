@@ -168,9 +168,7 @@ void MathUtilsTests::calculateQValuesTest() {
     QList<double> qVals = identifierVsQValue.values();
     std::sort(qVals.begin(), qVals.end());
 
-    for (double d : qVals) {
-        std::cout << d << std::endl;
-    }
+
 
 }
 
