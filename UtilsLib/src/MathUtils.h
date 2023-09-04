@@ -263,6 +263,12 @@ public:
         ERR_RETURN
     }
 
+    static QMap<Index, bool> generateRandomSelectionList(
+            int totalSizeOfList,
+            int desiredSizeRandomNumbers,
+            int seed = 666
+            );
+
 };
 
 

@@ -118,7 +118,6 @@ namespace {
 
         QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
 
-
         e = fragLibReader.getMS2IonsTopN(
                 topNMs2Ions,
                 &peptideSequenceChargeKeyVsCandidatePeptide
@@ -200,14 +199,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
-    QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-    e = buildUniqueMsInfoScanKeyVsScanPoints(
-            msDataFilePath,
-            &uniqueInfoScanKeyVsScanPoints,
-            &scanNumberVsScanTime
-            ); ree;
-
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptide;
     e = buildLibrary(
             msDataFilePath,
@@ -216,44 +207,52 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             &uniqueInfoScanKeyVsCandidatePeptide
             ); ree;
 
-    QVector<ParallelProcessingInput> parallelProcessingInputs;
-    for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueInfoScanKeyVsCandidatePeptide.keys()) {
-        ParallelProcessingInput ppi;
-        ppi.uniqueMsInfoScanKey = uniqueMsInfoScanKey;
-        ppi.scanNumberVsScanTime = scanNumberVsScanTime;
-        ppi.iRTReCalFilePath = m_iRTReCalFilePath;
-        ppi.pythiaParameters = m_pythiaParameters;
-        ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
-        ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptide[uniqueMsInfoScanKey];
-
-        parallelProcessingInputs.push_back(ppi);
-    }
-
-    QVector<ScoredCandidate> combinedResults;
-
-#define PROCESS_PARALLEL
-#ifdef PROCESS_PARALLEL
-    QFuture<QPair<Err, QVector<ScoredCandidate>>> futures = QtConcurrent::mapped(
-            parallelProcessingInputs,
-            parallelProciessingLogic
-    );
-    futures.waitForFinished();
-
-    for (const QPair<Err, QVector<ScoredCandidate>> &res : futures) {
-
-        e = res.first; ree;
-        combinedResults.append(res.second);
-    }
-#else
-    for (const ParallelProcessingInput &inp : parallelProcessingInputs) {
-        const QPair<Err, QVector<ScoredCandidate>> res = parallelProciessingLogic(inp);
-        e = res.first; ree;
-        combinedResults.append(res.second);
-    }
-#endif
-
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
+//    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
+//    QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+//    e = buildUniqueMsInfoScanKeyVsScanPoints(
+//            msDataFilePath,
+//            &uniqueInfoScanKeyVsScanPoints,
+//            &scanNumberVsScanTime
+//    ); ree;
+//
+//    QVector<ParallelProcessingInput> parallelProcessingInputs;
+//    for (const UniqueMsInfoScanKey &uniqueMsInfoScanKey : uniqueInfoScanKeyVsCandidatePeptide.keys()) {
+//        ParallelProcessingInput ppi;
+//        ppi.uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+//        ppi.scanNumberVsScanTime = scanNumberVsScanTime;
+//        ppi.iRTReCalFilePath = m_iRTReCalFilePath;
+//        ppi.pythiaParameters = m_pythiaParameters;
+//        ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
+//        ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptide[uniqueMsInfoScanKey];
+//
+//        parallelProcessingInputs.push_back(ppi);
+//    }
+//
+//    QVector<ScoredCandidate> combinedResults;
+//
+//#define PROCESS_PARALLEL
+//#ifdef PROCESS_PARALLEL
+//    QFuture<QPair<Err, QVector<ScoredCandidate>>> futures = QtConcurrent::mapped(
+//            parallelProcessingInputs,
+//            parallelProciessingLogic
+//    );
+//    futures.waitForFinished();
+//
+//    for (const QPair<Err, QVector<ScoredCandidate>> &res : futures) {
+//
+//        e = res.first; ree;
+//        combinedResults.append(res.second);
+//    }
+//#else
+//    for (const ParallelProcessingInput &inp : parallelProcessingInputs) {
+//        const QPair<Err, QVector<ScoredCandidate>> res = parallelProciessingLogic(inp);
+//        e = res.first; ree;
+//        combinedResults.append(res.second);
+//    }
+//#endif
+//
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(combinedResults, resultsFilePath); ree;
 
     ERR_RETURN
 }

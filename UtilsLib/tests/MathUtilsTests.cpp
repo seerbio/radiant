@@ -33,6 +33,7 @@ private Q_SLOTS:
     void factorialTest();
     void calculateQValuesTest();
     void closestTest();
+    void generateRandomSelectionListTest();
     void cleanupTestCase();
 
 };
@@ -115,7 +116,7 @@ void MathUtilsTests::unHashDecimalTest() {
 
 void MathUtilsTests::factorialTest() {
 
-    QCOMPARE(MathUtils::factorial(30), 9223372036854775807);
+    QCOMPARE(MathUtils::factorial(30), 265252859812191058636308480000000.0);
     QCOMPARE(MathUtils::factorial(0), 1);
     QCOMPARE(MathUtils::factorial(-1), 0);
     QCOMPARE(MathUtils::factorial(3), 6);
@@ -167,6 +168,32 @@ void MathUtilsTests::calculateQValuesTest() {
 
     QList<double> qVals = identifierVsQValue.values();
     std::sort(qVals.begin(), qVals.end());
+
+}
+
+void MathUtilsTests::generateRandomSelectionListTest() {
+
+    const QMap<Index, bool> selectionList = MathUtils::generateRandomSelectionList(
+            100,
+            20
+            );
+
+    const QVector<QPair<int, int>> expectedResults = {
+            {0,0}, {1,1}, {2,0}, {3,0}, {4,1}, {5,0}, {6,0}, {7,0}, {8,0}, {9,0}, {10,1}, {11,0}, {12,0}, {13,1}, {14,0},
+            {15,0}, {16,0}, {17,0}, {18,0}, {19,0}, {20,1}, {21,1}, {22,0}, {23,1}, {24,1}, {25,0}, {26,1}, {27,0},
+            {28,1}, {29,0}, {30,0}, {31,0}, {32,0}, {33,1}, {34,0}, {35,0}, {36,0}, {37,0}, {38,0}, {39,0},
+            {40,0}, {41,1}, {42,0}, {43,0}, {44,0}, {45,0}, {46,1}, {47,0}, {48,0}, {49,0}, {50,0}, {51,1},
+            {52,0}, {53,0}, {54,0}, {55,0}, {56,0}, {57,0}, {58,0}, {59,0}, {60,0}, {61,0}, {62,0}, {63,0},
+            {64,0}, {65,0}, {66,0}, {67,0}, {68,1}, {69,0}, {70,1}, {71,0}, {72,0}, {73,1}, {74,0}, {75,1},
+            {76,0}, {77,0}, {78,0}, {79,0}, {80,0}, {81,0}, {82,0}, {83,0}, {84,0}, {85,1}, {86,0}, {87,0},
+            {88,0}, {89,0}, {90,0}, {91,0}, {92,0}, {93,0}, {94,0}, {95,0}, {96,1}, {97,0}, {98,0}, {99,0}
+            };
+
+    int counter = 0;
+    for (auto it = selectionList.begin(); it != selectionList.end(); it++) {
+        QCOMPARE(it.value(), expectedResults.at(counter).second);
+        QCOMPARE(it.key(), expectedResults.at(counter++).first);
+    }
 
 }
 
