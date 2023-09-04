@@ -46,21 +46,18 @@ public:
 
 private:
 
+    Err extractTargetDecoyData(
+            const QString &msDataFilePath,
+            int topNMs2Ions,
+            double selectionFraction,
+            QVector<ScoredCandidate> *combinedResults
+            );
+
     Err buildUniqueMsInfoScanKeyVsScanPoints(
             const QString &msDataFilePath,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
             QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
             );
-
-//    Err buildPSMResultsForCalibrationFile(
-//            const QVector<FrameParallelInput> &frameParallelInputs,
-//            QVector<ScoredCandidate> *frameScoreVectorsAndExtractFilePaths
-//            );
-//
-//    static Err buildFrameScoreVectors(
-//            const QVector<FrameParallelInput> &frameParallelInputs,
-//            QVector<ScoredCandidate> *scoreVectorsOutput
-//            );
 
 private:
 
