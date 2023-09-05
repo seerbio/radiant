@@ -72,6 +72,47 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
+Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
+
+    ERR_INIT
+
+    m_msScanInfos.clear();
+
+    e = buildCalibration(msDataFilePath); ree;
+
+
+
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
+
+    const double calibrationSelectionFraction = 0.1;
+    const int minTopNMs2Ions = 6;
+    const int topNMs2IonsCalibration = std::max(
+            minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+    );
+
+    qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments";
+
+    QVector<ScoredCandidate> scoredCandidatesCalibration;
+    e = extractTargetDecoyData(
+            msDataFilePath,
+            topNMs2IonsCalibration,
+            calibrationSelectionFraction,
+            &scoredCandidatesCalibration
+    ); ree;
+
+    ERR_RETURN
+}
 
 namespace {
 
@@ -94,7 +135,7 @@ namespace {
 
                     return rTreePoint(box, msScanInfo.targetScanKey());
                 }
-            );
+        );
 
         const int maxElements = 16;
         return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
@@ -102,7 +143,7 @@ namespace {
 
     int calculateuniqueInfoScanKeyVsCandidatePeptideSize(
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide
-            ){
+    ){
 
         const auto accumulateLogic = [](int sum, const QMap<PeptideStringWithMods, CandidatePeptide> &c){return sum + c.size();};
 
@@ -111,7 +152,7 @@ namespace {
                 uniqueInfoScanKeyVsCandidatePeptide.end(),
                 0,
                 accumulateLogic
-                );
+        );
     }
 
     struct ParallelProcessingInput {
@@ -163,49 +204,6 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
-
-    ERR_INIT
-
-    m_msScanInfos.clear();
-
-    e = buildCalibration(msDataFilePath);
-
-
-
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
-
-    const double calibrationSelectionFraction = 0.1;
-    const int minTopNMs2Ions = 6;
-    const int topNMs2IonsCalibration = std::max(
-            minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
-    );
-
-    qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments";
-
-    QVector<ScoredCandidate> scoredCandidatesCalibration;
-    e = extractTargetDecoyData(
-            msDataFilePath,
-            topNMs2IonsCalibration,
-            calibrationSelectionFraction,
-            &scoredCandidatesCalibration
-    ); ree;
-
-
-    ERR_RETURN
-}
-
 Err PythiaDIAWorkflow::extractTargetDecoyData(
         const QString &msDataFilePath,
         int topNMs2Ions,
@@ -222,7 +220,6 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
             selectionFraction,
             &uniqueInfoScanKeyVsCandidatePeptideCalibration
     ); ree;
-    qDebug() << "Calibration Size" << calculateuniqueInfoScanKeyVsCandidatePeptideSize(uniqueInfoScanKeyVsCandidatePeptideCalibration);
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
@@ -336,6 +333,8 @@ Err PythiaDIAWorkflow::buildCandidates(
         }
 
     }
+
+    qDebug() << "Candidates size" << calculateuniqueInfoScanKeyVsCandidatePeptideSize(*uniqueInfoScanKeyVsCandidatePeptide);
 
     ERR_RETURN
 }
