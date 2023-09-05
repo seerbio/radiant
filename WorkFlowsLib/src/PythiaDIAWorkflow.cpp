@@ -82,6 +82,13 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
 
 
+
+
+
+
+
+
+
 //    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
 //    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 
@@ -111,7 +118,7 @@ Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
             &scoredCandidatesCalibration
     ); ree;
 
-//#define WRITE_CALIBRATION
+#define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION
     const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
     e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;

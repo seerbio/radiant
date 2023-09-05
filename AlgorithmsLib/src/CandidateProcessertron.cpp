@@ -209,10 +209,27 @@ Err CandidateProcessertron::processCandidate(
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-    e = findCandidateIntegrations(
-            summedMatVecToVec,
-            &peakIntegrationIndexes
-            ); ree;
+
+    if (m_fragPredsPredictedScanTime.isEmpty()) {
+
+        e = findCandidateIntegrations(
+                summedMatVecToVec,
+                &peakIntegrationIndexes
+        ); ree;
+
+    }
+    else {
+
+        const ScanTime scanTimeWindowTolerance = 5.0; // TODO auto set this in the calibration step.
+        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
+        e = findCandidateIntegrations(
+                summedMatVecToVec,
+                scanTimePredicted,
+                scanTimeWindowTolerance,
+                &peakIntegrationIndexes
+        ); ree;
+
+    }
 
     if (peakIntegrationIndexes.isEmpty()) {
         ERR_RETURN
