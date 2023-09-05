@@ -21,6 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/CandidateProcessertron.cpp
         src/ClassifierWeightsManager.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
@@ -44,6 +45,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/CandidateProcessertron.h
         src/ClassifierWeightsManager.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
