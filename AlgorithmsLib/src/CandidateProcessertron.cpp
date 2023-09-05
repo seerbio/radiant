@@ -976,6 +976,7 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->klDivSpectrum = klDivSpectrum;
     scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
     scoredCandidate->cosineSimMS1 = cosineSimMS1;
+    scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
 
     ERR_RETURN
 }
