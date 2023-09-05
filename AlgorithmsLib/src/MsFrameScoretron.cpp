@@ -4,6 +4,7 @@
 
 #include "MsFrameScoretron.h"
 
+#include "BiophysicalCalcs.h"
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
@@ -35,6 +36,7 @@ Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
 ) {
@@ -43,6 +45,7 @@ Err MsFrameScoretron::init(
 
     e = ErrorUtils::isTrue(params.isValid()); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
     e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
@@ -58,10 +61,17 @@ Err MsFrameScoretron::init(
             &m_fragmentFrequencies
     ); ree
 
-    m_msFrame.init(
+    e = m_msFrame.init(
             scanNumberVsScanPoints,
             scanNumberVsScanTime
             ); ree;
+
+    e = m_msFrameMS1.init(
+            scanNumberVsScanPointsMS1,
+            scanNumberVsScanTime
+            ); ree;
+
+    e = m_turboXICMS1.init(m_msFrameMS1.frameIndexVsScanPoints()); ree;
 
     const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_params);
     e = m_peakIntegratomatic.init(ffParams); ree;
@@ -74,7 +84,6 @@ Err MsFrameScoretron::init(
 //            mzMax
 //            ); ree;
 
-
     ERR_RETURN
 }
 
@@ -82,6 +91,7 @@ Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const QString &iRTRecalibrationFilePath
@@ -93,6 +103,7 @@ Err MsFrameScoretron::init(
             uniqueMsInfoScanKey,
             params,
             scanNumberVsScanPoints,
+            scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime
             ); ree;
@@ -124,10 +135,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
     e = buildMS2Peaks(&mzHashedVsXICPoints, &mzHashedVsIonPresence); ree;
 
-    for (auto it = m_fragPredsTopN.begin(); it != m_fragPredsTopN.end(); it++) {
-
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const CandidatePeptide &candidatePeptide = it.value();
+    for (const CandidatePeptide &candidatePeptide : m_fragPredsTopN) {
 
 //#define TROUBLESHOOT_CANDIDATE
 #ifdef TROUBLESHOOT_CANDIDATE
@@ -618,7 +626,8 @@ namespace {
             double *bestCosineSimSum,
             QVector<double> *bestKLDivIndividual,
             double *bestKLDivSum,
-            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec
+            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec,
+            Eigen::VectorX<double> *bestAnchorColumn
             ) {
 
         ERR_INIT
@@ -666,6 +675,7 @@ namespace {
                 *bestKLDivSum = klDivSumAnchor;
                 *bestKLDivIndividual = bestKLDivIndividualAnchor;
                 *bestFrameIndexMaxDiffFromAnchorVec = frameIndexMaxDiffFromAnchorVec;
+                *bestAnchorColumn = anchorColumn;
             }
 
         }
@@ -701,7 +711,8 @@ namespace {
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
             QVector<int> *bestFrameIndexMaxDiffFromAnchorVec,
-            QVector<int> *individualPeakPointCount
+            QVector<int> *individualPeakPointCount,
+            Eigen::VectorX<double> *bestAnchorColumn
     ) {
 
         ERR_INIT
@@ -755,7 +766,8 @@ namespace {
                     &bestCosineSimSumIntegration,
                     &klDivsIndividualIntegration,
                     &bestKlDivSimSumIntegration,
-                    &bestFrameIndexMaxDiffFromAnchorVecIntegration
+                    &bestFrameIndexMaxDiffFromAnchorVecIntegration,
+                    bestAnchorColumn
                     ); ree;
 
 //#define CHECK_ALIGNMENT
@@ -876,6 +888,50 @@ namespace {
         ERR_RETURN
     }
 
+    Err calculateMS1Corr(
+            const Eigen::VectorX<double> &bestAnchorColumn,
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
+            double mzTarget,
+            double ppmTol,
+            TurboXIC *turboXic,
+            double *cosineSimMS1
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestAnchorColumn.size() > 0); ree;
+
+        const double massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
+        const double mzStart = mzTarget - massTol;
+        const double mzEnd = mzTarget + massTol;
+
+        const XICPoints xicPoints = turboXic->extractPointsXIC(
+                mzStart,
+                mzEnd,
+                peakIntegrationIndexes.first,
+                peakIntegrationIndexes.second
+                );
+
+        Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
+        ms1Vec.setZero();
+
+        for (auto it = xicPoints.scanNumbersVsIntensityVals.begin(); it != xicPoints.scanNumbersVsIntensityVals.end(); it++) {
+            const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
+
+            if (frameIndex >= ms1Vec.size()) {
+                continue;
+            }
+
+            ms1Vec.coeffRef(frameIndex) = it.value();
+        }
+
+        ms1Vec = applyGaussSmoothRowWiseToMatrix(ms1Vec);
+
+        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err MsFrameScoretron::processCandidate(
         const CandidatePeptide &candidatePeptide,
@@ -953,6 +1009,7 @@ Err MsFrameScoretron::processCandidate(
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
     QVector<int> bestFrameIndexMaxDiffFromAnchorVec;
     QVector<int> individualPeakPointCount;
+    Eigen::VectorX<double> bestAnchorColumn;
     e = calculateCandidateAllignementMetrics(
             intensityMatrix,
             peakIntegrationIndexes,
@@ -963,7 +1020,8 @@ Err MsFrameScoretron::processCandidate(
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
             &bestFrameIndexMaxDiffFromAnchorVec,
-            &individualPeakPointCount
+            &individualPeakPointCount,
+            &bestAnchorColumn
             ); ree;
 
     QVector<double> intensityApexVals = EigenUtils::convertEigenVectorToQVector(
@@ -978,6 +1036,18 @@ Err MsFrameScoretron::processCandidate(
             &cosineSimSpectrum,
             &klDivSpectrum
             ); ree;
+
+    double cosineSimMS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
+            m_params.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSimMS1
+            ); ree;
+
+            qDebug() << cosineSimMS1;
 
     QVector<double> mzMeanValsFound;
     QVector<double> stdMeanValsFound;
@@ -1067,6 +1137,7 @@ Err MsFrameScoretron::processCandidate(
     scoredCandidate.klDivSum = bestKlDivSimSum;
     scoredCandidate.klDivSpectrum = klDivSpectrum;
     scoredCandidate.cosineSimSpectrum = cosineSimSpectrum;
+    scoredCandidate.cosineSimMS1 = cosineSimMS1;
 
     scoredCandidates->push_back(scoredCandidate);
 

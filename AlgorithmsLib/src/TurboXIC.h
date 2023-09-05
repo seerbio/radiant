@@ -49,6 +49,8 @@ public:
             double *mzMax
             ) const;
 
+    bool isInit();
+
 
 private:
 

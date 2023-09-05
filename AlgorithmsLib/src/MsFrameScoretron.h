@@ -15,6 +15,7 @@
 #include "PeakIntegratomatic.h"
 #include "PSMsReader.h"
 #include "PythiaParameterReader.h"
+#include "TurboXIC.h"
 
 
 using namespace Error;
@@ -51,6 +52,7 @@ namespace ScoredCandidateNamespace {
     const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
+    const QString COSINE_SIM_MS1 = QString("cosineSimMS1");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM,
@@ -77,7 +79,8 @@ namespace ScoredCandidateNamespace {
             KL_DIV_SUM,
             KL_DIV_TO_ANCHOR,
             KL_DIV_SPECTRUM,
-            COSINE_SIM_SPECTRUM
+            COSINE_SIM_SPECTRUM,
+            COSINE_SIM_MS1
     };
 }
 
@@ -95,6 +98,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double klDivSum = -1.0;
     double klDivSpectrum = -1.0;
     double cosineSimSpectrum = -1.0;
+    double cosineSimMS1 = -1.0;
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
     QVector<double> mzSearchedVec;
@@ -143,7 +147,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {KL_DIV_SUM, QVariant(klDivSum)},
                 {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
-                {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)}
+                {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
+                {COSINE_SIM_MS1, QVariant(cosineSimMS1)}
         };
     }
 
@@ -184,6 +189,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
+        cosineSimMS1 = dataMap.value(COSINE_SIM_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
         klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
 
@@ -207,6 +213,7 @@ public:
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QString &iRTRecalibrationFilePath
@@ -216,6 +223,7 @@ public:
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsMS2Ions,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
@@ -251,8 +259,10 @@ private:
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
     MsFrame m_msFrame;
+    MsFrame m_msFrameMS1;
 
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+    TurboXIC m_turboXICMS1;
 
     PythiaParameters m_params;
     QString m_msDataFilePath;

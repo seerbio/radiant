@@ -53,10 +53,11 @@ private:
             QVector<ScoredCandidate> *combinedResults
             );
 
-    Err buildUniqueMsInfoScanKeyVsScanPoints(
+    static Err buildUniqueMsInfoScanKeyVsScanPoints(
             const QString &msDataFilePath,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
-            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
+            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
             );
 
 private:

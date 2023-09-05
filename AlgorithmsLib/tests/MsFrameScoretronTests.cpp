@@ -135,7 +135,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
     const QString fragLibPath
-            = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib_found.speclib.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Testing/LatestStuff/predicted_lib.speclib.fragLib");
 //            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
 
     const double target = 454.957;
@@ -154,6 +154,11 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
     e = msReaderParquet.collateTandemPrecursorTargetsDIA(&diaTargetFrame);
+    QCOMPARE(e, eNoError);
+
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
+    e = msReaderParquet.getScanPoints(msLevel, &scanNumberVsScanPointsMS1);
     QCOMPARE(e, eNoError);
 
     const PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
@@ -175,6 +180,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             uniqueMsInfoScanKey,
             pythiaParameters,
             diaTargetFrame.value(uniqueMsInfoScanKey),
+            scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime,
             iRTReCalFilePath

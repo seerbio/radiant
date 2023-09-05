@@ -51,6 +51,8 @@ public:
             double *mzMax
             );
 
+    bool isInit();
+
 private:
 
     RTree *m_rTree;
@@ -136,7 +138,6 @@ Err TurboXIC::Private::getRTreeLimits(
     *mzMin = m_rTree->bounds().min_corner().get<1>();
     *mzMax = m_rTree->bounds().max_corner().get<1>();
 
-
     ERR_RETURN
 }
 
@@ -185,6 +186,10 @@ ScanPoints TurboXIC::Private::extractSpectrum(
     std::sort(scanPoints.begin(), scanPoints.end(), MsUtilsNamespace::sortAscMz);
 
     return scanPoints;
+}
+
+bool TurboXIC::Private::isInit() {
+    return !m_rTree->empty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -246,4 +251,8 @@ ScanPoints TurboXIC::extractSpectrum(
         ) const {
 
     return d_ptr->extractSpectrum(mzMin, mzMax, scanNumberMin, scanNumberMax);
+}
+
+bool TurboXIC::isInit() {
+    return false;
 }

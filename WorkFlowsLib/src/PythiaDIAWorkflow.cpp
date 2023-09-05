@@ -179,6 +179,7 @@ namespace {
         PythiaParameters pythiaParameters;
         QString iRTReCalFilePath;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+        QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
         QMap<ScanNumber , ScanPoints> *scanPoints = nullptr;
         QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptide = nullptr;
     };
@@ -198,6 +199,7 @@ namespace {
                 ppi.uniqueMsInfoScanKey,
                 ppi.pythiaParameters,
                 *ppi.scanPoints,
+                ppi.scanNumberVsScanTimeMS1,
                 *ppi.peptideStringWithModsVsCandidatePeptide,
                 ppi.scanNumberVsScanTime
         ); rree;
@@ -206,6 +208,7 @@ namespace {
 //                ppi.uniqueMsInfoScanKey,
 //                ppi.pythiaParameters,
 //                *ppi.scanPoints,
+//                ppi.scanNumberVsScanTimeMS1,
 //                *ppi.peptideStringWithModsVsCandidatePeptide,
 //                ppi.scanNumberVsScanTime,
 //                ppi.iRTReCalFilePath
@@ -224,8 +227,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    const double calibrationSelectionFraction = -0.1;
-    const int minTopNMs2Ions = 12;
+    const double calibrationSelectionFraction = 0.01;
+    const int minTopNMs2Ions = 6;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
@@ -240,9 +243,6 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             calibrationSelectionFraction,
             &scoredCandidatesCalibration
             ); ree;
-
-
-
 
 
 
@@ -274,10 +274,12 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
     e = buildUniqueMsInfoScanKeyVsScanPoints(
             msDataFilePath,
             &uniqueInfoScanKeyVsScanPoints,
-            &scanNumberVsScanTime
+            &scanNumberVsScanTime,
+            &scanNumberVsScanTimeMS1
     ); ree;
 
     QVector<ParallelProcessingInput> parallelProcessingInputs;
@@ -285,6 +287,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
         ParallelProcessingInput ppi;
         ppi.uniqueMsInfoScanKey = uniqueMsInfoScanKey;
         ppi.scanNumberVsScanTime = scanNumberVsScanTime;
+        ppi.scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1;
         ppi.iRTReCalFilePath = m_iRTReCalFilePath;
         ppi.pythiaParameters = m_pythiaParameters;
         ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
@@ -320,7 +323,8 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
 Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
         const QString &msDataFilePath,
         QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
-        QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
+        QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
+        QMap<ScanNumber, ScanPoints > *scanNumberVsScanTimeMS1
         ) {
 
     ERR_INIT
@@ -334,6 +338,9 @@ Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
     for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
         scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
     }
+
+    const int msLevel = 1;
+    e = msReaderParquet.getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
 
     ERR_RETURN
 }
