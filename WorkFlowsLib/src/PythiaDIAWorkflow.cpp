@@ -94,7 +94,7 @@ Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
 
     e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
 
-    const double calibrationSelectionFraction = 0.1;
+    const double calibrationSelectionFraction = -0.1;
     const int minTopNMs2Ions = 6;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,

@@ -6,6 +6,7 @@
 #define PYTHIADIACPP_MSFRAMESCORETRON_H
 
 #include "AlgorithmsLib_Exports.h"
+#include "CandidateProcessertron.h"
 #include "Error.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
@@ -64,18 +65,6 @@ private:
             QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
             );
 
-    Err processCandidate(
-            const CandidatePeptide &candidatePeptide,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-            ScoredCandidate *scoredCandidate
-    );
-
-    void filterSummedVecPeakIntegrationsByPredictedScanTime(
-            ScanTime predictedScanTime,
-            double windowWidthMinutes,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-    );
 
 private:
 
@@ -83,17 +72,15 @@ private:
     QMap<MzHashed, FrequencyPercent> m_fragmentFrequencies;
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
 
-    MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
-    MsFrame m_msFrame;
-    MsFrame m_msFrameMS1;
-    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
-    TurboXIC m_turboXICMS1;
-
     PythiaParameters m_params;
     QString m_msDataFilePath;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+    MsFrame m_msFrame;
+    MsFrame m_msFrameMS1;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
+    CandidateProcessertron m_candidateProcessertron;
 
-    PeakIntegratomatic m_peakIntegratomatic;
+    MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 };
 
 
