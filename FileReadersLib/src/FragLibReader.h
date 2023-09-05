@@ -109,16 +109,31 @@ public:
 
     Err init(const QString &fragLibFilePath);
 
+    int libarySize();
+
     Err getMS2Ions(QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide);
 
     Err getMS2IonsTopN(
             int topNMs2Ions,
+            double mzMin,
+            double mzMax,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
-    Err getMS2Ions(
+    Err getMS2IonsTopN(
+            const QMap<Index, bool> &selectionList,
+            int topNMs2Ions,
+            double mzMin,
+            double mzMax,
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
+    );
+
+    static Err getMS2Ions(
+            const QString &fragLibFilePath,
             double massStart,
             double massEnd,
+            double mzMin,
+            double mzMax,
             int topNMs2Ions,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
@@ -156,11 +171,13 @@ public:
             Charge *charge
     );
 
-    Err fragLibReaderRowsToMs2IonsMap(
+    static Err fragLibReaderRowsToMs2IonsMap(
             const QVector<FragLibReaderRow> &fragLibReaderRows,
             int topNMs2Ions,
+            double mzMin,
+            double mzMax,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
-    ) const;
+    );
 
     static Err generateFragmentFrequencies(
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -177,6 +194,8 @@ private:
     QString m_fragLibFilePath;
     double m_mzMin;
     double m_mzMax;
+
+    QVector<FragLibReaderRow> m_fragLibReaderRows;
 
 };
 

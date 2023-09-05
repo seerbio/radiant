@@ -173,7 +173,7 @@ void MathUtilsTests::calculateQValuesTest() {
 
 void MathUtilsTests::generateRandomSelectionListTest() {
 
-    const QMap<Index, bool> selectionList = MathUtils::generateRandomSelectionList(
+    const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
             100,
             20
             );

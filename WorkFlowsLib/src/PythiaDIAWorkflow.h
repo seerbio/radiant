@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
@@ -18,7 +19,6 @@
 
 using namespace Error;
 
-class FrameParallelInput;
 class PSMsReaderRow;
 class ScoredCandidate;
 class FeatureFinderHill;
@@ -46,12 +46,21 @@ public:
 
 private:
 
+    Err buildCalibration(const QString &msDataFilePath);
+
     Err extractTargetDecoyData(
             const QString &msDataFilePath,
             int topNMs2Ions,
             double selectionFraction,
             QVector<ScoredCandidate> *combinedResults
-            );
+    );
+
+    Err buildCandidates(
+            const QString &msDataFilePath,
+            int topNMs2Ions,
+            double selectionListFraction,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
+    );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             const QString &msDataFilePath,
@@ -66,6 +75,8 @@ private:
     QString m_fragLibUri;
     QString m_iRTReCalFilePath;
 
+    FragLibReader m_fragLibReader;
+    QVector<MsScanInfo> m_msScanInfos;
 
 };
 

@@ -47,6 +47,8 @@ Err PythiaDIAWorkflow::init(
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
+    e = m_fragLibReader.init(m_fragLibUri); ree;
+
     ERR_RETURN
 }
 
@@ -96,68 +98,6 @@ namespace {
 
         const int maxElements = 16;
         return RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    }
-
-    Err buildLibrary(
-            const QString &msDataFilePath,
-            const QString &fragLibFilePath,
-            int topNMs2Ions,
-            double selectionListFraction,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide = nullptr
-            ) {
-
-        ERR_INIT
-
-        MsReaderParquet msReaderParquet;
-        e = msReaderParquet.openFile(msDataFilePath); ree;
-
-        const QVector<MsScanInfo> msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
-        const RTree rtree = loadScanInfoToRTree(msScanInfos);
-
-        FragLibReader fragLibReader;
-        e = fragLibReader.init(fragLibFilePath); ree;
-
-        QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
-
-        e = fragLibReader.getMS2IonsTopN(
-                topNMs2Ions,
-                &peptideSequenceChargeKeyVsCandidatePeptide
-                ); ree;
-
-        QMap<Index, bool> selectionList;
-        if (selectionListFraction > 0) {
-            const int selectionCount
-                = static_cast<int>(std::round(peptideSequenceChargeKeyVsCandidatePeptide.size() * selectionListFraction));
-
-            selectionList = MathUtils::generateRandomSelectionList(peptideSequenceChargeKeyVsCandidatePeptide.size(), selectionCount);
-        }
-
-        int counter = 0;
-        for (const CandidatePeptide &candidatePeptide : peptideSequenceChargeKeyVsCandidatePeptide) {
-
-            if (!selectionList.isEmpty() && !selectionList.value(counter++)) {
-                continue;
-            }
-
-            const double mz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
-
-            const rTreeBox queryBox(
-                    rTreeCoor(mz, 0.0),
-                    rTreeCoor(mz, 0.0)
-            );
-
-            std::vector<rTreePoint> rTreeSearchResult;
-            rtree.query(bgi::intersects(queryBox), std::back_inserter(rTreeSearchResult));
-
-            for (const rTreePoint &rtp : rTreeSearchResult) {
-                const UniqueMsInfoScanKey &uniqueMsInfoScanKey = rtp.second;
-
-                (*uniqueInfoScanKeyVsCandidatePeptide)[uniqueMsInfoScanKey].insert(candidatePeptide.peptideStringWithMods, candidatePeptide);
-            }
-
-        }
-
-        ERR_RETURN
     }
 
     int calculateuniqueInfoScanKeyVsCandidatePeptideSize(
@@ -227,12 +167,30 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    const double calibrationSelectionFraction = -0.01;
-    const int minTopNMs2Ions = 12;
+    m_msScanInfos.clear();
+
+    e = buildCalibration(msDataFilePath);
+
+
+
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
+
+    const double calibrationSelectionFraction = 0.1;
+    const int minTopNMs2Ions = 6;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
-            );
+    );
 
     qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments";
 
@@ -242,13 +200,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
             topNMs2IonsCalibration,
             calibrationSelectionFraction,
             &scoredCandidatesCalibration
-            ); ree;
+    ); ree;
 
-
-
-
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 
     ERR_RETURN
 }
@@ -263,9 +216,8 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
     ERR_INIT
 
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-    e = buildLibrary(
+    e = buildCandidates(
             msDataFilePath,
-            m_fragLibUri,
             topNMs2Ions,
             selectionFraction,
             &uniqueInfoScanKeyVsCandidatePeptideCalibration
@@ -320,6 +272,74 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
     ERR_RETURN
 }
 
+Err PythiaDIAWorkflow::buildCandidates(
+        const QString &msDataFilePath,
+        int topNMs2Ions,
+        double selectionListFraction,
+        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide = nullptr
+) {
+
+    ERR_INIT
+
+    QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
+
+    QMap<Index, bool> selectionList;
+    if (selectionListFraction > 0) {
+        const int selectionCount
+            = static_cast<int>(std::round(m_fragLibReader.libarySize() * selectionListFraction));
+
+        selectionList = MathUtils::generateRandomSelectionList(m_fragLibReader.libarySize(), selectionCount);
+
+        e = m_fragLibReader.getMS2IonsTopN(
+                selectionList,
+                topNMs2Ions,
+                m_pythiaParameters.mzMinDataStructure,
+                m_pythiaParameters.mzMaxDataStructure,
+                &peptideSequenceChargeKeyVsCandidatePeptide
+        ); ree;
+    }
+
+    else {
+        e = m_fragLibReader.getMS2IonsTopN(
+                topNMs2Ions,
+                100.0,
+                2000.0,
+                &peptideSequenceChargeKeyVsCandidatePeptide
+        ); ree;
+
+    }
+
+    if (m_msScanInfos.isEmpty()) {
+        MsReaderParquet msReaderParquet;
+        e = msReaderParquet.openFile(msDataFilePath); ree;
+        m_msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
+    }
+
+    const RTree rtree = loadScanInfoToRTree(m_msScanInfos);
+
+    for (const CandidatePeptide &candidatePeptide : peptideSequenceChargeKeyVsCandidatePeptide) {
+
+        const double mz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
+
+        const rTreeBox queryBox(
+                rTreeCoor(mz, 0.0),
+                rTreeCoor(mz, 0.0)
+        );
+
+        std::vector<rTreePoint> rTreeSearchResult;
+        rtree.query(bgi::intersects(queryBox), std::back_inserter(rTreeSearchResult));
+
+        for (const rTreePoint &rtp : rTreeSearchResult) {
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey = rtp.second;
+
+            (*uniqueInfoScanKeyVsCandidatePeptide)[uniqueMsInfoScanKey].insert(candidatePeptide.peptideStringWithMods, candidatePeptide);
+        }
+
+    }
+
+    ERR_RETURN
+}
+
 Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
         const QString &msDataFilePath,
         QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
@@ -344,5 +364,3 @@ Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
 
     ERR_RETURN
 }
-
-

@@ -74,12 +74,9 @@ QMap<int, bool> MathUtils::generateRandomSelectionList(
     std::vector<int> uniqueNumbersVector(uniqueNumbers.begin(), uniqueNumbers.end());
 
     QMap<int, bool> selectionList;
-    for (int i = 0; i < totalSizeOfList; i++) {
-        selectionList.insert(i, false);
-    }
 
     for (int i : uniqueNumbersVector) {
-        selectionList[i] = true;
+        selectionList.insert(i, true);
     }
 
     return selectionList;

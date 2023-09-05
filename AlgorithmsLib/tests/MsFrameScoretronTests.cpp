@@ -79,9 +79,6 @@ namespace {
 
         ERR_INIT
 
-        FragLibReader fragLibReader;
-        e = fragLibReader.init(fragLibPath);
-
         for (int charge : {2, 3}) {
 
             QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
@@ -89,9 +86,12 @@ namespace {
             const double massMin = BiophysicalCalcs::calculateMassFromThomson(targetMz - isoWinMin, charge, 0);
             const double massMax = BiophysicalCalcs::calculateMassFromThomson(targetMz + isoWinMin, charge, 0);
 
-            e = fragLibReader.getMS2Ions(
+            e = FragLibReader::getMS2Ions(
+                    fragLibPath,
                     massMin,
                     massMax,
+                    100.0,
+                    2000.0,
                     topNMs2Ions,
                     &peptideSequenceChargeKeyVsCandidatePeptide
                     ); ree;

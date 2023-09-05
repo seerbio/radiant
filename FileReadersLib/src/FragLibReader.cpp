@@ -38,6 +38,11 @@ Err FragLibReader::init(const QString &fragLibFilePath) {
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
     m_fragLibFilePath = fragLibFilePath;
 
+    e = ParquetReader::read(
+            m_fragLibFilePath,
+            &m_fragLibReaderRows
+    ); ree
+
     ERR_RETURN
 }
 
@@ -71,8 +76,11 @@ namespace {
 
 }//namespace
 Err FragLibReader::getMS2Ions(
+        const QString &fragLibFilePath,
         double massStart,
         double massEnd,
+        double mzMin,
+        double mzMax,
         int topNMs2Ions,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
@@ -84,7 +92,7 @@ Err FragLibReader::getMS2Ions(
 
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = ParquetReader::read(
-            m_fragLibFilePath,
+            fragLibFilePath,
             FragLibReaderNamespace::MASS,
             {massStart, massEnd},
             &fragLibReaderRows
@@ -93,6 +101,8 @@ Err FragLibReader::getMS2Ions(
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
             topNMs2Ions,
+            mzMin,
+            mzMax,
             peptideSequenceChargeKeyVsCandidatePeptide
             ); ree;
 
@@ -107,6 +117,8 @@ Err FragLibReader::getMS2Ions(QMap<PeptideSequenceChargeKey, CandidatePeptide> *
     const int maxMs2Ions = 300;
     e = getMS2IonsTopN(
             maxMs2Ions,
+            m_mzMin,
+            m_mzMax,
             peptideSequenceChargeKeyVsCandidatePeptide
             ); ree;
 
@@ -115,6 +127,8 @@ Err FragLibReader::getMS2Ions(QMap<PeptideSequenceChargeKey, CandidatePeptide> *
 
 Err FragLibReader::getMS2IonsTopN(
         int topNMs2Ions,
+        double mzMin,
+        double mzMax,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
 
@@ -123,19 +137,48 @@ Err FragLibReader::getMS2IonsTopN(
     QElapsedTimer et;
     et.start();
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
-    e = ParquetReader::read(
-            m_fragLibFilePath,
-            &fragLibReaderRows
-    ); ree
-
     e = fragLibReaderRowsToMs2IonsMap(
-            fragLibReaderRows,
+            m_fragLibReaderRows,
             topNMs2Ions,
+            mzMin,
+            mzMax,
             peptideSequenceChargeKeyVsCandidatePeptide
     ); ree
 
     qDebug() << "All MS2 Predictions count:" << peptideSequenceChargeKeyVsCandidatePeptide->size() << "retrieved in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err FragLibReader::getMS2IonsTopN(
+        const QMap<Index, bool> &selectionList,
+        int topNMs2Ions,
+        double mzMin,
+        double mzMax,
+        QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
+        ) {
+
+    ERR_INIT
+
+    QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptideTemp;
+    e = getMS2IonsTopN(
+            topNMs2Ions,
+            mzMin,
+            mzMax,
+            &peptideSequenceChargeKeyVsCandidatePeptideTemp
+            ); ree;
+
+    int counter = 0;
+    for (auto it = peptideSequenceChargeKeyVsCandidatePeptideTemp.begin(); it != peptideSequenceChargeKeyVsCandidatePeptideTemp.end(); it++) {
+
+        const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
+        const CandidatePeptide &candidatePeptide = it.value();
+
+        if (selectionList.value(counter++)) {
+            peptideSequenceChargeKeyVsCandidatePeptide->insert(peptideSequenceChargeKey, candidatePeptide);
+        }
+
+    }
 
     ERR_RETURN
 }
@@ -247,31 +290,36 @@ Err FragLibReader::buildFragIonLibForCandidates(
 
     ERR_INIT
 
-    FragLibReader fragLibReader;
-    e = fragLibReader.init(fragLibUri); ree;
+//    FragLibReader fragLibReader;
+//    e = fragLibReader.init(fragLibUri); ree;
+//
+//    const int topNMs2Ions = 1000;
+//
+//    for (Charge charge = chargeMin; charge <= chargeMax; ++charge) {
+//
+//        const double massStart = calculateMassFromThomson(
+//                mzTargetMin,
+//                charge
+//        );
+//
+//        const double massEnd = calculateMassFromThomson(
+//                mzTargetMax,
+//                charge
+//        );
+//
+//        const double mzMin = 100.0;
+//        const double mzMax = 2000.0;
+//
+//        e = fragLibReader.getMS2Ions(
+//                massStart,
+//                massEnd,
+//                mzMin,
+//                mzMax,
+//                topNMs2Ions,
+//                peptideSequenceChargeKeyVsCandidatePeptide
+//        ); ree
 
-    const int topNMs2Ions = 1000;
-
-    for (Charge charge = chargeMin; charge <= chargeMax; ++charge) {
-
-        const double massStart = calculateMassFromThomson(
-                mzTargetMin,
-                charge
-        );
-
-        const double massEnd = calculateMassFromThomson(
-                mzTargetMax,
-                charge
-        );
-
-        e = fragLibReader.getMS2Ions(
-                massStart,
-                massEnd,
-                topNMs2Ions,
-                peptideSequenceChargeKeyVsCandidatePeptide
-        ); ree
-
-    }
+//    }
 
     ERR_RETURN
 }
@@ -308,8 +356,10 @@ Err FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
 Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
         const QVector<FragLibReaderRow> &fragLibReaderRows,
         int topNMs2Ions,
+        double mzMin,
+        double mzMax,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
-) const {
+) {
 
     ERR_INIT
 
@@ -341,8 +391,8 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
 
         getTopNMostIntenseMs2Ions(
                 topNMs2Ions,
-                m_mzMin,
-                m_mzMax,
+                mzMin,
+                mzMax,
                 &ms2Ions
                 ); ree
 
@@ -568,3 +618,9 @@ Err FragLibReader::convertDIANNLibToFragLib(const QString &specLibFilePath) {
 
     ERR_RETURN
 }
+
+int FragLibReader::libarySize() {
+    return m_fragLibReaderRows.size();
+}
+
+
