@@ -1047,8 +1047,6 @@ Err MsFrameScoretron::processCandidate(
             &cosineSimMS1
             ); ree;
 
-            qDebug() << cosineSimMS1;
-
     QVector<double> mzMeanValsFound;
     QVector<double> stdMeanValsFound;
     QVector<double> mzValsSearched;
