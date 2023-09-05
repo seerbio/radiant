@@ -51,7 +51,7 @@ QPointF MathUtils::closestXValPoint(const QVector<QPointF> &vec, double value) {
     return *it;
 }
 
-QMap<Index, bool> MathUtils::generateRandomSelectionList(
+QMap<int, bool> MathUtils::generateRandomSelectionList(
         int totalSizeOfList,
         int desiredSizeRandomNumbers,
         int seed
@@ -73,7 +73,7 @@ QMap<Index, bool> MathUtils::generateRandomSelectionList(
 
     std::vector<int> uniqueNumbersVector(uniqueNumbers.begin(), uniqueNumbers.end());
 
-    QMap<Index, bool> selectionList;
+    QMap<int, bool> selectionList;
     for (int i = 0; i < totalSizeOfList; i++) {
         selectionList.insert(i, false);
     }

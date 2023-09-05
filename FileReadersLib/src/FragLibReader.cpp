@@ -444,7 +444,7 @@ Err FragLibReader::generateFragmentFrequencies(
         fragmentFrequencies->insert(mzHashed, fragmentFreq);
     }
 
-    qDebug() << "Frequences calculated in" << et.elapsed() << "mSec";
+//    qDebug() << "Frequences calculated in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }

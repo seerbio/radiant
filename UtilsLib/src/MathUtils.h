@@ -7,7 +7,7 @@
 
 #include "UtilsLib_Exports.h"
 
-#include "GlobalSettings.h"
+//#include "GlobalSettings.h"
 #include "Error.h"
 
 #include <QDebug>
@@ -209,10 +209,10 @@ public:
 
     template<typename Identifier>
     static Err calculateQValue(
-            const QMap<Identifier, Score> &identifierVsTarget,
-            const QMap<Identifier, Score> &identifierVsDecoys,
-            QMap<Identifier, QValue> *identifierVsQValue,
-            QMap<Identifier, DecoyRatio> *identifierVsDecoyRatio
+            const QMap<Identifier, double> &identifierVsTarget,
+            const QMap<Identifier, double> &identifierVsDecoys,
+            QMap<Identifier, double> *identifierVsQValue,
+            QMap<Identifier, double> *identifierVsDecoyRatio
             ) {
 
         ERR_INIT
@@ -263,7 +263,7 @@ public:
         ERR_RETURN
     }
 
-    static QMap<Index, bool> generateRandomSelectionList(
+    static QMap<int, bool> generateRandomSelectionList(
             int totalSizeOfList,
             int desiredSizeRandomNumbers,
             int seed = 666

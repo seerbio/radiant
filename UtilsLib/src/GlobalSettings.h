@@ -8,7 +8,7 @@
 #include "UtilsLib_Exports.h"
 
 #include "Error.h"
-//#include "ErrorUtils.h"
+#include "ErrorUtils.h"
 
 #include <QPointF>
 #include <QString>
@@ -81,13 +81,13 @@ struct UTILSLIB_EXPORTS MS2Ion {
     MS2Ion() = default;
 
     MS2Ion(
-            double mz,
-            double intensity,
-            QString ionLabel
+        double mz,
+        double intensity,
+        QString ionLabel
     )
-            :mz(mz)
-            , intensity(intensity)
-            , ionLabel(std::move(ionLabel))
+    :mz(mz)
+    , intensity(intensity)
+    , ionLabel(std::move(ionLabel))
     {}
 
     friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
@@ -95,124 +95,124 @@ struct UTILSLIB_EXPORTS MS2Ion {
         return dbg;
     }
 
-//    Err getIonLabelInfo(QPair<IonIndex, IonType> *ionInfo) const {
-//
-//        ERR_INIT
-//
-//        const int expectedSplitSize = 2;
-//
-//        IonIndex ionIndex;
-//
-//        if (ionLabel.contains("p")) {
-//             *ionInfo = {0, ionLabel};
-//             ERR_RETURN
-//        }
-//        else if (ionLabel.contains("p-H2O")) {
-//            *ionInfo = {1, ionLabel};
-//            ERR_RETURN
-//        }
-//        else if (ionLabel.contains("p-NH3")) {
-//            *ionInfo = {2, ionLabel};
-//            ERR_RETURN
-//        }
-//        if (ionLabel.contains("p^2")) {
-//            *ionInfo = {3, ionLabel};
-//            ERR_RETURN
-//        }
-//        else if (ionLabel.contains("p-H2O^2")) {
-//            *ionInfo = {4, ionLabel};
-//            ERR_RETURN
-//        }
-//        else if (ionLabel.contains("p-NH3^2")) {
-//            *ionInfo = {5, ionLabel};
-//            ERR_RETURN
-//        }
-//        else if (ionLabel.contains("y")) {
-//
-//            QStringList ionLabelSplit;
-//            if (ionLabel.contains("-")) {
-//
-//                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
-//                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
-//
-//                const QString labelFront = ionLabelSplit.front().replace("y", "");
-//
-//                const QString labelBack = ionLabelSplit.back();
-//                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
-//
-//                *ionInfo = {ionIndex, "y-" + labelBack};
-//                ERR_RETURN
-//            }
-//            else if (ionLabel.contains("^")) {
-//                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
-//                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
-//
-//                const QString labelFront = ionLabelSplit.front().replace("y", "");
-//
-//                const QString labelBack = ionLabelSplit.back();
-//                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
-//
-//                *ionInfo = {ionIndex, "y^" + labelBack};
-//                ERR_RETURN
-//            }
-//            else {
-//
-//                QString ionLabelCopy = ionLabel;
-//                ionLabelCopy = ionLabelCopy.replace("y", "");
-//                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
-//                *ionInfo = {ionIndex, "y"};
-//                ERR_RETURN
-//            }
-//        }
-//
-//        else if (ionLabel.contains("b")) {
-//
-//            QStringList ionLabelSplit;
-//            if (ionLabel.contains("-")) {
-//
-//                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
-//                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
-//
-//                const QString labelFront = ionLabelSplit.front().replace("b", "");
-//
-//                const QString labelBack = ionLabelSplit.back();
-//                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
-//
-//                *ionInfo = {ionIndex, "b-" + labelBack};
-//                ERR_RETURN
-//            }
-//            else if (ionLabel.contains("^")) {
-//                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
-//                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
-//
-//                const QString labelFront = ionLabelSplit.front().replace("b", "");
-//
-//                const QString labelBack = ionLabelSplit.back();
-//                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
-//
-//                *ionInfo = {ionIndex, "b^" + labelBack};
-//                ERR_RETURN
-//            }
-//            else {
-//
-//                QString ionLabelCopy = ionLabel;
-//                ionLabelCopy = ionLabelCopy.replace("b", "");
-//                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
-//                *ionInfo = {ionIndex, "b"};
-//                ERR_RETURN
-//            }
-//        }
-//
-//        else if (ionLabel.contains("a")) {
-//            QString ionLabelCopy = ionLabel;
-//            ionLabelCopy = ionLabelCopy.replace("a", "");
-//            e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
-//            *ionInfo = {ionIndex, "a"};
-//            ERR_RETURN
-//        }
-//
-//        rrr(eValueError);
-//    }
+    Err getIonLabelInfo(QPair<IonIndex, IonType> *ionInfo) const {
+
+        ERR_INIT
+
+        const int expectedSplitSize = 2;
+
+        IonIndex ionIndex;
+
+        if (ionLabel.contains("p")) {
+             *ionInfo = {0, ionLabel};
+             ERR_RETURN
+        }
+        else if (ionLabel.contains("p-H2O")) {
+            *ionInfo = {1, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-NH3")) {
+            *ionInfo = {2, ionLabel};
+            ERR_RETURN
+        }
+        if (ionLabel.contains("p^2")) {
+            *ionInfo = {3, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-H2O^2")) {
+            *ionInfo = {4, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("p-NH3^2")) {
+            *ionInfo = {5, ionLabel};
+            ERR_RETURN
+        }
+        else if (ionLabel.contains("y")) {
+
+            QStringList ionLabelSplit;
+            if (ionLabel.contains("-")) {
+
+                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("y", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "y-" + labelBack};
+                ERR_RETURN
+            }
+            else if (ionLabel.contains("^")) {
+                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("y", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "y^" + labelBack};
+                ERR_RETURN
+            }
+            else {
+
+                QString ionLabelCopy = ionLabel;
+                ionLabelCopy = ionLabelCopy.replace("y", "");
+                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+                *ionInfo = {ionIndex, "y"};
+                ERR_RETURN
+            }
+        }
+
+        else if (ionLabel.contains("b")) {
+
+            QStringList ionLabelSplit;
+            if (ionLabel.contains("-")) {
+
+                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("b", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "b-" + labelBack};
+                ERR_RETURN
+            }
+            else if (ionLabel.contains("^")) {
+                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
+
+                const QString labelFront = ionLabelSplit.front().replace("b", "");
+
+                const QString labelBack = ionLabelSplit.back();
+                e = ErrorUtils::toInt(labelFront, &ionIndex); ree
+
+                *ionInfo = {ionIndex, "b^" + labelBack};
+                ERR_RETURN
+            }
+            else {
+
+                QString ionLabelCopy = ionLabel;
+                ionLabelCopy = ionLabelCopy.replace("b", "");
+                e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+                *ionInfo = {ionIndex, "b"};
+                ERR_RETURN
+            }
+        }
+
+        else if (ionLabel.contains("a")) {
+            QString ionLabelCopy = ionLabel;
+            ionLabelCopy = ionLabelCopy.replace("a", "");
+            e = ErrorUtils::toInt(ionLabelCopy, &ionIndex); ree
+            *ionInfo = {ionIndex, "a"};
+            ERR_RETURN
+        }
+
+        rrr(eValueError);
+    }
 
     static void sortMS2IonsMzAsc(QVector<MS2Ion> *ms2Ions) {
 

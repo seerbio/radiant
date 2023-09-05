@@ -191,7 +191,7 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-        qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
+//        qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
 
         MsFrameScoretron msFrameScoretron;
 
@@ -227,8 +227,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    const double calibrationSelectionFraction = 0.01;
-    const int minTopNMs2Ions = 6;
+    const double calibrationSelectionFraction = -0.01;
+    const int minTopNMs2Ions = 12;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
@@ -247,8 +247,8 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
 
 
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
-    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
+//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 
     ERR_RETURN
 }

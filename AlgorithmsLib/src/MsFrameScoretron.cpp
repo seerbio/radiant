@@ -302,8 +302,6 @@ Err MsFrameScoretron::buildMS2Peaks(
     QMap<MzHashed, MZION> mzHashedVsMzIon;
     e = buildMzHashedVsMzIon(m_fragPredsTopN, &mzHashedVsMzIon); ree;
 
-    qDebug() << "Extracting" << mzHashedVsMzIon.size() << "XICs";
-
     e = buildMzHashedVsXICPoints(
             mzHashedVsMzIon,
             m_msFrame,
