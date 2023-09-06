@@ -778,6 +778,7 @@ namespace {
             if (!mzHashedVsXICPoints.contains(mzHashed)) {
                 mzMeanValsFound->push_back(0.0);
                 stdMeanValsFound->push_back(0.0);
+                continue;
             }
 
             const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
@@ -1049,9 +1050,10 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
     ERR_RETURN
 }
 
+
 Err CandidateProcessertron::processCandidateDecoy(
-        const CandidatePeptide &candidatePeptideTarget,
-        const ScoredCandidate &scoredCandidateTarget,
+        const CandidatePeptide &candidatePeptideDecoy,
+        ScanTime scanTime,
         ScoredCandidate *scoredCandidateDecoy
         ) {
 
@@ -1059,8 +1061,6 @@ Err CandidateProcessertron::processCandidateDecoy(
 
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
-
-    const CandidatePeptide candidatePeptideDecoy = mutateCandidatePeptideTarget(candidatePeptideTarget);
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
             candidatePeptideDecoy,
@@ -1079,7 +1079,7 @@ Err CandidateProcessertron::processCandidateDecoy(
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
     e = findCandidateIntegrations(
             summedMatVecToVec,
-            scoredCandidateTarget.scanTime,
+            scanTime,
             scanTimeWindowTolerance,
             &peakIntegrationIndexes
     ); ree;
@@ -1094,8 +1094,6 @@ Err CandidateProcessertron::processCandidateDecoy(
             summedMatVecToVec,
             scoredCandidateDecoy
     ); ree;
-
-    scoredCandidateDecoy->isDecoy = true;
 
     ERR_RETURN
 }

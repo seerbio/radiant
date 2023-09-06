@@ -91,7 +91,7 @@ struct UTILSLIB_EXPORTS MS2Ion {
     {}
 
     friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
-        dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ")";
+        dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ") ";
         return dbg;
     }
 
@@ -267,29 +267,6 @@ public:
 
     const QString AAs = "GAVLIFMPWSCTYHKRQEND";
     const QString MutateAAto = "LLLVVLLLLTSSSSLLNDQE";
-
-    QMap<QChar, QChar> diannMutateAminoAcidTo = {
-            {'G', 'L'},
-            {'A', 'L'},
-            {'V', 'L'},
-            {'L', 'V'},
-            {'I', 'V'},
-            {'F', 'L'},
-            {'M', 'L'},
-            {'P', 'L'},
-            {'W', 'L'},
-            {'S', 'T'},
-            {'C', 'S'},
-            {'T', 'S'},
-            {'Y', 'S'},
-            {'H', 'S'},
-            {'K', 'L'},
-            {'R', 'L'},
-            {'Q', 'N'},
-            {'E', 'D'},
-            {'N', 'Q'},
-            {'D', 'E'}
-    };
 
     const QChar COMMA = ',';
     const QString DOT_CACHE = QStringLiteral(".cache");

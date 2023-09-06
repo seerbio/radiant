@@ -60,7 +60,12 @@ public:
 
 private:
 
+    Err buildPeptideStringWithModsVsCandidatePeptideDecoys(
+            QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptideDecoys
+            );
+
     Err buildMS2Peaks(
+            const QMap<PeptideStringWithMods, CandidatePeptide> &candidatePeptides,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints,
             QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
             );

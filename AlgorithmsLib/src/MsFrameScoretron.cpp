@@ -116,9 +116,24 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
 
     ERR_INIT
 
+    QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsCandidatePeptideDecoys;
+    e = buildPeptideStringWithModsVsCandidatePeptideDecoys(
+            &peptideStringWithModsVsCandidatePeptideDecoys
+            ); ree;
+
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
-    e = buildMS2Peaks(&mzHashedVsXICPoints, &mzHashedVsIonPresence); ree;
+    e = buildMS2Peaks(
+            m_fragPredsTopN,
+            &mzHashedVsXICPoints,
+            &mzHashedVsIonPresence
+            ); ree;
+
+    e = buildMS2Peaks(
+            peptideStringWithModsVsCandidatePeptideDecoys,
+            &mzHashedVsXICPoints,
+            &mzHashedVsIonPresence
+    ); ree;
 
     if (m_fragPredsPredictedScanTime.isEmpty()) {
         e = m_candidateProcessertron.init(
@@ -146,7 +161,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         ); ree;
     }
 
-    QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsScoredCandidateTargets;
+
     for (const CandidatePeptide &candidatePeptide : m_fragPredsTopN) {
 
         ScoredCandidate scoredCandidate;
@@ -160,24 +175,146 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         }
 
         scoredCandidates->push_back(scoredCandidate);
-        peptideStringWithModsVsScoredCandidateTargets.insert(candidatePeptide.peptideStringWithMods, candidatePeptide);
     }
 
     QMap<PeptideStringWithMods, ScoredCandidate> scoredCandidateDecoys;
     for (const ScoredCandidate &scoredCandidateTarget : *scoredCandidates) {
 
         e = ErrorUtils::isTrue(
-                peptideStringWithModsVsScoredCandidateTargets.contains(scoredCandidateTarget.peptideStringWithMods)
+                peptideStringWithModsVsCandidatePeptideDecoys.contains(scoredCandidateTarget.peptideStringWithMods)
                 );ree
 
         ScoredCandidate scoredCandidateDecoy;
         e = m_candidateProcessertron.processCandidateDecoy(
-                peptideStringWithModsVsScoredCandidateTargets.value(scoredCandidateTarget.peptideStringWithMods),
-                scoredCandidateTarget,
+                peptideStringWithModsVsCandidatePeptideDecoys.value(scoredCandidateTarget.peptideStringWithMods),
+                scoredCandidateTarget.scanTime,
                 &scoredCandidateDecoy
         ); ree;
 
         scoredCandidateDecoys.insert(scoredCandidateDecoy.peptideStringWithMods, scoredCandidateDecoy);
+    }
+
+#define INCLUDE_DECOYS_IN_REPORT
+#ifdef INCLUDE_DECOYS_IN_REPORT
+    scoredCandidates->append(scoredCandidateDecoys.values().toVector());
+#endif
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err mutateCandidatePeptideTarget(
+            const CandidatePeptide &candidatePeptideTarget,
+            CandidatePeptide *candidatePeptideDecoy
+    ) {
+
+        ERR_INIT
+
+        const QMap<QChar, double> diannMutateAminoAcidTo = AminoAcids::diannMutateAminoAcidTo();
+
+        const QString &seq = candidatePeptideTarget.peptideStringWithMods;
+
+        const int firstIndexToMutate = 1;
+        const int secondIndexToMutate = seq.size() - 2;
+
+        const double nTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(firstIndexToMutate));
+        const double cTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(secondIndexToMutate));
+        const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
+        const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
+
+        QVector<MS2Ion> ms2IonDecoys;
+        for (const MS2Ion &ms2Ion : candidatePeptideTarget.ms2Ions) {
+
+            MS2Ion ms2IonDecoy = ms2Ion;
+
+            QPair<IonIndex, IonType> ionLableInfo;
+            e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo); ree;
+
+            if (ionLableInfo.second.contains('b')) {
+
+                if (ionLableInfo.second.contains("^2")) {
+
+                    if (ionLableInfo.first >= firstIndexToMutate) {
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
+                    }
+
+                    if (ionLableInfo.first >= secondIndexToMutate) {
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
+                    }
+                }
+                else {
+
+                    if (ionLableInfo.first >= firstIndexToMutate) {
+                        ms2IonDecoy.mz += nTermDeltaMass;
+                    }
+
+                    if (ionLableInfo.first >= secondIndexToMutate) {
+                        ms2IonDecoy.mz += cTermDeltaMass;
+                    }
+                }
+            }
+
+            else if (ionLableInfo.second.contains('y')) {
+
+                if (ionLableInfo.second.contains("^2")) {
+
+                    if (ionLableInfo.first >= firstIndexToMutate) {
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
+                    }
+
+                    if (ionLableInfo.first >= secondIndexToMutate) {
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
+                    }
+                }
+                else {
+
+                    if (ionLableInfo.first >= firstIndexToMutate) {
+                        ms2IonDecoy.mz += cTermDeltaMass;
+                    }
+
+                    if (ionLableInfo.first >= secondIndexToMutate) {
+                        ms2IonDecoy.mz += nTermDeltaMass;
+                    }
+                }
+            }
+
+            else {
+                qDebug() << "Non b/y ion" << ionLableInfo;
+            }
+
+            ms2IonDecoys.push_back(ms2IonDecoy);
+        }
+
+        *candidatePeptideDecoy = candidatePeptideTarget;
+        candidatePeptideDecoy->isDecoy = true;
+        candidatePeptideDecoy->mass += nTermDeltaMass + cTermDeltaMass;
+        candidatePeptideDecoy->ms2Ions = ms2IonDecoys;
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrameScoretron::buildPeptideStringWithModsVsCandidatePeptideDecoys(
+        QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptideDecoys
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_fragPredsTopN); ree;
+
+    for (const CandidatePeptide &candidatePeptideTarget : m_fragPredsTopN) {
+
+        CandidatePeptide candidatePeptideDecoy;
+        e = mutateCandidatePeptideTarget(
+                candidatePeptideTarget,
+                &candidatePeptideDecoy
+        ); ree;
+
+        peptideStringWithModsVsCandidatePeptideDecoys->insert(
+                candidatePeptideTarget.peptideStringWithMods,
+                candidatePeptideDecoy
+                );
     }
 
     ERR_RETURN
@@ -235,6 +372,10 @@ namespace {
         for (auto it = mzHashedVsMzIon.begin(); it != mzHashedVsMzIon.end(); it++) {
 
             const MzHashed mzHashed = it.key();
+            if (mzHashedVsXICPoints->contains(mzHashed)) {
+                continue;
+            }
+
             const MZION mz = it.value();
             const double mzTol = MathUtils::calculatePPM(mz, ppmTol);
 
@@ -312,16 +453,17 @@ namespace {
 
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(
+        const QMap<PeptideStringWithMods, CandidatePeptide> &candidatePeptides,
         QMap<MzHashed, XICPoints> *mzHashedVsXICPoints,
         QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_fragPredsTopN); ree;
+    e = ErrorUtils::isNotEmpty(candidatePeptides); ree;
 
     QMap<MzHashed, MZION> mzHashedVsMzIon;
-    e = buildMzHashedVsMzIon(m_fragPredsTopN, &mzHashedVsMzIon); ree;
+    e = buildMzHashedVsMzIon(candidatePeptides, &mzHashedVsMzIon); ree;
 
     e = buildMzHashedVsXICPoints(
             mzHashedVsMzIon,
@@ -344,4 +486,5 @@ Err MsFrameScoretron::buildMS2Peaks(
 
     ERR_RETURN
 }
+
 

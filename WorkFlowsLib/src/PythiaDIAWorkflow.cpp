@@ -273,9 +273,14 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
     }
 #else
     for (const ParallelProcessingInput &inp : parallelProcessingInputs) {
+
+        if (inp.uniqueMsInfoScanKey != "695066") {
+            continue;
+        }
+
         const QPair<Err, QVector<ScoredCandidate>> res = parallelProciessingLogic(inp);
         e = res.first; ree;
-        combinedResults.append(res.second);
+        combinedResults->append(res.second);
     }
 #endif
 

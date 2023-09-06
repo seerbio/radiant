@@ -233,8 +233,8 @@ public:
             );
 
     Err processCandidateDecoy(
-            const CandidatePeptide &candidatePeptideTarget,
-            const ScoredCandidate &scoredCandidateTarget,
+            const CandidatePeptide &candidatePeptideDecoy,
+            ScanTime scanTime,
             ScoredCandidate *scoredCandidateDecoy
             );
 
