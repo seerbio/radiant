@@ -185,8 +185,8 @@ namespace {
     }
 
 }//namespace
-Err CandidateProcessertron::processCandidate(
-        const CandidatePeptide &candidatePeptide,
+Err CandidateProcessertron::processCandidateTarget(
+        const CandidatePeptide &candidatePeptideTarget,
         ScoredCandidate *scoredCandidate
         ) {
 
@@ -196,7 +196,7 @@ Err CandidateProcessertron::processCandidate(
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-            candidatePeptide,
+            candidatePeptideTarget,
             m_mzHashedVsIonPresence,
             m_pythiaParameters.topNMs2Ions
     );
@@ -221,7 +221,7 @@ Err CandidateProcessertron::processCandidate(
     else {
 
         const ScanTime scanTimeWindowTolerance = 5.0; // TODO auto set this in the calibration step.
-        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
+        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
         e = findCandidateIntegrations(
                 summedMatVecToVec,
                 scanTimePredicted,
@@ -236,7 +236,7 @@ Err CandidateProcessertron::processCandidate(
     }
 
     e = buildScores(
-            candidatePeptide,
+            candidatePeptideTarget,
             peakIntegrationIndexes,
             summedMatVecToVec,
             scoredCandidate
@@ -1049,4 +1049,53 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
     ERR_RETURN
 }
 
+Err CandidateProcessertron::processCandidateDecoy(
+        const CandidatePeptide &candidatePeptideTarget,
+        const ScoredCandidate &scoredCandidateTarget,
+        ScoredCandidate *scoredCandidateDecoy
+        ) {
 
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
+
+    const CandidatePeptide candidatePeptideDecoy = mutateCandidatePeptideTarget(candidatePeptideTarget);
+
+    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
+            candidatePeptideDecoy,
+            m_mzHashedVsIonPresence,
+            m_pythiaParameters.topNMs2Ions
+    );
+
+    if (presenceMatrix.rows() == 0) {
+        ERR_RETURN
+    }
+
+    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
+    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
+
+    const ScanTime scanTimeWindowTolerance = 5.0; // TODO figure out how to set this for decoys.
+    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+    e = findCandidateIntegrations(
+            summedMatVecToVec,
+            scoredCandidateTarget.scanTime,
+            scanTimeWindowTolerance,
+            &peakIntegrationIndexes
+    ); ree;
+
+    if (peakIntegrationIndexes.isEmpty()) {
+        ERR_RETURN
+    }
+
+    e = buildScores(
+            candidatePeptideDecoy,
+            peakIntegrationIndexes,
+            summedMatVecToVec,
+            scoredCandidateDecoy
+    ); ree;
+
+    scoredCandidateDecoy->isDecoy = true;
+
+    ERR_RETURN
+}

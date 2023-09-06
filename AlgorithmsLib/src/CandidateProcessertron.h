@@ -227,9 +227,15 @@ public:
             const QMap<PeptideStringWithMods, ScanTime> &fragPredsPredictedScanTime
     );
 
-    Err processCandidate(
-            const CandidatePeptide &candidatePeptide,
+    Err processCandidateTarget(
+            const CandidatePeptide &candidatePeptideTarget,
             ScoredCandidate *scoredCandidate
+            );
+
+    Err processCandidateDecoy(
+            const CandidatePeptide &candidatePeptideTarget,
+            const ScoredCandidate &scoredCandidateTarget,
+            ScoredCandidate *scoredCandidateDecoy
             );
 
 private:

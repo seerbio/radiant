@@ -146,15 +146,38 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         ); ree;
     }
 
+    QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsScoredCandidateTargets;
     for (const CandidatePeptide &candidatePeptide : m_fragPredsTopN) {
 
         ScoredCandidate scoredCandidate;
-        e = m_candidateProcessertron.processCandidate(
+        e = m_candidateProcessertron.processCandidateTarget(
                 candidatePeptide,
                 &scoredCandidate
                 ); ree;
 
+        if (scoredCandidate.cosineSimSum < 0.0) {
+            continue;
+        }
+
         scoredCandidates->push_back(scoredCandidate);
+        peptideStringWithModsVsScoredCandidateTargets.insert(candidatePeptide.peptideStringWithMods, candidatePeptide);
+    }
+
+    QMap<PeptideStringWithMods, ScoredCandidate> scoredCandidateDecoys;
+    for (const ScoredCandidate &scoredCandidateTarget : *scoredCandidates) {
+
+        e = ErrorUtils::isTrue(
+                peptideStringWithModsVsScoredCandidateTargets.contains(scoredCandidateTarget.peptideStringWithMods)
+                );ree
+
+        ScoredCandidate scoredCandidateDecoy;
+        e = m_candidateProcessertron.processCandidateDecoy(
+                peptideStringWithModsVsScoredCandidateTargets.value(scoredCandidateTarget.peptideStringWithMods),
+                scoredCandidateTarget,
+                &scoredCandidateDecoy
+        ); ree;
+
+        scoredCandidateDecoys.insert(scoredCandidateDecoy.peptideStringWithMods, scoredCandidateDecoy);
     }
 
     ERR_RETURN
