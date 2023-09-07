@@ -14,6 +14,7 @@
 #include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
 #include "PSMsReader.h"
+#include "ClassifierWeightsManager.h"
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -73,18 +74,45 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
+Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     ERR_INIT
 
     m_msScanInfos.clear();
 
+    QString msDataFilePath = _msDataFilePath;
+
+#define USE_FILE_CACHING
+#ifdef USE_FILE_CACHING
+    {
+        const QString msDataFilePathCached = msDataFilePath + ".cached";
+        const bool cacheFileExists = QFileInfo::exists(msDataFilePathCached);
+        qDebug() << "Using cached msdatafile" << cacheFileExists;
+
+        if (cacheFileExists) {
+            msDataFilePath = msDataFilePathCached;
+        }
+        else {
+            MsReaderParquet msReaderParquet;
+            e = msReaderParquet.openFile(msDataFilePath); ree;
+            e = deisotopeScans(&msReaderParquet); ree;
+            e = MsReaderParquet::writeMsReaderToParquet(
+                    msDataFilePathCached,
+                    QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
+            ); ree;
+        }
+
+    }
+#endif
+
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(msDataFilePath); ree;
 
+#ifndef USE_FILE_CACHING
     e = deisotopeScans(&msReaderParquet); ree;
+#endif
 
-//    e = buildCalibration(&msReaderParquet); ree;
+    e = buildCalibration(&msReaderParquet); ree;
 
 
 
@@ -134,6 +162,9 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
 
+    QElapsedTimer et;
+    et.start();
+
     const auto deisotopeLogicBinder = std::bind(
             deisotopeLogic,
             std::placeholders::_1,
@@ -164,16 +195,86 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
     e = msReaderParquet->setScanPoints(deisotopedScanPoints); ree;
 
+    qDebug() << "Scans deisotoped in" << et.elapsed() << "mSec";
+
     ERR_RETURN
 }
 
+namespace {
+
+    QString buildTargetDecoyKey(
+            const PeptideStringWithMods &peptideStringWithMods,
+            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+            Charge charge
+            ) {
+
+        const QString &sep = S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP;
+
+        return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
+    }
+
+    Err buildClassifierInput(
+            const QVector<ScoredCandidate> &scoredCandidates,
+            QVector<QVector<double>> *targetScoresVector,
+            QVector<QVector<double>> *decoyScoresVector
+            ) {
+
+        ERR_INIT
+
+        QMap<PeptideStringWithMods, ScoredCandidate> targets;
+        QMap<PeptideStringWithMods, ScoredCandidate> decoys;
+        for (const ScoredCandidate &sc : scoredCandidates) {
+
+            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+            if(sc.isDecoy) {
+                decoys.insert(key, sc);
+            }
+            else {
+                targets.insert(key, sc);
+            }
+        }
+
+        e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
+
+        for (auto it = targets.begin(); it != targets.end(); it++) {
+
+            const ScoredCandidate &scTarget = it.value();
+            const QString key = buildTargetDecoyKey(scTarget.peptideStringWithMods, scTarget.targetKey, scTarget.charge);
+
+            e = ErrorUtils::isTrue(decoys.contains(key)); ree;
+
+            const ScoredCandidate scDecoy = decoys.value(key);
+
+            const QVector<double> targetScores = {
+                    scTarget.cosineSimSum,
+                    scTarget.cosineSimMS1,
+                    std::pow(scTarget.cosineSimSpectrum, 3)
+            };
+
+            const QVector<double> decoyScores = {
+                    std::max(scDecoy.cosineSimSum, 0.0),
+                    std::max(scDecoy.cosineSimMS1, 0.0),
+                    std::max(std::pow(scDecoy.cosineSimSpectrum, 3), 0.0)
+            };
+
+            targetScoresVector->push_back(targetScores);
+            decoyScoresVector->push_back(decoyScores);
+        }
+
+        e = ErrorUtils::isEqual(targetScoresVector->size(), decoyScoresVector->size()); ree;
+
+        ERR_RETURN
+    }
+
+
+}//namespace
 Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
 
-    const double calibrationSelectionFraction = -0.1;
+    const double calibrationSelectionFraction = -0.5;
     const int minTopNMs2Ions = 6;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,
@@ -189,6 +290,50 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             msReaderParquet,
             &scoredCandidatesCalibration
     ); ree;
+
+//    QVector<QVector<double>> targetScoresVector;
+//    QVector<QVector<double>> decoyScoresVector;
+//    e = buildClassifierInput(
+//            scoredCandidatesCalibration,
+//            &targetScoresVector,
+//            &decoyScoresVector
+//            ); ree;
+//
+//
+//    QVector<QVector<double>> A;
+//    QVector<double> b;
+//    e = ClassifierWeightsManager::buildDataClassifier1(
+//            targetScoresVector,
+//            decoyScoresVector,
+//            &A,
+//            &b
+//            ); ree;
+//
+//    QVector<double> weights;
+//    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+//
+//    QVector<double> results;
+//
+//    for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
+//        e = ClassifierWeightsManager::applyWeights({{
+//            std::max(sc.cosineSimSum, 0.0),
+//            std::max(sc.cosineSimMS1, 0.0),
+//            std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
+//        }}, weights, &results); ree;
+//
+//        qDebug() << sc.cosineSimSum << results.front();
+//    }
+//
+//    qDebug() << weights;
+
+
+//    qDebug() << weights;
+//    for (int i = 0; i < results.size(); i++) {
+//        qDebug() << b.at(i) << results.at(i);
+//    }
+
+    ClassifierWeightsManager classifierWeightsManager;
+
 
 #define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION

@@ -304,6 +304,12 @@ Err CandidateProcessertron::findCandidateIntegrations(
             peakIntegrationIndexes
     );
 
+    const int topNPeakIntegrations = 2;
+    const int peakIntegrationsMaxSize
+            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
+
+    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
+
     ERR_RETURN
 }
 
