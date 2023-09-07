@@ -191,7 +191,7 @@ struct PythiaParameters{
             qDebug() << topNMs2Ions << "topNMS2Ions";
             return false;
         }
-        if (minFoundMzPeaks < 2) {
+        if (minFoundMzPeaks < 0) {
             print();
             qDebug() << minFoundMzPeaks << "minFoundMzPeaks";
             return false;

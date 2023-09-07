@@ -128,38 +128,24 @@ public:
     }
 
     template <typename T, typename U>
-    static Err tranchMapForParallelizationInOrder(
+    static Err tranchMapForParallelization(
             const QMap<T, U> &map,
             int numberOfProcesses,
-            QVector<QMap<T, U>> *tranchedMaps
+            QVector<QVector<QPair<T, U>>> *tranchedMaps
             ) {
 
         ERR_INIT
 
-        QVector<QPair<T, U>> pairs
-                = ParallelUtils::convertMapToVectorPairs(map);
+        QVector<QPair<T, U>> pairs = ParallelUtils::convertMapToVectorPairs(map);
 
-        const int itemsPerTranche = static_cast<int>(std::round(map.size() / static_cast<double>(numberOfProcesses)));
-
-        QMap<T,U> trancheMap;
-        for (int i = 0; i < pairs.size(); i++) {
-
-            if (i % itemsPerTranche == 0 && i > 0 && tranchedMaps->size() < numberOfProcesses - 1) {
-                tranchedMaps->push_back(trancheMap);
-                trancheMap.clear();
-            }
-
-            const QPair<T, U> &pr = pairs.at(i);
-            trancheMap.insert(pr.first, pr.second);
-        }
-
-        if (!trancheMap.isEmpty()) {
-            tranchedMaps->push_back(trancheMap);
-        }
+        e = tranchVectorForParallelization(
+                pairs,
+                numberOfProcesses,
+                tranchedMaps
+                );
 
         ERR_RETURN
     }
-
 
     template <typename T, typename U>
     static QVector<QPair<T, U>> convertMapToVectorPairs(const QMap<T, U> &map) {

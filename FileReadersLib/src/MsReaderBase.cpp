@@ -19,9 +19,16 @@ void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos
     m_msScanInfo = msScanInfos;
 }
 
-void MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
+Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
+
+    ERR_INIT
+
+    const int originalScanPointsSize = getMsScanInfos().size();
+    e = ErrorUtils::isEqual(scanPoints.size(), originalScanPointsSize); ree;
+
     m_scanPoints = scanPoints;
-    m_fileIsCalibrated = true;
+
+    ERR_RETURN
 }
 
 Err MsReaderBase::getMsScanInfo(

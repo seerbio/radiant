@@ -62,8 +62,6 @@ Err MsFrameScoretron::init(
             scanNumberVsScanTime
             ); ree;
 
-    //    e = msFrame.deisotopeMsFrame(ppmTol); ree;
-
     e = m_msFrameMS1.init(
             scanNumberVsScanPointsMS1,
             scanNumberVsScanTime

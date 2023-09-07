@@ -19,9 +19,9 @@
 
 using namespace Error;
 
+class MsReaderParquet;
 class PSMsReaderRow;
 class ScoredCandidate;
-class FeatureFinderHill;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
@@ -46,24 +46,26 @@ public:
 
 private:
 
-    Err buildCalibration(const QString &msDataFilePath);
+    Err deisotopeScans(MsReaderParquet *msReaderParquet);
+
+    Err buildCalibration(MsReaderParquet *msReaderParquet);
 
     Err extractTargetDecoyData(
-            const QString &msDataFilePath,
             int topNMs2Ions,
             double selectionFraction,
+            MsReaderParquet *msReaderParquet,
             QVector<ScoredCandidate> *combinedResults
     );
 
     Err buildCandidates(
-            const QString &msDataFilePath,
             int topNMs2Ions,
             double selectionListFraction,
+            MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
     );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
-            const QString &msDataFilePath,
+            MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
             QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
             QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1

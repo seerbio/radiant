@@ -63,7 +63,7 @@ public:
 
     void setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos);
 
-    void setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
+    Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
 
     virtual Err openFile(const QString &filePath);
 

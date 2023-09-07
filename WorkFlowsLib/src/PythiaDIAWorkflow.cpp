@@ -7,6 +7,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
+#include "MS2ChargeDeconvolvotron.h"
 #include "MsFrameScoretron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
@@ -78,7 +79,12 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
 
     m_msScanInfos.clear();
 
-    e = buildCalibration(msDataFilePath); ree;
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(msDataFilePath); ree;
+
+    e = deisotopeScans(&msReaderParquet); ree;
+
+//    e = buildCalibration(&msReaderParquet); ree;
 
 
 
@@ -95,7 +101,73 @@ Err PythiaDIAWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
+namespace {
+
+    QPair<Err, QVector<QPair<ScanNumber, ScanPoints>>> deisotopeLogic(const QVector<QPair<ScanNumber, ScanPoints>> &scanPointPairs, double ppmTol) {
+
+        ERR_INIT
+
+        const QString &chargeModelFilePath
+                = QDir(qApp->applicationDirPath()).filePath("MS2_Charge_Model.json");
+
+        const QString &monoModelFilePath
+                = QDir(qApp->applicationDirPath()).filePath("MS2_Mono_Model.json");
+
+        MS2ChargeDeconvolvotron ms2ChargeDeconvolvotron;
+        e = ms2ChargeDeconvolvotron.init(chargeModelFilePath, monoModelFilePath, ppmTol);
+
+        QVector<QPair<ScanNumber, ScanPoints>> deisotopedScanPoints;
+        for (const QPair<ScanNumber, ScanPoints> &pr : scanPointPairs) {
+
+            ScanPoints scanPointsIterDeisotoped;
+            e = ms2ChargeDeconvolvotron.deisotopeScanPoints(pr.second, &scanPointsIterDeisotoped); rree;
+
+            deisotopedScanPoints.push_back({pr.first, scanPointsIterDeisotoped});
+        }
+
+        return {e, deisotopedScanPoints};
+    }
+
+
+}//namespace
+Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
+
+    ERR_INIT
+
+    const auto deisotopeLogicBinder = std::bind(
+            deisotopeLogic,
+            std::placeholders::_1,
+            m_pythiaParameters.ms2ExtractionWidthPPM
+    );
+
+    QVector<QVector<QPair<ScanNumber, ScanPoints>>> scanPointsTranched;
+    ParallelUtils::tranchMapForParallelization(
+            msReaderParquet->getScanPoints(),
+            ParallelUtils::numberOfAvailableSystemProcessors(),
+            &scanPointsTranched
+    );
+
+    QFuture<QPair<Err, QVector<QPair<ScanNumber, ScanPoints>>>> futures
+            = QtConcurrent::mapped(scanPointsTranched, deisotopeLogicBinder);
+    futures.waitForFinished();
+
+    QMap<ScanNumber, ScanPoints> deisotopedScanPoints;
+    for (const QPair<Err, QVector<QPair<ScanNumber, ScanPoints>>> &res : futures) {
+
+        e = res.first; ree;
+        for (const QPair<ScanNumber, ScanPoints> &r : res.second) {
+            const ScanNumber scanNumber = r.first;
+            const ScanPoints &scanPoints = r.second;
+            deisotopedScanPoints.insert(scanNumber, scanPoints);
+        }
+    }
+
+    e = msReaderParquet->setScanPoints(deisotopedScanPoints); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
 
@@ -112,15 +184,15 @@ Err PythiaDIAWorkflow::buildCalibration(const QString &msDataFilePath) {
 
     QVector<ScoredCandidate> scoredCandidatesCalibration;
     e = extractTargetDecoyData(
-            msDataFilePath,
             topNMs2IonsCalibration,
             calibrationSelectionFraction,
+            msReaderParquet,
             &scoredCandidatesCalibration
     ); ree;
 
 #define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION
-    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+    const QString resultsFilePath = msReaderParquet->filePath() + ".pythiaDIA";
     e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 #endif
 
@@ -218,9 +290,9 @@ namespace {
 
 }//namespace
 Err PythiaDIAWorkflow::extractTargetDecoyData(
-        const QString &msDataFilePath,
         int topNMs2Ions,
         double selectionFraction,
+        MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *combinedResults
         ) {
 
@@ -228,9 +300,9 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
 
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
     e = buildCandidates(
-            msDataFilePath,
             topNMs2Ions,
             selectionFraction,
+            msReaderParquet,
             &uniqueInfoScanKeyVsCandidatePeptideCalibration
     ); ree;
 
@@ -238,7 +310,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
     e = buildUniqueMsInfoScanKeyVsScanPoints(
-            msDataFilePath,
+            msReaderParquet,
             &uniqueInfoScanKeyVsScanPoints,
             &scanNumberVsScanTime,
             &scanNumberVsScanTimeMS1
@@ -288,9 +360,9 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
 }
 
 Err PythiaDIAWorkflow::buildCandidates(
-        const QString &msDataFilePath,
         int topNMs2Ions,
         double selectionListFraction,
+        MsReaderParquet *msReaderParquet,
         QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide = nullptr
 ) {
 
@@ -325,9 +397,7 @@ Err PythiaDIAWorkflow::buildCandidates(
     }
 
     if (m_msScanInfos.isEmpty()) {
-        MsReaderParquet msReaderParquet;
-        e = msReaderParquet.openFile(msDataFilePath); ree;
-        m_msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
+        m_msScanInfos = msReaderParquet->getUniqueTandemMsScanInfos();
     }
 
     const RTree rtree = loadScanInfoToRTree(m_msScanInfos);
@@ -358,7 +428,7 @@ Err PythiaDIAWorkflow::buildCandidates(
 }
 
 Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
-        const QString &msDataFilePath,
+        MsReaderParquet *msReaderParquet,
         QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
         QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
         QMap<ScanNumber, ScanPoints > *scanNumberVsScanTimeMS1
@@ -366,18 +436,15 @@ Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
 
     ERR_INIT
 
-    MsReaderParquet msReaderParquet;
-    e = msReaderParquet.openFile(msDataFilePath); ree;
+    e = msReaderParquet->collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
 
-    e = msReaderParquet.collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
-
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet.getMsScanInfos();
+    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet->getMsScanInfos();
     for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
         scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
     }
 
     const int msLevel = 1;
-    e = msReaderParquet.getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
+    e = msReaderParquet->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
 
     ERR_RETURN
 }

@@ -214,6 +214,7 @@ Err CandidateProcessertron::processCandidateTarget(
 
         e = findCandidateIntegrations(
                 summedMatVecToVec,
+                m_pythiaParameters.minFoundMzPeaks,
                 &peakIntegrationIndexes
         ); ree;
 
@@ -224,6 +225,7 @@ Err CandidateProcessertron::processCandidateTarget(
         const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
         e = findCandidateIntegrations(
                 summedMatVecToVec,
+                m_pythiaParameters.minFoundMzPeaks,
                 scanTimePredicted,
                 scanTimeWindowTolerance,
                 &peakIntegrationIndexes
@@ -277,6 +279,7 @@ namespace {
 }//namespace
 Err CandidateProcessertron::findCandidateIntegrations(
         const QVector<double> &summedMatToVec,
+        int minFoundMzPeaks,
         QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
         ) {
 
@@ -291,7 +294,7 @@ Err CandidateProcessertron::findCandidateIntegrations(
 
     filterSummedVecPeakIntegrationsByPeakWidth(
             summedMatToVec,
-            m_pythiaParameters.minFoundMzPeaks,
+            minFoundMzPeaks,
             m_peakWidthMin,
             peakIntegrationIndexes
     );
@@ -306,6 +309,7 @@ Err CandidateProcessertron::findCandidateIntegrations(
 
 Err CandidateProcessertron::findCandidateIntegrations(
         const QVector<double> &summedMatToVec,
+        int minFoundMzPeaks,
         double scanTime,
         double scanTimeTolerance,
         QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
@@ -315,6 +319,7 @@ Err CandidateProcessertron::findCandidateIntegrations(
 
     e = findCandidateIntegrations(
             summedMatToVec,
+            minFoundMzPeaks,
             peakIntegrationIndexes
             ); ree;
 
@@ -584,11 +589,18 @@ namespace {
 
                 frameIndexMaxDiffFromAnchorVec.push_back(anchorFrameIndexMaxVsVal.first - altColumnFrameIndexMaxVsVal.first);
 
-                const double cosineSim = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
-                const double klDiv = EigenUtils::klDivergence(anchorColumn, altColumn);
+                const double cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
+                const double klDivToAnchor = EigenUtils::klDivergence(anchorColumn, altColumn);
 
-                bestCosineSimsIndividualAnchor.push_back(cosineSim);
-                bestKLDivIndividualAnchor.push_back(klDiv);
+                // TODO set this empirically when figuring out ppm setting.
+                if (cosineSimToAnchor < 0.97) {
+                    bestCosineSimsIndividualAnchor.push_back(0.0);
+                    bestKLDivIndividualAnchor.push_back(0.0);
+                    continue;
+                }
+
+                bestCosineSimsIndividualAnchor.push_back(cosineSimToAnchor);
+                bestKLDivIndividualAnchor.push_back(klDivToAnchor);
             }
 
             const double cosineSimSumAnchor
@@ -1075,10 +1087,13 @@ Err CandidateProcessertron::processCandidateDecoy(
     const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
 
+    const int minFoundMzPeaksDecoys = 0;
     const ScanTime scanTimeWindowTolerance = 5.0; // TODO figure out how to set this for decoys.
+
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
     e = findCandidateIntegrations(
             summedMatVecToVec,
+            minFoundMzPeaksDecoys,
             scanTime,
             scanTimeWindowTolerance,
             &peakIntegrationIndexes

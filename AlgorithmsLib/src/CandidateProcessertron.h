@@ -248,11 +248,13 @@ private:
 
     Err findCandidateIntegrations(
             const QVector<double> &summedMatToVec,
+            int minFoundMzPeaks,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
             );
 
     Err findCandidateIntegrations(
             const QVector<double> &summedMatToVec,
+            int minFoundMzPeaks,
             double scanTime,
             double scanTimeTolerance,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
