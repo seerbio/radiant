@@ -1081,6 +1081,10 @@ Err CandidateProcessertron::processCandidateDecoy(
     );
 
     if (presenceMatrix.rows() == 0) {
+        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
+        scoredCandidateDecoy->isDecoy = true;
+        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
+        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
         ERR_RETURN
     }
 
@@ -1100,6 +1104,10 @@ Err CandidateProcessertron::processCandidateDecoy(
     ); ree;
 
     if (peakIntegrationIndexes.isEmpty()) {
+        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
+        scoredCandidateDecoy->isDecoy = true;
+        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
+        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
         ERR_RETURN
     }
 

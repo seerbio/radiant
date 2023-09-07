@@ -62,6 +62,13 @@ Err MsFrameScoretron::init(
             scanNumberVsScanTime
             ); ree;
 
+
+//NOTE: Turn off deisotoping in PythiaDIAWorkflow.cpp if using here.
+//#define DEISOTOPE
+#ifdef DEISOTOPE
+    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree;
+#endif
+
     e = m_msFrameMS1.init(
             scanNumberVsScanPointsMS1,
             scanNumberVsScanTime
@@ -192,10 +199,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         scoredCandidateDecoys.insert(scoredCandidateDecoy.peptideStringWithMods, scoredCandidateDecoy);
     }
 
-#define INCLUDE_DECOYS_IN_REPORT
-#ifdef INCLUDE_DECOYS_IN_REPORT
     scoredCandidates->append(scoredCandidateDecoys.values().toVector());
-#endif
 
     ERR_RETURN
 }
