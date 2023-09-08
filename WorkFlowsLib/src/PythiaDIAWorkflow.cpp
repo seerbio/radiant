@@ -8,6 +8,7 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MS2ChargeDeconvolvotron.h"
+#include "MsCalibrationReader.h"
 #include "MsFrameScoretron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
@@ -85,7 +86,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 #define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
-        const QString msDataFilePathCached = msDataFilePath + ".cached";
+        const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
         const bool cacheFileExists = QFileInfo::exists(msDataFilePathCached);
         qDebug() << "Using cached msdatafile" << cacheFileExists;
 
@@ -123,7 +124,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
 
 
-//    const QString resultsFilePath = msDataFilePath + ".pythiaDIA";
+//    const QString resultsFilePath = msDataFilePath + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
 //    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
 
     ERR_RETURN
@@ -273,6 +274,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
+    const double fdrThreshold = 0.01;
 
     const double calibrationSelectionFraction = 0.2;
     const int minTopNMs2Ions = 6;
@@ -343,26 +345,46 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &identifierVsDecoyRatio
             ); ree;
 
-    int counter = 0;
+    QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
     for (auto it = identifierVsQValue.begin(); it != identifierVsQValue.end(); it++) {
 
         const QString &key = it.key();
         const double qVal = it.value();
 
-        if (qVal > 0.01) {
+        if (qVal > fdrThreshold) {
             continue;
         }
 
-//        const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
-//        qDebug() << counter++ << sc.scanNumber << key << qVal << sc.scanTime << sc.iRTPredicted << sc.mzSearchedVec << sc.mzFoundMeanVec;
+        const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
+        scoredCandidatesFDRThresholded.push_back(sc);
     }
 
-    ClassifierWeightsManager classifierWeightsManager;
+    qDebug() << scoredCandidatesFDRThresholded.size() << "Found for recalibartion";
 
-//#define WRITE_CALIBRATION
+#define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION
-    const QString resultsFilePath = msReaderParquet->filePath() + ".pythiaDIA";
-    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
+    //TODO abstrct to its own method
+    const auto msCalibrationReaderRowsInsertLogic = [](const ScoredCandidate &sc){
+        MsCalibarationReaderRow row;
+        row.peptideStringWithMods = sc.peptideStringWithMods;
+        row.iRTPredicted = sc.iRTPredicted;
+        row.scanTime = sc.scanTime;
+        row.mzSearchedVec = sc.mzSearchedVec;
+        row.mzFoundMeanVec = sc.mzFoundMeanVec;
+        row.mzFoundStDevVec = sc.mzFoundStDevVec;
+        return row;
+    };
+
+    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+    std::transform(
+            scoredCandidatesFDRThresholded.begin(),
+            scoredCandidatesFDRThresholded.end(),
+            std::back_inserter(msCalibrationReaderRows),
+            msCalibrationReaderRowsInsertLogic
+            );
+
+    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
+    e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
 #endif
 
     ERR_RETURN

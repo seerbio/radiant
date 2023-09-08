@@ -4,7 +4,6 @@
 
 #include "XYMappermatic.h"
 
-#include "CalibrationReader.h"
 #include "ErrorUtils.h"
 
 #include "Eigen/Dense"
@@ -31,12 +30,12 @@ Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
             &xyMappermaticRows
     ); ree;
 
-    qDebug() << xyMappermaticRows.size() << "iRT Rows";
+    qDebug() << xyMappermaticRows.size() << "X Rows";
 
     const auto insertLogic
         = [](const XYMappermaticRow &r){return QPair<double, double>(r.x, r.y);};
 
-    QVector<QPair<double, double>> data;
+    QVector<QPair<XVal, YVal>> data;
     std::transform(
             xyMappermaticRows.begin(),
             xyMappermaticRows.end(),
@@ -44,15 +43,28 @@ Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
             insertLogic
             );
 
+    e = init(data); ree;
+
+    ERR_RETURN
+}
+
+Err XYMappermatic::init(const QVector<QPair<XVal, YVal>> &_data) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(_data); ree;
+
+    QVector<QPair<XVal, YVal>> data = _data;
+
     const auto sortLogicXAsc
-        = [](const QPair<double, double> &l, const QPair<double, double> &r){return l.first < r.first;};
+            = [](const QPair<XVal , YVal> &l, const QPair<double, double> &r){return l.first < r.first;};
 
     std::sort(data.begin(), data.end(), sortLogicXAsc);
 
     m_segments = std::min(
             m_xSegments,
             static_cast<int>(std::max(1.0, 2.0 * sqrt(data.size() / static_cast<double>(m_minXPredBin))))
-            );
+    );
 
     e = mapXtoY(data); ree;
 
@@ -63,7 +75,7 @@ Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
 namespace {
 
     Err spline(
-            const QVector<QPair<double, double>> &data,
+            const QVector<QPair<XVal , YVal>> &data,
             int segments,
             QVector<double> *coeffs,
             QVector<double> *points
@@ -238,7 +250,7 @@ namespace {
 
 
 }//namespace
-Err XYMappermatic::mapXtoY(const QVector<QPair<double, double>> &data) {
+Err XYMappermatic::mapXtoY(const QVector<QPair<XVal, YVal>> &data) {
 
     ERR_INIT
 
@@ -257,12 +269,12 @@ Err XYMappermatic::mapXtoY(const QVector<QPair<double, double>> &data) {
 
     QVector<double> yDiff;
     QVector<double> yDiffSorted;
-    QVector<QPair<double, double>> tempData;
+    QVector<QPair<XVal, YVal>> tempData;
 
     yDiff.reserve(data.size());
     tempData.reserve(data.size());
 
-    for (const QPair<double, double> &p : data) {
+    for (const QPair<XVal, YVal> &p : data) {
         double y;
         e = calcSpline(m_coeffs, m_points, p.first, &y); ree;
         yDiff.push_back(std::abs(p.second - y));
@@ -294,7 +306,7 @@ Err XYMappermatic::predictY(double x, double *y) {
 }
 
 Err XYMappermatic::_splineTestAcces(
-        const QVector<QPair<double, double>> &data,
+        const QVector<QPair<XVal, YVal>> &data,
         int segments,
         QVector<double> *coeffs,
         QVector<double> *points

@@ -1,6 +1,6 @@
 #include "XYMappermatic.h"
 
-#include "CalibrationReader.h"
+#include "MsCalibrationReader.h"
 
 #include <QtTest/QtTest>
 

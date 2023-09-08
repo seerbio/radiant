@@ -269,6 +269,47 @@ public:
             int seed = 666
             );
 
+    template<typename T>
+    static Err trainTestSplit(
+            const QVector<T> &data,
+            double testFraction,
+            int seed,
+            QVector<T> *trainingData,
+            QVector<T> *testData
+            ) {
+
+        ERR_INIT
+
+        if (data.isEmpty() || MathUtils::tZero(testFraction)) {
+            rrr(eValueError);
+        }
+
+        trainingData->clear();
+        testData->clear();
+
+        const int testDataSize = static_cast<int>(data.size() * testFraction);
+
+        const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
+                data.size(),
+                testDataSize,
+                seed
+                );
+
+        for (int i = 0; i < data.size(); i++) {
+
+            const T &d = data.at(i);
+
+            if (selectionList.value(i)) {
+                testData->push_back(d);
+                continue;
+            }
+
+            trainingData->push_back(d);
+        }
+
+        ERR_RETURN
+    }
+
 };
 
 

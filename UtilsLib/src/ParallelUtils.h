@@ -197,8 +197,6 @@ public:
         ERR_RETURN
     }
 
-
-
     template <typename T>
     static Err zip(
             const QVector<T> &z1,

@@ -8,10 +8,8 @@
 #include "AlgorithmsLib_Exports.h"
 
 #include "CSVReader.h"
+#include "GlobalSettings.h"
 #include "Error.h"
-
-#include "Eigen/Dense"
-#include "Eigen/Sparse"
 
 #include <string>
 #include <vector>
@@ -81,6 +79,8 @@ public:
     ~XYMappermatic() = default;
 
     Err init(const QString &iRTRecalibrationFilePath);
+
+    Err init(const QVector<QPair<XVal, YVal>> &data);
 
     Err predictY(double x, double *y);
 

@@ -69,6 +69,8 @@ using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
 using Value = double;
 using XICPoint = QPair<ScanNumber, Intensity>;
+using XVal = double;
+using YVal = double;
 
 struct UTILSLIB_EXPORTS MS2Ion {
 
@@ -301,6 +303,20 @@ public:
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");
+    const QString PYTHIA_CAL_FILE_EXTENSION = QStringLiteral("pythiaCAL");
+    const QString PYTHIA_DIA_FILE_EXTENSION = QStringLiteral("pythiaDIA");
+
+    const QString DOT_CACHED_FILE_EXTENSION = QStringLiteral(".cached");
+    const QString DOT_CSV_FILE_EXTENSION = QStringLiteral(".csv");
+    const QString DOT_FASTA_FILE_EXTENSION = QStringLiteral(".fasta");
+    const QString DOT_HDF_FILE_EXTENSION = QStringLiteral(".hdf");
+    const QString DOT_MZML_FILE_EXTENSION = QStringLiteral(".mzml");
+    const QString DOT_PRQ_FILE_EXTENSION = QStringLiteral(".prq");
+    const QString DOT_PSM_FILE_EXTENSION = QStringLiteral(".psm");
+    const QString DOT_PSM_SCORED_FILE_EXTENSION = QStringLiteral(".scored");
+    const QString DOT_PYTHIA_FILE_EXTENSION = QStringLiteral(".pythia");
+    const QString DOT_PYTHIA_CAL_FILE_EXTENSION = QStringLiteral(".pythiaCAL");
+    const QString DOT_PYTHIA_DIA_FILE_EXTENSION = QStringLiteral(".pythiaDIA");
 
     const QString Y_IONS =  QStringLiteral("yIons");
     const QString B_IONS =  QStringLiteral("bIons");
