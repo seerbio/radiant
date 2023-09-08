@@ -310,8 +310,8 @@ namespace {
         for (const CalibarationReaderRow &row : calibarationReaderRows) {
 
             PeptideStringWithMods peptideStringWithMods = row.peptideStringWithMods;
-            peptideStringWithMods = peptideStringWithMods.replace('L', 'X');
-            peptideStringWithMods = peptideStringWithMods.replace('I', 'X');
+//            peptideStringWithMods = peptideStringWithMods.replace('L', 'X');
+//            peptideStringWithMods = peptideStringWithMods.replace('I', 'X');
 
             if (!peptideStringWithModsVsIRT.contains(peptideStringWithMods)) {
                 qDebug() << "Not found" << peptideStringWithMods;

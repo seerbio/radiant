@@ -566,13 +566,14 @@ Err FragLibReader::convertDIANNLibToFragLib(const QString &specLibFilePath) {
         Charge charge;
         e = ErrorUtils::toInt(QString(diannPepSeqChargeString.back()), &charge); ree;
 
+        //TODO reexplore this. So you want to use charge 4's?
         if (charge == 4 || charge == 1) {
             continue;
         }
 
         PeptideStringWithMods peptideStringWithMods = diannPepSeqChargeString;
         peptideStringWithMods = peptideStringWithMods.replace(QString::number(charge), "");
-        peptideStringWithMods = peptideStringWithMods.replace('L', 'X').replace('I', 'X');
+//        peptideStringWithMods = peptideStringWithMods.replace('L', 'X').replace('I', 'X');
         removeModificationLabel(&peptideStringWithMods);
 
         const PeptideSequenceChargeKey peptideSequenceChargeKey = peptideStringWithMods + "|" + QString::number(charge);

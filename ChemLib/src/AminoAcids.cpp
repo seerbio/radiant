@@ -28,8 +28,8 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'T', Molecule(threonineFormula)},
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
-       {'Y', Molecule(tyrosineFormula)},
-       {'X', Molecule(leucineFormula)}
+//       {'X', Molecule(leucineFormula)},
+       {'Y', Molecule(tyrosineFormula)}
     };
 
     return aa;
@@ -87,7 +87,7 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
             {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
             {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
             {'L', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
-            {'X', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
+//            {'X', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
             {'I', Molecule(valineFormula).monoisotopicMass() - Molecule(isoleucineFormula).monoisotopicMass()},
             {'F', Molecule(leucineFormula).monoisotopicMass() - Molecule(phenylalanineFormula).monoisotopicMass()},
             {'M', Molecule(leucineFormula).monoisotopicMass() - Molecule(methionineFormula).monoisotopicMass()},
