@@ -13,6 +13,7 @@
 #include "ParquetReader.h"
 #include "PSMsReader.h"
 #include "TandemFragmentPredictotron.h"
+#include "XYMappermatic.h"
 
 #include <Eigen/Dense>
 
@@ -306,7 +307,7 @@ namespace {
                 &calibarationReaderRows
                 ); ree;
 
-        QVector<IRTReCalibrationRow> iRTReCalibrationRows;
+        QVector<XYMappermaticRow> iRTReCalibrationRows;
         for (const CalibarationReaderRow &row : calibarationReaderRows) {
 
             PeptideStringWithMods peptideStringWithMods = row.peptideStringWithMods;
@@ -318,9 +319,9 @@ namespace {
                 continue;
             }
 
-            IRTReCalibrationRow reCalRow;
-            reCalRow.iRT = static_cast<float>(peptideStringWithModsVsIRT.value(peptideStringWithMods));
-            reCalRow.scanTime = row.scanTime;
+            XYMappermaticRow reCalRow;
+            reCalRow.x = static_cast<float>(peptideStringWithModsVsIRT.value(peptideStringWithMods));
+            reCalRow.y = row.scanTime;
 
             iRTReCalibrationRows.push_back(reCalRow);
         }

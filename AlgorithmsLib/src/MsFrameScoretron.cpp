@@ -9,7 +9,7 @@
 #include "IRTPredictron.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
-#include "ScanTimeFromIRtMapper.h"
+#include "XYMappermatic.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
@@ -100,7 +100,7 @@ Err MsFrameScoretron::init(
 
     qDebug() << "updating rt vals from iRT";
 
-    ScanTimeFromIRtMapper scanTimeFromIRtMapper;
+    XYMappermatic scanTimeFromIRtMapper;
     e = scanTimeFromIRtMapper.init(iRTRecalibrationFilePath); ree;
 
     for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
@@ -109,7 +109,7 @@ Err MsFrameScoretron::init(
         const double iRT = it.value().iRt;
 
         double predictedScanTime;
-        e = scanTimeFromIRtMapper.predictScanTime(iRT, &predictedScanTime); ree;
+        e = scanTimeFromIRtMapper.predictY(iRT, &predictedScanTime); ree;
 
         m_fragPredsPredictedScanTime.insert(peptideStringWithMods, predictedScanTime);
     }

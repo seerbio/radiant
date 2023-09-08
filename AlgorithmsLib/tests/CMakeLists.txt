@@ -27,11 +27,11 @@ SET(TEST_CLASSES
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests
-        ScanTimeFromIRtMapperTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
         TandemSpectraDeconvolvotronTests
         TurboXICTests
+        XYMappermaticTests
 )
 
 foreach(class ${TEST_CLASSES})

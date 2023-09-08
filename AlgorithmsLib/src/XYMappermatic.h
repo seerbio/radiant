@@ -2,11 +2,12 @@
 // Created by anichols on 8/24/23.
 //
 
-#ifndef PYTHIADIACPP_SCANTIMEFROMIRTMAPPER_H
-#define PYTHIADIACPP_SCANTIMEFROMIRTMAPPER_H
+#ifndef PYTHIADIACPP_XYMAPPERMATIC_H
+#define PYTHIADIACPP_XYMAPPERMATIC_H
 
 #include "AlgorithmsLib_Exports.h"
 
+#include "CSVReader.h"
 #include "Error.h"
 
 #include "Eigen/Dense"
@@ -18,29 +19,75 @@
 
 using namespace Error;
 
+namespace XYMappermaticRowNamespace {
 
-class ALGORITHMSLIB_EXPORTS ScanTimeFromIRtMapper {
+    const QString X = QStringLiteral("x");
+    const QString Y = QStringLiteral("y");
+
+    const QStringList keysToCheck = {
+            X,
+            Y
+    };
+}
+struct XYMappermaticRow: public CSVReaderInputBase {
+
+    double x = -1.0;
+    double y = -1.0;
+
+    QMap<QString, QVariant> map() override {
+
+        using namespace XYMappermaticRowNamespace;
+
+        return {
+                {X, x},
+                {Y, y}
+        };
+    }
+
+    Err initFromRead(const CSVReaderInputBase &row) override {
+
+        using namespace XYMappermaticRowNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = CSVReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        if (!allKeysPresent) {
+            qDebug() << dataMap;
+            qDebug() << keysToCheck;
+        }
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        x = dataMap.value(X).toDouble();
+        y = dataMap.value(Y).toDouble();
+
+        ERR_RETURN
+    }
+};
+
+
+class ALGORITHMSLIB_EXPORTS XYMappermatic {
 
 public:
 
-    friend class ScanTimeFromIRtMapperTests;
+    friend class XYMappermaticTests;
 
-    ScanTimeFromIRtMapper();
-    ~ScanTimeFromIRtMapper() = default;
+    XYMappermatic();
+    ~XYMappermatic() = default;
 
     Err init(const QString &iRTRecalibrationFilePath);
 
-    Err predictScanTime(double iRT, double *scanTime);
+    Err predictY(double x, double *y);
 
 
 private:
 
-    Err mapRT(const QVector<QPair<double, double>> &data);
-
-    static Err _pavaTestAccess(
-            const QVector<QPair<double, double>> &data,
-            QVector<QPair<double, double>> *resultOutput
-            );
+    Err mapXtoY(const QVector<QPair<double, double>> &data);
 
     static Err _splineTestAcces(
             const QVector<QPair<double, double>> &data,
@@ -55,10 +102,10 @@ private:
     QVector<double> m_points;
 
     int m_segments;
-    int m_rtSegments;
-    int m_minRtPredBin;
+    int m_xSegments;
+    int m_minXPredBin;
 
 };
 
 
-#endif //PYTHIADIACPP_SCANTIMEFROMIRTMAPPER_H
+#endif //PYTHIADIACPP_XYMAPPERMATIC_H

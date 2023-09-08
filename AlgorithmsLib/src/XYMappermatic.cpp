@@ -2,7 +2,7 @@
 // Created by anichols on 8/24/23.
 //
 
-#include "ScanTimeFromIRtMapper.h"
+#include "XYMappermatic.h"
 
 #include "CalibrationReader.h"
 #include "ErrorUtils.h"
@@ -12,120 +12,55 @@
 
 #include <iostream>
 
-ScanTimeFromIRtMapper::ScanTimeFromIRtMapper()
+XYMappermatic::XYMappermatic()
 : m_segments(0)
-, m_rtSegments(20)
-, m_minRtPredBin(20)
+, m_xSegments(20)
+, m_minXPredBin(20)
 {}
 
 
-Err ScanTimeFromIRtMapper::init(const QString &iRTRecalibrationFilePath) {
+Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
 
     ERR_INIT
 
     e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree;
 
-    QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
+    QVector<XYMappermaticRow> xyMappermaticRows;
     e  = CSVReader::read(
             iRTRecalibrationFilePath,
-            &iRTReCalibrationReaderRows
+            &xyMappermaticRows
     ); ree;
 
-    qDebug() << iRTReCalibrationReaderRows.size() << "iRT Rows";
+    qDebug() << xyMappermaticRows.size() << "iRT Rows";
 
     const auto insertLogic
-        = [](const IRTReCalibrationRow &r){return QPair<double, double>(r.iRT, r.scanTime);};
+        = [](const XYMappermaticRow &r){return QPair<double, double>(r.x, r.y);};
 
     QVector<QPair<double, double>> data;
     std::transform(
-            iRTReCalibrationReaderRows.begin(),
-            iRTReCalibrationReaderRows.end(),
+            xyMappermaticRows.begin(),
+            xyMappermaticRows.end(),
             std::back_inserter(data),
             insertLogic
             );
 
-    const auto sortLogicIRtAsc
+    const auto sortLogicXAsc
         = [](const QPair<double, double> &l, const QPair<double, double> &r){return l.first < r.first;};
 
-    std::sort(data.begin(), data.end(), sortLogicIRtAsc);
+    std::sort(data.begin(), data.end(), sortLogicXAsc);
 
     m_segments = std::min(
-            m_rtSegments,
-            static_cast<int>(std::max(1.0, 2.0 * sqrt(data.size() / static_cast<double>(m_minRtPredBin))))
+            m_xSegments,
+            static_cast<int>(std::max(1.0, 2.0 * sqrt(data.size() / static_cast<double>(m_minXPredBin))))
             );
 
-    e = mapRT(data); ree;
+    e = mapXtoY(data); ree;
 
     ERR_RETURN
 }
 
 
 namespace {
-
-    // implementation of the algorithm from
-    // stat.wikia.com/wiki/Isotonic_regression
-    Err PAVA(
-            const QVector<QPair<double, double>> &data,
-            QVector<QPair<double, double>> *resultOutput
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(data); ree;
-
-        QVector<int> pavaIndex;
-        QVector<double> pavaW, pavaA;
-
-        int i;
-        int j;
-        int k;
-        int l;
-        int dataSize = data.size();
-
-        pavaIndex.resize(dataSize + 1);
-        pavaW.resize(dataSize);
-        pavaA.resize(dataSize);
-
-        QVector<QPair<double, double>> result(dataSize);
-        for (i = 0; i < dataSize; i++) {
-            result[i].first = data[i].first;
-        }
-
-        pavaA[0] = data[0].second;
-        pavaW[0] = 1.0;
-        j = 0;
-        pavaIndex[0] = 0;
-        pavaIndex[1] = 1;
-
-        for (i = 1; i < dataSize; i++) {
-
-            j++;
-
-            pavaA[j] = data[i].second;
-            pavaW[j] = 1.0;
-            while (j > 0 && pavaA[j] < pavaA[j - 1]) {
-
-                const double denom = (pavaW[j] + pavaW[j - 1]);
-                e = ErrorUtils::isFalse(MathUtils::tZero(denom)); ree;
-
-                pavaA[j - 1] = (pavaW[j] * pavaA[j] + pavaW[j - 1] * pavaA[j - 1]) / denom;
-                pavaW[j - 1] = pavaW[j] + pavaW[j - 1];
-                j--;
-            }
-
-            pavaIndex[j + 1] = i + 1;
-        }
-
-        for (k = 0; k <= j; k++) {
-            for (l = pavaIndex[k]; l < pavaIndex[k + 1]; l++) {
-                result[l].second = pavaA[k];
-            }
-        }
-
-        *resultOutput = result;
-
-        ERR_RETURN
-    }
 
     Err spline(
             const QVector<QPair<double, double>> &data,
@@ -151,9 +86,6 @@ namespace {
         QVector<double> rtp;
         QVector<double> rte;
         QVector<double> rts;
-
-//        QVector<QPair<double, double>> pava;
-//        e = PAVA(data, &pava); ree;
 
         rtp.resize(dataSize);
         rte.resize(dataSize);
@@ -306,7 +238,7 @@ namespace {
 
 
 }//namespace
-Err ScanTimeFromIRtMapper::mapRT(const QVector<QPair<double, double>> &data) {
+Err XYMappermatic::mapXtoY(const QVector<QPair<double, double>> &data) {
 
     ERR_INIT
 
@@ -323,25 +255,25 @@ Err ScanTimeFromIRtMapper::mapRT(const QVector<QPair<double, double>> &data) {
         ERR_RETURN
     }
 
-    QVector<double> rtDiff;
-    QVector<double> rtDiffSorted;
+    QVector<double> yDiff;
+    QVector<double> yDiffSorted;
     QVector<QPair<double, double>> tempData;
 
-    rtDiff.reserve(data.size());
+    yDiff.reserve(data.size());
     tempData.reserve(data.size());
 
     for (const QPair<double, double> &p : data) {
         double y;
         e = calcSpline(m_coeffs, m_points, p.first, &y); ree;
-        rtDiff.push_back(std::abs(p.second - y));
+        yDiff.push_back(std::abs(p.second - y));
     }
 
-    rtDiffSorted = rtDiff;
-    std::sort(rtDiffSorted.begin(), rtDiffSorted.end());
+    yDiffSorted = yDiff;
+    std::sort(yDiffSorted.begin(), yDiffSorted.end());
 
-    const double max = rtDiffSorted[static_cast<int>(0.8 * rtDiffSorted.size())];
+    const double max = yDiffSorted[static_cast<int>(0.8 * yDiffSorted.size())];
     for (int i = 0; i < data.size(); i++) {
-        if (rtDiff[i] <= max + std::numeric_limits<double>::min()) {
+        if (yDiff[i] <= max + std::numeric_limits<double>::min()) {
             tempData.push_back(data[i]);
         }
     }
@@ -351,27 +283,17 @@ Err ScanTimeFromIRtMapper::mapRT(const QVector<QPair<double, double>> &data) {
     ERR_RETURN
 }
 
-Err ScanTimeFromIRtMapper::predictScanTime(double iRT, double *scanTime) {
+Err XYMappermatic::predictY(double x, double *y) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_coeffs); ree;
-    e = calcSpline(m_coeffs, m_points, iRT, scanTime); ree;
+    e = calcSpline(m_coeffs, m_points, x, y); ree;
 
     ERR_RETURN
 }
 
-Err ScanTimeFromIRtMapper::_pavaTestAccess(
-        const QVector<QPair<double, double>> &data,
-        QVector<QPair<double, double>> *resultOutput
-        ) {
-
-    ERR_INIT
-    e = PAVA(data, resultOutput); ree;
-    ERR_RETURN
-}
-
-Err ScanTimeFromIRtMapper::_splineTestAcces(
+Err XYMappermatic::_splineTestAcces(
         const QVector<QPair<double, double>> &data,
         int segments,
         QVector<double> *coeffs,

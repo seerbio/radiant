@@ -73,57 +73,7 @@ struct CalibarationReaderRow: public CSVReaderInputBase {
 };
 
 
-namespace IRTReCalibrationReaderNamespace {
 
-    const QString IRT_COL = QStringLiteral("iRT");
-    const QString SCAN_TIME = QStringLiteral("scanTime");
-
-    const QStringList keysToCheck = {
-            IRT_COL,
-            SCAN_TIME
-    };
-}
-struct IRTReCalibrationRow: public CSVReaderInputBase {
-
-    IRT iRT = -1.0;
-    ScanTime scanTime = -1.0;
-
-    QMap<QString, QVariant> map() override {
-
-        using namespace IRTReCalibrationReaderNamespace;
-
-        return {
-                {IRT_COL, iRT},
-                {SCAN_TIME, scanTime}
-        };
-    }
-
-    Err initFromRead(const CSVReaderInputBase &row) override {
-
-        using namespace IRTReCalibrationReaderNamespace;
-
-        ERR_INIT
-
-        const QMap<QString, QVariant> &dataMap = row.dataMap();
-        const bool allKeysPresent = CSVReaderInputBase::checkIfExpectedKeysArePresent(
-                dataMap,
-                keysToCheck
-        );
-
-        if (!allKeysPresent) {
-            qDebug() << dataMap;
-            qDebug() << keysToCheck;
-        }
-
-        e = ErrorUtils::isTrue(allKeysPresent); ree;
-
-        iRT = dataMap.value(IRT_COL).toFloat();
-        scanTime = dataMap.value(SCAN_TIME).toDouble();
-
-        ERR_RETURN
-    }
-
-};
 
 
 #endif //PYTHIADIACPP_CALIBRATIONREADER_H
