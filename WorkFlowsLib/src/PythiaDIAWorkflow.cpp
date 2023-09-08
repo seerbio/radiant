@@ -274,7 +274,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
 
-    const double calibrationSelectionFraction = -0.5;
+    const double calibrationSelectionFraction = 0.2;
     const int minTopNMs2Ions = 6;
     const int topNMs2IonsCalibration = std::max(
             minTopNMs2Ions,
@@ -291,51 +291,75 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &scoredCandidatesCalibration
     ); ree;
 
-//    QVector<QVector<double>> targetScoresVector;
-//    QVector<QVector<double>> decoyScoresVector;
-//    e = buildClassifierInput(
-//            scoredCandidatesCalibration,
-//            &targetScoresVector,
-//            &decoyScoresVector
-//            ); ree;
-//
-//
-//    QVector<QVector<double>> A;
-//    QVector<double> b;
-//    e = ClassifierWeightsManager::buildDataClassifier1(
-//            targetScoresVector,
-//            decoyScoresVector,
-//            &A,
-//            &b
-//            ); ree;
-//
-//    QVector<double> weights;
-//    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
-//
-//    QVector<double> results;
-//
-//    for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
-//        e = ClassifierWeightsManager::applyWeights({{
-//            std::max(sc.cosineSimSum, 0.0),
-//            std::max(sc.cosineSimMS1, 0.0),
-//            std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
-//        }}, weights, &results); ree;
-//
-//        qDebug() << sc.cosineSimSum << results.front();
-//    }
-//
-//    qDebug() << weights;
+    QVector<QVector<double>> targetScoresVector;
+    QVector<QVector<double>> decoyScoresVector;
+    e = buildClassifierInput(
+            scoredCandidatesCalibration,
+            &targetScoresVector,
+            &decoyScoresVector
+            ); ree;
 
 
-//    qDebug() << weights;
-//    for (int i = 0; i < results.size(); i++) {
-//        qDebug() << b.at(i) << results.at(i);
-//    }
+    QVector<QVector<double>> A;
+    QVector<double> b;
+    e = ClassifierWeightsManager::buildDataClassifier1(
+            targetScoresVector,
+            decoyScoresVector,
+            &A,
+            &b
+            ); ree;
+
+    QVector<double> weights;
+    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+    QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
+    QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
+    QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
+    for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
+        QVector<double> results;
+        e = ClassifierWeightsManager::applyWeights({{
+            std::max(sc.cosineSimSum, 0.0),
+            std::max(sc.cosineSimMS1, 0.0),
+            std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
+        }}, weights, &results); ree;
+
+        const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+
+        if(sc.isDecoy) {
+            peptideStringWithModsVsDiscScoreDecoys.insert(key, results.front());
+            continue;
+        }
+
+        peptideStringWithModsVsDiscScoreTargets.insert(key, results.front());
+        peptideStringWithModsVsScoredCandidateTargets.insert(key, sc);
+    }
+
+    QMap<QString, double> identifierVsQValue;
+    QMap<QString, double> identifierVsDecoyRatio;
+    e = MathUtils::calculateQValue(
+            peptideStringWithModsVsDiscScoreTargets,
+            peptideStringWithModsVsDiscScoreDecoys,
+            &identifierVsQValue,
+            &identifierVsDecoyRatio
+            ); ree;
+
+    int counter = 0;
+    for (auto it = identifierVsQValue.begin(); it != identifierVsQValue.end(); it++) {
+
+        const QString &key = it.key();
+        const double qVal = it.value();
+
+        if (qVal > 0.01) {
+            continue;
+        }
+
+//        const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
+//        qDebug() << counter++ << sc.scanNumber << key << qVal << sc.scanTime << sc.iRTPredicted << sc.mzSearchedVec << sc.mzFoundMeanVec;
+    }
 
     ClassifierWeightsManager classifierWeightsManager;
 
-
-#define WRITE_CALIBRATION
+//#define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION
     const QString resultsFilePath = msReaderParquet->filePath() + ".pythiaDIA";
     e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
