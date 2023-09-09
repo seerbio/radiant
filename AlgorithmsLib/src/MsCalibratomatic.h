@@ -8,7 +8,6 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "MsUtils.h"
 #include "PythiaParameterReader.h"
 #include "XYMappermatic.h"
 
@@ -37,6 +36,12 @@ public:
     [[nodiscard]] double newStDev();
 
     Err setScanTimeWindowNew(double scanTimeWindow);
+
+    Err predictScanTime(
+            double iRT,
+            double *predictedScanTime
+            );
+
 
 private:
 
