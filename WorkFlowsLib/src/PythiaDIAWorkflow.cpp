@@ -212,7 +212,7 @@ namespace {
         return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
     }
 
-    Err buildClassifierInput(
+    Err buildClassifierInputForCalibration(
             const QVector<ScoredCandidate> &scoredCandidates,
             QVector<QVector<double>> *targetScoresVector,
             QVector<QVector<double>> *decoyScoresVector
@@ -339,7 +339,7 @@ namespace {
             const QMap<QString, double> &identifierVsQValue,
             double fdrThreshold,
             QVector<ScoredCandidate> *scoredCandidatesFDRThresholded
-            ) {
+    ) {
 
         ERR_INIT
 
@@ -359,6 +359,67 @@ namespace {
             const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
             scoredCandidatesFDRThresholded->push_back(sc);
         }
+
+        ERR_RETURN
+    }
+
+    Err buildScoredCandidatesFDRThresholded(
+            const QVector<ScoredCandidate> &scoredCandidatesCalibration,
+            double fdrThreshold,
+            QVector<ScoredCandidate> *scoredCandidatesFDRThresholded
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
+        e = ErrorUtils::isTrue(fdrThreshold > 0.0); ree;
+
+        QVector<QVector<double>> targetScoresVector;
+        QVector<QVector<double>> decoyScoresVector;
+        e = buildClassifierInputForCalibration(
+                scoredCandidatesCalibration,
+                &targetScoresVector,
+                &decoyScoresVector
+        ); ree;
+
+        QVector<QVector<double>> A;
+        QVector<double> b;
+        e = ClassifierWeightsManager::buildDataClassifier1(
+                targetScoresVector,
+                decoyScoresVector,
+                &A,
+                &b
+        ); ree;
+
+        QVector<double> weights;
+        e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
+        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
+        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
+        e = separateScoredTargetDecoys(
+                scoredCandidatesCalibration,
+                weights,
+                &peptideStringWithModsVsScoredCandidateTargets,
+                &peptideStringWithModsVsDiscScoreTargets,
+                &peptideStringWithModsVsDiscScoreDecoys
+        ); ree;
+
+        QMap<QString, double> identifierVsQValue;
+        QMap<QString, double> identifierVsDecoyRatio;
+        e = MathUtils::calculateQValue(
+                peptideStringWithModsVsDiscScoreTargets,
+                peptideStringWithModsVsDiscScoreDecoys,
+                &identifierVsQValue,
+                &identifierVsDecoyRatio
+        ); ree;
+
+        e = thresholdQValues(
+                peptideStringWithModsVsScoredCandidateTargets,
+                identifierVsQValue,
+                fdrThreshold,
+                scoredCandidatesFDRThresholded
+        ); ree;
 
         ERR_RETURN
     }
@@ -388,50 +449,10 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &scoredCandidatesCalibration
     ); ree;
 
-    QVector<QVector<double>> targetScoresVector;
-    QVector<QVector<double>> decoyScoresVector;
-    e = buildClassifierInput(
-            scoredCandidatesCalibration,
-            &targetScoresVector,
-            &decoyScoresVector
-            ); ree;
-
-    QVector<QVector<double>> A;
-    QVector<double> b;
-    e = ClassifierWeightsManager::buildDataClassifier1(
-            targetScoresVector,
-            decoyScoresVector,
-            &A,
-            &b
-            ); ree;
-
-    QVector<double> weights;
-    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
-
-    QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
-    QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
-    QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
-    e = separateScoredTargetDecoys(
-            scoredCandidatesCalibration,
-            weights,
-            &peptideStringWithModsVsScoredCandidateTargets,
-            &peptideStringWithModsVsDiscScoreTargets,
-            &peptideStringWithModsVsDiscScoreDecoys
-            ); ree;
-
-    QMap<QString, double> identifierVsQValue;
-    QMap<QString, double> identifierVsDecoyRatio;
-    e = MathUtils::calculateQValue(
-            peptideStringWithModsVsDiscScoreTargets,
-            peptideStringWithModsVsDiscScoreDecoys,
-            &identifierVsQValue,
-            &identifierVsDecoyRatio
-            ); ree;
 
     QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
-    e = thresholdQValues(
-            peptideStringWithModsVsScoredCandidateTargets,
-            identifierVsQValue,
+    e = buildScoredCandidatesFDRThresholded(
+            scoredCandidatesCalibration,
             fdrThreshold,
             &scoredCandidatesFDRThresholded
             ); ree;
