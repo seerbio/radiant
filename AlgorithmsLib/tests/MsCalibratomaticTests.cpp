@@ -39,10 +39,7 @@ void MsCalibratomaticTests::execTests() {
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq.cached.pythiaCAL");
 
     MsCalibratomatic calibratomatic;
-    e = calibratomatic.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
-            reCalFile
-            );
+    e = calibratomatic.init(reCalFile);
     QCOMPARE(e, eNoError);
 
 

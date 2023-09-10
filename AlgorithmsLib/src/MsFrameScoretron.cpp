@@ -7,9 +7,9 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "IRTPredictron.h"
+#include "MsCalibratomatic.h"
 #include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
-#include "XYMappermatic.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"
 
@@ -77,17 +77,69 @@ Err MsFrameScoretron::init(
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildFragPredsPredictedScanTime(
+            const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
+            MsCalibratomatic *msCalibratomatic,
+            QMap<PeptideStringWithMods, ScanTime> *fragPredsPredictedScanTime
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
+        e = ErrorUtils::isTrue(msCalibratomatic->isInit()); ree;
+
+        for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
+
+            const PeptideStringWithMods &peptideStringWithMods = it.key();
+            const double iRT = it.value().iRt;
+
+            double predictedScanTime;
+            e = msCalibratomatic->predictScanTime(iRT, &predictedScanTime); ree;
+
+            fragPredsPredictedScanTime->insert(peptideStringWithMods, predictedScanTime);
+        }
+
+        ERR_RETURN
+    }
+
+
+}//namespace
 Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
+        const QMap<ScanNumber, ScanPoints> &_scanNumberVsScanPoints,
+        const QMap<ScanNumber, ScanPoints> &_scanNumberVsScanPointsMS1,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const QString &iRTRecalibrationFilePath
+        const MsCalibratomatic &msCalibratomatic
         ) {
 
     ERR_INIT
+
+    m_msCalibratomatic = msCalibratomatic;
+
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints = _scanNumberVsScanPoints;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1 = _scanNumberVsScanPointsMS1;
+    if (m_msCalibratomatic.isInit()) {
+
+        e = m_msCalibratomatic.recalibrateScanPoints(
+                _scanNumberVsScanPoints,
+                &scanNumberVsScanPoints
+                ); ree;
+
+        e = m_msCalibratomatic.recalibrateScanPoints(
+                _scanNumberVsScanPointsMS1,
+                &scanNumberVsScanPointsMS1
+        ); ree;
+
+        e = buildFragPredsPredictedScanTime(
+                peptideStringWithModsVsCandidatePeptide,
+                &m_msCalibratomatic,
+                &m_fragPredsPredictedScanTime
+        ); ree;
+    }
 
     e = init(
             uniqueMsInfoScanKey,
@@ -96,23 +148,8 @@ Err MsFrameScoretron::init(
             scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,
             scanNumberVsScanTime
-            ); ree;
+    ); ree;
 
-    qDebug() << "updating rt vals from iRT";
-
-    XYMappermatic scanTimeFromIRtMapper;
-    e = scanTimeFromIRtMapper.init(iRTRecalibrationFilePath); ree;
-
-    for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
-
-        const PeptideStringWithMods &peptideStringWithMods = it.key();
-        const double iRT = it.value().iRt;
-
-        double predictedScanTime;
-        e = scanTimeFromIRtMapper.predictY(iRT, &predictedScanTime); ree;
-
-        m_fragPredsPredictedScanTime.insert(peptideStringWithMods, predictedScanTime);
-    }
 
     ERR_RETURN
 }
@@ -165,7 +202,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 m_fragPredsPredictedScanTime
         ); ree;
     }
-
 
     for (const CandidatePeptide &candidatePeptide : m_fragPredsTopN) {
 

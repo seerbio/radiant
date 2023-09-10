@@ -80,6 +80,8 @@ private:
     FragLibReader m_fragLibReader;
     QVector<MsScanInfo> m_msScanInfos;
 
+    MsCalibratomatic m_msCalibratomatic;
+
 };
 
 

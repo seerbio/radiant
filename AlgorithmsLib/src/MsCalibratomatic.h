@@ -8,6 +8,7 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MsCalibrationReader.h"
 #include "PythiaParameterReader.h"
 #include "XYMappermatic.h"
 
@@ -22,10 +23,9 @@ public:
     MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QString &msCalibrationFilePath
-            );
+    Err init(const QString &msCalibrationFilePath);
+
+    Err init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
     // either FrameIndex, or ScanNumber can be key as they are both ints.
     Err recalibrateScanPoints(
@@ -42,6 +42,7 @@ public:
             double *predictedScanTime
             );
 
+    bool isInit() const;
 
 private:
 
@@ -56,8 +57,12 @@ private:
     double m_scanTimeWindowNew;
     QString m_msCalibrationFilePath;
 
+    QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;
+
     XYMappermatic m_iRTtoScanTimeMapper;
     XYMappermatic m_mzToRecalMz;
+
+    bool m_isInit;
 
 };
 

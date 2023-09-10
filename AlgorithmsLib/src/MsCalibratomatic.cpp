@@ -5,7 +5,6 @@
 #include "MsCalibratomatic.h"
 
 #include "ErrorUtils.h"
-#include "MsCalibrationReader.h"
 #include "ParquetReader.h"
 #include "SqlUtils.h"
 #include "XYMappermatic.h"
@@ -14,23 +13,38 @@
 MsCalibratomatic::MsCalibratomatic()
 : m_stDevNew(-1.0)
 , m_scanTimeWindowNew(-1.0)
+, m_isInit(false)
 {}
 
-Err MsCalibratomatic::init(
-        const PythiaParameters &pythiaParameters,
-        const QString &msCalibrationFilePath
-        ) {
+Err MsCalibratomatic::init(const QString &msCalibrationFilePath) {
 
     ERR_INIT
-
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree
-    m_params = pythiaParameters;
 
     e = ErrorUtils::fileExists(msCalibrationFilePath); ree
     m_msCalibrationFilePath = msCalibrationFilePath;
 
+    e = ParquetReader::read(
+            m_msCalibrationFilePath,
+            &m_msCalibarationReaderRows
+    ); ree;
+
+    e = init(m_msCalibrationFilePath); ree;
+
+    ERR_RETURN
+}
+
+
+Err MsCalibratomatic::init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
+    m_msCalibarationReaderRows = msCalibarationReaderRows;
+
     e = buildIRTCalibrator(); ree
     e = buildMzCalibrator(); ree
+
+    m_isInit = true;
 
     ERR_RETURN
 }
@@ -87,13 +101,8 @@ Err MsCalibratomatic::buildIRTCalibrator() {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
     qDebug() << "Calibarating iRT->ScanTime";
-
-    QVector<MsCalibarationReaderRow> msCalibarationReaderRows;
-    e = ParquetReader::read(
-            m_msCalibrationFilePath,
-            &msCalibarationReaderRows
-            ); ree;
 
     const auto insertLogic = [](const MsCalibarationReaderRow &r){
         return QPair(r.iRTPredicted, r.scanTime);
@@ -101,8 +110,8 @@ Err MsCalibratomatic::buildIRTCalibrator() {
 
     QVector<QPair<XVal, YVal>> data;
     std::transform(
-            msCalibarationReaderRows.begin(),
-            msCalibarationReaderRows.end(),
+            m_msCalibarationReaderRows.begin(),
+            m_msCalibarationReaderRows.end(),
             std::back_inserter(data),
             insertLogic
             );
@@ -290,16 +299,12 @@ Err MsCalibratomatic::buildMzCalibrator() {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
+
     //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
 
-    QVector<MsCalibarationReaderRow> msCalibarationReaderRows;
-    e = ParquetReader::read(
-            m_msCalibrationFilePath,
-            &msCalibarationReaderRows
-    ); ree;
-
     QVector<Inp> inputs;
-    e = buildMzCalData(msCalibarationReaderRows, &inputs); ree;
+    e = buildMzCalData(m_msCalibarationReaderRows, &inputs); ree;
     e = removeMassOutliers(&inputs); ree;
 
     double stDevMz;
@@ -364,4 +369,8 @@ Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) {
     ERR_INIT
     e = m_iRTtoScanTimeMapper.predictY(iRT, predictedScanTime); ree;
     ERR_RETURN
+}
+
+bool MsCalibratomatic::isInit() const {
+    return m_isInit;
 }

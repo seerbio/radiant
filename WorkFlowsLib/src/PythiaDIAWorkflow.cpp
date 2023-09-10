@@ -10,11 +10,9 @@
 #include "MS2ChargeDeconvolvotron.h"
 #include "MsCalibrationReader.h"
 #include "MsFrameScoretron.h"
-#include "MsFrameScoretronProcessormatic.h"
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
-#include "PSMsReader.h"
 #include "ClassifierWeightsManager.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -267,6 +265,103 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildMsCalibrationReaderRows(
+            const QVector<ScoredCandidate> &scoredCandidatesFDRThresholded,
+            QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesFDRThresholded); ree;
+
+        qDebug() << scoredCandidatesFDRThresholded.size() << "Found for recalibartion";
+
+        const auto msCalibrationReaderRowsInsertLogic = [](const ScoredCandidate &sc){
+            MsCalibarationReaderRow row;
+            row.peptideStringWithMods = sc.peptideStringWithMods;
+            row.iRTPredicted = static_cast<float>(sc.iRTPredicted);
+            row.scanTime = sc.scanTime;
+            row.mzSearchedVec = sc.mzSearchedVec;
+            row.mzFoundMeanVec = sc.mzFoundMeanVec;
+            row.mzFoundStDevVec = sc.mzFoundStDevVec;
+            return row;
+        };
+
+        ;
+        std::transform(
+                scoredCandidatesFDRThresholded.begin(),
+                scoredCandidatesFDRThresholded.end(),
+                std::back_inserter(*msCalibrationReaderRows),
+                msCalibrationReaderRowsInsertLogic
+        );
+
+        ERR_RETURN
+    }
+
+    Err separateScoredTargetDecoys(
+            const QVector<ScoredCandidate> &scoredCandidatesCalibration,
+            const QVector<double> &weights,
+            QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateTargets,
+            QMap<PeptideStringWithMods, double> *peptideStringWithModsVsDiscScoreTargets,
+            QMap<PeptideStringWithMods, double> *peptideStringWithModsVsDiscScoreDecoys
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
+        e = ErrorUtils::isNotEmpty(weights); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
+
+            QVector<double> results;
+            e = ClassifierWeightsManager::applyWeights({{
+                                                std::max(sc.cosineSimSum, 0.0),
+                                                std::max(sc.cosineSimMS1, 0.0),
+                                                std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
+                                        }}, weights, &results); ree;
+
+            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+
+            if(sc.isDecoy) {
+                peptideStringWithModsVsDiscScoreDecoys->insert(key, results.front());
+                continue;
+            }
+
+            peptideStringWithModsVsDiscScoreTargets->insert(key, results.front());
+            peptideStringWithModsVsScoredCandidateTargets->insert(key, sc);
+        }
+
+        ERR_RETURN
+    }
+
+    Err thresholdQValues(
+            const QMap<PeptideStringWithMods, ScoredCandidate> &peptideStringWithModsVsScoredCandidateTargets,
+            const QMap<QString, double> &identifierVsQValue,
+            double fdrThreshold,
+            QVector<ScoredCandidate> *scoredCandidatesFDRThresholded
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(peptideStringWithModsVsScoredCandidateTargets); ree;
+        e = ErrorUtils::isNotEmpty(identifierVsQValue); ree;
+        e = ErrorUtils::isTrue(fdrThreshold > 0.0); ree;
+
+        for (auto it = identifierVsQValue.begin(); it != identifierVsQValue.end(); it++) {
+
+            const QString &key = it.key();
+            const double qVal = it.value();
+
+            if (qVal > fdrThreshold) {
+                continue;
+            }
+
+            const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
+            scoredCandidatesFDRThresholded->push_back(sc);
+        }
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
@@ -301,7 +396,6 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &decoyScoresVector
             ); ree;
 
-
     QVector<QVector<double>> A;
     QVector<double> b;
     e = ClassifierWeightsManager::buildDataClassifier1(
@@ -317,24 +411,13 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
     QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
     QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
     QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
-    for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
-        QVector<double> results;
-        e = ClassifierWeightsManager::applyWeights({{
-            std::max(sc.cosineSimSum, 0.0),
-            std::max(sc.cosineSimMS1, 0.0),
-            std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
-        }}, weights, &results); ree;
-
-        const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
-
-        if(sc.isDecoy) {
-            peptideStringWithModsVsDiscScoreDecoys.insert(key, results.front());
-            continue;
-        }
-
-        peptideStringWithModsVsDiscScoreTargets.insert(key, results.front());
-        peptideStringWithModsVsScoredCandidateTargets.insert(key, sc);
-    }
+    e = separateScoredTargetDecoys(
+            scoredCandidatesCalibration,
+            weights,
+            &peptideStringWithModsVsScoredCandidateTargets,
+            &peptideStringWithModsVsDiscScoreTargets,
+            &peptideStringWithModsVsDiscScoreDecoys
+            ); ree;
 
     QMap<QString, double> identifierVsQValue;
     QMap<QString, double> identifierVsDecoyRatio;
@@ -346,45 +429,26 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             ); ree;
 
     QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
-    for (auto it = identifierVsQValue.begin(); it != identifierVsQValue.end(); it++) {
-
-        const QString &key = it.key();
-        const double qVal = it.value();
-
-        if (qVal > fdrThreshold) {
-            continue;
-        }
-
-        const ScoredCandidate &sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
-        scoredCandidatesFDRThresholded.push_back(sc);
-    }
-
-    qDebug() << scoredCandidatesFDRThresholded.size() << "Found for recalibartion";
-
-#define WRITE_CALIBRATION
-#ifdef WRITE_CALIBRATION
-    //TODO abstrct to its own method
-    const auto msCalibrationReaderRowsInsertLogic = [](const ScoredCandidate &sc){
-        MsCalibarationReaderRow row;
-        row.peptideStringWithMods = sc.peptideStringWithMods;
-        row.iRTPredicted = sc.iRTPredicted;
-        row.scanTime = sc.scanTime;
-        row.mzSearchedVec = sc.mzSearchedVec;
-        row.mzFoundMeanVec = sc.mzFoundMeanVec;
-        row.mzFoundStDevVec = sc.mzFoundStDevVec;
-        return row;
-    };
+    e = thresholdQValues(
+            peptideStringWithModsVsScoredCandidateTargets,
+            identifierVsQValue,
+            fdrThreshold,
+            &scoredCandidatesFDRThresholded
+            ); ree;
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-    std::transform(
-            scoredCandidatesFDRThresholded.begin(),
-            scoredCandidatesFDRThresholded.end(),
-            std::back_inserter(msCalibrationReaderRows),
-            msCalibrationReaderRowsInsertLogic
-            );
+    e = buildMsCalibrationReaderRows(
+            scoredCandidatesFDRThresholded,
+            &msCalibrationReaderRows
+            ); ree;
 
+//#define WRITE_CALIBRATION
+#ifdef WRITE_CALIBRATION
     const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
     e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
+    e = m_msCalibratomatic.init(resultsFilePath); ree;
+#else
+    e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
 #endif
 
     ERR_RETURN
@@ -434,7 +498,7 @@ namespace {
     struct ParallelProcessingInput {
         UniqueMsInfoScanKey uniqueMsInfoScanKey;
         PythiaParameters pythiaParameters;
-        QString iRTReCalFilePath;
+        MsCalibratomatic msCalibratomatic;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
         QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
         QMap<ScanNumber , ScanPoints> *scanPoints = nullptr;
@@ -448,8 +512,6 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-//        qDebug() << "Processing" << ppi.uniqueMsInfoScanKey;
-
         MsFrameScoretron msFrameScoretron;
 
         e = msFrameScoretron.init(
@@ -458,18 +520,9 @@ namespace {
                 *ppi.scanPoints,
                 ppi.scanNumberVsScanTimeMS1,
                 *ppi.peptideStringWithModsVsCandidatePeptide,
-                ppi.scanNumberVsScanTime
-        ); rree;
-
-//        e = msFrameScoretron.init(
-//                ppi.uniqueMsInfoScanKey,
-//                ppi.pythiaParameters,
-//                *ppi.scanPoints,
-//                ppi.scanNumberVsScanTimeMS1,
-//                *ppi.peptideStringWithModsVsCandidatePeptide,
-//                ppi.scanNumberVsScanTime,
-//                ppi.iRTReCalFilePath
-//                ); rree;
+                ppi.scanNumberVsScanTime,
+                ppi.msCalibratomatic
+                ); rree;
 
         QVector<ScoredCandidate> scoredCandidates;
         e = msFrameScoretron.scoreFrameCandidates(&scoredCandidates); rree;
@@ -513,7 +566,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
         ppi.uniqueMsInfoScanKey = uniqueMsInfoScanKey;
         ppi.scanNumberVsScanTime = scanNumberVsScanTime;
         ppi.scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1;
-        ppi.iRTReCalFilePath = m_iRTReCalFilePath;
+        ppi.msCalibratomatic = m_msCalibratomatic;
         ppi.pythiaParameters = m_pythiaParameters;
         ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
         ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptideCalibration[uniqueMsInfoScanKey];

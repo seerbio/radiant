@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
+#include "MsCalibratomatic.h"
 #include "MS2ChargeDeconvolvotron.h"
 #include "MsFrame.h"
 #include "ParquetReader.h"
@@ -43,7 +44,7 @@ public:
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const QString &iRTRecalibrationFilePath
+            const MsCalibratomatic &msCalibratomatic
     );
 
     Err init(
@@ -80,6 +81,7 @@ private:
     PythiaParameters m_params;
     QString m_msDataFilePath;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+    MsCalibratomatic m_msCalibratomatic;
     MsFrame m_msFrame;
     MsFrame m_msFrameMS1;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
