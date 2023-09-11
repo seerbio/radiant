@@ -561,6 +561,7 @@ namespace {
 
     Err calcBestCosineSimAndKLDivSum(
             const Eigen::MatrixX<double> &intensityMatrixIntegratedLimits,
+            double cosineSimToAnchorThreshold,
             QVector<double> *bestCosineSimsIndividual,
             double *bestCosineSimSum,
             QVector<double> *bestKLDivIndividual,
@@ -599,7 +600,7 @@ namespace {
                 const double klDivToAnchor = EigenUtils::klDivergence(anchorColumn, altColumn);
 
                 // TODO set this empirically when figuring out ppm setting.
-                if (cosineSimToAnchor < 0.97) {
+                if (cosineSimToAnchor < cosineSimToAnchorThreshold) {
                     bestCosineSimsIndividualAnchor.push_back(0.0);
                     bestKLDivIndividualAnchor.push_back(0.0);
                     continue;
@@ -652,6 +653,7 @@ namespace {
             const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
+            double cosineSimToAnchorThreshold,
             QVector<double> *cosineSimsIndividual,
             QVector<double> *klDivsIndividual,
             FrameIndex *frameIndexIntensityApex,
@@ -708,6 +710,7 @@ namespace {
             QVector<int> bestFrameIndexMaxDiffFromAnchorVecIntegration;
             e = calcBestCosineSimAndKLDivSum(
                     intensityMatrixIntegratedLimitsNoInterference,
+                    cosineSimToAnchorThreshold,
                     &cosineSimsIndividualIntegration,
                     &bestCosineSimSumIntegration,
                     &klDivsIndividualIntegration,
@@ -879,7 +882,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err CandidateProcessertron::buildScores(
         const CandidatePeptide &candidatePeptide,
@@ -908,6 +910,7 @@ Err CandidateProcessertron::buildScores(
             peakIntegrationIndexes,
             summedMatVecToVec,
             m_pythiaParameters.topNMs2Ions,
+            m_pythiaParameters.cosineSimToAnchorThreshold,
             &cosineSimsIndividual,
             &klDivsIndividual,
             &frameIndexIntensityApex,
@@ -1068,7 +1071,6 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
     ERR_RETURN
 }
 
-
 Err CandidateProcessertron::processCandidateDecoy(
         const CandidatePeptide &candidatePeptideDecoy,
         ScanTime scanTime,
@@ -1098,14 +1100,13 @@ Err CandidateProcessertron::processCandidateDecoy(
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
 
     const int minFoundMzPeaksDecoys = 0;
-    const ScanTime scanTimeWindowTolerance = 5.0; // TODO figure out how to set this for decoys.
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
     e = findCandidateIntegrations(
             summedMatVecToVec,
             minFoundMzPeaksDecoys,
             scanTime,
-            scanTimeWindowTolerance,
+            m_pythiaParameters.scanTimeWindowMinutes,
             &peakIntegrationIndexes
     ); ree;
 

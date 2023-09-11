@@ -1198,7 +1198,7 @@ Err MsFrameScoretronProcessormatic::deconvolveScanCandidate(const QVector<FrameE
     e = buildUniqueFoundScanPoints(
             frameExtractsReaderRows,
             m_precision,
-            m_params.filterIsotopologuesForDeconvolution,
+            true,
             &uniqueFoundScanPoints
             ); ree
 

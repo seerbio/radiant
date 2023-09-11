@@ -64,6 +64,8 @@ private:
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
     );
 
+    Err optimizeParameters(MsReaderParquet *msReaderParquet);
+
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,

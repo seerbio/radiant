@@ -113,11 +113,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-
-
-
-
-
+//    e = optimizeParameters(&msReaderParquet); ree;
 
 
 
@@ -449,7 +445,6 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &scoredCandidatesCalibration
     ); ree;
 
-
     QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
     e = buildScoredCandidatesFDRThresholded(
             scoredCandidatesCalibration,
@@ -654,8 +649,8 @@ Err PythiaDIAWorkflow::buildCandidates(
     else {
         e = m_fragLibReader.getMS2IonsTopN(
                 topNMs2Ions,
-                100.0,
-                2000.0,
+                m_pythiaParameters.mzMinDataStructure,
+                m_pythiaParameters.mzMaxDataStructure,
                 &peptideSequenceChargeKeyVsCandidatePeptide
         ); ree;
 
@@ -710,6 +705,41 @@ Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
 
     const int msLevel = 1;
     e = msReaderParquet->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
+
+    ERR_INIT
+
+    const int minTopNMs2Ions = 6;
+    const int topNMs2IonsCalibration = std::max(
+            minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+    );
+
+    const double selectionFractionBypassValue = 0.02;
+
+    for (int i = 0; i < 14; i++) {
+
+        QVector<ScoredCandidate> scoredCandidatesCalibration;
+        e = extractTargetDecoyData(
+                topNMs2IonsCalibration,
+                selectionFractionBypassValue,
+                msReaderParquet,
+                &scoredCandidatesCalibration
+        ); ree;
+
+        QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
+        e = buildScoredCandidatesFDRThresholded(
+                scoredCandidatesCalibration,
+                0.01,
+                &scoredCandidatesFDRThresholded
+        ); ree;
+
+        qDebug() << scoredCandidatesFDRThresholded.size();
+    }
 
     ERR_RETURN
 }
