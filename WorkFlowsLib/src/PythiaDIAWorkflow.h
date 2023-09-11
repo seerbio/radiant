@@ -51,6 +51,7 @@ private:
     Err buildCalibration(MsReaderParquet *msReaderParquet);
 
     Err extractTargetDecoyData(
+            const PythiaParameters &pythiaParameters,
             int topNMs2Ions,
             double selectionFraction,
             MsReaderParquet *msReaderParquet,

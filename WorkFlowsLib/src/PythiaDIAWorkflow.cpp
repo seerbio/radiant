@@ -113,10 +113,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-//    e = optimizeParameters(&msReaderParquet); ree;
-
-
-
+    e = optimizeParameters(&msReaderParquet); ree;
 
 //    const QString resultsFilePath = msDataFilePath + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
 //    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
@@ -439,6 +436,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     QVector<ScoredCandidate> scoredCandidatesCalibration;
     e = extractTargetDecoyData(
+            m_pythiaParameters,
             topNMs2IonsCalibration,
             calibrationSelectionFraction,
             msReaderParquet,
@@ -550,6 +548,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAWorkflow::extractTargetDecoyData(
+        const PythiaParameters &pythiaParameters,
         int topNMs2Ions,
         double selectionFraction,
         MsReaderParquet *msReaderParquet,
@@ -583,7 +582,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
         ppi.scanNumberVsScanTime = scanNumberVsScanTime;
         ppi.scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1;
         ppi.msCalibratomatic = m_msCalibratomatic;
-        ppi.pythiaParameters = m_pythiaParameters;
+        ppi.pythiaParameters = pythiaParameters;
         ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
         ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptideCalibration[uniqueMsInfoScanKey];
 
@@ -709,6 +708,64 @@ Err PythiaDIAWorkflow::buildUniqueMsInfoScanKeyVsScanPoints(
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildDOE(
+            const PythiaParameters &pythiaParameters,
+            double mzPPMStDev,
+            double scanTimeStDev,
+            QVector<PythiaParameters> *pythiaParametersExperiments
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(mzPPMStDev > 0.0); ree;
+        e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
+        e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+
+        const QVector<QVector<double>> experiments = {
+                {1.5, 1.0,  2.0},
+                {3.5, 1.0,  2.0},
+                {1.5,  3.0,  2.0},
+                {3.5,  3.0,  2.0},
+                {1.5,  2.0, 1.0},
+                {3.5,  2.0, 1.0},
+                {1.5,  2.0,  3.0},
+                {3.5,  2.0,  3.0},
+                {2.5, 1.0, 1.0},
+                {2.5,  3.0, 1.0},
+                {2.5, 1.0,  3.0},
+                {2.5,  3.0,  3.0},
+                {2.5,  2.0,  2.0}
+        };
+
+        for (const QVector<double> &exp : experiments) {
+
+            PythiaParameters params = pythiaParameters;
+            params.ms2ExtractionWidthPPM = mzPPMStDev * exp.at(0);
+            params.scanTimeWindowMinutes = scanTimeStDev * exp.at(1);
+
+            switch (static_cast<int>(exp.at(2))) {
+                case 1:
+                    params.cosineSimToAnchorThreshold = 0.9;
+                    break;
+                case 2:
+                    params.cosineSimToAnchorThreshold = 0.935;
+                    break;
+                case 3:
+                    params.cosineSimToAnchorThreshold = 0.97;
+                    break;
+                default:
+                    params.cosineSimToAnchorThreshold = pythiaParameters.cosineSimToAnchorThreshold;
+            }
+
+            pythiaParametersExperiments->push_back(params);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
@@ -719,12 +776,30 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
     );
 
-    const double selectionFractionBypassValue = 0.02;
+    const double selectionFractionBypassValue = 0.1;
+    const double fdrThreshold = 0.01;
 
-    for (int i = 0; i < 14; i++) {
+    QVector<PythiaParameters> pythiaParametersExperiments;
+    e = buildDOE(
+            m_pythiaParameters,
+            m_msCalibratomatic.mzStDev(),
+            m_msCalibratomatic.scanTimeStDev(),
+            &pythiaParametersExperiments
+            ); ree;
+
+    struct DOEResult {
+        double mzStDev = -1.0;
+        double scanTimeStDev = -1.0;
+        double cosineSimAnchor = -1.0;
+        int fdrCount = -1;
+    };
+
+    QVector<DOEResult> results;
+    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
         QVector<ScoredCandidate> scoredCandidatesCalibration;
         e = extractTargetDecoyData(
+                pythiaParams,
                 topNMs2IonsCalibration,
                 selectionFractionBypassValue,
                 msReaderParquet,
@@ -734,11 +809,20 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
         e = buildScoredCandidatesFDRThresholded(
                 scoredCandidatesCalibration,
-                0.01,
+                fdrThreshold,
                 &scoredCandidatesFDRThresholded
         ); ree;
 
-        qDebug() << scoredCandidatesFDRThresholded.size();
+        DOEResult res;
+        res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
+        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
+        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
+        res.fdrCount = scoredCandidatesFDRThresholded.size();
+        results.push_back(res);
+    }
+
+    for (const DOEResult &r : results) {
+        qDebug() << r.mzStDev << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
     }
 
     ERR_RETURN
