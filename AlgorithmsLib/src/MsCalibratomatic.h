@@ -33,9 +33,8 @@ public:
             QMap<ScanNumber, ScanPoints> *recalScanNumberVsScanPoints
             );
 
-    [[nodiscard]] double newStDev();
-
-    Err setScanTimeWindowNew(double scanTimeWindow);
+    [[nodiscard]] double mzStDev();
+    [[nodiscard]] double scanTimeStDev();
 
     Err predictScanTime(
             double iRT,
@@ -53,8 +52,8 @@ private:
 
     //Never cleared
     PythiaParameters m_params;
-    double m_stDevNew;
-    double m_scanTimeWindowNew;
+    double m_mzStDev;
+    double m_scanTimeStd;
     QString m_msCalibrationFilePath;
 
     QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;

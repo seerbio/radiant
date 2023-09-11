@@ -11,8 +11,8 @@
 
 
 MsCalibratomatic::MsCalibratomatic()
-: m_stDevNew(-1.0)
-, m_scanTimeWindowNew(-1.0)
+: m_mzStDev(-1.0)
+, m_scanTimeStd(-1.0)
 , m_isInit(false)
 {}
 
@@ -28,7 +28,7 @@ Err MsCalibratomatic::init(const QString &msCalibrationFilePath) {
             &m_msCalibarationReaderRows
     ); ree;
 
-    e = init(m_msCalibrationFilePath); ree;
+    e = init(m_msCalibarationReaderRows); ree;
 
     ERR_RETURN
 }
@@ -43,6 +43,12 @@ Err MsCalibratomatic::init(const QVector<MsCalibarationReaderRow> &msCalibaratio
 
     e = buildIRTCalibrator(); ree
     e = buildMzCalibrator(); ree
+
+    e = ErrorUtils::isTrue(m_mzStDev > 0.0); ree;
+    e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
+
+    qDebug() << "mzStDev" << m_mzStDev;
+    qDebug() << "scanTimeStDev" << m_scanTimeStd;
 
     m_isInit = true;
 
@@ -91,7 +97,7 @@ namespace {
 
         qDebug() << "iRT Cal Metrics: rmse" << rmse << "mean" << mean << "stDev" << stDev;
 
-        *stDevScanTimeDiff = stDev * S_GLOBAL_SETTINGS.STDEV_MULTIPLIER;
+        *stDevScanTimeDiff = stDev;
 
         ERR_RETURN
     }
@@ -118,7 +124,7 @@ Err MsCalibratomatic::buildIRTCalibrator() {
 
     double stDevScanTimeDiff;
     e = generateMetricsIRTtoScanTime(data, &stDevScanTimeDiff); ree;
-    e = setScanTimeWindowNew(stDevScanTimeDiff); ree;
+    m_scanTimeStd = stDevScanTimeDiff;
 
     e = m_iRTtoScanTimeMapper.init(data); ree;
 
@@ -289,7 +295,7 @@ namespace {
         qDebug() << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
         qDebug() << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
 
-        *stDevMz = stDevReCal * S_GLOBAL_SETTINGS.STDEV_MULTIPLIER;
+        *stDevMz = stDevReCal;
 
         ERR_RETURN
     }
@@ -309,6 +315,7 @@ Err MsCalibratomatic::buildMzCalibrator() {
 
     double stDevMz;
     e = generateMetricsMzReCal(inputs, &stDevMz); ree;
+    m_mzStDev = stDevMz;
 
     QVector<QPair<double, double>> data;
     std::transform(
@@ -348,21 +355,12 @@ Err MsCalibratomatic::recalibrateScanPoints(
     ERR_RETURN
 }
 
-double MsCalibratomatic::newStDev() {
-    return m_stDevNew;
+double MsCalibratomatic::mzStDev() {
+    return m_mzStDev;
 }
 
-Err MsCalibratomatic::setScanTimeWindowNew(double scanTimeWindow) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(MathUtils::tZero(scanTimeWindow)); ree;
-    e = ErrorUtils::isTrue(scanTimeWindow > 0.0); ree;
-
-    m_scanTimeWindowNew = scanTimeWindow;
-    qDebug() << "scanTimeWindowNew set to" << m_scanTimeWindowNew;
-
-    ERR_RETURN
+double MsCalibratomatic::scanTimeStDev() {
+    return m_scanTimeStd;
 }
 
 Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) {
