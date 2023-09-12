@@ -174,6 +174,11 @@ Err FragLibReader::getMS2IonsTopN(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
         const CandidatePeptide &candidatePeptide = it.value();
 
+        //for libraries w/ decoys included.
+//        if (candidatePeptide.isDecoy) {
+//            continue;
+//        }
+
         if (selectionList.value(counter++)) {
             peptideSequenceChargeKeyVsCandidatePeptide->insert(peptideSequenceChargeKey, candidatePeptide);
         }
