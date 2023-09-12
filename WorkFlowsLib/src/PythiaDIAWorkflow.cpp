@@ -945,9 +945,28 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         results.push_back(res);
     }
 
+    std::sort(
+            results.rbegin(),
+            results.rend(),
+            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+            );
+
     for (const DOEResult &r : results) {
         qDebug() << r.mzStDev << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
     }
+
+    //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
+    const DOEResult bestParametersFDR = *std::max_element(
+            results.rbegin(),
+            results.rend(),
+            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+    );
+
+    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.mzStDev;
+    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
+    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
+    m_pythiaParameters.print();
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     ERR_RETURN
 }
