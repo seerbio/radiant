@@ -205,8 +205,125 @@ namespace {
         return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
     }
 
-    Err buildClassifierInputForCalibration(
+    template <typename T>
+    QVector<double> extractScoresFromVecFeatures(
+            const QVector<T> &featureVec,
+            int theoMzIonsSize
+            ) {
+
+        QVector<double> vec(theoMzIonsSize, 0.0);
+
+        for (int i = 0; i < theoMzIonsSize; i++) {
+
+            if (i >= featureVec.size()) {
+                break;
+            }
+
+            vec[i] = static_cast<double>(featureVec[i]);
+        }
+
+        return vec;
+    }
+
+    QVector<double> buildScoreVector(
+            const ScoredCandidate &scoreCandidate,
+            bool useExtendedScores,
+            int theoMzIonsSize
+            ) {
+
+        QVector<double> scores = {
+                std::max(scoreCandidate.cosineSimSum, 0.0),
+                std::max(scoreCandidate.cosineSimMS1, 0.0),
+                std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3)
+        };
+
+        if (useExtendedScores) {
+            scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted));
+            scores.push_back(scoreCandidate.theoFragmentCount);
+            scores.push_back(scoreCandidate.charge);
+            scores.push_back(scoreCandidate.peptideStringWithMods.size());
+
+            scores.push_back(scoreCandidate.mass);
+
+//            const QVector<double> foundIntensities
+//                    = extractScoresFromVecFeatures(scoreCandidate.intensityFoundMaxVec, theoMzIonsSize);
+//            const double intensitySum = std::accumulate(foundIntensities.begin(), foundIntensities.end(), 0.0);
+//            scores.push_back(std::log(std::max(1.0, intensitySum)));
+//            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
+
+            const QVector<double> cosineSimToAnchors
+                    = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);
+            scores.append(cosineSimToAnchors);
+
+            const QVector<double> topHalfCosineSimScores = cosineSimToAnchors.mid(0, theoMzIonsSize / 2);
+            scores.push_back(std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0));
+
+//            else if (theoMzIonsSize % 3 == 0) {
+//
+//                for (int i = 0; i < theoMzIonsSize; i += 3) {
+//                    const QVector<double> cos1 = cosineSimToAnchors.mid(i, 3);
+//                    scores.push_back(std::accumulate(cos1.begin(), cos1.end(), 0.0));
+//                }
+//            }
+
+//            const QVector<double> individualPeakPointCount
+//                    = extractScoresFromVecFeatures(scoreCandidate.peakPointCountFoundVec, theoMzIonsSize);
+//            scores.append(individualPeakPointCount);
+
+//            const QVector<double> frameIndexMaxDiffFromAnchorVec
+//                    = extractScoresFromVecFeatures(scoreCandidate.frameIndexMaxDiffFromAnchorVec, theoMzIonsSize);
+//            scores.append(frameIndexMaxDiffFromAnchorVec);
+
+            const QVector<double> theoApexIntensity
+                    = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);
+            scores.append(theoApexIntensity);
+
+            const QVector<double> intensityFoundMaxVec
+                    = extractScoresFromVecFeatures(scoreCandidate.intensityFoundMaxVec, theoMzIonsSize);
+            const double maxIntensity = std::max(
+                    *std::max(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end()),
+                    1.0
+                    );
+            QVector<double> intensityFoundMaxVecNorm;
+            std::transform(
+                    intensityFoundMaxVec.begin(),
+                    intensityFoundMaxVec.end(),
+                    std::back_inserter(intensityFoundMaxVecNorm),
+                    [maxIntensity](double d){return d / maxIntensity;}
+                    );
+            scores.append(intensityFoundMaxVecNorm);
+
+
+//            QVector<double> ppmVec;
+//            for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
+//
+//                const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
+//                if (i >= scoreCandidate.mzFoundMeanVec.size()) {
+//                    break;
+//                }
+//
+//                const double mzFound = scoreCandidate.mzFoundMeanVec[i];
+//
+//                const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
+//                ppmVec.push_back(ppm);
+//            }
+//            const QVector<double> ppmMz
+//                    = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
+//            scores.append(ppmMz);
+
+            const QVector<double> mzStDev
+                    = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
+            scores.append(mzStDev);
+
+        }
+
+        return scores;
+    }
+
+    Err buildClassifierInput(
             const QVector<ScoredCandidate> &scoredCandidates,
+            bool useExtendedScores,
+            int theoMzIonsSize,
             QVector<QVector<double>> *targetScoresVector,
             QVector<QVector<double>> *decoyScoresVector
             ) {
@@ -237,17 +354,8 @@ namespace {
 
             const ScoredCandidate scDecoy = decoys.value(key);
 
-            const QVector<double> targetScores = {
-                    scTarget.cosineSimSum,
-                    scTarget.cosineSimMS1,
-                    std::pow(scTarget.cosineSimSpectrum, 3)
-            };
-
-            const QVector<double> decoyScores = {
-                    std::max(scDecoy.cosineSimSum, 0.0),
-                    std::max(scDecoy.cosineSimMS1, 0.0),
-                    std::max(std::pow(scDecoy.cosineSimSpectrum, 3), 0.0)
-            };
+            const QVector<double> targetScores = buildScoreVector(scTarget, useExtendedScores, theoMzIonsSize);
+            const QVector<double> decoyScores = buildScoreVector(scDecoy, useExtendedScores,theoMzIonsSize);
 
             targetScoresVector->push_back(targetScores);
             decoyScoresVector->push_back(decoyScores);
@@ -294,6 +402,8 @@ namespace {
     Err separateScoredTargetDecoys(
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             const QVector<double> &weights,
+            bool useExtendedScores,
+            const int theoMzIonsSize,
             QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateTargets,
             QMap<PeptideStringWithMods, double> *peptideStringWithModsVsDiscScoreTargets,
             QMap<PeptideStringWithMods, double> *peptideStringWithModsVsDiscScoreDecoys
@@ -306,12 +416,10 @@ namespace {
 
         for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
 
+            QVector<double> scores = buildScoreVector(sc, useExtendedScores, theoMzIonsSize);
+
             QVector<double> results;
-            e = ClassifierWeightsManager::applyWeights({{
-                                                std::max(sc.cosineSimSum, 0.0),
-                                                std::max(sc.cosineSimMS1, 0.0),
-                                                std::pow(std::max(0.0, sc.cosineSimSpectrum), 3)
-                                        }}, weights, &results); ree;
+            e = ClassifierWeightsManager::applyWeights({scores}, weights, &results); ree;
 
             const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
 
@@ -359,6 +467,8 @@ namespace {
     Err buildScoredCandidatesFDRThresholded(
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             double fdrThreshold,
+            bool useExtendedScores,
+            int theoMzIonsSize,
             QVector<ScoredCandidate> *scoredCandidatesFDRThresholded
             ) {
 
@@ -369,8 +479,10 @@ namespace {
 
         QVector<QVector<double>> targetScoresVector;
         QVector<QVector<double>> decoyScoresVector;
-        e = buildClassifierInputForCalibration(
+        e = buildClassifierInput(
                 scoredCandidatesCalibration,
+                useExtendedScores,
+                theoMzIonsSize,
                 &targetScoresVector,
                 &decoyScoresVector
         ); ree;
@@ -393,6 +505,8 @@ namespace {
         e = separateScoredTargetDecoys(
                 scoredCandidatesCalibration,
                 weights,
+                useExtendedScores,
+                theoMzIonsSize,
                 &peptideStringWithModsVsScoredCandidateTargets,
                 &peptideStringWithModsVsDiscScoreTargets,
                 &peptideStringWithModsVsDiscScoreDecoys
@@ -432,7 +546,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
     );
 
-    qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments";
+    qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments for calibration";
 
     QVector<ScoredCandidate> scoredCandidatesCalibration;
     e = extractTargetDecoyData(
@@ -443,10 +557,14 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             &scoredCandidatesCalibration
     ); ree;
 
+    const bool useExtendedScores = false;
+
     QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
     e = buildScoredCandidatesFDRThresholded(
             scoredCandidatesCalibration,
             fdrThreshold,
+            useExtendedScores,
+            topNMs2IonsCalibration,
             &scoredCandidatesFDRThresholded
             ); ree;
 
@@ -771,10 +889,12 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
     ERR_INIT
 
     const int minTopNMs2Ions = 6;
-    const int topNMs2IonsCalibration = std::max(
+    const int topNMs2IonsOptimization = std::max(
             minTopNMs2Ions,
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
     );
+
+    qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
 
     const double selectionFractionBypassValue = 0.1;
     const double fdrThreshold = 0.01;
@@ -794,13 +914,15 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         int fdrCount = -1;
     };
 
+    const bool useExtendedScores = true;
+
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
         QVector<ScoredCandidate> scoredCandidatesCalibration;
         e = extractTargetDecoyData(
                 pythiaParams,
-                topNMs2IonsCalibration,
+                topNMs2IonsOptimization,
                 selectionFractionBypassValue,
                 msReaderParquet,
                 &scoredCandidatesCalibration
@@ -810,6 +932,8 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         e = buildScoredCandidatesFDRThresholded(
                 scoredCandidatesCalibration,
                 fdrThreshold,
+                useExtendedScores,
+                topNMs2IonsOptimization,
                 &scoredCandidatesFDRThresholded
         ); ree;
 

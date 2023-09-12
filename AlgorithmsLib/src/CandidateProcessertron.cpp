@@ -190,6 +190,9 @@ Err CandidateProcessertron::processCandidateTarget(
         ScoredCandidate *scoredCandidate
         ) {
 
+    //NOTE: that if this method is modified, there is an analogous method called processCandidateDecoy()
+    // that may also need to be updated.
+
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints); ree;
@@ -221,13 +224,12 @@ Err CandidateProcessertron::processCandidateTarget(
     }
     else {
 
-        const ScanTime scanTimeWindowTolerance = 5.0; // TODO auto set this in the calibration step.
         const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
         e = findCandidateIntegrations(
                 summedMatVecToVec,
                 m_pythiaParameters.minFoundMzPeaks,
                 scanTimePredicted,
-                scanTimeWindowTolerance,
+                m_pythiaParameters.scanTimeWindowMinutes,
                 &peakIntegrationIndexes
         ); ree;
 
@@ -1093,6 +1095,7 @@ Err CandidateProcessertron::processCandidateDecoy(
         scoredCandidateDecoy->isDecoy = true;
         scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
         scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
+
         ERR_RETURN
     }
 
