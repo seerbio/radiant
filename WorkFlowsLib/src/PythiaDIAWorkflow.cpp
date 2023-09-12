@@ -907,6 +907,12 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
             &pythiaParametersExperiments
             ); ree;
 
+//    PythiaParameters pars = m_pythiaParameters;
+//    pars.ms2ExtractionWidthPPM = 12.6052;
+//    pars.scanTimeWindowMinutes = 1.64017;
+//    pars.cosineSimToAnchorThreshold = 0.9;
+//    pythiaParametersExperiments = {pars};
+
     struct DOEResult {
         double mzStDev = -1.0;
         double scanTimeStDev = -1.0;
@@ -919,18 +925,18 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
-        QVector<ScoredCandidate> scoredCandidatesCalibration;
+        QVector<ScoredCandidate> scoredCandidatesOptimization;
         e = extractTargetDecoyData(
                 pythiaParams,
                 topNMs2IonsOptimization,
                 selectionFractionBypassValue,
                 msReaderParquet,
-                &scoredCandidatesCalibration
+                &scoredCandidatesOptimization
         ); ree;
 
         QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
         e = buildScoredCandidatesFDRThresholded(
-                scoredCandidatesCalibration,
+                scoredCandidatesOptimization,
                 fdrThreshold,
                 useExtendedScores,
                 topNMs2IonsOptimization,
