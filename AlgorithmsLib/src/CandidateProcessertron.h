@@ -50,6 +50,7 @@ namespace ScoredCandidateNamespace {
     const QString THEO_FRAG_CNT = QString("theoFragmentCount");
     const QString DISC_SCORE = QString("discriminateScore");
     const QString Q_VAL = QString("qValue");
+    const QString DECOY_RATIO = QString("decoyRatio");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM,
@@ -80,7 +81,8 @@ namespace ScoredCandidateNamespace {
             COSINE_SIM_MS1,
             THEO_FRAG_CNT,
             DISC_SCORE,
-            Q_VAL
+            Q_VAL,
+            DECOY_RATIO
     };
 }
 
@@ -115,6 +117,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
     double qValue = -1.0;
+    double decoyRatio = -1.0;
 
 //    double discScore = -1.0;
 //    double pVal = -1.0;
@@ -154,7 +157,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {COSINE_SIM_MS1, QVariant(cosineSimMS1)},
                 {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
                 {DISC_SCORE, QVariant(discriminateScore)},
-                {Q_VAL, QVariant(qValue)}
+                {Q_VAL, QVariant(qValue)},
+                {DECOY_RATIO, QVariant(decoyRatio)}
         };
     }
 
@@ -201,6 +205,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
+        decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
 
         ERR_RETURN
     }

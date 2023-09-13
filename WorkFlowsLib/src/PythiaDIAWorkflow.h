@@ -51,9 +51,8 @@ private:
     Err buildCalibration(MsReaderParquet *msReaderParquet);
 
     Err extractTargetDecoyData(
+            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
             const PythiaParameters &pythiaParameters,
-            int topNMs2Ions,
-            double selectionFraction,
             MsReaderParquet *msReaderParquet,
             QVector<ScoredCandidate> *combinedResults
     );
@@ -61,7 +60,6 @@ private:
     Err buildCandidates(
             int topNMs2Ions,
             double selectionListFraction,
-            MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
     );
 

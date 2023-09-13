@@ -102,12 +102,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
                     QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
             ); ree;
         }
-
     }
 #endif
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(msDataFilePath); ree;
+    m_msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
 
 #ifndef USE_FILE_CACHING
     e = deisotopeScans(&msReaderParquet); ree;
@@ -444,32 +444,33 @@ namespace {
         ERR_RETURN
     }
 
-    Err thresholdQValues(
-            const QMap<PeptideStringWithMods, ScoredCandidate> &peptideStringWithModsVsScoredCandidateTargets,
+    Err assignQValuesAndDecoyRatios(
             const QMap<QString, double> &identifierVsQValue,
-            double fdrThreshold,
-            QVector<ScoredCandidate> *scoredCandidatesFDRThresholded
+            const QMap<QString, double> &identifierVsDecoyRatio,
+            QVector<ScoredCandidate> *scoredCandidatesQValsUpdated
     ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(peptideStringWithModsVsScoredCandidateTargets); ree;
+        e = ErrorUtils::isNotEmpty(identifierVsDecoyRatio); ree;
         e = ErrorUtils::isNotEmpty(identifierVsQValue); ree;
-        e = ErrorUtils::isTrue(fdrThreshold > 0.0); ree;
+        e = ErrorUtils::isNotEmpty(*scoredCandidatesQValsUpdated); ree;
 
-        for (auto it = identifierVsQValue.begin(); it != identifierVsQValue.end(); it++) {
+        for (int i = 0; i < scoredCandidatesQValsUpdated->size(); i++) {
 
-            const QString &key = it.key();
-            const double qVal = it.value();
+            ScoredCandidate &sc = (*scoredCandidatesQValsUpdated)[i];
 
-            if (qVal > fdrThreshold) {
+            if (sc.isDecoy) {
                 continue;
             }
 
-            ScoredCandidate sc = peptideStringWithModsVsScoredCandidateTargets.value(key);
-            sc.qValue = qVal;
+            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
 
-            scoredCandidatesFDRThresholded->push_back(sc);
+            e = ErrorUtils::isTrue(identifierVsQValue.contains(key)); ree;
+            e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(key)); ree;
+
+            sc.qValue = identifierVsQValue.value(key);
+            sc.decoyRatio = identifierVsQValue.value(key);
         }
 
         ERR_RETURN
@@ -499,12 +500,11 @@ namespace {
         ERR_RETURN
     }
 
-    Err buildScoredCandidatesFDRThresholded(
+    Err buildScoredCandidatesFDR(
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             double fdrThreshold,
             bool useExtendedScores,
             int theoMzIonsSize,
-            QVector<ScoredCandidate> *scoredCandidatesFDRThresholded,
             QVector<ScoredCandidate> *scoredCandidatesAll
             ) {
 
@@ -565,12 +565,55 @@ namespace {
                 scoredCandidatesAll
                 ); ree;
 
-        e = thresholdQValues(
-                peptideStringWithModsVsScoredCandidateTargets,
+        e = assignQValuesAndDecoyRatios(
                 identifierVsQValue,
-                fdrThreshold,
-                scoredCandidatesFDRThresholded
+                identifierVsDecoyRatio,
+                scoredCandidatesAll
         ); ree;
+
+        ERR_RETURN
+    }
+
+    Err filterScoreCandidatesByFDR(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            double qValueThreshold,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+            if (sc.isDecoy || sc.qValue > qValueThreshold) {
+                continue;
+            }
+
+            scoredCandidatesTargetsFDRThresholded->push_back(sc);
+        }
+
+        ERR_RETURN
+    }
+
+    Err countScoreCandidatesByFDR(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            double qValueThreshold,
+            int *targetCountBelowFDRThreshold
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+        const auto countLogic = [qValueThreshold](const ScoredCandidate &sc){
+            return !sc.isDecoy && sc.qValue < qValueThreshold;
+        };
+
+        *targetCountBelowFDRThreshold
+            = static_cast<int>(std::count_if(scoredCandidatesAll.begin(), scoredCandidatesAll.end(), countLogic));
 
         ERR_RETURN
     }
@@ -591,31 +634,42 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments for calibration";
 
-    QVector<ScoredCandidate> scoredCandidatesCalibration;
-    e = extractTargetDecoyData(
-            m_pythiaParameters,
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+    e = buildCandidates(
             topNMs2IonsCalibration,
             calibrationSelectionFraction,
+            &uniqueInfoScanKeyVsCandidatePeptideCalibration
+    ); ree;
+
+    QVector<ScoredCandidate> scoredCandidatesCalibration;
+    e = extractTargetDecoyData(
+            uniqueInfoScanKeyVsCandidatePeptideCalibration,
+            m_pythiaParameters,
             msReaderParquet,
             &scoredCandidatesCalibration
     ); ree;
 
     const bool useExtendedScores = false;
 
-    QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
-    e = buildScoredCandidatesFDRThresholded(
+    e = buildScoredCandidatesFDR(
             scoredCandidatesCalibration,
             fdrThreshold,
             useExtendedScores,
             topNMs2IonsCalibration,
-            &scoredCandidatesFDRThresholded,
             &scoredCandidatesAll
             ); ree;
 
+    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+    e = filterScoreCandidatesByFDR(
+            scoredCandidatesAll,
+            fdrThreshold,
+            &scoredCandidatesTargetsFDRThresholded
+    ); ree;
+
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = buildMsCalibrationReaderRows(
-            scoredCandidatesFDRThresholded,
+            scoredCandidatesTargetsFDRThresholded,
             &msCalibrationReaderRows
             ); ree;
 
@@ -679,7 +733,7 @@ namespace {
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
         QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
         QMap<ScanNumber , ScanPoints> *scanPoints = nullptr;
-        QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptide = nullptr;
+        QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsCandidatePeptide;
     };
 
     QPair<Err, QVector<ScoredCandidate>> parallelProciessingLogic(const ParallelProcessingInput &ppi) {
@@ -696,7 +750,7 @@ namespace {
                 ppi.pythiaParameters,
                 *ppi.scanPoints,
                 ppi.scanNumberVsScanTimeMS1,
-                *ppi.peptideStringWithModsVsCandidatePeptide,
+                ppi.peptideStringWithModsVsCandidatePeptide,
                 ppi.scanNumberVsScanTime,
                 ppi.msCalibratomatic
                 ); rree;
@@ -711,22 +765,13 @@ namespace {
 
 }//namespace
 Err PythiaDIAWorkflow::extractTargetDecoyData(
+        const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
         const PythiaParameters &pythiaParameters,
-        int topNMs2Ions,
-        double selectionFraction,
         MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *combinedResults
         ) {
 
     ERR_INIT
-
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-    e = buildCandidates(
-            topNMs2Ions,
-            selectionFraction,
-            msReaderParquet,
-            &uniqueInfoScanKeyVsCandidatePeptideCalibration
-    ); ree;
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> uniqueInfoScanKeyVsScanPoints;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
@@ -747,7 +792,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
         ppi.msCalibratomatic = m_msCalibratomatic;
         ppi.pythiaParameters = pythiaParameters;
         ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
-        ppi.peptideStringWithModsVsCandidatePeptide = &uniqueInfoScanKeyVsCandidatePeptideCalibration[uniqueMsInfoScanKey];
+        ppi.peptideStringWithModsVsCandidatePeptide = uniqueInfoScanKeyVsCandidatePeptideCalibration[uniqueMsInfoScanKey];
 
         parallelProcessingInputs.push_back(ppi);
     }
@@ -784,7 +829,6 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
 Err PythiaDIAWorkflow::buildCandidates(
         int topNMs2Ions,
         double selectionListFraction,
-        MsReaderParquet *msReaderParquet,
         QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide = nullptr
 ) {
 
@@ -816,10 +860,6 @@ Err PythiaDIAWorkflow::buildCandidates(
                 &peptideSequenceChargeKeyVsCandidatePeptide
         ); ree;
 
-    }
-
-    if (m_msScanInfos.isEmpty()) {
-        m_msScanInfos = msReaderParquet->getUniqueTandemMsScanInfos();
     }
 
     const RTree rtree = loadScanInfoToRTree(m_msScanInfos);
@@ -944,34 +984,45 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 
     const bool useExtendedScores = true;
 
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+    e = buildCandidates(
+            topNMs2IonsOptimization,
+            selectionFractionValue,
+            &uniqueInfoScanKeyVsCandidatePeptideCalibration
+    ); ree;
+
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
         QVector<ScoredCandidate> scoredCandidatesOptimization;
         e = extractTargetDecoyData(
+                uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 pythiaParams,
-                topNMs2IonsOptimization,
-                selectionFractionValue,
                 msReaderParquet,
                 &scoredCandidatesOptimization
         ); ree;
 
-        QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
         QVector<ScoredCandidate> scoredCandidatesAll;
-        e = buildScoredCandidatesFDRThresholded(
+        e = buildScoredCandidatesFDR(
                 scoredCandidatesOptimization,
                 fdrThreshold,
                 useExtendedScores,
                 topNMs2IonsOptimization,
-                &scoredCandidatesFDRThresholded,
                 &scoredCandidatesAll
         ); ree;
+
+       int targetCountAboveFDRQValueThreshold;
+        e = countScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fdrThreshold,
+                &targetCountAboveFDRQValueThreshold
+                ); ree;
 
         DOEResult res;
         res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
         res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
         res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
-        res.fdrCount = scoredCandidatesFDRThresholded.size();
+        res.fdrCount = targetCountAboveFDRQValueThreshold;
         results.push_back(res);
     }
 
@@ -1014,29 +1065,40 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
     );
 
-    QVector<ScoredCandidate> scoredCandidatesOptimization;
-    e = extractTargetDecoyData(
-            m_pythiaParameters,
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+    e = buildCandidates(
             topNMs2IonsMainAnalysis,
             selectionFractionBypassValue,
+            &uniqueInfoScanKeyVsCandidatePeptideCalibration
+    ); ree;
+
+    QVector<ScoredCandidate> scoredCandidatesOptimization;
+    e = extractTargetDecoyData(
+            uniqueInfoScanKeyVsCandidatePeptideCalibration,
+            m_pythiaParameters,
             msReaderParquet,
             &scoredCandidatesOptimization
     ); ree;
 
     const bool useExtendedScores = true;
 
-    QVector<ScoredCandidate> scoredCandidatesFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
-    e = buildScoredCandidatesFDRThresholded(
+    e = buildScoredCandidatesFDR(
             scoredCandidatesOptimization,
             fdrThreshold,
             useExtendedScores,
             topNMs2IonsMainAnalysis,
-            &scoredCandidatesFDRThresholded,
             &scoredCandidatesAll
     ); ree;
 
-    qDebug() << scoredCandidatesFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
+    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+    e = filterScoreCandidatesByFDR(
+            scoredCandidatesAll,
+            fdrThreshold,
+            &scoredCandidatesTargetsFDRThresholded
+    ); ree;
+
+    qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
 
 
 //#define WRITE_FDR_PMSS
