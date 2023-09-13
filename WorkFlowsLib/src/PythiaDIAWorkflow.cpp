@@ -1215,10 +1215,10 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
         qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
     }
 
-//#define WRITE_FDR_PMSS
+#define WRITE_FDR_PMSS
 #ifdef WRITE_FDR_PMSS
     const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesFDRThresholded, resultsFilePath); ree;
+    e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
 #endif
 
 //#define WRITE_ALL_PMSS
