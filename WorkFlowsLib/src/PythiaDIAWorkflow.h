@@ -27,7 +27,7 @@ class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
 public:
 
-    PythiaDIAWorkflow() = default;
+    PythiaDIAWorkflow();
     ~PythiaDIAWorkflow() = default;
 
     Err init(
@@ -67,6 +67,8 @@ private:
 
     Err optimizeParameters(MsReaderParquet *msReaderParquet);
 
+    Err mainAnalysis(MsReaderParquet *msReaderParquet);
+
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
@@ -84,6 +86,8 @@ private:
     QVector<MsScanInfo> m_msScanInfos;
 
     MsCalibratomatic m_msCalibratomatic;
+
+    const int m_minTopNMs2Ions;
 
 };
 

@@ -240,99 +240,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     ERR_RETURN
 }
 
-namespace {
-
-    Err mutateCandidatePeptideTarget(
-            const CandidatePeptide &candidatePeptideTarget,
-            CandidatePeptide *candidatePeptideDecoy
-    ) {
-
-        ERR_INIT
-
-        const QMap<QChar, double> diannMutateAminoAcidTo = AminoAcids::diannMutateAminoAcidTo();
-
-        const QString &seq = candidatePeptideTarget.peptideStringWithMods;
-
-        const int firstIndexToMutate = 1;
-        const int secondIndexToMutate = seq.size() - 2;
-
-        const double nTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(firstIndexToMutate));
-        const double cTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(secondIndexToMutate));
-        const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
-        const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
-
-        QVector<MS2Ion> ms2IonDecoys;
-        for (const MS2Ion &ms2Ion : candidatePeptideTarget.ms2Ions) {
-
-            MS2Ion ms2IonDecoy = ms2Ion;
-
-            QPair<IonIndex, IonType> ionLableInfo;
-            e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo); ree;
-
-            if (ionLableInfo.second.contains('b')) {
-
-                if (ionLableInfo.second.contains("^2")) {
-
-                    if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
-                    }
-
-                    if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
-                    }
-                }
-                else {
-
-                    if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass;
-                    }
-
-                    if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass;
-                    }
-                }
-            }
-
-            else if (ionLableInfo.second.contains('y')) {
-
-                if (ionLableInfo.second.contains("^2")) {
-
-                    if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
-                    }
-
-                    if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
-                    }
-                }
-                else {
-
-                    if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass;
-                    }
-
-                    if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass;
-                    }
-                }
-            }
-
-            else {
-                qDebug() << "Non b/y ion" << ionLableInfo;
-            }
-
-            ms2IonDecoys.push_back(ms2IonDecoy);
-        }
-
-        *candidatePeptideDecoy = candidatePeptideTarget;
-        candidatePeptideDecoy->isDecoy = true;
-        candidatePeptideDecoy->mass += nTermDeltaMass + cTermDeltaMass;
-        candidatePeptideDecoy->ms2Ions = ms2IonDecoys;
-
-        ERR_RETURN
-    }
-
-}//namespace
 Err MsFrameScoretron::buildPeptideStringWithModsVsCandidatePeptideDecoys(
         QMap<PeptideStringWithMods, CandidatePeptide> *peptideStringWithModsVsCandidatePeptideDecoys
         ) {
@@ -344,7 +251,7 @@ Err MsFrameScoretron::buildPeptideStringWithModsVsCandidatePeptideDecoys(
     for (const CandidatePeptide &candidatePeptideTarget : m_fragPredsTopN) {
 
         CandidatePeptide candidatePeptideDecoy;
-        e = mutateCandidatePeptideTarget(
+        e = FragLibReader::mutateCandidatePeptideTarget(
                 candidatePeptideTarget,
                 &candidatePeptideDecoy
         ); ree;

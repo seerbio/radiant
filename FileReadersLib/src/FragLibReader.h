@@ -187,7 +187,10 @@ public:
 
     static Err convertDIANNLibToFragLib(const QString &specLibFilePath);
 
-
+    static Err mutateCandidatePeptideTarget(
+            const CandidatePeptide &candidatePeptideTarget,
+            CandidatePeptide *candidatePeptideDecoy
+    );
 
 private:
 

@@ -48,6 +48,8 @@ namespace ScoredCandidateNamespace {
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
     const QString COSINE_SIM_MS1 = QString("cosineSimMS1");
     const QString THEO_FRAG_CNT = QString("theoFragmentCount");
+    const QString DISC_SCORE = QString("discriminateScore");
+    const QString Q_VAL = QString("qValue");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM,
@@ -76,7 +78,9 @@ namespace ScoredCandidateNamespace {
             KL_DIV_SPECTRUM,
             COSINE_SIM_SPECTRUM,
             COSINE_SIM_MS1,
-            THEO_FRAG_CNT
+            THEO_FRAG_CNT,
+            DISC_SCORE,
+            Q_VAL
     };
 }
 
@@ -109,6 +113,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> fragmentFrequencyVec;
     QString targetKey;
     int theoFragmentCount = -1;
+    double discriminateScore = -1.0;
+    double qValue = -1.0;
 
 //    double discScore = -1.0;
 //    double pVal = -1.0;
@@ -147,6 +153,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_MS1, QVariant(cosineSimMS1)},
                 {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
+                {DISC_SCORE, QVariant(discriminateScore)},
+                {Q_VAL, QVariant(qValue)}
         };
     }
 
@@ -191,6 +199,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
         klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
+        discriminateScore = dataMap.value(DISC_SCORE).toDouble();
+        qValue = dataMap.value(Q_VAL).toDouble();
 
         ERR_RETURN
     }
