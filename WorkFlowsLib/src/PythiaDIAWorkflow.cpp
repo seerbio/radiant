@@ -4,6 +4,7 @@
 
 #include "PythiaDIAWorkflow.h"
 
+#include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
@@ -13,7 +14,7 @@
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
-#include "ClassifierWeightsManager.h"
+#include "TandemSpectraDeconvolvotron.h"
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -75,6 +76,166 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildPeptideStringWithModsVsScoreCandidatesDecoys(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoreCandidatesDecoys
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+            if (!sc.isDecoy) {
+                continue;
+            }
+
+            const QStringList splitPepStrWithMods = sc.peptideStringWithMods.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP);
+            e = ErrorUtils::isEqual(splitPepStrWithMods.size(), 2); ree;
+
+            const PeptideStringWithMods &peptideStringWithMods = splitPepStrWithMods.front();
+            peptideStringWithModsVsScoreCandidatesDecoys->insert(peptideStringWithMods, sc);
+
+        }
+
+        e = ErrorUtils::isNotEmpty(*peptideStringWithModsVsScoreCandidatesDecoys); ree
+
+        ERR_RETURN
+    }
+
+    Err buildMs2IonsFromScoredCandidate(
+            const ScoredCandidate &scoredCandidate,
+            QVector<MS2Ion> *ms2Ions
+            ) {
+
+        ERR_INIT
+
+        if (scoredCandidate.theoIntensityVec.isEmpty()) {
+            qDebug() << scoredCandidate.peptideStringWithMods;
+            qDebug() << scoredCandidate.mzSearchedVec;
+            qDebug() << scoredCandidate.intensityFoundMaxVec;
+        }
+
+        e = ErrorUtils::isNotEmpty(scoredCandidate.theoIntensityVec); ree;
+        e = ErrorUtils::isEqual(scoredCandidate.theoIntensityVec.size(), scoredCandidate.mzSearchedVec.size()); ree;
+
+        for (int i = 0; i < scoredCandidate.theoIntensityVec.size(); i++) {
+            const double intensity = scoredCandidate.theoIntensityVec.at(i);
+            const double mz = scoredCandidate.mzSearchedVec.at(i);
+
+            if (MathUtils::tZero(mz) || MathUtils::tZero(intensity)) {
+                continue;
+            }
+
+            MS2Ion ms2Ion;
+            ms2Ion.mz = mz;
+            ms2Ion.intensity = intensity;
+
+            ms2Ions->push_back(ms2Ion);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildTandemDeconvolutionInput(
+            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *scanNumberVsTandemPredictions
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesTargetsFDRThresholded); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+
+        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoreCandidatesDecoys;
+        e = buildPeptideStringWithModsVsScoreCandidatesDecoys(
+                scoredCandidatesAll,
+                &peptideStringWithModsVsScoreCandidatesDecoys
+                ); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesTargetsFDRThresholded) {
+            e = ErrorUtils::isTrue(peptideStringWithModsVsScoreCandidatesDecoys.contains(sc.peptideStringWithMods)); ree;
+
+            const ScoredCandidate &scoredCandidateDecoy
+                    = peptideStringWithModsVsScoreCandidatesDecoys.value(sc.peptideStringWithMods);
+
+            QVector<MS2Ion> ms2IonsTarget;
+            e = buildMs2IonsFromScoredCandidate(sc, &ms2IonsTarget); ree;
+            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(sc.peptideStringWithMods, ms2IonsTarget);
+
+            if(scoredCandidateDecoy.mzSearchedVec.isEmpty()) {
+                continue;
+            }
+
+            QVector<MS2Ion> ms2IonsDecoy;
+            e = buildMs2IonsFromScoredCandidate(scoredCandidateDecoy, &ms2IonsDecoy); ree;
+            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(scoredCandidateDecoy.peptideStringWithMods, ms2IonsDecoy);
+        }
+
+        for (auto it = scanNumberVsTandemPredictions->begin(); it != scanNumberVsTandemPredictions->end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &pepVsIons = it.value();
+
+            if (pepVsIons.size() > 2) {
+                continue;
+            }
+
+            scanNumberVsTandemPredictions->remove(scanNumber);
+        }
+
+        ERR_RETURN
+    }
+
+    Err tandemDeconvolutionLogic(const QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &input) {
+
+        ERR_INIT
+
+        TandemSpectraDeconvolvotron tandemSpectraDeconvolvotron;
+//        e = tandemSpectraDeconvolvotron.init(
+//                S_GLOBAL_SETTINGS.HASHING_PRECISION
+//                )
+
+
+        ERR_RETURN
+    }
+
+    Err deconvolveTandemSpectra(
+            const QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
+            MsReaderParquet *msReaderParquet
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(scanNumberVsTandemPredictions); ree;
+
+        const auto insertLogic = [msReaderParquet, scanNumberVsTandemPredictions](const ScanNumber sn){
+
+            ScanPoints scanPoints;
+            msReaderParquet->getScanPoints(sn, &scanPoints);
+            return QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>>(
+                    scanPoints,
+                    scanNumberVsTandemPredictions.value(sn)
+                    );
+        };
+
+        QVector<QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> scanPointsVsTandemPredictions;
+        const QList<ScanNumber> &scanNumbers = scanNumberVsTandemPredictions.keys();
+        std::transform(
+                scanNumbers.begin(),
+                scanNumbers.end(),
+                std::back_inserter(scanPointsVsTandemPredictions),
+                insertLogic
+                );
+
+
+        ERR_RETURN
+    }
+
+}
 Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     ERR_INIT
@@ -118,15 +279,35 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = optimizeParameters(&msReaderParquet); ree;
 
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+    QVector<ScoredCandidate> scoredCandidatesAll;
     e = mainAnalysis(
             &msReaderParquet,
-            &scoredCandidatesTargetsFDRThresholded
+            &scoredCandidatesTargetsFDRThresholded,
+            &scoredCandidatesAll
+            ); ree;
+
+    QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
+    e = buildTandemDeconvolutionInput(
+            scoredCandidatesTargetsFDRThresholded,
+            scoredCandidatesAll,
+            &scanNumberVsTandemPredictions
+            ); ree;
+
+    e = deconvolveTandemSpectra(
+            scanNumberVsTandemPredictions,
+            &msReaderParquet
             ); ree;
 
 #define WRITE_FDR_PMSS
 #ifdef WRITE_FDR_PMSS
     const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
+#endif
+
+//#define WRITE_ALL_PMSS
+#ifdef WRITE_ALL_PMSS
+    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesAll, resultsFilePath); ree;
 #endif
 
     ERR_RETURN
@@ -522,7 +703,7 @@ namespace {
 
         for (const ScoredCandidate &sc : peptideStringWithModsVsScoredCandidateDecoys) {
             ScoredCandidate scNew = sc;
-            scNew.peptideStringWithMods += "-DECOY";
+            scNew.peptideStringWithMods += (static_cast<QString>(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP) + "DECOY");
             scoredCandidatesAll->push_back(scNew);
         }
 
@@ -1183,7 +1364,8 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 
 Err PythiaDIAWorkflow::mainAnalysis(
         MsReaderParquet *msReaderParquet,
-        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
+        QVector<ScoredCandidate> *scoredCandidatesAll
         ) {
 
     ERR_INIT
@@ -1209,7 +1391,6 @@ Err PythiaDIAWorkflow::mainAnalysis(
     const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
 
-    QVector<ScoredCandidate> scoredCandidatesAll;
     e = extractionLoopLogic(
             uniqueInfoScanKeyVsCandidatePeptideCalibration,
             fdrThreshold,
@@ -1217,13 +1398,18 @@ Err PythiaDIAWorkflow::mainAnalysis(
             useNeuralNetworkScores,
             topNMs2IonsMainAnalysis,
             msReaderParquet,
-            &scoredCandidatesAll,
+            scoredCandidatesAll,
             scoredCandidatesTargetsFDRThresholded
     );
 
     const double fdrOnePercent = 0.01;
     int foundAtOnePercentFDR;
-    e = countScoreCandidatesByFDR(scoredCandidatesAll, fdrOnePercent, &foundAtOnePercentFDR); ree;
+    e = countScoreCandidatesByFDR(
+            *scoredCandidatesAll,
+            fdrOnePercent,
+            &foundAtOnePercentFDR
+            ); ree;
+
     qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
     qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
 
@@ -1251,11 +1437,15 @@ Err PythiaDIAWorkflow::mainAnalysis(
                 useNeuralNetworkScores,
                 topNMs2IonsMainAnalysis,
                 msReaderParquet,
-                &scoredCandidatesAll,
+                scoredCandidatesAll,
                 scoredCandidatesTargetsFDRThresholded
         );
 
-        e = countScoreCandidatesByFDR(scoredCandidatesAll, fdrOnePercent, &foundAtOnePercentFDR); ree;
+        e = countScoreCandidatesByFDR(
+                *scoredCandidatesAll,
+                fdrOnePercent,
+                &foundAtOnePercentFDR
+                ); ree;
 
 
         const double minQVal = std::min_element(
@@ -1274,12 +1464,6 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
         lastMinQVal = minQVal;
     }
-
-//#define WRITE_ALL_PMSS
-#ifdef WRITE_ALL_PMSS
-    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesAll, resultsFilePath); ree;
-#endif
 
     ERR_RETURN
 }

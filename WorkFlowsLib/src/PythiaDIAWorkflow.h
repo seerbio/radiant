@@ -83,7 +83,8 @@ private:
 
     Err mainAnalysis(
             MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
+            QVector<ScoredCandidate> *scoredCandidatesAll
             );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
