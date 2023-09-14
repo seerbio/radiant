@@ -81,7 +81,9 @@ private:
 
     Err optimizeParameters(MsReaderParquet *msReaderParquet);
 
-    Err mainAnalysis(MsReaderParquet *msReaderParquet);
+    Err mainAnalysis(
+            MsReaderParquet *msReaderParquet
+            );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
