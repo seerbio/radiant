@@ -182,8 +182,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
             diaTargetFrame.value(uniqueMsInfoScanKey),
             scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,
-            scanNumberVsScanTime,
-            iRTReCalFilePath
+            scanNumberVsScanTime
     );
     QCOMPARE(e, eNoError);
 

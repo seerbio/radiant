@@ -23,7 +23,6 @@ SET(TEST_CLASSES
         MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronTests
-        MsFrameScoretronProcessormaticTests
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests

@@ -20,7 +20,6 @@
 using namespace Error;
 
 class MsReaderParquet;
-class PSMsReaderRow;
 class ScoredCandidate;
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {

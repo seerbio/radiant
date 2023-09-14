@@ -32,7 +32,6 @@ SET(SOURCE_FILES
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
-        src/MsFrameScoretronProcessormatic.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
@@ -56,7 +55,6 @@ SET(HEADER_FILES
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h
-        src/MsFrameScoretronProcessormatic.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h

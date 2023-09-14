@@ -8,7 +8,6 @@
 #include "ErrorUtils.h"
 #include "IRTPredictron.h"
 #include "MsCalibratomatic.h"
-#include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "TandemSpectraDeconvolvotron.h"
 #include "TurboXIC.h"

@@ -165,6 +165,8 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
 
+    qDebug() << "Deisotoping start";
+
     QElapsedTimer et;
     et.start();
 
