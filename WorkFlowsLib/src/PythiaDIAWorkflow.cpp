@@ -1204,20 +1204,26 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
                 &uniqueInfoScanKeyVsCandidatePeptideCalibration
         ); ree;
 
+        QVector<ScoredCandidate> scoredCandidatesAllLoop;
+        QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholdedLoop;
         e = extractionLoopLogic(
                 uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 fdrThreshold,
                 useExtendedScores,
                 topNMs2IonsMainAnalysis,
                 msReaderParquet,
-                &scoredCandidatesAll,
-                &scoredCandidatesTargetsFDRThresholded
+                &scoredCandidatesAllLoop,
+                &scoredCandidatesTargetsFDRThresholdedLoop
         );
 
         e = countScoreCandidatesByFDR(scoredCandidatesAll, fdrOnePercent, &foundAtOnePercentFDR); ree;
+
         if (foundAtOnePercentFDR <= lastFDRCount) {
             break;
         }
+
+        scoredCandidatesAll = scoredCandidatesAllLoop;
+        scoredCandidatesTargetsFDRThresholdedLoop = scoredCandidatesTargetsFDRThresholdedLoop;
 
         qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
         qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
