@@ -241,6 +241,7 @@ namespace {
     QVector<double> buildScoreVector(
             const ScoredCandidate &scoreCandidate,
             bool useExtendedScores,
+            bool useNeuralNetworkScores,
             int theoMzIonsSize
             ) {
 
@@ -250,7 +251,7 @@ namespace {
                 std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3)
         };
 
-        if (useExtendedScores) {
+        if (useExtendedScores || useNeuralNetworkScores) {
             scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted));
             scores.push_back(scoreCandidate.theoFragmentCount);
             scores.push_back(scoreCandidate.charge);
@@ -258,10 +259,6 @@ namespace {
 
             scores.push_back(scoreCandidate.mass);
 
-//            const QVector<double> foundIntensities
-//                    = extractScoresFromVecFeatures(scoreCandidate.intensityFoundMaxVec, theoMzIonsSize);
-//            const double intensitySum = std::accumulate(foundIntensities.begin(), foundIntensities.end(), 0.0);
-//            scores.push_back(std::log(std::max(1.0, intensitySum)));
 //            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
 
             const QVector<double> cosineSimToAnchors
@@ -309,7 +306,15 @@ namespace {
                     );
             scores.append(intensityFoundMaxVecNorm);
 
-//            QVector<double> ppmVec;
+
+            const QVector<double> mzStDev
+                    = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
+            scores.append(mzStDev);
+
+        }
+
+        if (useNeuralNetworkScores) {
+            //            QVector<double> ppmVec;
 //            for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
 //
 //                const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
@@ -320,16 +325,11 @@ namespace {
 //                const double mzFound = scoreCandidate.mzFoundMeanVec[i];
 //
 //                const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-//                ppmVec.push_back(ppm);
+//                ppmVec.push_back(std::min(ppm, 100.0));
 //            }
 //            const QVector<double> ppmMz
 //                    = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
 //            scores.append(ppmMz);
-
-            const QVector<double> mzStDev
-                    = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
-            scores.append(mzStDev);
-
         }
 
         return scores;
@@ -338,6 +338,7 @@ namespace {
     Err buildClassifierInput(
             const QVector<ScoredCandidate> &scoredCandidates,
             bool useExtendedScores,
+            bool useNeuralNetworkScores,
             int theoMzIonsSize,
             QVector<QVector<double>> *targetScoresVector,
             QVector<QVector<double>> *decoyScoresVector
@@ -369,8 +370,19 @@ namespace {
 
             const ScoredCandidate scDecoy = decoys.value(key);
 
-            const QVector<double> targetScores = buildScoreVector(scTarget, useExtendedScores, theoMzIonsSize);
-            const QVector<double> decoyScores = buildScoreVector(scDecoy, useExtendedScores,theoMzIonsSize);
+            const QVector<double> targetScores = buildScoreVector(
+                    scTarget,
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    theoMzIonsSize
+                    );
+
+            const QVector<double> decoyScores = buildScoreVector(
+                    scDecoy,
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    theoMzIonsSize
+                    );
 
             targetScoresVector->push_back(targetScores);
             decoyScoresVector->push_back(decoyScores);
@@ -418,6 +430,7 @@ namespace {
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             const QVector<double> &weights,
             bool useExtendedScores,
+            bool useNeuralNetworkScores,
             const int theoMzIonsSize,
             QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateTargets,
             QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateDecoys,
@@ -432,7 +445,12 @@ namespace {
 
         for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
 
-            QVector<double> scores = buildScoreVector(sc, useExtendedScores, theoMzIonsSize);
+            QVector<double> scores = buildScoreVector(
+                    sc,
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    theoMzIonsSize
+                    );
 
             QVector<double> results;
             e = ClassifierWeightsManager::applyWeights({scores}, weights, &results); ree;
@@ -515,6 +533,7 @@ namespace {
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             double fdrThreshold,
             bool useExtendedScores,
+            bool useNeuralNetworkScores,
             int theoMzIonsSize,
             QVector<ScoredCandidate> *scoredCandidatesAll
             ) {
@@ -531,6 +550,7 @@ namespace {
         e = buildClassifierInput(
                 scoredCandidatesCalibration,
                 useExtendedScores,
+                useNeuralNetworkScores,
                 theoMzIonsSize,
                 &targetScoresVector,
                 &decoyScoresVector
@@ -556,6 +576,7 @@ namespace {
                 scoredCandidatesCalibration,
                 weights,
                 useExtendedScores,
+                useNeuralNetworkScores,
                 theoMzIonsSize,
                 &peptideStringWithModsVsScoredCandidateTargets,
                 &peptideStringWithModsVsScoredCandidateDecoys,
@@ -657,12 +678,14 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
     ); ree;
 
     const bool useExtendedScores = false;
+    const bool useNeuralNetworkScores = false;
     QVector<ScoredCandidate> scoredCandidatesAll;
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     e = extractionLoopLogic(
             uniqueInfoScanKeyVsCandidatePeptideCalibration,
             fdrThreshold,
             useExtendedScores,
+            useNeuralNetworkScores,
             topNMs2IonsCalibration,
             msReaderParquet,
             &scoredCandidatesAll,
@@ -691,6 +714,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
         double fdrThreshold,
         bool useExtendedScores,
+        bool useNeuralNetworkScores,
         int topNMs2IonsMainAnalysis,
         MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *scoredCandidatesAll,
@@ -710,6 +734,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
             scoredCandidatesOptimization,
             fdrThreshold,
             useExtendedScores,
+            useNeuralNetworkScores,
             topNMs2IonsMainAnalysis,
             scoredCandidatesAll
     ); ree;
@@ -1086,6 +1111,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
     };
 
     const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
 
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
     e = buildCandidates(
@@ -1110,6 +1136,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
                 scoredCandidatesOptimization,
                 fdrThreshold,
                 useExtendedScores,
+                useNeuralNetworkScores,
                 topNMs2IonsOptimization,
                 &scoredCandidatesAll
         ); ree;
@@ -1180,12 +1207,14 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     //TODO determine if this should be false w/ Entrapment experiements
     const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
 
     QVector<ScoredCandidate> scoredCandidatesAll;
     e = extractionLoopLogic(
             uniqueInfoScanKeyVsCandidatePeptideCalibration,
             fdrThreshold,
             useExtendedScores,
+            useNeuralNetworkScores,
             topNMs2IonsMainAnalysis,
             msReaderParquet,
             &scoredCandidatesAll,
@@ -1219,6 +1248,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
                 uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 fdrThreshold,
                 useExtendedScores,
+                useNeuralNetworkScores,
                 topNMs2IonsMainAnalysis,
                 msReaderParquet,
                 &scoredCandidatesAll,

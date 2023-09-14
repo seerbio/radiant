@@ -53,6 +53,7 @@ private:
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
             double fdrThreshold,
             bool useExtendedScores,
+            bool useNeuralNetworkScores,
             int topNMs2IonsMainAnalysis,
             MsReaderParquet *msReaderParquet,
             QVector<ScoredCandidate> *scoredCandidatesAll,
