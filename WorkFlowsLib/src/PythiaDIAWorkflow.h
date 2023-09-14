@@ -82,7 +82,8 @@ private:
     Err optimizeParameters(MsReaderParquet *msReaderParquet);
 
     Err mainAnalysis(
-            MsReaderParquet *msReaderParquet
+            MsReaderParquet *msReaderParquet,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
             );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(

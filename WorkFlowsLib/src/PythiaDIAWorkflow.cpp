@@ -117,10 +117,17 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = optimizeParameters(&msReaderParquet); ree;
 
-    e = mainAnalysis(&msReaderParquet); ree;
+    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+    e = mainAnalysis(
+            &msReaderParquet,
+            &scoredCandidatesTargetsFDRThresholded
+            ); ree;
 
-//    const QString resultsFilePath = msDataFilePath + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesCalibration, resultsFilePath); ree;
+#define WRITE_FDR_PMSS
+#ifdef WRITE_FDR_PMSS
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
+#endif
 
     ERR_RETURN
 }
@@ -1145,7 +1152,10 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
+Err PythiaDIAWorkflow::mainAnalysis(
+        MsReaderParquet *msReaderParquet,
+        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+        ) {
 
     ERR_INIT
 
@@ -1169,7 +1179,6 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
     //TODO determine if this should be false w/ Entrapment experiements
     const bool useExtendedScores = true;
 
-    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
     e = extractionLoopLogic(
             uniqueInfoScanKeyVsCandidatePeptideCalibration,
@@ -1178,23 +1187,22 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
             topNMs2IonsMainAnalysis,
             msReaderParquet,
             &scoredCandidatesAll,
-            &scoredCandidatesTargetsFDRThresholded
+            scoredCandidatesTargetsFDRThresholded
     );
 
     const double fdrOnePercent = 0.01;
     int foundAtOnePercentFDR;
     e = countScoreCandidatesByFDR(scoredCandidatesAll, fdrOnePercent, &foundAtOnePercentFDR); ree;
     qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-    qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
+    qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
 
-    int lastFDRCount = 0;
-//    while (true) {
-    for (int i = 0; i < 5; i++) {
+    double lastMinQVal = 1.0;
+    while (true) {
 
         QVector<PeptideStringWithMods> scoredCandidatesTargetsFDRThresholdedSequences;
         std::transform(
-                scoredCandidatesTargetsFDRThresholded.begin(),
-                scoredCandidatesTargetsFDRThresholded.end(),
+                scoredCandidatesTargetsFDRThresholded->begin(),
+                scoredCandidatesTargetsFDRThresholded->end(),
                 std::back_inserter(scoredCandidatesTargetsFDRThresholdedSequences),
                 [](const ScoredCandidate &sc){return sc.peptideStringWithMods;}
         );
@@ -1212,33 +1220,28 @@ Err PythiaDIAWorkflow::mainAnalysis(MsReaderParquet *msReaderParquet) {
                 topNMs2IonsMainAnalysis,
                 msReaderParquet,
                 &scoredCandidatesAll,
-                &scoredCandidatesTargetsFDRThresholded
+                scoredCandidatesTargetsFDRThresholded
         );
 
         e = countScoreCandidatesByFDR(scoredCandidatesAll, fdrOnePercent, &foundAtOnePercentFDR); ree;
 
 
         const double minQVal = std::min_element(
-                scoredCandidatesTargetsFDRThresholded.begin(),
-                scoredCandidatesTargetsFDRThresholded.end(),
+                scoredCandidatesTargetsFDRThresholded->begin(),
+                scoredCandidatesTargetsFDRThresholded->end(),
                 [](const ScoredCandidate &l, const ScoredCandidate &r){return l.qValue < r.qValue;}
                 )->qValue;
 
         qDebug() << "Min QValue" << minQVal;
         qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-        qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
+        qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
 
-        lastFDRCount = foundAtOnePercentFDR;
+        if (minQVal > lastMinQVal || MathUtils::tSame(minQVal, lastMinQVal)) {
+            break;
+        }
+
+        lastMinQVal = minQVal;
     }
-
-//    qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-//    qDebug() << scoredCandidatesTargetsFDRThresholded.size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
-
-#define WRITE_FDR_PMSS
-#ifdef WRITE_FDR_PMSS
-    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
-#endif
 
 //#define WRITE_ALL_PMSS
 #ifdef WRITE_ALL_PMSS
