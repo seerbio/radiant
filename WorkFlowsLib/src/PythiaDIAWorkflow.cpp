@@ -116,7 +116,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-#define BYPASS_OPTI
+//#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
@@ -273,7 +273,9 @@ namespace {
         QVector<double> scores = {
                 std::max(scoreCandidate.cosineSimSum, 0.0),
                 std::max(scoreCandidate.cosineSimMS1, 0.0),
-                std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3)
+                //TODO make sure you explore this again if FMR is too big during entrapment experiments
+//                std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3),
+                std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3)
         };
 
         if (useExtendedScores || useNeuralNetworkScores) {
@@ -281,7 +283,6 @@ namespace {
             scores.push_back(scoreCandidate.theoFragmentCount);
             scores.push_back(scoreCandidate.charge);
             scores.push_back(scoreCandidate.peptideStringWithMods.size());
-
             scores.push_back(scoreCandidate.mass);
 
 //            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
@@ -330,8 +331,7 @@ namespace {
                     [maxIntensity](double d){return d / maxIntensity;}
                     );
             scores.append(intensityFoundMaxVecNorm);
-
-
+            
             const QVector<double> mzStDev
                     = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
             scores.append(mzStDev);
