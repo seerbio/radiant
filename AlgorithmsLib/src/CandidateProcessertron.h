@@ -51,6 +51,10 @@ namespace ScoredCandidateNamespace {
     const QString DISC_SCORE = QString("discriminateScore");
     const QString Q_VAL = QString("qValue");
     const QString DECOY_RATIO = QString("decoyRatio");
+    const QString MATRIX_WEIGHT = QString("matrixWeight");
+    const QString MATRIX_PVAL = QString("matrixPVal");
+    const QString MATRIX_ERROR = QString("matrixError");
+    const QString SCAN_NUM_CAND_CNT = QString("scanNumberCandidateCount");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM,
@@ -82,7 +86,11 @@ namespace ScoredCandidateNamespace {
             THEO_FRAG_CNT,
             DISC_SCORE,
             Q_VAL,
-            DECOY_RATIO
+            DECOY_RATIO,
+            MATRIX_WEIGHT,
+            MATRIX_PVAL,
+            MATRIX_ERROR,
+            SCAN_NUM_CAND_CNT
     };
 }
 
@@ -116,8 +124,12 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
-    double qValue = -1.0;
+    double qValue = 1.0;
     double decoyRatio = -1.0;
+    double matrixWeight = -1.0;
+    double matrixPValue = 1.0;
+    double matrixError = 1.0;
+    int scanNumberCandidateCount = -1;
 
 //    double discScore = -1.0;
 //    double pVal = -1.0;
@@ -158,7 +170,11 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
                 {DISC_SCORE, QVariant(discriminateScore)},
                 {Q_VAL, QVariant(qValue)},
-                {DECOY_RATIO, QVariant(decoyRatio)}
+                {DECOY_RATIO, QVariant(decoyRatio)},
+                {MATRIX_WEIGHT, QVariant(matrixWeight)},
+                {MATRIX_PVAL, QVariant(matrixPValue)},
+                {MATRIX_ERROR, QVariant(matrixError)},
+                {SCAN_NUM_CAND_CNT, QVariant(scanNumberCandidateCount)}
         };
     }
 
@@ -206,6 +222,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
         decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
+        matrixWeight = dataMap.value(MATRIX_WEIGHT).toDouble();
+        matrixPValue = dataMap.value(MATRIX_PVAL).toDouble();
+        matrixError = dataMap.value(MATRIX_ERROR).toDouble();
+        scanNumberCandidateCount = dataMap.value(SCAN_NUM_CAND_CNT).toInt();
 
         ERR_RETURN
     }

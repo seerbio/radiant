@@ -169,6 +169,61 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     ERR_RETURN
 }
 
+Err ClassifierWeightsManager::buildDataClassifier2(
+        const QVector<QVector<double>> &targets,
+        const QVector<QVector<double>> &decoys,
+        QVector<QVector<double>> *A,
+        QVector<double> *b
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(targets); ree;
+    e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
+    e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
+
+    const Eigen::MatrixX<double> matTargets = convertQVectorsToEigenMatrix(targets);
+    const Eigen::MatrixX<double> matDecoys = convertQVectorsToEigenMatrix(decoys);
+
+    const Eigen::VectorX<double> matTargetsSum = matTargets.colwise().sum();
+    const Eigen::VectorX<double> matDecoysSum = matDecoys.colwise().sum();
+
+    const Eigen::VectorX<double> matTargetsSumMean = matTargetsSum / matTargets.rows();
+    const Eigen::VectorX<double> matDecoysSumMean = matDecoysSum / matTargets.rows();
+
+    const Eigen::MatrixX<double> subtractionMat = matTargets - matDecoys;
+    const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
+    const Eigen::VectorX<double> meanMat = subtractionMatSum / matTargets.rows();
+
+    *b = EigenUtils::convertEigenVectorToQVector(meanMat);
+
+    const int rows = targets.size();
+    const int cols = targets.front().size();
+
+    Eigen::MatrixX<double> matA(cols, cols);
+    matA.setZero();
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            for (int k = j; k < cols; k++) {
+                matA.coeffRef(j, k) += 0.5 *
+                                       ((decoys[i][j] - matDecoysSumMean[j]) * (decoys[i][k] - matDecoysSumMean[k]) +
+                                        (targets[i][j] - matTargetsSumMean[j]) * (targets[i][k] - matTargetsSumMean[k]));
+                matA.coeffRef(k, j) = matA.coeffRef(j, k);
+            }
+        }
+    }
+
+    matA /= rows - 1;
+    for (int i = 0; i < cols; i++) {
+        matA.coeffRef(i, i) += std::numeric_limits<double>::min();
+    }
+
+    *A = convertEigenMatrixToQVectors(matA);
+
+    ERR_RETURN
+}
+
 Err ClassifierWeightsManager::applyWeights(
         const QVector<QVector<double>> &matA,
         const QVector<double> &weights,

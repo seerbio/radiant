@@ -87,6 +87,13 @@ private:
             QVector<ScoredCandidate> *scoredCandidatesAll
             );
 
+    Err removeInterferingCandidates(
+            MsReaderParquet *msReaderParquet,
+            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QVector<ScoredCandidate> *scoredCandidatesAllUpdated
+            );
+
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,

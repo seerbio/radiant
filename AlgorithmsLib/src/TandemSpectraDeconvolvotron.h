@@ -21,6 +21,7 @@ struct TandemDeconvolverResult {
     double frameFStat = -1.0;
     double pValFrameFtest = -1.0;
     double frameError = -1.0;
+    int scanNumberCandidateCount = -1;
 };
 
 
@@ -44,8 +45,7 @@ public:
             const ScanPoints &scanPoints,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
             QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
-            ) const;
-
+            );
 
 private:
 

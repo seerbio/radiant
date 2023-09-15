@@ -49,6 +49,13 @@ public:
             QVector<double> *b
             );
 
+    static Err buildDataClassifier2(
+            const QVector<QVector<double>> &targets,
+            const QVector<QVector<double>> &decoys,
+            QVector<QVector<double>> *A,
+            QVector<double> *b
+    );
+
     static Err fitWeights(
             const QVector<QVector<double>> &matA,
             const QVector<double> &vecB,

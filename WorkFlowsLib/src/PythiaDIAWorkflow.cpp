@@ -76,166 +76,6 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
-namespace {
-
-    Err buildPeptideStringWithModsVsScoreCandidatesDecoys(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoreCandidatesDecoys
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-
-        for (const ScoredCandidate &sc : scoredCandidatesAll) {
-
-            if (!sc.isDecoy) {
-                continue;
-            }
-
-            const QStringList splitPepStrWithMods = sc.peptideStringWithMods.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP);
-            e = ErrorUtils::isEqual(splitPepStrWithMods.size(), 2); ree;
-
-            const PeptideStringWithMods &peptideStringWithMods = splitPepStrWithMods.front();
-            peptideStringWithModsVsScoreCandidatesDecoys->insert(peptideStringWithMods, sc);
-
-        }
-
-        e = ErrorUtils::isNotEmpty(*peptideStringWithModsVsScoreCandidatesDecoys); ree
-
-        ERR_RETURN
-    }
-
-    Err buildMs2IonsFromScoredCandidate(
-            const ScoredCandidate &scoredCandidate,
-            QVector<MS2Ion> *ms2Ions
-            ) {
-
-        ERR_INIT
-
-        if (scoredCandidate.theoIntensityVec.isEmpty()) {
-            qDebug() << scoredCandidate.peptideStringWithMods;
-            qDebug() << scoredCandidate.mzSearchedVec;
-            qDebug() << scoredCandidate.intensityFoundMaxVec;
-        }
-
-        e = ErrorUtils::isNotEmpty(scoredCandidate.theoIntensityVec); ree;
-        e = ErrorUtils::isEqual(scoredCandidate.theoIntensityVec.size(), scoredCandidate.mzSearchedVec.size()); ree;
-
-        for (int i = 0; i < scoredCandidate.theoIntensityVec.size(); i++) {
-            const double intensity = scoredCandidate.theoIntensityVec.at(i);
-            const double mz = scoredCandidate.mzSearchedVec.at(i);
-
-            if (MathUtils::tZero(mz) || MathUtils::tZero(intensity)) {
-                continue;
-            }
-
-            MS2Ion ms2Ion;
-            ms2Ion.mz = mz;
-            ms2Ion.intensity = intensity;
-
-            ms2Ions->push_back(ms2Ion);
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildTandemDeconvolutionInput(
-            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *scanNumberVsTandemPredictions
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scoredCandidatesTargetsFDRThresholded); ree;
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-
-        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoreCandidatesDecoys;
-        e = buildPeptideStringWithModsVsScoreCandidatesDecoys(
-                scoredCandidatesAll,
-                &peptideStringWithModsVsScoreCandidatesDecoys
-                ); ree;
-
-        for (const ScoredCandidate &sc : scoredCandidatesTargetsFDRThresholded) {
-            e = ErrorUtils::isTrue(peptideStringWithModsVsScoreCandidatesDecoys.contains(sc.peptideStringWithMods)); ree;
-
-            const ScoredCandidate &scoredCandidateDecoy
-                    = peptideStringWithModsVsScoreCandidatesDecoys.value(sc.peptideStringWithMods);
-
-            QVector<MS2Ion> ms2IonsTarget;
-            e = buildMs2IonsFromScoredCandidate(sc, &ms2IonsTarget); ree;
-            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(sc.peptideStringWithMods, ms2IonsTarget);
-
-            if(scoredCandidateDecoy.mzSearchedVec.isEmpty()) {
-                continue;
-            }
-
-            QVector<MS2Ion> ms2IonsDecoy;
-            e = buildMs2IonsFromScoredCandidate(scoredCandidateDecoy, &ms2IonsDecoy); ree;
-            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(scoredCandidateDecoy.peptideStringWithMods, ms2IonsDecoy);
-        }
-
-        for (auto it = scanNumberVsTandemPredictions->begin(); it != scanNumberVsTandemPredictions->end(); it++) {
-
-            const ScanNumber scanNumber = it.key();
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &pepVsIons = it.value();
-
-            if (pepVsIons.size() > 2) {
-                continue;
-            }
-
-            scanNumberVsTandemPredictions->remove(scanNumber);
-        }
-
-        ERR_RETURN
-    }
-
-    Err tandemDeconvolutionLogic(const QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &input) {
-
-        ERR_INIT
-
-        TandemSpectraDeconvolvotron tandemSpectraDeconvolvotron;
-//        e = tandemSpectraDeconvolvotron.init(
-//                S_GLOBAL_SETTINGS.HASHING_PRECISION
-//                )
-
-
-        ERR_RETURN
-    }
-
-    Err deconvolveTandemSpectra(
-            const QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
-            MsReaderParquet *msReaderParquet
-            ) {
-
-        ERR_INIT
-        e = ErrorUtils::isNotEmpty(scanNumberVsTandemPredictions); ree;
-
-        const auto insertLogic = [msReaderParquet, scanNumberVsTandemPredictions](const ScanNumber sn){
-
-            ScanPoints scanPoints;
-            msReaderParquet->getScanPoints(sn, &scanPoints);
-            return QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>>(
-                    scanPoints,
-                    scanNumberVsTandemPredictions.value(sn)
-                    );
-        };
-
-        QVector<QPair<ScanPoints, QMap<PeptideStringWithMods, QVector<MS2Ion>>>> scanPointsVsTandemPredictions;
-        const QList<ScanNumber> &scanNumbers = scanNumberVsTandemPredictions.keys();
-        std::transform(
-                scanNumbers.begin(),
-                scanNumbers.end(),
-                std::back_inserter(scanPointsVsTandemPredictions),
-                insertLogic
-                );
-
-
-        ERR_RETURN
-    }
-
-}
 Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     ERR_INIT
@@ -276,7 +116,14 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
+#define BYPASS_OPTI
+#ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
+#else
+    m_pythiaParameters.ms2ExtractionWidthPPM = 12.6052;
+    m_pythiaParameters.scanTimeWindowMinutes = 1.64017;
+    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+#endif
 
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
@@ -286,28 +133,24 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAll
             ); ree;
 
-    QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
-    e = buildTandemDeconvolutionInput(
+    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
+    e = removeInterferingCandidates(
+            &msReaderParquet,
             scoredCandidatesTargetsFDRThresholded,
             scoredCandidatesAll,
-            &scanNumberVsTandemPredictions
+            &scoredCandidatesAllUpdated
             ); ree;
 
-    e = deconvolveTandemSpectra(
-            scanNumberVsTandemPredictions,
-            &msReaderParquet
-            ); ree;
-
-#define WRITE_FDR_PMSS
+//#define WRITE_FDR_PMSS
 #ifdef WRITE_FDR_PMSS
     const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
 #endif
 
-//#define WRITE_ALL_PMSS
+#define WRITE_ALL_PMSS
 #ifdef WRITE_ALL_PMSS
-    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesAll, resultsFilePath); ree;
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
 #endif
 
     ERR_RETURN
@@ -1278,12 +1121,6 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
             &pythiaParametersExperiments
             ); ree;
 
-//    PythiaParameters pars = m_pythiaParameters;
-//    pars.ms2ExtractionWidthPPM = 12.6052;
-//    pars.scanTimeWindowMinutes = 1.64017;
-//    pars.cosineSimToAnchorThreshold = 0.9;
-//    pythiaParametersExperiments = {pars};
-
     struct DOEResult {
         double mzStDev = -1.0;
         double scanTimeStDev = -1.0;
@@ -1463,6 +1300,276 @@ Err PythiaDIAWorkflow::mainAnalysis(
         }
 
         lastMinQVal = minQVal;
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildPeptideStringWithModsVsScoreCandidatesDecoys(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoreCandidatesDecoys
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+            if (!sc.isDecoy) {
+                continue;
+            }
+
+            const QStringList splitPepStrWithMods = sc.peptideStringWithMods.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP);
+            e = ErrorUtils::isEqual(splitPepStrWithMods.size(), 2); ree;
+
+            const PeptideStringWithMods &peptideStringWithMods = splitPepStrWithMods.front();
+            peptideStringWithModsVsScoreCandidatesDecoys->insert(peptideStringWithMods, sc);
+
+        }
+
+        e = ErrorUtils::isNotEmpty(*peptideStringWithModsVsScoreCandidatesDecoys); ree
+
+        ERR_RETURN
+    }
+
+    Err buildMs2IonsFromScoredCandidate(
+            const ScoredCandidate &scoredCandidate,
+            QVector<MS2Ion> *ms2Ions
+    ) {
+
+        ERR_INIT
+
+        if (scoredCandidate.theoIntensityVec.isEmpty()) {
+            qDebug() << scoredCandidate.peptideStringWithMods;
+            qDebug() << scoredCandidate.mzSearchedVec;
+            qDebug() << scoredCandidate.intensityFoundMaxVec;
+        }
+
+        e = ErrorUtils::isNotEmpty(scoredCandidate.theoIntensityVec); ree;
+        e = ErrorUtils::isEqual(scoredCandidate.theoIntensityVec.size(), scoredCandidate.mzSearchedVec.size()); ree;
+
+        for (int i = 0; i < scoredCandidate.theoIntensityVec.size(); i++) {
+            const double intensity = scoredCandidate.theoIntensityVec.at(i);
+            const double mz = scoredCandidate.mzSearchedVec.at(i);
+
+            if (MathUtils::tZero(mz) || MathUtils::tZero(intensity)) {
+                continue;
+            }
+
+            MS2Ion ms2Ion;
+            ms2Ion.mz = mz;
+            ms2Ion.intensity = intensity;
+
+            ms2Ions->push_back(ms2Ion);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildTandemDeconvolutionInput(
+            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *scanNumberVsTandemPredictions
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesTargetsFDRThresholded); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+
+        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoreCandidatesDecoys;
+        e = buildPeptideStringWithModsVsScoreCandidatesDecoys(
+                scoredCandidatesAll,
+                &peptideStringWithModsVsScoreCandidatesDecoys
+        ); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidatesTargetsFDRThresholded) {
+            e = ErrorUtils::isTrue(peptideStringWithModsVsScoreCandidatesDecoys.contains(sc.peptideStringWithMods)); ree;
+
+            const ScoredCandidate &scoredCandidateDecoy
+                    = peptideStringWithModsVsScoreCandidatesDecoys.value(sc.peptideStringWithMods);
+
+            QVector<MS2Ion> ms2IonsTarget;
+            e = buildMs2IonsFromScoredCandidate(sc, &ms2IonsTarget); ree;
+            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(sc.peptideStringWithMods, ms2IonsTarget);
+
+            if(scoredCandidateDecoy.mzSearchedVec.isEmpty()) {
+                continue;
+            }
+
+            QVector<MS2Ion> ms2IonsDecoy;
+            e = buildMs2IonsFromScoredCandidate(scoredCandidateDecoy, &ms2IonsDecoy); ree;
+            (*scanNumberVsTandemPredictions)[sc.scanNumber].insert(scoredCandidateDecoy.peptideStringWithMods, ms2IonsDecoy);
+        }
+
+        ERR_RETURN
+    }
+
+    struct DeconVol {
+        ScanNumber scanNumber = -1;
+        ScanPoints scanPoints;
+        QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions;
+    };
+
+    struct DeconResult {
+        Err e = eNoError;
+        ScanNumber scanNumber = -1;
+        QMap<PeptideStringWithMods, TandemDeconvolverResult> tandemDeconvolverResult;
+    };
+
+    DeconResult tandemDeconvolutionLogic(
+            const DeconVol &deconVol,
+            const PythiaParameters &params
+    ) {
+
+        ERR_INIT
+
+        const int maxIteration= 20;
+        const double stopTol = 0.000000001;
+        const double pValThreshold = 0.05;
+
+        DeconResult deconResult;
+
+        TandemSpectraDeconvolvotron tandemSpectraDeconvolvotron;
+        e = tandemSpectraDeconvolvotron.init(
+                S_GLOBAL_SETTINGS.HASHING_PRECISION,
+                params.mzMaxDataStructure,
+                params.ms2ExtractionWidthPPM,
+                maxIteration,
+                stopTol,
+                pValThreshold
+        );
+        if (e != eNoError){
+            return deconResult;
+        }
+
+        QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsWeight;
+        e = tandemSpectraDeconvolvotron.deconvolveTandemSpectra(
+                deconVol.scanPoints,
+                deconVol.tandemPredictions,
+                &pepSeqVsWeight
+        );
+        if (e != eNoError){
+            return deconResult;
+        }
+
+        deconResult.e = e;
+        deconResult.scanNumber = deconVol.scanNumber;
+        deconResult.tandemDeconvolverResult = pepSeqVsWeight;
+
+        return deconResult;
+    }
+
+    Err deconvolveTandemSpectra(
+            const QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
+            const PythiaParameters &params,
+            MsReaderParquet *msReaderParquet,
+            QMap<ScanNumber, QMap<PeptideStringWithMods, TandemDeconvolverResult>> *scanNumberVsTandemDeconvolverResult
+    ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(scanNumberVsTandemPredictions); ree;
+
+        QElapsedTimer et;
+        et.start();
+
+        const auto insertLogic = [msReaderParquet, scanNumberVsTandemPredictions](const ScanNumber sn){
+
+            DeconVol deconVol;
+            deconVol.scanNumber = sn;
+            deconVol.tandemPredictions = scanNumberVsTandemPredictions.value(sn);
+            msReaderParquet->getScanPoints(sn, &deconVol.scanPoints);
+
+            return deconVol;
+        };
+
+        QVector<DeconVol> scanPointsVsTandemPredictions;
+        const QList<ScanNumber> &scanNumbers = scanNumberVsTandemPredictions.keys();
+        std::transform(
+                scanNumbers.begin(),
+                scanNumbers.end(),
+                std::back_inserter(scanPointsVsTandemPredictions),
+                insertLogic
+        );
+
+#define PARALLEL_DECONVOLVE
+#ifdef PARALLEL_DECONVOLVE
+        const auto deconvolutionLogicBinder = std::bind(
+            tandemDeconvolutionLogic,
+            std::placeholders::_1,
+            params
+        );
+
+        QFuture<DeconResult> futures = QtConcurrent::mapped(
+                scanPointsVsTandemPredictions,
+                deconvolutionLogicBinder
+                );
+        futures.waitForFinished();
+
+        for (const DeconResult &result : futures) {
+            e = result.e; ree;
+            (*scanNumberVsTandemDeconvolverResult)[result.scanNumber] = result.tandemDeconvolverResult;
+        }
+#else
+        for (const DeconVol &deconVol : scanPointsVsTandemPredictions) {
+
+            const DeconResult result = tandemDeconvolutionLogic(
+                    deconVol,
+                    params
+            );
+
+            e = result.e; ree;
+            (*scanNumberVsTandemDeconvolverResult)[result.scanNumber] = result.tandemDeconvolverResult;
+        }
+#endif
+
+        qDebug() << "Deconvolution finished in" << et.elapsed() << "mSec";
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::removeInterferingCandidates(
+        MsReaderParquet *msReaderParquet,
+        const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
+        QVector<ScoredCandidate> *scoredCandidatesAllUpdated
+        ) {
+
+    ERR_INIT
+
+    QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
+    e = buildTandemDeconvolutionInput(
+            scoredCandidatesTargetsFDRThresholded,
+            scoredCandidatesAll,
+            &scanNumberVsTandemPredictions
+    ); ree;
+
+    QMap<ScanNumber, QMap<PeptideStringWithMods, TandemDeconvolverResult>> scanNumberVsTandemDeconvolverResult;
+    e = deconvolveTandemSpectra(
+            scanNumberVsTandemPredictions,
+            m_pythiaParameters,
+            msReaderParquet,
+            &scanNumberVsTandemDeconvolverResult
+    ); ree;
+
+    for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+        const QMap<PeptideStringWithMods, TandemDeconvolverResult> &tandemResult
+                = scanNumberVsTandemDeconvolverResult.value(sc.scanNumber);
+
+        const TandemDeconvolverResult &tandemDeconvolverResult = tandemResult.value(sc.peptideStringWithMods);
+
+        ScoredCandidate scNew = sc;
+        scNew.matrixWeight = tandemDeconvolverResult.discScore;
+        scNew.matrixPValue = tandemDeconvolverResult.pVal;
+        scNew.matrixError = tandemDeconvolverResult.frameError;
+        scNew.scanNumberCandidateCount = tandemDeconvolverResult.scanNumberCandidateCount;
+
+        scoredCandidatesAllUpdated->push_back(scNew);
     }
 
     ERR_RETURN
