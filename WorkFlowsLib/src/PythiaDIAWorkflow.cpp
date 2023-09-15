@@ -141,6 +141,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
+
 //#define WRITE_FDR_PMSS
 #ifdef WRITE_FDR_PMSS
     const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
@@ -1531,6 +1532,22 @@ namespace {
         ERR_RETURN
     }
 
+    void filterScoredCandidatesByWeightAndPVal(QVector<ScoredCandidate> *scoredCandidatesAllUpdated) {
+
+        const double pValThreshold = 0.05;
+        const double weightThreshold = 0.0;
+        const auto terminatorLogic = [weightThreshold, pValThreshold](const ScoredCandidate &s){
+            return s.matrixWeight < weightThreshold || s.matrixPValue > pValThreshold;
+        };
+
+        const auto terminator = std::remove_if(
+                scoredCandidatesAllUpdated->begin(),
+                scoredCandidatesAllUpdated->end(),
+                terminatorLogic
+        );
+        scoredCandidatesAllUpdated->erase(terminator, scoredCandidatesAllUpdated->end());
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::removeInterferingCandidates(
         MsReaderParquet *msReaderParquet,
@@ -1571,6 +1588,8 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 
         scoredCandidatesAllUpdated->push_back(scNew);
     }
+
+    filterScoredCandidatesByWeightAndPVal(scoredCandidatesAllUpdated);
 
     ERR_RETURN
 }
