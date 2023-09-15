@@ -131,11 +131,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double matrixError = 1.0;
     int scanNumberCandidateCount = -1;
 
-//    double discScore = -1.0;
-//    double pVal = -1.0;
-//    double frameError = -1.0;
-//    double tTestVal = -1.0;
-
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;

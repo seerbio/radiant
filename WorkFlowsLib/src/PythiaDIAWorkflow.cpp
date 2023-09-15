@@ -331,7 +331,7 @@ namespace {
                     [maxIntensity](double d){return d / maxIntensity;}
                     );
             scores.append(intensityFoundMaxVecNorm);
-            
+
             const QVector<double> mzStDev
                     = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
             scores.append(mzStDev);
