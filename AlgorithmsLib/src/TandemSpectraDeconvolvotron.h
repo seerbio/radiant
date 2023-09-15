@@ -34,6 +34,7 @@ public:
     Err init(
             int precision,
             double mzMax,
+            double ppmTol,
             int iterationsMax,
             double stopTolerance,
             double pValThreshold
@@ -53,6 +54,7 @@ private:
     double m_mzMax;
     double m_stopTolerance;
     double m_pValThreshold;
+    double m_ppmTol;
 
     bool m_isInit;
 
