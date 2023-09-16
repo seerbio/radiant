@@ -1285,7 +1285,6 @@ Err PythiaDIAWorkflow::mainAnalysis(
                 &foundAtOnePercentFDR
                 ); ree;
 
-
         const double minQVal = std::min_element(
                 scoredCandidatesTargetsFDRThresholded->begin(),
                 scoredCandidatesTargetsFDRThresholded->end(),

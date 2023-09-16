@@ -103,7 +103,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
@@ -430,5 +429,3 @@ Err MsFrameScoretron::buildMS2Peaks(
 
     ERR_RETURN
 }
-
-
