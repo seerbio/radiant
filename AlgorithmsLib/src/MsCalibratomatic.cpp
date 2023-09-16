@@ -66,7 +66,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(data); ree;
 
         const double testFraction = 0.2;
-        const int seed = 666;
+        const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<XVal, YVal>> trainingData;
         QVector<QPair<XVal, YVal>> testData;
@@ -244,7 +244,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(inputs); ree;
 
         const double testFraction = 0.2;
-        const int seed = 666;
+        const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<double, double>> data;
         std::transform(

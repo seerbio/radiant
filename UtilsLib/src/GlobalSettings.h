@@ -329,6 +329,8 @@ public:
     const QString B_H2O_IONS =  QStringLiteral("bH20");
     const QString PRECURSOR_IONS =  QStringLiteral("precursorIons");
 
+    const int NUMBER_OF_THE_BEAST = 666;
+
     static QString VERSION();
 };
 

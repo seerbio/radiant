@@ -94,6 +94,16 @@ private:
             QVector<ScoredCandidate> *scoredCandidatesAllUpdated
             );
 
+    Err applyNeuralNetClassifier(
+            const QVector<ScoredCandidate> &scoredCandidatesCulled,
+            MsReaderParquet *msReaderParquet
+            );
+
+    Err returnAllCandidatesScoredFullFragIons(
+            MsReaderParquet *msReaderParquet,
+            QVector<ScoredCandidate> *scoredCandidatesAllTemp
+            );
+
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
