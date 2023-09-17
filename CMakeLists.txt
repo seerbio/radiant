@@ -64,8 +64,7 @@ SET(ARROW_STATIC_LIBRARY_DEPS "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parque
 SET(PARQUET_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.a")
 SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100")
 SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100")
-SET(TENSORFLOW_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/include")
-SET(TENSORFLOW_LIB_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow.so")
+SET(PYTORCH_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtorch")
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")

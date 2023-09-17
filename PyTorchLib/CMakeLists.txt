@@ -51,7 +51,7 @@ FIND_PACKAGE(Qt5 REQUIRED
         Sql
         )
 
-list(APPEND CMAKE_PREFIX_PATH "/home/anichols/Repositories/PythiaDIACpp/ThirdPartyLibs/libtorch")
+list(APPEND CMAKE_PREFIX_PATH ${PYTORCH_PREFIX_PATH})
 
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
