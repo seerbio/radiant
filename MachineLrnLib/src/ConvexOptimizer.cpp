@@ -120,35 +120,8 @@ void exampleResidual(const VectorXd& x, VectorXd& f)
 
 Err ConvexOptimizer::test() {
 
-//    Eigen::VectorXd a(10);
-//    a << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
-//
-//    Eigen::VectorXd b(10);
-//    b << 2, 3, 4, 5, 6, 7, 8, 9, 10, 11;
-//
-//    Eigen::VectorXd c(10);
-//    c << 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
-//
-//    Eigen::VectorXd y(10);
-//    y << 10, 20, 30, 40, 50, 40, 30, 20, 10, 0;
-//
-//
-//    Eigen::MatrixX<double> A(a.size(), 3);
-//    A.col(0) = a;
-//    A.col(1) = b;
-//    A.col(2) = c;
-//
-//    std::cout << A << std::endl;
-//
-//    int N = y.size();
-//
-//
-//
-//    levenbergMarquardt(exampleResidual, A, y);
-//
-//    std::cout << "Optimized x: " << A << std::endl;
+    ERR_INIT
 
-// Initialize the TensorFlow library
     TF_Status* status = TF_NewStatus();
     TF_Graph* graph = TF_NewGraph();
     TF_SessionOptions* session_options = TF_NewSessionOptions();
@@ -157,47 +130,27 @@ Err ConvexOptimizer::test() {
 
     if (TF_GetCode(status) != TF_OK) {
         std::cerr << "Error initializing TensorFlow: " << TF_Message(status) << std::endl;
-        return eNoError;
+        ERR_RETURN
     }
 
     // Define the computation graph
-    TF_OperationDescription* desc = TF_NewOperation(graph, "Placeholder", "input");
-    TF_Operation* input = TF_FinishOperation(desc, status);
+    // ... (create input, hidden layers, batch normalization, output layers)
 
-    desc = TF_NewOperation(graph, "Const", "weights");
-    float weight_value = 2.0;
-    TF_Tensor* weight_tensor = TF_AllocateTensor(TF_FLOAT, nullptr, 0, sizeof(float));
-    float* weight_data = static_cast<float*>(TF_TensorData(weight_tensor));
-    *weight_data = weight_value;
-    TF_SetAttrTensor(desc, "value", weight_tensor, status);
-    TF_Operation* weights = TF_FinishOperation(desc, status);
+    // Define loss function and optimizer
+    // ... (create loss node, optimizer, etc.)
 
-//    desc = TF_NewOperation(graph, "MatMul", "output");
-//    TF_Input inputs[2] = {TF_Output{input, 0}, TF_Output{weights, 0}};
-//    TF_SetInputs(desc, inputs, 2);
-//    TF_Operation* output = TF_FinishOperation(desc, status);
-//
-//    // Initialize input data
-//    std::vector<float> input_data = {3.0};
-//    std::vector<TF_Tensor*> input_tensors;
-//    TF_Tensor* input_tensor = TF_AllocateTensor(TF_FLOAT, nullptr, 0, input_data.size() * sizeof(float));
-//    float* input_data_ptr = static_cast<float*>(TF_TensorData(input_tensor));
-//    std::copy(input_data.begin(), input_data.end(), input_data_ptr);
-//    input_tensors.push_back(input_tensor);
-//
-//    // Run the computation
-//    const TF_Output inputs_arr[] = {{input, 0}};
-//    TF_Tensor* output_tensors = nullptr;
-//    TF_SessionRun(session, nullptr, inputs_arr, input_tensors.data(), 1, &output, &output_tensors, nullptr, 0, nullptr, status);
-//
-//    if (TF_GetCode(status) != TF_OK) {
-//        std::cerr << "Error running the session: " << TF_Message(status) << std::endl;
-//        return 1;
-//    }
-//
-//    // Get and print the output
-//    float* output_data = static_cast<float*>(TF_TensorData(output_tensors));
-//    std::cout << "Result: " << *output_data << std::endl;
+    // Initialize input data and labels
+    // ... (prepare input data and labels)
+
+    // Training loop
+    int num_iterations = 1000;
+    for (int i = 0; i < num_iterations; ++i) {
+        // Run a training step
+        // ... (run optimizer, update weights, compute loss)
+    }
+
+    // Test the model
+    // ... (run inference on test data)
 
     // Clean up resources
     TF_CloseSession(session, status);
@@ -207,5 +160,5 @@ Err ConvexOptimizer::test() {
     TF_DeleteStatus(status);
 
 
-    return eNoError;
+    ERR_RETURN
 }
