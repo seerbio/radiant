@@ -99,6 +99,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         FileReadersLib
         MachineLrnLib
+        PyTorchLib
         UtilsLib
         )
 

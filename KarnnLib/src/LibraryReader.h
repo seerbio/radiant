@@ -2,7 +2,7 @@
 // Created by anichols on 8/23/23.
 //
 
-#ifndef PYTHIADIACPP_LIBRARYREADERR_H
+#ifndef PYTHIADIACPP_CANDIDATECLASSIFIER_H
 #define PYTHIADIACPP_LIBRARYREADER_H
 
 #include "KarnnLib_Exports.h"

@@ -2,7 +2,7 @@
 // Created by anichols on 9/17/23.
 //
 
-#include "LibraryReaderr.h"
+#include "CandidateClassifier.h"
 
 #include <torch/torch.h>
 #include <iostream>
@@ -11,7 +11,7 @@
 
 #include <QDebug>
 
-void LibraryReaderr::test() {
+void CandidateClassifier::test() {
     torch::Tensor tensor = torch::rand({2, 3});
     std::cout << tensor << std::endl;
 }

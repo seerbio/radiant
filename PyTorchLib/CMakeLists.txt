@@ -22,11 +22,11 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/LibraryReaderr.cpp
+        src/CandidateClassifier.cpp
         )
 
 SET(HEADER_FILES
-        src/LibraryReaderr.h
+        src/CandidateClassifier.h
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
