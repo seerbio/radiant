@@ -4,6 +4,10 @@ PROJECT(PythiaDIACpp)
 #INSTALL INSTRUCTIONS
 # BOOST LINUX sudo apt-get install libboost-all-dev
 
+# download and unzip.  Make sure TENSORFLOW_INCLUDE_PATH and TENSORFLOW_LIB_PATH below are set to the locations of
+# include directory and libtensorflow.so filepath
+#https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.13.0.tar.gz
+
 # https://hub.docker.com/r/arrowdev/amd64-debian-10-cpp
 # docker pull arrowdev/amd64-debian-10-cpp
 # sudo docker run -it --entrypoint /bin/bash arrowdev/amd64-debian-10-cpp
