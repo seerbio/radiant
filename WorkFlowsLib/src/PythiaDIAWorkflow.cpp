@@ -142,7 +142,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
-    e = applyNeuralNetClassifier(scoredCandidatesAll, &msReaderParquet); ree;
+    e = applyNeuralNetClassifier(scoredCandidatesAllUpdated, &msReaderParquet); ree;
 
 //#define WRITE_FDR_PMSS
 #ifdef WRITE_FDR_PMSS
@@ -1603,12 +1603,14 @@ namespace {
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
             const QVector<ScoredCandidate> &scoredCandidatesAll,
             int topNMs2IonsFull,
-            QVector<QPair<ScoredCandidate, QVector<double>>> *dataSet
+            QVector<NeuralNetData> *trainingData
     ) {
 
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+
+        QVector<QPair<ScoredCandidate, QVector<double>>> dataSet;
 
         QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
         for (const ScoredCandidate &sc : scoredCandidatesCulled) {
@@ -1622,16 +1624,17 @@ namespace {
         const bool useNeuralNetworkScores = true;
 
         QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
+        QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
         for (const ScoredCandidate &sc: scoredCandidatesAll) {
-            if (sc.isDecoy && sc.cosineSimSum > cosineSimSumMin) {
 
-                const QVector<double> scoreVector = buildScoreVector(
+            const QVector<double> scoreVector = buildScoreVector(
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
                     topNMs2IonsFull
-                );
+            );
 
+            if (sc.isDecoy && sc.cosineSimSum > cosineSimSumMin) {
                 decoyPairs.push_back({sc, scoreVector});
                 continue;
             }
@@ -1643,18 +1646,14 @@ namespace {
 
             const ScoredCandidate &scoredCandidateOriginal = keyVsScoredCandidateCulled.value(key);
 
+
+
             if (scoredCandidateOriginal.qValue > qValueMin) {
+                testPairs.push_back({sc, scoreVector});
                 continue;
             }
 
-            const QVector<double> scoreVector = buildScoreVector(
-                    sc,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    topNMs2IonsFull
-            );
-
-            dataSet->push_back({sc, scoreVector});
+            dataSet.push_back({sc, scoreVector});
         }
 
         // TODO decide whether to shuffle this rather than sort.
@@ -1665,22 +1664,44 @@ namespace {
                 [](const PR &l, const PR &r){return l.first.discriminateScore < l.first.discriminateScore;}
                 );
 
-        const int decoyCutSize = std::min(decoyPairs.size(), dataSet->size());
-        qDebug() << "target count training" << dataSet->size() << "decoy count training" << decoyCutSize;
+        const int decoyCutSize = std::min(decoyPairs.size(), dataSet.size());
+        qDebug() << "target count training" << dataSet.size() << "decoy count training" << decoyCutSize;
 
         decoyPairs.resize(decoyCutSize);
-        dataSet->append(decoyPairs);
+        dataSet.append(decoyPairs);
 
         std::random_device rd;
         std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
-        std::shuffle(dataSet->begin(), dataSet->end(), g);
+        std::shuffle(dataSet.begin(), dataSet.end(), g);
 
 #define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
 
-        
+        for (const QPair<ScoredCandidate, QVector<double>> scPair : dataSet) {
+            NeuralNetData td;
+            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
+            td.isDecoy = scPair.first.isDecoy;
+            td.scores = scPair.second;
+            td.isTest = false;
+            td.charge = scPair.first.charge;
+            td.targetKey = scPair.first.targetKey;
+            trainingData->push_back(td);
+        }
 
+        for (const QPair<ScoredCandidate, QVector<double>> scPair : testPairs) {
+            NeuralNetData td;
+            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
+            td.isDecoy = scPair.first.isDecoy;
+            td.scores = scPair.second;
+            td.isTest = true;
+            td.charge = scPair.first.charge;
+            td.targetKey = scPair.first.targetKey;
+            trainingData->push_back(td);
+        }
+
+        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
+        e = ParquetReader::write(*trainingData, dataFilePath); ree;
 
 #endif
 
@@ -1708,20 +1729,18 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
     );
 
-    QVector<QPair<ScoredCandidate, QVector<double>>> dataSet;
+    QVector<NeuralNetData> trainingData;
     e = buildNeuralNetworkInput(
             scoredCandidatesCulled,
             scoredCandidatesAllFullFragIons,
             topNMs2IonsFull,
-            &dataSet
+            &trainingData
             ); ree;
 
-
-
-    for (const QPair<ScoredCandidate, QVector<double>> scPair : dataSet) {
-        qDebug() << scPair.first.discriminateScore << scPair.first.isDecoy << scPair.first.peptideStringWithMods;
-        qDebug() << scPair.second.size() << scPair.second;
-    }
+//    for (const QPair<ScoredCandidate, QVector<double>> scPair : dataSet) {
+//        qDebug() << scPair.first.discriminateScore << scPair.first.isDecoy << scPair.first.peptideStringWithMods;
+//        qDebug() << scPair.second.size() << scPair.second;
+//    }
 
     ERR_RETURN
 }
