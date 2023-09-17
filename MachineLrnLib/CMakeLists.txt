@@ -48,6 +48,7 @@ INCLUDE_DIRECTORIES(
         "${FRUGALLY_DEEP_DIRECTORY}"
         "${JSON_DIRECTORY}"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "/home/anichols/Repositories/PythiaDIACpp/ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/include"
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -66,6 +67,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         EigenLib
         UtilsLib
+        "/home/anichols/Repositories/PythiaDIACpp/ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow.so"
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

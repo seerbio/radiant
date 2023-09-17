@@ -1,2 +1,14 @@
 
 .idea/
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow.so
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow.so.2
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow.so.2.13.0
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow_framework.so
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow_framework.so.2
+
+ThirdPartyLibs/libtensorflow-cpu-linux-x86_64-2.13.0/lib/libtensorflow_framework.so.2.13.0
