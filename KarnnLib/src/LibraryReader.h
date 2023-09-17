@@ -2,7 +2,7 @@
 // Created by anichols on 8/23/23.
 //
 
-#ifndef PYTHIADIACPP_LIBRARYREADER_H
+#ifndef PYTHIADIACPP_LIBRARYREADERR_H
 #define PYTHIADIACPP_LIBRARYREADER_H
 
 #include "KarnnLib_Exports.h"
@@ -63,4 +63,4 @@ private:
 };
 
 
-#endif //PYTHIADIACPP_LIBRARYREADER_H
+#endif //PYTHIADIACPP_LIBRARYREADERR_H

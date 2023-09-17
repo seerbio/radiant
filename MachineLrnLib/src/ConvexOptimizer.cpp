@@ -15,8 +15,6 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 
 #include <iostream>
-#include "tensorflow/c/c_api.h"
-
 
 
 #include <iostream>
@@ -122,42 +120,7 @@ Err ConvexOptimizer::test() {
 
     ERR_INIT
 
-    TF_Status* status = TF_NewStatus();
-    TF_Graph* graph = TF_NewGraph();
-    TF_SessionOptions* session_options = TF_NewSessionOptions();
-    TF_Buffer* run_options = nullptr;
-    TF_Session* session = TF_NewSession(graph, session_options, status);
 
-    if (TF_GetCode(status) != TF_OK) {
-        std::cerr << "Error initializing TensorFlow: " << TF_Message(status) << std::endl;
-        ERR_RETURN
-    }
-
-    // Define the computation graph
-    // ... (create input, hidden layers, batch normalization, output layers)
-
-    // Define loss function and optimizer
-    // ... (create loss node, optimizer, etc.)
-
-    // Initialize input data and labels
-    // ... (prepare input data and labels)
-
-    // Training loop
-    int num_iterations = 1000;
-    for (int i = 0; i < num_iterations; ++i) {
-        // Run a training step
-        // ... (run optimizer, update weights, compute loss)
-    }
-
-    // Test the model
-    // ... (run inference on test data)
-
-    // Clean up resources
-    TF_CloseSession(session, status);
-    TF_DeleteSession(session, status);
-    TF_DeleteSessionOptions(session_options);
-    TF_DeleteGraph(graph);
-    TF_DeleteStatus(status);
 
 
     ERR_RETURN

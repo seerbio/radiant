@@ -48,7 +48,6 @@ INCLUDE_DIRECTORIES(
         "${FRUGALLY_DEEP_DIRECTORY}"
         "${JSON_DIRECTORY}"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${TENSORFLOW_INCLUDE_PATH}"
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -67,7 +66,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         EigenLib
         UtilsLib
-        "${TENSORFLOW_LIB_PATH}"
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
