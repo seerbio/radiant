@@ -8,6 +8,9 @@
 #include "PyTorchLib_Exports.h"
 
 
+#include <QVector>
+
+
 class PYTORCHLIB_EXPORTS CandidateClassifier {
 
 public:
@@ -15,7 +18,10 @@ public:
     CandidateClassifier() = default;
     ~CandidateClassifier() = default;
 
-    void test();
+    bool trainCandidateClassifier(
+            const QVector<QVector<double>> &xData,
+            const QVector<double> &yData
+            );
 
 
 };

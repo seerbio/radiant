@@ -25,7 +25,7 @@ private Q_SLOTS:
 void CandidateClassifierTests::readLibrary() {
 
     CandidateClassifier r;
-    r.test();
+
 
 }
 

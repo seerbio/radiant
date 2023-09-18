@@ -4,6 +4,8 @@
 
 #include "CandidateClassifier.h"
 
+//#include "MathUtils.h"
+
 #include <torch/torch.h>
 #include <iostream>
 #include <torch/nn/modules/loss.h>
@@ -11,7 +13,14 @@
 
 #include <QDebug>
 
-void CandidateClassifier::test() {
+
+bool CandidateClassifier::trainCandidateClassifier(
+        const QVector<QVector<double>> &xData,
+        const QVector<double> &yData
+        ) {
+
     torch::Tensor tensor = torch::rand({2, 3});
     std::cout << tensor << std::endl;
+
+    return true;
 }
