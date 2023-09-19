@@ -26,8 +26,13 @@ class EIGENLIB_EXPORTS EigenUtils {
 public:
 
     template<typename T>
+    static void replaceNaN(T replaceVal, Eigen::VectorX<T> *vec){
+        *vec = vec->array().isNaN().select(replaceVal, vec->array());
+    }
+
+    template<typename T>
     static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
-        mat->array().isNaN().select(replaceVal, mat->array());
+        *mat = mat->array().isNaN().select(replaceVal, mat->array());
     }
 
     template<typename T>
@@ -376,11 +381,6 @@ public:
         }
 
         return vec;
-    }
-
-    template <typename T>
-    static Eigen::VectorX<T> setNANToZero(const Eigen::VectorX<T> &vec) {
-        return vec.array().isNaN().select(0.0, vec);
     }
 
     /*!

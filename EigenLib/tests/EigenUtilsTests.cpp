@@ -43,6 +43,9 @@ private Q_SLOTS:
     void minMaxScaleVectorTest();
     void minMaxScaleMatrixTest();
 
+    void replaceNaNTest();
+
+
 };
 
 
@@ -244,6 +247,23 @@ void EigenUtilsTests::minMaxScaleMatrixTest() {
 
     QVERIFY(MathUtils::tSame(mat.coeff(2,0), 0.66666));
     QVERIFY(MathUtils::tSame(mat.coeff(2,1), 0.66666));
+}
+
+void EigenUtilsTests::replaceNaNTest() {
+
+    Eigen::VectorX<double> vec(4);
+    vec.setZero();
+
+    vec /= 0.0;
+    EigenUtils::replaceNaN(0.0, &vec);
+    QVERIFY(MathUtils::tSame(vec.coeff(1), 0.0));
+
+    Eigen::MatrixX<double> mat(4, 4);
+    mat.setZero();
+
+    mat /= 0.0;
+    EigenUtils::replaceNaN(0.0, &mat);
+    QVERIFY(MathUtils::tSame(mat.coeff(1, 1), 0.0));
 }
 
 

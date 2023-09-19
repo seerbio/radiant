@@ -387,7 +387,7 @@ namespace {
             const Eigen::VectorX<double> &normVec = it.value();
 
             Eigen::VectorX<double> vecPresence = normVec.array() / normVec.array();
-            vecPresence = EigenUtils::setNANToZero(vecPresence);
+            EigenUtils::replaceNaN(0.0, &vecPresence);
             mzHashedVsIonPresence->insert(mzHashed, EigenUtils::convertEigenVectorToQVector(vecPresence));
         }
 
