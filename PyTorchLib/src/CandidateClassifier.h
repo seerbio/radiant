@@ -26,6 +26,11 @@ public:
             double learningRate
             );
 
+    bool predict(
+            const QVector<QVector<float>> &xData,
+            QVector<float> *predictions
+            );
+
 private:
 
     Q_DISABLE_COPY(CandidateClassifier) class Private;

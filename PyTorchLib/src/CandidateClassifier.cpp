@@ -60,6 +60,13 @@ public:
             double learningRate
     );
 
+    bool predict(
+            const QVector<QVector<float>> &xData,
+            QVector<float> *predictions
+    );
+
+    bool isTrained();
+
 private:
 
     Net *m_net;
@@ -169,7 +176,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             loss.backward();
             optimizer.step();
 
-            std::cout << "Epoch " << epoch + 1 << ", Batch " << (i / batchSize) + 1 << ", Loss: " << loss.item<float>() << std::endl;
+//            std::cout << "Epoch " << epoch + 1 << ", Batch " << (i / batchSize) + 1 << ", Loss: " << loss.item<float>() << std::endl;
         }
 
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);
@@ -189,13 +196,30 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
     }
 
+    m_net->eval();
+
     torch::Tensor output = m_net->forward(X);
     const QVector<float> outputVec = tensorToVector(output);
 
+    int falsePos = 0;
+    int falseNeg = 0;
     for (int i = 0; i < yData.size(); i++) {
-        std::cout << yData.at(i) << " pred= " << outputVec.at(i) << std::endl;
+
+        const float act = yData.at(i);
+        const float pred =  outputVec.at(i);
+
+//        std::cout << act << " pred= " << pred << std::endl;
+
+        if (act > 0.5 && pred < 0.5) {
+            falsePos++;
+        }
+        else if (act < 0.5 && pred >= 0.5) {
+            falseNeg++;
+        }
+
     }
 
+    std::cout << "FP " << falsePos << " FN " << falseNeg << std::endl;
 //    std::cout << output << std::endl;
 
 //    torch::serialize::OutputArchive archive;
@@ -213,6 +237,35 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 //    std::cout << output2 << std::endl;
 
     m_isTrained = true;
+
+    return true;
+}
+
+bool CandidateClassifier::Private::isTrained() {
+    return m_isTrained;
+}
+
+bool CandidateClassifier::Private::predict(
+        const QVector<QVector<float>> &xData,
+        QVector<float> *predictions
+        ) {
+
+    if (!isTrained()) {
+        std::cout << "Neural network is not trained" << std::endl;
+        return false;
+    }
+
+    const int input_size = xData.front().size();
+    m_net->eval();
+
+    std::vector<float> flatData;
+    for (const QVector<float> &innerVec : xData) {
+        flatData.insert(flatData.end(), innerVec.begin(), innerVec.end());
+    }
+    torch::Tensor X = torch::from_blob(flatData.data(), {static_cast<long>(xData.size()), input_size}, torch::kFloat);
+
+    torch::Tensor output = m_net->forward(X);
+    *predictions = tensorToVector(output);
 
     return true;
 }
@@ -239,4 +292,11 @@ bool CandidateClassifier::trainCandidateClassifier(
             batchFraction,
             learningRate
             );
+}
+
+bool CandidateClassifier::predict(
+        const QVector<QVector<float>> &xData,
+        QVector<float> *predictions
+        ) {
+    return d_ptr->predict(xData, predictions);
 }

@@ -1841,6 +1841,37 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             );
     e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
 
+    QVector<float> predictions;
+    const bool predictionOK = candidateClassifier.predict(
+            allDataVecs,
+            &predictions
+            );
+    e = ErrorUtils::isTrue(predictionOK); ree;
+
+    int falsePos = 0;
+    int falseNeg = 0;
+    int truePos = 0;
+    int trueNeg = 0;
+    for (int i = 0; i < trainingData.size(); i++) {
+
+        const float act = trainingData.at(i).isDecoy;
+        const float pred =  predictions.at(i);
+
+        if (act >= 0.5 && pred < 0.5) {
+            falsePos++;
+        }
+        else if (act < 0.5 && pred >= 0.5) {
+            falseNeg++;
+        }
+        else if (act < 0.5 && pred < 0.5) {
+            truePos++;
+        }
+        else if (act >= 0.5 && pred >= 0.5) {
+            trueNeg++;
+        }
+    }
+
+    qDebug() << "FP" << falsePos << "FN" << falseNeg << "TP" << truePos << "TN" << trueNeg;
 
     ERR_RETURN
 }
