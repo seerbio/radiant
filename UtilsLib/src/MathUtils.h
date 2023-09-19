@@ -7,7 +7,6 @@
 
 #include "UtilsLib_Exports.h"
 
-//#include "GlobalSettings.h"
 #include "Error.h"
 
 #include <QDebug>

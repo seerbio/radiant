@@ -4,6 +4,7 @@
 
 #include "PythiaDIAWorkflow.h"
 
+#include "CandidateClassifier.h"
 #include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
@@ -690,7 +691,8 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
     e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
     const double fdrThreshold = 0.01;
 
-    const double calibrationSelectionFraction = 0.2;
+    const double calibrationSelectionFractionIncrement = 0.2;
+    double calibrationSelectionFraction = calibrationSelectionFractionIncrement;
     const int topNMs2IonsCalibration = std::max(
             m_minTopNMs2Ions,
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
@@ -698,27 +700,43 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
     qDebug() << "Using top:" << topNMs2IonsCalibration << "fragments for calibration";
 
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-    e = buildCandidates(
-            topNMs2IonsCalibration,
-            calibrationSelectionFraction,
-            &uniqueInfoScanKeyVsCandidatePeptideCalibration
-    ); ree;
-
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
     QVector<ScoredCandidate> scoredCandidatesAll;
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
-    e = extractionLoopLogic(
-            uniqueInfoScanKeyVsCandidatePeptideCalibration,
-            fdrThreshold,
-            useExtendedScores,
-            useNeuralNetworkScores,
-            topNMs2IonsCalibration,
-            msReaderParquet,
-            &scoredCandidatesAll,
-            &scoredCandidatesTargetsFDRThresholded
-            ); ree;
+
+    int onePercentFDRCount = 0;
+    const double maxTrainingFraction = 1.1;
+    const int minTrainingCount = 100;
+    while (calibrationSelectionFraction < maxTrainingFraction && onePercentFDRCount < minTrainingCount) {
+
+        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+        e = buildCandidates(
+                topNMs2IonsCalibration,
+                calibrationSelectionFraction,
+                &uniqueInfoScanKeyVsCandidatePeptideCalibration
+        ); ree;
+
+        e = extractionLoopLogic(
+                uniqueInfoScanKeyVsCandidatePeptideCalibration,
+                fdrThreshold,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                topNMs2IonsCalibration,
+                msReaderParquet,
+                &scoredCandidatesAll,
+                &scoredCandidatesTargetsFDRThresholded
+        ); ree;
+
+        countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
+        qDebug() << onePercentFDRCount;
+
+        int tenPercetFDRCount;
+        countScoreCandidatesByFDR(scoredCandidatesAll, 0.1, &tenPercetFDRCount);
+        qDebug() << calibrationSelectionFraction << "One percent FDR" << onePercentFDRCount << "ten percent FDR" << tenPercetFDRCount;
+
+        calibrationSelectionFraction += calibrationSelectionFractionIncrement;
+    }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = buildMsCalibrationReaderRows(
@@ -1646,8 +1664,6 @@ namespace {
 
             const ScoredCandidate &scoredCandidateOriginal = keyVsScoredCandidateCulled.value(key);
 
-
-
             if (scoredCandidateOriginal.qValue > qValueMin) {
                 testPairs.push_back({sc, scoreVector});
                 continue;
@@ -1708,6 +1724,74 @@ namespace {
         ERR_RETURN
     }
 
+    Err separateTrainingDataFromAllData(
+            const QVector<NeuralNetData> &trainingData,
+            QVector<QVector<float>> *allDataVecs,
+            QVector<QVector<float>> *trainingDataVecs
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(trainingData); ree;
+        e = ErrorUtils::isNotEmpty(*allDataVecs); ree;
+        e = ErrorUtils::isEqual(trainingData.size(), allDataVecs->size()); ree;
+
+        for (int i = 0; i < trainingData.size(); i++) {
+
+            const bool isTest = trainingData.at(i).isTest;
+
+            if (isTest) {
+                continue;
+            }
+
+            trainingDataVecs->push_back(allDataVecs->at(i));
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildNeuralNetworkNormalizedVectors(
+            const QVector<NeuralNetData> &trainingData,
+            QVector<QVector<float>> *allDataVecs,
+            QVector<QVector<float>> *trainingDataVecs,
+            QVector<float> *yData
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(trainingData); ree;
+
+        QVector<QVector<double>> allData;
+        for (const NeuralNetData &nnd : trainingData) {
+            allData.push_back(nnd.scores);
+        }
+
+        Eigen::MatrixX<double> mat = EigenUtils::convertQVectorsToEigenMatrix(allData);
+        EigenUtils::minMaxScaleMatrix(&mat);
+
+        Eigen::MatrixX<float> matFloat = mat.cast<float>();
+        *allDataVecs = EigenUtils::convertEigenMatrixToQVectors(matFloat);
+
+        e = separateTrainingDataFromAllData(
+                trainingData,
+                allDataVecs,
+                trainingDataVecs
+                ); ree;
+
+        for (const NeuralNetData &nnd : trainingData) {
+
+            if (nnd.isTest) {
+                continue;
+            }
+
+            yData->push_back(static_cast<float>(nnd.isDecoy));
+        }
+
+        e = ErrorUtils::isNotEmpty(*yData); ree;
+        e = ErrorUtils::isEqual(yData->size(), trainingDataVecs->size()); ree;
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         const QVector<ScoredCandidate> &scoredCandidatesCulled,
@@ -1737,10 +1821,26 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             &trainingData
             ); ree;
 
-//    for (const QPair<ScoredCandidate, QVector<double>> scPair : dataSet) {
-//        qDebug() << scPair.first.discriminateScore << scPair.first.isDecoy << scPair.first.peptideStringWithMods;
-//        qDebug() << scPair.second.size() << scPair.second;
-//    }
+    QVector<QVector<float>> allDataVecs;
+    QVector<QVector<float>> trainingDataVecs;
+    QVector<float> yData;
+    e = buildNeuralNetworkNormalizedVectors(
+            trainingData,
+            &allDataVecs,
+            &trainingDataVecs,
+            &yData
+            ); ree;
+
+    CandidateClassifier candidateClassifier;
+    bool trainingCompletedNoErrors = candidateClassifier.trainCandidateClassifier(
+            trainingDataVecs,
+            yData,
+            10,
+            0.001,
+            0.001
+            );
+    e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
+
 
     ERR_RETURN
 }

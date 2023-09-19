@@ -93,6 +93,15 @@ namespace {
         return xDataAllSameSize && xyDataIsSameSize;
     }
 
+    QVector<float> tensorToVector(const torch::Tensor& tensor) {
+
+        const long numel = tensor.numel();
+        const float* data = tensor.data_ptr<float>();
+        std::vector<float> vec(data, data + numel);
+
+        return QVector<float>::fromStdVector(vec);
+    }
+
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
         const QVector<QVector<float>> &xData,
@@ -108,6 +117,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             );
 
     if (!dataInputIsValid) {
+        std::cout << "Training input is not valid" << std::endl;
         return false;
     }
 
@@ -164,15 +174,15 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);
 
-//        if (meanBatchLoss < bestEpochLoss) {
-//
-//            std::cout << "Updating weights" << std::endl;
-//
-//            bestEpochLoss = meanBatchLoss;
+        if (meanBatchLoss < bestEpochLoss) {
+
+            std::cout << "Updating weights" << std::endl;
+
+            bestEpochLoss = meanBatchLoss;
 //            torch::serialize::OutputArchive archive;
 //            m_net->save(archive);
 //            archive.save_to(oss);
-//        }
+        }
 
         std::cout << "****" << "Epoch " << epoch + 1 << ", Best loss: " << bestEpochLoss << " Mean loss " << meanBatchLoss <<  std::endl;
 
@@ -180,21 +190,27 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     torch::Tensor output = m_net->forward(X);
-    std::cout << output << std::endl;
+    const QVector<float> outputVec = tensorToVector(output);
 
-    torch::serialize::OutputArchive archive;
-    m_net->save(archive);
-    archive.save_to(oss);
+    for (int i = 0; i < yData.size(); i++) {
+        std::cout << yData.at(i) << " pred= " << outputVec.at(i) << std::endl;
+    }
 
-    m_net->eval();
+//    std::cout << output << std::endl;
 
-    std::istringstream iss(oss.str());
-    torch::serialize::InputArchive inputArchive;
-    inputArchive.load_from(iss);
-    m_net->load(inputArchive);
-
-    torch::Tensor output2 = m_net->forward(X);
-    std::cout << output2 << std::endl;
+//    torch::serialize::OutputArchive archive;
+//    m_net->save(archive);
+//    archive.save_to(oss);
+//
+//    m_net->eval();
+//
+//    std::istringstream iss(oss.str());
+//    torch::serialize::InputArchive inputArchive;
+//    inputArchive.load_from(iss);
+//    m_net->load(inputArchive);
+//
+//    torch::Tensor output2 = m_net->forward(X);
+//    std::cout << output2 << std::endl;
 
     m_isTrained = true;
 
