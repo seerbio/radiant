@@ -40,6 +40,9 @@ private Q_SLOTS:
 
     void removeRowsBelowThresholdTest();
 
+    void minMaxScaleVectorTest();
+    void minMaxScaleMatrixTest();
+
 };
 
 
@@ -220,6 +223,27 @@ void EigenUtilsTests::removeRowsBelowThresholdTest() {
     QCOMPARE(matIntAbove.coeffRef(0,0), 1);
     QCOMPARE(matIntAbove.coeffRef(1,0), 3);
 
+}
+
+void EigenUtilsTests::minMaxScaleVectorTest() {
+
+    Eigen::VectorX<double> vec(4);
+    vec << 1, 2, 3, 4;
+
+    EigenUtils::minMaxScaleVector(&vec);
+
+    QVERIFY(MathUtils::tSame(vec.coeff(2), 0.66666));
+}
+
+void EigenUtilsTests::minMaxScaleMatrixTest() {
+
+    Eigen::MatrixX<double> mat(4, 2);
+    mat << 1, 1, 2, 2, 3, 3, 4, 4;
+
+    EigenUtils::minMaxScaleMatrix(&mat);
+
+    QVERIFY(MathUtils::tSame(mat.coeff(2,0), 0.66666));
+    QVERIFY(MathUtils::tSame(mat.coeff(2,1), 0.66666));
 }
 
 

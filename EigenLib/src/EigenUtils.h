@@ -602,7 +602,7 @@ public:
 
 
     template<typename T>
-    static Err printMatrix(
+    static Err writeMatrixToFile(
             const Eigen::MatrixX<T> &mat,
             const QString &outputFilePath
     ) {
@@ -636,6 +636,56 @@ public:
 
         ERR_RETURN
     }
+
+    template<typename T>
+    static void minMaxScaleVector(Eigen::VectorX<T> *vec) {
+
+        const T maxVal = vec->maxCoeff();
+        const T minVal = vec->minCoeff();
+        const T minMaxDiff = std::max(maxVal - minVal, std::numeric_limits<T>::min());
+
+        *vec = (vec->array() - minVal) / minMaxDiff;
+    }
+
+    template<typename T>
+    static void minMaxScaleMatrix(Eigen::MatrixX<T> *mat) {
+        for (int col = 0; col < mat->cols(); col++) {
+
+            Eigen::VectorX<T> vec = mat->col(col);
+            minMaxScaleVector(&vec);
+            mat->col(col) = vec;
+        }
+    }
+
+    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<double>> &matA) {
+
+        const int rows = matA.size();
+        const int columns = matA.front().size();
+        Eigen::MatrixX<double> mat(rows, columns);
+        mat.setZero();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                mat.coeffRef(i, j) = matA[i][j];
+            }
+        }
+
+        return mat;
+    }
+
+    template<typename T>
+    static QVector<QVector<T>> convertEigenMatrixToQVectors(const Eigen::MatrixX<T> &mat) {
+
+        QVector<QVector<T>> vecs;
+        for (int row = 0; row < mat.rows(); row++) {
+
+            Eigen::VectorX<T> v = mat.row(row);
+            vecs.push_back(EigenUtils::convertEigenVectorToQVector<T>(v));
+        }
+
+        return vecs;
+    }
+
 };
 
 #endif //EIGENUTILS_H
