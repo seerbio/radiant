@@ -71,33 +71,6 @@ namespace {
         return std::all_of(matA.begin(), matA.end(), allOfLogic);
     }
 
-    Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<double>> &matA) {
-
-        const int rows = matA.size();
-        const int columns = matA.front().size();
-        Eigen::MatrixX<double> mat(rows, columns);
-        mat.setZero();
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
-                mat.coeffRef(i, j) = matA[i][j];
-            }
-        }
-
-        return mat;
-    }
-
-    QVector<QVector<double>> convertEigenMatrixToQVectors(const Eigen::MatrixX<double> &mat) {
-
-        QVector<QVector<double>> vecs;
-        for (int row = 0; row < mat.rows(); row++) {
-
-            Eigen::VectorX<double> v = mat.row(row);
-            vecs.push_back(EigenUtils::convertEigenVectorToQVector(v));
-        }
-
-        return vecs;
-    }
 
 }//namespace
 Err ClassifierWeightsManager::fitWeights(
@@ -113,7 +86,7 @@ Err ClassifierWeightsManager::fitWeights(
     e = ErrorUtils::isTrue(allMatAInputsAreSameSize(matA)); ree;
     e = ErrorUtils::isEqual(matA.front().size(), vecB.size()); ree;
 
-    const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
+    const Eigen::MatrixX<double> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
     const Eigen::VectorX<double> b = EigenUtils::convertQVectorToEigenVector(vecB);
 
     Eigen::VectorXd X = A.fullPivHouseholderQr().solve(b);
@@ -135,8 +108,8 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
     e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
 
-    const Eigen::MatrixX<double> matTargets = convertQVectorsToEigenMatrix(targets);
-    const Eigen::MatrixX<double> matDecoys = convertQVectorsToEigenMatrix(decoys);
+    const Eigen::MatrixX<double> matTargets = EigenUtils::convertQVectorsToEigenMatrix(targets);
+    const Eigen::MatrixX<double> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(decoys);
 
     const Eigen::MatrixX<double> subtractionMat = matTargets - matDecoys;
     const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
@@ -164,7 +137,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
         matA.coeffRef(i, i) += std::numeric_limits<double>::min();
     }
 
-    *A = convertEigenMatrixToQVectors(matA);
+    *A = EigenUtils::convertEigenMatrixToQVectors(matA);
 
     ERR_RETURN
 }
@@ -182,8 +155,8 @@ Err ClassifierWeightsManager::buildDataClassifier2(
     e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
     e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
 
-    const Eigen::MatrixX<double> matTargets = convertQVectorsToEigenMatrix(targets);
-    const Eigen::MatrixX<double> matDecoys = convertQVectorsToEigenMatrix(decoys);
+    const Eigen::MatrixX<double> matTargets = EigenUtils::convertQVectorsToEigenMatrix(targets);
+    const Eigen::MatrixX<double> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(decoys);
 
     const Eigen::VectorX<double> matTargetsSum = matTargets.colwise().sum();
     const Eigen::VectorX<double> matDecoysSum = matDecoys.colwise().sum();
@@ -219,7 +192,7 @@ Err ClassifierWeightsManager::buildDataClassifier2(
         matA.coeffRef(i, i) += std::numeric_limits<double>::min();
     }
 
-    *A = convertEigenMatrixToQVectors(matA);
+    *A = EigenUtils::convertEigenMatrixToQVectors(matA);
 
     ERR_RETURN
 }
@@ -236,7 +209,7 @@ Err ClassifierWeightsManager::applyWeights(
     e = ErrorUtils::isNotEmpty(matA.front()); ree;
     e = ErrorUtils::isEqual(matA.front().size(), weights.size()); ree;
 
-    const Eigen::MatrixX<double> A = convertQVectorsToEigenMatrix(matA);
+    const Eigen::MatrixX<double> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
     const Eigen::VectorX<double> x = EigenUtils::convertQVectorToEigenVector(weights);
 
     const Eigen::VectorX<double> b = A * x;

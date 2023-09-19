@@ -657,11 +657,12 @@ public:
         }
     }
 
-    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<double>> &matA) {
+    template<typename T>
+    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
 
         const int rows = matA.size();
         const int columns = matA.front().size();
-        Eigen::MatrixX<double> mat(rows, columns);
+        Eigen::MatrixX<T> mat(rows, columns);
         mat.setZero();
 
         for (int i = 0; i < rows; i++) {
