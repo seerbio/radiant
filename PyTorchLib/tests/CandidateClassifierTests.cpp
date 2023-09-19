@@ -24,7 +24,35 @@ private Q_SLOTS:
 
 void CandidateClassifierTests::readLibrary() {
 
-    CandidateClassifier r;
+    const QVector<QVector<float>> xVec = {
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 1.0, 0.0},
+            {1.0, 1.0, 0.0},
+            {1.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 1.0, 0.0},
+            {1.0, 1.0, 0.0},
+            {1.0, 1.0, 0.0}
+    };
+
+    const QVector<float> yVec = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0};
+
+    CandidateClassifier classifier;
+    classifier.trainCandidateClassifier(xVec, yVec, 1000, 0.2, 1e-2);
 
 
 }
