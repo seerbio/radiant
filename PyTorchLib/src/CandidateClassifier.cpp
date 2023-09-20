@@ -128,6 +128,9 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         double learningRate
         ) {
 
+    const int numberOfTheBeast = 666;
+    torch::manual_seed(numberOfTheBeast);
+
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
             yData
