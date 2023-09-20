@@ -17,6 +17,14 @@
 
 struct Net : torch::nn::Module {
 
+    void xavier_init(torch::nn::Module& module) {
+        torch::NoGradGuard noGrad;
+        if (auto* linear = module.as<torch::nn::Linear>()) {
+            torch::nn::init::xavier_normal_(linear->weight);
+            torch::nn::init::constant_(linear->bias, 0.01);
+        }
+    }
+
     torch::nn::Linear layer1{nullptr}, layer2{nullptr}, layer3{nullptr}, layer4{nullptr};
     torch::nn::BatchNorm1d batchNorm1{nullptr}, batchNorm2{nullptr}, batchNorm3{nullptr};
 
@@ -34,6 +42,8 @@ struct Net : torch::nn::Module {
         torch::nn::init::xavier_uniform_(layer2->weight);
         torch::nn::init::xavier_uniform_(layer3->weight);
         torch::nn::init::xavier_uniform_(layer4->weight);
+        torch::nn::init::constant_(layer4->bias, 0.01);
+
     }
 
     torch::Tensor forward(torch::Tensor x) {
@@ -167,7 +177,16 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
 
             torch::Tensor output = m_net->forward(batchX);
-            torch::Tensor loss = loss_function(output, batchY);
+
+            // Regularization strength (lambda)
+            float lambda = 0.001; // Adjust as needed
+            torch::Tensor l2_regularization = torch::tensor(0.0, torch::kFloat32);
+            for (const auto& parameter : m_net->parameters()) {
+                l2_regularization += torch::norm(parameter, 2);
+            }
+            torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
+
+//            torch::Tensor loss = loss_function(output, batchY);
 
             const auto batchLoss = loss.item<float>();
             batchLossSum += batchLoss;
