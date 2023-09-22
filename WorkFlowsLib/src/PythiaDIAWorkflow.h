@@ -164,7 +164,8 @@ private:
 
     Err applyNeuralNetClassifier(
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
-            MsReaderParquet *msReaderParquet
+            MsReaderParquet *msReaderParquet,
+            QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
     Err returnAllCandidatesScoredFullFragIons(

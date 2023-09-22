@@ -9,7 +9,7 @@
 #include <torch/optim/adam.h>
 
 #include <QCoreApplication>
-#include <QDir>
+#include <QDebug>
 
 #include <iostream>
 #include <random>
@@ -137,7 +137,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             );
 
     if (!dataInputIsValid) {
-        std::cout << "Training input is not valid" << std::endl;
+        qDebug() << "Training input is not valid";
         return false;
     }
 
@@ -159,9 +159,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
     torch::nn::BCELoss loss_function;
     torch::optim::Adam optimizer(m_net->parameters(), torch::optim::AdamOptions(learningRate));
-
-//    const QString &weightsPath
-//            = QDir(qApp->applicationDirPath()).filePath("model_weights.pt");
 
     std::ostringstream oss;
     float bestEpochLoss = std::numeric_limits<float>::max();
@@ -189,8 +186,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             }
             torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
 
-//            torch::Tensor loss = loss_function(output, batchY);
-
             const auto batchLoss = loss.item<float>();
             batchLossSum += batchLoss;
 
@@ -198,22 +193,18 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             loss.backward();
             optimizer.step();
 
-//            std::cout << "Epoch " << epoch + 1 << ", Batch " << (i / batchSize) + 1 << ", Loss: " << loss.item<float>() << std::endl;
         }
 
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);
 
         if (meanBatchLoss < bestEpochLoss) {
 
-            std::cout << "Updating weights" << std::endl;
+            qDebug() << "Updating weights";
 
             bestEpochLoss = meanBatchLoss;
-//            torch::serialize::OutputArchive archive;
-//            m_net->save(archive);
-//            archive.save_to(oss);
         }
 
-        std::cout << "****" << "Epoch " << epoch + 1 << ", Best loss: " << bestEpochLoss << " Mean loss " << meanBatchLoss <<  std::endl;
+        qDebug() << "****" << "Epoch" << epoch + 1 << "Best loss:" << bestEpochLoss << "Mean loss" << meanBatchLoss;
 
 
     }
@@ -230,8 +221,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         const float act = yData.at(i);
         const float pred =  outputVec.at(i);
 
-//        std::cout << act << " pred= " << pred << std::endl;
-
         if (act > 0.5 && pred < 0.5) {
             falsePos++;
         }
@@ -240,23 +229,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         }
 
     }
-
-    std::cout << "FP " << falsePos << " FN " << falseNeg << std::endl;
-//    std::cout << output << std::endl;
-
-//    torch::serialize::OutputArchive archive;
-//    m_net->save(archive);
-//    archive.save_to(oss);
-//
-//    m_net->eval();
-//
-//    std::istringstream iss(oss.str());
-//    torch::serialize::InputArchive inputArchive;
-//    inputArchive.load_from(iss);
-//    m_net->load(inputArchive);
-//
-//    torch::Tensor output2 = m_net->forward(X);
-//    std::cout << output2 << std::endl;
 
     m_isTrained = true;
 
@@ -273,7 +245,7 @@ bool CandidateClassifier::Private::predict(
         ) {
 
     if (!isTrained()) {
-        std::cout << "Neural network is not trained" << std::endl;
+        qDebug() << "Neural network is not trained";
         return false;
     }
 
