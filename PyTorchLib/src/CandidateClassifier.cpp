@@ -26,8 +26,15 @@ struct Net : torch::nn::Module {
         }
     }
 
-    torch::nn::Linear layer1{nullptr}, layer2{nullptr}, layer3{nullptr}, layer4{nullptr};
-    torch::nn::BatchNorm1d batchNorm1{nullptr}, batchNorm2{nullptr}, batchNorm3{nullptr};
+    torch::nn::Linear layer1{nullptr};
+    torch::nn::Linear layer2{nullptr};
+    torch::nn::Linear layer3{nullptr};
+    torch::nn::Linear layer4{nullptr};
+
+    torch::nn::BatchNorm1d batchNorm1{nullptr};
+    torch::nn::BatchNorm1d batchNorm2{nullptr};
+    torch::nn::BatchNorm1d batchNorm3{nullptr};
+    
 
     Net(int input_size, int nodes, int num_classes) {
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(false)));
