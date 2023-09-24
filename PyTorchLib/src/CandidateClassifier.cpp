@@ -8,6 +8,7 @@
 #include <torch/nn/modules/loss.h>
 #include <torch/optim/adam.h>
 
+//NOTE: QDebug and many QT classes that rely on it have to come after pytorch or a compile error occurs.
 #include <QCoreApplication>
 #include <QDebug>
 

@@ -6,7 +6,8 @@ PROJECT(PythiaDIACpp)
 
 #PYTORCH
 # instructions at: https://pytorch.org/cppdocs/installing.html
-# c api: https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+# c api: https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+# after unzipping, move the entire libtorch folder to ThirdPartyLibs folder
 
 # ARROW AND PARQUET
 # https://hub.docker.com/r/arrowdev/amd64-debian-10-cpp
