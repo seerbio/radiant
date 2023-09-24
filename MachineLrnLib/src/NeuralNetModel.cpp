@@ -136,7 +136,7 @@ QVector<QVector<float>> NeuralNetModel::Private::batchPredict(const QVector<Eige
     const int trancheBuffer = 0;
 
     QVector<QVector<Eigen::MatrixXd>> matsTranched;
-    ParallelUtils::tranchVectorForParallelizationInOrder(
+    ParallelUtils::trancheVectorForParallelizationInOrder(
             mats,
             ParallelUtils::numberOfAvailableSystemProcessors(),
             trancheBuffer,

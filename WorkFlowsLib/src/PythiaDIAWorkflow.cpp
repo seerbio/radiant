@@ -85,7 +85,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-#define USE_FILE_CACHING
+//#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -106,12 +106,14 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
         }
     }
 #endif
-
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(msDataFilePath); ree;
     m_msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
-
 #ifndef USE_FILE_CACHING
+    if (m_pythiaParameters.deisotopeScans) {
+        e = deisotopeScans(&msReaderParquet); ree;
+    }
+#else
     e = deisotopeScans(&msReaderParquet); ree;
 #endif
 
@@ -210,7 +212,7 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
     );
 
     QVector<QVector<QPair<ScanNumber, ScanPoints>>> scanPointsTranched;
-    ParallelUtils::tranchMapForParallelization(
+    ParallelUtils::trancheMapForParallelization(
             msReaderParquet->getScanPoints(),
             ParallelUtils::numberOfAvailableSystemProcessors(),
             &scanPointsTranched
@@ -1558,9 +1560,10 @@ namespace {
         ERR_RETURN
     }
 
-    void filterScoredCandidatesByWeightAndPVal(QVector<ScoredCandidate> *scoredCandidatesAllUpdated) {
+    void filterScoredCandidatesByWeightAndPVal(
+            QVector<ScoredCandidate> *scoredCandidatesAllUpdated,
+            double pValThreshold) {
 
-        const double pValThreshold = 0.05;
         const double weightThreshold = 0.0;
         const auto terminatorLogic = [weightThreshold, pValThreshold](const ScoredCandidate &s){
             return s.matrixWeight < weightThreshold || s.matrixPValue > pValThreshold;
@@ -1615,7 +1618,10 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
         scoredCandidatesAllUpdated->push_back(scNew);
     }
 
-    filterScoredCandidatesByWeightAndPVal(scoredCandidatesAllUpdated);
+    filterScoredCandidatesByWeightAndPVal(
+            scoredCandidatesAllUpdated,
+            m_pythiaParameters.pValThreshold
+            );
 
     ERR_RETURN
 }

@@ -202,7 +202,7 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
     const int defaultExtraGroup = 1;
 
     QVector<QVector<ScanPoints>> tranchedScanPoints;
-    ParallelUtils::tranchVectorForParallelizationInOrder(
+    ParallelUtils::trancheVectorForParallelizationInOrder(
             allScanPoints,
             processorCount,
             m_featureFinderParameters.skipScanCount + defaultExtraGroup,

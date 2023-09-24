@@ -124,13 +124,15 @@ struct PythiaParameters{
     int maxTandemPointCount = -1;
     int returnPSMTopN = -1;
 
+    bool deisotopeScans = true;
+
     double precursorExtractionWindowThomsons = -1.0;
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
     double fragIntensityThreshold = 0.025;
 
-    double pValThreshold = -1.0;
+    double pValThreshold = 0.05;
 
     int skipScanCount = 2;
     int minScanCount = 3;

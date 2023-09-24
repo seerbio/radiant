@@ -20,7 +20,7 @@ public:
     }
 
     template <typename T>
-    static Err tranchVectorForParallelization(
+    static Err trancheVectorForParallelization(
             const QVector<T> &input,
             int desiredTrancheSize,
             QVector<QVector<T>> *output
@@ -53,7 +53,7 @@ public:
     }
 
     template <typename T>
-    static Err tranchVectorForParallelizationInOrder(
+    static Err trancheVectorForParallelizationInOrder(
             const QVector<T> &input,
             int desiredTrancheSegments,
             int trancheBuffer,
@@ -71,7 +71,7 @@ public:
         }
 
         const int minTrancheSize = 1;
-        const int tranchSize = std::max(
+        const int trancheSize = std::max(
                     static_cast<int>(std::round(input.size() / static_cast<double>(desiredTrancheSegments))),
                     minTrancheSize
         );
@@ -81,7 +81,7 @@ public:
 
             const T &inp = input.at(i);
 
-            if (i % tranchSize == 0 && i > 0) {
+            if (i % trancheSize == 0 && i > 0) {
 
                 for (int j = i; j < i + trancheBuffer; j++) {
 
@@ -128,7 +128,7 @@ public:
     }
 
     template <typename T, typename U>
-    static Err tranchMapForParallelization(
+    static Err trancheMapForParallelization(
             const QMap<T, U> &map,
             int numberOfProcesses,
             QVector<QVector<QPair<T, U>>> *tranchedMaps
@@ -138,7 +138,7 @@ public:
 
         QVector<QPair<T, U>> pairs = ParallelUtils::convertMapToVectorPairs(map);
 
-        e = tranchVectorForParallelization(
+        e = trancheVectorForParallelization(
                 pairs,
                 numberOfProcesses,
                 tranchedMaps
