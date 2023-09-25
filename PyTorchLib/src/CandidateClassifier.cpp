@@ -18,14 +18,6 @@
 
 struct Net : torch::nn::Module {
 
-    void xavier_init(torch::nn::Module& module) {
-        torch::NoGradGuard noGrad;
-        if (auto* linear = module.as<torch::nn::Linear>()) {
-            torch::nn::init::xavier_normal_(linear->weight);
-            torch::nn::init::constant_(linear->bias, 0.01);
-        }
-    }
-
     torch::nn::Linear layer1{nullptr};
     torch::nn::Linear layer2{nullptr};
     torch::nn::Linear layer3{nullptr};
@@ -34,7 +26,6 @@ struct Net : torch::nn::Module {
     torch::nn::BatchNorm1d batchNorm1{nullptr};
     torch::nn::BatchNorm1d batchNorm2{nullptr};
     torch::nn::BatchNorm1d batchNorm3{nullptr};
-    
 
     Net(int input_size, int nodes, int num_classes) {
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(false)));
@@ -51,7 +42,6 @@ struct Net : torch::nn::Module {
         torch::nn::init::xavier_uniform_(layer3->weight);
         torch::nn::init::xavier_uniform_(layer4->weight);
         torch::nn::init::constant_(layer4->bias, 0.01);
-
     }
 
     torch::Tensor forward(torch::Tensor x) {
