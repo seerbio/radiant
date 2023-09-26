@@ -173,6 +173,11 @@ private:
             QVector<ScoredCandidate> *scoredCandidatesAllTemp
             );
 
+    Err updateProteinGroupAnnotation(
+            const QString &fastaFilePath,
+            QVector<ScoredCandidate> *scoredCandidates
+    );
+
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
             MsReaderParquet *msReaderParquet,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,

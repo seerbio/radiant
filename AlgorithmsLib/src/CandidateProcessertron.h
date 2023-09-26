@@ -56,6 +56,7 @@ namespace ScoredCandidateNamespace {
     const QString MATRIX_ERROR = QString("matrixError");
     const QString SCAN_NUM_CAND_CNT = QString("scanNumberCandidateCount");
     const QString CLASSIFIER_SCORE = QString("classifierScore");
+    const QString PROTEIN_GRP = QString("proteinGroup");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM,
@@ -92,7 +93,8 @@ namespace ScoredCandidateNamespace {
             MATRIX_PVAL,
             MATRIX_ERROR,
             SCAN_NUM_CAND_CNT,
-            CLASSIFIER_SCORE
+            CLASSIFIER_SCORE,
+            PROTEIN_GRP
     };
 }
 
@@ -133,6 +135,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double matrixError = 1.0;
     int scanNumberCandidateCount = -1;
     double classifierScore = -1.0;
+    QString proteinGroup;
 
     QMap<QString, QVariant> map() override {
 
@@ -173,6 +176,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {MATRIX_PVAL, QVariant(matrixPValue)},
                 {MATRIX_ERROR, QVariant(matrixError)},
                 {SCAN_NUM_CAND_CNT, QVariant(scanNumberCandidateCount)},
+                {PROTEIN_GRP, QVariant(proteinGroup)},
                 {CLASSIFIER_SCORE, QVariant(classifierScore)}
         };
     }
@@ -226,6 +230,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         matrixError = dataMap.value(MATRIX_ERROR).toDouble();
         scanNumberCandidateCount = dataMap.value(SCAN_NUM_CAND_CNT).toInt();
         classifierScore = dataMap.value(CLASSIFIER_SCORE).toDouble();
+        proteinGroup = dataMap.value(PROTEIN_GRP).toString();
 
         ERR_RETURN
     }

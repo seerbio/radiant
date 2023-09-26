@@ -8,6 +8,8 @@
 #include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "FastaFileToPeptidesListWorkFlow.h"
+#include "FastaReader.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MS2ChargeDeconvolvotron.h"
 #include "MsCalibrationReader.h"
@@ -77,6 +79,40 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
+
+namespace{
+
+    Err filterScoreCandidatesByFDR(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            double qValueThreshold,
+            bool filterDecoys,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+    ) {
+
+        ERR_INIT
+
+                e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+        scoredCandidatesTargetsFDRThresholded->clear();
+
+        for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+            if (filterDecoys && sc.isDecoy) {
+                continue;
+            }
+
+            else if (sc.qValue > qValueThreshold) {
+                continue;
+            }
+
+            scoredCandidatesTargetsFDRThresholded->push_back(sc);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     ERR_INIT
@@ -85,7 +121,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-//#define USE_FILE_CACHING
+#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -113,18 +149,16 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     if (m_pythiaParameters.deisotopeScans) {
         e = deisotopeScans(&msReaderParquet); ree;
     }
-#else
-    e = deisotopeScans(&msReaderParquet); ree;
 #endif
 
     e = buildCalibration(&msReaderParquet); ree;
 
-//#define BYPASS_OPTI
+#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
-    m_pythiaParameters.ms2ExtractionWidthPPM = 12.6052;
-    m_pythiaParameters.scanTimeWindowMinutes = 1.64017;
+    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
+    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
@@ -136,7 +170,6 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAll
             ); ree;
 
-
     QVector<ScoredCandidate> scoredCandidatesAllUpdated;
     e = removeInterferingCandidates(
             &msReaderParquet,
@@ -145,6 +178,8 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
+#define USE_NEURAL_NET_CLASSIFIER
+#ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
             scoredCandidatesAllUpdated,
@@ -152,16 +187,39 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 
-//#define WRITE_FDR_PMSS
-#ifdef WRITE_FDR_PMSS
-    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesTargetsFDRThresholded, resultsFilePath); ree;
-#endif
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesClassifierUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
 
-#define WRITE_ALL_PMSS
-#ifdef WRITE_ALL_PMSS
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
     const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+#else
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesAllUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesAllUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
 #endif
 
     ERR_RETURN
@@ -283,9 +341,7 @@ namespace {
         QVector<double> scores = {
                 std::max(scoreCandidate.cosineSimSum, 0.0),
                 std::max(scoreCandidate.cosineSimMS1, 0.0),
-                //TODO make sure you explore this again if FMR is too big during entrapment experiments
                 std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3),
-//                std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3)
         };
 
         if (useExtendedScores || useNeuralNetworkScores) {
@@ -333,26 +389,25 @@ namespace {
         if (useNeuralNetworkScores) {
 
             scores.push_back(scoreCandidate.discriminateScore);
-            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
+//            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
             scores.push_back(std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3));
-            scores.push_back(scoreCandidate.cosineSimSpectrum);
 
-            QVector<double> ppmVec;
-            for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
-
-                const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
-                if (i >= scoreCandidate.mzFoundMeanVec.size()) {
-                    break;
-                }
-
-                const double mzFound = scoreCandidate.mzFoundMeanVec[i];
-
-                const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-                ppmVec.push_back(std::min(ppm, 100.0));
-            }
-            const QVector<double> ppmMz
-                    = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
-            scores.append(ppmMz);
+//            QVector<double> ppmVec;
+//            for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
+//
+//                const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
+//                if (i >= scoreCandidate.mzFoundMeanVec.size()) {
+//                    break;
+//                }
+//
+//                const double mzFound = scoreCandidate.mzFoundMeanVec[i];
+//
+//                const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
+//                ppmVec.push_back(std::min(ppm, 100.0));
+//            }
+//            const QVector<double> ppmMz
+//                    = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
+//            scores.append(ppmMz);
 
             const QVector<double> individualPeakPointCount
                     = extractScoresFromVecFeatures(scoreCandidate.peakPointCountFoundVec, theoMzIonsSize);
@@ -562,7 +617,6 @@ namespace {
 
     Err buildScoredCandidatesFDR(
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
-            double fdrThreshold,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
@@ -572,7 +626,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
-        e = ErrorUtils::isTrue(fdrThreshold > 0.0); ree;
 
         scoredCandidatesAll->clear();
 
@@ -635,36 +688,6 @@ namespace {
                 identifierVsDecoyRatio,
                 scoredCandidatesAll
         ); ree;
-
-        ERR_RETURN
-    }
-
-    Err filterScoreCandidatesByFDR(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            double qValueThreshold,
-            bool filterDecoys,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
-
-        scoredCandidatesTargetsFDRThresholded->clear();
-
-        for (const ScoredCandidate &sc : scoredCandidatesAll) {
-
-            if (filterDecoys && sc.isDecoy) {
-                continue;
-            }
-
-            else if (sc.qValue > qValueThreshold) {
-                continue;
-            }
-
-            scoredCandidatesTargetsFDRThresholded->push_back(sc);
-        }
 
         ERR_RETURN
     }
@@ -785,7 +808,6 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
 
     e = buildScoredCandidatesFDR(
             scoredCandidatesOptimization,
-            fdrThreshold,
             useExtendedScores,
             useNeuralNetworkScores,
             topNMs2IonsMainAnalysis,
@@ -1182,7 +1204,6 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         QVector<ScoredCandidate> scoredCandidatesAll;
         e = buildScoredCandidatesFDR(
                 scoredCandidatesOptimization,
-                fdrThreshold,
                 useExtendedScores,
                 useNeuralNetworkScores,
                 topNMs2IonsOptimization,
@@ -1280,56 +1301,56 @@ Err PythiaDIAWorkflow::mainAnalysis(
     qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
     qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
 
-    double lastMinQVal = 1.0;
-    while (true) {
-
-        QVector<PeptideStringWithMods> scoredCandidatesTargetsFDRThresholdedSequences;
-        std::transform(
-                scoredCandidatesTargetsFDRThresholded->begin(),
-                scoredCandidatesTargetsFDRThresholded->end(),
-                std::back_inserter(scoredCandidatesTargetsFDRThresholdedSequences),
-                [](const ScoredCandidate &sc){return sc.peptideStringWithMods;}
-        );
-
-        e = buildCandidates(
-                scoredCandidatesTargetsFDRThresholdedSequences,
-                topNMs2IonsMainAnalysis,
-                &uniqueInfoScanKeyVsCandidatePeptides
-        ); ree;
-
-        e = extractionLoopLogic(
-                uniqueInfoScanKeyVsCandidatePeptides,
-                fdrThreshold,
-                useExtendedScores,
-                useNeuralNetworkScores,
-                topNMs2IonsMainAnalysis,
-                msReaderParquet,
-                scoredCandidatesAll,
-                scoredCandidatesTargetsFDRThresholded
-        ); ree;
-
-        e = countScoreCandidatesByFDR(
-                *scoredCandidatesAll,
-                fdrOnePercent,
-                &foundAtOnePercentFDR
-                ); ree;
-
-        const double minQVal = std::min_element(
-                scoredCandidatesTargetsFDRThresholded->begin(),
-                scoredCandidatesTargetsFDRThresholded->end(),
-                [](const ScoredCandidate &l, const ScoredCandidate &r){return l.qValue < r.qValue;}
-                )->qValue;
-
-        qDebug() << "Min QValue" << minQVal;
-        qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-        qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
-
-        if (minQVal > lastMinQVal || MathUtils::tSame(minQVal, lastMinQVal)) {
-            break;
-        }
-
-        lastMinQVal = minQVal;
-    }
+//    double lastMinQVal = 1.0;
+//    while (true) {
+//
+//        QVector<PeptideStringWithMods> scoredCandidatesTargetsFDRThresholdedSequences;
+//        std::transform(
+//                scoredCandidatesTargetsFDRThresholded->begin(),
+//                scoredCandidatesTargetsFDRThresholded->end(),
+//                std::back_inserter(scoredCandidatesTargetsFDRThresholdedSequences),
+//                [](const ScoredCandidate &sc){return sc.peptideStringWithMods;}
+//        );
+//
+//        e = buildCandidates(
+//                scoredCandidatesTargetsFDRThresholdedSequences,
+//                topNMs2IonsMainAnalysis,
+//                &uniqueInfoScanKeyVsCandidatePeptides
+//        ); ree;
+//
+//        e = extractionLoopLogic(
+//                uniqueInfoScanKeyVsCandidatePeptides,
+//                fdrThreshold,
+//                useExtendedScores,
+//                useNeuralNetworkScores,
+//                topNMs2IonsMainAnalysis,
+//                msReaderParquet,
+//                scoredCandidatesAll,
+//                scoredCandidatesTargetsFDRThresholded
+//        ); ree;
+//
+//        e = countScoreCandidatesByFDR(
+//                *scoredCandidatesAll,
+//                fdrOnePercent,
+//                &foundAtOnePercentFDR
+//                ); ree;
+//
+//        const double minQVal = std::min_element(
+//                scoredCandidatesTargetsFDRThresholded->begin(),
+//                scoredCandidatesTargetsFDRThresholded->end(),
+//                [](const ScoredCandidate &l, const ScoredCandidate &r){return l.qValue < r.qValue;}
+//                )->qValue;
+//
+//        qDebug() << "Min QValue" << minQVal;
+//        qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
+//        qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
+//
+//        if (minQVal > lastMinQVal || MathUtils::tSame(minQVal, lastMinQVal)) {
+//            break;
+//        }
+//
+//        lastMinQVal = minQVal;
+//    }
 
     ERR_RETURN
 }
@@ -1639,8 +1660,6 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
 
-        QVector<QPair<ScoredCandidate, QVector<double>>> dataSet;
-
         QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
         for (const ScoredCandidate &sc : scoredCandidatesCulled) {
             const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
@@ -1652,6 +1671,7 @@ namespace {
         const bool useExtendedScores = true;
         const bool useNeuralNetworkScores = true;
 
+        QVector<QPair<ScoredCandidate, QVector<double>>> targetPairs;
         QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
         QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
         for (const ScoredCandidate &sc: scoredCandidatesAll) {
@@ -1680,7 +1700,7 @@ namespace {
                 continue;
             }
 
-            dataSet.push_back({sc, scoreVector});
+            targetPairs.push_back({sc, scoreVector});
         }
 
         // TODO decide whether to shuffle this rather than sort.
@@ -1688,24 +1708,23 @@ namespace {
         std::sort(
                 decoyPairs.rbegin(),
                 decoyPairs.rend(),
-                [](const PR &l, const PR &r){return l.first.discriminateScore < l.first.discriminateScore;}
+                [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
                 );
 
-        const int decoyCutSize = std::min(decoyPairs.size(), dataSet.size());
-        qDebug() << "target count training" << dataSet.size() << "decoy count training" << decoyCutSize;
+        const int decoyCutSize = std::min(decoyPairs.size(), targetPairs.size());
+        qDebug() << "target count training" << targetPairs.size() << "decoy count training" << decoyCutSize;
 
+        QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
+        targetDecoyPairs.append(targetPairs);
         decoyPairs.resize(decoyCutSize);
-        dataSet.append(decoyPairs);
+        targetDecoyPairs.append(decoyPairs);
 
         std::random_device rd;
         std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
-        std::shuffle(dataSet.begin(), dataSet.end(), g);
+        std::shuffle(targetDecoyPairs.begin(), targetDecoyPairs.end(), g);
 
-#define WRITE_NN_TRAIN_DATA
-#ifdef WRITE_NN_TRAIN_DATA
-
-        for (const QPair<ScoredCandidate, QVector<double>> scPair : dataSet) {
+        for (const QPair<ScoredCandidate, QVector<double>> &scPair : targetDecoyPairs) {
             NeuralNetData td;
             td.peptideStringWithMods = scPair.first.peptideStringWithMods;
             td.isDecoy = scPair.first.isDecoy;
@@ -1716,7 +1735,7 @@ namespace {
             trainingData->push_back(td);
         }
 
-        for (const QPair<ScoredCandidate, QVector<double>> scPair : testPairs) {
+        for (const QPair<ScoredCandidate, QVector<double>> &scPair : testPairs) {
             NeuralNetData td;
             td.peptideStringWithMods = scPair.first.peptideStringWithMods;
             td.isDecoy = scPair.first.isDecoy;
@@ -1727,9 +1746,10 @@ namespace {
             trainingData->push_back(td);
         }
 
+//#define WRITE_NN_TRAIN_DATA
+#ifdef WRITE_NN_TRAIN_DATA
         const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;
-
 #endif
 
         ERR_RETURN
@@ -1737,14 +1757,14 @@ namespace {
 
     Err separateTrainingDataFromAllData(
             const QVector<NeuralNetData> &trainingData,
-            QVector<QVector<float>> *allDataVecs,
+            const QVector<QVector<float>> &allDataVecs,
             QVector<QVector<float>> *trainingDataVecs
             ) {
 
         ERR_INIT
         e = ErrorUtils::isNotEmpty(trainingData); ree;
-        e = ErrorUtils::isNotEmpty(*allDataVecs); ree;
-        e = ErrorUtils::isEqual(trainingData.size(), allDataVecs->size()); ree;
+        e = ErrorUtils::isNotEmpty(allDataVecs); ree;
+        e = ErrorUtils::isEqual(trainingData.size(), allDataVecs.size()); ree;
 
         for (int i = 0; i < trainingData.size(); i++) {
 
@@ -1754,7 +1774,7 @@ namespace {
                 continue;
             }
 
-            trainingDataVecs->push_back(allDataVecs->at(i));
+            trainingDataVecs->push_back(allDataVecs.at(i));
         }
 
         ERR_RETURN
@@ -1784,7 +1804,7 @@ namespace {
 
         e = separateTrainingDataFromAllData(
                 trainingData,
-                allDataVecs,
+                *allDataVecs,
                 trainingDataVecs
                 ); ree;
 
@@ -1915,6 +1935,9 @@ namespace {
         e = countScoreCandidatesByFDR(*scoredCandidatesUpdateQVal, 0.01, &targetCount);
         qDebug() << targetCount << "Targets at 1% FDR";
 
+        e = countScoreCandidatesByFDR(*scoredCandidatesUpdateQVal, 0.1, &targetCount);
+        qDebug() << targetCount << "Targets at 10% FDR";
+
         ERR_RETURN
     }
 
@@ -1962,7 +1985,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     bool trainingCompletedNoErrors = candidateClassifier.trainCandidateClassifier(
             trainingDataVecs,
             yData,
-            10,
+            1,
             0.001,
             0.001
             );
@@ -1975,7 +1998,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             );
     e = ErrorUtils::isTrue(predictionOK); ree;
 
-//#define PRINT_NEURAL_NET_METRICS
+#define PRINT_NEURAL_NET_METRICS
 #ifdef PRINT_NEURAL_NET_METRICS
     int falsePos = 0;
     int falseNeg = 0;
@@ -2050,6 +2073,50 @@ Err PythiaDIAWorkflow::returnAllCandidatesScoredFullFragIons(
             scoredCandidatesAllTemp,
             &scoredCandidatesTargetsFDRThresholdedUnused
     ); ree;
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
+        const QString &fastaFilePath,
+        QVector<ScoredCandidate> *scoredCandidates
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*scoredCandidates); ree;
+
+    FastaReader fastaReader;
+    e = fastaReader.parseFastaFile(fastaFilePath); ree;
+
+    QVector<PeptideSequence> peptideSequences;
+    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntries;
+    e = FastaFileToPeptidesListWorkFlow::digestFastaEntries(
+            m_pythiaParameters,
+            fastaReader.fastaEntries(),
+            &peptideSequences,
+            &peptideStringWithModsVsFastaEntries
+            ); ree;
+
+    for (int i = 0; i < scoredCandidates->size(); i++) {
+
+        ScoredCandidate &sc = (*scoredCandidates)[i];
+
+        QString peptideSeqReplacedLeucines = sc.peptideStringWithMods;
+        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+
+        const QVector<FastaEntry> fastaEntries = peptideStringWithModsVsFastaEntries.value(peptideSeqReplacedLeucines);
+
+        QStringList fastaDescriptions;
+        std::transform(
+                fastaEntries.begin(),
+                fastaEntries.end(),
+                std::back_inserter(fastaDescriptions),
+                [](const FastaEntry &fe){return fe.fastaDescription;}
+                );
+
+        sc.proteinGroup = fastaDescriptions.join(';');
+    }
 
     ERR_RETURN
 }

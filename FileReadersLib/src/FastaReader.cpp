@@ -18,6 +18,8 @@ Err FastaReader::parseFastaFile(const QString &filePath)
 {
     ERR_INIT;
 
+    e = ErrorUtils::fileExists(filePath); ree;
+
     QFile file(filePath);
     e = ErrorUtils::isTrue(file.open(QIODevice::ReadOnly), eFileError); ree;
 
