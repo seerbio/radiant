@@ -15,8 +15,11 @@
 #include <iostream>
 #include <random>
 
+const int NUMBER_OF_THE_BEAST = 666;
 
 struct Net : torch::nn::Module {
+
+
 
     torch::nn::Linear layer1{nullptr};
     torch::nn::Linear layer2{nullptr};
@@ -36,7 +39,7 @@ struct Net : torch::nn::Module {
         batchNorm3 = register_module("batchNorm3", torch::nn::BatchNorm1d(nodes));
         layer4 = register_module("layer4", torch::nn::Linear(nodes, num_classes));
 
-        std::mt19937 rng(666);
+//        std::mt19937 rng(NUMBER_OF_THE_BEAST);
         torch::nn::init::xavier_uniform_(layer1->weight);
         torch::nn::init::xavier_uniform_(layer2->weight);
         torch::nn::init::xavier_uniform_(layer3->weight);
@@ -126,8 +129,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         double learningRate
         ) {
 
-    const int numberOfTheBeast = 666;
-    torch::manual_seed(numberOfTheBeast);
+    torch::manual_seed(NUMBER_OF_THE_BEAST);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -140,7 +142,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = input_size;
+    const int nodes = 10;
     const int num_classes = 1;
     const int batchSize = static_cast<int>(batchFraction * xData.size());
 
@@ -176,13 +178,14 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
             torch::Tensor output = m_net->forward(batchX);
 
-            // Regularization strength (lambda)
-            float lambda = 0.001; // Adjust as needed
-            torch::Tensor l2_regularization = torch::tensor(0.0, torch::kFloat32);
-            for (const auto& parameter : m_net->parameters()) {
-                l2_regularization += torch::norm(parameter, 2);
-            }
-            torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
+//            // Regularization strength (lambda)
+//            float lambda = 0.0001; // Adjust as needed
+//            torch::Tensor l2_regularization = torch::tensor(0.0, torch::kFloat32);
+//            for (const auto& parameter : m_net->parameters()) {
+//                l2_regularization += torch::norm(parameter, 2);
+//            }
+//            torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
+            torch::Tensor loss = loss_function(output, batchY);
 
             const auto batchLoss = loss.item<float>();
             batchLossSum += batchLoss;

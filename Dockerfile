@@ -64,14 +64,17 @@ ENV PATH="/usr/bin/cmake/bin:${PATH}"
 COPY ./ /src/PythiaDIACpp/
 
 # https://pytorch.org
-RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
-RUN unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
+&& unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
+&& cp -r ./libtorch/ /src/PythiaDIACpp/ThirdPartyLibs/libtorch \
+&& cp -r ./libtorch/lib/ /usr/lib/
 
-# Build the project in /app/
+
+### Build the project in /app/
 #WORKDIR /app/
 #RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
 #    && make
-#
+
 #################################################
 ##
 ## Test stage
