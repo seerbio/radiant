@@ -10,6 +10,7 @@
 #include "ErrorUtils.h"
 #include "FastaFileToPeptidesListWorkFlow.h"
 #include "FastaReader.h"
+#include "FDRCLassifierNeuralNet.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MS2ChargeDeconvolvotron.h"
 #include "MsCalibrationReader.h"
@@ -79,7 +80,6 @@ Err PythiaDIAWorkflow::init(
     ERR_RETURN
 }
 
-
 namespace{
 
     Err filterScoreCandidatesByFDR(
@@ -91,7 +91,7 @@ namespace{
 
         ERR_INIT
 
-                e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
         e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
 
         scoredCandidatesTargetsFDRThresholded->clear();
@@ -252,7 +252,6 @@ namespace {
         return {e, deisotopedScanPoints};
     }
 
-
 }//namespace
 Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
@@ -300,131 +299,6 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
 namespace {
 
-    QString buildTargetDecoyKey(
-            const PeptideStringWithMods &peptideStringWithMods,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            Charge charge
-            ) {
-
-        const QString &sep = S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP;
-
-        return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
-    }
-
-    template <typename T>
-    QVector<double> extractScoresFromVecFeatures(
-            const QVector<T> &featureVec,
-            int theoMzIonsSize
-            ) {
-
-        QVector<double> vec(theoMzIonsSize, 0.0);
-
-        for (int i = 0; i < theoMzIonsSize; i++) {
-
-            if (i >= featureVec.size()) {
-                break;
-            }
-
-            vec[i] = static_cast<double>(featureVec[i]);
-        }
-
-        return vec;
-    }
-
-    QVector<double> buildScoreVector(
-            const ScoredCandidate &scoreCandidate,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            int theoMzIonsSize
-            ) {
-
-        QVector<double> scores = {
-                std::max(scoreCandidate.cosineSimSum, 0.0),
-                std::max(scoreCandidate.cosineSimMS1, 0.0),
-                std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3),
-        };
-
-        if (useExtendedScores || useNeuralNetworkScores) {
-            scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted));
-            scores.push_back(scoreCandidate.theoFragmentCount);
-            scores.push_back(scoreCandidate.charge);
-            scores.push_back(scoreCandidate.peptideStringWithMods.size());
-            scores.push_back(scoreCandidate.mass);
-
-            const QVector<double> cosineSimToAnchors
-                    = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);
-            scores.append(cosineSimToAnchors);
-
-            const QVector<double> topHalfCosineSimScores = cosineSimToAnchors.mid(0, theoMzIonsSize / 2);
-            scores.push_back(std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0));
-
-            const QVector<double> bottomHalfCosineSimScores = cosineSimToAnchors.mid(theoMzIonsSize / 2, theoMzIonsSize / 2);
-            scores.push_back(std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0));
-
-            const QVector<double> theoApexIntensity
-                    = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);
-            scores.append(theoApexIntensity);
-
-            const QVector<double> intensityFoundMaxVec
-                    = extractScoresFromVecFeatures(scoreCandidate.intensityFoundMaxVec, theoMzIonsSize);
-            const double maxIntensity = std::max(
-                    *std::max(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end()),
-                    1.0
-                    );
-            QVector<double> intensityFoundMaxVecNorm;
-            std::transform(
-                    intensityFoundMaxVec.begin(),
-                    intensityFoundMaxVec.end(),
-                    std::back_inserter(intensityFoundMaxVecNorm),
-                    [maxIntensity](double d){return d / maxIntensity;}
-                    );
-            scores.append(intensityFoundMaxVecNorm);
-
-            const QVector<double> mzStDev
-                    = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
-            scores.append(mzStDev);
-        }
-
-        if (useNeuralNetworkScores) {
-
-            scores.push_back(scoreCandidate.discriminateScore);
-            scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
-            scores.push_back(std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3));
-
-            QVector<double> ppmVec;
-            for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
-
-                const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
-                if (i >= scoreCandidate.mzFoundMeanVec.size()) {
-                    break;
-                }
-
-                const double mzFound = scoreCandidate.mzFoundMeanVec[i];
-
-                const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-                ppmVec.push_back(std::min(ppm, 100.0));
-            }
-            const QVector<double> ppmMz
-                    = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
-            scores.append(ppmMz);
-
-            scores.push_back(scoreCandidate.matrixPValue);
-            scores.push_back(scoreCandidate.matrixWeight);
-            scores.push_back(scoreCandidate.matrixError);
-            scores.push_back(scoreCandidate.scanNumberCandidateCount);
-
-            const QVector<double> individualPeakPointCount
-                    = extractScoresFromVecFeatures(scoreCandidate.peakPointCountFoundVec, theoMzIonsSize);
-            scores.append(individualPeakPointCount);
-
-            const QVector<double> frameIndexMaxDiffFromAnchorVec
-                    = extractScoresFromVecFeatures(scoreCandidate.frameIndexMaxDiffFromAnchorVec, theoMzIonsSize);
-            scores.append(frameIndexMaxDiffFromAnchorVec);
-        }
-
-        return scores;
-    }
-
     Err buildClassifierInput(
             const QVector<ScoredCandidate> &scoredCandidates,
             bool useExtendedScores,
@@ -440,7 +314,12 @@ namespace {
         QMap<PeptideStringWithMods, ScoredCandidate> decoys;
         for (const ScoredCandidate &sc : scoredCandidates) {
 
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
+                    );
+
             if(sc.isDecoy) {
                 decoys.insert(key, sc);
             }
@@ -454,20 +333,24 @@ namespace {
         for (auto it = targets.begin(); it != targets.end(); it++) {
 
             const ScoredCandidate &scTarget = it.value();
-            const QString key = buildTargetDecoyKey(scTarget.peptideStringWithMods, scTarget.targetKey, scTarget.charge);
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    scTarget.peptideStringWithMods,
+                    scTarget.targetKey,
+                    scTarget.charge
+                    );
 
             e = ErrorUtils::isTrue(decoys.contains(key)); ree;
 
             const ScoredCandidate scDecoy = decoys.value(key);
 
-            const QVector<double> targetScores = buildScoreVector(
+            const QVector<double> targetScores = FDRCLassifierNeuralNet::buildScoreVector(
                     scTarget,
                     useExtendedScores,
                     useNeuralNetworkScores,
                     theoMzIonsSize
                     );
 
-            const QVector<double> decoyScores = buildScoreVector(
+            const QVector<double> decoyScores = FDRCLassifierNeuralNet::buildScoreVector(
                     scDecoy,
                     useExtendedScores,
                     useNeuralNetworkScores,
@@ -535,7 +418,7 @@ namespace {
 
         for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
 
-            QVector<double> scores = buildScoreVector(
+            QVector<double> scores = FDRCLassifierNeuralNet::buildScoreVector(
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
@@ -545,7 +428,11 @@ namespace {
             QVector<double> results;
             e = ClassifierWeightsManager::applyWeights({scores}, weights, &results); ree;
 
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
+                    );
 
             ScoredCandidate scoredCandidate = sc;
             scoredCandidate.discriminateScore = results.front();
@@ -583,7 +470,11 @@ namespace {
                 continue;
             }
 
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
+                    );
 
             e = ErrorUtils::isTrue(identifierVsQValue.contains(key)); ree;
             e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(key)); ree;
@@ -696,27 +587,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err countScoreCandidatesByFDR(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            double qValueThreshold,
-            int *targetCountBelowFDRThreshold
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
-
-        const auto countLogic = [qValueThreshold](const ScoredCandidate &sc){
-            return !sc.isDecoy && sc.qValue < qValueThreshold;
-        };
-
-        *targetCountBelowFDRThreshold
-            = static_cast<int>(std::count_if(scoredCandidatesAll.begin(), scoredCandidatesAll.end(), countLogic));
-
-        ERR_RETURN
-    }
-
 }//namespace
 Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
 
@@ -762,11 +632,11 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
                 &scoredCandidatesTargetsFDRThresholded
         ); ree;
 
-        countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
+        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
         qDebug() << onePercentFDRCount;
 
         int tenPercetFDRCount;
-        countScoreCandidatesByFDR(scoredCandidatesAll, 0.1, &tenPercetFDRCount);
+        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.1, &tenPercetFDRCount);
         qDebug() << calibrationSelectionFraction << "One percent FDR" << onePercentFDRCount << "ten percent FDR" << tenPercetFDRCount;
 
         calibrationSelectionFraction += calibrationSelectionFractionIncrement;
@@ -800,6 +670,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
         QVector<ScoredCandidate> *scoredCandidatesAll,
         QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
         ) {
+
     ERR_INIT
 
     QVector<ScoredCandidate> scoredCandidatesOptimization;
@@ -1215,7 +1086,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         ); ree;
 
        int targetCountAboveFDRQValueThreshold;
-        e = countScoreCandidatesByFDR(
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
                 scoredCandidatesAll,
                 fdrThreshold,
                 &targetCountAboveFDRQValueThreshold
@@ -1296,7 +1167,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     const double fdrOnePercent = 0.01;
     int foundAtOnePercentFDR;
-    e = countScoreCandidatesByFDR(
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
             *scoredCandidatesAll,
             fdrOnePercent,
             &foundAtOnePercentFDR
@@ -1653,294 +1524,23 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 
 namespace {
 
-    Err buildNeuralNetworkInput(
+    Err buildKeyVsScoredCandidateCulled(
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            int topNMs2IonsFull,
-            QVector<NeuralNetData> *trainingData
-    ) {
+            QMap<QString, ScoredCandidate> *keyVsScoredCandidateCulled
+            ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidatesCulled); ree;
 
-        QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
         for (const ScoredCandidate &sc : scoredCandidatesCulled) {
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
-            keyVsScoredCandidateCulled.insert(key, sc);
-        }
-
-        const double qValueMin = 0.01;
-        const double cosineSimSumMin = 0.5;
-        const bool useExtendedScores = true;
-        const bool useNeuralNetworkScores = true;
-
-        QVector<QPair<ScoredCandidate, QVector<double>>> targetPairs;
-        QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
-        QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
-        for (const ScoredCandidate &sc: scoredCandidatesAll) {
-
-            const QVector<double> scoreVector = buildScoreVector(
-                    sc,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    topNMs2IonsFull
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
             );
-
-            if (sc.isDecoy && sc.cosineSimSum > cosineSimSumMin) {
-                decoyPairs.push_back({sc, scoreVector});
-                continue;
-            }
-
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
-            if (!keyVsScoredCandidateCulled.contains(key)) {
-                continue;
-            }
-
-            const ScoredCandidate &scoredCandidateOriginal = keyVsScoredCandidateCulled.value(key);
-
-            if (scoredCandidateOriginal.qValue > qValueMin && !scoredCandidateOriginal.isDecoy) {
-                testPairs.push_back({sc, scoreVector});
-                continue;
-            }
-
-            targetPairs.push_back({sc, scoreVector});
+            keyVsScoredCandidateCulled->insert(key, sc);
         }
-
-        // TODO decide whether to shuffle this rather than sort.
-        using PR = QPair<ScoredCandidate, QVector<double>>;
-        std::sort(
-                decoyPairs.rbegin(),
-                decoyPairs.rend(),
-                [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
-                );
-
-        const int decoyCutSize = std::min(decoyPairs.size(), targetPairs.size());
-        qDebug() << "target count training" << targetPairs.size() << "decoy count training" << decoyCutSize;
-
-        QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
-        targetDecoyPairs.append(targetPairs);
-        decoyPairs.resize(decoyCutSize);
-        targetDecoyPairs.append(decoyPairs);
-
-        std::random_device rd;
-        std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-
-        std::shuffle(targetDecoyPairs.begin(), targetDecoyPairs.end(), g);
-
-        for (const QPair<ScoredCandidate, QVector<double>> &scPair : targetDecoyPairs) {
-            NeuralNetData td;
-            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
-            td.isDecoy = scPair.first.isDecoy;
-            td.scores = scPair.second;
-            td.isTest = false;
-            td.charge = scPair.first.charge;
-            td.targetKey = scPair.first.targetKey;
-            trainingData->push_back(td);
-        }
-
-        for (const QPair<ScoredCandidate, QVector<double>> &scPair : testPairs) {
-            NeuralNetData td;
-            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
-            td.isDecoy = scPair.first.isDecoy;
-            td.scores = scPair.second;
-            td.isTest = true;
-            td.charge = scPair.first.charge;
-            td.targetKey = scPair.first.targetKey;
-            trainingData->push_back(td);
-        }
-
-#define WRITE_NN_TRAIN_DATA
-#ifdef WRITE_NN_TRAIN_DATA
-        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
-        e = ParquetReader::write(*trainingData, dataFilePath); ree;
-#endif
-
-        ERR_RETURN
-    }
-
-    Err separateTrainingDataFromAllData(
-            const QVector<NeuralNetData> &trainingData,
-            const QVector<QVector<float>> &allDataVecs,
-            QVector<QVector<float>> *trainingDataVecs
-            ) {
-
-        ERR_INIT
-        e = ErrorUtils::isNotEmpty(trainingData); ree;
-        e = ErrorUtils::isNotEmpty(allDataVecs); ree;
-        e = ErrorUtils::isEqual(trainingData.size(), allDataVecs.size()); ree;
-
-        for (int i = 0; i < trainingData.size(); i++) {
-
-            const bool isTest = trainingData.at(i).isTest;
-
-            if (isTest) {
-                continue;
-            }
-
-            trainingDataVecs->push_back(allDataVecs.at(i));
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildNeuralNetworkNormalizedVectors(
-            const QVector<NeuralNetData> &trainingData,
-            QVector<QVector<float>> *allDataVecs,
-            QVector<QVector<float>> *trainingDataVecs,
-            QVector<float> *yData
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(trainingData); ree;
-
-        QVector<QVector<double>> allData;
-        for (const NeuralNetData &nnd : trainingData) {
-            allData.push_back(nnd.scores);
-        }
-
-        Eigen::MatrixX<double> mat = EigenUtils::convertQVectorsToEigenMatrix(allData);
-        EigenUtils::minMaxScaleMatrix(&mat);
-
-        Eigen::MatrixX<float> matFloat = mat.cast<float>();
-        *allDataVecs = EigenUtils::convertEigenMatrixToQVectors(matFloat);
-
-        e = separateTrainingDataFromAllData(
-                trainingData,
-                *allDataVecs,
-                trainingDataVecs
-                ); ree;
-
-        for (const NeuralNetData &nnd : trainingData) {
-
-            if (nnd.isTest) {
-                continue;
-            }
-
-            yData->push_back(static_cast<float>(nnd.isDecoy));
-        }
-
-        e = ErrorUtils::isNotEmpty(*yData); ree;
-        e = ErrorUtils::isEqual(yData->size(), trainingDataVecs->size()); ree;
-
-        ERR_RETURN
-    }
-
-    Err buildQValCalcInput(
-            const QVector<NeuralNetData> &trainingData,
-            const QVector<float> &predictions,
-            QMap<QString, double> *identifierVsTarget,
-            QMap<QString, double> *identifierVsDecoys
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isEqual(trainingData.size(), predictions.size());
-
-
-        for (int i = 0; i < trainingData.size(); i++) {
-
-            const NeuralNetData &nnd = trainingData.at(i);
-
-            const QString key = buildTargetDecoyKey(
-                    nnd.peptideStringWithMods,
-                    nnd.targetKey,
-                    nnd.charge
-            );
-
-            if (nnd.isDecoy) {
-                identifierVsDecoys->insert(key, 1 / predictions.at(i));
-                continue;
-            }
-
-            identifierVsTarget->insert(key, 1 / predictions.at(i));
-        }
-
-        ERR_RETURN
-    }
-
-    Err updateScoreCandidatesClassifier(
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-            const QMap<QString, double> &identifierVsTarget,
-            const QMap<QString, double> &identifierVsQValue,
-            const QMap<QString, double> &identifierVsDecoyRatio,
-            QVector<ScoredCandidate> *scoredCandidatesUpdateQVal
-            ) {
-
-        ERR_INIT
-
-        for (const ScoredCandidate &sc : scoredCandidatesAllFullFragIons) {
-
-            if (sc.isDecoy) {
-                continue;
-            }
-
-            const QString key = buildTargetDecoyKey(sc.peptideStringWithMods, sc.targetKey, sc.charge);
-            if (identifierVsQValue.contains(key)) {
-
-                ScoredCandidate scUpdate = sc;
-                scUpdate.qValue = identifierVsQValue.value(key);
-                scUpdate.decoyRatio = identifierVsDecoyRatio.value(key);
-
-                // take reciprical because it was done in buildQValCalcInput() to calc QVal because
-                // score for qVal higher is better, but for classifier lower is better.
-                scUpdate.classifierScore = 1 / identifierVsTarget.value(key);
-
-                scoredCandidatesUpdateQVal->push_back(scUpdate);
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    Err recalculateQValsFromNeuralNetScore(
-            const QVector<NeuralNetData> &trainingData,
-            const QVector<float> &predictions,
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-            QVector<ScoredCandidate> *scoredCandidatesUpdateQVal
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(trainingData); ree;
-        e = ErrorUtils::isNotEmpty(predictions); ree;
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAllFullFragIons); ree;
-
-        scoredCandidatesUpdateQVal->clear();
-
-        QMap<QString, double> identifierVsTarget;
-        QMap<QString, double> identifierVsDecoys;
-        e = buildQValCalcInput(
-                trainingData,
-                predictions,
-                &identifierVsTarget,
-                &identifierVsDecoys
-                ); ree;
-
-        QMap<QString, double> identifierVsQValue;
-        QMap<QString, double> identifierVsDecoyRatio;
-        e = MathUtils::calculateQValue(
-                identifierVsTarget,
-                identifierVsDecoys,
-                &identifierVsQValue,
-                &identifierVsDecoyRatio
-        ); ree;
-
-        e = updateScoreCandidatesClassifier(
-                scoredCandidatesAllFullFragIons,
-                identifierVsTarget,
-                identifierVsQValue,
-                identifierVsDecoyRatio,
-                scoredCandidatesUpdateQVal
-                ); ree;
-
-        int targetCount;
-        e = countScoreCandidatesByFDR(*scoredCandidatesUpdateQVal, 0.01, &targetCount);
-        qDebug() << targetCount << "Targets at 1% FDR";
-
-        e = countScoreCandidatesByFDR(*scoredCandidatesUpdateQVal, 0.1, &targetCount);
-        qDebug() << targetCount << "Targets at 10% FDR";
 
         ERR_RETURN
     }
@@ -1962,77 +1562,42 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             &scoredCandidatesAllFullFragIons
             ); ree;
 
-    const int topNMs2IonsFull = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-    );
-
-    QVector<NeuralNetData> trainingData;
-    e = buildNeuralNetworkInput(
+    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
+    e = buildKeyVsScoredCandidateCulled(
             scoredCandidatesCulled,
-            scoredCandidatesAllFullFragIons,
-            topNMs2IonsFull,
-            &trainingData
+            &keyVsScoredCandidateCulled
             ); ree;
 
-    QVector<QVector<float>> allDataVecs;
-    QVector<QVector<float>> trainingDataVecs;
-    QVector<float> yData;
-    e = buildNeuralNetworkNormalizedVectors(
-            trainingData,
-            &allDataVecs,
-            &trainingDataVecs,
-            &yData
-            ); ree;
+#define WRITE_NEURAL_NET_INPUT
+#ifdef WRITE_NEURAL_NET_INPUT
+      e = ParquetReader::write(
+              scoredCandidatesAllFullFragIons,
+              "scoredCandidatesAllFullFragIons.parquet"
+              ); ree;
 
-    CandidateClassifier candidateClassifier;
-    bool trainingCompletedNoErrors = candidateClassifier.trainCandidateClassifier(
-            trainingDataVecs,
-            yData,
-            1,
-            0.001,
-            0.001
-            );
-    e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
-
-    QVector<float> predictions;
-    const bool predictionOK = candidateClassifier.predict(
-            allDataVecs,
-            &predictions
-            );
-    e = ErrorUtils::isTrue(predictionOK); ree;
-
-#define PRINT_NEURAL_NET_METRICS
-#ifdef PRINT_NEURAL_NET_METRICS
-    int falsePos = 0;
-    int falseNeg = 0;
-    int truePos = 0;
-    int trueNeg = 0;
-    for (int i = 0; i < trainingData.size(); i++) {
-
-        const float act = trainingData.at(i).isDecoy;
-        const float pred =  predictions.at(i);
-
-        if (act >= 0.5 && pred < 0.5) {
-            falsePos++;
-        }
-        else if (act < 0.5 && pred >= 0.5) {
-            falseNeg++;
-        }
-        else if (act < 0.5 && pred < 0.5) {
-            truePos++;
-        }
-        else if (act >= 0.5 && pred >= 0.5) {
-            trueNeg++;
-        }
-    }
-    qDebug() << "FP" << falsePos << "FN" << falseNeg << "TP" << truePos << "TN" << trueNeg;
+    e = ParquetReader::write(
+            keyVsScoredCandidateCulled.values().toVector(),
+            "keyVsScoredCandidateCulled.parquet"
+    ); ree;
 #endif
 
-    e = recalculateQValsFromNeuralNetScore(
-            trainingData,
-            predictions,
+    const int epochs = 20;
+    const int baggingSize = 6;
+    const double batchFraction = 0.01;
+    const double learningRate = 0.001;
+    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    e = fdrClassifierNeuralNet.init(
+            m_pythiaParameters,
+            epochs,
+            baggingSize,
+            batchFraction,
+            learningRate
+            ); ree;
+
+    e = fdrClassifierNeuralNet.exec(
+            keyVsScoredCandidateCulled,
             scoredCandidatesAllFullFragIons,
+            msReaderParquet,
             scoredCandidatesClassifier
             ); ree;
 
