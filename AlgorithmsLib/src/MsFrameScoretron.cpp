@@ -201,7 +201,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         ); ree;
     }
 
-    const double cosineSimSumMin = 1.5; //TODO revisit this.
+    const double cosineSimSumMin = 0.0;
     for (const CandidatePeptide &candidatePeptide : m_fragPredsTopN) {
 
         ScoredCandidate scoredCandidate;
