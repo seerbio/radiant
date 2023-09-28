@@ -1150,6 +1150,8 @@ Err PythiaDIAWorkflow::mainAnalysis(
             static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
     );
 
+    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+
     QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
     e = buildCandidates(
             topNMs2IonsMainAnalysis,

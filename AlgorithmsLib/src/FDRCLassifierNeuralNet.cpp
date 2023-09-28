@@ -588,27 +588,28 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 ) {
 
     QVector<double> scores = {
-            std::max(scoreCandidate.cosineSimSum, 0.0),
-            std::max(scoreCandidate.cosineSimMS1, 0.0),
-            std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3),
+            std::max(scoreCandidate.cosineSimSum, 0.0), //1
+            std::max(scoreCandidate.cosineSimMS1, 0.0), //2
+            std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //3
+            std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //4
     };
 
     if (useExtendedScores || useNeuralNetworkScores) {
-        scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted));
-        scores.push_back(scoreCandidate.theoFragmentCount);
-        scores.push_back(scoreCandidate.charge);
-        scores.push_back(scoreCandidate.peptideStringWithMods.size());
-        scores.push_back(scoreCandidate.mass);
+        scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted)); //5
+        scores.push_back(scoreCandidate.theoFragmentCount); //6
+        scores.push_back(scoreCandidate.charge); //7
+        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //8
+        scores.push_back(scoreCandidate.mass); //9
 
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);
-        scores.append(cosineSimToAnchors);
+        scores.append(cosineSimToAnchors); //10-15
 
         const QVector<double> topHalfCosineSimScores = cosineSimToAnchors.mid(0, theoMzIonsSize / 2);
-        scores.push_back(std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0));
+        scores.push_back(std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0)); //16
 
         const QVector<double> bottomHalfCosineSimScores = cosineSimToAnchors.mid(theoMzIonsSize / 2, theoMzIonsSize / 2);
-        scores.push_back(std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0));
+        scores.push_back(std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0)); //17
 
         const QVector<double> theoApexIntensity
                 = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);
