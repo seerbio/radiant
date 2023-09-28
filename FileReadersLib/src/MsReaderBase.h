@@ -84,6 +84,8 @@ public:
 
     bool isDIA();
 
+    QPair<double, double> scanTimeMinMax();
+
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
     Err getScanPoints(

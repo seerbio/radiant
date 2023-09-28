@@ -99,7 +99,8 @@ public:
             int epochs,
             int baggingSize,
             double batchFraction,
-            double learningRate
+            double learningRate,
+            const QPair<double, double> &scanTimeMinMax
             );
 
     Err exec(
@@ -118,7 +119,8 @@ public:
             const ScoredCandidate &scoreCandidate,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
-            int theoMzIonsSize
+            int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax
     );
 
     template <typename T>
@@ -183,6 +185,7 @@ private:
     const int m_minTopNMs2Ions;
     bool m_isInit;
 
+    QPair<double, double> m_scanTimeMinMax;
     QVector<CandidateClassifier*> m_candidateClassifiers;
 
 };

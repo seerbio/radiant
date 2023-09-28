@@ -437,3 +437,7 @@ QString MsReaderBase::filePath() {
 int MsReaderBase::getFrameCount() {
     return getUniqueTandemMsScanInfos().size();
 }
+
+QPair<double, double> MsReaderBase::scanTimeMinMax() {
+    return {m_msScanInfo.first().scanTime, m_msScanInfo.last().scanTime};
+}

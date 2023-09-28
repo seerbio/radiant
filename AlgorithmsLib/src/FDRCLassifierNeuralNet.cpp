@@ -31,7 +31,8 @@ Err FDRCLassifierNeuralNet::init(
         int epochs,
         int baggingSize,
         double batchFraction,
-        double learningRate
+        double learningRate,
+        const QPair<double, double> &scanTimeMinMax
         ) {
 
     ERR_INIT
@@ -47,6 +48,7 @@ Err FDRCLassifierNeuralNet::init(
     m_baggingSize = baggingSize;
     m_batchFraction = batchFraction;
     m_learningRate = learningRate;
+    m_scanTimeMinMax = scanTimeMinMax;
 
     m_isInit = true;
 
@@ -232,6 +234,7 @@ namespace {
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
             const QVector<ScoredCandidate> &scoredCandidatesAll,
             int topNMs2IonsFull,
+            const QPair<double, double> &scanTimeMinMax,
             QVector<NeuralNetData> *trainingData
     ) {
 
@@ -254,7 +257,8 @@ namespace {
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
-                    topNMs2IonsFull
+                    topNMs2IonsFull,
+                    scanTimeMinMax
             );
 
             if (sc.isDecoy && sc.cosineSimSum > cosineSimSumMin) {
@@ -425,6 +429,7 @@ Err FDRCLassifierNeuralNet::trainClassifier(
             keyVsScoredCandidateCulled,
             scoredCandidatesAllFullFragIons,
             topNMs2IonsFull,
+            m_scanTimeMinMax,
             trainingData
             ); ree;
 
@@ -569,7 +574,6 @@ Err FDRCLassifierNeuralNet::predictBaggedClassifiers(
     ERR_RETURN
 }
 
-
 QString FDRCLassifierNeuralNet::buildTargetDecoyKey(
         const PeptideStringWithMods &peptideStringWithMods,
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
@@ -584,32 +588,50 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const ScoredCandidate &scoreCandidate,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        int theoMzIonsSize
+        int theoMzIonsSize,
+        const QPair<double, double> &scanTimeMinMax
+
 ) {
 
     QVector<double> scores = {
             std::max(scoreCandidate.cosineSimSum, 0.0), //1
             std::max(scoreCandidate.cosineSimMS1, 0.0), //2
             std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //3
-            std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //4
+            std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 1/3.0) //4
     };
 
     if (useExtendedScores || useNeuralNetworkScores) {
+
         scores.push_back(std::abs(scoreCandidate.scanTime - scoreCandidate.scanTimePredicted)); //5
-        scores.push_back(scoreCandidate.theoFragmentCount); //6
-        scores.push_back(scoreCandidate.charge); //7
-        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //8
-        scores.push_back(scoreCandidate.mass); //9
+
+        const double scanTimeRange = std::max(
+                std::numeric_limits<double>::min(),
+                scanTimeMinMax.second - scanTimeMinMax.first
+                );
+        const double scanTimeDelta = scoreCandidate.scanTime - scoreCandidate.scanTimePredicted;
+        const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
+        scores.push_back(pdScanTime); //6
+
+        scores.push_back(scoreCandidate.theoFragmentCount); //7
+        scores.push_back(scoreCandidate.charge); //8
+        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //9
+        scores.push_back(scoreCandidate.mass); //10
 
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);
-        scores.append(cosineSimToAnchors); //10-15
+        scores.append(cosineSimToAnchors); //11-16
 
         const QVector<double> topHalfCosineSimScores = cosineSimToAnchors.mid(0, theoMzIonsSize / 2);
-        scores.push_back(std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0)); //16
+        const double topHalfCosineSimScoresSum = std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0);
+        scores.push_back(topHalfCosineSimScoresSum); //17
 
         const QVector<double> bottomHalfCosineSimScores = cosineSimToAnchors.mid(theoMzIonsSize / 2, theoMzIonsSize / 2);
-        scores.push_back(std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0)); //17
+        const double bottomHalfCosineSimScoresSum = std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0);
+        scores.push_back(bottomHalfCosineSimScoresSum); //18
+
+        const double topBottomRatio
+            = std::log(std::max(1.0, topHalfCosineSimScoresSum) / (topHalfCosineSimScoresSum + bottomHalfCosineSimScoresSum + 1.0));
+        scores.push_back(topBottomRatio);
 
         const QVector<double> theoApexIntensity
                 = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);

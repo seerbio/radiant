@@ -27,7 +27,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             1,
             5,
             0.1,
-            0.01
+            0.01,
+            {1,20}
             );
     QCOMPARE(e, eError);
 
@@ -36,7 +37,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             0,
             5,
             0.1,
-            0.01
+            0.01,
+            {1,20}
     );
     QCOMPARE(e, eError);
 
@@ -45,7 +47,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             1,
             0,
             0.1,
-            0.01
+            0.01,
+            {1,20}
     );
     QCOMPARE(e, eError);
 
@@ -54,7 +57,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             1,
             1,
             0.0,
-            0.01
+            0.01,
+            {1,20}
     );
     QCOMPARE(e, eError);
 
@@ -63,7 +67,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             1,
             1,
             0.1,
-            0.0
+            0.0,
+            {1,20}
     );
     QCOMPARE(e, eError);
 
@@ -72,7 +77,8 @@ void FDRCLassifierNeuralNetTests::initTest() {
             1,
             1,
             0.1,
-            0.0000001
+            0.0000001,
+            {1,20}
     );
     QCOMPARE(e, eNoError);
 
@@ -112,7 +118,8 @@ void FDRCLassifierNeuralNetTests::execTest() {
             10,
             6,
             0.1,
-            0.001
+            0.001,
+            {1,20}
     );
     QCOMPARE(e, eNoError);
 

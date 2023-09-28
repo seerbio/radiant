@@ -304,6 +304,7 @@ namespace {
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
             QVector<QVector<double>> *targetScoresVector,
             QVector<QVector<double>> *decoyScoresVector
             ) {
@@ -347,14 +348,16 @@ namespace {
                     scTarget,
                     useExtendedScores,
                     useNeuralNetworkScores,
-                    theoMzIonsSize
+                    theoMzIonsSize,
+                    scanTimeMinMax
                     );
 
             const QVector<double> decoyScores = FDRCLassifierNeuralNet::buildScoreVector(
                     scDecoy,
                     useExtendedScores,
                     useNeuralNetworkScores,
-                    theoMzIonsSize
+                    theoMzIonsSize,
+                    scanTimeMinMax
                     );
 
             targetScoresVector->push_back(targetScores);
@@ -405,6 +408,7 @@ namespace {
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             const int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
             QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateTargets,
             QMap<PeptideStringWithMods, ScoredCandidate> *peptideStringWithModsVsScoredCandidateDecoys,
             QMap<PeptideStringWithMods, double> *peptideStringWithModsVsDiscScoreTargets,
@@ -422,7 +426,8 @@ namespace {
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
-                    theoMzIonsSize
+                    theoMzIonsSize,
+                    scanTimeMinMax
                     );
 
             QVector<double> results;
@@ -515,6 +520,7 @@ namespace {
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
             QVector<ScoredCandidate> *scoredCandidatesAll
             ) {
 
@@ -531,6 +537,7 @@ namespace {
                 useExtendedScores,
                 useNeuralNetworkScores,
                 theoMzIonsSize,
+                scanTimeMinMax,
                 &targetScoresVector,
                 &decoyScoresVector
         ); ree;
@@ -558,6 +565,7 @@ namespace {
                 useExtendedScores,
                 useNeuralNetworkScores,
                 theoMzIonsSize,
+                scanTimeMinMax,
                 &peptideStringWithModsVsScoredCandidateTargets,
                 &peptideStringWithModsVsScoredCandidateDecoys,
                 &peptideStringWithModsVsDiscScoreTargets,
@@ -688,6 +696,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
             useExtendedScores,
             useNeuralNetworkScores,
             topNMs2Ions,
+            msReaderParquet->scanTimeMinMax(),
             scoredCandidatesAll
     ); ree;
 
@@ -1089,6 +1098,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
                 useExtendedScores,
                 useNeuralNetworkScores,
                 topNMs2IonsOptimization,
+                msReaderParquet->scanTimeMinMax(),
                 &scoredCandidatesAll
         ); ree;
 
@@ -1600,7 +1610,8 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             epochs,
             baggingSize,
             batchFraction,
-            learningRate
+            learningRate,
+            msReaderParquet->scanTimeMinMax()
             ); ree;
 
     e = fdrClassifierNeuralNet.exec(
