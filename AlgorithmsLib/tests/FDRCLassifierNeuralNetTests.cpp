@@ -14,6 +14,7 @@ public:
 
 private Q_SLOTS:
     void initTest();
+    void execTest();
 };
 
 void FDRCLassifierNeuralNetTests::initTest() {
@@ -22,7 +23,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
 
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = fdrClassifierNeuralNet.init(
-            PythiaParameters(),
+            5,
             1,
             5,
             0.1,
@@ -31,7 +32,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
     QCOMPARE(e, eError);
 
     e = fdrClassifierNeuralNet.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            6,
             0,
             5,
             0.1,
@@ -40,7 +41,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
     QCOMPARE(e, eError);
 
     e = fdrClassifierNeuralNet.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            6,
             1,
             0,
             0.1,
@@ -49,7 +50,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
     QCOMPARE(e, eError);
 
     e = fdrClassifierNeuralNet.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            6,
             1,
             1,
             0.0,
@@ -58,7 +59,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
     QCOMPARE(e, eError);
 
     e = fdrClassifierNeuralNet.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            6,
             1,
             1,
             0.1,
@@ -67,7 +68,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
     QCOMPARE(e, eError);
 
     e = fdrClassifierNeuralNet.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            6,
             1,
             1,
             0.1,
@@ -77,9 +78,53 @@ void FDRCLassifierNeuralNetTests::initTest() {
 
 }
 
+void FDRCLassifierNeuralNetTests::execTest() {
 
+    ERR_INIT
 
+    const QString &scoredCandsFullFragsFilePath
+            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllFullFragIons.parquet");
 
+    const QString &keyVsScoredCandidateCulledFilePath
+            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/keyVsScoredCandidateCulled.parquet");
+
+    QVector<ScoredCandidate> scoredCandidatesAllFullFragIons;
+    e = ParquetReader::read(scoredCandsFullFragsFilePath, &scoredCandidatesAllFullFragIons);
+    QCOMPARE(e, eNoError);
+
+    QVector<ScoredCandidate> keyVsScoredCandidateCulledVec;
+    e = ParquetReader::read(keyVsScoredCandidateCulledFilePath, &keyVsScoredCandidateCulledVec);
+    QCOMPARE(e, eNoError);
+
+    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
+    for (const ScoredCandidate &sc : keyVsScoredCandidateCulledVec) {
+        const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                sc.peptideStringWithMods,
+                sc.targetKey,
+                sc.charge
+        );
+        keyVsScoredCandidateCulled.insert(key, sc);
+    }
+
+    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    e = fdrClassifierNeuralNet.init(
+            12,
+            10,
+            6,
+            0.1,
+            0.001
+    );
+    QCOMPARE(e, eNoError);
+
+    QVector<ScoredCandidate> scoredCandidatesClassifier;
+    e = fdrClassifierNeuralNet.exec(
+            keyVsScoredCandidateCulled,
+            scoredCandidatesAllFullFragIons,
+            &scoredCandidatesClassifier
+            );
+    QCOMPARE(e, eNoError);
+
+}
 
 
 QTEST_MAIN(FDRCLassifierNeuralNetTests)

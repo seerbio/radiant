@@ -17,6 +17,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 , m_learningRate(-1.0)
 , m_minTopNMs2Ions(6)
 , m_isInit(false)
+, m_topNMs2Ions(-1)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
@@ -26,7 +27,7 @@ FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
 }
 
 Err FDRCLassifierNeuralNet::init(
-        const PythiaParameters &pythiaParameters,
+        int topNMs2Ions,
         int epochs,
         int baggingSize,
         double batchFraction,
@@ -35,13 +36,13 @@ Err FDRCLassifierNeuralNet::init(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(topNMs2Ions >= m_minTopNMs2Ions); ree;
     e = ErrorUtils::isTrue(epochs > 0); ree;
     e = ErrorUtils::isTrue(baggingSize >= 1); ree;
     e = ErrorUtils::isTrue(batchFraction > 0 & batchFraction < 1 & !MathUtils::tZero(batchFraction)); ree;
     e = ErrorUtils::isTrue(learningRate > 0 & learningRate < 1 & !MathUtils::tZero(learningRate)); ree;
 
-    m_params = pythiaParameters;
+    m_topNMs2Ions = topNMs2Ions;
     m_epochs = epochs;
     m_baggingSize = baggingSize;
     m_batchFraction = batchFraction;
@@ -189,22 +190,20 @@ namespace {
 Err FDRCLassifierNeuralNet::exec(
         const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
         const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-        MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *scoredCandidatesClassifier
         ) {
 
     ERR_INIT
 
+    e = ErrorUtils::isTrue(m_isInit); ree;
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
     e = ErrorUtils::isNotEmpty(scoredCandidatesAllFullFragIons); ree;
-    e = ErrorUtils::isNotEmpty(msReaderParquet->getMsScanInfos()); ree;
 
     QVector<QVector<float>> allDataVecs;
     QVector<NeuralNetData> trainingData;
     e = trainClassifier(
             keyVsScoredCandidateCulled,
             scoredCandidatesAllFullFragIons,
-            msReaderParquet,
             &allDataVecs,
             &trainingData
             ); ree;
@@ -408,7 +407,6 @@ namespace {
 Err FDRCLassifierNeuralNet::trainClassifier(
         const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
         const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-        MsReaderParquet *msReaderParquet,
         QVector<QVector<float>> *allDataVecs,
         QVector<NeuralNetData> *trainingData
         ) {
@@ -417,11 +415,10 @@ Err FDRCLassifierNeuralNet::trainClassifier(
 
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
     e = ErrorUtils::isNotEmpty(scoredCandidatesAllFullFragIons); ree;
-    e = ErrorUtils::isNotEmpty(msReaderParquet->getMsScanInfos()); ree;
 
     const int topNMs2IonsFull = std::max(
             m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_params.topNMs2Ions))
+            static_cast<int>(std::round(m_topNMs2Ions))
     );
 
     e = buildNeuralNetworkInput(

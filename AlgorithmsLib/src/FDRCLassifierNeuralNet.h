@@ -95,7 +95,7 @@ public:
     ~FDRCLassifierNeuralNet();
 
     Err init(
-            const PythiaParameters &pythiaParameters,
+            int topNMs2Ions,
             int epochs,
             int baggingSize,
             double batchFraction,
@@ -105,7 +105,6 @@ public:
     Err exec(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
             const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-            MsReaderParquet *msReaderParquet,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
@@ -153,7 +152,6 @@ private:
     Err trainClassifier(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
             const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
-            MsReaderParquet *msReaderParquet,
             QVector<QVector<float>> *allDataVecs,
             QVector<NeuralNetData> *trainingData
             );
@@ -176,9 +174,9 @@ private:
 
 private:
 
-    PythiaParameters m_params;
     int m_epochs;
     int m_baggingSize;
+    int m_topNMs2Ions;
     double m_batchFraction;
     double m_learningRate;
 
