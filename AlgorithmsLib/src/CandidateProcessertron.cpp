@@ -30,6 +30,7 @@ namespace{
 }//namespace
 Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
+        int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
@@ -49,6 +50,7 @@ Err CandidateProcessertron::init(
     e = ErrorUtils::isTrue(msFrameMS1.isValid()); ree;
     e = ErrorUtils::isNotEmpty(fragmentFrequencies); ree;
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::isTrue(topNMS2Ions >= 6); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_mzHashedVsXICPoints = mzHashedVsXICPoints;
@@ -58,6 +60,7 @@ Err CandidateProcessertron::init(
     m_msFrameMS1 = msFrameMS1;
     m_fragmentFrequencies = fragmentFrequencies;
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+    m_topNMS2Ions = topNMS2Ions;
 
     const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_pythiaParameters);
     e = m_peakIntegratomatic.init(ffParams); ree;
@@ -69,6 +72,7 @@ Err CandidateProcessertron::init(
 
 Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
+        int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
@@ -86,6 +90,7 @@ Err CandidateProcessertron::init(
 
     e = init(
             pythiaParameters,
+            topNMS2Ions,
             mzHashedVsXICPoints,
             mzHashedVsIonPresence,
             msFrame,
@@ -201,7 +206,7 @@ Err CandidateProcessertron::processCandidateTarget(
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
             candidatePeptideTarget,
             m_mzHashedVsIonPresence,
-            m_pythiaParameters.topNMs2Ions
+            m_topNMS2Ions
     );
 
     if (presenceMatrix.rows() == 0) {
@@ -897,7 +902,7 @@ Err CandidateProcessertron::buildScores(
             candidatePeptide,
             m_mzHashedVsXICPoints,
             summedMatVecToVec.size(),
-            m_pythiaParameters.topNMs2Ions
+            m_topNMS2Ions
     );
 
     QVector<double> cosineSimsIndividual;
@@ -911,7 +916,7 @@ Err CandidateProcessertron::buildScores(
             intensityMatrix,
             peakIntegrationIndexes,
             summedMatVecToVec,
-            m_pythiaParameters.topNMs2Ions,
+            m_topNMS2Ions,
             m_pythiaParameters.cosineSimToAnchorThreshold,
             &cosineSimsIndividual,
             &klDivsIndividual,
@@ -1087,7 +1092,7 @@ Err CandidateProcessertron::processCandidateDecoy(
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
             candidatePeptideDecoy,
             m_mzHashedVsIonPresence,
-            m_pythiaParameters.topNMs2Ions
+            m_topNMS2Ions
     );
 
     if (presenceMatrix.rows() == 0) {

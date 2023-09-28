@@ -480,7 +480,7 @@ namespace {
             e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(key)); ree;
 
             sc.qValue = identifierVsQValue.value(key);
-            sc.decoyRatio = identifierVsQValue.value(key);
+            sc.decoyRatio = identifierVsDecoyRatio.value(key);
         }
 
         ERR_RETURN
@@ -546,6 +546,7 @@ namespace {
 
         QVector<double> weights;
         e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+        qDebug() << "Current weights:" << weights;
 
         QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
         QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateDecoys;
@@ -665,7 +666,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
         double fdrThreshold,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        int topNMs2IonsMainAnalysis,
+        int topNMs2Ions,
         MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *scoredCandidatesAll,
         QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
@@ -677,6 +678,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
     e = extractTargetDecoyData(
             uniqueInfoScanKeyVsCandidatePeptide,
             m_pythiaParameters,
+            topNMs2Ions,
             msReaderParquet,
             &scoredCandidatesOptimization
     ); ree;
@@ -685,7 +687,7 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
             scoredCandidatesOptimization,
             useExtendedScores,
             useNeuralNetworkScores,
-            topNMs2IonsMainAnalysis,
+            topNMs2Ions,
             scoredCandidatesAll
     ); ree;
 
@@ -748,6 +750,7 @@ namespace {
         QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
         QMap<ScanNumber , ScanPoints> *scanPoints = nullptr;
         QMap<PeptideStringWithMods, CandidatePeptide> peptideStringWithModsVsCandidatePeptide;
+        int topNMS2Ions = -1;
     };
 
     QPair<Err, QVector<ScoredCandidate>> parallelProciessingLogic(const ParallelProcessingInput &ppi) {
@@ -762,6 +765,7 @@ namespace {
         e = msFrameScoretron.init(
                 ppi.uniqueMsInfoScanKey,
                 ppi.pythiaParameters,
+                ppi.topNMS2Ions,
                 *ppi.scanPoints,
                 ppi.scanNumberVsScanTimeMS1,
                 ppi.peptideStringWithModsVsCandidatePeptide,
@@ -781,6 +785,7 @@ namespace {
 Err PythiaDIAWorkflow::extractTargetDecoyData(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
         const PythiaParameters &pythiaParameters,
+        int topNMs2Ions,
         MsReaderParquet *msReaderParquet,
         QVector<ScoredCandidate> *combinedResults
         ) {
@@ -812,6 +817,7 @@ Err PythiaDIAWorkflow::extractTargetDecoyData(
         ppi.pythiaParameters = pythiaParameters;
         ppi.scanPoints = &uniqueInfoScanKeyVsScanPoints[uniqueMsInfoScanKey];
         ppi.peptideStringWithModsVsCandidatePeptide = uniqueInfoScanKeyVsCandidatePeptideCalibration[uniqueMsInfoScanKey];
+        ppi.topNMS2Ions = topNMs2Ions;
 
         parallelProcessingInputs.push_back(ppi);
     }
@@ -1072,6 +1078,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         e = extractTargetDecoyData(
                 uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 pythiaParams,
+                topNMs2IonsOptimization,
                 msReaderParquet,
                 &scoredCandidatesOptimization
         ); ree;

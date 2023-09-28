@@ -30,6 +30,7 @@ namespace{
 Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
+        int topNMS2Ions,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -44,11 +45,13 @@ Err MsFrameScoretron::init(
     e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::isTrue(topNMS2Ions >= 6); ree;
 
     m_params = params;
     m_fragPredsTopN = peptideStringWithModsVsCandidatePeptide;
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
+    m_topNMS2Ions = topNMS2Ions;
 
     e = FragLibReader::generateFragmentFrequencies(
             m_fragPredsTopN,
@@ -107,6 +110,7 @@ namespace {
 Err MsFrameScoretron::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const PythiaParameters &params,
+        int topNMS2Ions,
         const QMap<ScanNumber, ScanPoints> &_scanNumberVsScanPoints,
         const QMap<ScanNumber, ScanPoints> &_scanNumberVsScanPointsMS1,
         const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -142,6 +146,7 @@ Err MsFrameScoretron::init(
     e = init(
             uniqueMsInfoScanKey,
             params,
+            topNMS2Ions,
             scanNumberVsScanPoints,
             scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,
@@ -178,6 +183,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     if (m_fragPredsPredictedScanTime.isEmpty()) {
         e = m_candidateProcessertron.init(
                 m_params,
+                m_topNMS2Ions,
                 mzHashedVsXICPoints,
                 mzHashedVsIonPresence,
                 m_msFrame,
@@ -190,6 +196,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     else {
         e = m_candidateProcessertron.init(
                 m_params,
+                m_topNMS2Ions,
                 mzHashedVsXICPoints,
                 mzHashedVsIonPresence,
                 m_msFrame,

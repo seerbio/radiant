@@ -40,6 +40,7 @@ public:
     Err init(
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
+            int topNMS2Ions,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
@@ -50,6 +51,7 @@ public:
     Err init(
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const PythiaParameters &params,
+            int topNMS2Ions,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
             const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsMS2Ions,
@@ -79,6 +81,7 @@ private:
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
 
     PythiaParameters m_params;
+    int m_topNMS2Ions;
     QString m_msDataFilePath;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     MsCalibratomatic m_msCalibratomatic;

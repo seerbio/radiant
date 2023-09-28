@@ -64,6 +64,7 @@ private:
     Err extractTargetDecoyData(
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
             const PythiaParameters &pythiaParameters,
+            int topNMs2Ions,
             MsReaderParquet *msReaderParquet,
             QVector<ScoredCandidate> *combinedResults
     );

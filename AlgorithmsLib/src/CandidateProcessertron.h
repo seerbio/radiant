@@ -246,6 +246,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
+            int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
@@ -257,6 +258,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
+            int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
@@ -332,6 +334,8 @@ private:
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
 
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
+
+    int m_topNMS2Ions;
 
     const int m_peakWidthMin;
 
