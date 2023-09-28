@@ -1587,7 +1587,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     const double learningRate = 0.001;
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = fdrClassifierNeuralNet.init(
-            m_pythiaParameters,
+            m_pythiaParameters.topNMs2Ions,
             epochs,
             baggingSize,
             batchFraction,
@@ -1597,7 +1597,6 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     e = fdrClassifierNeuralNet.exec(
             keyVsScoredCandidateCulled,
             scoredCandidatesAllFullFragIons,
-            msReaderParquet,
             scoredCandidatesClassifier
             ); ree;
 
