@@ -153,7 +153,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-#define BYPASS_OPTI
+//#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
@@ -178,7 +178,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
-#define USE_NEURAL_NET_CLASSIFIER
+//#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
