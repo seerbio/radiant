@@ -112,6 +112,25 @@ namespace{
         ERR_RETURN
     }
 
+    Err outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
+
+        ERR_INIT
+
+        const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.01, 0.005};
+        for (double fdrThresh : fdrFractions) {
+            int foundAtThreshold;
+            e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                    scoredCandidatesAll,
+                    fdrThresh,
+                    &foundAtThreshold
+            ); ree;
+
+            qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
@@ -515,6 +534,65 @@ namespace {
         ERR_RETURN
     }
 
+    Err fitWeightsLogic(
+            const QVector<ScoredCandidate> &scoredCandidatesCalibration,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
+            const QVector<QVector<double>> &A,
+            const QVector<double> &b,
+            QVector<double> *weights,
+            QVector<ScoredCandidate> *scoredCandidatesAll
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
+
+        e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
+
+        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
+        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateDecoys;
+        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
+        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
+        e = separateScoredTargetDecoys(
+                scoredCandidatesCalibration,
+                *weights,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                theoMzIonsSize,
+                scanTimeMinMax,
+                &peptideStringWithModsVsScoredCandidateTargets,
+                &peptideStringWithModsVsScoredCandidateDecoys,
+                &peptideStringWithModsVsDiscScoreTargets,
+                &peptideStringWithModsVsDiscScoreDecoys
+        ); ree;
+
+        QMap<QString, double> identifierVsQValue;
+        QMap<QString, double> identifierVsDecoyRatio;
+        e = MathUtils::calculateQValue(
+                peptideStringWithModsVsDiscScoreTargets,
+                peptideStringWithModsVsDiscScoreDecoys,
+                &identifierVsQValue,
+                &identifierVsDecoyRatio
+        ); ree;
+
+        e = buildScoredCandidatesAll(
+                peptideStringWithModsVsScoredCandidateTargets,
+                peptideStringWithModsVsScoredCandidateDecoys,
+                scoredCandidatesAll
+        ); ree;
+
+        e = assignQValuesAndDecoyRatios(
+                identifierVsQValue,
+                identifierVsDecoyRatio,
+                scoredCandidatesAll
+        ); ree;
+
+        ERR_RETURN
+    }
+
     Err buildScoredCandidatesFDR(
             const QVector<ScoredCandidate> &scoredCandidatesCalibration,
             bool useExtendedScores,
@@ -552,47 +630,33 @@ namespace {
         ); ree;
 
         QVector<double> weights;
-        e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+        int bestPsmCountTenPercentFDR = 0;
+
         qDebug() << "Current weights:" << weights;
 
-        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateTargets;
-        QMap<PeptideStringWithMods, ScoredCandidate> peptideStringWithModsVsScoredCandidateDecoys;
-        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreTargets;
-        QMap<PeptideStringWithMods, double> peptideStringWithModsVsDiscScoreDecoys;
-        e = separateScoredTargetDecoys(
+        e = fitWeightsLogic(
                 scoredCandidatesCalibration,
-                weights,
                 useExtendedScores,
                 useNeuralNetworkScores,
                 theoMzIonsSize,
                 scanTimeMinMax,
-                &peptideStringWithModsVsScoredCandidateTargets,
-                &peptideStringWithModsVsScoredCandidateDecoys,
-                &peptideStringWithModsVsDiscScoreTargets,
-                &peptideStringWithModsVsDiscScoreDecoys
-        ); ree;
-
-        QMap<QString, double> identifierVsQValue;
-        QMap<QString, double> identifierVsDecoyRatio;
-        e = MathUtils::calculateQValue(
-                peptideStringWithModsVsDiscScoreTargets,
-                peptideStringWithModsVsDiscScoreDecoys,
-                &identifierVsQValue,
-                &identifierVsDecoyRatio
-        ); ree;
-
-        e = buildScoredCandidatesAll(
-                peptideStringWithModsVsScoredCandidateTargets,
-                peptideStringWithModsVsScoredCandidateDecoys,
+                A,
+                b,
+                &weights,
                 scoredCandidatesAll
                 ); ree;
 
-        e = assignQValuesAndDecoyRatios(
-                identifierVsQValue,
-                identifierVsDecoyRatio,
-                scoredCandidatesAll
-        ); ree;
+        int psmCountTenPercentFDR;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                *scoredCandidatesAll,
+                0.1,
+                &psmCountTenPercentFDR
+                ); ree;
 
+        qDebug() << "Adjusted weights:" << weights;
+        qDebug() << "PSM count 10% FDR" << psmCountTenPercentFDR;
+        
         ERR_RETURN
     }
 
@@ -642,11 +706,6 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
         ); ree;
 
         FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
-        qDebug() << onePercentFDRCount;
-
-        int tenPercetFDRCount;
-        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.1, &tenPercetFDRCount);
-        qDebug() << calibrationSelectionFraction << "One percent FDR" << onePercentFDRCount << "ten percent FDR" << tenPercetFDRCount;
 
         calibrationSelectionFraction += calibrationSelectionFractionIncrement;
     }
@@ -706,6 +765,8 @@ Err PythiaDIAWorkflow::extractionLoopLogic(
             false,
             scoredCandidatesTargetsFDRThresholded
     ); ree;
+
+    e = outputFDRResults(*scoredCandidatesAll); ree;
 
     ERR_RETURN
 }
@@ -1109,6 +1170,8 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
                 &targetCountAboveFDRQValueThreshold
                 ); ree;
 
+        e = outputFDRResults(scoredCandidatesAll); ree;
+
         DOEResult res;
         res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
         res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
@@ -1153,7 +1216,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
     m_pythiaParameters.print();
 
     const double selectionFractionBypassValue = -1.0;
-    const double fdrThreshold = 0.1;
+    const double fdrThreshold = 0.2;
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
@@ -1169,7 +1232,6 @@ Err PythiaDIAWorkflow::mainAnalysis(
             &uniqueInfoScanKeyVsCandidatePeptides
     ); ree;
 
-    //TODO determine if this should be false w/ Entrapment experiements
     const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
 
@@ -1184,67 +1246,12 @@ Err PythiaDIAWorkflow::mainAnalysis(
             scoredCandidatesTargetsFDRThresholded
     ); ree;
 
-    const double fdrOnePercent = 0.01;
-    int foundAtOnePercentFDR;
+    int psmCountTenPercentFDR;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-            *scoredCandidatesAll,
-            fdrOnePercent,
-            &foundAtOnePercentFDR
+            *scoredCandidatesTargetsFDRThresholded,
+            0.1,
+            &psmCountTenPercentFDR
             ); ree;
-
-    qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-    qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
-
-//    double lastMinQVal = 1.0;
-//    while (true) {
-//
-//        QVector<PeptideStringWithMods> scoredCandidatesTargetsFDRThresholdedSequences;
-//        std::transform(
-//                scoredCandidatesTargetsFDRThresholded->begin(),
-//                scoredCandidatesTargetsFDRThresholded->end(),
-//                std::back_inserter(scoredCandidatesTargetsFDRThresholdedSequences),
-//                [](const ScoredCandidate &sc){return sc.peptideStringWithMods;}
-//        );
-//
-//        e = buildCandidates(
-//                scoredCandidatesTargetsFDRThresholdedSequences,
-//                topNMs2IonsMainAnalysis,
-//                &uniqueInfoScanKeyVsCandidatePeptides
-//        ); ree;
-//
-//        e = extractionLoopLogic(
-//                uniqueInfoScanKeyVsCandidatePeptides,
-//                fdrThreshold,
-//                useExtendedScores,
-//                useNeuralNetworkScores,
-//                topNMs2IonsMainAnalysis,
-//                msReaderParquet,
-//                scoredCandidatesAll,
-//                scoredCandidatesTargetsFDRThresholded
-//        ); ree;
-//
-//        e = countScoreCandidatesByFDR(
-//                *scoredCandidatesAll,
-//                fdrOnePercent,
-//                &foundAtOnePercentFDR
-//                ); ree;
-//
-//        const double minQVal = std::min_element(
-//                scoredCandidatesTargetsFDRThresholded->begin(),
-//                scoredCandidatesTargetsFDRThresholded->end(),
-//                [](const ScoredCandidate &l, const ScoredCandidate &r){return l.qValue < r.qValue;}
-//                )->qValue;
-//
-//        qDebug() << "Min QValue" << minQVal;
-//        qDebug() <<  foundAtOnePercentFDR << "PSMs found at 1 % FDR";
-//        qDebug() << scoredCandidatesTargetsFDRThresholded->size() << "PSMs found at " << fdrThreshold * 100 << "% FDR";
-//
-//        if (minQVal > lastMinQVal || MathUtils::tSame(minQVal, lastMinQVal)) {
-//            break;
-//        }
-//
-//        lastMinQVal = minQVal;
-//    }
 
     ERR_RETURN
 }
@@ -1496,7 +1503,7 @@ namespace {
 Err PythiaDIAWorkflow::removeInterferingCandidates(
         MsReaderParquet *msReaderParquet,
         const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
-        const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
         QVector<ScoredCandidate> *scoredCandidatesAllUpdated
         ) {
 
@@ -1505,7 +1512,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
     QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
     e = buildTandemDeconvolutionInput(
             scoredCandidatesTargetsFDRThresholded,
-            scoredCandidatesAllFullFragIons,
+            scoredCandidatesAll,
             &scanNumberVsTandemPredictions
     ); ree;
 
@@ -1517,7 +1524,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
             &scanNumberVsTandemDeconvolverResult
     ); ree;
 
-    for (const ScoredCandidate &sc : scoredCandidatesAllFullFragIons) {
+    for (const ScoredCandidate &sc : scoredCandidatesAll) {
 
         const QMap<PeptideStringWithMods, TandemDeconvolverResult> &tandemResult
                 = scanNumberVsTandemDeconvolverResult.value(sc.scanNumber);
@@ -1537,6 +1544,8 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
             scoredCandidatesAllUpdated,
             m_pythiaParameters.pValThreshold
             );
+
+    e = outputFDRResults(*scoredCandidatesAllUpdated); ree;
 
     ERR_RETURN
 }

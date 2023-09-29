@@ -655,7 +655,7 @@ Err FragLibReader::mutateCandidatePeptideTarget(
         QPair<IonIndex, IonType> ionLableInfo;
         e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo); ree;
 
-        if (ionLableInfo.second.contains('b')) {
+        if (ionLableInfo.second.contains('b') || ionLableInfo.second.contains('a')) {
 
             if (ionLableInfo.second.contains("^2")) {
 
@@ -704,7 +704,7 @@ Err FragLibReader::mutateCandidatePeptideTarget(
         }
 
         else {
-            qDebug() << "Non b/y ion" << ionLableInfo;
+            qDebug() << "Non b/y/a ion" << ionLableInfo;
         }
 
         ms2IonDecoys.push_back(ms2IonDecoy);

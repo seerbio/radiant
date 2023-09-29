@@ -89,8 +89,8 @@ Err ClassifierWeightsManager::fitWeights(
     const Eigen::MatrixX<double> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
     const Eigen::VectorX<double> b = EigenUtils::convertQVectorToEigenVector(vecB);
 
-    Eigen::VectorXd X = A.fullPivHouseholderQr().solve(b);
-    *weights = EigenUtils::convertEigenVectorToQVector(X);
+    Eigen::VectorXd x = A.fullPivHouseholderQr().solve(b);
+    *weights = EigenUtils::convertEigenVectorToQVector(x);
 
     ERR_RETURN
 }
