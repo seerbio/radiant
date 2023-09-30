@@ -39,7 +39,6 @@ namespace ScoredCandidateNamespace {
     const QString FRAME_IND_MAX_DIV_ANCH_V = QStringLiteral("frameIndexMaxDiffFromAnchorVec");
     const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
     const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
-    const QString FRAG_FRQ_V = QStringLiteral("fragmenFrequencyVec");
     const QString TARGET_KEY = QStringLiteral("targetKey");
 
     const QString KL_DIV_SUM = QStringLiteral("klDivSum");
@@ -75,7 +74,6 @@ namespace ScoredCandidateNamespace {
             FRAME_IND_MAX_DIV_ANCH_V,
             COS_SIM_SUM_ANCH_V,
             PK_PNT_CNT_FND_V,
-            FRAG_FRQ_V,
             SCAN_TIME_PRED,
             IRT_PRED,
             TARGET_KEY,
@@ -124,7 +122,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> cosineSimToAnchorVec;
     QVector<double> klDivToAnchorVec;
     QVector<int> peakPointCountFoundVec;
-    QVector<double> fragmentFrequencyVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -158,7 +155,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
                 {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
-                {FRAG_FRQ_V, QVariant(qVectorToQByteArray(fragmentFrequencyVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
                 {TARGET_KEY, QVariant(targetKey)},
@@ -213,7 +209,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
         peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
-        fragmentFrequencyVec = bytesArrayToQVector<double>(dataMap.value(FRAG_FRQ_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
         xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
@@ -252,7 +247,6 @@ public:
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const QMap<MzHashed, FrequencyPercent> &fragmentFrequencies,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey
             );
 
@@ -264,7 +258,6 @@ public:
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const QMap<MzHashed, FrequencyPercent> &fragmentFrequencies,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QMap<PeptideStringWithMods, ScanTime> &fragPredsPredictedScanTime
     );
@@ -330,7 +323,6 @@ private:
     MsFrame m_msFrameMS1;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     TurboXIC m_turboXICMS1;
-    QMap<MzHashed, FrequencyPercent> m_fragmentFrequencies;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
 
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;

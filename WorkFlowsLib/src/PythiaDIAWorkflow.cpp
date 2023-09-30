@@ -215,7 +215,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
 #endif
 
-#define USE_NEURAL_NET_CLASSIFIER
+//#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(

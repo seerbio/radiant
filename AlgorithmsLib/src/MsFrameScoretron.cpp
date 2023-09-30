@@ -166,17 +166,23 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             &peptideStringWithModsVsCandidatePeptideDecoys
             ); ree;
 
-    QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints100;
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
     e = buildMS2Peaks(
             m_fragPredsTopN,
-            &mzHashedVsXICPoints,
+            &mzHashedVsXICPoints100,
+            &mzHashedVsXICPoints45,
+            &mzHashedVsXICPoints20,
             &mzHashedVsIonPresence
             ); ree;
 
     e = buildMS2Peaks(
             peptideStringWithModsVsCandidatePeptideDecoys,
-            &mzHashedVsXICPoints,
+            &mzHashedVsXICPoints100,
+            &mzHashedVsXICPoints45,
+            &mzHashedVsXICPoints20,
             &mzHashedVsIonPresence
     ); ree;
 
@@ -184,12 +190,11 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         e = m_candidateProcessertron.init(
                 m_params,
                 m_topNMS2Ions,
-                mzHashedVsXICPoints,
+                mzHashedVsXICPoints100,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,
                 m_scanNumberVsScanTime,
-                m_fragmentFrequencies,
                 m_uniqueMsInfoScanKey
         ); ree;
     }
@@ -197,12 +202,11 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
         e = m_candidateProcessertron.init(
                 m_params,
                 m_topNMS2Ions,
-                mzHashedVsXICPoints,
+                mzHashedVsXICPoints100,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,
                 m_scanNumberVsScanTime,
-                m_fragmentFrequencies,
                 m_uniqueMsInfoScanKey,
                 m_fragPredsPredictedScanTime
         ); ree;
@@ -405,7 +409,9 @@ namespace {
 }//namespace
 Err MsFrameScoretron::buildMS2Peaks(
         const QMap<PeptideStringWithMods, CandidatePeptide> &candidatePeptides,
-        QMap<MzHashed, XICPoints> *mzHashedVsXICPoints,
+        QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100,
+        QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
+        QMap<MzHashed, XICPoints> *mzHashedVsXICPoints20,
         QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
         ) {
 
@@ -420,18 +426,32 @@ Err MsFrameScoretron::buildMS2Peaks(
             mzHashedVsMzIon,
             m_msFrame,
             m_params.ms2ExtractionWidthPPM,
-            mzHashedVsXICPoints
+            mzHashedVsXICPoints100
             ); ree;
 
-    QMap<MzHashed, Eigen::VectorX<double>> mzHashedVsXICPointsNormalized;
+    e = buildMzHashedVsXICPoints(
+            mzHashedVsMzIon,
+            m_msFrame,
+            m_params.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
+            mzHashedVsXICPoints45
+    ); ree;
+
+    e = buildMzHashedVsXICPoints(
+            mzHashedVsMzIon,
+            m_msFrame,
+            m_params.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
+            mzHashedVsXICPoints20
+    ); ree;
+
+    QMap<MzHashed, Eigen::VectorX<double>> mzHashedVsXICPoints100Normalized;
     e = buildMzHashedVsXICPointsNormalized(
-            *mzHashedVsXICPoints,
+            *mzHashedVsXICPoints100,
             m_msFrame.scanCount(),
-            &mzHashedVsXICPointsNormalized
+            &mzHashedVsXICPoints100Normalized
             ); ree;
 
     e = buildMzHashedVsIonPresence(
-            mzHashedVsXICPointsNormalized,
+            mzHashedVsXICPoints100Normalized,
             mzHashedVsIonPresence
             );ree
 
