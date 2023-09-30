@@ -212,7 +212,7 @@ Err CandidateProcessertron::processCandidateTarget(
     if (presenceMatrix.rows() == 0) {
         ERR_RETURN
     }
-
+    qDebug() << "SDFJSL";
     const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
 
