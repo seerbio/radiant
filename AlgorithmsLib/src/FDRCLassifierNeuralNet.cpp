@@ -261,7 +261,7 @@ namespace {
                     scanTimeMinMax
             );
 
-            if (sc.isDecoy && sc.cosineSimSum > cosineSimSumMin) {
+            if (sc.isDecoy && sc.cosineSimSum100 > cosineSimSumMin) {
                 decoyPairs.push_back({sc, scoreVector});
                 continue;
             }
@@ -594,7 +594,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 ) {
 
     QVector<double> scores = {
-            std::max(scoreCandidate.cosineSimSum, 0.0), //1
+            std::max(scoreCandidate.cosineSimSum100, 0.0), //1
             std::max(scoreCandidate.cosineSimMS1, 0.0), //2
             std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //3
             std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 1/3.0) //4
@@ -612,10 +612,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
 
+        scores.push_back(scoreCandidate.cosineSimSum45); //8
+        scores.push_back(scoreCandidate.cosineSimSum20); //8
+
         scores.push_back(scoreCandidate.theoFragmentCount); //7
-        scores.push_back(scoreCandidate.charge); //8
-        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //9
-        scores.push_back(scoreCandidate.mass); //10
 
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);

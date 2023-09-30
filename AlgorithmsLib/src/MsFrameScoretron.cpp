@@ -191,6 +191,8 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 m_params,
                 m_topNMS2Ions,
                 mzHashedVsXICPoints100,
+                mzHashedVsXICPoints45,
+                mzHashedVsXICPoints20,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,
@@ -203,6 +205,8 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 m_params,
                 m_topNMS2Ions,
                 mzHashedVsXICPoints100,
+                mzHashedVsXICPoints45,
+                mzHashedVsXICPoints20,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,
@@ -221,7 +225,7 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 &scoredCandidate
                 ); ree;
 
-        if (scoredCandidate.cosineSimSum < cosineSimSumMin) {
+        if (scoredCandidate.cosineSimSum100 < cosineSimSumMin) {
             continue;
         }
 

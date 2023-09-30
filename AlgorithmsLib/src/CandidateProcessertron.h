@@ -19,7 +19,9 @@ using namespace Error;
 
 namespace ScoredCandidateNamespace {
 
-    const QString COS_SIM_SUM = QStringLiteral("cosineSimSum");
+    const QString COS_SIM_SUM_100 = QStringLiteral("cosineSimSum100");
+    const QString COS_SIM_SUM_45 = QStringLiteral("cosineSimSum45");
+    const QString COS_SIM_SUM_20 = QStringLiteral("cosineSimSum20");
     const QString IS_DECOY = QStringLiteral("isDecoy");
     const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
     const QString CHARGE = QStringLiteral("charge");
@@ -58,7 +60,9 @@ namespace ScoredCandidateNamespace {
     const QString PROTEIN_GRP = QString("proteinGroup");
 
     const QStringList keysToCheck = {
-            COS_SIM_SUM,
+            COS_SIM_SUM_100,
+            COS_SIM_SUM_45,
+            COS_SIM_SUM_20,
             IS_DECOY,
             PEP_STR_W_MODS,
             CHARGE,
@@ -99,7 +103,9 @@ namespace ScoredCandidateNamespace {
 struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;
-    double cosineSimSum = -1.0;
+    double cosineSimSum100 = -1.0;
+    double cosineSimSum45 = -1.0;
+    double cosineSimSum20 = -1.0;
     bool isDecoy = false;
     Charge charge = -1;
     double mass = -1.0;
@@ -140,7 +146,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
         return {
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {COS_SIM_SUM, QVariant(cosineSimSum)},
+                {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
+                {COS_SIM_SUM_45, QVariant(cosineSimSum45)},
+                {COS_SIM_SUM_20, QVariant(cosineSimSum20)},
                 {IS_DECOY, QVariant(isDecoy)},
                 {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
@@ -191,7 +199,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
-        cosineSimSum = dataMap.value(COS_SIM_SUM).toDouble();
+        cosineSimSum100 = dataMap.value(COS_SIM_SUM_100).toDouble();
+        cosineSimSum45 = dataMap.value(COS_SIM_SUM_45).toDouble();
+        cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
         charge = dataMap.value(CHARGE).toInt();
@@ -242,7 +252,9 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -253,7 +265,9 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -315,7 +329,9 @@ private:
 private:
 
     PythiaParameters m_pythiaParameters;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
     QMap<MzHashed, QVector<double>> m_mzHashedVsIonPresence;
 
     PeakIntegratomatic m_peakIntegratomatic;
