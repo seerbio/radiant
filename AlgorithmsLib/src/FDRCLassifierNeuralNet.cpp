@@ -595,7 +595,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 
     QVector<double> scores = {
             std::max(scoreCandidate.cosineSimSum100, 0.0), //1
-            std::max(scoreCandidate.cosineSimMS1, 0.0), //2
+            std::max(scoreCandidate.cosineSim100MS1, 0.0), //2
             std::pow(std::max(0.0, scoreCandidate.cosineSimSpectrum), 3), //3
             std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 1/3.0) //4
     };
@@ -612,8 +612,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
 
-        scores.push_back(scoreCandidate.cosineSimSum45); //8
-        scores.push_back(scoreCandidate.cosineSimSum20); //8
+        scores.push_back(std::max(scoreCandidate.cosineSimSum45, 0.0)); //8
+        scores.push_back(std::max(scoreCandidate.cosineSimSum20, 0.0)); //8
+        scores.push_back(std::max(scoreCandidate.cosineSim45MS1, 0.0)); //8
+        scores.push_back(std::max(scoreCandidate.cosineSim20MS1, 0.0)); //8
 
         scores.push_back(scoreCandidate.theoFragmentCount); //7
 

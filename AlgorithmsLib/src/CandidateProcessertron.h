@@ -47,7 +47,9 @@ namespace ScoredCandidateNamespace {
     const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
-    const QString COSINE_SIM_MS1 = QString("cosineSimMS1");
+    const QString COSINE_SIM_100_MS1 = QString("cosineSim100MS1");
+    const QString COSINE_SIM_45_MS1 = QString("cosineSim45MS1");
+    const QString COSINE_SIM_20_MS1 = QString("cosineSim20MS1");
     const QString THEO_FRAG_CNT = QString("theoFragmentCount");
     const QString DISC_SCORE = QString("discriminateScore");
     const QString Q_VAL = QString("qValue");
@@ -86,7 +88,9 @@ namespace ScoredCandidateNamespace {
             KL_DIV_TO_ANCHOR,
             KL_DIV_SPECTRUM,
             COSINE_SIM_SPECTRUM,
-            COSINE_SIM_MS1,
+            COSINE_SIM_100_MS1,
+            COSINE_SIM_45_MS1,
+            COSINE_SIM_20_MS1,
             THEO_FRAG_CNT,
             DISC_SCORE,
             Q_VAL,
@@ -116,7 +120,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double klDivSum = -1.0;
     double klDivSpectrum = -1.0;
     double cosineSimSpectrum = -1.0;
-    double cosineSimMS1 = -1.0;
+    double cosineSim100MS1 = -1.0;
+    double cosineSim45MS1 = -1.0;
+    double cosineSim20MS1 = -1.0;
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
     QVector<double> mzSearchedVec;
@@ -171,7 +177,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
-                {COSINE_SIM_MS1, QVariant(cosineSimMS1)},
+                {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
+                {COSINE_SIM_45_MS1, QVariant(cosineSim45MS1)},
+                {COSINE_SIM_20_MS1, QVariant(cosineSim20MS1)},
                 {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
                 {DISC_SCORE, QVariant(discriminateScore)},
                 {Q_VAL, QVariant(qValue)},
@@ -223,7 +231,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
-        cosineSimMS1 = dataMap.value(COSINE_SIM_MS1).toDouble();
+        cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();
+        cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
+        cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
         klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
