@@ -505,7 +505,7 @@ Err FDRCLassifierNeuralNet::predict(
 
     e = predictBaggedClassifiers(allDataVecs, meanPredictions); ree;
 
-#define PRINT_NEURAL_NET_METRICS
+//#define PRINT_NEURAL_NET_METRICS
 #ifdef PRINT_NEURAL_NET_METRICS
     int falsePos = 0;
     int falseNeg = 0;
@@ -658,6 +658,8 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
     }
 
     if (useNeuralNetworkScores) {
+
+        scores.push_back(std::max(0.0, scoreCandidate.cosineSimSpectrum));
 
         scores.push_back(scoreCandidate.discriminateScore);
         scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));

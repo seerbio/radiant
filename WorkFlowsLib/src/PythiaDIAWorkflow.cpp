@@ -172,12 +172,18 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-//#define BYPASS_OPTI
+#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
-    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
-    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
+    //Pythia Main Library
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
+//    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
+//    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+
+    //Entrapment libarary
+    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
+    m_pythiaParameters.scanTimeWindowMinutes = 5.25372;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
@@ -189,6 +195,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAll
             ); ree;
 
+//#define WRITE_UNFILTERED_PSM
+#ifdef WRITE_UNFILTERED_PSM
+    qDebug() << scoredCandidatesAll.size() << "Candidates written";
+    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet");
+#endif
+
     QVector<ScoredCandidate> scoredCandidatesAllUpdated;
     e = removeInterferingCandidates(
             &msReaderParquet,
@@ -197,7 +209,13 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
-//#define USE_NEURAL_NET_CLASSIFIER
+//#define WRITE_FILTERED_PSM
+#ifdef WRITE_FILTERED_PSM
+    qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
+    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
+#endif
+
+#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
@@ -630,10 +648,9 @@ namespace {
         ); ree;
 
         QVector<double> weights;
+        weights.reserve(b.size());
 
         int bestPsmCountTenPercentFDR = 0;
-
-        qDebug() << "Current weights:" << weights;
 
         e = fitWeightsLogic(
                 scoredCandidatesCalibration,
