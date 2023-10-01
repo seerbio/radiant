@@ -1001,14 +1001,38 @@ Err CandidateProcessertron::buildScores(
             &klDivSpectrum
     ); ree;
 
+    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
+    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / candidatePeptide.charge);
+    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / candidatePeptide.charge);
+
     double cosineSim100MS1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
-            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
+            precursorMz,
             m_pythiaParameters.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &cosineSim100MS1
+    ); ree;
+
+    double cosineSim100MS1Iso1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso1,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSim100MS1Iso1
+    ); ree;
+
+    double cosineSim100MSIso2;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso2,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSim100MSIso2
     ); ree;
 
     double cosineSim45MS1;
@@ -1081,6 +1105,8 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->klDivSpectrum = klDivSpectrum;
     scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
     scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
+    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
+    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MSIso2;
     scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
     scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
     scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;

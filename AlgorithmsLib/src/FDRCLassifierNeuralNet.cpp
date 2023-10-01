@@ -611,12 +611,13 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const double scanTimeDelta = scoreCandidate.scanTime - scoreCandidate.scanTimePredicted;
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
-
+//        scores.push_back(std::max(scoreCandidate.cosineSim100MS1Iso1, 0.0)); //8
+//        scores.push_back(std::max(scoreCandidate.cosineSim100MS1Iso2, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSimSum45, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSimSum20, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSim45MS1, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSim20MS1, 0.0)); //8
-
+//        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //7
         scores.push_back(scoreCandidate.theoFragmentCount); //7
 
         const QVector<double> cosineSimToAnchors
@@ -631,16 +632,20 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const double bottomHalfCosineSimScoresSum = std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0);
         scores.push_back(bottomHalfCosineSimScoresSum); //18
 
-        const double topBottomRatio
-            = std::log(std::max(1.0, topHalfCosineSimScoresSum) / (topHalfCosineSimScoresSum + bottomHalfCosineSimScoresSum + 1.0));
-        scores.push_back(topBottomRatio);
+//        const double topBottomRatio
+//            = std::log(std::max(1.0, topHalfCosineSimScoresSum) / (topHalfCosineSimScoresSum + bottomHalfCosineSimScoresSum + 1.0));
+//        scores.push_back(topBottomRatio);
 
-        const QVector<double> theoApexIntensity
-                = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);
-        scores.append(theoApexIntensity);
+//        const QVector<double> theoApexIntensity
+//                = extractScoresFromVecFeatures(scoreCandidate.theoIntensityVec, theoMzIonsSize);
+//        scores.append(theoApexIntensity);
 
         const QVector<double> intensityFoundMaxVec
                 = extractScoresFromVecFeatures(scoreCandidate.intensityFoundMaxVec, theoMzIonsSize);
+//        const double totalIntensity = std::accumulate(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end(), 0.0);
+//        const double totalIntensityLog = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
+//        scores.append(totalIntensityLog);
+
         const double maxIntensity = std::max(
                 *std::max(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end()),
                 1.0
@@ -658,6 +663,8 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
                 = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
         scores.append(mzStDev);
     }
+
+
 
     if (useNeuralNetworkScores) {
 

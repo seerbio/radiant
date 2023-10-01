@@ -48,6 +48,8 @@ namespace ScoredCandidateNamespace {
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
     const QString COSINE_SIM_100_MS1 = QString("cosineSim100MS1");
+    const QString COSINE_SIM_100_MS1_ISO1 = QString("cosineSim100MS1Iso1");
+    const QString COSINE_SIM_100_MS1_ISO2 = QString("cosineSim100MS1Iso2");
     const QString COSINE_SIM_45_MS1 = QString("cosineSim45MS1");
     const QString COSINE_SIM_20_MS1 = QString("cosineSim20MS1");
     const QString THEO_FRAG_CNT = QString("theoFragmentCount");
@@ -89,6 +91,8 @@ namespace ScoredCandidateNamespace {
             KL_DIV_SPECTRUM,
             COSINE_SIM_SPECTRUM,
             COSINE_SIM_100_MS1,
+            COSINE_SIM_100_MS1_ISO1,
+            COSINE_SIM_100_MS1_ISO2,
             COSINE_SIM_45_MS1,
             COSINE_SIM_20_MS1,
             THEO_FRAG_CNT,
@@ -123,6 +127,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double cosineSim100MS1 = -1.0;
     double cosineSim45MS1 = -1.0;
     double cosineSim20MS1 = -1.0;
+    double cosineSim100MS1Iso1 = -1.0;
+    double cosineSim100MS1Iso2 = -1.0;
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
     QVector<double> mzSearchedVec;
@@ -178,6 +184,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
+                {COSINE_SIM_100_MS1_ISO1, QVariant(cosineSim100MS1Iso1)},
+                {COSINE_SIM_100_MS1_ISO2, QVariant(cosineSim100MS1Iso2)},
                 {COSINE_SIM_45_MS1, QVariant(cosineSim45MS1)},
                 {COSINE_SIM_20_MS1, QVariant(cosineSim20MS1)},
                 {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
@@ -232,6 +240,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
         cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();
+        cosineSim100MS1Iso1 = dataMap.value(COSINE_SIM_100_MS1_ISO1).toDouble();
+        cosineSim100MS1Iso2 = dataMap.value(COSINE_SIM_100_MS1_ISO2).toDouble();
         cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
         cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
