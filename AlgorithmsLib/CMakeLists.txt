@@ -23,6 +23,7 @@ SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/CandidateProcessertron.cpp
         src/ClassifierWeightsManager.cpp
+        src/MS2DataExtractomatic.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
@@ -47,6 +48,7 @@ SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/CandidateProcessertron.h
         src/ClassifierWeightsManager.h
+        src/MS2DataExtractomatic.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h

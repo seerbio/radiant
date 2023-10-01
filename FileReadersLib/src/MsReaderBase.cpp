@@ -441,3 +441,7 @@ int MsReaderBase::getFrameCount() {
 QPair<double, double> MsReaderBase::scanTimeMinMax() {
     return {m_msScanInfo.first().scanTime, m_msScanInfo.last().scanTime};
 }
+
+bool MsReaderBase::isInit() {
+    return !m_msScanInfo.isEmpty() && !m_scanPoints.isEmpty();
+}

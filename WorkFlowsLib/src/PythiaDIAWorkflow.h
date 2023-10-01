@@ -50,25 +50,6 @@ private:
 
     Err buildCalibration(MsReaderParquet *msReaderParquet);
 
-    Err extractionLoopLogic(
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
-            double fdrThreshold,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            int topNMs2IonsMainAnalysis,
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *scoredCandidatesAll,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
-            );
-
-    Err extractTargetDecoyData(
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
-            const PythiaParameters &pythiaParameters,
-            int topNMs2Ions,
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *combinedResults
-    );
-
     Err buildCandidates(
             int topNMs2Ions,
             double selectionListFraction,
@@ -111,13 +92,6 @@ private:
             const QString &fastaFilePath,
             QVector<ScoredCandidate> *scoredCandidates
     );
-
-    static Err buildUniqueMsInfoScanKeyVsScanPoints(
-            MsReaderParquet *msReaderParquet,
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
-            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
-            );
 
 private:
 
