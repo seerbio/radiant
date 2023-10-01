@@ -44,6 +44,7 @@ private Q_SLOTS:
     void minMaxScaleMatrixTest();
 
     void replaceNaNTest();
+    void trimVectorTest();
 
 
 };
@@ -174,11 +175,11 @@ void EigenUtilsTests::rowWiseKLDivergeneceTest() {
     EigenUtils::klDivergence(mat1.row(1), mat2.row(1));
 
     //TODO make these resluts into a test.
-    for (int i = 0; i < 3; i++) {
-        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
-    }
-
-    std::cout << res << std::endl;
+//    for (int i = 0; i < 3; i++) {
+//        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
+//    }
+//
+//    std::cout << res << std::endl;
 
 }
 
@@ -264,6 +265,17 @@ void EigenUtilsTests::replaceNaNTest() {
     mat /= 0.0;
     EigenUtils::replaceNaN(0.0, &mat);
     QVERIFY(MathUtils::tSame(mat.coeff(1, 1), 0.0));
+}
+
+void EigenUtilsTests::trimVectorTest() {
+
+    Eigen::VectorX<int> vec(7);
+    vec << 0, 0, 1, 2, 1, 0, 0;
+
+    const Eigen::VectorX<int> vecTrimmed = EigenUtils::trimVector(vec);
+
+    QCOMPARE(vecTrimmed.size(), 3);
+    QCOMPARE(vecTrimmed.sum(), 4);
 }
 
 

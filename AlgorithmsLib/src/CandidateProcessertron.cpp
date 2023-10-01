@@ -910,6 +910,22 @@ namespace {
         ERR_RETURN
     }
 
+    QVector<double> calculatePeakShapeRatios(const Eigen::VectorX<double> &vec) {
+
+        const Eigen::VectorX<double> vecTrimmed = EigenUtils::trimVector(vec);
+        const int segmentSize = std::round(vecTrimmed.size() / 3.0);
+
+        const double seg1Sum = vecTrimmed.segment(0, segmentSize).sum();
+        const double seg2Sum = vecTrimmed.segment(segmentSize, segmentSize).sum();
+        const double seg3Sum = vecTrimmed.segment(segmentSize * 2, segmentSize).sum();
+
+        return {
+            seg1Sum / seg2Sum,
+            seg3Sum / seg2Sum,
+            seg1Sum / std::max(seg3Sum, std::numeric_limits<double>::min())
+        };
+    }
+
 }//namespace
 Err CandidateProcessertron::buildScores(
         const CandidatePeptide &candidatePeptide,
@@ -955,6 +971,8 @@ Err CandidateProcessertron::buildScores(
             &bestPeakIntegrationIndexes,
             &bestAnchorColumn
     ); ree;
+
+    const QVector<double> peakShapeRatios = calculatePeakShapeRatios(bestAnchorColumn);
 
     QVector<double> cosineSimsIndividual45;
     double unused1;
@@ -1015,25 +1033,25 @@ Err CandidateProcessertron::buildScores(
             &cosineSim100MS1
     ); ree;
 
-    double cosineSim100MS1Iso1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            precursorMzIso1,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &cosineSim100MS1Iso1
-    ); ree;
-
-    double cosineSim100MSIso2;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            precursorMzIso2,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &cosineSim100MSIso2
-    ); ree;
+//    double cosineSim100MS1Iso1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            precursorMzIso1,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &cosineSim100MS1Iso1
+//    ); ree;
+//
+//    double cosineSim100MSIso2;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            precursorMzIso2,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &cosineSim100MSIso2
+//    ); ree;
 
     double cosineSim45MS1;
     e = calculateMS1Corr(
@@ -1058,7 +1076,6 @@ Err CandidateProcessertron::buildScores(
     QVector<double> mzMeanValsFound;
     QVector<double> stdMeanValsFound;
     QVector<double> mzValsSearched;
-    QVector<double> ppmDifference;
     QVector<double> theoApexIntensity;
     e = calculateEmpiricalMzStats(
             candidatePeptide,
@@ -1066,7 +1083,6 @@ Err CandidateProcessertron::buildScores(
             &mzMeanValsFound,
             &stdMeanValsFound,
             &mzValsSearched,
-            &ppmDifference,
             &theoApexIntensity
             ); ree;
 
@@ -1105,11 +1121,14 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->klDivSpectrum = klDivSpectrum;
     scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
     scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
-    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
-    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MSIso2;
+//    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
+//    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MSIso2;
     scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
     scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
     scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
+    scoredCandidate->peakShapeRatio1 = peakShapeRatios.at(0);
+    scoredCandidate->peakShapeRatio2 = peakShapeRatios.at(1);
+    scoredCandidate->peakShapeRatio3 = peakShapeRatios.at(2);
 
     ERR_RETURN
 }
@@ -1120,7 +1139,6 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
         QVector<double> *mzMeanValsFound,
         QVector<double> *stdMeanValsFound,
         QVector<double> *mzValsSearched,
-        QVector<double> *ppmDifference,
         QVector<double> *theoApexIntensity
         ) {
 
@@ -1147,13 +1165,6 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
             *mzValsSearched,
             &mzFoundVsMzSearched
     ); ree
-
-    std::transform(
-            mzFoundVsMzSearched.begin(),
-            mzFoundVsMzSearched.end(),
-            std::back_inserter(*ppmDifference),
-            [](const QPair<double, double> &p){return 1e6 * (p.first - p.second) / p.second;}
-    );
 
     std::transform(
             candidatePeptide.ms2Ions.begin(),

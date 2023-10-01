@@ -47,21 +47,25 @@ namespace ScoredCandidateNamespace {
     const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
-    const QString COSINE_SIM_100_MS1 = QString("cosineSim100MS1");
-    const QString COSINE_SIM_100_MS1_ISO1 = QString("cosineSim100MS1Iso1");
-    const QString COSINE_SIM_100_MS1_ISO2 = QString("cosineSim100MS1Iso2");
-    const QString COSINE_SIM_45_MS1 = QString("cosineSim45MS1");
-    const QString COSINE_SIM_20_MS1 = QString("cosineSim20MS1");
-    const QString THEO_FRAG_CNT = QString("theoFragmentCount");
-    const QString DISC_SCORE = QString("discriminateScore");
-    const QString Q_VAL = QString("qValue");
-    const QString DECOY_RATIO = QString("decoyRatio");
-    const QString MATRIX_WEIGHT = QString("matrixWeight");
-    const QString MATRIX_PVAL = QString("matrixPVal");
-    const QString MATRIX_ERROR = QString("matrixError");
-    const QString SCAN_NUM_CAND_CNT = QString("scanNumberCandidateCount");
-    const QString CLASSIFIER_SCORE = QString("classifierScore");
-    const QString PROTEIN_GRP = QString("proteinGroup");
+    const QString COSINE_SIM_100_MS1 = QStringLiteral("cosineSim100MS1");
+    const QString COSINE_SIM_100_MS1_ISO1 = QStringLiteral("cosineSim100MS1Iso1");
+    const QString COSINE_SIM_100_MS1_ISO2 = QStringLiteral("cosineSim100MS1Iso2");
+    const QString COSINE_SIM_45_MS1 = QStringLiteral("cosineSim45MS1");
+    const QString COSINE_SIM_20_MS1 = QStringLiteral("cosineSim20MS1");
+    const QString THEO_FRAG_CNT = QStringLiteral("theoFragmentCount");
+    const QString DISC_SCORE = QStringLiteral("discriminateScore");
+    const QString Q_VAL = QStringLiteral("qValue");
+    const QString DECOY_RATIO = QStringLiteral("decoyRatio");
+    const QString MATRIX_WEIGHT = QStringLiteral("matrixWeight");
+    const QString MATRIX_PVAL = QStringLiteral("matrixPVal");
+    const QString MATRIX_ERROR = QStringLiteral("matrixError");
+    const QString SCAN_NUM_CAND_CNT = QStringLiteral("scanNumberCandidateCount");
+    const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
+    const QString PROTEIN_GRP = QStringLiteral("proteinGroup");
+
+    const QString PEAK_SHAPE_RATIO_1 = QStringLiteral("peakShapeRatio1");
+    const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
+    const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -104,7 +108,10 @@ namespace ScoredCandidateNamespace {
             MATRIX_ERROR,
             SCAN_NUM_CAND_CNT,
             CLASSIFIER_SCORE,
-            PROTEIN_GRP
+            PROTEIN_GRP,
+            PEAK_SHAPE_RATIO_1,
+            PEAK_SHAPE_RATIO_2,
+            PEAK_SHAPE_RATIO_3
     };
 }
 
@@ -152,6 +159,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double classifierScore = -1.0;
     QString proteinGroup;
 
+    double peakShapeRatio1 = -1.0;
+    double peakShapeRatio2 = -1.0;
+    double peakShapeRatio3 = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;
@@ -197,6 +208,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {MATRIX_ERROR, QVariant(matrixError)},
                 {SCAN_NUM_CAND_CNT, QVariant(scanNumberCandidateCount)},
                 {PROTEIN_GRP, QVariant(proteinGroup)},
+                {PEAK_SHAPE_RATIO_1, QVariant(peakShapeRatio1)},
+                {PEAK_SHAPE_RATIO_2, QVariant(peakShapeRatio2)},
+                {PEAK_SHAPE_RATIO_3, QVariant(peakShapeRatio3)},
                 {CLASSIFIER_SCORE, QVariant(classifierScore)}
         };
     }
@@ -256,6 +270,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         scanNumberCandidateCount = dataMap.value(SCAN_NUM_CAND_CNT).toInt();
         classifierScore = dataMap.value(CLASSIFIER_SCORE).toDouble();
         proteinGroup = dataMap.value(PROTEIN_GRP).toString();
+        peakShapeRatio1 = dataMap.value(PEAK_SHAPE_RATIO_1).toDouble();
+        peakShapeRatio2 = dataMap.value(PEAK_SHAPE_RATIO_2).toDouble();
+        peakShapeRatio3 = dataMap.value(PEAK_SHAPE_RATIO_3).toDouble();
 
         ERR_RETURN
     }
@@ -342,7 +359,6 @@ private:
             QVector<double> *mzMeanValsFound,
             QVector<double> *stdMeanValsFound,
             QVector<double> *mzValsSearched,
-            QVector<double> *ppmDifference,
             QVector<double> *theoApexIntensity
             );
 
