@@ -174,91 +174,96 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = buildCalibration(&msReaderParquet); ree;
 
 //#define BYPASS_OPTI
-//#ifndef BYPASS_OPTI
-//    e = optimizeParameters(&msReaderParquet); ree;
-//#else
-//    //Pythia Main Library
-////    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
-////    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
-////    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-//
-//    //Entrapment libarary
-//    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-//    m_pythiaParameters.scanTimeWindowMinutes = 5.25372;
+#ifndef BYPASS_OPTI
+    e = optimizeParameters(&msReaderParquet); ree;
+#else
+    //Pythia Main Library
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
+//    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-//#endif
-//
-//    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
-//    QVector<ScoredCandidate> scoredCandidatesAll;
-//    e = mainAnalysis(
-//            &msReaderParquet,
-//            &scoredCandidatesTargetsFDRThresholded,
-//            &scoredCandidatesAll
-//            ); ree;
-//
-////#define WRITE_UNFILTERED_PSM
-//#ifdef WRITE_UNFILTERED_PSM
-//    qDebug() << scoredCandidatesAll.size() << "Candidates written";
-//    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet");
-//#endif
-//
-//    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
-//    e = removeInterferingCandidates(
-//            &msReaderParquet,
-//            scoredCandidatesTargetsFDRThresholded,
-//            scoredCandidatesAll,
-//            &scoredCandidatesAllUpdated
-//            ); ree;
-//
-////#define WRITE_FILTERED_PSM
-//#ifdef WRITE_FILTERED_PSM
-//    qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
-//    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
-//#endif
-//
-////#define USE_NEURAL_NET_CLASSIFIER
-//#ifdef USE_NEURAL_NET_CLASSIFIER
-//    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
-//    e = applyNeuralNetClassifier(
-//            scoredCandidatesAllUpdated,
-//            &msReaderParquet,
-//            &scoredCandidatesClassifierUpdated
-//            ); ree;
-//
-//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-//    filterScoreCandidatesByFDR(
-//            scoredCandidatesClassifierUpdated,
-//            0.01,
-//            true,
-//            &scoredCandidatesAllThresholded
-//    );
-//    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
-//
-//    e = updateProteinGroupAnnotation(
-//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-//            &scoredCandidatesClassifierUpdated
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
-//#else
-//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-//    filterScoreCandidatesByFDR(
-//            scoredCandidatesAllUpdated,
-//            0.01,
-//            true,
-//            &scoredCandidatesAllThresholded
-//    );
-//    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
-//
-//    e = updateProteinGroupAnnotation(
-//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-//            &scoredCandidatesAllUpdated
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
-//#endif
+
+    //Entrapment libarary
+    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
+    m_pythiaParameters.scanTimeWindowMinutes = 5.25372;
+    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 15.1303;
+//    m_pythiaParameters.scanTimeWindowMinutes = 3.502466667;
+//    m_pythiaParameters.cosineSimToAnchorThreshold = 0.911666667;
+
+#endif
+
+    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+    QVector<ScoredCandidate> scoredCandidatesAll;
+    e = mainAnalysis(
+            &msReaderParquet,
+            &scoredCandidatesTargetsFDRThresholded,
+            &scoredCandidatesAll
+            ); ree;
+
+//#define WRITE_UNFILTERED_PSM
+#ifdef WRITE_UNFILTERED_PSM
+    qDebug() << scoredCandidatesAll.size() << "Candidates written";
+    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet");
+#endif
+
+    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
+    e = removeInterferingCandidates(
+            &msReaderParquet,
+            scoredCandidatesTargetsFDRThresholded,
+            scoredCandidatesAll,
+            &scoredCandidatesAllUpdated
+            ); ree;
+
+//#define WRITE_FILTERED_PSM
+#ifdef WRITE_FILTERED_PSM
+    qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
+    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
+#endif
+
+//#define USE_NEURAL_NET_CLASSIFIER
+#ifdef USE_NEURAL_NET_CLASSIFIER
+    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
+    e = applyNeuralNetClassifier(
+            scoredCandidatesAllUpdated,
+            &msReaderParquet,
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesClassifierUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+#else
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesAllUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesAllUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
+#endif
 
     ERR_RETURN
 }
@@ -672,101 +677,101 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 
     ERR_INIT
 
-//    const int topNMs2IonsOptimization = std::max(
-//            m_minTopNMs2Ions,
-//            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
-//    );
-//
-//    qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
-//
-//    const double selectionFractionValue = 0.1;
-//    const double fdrThreshold = 0.01;
-//
-//    QVector<PythiaParameters> pythiaParametersExperiments;
-//    e = buildDOE(
-//            m_pythiaParameters,
-//            m_msCalibratomatic.mzStDev(),
-//            m_msCalibratomatic.scanTimeStDev(),
-//            &pythiaParametersExperiments
-//            ); ree;
-//
-//    struct DOEResult {
-//        double mzStDev = -1.0;
-//        double scanTimeStDev = -1.0;
-//        double cosineSimAnchor = -1.0;
-//        int fdrCount = -1;
-//    };
-//
-//    const bool useExtendedScores = true;
-//    const bool useNeuralNetworkScores = false;
-//
-//    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-//    e = buildCandidates(
-//            topNMs2IonsOptimization,
-//            selectionFractionValue,
-//            &uniqueInfoScanKeyVsCandidatePeptideCalibration
-//    ); ree;
-//
-//    QVector<DOEResult> results;
-//    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
-//
-//        QVector<ScoredCandidate> scoredCandidatesOptimization;
-//        e = extractTargetDecoyData(
-//                uniqueInfoScanKeyVsCandidatePeptideCalibration,
-//                pythiaParams,
-//                topNMs2IonsOptimization,
-//                msReaderParquet,
-//                &scoredCandidatesOptimization
-//        ); ree;
-//
-//        QVector<ScoredCandidate> scoredCandidatesAll;
-//        e = buildScoredCandidatesFDR(
-//                scoredCandidatesOptimization,
-//                useExtendedScores,
-//                useNeuralNetworkScores,
-//                topNMs2IonsOptimization,
-//                msReaderParquet->scanTimeMinMax(),
-//                &scoredCandidatesAll
-//        ); ree;
-//
-//       int targetCountAboveFDRQValueThreshold;
-//        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//                scoredCandidatesAll,
-//                fdrThreshold,
-//                &targetCountAboveFDRQValueThreshold
-//                ); ree;
-//
-//        e = outputFDRResults(scoredCandidatesAll); ree;
-//
-//        DOEResult res;
-//        res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
-//        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
-//        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
-//        res.fdrCount = targetCountAboveFDRQValueThreshold;
-//        results.push_back(res);
-//    }
-//
-//    std::sort(
-//            results.rbegin(),
-//            results.rend(),
-//            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
-//            );
-//
-//    for (const DOEResult &r : results) {
-//        qDebug() << r.mzStDev << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
-//    }
-//
-//    //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
-//    const DOEResult bestParametersFDR = *std::max_element(
-//            results.rbegin(),
-//            results.rend(),
-//            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
-//    );
-//
-//    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.mzStDev;
-//    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
-//    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
-//    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    const int topNMs2IonsOptimization = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+    );
+
+    qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
+
+    const double selectionFractionValue = 0.1;
+    const double fdrThreshold = 0.01;
+
+    QVector<PythiaParameters> pythiaParametersExperiments;
+    e = buildDOE(
+            m_pythiaParameters,
+            m_msCalibratomatic.mzStDev(),
+            m_msCalibratomatic.scanTimeStDev(),
+            &pythiaParametersExperiments
+            ); ree;
+
+    struct DOEResult {
+        double mzStDev = -1.0;
+        double scanTimeStDev = -1.0;
+        double cosineSimAnchor = -1.0;
+        int fdrCount = -1;
+    };
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+    e = buildCandidates(
+            topNMs2IonsOptimization,
+            selectionFractionValue,
+            &uniqueInfoScanKeyVsCandidatePeptideCalibration
+    ); ree;
+
+    QVector<DOEResult> results;
+    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+
+        MS2DataExtractomatic ms2DataExtractomatic;
+        e = ms2DataExtractomatic.init(
+                pythiaParams,
+                topNMs2IonsOptimization,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                msReaderParquet,
+                m_msCalibratomatic
+        ); ree;
+
+        QVector<ScoredCandidate> scoredCandidatesAll;
+        QVector<ScoredCandidate> unused;
+        e = ms2DataExtractomatic.extractMS2ForCandidates(
+                uniqueInfoScanKeyVsCandidatePeptideCalibration,
+                fdrThreshold,
+                &scoredCandidatesAll,
+                &unused
+                ); ree;
+
+       int targetCountAboveFDRQValueThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fdrThreshold,
+                &targetCountAboveFDRQValueThreshold
+                ); ree;
+
+        e = outputFDRResults(scoredCandidatesAll); ree;
+
+        DOEResult res;
+        res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
+        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
+        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
+        res.fdrCount = targetCountAboveFDRQValueThreshold;
+        results.push_back(res);
+    }
+
+    std::sort(
+            results.rbegin(),
+            results.rend(),
+            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+            );
+
+    for (const DOEResult &r : results) {
+        qDebug() << r.mzStDev << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
+    }
+
+    //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
+    const DOEResult bestParametersFDR = *std::max_element(
+            results.rbegin(),
+            results.rend(),
+            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+    );
+
+    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.mzStDev;
+    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
+    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     ERR_RETURN
 }
@@ -779,45 +784,51 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     ERR_INIT
 
-//    m_pythiaParameters.print();
-//
-//    const double selectionFractionBypassValue = -1.0;
-//    const double fdrThreshold = 0.2;
-//
-//    const int topNMs2IonsMainAnalysis = std::max(
-//            m_minTopNMs2Ions,
-//            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
-//    );
-//
-//    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
-//
-//    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
-//    e = buildCandidates(
-//            topNMs2IonsMainAnalysis,
-//            selectionFractionBypassValue,
-//            &uniqueInfoScanKeyVsCandidatePeptides
-//    ); ree;
-//
-//    const bool useExtendedScores = true;
-//    const bool useNeuralNetworkScores = false;
-//
-//    e = extractionLoopLogic(
-//            uniqueInfoScanKeyVsCandidatePeptides,
-//            fdrThreshold,
-//            useExtendedScores,
-//            useNeuralNetworkScores,
-//            topNMs2IonsMainAnalysis,
-//            msReaderParquet,
-//            scoredCandidatesAll,
-//            scoredCandidatesTargetsFDRThresholded
-//    ); ree;
-//
-//    int psmCountTenPercentFDR;
-//    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//            *scoredCandidatesTargetsFDRThresholded,
-//            0.1,
-//            &psmCountTenPercentFDR
-//            ); ree;
+    m_pythiaParameters.print();
+
+    const double selectionFractionBypassValue = -1.0;
+    const double fdrThreshold = 0.2;
+
+    const int topNMs2IonsMainAnalysis = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+    );
+
+    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
+    e = buildCandidates(
+            topNMs2IonsMainAnalysis,
+            selectionFractionBypassValue,
+            &uniqueInfoScanKeyVsCandidatePeptides
+    ); ree;
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+
+    MS2DataExtractomatic ms2DataExtractomatic;
+    e = ms2DataExtractomatic.init(
+            m_pythiaParameters,
+            topNMs2IonsMainAnalysis,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            msReaderParquet,
+            m_msCalibratomatic
+            ); ree;
+
+    e = ms2DataExtractomatic.extractMS2ForCandidates(
+            uniqueInfoScanKeyVsCandidatePeptides,
+            fdrThreshold,
+            scoredCandidatesAll,
+            scoredCandidatesTargetsFDRThresholded
+    ); ree;
+
+    int psmCountTenPercentFDR;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+            *scoredCandidatesTargetsFDRThresholded,
+            0.1,
+            &psmCountTenPercentFDR
+            ); ree;
 
     ERR_RETURN
 }

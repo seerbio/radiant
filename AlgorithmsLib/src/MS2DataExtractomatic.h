@@ -51,6 +51,8 @@ public:
             QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
             );
 
+private:
+
     Err extractTargetDecoyData(
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
             QVector<ScoredCandidate> *combinedResults
