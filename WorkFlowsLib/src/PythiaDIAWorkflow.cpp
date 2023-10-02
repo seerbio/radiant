@@ -184,13 +184,8 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     //Entrapment libarary
     m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-    m_pythiaParameters.scanTimeWindowMinutes = 5.25372;
+    m_pythiaParameters.scanTimeWindowMinutes = 4.3781;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-
-//    m_pythiaParameters.ms2ExtractionWidthPPM = 15.1303;
-//    m_pythiaParameters.scanTimeWindowMinutes = 3.502466667;
-//    m_pythiaParameters.cosineSimToAnchorThreshold = 0.911666667;
-
 #endif
 
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
@@ -617,6 +612,13 @@ Err PythiaDIAWorkflow::buildCandidates(
 
 namespace {
 
+    struct DOEResult {
+        double ppm = -1.0;
+        double scanTimeStDev = -1.0;
+        double cosineSimAnchor = -1.0;
+        int fdrCount = -1;
+    };
+
     Err buildDOE(
             const PythiaParameters &pythiaParameters,
             double mzPPMStDev,
@@ -672,6 +674,90 @@ namespace {
         ERR_RETURN
     }
 
+
+    Err findMostFrequentValue(
+            const QVector<QPair<QString, int>> &countsVector,
+            double *value
+            ) {
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(countsVector); ree;
+
+        if (countsVector.size() == 1) {
+            e = ErrorUtils::toDouble(countsVector.front().first, value); ree;
+            ERR_RETURN
+        }
+
+        QVector<QPair<QString, int>> cv = countsVector;
+
+        std::sort(cv.rbegin(), cv.rend(), [](const QPair<QString, int> &l, const QPair<QString, int> &r){
+            return l.second < r.second;
+        });
+
+        if (cv.at(0).second == cv.at(1).second) {
+            double v1;
+            e = ErrorUtils::toDouble(cv.at(0).first, &v1); ree;
+
+            double v2;
+            e = ErrorUtils::toDouble(cv.at(1).first, &v2); ree;
+
+            * value = (v1 + v2) / 2;
+            ERR_RETURN
+        }
+
+        e = ErrorUtils::toDouble(countsVector.front().first, value); ree;
+
+        ERR_RETURN
+    }
+
+    Err getTopFrequencyParameters(
+            QVector<DOEResult> *results,
+            double *ppmSetting,
+            double *scanTimeWidthSetting,
+            double *cosineSimSetting
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(*results); ree;
+
+        std::sort(
+                results->rbegin(),
+                results->rend(),
+                [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+        );
+
+        for (const DOEResult &r : *results) {
+            qDebug() << r.ppm << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
+        }
+
+        const int topNResults = 5;
+        results->resize(topNResults);
+
+        QMap<QString, int> ppmCounts;
+        QMap<QString, int> scanTimeWidthCounts;
+        QMap<QString, int> cosineSimCounts;
+        for (const DOEResult &r : *results) {
+
+            const QString ppmString = QString::number(r.ppm);
+            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
+            const QString cosineSimString = QString::number(r.cosineSimAnchor);
+
+            ppmCounts[ppmString]++;
+            scanTimeWidthCounts[scanTimeWidthString]++;
+            cosineSimCounts[cosineSimString]++;
+        }
+
+        const QVector<QPair<QString, int>> ppmCountsVector = ParallelUtils::convertMapToVectorPairs(ppmCounts);
+        const QVector<QPair<QString, int>> scanTimeWidthCountsVector = ParallelUtils::convertMapToVectorPairs(scanTimeWidthCounts);
+        const QVector<QPair<QString, int>> cosineSimCountsVector = ParallelUtils::convertMapToVectorPairs(cosineSimCounts);
+
+        e = findMostFrequentValue(ppmCountsVector, ppmSetting); ree;
+        e = findMostFrequentValue(scanTimeWidthCountsVector, scanTimeWidthSetting); ree;
+        e = findMostFrequentValue(cosineSimCountsVector, cosineSimSetting); ree;
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 
@@ -694,13 +780,6 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
             m_msCalibratomatic.scanTimeStDev(),
             &pythiaParametersExperiments
             ); ree;
-
-    struct DOEResult {
-        double mzStDev = -1.0;
-        double scanTimeStDev = -1.0;
-        double cosineSimAnchor = -1.0;
-        int fdrCount = -1;
-    };
 
     const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
@@ -744,33 +823,34 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
         e = outputFDRResults(scoredCandidatesAll); ree;
 
         DOEResult res;
-        res.mzStDev = pythiaParams.ms2ExtractionWidthPPM;
+        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
         res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
         res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
         res.fdrCount = targetCountAboveFDRQValueThreshold;
         results.push_back(res);
     }
 
-    std::sort(
-            results.rbegin(),
-            results.rend(),
-            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
-            );
+    e = getTopFrequencyParameters(
+            &results,
+            &m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_pythiaParameters.scanTimeWindowMinutes,
+            &m_pythiaParameters.cosineSimToAnchorThreshold
+            ); ree;
 
-    for (const DOEResult &r : results) {
-        qDebug() << r.mzStDev << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
-    }
+    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
+    qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
+    qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
 
     //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
-    const DOEResult bestParametersFDR = *std::max_element(
-            results.rbegin(),
-            results.rend(),
-            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
-    );
-
-    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.mzStDev;
-    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
-    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
+//    const DOEResult bestParametersFDR = *std::max_element(
+//            results.rbegin(),
+//            results.rend(),
+//            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+//    );
+//
+//    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.ppm;
+//    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
+//    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     ERR_RETURN
