@@ -173,7 +173,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-//#define BYPASS_OPTI
+#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
@@ -188,6 +188,8 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
+#define BYPASS_MAIN_ANALYSIS
+#ifndef BYPASS_MAIN_ANALYSIS
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
     e = mainAnalysis(
@@ -195,12 +197,6 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesTargetsFDRThresholded,
             &scoredCandidatesAll
             ); ree;
-
-//#define WRITE_UNFILTERED_PSM
-#ifdef WRITE_UNFILTERED_PSM
-    qDebug() << scoredCandidatesAll.size() << "Candidates written";
-    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet");
-#endif
 
     QVector<ScoredCandidate> scoredCandidatesAllUpdated;
     e = removeInterferingCandidates(
@@ -210,13 +206,24 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
-//#define WRITE_FILTERED_PSM
+    qDebug() << "ScoredCandidatesAllUpdated size" << scoredCandidatesAllUpdated.size();
+    qDebug() << "ScoredCandidatesThresholded size" << scoredCandidatesTargetsFDRThresholded.size();
+
+#define WRITE_FILTERED_PSM
 #ifdef WRITE_FILTERED_PSM
     qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
     e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
 #endif
 
-//#define USE_NEURAL_NET_CLASSIFIER
+#else
+    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
+    e = ParquetReader::read(
+            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllUpdated.parquet",
+            &scoredCandidatesAllUpdated
+            ); ree;
+#endif
+
+#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
@@ -225,22 +232,22 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 
-    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-    filterScoreCandidatesByFDR(
-            scoredCandidatesClassifierUpdated,
-            0.01,
-            true,
-            &scoredCandidatesAllThresholded
-    );
-    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
-
-    e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-            &scoredCandidatesClassifierUpdated
-            ); ree;
-
-    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+//    filterScoreCandidatesByFDR(
+//            scoredCandidatesClassifierUpdated,
+//            0.01,
+//            true,
+//            &scoredCandidatesAllThresholded
+//    );
+//    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+//
+//    e = updateProteinGroupAnnotation(
+//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+//            &scoredCandidatesClassifierUpdated
+//            ); ree;
+//
+//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 #else
     QVector<ScoredCandidate> scoredCandidatesAllThresholded;
     filterScoreCandidatesByFDR(
@@ -1211,6 +1218,7 @@ namespace {
 
     Err buildKeyVsScoredCandidateCulled(
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
+            const QVector<ScoredCandidate> scoredCandidatesAllFullFragIons,
             QMap<QString, ScoredCandidate> *keyVsScoredCandidateCulled
             ) {
 
@@ -1218,13 +1226,50 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(scoredCandidatesCulled); ree;
 
-        for (const ScoredCandidate &sc : scoredCandidatesCulled) {
+        QMap<PeptideStringWithMods, Index> peptideStringWithModsVsIndex;
+        for (const ScoredCandidate &sc : scoredCandidatesAllFullFragIons) {
+
             const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
                     sc.peptideStringWithMods,
                     sc.targetKey,
                     sc.charge
             );
-            keyVsScoredCandidateCulled->insert(key, sc);
+
+            peptideStringWithModsVsIndex.insert(key, peptideStringWithModsVsIndex.size());
+        }
+
+        for (const ScoredCandidate &sc : scoredCandidatesCulled) {
+
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
+            );
+
+            if (!peptideStringWithModsVsIndex.contains(key)) {
+                qDebug() << "target" << key << peptideStringWithModsVsIndex.value(key);
+            }
+
+            const QString keyDecoy = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods + "|DECOY",
+                    sc.targetKey,
+                    sc.charge
+            );
+
+            if (!peptideStringWithModsVsIndex.contains(keyDecoy)) {
+                qDebug() << "decoy" << keyDecoy << peptideStringWithModsVsIndex.value(keyDecoy);
+            }
+
+            const ScoredCandidate scoredCandidateNew = scoredCandidatesAllFullFragIons.value(peptideStringWithModsVsIndex.value(key));
+            const ScoredCandidate scoredCandidateDecoy = scoredCandidatesAllFullFragIons.value(peptideStringWithModsVsIndex.value(keyDecoy));
+
+            keyVsScoredCandidateCulled->insert(key, scoredCandidateNew);
+
+            if (scoredCandidateDecoy.cosineSimSum100 < 0.0) {
+                continue;
+            }
+
+            keyVsScoredCandidateCulled->insert(keyDecoy, scoredCandidateDecoy);
         }
 
         ERR_RETURN
@@ -1241,50 +1286,58 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
 
     e = ErrorUtils::isNotEmpty(scoredCandidatesCulled); ree;
 
-    QVector<ScoredCandidate> scoredCandidatesAllFullFragIons;
-    e = returnAllCandidatesScoredFullFragIons(
-            msReaderParquet,
-            &scoredCandidatesAllFullFragIons
-            ); ree;
 
-    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
-    e = buildKeyVsScoredCandidateCulled(
-            scoredCandidatesCulled,
-            &keyVsScoredCandidateCulled
-            ); ree;
 
-#define WRITE_NEURAL_NET_INPUT
-#ifdef WRITE_NEURAL_NET_INPUT
-      e = ParquetReader::write(
-              scoredCandidatesAllFullFragIons,
-              "scoredCandidatesAllFullFragIons.parquet"
-              ); ree;
 
-    e = ParquetReader::write(
-            keyVsScoredCandidateCulled.values().toVector(),
-            "keyVsScoredCandidateCulled.parquet"
-    ); ree;
-#endif
 
-    const int epochs = 20;
-    const int baggingSize = 6;
-    const double batchFraction = 0.01;
-    const double learningRate = 0.001;
-    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
-    e = fdrClassifierNeuralNet.init(
-            m_pythiaParameters.topNMs2Ions,
-            epochs,
-            baggingSize,
-            batchFraction,
-            learningRate,
-            msReaderParquet->scanTimeMinMax()
-            ); ree;
 
-    e = fdrClassifierNeuralNet.exec(
-            keyVsScoredCandidateCulled,
-            scoredCandidatesAllFullFragIons,
-            scoredCandidatesClassifier
-            ); ree;
+
+//    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
+//    e = buildKeyVsScoredCandidateCulled(
+//            scoredCandidatesCulled,
+//            scoredCandidatesAllFullFragIons,
+//            &keyVsScoredCandidateCulled
+//            ); ree;
+
+//    for (auto &r : keyVsScoredCandidateCulled) {
+//        if (r.peptideStringWithMods.contains("AAAAAAAAAPAAAATAPTTAATTAATAAQ")) {
+//            qDebug() << r.peptideStringWithMods;
+//        }
+//    }
+
+//#define WRITE_NEURAL_NET_INPUT
+//#ifdef WRITE_NEURAL_NET_INPUT
+//    QVector<ScoredCandidate> keyVsScoredCandidateCulledVec = keyVsScoredCandidateCulled.values().toVector();
+////    e = updateProteinGroupAnnotation(
+////            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+////            &keyVsScoredCandidateCulledVec
+////    ); ree;
+//
+//    e = ParquetReader::write(
+//            keyVsScoredCandidateCulledVec,
+//            "keyVsScoredCandidateCulled.parquet"
+//    ); ree;
+//
+//#endif
+
+//    const int epochs = 20;
+//    const int baggingSize = 6;
+//    const double batchFraction = 0.01;
+//    const double learningRate = 0.001;
+//    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+//    e = fdrClassifierNeuralNet.init(
+//            m_pythiaParameters.topNMs2Ions,
+//            epochs,
+//            baggingSize,
+//            batchFraction,
+//            learningRate,
+//            msReaderParquet->scanTimeMinMax()
+//            ); ree;
+//
+//    e = fdrClassifierNeuralNet.exec(
+//            keyVsScoredCandidateCulled,
+//            scoredCandidatesClassifier
+//            ); ree;
 
     ERR_RETURN
 }
@@ -1296,37 +1349,44 @@ Err PythiaDIAWorkflow::returnAllCandidatesScoredFullFragIons(
 
     ERR_INIT
 
-//    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
-//
-//    const double selectionFractionBypassValue = -1.0;
-//    const int topNMs2IonsFull = std::max(
-//            m_minTopNMs2Ions,
-//            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-//    );
-//    qDebug() << "Using top:" << topNMs2IonsFull << "fragments for calibration";
-//
-//    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
-//    e = buildCandidates(
-//            topNMs2IonsFull,
-//            selectionFractionBypassValue,
-//            &uniqueInfoScanKeyVsCandidatePeptides
-//    ); ree;
-//
-//    const bool useExtendedScores = true;
-//    const bool useNeuralNetworkScores = true;
-//    const double fdrThreshold = 1.0;
-//
-//    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholdedUnused;
-//    e = extractionLoopLogic(
-//            uniqueInfoScanKeyVsCandidatePeptides,
-//            fdrThreshold,
-//            useExtendedScores,
-//            useNeuralNetworkScores,
-//            topNMs2IonsFull,
-//            msReaderParquet,
-//            scoredCandidatesAllTemp,
-//            &scoredCandidatesTargetsFDRThresholdedUnused
-//    ); ree;
+    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
+
+    const double selectionFractionBypassValue = -1.0;
+    const int topNMs2IonsFull = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
+    );
+    qDebug() << "Using top:" << topNMs2IonsFull << "fragments for calibration";
+
+    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
+    e = buildCandidates(
+            topNMs2IonsFull,
+            selectionFractionBypassValue,
+            &uniqueInfoScanKeyVsCandidatePeptides
+    ); ree;
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = true;
+    const double fdrThreshold = 1000.0;
+
+    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholdedUnused;
+    MS2DataExtractomatic ms2DataExtractomatic;
+    e = ms2DataExtractomatic.init(
+            m_pythiaParameters,
+            topNMs2IonsFull,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            msReaderParquet,
+            m_msCalibratomatic
+    ); ree;
+
+    QVector<ScoredCandidate> unused;
+    e = ms2DataExtractomatic.extractMS2ForCandidates(
+            uniqueInfoScanKeyVsCandidatePeptides,
+            fdrThreshold,
+            scoredCandidatesAllTemp,
+            &unused
+    ); ree;
 
     ERR_RETURN
 }

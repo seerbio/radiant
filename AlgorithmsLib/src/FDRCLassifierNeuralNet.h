@@ -105,7 +105,6 @@ public:
 
     Err exec(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
@@ -153,7 +152,6 @@ private:
 
     Err trainClassifier(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
             QVector<QVector<float>> *allDataVecs,
             QVector<NeuralNetData> *trainingData
             );

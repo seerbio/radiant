@@ -191,7 +191,6 @@ namespace {
 }//namespace
 Err FDRCLassifierNeuralNet::exec(
         const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-        const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
         QVector<ScoredCandidate> *scoredCandidatesClassifier
         ) {
 
@@ -199,13 +198,11 @@ Err FDRCLassifierNeuralNet::exec(
 
     e = ErrorUtils::isTrue(m_isInit); ree;
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-    e = ErrorUtils::isNotEmpty(scoredCandidatesAllFullFragIons); ree;
 
     QVector<QVector<float>> allDataVecs;
     QVector<NeuralNetData> trainingData;
     e = trainClassifier(
             keyVsScoredCandidateCulled,
-            scoredCandidatesAllFullFragIons,
             &allDataVecs,
             &trainingData
             ); ree;
@@ -220,7 +217,7 @@ Err FDRCLassifierNeuralNet::exec(
     e = recalculateQValsFromNeuralNetScore(
         trainingData,
         meanPredictions,
-        scoredCandidatesAllFullFragIons,
+        keyVsScoredCandidateCulled.values().toVector(),
         scoredCandidatesClassifier
         ); ree;
 
@@ -232,7 +229,6 @@ namespace {
 
     Err buildNeuralNetworkInput(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
             int topNMs2IonsFull,
             const QPair<double, double> &scanTimeMinMax,
             QVector<NeuralNetData> *trainingData
@@ -241,17 +237,16 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
 
         const double qValueMin = 0.01;
-        const double cosineSimSumMin = 0.5;
+        const double cosineSimSumMin = 0.0;
         const bool useExtendedScores = true;
         const bool useNeuralNetworkScores = true;
 
         QVector<QPair<ScoredCandidate, QVector<double>>> targetPairs;
         QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
         QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
-        for (const ScoredCandidate &sc: scoredCandidatesAll) {
+        for (const ScoredCandidate &sc: keyVsScoredCandidateCulled) {
 
             const QVector<double> scoreVector = FDRCLassifierNeuralNet::buildScoreVector(
                     sc,
@@ -266,19 +261,7 @@ namespace {
                 continue;
             }
 
-            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                    sc.peptideStringWithMods,
-                    sc.targetKey,
-                    sc.charge
-                    );
-
-            if (!keyVsScoredCandidateCulled.contains(key)) {
-                continue;
-            }
-
-            const ScoredCandidate &scoredCandidateOriginal = keyVsScoredCandidateCulled.value(key);
-
-            if (scoredCandidateOriginal.qValue > qValueMin && !scoredCandidateOriginal.isDecoy) {
+            if (sc.qValue > qValueMin && !sc.isDecoy) {
                 testPairs.push_back({sc, scoreVector});
                 continue;
             }
@@ -294,12 +277,10 @@ namespace {
                 [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
         );
 
-        const int decoyCutSize = std::min(decoyPairs.size(), targetPairs.size());
-        qDebug() << "target count training" << targetPairs.size() << "decoy count training" << decoyCutSize;
+        qDebug() << "target count training" << targetPairs.size() << "decoy count training";
 
         QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
         targetDecoyPairs.append(targetPairs);
-        decoyPairs.resize(decoyCutSize);
         targetDecoyPairs.append(decoyPairs);
 
         std::random_device rd;
@@ -329,7 +310,7 @@ namespace {
             trainingData->push_back(td);
         }
 
-#define WRITE_NN_TRAIN_DATA
+//#define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
         const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;
@@ -410,7 +391,6 @@ namespace {
 }//namespace
 Err FDRCLassifierNeuralNet::trainClassifier(
         const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-        const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
         QVector<QVector<float>> *allDataVecs,
         QVector<NeuralNetData> *trainingData
         ) {
@@ -418,7 +398,6 @@ Err FDRCLassifierNeuralNet::trainClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-    e = ErrorUtils::isNotEmpty(scoredCandidatesAllFullFragIons); ree;
 
     const int topNMs2IonsFull = std::max(
             m_minTopNMs2Ions,
@@ -427,7 +406,6 @@ Err FDRCLassifierNeuralNet::trainClassifier(
 
     e = buildNeuralNetworkInput(
             keyVsScoredCandidateCulled,
-            scoredCandidatesAllFullFragIons,
             topNMs2IonsFull,
             m_scanTimeMinMax,
             trainingData
