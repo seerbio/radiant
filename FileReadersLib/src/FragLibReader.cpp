@@ -578,7 +578,6 @@ Err FragLibReader::convertDIANNLibToFragLib(const QString &specLibFilePath) {
 
         PeptideStringWithMods peptideStringWithMods = diannPepSeqChargeString;
         peptideStringWithMods = peptideStringWithMods.replace(QString::number(charge), "");
-//        peptideStringWithMods = peptideStringWithMods.replace('L', 'X').replace('I', 'X');
         removeModificationLabel(&peptideStringWithMods);
 
         const PeptideSequenceChargeKey peptideSequenceChargeKey = peptideStringWithMods + "|" + QString::number(charge);
@@ -712,7 +711,6 @@ Err FragLibReader::mutateCandidatePeptideTarget(
 
     *candidatePeptideDecoy = candidatePeptideTarget;
     candidatePeptideDecoy->isDecoy = true;
-    candidatePeptideDecoy->mass += nTermDeltaMass + cTermDeltaMass;
     candidatePeptideDecoy->ms2Ions = ms2IonDecoys;
 
     ERR_RETURN
