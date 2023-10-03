@@ -49,7 +49,6 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${DLIB_DIRECTORY}
         "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
-        "${ARROW_DIRECTORY}"
         ${EIGEN_DIRECTORY}
 )
 
@@ -71,9 +70,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         FileReadersLib
         UtilsLib
-        ${ARROW_SHARED_LIBRARY}
-        ${ARROW_STATIC_LIBRARY_DEPS}
-        ${PARQUET_SHARED_LIBRARY}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
