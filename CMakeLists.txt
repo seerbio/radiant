@@ -54,11 +54,11 @@ SET(JSON_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/json/include")
 SET(MODELS_DIRECTORY "${PROJECT_SOURCE_DIR}/MachineLrnLib/Models")
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(ARROW_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_src")
-SET(ARROW_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.a")
-SET(ARROW_STATIC_LIBRARY_DEPS "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow_bundled_dependencies.a")
-SET(PARQUET_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.a")
-SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100")
-SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100")
+#SET(ARROW_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.a")
+#SET(ARROW_STATIC_LIBRARY_DEPS "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow_bundled_dependencies.a")
+#SET(PARQUET_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.a")
+#SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100")
+#SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100")
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
@@ -71,6 +71,8 @@ ADD_SUBDIRECTORY("FileReadersLib")
 ADD_SUBDIRECTORY("MachineLrnLib")
 ADD_SUBDIRECTORY("WorkFlowsLib")
 ADD_SUBDIRECTORY("UtilsLib")
+
+FIND_PACKAGE(Arrow REQUIRED)
 
 
 ## Add a custom target for running all tests
