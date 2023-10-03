@@ -73,6 +73,7 @@ ADD_SUBDIRECTORY("WorkFlowsLib")
 ADD_SUBDIRECTORY("UtilsLib")
 
 FIND_PACKAGE(Arrow REQUIRED)
+FIND_PACKAGE(Parquet REQUIRED)
 
 
 ## Add a custom target for running all tests
