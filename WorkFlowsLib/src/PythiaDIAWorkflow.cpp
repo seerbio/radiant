@@ -141,7 +141,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-#define USE_FILE_CACHING
+//#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -173,7 +173,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&msReaderParquet); ree;
 
-#define BYPASS_OPTI
+//#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&msReaderParquet); ree;
 #else
@@ -217,7 +217,8 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
             &scoredCandidatesAllUpdated
     ); ree;
-    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
+    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet"); ree;
+    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet"); ree;
 #endif
 
 #else
@@ -226,6 +227,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllUpdated.parquet",
             &scoredCandidatesAllUpdated
             ); ree;
+
+    QVector<ScoredCandidate> scoredCandidatesAll;
+    e = ParquetReader::read(
+            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAll.parquet",
+            &scoredCandidatesAll
+    ); ree;
 #endif
 
 #define USE_NEURAL_NET_CLASSIFIER
@@ -1178,6 +1185,8 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
         ) {
 
     ERR_INIT
+
+    qDebug() << "Starting interference removal of shared tandem fragments"
 
     QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
     e = buildTandemDeconvolutionInput(

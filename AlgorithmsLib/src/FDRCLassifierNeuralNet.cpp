@@ -57,6 +57,98 @@ Err FDRCLassifierNeuralNet::init(
 
 namespace {
 
+    Err buildNeuralNetworkInput(
+            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
+            int topNMs2IonsFull,
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<NeuralNetData> *trainingData
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
+
+        const double qValueMin = 0.01;
+        const double cosineSimSumMin = 0.0;
+        const bool useExtendedScores = true;
+        const bool useNeuralNetworkScores = false;
+
+        QVector<QPair<ScoredCandidate, QVector<double>>> targetPairs;
+        QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
+        QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
+        for (const ScoredCandidate &sc: keyVsScoredCandidateCulled) {
+
+            const QVector<double> scoreVector = FDRCLassifierNeuralNet::buildScoreVector(
+                    sc,
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    topNMs2IonsFull,
+                    scanTimeMinMax
+            );
+
+            if (sc.isDecoy && sc.cosineSimSum100 > cosineSimSumMin) {
+                decoyPairs.push_back({sc, scoreVector});
+                continue;
+            }
+
+            if (sc.qValue > qValueMin && !sc.isDecoy) {
+                testPairs.push_back({sc, scoreVector});
+                continue;
+            }
+
+            targetPairs.push_back({sc, scoreVector});
+        }
+
+        // TODO decide whether to shuffle this rather than sort.
+        using PR = QPair<ScoredCandidate, QVector<double>>;
+        std::sort(
+                decoyPairs.rbegin(),
+                decoyPairs.rend(),
+                [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
+        );
+
+        qDebug() << "target count training" << targetPairs.size() << "decoy count training";
+
+        QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
+        targetDecoyPairs.append(targetPairs);
+        targetDecoyPairs.append(decoyPairs);
+
+        std::random_device rd;
+        std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+
+        std::shuffle(targetDecoyPairs.begin(), targetDecoyPairs.end(), g);
+
+        for (const QPair<ScoredCandidate, QVector<double>> &scPair : targetDecoyPairs) {
+            NeuralNetData td;
+            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
+            td.isDecoy = scPair.first.isDecoy;
+            td.scores = scPair.second;
+            td.isTest = false;
+            td.charge = scPair.first.charge;
+            td.targetKey = scPair.first.targetKey;
+            trainingData->push_back(td);
+        }
+
+        for (const QPair<ScoredCandidate, QVector<double>> &scPair : testPairs) {
+            NeuralNetData td;
+            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
+            td.isDecoy = scPair.first.isDecoy;
+            td.scores = scPair.second;
+            td.isTest = true;
+            td.charge = scPair.first.charge;
+            td.targetKey = scPair.first.targetKey;
+            trainingData->push_back(td);
+        }
+
+#define WRITE_NN_TRAIN_DATA
+#ifdef WRITE_NN_TRAIN_DATA
+        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
+        e = ParquetReader::write(*trainingData, dataFilePath); ree;
+#endif
+
+        ERR_RETURN
+    }
+
     Err buildKeyVsScoredCandidateCulled(
             const QVector<ScoredCandidate> &scoredCandidateCulled,
             QMap<QString, ScoredCandidate> *keyVsScoredCandidateCulled
@@ -211,25 +303,37 @@ namespace {
 
 }//namespace
 Err FDRCLassifierNeuralNet::exec(
-        const QVector<ScoredCandidate> &scoredCandidateCulled,
+        const QVector<ScoredCandidate> &trainingDataTargetsAndDecoys,
         QVector<ScoredCandidate> *scoredCandidatesClassifier
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_isInit); ree;
-    e = ErrorUtils::isNotEmpty(scoredCandidateCulled); ree;
+    e = ErrorUtils::isNotEmpty(trainingDataTargetsAndDecoys); ree;
 
-    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
+    const int topNMs2IonsFull = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_topNMs2Ions / 2))
+    );
+
+    QMap<QString, ScoredCandidate> keyVsScoredCandidateTargetsAndDecoys;
     e = buildKeyVsScoredCandidateCulled(
-            scoredCandidateCulled,
-            &keyVsScoredCandidateCulled
+            trainingDataTargetsAndDecoys,
+            &keyVsScoredCandidateTargetsAndDecoys
             ); ree;
 
     QVector<QVector<float>> allDataVecs;
     QVector<NeuralNetData> trainingData;
+    e = buildNeuralNetworkInput(
+            keyVsScoredCandidateTargetsAndDecoys,
+            topNMs2IonsFull,
+            m_scanTimeMinMax,
+            &trainingData
+    ); ree;
+
     e = trainClassifier(
-            keyVsScoredCandidateCulled,
+            keyVsScoredCandidateTargetsAndDecoys,
             &allDataVecs,
             &trainingData
             ); ree;
@@ -244,7 +348,7 @@ Err FDRCLassifierNeuralNet::exec(
     e = recalculateQValsFromNeuralNetScore(
         trainingData,
         meanPredictions,
-        keyVsScoredCandidateCulled.values().toVector(),
+        keyVsScoredCandidateTargetsAndDecoys.values().toVector(),
         scoredCandidatesClassifier
         ); ree;
 
@@ -253,98 +357,6 @@ Err FDRCLassifierNeuralNet::exec(
 
 
 namespace {
-
-    Err buildNeuralNetworkInput(
-            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            int topNMs2IonsFull,
-            const QPair<double, double> &scanTimeMinMax,
-            QVector<NeuralNetData> *trainingData
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-
-        const double qValueMin = 0.01;
-        const double cosineSimSumMin = 0.0;
-        const bool useExtendedScores = true;
-        const bool useNeuralNetworkScores = true;
-
-        QVector<QPair<ScoredCandidate, QVector<double>>> targetPairs;
-        QVector<QPair<ScoredCandidate, QVector<double>>> decoyPairs;
-        QVector<QPair<ScoredCandidate, QVector<double>>> testPairs;
-        for (const ScoredCandidate &sc: keyVsScoredCandidateCulled) {
-
-            const QVector<double> scoreVector = FDRCLassifierNeuralNet::buildScoreVector(
-                    sc,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    topNMs2IonsFull,
-                    scanTimeMinMax
-            );
-
-            if (sc.isDecoy && sc.cosineSimSum100 > cosineSimSumMin) {
-                decoyPairs.push_back({sc, scoreVector});
-                continue;
-            }
-
-            if (sc.qValue > qValueMin && !sc.isDecoy) {
-                testPairs.push_back({sc, scoreVector});
-                continue;
-            }
-
-            targetPairs.push_back({sc, scoreVector});
-        }
-
-        // TODO decide whether to shuffle this rather than sort.
-        using PR = QPair<ScoredCandidate, QVector<double>>;
-        std::sort(
-                decoyPairs.rbegin(),
-                decoyPairs.rend(),
-                [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
-        );
-
-        qDebug() << "target count training" << targetPairs.size() << "decoy count training";
-
-        QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
-        targetDecoyPairs.append(targetPairs);
-        targetDecoyPairs.append(decoyPairs);
-
-        std::random_device rd;
-        std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-
-        std::shuffle(targetDecoyPairs.begin(), targetDecoyPairs.end(), g);
-
-        for (const QPair<ScoredCandidate, QVector<double>> &scPair : targetDecoyPairs) {
-            NeuralNetData td;
-            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
-            td.isDecoy = scPair.first.isDecoy;
-            td.scores = scPair.second;
-            td.isTest = false;
-            td.charge = scPair.first.charge;
-            td.targetKey = scPair.first.targetKey;
-            trainingData->push_back(td);
-        }
-
-        for (const QPair<ScoredCandidate, QVector<double>> &scPair : testPairs) {
-            NeuralNetData td;
-            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
-            td.isDecoy = scPair.first.isDecoy;
-            td.scores = scPair.second;
-            td.isTest = true;
-            td.charge = scPair.first.charge;
-            td.targetKey = scPair.first.targetKey;
-            trainingData->push_back(td);
-        }
-
-#define WRITE_NN_TRAIN_DATA
-#ifdef WRITE_NN_TRAIN_DATA
-        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
-        e = ParquetReader::write(*trainingData, dataFilePath); ree;
-#endif
-
-        ERR_RETURN
-    }
 
     Err separateTrainingDataFromAllData(
             const QVector<NeuralNetData> &trainingData,
@@ -425,18 +437,6 @@ Err FDRCLassifierNeuralNet::trainClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-
-    const int topNMs2IonsFull = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_topNMs2Ions))
-    );
-
-    e = buildNeuralNetworkInput(
-            keyVsScoredCandidateCulled,
-            topNMs2IonsFull,
-            m_scanTimeMinMax,
-            trainingData
-            ); ree;
 
     QVector<QVector<float>> trainingDataVecs;
     QVector<float> yData;

@@ -104,7 +104,7 @@ public:
             );
 
     Err exec(
-            const QVector<ScoredCandidate> &scoredCandidateCulled,
+            const QVector<ScoredCandidate> &trainingDataTargetsAndDecoys,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
