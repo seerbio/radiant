@@ -184,11 +184,11 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     //Entrapment libarary
     m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-    m_pythiaParameters.scanTimeWindowMinutes = 4.3781;
+    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
-#define BYPASS_MAIN_ANALYSIS
+//#define BYPASS_MAIN_ANALYSIS
 #ifndef BYPASS_MAIN_ANALYSIS
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
@@ -206,12 +206,17 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesAllUpdated
             ); ree;
 
+    qDebug() << "scoredCandidatesAll size" << scoredCandidatesAll.size();
     qDebug() << "ScoredCandidatesAllUpdated size" << scoredCandidatesAllUpdated.size();
     qDebug() << "ScoredCandidatesThresholded size" << scoredCandidatesTargetsFDRThresholded.size();
 
-#define WRITE_FILTERED_PSM
+//#define WRITE_FILTERED_PSM
 #ifdef WRITE_FILTERED_PSM
     qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesAllUpdated
+    ); ree;
     e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet");
 #endif
 
@@ -227,27 +232,28 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
+            scoredCandidatesAll,
             scoredCandidatesAllUpdated,
-            &msReaderParquet,
+            msReaderParquet.scanTimeMinMax(),
             &scoredCandidatesClassifierUpdated
             ); ree;
 
-//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-//    filterScoreCandidatesByFDR(
-//            scoredCandidatesClassifierUpdated,
-//            0.01,
-//            true,
-//            &scoredCandidatesAllThresholded
-//    );
-//    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
-//
-//    e = updateProteinGroupAnnotation(
-//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-//            &scoredCandidatesClassifierUpdated
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesClassifierUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 #else
     QVector<ScoredCandidate> scoredCandidatesAllThresholded;
     filterScoreCandidatesByFDR(
@@ -1216,177 +1222,80 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 
 namespace {
 
-    Err buildKeyVsScoredCandidateCulled(
-            const QVector<ScoredCandidate> &scoredCandidatesCulled,
-            const QVector<ScoredCandidate> scoredCandidatesAllFullFragIons,
-            QMap<QString, ScoredCandidate> *keyVsScoredCandidateCulled
+    void filterTargetsOut(QVector<ScoredCandidate> *scoredCandidatesAll) {
+
+        const auto terminatorLogic = [](const ScoredCandidate &sc){
+            return sc.isDecoy == 0;
+        };
+
+        const auto terminator
+            = std::remove_if(scoredCandidatesAll->begin(), scoredCandidatesAll->end(), terminatorLogic);
+
+        scoredCandidatesAll->erase(terminator, scoredCandidatesAll->end());
+    }
+
+    Err getTopDecoys(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            int decoyCount,
+            QVector<ScoredCandidate> *decoys
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scoredCandidatesCulled); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
 
-        QMap<PeptideStringWithMods, Index> peptideStringWithModsVsIndex;
-        for (const ScoredCandidate &sc : scoredCandidatesAllFullFragIons) {
+        QVector<ScoredCandidate> scoredCandidatesDecoys = scoredCandidatesAll;
+        filterTargetsOut(&scoredCandidatesDecoys);
 
-            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                    sc.peptideStringWithMods,
-                    sc.targetKey,
-                    sc.charge
-            );
+        const auto sortLogicCosineSimSumDesc = [](const ScoredCandidate &l, const ScoredCandidate &r){
+            return l.cosineSimSum100 < r.cosineSimSum100;
+        };
 
-            peptideStringWithModsVsIndex.insert(key, peptideStringWithModsVsIndex.size());
-        }
+        std::sort(scoredCandidatesDecoys.rbegin(), scoredCandidatesDecoys.rend(), sortLogicCosineSimSumDesc);
+        scoredCandidatesDecoys.resize(decoyCount);
 
-        for (const ScoredCandidate &sc : scoredCandidatesCulled) {
-
-            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                    sc.peptideStringWithMods,
-                    sc.targetKey,
-                    sc.charge
-            );
-
-            if (!peptideStringWithModsVsIndex.contains(key)) {
-                qDebug() << "target" << key << peptideStringWithModsVsIndex.value(key);
-            }
-
-            const QString keyDecoy = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                    sc.peptideStringWithMods + "|DECOY",
-                    sc.targetKey,
-                    sc.charge
-            );
-
-            if (!peptideStringWithModsVsIndex.contains(keyDecoy)) {
-                qDebug() << "decoy" << keyDecoy << peptideStringWithModsVsIndex.value(keyDecoy);
-            }
-
-            const ScoredCandidate scoredCandidateNew = scoredCandidatesAllFullFragIons.value(peptideStringWithModsVsIndex.value(key));
-            const ScoredCandidate scoredCandidateDecoy = scoredCandidatesAllFullFragIons.value(peptideStringWithModsVsIndex.value(keyDecoy));
-
-            keyVsScoredCandidateCulled->insert(key, scoredCandidateNew);
-
-            if (scoredCandidateDecoy.cosineSimSum100 < 0.0) {
-                continue;
-            }
-
-            keyVsScoredCandidateCulled->insert(keyDecoy, scoredCandidateDecoy);
-        }
+        *decoys = scoredCandidatesDecoys;
 
         ERR_RETURN
     }
 
 }//namespace
 Err PythiaDIAWorkflow::applyNeuralNetClassifier(
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
         const QVector<ScoredCandidate> &scoredCandidatesCulled,
-        MsReaderParquet *msReaderParquet,
+        const QPair<double, double> &scanTimeMinMax,
         QVector<ScoredCandidate> *scoredCandidatesClassifier
         ) {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
     e = ErrorUtils::isNotEmpty(scoredCandidatesCulled); ree;
 
+    QVector<ScoredCandidate> topDecoys;
+    e = getTopDecoys(scoredCandidatesAll, scoredCandidatesCulled.size(), &topDecoys); ree
 
+    QVector<ScoredCandidate> trainingData = scoredCandidatesCulled;
+    trainingData.append(topDecoys);
 
+    const int epochs = 20;
+    const int baggingSize = 6;
+    const double batchFraction = 0.01;
+    const double learningRate = 0.001;
+    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    e = fdrClassifierNeuralNet.init(
+            m_pythiaParameters.topNMs2Ions,
+            epochs,
+            baggingSize,
+            batchFraction,
+            learningRate,
+            scanTimeMinMax
+            ); ree;
 
-
-
-
-//    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
-//    e = buildKeyVsScoredCandidateCulled(
-//            scoredCandidatesCulled,
-//            scoredCandidatesAllFullFragIons,
-//            &keyVsScoredCandidateCulled
-//            ); ree;
-
-//    for (auto &r : keyVsScoredCandidateCulled) {
-//        if (r.peptideStringWithMods.contains("AAAAAAAAAPAAAATAPTTAATTAATAAQ")) {
-//            qDebug() << r.peptideStringWithMods;
-//        }
-//    }
-
-//#define WRITE_NEURAL_NET_INPUT
-//#ifdef WRITE_NEURAL_NET_INPUT
-//    QVector<ScoredCandidate> keyVsScoredCandidateCulledVec = keyVsScoredCandidateCulled.values().toVector();
-////    e = updateProteinGroupAnnotation(
-////            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-////            &keyVsScoredCandidateCulledVec
-////    ); ree;
-//
-//    e = ParquetReader::write(
-//            keyVsScoredCandidateCulledVec,
-//            "keyVsScoredCandidateCulled.parquet"
-//    ); ree;
-//
-//#endif
-
-//    const int epochs = 20;
-//    const int baggingSize = 6;
-//    const double batchFraction = 0.01;
-//    const double learningRate = 0.001;
-//    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
-//    e = fdrClassifierNeuralNet.init(
-//            m_pythiaParameters.topNMs2Ions,
-//            epochs,
-//            baggingSize,
-//            batchFraction,
-//            learningRate,
-//            msReaderParquet->scanTimeMinMax()
-//            ); ree;
-//
-//    e = fdrClassifierNeuralNet.exec(
-//            keyVsScoredCandidateCulled,
-//            scoredCandidatesClassifier
-//            ); ree;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::returnAllCandidatesScoredFullFragIons(
-        MsReaderParquet *msReaderParquet,
-        QVector<ScoredCandidate> *scoredCandidatesAllTemp
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
-
-    const double selectionFractionBypassValue = -1.0;
-    const int topNMs2IonsFull = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-    );
-    qDebug() << "Using top:" << topNMs2IonsFull << "fragments for calibration";
-
-    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
-    e = buildCandidates(
-            topNMs2IonsFull,
-            selectionFractionBypassValue,
-            &uniqueInfoScanKeyVsCandidatePeptides
-    ); ree;
-
-    const bool useExtendedScores = true;
-    const bool useNeuralNetworkScores = true;
-    const double fdrThreshold = 1000.0;
-
-    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholdedUnused;
-    MS2DataExtractomatic ms2DataExtractomatic;
-    e = ms2DataExtractomatic.init(
-            m_pythiaParameters,
-            topNMs2IonsFull,
-            useExtendedScores,
-            useNeuralNetworkScores,
-            msReaderParquet,
-            m_msCalibratomatic
-    ); ree;
-
-    QVector<ScoredCandidate> unused;
-    e = ms2DataExtractomatic.extractMS2ForCandidates(
-            uniqueInfoScanKeyVsCandidatePeptides,
-            fdrThreshold,
-            scoredCandidatesAllTemp,
-            &unused
-    ); ree;
+    e = fdrClassifierNeuralNet.exec(
+            trainingData,
+            scoredCandidatesClassifier
+            ); ree;
 
     ERR_RETURN
 }

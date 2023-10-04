@@ -57,6 +57,27 @@ Err FDRCLassifierNeuralNet::init(
 
 namespace {
 
+    Err buildKeyVsScoredCandidateCulled(
+            const QVector<ScoredCandidate> &scoredCandidateCulled,
+            QMap<QString, ScoredCandidate> *keyVsScoredCandidateCulled
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoredCandidateCulled); ree;
+
+        for (const ScoredCandidate &sc : scoredCandidateCulled) {
+            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+                    sc.peptideStringWithMods,
+                    sc.targetKey,
+                    sc.charge
+                    );
+            keyVsScoredCandidateCulled->insert(key, sc);
+        }
+
+        ERR_RETURN
+    }
+
     Err buildQValCalcInput(
         const QVector<NeuralNetData> &trainingData,
         const QVector<float> &predictions,
@@ -190,14 +211,20 @@ namespace {
 
 }//namespace
 Err FDRCLassifierNeuralNet::exec(
-        const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
+        const QVector<ScoredCandidate> &scoredCandidateCulled,
         QVector<ScoredCandidate> *scoredCandidatesClassifier
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_isInit); ree;
-    e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
+    e = ErrorUtils::isNotEmpty(scoredCandidateCulled); ree;
+
+    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
+    e = buildKeyVsScoredCandidateCulled(
+            scoredCandidateCulled,
+            &keyVsScoredCandidateCulled
+            ); ree;
 
     QVector<QVector<float>> allDataVecs;
     QVector<NeuralNetData> trainingData;
@@ -310,7 +337,7 @@ namespace {
             trainingData->push_back(td);
         }
 
-//#define WRITE_NN_TRAIN_DATA
+#define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
         const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;
@@ -650,9 +677,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
     if (useNeuralNetworkScores) {
 
         scores.push_back(std::max(0.0, scoreCandidate.cosineSimSpectrum));
-
         scores.push_back(scoreCandidate.discriminateScore);
-        scores.push_back(std::log(std::max(1.0, scoreCandidate.xCorr)));
         scores.push_back(std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3));
 
         QVector<double> ppmVec;
@@ -668,8 +693,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
             const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
             ppmVec.push_back(std::min(ppm, 100.0));
         }
-        const QVector<double> ppmMz
-                = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
+        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
         scores.append(ppmMz);
 
         scores.push_back(scoreCandidate.matrixPValue);
@@ -677,13 +701,6 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(scoreCandidate.matrixError);
         scores.push_back(scoreCandidate.scanNumberCandidateCount);
 
-        const QVector<double> individualPeakPointCount
-                = extractScoresFromVecFeatures(scoreCandidate.peakPointCountFoundVec, theoMzIonsSize);
-        scores.append(individualPeakPointCount);
-
-        const QVector<double> frameIndexMaxDiffFromAnchorVec
-                = extractScoresFromVecFeatures(scoreCandidate.frameIndexMaxDiffFromAnchorVec, theoMzIonsSize);
-        scores.append(frameIndexMaxDiffFromAnchorVec);
     }
 
     return scores;

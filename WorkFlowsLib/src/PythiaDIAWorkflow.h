@@ -78,14 +78,10 @@ private:
             );
 
     Err applyNeuralNetClassifier(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
-            MsReaderParquet *msReaderParquet,
+            const QPair<double, double> &scanTimeMinMax,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
-            );
-
-    Err returnAllCandidatesScoredFullFragIons(
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *scoredCandidatesAllTemp
             );
 
     Err updateProteinGroupAnnotation(

@@ -104,7 +104,7 @@ public:
             );
 
     Err exec(
-            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
+            const QVector<ScoredCandidate> &scoredCandidateCulled,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
