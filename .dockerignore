@@ -1,0 +1,6 @@
+# Files that should be ignored by Docker (not sent to the build context)
+
+.git
+
+ThirdPartyLibs/libtorch
+ThirdPartyLibs/arrow_parquet
