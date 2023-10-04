@@ -31,6 +31,43 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Here we install development/build tools and fetch dependencies.
 #
 ################################################
+
+FROM apache/arrow-dev:arm64v8-ubuntu-20.04-cpp AS build-arrow
+
+WORKDIR /src/
+RUN git clone https://github.com/apache/arrow.git \
+    && mkdir arrow/cpp/build/ \
+    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON
+
+
+# https://hub.docker.com/r/arrowdev/amd64-debian-10-cpp
+# docker pull arrowdev/amd64-debian-10-cpp
+# sudo docker run -it --entrypoint /bin/bash arrowdev/amd64-debian-10-cpp
+# git clone https://github.com/apache/arrow.git
+# cd arrow/cpp
+# mkdir build
+# cd build
+# cmake .. -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON
+# make
+
+### INSTRUCTIONS TO PULL FILES FROM DOCKER CONTAINER
+# zip the release directory
+
+# Open separate termial window
+# sudo docker ps
+# sudo docker exec <container_id> chmod 777 /path/to/zipped/directory
+
+# docker cp <container_name>:path/to/file -
+# docker cp <container_name>:path/to/file - > file.txt
+
+# sudo docker cp 7449c6433401:/arrow/cpp/arrow.zip -
+# sudo docker cp 7449c6433401:/arrow/cpp/arrow.zip - > arrow.zip
+
+# sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip -
+# sudo docker cp d99e58c57b48:/arrow/cpp/build/arrow_parquet.zip - > arrow_parquet.zip
+########################################################
+
+
 FROM base AS build
 
 #
