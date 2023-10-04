@@ -81,6 +81,10 @@ FIND_PACKAGE(Qt5 REQUIRED
         Test
         )
 
+FIND_PACKAGE(Arrow REQUIRED)
+FIND_PACKAGE(Parquet REQUIRED)
+
+
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 
@@ -91,9 +95,8 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Test
         ChemLib
         UtilsLib
-        ${ARROW_SHARED_LIBRARY}
-        ${ARROW_STATIC_LIBRARY_DEPS}
-        ${PARQUET_SHARED_LIBRARY}
+	Arrow::arrow_static
+	Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
