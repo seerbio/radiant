@@ -72,10 +72,6 @@ ADD_SUBDIRECTORY("MachineLrnLib")
 ADD_SUBDIRECTORY("WorkFlowsLib")
 ADD_SUBDIRECTORY("UtilsLib")
 
-FIND_PACKAGE(Arrow REQUIRED)
-FIND_PACKAGE(Parquet REQUIRED)
-
-
 ## Add a custom target for running all tests
 #add_custom_target(run_tests COMMAND ${CMAKE_CTEST_COMMAND})
 #
