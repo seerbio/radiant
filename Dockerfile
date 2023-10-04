@@ -66,7 +66,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
 RUN mkdir /src/ && cd /src/ \
-    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-12.0.1 \
+    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
     && mkdir arrow/cpp/build/ \
     && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release -DARROW_BUILD_BENCHMARKS=OFF -DARROW_BUILD_EXAMPLES=OFF -DARROW_BUILD_INTEGRATION=OFF -DARROW_BUILD_TESTS=OFF -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON -DARROW_BUILD_STATIC=ON -DPARQUET_BUILD_EXECUTABLES=ON \
     && cd arrow/cpp/build \
