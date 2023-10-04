@@ -49,9 +49,8 @@ RUN apt-get update \
 #    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
     && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y ca-certificates wget build-essential  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools  \
-        libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 \
-        git libsnappy-dev \
+    && apt-get install --no-install-recommends -y ca-certificates wget git build-essential \
+        qtbase5-dev libcurl4-openssl-dev libhdf5-dev libbrotli-dev libboost-all-dev libthrift-0.13.0 libsnappy-dev \
 #        libarrow-dev libparquet-dev \
     && apt-get autoremove -y \
     && apt-get clean \
@@ -69,7 +68,7 @@ ENV PATH="/usr/bin/cmake/bin:${PATH}"
 RUN mkdir /src/ && cd /src/ \
     && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-12.0.1 \
     && mkdir arrow/cpp/build/ \
-    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON \
+    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON -DPARQUET_BUILD_STATIC=ON -DPARQUET_BUILD_EXECUTABLES=ON \
     && cd arrow/cpp/build \
     && make -j && make install
 
