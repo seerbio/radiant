@@ -32,14 +32,11 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 #
 ################################################
 
-FROM apache/arrow-dev:arm64v8-ubuntu-20.04-cpp AS build-arrow
 
-WORKDIR /src/
-RUN git clone https://github.com/apache/arrow.git \
-    && mkdir arrow/cpp/build/ \
-    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON
-
-
+# ###
+# # DREW'S MANUAL BUILD STEPS:
+# ###
+#
 # https://hub.docker.com/r/arrowdev/amd64-debian-10-cpp
 # docker pull arrowdev/amd64-debian-10-cpp
 # sudo docker run -it --entrypoint /bin/bash arrowdev/amd64-debian-10-cpp
@@ -68,6 +65,15 @@ RUN git clone https://github.com/apache/arrow.git \
 ########################################################
 
 
+FROM apache/arrow-dev:arm64v8-ubuntu-20.04-cpp AS build-arrow
+
+WORKDIR /src/
+RUN git clone https://github.com/apache/arrow.git \
+    && mkdir arrow/cpp/build/ \
+    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_STATIC=ON -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DPARQUET_BUILD_EXECUTABLES=ON \
+    && cd arrow/cpp/build \
+    && make -j
+
 FROM base AS build
 
 #
@@ -80,13 +86,14 @@ FROM base AS build
 # and run `apt-get clean` to remove any downloaded package archives.
 #
 RUN apt-get update \
-    && apt-get install -y ca-certificates lsb-release wget \
-    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
-    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+#    && apt-get install -y ca-certificates lsb-release wget \
+#    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+#    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates wget build-essential  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools  \
-    libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 libarrow-dev libparquet-dev \
+        libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 \
+#        libarrow-dev libparquet-dev \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -100,13 +107,16 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
+# Copy Arrow/Parquet libraries
+COPY --from=build-arrow /src/arrow/cpp/build/release /src/arrow/cpp/build/release
+
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
 
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
-    && make
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_PREFIX_PATH=/src/arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release \
+    && make -j
 
 ################################################
 #
