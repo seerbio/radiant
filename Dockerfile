@@ -102,7 +102,7 @@ COPY ./ /src/PythiaDIACpp/
 # Build the project in /app/
 WORKDIR /app/
 RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
-    && make #-j # TODO: reenable -j
+    && make -j # TODO: reenable -j
 
 #RUN make -j UtilsLib
 #RUN make -j ChemLib

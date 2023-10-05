@@ -7,7 +7,6 @@
 
 
 #include "CSVReader.h"
-#include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"

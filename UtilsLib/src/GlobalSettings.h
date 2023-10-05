@@ -7,7 +7,6 @@
 
 #include "UtilsLib_Exports.h"
 
-#include "Error.h"
 #include "ErrorUtils.h"
 
 #include <QPointF>

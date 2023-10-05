@@ -5,7 +5,6 @@
 #ifndef PYTHIADIACPP_CSVREADER_H
 #define PYTHIADIACPP_CSVREADER_H
 
-#include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 
