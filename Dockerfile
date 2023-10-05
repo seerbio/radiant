@@ -44,14 +44,14 @@ FROM base AS build
 # and run `apt-get clean` to remove any downloaded package archives.
 #
 RUN apt-get update \
-#    && apt-get install -y ca-certificates lsb-release wget \
-#    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
-#    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt-get install -y ca-certificates lsb-release wget \
+    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates wget git build-essential \
         qtbase5-dev libcurl4-openssl-dev libhdf5-dev libbrotli-dev libboost-all-dev libthrift-0.13.0 libsnappy-dev \
-#        libarrow-dev libparquet-dev \
+        libarrow-dev libparquet-dev \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -65,12 +65,13 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
-RUN mkdir /src/ && cd /src/ \
-    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
-    && mkdir arrow/cpp/build/ \
-    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release -DARROW_BUILD_BENCHMARKS=OFF -DARROW_BUILD_EXAMPLES=OFF -DARROW_BUILD_INTEGRATION=OFF -DARROW_BUILD_TESTS=OFF -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON -DARROW_BUILD_STATIC=ON -DPARQUET_BUILD_EXECUTABLES=ON \
-    && cd arrow/cpp/build \
-    && make -j && make install
+## Build and install Arrow/Parquet (from source)
+#RUN mkdir /src/ && cd /src/ \
+#    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
+#    && mkdir arrow/cpp/build/ \
+#    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release -DARROW_BUILD_BENCHMARKS=OFF -DARROW_BUILD_EXAMPLES=OFF -DARROW_BUILD_INTEGRATION=OFF -DARROW_BUILD_TESTS=OFF -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON -DARROW_BUILD_STATIC=ON -DPARQUET_BUILD_EXECUTABLES=ON \
+#    && cd arrow/cpp/build \
+#    && make -j && make install
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
