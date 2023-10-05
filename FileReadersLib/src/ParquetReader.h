@@ -5,7 +5,6 @@
 #ifndef PYTHIADIACPP_PARQUETREADER_H
 #define PYTHIADIACPP_PARQUETREADER_H
 
-#include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"

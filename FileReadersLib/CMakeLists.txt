@@ -7,17 +7,17 @@ INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTORCC ON)
-SET(CMAKE_AUTOUIC ON)
+#SET(CMAKE_AUTOMOC ON)
+#SET(CMAKE_AUTORCC ON)
+#SET(CMAKE_AUTOUIC ON)
 
 
-SET(CMAKE_AUTOMOC_MACRO_NAMES
-        "Q_OBJECT"
-        "Q_GADGET"
-        "Q_NAMESPACE"
-        "Q_NAMESPACE_EXPORT"
-        )
+#SET(CMAKE_AUTOMOC_MACRO_NAMES
+#        "Q_OBJECT"
+#        "Q_GADGET"
+#        "Q_NAMESPACE"
+#        "Q_NAMESPACE_EXPORT"
+#        )
 
 SET(SOURCE_FILES
         src/CalibrationReader.cpp
@@ -33,7 +33,7 @@ SET(SOURCE_FILES
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/MsReaderPointerFactory.cpp
-        #src/ParquetReader.cpp
+        src/ParquetReader.cpp
         src/PSMsReader.cpp
         src/PythiaParameterReader.cpp
         )
@@ -52,7 +52,7 @@ SET(HEADER_FILES
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/MsReaderPointerFactory.h
-        #src/ParquetReader.h
+        src/ParquetReader.h
         src/PSMsReader.h
         src/PythiaParameterReader.h
         src/toml.hpp
@@ -66,7 +66,7 @@ SET(${PROJECT_NAME}_LIB_SOURCES
 #MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}
+	#${CMAKE_CURRENT_SOURCE_DIR}
         )
 
 INCLUDE_DIRECTORIES(
