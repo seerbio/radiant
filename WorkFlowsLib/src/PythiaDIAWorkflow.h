@@ -32,17 +32,11 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri
+            const QString &fragLibUri,
+            const QString &fastaUri
             );
 
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri,
-            const QString &iRTReCalFilePath
-    );
-
     Err processFile(const QString &msDataFilePath);
-
 
 private:
 
@@ -93,7 +87,7 @@ private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
-    QString m_iRTReCalFilePath;
+    QString m_fastaUri;
 
     FragLibReader m_fragLibReader;
     QVector<MsScanInfo> m_msScanInfos;

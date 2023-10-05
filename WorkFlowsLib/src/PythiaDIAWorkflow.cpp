@@ -43,7 +43,8 @@ PythiaDIAWorkflow::PythiaDIAWorkflow() : m_minTopNMs2Ions(6) {}
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
-        const QString &fragLibUri
+        const QString &fragLibUri,
+        const QString &fastaUri
         ) {
 
     ERR_INIT
@@ -53,30 +54,15 @@ Err PythiaDIAWorkflow::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::fileExists(fragLibUri); ree;
 
+    if (!fastaUri.isEmpty()) {
+        e = ErrorUtils::fileExists(fastaUri); ree;
+        m_fastaUri = fastaUri;
+    }
+
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
     e = m_fragLibReader.init(m_fragLibUri); ree;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAWorkflow::init(
-        const PythiaParameters &pythiaParameters,
-        const QString &fragLibUri,
-        const QString &iRTReCalFilePath
-) {
-
-    ERR_INIT
-
-    e = init(
-            pythiaParameters,
-            fragLibUri
-            ); ree;
-
-    e = ErrorUtils::fileExists(iRTReCalFilePath); ree;
-
-    m_iRTReCalFilePath = iRTReCalFilePath;
 
     ERR_RETURN
 }
@@ -255,7 +241,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
 
     e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            m_fastaUri,
             &scoredCandidatesClassifierUpdated
             ); ree;
 
@@ -1186,7 +1172,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 
     ERR_INIT
 
-    qDebug() << "Starting interference removal of shared tandem fragments"
+    qDebug() << "Starting interference removal of shared tandem fragments";
 
     QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
     e = buildTandemDeconvolutionInput(
