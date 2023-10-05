@@ -33,7 +33,7 @@ SET(SOURCE_FILES
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/MsReaderPointerFactory.cpp
-        src/ParquetReader.cpp
+        #src/ParquetReader.cpp
         src/PSMsReader.cpp
         src/PythiaParameterReader.cpp
         )
@@ -52,7 +52,7 @@ SET(HEADER_FILES
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/MsReaderPointerFactory.h
-        src/ParquetReader.h
+        #src/ParquetReader.h
         src/PSMsReader.h
         src/PythiaParameterReader.h
         src/toml.hpp
@@ -63,7 +63,7 @@ SET(${PROJECT_NAME}_LIB_SOURCES
         ${HEADER_FILES}
         )
 
-MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
+#MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -72,7 +72,7 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
+#        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
@@ -81,8 +81,8 @@ FIND_PACKAGE(Qt5 REQUIRED
         Test
         )
 
-FIND_PACKAGE(Arrow REQUIRED)
-FIND_PACKAGE(Parquet REQUIRED)
+#FIND_PACKAGE(Arrow REQUIRED)
+#FIND_PACKAGE(Parquet REQUIRED)
 
 
 GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
@@ -90,13 +90,13 @@ GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-        Qt5::Concurrent
-        Qt5::Core
-        Qt5::Test
+        #Qt5::Concurrent
+        #Qt5::Core
+        #Qt5::Test
         ChemLib
         UtilsLib
-	Arrow::arrow_static
-	Parquet::parquet_static
+        #Arrow::arrow_static
+        #Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
