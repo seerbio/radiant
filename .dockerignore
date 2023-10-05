@@ -2,6 +2,8 @@
 
 .git
 
+Dockerfile
+
 ThirdPartyLibs/libtorch
 ThirdPartyLibs/arrow_parquet
 ThirdPartyLibs/arrow_src
