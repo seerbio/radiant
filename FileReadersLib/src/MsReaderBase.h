@@ -149,6 +149,8 @@ public:
 
     Err printFileInfo();
 
+    Err writeTargetCollisionEnergyFile();
+
 protected:
 
     bool m_fileIsCalibrated;

@@ -397,34 +397,9 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << "File is DIA" << isDIA();
 
-//#define WRITE_TARGET_CE_FILE
+#define WRITE_TARGET_CE_FILE
 #ifdef WRITE_TARGET_CE_FILE
-    if (isDIA()) {
-        qDebug() << "Mean Scan Count Per MS2 Target (DIA)" << static_cast<double>(ms2ScanSize) / uniqueTandemScanInfos.size();
-
-        QVector<DIAMzTargetsReaderRow> ops;
-        for (const MsScanInfo &si : uniqueTandemScanInfos) {
-            qDebug() << "TargetMz:" << si.precursorTargetMz
-                     << "IsoWinLo:" << si.isoWindowLower
-                     << "IsoWinHi:" << si.isoWindowUpper;
-            DIAMzTargetsReaderRow op;
-            op.targetMz = si.precursorTargetMz;
-            op.isoWindowLo = si.isoWindowLower;
-            op.isoWindowHi = si.isoWindowUpper;
-            op.collisionEnergy = si.collisionEnergy;
-
-            ops.push_back(op);
-        }
-
-        const QString outputFileName = m_filePath + S_GLOBAL_SETTINGS.DOT_CSV;
-
-        e = CSVReader::write(
-                ops,
-                outputFileName
-                ); ree;
-
-        qDebug() << "Target CSV written to" << outputFileName;
-    }
+    writeTargetCollisionEnergyFile();
 #endif
 
     ERR_RETURN
@@ -444,4 +419,41 @@ QPair<double, double> MsReaderBase::scanTimeMinMax() {
 
 bool MsReaderBase::isInit() {
     return !m_msScanInfo.isEmpty() && !m_scanPoints.isEmpty();
+}
+
+Err MsReaderBase::writeTargetCollisionEnergyFile() {
+    ERR_INIT
+
+    const QVector<MsScanInfo> uniqueTandemScanInfos = getUniqueTandemMsScanInfos();
+
+    if (isDIA()) {
+
+        QVector<DIAMzTargetsReaderRow> ops;
+        for (const MsScanInfo &si : uniqueTandemScanInfos) {
+            qDebug() << "TargetMz:" << si.precursorTargetMz
+                     << "IsoWinLo:" << si.isoWindowLower
+                     << "IsoWinHi:" << si.isoWindowUpper;
+            DIAMzTargetsReaderRow op;
+            op.targetMz = si.precursorTargetMz;
+            op.isoWindowLo = si.isoWindowLower;
+            op.isoWindowHi = si.isoWindowUpper;
+            op.collisionEnergy = si.collisionEnergy;
+
+            ops.push_back(op);
+        }
+
+        const QString outputFileName = m_filePath + ".CE_Profile" + S_GLOBAL_SETTINGS.DOT_CSV;
+
+        e = CSVReader::write(
+                ops,
+                outputFileName
+        ); ree;
+
+        qDebug() << "Target CSV written to" << outputFileName;
+        ERR_RETURN
+    }
+
+    qDebug() << "No CE profile was printed as file is DDA";
+
+    ERR_RETURN
 }
