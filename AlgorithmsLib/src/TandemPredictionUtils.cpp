@@ -52,7 +52,7 @@ QMap<QChar, int> TandemPredictionUtils::aminoAcidIndex() {
             {'Y',17},
             {'H',18},
             {'K',19},
-            {'X',12},
+//            {'X',12},
             {'R',20}
     };
 }
