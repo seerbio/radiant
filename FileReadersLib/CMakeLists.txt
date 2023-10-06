@@ -7,17 +7,17 @@ INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
 SET(CMAKE_CXX_STANDARD 17)
-#SET(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTOMOC ON)
 #SET(CMAKE_AUTORCC ON)
 #SET(CMAKE_AUTOUIC ON)
 
 
-#SET(CMAKE_AUTOMOC_MACRO_NAMES
-#        "Q_OBJECT"
-#        "Q_GADGET"
-#        "Q_NAMESPACE"
-#        "Q_NAMESPACE_EXPORT"
-#        )
+SET(CMAKE_AUTOMOC_MACRO_NAMES
+        "Q_OBJECT"
+        "Q_GADGET"
+        "Q_NAMESPACE"
+        "Q_NAMESPACE_EXPORT"
+        )
 
 SET(SOURCE_FILES
         src/CalibrationReader.cpp
@@ -66,7 +66,7 @@ SET(${PROJECT_NAME}_LIB_SOURCES
 #MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
-	#${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}
         )
 
 INCLUDE_DIRECTORIES(
@@ -76,27 +76,27 @@ INCLUDE_DIRECTORIES(
 )
 
 FIND_PACKAGE(Qt5 REQUIRED
-        Concurrent
+	Concurrent
         Core
         Test
         )
 
-#FIND_PACKAGE(Arrow REQUIRED)
-#FIND_PACKAGE(Parquet REQUIRED)
+FIND_PACKAGE(Arrow REQUIRED)
+FIND_PACKAGE(Parquet REQUIRED)
 
 
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+#GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-        #Qt5::Concurrent
+        Qt5::Concurrent
         #Qt5::Core
         #Qt5::Test
-        ChemLib
-        UtilsLib
-        #Arrow::arrow_static
-        #Parquet::parquet_static
+	ChemLib
+	UtilsLib
+	Arrow::arrow_static
+	Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

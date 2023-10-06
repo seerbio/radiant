@@ -10,16 +10,16 @@ enable_testing(true)
 
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTORCC ON)
-SET(CMAKE_AUTOUIC ON)
+#SET(CMAKE_AUTORCC ON)
+#SET(CMAKE_AUTOUIC ON)
 
 
-SET(CMAKE_AUTOMOC_MACRO_NAMES
-        "Q_OBJECT"
-        "Q_GADGET"
-        "Q_NAMESPACE"
-        "Q_NAMESPACE_EXPORT"
-        )
+#SET(CMAKE_AUTOMOC_MACRO_NAMES
+#        "Q_OBJECT"
+#        "Q_GADGET"
+#        "Q_NAMESPACE"
+#        "Q_NAMESPACE_EXPORT"
+#        )
 
 SET(SOURCE_FILES
         src/Error.cpp
@@ -53,26 +53,26 @@ SET(DLL_LIB_INCLUDE_DIRS
 
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 
 FIND_PACKAGE(Qt5 REQUIRED
         Core
-        Test
-        Network
-        Sql
+	Test
+        #Network
+        #Sql
         )
 
 
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+#GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
-        Qt5::Test
-        Qt5::Network
-        Qt5::Sql
+	#Qt5::Test
+        #Qt5::Network
+        #Qt5::Sql
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

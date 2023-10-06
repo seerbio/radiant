@@ -5,11 +5,10 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include "UtilsLib_Exports.h"
-
-
 #include <QDebug>
 #include <QMap>
+
+#include "UtilsLib_Exports.h"
 
 namespace Error{
 

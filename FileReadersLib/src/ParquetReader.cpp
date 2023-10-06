@@ -2,18 +2,18 @@
 // Created by anichols on 4/5/23.
 //
 
-#include "ParquetReader.h"
+#include <iostream>
 
 #include <arrow/api.h>
-#include <arrow/csv/api.h>
+//#include <arrow/csv/api.h>
 #include <arrow/filesystem/localfs.h>
 #include <arrow/io/api.h>
-#include <arrow/status.h>
+//#include <arrow/status.h>
 
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 
-#include <iostream>
+#include "ParquetReader.h"
 
 
 class Q_DECL_HIDDEN ParquetReader::Private
