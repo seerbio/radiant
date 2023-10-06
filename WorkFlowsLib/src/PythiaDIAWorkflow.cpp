@@ -39,7 +39,10 @@ using rTreePoint = std::pair<rTreeBox, QString> ;
 using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 
-PythiaDIAWorkflow::PythiaDIAWorkflow() : m_minTopNMs2Ions(6) {}
+PythiaDIAWorkflow::PythiaDIAWorkflow()
+: m_minTopNMs2Ions(6)
+, m_byIonsOnly(true)
+{}
 
 Err PythiaDIAWorkflow::init(
         const PythiaParameters &pythiaParameters,
@@ -127,7 +130,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-//#define USE_FILE_CACHING
+#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -517,6 +520,7 @@ Err PythiaDIAWorkflow::buildCandidates(
                 topNMs2Ions,
                 m_pythiaParameters.mzMinDataStructure,
                 m_pythiaParameters.mzMaxDataStructure,
+                m_byIonsOnly,
                 &peptideSequenceChargeKeyVsCandidatePeptide
         ); ree;
     }
@@ -526,6 +530,7 @@ Err PythiaDIAWorkflow::buildCandidates(
                 topNMs2Ions,
                 m_pythiaParameters.mzMinDataStructure,
                 m_pythiaParameters.mzMaxDataStructure,
+                m_byIonsOnly,
                 &peptideSequenceChargeKeyVsCandidatePeptide
         ); ree;
 
@@ -581,6 +586,7 @@ Err PythiaDIAWorkflow::buildCandidates(
             topNMs2Ions,
             m_pythiaParameters.mzMinDataStructure,
             m_pythiaParameters.mzMaxDataStructure,
+            m_byIonsOnly,
             &peptideSequenceChargeKeyVsCandidatePeptide
     ); ree;
 

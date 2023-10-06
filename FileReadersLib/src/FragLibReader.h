@@ -117,6 +117,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -125,6 +126,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -135,6 +137,7 @@ public:
             double mzMin,
             double mzMax,
             int topNMs2Ions,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -153,6 +156,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QVector<MS2Ion> *ms2Ions
     );
 
@@ -176,6 +180,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -197,6 +202,8 @@ private:
     QString m_fragLibFilePath;
     double m_mzMin;
     double m_mzMax;
+
+    bool m_useBYOnly;
 
     QVector<FragLibReaderRow> m_fragLibReaderRows;
 

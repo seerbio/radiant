@@ -397,7 +397,7 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << "File is DIA" << isDIA();
 
-#define WRITE_TARGET_CE_FILE
+//#define WRITE_TARGET_CE_FILE
 #ifdef WRITE_TARGET_CE_FILE
     writeTargetCollisionEnergyFile();
 #endif

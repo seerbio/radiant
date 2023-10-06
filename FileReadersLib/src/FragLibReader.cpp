@@ -30,7 +30,9 @@ using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 FragLibReader::FragLibReader()
 : m_mzMin(200.0)
-, m_mzMax(2000.0) {}
+, m_mzMax(2000.0)
+, m_useBYOnly(false)
+{}
 
 Err FragLibReader::init(const QString &fragLibFilePath) {
     ERR_INIT
@@ -82,6 +84,7 @@ Err FragLibReader::getMS2Ions(
         double mzMin,
         double mzMax,
         int topNMs2Ions,
+        bool byIonsOnly,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
 
@@ -103,6 +106,7 @@ Err FragLibReader::getMS2Ions(
             topNMs2Ions,
             mzMin,
             mzMax,
+            byIonsOnly,
             peptideSequenceChargeKeyVsCandidatePeptide
             ); ree;
 
@@ -119,6 +123,7 @@ Err FragLibReader::getMS2Ions(QMap<PeptideSequenceChargeKey, CandidatePeptide> *
             maxMs2Ions,
             m_mzMin,
             m_mzMax,
+            m_useBYOnly,
             peptideSequenceChargeKeyVsCandidatePeptide
             ); ree;
 
@@ -129,6 +134,7 @@ Err FragLibReader::getMS2IonsTopN(
         int topNMs2Ions,
         double mzMin,
         double mzMax,
+        bool byIonsOnly,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
 
@@ -142,6 +148,7 @@ Err FragLibReader::getMS2IonsTopN(
             topNMs2Ions,
             mzMin,
             mzMax,
+            byIonsOnly,
             peptideSequenceChargeKeyVsCandidatePeptide
     ); ree
 
@@ -155,6 +162,7 @@ Err FragLibReader::getMS2IonsTopN(
         int topNMs2Ions,
         double mzMin,
         double mzMax,
+        bool byIonsOnly,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
         ) {
 
@@ -165,6 +173,7 @@ Err FragLibReader::getMS2IonsTopN(
             topNMs2Ions,
             mzMin,
             mzMax,
+            byIonsOnly,
             &peptideSequenceChargeKeyVsCandidatePeptideTemp
             ); ree;
 
@@ -228,15 +237,30 @@ namespace {
         ms2Ions->erase(terminator, ms2Ions->end());
     }
 
+    void removeNeutralLosses(QVector<MS2Ion> *ms2Ions) {
+
+        const auto terminatorLogic = [](const MS2Ion &ms2Ion){
+            return ms2Ion.ionLabel.contains("NH2") || ms2Ion.ionLabel.contains("H2O") || ms2Ion.ionLabel.contains("a");
+        };
+
+        const auto termnator = std::remove_if(ms2Ions->begin(), ms2Ions->end(), terminatorLogic);
+        ms2Ions->erase(termnator, ms2Ions->end());
+    }
+
 }//namespace
 void FragLibReader::getTopNMostIntenseMs2Ions(
         int topNMs2Ions,
         double mzMin,
         double mzMax,
+        bool byIonsOnly,
         QVector<MS2Ion> *ms2Ions
 ) {
 
     removeMzVals(mzMin, mzMax, ms2Ions);
+
+    if (byIonsOnly) {
+        removeNeutralLosses(ms2Ions);
+    }
 
     const auto sortIntensityAsc = [](const MS2Ion &l, const MS2Ion &r){
         return l.intensity < r.intensity;
@@ -363,6 +387,7 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
         int topNMs2Ions,
         double mzMin,
         double mzMax,
+        bool byIonsOnly,
         QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
 ) {
 
@@ -398,6 +423,7 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
                 topNMs2Ions,
                 mzMin,
                 mzMax,
+                byIonsOnly,
                 &ms2Ions
                 ); ree
 

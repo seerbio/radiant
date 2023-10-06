@@ -95,6 +95,7 @@ private:
     MsCalibratomatic m_msCalibratomatic;
 
     const int m_minTopNMs2Ions;
+    const bool m_byIonsOnly;
 
 };
 
