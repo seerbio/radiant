@@ -73,6 +73,7 @@ Err logic(const QString &testFilePath) {
             100.0,
             2000.0,
             1000,
+            true,
             &peptideSequenceChargeKeyVsCandidatePeptide
     ); ree;
 

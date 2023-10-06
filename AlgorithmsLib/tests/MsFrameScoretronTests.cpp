@@ -93,6 +93,7 @@ namespace {
                     100.0,
                     2000.0,
                     topNMs2Ions,
+                    true,
                     &peptideSequenceChargeKeyVsCandidatePeptide
                     ); ree;
 
