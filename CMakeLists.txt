@@ -14,8 +14,6 @@ SET(MODELS_DIRECTORY "${PROJECT_SOURCE_DIR}/MachineLrnLib/Models")
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
 
-FIND_PACKAGE(Parquet REQUIRED)
-
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")

@@ -72,8 +72,11 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
+FIND_PACKAGE(Parquet REQUIRED)
+
 FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
+	Test
         REQUIRED
 )
 

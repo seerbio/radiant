@@ -48,7 +48,6 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${DLIB_DIRECTORY}
-        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
         ${EIGEN_DIRECTORY}
 )
 
