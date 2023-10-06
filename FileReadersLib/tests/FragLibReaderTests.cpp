@@ -68,11 +68,13 @@ Err logic(const QString &testFilePath) {
 
     QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
     QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
+    QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
     e = fragLibReader.getMS2Ions(
             massStart,
             massEnd,
             &peptideStringWithModsVsMS2Ions,
-            &peptideSequenceChargeKeyVsIsDecoy
+            &peptideSequenceChargeKeyVsIsDecoy,
+            &peptideSequenceChargeKeyVsMass
     ); ree;
 
     ERR_RETURN

@@ -64,6 +64,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         Qt5::Network
+        FileReadersLib
         UtilsLib
         )
 

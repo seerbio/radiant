@@ -86,13 +86,13 @@ namespace {
 
             for (const MS2Ion &ion : targetIons) {
 
-                const int mzHashed = MathUtils::hashDecimal(ion.x(), precision);
+                const int mzHashed = MathUtils::hashDecimal(ion.mz, precision);
 
                 if (mzHashed >= rows || currentTargetIndex >= cols){
                     continue;
                 }
 
-                mat.insert(mzHashed, currentTargetIndex) = ion.y();
+                mat.insert(mzHashed, currentTargetIndex) = ion.intensity;
 
             }
 

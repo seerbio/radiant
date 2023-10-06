@@ -25,6 +25,8 @@ public:
 
     QVector<QVector<float>> batchPredict(const QVector<Eigen::MatrixXd> &mats);
 
+    QVector<float> predict(const Eigen::VectorX<double> &vec);
+
 private:
 
     Q_DISABLE_COPY(NeuralNetModel) class Private;

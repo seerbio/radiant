@@ -213,8 +213,6 @@ namespace {
 
         ERR_INIT
 
-        QVector<double> v = EigenUtils::convertEigenVectorToQVector(*vec);
-
         const int order = 2;
         const int derivative = 0;
         const int rate = 1;
@@ -228,8 +226,6 @@ namespace {
                     vec
                     ); ree;
         }
-
-        QVector<double> w = EigenUtils::convertEigenVectorToQVector(*vec);
 
         ERR_RETURN
     }
@@ -273,7 +269,7 @@ Err PeakIntegratomatic::simpleIntegrator(
 
     e = ErrorUtils::isNotEmpty(vec); ree;
 
-    const int minFilterLength = 5;
+    const int minFilterLength = 3;
     e = ErrorUtils::isAboveThreshold(
             filterLength,
             minFilterLength,

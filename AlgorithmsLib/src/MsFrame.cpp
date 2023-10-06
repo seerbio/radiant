@@ -11,26 +11,14 @@
 #include "GlobalSettings.h"
 #include "MsReaderBase.h"
 #include "MsReaderParquet.h"
-#include "MsScansDenoiseTron.h"
 #include "ParallelUtils.h"
-
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
 
 #include <QElapsedTimer>
 
 using SparseMatrixPoint = EigenSparseUtils::SparseMatrixPoint;
 
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
-using rTreeSearchBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreeCoor, double> ;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
-
 const int PRECISION = 3;
+
 
 MsFrame::MsFrame()
 : m_mzWindowLower(-1.0)
@@ -41,21 +29,25 @@ MsFrame::MsFrame()
 Err MsFrame::init(
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const QMap<ScanNumber, ScanPoints> &scanPoints,
-        const QPair<double, double> &frameMzStartStop
+        const QPair<double, double> &frameMzStartStop,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::isNotEmpty(scanPoints); ree
     m_frame = scanPoints;
 
-    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
+    e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
+
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree
+    m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     m_mzWindowLower = frameMzStartStop.first;
     m_mzWindowUpper = frameMzStartStop.second;
 
-    e = buildFrameIndexVsScanNumber(); ree;
+    e = buildFrameIndexVsScanNumber(); ree
 
     ERR_RETURN
 }
@@ -96,11 +88,12 @@ QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
     return frameIndexVsScanPoints;
 }
 
-Err MsFrame::writeFrameScans(const QString &outputFilePath) const {
+Err MsFrame::writeFrameScans(
+        const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
+        const QString &outputFilePath
+        ) {
 
     ERR_INIT
-
-    const QMap<FrameIndex, ScanPoints> framesVsScanPoints = frameIndexVsScanPoints();
 
     QVector<MsFrameScanPointRows> rowsToWrite;
     for (auto it = framesVsScanPoints.begin(); it != framesVsScanPoints.end(); it++) {
@@ -108,6 +101,10 @@ Err MsFrame::writeFrameScans(const QString &outputFilePath) const {
         row.frameIndex = it.key();
 
         const ScanPoints &sp = it.value();
+
+        if (sp.isEmpty()) {
+            continue;
+        }
 
         e = MsReaderBase::splitScanPoints(
                 sp,
@@ -132,6 +129,10 @@ double MsFrame::meanPrecursorRange() const {
 
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
+}
+
+ScanTime MsFrame::scanTimeFromScanNumber(ScanNumber scanNumber) const {
+    return m_scanNumberVsScanTime.value(scanNumber);
 }
 
 ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
@@ -170,11 +171,122 @@ Err MsFrame::buildMsFrame(
     const QMap<ScanNumber, ScanPoints> targetScanPoints = msReaderParquet.getScanPoints();
     e = ErrorUtils::isNotEmpty(targetScanPoints); ree;
 
+    const QMap<ScanNumber, ScanTime> scanNumberVsScanTime = msReaderParquet.getScanNumberVsScanTime();
+
     e = msFrame->init(
             uniqueMsInfoScanKey,
             targetScanPoints,
-            mzTargetStartStop
+            mzTargetStartStop,
+            scanNumberVsScanTime
     ); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err smoothEigenMatrix(
+            int gaussFilterLength,
+            double sigma,
+            int smoothCount,
+            Eigen::SparseMatrix<double, Eigen::ColMajor> *mat
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(mat->nonZeros() > 0); ree
+
+        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(
+                gaussFilterLength,
+                sigma,
+                false
+                );
+
+        for (int i = 0; i <= smoothCount; i++) {
+
+            *mat = EigenKernelUtils::applyKernelColumnWiseToMatrix(
+                    *mat,
+                    gaussKernel,
+                    false
+                    );
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrame::smoothFrame(
+        int gaussFilterLength,
+        double sigma,
+        int smoothCount,
+        double mzMax
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(isValid()); ree
+
+    const QMap<FrameIndex, ScanPoints> scanPoints = frameIndexVsScanPoints();
+
+    Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
+            scanPoints,
+            PRECISION,
+            mzMax
+            );
+
+    e = smoothEigenMatrix(
+            gaussFilterLength,
+            sigma,
+            smoothCount,
+            &mat
+            ); ree
+
+    const QMap<int, ScanPoints> reFrame = EigenSparseUtils::loadSparseMatrixToFrame(
+            mat,
+            PRECISION
+            );
+
+    e = reloadMFrame(reFrame); ree;
+
+    ERR_RETURN
+}
+
+Err MsFrame::reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scanPoints); ree
+
+    m_frame.clear();
+
+    for (auto it = scanPoints.begin(); it != scanPoints.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        const ScanNumber scanNumber = scanNumberFromFrameIndex(frameIndex);
+        const ScanPoints &fiScanPoints = it.value();
+
+        m_frame.insert(scanNumber, fiScanPoints);
+    }
+
+    ERR_RETURN
+}
+
+Err MsFrame::filterFrameByMz(
+        double mzMin,
+        double mzMax
+        ) {
+
+    ERR_INIT
+
+    const auto terminatorLogic = [&](const ScanPoint &p){return !(mzMin < p.x() && p.x() < mzMax);};
+
+    for (ScanPoints &pnts : m_frame) {
+
+        const auto terminator = std::remove_if(pnts.begin(), pnts.end(), terminatorLogic);
+
+        pnts.erase(terminator, pnts.end());
+    }
+
 
     ERR_RETURN
 }

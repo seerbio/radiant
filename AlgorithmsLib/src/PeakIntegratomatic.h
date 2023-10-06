@@ -16,16 +16,23 @@ using namespace Error;
 
 struct PeakIntegratomaticParameters {
 
-    int filterLength = 7;
+    int filterLength = 2;
     int smoothCount = 3;
     double sigma = 1.0;
     double signalToNoiseRatio = 3;
 
     [[nodiscard]] bool isValid() const {
-        return filterLength > 2
-            && smoothCount > 0
+        return filterLength >= 2
+            && smoothCount >= 0
             && sigma > 0
             && signalToNoiseRatio > 0;
+    }
+
+    void printParams() {
+        qDebug() << "filterLength" << filterLength;
+        qDebug() << "smoothCount" << smoothCount;
+        qDebug() << "sigma" << sigma;
+        qDebug() << "signalToNoiseRatio" << signalToNoiseRatio;
     }
 
 };

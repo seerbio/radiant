@@ -110,6 +110,16 @@ namespace PythiaParameterReaderConstants {
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
     const QString kPercentFDR = QStringLiteral("percentFDR");
 
+    const QString kSkipScanCount = QStringLiteral("skipScanCount");
+    const QString kMinScanCount = QStringLiteral("minScanCount");
+    const QString kUseMeanMz = QStringLiteral("useMeanMz");
+    const QString kFilterLength = QStringLiteral("filterLength");
+    const QString kSmoothCount = QStringLiteral("smoothCount");
+    const QString kSigma = QStringLiteral("sigma");
+    const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
+    const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
+    const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
+
 }
 
 
@@ -262,21 +272,55 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->chargeStateMax = val;
         }
-        else if (jsonKey == "topNMs2Ions"){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->topNMs2Ions = val;
-        }
-        else if (jsonKey == "minFoundMzPeaks"){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->minFoundMzPeaks = val;
-        }
         else if (jsonKey == kAddDecoys){
             bool val = jsonValue.toBool();
             pythiaParameters->addDecoys = val;
         }
 
+        else if (jsonKey == kTopNMs2Ions){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->topNMs2Ions = val;
+        }
+        else if (jsonKey == kSkipScanCount){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->skipScanCount = val;
+        }
+        else if (jsonKey == kMinScanCount){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->minScanCount = val;
+        }
+        else if (jsonKey == kUseMeanMz){
+            bool val = jsonValue.toBool();
+            pythiaParameters->useMeanMz = val;
+        }
+        else if (jsonKey == kFilterLength){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->filterLength = val;
+        }
+        else if (jsonKey == kSmoothCount){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->smoothCount = val;
+        }
+        else if (jsonKey == kSigma){
+            double val;
+            e = ErrorUtils::toDouble(jsonValue, &val); ree;
+            pythiaParameters->sigma = val;
+        }
+        else if (jsonKey == kSignalToNoiseRatio){
+            double val;
+            e = ErrorUtils::toDouble(jsonValue, &val); ree;
+            pythiaParameters->signalToNoiseRatio = val;
+        }
+        else if (jsonKey == kMinFoundMzPeaks){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->minFoundMzPeaks = val;
+        }
     }
 
     e = applyFixedModificationsToAminoAcids(
@@ -313,7 +357,17 @@ Err PythiaParameterReader::validateJsonKeys() {
             kMS2ExtractionWidthPPM,
             kPrecursorExtractionWindowThomsons,
             kPercentFDR,
-            kAddDecoys
+            kAddDecoys,
+
+            kTopNMs2Ions,
+            kSkipScanCount,
+            kMinScanCount,
+            kUseMeanMz,
+            kFilterLength,
+            kSmoothCount,
+            kSigma,
+            kSignalToNoiseRatio,
+            kMinFoundMzPeaks
     };
 
     //TODO FIX THIS
@@ -355,21 +409,20 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
     pythiaParameters.ms2ExtractionWidthPPM = 15.0;
-    pythiaParameters.featureFinderTolerancePPM = 15.0;
-    pythiaParameters.precursorExtractionWindowThomsons = 1.0;
+    pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
-    pythiaParameters.minScanCount = 1;
+    pythiaParameters.minScanCount = 2;
     pythiaParameters.skipScanCount = 1;
     pythiaParameters.useMeanMz = true;
-    pythiaParameters.filterLength = 5;
+    pythiaParameters.filterLength = 3;
     pythiaParameters.smoothCount = 1;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.topNMs2Ions = 13;
-    pythiaParameters.minFoundMzPeaks = 4;
+    pythiaParameters.minFoundMzPeaks = 5;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinDataStructure = 50.0;
+    pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
     pythiaParameters.pValThreshold = 0.05;
 

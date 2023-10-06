@@ -4,7 +4,6 @@
 
 #include "CSVReader.h"
 
-#include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "QFile"
 
@@ -86,7 +85,7 @@ Err CSVReader::readDataFromCSV(
         if(line.isEmpty()){
             continue;
         }
-
+        
         e = ErrorUtils::isEqual(
                 headerSplit.size(),
                 lineSplit.size()

@@ -20,6 +20,13 @@ struct ALGORITHMSLIB_EXPORTS ExtractPoints {
 };
 
 
+namespace MsUtilsNamespace{
+
+    const extern auto ALGORITHMSLIB_EXPORTS sortAscMz = [](const QPointF &l, const QPointF &r){return l.x() < r.x();};
+    const extern auto ALGORITHMSLIB_EXPORTS sortAscIntensity = [](const QPointF &l, const QPointF &r){return l.y() < r.y();};
+}
+
+
 class ALGORITHMSLIB_EXPORTS MsUtils {
 
 
@@ -48,8 +55,15 @@ public:
             const QPointF &mzCenterPoint,
             const QVector<QPointF> &scanPoints,
             double ppmTol,
+            int chargeMin,
+            int chargeMax,
             int *charge
             );
+
+    static int getCenterPointIndex(
+            const QVector<QPointF> &points,
+            const QPointF &mzCenterPoint
+    );
 
     static Err monoIsotopeDeterminator(
             const QPointF &mzCenterPoint,
@@ -61,6 +75,10 @@ public:
             double *bestCosineSim
     );
 
+    static Err writePointsToCSV(
+            const QVector<QPointF> &points,
+            const QString &destFilePath
+    );
 
 
 };

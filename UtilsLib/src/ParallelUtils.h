@@ -163,7 +163,7 @@ public:
             ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(z1); ree;
+
         e = ErrorUtils::isEqual(z1.size(), z2.size());
 
         for (int i = 0; i < z1.size(); i++) {
@@ -173,15 +173,15 @@ public:
         ERR_RETURN
     }
 
-    template <typename T, typename U>
+    template <typename T>
     static Err zip(
             const T &z1,
-            const U &z2,
+            const T &z2,
             QVector<QPointF> *zipResult
     ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(z1); ree;
+
         e = ErrorUtils::isEqual(z1.size(), z2.size());
 
         for (int i = 0; i < z1.size(); i++) {
@@ -208,6 +208,34 @@ public:
         }
 
         return {v1, v2};
+    }
+
+    template <typename T>
+    static QMap<int, T> convertVectorToMap(const QVector<T> &vec) {
+
+        QMap<int, T> vMap;
+
+        for (const T &v : vec) {
+            vMap.insert(vMap.size(), v);
+        }
+
+        return vMap;
+    }
+
+    template <typename T, typename U>
+    static QVector<QPointF> convertMapToPoints(const QMap<T, U> &vec) {
+
+        QVector<QPointF> points;
+
+        for (auto it = vec.begin(); it != vec.end(); it++) {
+
+            const U x = static_cast<U>(it.key());
+            const U y = it.value();
+
+            points.push_back({x, y});
+        }
+
+        return points;
     }
 
 };

@@ -36,25 +36,6 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderMS1Feature {
 
 };
 
-struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPoint {
-    FrameIndex frameIndex = -1;
-    double mz = -1.0;
-    double intensity = -1.0;
-
-    FeatureFinderHillPoint() = default;
-    ~FeatureFinderHillPoint() = default;
-
-    FeatureFinderHillPoint(
-            FrameIndex frameIndex,
-            double mz,
-            double intensity
-            )
-            : frameIndex(frameIndex)
-            , mz(mz)
-            , intensity(intensity)
-            {}
-
-};
 
 class ALGORITHMSLIB_EXPORTS FeatureFinderHill {
 
@@ -62,6 +43,13 @@ public:
 
     FeatureFinderHill() = default;
     ~FeatureFinderHill() = default;
+
+    bool operator == (const FeatureFinderHill &c) const
+    {
+        if (mzMean() == c.mzMean() && maxIntensityScanNumberIndex() == c.maxIntensityScanNumber())
+            return true;
+        return false;
+    }
 
     void addPoint(
         ScanNumberIndex scanNumberIndex,
@@ -74,8 +62,6 @@ public:
             int startIndex,
             int endIndex
     );
-
-    void updateIntensities(const QVector<double> &newIntensities);
 
     [[nodiscard]] double mzMean() const;
 
@@ -92,6 +78,8 @@ public:
     [[nodiscard]] int scanCount() const;
 
     [[nodiscard]] QPair<ScanNumber , ScanNumber> scanNumberMinMax() const;
+
+    [[nodiscard]] QPair<ScanNumber , ScanNumber> scanNumberIndexMinMax() const;
 
     [[nodiscard]] QVector<int> scanNumbers() const;
 
@@ -110,6 +98,29 @@ private:
     QVector<double> m_intensities;
 
 };
+
+struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPlus {
+    FeatureFinderHill featureFinderHill;
+    IonType ionType;
+    IonIndex ionIndex = -1;
+    double cosineSimToAnchor = -1.0;
+
+    double bestIsotopologueCosineSim = -1.0;
+    Charge isotopologueCharge = -1;
+    double isotopologueIntensity = -1.0;
+};
+
+namespace FeatureFinderHillUtils {
+
+    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesIntensityDesc(
+            QVector<FeatureFinderHillPlus> *featureFinderHills
+            );
+
+    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesMzAsc(
+            QVector<FeatureFinderHillPlus> *featureFinderHills
+    );
+
+}
 
 
 #endif //PYTHIACPP_FEATUREFINDERHILL_H
