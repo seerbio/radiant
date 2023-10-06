@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 PROJECT(OrpheusFastaShredder)
 
+FIND_PACKAGE(Qt5 COMPONENTS
+        Core
+        Network
+        Sql
+        Test
+        Widgets
+        REQUIRED
+)
 SET(SOURCE_FILES
         src/CommandLineParser.cpp
         main.cpp

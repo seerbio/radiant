@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.18)
 PROJECT(LycaonMzMLTransmorgitron)
 
+FIND_PACKAGE(Qt5 COMPONENTS
+        Core
+        Network
+        Sql
+        Test
+        Widgets
+        REQUIRED
+)
+
 SET(SOURCE_FILES
         src/CommandLineParser.cpp
         main.cpp

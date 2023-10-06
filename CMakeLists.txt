@@ -6,11 +6,6 @@ enable_testing(true)
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
 
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTORCC ON)
-SET(CMAKE_AUTOUIC ON)
-
-SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 SET(FUNCTIONAL_PLUS_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/FunctionalPlus/include")
 SET(FRUGALLY_DEEP_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/frugally-deep/include")
@@ -20,15 +15,6 @@ SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
 
 FIND_PACKAGE(Parquet REQUIRED)
-
-FIND_PACKAGE(Qt5 REQUIRED
-        Concurrent
-        Core
-        Network
-        Sql
-        Test
-        Widgets
-        )
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
