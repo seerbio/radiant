@@ -22,10 +22,12 @@ SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include"
 FIND_PACKAGE(Parquet REQUIRED)
 
 FIND_PACKAGE(Qt5 REQUIRED
-	Concurrent
+        Concurrent
         Core
         Network
+        Sql
         Test
+        Widgets
         )
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
