@@ -25,7 +25,7 @@ jobs:
         with:
           container: seer/pythia-dia-container
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
-          test_script: ./test-container.sh
+          test_script: ./test_container.sh
 
   build-aarch64:
     # Require that this step run on a self-hosted runner
@@ -45,4 +45,4 @@ jobs:
         with:
           container: seer/pythia-dia-container
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
-          test_script: ./test-container.sh
+          test_script: ./test_container.sh

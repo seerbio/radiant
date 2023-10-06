@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: container-test
-        run: ./test-container.sh
+        run: ./test_container.sh
 
   test-aarch64:
     name: Test Container (aarch64)
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: container-test
-        run: ./test-container.sh
+        run: ./test_container.sh
 
   lint-container:
     name: Lint Container
