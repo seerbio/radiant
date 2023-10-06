@@ -10,7 +10,7 @@ jobs:
         run: ./test-container.sh
 
   test-aarch64:
-    name: Test Container (x86_64)
+    name: Test Container (aarch64)
     runs-on: [self-hosted, aarch64]
     steps:
       - uses: actions/checkout@v2
