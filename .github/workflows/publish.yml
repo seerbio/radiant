@@ -1,0 +1,20 @@
+name: Tag Container
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  tag_container_image:
+    runs-on: [self-hosted, aws-master]
+    steps:
+      # Necessary to set up the token required to push the commit tag to GitHub
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Tag container
+        uses: seerbio/action-tag-container@2.0.1
+        with:
+          container: seer/pythia-dia-container
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          addl_tags: latest

@@ -1,0 +1,27 @@
+name: Build and Push Container
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Require that this step run on a self-hosted runner
+    # within the aws-master AWS account; this will ensure
+    # it has the necessary access to ECR.
+    runs-on: [self-hosted, aws-master]
+
+    env:
+      CONTAINER_TAG: build-${{ github.run_number }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build and tag container image
+        uses: seerbio/action-build-container@1.1.0
+        with:
+          container: seer/pythia-dia-container
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          test_script: ./test-container.sh
