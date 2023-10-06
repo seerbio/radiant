@@ -39,6 +39,16 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorExtractionWindowThomsons;
     extern const QString FILEREADERSLIB_EXPORTS kPercentFDR;
+
+    extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
+    extern const QString FILEREADERSLIB_EXPORTS kMinScanCount;
+    extern const QString FILEREADERSLIB_EXPORTS kUseMeanMz;
+    extern const QString FILEREADERSLIB_EXPORTS kFilterLength;
+    extern const QString FILEREADERSLIB_EXPORTS kSmoothCount;
+    extern const QString FILEREADERSLIB_EXPORTS kSigma;
+    extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
+    extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
+    extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
 }
 
 
@@ -117,14 +127,14 @@ struct PythiaParameters{
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
+    double cosineSimThreshold = 0.8;
+    double fragIntensityThreshold = 0.025;
 
     double pValThreshold = -1.0;
 
     bool replaceLeucinesWithX = true;
     bool addDecoys = true; //TODO change this to a number for rounds of decoys.
 
-    //TODO hook these up
-    double featureFinderTolerancePPM = 12;
     int skipScanCount = 2;
     int minScanCount = 3;
     bool useMeanMz = true;
@@ -132,10 +142,12 @@ struct PythiaParameters{
     int smoothCount = -1;
     double sigma = -1.0;
     double signalToNoiseRatio = -1.0;
-
-    //TODO hook these up
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
+
+    bool findIsotopologues = true; //TODO make this settable
+    int maxIsotopologueCharge = 2; //TODO make this settable
+    bool filterIsotopologuesForDeconvolution = true; //TODO make this settable
 
     [[nodiscard]] bool isValid() const {
 
@@ -211,17 +223,16 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
         qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
-        qDebug() << "topNMs2Ions" << topNMs2Ions;
-        qDebug() << "FeatureFinderTolPPM" << featureFinderTolerancePPM;
-        qDebug() << "Skip scan count" << skipScanCount;
-        qDebug() << "Min scan Count" << minScanCount;
-        qDebug() << "UseMeanMz" << useMeanMz; //TODO make this proper like the rest
-        qDebug() << "FilterLength" << filterLength;
-        qDebug() << "Smooth count" << smoothCount;
-        qDebug() << "sigma" << sigma;
-        qDebug() << "S/N" << signalToNoiseRatio;
-        qDebug() << "TopnMs2Ions" << topNMs2Ions;
-        qDebug() << "minFoundMzPeaks" << minFoundMzPeaks;
+
+        qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
+        qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
+        qDebug() << PythiaParameterReaderConstants::kUseMeanMz << useMeanMz;
+        qDebug() << PythiaParameterReaderConstants::kFilterLength << filterLength;
+        qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
+        qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
+        qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
+        qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
+        qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

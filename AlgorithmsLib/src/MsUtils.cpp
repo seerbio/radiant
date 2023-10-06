@@ -5,15 +5,14 @@
 #include "MsUtils.h"
 
 #include "BiophysicalCalcs.h"
+#include "CSVReader.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "IsotopicDistributionBuilder.h"
 #include "ParallelUtils.h"
 
-namespace {
-    const auto sortAscMz = [](const QPointF &l, const QPointF &r){return l.x() < r.x();};
-}
+
 ExtractPoints MsUtils::extractPointsFromPoints(
         const QVector<QPointF> &_points,
         const QVector<QPointF> &_pointsToExtract,
@@ -25,10 +24,10 @@ ExtractPoints MsUtils::extractPointsFromPoints(
     extractPointsOutput.intensityFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
 
     QVector<QPointF> pointsToExtract = _pointsToExtract;
-    std::sort(pointsToExtract.begin(), pointsToExtract.end(), sortAscMz);
+    std::sort(pointsToExtract.begin(), pointsToExtract.end(), MsUtilsNamespace::sortAscMz);
 
     QVector<QPointF> points = _points;
-    std::sort(points.begin(), points.end(), sortAscMz);
+    std::sort(points.begin(), points.end(), MsUtilsNamespace::sortAscMz);
 
     int currentExtractionIndex = 0;
     double extractionPointX = pointsToExtract.at(currentExtractionIndex).x();
@@ -107,7 +106,7 @@ ScanPoints MsUtils::extractPointsFromPoints(
             extractionPPM
             );
 
-    QVector<MS2Ion> extractedPoints;
+    QVector<QPointF> extractedPoints;
     for (int i = 0; i < ep.mzFoundVsSearched.size(); i++) {
         const double mzFound = ep.mzFoundVsSearched.at(i).x();
         const double intensityFound = ep.intensityFoundVsSearched.at(i).x();
@@ -370,6 +369,8 @@ Err MsUtils::chargeDeterminator(
         const QPointF &mzCenterPoint,
         const QVector<QPointF> &scanPoints,
         double ppmTol,
+        int chargeMin,
+        int chargeMax,
         int *charge
         ) {
 
@@ -380,9 +381,6 @@ Err MsUtils::chargeDeterminator(
     *charge = -1;
 
     double currentBestScore = 0.0;
-
-    const int chargeMin = 1;
-    const int chargeMax = 5;
 
     for (int chrg = chargeMin; chrg <= chargeMax; chrg++) {
 
@@ -406,23 +404,23 @@ Err MsUtils::chargeDeterminator(
     ERR_RETURN
 }
 
+int MsUtils::getCenterPointIndex(
+        const QVector<QPointF> &points,
+        const QPointF &mzCenterPoint
+) {
+
+    QVector<double> mzVals;
+    std::transform(
+            points.begin(),
+            points.end(),
+            std::back_inserter(mzVals),
+            [](const QPointF &p){return p.x();}
+    );
+
+    return MathUtils::closest(mzVals, mzCenterPoint.x());
+}
+
 namespace {
-
-    int getCenterPointIndex(
-            const QVector<QPointF> &points,
-            const QPointF &mzCenterPoint
-            ) {
-
-        QVector<double> mzVals;
-        std::transform(
-                points.begin(),
-                points.end(),
-                std::back_inserter(mzVals),
-                [](const QPointF &p){return p.x();}
-        );
-
-        return MathUtils::closest(mzVals, mzCenterPoint.x());
-    }
 
     Err buildExtractedPoints(
             const QPointF &mzCenterPoint,
@@ -454,7 +452,7 @@ namespace {
 
         std::copy(extractedScanPoints.begin(), extractedScanPoints.end(), extractedPointsFilled->begin());
 
-        *startCenterPointIdxOG = getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
+        *startCenterPointIdxOG = MsUtils::getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
 
         e = ErrorUtils::isTrue(
                 MathUtils::tZero(extractedPointsFilled->at(*startCenterPointIdxOG).x() - mzCenterPoint.x())
@@ -484,8 +482,13 @@ QVector<QPointF> buildSubractionPoints(
         int monoOffset
         ) {
 
+        if (monoOffset == -1) {
+            return {extractedPointsFilled.at(startCenterPointIdx)};
+        }
+
         QVector<QPointF> subtractPoints;
 
+        //TODO change this return points based on averagine envelope.
         const int return4Points = 4;
         for (int i = startCenterPointIdx - monoOffset; i < extractedPointsFilled.size(); i++) {
 
@@ -501,7 +504,6 @@ QVector<QPointF> buildSubractionPoints(
             }
 
         }
-
 
         return subtractPoints;
     }
@@ -522,7 +524,7 @@ Err MsUtils::monoIsotopeDeterminator(
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
     *bestCosineSim = 0;
-    *monoIsoOffset = 1000;
+    *monoIsoOffset = -1;
 
     int startCenterPointIdxOG;
     QVector<QPointF> extractedPointsFilled;
@@ -574,6 +576,61 @@ Err MsUtils::monoIsotopeDeterminator(
             startCenterPointIdxOG,
             *monoIsoOffset
             );
+
+    ERR_RETURN
+}
+
+Err MsUtils::writePointsToCSV(
+        const QVector<QPointF> &points,
+        const QString &destFilePath
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(points); ree
+
+    // Check if the file exists
+    if (QFile::exists(destFilePath)) {
+        // Delete the file
+        if (QFile::remove(destFilePath)) {
+            qDebug() << "File deleted successfully.";
+        } else {
+            qDebug() << "Failed to delete file.";
+        }
+    } else {
+        qDebug() << "File does not exist.";
+    }
+
+    struct PointRow : CSVReaderInputBase {
+
+        double x = -1.0;
+        double y = -1.0;
+
+        QMap<QString, QVariant> map() override {
+            return {
+                    {"x", x},
+                    {"y", y}
+            };
+        }
+    };
+
+    const auto transformLogic = [](const QPointF &p){
+        PointRow pr;
+        pr.x = p.x();
+        pr.y = p.y();
+        return pr;
+    };
+
+    QVector<PointRow> pointRows;
+
+    std::transform(
+            points.begin(),
+            points.end(),
+            std::back_inserter(pointRows),
+            transformLogic
+            );
+
+    e = CSVReader::write(pointRows, destFilePath); ree;
 
     ERR_RETURN
 }

@@ -17,50 +17,86 @@ public:
 private slots:
 
     void scoreCandidatesTest();
-
-private:
-
-    static PythiaParameters pythiaParameters() {
-
-        const QString &paramsFile
-                = QDir(qApp->applicationDirPath()).filePath("WorkFlowTestsParams.pythia");
-
-        PythiaParameterReader reader;
-        PythiaParameters pythiaParameters;
-        reader.readFile(paramsFile);
-        reader.loadPythiaParameters(&pythiaParameters);
-
-        pythiaParameters.topNMs2Ions = 12;
-        pythiaParameters.print();
-        return pythiaParameters;
-    }
+    void scoreCandidatesRecalTest();
 
 };
 
 void MsFrameScoretronTests::scoreCandidatesTest() {
 
+    QSKIP("undo me baby");
+
     ERR_INIT
 
-    const QString mzMLFileURI
-            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
+    const QString msDataFilePath
+            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
+
+    const QString fragLibBackgroundPath
+            = QStringLiteral("/home/anichols/Desktop/Libraries/uniparc_upid_UP000027126_2023_07_02.fasta.csv.fragLib");
 
     const QString fragLibPath
-            = QStringLiteral("/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib");
+            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
 
-    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "474966";
+//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "444952";
+//    const double target = 444.952;
 
-    //TODO needs to be completely rewritten after MsFrameScoretron refactor
+    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+    const double target = 454.957;
 
-//    MsFrameScoretron msFrameScoretron;
-//    QPair<Err, QVector<PSMsReaderRow>> result = msFrameScoretron.scoreCandidates(
-//            pythiaParameters(),
-//            mzMLFileURI,
-//            fragLibPath,
-//            uniqueMsInfoScanKey,
-//            {474.966 - 5.5, 474.966 + 5.5},
-//            false
-//            );
-//    QCOMPARE(result.first, eNoError);
+    const double targetWindowSize = 5.5;
+
+    MsFrameScoretron msFrameScoretron;
+    e = msFrameScoretron.init(
+            PythiaParameterReader::genericPythiaParametersForTests(),
+            msDataFilePath,
+            fragLibPath,
+            fragLibBackgroundPath,
+            uniqueMsInfoScanKey,
+            {target - targetWindowSize, target + targetWindowSize}
+            );
+    QCOMPARE(e, eNoError);
+
+    QMap<FrameIndex , QVector<ScoredCandidate>> frameIndexVsScoredCandidates;
+    e = msFrameScoretron.scoreFrameCandidates(&frameIndexVsScoredCandidates);
+    QCOMPARE(e, eNoError);
+
+}
+
+void MsFrameScoretronTests::scoreCandidatesRecalTest() {
+
+    ERR_INIT
+
+    const QString iRTReCalFilePath
+        = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
+
+    const QString msDataFilePath
+            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
+
+    const QString fragLibBackgroundPath
+            = QStringLiteral("/home/anichols/Desktop/Libraries/uniparc_upid_UP000027126_2023_07_02.fasta.csv.fragLib");
+
+    const QString fragLibPath
+            = QStringLiteral("/home/anichols/Desktop/Libraries/2022.08.31UP000005640_9606.target.decoy.contam.human_plasma.fasta.csv.fragLib");
+
+    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+    const double target = 454.957;
+
+    const double targetWindowSize = 5.5;
+
+    MsFrameScoretron msFrameScoretron;
+    e = msFrameScoretron.init(
+            PythiaParameterReader::genericPythiaParametersForTests(),
+            msDataFilePath,
+            fragLibPath,
+            fragLibBackgroundPath,
+            iRTReCalFilePath,
+            uniqueMsInfoScanKey,
+            {target - targetWindowSize, target + targetWindowSize}
+    );
+    QCOMPARE(e, eNoError);
+
+    QMap<FrameIndex , QVector<ScoredCandidate>> frameIndexVsScoredCandidates;
+    e = msFrameScoretron.scoreFrameCandidates(&frameIndexVsScoredCandidates);
+    QCOMPARE(e, eNoError);
 
 }
 

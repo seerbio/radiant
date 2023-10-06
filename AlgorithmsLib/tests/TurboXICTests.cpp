@@ -3,6 +3,9 @@
 //
 
 #include "ErrorUtils.h"
+#include "MsFrame.h"
+#include "MsUtils.h"
+#include "ParallelUtils.h"
 #include "TurboXIC.h"
 
 #include <QtTest/QtTest>
@@ -20,11 +23,12 @@ private Q_SLOTS:
     void initTest();
     void extractPointsTest();
 
+    void turboXICUtility();
+
 
 private:
 
     QMap<int, QVector<QPointF>> buildPoints() const;
-
 
 };
 
@@ -69,16 +73,75 @@ void TurboXICTests::extractPointsTest() {
     e = turboXIC.init(points);
     QCOMPARE(e, eNoError);
 
-    const XICPoints xicPoints = turboXIC.extractPoints(100.0, 100.13, 2, 4);
+    const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
     QCOMPARE(xicPoints.size(), 2);
     QCOMPARE(xicPoints.firstKey(), 2);
     QCOMPARE(xicPoints.first(), 100.2);
     QCOMPARE(xicPoints.lastKey(), 3);
     QCOMPARE(xicPoints.last(), 100.3);
 
-    const XICPoints xicPointsSum = turboXIC.extractPoints(100.0, 100.17, 2, 5);
+    const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
     QCOMPARE(xicPointsSum.size(), 4);
     QCOMPARE(xicPointsSum.last(), 201.);
+
+}
+
+void TurboXICTests::turboXICUtility() {
+
+    ERR_INIT
+
+    QSKIP("uncomment for troubleshooting");
+
+    const QString msDataFilePath
+            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
+
+    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+    double target = 454.957;
+    double window = 5.5;
+
+    MsFrame msFrame;
+    e = MsFrame::buildMsFrame(
+            msDataFilePath,
+            uniqueMsInfoScanKey,
+            {target - window, target + window},
+            &msFrame
+    );
+    QCOMPARE(e, eNoError);
+
+    e = msFrame.smoothFrame(
+            3,
+            1.0,
+            2,
+            1500.0
+            );
+    QCOMPARE(e, eNoError);
+
+    const QMap<int, QVector<QPointF>> &points = msFrame.scanNumberVsScanPoints();
+
+    TurboXIC turboXIC;
+    e = turboXIC.init(points);
+    QCOMPARE(e, eNoError);
+
+    const double mzCenter = 523.26232347;
+    const double ppmTol = 50;
+    const double massTol = MathUtils::calculatePPM(mzCenter, ppmTol);
+
+    const XICPoints xicPoints = turboXIC.extractPointsXIC(
+            mzCenter - massTol,
+            mzCenter + massTol,
+            0,
+            26000
+            );
+
+    qDebug() << xicPoints.size();
+    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints);
+
+    for (const QPointF &p : vec) {
+        qDebug() << p;
+    }
+
+    e = MsUtils::writePointsToCSV(vec, "xic.csv");
+    QCOMPARE(e, eNoError);
 
 }
 

@@ -51,7 +51,7 @@ public:
     * @brief Checks if a container is empty. Will return specified error if container is empty.
     */
     template <typename T>
-    static Err isNotEmpty(const T &container, Err e = eError) {
+    static Err isNotEmpty(const T &container, Err e = eEmptyContainerError) {
         if (container.isEmpty()) {
             rrr(e);
         }

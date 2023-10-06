@@ -9,7 +9,6 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
-#include "MsFrameScoreVectorReader.h"
 #include "MsUtils.h"
 #include "NearestNeighborsSearch.h"
 #include "ProteinDigestomatic.h"
@@ -29,6 +28,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             const QString &firstPassSearchFilePath,
+            const QString &fragLibFilePath,
+            const QString &msReaderParquetFilePath,
             int calPointK
             );
 
@@ -42,7 +43,12 @@ public:
 
 private:
 
-    Err buildCalibrator();
+    Err buildMzCalibrator(const QString &firstPassCSVFilePath);
+    Err buildIRTCalibrator(
+            const QString &fragLibReaderFilePath,
+            const QString &firstPassCSVFilePath,
+            const QString &msReaderParquetFilePath
+            );
 
 
 private:
@@ -52,7 +58,8 @@ private:
     NearestNeighborsSearch m_nnSearch;
     int m_calPointK;
     double m_stDevNew;
-    QString m_firstPassSearchFilePath;
+
+    QString m_iRTCalibrationFilePath;
 
 };
 

@@ -31,8 +31,16 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri
+            const QString &fragLibUri,
+            const QString &fragLibBackgroundUri
             );
+
+    Err init(
+            const PythiaParameters &pythiaParameters,
+            const QString &fragLibUri,
+            const QString &fragLibBackgroundUri,
+            const QString &iRTReCalFilePath
+    );
 
     Err processFile(const QString &msDataFilePath);
 
@@ -60,6 +68,8 @@ private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
+    QString m_fragLibBackgroundUri;
+    QString m_iRTReCalFilePath;
 
 
 };

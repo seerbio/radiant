@@ -6,6 +6,7 @@
 
 #include "BiophysicalCalcs.h"
 #include "ErrorUtils.h"
+#include "IRTPredictron.h"
 #include "MolecularFormula.h"
 #include "PythiaParameterReader.h"
 #include "TandemFragmentPredictotron.h"
@@ -52,6 +53,7 @@ Err LibraryBuilderWorkFlow::init(
                 m_modelFilePaths.value(charge),
                 charge
                 ); ree;
+        model->setIntensityThreshold(pythiaParameters.fragIntensityThreshold);
 
         m_tandemPredictionModels.insert(charge, model);
     }
@@ -61,6 +63,24 @@ Err LibraryBuilderWorkFlow::init(
 
 
 namespace {
+
+    void filterByMaxPeptideLength(
+            QVector<PeptidePredictionInput> *peptidePredictionInputs,
+            int maxPeptideLength
+            ) {
+
+        const auto terminatorLogic = [maxPeptideLength](const PeptidePredictionInput &ppi){
+            return ppi.peptideSequence.size() > maxPeptideLength;
+        };
+
+        const auto terminator = std::remove_if(
+                peptidePredictionInputs->begin(),
+                peptidePredictionInputs->end(),
+                terminatorLogic
+                );
+
+        peptidePredictionInputs->erase(terminator, peptidePredictionInputs->end());
+    }
 
     Err buildTandemPredictionInputs(
             const AminoAcids &aminoAcids,
@@ -102,54 +122,10 @@ namespace {
         return sortedPeptidePredictionInputs;
     };
 
-    Err writePredictionsToCSV(
-            const QHash<PeptideSequenceChargeKey,
-                    TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
-            const QString &outputFilePath
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(outputFilePath); ree;
-        e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
-
-        const QStringList rowHeader = {
-                QStringLiteral("Peptide"),
-                QStringLiteral("IonLabel"),
-                QStringLiteral("Intensity")
-        };
-
-        QFile file(outputFilePath);
-        if (file.open(QIODevice::ReadWrite)) {
-
-            QTextStream stream(&file);
-            stream << rowHeader.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-
-            for (auto itt = tandemPredictionsAllCharges.begin(); itt != tandemPredictionsAllCharges.end(); itt++) {
-
-                const PeptideSequenceChargeKey &key = itt.key();
-                TandemFragmentPredictotron::TandemPrediction pred = itt.value();
-
-                for (const FragmentIon &fli : pred) {
-
-                    const QStringList row = {
-                            key,
-                            fli.ionLabel,
-                            QString::number(fli.intensity)};
-
-                    stream << row.join(S_GLOBAL_SETTINGS.COMMA) + S_GLOBAL_SETTINGS.NEWLINE;
-                }
-            }
-        }
-
-        qDebug() << "FragLib file written to" << outputFilePath;
-        file.close();
-        ERR_RETURN
-    }
-
     QVector<FragLibReaderRow> buildFragLibReaderRows(
             const QHash<PeptideSequenceChargeKey,TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
             const QHash<PeptideSequenceChargeKey, bool> &peptideSeqChargeKeyVsIsDecoy,
+            const QHash<PeptideStringWithMods, IRT> &peptideStringWithModsVsIRT,
             const AminoAcids &aminoAcids
             ) {
 
@@ -179,6 +155,8 @@ namespace {
             row.mass = BiophysicalCalcs::calculatePeptideMass(peptideString, aminoAcids);
             row.intensityVals = intensities;
             row.isDecoy = peptideSeqChargeKeyVsIsDecoy.value(row.peptideSequenceChargeKey);
+            row.ionLabels = ionLabels.join(S_GLOBAL_SETTINGS.SEPARATOR);
+            row.iRT = peptideStringWithModsVsIRT.value(peptideString);
 
             tlrs.push_back(row);
         }
@@ -193,32 +171,6 @@ namespace {
         std::sort(tlrs.begin(), tlrs.end(), sortLogicMassAsc);
 
         return tlrs;
-    }
-
-    Err writePredictionsToParquet(
-            const QHash<PeptideSequenceChargeKey, TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
-            const QString &outputFilePath,
-            const QHash<PeptideSequenceChargeKey, bool> &peptideSequenceChargeKeyVsIsBool,
-            const AminoAcids &aminoAcids
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(outputFilePath); ree;
-        e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
-
-        const QVector<FragLibReaderRow> writeRows = buildFragLibReaderRows(
-                tandemPredictionsAllCharges,
-                peptideSequenceChargeKeyVsIsBool,
-                aminoAcids
-                );
-
-        e = ParquetReader::write(
-                writeRows,
-                outputFilePath
-                ); ree;
-
-        ERR_RETURN
     }
 
 }//namespace
@@ -237,7 +189,10 @@ Err LibraryBuilderWorkFlow::exec(
             &peptidePredictionInputs
             ); ree;
 
-    e = buildPeptideSequenceChargeKeyVsIsDecoy(peptidePredictionInputs); ree;
+    filterByMaxPeptideLength(&peptidePredictionInputs, m_maxPeptideLength);
+
+    e = buildPeptideSequenceChargeKeyVsIsDecoy(peptidePredictionInputs); ree
+    e = buildPeptideStringWithModsVsIRT(peptidePredictionInputs); ree
 
     e = buildTandemPredictionInputs(
             m_pythiaParameters.aminoAcids,
@@ -278,9 +233,7 @@ Err LibraryBuilderWorkFlow::exec(
 
     e = writePredictionsToParquet(
             tandemPredictionsAllCharges,
-            *returnFilePath,
-            m_peptideSequenceChargeKeyVsIsDecoy,
-            m_pythiaParameters.aminoAcids
+            *returnFilePath
             ); ree;
 
     ERR_RETURN
@@ -303,6 +256,73 @@ Err LibraryBuilderWorkFlow::buildPeptideSequenceChargeKeyVsIsDecoy(
         m_peptideSequenceChargeKeyVsIsDecoy.insert(peptideSequenceChargeKey, ppi.isDecoy);
 
     }
+
+    ERR_RETURN
+}
+
+LibraryBuilderWorkFlow::LibraryBuilderWorkFlow() : m_maxPeptideLength(40) {}
+
+Err LibraryBuilderWorkFlow::buildPeptideStringWithModsVsIRT(
+        const QVector<PeptidePredictionInput> &peptidePredictionInputs
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(peptidePredictionInputs); ree;
+
+    QStringList peptideStringWithModsList;
+    std::transform(
+            peptidePredictionInputs.begin(),
+            peptidePredictionInputs.end(),
+            std::back_inserter(peptideStringWithModsList),
+            [](const PeptidePredictionInput &ppi){return ppi.peptideSequence;}
+            );
+
+    const QSet<PeptideStringWithMods> peptideStringWithModsSet = peptideStringWithModsList.toSet();
+    peptideStringWithModsList = peptideStringWithModsSet.toList();
+
+    const QString iRTModelFilePath = QDir(qApp->applicationDirPath()).filePath("iRT_Model.json");
+
+    IRTPredictron iRTPredictron;
+    e = iRTPredictron.init(iRTModelFilePath); ree
+
+    QVector<float> iRTs;
+    e = iRTPredictron.batchPredictIRT(peptideStringWithModsList, &iRTs); ree
+
+    e = ErrorUtils::isEqual(iRTs.size(), peptideStringWithModsList.size()); ree
+
+    for (int i = 0; i < iRTs.size(); i++) {
+
+        const PeptideStringWithMods &peptideStringWithMods = peptideStringWithModsList.at(i);
+        const IRT iRT = iRTs.at(i);
+
+        m_peptideStringWithModsVsIRT.insert(peptideStringWithMods, iRT);
+    }
+
+    ERR_RETURN
+}
+
+Err LibraryBuilderWorkFlow::writePredictionsToParquet(
+        const QHash<PeptideSequenceChargeKey, TandemFragmentPredictotron::TandemPrediction> &tandemPredictionsAllCharges,
+        const QString &outputFilePath
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(outputFilePath); ree;
+    e = ErrorUtils::isNotEmpty(tandemPredictionsAllCharges); ree;
+
+    const QVector<FragLibReaderRow> writeRows = buildFragLibReaderRows(
+            tandemPredictionsAllCharges,
+            m_peptideSequenceChargeKeyVsIsDecoy,
+            m_peptideStringWithModsVsIRT,
+            m_pythiaParameters.aminoAcids
+    );
+
+    e = ParquetReader::write(
+            writeRows,
+            outputFilePath
+    ); ree;
 
     ERR_RETURN
 }

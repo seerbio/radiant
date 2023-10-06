@@ -5,9 +5,13 @@
 #ifndef EIGENUTILS_H
 #define EIGENUTILS_H
 
+#include "CSVReader.h"
 #include "EigenLib_Exports.h"
+#include "ErrorUtils.h"
+#include "GlobalSettings.h"
 #include "MathUtils.h"
 
+#include <QFile>
 #include <QVector>
 
 #include <Eigen/Dense>
@@ -538,20 +542,43 @@ public:
         }
         *mat = newMatrix;
     }
+
+
+    template<typename T>
+    static Err printMatrix(
+            const Eigen::MatrixX<T> &mat,
+            const QString &outputFilePath
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(mat.rows() > 0); ree;
+
+        QFile file(outputFilePath);
+        if (file.open(QIODevice::ReadWrite)) {
+
+            QTextStream stream(&file);
+
+            for (int i = 0; i < mat.rows(); i++) {
+
+                const Eigen::VectorX<T> v = mat.row(i);
+
+                QStringList rtwQStringList;
+                for (int j = 0; j < v.size(); j++) {
+                    rtwQStringList.push_back(QString::number(v.coeff(j)));
+                }
+
+                stream << rtwQStringList.join(S_GLOBAL_SETTINGS.COMMA);
+                stream << S_GLOBAL_SETTINGS.NEWLINE;
+            }
+
+        }
+
+        file.close();
+        qDebug() << mat.rows() << "Rows written to" << outputFilePath;
+
+        ERR_RETURN
+    }
 };
 
 #endif //EIGENUTILS_H
-
-
-
-
-
-
-
-
-
-
-
-
-
-

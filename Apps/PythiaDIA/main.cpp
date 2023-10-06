@@ -33,8 +33,14 @@ int main(int argc, char *argv[]) {
     const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
     const QString fragLibPath = cliParameters.fragLibFilePath;
+    const QString fragLibBackgroundPath = cliParameters.fragLibFilePath;
     const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
     const QString msDataFilesDirectory = cliParameters.msDataFilesDirectory;
+
+    //TODO make sure this optional argument works.
+    const QString iRTReCalFilePath
+            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
+
 
     PythiaParameters pythiaParameters;
     e = PythiaParameterReader::buildPythiaParameters(
@@ -49,7 +55,9 @@ int main(int argc, char *argv[]) {
     PythiaDIAWorkflow pythiaDiaWorkflow;
     e = pythiaDiaWorkflow.init(
             pythiaParameters,
-            fragLibPath
+            fragLibPath,
+            fragLibBackgroundPath,
+            iRTReCalFilePath
     );
     if (e != eNoError) {
         qDebug() << "Error initializing Pythia Workflow Libraries";

@@ -79,12 +79,16 @@ public:
     Err init(
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QPair<double, double> &frameMzStartStop
+            const QPair<double, double> &frameMzStartStop,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
     [[nodiscard]] bool isValid() const ;
 
-    [[nodiscard]] Err writeFrameScans(const QString &outputFilePath) const;
+    static Err writeFrameScans(
+            const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
+            const QString &outputFilePath
+            );
 
     [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
 
@@ -100,9 +104,23 @@ public:
 
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
+    [[nodiscard]] ScanTime scanTimeFromScanNumber(ScanNumber scanNumber) const;
+
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
+
+    Err smoothFrame(
+            int gaussFilterLength,
+            double sigma,
+            int smoothCount,
+            double mzMax
+            );
+
+    Err filterFrameByMz(
+            double mzMin,
+            double mzMax
+            );
 
     static Err buildMsFrame(
             const QString &msDataFilePath,
@@ -115,6 +133,8 @@ private:
 
     Err buildFrameIndexVsScanNumber();
 
+    Err reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints);
+
 private:
 
     QMap<ScanNumber, ScanPoints> m_frame;
@@ -122,6 +142,7 @@ private:
     double m_mzWindowLower;
     double m_mzWindowUpper;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
 };
 

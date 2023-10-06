@@ -25,10 +25,13 @@ SET(SOURCE_FILES
         src/DeisotoperTandem.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/FeatureFinderHillClusterTron.cpp
+        src/FragLibIonRTree.cpp
+        src/IRTPredictron.cpp
         src/IsotopicDistributionBuilder.cpp
-        src/Ms1FeatureFinder.cpp
+        src/MS2ChargeDeconvolvotron.cpp
+        src/MS2PointsExtractomatic.cpp
         src/MsCalibratomatic.cpp
-        src/MsScansDenoiseTron.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
         src/MsFrameScoretronProcessormatic.cpp
@@ -47,13 +50,16 @@ SET(HEADER_FILES
         src/DeisotoperTandem.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/FeatureFinderHillClusterTron.h
+        src/FragLibIonRTree.h
+        src/IRTPredictron.h
         src/IsotopicDistributionBuilder.h
-        src/Ms1FeatureFinder.h
+        src/MS2ChargeDeconvolvotron.h
+        src/MS2PointsExtractomatic.h
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h
         src/MsFrameScoretronProcessormatic.h
-        src/MsScansDenoiseTron.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h

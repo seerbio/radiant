@@ -20,15 +20,15 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/CalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
         src/DIAMzTargetsReader.cpp
-        src/ExtractedScansReader.cpp
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
+        src/FrameExtractsReader.cpp
         src/JsonParametersReader.cpp
-        src/MsFrameScoreVectorReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
@@ -39,15 +39,15 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
+        src/CalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
         src/DIAMzTargetsReader.h
-        src/ExtractedScansReader.h
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
+        src/FrameExtractsReader.h
         src/JsonParametersReader.h
-        src/MsFrameScoreVectorReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h

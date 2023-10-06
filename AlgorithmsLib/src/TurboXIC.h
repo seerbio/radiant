@@ -23,12 +23,26 @@ public:
 
     Err init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
 
-    XICPoints extractPoints(
+    XICPoints extractPointsXIC(
             double mzMin,
             double mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
     );
+
+    [[nodiscard]] ScanPoints extractSpectrum(
+            double mzMin,
+            double mzMax,
+            ScanNumber scanNumberMin,
+            ScanNumber scanNumberMax
+            ) const;
+
+    Err getRTreeLimits(
+            double *scanNumberMin,
+            double *scanNumberMax,
+            double *mzMin,
+            double *mzMax
+            ) const;
 
 
 private:

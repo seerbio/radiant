@@ -14,7 +14,7 @@ using namespace Error;
 struct NNSearchResult {
     QVector<double> searchedCoor;
     double distanceSquared;
-    double values;
+    double meanValues;
 
     NNSearchResult() = default;
     ~NNSearchResult() = default;
@@ -22,16 +22,17 @@ struct NNSearchResult {
     NNSearchResult(
             const QVector<double> &searchedCoor,
             double distanceSquared,
-            double value
+            double meanValues
             )
             : searchedCoor(searchedCoor)
             , distanceSquared(distanceSquared)
-            , values(value) {}
+            , meanValues(meanValues) {}
 };
 
 class MACHINELRNLIB_EXPORTS NearestNeighborsSearch {
 
 public:
+
     NearestNeighborsSearch();
     ~NearestNeighborsSearch();
 
@@ -41,13 +42,13 @@ public:
             );
 
     Err kNearestNeighborsSearch(
-            const QVector<QVector<double>> &searchPointCoors,
+            const QVector<Coors> &searchPointCoors,
             int k,
             QVector<NNSearchResult> *result
             );
 
     Err radiusSearch(
-            const QVector<QVector<double>> &searchPointCoors,
+            const QVector<Coors> &searchPointCoors,
             double searchRadiusSquared,
             QVector<NNSearchResult> *result
     );

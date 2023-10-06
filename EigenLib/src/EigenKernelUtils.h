@@ -113,11 +113,21 @@ public:
             int filterLength
     );
 
+    static Eigen::MatrixX<double> addPaddingToMatrixRowWise(
+            const Eigen::MatrixX<double> &mat,
+            int filterLength
+    );
+
 
     static Eigen::SparseMatrix<double> applyKernelColumnWiseToMatrix(
             const Eigen::SparseMatrix<double> &_mat,
             const Eigen::VectorXd &kernel,
             bool matchOriginalMaximum
+    );
+
+    static Eigen::MatrixX<double> applyKernelRowWiseToMatrix(
+            const Eigen::MatrixX<double> &_mat,
+            const Eigen::VectorXd &kernel
     );
 
     static Err savitskyGolaySmooth(

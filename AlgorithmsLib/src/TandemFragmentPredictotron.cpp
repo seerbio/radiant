@@ -66,9 +66,8 @@ Err TandemFragmentPredictotron::Private::init(
     e = ErrorUtils::isNotEmpty(modelFilePath); ree;
     e = ErrorUtils::fileExists(modelFilePath); ree;
 
-    auto *model = new NeuralNetModel();
-    e = model->init(modelFilePath); ree;
-    m_model = model;
+    m_model = new NeuralNetModel();
+    e = m_model->init(modelFilePath); ree;
 
     const int minCharge = 1;
     const int maxCharge = 4;
@@ -113,6 +112,8 @@ namespace {
 
         ERR_INIT
 
+        e = ErrorUtils::isNotEmpty(predictionInputs); ree
+
         const int aminoAcidCountPlusNull = 20 + 1;
         const double normalizerNCE = 100.0;
 
@@ -133,9 +134,8 @@ namespace {
     QVector<QVector<float>> normalizePredictions(const QVector<QVector<float>> &predictions) {
 
         QVector<QVector<float>> returnVecs;
-        for (QVector<float> vec : predictions) {
-            //TODO replace w/ EigenUtils::convertQvectorToEigenVector
-            Eigen::VectorX<float> eVec = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(vec.data(), vec.size());
+        for (const QVector<float> &vec : predictions) {
+            Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
             EigenUtils::normalizeVector<Eigen::VectorX<float>, float>(&eVec);
             EigenUtils::thresholdVector(static_cast<float>(1e-2), &eVec);
 

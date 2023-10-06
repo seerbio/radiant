@@ -9,6 +9,7 @@
 #include "Error.h"
 #include "FeatureFinderHill.h"
 #include "GlobalSettings.h"
+#include "PythiaParameterReader.h"
 
 #include <QScopedPointer>
 
@@ -22,38 +23,53 @@ struct ALGORITHMSLIB_EXPORTS FeatureFinderParameters {
     double tolerancePPM = -1.0;
     int skipScanCount = -1;
     int minScanCount = -1;
-    bool useMeanMz = false;
 
     //Hill Refinement Integration
-    int filterLength = 5;
-    int smoothCount = 1;
-    double sigma = 1.0;
-    double signalToNoiseRatio = 2;
+    int filterLength = -1;
+    int smoothCount = -1;
+    double sigma = -1.0;
+    double signalToNoiseRatio = -1.0;
 
-    //Clustering
-    int scanBuffer = 1;
-    double mzBuffer = 3.0;
+//    double cosineSimThreshold = 0.8; //TODO make this settable
 
+    FeatureFinderParameters() = default;
+    ~FeatureFinderParameters() = default;
+
+    FeatureFinderParameters(const PythiaParameters &pythiaParameters)
+    : tolerancePPM(pythiaParameters.ms2ExtractionWidthPPM)
+    , skipScanCount(pythiaParameters.skipScanCount)
+    , minScanCount(pythiaParameters.minScanCount)
+    , filterLength(pythiaParameters.filterLength)
+    , smoothCount(pythiaParameters.smoothCount)
+    , sigma(pythiaParameters.sigma)
+    , signalToNoiseRatio(pythiaParameters.signalToNoiseRatio)
+    {}
 
 public:
 
-    bool isValid() const {
+    void printParams() const {
+
+        qDebug() << "tolerancePPM" << tolerancePPM;
+        qDebug() << "skipScanCount" << skipScanCount ;
+        qDebug() << "minScanCount" << minScanCount;
+
+        qDebug() << "filterLength" << filterLength;
+        qDebug() << "smoothCount" << smoothCount;
+        qDebug() << "Sigma" << sigma;
+        qDebug() << "signalToNoiseRatio" << signalToNoiseRatio ;
+    }
+
+    [[nodiscard]] bool isValid() const {
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount >= 0
-            && filterLength > 2
-            && smoothCount >0
-            && sigma > 0
-            && signalToNoiseRatio > 0;
+            && minScanCount >= 2
+            && filterLength >= 2
+            && smoothCount > 0
+            && sigma > 0.0
+            && signalToNoiseRatio >= 1;
 
         if (!isValid) {
-           qDebug() << "tolerancePPM" << tolerancePPM;
-           qDebug() << "skipScanCount" << skipScanCount ;
-           qDebug() << "minScanCount" << minScanCount;
-           qDebug() << "filterLentght" << filterLength;
-           qDebug() << "smoothCount" << smoothCount;
-           qDebug() << "Sigma" << sigma;
-           qDebug() << "signalToNoiseRatio" << signalToNoiseRatio ;
+            printParams();
         }
 
         return isValid;
@@ -74,10 +90,19 @@ public:
 
     Err init(const FeatureFinderParameters &featureFinderParameters);
 
-    Err buildHills(
-            const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber,
+    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
+
+    Err refineHills(bool useSmoothing);
+
+    Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
+
+    Err getHills(
+            FrameIndex frameIndexStart,
+            FrameIndex frameIndexEnd,
+            double mz,
+            double ppmTolerance,
             QVector<FeatureFinderHill> *featureFinderHills
-    );
+            );
 
     void setRunParallel(bool runParallel);
 
@@ -89,13 +114,6 @@ public:
             const QVector<FeatureFinderHill> &featureFinderHills,
             const QString &destinationFilePath
     );
-
-    static Err featureFinderHillPoints(
-            const QVector<FeatureFinderHill> &featureFinderHills,
-            QVector<FeatureFinderHillPoint> *featureFinderHillPoints
-    );
-
-    Err refineHills(QVector<FeatureFinderHill> *featureFinderHills);
 
 private:
 

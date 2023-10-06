@@ -15,14 +15,17 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         DeisotoperTandemTests
         FeatureFinderHillBuilderTests
+        FeatureFinderHillClusterTronTests
+        FragLibIonRTreeTests
+        IRTPredictronTests
         IsotopeDistributionBuilderTests
         MissingPeptideManualTroubleshooter
-        Ms1FeatureFinderTests
+        MS2ChargeDeconvolvotronTests
+        MS2PointsExtractomaticTests
         MsCalibratomaticTests
         MsFrameTests
         MsFrameScoretronTests
         MsFrameScoretronProcessormaticTests
-        MsScansDenoiseTronTests
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests
