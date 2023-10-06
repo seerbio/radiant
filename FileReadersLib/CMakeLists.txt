@@ -76,7 +76,7 @@ FIND_PACKAGE(Parquet REQUIRED)
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
-	Test
+        Test
         REQUIRED
 )
 
