@@ -44,13 +44,13 @@ FROM base AS build
 # and run `apt-get clean` to remove any downloaded package archives.
 #
 RUN apt-get update \
-    && apt-get install -y ca-certificates lsb-release wget \
+    && apt-get install --no-install-recommends -y ca-certificates lsb-release wget \
     && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
     && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates wget git build-essential \
-        qtbase5-dev libcurl4-openssl-dev libhdf5-dev libbrotli-dev libboost-all-dev libthrift-0.13.0 libsnappy-dev \
+        libboost-all-dev qtbase5-dev \
         libarrow-dev \
         libparquet-dev \
     && apt-get autoremove -y \
