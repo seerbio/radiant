@@ -5,10 +5,8 @@
 #include <iostream>
 
 #include <arrow/api.h>
-//#include <arrow/csv/api.h>
 #include <arrow/filesystem/localfs.h>
 #include <arrow/io/api.h>
-//#include <arrow/status.h>
 
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
