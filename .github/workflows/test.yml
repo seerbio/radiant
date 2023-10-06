@@ -1,8 +1,17 @@
 name: Test and Lint
 on: [pull_request]
 jobs:
-  test:
-    name: Test Container
+  test-x86_64:
+    name: Test Container (x86_64)
+    runs-on: ubuntu-20.04 # x86_64
+    steps:
+      - uses: actions/checkout@v2
+      - name: container-test
+        run: ./test-container.sh
+
+  test-aarch64:
+    name: Test Container (x86_64)
+    runs-on: [self-hosted, aarch64]
     steps:
       - uses: actions/checkout@v2
       - name: container-test
@@ -10,6 +19,7 @@ jobs:
 
   lint-container:
     name: Lint Container
+    runs-on: ubuntu-20.04 # x86_64
     steps:
       - uses: actions/checkout@v2
       - name: hadolint
@@ -19,6 +29,7 @@ jobs:
 
   lint-actions:
     name: Lint Actions Config
+    runs-on: ubuntu-20.04 # x86_64
     steps:
       - uses: actions/checkout@v2
       - name: actionlint
