@@ -73,16 +73,12 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-FIND_PACKAGE(Arrow REQUIRED)
-FIND_PACKAGE(Parquet REQUIRED)
-
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
         UtilsLib
-        Arrow::arrow_static
         Parquet::parquet_static
         )
 
