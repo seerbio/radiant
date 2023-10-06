@@ -65,7 +65,7 @@ SET(${PROJECT_NAME}_LIB_SOURCES
 
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
 INCLUDE_DIRECTORIES(
@@ -80,10 +80,10 @@ FIND_PACKAGE(Parquet REQUIRED)
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
-	ChemLib
-	UtilsLib
-	Arrow::arrow_static
-	Parquet::parquet_static
+        ChemLib
+        UtilsLib
+        Arrow::arrow_static
+        Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
