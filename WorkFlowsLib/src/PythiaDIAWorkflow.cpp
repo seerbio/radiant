@@ -883,7 +883,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
     );
 
     qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
