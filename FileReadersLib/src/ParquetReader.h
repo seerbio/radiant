@@ -5,12 +5,13 @@
 #ifndef PYTHIADIACPP_PARQUETREADER_H
 #define PYTHIADIACPP_PARQUETREADER_H
 
-#include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
+
+#include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "SqlUtils.h"
 
-#include <QDebug>
+//#include <QDebug>
 
 using namespace Error;
 

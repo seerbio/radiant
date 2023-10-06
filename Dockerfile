@@ -52,7 +52,7 @@ RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates wget git build-essential \
         qtbase5-dev libcurl4-openssl-dev libhdf5-dev libbrotli-dev libboost-all-dev libthrift-0.13.0 libsnappy-dev \
-    #    libarrow-dev libparquet-dev \
+        libarrow-dev \
         libparquet-dev \
     && apt-get autoremove -y \
     && apt-get clean \
@@ -67,27 +67,28 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
-## Build and install Arrow/Parquet (from source)
+# Build and install Arrow/Parquet (from source)
 #RUN mkdir /src/ && cd /src/ \
 #    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
 #    && mkdir arrow/cpp/build/ \
 #    && cmake -S arrow/cpp/ -B arrow/cpp/build/ -DCMAKE_BUILD_TYPE=Release -DARROW_BUILD_BENCHMARKS=OFF -DARROW_BUILD_EXAMPLES=OFF -DARROW_BUILD_INTEGRATION=OFF -DARROW_BUILD_TESTS=OFF -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON -DARROW_BUILD_STATIC=ON -DPARQUET_BUILD_EXECUTABLES=ON \
 #    && cd arrow/cpp/build \
-#    && make -j && make install
+#    && make -j \
+#    && make install
 
 #FROM build AS test-arrow
 #
-### Try building the Arrow example project
-##RUN mkdir /src/ && cd /src/ \
-##    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
-##    && mkdir arrow/cpp/examples/minimal_build/build/ \
-##    && cmake -S arrow/cpp/examples/minimal_build/ -B arrow/cpp/examples/minimal_build/build/ -DARROW_LINK_SHARED=OFF \
-##    && cd arrow/cpp/examples/minimal_build/build/ \
-##    && make -j
+## Try building the Arrow example project
+#RUN mkdir -p /src/ && cd /src/ \
+#    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
+#    && mkdir arrow/cpp/examples/minimal_build/build/ \
+#    && cmake -S arrow/cpp/examples/minimal_build/ -B arrow/cpp/examples/minimal_build/build/ -DARROW_LINK_SHARED=OFF \
+#    && cd arrow/cpp/examples/minimal_build/build/ \
+#    && make -j
 #
 ## Try building the Parquet example project
-#RUN mkdir /src/ && cd /src/ \
-#    && git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
+#RUN mkdir -p /src/ && cd /src/ \
+#    #&& git clone https://github.com/apache/arrow.git --depth 1 --branch apache-arrow-13.0.0 \
 #    && mkdir arrow/cpp/examples/parquet/parquet_arrow/build/ \
 #    && cmake -S arrow/cpp/examples/parquet/parquet_arrow/ -B arrow/cpp/examples/parquet/parquet_arrow/build/ -DPARQUET_LINK_SHARED=OFF \
 #    && cd arrow/cpp/examples/parquet/parquet_arrow/build/ \
@@ -103,10 +104,6 @@ COPY ./ /src/PythiaDIACpp/
 WORKDIR /app/
 RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
     && make -j # TODO: reenable -j
-
-#RUN make -j UtilsLib
-#RUN make -j ChemLib
-#RUN make FileReadersLib
 
 ################################################
 #

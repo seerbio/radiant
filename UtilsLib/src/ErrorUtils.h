@@ -4,6 +4,7 @@
 #define ERRORUTILS_H
 
 #include "UtilsLib_Exports.h"
+
 #include "Error.h"
 #include "MathUtils.h"
 
