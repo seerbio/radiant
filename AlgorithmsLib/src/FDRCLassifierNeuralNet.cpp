@@ -670,11 +670,17 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const QVector<double> mzStDev
                 = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
         scores.append(mzStDev);
+        
     }
 
-
-
     if (useNeuralNetworkScores) {
+
+        scores.push_back(std::max(scoreCandidate.b2Corr, 0.0));
+        scores.push_back(std::max(scoreCandidate.b3Corr, 0.0));
+        scores.push_back(std::max(scoreCandidate.b2b3CosineSimSum, 0.0));
+        scores.push_back(std::max(scoreCandidate.y2Corr, 0.0));
+        scores.push_back(std::max(scoreCandidate.y3Corr, 0.0));
+        scores.push_back(std::max(scoreCandidate.y2y3CosineSimSum, 0.0));
 
         scores.push_back(std::max(0.0, scoreCandidate.cosineSimSpectrum));
         scores.push_back(scoreCandidate.discriminateScore);

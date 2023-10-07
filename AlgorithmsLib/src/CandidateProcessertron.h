@@ -67,6 +67,14 @@ namespace ScoredCandidateNamespace {
     const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
     const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
 
+    const QString B2_CORR = QStringLiteral("b2Corr");
+    const QString B3_CORR = QStringLiteral("b3Corr");
+    const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
+
+    const QString Y2_CORR = QStringLiteral("y2Corr");
+    const QString Y3_CORR = QStringLiteral("y3Corr");
+    const QString Y2Y3_COSINE_SIM_SUM = QStringLiteral("y2y3CosineSimSum");
+
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
             COS_SIM_SUM_45,
@@ -111,7 +119,13 @@ namespace ScoredCandidateNamespace {
             PROTEIN_GRP,
             PEAK_SHAPE_RATIO_1,
             PEAK_SHAPE_RATIO_2,
-            PEAK_SHAPE_RATIO_3
+            PEAK_SHAPE_RATIO_3,
+            B2_CORR,
+            B3_CORR,
+            B2B3_COSINE_SIM_SUM,
+            Y2_CORR,
+            Y3_CORR,
+            Y2Y3_COSINE_SIM_SUM
     };
 }
 
@@ -163,6 +177,13 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double peakShapeRatio2 = -1.0;
     double peakShapeRatio3 = -1.0;
 
+    double b2Corr = -1.0;
+    double b3Corr = -1.0;
+    double b2b3CosineSimSum = -1.0;
+    double y2Corr = -1.0;
+    double y3Corr = -1.0;
+    double y2y3CosineSimSum = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;
@@ -211,7 +232,13 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {PEAK_SHAPE_RATIO_1, QVariant(peakShapeRatio1)},
                 {PEAK_SHAPE_RATIO_2, QVariant(peakShapeRatio2)},
                 {PEAK_SHAPE_RATIO_3, QVariant(peakShapeRatio3)},
-                {CLASSIFIER_SCORE, QVariant(classifierScore)}
+                {CLASSIFIER_SCORE, QVariant(classifierScore)},
+                {B2_CORR, QVariant(b2Corr)},
+                {B3_CORR, QVariant(b3Corr)},
+                {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
+                {Y2_CORR, QVariant(y2Corr)},
+                {Y3_CORR, QVariant(y3Corr)},
+                {Y2Y3_COSINE_SIM_SUM, QVariant(y2y3CosineSimSum)}
         };
     }
 
@@ -273,6 +300,13 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         peakShapeRatio1 = dataMap.value(PEAK_SHAPE_RATIO_1).toDouble();
         peakShapeRatio2 = dataMap.value(PEAK_SHAPE_RATIO_2).toDouble();
         peakShapeRatio3 = dataMap.value(PEAK_SHAPE_RATIO_3).toDouble();
+
+        b2Corr = dataMap.value(B2_CORR).toDouble();
+        b3Corr = dataMap.value(B3_CORR).toDouble();
+        b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
+        y2Corr = dataMap.value(Y2_CORR).toDouble();
+        y3Corr = dataMap.value(Y3_CORR).toDouble();
+        y2y3CosineSimSum = dataMap.value(Y2Y3_COSINE_SIM_SUM).toDouble();
 
         ERR_RETURN
     }
