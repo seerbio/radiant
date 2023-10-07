@@ -102,25 +102,6 @@ namespace{
         ERR_RETURN
     }
 
-    Err outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
-
-        ERR_INIT
-
-        const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.01, 0.005};
-        for (double fdrThresh : fdrFractions) {
-            int foundAtThreshold;
-            e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                    scoredCandidatesAll,
-                    fdrThresh,
-                    &foundAtThreshold
-            ); ree;
-
-            qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
-        }
-
-        ERR_RETURN
-    }
-
 }//namespace
 Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
@@ -148,6 +129,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
                     msDataFilePathCached,
                     QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
             ); ree;
+            msDataFilePath = msDataFilePathCached;
         }
     }
 #endif
@@ -434,6 +416,18 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
         FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
 
         calibrationSelectionFraction += calibrationSelectionFractionIncrement;
+    }
+
+    if (scoredCandidatesTargetsFDRThresholded.isEmpty()) {
+
+        const double fallBackFDR = 0.1;
+        e = MS2DataExtractomatic::filterScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fallBackFDR,
+                true,
+                &scoredCandidatesTargetsFDRThresholded
+                ); ree;
+
     }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
@@ -785,6 +779,8 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
     const double selectionFractionValue = 0.1;
     const double fdrThreshold = 0.01;
 
+
+
     QVector<PythiaParameters> pythiaParametersExperiments;
     e = buildDOE(
             m_pythiaParameters,
@@ -831,8 +827,6 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
                 fdrThreshold,
                 &targetCountAboveFDRQValueThreshold
                 ); ree;
-
-        e = outputFDRResults(scoredCandidatesAll); ree;
 
         DOEResult res;
         res.ppm = pythiaParams.ms2ExtractionWidthPPM;
@@ -1216,7 +1210,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
             m_pythiaParameters.pValThreshold
             );
 
-    e = outputFDRResults(*scoredCandidatesAllUpdated); ree;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated); ree;
 
     ERR_RETURN
 }

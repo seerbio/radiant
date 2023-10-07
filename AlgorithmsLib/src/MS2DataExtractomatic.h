@@ -51,6 +51,15 @@ public:
             QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
             );
 
+    static Err filterScoreCandidatesByFDR(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            double qValueThreshold,
+            bool filterDecoys,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+    );
+
+    static Err outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll);
+
 private:
 
     Err extractTargetDecoyData(

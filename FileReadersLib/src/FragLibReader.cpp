@@ -45,6 +45,8 @@ Err FragLibReader::init(const QString &fragLibFilePath) {
             &m_fragLibReaderRows
     ); ree
 
+    qDebug() << "Use b/y ions only" << m_useBYOnly;
+
     ERR_RETURN
 }
 

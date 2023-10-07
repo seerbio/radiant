@@ -67,58 +67,6 @@ Err MS2DataExtractomatic::init(
     ERR_RETURN
 }
 
-namespace {
-
-    Err filterScoreCandidatesByFDR(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            double qValueThreshold,
-            bool filterDecoys,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-        e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
-
-        scoredCandidatesTargetsFDRThresholded->clear();
-
-        for (const ScoredCandidate &sc : scoredCandidatesAll) {
-
-            if (filterDecoys && sc.isDecoy) {
-                continue;
-            }
-
-            else if (sc.qValue > qValueThreshold) {
-                continue;
-            }
-
-            scoredCandidatesTargetsFDRThresholded->push_back(sc);
-        }
-
-        ERR_RETURN
-    }
-
-    Err outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
-
-        ERR_INIT
-
-        const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.01, 0.005};
-        for (double fdrThresh : fdrFractions) {
-            int foundAtThreshold;
-            e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                    scoredCandidatesAll,
-                    fdrThresh,
-                    &foundAtThreshold
-            ); ree;
-
-            qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
 Err MS2DataExtractomatic::extractMS2ForCandidates(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
         double fdrThreshold,
@@ -581,6 +529,55 @@ Err MS2DataExtractomatic::fitWeightsLogic(
             identifierVsDecoyRatio,
             scoredCandidatesAll
     ); ree;
+
+    ERR_RETURN
+}
+
+Err MS2DataExtractomatic::outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
+
+    ERR_INIT
+
+    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005};
+    for (double fdrThresh : fdrFractions) {
+        int foundAtThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fdrThresh,
+                &foundAtThreshold
+        ); ree;
+
+        qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
+    }
+
+    ERR_RETURN
+}
+
+Err MS2DataExtractomatic::filterScoreCandidatesByFDR(
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
+        double qValueThreshold,
+        bool filterDecoys,
+        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    scoredCandidatesTargetsFDRThresholded->clear();
+
+    for (const ScoredCandidate &sc : scoredCandidatesAll) {
+
+        if (filterDecoys && sc.isDecoy) {
+            continue;
+        }
+
+        else if (sc.qValue > qValueThreshold) {
+            continue;
+        }
+
+        scoredCandidatesTargetsFDRThresholded->push_back(sc);
+    }
 
     ERR_RETURN
 }
