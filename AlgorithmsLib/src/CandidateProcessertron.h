@@ -292,6 +292,8 @@ public:
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -305,6 +307,8 @@ public:
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -368,6 +372,8 @@ private:
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsB2B3;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsY2Y3;
     QMap<MzHashed, QVector<double>> m_mzHashedVsIonPresence;
 
     PeakIntegratomatic m_peakIntegratomatic;

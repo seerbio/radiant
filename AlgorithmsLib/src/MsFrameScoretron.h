@@ -72,6 +72,8 @@ private:
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints20,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPointsB2B3,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPointsY2Y3,
             QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
             );
 

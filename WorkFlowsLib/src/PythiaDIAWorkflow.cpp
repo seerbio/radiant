@@ -65,7 +65,7 @@ Err PythiaDIAWorkflow::init(
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
-    e = m_fragLibReader.init(m_fragLibUri); ree;
+    e = m_fragLibReader.init(m_fragLibUri, m_pythiaParameters.aminoAcids); ree;
 
     ERR_RETURN
 }

@@ -65,9 +65,13 @@ Err logic(const QString &testFilePath) {
     const double massStart = 1000.0;
     const double massEnd = 1002.0;
 
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
     QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
     e = FragLibReader::getMS2Ions(
             testFilePath,
+            aminoAcids,
             massStart,
             massEnd,
             100.0,

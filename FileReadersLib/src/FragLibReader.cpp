@@ -4,7 +4,6 @@
 
 #include "FragLibReader.h"
 
-#include "AminoAcids.h"
 #include "LibraryCommon.h"
 #include "LibraryReader.h"
 #include "MolecularFormula.h"
@@ -34,7 +33,7 @@ FragLibReader::FragLibReader()
 , m_useBYOnly(false)
 {}
 
-Err FragLibReader::init(const QString &fragLibFilePath) {
+Err FragLibReader::init(const QString &fragLibFilePath, const AminoAcids &aminoAcids) {
     ERR_INIT
 
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
@@ -44,6 +43,8 @@ Err FragLibReader::init(const QString &fragLibFilePath) {
             m_fragLibFilePath,
             &m_fragLibReaderRows
     ); ree
+
+    m_aminoAcids = aminoAcids;
 
     qDebug() << "Use b/y ions only" << m_useBYOnly;
 
@@ -81,6 +82,7 @@ namespace {
 }//namespace
 Err FragLibReader::getMS2Ions(
         const QString &fragLibFilePath,
+        const AminoAcids &aminoAcids,
         double massStart,
         double massEnd,
         double mzMin,
@@ -105,6 +107,7 @@ Err FragLibReader::getMS2Ions(
 
     e = fragLibReaderRowsToMs2IonsMap(
             fragLibReaderRows,
+            aminoAcids,
             topNMs2Ions,
             mzMin,
             mzMax,
@@ -147,6 +150,7 @@ Err FragLibReader::getMS2IonsTopN(
 
     e = fragLibReaderRowsToMs2IonsMap(
             m_fragLibReaderRows,
+            m_aminoAcids,
             topNMs2Ions,
             mzMin,
             mzMax,
@@ -384,8 +388,26 @@ Err FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
     ERR_RETURN
 }
 
+namespace {
+
+    double calculateFragmentMass(
+            const QString &fragment,
+            const AminoAcids &aminoAcids,
+            bool isCTerm
+            ){
+
+        const auto accLogic = [aminoAcids](double sum, const QChar &c){
+            return sum + aminoAcids.aminoAcid(c).monoisotopicMass();
+        };
+
+        const double fragMass = std::accumulate(fragment.begin(), fragment.end(), 0.0, accLogic);
+        return isCTerm ? fragMass + Molecule(MolecularFormulas::waterFormula).monoisotopicMass() : fragMass;
+    }
+
+}//namespace
 Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
         const QVector<FragLibReaderRow> &fragLibReaderRows,
+        const AminoAcids &aminoAcids,
         int topNMs2Ions,
         double mzMin,
         double mzMax,
@@ -430,6 +452,16 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
                 ); ree
 
         candidatePeptide.ms2Ions = ms2Ions;
+
+        candidatePeptide.ms2IonMzB2B3 = {
+                calculateFragmentMass(peptideStringWithMods.mid(0, 2), aminoAcids, false),
+                calculateFragmentMass(peptideStringWithMods.mid(0, 3), aminoAcids, false)
+        };
+
+        candidatePeptide.ms2IonMzY2Y3 = {
+                calculateFragmentMass(peptideStringWithMods.mid(peptideStringWithMods.size() - 2, 2), aminoAcids, true),
+                calculateFragmentMass(peptideStringWithMods.mid(peptideStringWithMods.size() - 3, 3), aminoAcids, true)
+        };
 
         candidatePeptide.mass = row.mass;
         candidatePeptide.iRt = row.iRT;
@@ -580,12 +612,15 @@ namespace {
 
 
 }//namespace
-Err FragLibReader::convertDIANNLibToFragLib(const QString &specLibFilePath) {
+Err FragLibReader::convertDIANNLibToFragLib(
+        const QString &specLibFilePath,
+        const AminoAcids &aminoAcids
+        ) {
 
     ERR_INIT
 
-    AminoAcids aminoAcids;
-    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+//    AminoAcids aminoAcids;
+//    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
 
     LibraryReader lib;
     lib.load(specLibFilePath.toStdString());
@@ -737,9 +772,27 @@ Err FragLibReader::mutateCandidatePeptideTarget(
         ms2IonDecoys.push_back(ms2IonDecoy);
     }
 
+    QVector<MZION> ms2IonMzB2B3Decoy;
+    std::transform(
+            candidatePeptideTarget.ms2IonMzB2B3.begin(),
+            candidatePeptideTarget.ms2IonMzB2B3.end(),
+            std::back_inserter(ms2IonMzB2B3Decoy),
+            [nTermDeltaMass](MZION mz){return mz + nTermDeltaMass;}
+            );
+
+    QVector<MZION> ms2IonMzY2Y3Decoy;
+    std::transform(
+            candidatePeptideTarget.ms2IonMzY2Y3.begin(),
+            candidatePeptideTarget.ms2IonMzY2Y3.end(),
+            std::back_inserter(ms2IonMzY2Y3Decoy),
+            [cTermDeltaMass](MZION mz){return mz + cTermDeltaMass;}
+    );
+
     *candidatePeptideDecoy = candidatePeptideTarget;
     candidatePeptideDecoy->isDecoy = true;
     candidatePeptideDecoy->ms2Ions = ms2IonDecoys;
+    candidatePeptideDecoy->ms2IonMzB2B3 = ms2IonMzB2B3Decoy;
+    candidatePeptideDecoy->ms2IonMzY2Y3 = ms2IonMzY2Y3Decoy;
 
     ERR_RETURN
 }
