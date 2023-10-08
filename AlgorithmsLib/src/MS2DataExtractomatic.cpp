@@ -315,8 +315,6 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     QVector<double> weights;
     weights.reserve(b.size());
 
-    int bestPsmCountTenPercentFDR = 0;
-
     e = fitWeightsLogic(
             scoredCandidatesCalibration,
             scanTimeMinMax,
