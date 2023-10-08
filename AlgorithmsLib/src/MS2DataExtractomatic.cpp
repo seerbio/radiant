@@ -76,14 +76,14 @@ Err MS2DataExtractomatic::extractMS2ForCandidates(
 
     ERR_INIT
 
-    QVector<ScoredCandidate> scoredCandidatesOptimization;
+    QVector<ScoredCandidate> scoredCandidates;
     e = extractTargetDecoyData(
             uniqueInfoScanKeyVsCandidatePeptide,
-            &scoredCandidatesOptimization
+            &scoredCandidates
     ); ree;
 
     e = buildScoredCandidatesFDR(
-            scoredCandidatesOptimization,
+            scoredCandidates,
             m_msReaderParquet->scanTimeMinMax(),
             scoredCandidatesAll
     ); ree;
@@ -280,21 +280,21 @@ namespace {
 
 }//namespace
 Err MS2DataExtractomatic::buildScoredCandidatesFDR(
-        const QVector<ScoredCandidate> &scoredCandidatesCalibration,
+        const QVector<ScoredCandidate> &scoredCandidates,
         const QPair<double, double> &scanTimeMinMax,
         QVector<ScoredCandidate> *scoredCandidatesAll
 ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
+    e = ErrorUtils::isNotEmpty(scoredCandidates); ree;
 
     scoredCandidatesAll->clear();
 
     QVector<QVector<double>> targetScoresVector;
     QVector<QVector<double>> decoyScoresVector;
     e = buildClassifierInput(
-            scoredCandidatesCalibration,
+            scoredCandidates,
             m_useExtendedScores,
             m_useNeuralNetworkScores,
             m_topNMs2Ions,
@@ -316,7 +316,7 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     weights.reserve(b.size());
 
     e = fitWeightsLogic(
-            scoredCandidatesCalibration,
+            scoredCandidates,
             scanTimeMinMax,
             A,
             b,
