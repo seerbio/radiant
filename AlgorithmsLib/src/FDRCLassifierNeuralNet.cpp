@@ -670,7 +670,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         const QVector<double> mzStDev
                 = extractScoresFromVecFeatures(scoreCandidate.mzFoundStDevVec, theoMzIonsSize);
         scores.append(mzStDev);
-        
+
     }
 
     if (useNeuralNetworkScores) {
