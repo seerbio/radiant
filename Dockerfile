@@ -80,12 +80,23 @@ WORKDIR /app/
 RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
     && make -j
 
+################################################
+#
+# Test stage
+#
+# Here we add test dependencies to the build container
+# and define an ENTRYPOINT that will run them.
+#
+################################################
+FROM build AS test
 
-### Build the project in /app/
-#WORKDIR /app/
-#RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
-#    && make
-
+#
+# This entrypoint allows running tests (with coverage)
+# by building with `--target test` and then running the
+# resulting container. See README.md for more.
+#
+WORKDIR /app/
+CMD ["ctest"]
 
 ################################################
 ##
@@ -98,37 +109,6 @@ RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
 ##
 ##     $ docker run --rm -it $(docker build --target deploy .)
 ##
-#################################################
-#FROM build AS deploy
-#
-## Install Python and dependencies
-#RUN apt-get update \
-#    && apt-get upgrade -y \
-#    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/* \
-#    && pip install --no-cache-dir awscli boto3
-#
-## Copy some extra contents into /app/
-#RUN cp \
-#    /src/PythiaDIACpp/control \
-#    /src/PythiaDIACpp/build_deb.sh \
-#    /src/PythiaDIACpp/s3_package_uploader.py \
-#    /app/
-#
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
-#
-#WORKDIR /app/
-#
-#ARG pythia_dia_version=0.1
-#ENV package_dir=pythia_dia_${pythia_dia_version}
-#ENV PACKAGE_NAME=${package_dir}.deb
-#
-## This should work with the default entrypoint to build and deploy.
-#CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
-
 #################################################
 #FROM build AS deploy
 #
