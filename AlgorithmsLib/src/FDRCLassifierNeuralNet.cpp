@@ -579,6 +579,8 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
 //        scores.push_back(scoreCandidate.peakShapeRatio3);
+//        scores.push_back(std::max(scoreCandidate.b2Corr, 0.0));
+//        scores.push_back(std::max(scoreCandidate.b3Corr, 0.0));
 
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(scoreCandidate.cosineSimToAnchorVec, theoMzIonsSize);
