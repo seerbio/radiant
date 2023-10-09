@@ -1,0 +1,21 @@
+# Files that should be ignored by Docker (not sent to the build context)
+
+# Git files
+.git
+.gitignore
+
+# GitHub Actions config
+.github
+
+# Other dev tools config
+.hadolint.yaml
+.pre-commit-config.yaml
+
+# Docker config
+Dockerfile
+.dockerignore
+
+# Obsolete directories
+ThirdPartyLibs/libtorch
+ThirdPartyLibs/arrow_parquet
+ThirdPartyLibs/arrow_src

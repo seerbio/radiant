@@ -21,6 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/DecoyGeneratomatic.cpp
         src/CandidateProcessertron.cpp
         src/ClassifierWeightsManager.cpp
         src/FDRCLassifierNeuralNet.cpp
@@ -45,6 +46,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/DecoyGeneratomatic.h
         src/CandidateProcessertron.h
         src/ClassifierWeightsManager.h
         src/FDRCLassifierNeuralNet.h
@@ -81,15 +83,14 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
-)
+        )
 
-FIND_PACKAGE(Qt5 REQUIRED
+FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
         Core
         Test
-        )
-
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+        REQUIRED
+)
 
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})

@@ -31,6 +31,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Here we install development/build tools and fetch dependencies.
 #
 ################################################
+
 FROM base AS build
 
 #
@@ -43,25 +44,27 @@ FROM base AS build
 # and run `apt-get clean` to remove any downloaded package archives.
 #
 RUN apt-get update \
+    && apt-get install --no-install-recommends -y ca-certificates lsb-release wget \
+    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y ca-certificates wget build-essential  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools  \
-    libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 \
-    unzip=6.0-25ubuntu1.1 \
+    && apt-get install --no-install-recommends -y ca-certificates wget git build-essential unzip\
+        libboost-all-dev qtbase5-dev \
+        libarrow-dev \
+        libparquet-dev \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install latest CMAKE > 3.17
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-x86_64.sh -q -O /tmp/cmake-install.sh \
-      && chmod u+x /tmp/cmake-install.sh \
-      && mkdir /usr/bin/cmake \
-      && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
-      && rm /tmp/cmake-install.sh
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-`uname -m`.sh -q -O /tmp/cmake-install.sh \
+    && chmod u+x /tmp/cmake-install.sh \
+    && mkdir /usr/bin/cmake \
+    && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
+    && rm /tmp/cmake-install.sh
 
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
-
-# Copy project source into the container
-COPY ./ /src/PythiaDIACpp/
 
 # https://pytorch.org
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
@@ -69,31 +72,21 @@ RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-wit
 && cp -r ./libtorch/ /src/PythiaDIACpp/ThirdPartyLibs/libtorch \
 && cp -r ./libtorch/lib/ /usr/lib/
 
+# Copy project source into the container
+COPY ./ /src/PythiaDIACpp/
+
+# Build the project in /app/
+WORKDIR /app/
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
+    && make -j
+
 
 ### Build the project in /app/
 #WORKDIR /app/
 #RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
 #    && make
 
-#################################################
-##
-## Test stage
-##
-## Here we add test dependencies to the build container
-## and define an ENTRYPOINT that will run them.
-##
-#################################################
-#FROM build AS test
-#
-##
-## This entrypoint allows running tests (with coverage)
-## by building with `--target test` and then running the
-## resulting container. See README.md for more.
-##
-#WORKDIR /app/
-#CMD ["ctest"]
-#
-#
+
 ################################################
 ##
 ## Deploy stage
@@ -105,6 +98,37 @@ RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-wit
 ##
 ##     $ docker run --rm -it $(docker build --target deploy .)
 ##
+#################################################
+#FROM build AS deploy
+#
+## Install Python and dependencies
+#RUN apt-get update \
+#    && apt-get upgrade -y \
+#    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
+#    && apt-get autoremove -y \
+#    && apt-get clean \
+#    && rm -rf /var/lib/apt/lists/* \
+#    && pip install --no-cache-dir awscli boto3
+#
+## Copy some extra contents into /app/
+#RUN cp \
+#    /src/PythiaDIACpp/control \
+#    /src/PythiaDIACpp/build_deb.sh \
+#    /src/PythiaDIACpp/s3_package_uploader.py \
+#    /app/
+#
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
+#
+#WORKDIR /app/
+#
+#ARG pythia_dia_version=0.1
+#ENV package_dir=pythia_dia_${pythia_dia_version}
+#ENV PACKAGE_NAME=${package_dir}.deb
+#
+## This should work with the default entrypoint to build and deploy.
+#CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
+
 #################################################
 #FROM build AS deploy
 #

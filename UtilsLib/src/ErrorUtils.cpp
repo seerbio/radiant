@@ -1,8 +1,8 @@
 // Created by anichols on 11/07/2021.
 
-#include "ErrorUtils.h"
-
 #include <QFileInfo>
+
+#include "ErrorUtils.h"
 
 Err ErrorUtils::fileExists(const QString &filePath) {
 
