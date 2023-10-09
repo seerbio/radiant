@@ -11,7 +11,7 @@ jobs:
 
   test-aarch64:
     name: Test Container (aarch64)
-    runs-on: [self-hosted, aarch64]
+    runs-on: [self-hosted, ARM64]
     steps:
       - uses: actions/checkout@v2
       - name: container-test
