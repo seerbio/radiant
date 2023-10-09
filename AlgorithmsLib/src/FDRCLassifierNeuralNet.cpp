@@ -574,7 +574,7 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(scoreCandidate.cosineSimSum20, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSim45MS1, 0.0)); //8
         scores.push_back(std::max(scoreCandidate.cosineSim20MS1, 0.0)); //8
-//        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //7
+        scores.push_back(scoreCandidate.peptideStringWithMods.size()); //7
         scores.push_back(scoreCandidate.theoFragmentCount); //7
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
