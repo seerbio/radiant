@@ -4,6 +4,11 @@
 set -eu -o pipefail
 
 echo "Building test container…"
+
+# Build the container, with log output
+docker build --target test .
+
+# Re-run the build command to get the ID (should be cached)
 TEST_IMG=$(docker build -q --target test .)
 
 # Run the default command from the `test` stage

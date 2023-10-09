@@ -1,0 +1,3 @@
+ignored:
+  - DL3008 # ignore `apt install` without pinned version
+  - DL3013 # ignore `pip install` without pinned version

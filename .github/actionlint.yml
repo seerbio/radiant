@@ -1,0 +1,7 @@
+self-hosted-runner:
+  labels:
+    - aarch64
+    - x86_64
+
+    - aws-master
+    - aws-ds-sandbox
