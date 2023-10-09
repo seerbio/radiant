@@ -83,15 +83,14 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
-)
+        )
 
-FIND_PACKAGE(Qt5 REQUIRED
+FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
         Core
         Test
-        )
-
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+        REQUIRED
+)
 
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})

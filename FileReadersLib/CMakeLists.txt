@@ -11,7 +11,6 @@ SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 
-
 SET(CMAKE_AUTOMOC_MACRO_NAMES
         "Q_OBJECT"
         "Q_GADGET"
@@ -63,7 +62,6 @@ SET(${PROJECT_NAME}_LIB_SOURCES
         ${HEADER_FILES}
         )
 
-MESSAGE( "${PROJECT_SOURCE_DIR}/ThirdPartyLibs")
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -72,29 +70,22 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${PROJECT_SOURCE_DIR}/ThirdPartyLibs"
-        "${ARROW_DIRECTORY}"
 )
 
-FIND_PACKAGE(Qt5 REQUIRED
+FIND_PACKAGE(Parquet REQUIRED)
+
+FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
-        Core
         Test
-        )
-
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
-
+        REQUIRED
+)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
-        Qt5::Core
-        Qt5::Test
         ChemLib
         UtilsLib
-        ${ARROW_SHARED_LIBRARY}
-        ${ARROW_STATIC_LIBRARY_DEPS}
-        ${PARQUET_SHARED_LIBRARY}
+        Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
