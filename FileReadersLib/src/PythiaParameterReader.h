@@ -235,6 +235,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << "cosineSimToAnchorThreshold" << cosineSimToAnchorThreshold;
         qDebug() << "scanTimeWindowMinutes" << scanTimeWindowMinutes;
+        qDebug() << "deisotopeScans" << deisotopeScans;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {
