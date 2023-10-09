@@ -4,18 +4,28 @@ on:
   release:
     types: [created]
 
-#TODO: Set up to tag twice, once for each architecture!
 jobs:
-#  tag_container_image:
-#    runs-on: [self-hosted, aws-master]
-#    steps:
-#      # Necessary to set up the token required to push the commit tag to GitHub
-#      - name: Check out code
-#        uses: actions/checkout@v2
-#
-#      - name: Tag container
-#        uses: seerbio/action-tag-container@2.0.1
-#        with:
-#          container: seer/pythia-dia-container
-#          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
-#          addl_tags: latest
+  tag_container_image:
+    runs-on: [self-hosted, aws-master]
+    steps:
+      # Necessary to set up the token required to push the commit tag to GitHub
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Tag x86 container image
+        uses: seerbio/action-tag-container@2.1.0
+        with:
+          container: seer/pythia-dia-container
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          build_tag_prefix: x86_64-build-
+          tag_suffix: -x86_64
+          addl_tags: latest
+
+      - name: Tag ARM container image
+        uses: seerbio/action-tag-container@2.1.0
+        with:
+          container: seer/pythia-dia-container
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          build_tag_prefix: aarch64-build-
+          tag_suffix: -aarch64
+          addl_tags: latest
