@@ -1,6 +1,7 @@
 # Files that should be ignored by Docker (not sent to the build context)
 
 .git
+.github
 
 Dockerfile
 
