@@ -161,12 +161,6 @@ private:
             const QVector<QVector<float>> &ytrainingDataTranched
             );
 
-    Err predict(
-            const QVector<QVector<float>> &allDataVecs,
-            const QVector<NeuralNetData> &trainingData,
-            QVector<float> *meanPredictions
-            );
-
     Err predictBaggedClassifiers(
             const QVector<QVector<float>> &allDataVecs,
             QVector<float> *meanPredictions

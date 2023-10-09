@@ -107,7 +107,10 @@ namespace {
                 [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
         );
 
-        qDebug() << "target count training" << targetPairs.size() << "decoy count training";
+        const int decoySize = std::min(decoyPairs.size(), targetPairs.size());
+        decoyPairs.resize(decoySize);
+
+        qDebug() << "target count training" << targetPairs.size() << "decoy count training" << decoyPairs.size();
 
         QVector<QPair<ScoredCandidate, QVector<double>>> targetDecoyPairs;
         targetDecoyPairs.append(targetPairs);
@@ -339,11 +342,7 @@ Err FDRCLassifierNeuralNet::exec(
             ); ree;
 
     QVector<float> meanPredictions;
-    e = predict(
-            allDataVecs,
-            trainingData,
-            &meanPredictions
-            ); ree;
+    e = predictBaggedClassifiers(allDataVecs, &meanPredictions); ree;
 
     e = recalculateQValsFromNeuralNetScore(
         trainingData,
@@ -496,53 +495,6 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
 
         m_candidateClassifiers.push_back(candidateClassifier);
     }
-
-    ERR_RETURN
-}
-
-Err FDRCLassifierNeuralNet::predict(
-        const QVector<QVector<float>> &allDataVecs,
-        const QVector<NeuralNetData> &trainingData,
-        QVector<float> *meanPredictions
-        ) {
-
-    ERR_INIT
-
-    e = predictBaggedClassifiers(allDataVecs, meanPredictions); ree;
-
-//#define PRINT_NEURAL_NET_METRICS
-#ifdef PRINT_NEURAL_NET_METRICS
-    int falsePos = 0;
-    int falseNeg = 0;
-    int truePos = 0;
-    int trueNeg = 0;
-    for (int i = 0; i < trainingData.size(); i++) {
-
-        const float act = trainingData.at(i).isDecoy;
-        const float pred =  meanPredictions->at(i);
-
-        if (act >= 0.5 && pred < 0.5) {
-            falsePos++;
-        }
-        else if (act < 0.5 && pred >= 0.5) {
-            falseNeg++;
-        }
-        else if (act < 0.5 && pred < 0.5) {
-            truePos++;
-        }
-        else if (act >= 0.5 && pred >= 0.5) {
-            trueNeg++;
-        }
-    }
-    qDebug() << "FP" << falsePos << "FN" << falseNeg << "TP" << truePos << "TN" << trueNeg;
-#endif
-
-//    e = recalculateQValsFromNeuralNetScore(
-//            trainingData,
-//            predictions,
-//            scoredCandidatesAllFullFragIons,
-//            scoredCandidatesClassifier
-//            ); ree;
 
     ERR_RETURN
 }
