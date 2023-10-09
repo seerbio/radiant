@@ -68,9 +68,11 @@ ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
 # https://pytorch.org
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-&& unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-&& cp -r ./libtorch/ /src/PythiaDIACpp/ThirdPartyLibs/libtorch \
-&& cp -r ./libtorch/lib/ /usr/lib/
+    && mkdir -p /src/PythiaDIACpp/ThirdPartyLibs/ \
+    && unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
+    && cp -r ./libtorch/ /src/PythiaDIACpp/ThirdPartyLibs/libtorch \
+    && cp -r ./libtorch/lib/ /usr/lib/
+
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
