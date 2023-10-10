@@ -65,7 +65,8 @@ SET(ARROW_STATIC_LIBRARY_DEPS "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parque
 SET(PARQUET_STATIC_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.a")
 SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100")
 SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100")
-SET(PYTORCH_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtorch")
+#SET(PYTORCH_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtorch")
+SET(PYTORCH_PREFIX_PATH "/libtorch")
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
