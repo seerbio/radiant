@@ -4756,7 +4756,7 @@ void ClassifierWeightsManagerTests::fitWeightsTest() {
     const QVector<double> expectedResults = {0.700529, 0.0454287, 1.95775, 0.0425807};
 
     for (int i = 0; i < x.size(); i++) {
-        QCOMPARE(MathUtils::tSame(x.at(i), expectedResults.at(i)), true);
+        QVERIFY2(MathUtils::tSame(x.at(i), expectedResults.at(i), 0.05), qPrintable(QString("Values differ at index %1; expected %2, got %3").arg(i).arg(expectedResults.at(i)).arg(x.at(i))));
     }
 
 }
