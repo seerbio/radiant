@@ -1273,7 +1273,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     QVector<ScoredCandidate> trainingData = scoredCandidatesCulled;
     trainingData.append(topDecoys);
 
-    const int epochs = 20;
+    const int epochs = 10;
     const int baggingSize = 6;
     const double batchFraction = 0.01;
     const double learningRate = 0.001;
