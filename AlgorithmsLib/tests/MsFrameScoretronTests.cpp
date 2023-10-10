@@ -88,6 +88,7 @@ namespace {
 
             e = FragLibReader::getMS2Ions(
                     fragLibPath,
+                    AminoAcids(),
                     massMin,
                     massMax,
                     100.0,

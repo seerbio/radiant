@@ -107,7 +107,7 @@ void FragLibReaderTests::convertDIANNLibToFragLibTest() {
 
     const QString diannLibraryFile = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib";
 
-    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile);
+    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, AminoAcids());
     QCOMPARE(e, eNoError);
 
 }
