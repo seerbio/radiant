@@ -143,7 +143,7 @@ namespace {
             trainingData->push_back(td);
         }
 
-#define WRITE_NN_TRAIN_DATA
+//#define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
         const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;

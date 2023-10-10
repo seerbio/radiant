@@ -105,9 +105,14 @@ void FragLibReaderTests::convertDIANNLibToFragLibTest() {
 
     ERR_INIT
 
+    QSKIP("Do not activate this");
+
     const QString diannLibraryFile = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib";
 
-    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, AminoAcids());
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
+    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, aminoAcids);
     QCOMPARE(e, eNoError);
 
 }
