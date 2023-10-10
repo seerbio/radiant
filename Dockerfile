@@ -49,9 +49,11 @@ RUN apt-get update \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates wget git build-essential unzip\
+        python3.10 python-is-python3 python3-pip \
         libboost-all-dev qtbase5-dev \
         libarrow-dev \
         libparquet-dev \
+    && pip install --no-cache-dir setuptools pyyaml \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -65,11 +67,16 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2
 
 ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
-# https://pytorch.org
-RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-    && mkdir -p /src/PythiaDIACpp/ThirdPartyLibs/ \
-    &&unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+## https://pytorch.org
+#RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
+#    && mkdir -p /src/PythiaDIACpp/ThirdPartyLibs/ \
+#    &&unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
 
+# Build libtorch from sources
+WORKDIR /src/
+RUN git clone --recursive https://github.com/pytorch/pytorch \
+    && cd pytorch \
+    && _GLIBCXX_USE_CXX11_ABI=1 python tools/build_libtorch.py
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
