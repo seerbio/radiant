@@ -32,7 +32,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 #
 ################################################
 FROM base AS build
-
 #
 # Update, upgrade packages. Install build dependencies.
 #
@@ -65,15 +64,12 @@ COPY ./ /src/PythiaDIACpp/
 
 # https://pytorch.org
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-&& unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-&& cp -r ./libtorch/ /src/PythiaDIACpp/ThirdPartyLibs/libtorch \
-&& cp -r ./libtorch/lib/ /usr/lib/
-
+&& unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
 
 ### Build the project in /app/
-#WORKDIR /app/
-#RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
-#    && make
+WORKDIR /app/
+RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
+    && make
 
 #################################################
 ##
@@ -83,17 +79,16 @@ RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-wit
 ## and define an ENTRYPOINT that will run them.
 ##
 #################################################
-#FROM build AS test
+FROM build AS test
+
 #
-##
-## This entrypoint allows running tests (with coverage)
-## by building with `--target test` and then running the
-## resulting container. See README.md for more.
-##
-#WORKDIR /app/
-#CMD ["ctest"]
+# This entrypoint allows running tests (with coverage)
+# by building with `--target test` and then running the
+# resulting container. See README.md for more.
 #
-#
+WORKDIR /app/
+CMD ["ctest"]
+
 ################################################
 ##
 ## Deploy stage
