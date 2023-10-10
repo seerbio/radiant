@@ -31,34 +31,43 @@ namespace{
 Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const QMap<MzHashed, FrequencyPercent> &fragmentFrequencies,
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints45); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints20); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsB2B3); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsY2Y3); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(msFrame.isValid()); ree;
     e = ErrorUtils::isTrue(msFrameMS1.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(fragmentFrequencies); ree;
     e = ErrorUtils::isNotEmpty(uniqueMsInfoScanKey); ree;
     e = ErrorUtils::isTrue(topNMS2Ions >= 6); ree;
 
     m_pythiaParameters = pythiaParameters;
-    m_mzHashedVsXICPoints = mzHashedVsXICPoints;
+    m_mzHashedVsXICPoints100 = mzHashedVsXICPoints100;
+    m_mzHashedVsXICPoints45 = mzHashedVsXICPoints45;
+    m_mzHashedVsXICPoints20 = mzHashedVsXICPoints20;
+    m_mzHashedVsXICPointsB2B3 = mzHashedVsXICPointsB2B3;
+    m_mzHashedVsXICPointsY2Y3 = mzHashedVsXICPointsY2Y3;
     m_mzHashedVsIonPresence = mzHashedVsIonPresence;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
     m_msFrame = msFrame;
     m_msFrameMS1 = msFrameMS1;
-    m_fragmentFrequencies = fragmentFrequencies;
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
     m_topNMS2Ions = topNMS2Ions;
 
@@ -73,12 +82,15 @@ Err CandidateProcessertron::init(
 Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const QMap<MzHashed, FrequencyPercent> &fragmentFrequencies,
         const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
         const QMap<PeptideStringWithMods, ScanTime> &fragPredsPredictedScanTime
         ) {
@@ -91,12 +103,15 @@ Err CandidateProcessertron::init(
     e = init(
             pythiaParameters,
             topNMS2Ions,
-            mzHashedVsXICPoints,
+            mzHashedVsXICPoints100,
+            mzHashedVsXICPoints45,
+            mzHashedVsXICPoints20,
+            mzHashedVsXICPointsB2B3,
+            mzHashedVsXICPointsY2Y3,
             mzHashedVsIonPresence,
             msFrame,
             msFrameMS1,
             scanNumberVsScanTime,
-            fragmentFrequencies,
             uniqueMsInfoScanKey
             ); ree;
 
@@ -200,7 +215,11 @@ Err CandidateProcessertron::processCandidateTarget(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints45); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints20); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsY2Y3); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
@@ -384,7 +403,7 @@ Err CandidateProcessertron::filterSummedVecPeakIntegrationsByPredictedScanTime(
 namespace {
 
     Eigen::MatrixX<double> buildIntensityVecMatrix(
-            const CandidatePeptide &candidatePeptide,
+            const QVector<MZION> &mzIons,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             int vecSize,
             int topNMzFrags
@@ -398,13 +417,13 @@ namespace {
 
         for (int i = 0; i < cols; i++) {
 
-            if (i >= candidatePeptide.ms2Ions.size()) {
+            if (i >= mzIons.size()) {
                 break;
             }
 
-            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
+            const MZION &mz = mzIons.at(i);
 
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
             QVector<double> intensityVals = ParallelUtils::convertMapToVector(
                     mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals,
@@ -541,7 +560,7 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(peakCountsPerRow); ree;
-        e = ErrorUtils::isTrue(_intensityMatrixIntegratedLimits.maxCoeff() > 0);
+        e = ErrorUtils::isTrue(_intensityMatrixIntegratedLimits.maxCoeff() > 0); ree;
 
         Eigen::MatrixX<double> intensityMatrixIntegratedLimits = _intensityMatrixIntegratedLimits;
 
@@ -566,14 +585,11 @@ namespace {
         ERR_RETURN
     }
 
-    Err calcBestCosineSimAndKLDivSum(
+    Err calcBestCosineSimSumLogic(
             const Eigen::MatrixX<double> &intensityMatrixIntegratedLimits,
             double cosineSimToAnchorThreshold,
             QVector<double> *bestCosineSimsIndividual,
             double *bestCosineSimSum,
-            QVector<double> *bestKLDivIndividual,
-            double *bestKLDivSum,
-            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec,
             Eigen::VectorX<double> *bestAnchorColumn
     ) {
 
@@ -582,7 +598,6 @@ namespace {
         e = ErrorUtils::isTrue(intensityMatrixIntegratedLimits.rows() > 0); ree;
 
         *bestCosineSimSum = 0.0;
-        *bestKLDivSum = std::numeric_limits<double>::max();
 
         const Eigen::MatrixX<double> intensityMatrixIntegratedLimitsSmoothed
                 = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimits);
@@ -590,8 +605,6 @@ namespace {
         for (int i = 0; i < intensityMatrixIntegratedLimitsSmoothed.cols(); i++) {
 
             QVector<double> bestCosineSimsIndividualAnchor;
-            QVector<double> bestKLDivIndividualAnchor;
-            QVector<int> frameIndexMaxDiffFromAnchorVec;
             const Eigen::VectorX<double> anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
 
             const QPair<int, double> anchorFrameIndexMaxVsVal = EigenUtils::returnTopIndexAndValue(anchorColumn);
@@ -601,34 +614,22 @@ namespace {
                 const Eigen::VectorX<double> altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
                 const QPair<int, double> altColumnFrameIndexMaxVsVal = EigenUtils::returnTopIndexAndValue(altColumn);
 
-                frameIndexMaxDiffFromAnchorVec.push_back(anchorFrameIndexMaxVsVal.first - altColumnFrameIndexMaxVsVal.first);
-
                 const double cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
-                const double klDivToAnchor = EigenUtils::klDivergence(anchorColumn, altColumn);
 
-                // TODO set this empirically when figuring out ppm setting.
                 if (cosineSimToAnchor < cosineSimToAnchorThreshold) {
                     bestCosineSimsIndividualAnchor.push_back(0.0);
-                    bestKLDivIndividualAnchor.push_back(0.0);
                     continue;
                 }
 
                 bestCosineSimsIndividualAnchor.push_back(cosineSimToAnchor);
-                bestKLDivIndividualAnchor.push_back(klDivToAnchor);
             }
 
             const double cosineSimSumAnchor
                     = std::accumulate(bestCosineSimsIndividualAnchor.begin(), bestCosineSimsIndividualAnchor.end(), 0.0);
 
-            const double klDivSumAnchor
-                    = std::accumulate(bestKLDivIndividualAnchor.begin(), bestKLDivIndividualAnchor.end(), 0.0);
-
             if (cosineSimSumAnchor > *bestCosineSimSum) {
                 *bestCosineSimSum = cosineSimSumAnchor;
                 *bestCosineSimsIndividual = bestCosineSimsIndividualAnchor;
-                *bestKLDivSum = klDivSumAnchor;
-                *bestKLDivIndividual = bestKLDivIndividualAnchor;
-                *bestFrameIndexMaxDiffFromAnchorVec = frameIndexMaxDiffFromAnchorVec;
                 *bestAnchorColumn = anchorColumn;
             }
 
@@ -637,20 +638,88 @@ namespace {
         ERR_RETURN
     }
 
-    Err calculateIndividualPeakPointCount(
-            const Eigen::MatrixX<double> &intensityMatrixIntegratedLimitsNoInterference,
-            QVector<int> *individualPeakPointCount
-    ) {
+    Err buildAlignmentMatrix(
+            const Eigen::MatrixX<double> &intensityMatrix,
+            const PeakIntegrationIndexes &pii,
+            const QVector<double> &summedMatToVec,
+            int topNMs2FragPeaks,
+            Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference,
+            FrameIndex *frameIndexIntensityApexIntegration
+            ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(intensityMatrixIntegratedLimitsNoInterference.size() > 0); ree;
+        const int rowStart = pii.first;
+        const int rowCount = pii.second < intensityMatrix.rows()
+                             ? pii.second - pii.first + 1
+                             : static_cast<int>(intensityMatrix.rows()) - pii.first;
 
-        Eigen::MatrixX<double> mat = intensityMatrixIntegratedLimitsNoInterference;
-        mat = (mat.array() > 0.0).select(1.0, mat);
+        const int colStart = 0;
+        const int colCount = topNMs2FragPeaks;
 
-        const Eigen::VectorX<int> colSumVec = mat.colwise().sum().cast<int>();
-        *individualPeakPointCount = EigenUtils::convertEigenVectorToQVector(colSumVec);
+        const Eigen::MatrixX<double> intensityMatrixIntegratedLimits = intensityMatrix.block(
+                rowStart,
+                colStart,
+                rowCount,
+                colCount
+        );
+
+        if (MathUtils::tZero(intensityMatrixIntegratedLimits.maxCoeff())) {
+            *intensityMatrixIntegratedLimitsNoInterference = intensityMatrixIntegratedLimits;
+            ERR_RETURN
+        }
+
+        const QVector<double> peakCountsPerRow = summedMatToVec.mid(rowStart, rowCount);
+        *frameIndexIntensityApexIntegration = MathUtils::findMaxIndexInVector(peakCountsPerRow) + rowStart;
+
+        e = removeInterferingPeaksInMatrix(
+                intensityMatrixIntegratedLimits,
+                peakCountsPerRow,
+                intensityMatrixIntegratedLimitsNoInterference
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    Err calcBestCosineSimSum(
+            const Eigen::MatrixX<double> &intensityMatrix,
+            const PeakIntegrationIndexes &pii,
+            const QVector<double> &summedMatToVec,
+            int topNMs2FragPeaks,
+            double cosineSimToAnchorThreshold,
+            QVector<double> *cosineSimsIndividualIntegration,
+            double *bestCosineSimSumIntegration,
+            Eigen::VectorX<double> *bestAnchorColumn,
+            FrameIndex *frameIndexIntensityApexIntegration
+            ) {
+
+        ERR_INIT
+
+        Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterference;
+
+        e = buildAlignmentMatrix(
+                intensityMatrix,
+                pii,
+                summedMatToVec,
+                topNMs2FragPeaks,
+                &intensityMatrixIntegratedLimitsNoInterference,
+                frameIndexIntensityApexIntegration
+        ); ree;
+
+        if (MathUtils::tZero(intensityMatrixIntegratedLimitsNoInterference.maxCoeff())) {
+            const QVector<double> v(topNMs2FragPeaks, 0.0);
+            *cosineSimsIndividualIntegration = v;
+            *bestCosineSimSumIntegration = 0.0;
+            ERR_RETURN
+        }
+
+        e = calcBestCosineSimSumLogic(
+                intensityMatrixIntegratedLimitsNoInterference,
+                cosineSimToAnchorThreshold,
+                cosineSimsIndividualIntegration,
+                bestCosineSimSumIntegration,
+                bestAnchorColumn
+                ); ree;
 
         ERR_RETURN
     }
@@ -662,11 +731,8 @@ namespace {
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
             QVector<double> *cosineSimsIndividual,
-            QVector<double> *klDivsIndividual,
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
-            QVector<int> *bestFrameIndexMaxDiffFromAnchorVec,
-            QVector<int> *individualPeakPointCount,
             Eigen::VectorX<double> *bestAnchorColumn
     ) {
 
@@ -680,51 +746,20 @@ namespace {
 
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
-            const int rowStart = pii.first;
-            const int rowCount = pii.second < intensityMatrix.rows()
-                                 ? pii.second - pii.first + 1
-                                 : static_cast<int>(intensityMatrix.rows()) - pii.first;
-
-            const int colStart = 0;
-            const int colCount = topNMs2FragPeaks;
-
-            const Eigen::MatrixX<double> intensityMatrixIntegratedLimits = intensityMatrix.block(
-                    rowStart,
-                    colStart,
-                    rowCount,
-                    colCount
-            );
-
-            const QVector<double> peakCountsPerRow = summedMatToVec.mid(rowStart, rowCount);
-            const FrameIndex frameIndexIntensityApexIntegration = MathUtils::findMaxIndexInVector(peakCountsPerRow) + rowStart;
-
-            Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterference;
-            e = removeInterferingPeaksInMatrix(
-                    intensityMatrixIntegratedLimits,
-                    peakCountsPerRow,
-                    &intensityMatrixIntegratedLimitsNoInterference
-            ); ree;
-
-            e = calculateIndividualPeakPointCount(
-                    intensityMatrixIntegratedLimitsNoInterference,
-                    individualPeakPointCount
-            ); ree;
-
             QVector<double> cosineSimsIndividualIntegration;
             double bestCosineSimSumIntegration;
-            QVector<double> klDivsIndividualIntegration;
-            double bestKlDivSimSumIntegration;
-            QVector<int> bestFrameIndexMaxDiffFromAnchorVecIntegration;
-            e = calcBestCosineSimAndKLDivSum(
-                    intensityMatrixIntegratedLimitsNoInterference,
+            FrameIndex frameIndexIntensityApexIntegration;
+            e = calcBestCosineSimSum(
+                    intensityMatrix,
+                    pii,
+                    summedMatToVec,
+                    topNMs2FragPeaks,
                     cosineSimToAnchorThreshold,
                     &cosineSimsIndividualIntegration,
                     &bestCosineSimSumIntegration,
-                    &klDivsIndividualIntegration,
-                    &bestKlDivSimSumIntegration,
-                    &bestFrameIndexMaxDiffFromAnchorVecIntegration,
-                    bestAnchorColumn
-            ); ree;
+                    bestAnchorColumn,
+                    &frameIndexIntensityApexIntegration
+                    ); ree;
 
 //#define CHECK_ALIGNMENT
 #ifdef CHECK_ALIGNMENT
@@ -743,10 +778,8 @@ namespace {
             if (bestCosineSimSumIntegration > bestCosineSimSum) {
                 bestCosineSimSum = bestCosineSimSumIntegration;
                 *cosineSimsIndividual = cosineSimsIndividualIntegration;
-                *klDivsIndividual = klDivsIndividualIntegration;
                 *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
                 *bestPeakIntegrationIndexes = pii;
-                *bestFrameIndexMaxDiffFromAnchorVec = bestFrameIndexMaxDiffFromAnchorVecIntegration;
             }
 
         }
@@ -889,6 +922,22 @@ namespace {
         ERR_RETURN
     }
 
+    QVector<double> calculatePeakShapeRatios(const Eigen::VectorX<double> &vec) {
+
+        const Eigen::VectorX<double> vecTrimmed = EigenUtils::trimVector(vec);
+        const int segmentSize = std::round(vecTrimmed.size() / 3.0);
+
+        const double seg1Sum = vecTrimmed.segment(0, segmentSize).sum();
+        const double seg2Sum = vecTrimmed.segment(segmentSize, segmentSize).sum();
+        const double seg3Sum = vecTrimmed.segment(segmentSize * 2, segmentSize).sum();
+
+        return {
+            seg1Sum / seg2Sum,
+            seg3Sum / seg2Sum,
+            seg1Sum / std::max(seg3Sum, std::numeric_limits<double>::min())
+        };
+    }
+
 }//namespace
 Err CandidateProcessertron::buildScores(
         const CandidatePeptide &candidatePeptide,
@@ -898,62 +947,202 @@ Err CandidateProcessertron::buildScores(
         ) {
     ERR_INIT
 
-    const Eigen::MatrixX<double> intensityMatrix = buildIntensityVecMatrix(
-            candidatePeptide,
-            m_mzHashedVsXICPoints,
+    const QVector<MS2Ion> &ms2Ions = candidatePeptide.ms2Ions;
+    QVector<MZION> mzIonsTopN;
+    std::transform(
+            ms2Ions.begin(),
+            ms2Ions.end(),
+            std::back_inserter(mzIonsTopN),
+            [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
+            );
+
+    const Eigen::MatrixX<double> intensityMatrix100 = buildIntensityVecMatrix(
+            mzIonsTopN,
+            m_mzHashedVsXICPoints100,
             summedMatVecToVec.size(),
             m_topNMS2Ions
     );
 
-    QVector<double> cosineSimsIndividual;
-    QVector<double> klDivsIndividual;
+    const Eigen::MatrixX<double> intensityMatrix45 = buildIntensityVecMatrix(
+            mzIonsTopN,
+            m_mzHashedVsXICPoints45,
+            summedMatVecToVec.size(),
+            m_topNMS2Ions
+    );
+
+    const Eigen::MatrixX<double> intensityMatrix20 = buildIntensityVecMatrix(
+            mzIonsTopN,
+            m_mzHashedVsXICPoints20,
+            summedMatVecToVec.size(),
+            m_topNMS2Ions
+    );
+
+    const Eigen::MatrixX<double> intensityMatrixB2B3 = buildIntensityVecMatrix(
+            candidatePeptide.ms2IonMzB2B3,
+            m_mzHashedVsXICPointsB2B3,
+            summedMatVecToVec.size(),
+            candidatePeptide.ms2IonMzB2B3.size()
+    );
+
+    const Eigen::MatrixX<double> intensityMatrixY2Y3 = buildIntensityVecMatrix(
+            candidatePeptide.ms2IonMzY2Y3,
+            m_mzHashedVsXICPointsY2Y3,
+            summedMatVecToVec.size(),
+            candidatePeptide.ms2IonMzY2Y3.size()
+    );
+
+    QVector<double> cosineSimsIndividual100;
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
-    QVector<int> bestFrameIndexMaxDiffFromAnchorVec;
-    QVector<int> individualPeakPointCount;
     Eigen::VectorX<double> bestAnchorColumn;
     e = calculateCandidateAllignementMetrics(
-            intensityMatrix,
+            intensityMatrix100,
             peakIntegrationIndexes,
             summedMatVecToVec,
             m_topNMS2Ions,
             m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividual,
-            &klDivsIndividual,
+            &cosineSimsIndividual100,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
-            &bestFrameIndexMaxDiffFromAnchorVec,
-            &individualPeakPointCount,
             &bestAnchorColumn
     ); ree;
 
-    QVector<double> intensityApexVals = EigenUtils::convertEigenVectorToQVector(
-            Eigen::VectorX<double>(intensityMatrix.row(frameIndexIntensityApex))
+    const QVector<double> peakShapeRatios = calculatePeakShapeRatios(bestAnchorColumn);
+
+    QVector<double> cosineSimsIndividual45;
+    double unused1;
+    Eigen::VectorX<double> unused2;
+    FrameIndex unused3;
+    e = calcBestCosineSimSum(
+            intensityMatrix45,
+            bestPeakIntegrationIndexes,
+            summedMatVecToVec,
+            m_topNMS2Ions,
+            m_pythiaParameters.cosineSimToAnchorThreshold,
+            &cosineSimsIndividual45,
+            &unused1,
+            &unused2,
+            &unused3
+            ); ree;
+
+    QVector<double> cosineSimsIndividual20;
+    double unused4;
+    Eigen::VectorX<double> unused5;
+    FrameIndex unused6;
+    e = calcBestCosineSimSum(
+            intensityMatrix20,
+            bestPeakIntegrationIndexes,
+            summedMatVecToVec,
+            m_topNMS2Ions,
+            m_pythiaParameters.cosineSimToAnchorThreshold,
+            &cosineSimsIndividual20,
+            &unused4,
+            &unused5,
+            &unused6
+    ); ree;
+
+    QVector<double> cosineSimsIndividualB2B3;
+    double cosineSimSumB2B3;
+    Eigen::VectorX<double> unused8;
+    FrameIndex unused9;
+    e = calcBestCosineSimSum(
+            intensityMatrixB2B3,
+            bestPeakIntegrationIndexes,
+            summedMatVecToVec,
+            candidatePeptide.ms2IonMzB2B3.size(),
+            m_pythiaParameters.cosineSimToAnchorThreshold,
+            &cosineSimsIndividualB2B3,
+            &cosineSimSumB2B3,
+            &unused8,
+            &unused9
+    ); ree;
+
+    QVector<double> cosineSimsIndividualY2Y3;
+    double cosineSimSumY2Y3;
+    Eigen::VectorX<double> unused11;
+    FrameIndex unused12;
+    e = calcBestCosineSimSum(
+            intensityMatrixY2Y3,
+            bestPeakIntegrationIndexes,
+            summedMatVecToVec,
+            candidatePeptide.ms2IonMzY2Y3.size(),
+            m_pythiaParameters.cosineSimToAnchorThreshold,
+            &cosineSimsIndividualY2Y3,
+            &cosineSimSumY2Y3,
+            &unused11,
+            &unused12
+    ); ree;
+
+    QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
+            Eigen::VectorX<double>(intensityMatrix100.row(frameIndexIntensityApex))
     );
 
     double cosineSimSpectrum;
     double klDivSpectrum;
     e = calculateSpectrumMetrics(
-            intensityMatrix.row(frameIndexIntensityApex),
+            intensityMatrix100.row(frameIndexIntensityApex),
             candidatePeptide.ms2Ions,
             &cosineSimSpectrum,
             &klDivSpectrum
     ); ree;
 
-    double cosineSimMS1;
+    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
+    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / candidatePeptide.charge);
+    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / candidatePeptide.charge);
+
+    double cosineSim100MS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMz,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSim100MS1
+    ); ree;
+
+    double cosineSim100MS1Iso1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso1,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSim100MS1Iso1
+    ); ree;
+
+    double cosineSim100MSIso2;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso2,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &cosineSim100MSIso2
+    ); ree;
+
+    double cosineSim45MS1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
             BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
-            m_pythiaParameters.ms2ExtractionWidthPPM,
+            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
             &m_turboXICMS1,
-            &cosineSimMS1
+            &cosineSim45MS1
+    ); ree;
+
+    double cosineSim20MS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
+            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
+            &m_turboXICMS1,
+            &cosineSim20MS1
     ); ree;
 
     QVector<double> mzMeanValsFound;
     QVector<double> stdMeanValsFound;
     QVector<double> mzValsSearched;
-    QVector<double> ppmDifference;
     QVector<double> theoApexIntensity;
     e = calculateEmpiricalMzStats(
             candidatePeptide,
@@ -961,46 +1150,28 @@ Err CandidateProcessertron::buildScores(
             &mzMeanValsFound,
             &stdMeanValsFound,
             &mzValsSearched,
-            &ppmDifference,
             &theoApexIntensity
             ); ree;
 
-    QVector<double> fragmentFrequencies;
-    std::transform(
-            candidatePeptide.ms2Ions.begin(),
-            candidatePeptide.ms2Ions.end(),
-            std::back_inserter(fragmentFrequencies),
-            [&](const MS2Ion &ms2Ion){
-                return m_fragmentFrequencies.value(MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION));
-            }
-    );
+    cosineSimsIndividual100.resize(mzValsSearched.size());
+    cosineSimsIndividual45.resize(mzValsSearched.size());
+    cosineSimsIndividual20.resize(mzValsSearched.size());
+    intensityApexVals100.resize(mzValsSearched.size());
 
-    cosineSimsIndividual.resize(mzValsSearched.size());
-    klDivsIndividual.resize(mzValsSearched.size());
-    intensityApexVals.resize(mzValsSearched.size());
-
-    const double bestCosineSimSum = std::accumulate(cosineSimsIndividual.begin(), cosineSimsIndividual.end(), 0.0);
-    const double bestKlDivSimSum = std::accumulate(klDivsIndividual.begin(), klDivsIndividual.end(), 0.0);
-
-    double xCorr;
-    e = MsUtils::calcXCorr(
-            mzMeanValsFound,
-            mzValsSearched,
-            intensityApexVals,
-            theoApexIntensity,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &xCorr
-    ); ree;
+    const double bestCosineSimSum100 = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
+    const double bestCosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
+    const double bestCosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
 
     scoredCandidate->peptideStringWithMods = candidatePeptide.peptideStringWithMods;
-    scoredCandidate->cosineSimSum = bestCosineSimSum;
+    scoredCandidate->cosineSimSum100 = bestCosineSimSum100;
+    scoredCandidate->cosineSimSum45 = bestCosineSimSum45;
+    scoredCandidate->cosineSimSum20 = bestCosineSimSum20;
     scoredCandidate->isDecoy = candidatePeptide.isDecoy;
     scoredCandidate->charge = candidatePeptide.charge;
     scoredCandidate->mass = candidatePeptide.mass;
     scoredCandidate->scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
     scoredCandidate->scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate->scanNumber);
     scoredCandidate->scanIonCount = m_msFrame.getScanPointsByScanNumber(scoredCandidate->scanNumber).size();
-    scoredCandidate->xCorr = xCorr;
 
     scoredCandidate->scanTimePredicted = m_fragPredsPredictedScanTime.isEmpty()
             ? -1.0
@@ -1011,18 +1182,26 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->theoIntensityVec = theoApexIntensity;
     scoredCandidate->mzFoundMeanVec = mzMeanValsFound;
     scoredCandidate->mzFoundStDevVec = stdMeanValsFound;
-    scoredCandidate->intensityFoundMaxVec = intensityApexVals;
-    scoredCandidate->frameIndexMaxDiffFromAnchorVec = bestFrameIndexMaxDiffFromAnchorVec;
-    scoredCandidate->cosineSimToAnchorVec = cosineSimsIndividual;
-    scoredCandidate->klDivToAnchorVec = klDivsIndividual;
-    scoredCandidate->peakPointCountFoundVec = individualPeakPointCount;
-    scoredCandidate->fragmentFrequencyVec = fragmentFrequencies;
+    scoredCandidate->intensityFoundMaxVec = intensityApexVals100;
+    scoredCandidate->cosineSimToAnchorVec = cosineSimsIndividual100;
     scoredCandidate->targetKey = m_uniqueMsInfoScanKey;
-    scoredCandidate->klDivSum = bestKlDivSimSum;
     scoredCandidate->klDivSpectrum = klDivSpectrum;
     scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
-    scoredCandidate->cosineSimMS1 = cosineSimMS1;
+    scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
+    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
+    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MSIso2;
+    scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
+    scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
     scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
+    scoredCandidate->peakShapeRatio1 = peakShapeRatios.at(0);
+    scoredCandidate->peakShapeRatio2 = peakShapeRatios.at(1);
+    scoredCandidate->peakShapeRatio3 = peakShapeRatios.at(2);
+    scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
+    scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
+    scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
+    scoredCandidate->y2Corr = cosineSimsIndividualY2Y3.at(0);
+    scoredCandidate->y3Corr = cosineSimsIndividualY2Y3.at(1);
+    scoredCandidate->y2y3CosineSimSum = cosineSimSumY2Y3;
 
     ERR_RETURN
 }
@@ -1033,7 +1212,6 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
         QVector<double> *mzMeanValsFound,
         QVector<double> *stdMeanValsFound,
         QVector<double> *mzValsSearched,
-        QVector<double> *ppmDifference,
         QVector<double> *theoApexIntensity
         ) {
 
@@ -1046,7 +1224,7 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
             ); ree;
 
     e = calculateMassAccuracyMetrics(
-            m_mzHashedVsXICPoints,
+            m_mzHashedVsXICPoints100,
             candidatePeptide,
             bestPeakIntegrationIndexes,
             mzMeanValsFound,
@@ -1060,13 +1238,6 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
             *mzValsSearched,
             &mzFoundVsMzSearched
     ); ree
-
-    std::transform(
-            mzFoundVsMzSearched.begin(),
-            mzFoundVsMzSearched.end(),
-            std::back_inserter(*ppmDifference),
-            [](const QPair<double, double> &p){return 1e6 * (p.first - p.second) / p.second;}
-    );
 
     std::transform(
             candidatePeptide.ms2Ions.begin(),
@@ -1086,7 +1257,9 @@ Err CandidateProcessertron::processCandidateDecoy(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints45); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints20); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(

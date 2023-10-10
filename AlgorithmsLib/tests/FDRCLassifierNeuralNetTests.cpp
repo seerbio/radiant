@@ -98,19 +98,9 @@ void FDRCLassifierNeuralNetTests::execTest() {
     e = ParquetReader::read(scoredCandsFullFragsFilePath, &scoredCandidatesAllFullFragIons);
     QCOMPARE(e, eNoError);
 
-    QVector<ScoredCandidate> keyVsScoredCandidateCulledVec;
-    e = ParquetReader::read(keyVsScoredCandidateCulledFilePath, &keyVsScoredCandidateCulledVec);
+    QVector<ScoredCandidate> scoredCandidateCulledVec;
+    e = ParquetReader::read(keyVsScoredCandidateCulledFilePath, &scoredCandidateCulledVec);
     QCOMPARE(e, eNoError);
-
-    QMap<QString, ScoredCandidate> keyVsScoredCandidateCulled;
-    for (const ScoredCandidate &sc : keyVsScoredCandidateCulledVec) {
-        const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                sc.peptideStringWithMods,
-                sc.targetKey,
-                sc.charge
-        );
-        keyVsScoredCandidateCulled.insert(key, sc);
-    }
 
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = fdrClassifierNeuralNet.init(
@@ -125,8 +115,7 @@ void FDRCLassifierNeuralNetTests::execTest() {
 
     QVector<ScoredCandidate> scoredCandidatesClassifier;
     e = fdrClassifierNeuralNet.exec(
-            keyVsScoredCandidateCulled,
-            scoredCandidatesAllFullFragIons,
+            scoredCandidateCulledVec,
             &scoredCandidatesClassifier
             );
     QCOMPARE(e, eNoError);

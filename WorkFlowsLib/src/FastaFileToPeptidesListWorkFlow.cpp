@@ -78,12 +78,13 @@ Err FastaFileToPeptidesListWorkFlow::exec(
             &peptideSequences
             ); ree;
 
-    if (m_params.addDecoys) {
-        e = addDecoys(
-                666,
-                &peptideSequences
-                ); ree;
-    }
+//TODO see if you want to reconsider this
+//    if (m_params.addDecoys) {
+//        e = addDecoys(
+//                666,
+//                &peptideSequences
+//                ); ree;
+//    }
 
     e = writeLibraryBuilderCSV(
             peptideSequences,
@@ -154,9 +155,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
         for (const PeptideSequence &ps : result.second.peptideSequences) {
 
-            QString peptideSeqReplacedLeucines = ps.sequence;
-            peptideSeqReplacedLeucines =  peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
-            (*peptideStringWithModsVsFastaEntries)[peptideSeqReplacedLeucines].push_back(result.second.fastaEntry);
+            (*peptideStringWithModsVsFastaEntries)[ps.sequence].push_back(result.second.fastaEntry);
 
             if (entered.value(ps.sequence)) {
                 continue;

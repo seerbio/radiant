@@ -80,7 +80,7 @@ void ErrorUtilsTests::emptyCheckReturnTest()
 
     eee_absorb;
     e = ErrorUtils::isNotEmpty(nullString);
-    QVERIFY(e == eError);
+    QVERIFY(e == eEmptyContainerError);
 
 }
 

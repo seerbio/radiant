@@ -84,6 +84,8 @@ public:
 
     bool isDIA();
 
+    bool isInit();
+
     QPair<double, double> scanTimeMinMax();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
@@ -146,6 +148,8 @@ public:
     void printSize();
 
     Err printFileInfo();
+
+    Err writeTargetCollisionEnergyFile();
 
 protected:
 

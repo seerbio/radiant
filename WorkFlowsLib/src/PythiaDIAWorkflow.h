@@ -32,42 +32,17 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri
+            const QString &fragLibUri,
+            const QString &fastaUri
             );
 
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri,
-            const QString &iRTReCalFilePath
-    );
-
     Err processFile(const QString &msDataFilePath);
-
 
 private:
 
     Err deisotopeScans(MsReaderParquet *msReaderParquet);
 
     Err buildCalibration(MsReaderParquet *msReaderParquet);
-
-    Err extractionLoopLogic(
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
-            double fdrThreshold,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            int topNMs2IonsMainAnalysis,
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *scoredCandidatesAll,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
-            );
-
-    Err extractTargetDecoyData(
-            const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
-            const PythiaParameters &pythiaParameters,
-            int topNMs2Ions,
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *combinedResults
-    );
 
     Err buildCandidates(
             int topNMs2Ions,
@@ -97,14 +72,10 @@ private:
             );
 
     Err applyNeuralNetClassifier(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
             const QVector<ScoredCandidate> &scoredCandidatesCulled,
-            MsReaderParquet *msReaderParquet,
+            const QPair<double, double> &scanTimeMinMax,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
-            );
-
-    Err returnAllCandidatesScoredFullFragIons(
-            MsReaderParquet *msReaderParquet,
-            QVector<ScoredCandidate> *scoredCandidatesAllTemp
             );
 
     Err updateProteinGroupAnnotation(
@@ -112,18 +83,11 @@ private:
             QVector<ScoredCandidate> *scoredCandidates
     );
 
-    static Err buildUniqueMsInfoScanKeyVsScanPoints(
-            MsReaderParquet *msReaderParquet,
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
-            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
-            );
-
 private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
-    QString m_iRTReCalFilePath;
+    QString m_fastaUri;
 
     FragLibReader m_fragLibReader;
     QVector<MsScanInfo> m_msScanInfos;
@@ -131,6 +95,7 @@ private:
     MsCalibratomatic m_msCalibratomatic;
 
     const int m_minTopNMs2Ions;
+    const bool m_byIonsOnly;
 
 };
 

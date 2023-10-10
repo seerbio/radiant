@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "AminoAcids.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
@@ -91,6 +92,8 @@ struct CandidatePeptide {
     PeptideStringWithMods peptideStringWithMods;
     Charge charge = -1;
     QVector<MS2Ion> ms2Ions;
+    QVector<MZION> ms2IonMzB2B3;
+    QVector<MZION> ms2IonMzY2Y3;
     bool isDecoy = false;
     double mass = -1.0;
     double iRt = -1.0;
@@ -106,7 +109,7 @@ public:
     FragLibReader();
     ~FragLibReader() = default;
 
-    Err init(const QString &fragLibFilePath);
+    Err init(const QString &fragLibFilePath, const AminoAcids &aminoAcids);
 
     int libarySize();
 
@@ -116,6 +119,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -124,16 +128,19 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
     static Err getMS2Ions(
             const QString &fragLibFilePath,
+            const AminoAcids &aminoAcids,
             double massStart,
             double massEnd,
             double mzMin,
             double mzMax,
             int topNMs2Ions,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -152,6 +159,7 @@ public:
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QVector<MS2Ion> *ms2Ions
     );
 
@@ -172,9 +180,11 @@ public:
 
     static Err fragLibReaderRowsToMs2IonsMap(
             const QVector<FragLibReaderRow> &fragLibReaderRows,
+            const AminoAcids &aminoAcids,
             int topNMs2Ions,
             double mzMin,
             double mzMax,
+            bool byIonsOnly,
             QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
@@ -184,7 +194,10 @@ public:
             QMap<MzHashed, FrequencyPercent> *fragmentFrequencies
     );
 
-    static Err convertDIANNLibToFragLib(const QString &specLibFilePath);
+    static Err convertDIANNLibToFragLib(
+            const QString &specLibFilePath,
+            const AminoAcids &aminoAcids
+            );
 
     static Err mutateCandidatePeptideTarget(
             const CandidatePeptide &candidatePeptideTarget,
@@ -197,7 +210,10 @@ private:
     double m_mzMin;
     double m_mzMax;
 
+    bool m_useBYOnly;
+
     QVector<FragLibReaderRow> m_fragLibReaderRows;
+    AminoAcids m_aminoAcids;
 
 };
 

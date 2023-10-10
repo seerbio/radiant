@@ -57,7 +57,7 @@ Err MsReaderParquet::openFile(const QString &filePath) {
     m_filePath = filePath;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             &msParquetReaderRows
     ); ree;
@@ -85,7 +85,7 @@ Err MsReaderParquet::openFile(
     m_filePath = filePath;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             columnToFilterBy,
             filterRange,
@@ -112,7 +112,7 @@ Err MsReaderParquet::openFile(
     m_filePath = filePath;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             columnToFilterBy,
             &msParquetReaderRows

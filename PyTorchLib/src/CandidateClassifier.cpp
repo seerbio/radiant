@@ -19,30 +19,27 @@ const int NUMBER_OF_THE_BEAST = 666;
 
 struct Net : torch::nn::Module {
 
-
-
     torch::nn::Linear layer1{nullptr};
     torch::nn::Linear layer2{nullptr};
-    torch::nn::Linear layer3{nullptr};
+//    torch::nn::Linear layer3{nullptr};
     torch::nn::Linear layer4{nullptr};
 
     torch::nn::BatchNorm1d batchNorm1{nullptr};
     torch::nn::BatchNorm1d batchNorm2{nullptr};
-    torch::nn::BatchNorm1d batchNorm3{nullptr};
+//    torch::nn::BatchNorm1d batchNorm3{nullptr};
 
     Net(int input_size, int nodes, int num_classes) {
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(false)));
         batchNorm1 = register_module("batchNorm1", torch::nn::BatchNorm1d(nodes));
         layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(false)));
         batchNorm2 = register_module("batchNorm2", torch::nn::BatchNorm1d(nodes));
-        layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(false)));
-        batchNorm3 = register_module("batchNorm3", torch::nn::BatchNorm1d(nodes));
+//        layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(false)));
+//        batchNorm3 = register_module("batchNorm3", torch::nn::BatchNorm1d(nodes));
         layer4 = register_module("layer4", torch::nn::Linear(nodes, num_classes));
 
-//        std::mt19937 rng(NUMBER_OF_THE_BEAST);
         torch::nn::init::xavier_uniform_(layer1->weight);
         torch::nn::init::xavier_uniform_(layer2->weight);
-        torch::nn::init::xavier_uniform_(layer3->weight);
+//        torch::nn::init::xavier_uniform_(layer3->weight);
         torch::nn::init::xavier_uniform_(layer4->weight);
         torch::nn::init::constant_(layer4->bias, 0.01);
     }
@@ -50,7 +47,7 @@ struct Net : torch::nn::Module {
     torch::Tensor forward(torch::Tensor x) {
         x = torch::relu(batchNorm1->forward(layer1->forward(x)));
         x = torch::relu(batchNorm2->forward(layer2->forward(x)));
-        x = torch::relu(batchNorm3->forward(layer3->forward(x)));
+//        x = torch::relu(batchNorm3->forward(layer3->forward(x)));
         x = torch::sigmoid(layer4->forward(x));
         return x;
     }
@@ -142,7 +139,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = 10;
+    const int nodes = 20;
     const int num_classes = 1;
     const int batchSize = static_cast<int>(batchFraction * xData.size());
 
@@ -178,22 +175,24 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
             torch::Tensor output = m_net->forward(batchX);
 
-//            // Regularization strength (lambda)
-//            float lambda = 0.0001; // Adjust as needed
-//            torch::Tensor l2_regularization = torch::tensor(0.0, torch::kFloat32);
-//            for (const auto& parameter : m_net->parameters()) {
-//                l2_regularization += torch::norm(parameter, 2);
-//            }
-//            torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
+//#define REGULARIZATION
+#ifdef REGULARIZATION
+            // Regularization strength (lambda)
+            float lambda = 0.01; // Adjust as needed
+            torch::Tensor l2_regularization = torch::tensor(0.0, torch::kFloat32);
+            for (const auto& parameter : m_net->parameters()) {
+                l2_regularization += torch::norm(parameter, 2);
+            }
+            torch::Tensor loss = loss_function(output, batchY) + lambda * l2_regularization;
+#else
             torch::Tensor loss = loss_function(output, batchY);
-
+#endif
             const auto batchLoss = loss.item<float>();
             batchLossSum += batchLoss;
 
             optimizer.zero_grad();
             loss.backward();
             optimizer.step();
-
         }
 
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);

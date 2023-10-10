@@ -307,7 +307,6 @@ public:
     template <typename T>
     static QPair<int, T> returnTopIndexAndValue(const Eigen::VectorX<T> &vec) {
 
-
         QPair<int, T> maxIndex = {-1, std::numeric_limits<T>::min()};
 
         for (int i = 0; i < vec.size(); i++) {
@@ -685,6 +684,36 @@ public:
         }
 
         return vecs;
+    }
+
+    template<typename T>
+    static Eigen::VectorX<T> trimVector(const Eigen::VectorX<T> &vec) {
+
+        const int center = EigenUtils::returnTopIndexAndValue(vec).first;
+
+        int currentIndex = center - 1;
+        int leftStart = currentIndex;
+        while(currentIndex >= 0) {
+            const double currentValue = vec.coeff(currentIndex);
+            if (MathUtils::tZero(currentValue)) {
+                break;
+            }
+            leftStart = currentIndex;
+            currentIndex--;
+        }
+
+        currentIndex = center + 1;
+        int rightStart = currentIndex;
+        while(currentIndex < vec.size()) {
+            const double currentValue = vec.coeff(currentIndex);
+            if (MathUtils::tZero(currentValue)) {
+                break;
+            }
+            rightStart = currentIndex;
+            currentIndex++;
+        }
+
+        return vec.segment(leftStart, rightStart - leftStart + 1);
     }
 
 };

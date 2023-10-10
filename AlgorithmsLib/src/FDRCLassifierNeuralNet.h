@@ -104,8 +104,7 @@ public:
             );
 
     Err exec(
-            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
+            const QVector<ScoredCandidate> &trainingDataTargetsAndDecoys,
             QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
 
@@ -153,7 +152,6 @@ private:
 
     Err trainClassifier(
             const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            const QVector<ScoredCandidate> &scoredCandidatesAllFullFragIons,
             QVector<QVector<float>> *allDataVecs,
             QVector<NeuralNetData> *trainingData
             );
@@ -161,12 +159,6 @@ private:
     Err trainBaggedNeuralNets(
             const QVector<QVector<QVector<float>>> &trainingDataVecsTranched,
             const QVector<QVector<float>> &ytrainingDataTranched
-            );
-
-    Err predict(
-            const QVector<QVector<float>> &allDataVecs,
-            const QVector<NeuralNetData> &trainingData,
-            QVector<float> *meanPredictions
             );
 
     Err predictBaggedClassifiers(

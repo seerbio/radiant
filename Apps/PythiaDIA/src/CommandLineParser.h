@@ -16,9 +16,9 @@ public:
 
     struct CliParameters{
         QString fragLibFilePath;
-        QString fragLibFileBackgroundPath;
+        QString fastaFilePath;
         QString pythiaParametersFilePath;
-        QString msDataFilesDirectory;
+        QString msDataFile;
     };
 
     CommandLineParser();

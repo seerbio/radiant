@@ -65,14 +65,19 @@ Err logic(const QString &testFilePath) {
     const double massStart = 1000.0;
     const double massEnd = 1002.0;
 
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
     QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
     e = FragLibReader::getMS2Ions(
             testFilePath,
+            aminoAcids,
             massStart,
             massEnd,
             100.0,
             2000.0,
             1000,
+            true,
             &peptideSequenceChargeKeyVsCandidatePeptide
     ); ree;
 
@@ -102,7 +107,7 @@ void FragLibReaderTests::convertDIANNLibToFragLibTest() {
 
     const QString diannLibraryFile = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib";
 
-    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile);
+    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, AminoAcids());
     QCOMPARE(e, eNoError);
 
 }

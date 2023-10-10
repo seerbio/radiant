@@ -88,11 +88,13 @@ namespace {
 
             e = FragLibReader::getMS2Ions(
                     fragLibPath,
+                    AminoAcids(),
                     massMin,
                     massMax,
                     100.0,
                     2000.0,
                     topNMs2Ions,
+                    true,
                     &peptideSequenceChargeKeyVsCandidatePeptide
                     ); ree;
 
@@ -179,6 +181,7 @@ void MsFrameScoretronTests::scoreCandidatesRecalTest() {
     e = msFrameScoretron.init(
             uniqueMsInfoScanKey,
             pythiaParameters,
+            pythiaParameters.topNMs2Ions,
             diaTargetFrame.value(uniqueMsInfoScanKey),
             scanNumberVsScanPointsMS1,
             peptideStringWithModsVsCandidatePeptide,

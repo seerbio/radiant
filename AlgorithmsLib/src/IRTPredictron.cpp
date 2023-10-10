@@ -113,6 +113,7 @@ Err IRTPredictron::Private::batchPredictIRT(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(peptideStringWithModsList); ree
+    e = ErrorUtils::isTrue(m_isInit); ree;
 
     const bool allSequenceLengthsAreValid = checkIfPeptideLengthsAreValid(
             peptideStringWithModsList,

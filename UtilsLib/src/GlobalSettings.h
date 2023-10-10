@@ -318,16 +318,19 @@ public:
     const QString DOT_PYTHIA_CAL_FILE_EXTENSION = QStringLiteral(".pythiaCAL");
     const QString DOT_PYTHIA_DIA_FILE_EXTENSION = QStringLiteral(".pythiaDIA");
 
-    const QString Y_IONS =  QStringLiteral("yIons");
-    const QString B_IONS =  QStringLiteral("bIons");
-    const QString Y2_IONS =  QStringLiteral("y2Ions");
-    const QString B2_IONS =  QStringLiteral("b2Ions");
-    const QString A_IONS =  QStringLiteral("aIons");
-    const QString Y_NH3_IONS =  QStringLiteral("yNH3");
-    const QString Y_H2O_IONS =  QStringLiteral("yH20");
-    const QString B_NH3_IONS=  QStringLiteral("bNH3");
-    const QString B_H2O_IONS =  QStringLiteral("bH20");
-    const QString PRECURSOR_IONS =  QStringLiteral("precursorIons");
+    const QString Y_IONS = QStringLiteral("yIons");
+    const QString B_IONS = QStringLiteral("bIons");
+    const QString Y2_IONS = QStringLiteral("y2Ions");
+    const QString B2_IONS = QStringLiteral("b2Ions");
+    const QString A_IONS = QStringLiteral("aIons");
+    const QString Y_NH3_IONS = QStringLiteral("yNH3");
+    const QString Y_H2O_IONS = QStringLiteral("yH20");
+    const QString B_NH3_IONS= QStringLiteral("bNH3");
+    const QString B_H2O_IONS = QStringLiteral("bH20");
+    const QString PRECURSOR_IONS = QStringLiteral("precursorIons");
+
+    const double TIGHT_1_FRACTION = 0.45;
+    const double TIGHT_2_FRACTION = 0.2;
 
     const int NUMBER_OF_THE_BEAST = 666;
 
