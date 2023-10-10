@@ -101,36 +101,36 @@ CMD ["ctest"]
 ##     $ docker run --rm -it $(docker build --target deploy .)
 ##
 #################################################
-#FROM build AS deploy
-#
-## Install Python and dependencies
-#RUN apt-get update \
-#    && apt-get upgrade -y \
-#    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/* \
-#    && pip install --no-cache-dir awscli boto3
-#
-## Copy some extra contents into /app/
-#RUN cp \
-#    /src/PythiaDIACpp/control \
-#    /src/PythiaDIACpp/build_deb.sh \
-#    /src/PythiaDIACpp/s3_package_uploader.py \
-#    /app/
-#
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
-#
-#WORKDIR /app/
-#
-#ARG pythia_dia_version=0.1
-#ENV package_dir=pythia_dia_${pythia_dia_version}
-#ENV PACKAGE_NAME=${package_dir}.deb
-#
-## This should work with the default entrypoint to build and deploy.
-#CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
-#
+FROM build AS deploy
+
+# Install Python and dependencies
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir awscli boto3
+
+# Copy some extra contents into /app/
+RUN cp \
+    /src/PythiaDIACpp/control \
+    /src/PythiaDIACpp/build_deb.sh \
+    /src/PythiaDIACpp/s3_package_uploader.py \
+    /app/
+
+RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
+RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
+
+WORKDIR /app/
+
+ARG pythia_dia_version=1.0
+ENV package_dir=pythia_dia_${pythia_dia_version}
+ENV PACKAGE_NAME=${package_dir}.deb
+
+# This should work with the default entrypoint to build and deploy.
+CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
+
 ##################################################
 ###
 ### App stage
