@@ -13,6 +13,7 @@ rm -rf /tmp/libtorch
 unzip /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -d /tmp/
 rm /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
 rm -rf ${PYTORCH_PREFIX_PATH}/pytorch
+mkdir -p ${PYTORCH_PREFIX_PATH}
 mv /tmp/libtorch ${PYTORCH_PREFIX_PATH}/pytorch
 
 ## Build libtorch from sources
