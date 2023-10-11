@@ -36,6 +36,10 @@ else
     if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
     cd pytorch || exit
 
+    # Always run an update just in case package cache is out of date
+    ${APT} update
+
+    # Install Python, which is needed by the libtorch build
     ${APT} install -y python3.10 python-is-python3 python3-pip
 
     _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE="$(which python)"
