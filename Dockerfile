@@ -51,20 +51,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # TODO: is this necessary? We should ensure it ends up somewhere that's already in $PATH...
-ENV PATH="/usr/bin/cmake/bin:${PATH}"
+#ENV PATH="/usr/bin/cmake/bin:${PATH}"
 
-## https://pytorch.org
-#RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-#    && mkdir -p /src/PythiaDIACpp/ThirdPartyLibs/ \
-#    &&unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+COPY get-or-build-libtorch.sh /tmp/
+RUN chmod u+x /tmp/get-or-build-libtorch.sh \
+    && PYTORCH_PREFIX_PATH='/src/' /tmp/get-or-build-libtorch.sh
 
-# TODO!!! REENABLE!!
-## Build libtorch from sources
-#WORKDIR /src/
-#RUN git clone --recursive https://github.com/pytorch/pytorch \
-#    && cd pytorch \
-#    && _GLIBCXX_USE_CXX11_ABI=1 python tools/build_libtorch.py
-#
 ## Copy project source into the container
 #COPY ./ /src/PythiaDIACpp/
 #
