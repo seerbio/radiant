@@ -58,7 +58,6 @@ void MsReaderPointerAccTests::openFileTest2() {
     const QString prqFile
         = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
-
     MsReaderPointerAcc reader;
     e = reader.openFile(prqFile);
     QCOMPARE(e, eNoError);

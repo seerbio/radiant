@@ -11,7 +11,7 @@
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
-#include "MsReaderParquet.h"
+#include "MsReaderPointerAcc.h"
 #include "ParquetReader.h"
 #include "PythiaParameterReader.h"
 
@@ -32,7 +32,7 @@ public:
             int topNMs2Ions,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
-            MsReaderParquet *msReaderParquet
+            MsReaderPointerAcc *msReaderPointerAcc
             );
 
     Err init(
@@ -40,7 +40,7 @@ public:
             int topNMs2Ions,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
-            MsReaderParquet *msReaderParquet,
+            MsReaderPointerAcc *msReaderPointerAcc,
             const MsCalibratomatic &msCalibratomatic
     );
 
@@ -83,7 +83,7 @@ private:
     );
 
     static Err buildUniqueMsInfoScanKeyVsScanPoints(
-            MsReaderParquet *msReaderParquet,
+            MsReaderPointerAcc *msReaderPointerAcc,
             QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
             QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
             QMap<ScanNumber, ScanPoints > *scanNumberVsScanTimeMS1
@@ -92,7 +92,7 @@ private:
 private:
 
     PythiaParameters m_pythiaParameters;
-    MsReaderParquet *m_msReaderParquet;
+    MsReaderPointerAcc *m_msReaderPointerAcc;
     int m_topNMs2Ions;
 
     MsCalibratomatic m_msCalibratomatic;
