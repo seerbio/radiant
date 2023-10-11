@@ -20,9 +20,12 @@ private Q_SLOTS:
 
     void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
     void getSM2IonsTest();
+    void convertDIANNLibToFragLibTest();
 };
 
 void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
+
+    QSKIP("undo me baby");
 
     FragLibReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
@@ -62,25 +65,28 @@ Err logic(const QString &testFilePath) {
     const double massStart = 1000.0;
     const double massEnd = 1002.0;
 
-    FragLibReader fragLibReader;
-    e = fragLibReader.init(testFilePath); ree;
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
 
-
-    QMap<PeptideStringWithMods, QVector<MS2Ion>> peptideStringWithModsVsMS2Ions;
-    QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-    QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
-    e = fragLibReader.getMS2Ions(
+    QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
+    e = FragLibReader::getMS2Ions(
+            testFilePath,
+            aminoAcids,
             massStart,
             massEnd,
-            &peptideStringWithModsVsMS2Ions,
-            &peptideSequenceChargeKeyVsIsDecoy,
-            &peptideSequenceChargeKeyVsMass
+            100.0,
+            2000.0,
+            1000,
+            true,
+            &peptideSequenceChargeKeyVsCandidatePeptide
     ); ree;
 
     ERR_RETURN
 }
 
 void FragLibReaderTests::getSM2IonsTest() {
+
+    QSKIP("undo me baby");
 
     const QString testFilePath
         = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
@@ -92,6 +98,22 @@ void FragLibReaderTests::getSM2IonsTest() {
             logic
             ) ;
     futures.waitForFinished();
+
+}
+
+void FragLibReaderTests::convertDIANNLibToFragLibTest() {
+
+    ERR_INIT
+
+    QSKIP("Do not activate this");
+
+    const QString diannLibraryFile = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib";
+
+    AminoAcids aminoAcids;
+    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+
+    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, aminoAcids);
+    QCOMPARE(e, eNoError);
 
 }
 

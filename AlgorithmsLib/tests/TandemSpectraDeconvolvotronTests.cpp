@@ -55,7 +55,7 @@ void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
             {100, 1.5},
             {200, 1.5},
             {300, 1},
-            {600, 0.5},
+            {600.1, 0.5},
     };
 
     const QVector<MS2Ion> cand1 = {
@@ -74,7 +74,7 @@ void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
     QMap<PeptideSequenceChargeKey, TandemDeconvolverResult> result;
 
     TandemSpectraDeconvolvotron deconvolvotron;
-    e = deconvolvotron.init(3, 1000, 20, 0.000000000000000001, 0.05);
+    e = deconvolvotron.init(3, 1000.0, 2000.0, 20, 0.000000000000000001, 0.05);
     QCOMPARE(e, eNoError);
 
     double fStat;
@@ -87,6 +87,8 @@ void TandemSpectraDeconvolvotronTests::deconvolveTandemSpectraTest() {
     QCOMPARE(e, eNoError);
 
     const QStringList expectedKeys = {"C1", "C2"};
+
+    qDebug() << result.value("C1").discScore << result.value("C2").discScore;
 
     QCOMPARE(result.keys(), expectedKeys);
     QCOMPARE(QString::number(result.value("C1").discScore), QString::number(0.666666666667));

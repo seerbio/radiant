@@ -28,8 +28,8 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'T', Molecule(threonineFormula)},
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
-       {'Y', Molecule(tyrosineFormula)},
-       {'X', Molecule(leucineFormula)}
+//       {'X', Molecule(leucineFormula)},
+       {'Y', Molecule(tyrosineFormula)}
     };
 
     return aa;
@@ -42,7 +42,6 @@ AminoAcids::AminoAcids() {
 
 
 Molecule AminoAcids::aminoAcid(QChar aminoAcid) const {
-
     return m_aminoAcids.value(aminoAcid);
 }
 
@@ -81,3 +80,31 @@ const QMap<QChar, MolecularFormula> &AminoAcids::fixedModifications() const {
     return m_fixedModifications;
 }
 
+QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
+
+    QMap<QChar, double> diannMutateAminoAcidTo = {
+            {'G', Molecule(leucineFormula).monoisotopicMass() - Molecule(glycineFormula).monoisotopicMass()},
+            {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
+            {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
+            {'L', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
+//            {'X', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
+            {'I', Molecule(valineFormula).monoisotopicMass() - Molecule(isoleucineFormula).monoisotopicMass()},
+            {'F', Molecule(leucineFormula).monoisotopicMass() - Molecule(phenylalanineFormula).monoisotopicMass()},
+            {'M', Molecule(leucineFormula).monoisotopicMass() - Molecule(methionineFormula).monoisotopicMass()},
+            {'P', Molecule(leucineFormula).monoisotopicMass() - Molecule(prolineFormula).monoisotopicMass()},
+            {'W', Molecule(leucineFormula).monoisotopicMass() - Molecule(tryptophanFormula).monoisotopicMass()},
+            {'S', Molecule(threonineFormula).monoisotopicMass() - Molecule(serineFormula).monoisotopicMass()},
+            {'C', Molecule(serineFormula).monoisotopicMass() - Molecule(cysteineFormula).monoisotopicMass()},
+            {'T', Molecule(serineFormula).monoisotopicMass() - Molecule(threonineFormula).monoisotopicMass()},
+            {'Y', Molecule(serineFormula).monoisotopicMass() - Molecule(tyrosineFormula).monoisotopicMass()},
+            {'H', Molecule(serineFormula).monoisotopicMass() - Molecule(histidineFormula).monoisotopicMass()},
+            {'K', Molecule(leucineFormula).monoisotopicMass() - Molecule(lysineFormula).monoisotopicMass()},
+            {'R', Molecule(leucineFormula).monoisotopicMass() - Molecule(arginineFormula).monoisotopicMass()},
+            {'Q', Molecule(asparagineFormula).monoisotopicMass() - Molecule(glutamineFormula).monoisotopicMass()},
+            {'E', Molecule(asparticAcidFormula).monoisotopicMass() - Molecule(glutamicAcidFormula).monoisotopicMass()},
+            {'N', Molecule(glutamineFormula).monoisotopicMass() - Molecule(asparagineFormula).monoisotopicMass()},
+            {'D', Molecule(glutamicAcidFormula).monoisotopicMass() - Molecule(asparticAcidFormula).monoisotopicMass()}
+    };
+
+    return diannMutateAminoAcidTo;
+}

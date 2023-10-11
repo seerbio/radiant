@@ -20,7 +20,7 @@ public:
     }
 
     template <typename T>
-    static Err tranchVectorForParallelization(
+    static Err trancheVectorForParallelization(
             const QVector<T> &input,
             int desiredTrancheSize,
             QVector<QVector<T>> *output
@@ -53,7 +53,7 @@ public:
     }
 
     template <typename T>
-    static Err tranchVectorForParallelizationInOrder(
+    static Err trancheVectorForParallelizationInOrder(
             const QVector<T> &input,
             int desiredTrancheSegments,
             int trancheBuffer,
@@ -71,7 +71,7 @@ public:
         }
 
         const int minTrancheSize = 1;
-        const int tranchSize = std::max(
+        const int trancheSize = std::max(
                     static_cast<int>(std::round(input.size() / static_cast<double>(desiredTrancheSegments))),
                     minTrancheSize
         );
@@ -81,7 +81,7 @@ public:
 
             const T &inp = input.at(i);
 
-            if (i % tranchSize == 0 && i > 0) {
+            if (i % trancheSize == 0 && i > 0) {
 
                 for (int j = i; j < i + trancheBuffer; j++) {
 
@@ -107,39 +107,45 @@ public:
         ERR_RETURN;
     }
 
+    template <typename T>
+    static QVector<T> convertMapToVector(const QMap<int, T> &m, int vecSize){
+
+        QVector<double> vec(vecSize);
+
+        for (auto it = m.begin(); it != m.end(); it++) {
+
+            const int key = it.key();
+            const T val = it.value();
+
+            if (key >= vecSize) {
+                continue;
+            }
+
+            vec[key] = val;
+        }
+
+        return vec;
+    }
+
     template <typename T, typename U>
-    static Err tranchMapForParallelizationInOrder(
+    static Err trancheMapForParallelization(
             const QMap<T, U> &map,
             int numberOfProcesses,
-            QVector<QMap<T, U>> *tranchedMaps
+            QVector<QVector<QPair<T, U>>> *tranchedMaps
             ) {
 
         ERR_INIT
 
-        QVector<QPair<T, U>> pairs
-                = ParallelUtils::convertMapToVectorPairs(map);
+        QVector<QPair<T, U>> pairs = ParallelUtils::convertMapToVectorPairs(map);
 
-        const int itemsPerTranche = static_cast<int>(std::round(map.size() / static_cast<double>(numberOfProcesses)));
-
-        QMap<T,U> trancheMap;
-        for (int i = 0; i < pairs.size(); i++) {
-
-            if (i % itemsPerTranche == 0 && i > 0 && tranchedMaps->size() < numberOfProcesses - 1) {
-                tranchedMaps->push_back(trancheMap);
-                trancheMap.clear();
-            }
-
-            const QPair<T, U> &pr = pairs.at(i);
-            trancheMap.insert(pr.first, pr.second);
-        }
-
-        if (!trancheMap.isEmpty()) {
-            tranchedMaps->push_back(trancheMap);
-        }
+        e = trancheVectorForParallelization(
+                pairs,
+                numberOfProcesses,
+                tranchedMaps
+                );
 
         ERR_RETURN
     }
-
 
     template <typename T, typename U>
     static QVector<QPair<T, U>> convertMapToVectorPairs(const QMap<T, U> &map) {
@@ -157,8 +163,8 @@ public:
 
     template <typename T, typename U>
     static Err zip(
-            const T &z1,
-            const U &z2,
+            const QVector<T> &z1,
+            const QVector<U> &z2,
             QVector<QPair<T, U>> *zipResult
             ) {
 
@@ -173,11 +179,29 @@ public:
         ERR_RETURN
     }
 
+    template <typename T, typename U>
+    static Err zip(
+            const QVector<T> &z1,
+            const QVector<U> &z2,
+            QVector<QPointF> *zipResult
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isEqual(z1.size(), z2.size());
+
+        for (int i = 0; i < z1.size(); i++) {
+            zipResult->push_back({z1.at(i), z2.at(i)});
+        }
+
+        ERR_RETURN
+    }
+
     template <typename T>
     static Err zip(
-            const T &z1,
-            const T &z2,
-            QVector<QPointF> *zipResult
+            const QVector<T> &z1,
+            const QVector<T> &z2,
+            QVector<QPair<T, T>> *zipResult
     ) {
 
         ERR_INIT

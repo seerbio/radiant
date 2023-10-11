@@ -5,6 +5,7 @@
 #include "IRTPredictron.h"
 
 #include "AminoAcids.h"
+#include "MsCalibrationReader.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "NeuralNetModel.h"
@@ -112,6 +113,7 @@ Err IRTPredictron::Private::batchPredictIRT(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(peptideStringWithModsList); ree
+    e = ErrorUtils::isTrue(m_isInit); ree;
 
     const bool allSequenceLengthsAreValid = checkIfPeptideLengthsAreValid(
             peptideStringWithModsList,
@@ -162,3 +164,26 @@ Err IRTPredictron::batchPredictIRT(
     e = d_ptr->batchPredictIRT(peptideStringWithModsList, rawPredictionResults); ree
     ERR_RETURN
 }
+
+//Err IRTPredictron::buildNearestNeighborsIRTData(
+//        const QString &iRTRecalibrationFilePath,
+//        QVector<QPair<double, Coors>> *nnInputData
+//        ) {
+//
+//    ERR_INIT
+//
+//    e = ErrorUtils::fileExists(iRTRecalibrationFilePath); ree
+//
+//    QVector<IRTReCalibrationRow> iRTReCalibrationReaderRows;
+//    e  = CSVReader::read(
+//            iRTRecalibrationFilePath,
+//            &iRTReCalibrationReaderRows
+//    ); ree;
+//
+//    for (const IRTReCalibrationRow &row : iRTReCalibrationReaderRows) {
+//        nnInputData->push_back({row.scanTime, {row.iRT, 0.0}});
+//    }
+//
+//    ERR_RETURN
+//
+//}

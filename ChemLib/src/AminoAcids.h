@@ -33,6 +33,8 @@ public:
 
     [[nodiscard]] const QMap<QChar, MolecularFormula> &fixedModifications() const;
 
+    static QMap<QChar, double> diannMutateAminoAcidTo();
+
 private:
 
     QMap<QChar, Molecule> m_aminoAcids;

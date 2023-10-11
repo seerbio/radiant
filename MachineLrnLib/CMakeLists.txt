@@ -19,11 +19,13 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/ConvexOptimizer.cpp
         src/NearestNeighborsSearch.cpp
         src/NeuralNetModel.cpp
         )
 
 SET(HEADER_FILES
+        src/ConvexOptimizer.h
         src/NearestNeighborsSearch.h
         src/NeuralNetModel.h
         )

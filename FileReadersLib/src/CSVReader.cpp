@@ -107,5 +107,7 @@ Err CSVReader::readDataFromCSV(
         readRows->push_back(csvReaderInputBase);
     }
 
+    file.close();
+
     ERR_RETURN
 }

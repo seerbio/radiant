@@ -80,6 +80,15 @@ public:
             const QString &destFilePath
     );
 
+    static Err calcXCorr(
+            const QVector<double> &foundMassVals,
+            const QVector<double> &theoMassVals,
+            const QVector<double> &foundIntensityVals,
+            const QVector<double> &theoIntensityVals,
+            double ppmTol,
+            double *xCorr
+    );
+
 
 };
 

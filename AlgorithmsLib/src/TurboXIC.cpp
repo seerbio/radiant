@@ -51,6 +51,8 @@ public:
             double *mzMax
             );
 
+    bool isInit();
+
 private:
 
     RTree *m_rTree;
@@ -113,7 +115,8 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
 
     for (const rTreePoint &rtp : result) {
-        xicPoints[static_cast<int>(rtp.first.get<0>())] += rtp.second;
+        xicPoints.scanNumbersVsIntensityVals[static_cast<int>(rtp.first.get<0>())] += rtp.second;
+        xicPoints.scanNumberVsMzVals[static_cast<int>(rtp.first.get<0>())].push_back(rtp.first.get<1>());
     }
 
     return xicPoints;
@@ -134,7 +137,6 @@ Err TurboXIC::Private::getRTreeLimits(
     *scanNumberMax = m_rTree->bounds().max_corner().get<0>();
     *mzMin = m_rTree->bounds().min_corner().get<1>();
     *mzMax = m_rTree->bounds().max_corner().get<1>();
-
 
     ERR_RETURN
 }
@@ -184,6 +186,10 @@ ScanPoints TurboXIC::Private::extractSpectrum(
     std::sort(scanPoints.begin(), scanPoints.end(), MsUtilsNamespace::sortAscMz);
 
     return scanPoints;
+}
+
+bool TurboXIC::Private::isInit() {
+    return !m_rTree->empty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -245,4 +251,8 @@ ScanPoints TurboXIC::extractSpectrum(
         ) const {
 
     return d_ptr->extractSpectrum(mzMin, mzMax, scanNumberMin, scanNumberMax);
+}
+
+bool TurboXIC::isInit() {
+    return false;
 }

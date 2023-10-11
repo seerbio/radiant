@@ -21,7 +21,7 @@ namespace Error{
         eFileError,
         eFileIncorrectTypeError,
         eNetworkError,
-        eFunctionNotImplemented,
+        eFunctionNotImplemented
     };
 
 

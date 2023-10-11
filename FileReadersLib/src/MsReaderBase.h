@@ -63,7 +63,7 @@ public:
 
     void setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos);
 
-    void setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
+    Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
 
     virtual Err openFile(const QString &filePath);
 
@@ -83,6 +83,10 @@ public:
     QString filePath();
 
     bool isDIA();
+
+    bool isInit();
+
+    QPair<double, double> scanTimeMinMax();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
@@ -144,6 +148,8 @@ public:
     void printSize();
 
     Err printFileInfo();
+
+    Err writeTargetCollisionEnergyFile();
 
 protected:
 

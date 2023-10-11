@@ -76,7 +76,6 @@ void PythiaDIAWorkflowTests::execIRTTest() {
     e = pythiaDiaWorkflow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
             fragLibPath,
-            fragLibBackgroundPath,
             iRTReCalFilePath
     );
     QCOMPARE(e, eNoError);

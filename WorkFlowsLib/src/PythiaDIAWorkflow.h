@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
@@ -18,59 +19,83 @@
 
 using namespace Error;
 
-class FrameParallelInput;
-class PSMsReaderRow;
-class ScoreVectorsOutput;
+class MsReaderParquet;
+class ScoredCandidate;
+
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
 
 public:
 
-    PythiaDIAWorkflow() = default;
+    PythiaDIAWorkflow();
     ~PythiaDIAWorkflow() = default;
 
     Err init(
             const PythiaParameters &pythiaParameters,
             const QString &fragLibUri,
-            const QString &fragLibBackgroundUri
+            const QString &fastaUri
             );
-
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QString &fragLibUri,
-            const QString &fragLibBackgroundUri,
-            const QString &iRTReCalFilePath
-    );
 
     Err processFile(const QString &msDataFilePath);
 
-
 private:
 
-    Err buildPSMResultsForCalibrationFile(
-            const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoreVectorsOutput> *frameScoreVectorsAndExtractFilePaths
+    Err deisotopeScans(MsReaderParquet *msReaderParquet);
+
+    Err buildCalibration(MsReaderParquet *msReaderParquet);
+
+    Err buildCandidates(
+            int topNMs2Ions,
+            double selectionListFraction,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
+    );
+
+    Err buildCandidates(
+            const QVector<PeptideStringWithMods> &inclusionList,
+            int topNMs2Ions,
+            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
+    );
+
+    Err optimizeParameters(MsReaderParquet *msReaderParquet);
+
+    Err mainAnalysis(
+            MsReaderParquet *msReaderParquet,
+            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
+            QVector<ScoredCandidate> *scoredCandidatesAll
             );
 
-    static Err buildFrameScoreVectors(
-            const QVector<FrameParallelInput> &frameParallelInputs,
-            QVector<ScoreVectorsOutput> *scoreVectorsOutput
+    Err removeInterferingCandidates(
+            MsReaderParquet *msReaderParquet,
+            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QVector<ScoredCandidate> *scoredCandidatesAllUpdated
             );
 
-    static Err processFrameScoreVectors(
-            const QVector<ScoreVectorsOutput> &scoreVectorsOutputs,
-            const QString &msDataFilePath,
-            const PythiaParameters &pythiaParameters,
-            QVector<PSMsReaderRow> *psmsPreaderRows
+    Err applyNeuralNetClassifier(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            const QVector<ScoredCandidate> &scoredCandidatesCulled,
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<ScoredCandidate> *scoredCandidatesClassifier
             );
+
+    Err updateProteinGroupAnnotation(
+            const QString &fastaFilePath,
+            QVector<ScoredCandidate> *scoredCandidates
+    );
 
 private:
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
-    QString m_fragLibBackgroundUri;
-    QString m_iRTReCalFilePath;
+    QString m_fastaUri;
 
+    FragLibReader m_fragLibReader;
+    QVector<MsScanInfo> m_msScanInfos;
+
+    MsCalibratomatic m_msCalibratomatic;
+
+    const int m_minTopNMs2Ions;
+    const bool m_byIonsOnly;
 
 };
 

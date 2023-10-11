@@ -4,489 +4,371 @@
 
 #include "MsCalibratomatic.h"
 
-#include "CalibrationReader.h"
-#include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FragLibReader.h"
-#include "MsFrameScoretronProcessormatic.h"
-#include "ParallelUtils.h"
 #include "ParquetReader.h"
-#include "PSMsReader.h"
-#include "TandemFragmentPredictotron.h"
-
-#include <Eigen/Dense>
-
-#include <QtConcurrent/QtConcurrent>
+#include "SqlUtils.h"
+#include "XYMappermatic.h"
 
 
 MsCalibratomatic::MsCalibratomatic()
-: m_calPointK(3)
-, m_stDevNew(-1.0)
+: m_mzStDev(-1.0)
+, m_scanTimeStd(-1.0)
+, m_isInit(false)
 {}
 
-Err MsCalibratomatic::init(
-        const PythiaParameters &pythiaParameters,
-        const QString &firstPassSearchFilePath,
-        const QString &fragLibFilePath,
-        const QString &msReaderParquetFilePath,
-        int calPointK
-        ) {
+Err MsCalibratomatic::init(const QString &msCalibrationFilePath) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree
-    m_params = pythiaParameters;
+    e = ErrorUtils::fileExists(msCalibrationFilePath); ree
+    m_msCalibrationFilePath = msCalibrationFilePath;
 
-    e = ErrorUtils::fileExists(firstPassSearchFilePath); ree
-    e = ErrorUtils::fileExists(fragLibFilePath); ree
+    e = ParquetReader::read(
+            m_msCalibrationFilePath,
+            &m_msCalibarationReaderRows
+    ); ree;
 
-    e = ErrorUtils::isAboveThreshold(
-            calPointK,
-            0,
-            ErrorUtilsParam::ExcludeThreshold
-            ); ree
-    m_calPointK = calPointK;
-
-    e = buildMzCalibrator(firstPassSearchFilePath); ree
-    e = buildIRTCalibrator(
-            fragLibFilePath,
-            firstPassSearchFilePath,
-            msReaderParquetFilePath
-            ); ree
-
-//    qDebug() << "NearestNeighbors Treesize" << m_nnSearch.kdTreeSize();
+    e = init(m_msCalibarationReaderRows); ree;
 
     ERR_RETURN
 }
 
-namespace{
 
-    void sortScoreDesc(QVector<PSMsReaderRow> *psmsReaderRows) {
+Err MsCalibratomatic::init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
 
-        const auto sortLogic = [](const PSMsReaderRow &l, const PSMsReaderRow &r){
-            return l.score < r.score;
-        };
+    ERR_INIT
 
-        std::sort(psmsReaderRows->rbegin(), psmsReaderRows->rend(), sortLogic);
-    }
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
+    m_msCalibarationReaderRows = msCalibarationReaderRows;
 
-    Err buildNearestNeigbhorsDataMatrix(
-            const QString &firstPassSearchFilePath,
-            Eigen::MatrixX<double> *mat
+    e = buildIRTCalibrator(); ree
+    e = buildMzCalibrator(); ree
+
+    e = ErrorUtils::isTrue(m_mzStDev > 0.0); ree;
+    e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
+
+    qDebug() << "mzStDev" << m_mzStDev;
+    qDebug() << "scanTimeStDev" << m_scanTimeStd;
+
+    m_isInit = true;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err generateMetricsIRTtoScanTime(
+            const QVector<QPair<XVal, YVal>> &data,
+            double *stDevScanTimeDiff
             ) {
 
         ERR_INIT
+        e = ErrorUtils::isNotEmpty(data); ree;
 
-        //TODO redo this for calibration
+        const double testFraction = 0.2;
+        const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
-//        e = ErrorUtils::isEqual(scanNumbers.size(), mzFounds.size());
-//        e = ErrorUtils::isEqual(scanNumbers.size(), ppms.size());
-//
-//        const int colCount = 3;
-//        mat->resize(mzFounds.size(), colCount);
-//
-//        const Eigen::VectorX<double> scanNumbersVec = EigenUtils::convertQVectorToEigenVector(scanNumbers);
-//        const Eigen::VectorX<double> mzFoundsVec = EigenUtils::convertQVectorToEigenVector(mzFounds);
-//        const Eigen::VectorX<double> ppmsVec = EigenUtils::convertQVectorToEigenVector(ppms);
-//
-//        mat->col(0) = scanNumbersVec;
-//        mat->col(1) = mzFoundsVec;
-//        mat->col(2) = ppmsVec;
-
-        ERR_RETURN
-    }
-
-    Err filterDataMatrix(Eigen::MatrixX<double> *dataMatrix) {
-
-        ERR_INIT
-
-        const int expectedColSize = 3;
-
-        e = ErrorUtils::isTrue(dataMatrix->rows()); ree;
-        e = ErrorUtils::isEqual(
-                static_cast<int>(dataMatrix->cols()),
-                expectedColSize
-                ); ree;
-
-        const Eigen::VectorX<double> ppmColumn = dataMatrix->col(2);
-
-        const double ppmMean = EigenUtils::calculateMeanOfVector(ppmColumn);
-        const double ppmStDev = EigenUtils::calculateStDevOfVector(ppmColumn);
-
-        qDebug() << "OG ppm:stDev" << ppmMean << ppmStDev;
-
-        const double absThresholdPPM = std::abs(ppmMean * ppmStDev);
-
-        const int thresholdColIdx = 2;
-        EigenUtils::removeRowsAboveOrBelowThreshold(
-                absThresholdPPM,
-                thresholdColIdx,
-                EigenUtils::ThresholderDirection::Above,
-                dataMatrix
-                );
-
-        EigenUtils::removeRowsAboveOrBelowThreshold(
-                -absThresholdPPM,
-                thresholdColIdx,
-                EigenUtils::ThresholderDirection::Below,
-                dataMatrix
-        );
-
-        ERR_RETURN
-    }
-
-    Err buildNNInput(
-            const Eigen::MatrixX<double> &mat,
-            QVector<QPair<double, Coors>> *valuesVsTreePoints
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(mat.rows() > 0); ree;
-
-        for (int row = 0; row < mat.rows(); row++) {
-
-            const Eigen::VectorX<double> matRowQVec = mat.row(row);
-            QVector<double> matRow = EigenUtils::convertEigenVectorToQVector(matRowQVec);
-
-            const double ppm = matRow.back();
-            matRow.pop_back();
-
-            valuesVsTreePoints->push_back({ppm, matRow});
-        }
-
-        ERR_RETURN
-    }
-
-    Err calculateNewAccuracyMetrics(
-            Eigen::MatrixX<double> dataMatrix,
-            int calPointK,
-            NearestNeighborsSearch *nnSearch,
-            double *stDevNew
-            ) {
-
-        ERR_INIT
-
-        e =  ErrorUtils::isTrue(dataMatrix.size() > 0); ree;
-
-        QVector<QPair<DiffPPM, Coors>> valuesVsTreePoints;
-
-        const int yValIdx = static_cast<int>(dataMatrix.cols()) - 1;
-        const Eigen::VectorX<double> vec = dataMatrix.col(yValIdx);
-        const QVector<double> ppmDiffVals = EigenUtils::convertEigenVectorToQVector(vec);
-
-        buildNNInput(
-                dataMatrix,
-                &valuesVsTreePoints
-        );
-
-        const double ppmMean = MathUtils::mean(ppmDiffVals);
-        const double stDev = MathUtils::stDev(ppmDiffVals);
-        qDebug() << "OG Mean / StDev" << ppmMean << stDev;
-
-        const QPair<QVector<DiffPPM>, QVector<QVector<double>>> unzippedTreePoints
-                = ParallelUtils::unZip(valuesVsTreePoints);
-
-        const int calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped = calPointK + 1;
-        QVector<NNSearchResult> searchResults;
-        e = nnSearch->kNearestNeighborsSearch(
-                unzippedTreePoints.second,
-                calPointsForMetricsBecauseFirstResultIsInTrainingSetWillBePopped,
-                &searchResults
+        QVector<QPair<XVal, YVal>> trainingData;
+        QVector<QPair<XVal, YVal>> testData;
+        e = MathUtils::trainTestSplit(
+                data,
+                testFraction,
+                seed,
+                &trainingData,
+                &testData
         ); ree;
 
-        QVector<double> adjustedPPMs;
-        for (int i = 0; i < searchResults.size(); i++) {
+        XYMappermatic mapperMetrics;
+        e = mapperMetrics.init(trainingData); ree;
 
-            const NNSearchResult &sr = searchResults.at(i);
-            const double ogPPM = ppmDiffVals.at(i);
+        QVector<QPair<double, double>> actualVsPredicted;
+        QVector<double> diffs;
+        for (const QPair<XVal, YVal> &pr : testData) {
 
-            const double ppmCorrectionMean = sr.meanValues;
-
-            adjustedPPMs.push_back(ogPPM - ppmCorrectionMean);
+            double yPredicted;
+            e = mapperMetrics.predictY(pr.first, &yPredicted);
+            actualVsPredicted.push_back({pr.second, yPredicted});
+            diffs.push_back({pr.second - yPredicted});
         }
 
-        const double ppmMeanNew = MathUtils::mean(adjustedPPMs);
-        *stDevNew = MathUtils::stDev(adjustedPPMs);
-        qDebug() << "New Mean / StDev" << ppmMeanNew << *stDevNew;
+        const double rmse = MathUtils::rmse(actualVsPredicted);
+        const double mean = MathUtils::mean(diffs);
+        const double stDev = MathUtils::stDev(diffs);
+
+        qDebug() << "iRT Cal Metrics: rmse" << rmse << "mean" << mean << "stDev" << stDev;
+
+        *stDevScanTimeDiff = stDev;
 
         ERR_RETURN
     }
 
-}//namespace
-Err MsCalibratomatic::buildMzCalibrator(const QString &firstPassCSVFilePath) {
+} //namespace
+Err MsCalibratomatic::buildIRTCalibrator() {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_params.isValid()); ree;
-    e = ErrorUtils::fileExists(firstPassCSVFilePath); ree;
+    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
+    qDebug() << "Calibarating iRT->ScanTime";
 
-//    Eigen::MatrixX<double> dataMatrix;
-//    e = buildNearestNeigbhorsDataMatrix(
-//            m_firstPassSearchFilePath,
-//            &dataMatrix
-//            ); ree;
-//
-//    e = filterDataMatrix(&dataMatrix); ree;
-//
-//    const double trainingFraction = 0.9;
-//    const int trainSize = static_cast<int>(dataMatrix.rows() * trainingFraction);
-//    Eigen::MatrixX<double> dataMatrixTrain = dataMatrix.topRows(trainSize);
-//    Eigen::MatrixX<double> dataMatrixTest = dataMatrix.bottomRows(dataMatrix.rows() - trainSize);
-//    qDebug() << "Datapoints:" << dataMatrixTrain.rows();
-//
-//    QVector<QPair<double, Coors>> valuesVsTreePoints;
-//    buildNNInput(dataMatrixTrain, &valuesVsTreePoints);
-//
-//    e = m_nnSearch.init(valuesVsTreePoints); ree;
-//
-//    e = calculateNewAccuracyMetrics(
-//            dataMatrixTest,
-//            m_calPointK,
-//            &m_nnSearch,
-//            &m_stDevNew
-//            ); ree;
+    const auto insertLogic = [](const MsCalibarationReaderRow &r){
+        return QPair(r.iRTPredicted, r.scanTime);
+    };
+
+    QVector<QPair<XVal, YVal>> data;
+    std::transform(
+            m_msCalibarationReaderRows.begin(),
+            m_msCalibarationReaderRows.end(),
+            std::back_inserter(data),
+            insertLogic
+            );
+
+    double stDevScanTimeDiff;
+    e = generateMetricsIRTtoScanTime(data, &stDevScanTimeDiff); ree;
+    m_scanTimeStd = stDevScanTimeDiff;
+
+    e = m_iRTtoScanTimeMapper.init(data); ree;
 
     ERR_RETURN
 }
 
 namespace {
 
-    Err buildPeptideStringWithModsVsIRT(
-            const QMap<PeptideSequenceChargeKey, IRT> &peptideSequenceChargeKeyVsIRT,
-            QMap<PeptideStringWithMods, IRT> *peptideStringWithModsVsIRT
+    struct Inp {
+        double mzSearched = -1.0;
+        double mzFound = -1.0;
+        double stDev = -1.0;
+        double ppm = -1.0;
+    };
+
+    Err buildMzCalData(
+            const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+            QVector<Inp> *inputs
             ) {
 
         ERR_INIT
 
-        for (auto it = peptideSequenceChargeKeyVsIRT.begin(); it != peptideSequenceChargeKeyVsIRT.end(); it++) {
+        e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
 
-            const PeptideSequenceChargeKey &peptideSequenceChargeKey = it.key();
-            const IRT iRT = it.value();
+        for (const MsCalibarationReaderRow &row : msCalibarationReaderRows){
 
-            Charge charge;
-            PeptideStringWithMods peptideStringWithMods;
-            e = FragLibReader::peptideStringWithModsFromPeptideSequenceChargeKey(
-                    peptideSequenceChargeKey,
-                    &peptideStringWithMods,
-                    &charge
-                    ); ree
+            const QVector<double> &mzSearchedVec = row.mzSearchedVec;
+            const QVector<double> &mzFoundMeanVec = row.mzFoundMeanVec;
+            const QVector<double> &mzFoundStDevVec = row.mzFoundStDevVec;
 
-            peptideStringWithModsVsIRT->insert(peptideStringWithMods, iRT);
+            e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundMeanVec.size()); ree;
+            e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundStDevVec.size()); ree;
+
+            for (int i = 0; i < mzFoundMeanVec.size(); i++) {
+                Inp inp;
+                inp.mzFound = mzFoundMeanVec.at(i);
+                inp.mzSearched = mzSearchedVec.at(i);
+                inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<double>::min());
+
+                if (MathUtils::tZero(inp.mzSearched) || MathUtils::tZero(inp.mzFound)) {
+                    continue;
+                }
+
+                inp.ppm = 1e6 * (inp.mzFound - inp.mzSearched) / inp.mzSearched;
+                inputs->push_back(inp);
+            }
         }
 
         ERR_RETURN
     }
 
-    Err buildRTCalibrationData(
-            const QString &fragLibReaderFilePath,
-            const QString &firstPassCSVFilePath,
-            const QString &msReaderParquetFilePath,
-            QString *iRTOutputFilePath
-            ) {
+    Err removeMassOutliers(QVector<Inp> *inp) {
 
         ERR_INIT
 
-        FragLibReader fragLibReader;
-        e = fragLibReader.init(fragLibReaderFilePath); ree
+        qDebug() << "Removing mz outliers for calibration";
 
-        QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> peptideSequenceChargeKeyVsMS2Ions;
-        QMap<PeptideSequenceChargeKey, bool> peptideSequenceChargeKeyVsIsDecoy;
-        QMap<PeptideSequenceChargeKey, double> peptideSequenceChargeKeyVsMass;
-        QMap<PeptideSequenceChargeKey, IRT> peptideSequenceChargeKeyVsIRT;
+        e = ErrorUtils::isNotEmpty(*inp); ree;
 
-        e = fragLibReader.getMS2Ions(
-                &peptideSequenceChargeKeyVsMS2Ions,
-                &peptideSequenceChargeKeyVsIsDecoy,
-                &peptideSequenceChargeKeyVsMass
-                ); ree
-
-        QMap<PeptideStringWithMods, IRT> peptideStringWithModsVsIRT;
-        e = buildPeptideStringWithModsVsIRT(
-                peptideSequenceChargeKeyVsIRT,
-                &peptideStringWithModsVsIRT
-                ); ree;
-
-        QVector<CalibarationReaderRow> calibarationReaderRows;
-        e = CSVReader::read(
-                firstPassCSVFilePath,
-                &calibarationReaderRows
-                ); ree;
-
-        QVector<IRTReCalibrationRow> iRTReCalibrationRows;
-        for (const CalibarationReaderRow &row : calibarationReaderRows) {
-
-            PeptideStringWithMods peptideStringWithMods = row.peptideStringWithMods;
-            peptideStringWithMods = peptideStringWithMods.replace('L', 'X');
-            peptideStringWithMods = peptideStringWithMods.replace('I', 'X');
-
-            if (!peptideStringWithModsVsIRT.contains(peptideStringWithMods)) {
-                qDebug() << "Not found" << peptideStringWithMods;
-                continue;
-            }
-
-            IRTReCalibrationRow reCalRow;
-            reCalRow.iRT = peptideStringWithModsVsIRT.value(peptideStringWithMods);
-            reCalRow.scanTime = row.scanTime;
-
-            iRTReCalibrationRows.push_back(reCalRow);
-        }
-
-        *iRTOutputFilePath = msReaderParquetFilePath + ".iRT";
-
-        e = CSVReader::write(
-                iRTReCalibrationRows,
-                *iRTOutputFilePath
+        QVector<double> ppms;
+        std::transform(
+                inp->begin(),
+                inp->end(),
+                std::back_inserter(ppms),
+                [](const Inp &i){return i.ppm;}
                 );
 
+        QVector<double> stDevs;
+        std::transform(
+                inp->begin(),
+                inp->end(),
+                std::back_inserter(stDevs),
+                [](const Inp &i){return i.stDev;}
+        );
+
+        const double ppmMean = MathUtils::mean(ppms);
+        const double ppmStDev = MathUtils::stDev(ppms);
+        const auto ppmsMinMax = std::minmax_element(ppms.begin(), ppms.end());
+
+        const double stDevMean = MathUtils::mean(stDevs);
+        const double stDevStDev = MathUtils::stDev(stDevs);
+        const auto stDevsMinMax = std::minmax_element(stDevs.begin(), stDevs.end());
+
+        qDebug() << "ppmMean" << ppmMean << "ppmStDev"
+                << ppmStDev << "ppmMin" << *ppmsMinMax.first << "ppmMax" << *ppmsMinMax.second;
+        qDebug() << "stDevMean" << stDevMean << "stDevMean" << stDevStDev
+                << "stDevMin" << *stDevsMinMax.first << "stDevMax" << *stDevsMinMax.second;
+
+        const auto terminatorLogic = [&](const Inp &i){
+
+            const double ppmTol = ppmStDev * S_GLOBAL_SETTINGS.STDEV_MULTIPLIER;
+            const double ppmLo = ppmMean - ppmTol;
+            const double ppmHi = ppmMean + ppmTol;
+            const bool ppmOutOfRange = i.ppm < ppmLo || i.ppm > ppmHi;
+
+            const double stDevTol = stDevStDev * (S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+            const double stDevLo = stDevMean - stDevTol;
+            const double stDevHi = stDevMean + stDevTol;
+            const bool stDevOutOfRange = i.stDev < stDevLo || i.stDev > stDevHi;
+
+            return ppmOutOfRange || stDevOutOfRange;
+        };
+
+        const auto terminator = std::remove_if(inp->begin(), inp->end(), terminatorLogic);
+
+        inp->erase(terminator, inp->end());
+
         ERR_RETURN
     }
 
-}//namespace
-Err MsCalibratomatic::buildIRTCalibrator(
-        const QString &fragLibReaderFilePath,
-        const QString &firstPassCSVFilePath,
-        const QString &msReaderParquetFilePath
-        ) {
-
-    ERR_INIT
-
-    e = buildRTCalibrationData(
-            fragLibReaderFilePath,
-            firstPassCSVFilePath,
-            msReaderParquetFilePath,
-            &m_iRTCalibrationFilePath
-            ); ree
-
-
-
-
-    ERR_RETURN
-}
-
-namespace {
-
-    QVector<QVector<double>> buildNearestNeighborsInput(
-            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints
-            ) {
-
-        QVector<QVector<double>> nnInputs;
-
-        for (auto it = indexVsScanPoints.begin(); it != indexVsScanPoints.end(); it++) {
-
-            const FrameIndex frameIndex = it.key();
-            const ScanPoints &scanPoints = it.value();
-
-            for (const ScanPoint &sp : scanPoints) {
-                nnInputs.push_back({static_cast<double>(frameIndex), sp.x()});
-            }
-        }
-
-        return nnInputs;
-    }
-
-    QMap<FrameIndex, QVector<NNSearchResult>> groupNNSearchResultsByFrame(
-            const QVector<NNSearchResult> &nnSearchResults
-            ) {
-
-        QMap<FrameIndex, QVector<NNSearchResult>> frameIndexVsNNSearchResults;
-
-        for (const NNSearchResult &res : nnSearchResults) {
-
-            const auto frameIndex = static_cast<int>(res.searchedCoor.at(0));
-            frameIndexVsNNSearchResults[frameIndex].push_back(res);
-        }
-
-        return frameIndexVsNNSearchResults;
-    }
-
-    Err correctMzValues(
-            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
-            const QVector<NNSearchResult> &nnSearchResults,
-            QMap<FrameIndex, ScanPoints> *correctedIndexVsScanPoints
-            ) {
+    Err generateMetricsMzReCal(
+            const QVector<Inp> &inputs,
+            double *stDevMz
+    ) {
 
         ERR_INIT
+        e = ErrorUtils::isNotEmpty(inputs); ree;
 
-        e = ErrorUtils::isNotEmpty(indexVsScanPoints); ree;
-        e = ErrorUtils::isNotEmpty(nnSearchResults); ree;
+        const double testFraction = 0.2;
+        const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
-        const QMap<FrameIndex, QVector<NNSearchResult>> frameIndexVsNNSearchResults
-                =  groupNNSearchResultsByFrame(nnSearchResults);
+        QVector<QPair<double, double>> data;
+        std::transform(
+                inputs.begin(),
+                inputs.end(),
+                std::back_inserter(data),
+                [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
+                );
 
-        e = ErrorUtils::isEqual(
-                indexVsScanPoints.size(),
-                frameIndexVsNNSearchResults.size()
-                ); ree;
+        QVector<QPair<XVal, YVal>> trainingData;
+        QVector<QPair<XVal, YVal>> testData;
+        e = MathUtils::trainTestSplit(
+                data,
+                testFraction,
+                seed,
+                &trainingData,
+                &testData
+        ); ree;
 
-        for (auto it = indexVsScanPoints.begin(); it != indexVsScanPoints.end(); it++) {
+        XYMappermatic mapperMetrics;
+        e = mapperMetrics.init(trainingData); ree;
 
-            const FrameIndex frameIndex = it.key();
-            const ScanPoints &scanPoints = it.value();
-            const QVector<NNSearchResult> &nnSearchResultsFrame = frameIndexVsNNSearchResults.value(frameIndex);
+        QVector<QPair<double, double>> actualVsPredicted;
 
-            e = ErrorUtils::isEqual(
-                    scanPoints.size(),
-                    nnSearchResultsFrame.size()
-                    ); ree;
+        QVector<double> ppmOriginals;
+        QVector<double> ppmReCals;
+        for (const QPair<XVal, YVal> &pr : testData) {
 
-            for (int i = 0; i < scanPoints.size(); i++) {
+            double yPredicted;
+            e = mapperMetrics.predictY(pr.first, &yPredicted);
+            actualVsPredicted.push_back({pr.second, yPredicted});
 
-                const ScanPoint &scanPoint = scanPoints.at(i);
-                const NNSearchResult &nnSearchResult = nnSearchResultsFrame.at(i);
+            const double ppmOriginal = 1e6 * (pr.first - pr.second) / pr.second;
+            const double ppmReCal = 1e6 * (yPredicted - pr.second) / pr.second;
 
-                const double ogMz = scanPoint.x();
-                const double ogIntensity = scanPoint.y();
-                const double searchedMz = nnSearchResult.searchedCoor.at(1);
-                const int searchedFrameIndex = static_cast<int>(nnSearchResult.searchedCoor.at(0));
-
-                e = ErrorUtils::isTrue(MathUtils::tSame(ogMz, searchedMz)); ree;
-                e = ErrorUtils::isEqual(
-                        frameIndex,
-                        searchedFrameIndex
-                        ); ree;
-
-                const double meanDiffPPM = nnSearchResult.meanValues;
-                const double mzCorrectionAmount = (ogMz * meanDiffPPM) / 1e6;
-                const double correctedMz = ogMz - mzCorrectionAmount;
-
-                (*correctedIndexVsScanPoints)[frameIndex].push_back({correctedMz, ogIntensity});
-            }
+            ppmOriginals.push_back(ppmOriginal);
+            ppmReCals.push_back(ppmReCal);
 
         }
+
+        const double rmse = MathUtils::rmse(actualVsPredicted);
+        const double meanOriginal = MathUtils::mean(ppmOriginals);
+        const double stDevOriginal = MathUtils::stDev(ppmOriginals);
+        const double meanReCal = MathUtils::mean(ppmReCals);
+        const double stDevReCal = MathUtils::stDev(ppmReCals);
+
+        qDebug() << "Mz Cal Metrics: rmse" << rmse;
+        qDebug() << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
+        qDebug() << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
+
+        *stDevMz = stDevReCal;
 
         ERR_RETURN
     }
 
 }//namespace
-Err MsCalibratomatic::recalibratePoints(
-        const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
-        QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
-        ) {
+Err MsCalibratomatic::buildMzCalibrator() {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(indexVsScanPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
 
-    const QVector<QVector<double>> nnInputs
-            = buildNearestNeighborsInput(indexVsScanPoints);
+    //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
 
-    QVector<NNSearchResult> nnSearchResults;
-    e = m_nnSearch.kNearestNeighborsSearch(
-            nnInputs,
-            m_calPointK,
-            &nnSearchResults
-            ); ree;
+    QVector<Inp> inputs;
+    e = buildMzCalData(m_msCalibarationReaderRows, &inputs); ree;
+    e = removeMassOutliers(&inputs); ree;
 
-    e = correctMzValues(
-            indexVsScanPoints,
-            nnSearchResults,
-            recalIndexVsScanPoints
-            ); ree;
+    double stDevMz;
+    e = generateMetricsMzReCal(inputs, &stDevMz); ree;
+    m_mzStDev = stDevMz;
+
+    QVector<QPair<double, double>> data;
+    std::transform(
+            inputs.begin(),
+            inputs.end(),
+            std::back_inserter(data),
+            [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
+    );
+
+    e = m_mzToRecalMz.init(data); ree;
 
     ERR_RETURN
 }
 
-double MsCalibratomatic::newStDev() {
-    return m_stDevNew;
+Err MsCalibratomatic::recalibrateScanPoints(
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+        QMap<ScanNumber, ScanPoints> *reCalScanNumberVsScanPoints
+        ) {
+
+    ERR_INIT
+
+    for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const ScanPoints &scanPoints = it.value();
+
+        ScanPoints scanPointsRecal;
+        for (const ScanPoint &sp : scanPoints) {
+            double mzRecal;
+            e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
+            scanPointsRecal.push_back({mzRecal, sp.y()});
+        }
+
+        reCalScanNumberVsScanPoints->insert(scanNumber, scanPointsRecal);
+    }
+
+    ERR_RETURN
+}
+
+double MsCalibratomatic::mzStDev() {
+    return m_mzStDev;
+}
+
+double MsCalibratomatic::scanTimeStDev() {
+    return m_scanTimeStd;
+}
+
+Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) {
+    ERR_INIT
+    e = m_iRTtoScanTimeMapper.predictY(iRT, predictedScanTime); ree;
+    ERR_RETURN
+}
+
+bool MsCalibratomatic::isInit() const {
+    return m_isInit;
 }

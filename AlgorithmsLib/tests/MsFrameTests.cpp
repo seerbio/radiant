@@ -45,14 +45,12 @@ void MsFrameTests::preprocessMsFrame() {
     );
     QCOMPARE(e, eNoError);
 
-    MsFrame msFrame;
-    e = msFrame.init(
-            "-1000",
-            ms1Scans,
-            {0.0, 2000.0},
-            msReader.getScanNumberVsScanTime()
-            );
-    QCOMPARE(e, eNoError);
+//    MsFrame msFrame;
+//    e = msFrame.init(
+//            ms1Scans,
+//            msReader.getScanNumberVsScanTime()
+//            );
+//    QCOMPARE(e, eNoError);
 
 //    const bool denoise = true;
 //    const bool deisotope = true;

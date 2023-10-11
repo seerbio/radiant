@@ -5,6 +5,7 @@
 
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "MsUtils.h"
 #include "MathUtils.h"
 #include "FragLibReader.h"
 
@@ -22,11 +23,13 @@ TandemSpectraDeconvolvotron::TandemSpectraDeconvolvotron()
 , m_stopTolerance(-1.0)
 , m_isInit(false)
 , m_pValThreshold(-1.0)
+, m_ppmTol(-1.0)
 {}
 
 Err TandemSpectraDeconvolvotron::init(
         int precision,
         double mzMax,
+        double ppmTol,
         int iterationsMax,
         double stopTolerance,
         double pValThreshold
@@ -60,6 +63,7 @@ Err TandemSpectraDeconvolvotron::init(
 
     const double stopTolMin = 1e-100;
     m_stopTolerance = std::max(stopTolerance, stopTolMin);
+    m_ppmTol = ppmTol;
 
     m_pValThreshold = pValThreshold;
 
@@ -69,6 +73,28 @@ Err TandemSpectraDeconvolvotron::init(
 }
 
 namespace {
+
+    QMap<MzHashed, MZION> buildHashedMzVsUniqueTheoreticalMzVal(
+            const QList<QVector<MS2Ion>> &allMS2Ions,
+            int precision
+            ) {
+
+        QMap<MzHashed, MZION> hashedMzVsUniqueTheoreticalMzVal;
+        for(const QVector<MS2Ion> &ms2Ions : allMS2Ions) {
+
+            for (const MS2Ion &ms2Ion : ms2Ions) {
+
+                if (ms2Ion.mz < 0.0 || MathUtils::tZero(ms2Ion.mz)) {
+                    continue;
+                }
+
+                const int mzHashed = MathUtils::hashDecimal(ms2Ion.mz, precision);
+                hashedMzVsUniqueTheoreticalMzVal.insert(mzHashed, ms2Ion.mz);
+            }
+        }
+
+        return hashedMzVsUniqueTheoreticalMzVal;
+    }
 
     Eigen::SparseMatrix<double> buildDeconvolveMatrix(
             const QList<QVector<MS2Ion>> &targetsMs2Ions,
@@ -80,6 +106,7 @@ namespace {
         const int cols = targetsMs2Ions.size();
 
         Eigen::SparseMatrix<double> mat(rows, cols);
+        mat.setZero();
 
         int currentTargetIndex = 0;
         for (const QVector<MS2Ion> &targetIons : targetsMs2Ions) {
@@ -88,7 +115,7 @@ namespace {
 
                 const int mzHashed = MathUtils::hashDecimal(ion.mz, precision);
 
-                if (mzHashed >= rows || currentTargetIndex >= cols){
+                if (mzHashed >= rows || currentTargetIndex >= cols || mzHashed < 0 || currentTargetIndex < 0){
                     continue;
                 }
 
@@ -100,6 +127,34 @@ namespace {
         }
 
         return mat;
+    }
+
+    Eigen::VectorX<double> buildVecScanPoints(
+            const ExtractPoints &extractPoints,
+            int precision,
+            double mzMax
+            ) {
+
+        const int mzMaxHashed = MathUtils::hashDecimal(mzMax, precision);
+
+        Eigen::VectorX<double> vec(mzMaxHashed);
+        vec.setZero();
+
+        for (int i = 0; i < extractPoints.mzFoundVsSearched.size(); i++) {
+            const ScanPoint &mzFoundVsMzSearched = extractPoints.mzFoundVsSearched.at(i);
+            const ScanPoint &intensityFoundVsSearched = extractPoints.intensityFoundVsSearched.at(i);
+
+            const int mzSearchedHashed = MathUtils::hashDecimal(mzFoundVsMzSearched.y(), precision);
+            const double intensityFound = intensityFoundVsSearched.x();
+
+            if (mzSearchedHashed >= mzMaxHashed || mzSearchedHashed < 0) {
+                continue;
+            }
+
+            vec.coeffRef(mzSearchedHashed) = intensityFound;
+        }
+
+        return vec;
     }
 
     Err deconvolveStats(
@@ -120,7 +175,8 @@ namespace {
                 ErrorUtilsParam::ExcludeThreshold
                 ); ree;
 
-        const double residualSumOfSquares = (b - A * x).squaredNorm();
+        const Eigen::VectorX<double> vecProds = b - (A * x);
+        const double residualSumOfSquares = vecProds.squaredNorm();
 
         const int n = static_cast<int>(b.size());
         const int p = static_cast<int>(A.cols());
@@ -134,7 +190,9 @@ namespace {
         mse = MathUtils::tZero(mse) ? nearZero : mse;
 
         *fStat = (((x.transpose() * A.transpose() * A * x) / p) / mse)(0);
-        *pValFTest = 1 - boost::math::cdf(boost::math::fisher_f(df1, df2), *fStat);
+
+        auto fisherDist = boost::math::fisher_f(df1, df2);
+        *pValFTest = 1 - boost::math::cdf(fisherDist, *fStat);
 
         const Eigen::SparseMatrix<double> AtA = A.transpose() * A;
         Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
@@ -163,7 +221,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
         const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
         QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
-        ) const {
+        ) {
 
     ERR_INIT
 
@@ -182,11 +240,38 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
             m_mzMax
             );
 
-    Eigen::VectorX<double> vecScanPoints = EigenUtils::convertQPointFVecToEigen(
+    const QMap<MzHashed, MZION> hashedMzVsUniqueTheoreticalMzVal
+            = buildHashedMzVsUniqueTheoreticalMzVal(tandemPredictions.values(), m_precision);
+
+    const QList<double> &mzVals = hashedMzVsUniqueTheoreticalMzVal.values();
+
+    ScanPoints scanPointsToExtract;
+    std::transform(
+            mzVals.begin(),
+            mzVals.end(),
+            std::back_inserter(scanPointsToExtract),
+            [](const double d){return ScanPoint(d, 1.0);}
+            );
+
+    const ExtractPoints extractedScanPoints = MsUtils::extractPointsFromPoints(
             scanPoints,
+            scanPointsToExtract,
+            m_ppmTol
+    );
+
+    if (extractedScanPoints.mzFoundVsSearched.isEmpty()) {
+        ERR_RETURN
+    }
+
+    Eigen::VectorX<double> vecScanPoints = buildVecScanPoints(
+            extractedScanPoints,
             m_precision,
             m_mzMax
             );
+
+    if (MathUtils::tZero(vecScanPoints.maxCoeff())) {
+        ERR_RETURN
+    }
 
     vecScanPoints /= vecScanPoints.maxCoeff();
 
@@ -211,6 +296,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.frameFStat = -1.0;
         tdr.pValFrameFtest = -1.0;
         tdr.frameError = error;
+        tdr.scanNumberCandidateCount = static_cast<int>(x.size());
 
         const PeptideStringWithMods &peptideSequenceChargeKey = tandemPredictions.firstKey();
         pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
@@ -247,6 +333,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.frameFStat = fStat;
         tdr.pValFrameFtest = pValFTest;
         tdr.frameError = error;
+        tdr.scanNumberCandidateCount = static_cast<int>(x.size());
 
         pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
     }

@@ -40,6 +40,13 @@ private Q_SLOTS:
 
     void removeRowsBelowThresholdTest();
 
+    void minMaxScaleVectorTest();
+    void minMaxScaleMatrixTest();
+
+    void replaceNaNTest();
+    void trimVectorTest();
+
+
 };
 
 
@@ -88,6 +95,34 @@ void EigenUtilsTests::apexesTest() {
     QCOMPARE(apexResult.lastKey(), 5);
     QCOMPARE(static_cast<int>(apexResult.first()), 1);
     QCOMPARE(static_cast<int>(apexResult.last()), 1);
+
+
+    Eigen::VectorX<double> vec2(14);
+    vec2.coeffRef(0) = 9465.27;
+    vec2.coeffRef(1) = 0.0;
+    vec2.coeffRef(2) = 54665.6;
+    vec2.coeffRef(3) = 539886.0;
+    vec2.coeffRef(4) = 47320.7;
+    vec2.coeffRef(5) = 7205.26;
+    vec2.coeffRef(6) = 19682.5 ;
+    vec2.coeffRef(7) = 13817.7;
+    vec2.coeffRef(8) = 23367.9;
+    vec2.coeffRef(9) = 20809.4;
+    vec2.coeffRef(10) = 0;
+    vec2.coeffRef(11) = 0;
+    vec2.coeffRef(12) = 7581.3;
+    vec2.coeffRef(13) = 0;
+
+    QMap<int, double> apexResult2 = EigenUtils::apexes(vec2);
+
+    QCOMPARE(apexResult2.size(), 5);
+    QCOMPARE(apexResult2.firstKey(), 0);
+    QCOMPARE(apexResult2.lastKey(), 12);
+    QCOMPARE(static_cast<int>(apexResult2.first()), 9465);
+    QCOMPARE(static_cast<int>(apexResult2.last()), 7581);
+
+    qDebug() << apexResult2;
+
 }
 
 void EigenUtilsTests::troughtsTest() {
@@ -140,11 +175,11 @@ void EigenUtilsTests::rowWiseKLDivergeneceTest() {
     EigenUtils::klDivergence(mat1.row(1), mat2.row(1));
 
     //TODO make these resluts into a test.
-    for (int i = 0; i < 3; i++) {
-        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
-    }
-
-    std::cout << res << std::endl;
+//    for (int i = 0; i < 3; i++) {
+//        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;
+//    }
+//
+//    std::cout << res << std::endl;
 
 }
 
@@ -192,6 +227,55 @@ void EigenUtilsTests::removeRowsBelowThresholdTest() {
     QCOMPARE(matIntAbove.coeffRef(0,0), 1);
     QCOMPARE(matIntAbove.coeffRef(1,0), 3);
 
+}
+
+void EigenUtilsTests::minMaxScaleVectorTest() {
+
+    Eigen::VectorX<double> vec(4);
+    vec << 1, 2, 3, 4;
+
+    EigenUtils::minMaxScaleVector(&vec);
+
+    QVERIFY(MathUtils::tSame(vec.coeff(2), 0.66666));
+}
+
+void EigenUtilsTests::minMaxScaleMatrixTest() {
+
+    Eigen::MatrixX<double> mat(4, 2);
+    mat << 1, 1, 2, 2, 3, 3, 4, 4;
+
+    EigenUtils::minMaxScaleMatrix(&mat);
+
+    QVERIFY(MathUtils::tSame(mat.coeff(2,0), 0.66666));
+    QVERIFY(MathUtils::tSame(mat.coeff(2,1), 0.66666));
+}
+
+void EigenUtilsTests::replaceNaNTest() {
+
+    Eigen::VectorX<double> vec(4);
+    vec.setZero();
+
+    vec /= 0.0;
+    EigenUtils::replaceNaN(0.0, &vec);
+    QVERIFY(MathUtils::tSame(vec.coeff(1), 0.0));
+
+    Eigen::MatrixX<double> mat(4, 4);
+    mat.setZero();
+
+    mat /= 0.0;
+    EigenUtils::replaceNaN(0.0, &mat);
+    QVERIFY(MathUtils::tSame(mat.coeff(1, 1), 0.0));
+}
+
+void EigenUtilsTests::trimVectorTest() {
+
+    Eigen::VectorX<int> vec(7);
+    vec << 0, 0, 1, 2, 1, 0, 0;
+
+    const Eigen::VectorX<int> vecTrimmed = EigenUtils::trimVector(vec);
+
+    QCOMPARE(vecTrimmed.size(), 3);
+    QCOMPARE(vecTrimmed.sum(), 4);
 }
 
 

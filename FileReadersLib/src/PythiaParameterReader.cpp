@@ -18,10 +18,12 @@ Modification::Modification(QChar residue,
 , formula(formula){}
 
 
-Modification::Modification(const QString &positionalLocation,
-                           const QString &name,
-                           const ModificationType &type,
-                           const QString &formula)
+Modification::Modification(
+        const QString &positionalLocation,
+        const QString &name,
+        const ModificationType &type,
+        const QString &formula
+        )
 : positionalLocation(positionalLocation)
 , name(name)
 , type(type)
@@ -408,19 +410,19 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
-    pythiaParameters.ms2ExtractionWidthPPM = 15.0;
+    pythiaParameters.ms2ExtractionWidthPPM = 17.0;
     pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;
-    pythiaParameters.skipScanCount = 1;
+    pythiaParameters.skipScanCount = 0;
     pythiaParameters.useMeanMz = true;
-    pythiaParameters.filterLength = 3;
-    pythiaParameters.smoothCount = 1;
+    pythiaParameters.filterLength = 5;
+    pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 13;
-    pythiaParameters.minFoundMzPeaks = 5;
+    pythiaParameters.topNMs2Ions = 6;
+    pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;

@@ -5,7 +5,6 @@
 #include "BiophysicalCalcs.h"
 #include "MsReaderParquet.h"
 #include "MsFrameScoretron.h"
-#include "MsFrameScoretronProcessormatic.h"
 #include "ParallelUtils.h"
 #include "PythiaParameterReader.h"
 

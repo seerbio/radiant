@@ -4,7 +4,12 @@
 
 #include "MathUtils.h"
 
+#include "ErrorUtils.h"
 
+#include <iostream>
+#include <random>
+#include <set>
+#include <vector>
 
 
 namespace MathUtilsConstants {
@@ -44,4 +49,35 @@ QPointF MathUtils::closestXValPoint(const QVector<QPointF> &vec, double value) {
     }
 
     return *it;
+}
+
+QMap<int, bool> MathUtils::generateRandomSelectionList(
+        int totalSizeOfList,
+        int desiredSizeRandomNumbers,
+        int seed
+        ) {
+
+    const int randomValMin = 0;
+    const int randomValmax = totalSizeOfList;
+
+    std::mt19937 gen(seed);
+
+    std::uniform_int_distribution<int> distribution(randomValMin, randomValmax);
+
+    std::set<int> uniqueNumbers; // To store unique random numbers
+
+    while (uniqueNumbers.size() < desiredSizeRandomNumbers) {
+        const int randomNum = distribution(gen);
+        uniqueNumbers.insert(randomNum);
+    }
+
+    std::vector<int> uniqueNumbersVector(uniqueNumbers.begin(), uniqueNumbers.end());
+
+    QMap<int, bool> selectionList;
+
+    for (int i : uniqueNumbersVector) {
+        selectionList.insert(i, true);
+    }
+
+    return selectionList;
 }

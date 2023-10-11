@@ -21,6 +21,7 @@ struct TandemDeconvolverResult {
     double frameFStat = -1.0;
     double pValFrameFtest = -1.0;
     double frameError = -1.0;
+    int scanNumberCandidateCount = -1;
 };
 
 
@@ -34,6 +35,7 @@ public:
     Err init(
             int precision,
             double mzMax,
+            double ppmTol,
             int iterationsMax,
             double stopTolerance,
             double pValThreshold
@@ -43,8 +45,7 @@ public:
             const ScanPoints &scanPoints,
             const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
             QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
-            ) const;
-
+            );
 
 private:
 
@@ -53,6 +54,7 @@ private:
     double m_mzMax;
     double m_stopTolerance;
     double m_pValThreshold;
+    double m_ppmTol;
 
     bool m_isInit;
 

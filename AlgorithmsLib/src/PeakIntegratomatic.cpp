@@ -72,6 +72,22 @@ namespace {
         return *std::max_element(vecTrunc.begin(), vecTrunc.end());
     }
 
+    Eigen::VectorX<double> addPaddingToVector(
+            const Eigen::VectorX<double> &vec,
+            int paddingCount
+            ) {
+
+        const int finalPaddingSize = vec.size() > paddingCount ? paddingCount : 2 * paddingCount;
+
+        Eigen::VectorX<double> vecPadded(vec.size() + finalPaddingSize);
+        vecPadded.setZero();
+
+        const int vecInsertPoint = vec.size() > paddingCount ? 0 : paddingCount;
+        vecPadded.segment(vecInsertPoint, vec.size()) = vec;
+
+        return vecPadded;
+    }
+
 }//namespace
 Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
         const QVector<double> &intensityVec,
@@ -87,16 +103,18 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
     peakLimits->clear();
     intensityVecSmoothed->clear();
 
-    const double filterToVecRejectionRatio = 1.5;
-    if (intensityVec.size() < static_cast<int>(std::round(m_gaussFilter.size() * filterToVecRejectionRatio))) {
-        *peakLimits = {{0, intensityVec.size() -1}};
-        ERR_RETURN
-    }
+    const Eigen::VectorX<double> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
 
-    Eigen::VectorX<double> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
+    const int paddingMultiplier = 1;
+    const int paddingSize = static_cast<int>(m_gaussFilter.size()) * paddingMultiplier;
+
+    Eigen::VectorX<double> smoothedVecPadded = addPaddingToVector(
+            smoothedVec,
+            paddingSize
+            );
 
     for (int i = 0; i < m_params.smoothCount; i++) {
-        smoothedVec = EigenKernelUtils::convolveVectorWithKernel(smoothedVec, m_gaussFilter);
+        smoothedVecPadded = EigenKernelUtils::convolveVectorWithKernel(smoothedVecPadded, m_gaussFilter);
     }
 
     const double maxVal = smoothedVec.maxCoeff();
@@ -105,11 +123,12 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
         ERR_RETURN
     }
 
-    smoothedVec /= maxVal;
-    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVec);
+    smoothedVecPadded /= maxVal;
+
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
 
     Eigen::VectorX<double> mexicanHatsmoothedVec
-        = EigenKernelUtils::convolveVectorWithKernel(smoothedVec, m_mexicanHatFilter);
+        = EigenKernelUtils::convolveVectorWithKernel(smoothedVecPadded, m_mexicanHatFilter);
 
 //#define PRINT_VECS
 #ifdef PRINT_VECS
@@ -131,7 +150,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     int startIndex = 0;
     const double signalToNoiseThreshold
-        = m_params.signalToNoiseRatio * MathUtils::median(smoothedVec);
+        = m_params.signalToNoiseRatio * MathUtils::median(smoothedVecPadded);
 
     for (int mx : maximaKeys) {
 
@@ -156,13 +175,23 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
             const double maxOfVecSegment = maxOfVectorSegment(*intensityVecSmoothed, startVal, endVal);
 
             if (maxOfVecSegment > signalToNoiseThreshold) {
-                peakLimits->push_back({startVal, endVal});
+
+                const bool sizeCheck = intensityVec.size() > paddingSize;
+
+                const int startValCorrected = sizeCheck ? startVal : startVal - paddingSize;
+                const int endValCorrected = sizeCheck ? endVal : endVal - paddingSize;
+
+                peakLimits->push_back({startValCorrected, endValCorrected});
             }
 
             startIndex = endIndex;
             break;
         }
     }
+
+    smoothedVecPadded /= smoothedVecPadded.maxCoeff();
+    smoothedVecPadded *= maxVal;
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
 
     ERR_RETURN
 }
@@ -213,6 +242,9 @@ namespace {
 
         ERR_INIT
 
+        const int filterLengthMin = 5;
+        filterLength = std::max(filterLength, filterLengthMin);
+
         const int order = 2;
         const int derivative = 0;
         const int rate = 1;
@@ -237,31 +269,7 @@ Err PeakIntegratomatic::simpleIntegrator(
         double stopThresholdFraction,
         int filterLength,
         int smoothCount,
-        PeakIntegrationIndexes *peakIntegrationIndexes
-        ) {
-
-    ERR_INIT
-
-    QVector<double> smoothedVecNoReturn;
-    e = simpleIntegrator(
-            vec,
-            stopThresholdFraction,
-            filterLength,
-            smoothCount,
-            peakIntegrationIndexes,
-            &smoothedVecNoReturn
-            ); ree;
-
-    ERR_RETURN
-}
-
-
-Err PeakIntegratomatic::simpleIntegrator(
-        const QVector<double> &vec,
-        double stopThresholdFraction,
-        int filterLength,
-        int smoothCount,
-        PeakIntegrationIndexes *peakIntegrationIndexes,
+        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes,
         QVector<double> *smoothedVec
 ) {
 
@@ -290,57 +298,67 @@ Err PeakIntegratomatic::simpleIntegrator(
             &eVec
     ); ree;
 
-    const QVector<QPair<int, double>> vecApex = EigenUtils::returnTopXIndexAndValues(eVec, 1);
-    const int apexIndex = vecApex.front().first;
-    const double apexValue = vecApex.front().second;
-    const double stopThreshold = apexValue * stopThresholdFraction;
+    const int topNApexes = std::numeric_limits<int>::max();
+    const QVector<QPair<int, double>> vecApexs = EigenUtils::returnTopXIndexAndValues(eVec, topNApexes);
 
-    double rightStopVal = apexValue;
-    int rightStopIndex = apexIndex;
-
-    int rightCurrentIndex = apexIndex;
-    while (rightCurrentIndex < eVec.size()) {
-
-        const double currentValue = eVec(rightCurrentIndex);
-        if (currentValue < stopThreshold) {
-            rightStopIndex = rightCurrentIndex;
-            break;
-        }
-
-        if (currentValue <= rightStopVal) {
-            rightStopVal = currentValue;
-            rightStopIndex = rightCurrentIndex;
-            rightCurrentIndex++;
-            continue;
-        }
-
-        break;
+    for (const auto &v : vecApexs) {
+        qDebug() << v;
     }
+    qDebug() << vecApexs.size();
 
-    double leftStopVal = apexValue;
-    int leftStopIndex = apexIndex;
+    for (const QPair<int, double> &vecApex : vecApexs) {
+        const int apexIndex = vecApex.first;
+        const double apexValue = vecApex.second;
+        const double stopThreshold = apexValue * stopThresholdFraction;
 
-    int leftCurrentIndex = apexIndex;
-    while (leftCurrentIndex < eVec.size()) {
+        double rightStopVal = apexValue;
+        int rightStopIndex = apexIndex;
 
-        const double currentValue = eVec(leftCurrentIndex);
-        if (currentValue < stopThreshold) {
-            leftStopIndex = leftCurrentIndex;
+        int rightCurrentIndex = apexIndex;
+        while (rightCurrentIndex < eVec.size()) {
+
+            const double currentValue = eVec(rightCurrentIndex);
+            if (currentValue < stopThreshold) {
+                rightStopIndex = rightCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= rightStopVal) {
+                rightStopVal = currentValue;
+                rightStopIndex = rightCurrentIndex;
+                rightCurrentIndex++;
+                continue;
+            }
+
             break;
         }
 
-        if (currentValue <= leftStopVal) {
-            leftStopVal = currentValue;
-            leftStopIndex = leftCurrentIndex;
-            leftCurrentIndex--;
-            continue;
+        double leftStopVal = apexValue;
+        int leftStopIndex = apexIndex;
+
+        int leftCurrentIndex = apexIndex;
+        while (leftCurrentIndex < eVec.size()) {
+
+            const double currentValue = eVec(leftCurrentIndex);
+            if (currentValue < stopThreshold) {
+                leftStopIndex = leftCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= leftStopVal) {
+                leftStopVal = currentValue;
+                leftStopIndex = leftCurrentIndex;
+                leftCurrentIndex--;
+                continue;
+            }
+
+            break;
         }
 
-        break;
+        peakIntegrationIndexes->push_back({leftStopIndex, rightStopIndex});
     }
 
     *smoothedVec = EigenUtils::convertEigenVectorToQVector(eVec);
-    *peakIntegrationIndexes = {leftStopIndex, rightStopIndex};
 
     ERR_RETURN
 }

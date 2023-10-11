@@ -19,7 +19,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/CalibrationReader.cpp
+        src/MsCalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
         src/DIAMzTargetsReader.cpp
@@ -38,7 +38,7 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
-        src/CalibrationReader.h
+        src/MsCalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
         src/DIAMzTargetsReader.h
@@ -85,6 +85,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
         UtilsLib
+        KarnnLib
         Parquet::parquet_static
         )
 

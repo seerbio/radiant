@@ -53,8 +53,11 @@ Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
 
+    e = ErrorUtils::fileExists(filePath); ree;
+    m_filePath = filePath;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             &msParquetReaderRows
     ); ree;
@@ -78,8 +81,11 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
+    e = ErrorUtils::fileExists(filePath); ree;
+    m_filePath = filePath;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             columnToFilterBy,
             filterRange,
@@ -102,8 +108,11 @@ Err MsReaderParquet::openFile(
 
     ERR_INIT
 
+    e = ErrorUtils::fileExists(filePath); ree;
+    m_filePath = filePath;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
-    ParquetReader::read(
+    e = ParquetReader::read(
             filePath,
             columnToFilterBy,
             &msParquetReaderRows

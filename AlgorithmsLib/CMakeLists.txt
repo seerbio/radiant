@@ -22,11 +22,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/DecoyGeneratomatic.cpp
-        src/DeisotoperTandem.cpp
+        src/CandidateProcessertron.cpp
+        src/ClassifierWeightsManager.cpp
+        src/MS2DataExtractomatic.cpp
+        src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
-        src/FeatureFinderHillClusterTron.cpp
-        src/FragLibIonRTree.cpp
         src/IRTPredictron.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2ChargeDeconvolvotron.cpp
@@ -34,10 +35,10 @@ SET(SOURCE_FILES
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
         src/MsFrameScoretron.cpp
-        src/MsFrameScoretronProcessormatic.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
+        src/XYMappermatic.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
@@ -47,11 +48,12 @@ SET(SOURCE_FILES
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/DecoyGeneratomatic.h
-        src/DeisotoperTandem.h
+        src/CandidateProcessertron.h
+        src/ClassifierWeightsManager.h
+        src/MS2DataExtractomatic.h
+        src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
-        src/FeatureFinderHillClusterTron.h
-        src/FragLibIonRTree.h
         src/IRTPredictron.h
         src/IsotopicDistributionBuilder.h
         src/MS2ChargeDeconvolvotron.h
@@ -59,10 +61,10 @@ SET(HEADER_FILES
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsFrameScoretron.h
-        src/MsFrameScoretronProcessormatic.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
+        src/XYMappermatic.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
         src/TandemSpectraDeconvolvotron.h
@@ -102,6 +104,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         FileReadersLib
         MachineLrnLib
+        PyTorchLib
         UtilsLib
         )
 

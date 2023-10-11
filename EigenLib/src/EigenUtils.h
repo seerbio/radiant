@@ -13,6 +13,7 @@
 
 #include <QFile>
 #include <QVector>
+#include <QMap>
 
 #include <Eigen/Dense>
 
@@ -25,8 +26,13 @@ class EIGENLIB_EXPORTS EigenUtils {
 public:
 
     template<typename T>
+    static void replaceNaN(T replaceVal, Eigen::VectorX<T> *vec){
+        *vec = vec->array().isNaN().select(replaceVal, vec->array());
+    }
+
+    template<typename T>
     static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
-        mat->array().isNaN().select(replaceVal, mat->array());
+        *mat = mat->array().isNaN().select(replaceVal, mat->array());
     }
 
     template<typename T>
@@ -131,12 +137,14 @@ public:
         return vec;
     }
 
-
     /*!
     * @brief Fits a polynomial to an eigen vector given an order.
     */
-    static void fitPolynomialQRDecomposition(const Eigen::MatrixXd points, int order,
-                                             QVector<double> *coeff) {
+    static void fitPolynomialQRDecomposition(
+            const Eigen::MatrixXd &points,
+            int order,
+            QVector<double> *coeff
+            ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
         Eigen::VectorXd yv_mapped = points.col(1);
@@ -201,7 +209,6 @@ public:
         return mat;
     }
 
-
     template <typename T>
     static void thresholdMatrix(T thresholdValue,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
@@ -211,7 +218,6 @@ public:
     static void thresholdMatrix(T thresholdValue, T fillVal,  Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
-
 
     template <typename T>
     static void thresholdVector(T thresholdValue,  Eigen::VectorX<T> *vec) {
@@ -283,7 +289,6 @@ public:
         return mat1.array() * mat1mat2QuotientLog2Sum;
     }
 
-
     template <typename EigenMatrix>
     static int nonZeros(EigenMatrix v1) {
 
@@ -299,11 +304,28 @@ public:
         return nonZeros;
     }
 
+    template <typename T>
+    static QPair<int, T> returnTopIndexAndValue(const Eigen::VectorX<T> &vec) {
+
+        QPair<int, T> maxIndex = {-1, std::numeric_limits<T>::min()};
+
+        for (int i = 0; i < vec.size(); i++) {
+
+            const T currentVal = vec.coeff(i);
+
+            if (currentVal > maxIndex.second) {
+                maxIndex = {i, currentVal};
+            }
+        }
+
+        return maxIndex;
+    }
 
     template <typename T>
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
-        topX = std::min(topX, static_cast<int>(vec.size()));
+//        topX = std::min(topX, static_cast<int>(vec.size()));
+        topX = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
 
         std::vector<double> stdVec(vec.data(), vec.data() + vec.size());
 
@@ -313,13 +335,12 @@ public:
         }
 
         const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
-        std::sort(ogIndexPoints.rbegin(), ogIndexPoints.rend(), sortLogic);
+        std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + topX, ogIndexPoints.end(), sortLogic);
 
         ogIndexPoints.resize(topX);
 
         return ogIndexPoints;
     }
-
 
     template <typename T>
     static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
@@ -331,11 +352,34 @@ public:
         return ev;
     }
 
-
     template <typename T>
     static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
         std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
         return QVector<T>::fromStdVector(vecReturn);
+    }
+
+    template <typename T>
+    static Eigen::VectorX<T> convertQMapToEigenVector(
+            const QMap<int, T> &m,
+            int pointCount
+            ) {
+
+        Eigen::VectorX<T> vec(pointCount);
+        vec.setZero();
+
+        for (auto it = m.begin(); it != m.end(); it++) {
+
+            const int vecIndex = it.key();
+            const double val = it.value();
+
+            if (vecIndex < 0 || vecIndex >= pointCount) {
+                continue;
+            }
+
+            vec.coeffRef(vecIndex) = val;
+        }
+
+        return vec;
     }
 
     /*!
@@ -346,11 +390,18 @@ public:
     */
     template <typename T>
     static QMap<int, T> apexes(
-            const Eigen::VectorX<T> &vec,
+            const Eigen::VectorX<T> &_vec,
             int precision = 1e4
     ){
 
         QMap<int, T> apexIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
 
         const int vecSize = static_cast<int>(vec.size());
         for (int index = 0; index < vecSize; index++) {
@@ -362,7 +413,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue >= rightPointValue) {
-                    apexIndicies.insert(index,  vec.coeff(index));
+                    apexIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -373,7 +424,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue > leftPointValue) {
-                    apexIndicies.insert(index,  vec.coeff(index));
+                    apexIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -383,13 +434,12 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
-                apexIndicies.insert(index,  vec.coeff(index));
+                apexIndicies.insert(index,  _vec.coeff(index));
             }
         }
 
         return apexIndicies;
     }
-
 
     /*!
     * \brief Finds all troughs in a eigen vector.
@@ -399,11 +449,18 @@ public:
     */
     template <typename T>
     static QMap<int, T> troughs(
-            const Eigen::VectorX<T> &vec,
+            const Eigen::VectorX<T> &_vec,
             int precision = 1e4
                     ){
 
         QMap<int, T> troughtIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
 
         const int vecSize = static_cast<int>(vec.size());
         for (int index = 0; index < vecSize; index++) {
@@ -415,7 +472,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue <= rightPointValue) {
-                    troughtIndicies.insert(index,  vec.coeff(index));
+                    troughtIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -426,7 +483,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue < leftPointValue) {
-                    troughtIndicies.insert(index,  vec.coeff(index));
+                    troughtIndicies.insert(index,  _vec.coeff(index));
                 }
 
                 continue;
@@ -436,13 +493,12 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue < leftPointValue && centerPointValue <= rightPointValue){
-                troughtIndicies.insert(index,  vec.coeff(index));
+                troughtIndicies.insert(index,  _vec.coeff(index));
             }
         }
 
         return troughtIndicies;
     }
-
 
     template<typename T>
     static Eigen::VectorX<T> rowWiseCosineSimilarOfMatrices(
@@ -545,7 +601,7 @@ public:
 
 
     template<typename T>
-    static Err printMatrix(
+    static Err writeMatrixToFile(
             const Eigen::MatrixX<T> &mat,
             const QString &outputFilePath
     ) {
@@ -579,6 +635,87 @@ public:
 
         ERR_RETURN
     }
+
+    template<typename T>
+    static void minMaxScaleVector(Eigen::VectorX<T> *vec) {
+
+        const T maxVal = vec->maxCoeff();
+        const T minVal = vec->minCoeff();
+        const T minMaxDiff = std::max(maxVal - minVal, std::numeric_limits<T>::min());
+
+        *vec = (vec->array() - minVal) / minMaxDiff;
+    }
+
+    template<typename T>
+    static void minMaxScaleMatrix(Eigen::MatrixX<T> *mat) {
+        for (int col = 0; col < mat->cols(); col++) {
+
+            Eigen::VectorX<T> vec = mat->col(col);
+            minMaxScaleVector(&vec);
+            mat->col(col) = vec;
+        }
+    }
+
+    template<typename T>
+    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
+
+        const int rows = matA.size();
+        const int columns = matA.front().size();
+        Eigen::MatrixX<T> mat(rows, columns);
+        mat.setZero();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                mat.coeffRef(i, j) = matA[i][j];
+            }
+        }
+
+        return mat;
+    }
+
+    template<typename T>
+    static QVector<QVector<T>> convertEigenMatrixToQVectors(const Eigen::MatrixX<T> &mat) {
+
+        QVector<QVector<T>> vecs;
+        for (int row = 0; row < mat.rows(); row++) {
+
+            Eigen::VectorX<T> v = mat.row(row);
+            vecs.push_back(EigenUtils::convertEigenVectorToQVector<T>(v));
+        }
+
+        return vecs;
+    }
+
+    template<typename T>
+    static Eigen::VectorX<T> trimVector(const Eigen::VectorX<T> &vec) {
+
+        const int center = EigenUtils::returnTopIndexAndValue(vec).first;
+
+        int currentIndex = center - 1;
+        int leftStart = currentIndex;
+        while(currentIndex >= 0) {
+            const double currentValue = vec.coeff(currentIndex);
+            if (MathUtils::tZero(currentValue)) {
+                break;
+            }
+            leftStart = currentIndex;
+            currentIndex--;
+        }
+
+        currentIndex = center + 1;
+        int rightStart = currentIndex;
+        while(currentIndex < vec.size()) {
+            const double currentValue = vec.coeff(currentIndex);
+            if (MathUtils::tZero(currentValue)) {
+                break;
+            }
+            rightStart = currentIndex;
+            currentIndex++;
+        }
+
+        return vec.segment(leftStart, rightStart - leftStart + 1);
+    }
+
 };
 
 #endif //EIGENUTILS_H

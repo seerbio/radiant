@@ -33,13 +33,9 @@ int main(int argc, char *argv[]) {
     const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
     const QString fragLibPath = cliParameters.fragLibFilePath;
-    const QString fragLibBackgroundPath = cliParameters.fragLibFilePath;
+    const QString fastaFilePath = cliParameters.fastaFilePath;
     const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
-    const QString msDataFilesDirectory = cliParameters.msDataFilesDirectory;
-
-    //TODO make sure this optional argument works.
-    const QString iRTReCalFilePath
-            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
+    const QString msDataFile = cliParameters.msDataFile;
 
 
     PythiaParameters pythiaParameters;
@@ -56,43 +52,20 @@ int main(int argc, char *argv[]) {
     e = pythiaDiaWorkflow.init(
             pythiaParameters,
             fragLibPath,
-            fragLibBackgroundPath,
-            iRTReCalFilePath
+            fastaFilePath
     );
     if (e != eNoError) {
         qDebug() << "Error initializing Pythia Workflow Libraries";
         return 1;
     }
 
-    QStringList dataFiles;
-    e = CommandLineParserUtils::getDataFilesFromDirectory(
-            msDataFilesDirectory,
-            &dataFiles
-            );
+    e = pythiaDiaWorkflow.processFile(cliParameters.msDataFile);
     if (e != eNoError) {
-        qDebug() << "Error reading data files.";
+        qDebug() << cliParameters.msDataFile << "Did not run completely";
         return 1;
-    }
-
-    e = ErrorUtils::isNotEmpty(dataFiles);
-    if (e != eNoError) {
-        qDebug() << "No data files found.";
-        return 1;
-    }
-
-    for (const QString &dataFilePath : dataFiles) {
-
-        qDebug() << "Processing file:" << dataFilePath;
-
-        e = pythiaDiaWorkflow.processFile(dataFilePath);
-        if (e != eNoError) {
-            qDebug() << dataFilePath << "Did not run completely";
-            return 1;
-        }
     }
 
     qDebug() << "PSMing done in" << et.elapsed() << "mSec";
 
     return 0;
-
 }

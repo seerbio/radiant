@@ -10,6 +10,7 @@
 #include "Error.h"
 
 #include <QDebug>
+#include <QMap>
 #include <QPointF>
 
 #include <cmath>
@@ -181,7 +182,6 @@ public:
         return it - vec.begin();
     }
 
-
     static QPointF closestXValPoint(const QVector<QPointF> &vec, double value);
 
     template<typename T>
@@ -205,6 +205,110 @@ public:
 
         return std::sqrt(squaredDiffs / actualVsPredicted.size());
     }
+
+    template<typename Identifier>
+    static Err calculateQValue(
+            const QMap<Identifier, double> &identifierVsTarget,
+            const QMap<Identifier, double> &identifierVsDecoys,
+            QMap<Identifier, double> *identifierVsQValue,
+            QMap<Identifier, double> *identifierVsDecoyRatio
+            ) {
+
+        ERR_INIT
+
+        if (identifierVsTarget.isEmpty() || identifierVsDecoys.isEmpty()) {
+            rrr(eValueError);
+        }
+
+        identifierVsQValue->clear();
+        identifierVsDecoyRatio->clear();
+
+        QVector<double> targetScores = identifierVsTarget.values().toVector();
+        std::sort(targetScores.begin(), targetScores.end());
+
+        QVector<double> decoyScores = identifierVsDecoys.values().toVector();
+        std::sort(decoyScores.begin(), decoyScores.end());
+
+        for (auto it = identifierVsTarget.begin(); it != identifierVsTarget.end(); it++) {
+
+            const Identifier &identifier = it.key();
+            double score = it.value();
+
+            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+            const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
+
+            auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
+            if (decoyIndexLowest > decoyScores.begin()) {
+                if (*(decoyIndexLowest - 1) > decoyScores.front()) {
+                    score = *(--decoyIndexLowest);
+                }
+            }
+
+            targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+
+            const long targetCount = std::distance(targetIndexLowest, targetScores.end());
+            const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
+
+            const double qvalue
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
+            identifierVsQValue->insert(identifier, qvalue);
+
+            const double decoyRatio
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
+            identifierVsDecoyRatio->insert(identifier, decoyRatio);
+
+        }
+
+        ERR_RETURN
+    }
+
+    static QMap<int, bool> generateRandomSelectionList(
+            int totalSizeOfList,
+            int desiredSizeRandomNumbers,
+            int seed = 666
+            );
+
+    template<typename T>
+    static Err trainTestSplit(
+            const QVector<T> &data,
+            double testFraction,
+            int seed,
+            QVector<T> *trainingData,
+            QVector<T> *testData
+            ) {
+
+        ERR_INIT
+
+        if (data.isEmpty() || MathUtils::tZero(testFraction)) {
+            rrr(eValueError);
+        }
+
+        trainingData->clear();
+        testData->clear();
+
+        const int testDataSize = static_cast<int>(data.size() * testFraction);
+
+        const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
+                data.size(),
+                testDataSize,
+                seed
+                );
+
+        for (int i = 0; i < data.size(); i++) {
+
+            const T &d = data.at(i);
+
+            if (selectionList.value(i)) {
+                testData->push_back(d);
+                continue;
+            }
+
+            trainingData->push_back(d);
+        }
+
+        ERR_RETURN
+    }
+
 };
 
 

@@ -72,28 +72,22 @@ public:
 
     friend class MsFrameTests;
 
-    MsFrame();
+    MsFrame() = default;
     ~MsFrame() = default;
 
     Err init(
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
             const QMap<ScanNumber, ScanPoints> &scanPoints,
-            const QPair<double, double> &frameMzStartStop,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
     [[nodiscard]] bool isValid() const ;
 
+    Err deisotopeMsFrame(double ppmTol);
+
     static Err writeFrameScans(
             const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
             const QString &outputFilePath
             );
-
-    [[nodiscard]] QPair<double, double> precursorMzTargetStartEnd() const;
-
-    [[nodiscard]] double meanPrecursorRange() const;
-
-    [[nodiscard]] UniqueMsInfoScanKey uniqueMsInfoScanKey() const;
 
     [[nodiscard]] int scanCount() const;
 
@@ -104,6 +98,8 @@ public:
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
     [[nodiscard]] ScanTime scanTimeFromScanNumber(ScanNumber scanNumber) const;
+
+    [[nodiscard]] ScanNumber scanNumberFromScanTime(ScanTime scanTime) const;
 
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
@@ -121,13 +117,6 @@ public:
             double mzMax
             );
 
-    static Err buildMsFrame(
-            const QString &msDataFilePath,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            QPair<double, double> mzTargetStartStop,
-            MsFrame *msFrame
-            );
-
 private:
 
     Err buildFrameIndexVsScanNumber();
@@ -138,8 +127,6 @@ private:
 
     QMap<ScanNumber, ScanPoints> m_frame;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
-    double m_mzWindowLower;
-    double m_mzWindowUpper;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 

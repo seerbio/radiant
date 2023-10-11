@@ -78,12 +78,13 @@ Err FastaFileToPeptidesListWorkFlow::exec(
             &peptideSequences
             ); ree;
 
-    if (m_params.addDecoys) {
-        e = addDecoys(
-                666,
-                &peptideSequences
-                ); ree;
-    }
+//TODO see if you want to reconsider this
+//    if (m_params.addDecoys) {
+//        e = addDecoys(
+//                666,
+//                &peptideSequences
+//                ); ree;
+//    }
 
     e = writeLibraryBuilderCSV(
             peptideSequences,
@@ -96,7 +97,12 @@ Err FastaFileToPeptidesListWorkFlow::exec(
 
 namespace {
 
-    QPair<Err, QVector<PeptideSequence>> digestLogic(
+    struct DigestResult {
+        QVector<PeptideSequence> peptideSequences;
+        FastaEntry fastaEntry;
+    };
+
+    QPair<Err, DigestResult> digestLogic(
             const FastaEntry &fe,
             const PythiaParameters &params
             ) {
@@ -111,13 +117,19 @@ namespace {
                 &peptideSequences
                 );
 
-        return {e, peptideSequences};
+        DigestResult dr;
+        dr.peptideSequences = peptideSequences;
+        dr.fastaEntry = fe;
+
+        return {e, dr};
     }
 
 }//namespace
 Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
+        const PythiaParameters &pythiaParameters,
         const QMap<ProteinId, FastaEntry> &fastaEntries,
-        QVector<PeptideSequence> *peptideSequences
+        QVector<PeptideSequence> *peptideSequences,
+        QMap<PeptideStringWithMods, QVector<FastaEntry>> *peptideStringWithModsVsFastaEntries
         ) {
 
     ERR_INIT
@@ -127,20 +139,23 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
     const auto digestLogicBinder = std::bind(
             digestLogic,
             std::placeholders::_1,
-            m_params
+            pythiaParameters
     );
 
-    QFuture<QPair<Err, QVector<PeptideSequence>>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, DigestResult>> futures = QtConcurrent::mapped(
             fastaEntries,
             digestLogicBinder
             );
     futures.waitForFinished();
 
     QHash<PeptideString , bool> entered;
-    for (const QPair<Err, QVector<PeptideSequence>> &result : futures) {
+    for (const QPair<Err, DigestResult> &result : futures) {
+
         e = result.first; ree;
 
-        for (const PeptideSequence &ps : result.second) {
+        for (const PeptideSequence &ps : result.second.peptideSequences) {
+
+            (*peptideStringWithModsVsFastaEntries)[ps.sequence].push_back(result.second.fastaEntry);
 
             if (entered.value(ps.sequence)) {
                 continue;
@@ -155,6 +170,21 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
     ERR_RETURN
 }
 
+Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
+        const QMap<ProteinId, FastaEntry> &fastaEntries,
+        QVector<PeptideSequence> *peptideSequences
+        ) {
+
+    ERR_INIT
+    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntries;
+    e = digestFastaEntries(
+            m_params,
+            fastaEntries,
+            peptideSequences,
+            &peptideStringWithModsVsFastaEntries
+            ); ree;
+    ERR_RETURN
+}
 
 namespace {
 

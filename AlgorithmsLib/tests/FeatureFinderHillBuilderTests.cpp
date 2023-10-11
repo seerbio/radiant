@@ -49,8 +49,6 @@ QVector<ScanPoints> FeatureFinderHillBuilderTests::testScanPoints() {
 
 void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
-    QSKIP("undo me");
-
     ERR_INIT
 
     QVector<ScanPoints> scanPoints = testScanPoints();
@@ -59,6 +57,10 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
     params.skipScanCount = 1;
     params.minScanCount = 2;
     params.tolerancePPM = 1.0;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -144,14 +146,16 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
     ERR_INIT
 
-    QSKIP("undo me");
-
     const QVector<ScanPoints> scanPoints = testScanPoints();
 
     FeatureFinderParameters params;
     params.skipScanCount = 1;
     params.tolerancePPM = 10.0;
     params.minScanCount = 2;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -187,8 +191,6 @@ void FeatureFinderHillBuilderTests::connectCentroidsInGroupedMzValsTest() {
 
 void FeatureFinderHillBuilderTests::buildHillsTest() {
 
-    QSKIP("undo me");
-
     ERR_INIT
 
     const QVector<ScanPoints> scanPoints = testScanPoints();
@@ -201,16 +203,24 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
     FeatureFinderParameters params;
     params.skipScanCount = 2;
-    params.tolerancePPM = 10.0;
+    params.tolerancePPM = 100.0;
     params.minScanCount = 2;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-    QVector<FeatureFinderHill> featureFinderHills;
     e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber);
     QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHills;
+    e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(featureFinderHills.size(), 5);
 
     const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
         return l.mzMean() < r.mzMean();
@@ -235,9 +245,30 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
         qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
 
-
         QCOMPARE(ffh.mzMean(), expectedMz);
         QCOMPARE(ffh.scanCount(), expectedScanNumbers.size());
+    }
+
+    params.minScanCount = 1;
+    FeatureFinderHillBuilder featureFinderHillBuilderSingle;
+    e = featureFinderHillBuilderSingle.init(params);
+    QCOMPARE(e, eNoError);
+
+    e = featureFinderHillBuilderSingle.buildHills(scanPointsByScanNumber);
+    QCOMPARE(e, eNoError);
+
+    QVector<FeatureFinderHill> featureFinderHillsSingle;
+    e = featureFinderHillBuilderSingle.featureFinderHills(&featureFinderHillsSingle);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(featureFinderHillsSingle.size(), 15);
+
+    std::sort(featureFinderHillsSingle.begin(), featureFinderHillsSingle.end(), sortLogic);
+
+    for (int i = 0; i < featureFinderHillsSingle.size(); i++) {
+
+        const FeatureFinderHill &ffh = featureFinderHillsSingle.at(i);
+        qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
+
     }
 
 }
@@ -246,8 +277,6 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     ERR_INIT
-
-    QSKIP("undo me");
 
     //TODO use proper pathing here
     const QString filePath = "/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq";
@@ -259,7 +288,10 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     params.skipScanCount = 0;
     params.tolerancePPM = 12.0;
     params.minScanCount = 1;
-//    params.signalToNoiseRatio = 1;
+    params.filterLength = 3;
+    params.smoothCount = 1;
+    params.sigma = 1;
+    params.signalToNoiseRatio = 2;
 
     FeatureFinderHillBuilder featureFinderHillBuilder;
     e = featureFinderHillBuilder.init(params);
@@ -276,6 +308,12 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     QVector<FeatureFinderHill> featureFinderHills;
     e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
+    QCOMPARE(e, eNoError);
+
+    e = featureFinderHillBuilder.refineHills(true);
+    QCOMPARE(e, eNoError);
+
+    e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
     QCOMPARE(e, eNoError);
 
     qDebug() << "Hills found to write" << featureFinderHills.size();

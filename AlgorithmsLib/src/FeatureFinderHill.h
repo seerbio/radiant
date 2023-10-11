@@ -58,11 +58,6 @@ public:
         double intensityVal
     );
 
-    Err refineHill(
-            int startIndex,
-            int endIndex
-    );
-
     [[nodiscard]] double mzMean() const;
 
     [[nodiscard]] double mzStDev() const;
@@ -98,29 +93,6 @@ private:
     QVector<double> m_intensities;
 
 };
-
-struct ALGORITHMSLIB_EXPORTS FeatureFinderHillPlus {
-    FeatureFinderHill featureFinderHill;
-    IonType ionType;
-    IonIndex ionIndex = -1;
-    double cosineSimToAnchor = -1.0;
-
-    double bestIsotopologueCosineSim = -1.0;
-    Charge isotopologueCharge = -1;
-    double isotopologueIntensity = -1.0;
-};
-
-namespace FeatureFinderHillUtils {
-
-    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesIntensityDesc(
-            QVector<FeatureFinderHillPlus> *featureFinderHills
-            );
-
-    void ALGORITHMSLIB_EXPORTS sortFeatureFinderHillsPlussesMzAsc(
-            QVector<FeatureFinderHillPlus> *featureFinderHills
-    );
-
-}
 
 
 #endif //PYTHIACPP_FEATUREFINDERHILL_H

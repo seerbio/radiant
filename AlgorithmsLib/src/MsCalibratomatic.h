@@ -8,11 +8,9 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "MsFrame.h"
-#include "MsUtils.h"
-#include "NearestNeighborsSearch.h"
-#include "ProteinDigestomatic.h"
+#include "MsCalibrationReader.h"
 #include "PythiaParameterReader.h"
+#include "XYMappermatic.h"
 
 using namespace Error;
 
@@ -25,41 +23,45 @@ public:
     MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            const QString &firstPassSearchFilePath,
-            const QString &fragLibFilePath,
-            const QString &msReaderParquetFilePath,
-            int calPointK
-            );
+    Err init(const QString &msCalibrationFilePath);
+
+    Err init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
     // either FrameIndex, or ScanNumber can be key as they are both ints.
-    Err recalibratePoints(
-            const QMap<FrameIndex, ScanPoints> &indexVsScanPoints,
-            QMap<FrameIndex, ScanPoints> *recalIndexVsScanPoints
+    Err recalibrateScanPoints(
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            QMap<ScanNumber, ScanPoints> *recalScanNumberVsScanPoints
             );
 
-    [[nodiscard]] double newStDev();
+    [[nodiscard]] double mzStDev();
+    [[nodiscard]] double scanTimeStDev();
+
+    Err predictScanTime(
+            double iRT,
+            double *predictedScanTime
+            );
+
+    bool isInit() const;
 
 private:
 
-    Err buildMzCalibrator(const QString &firstPassCSVFilePath);
-    Err buildIRTCalibrator(
-            const QString &fragLibReaderFilePath,
-            const QString &firstPassCSVFilePath,
-            const QString &msReaderParquetFilePath
-            );
-
+    Err buildMzCalibrator();
+    Err buildIRTCalibrator();
 
 private:
 
     //Never cleared
     PythiaParameters m_params;
-    NearestNeighborsSearch m_nnSearch;
-    int m_calPointK;
-    double m_stDevNew;
+    double m_mzStDev;
+    double m_scanTimeStd;
+    QString m_msCalibrationFilePath;
 
-    QString m_iRTCalibrationFilePath;
+    QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;
+
+    XYMappermatic m_iRTtoScanTimeMapper;
+    XYMappermatic m_mzToRecalMz;
+
+    bool m_isInit;
 
 };
 

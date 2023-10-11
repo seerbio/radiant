@@ -32,13 +32,19 @@ public:
             const QString &outputFilePath
             );
 
+    static Err digestFastaEntries(
+            const PythiaParameters &pythiaParameters,
+            const QMap<ProteinId, FastaEntry> &fastaEntries,
+            QVector<PeptideSequence> *peptideSequences,
+            QMap<PeptideStringWithMods, QVector<FastaEntry>> *peptideStringWithModsVsFastaEntries
+    );
 
 private:
 
     Err digestFastaEntries(
             const QMap<ProteinId, FastaEntry> &fastaEntries,
             QVector<PeptideSequence> *peptideSequences
-            );
+    );
 
     Err addDecoys(
             int seed,

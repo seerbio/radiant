@@ -62,7 +62,7 @@ public:
     [[nodiscard]] bool isValid() const {
         const bool isValid = tolerancePPM > 0.0
             && skipScanCount >= 0
-            && minScanCount >= 2
+            && minScanCount >= 1
             && filterLength >= 2
             && smoothCount > 0
             && sigma > 0.0
@@ -78,6 +78,7 @@ public:
 };
 
 
+
 class ALGORITHMSLIB_EXPORTS FeatureFinderHillBuilder {
 
 
@@ -86,6 +87,7 @@ public:
     friend class FeatureFinderHillBuilderTests;
 
     FeatureFinderHillBuilder();
+
     ~FeatureFinderHillBuilder();
 
     Err init(const FeatureFinderParameters &featureFinderParameters);
@@ -95,14 +97,6 @@ public:
     Err refineHills(bool useSmoothing);
 
     Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
-
-    Err getHills(
-            FrameIndex frameIndexStart,
-            FrameIndex frameIndexEnd,
-            double mz,
-            double ppmTolerance,
-            QVector<FeatureFinderHill> *featureFinderHills
-            );
 
     void setRunParallel(bool runParallel);
 

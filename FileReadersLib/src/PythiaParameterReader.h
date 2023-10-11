@@ -117,23 +117,22 @@ struct PythiaParameters{
     int peptideLengthMax = 50;
     int maxModificationsPeptide = 1;
 
+    bool addDecoys = true; //TODO consider removing
+
     int chargeStateMin = -1;
     int chargeStateMax = -1;
     int maxTandemPointCount = -1;
     int returnPSMTopN = -1;
 
-    double ms2ExtractionWidthPPM = -1.0;
+    bool deisotopeScans = true;
+
     double precursorExtractionWindowThomsons = -1.0;
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
-    double cosineSimThreshold = 0.8;
     double fragIntensityThreshold = 0.025;
 
-    double pValThreshold = -1.0;
-
-    bool replaceLeucinesWithX = true;
-    bool addDecoys = true; //TODO change this to a number for rounds of decoys.
+    double pValThreshold = 0.05;
 
     int skipScanCount = 2;
     int minScanCount = 3;
@@ -145,9 +144,10 @@ struct PythiaParameters{
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
 
-    bool findIsotopologues = true; //TODO make this settable
-    int maxIsotopologueCharge = 2; //TODO make this settable
-    bool filterIsotopologuesForDeconvolution = true; //TODO make this settable
+    double cosineSimToAnchorThreshold = 0.97;
+    double scanTimeWindowMinutes = 5.0;
+    double ms2ExtractionWidthPPM = -1.0;
+
 
     [[nodiscard]] bool isValid() const {
 
@@ -186,12 +186,12 @@ struct PythiaParameters{
             qDebug() << precursorExtractionWindowThomsons << "precursorExtractWindowThompsons";
             return false;
         }
-        if (topNMs2Ions < 8) {
+        if (topNMs2Ions < 6) {
             print();
             qDebug() << topNMs2Ions << "topNMS2Ions";
             return false;
         }
-        if (minFoundMzPeaks < 3) {
+        if (minFoundMzPeaks < 0) {
             print();
             qDebug() << minFoundMzPeaks << "minFoundMzPeaks";
             return false;
@@ -233,6 +233,9 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
         qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
+        qDebug() << "cosineSimToAnchorThreshold" << cosineSimToAnchorThreshold;
+        qDebug() << "scanTimeWindowMinutes" << scanTimeWindowMinutes;
+        qDebug() << "deisotopeScans" << deisotopeScans;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

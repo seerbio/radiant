@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "AminoAcids.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
@@ -87,126 +88,16 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
 };
 
-struct MS2IonsSeparated {
-
-public:
-
-    QMap<IonIndex, MS2Ion> yIons;
-    QMap<IonIndex, MS2Ion> bIons;
-    QMap<IonIndex, MS2Ion> y2Ions;
-    QMap<IonIndex, MS2Ion> b2Ions;
-    QMap<IonIndex, MS2Ion> aIons;
-    QMap<IonIndex, MS2Ion> yNH3Ions;
-    QMap<IonIndex, MS2Ion> yH2OIons;
-    QMap<IonIndex, MS2Ion> bNH3Ions;
-    QMap<IonIndex, MS2Ion> bH2OIons;
-    QMap<IonIndex, MS2Ion> precursorIons;
-
-    double iRT = -1.0;
-
-    [[nodiscard]] QVector<MS2Ion> getTopXMS2Ions(
-            int topX,
-            int ionIndexCutoffThreshold
-            ) const {
-
-        QVector<MS2Ion> allMS2Ions;
-
-        const QVector<MS2Ion> yIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                yIons,
-                ionIndexCutoffThreshold
-                );
-        allMS2Ions.append(yIonsThresholded);
-
-        const QVector<MS2Ion> y2IonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                y2Ions,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(y2IonsThresholded);
-
-        const QVector<MS2Ion> yNH3IonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                yNH3Ions,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(yNH3IonsThresholded);
-
-        const QVector<MS2Ion> yH2OIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                yH2OIons,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(yH2OIonsThresholded);
-
-        const QVector<MS2Ion> bIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                bIons,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(bIonsThresholded);
-
-        const QVector<MS2Ion> b2IonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                b2Ions,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(b2IonsThresholded);
-
-        const QVector<MS2Ion> bNH3IonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                bNH3Ions,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(bNH3IonsThresholded);
-
-        const QVector<MS2Ion> bH2OIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                bH2OIons,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(bH2OIonsThresholded);
-
-        const QVector<MS2Ion> aIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                aIons,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(aIonsThresholded);
-
-        const QVector<MS2Ion> precursorIonsThresholded = returnMS2IonAboveIonIndexCutoff(
-                precursorIons,
-                ionIndexCutoffThreshold
-        );
-        allMS2Ions.append(precursorIonsThresholded);
-
-        std::sort(
-                allMS2Ions.rbegin(),
-                allMS2Ions.rend(),
-                [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
-                );
-
-        topX = std::min(topX, allMS2Ions.size());
-
-        allMS2Ions.resize(topX);
-        return allMS2Ions;
-    }
-
-private:
-
-    static QVector<MS2Ion> returnMS2IonAboveIonIndexCutoff(
-            const QMap<IonIndex, MS2Ion> &ions,
-            int ionIndexCutoffThreshold
-            ) {
-
-        QVector<MS2Ion> ms2IonsThresholded;
-
-        for (auto it = ions.begin(); it != ions.end(); it++) {
-
-            const IonIndex ionIndex = it.key();
-
-            if (ionIndex < ionIndexCutoffThreshold) {
-                continue;
-            }
-
-            ms2IonsThresholded.push_back(it.value());
-        }
-
-        return ms2IonsThresholded;
-    }
-
-
+struct CandidatePeptide {
+    PeptideStringWithMods peptideStringWithMods;
+    Charge charge = -1;
+    QVector<MS2Ion> ms2Ions;
+    QVector<MZION> ms2IonMzB2B3;
+    QVector<MZION> ms2IonMzY2Y3;
+    bool isDecoy = false;
+    double mass = -1.0;
+    double iRt = -1.0;
+    int totalFragmentCount;
 };
 
 
@@ -215,31 +106,42 @@ class FILEREADERSLIB_EXPORTS FragLibReader {
 
 public:
 
-    FragLibReader() = default;
+    FragLibReader();
     ~FragLibReader() = default;
 
-    Err init(const QString &fragLibFilePath);
+    Err init(const QString &fragLibFilePath, const AminoAcids &aminoAcids);
 
-    Err getMS2Ions(
-            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
-            );
+    int libarySize();
 
-    Err getMS2Ions(
-            double massStart,
-            double massEnd,
-            QMap<PeptideSequenceChargeKey, QVector<MS2Ion>> *peptideSequenceChargeKeyVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsIsDecoy,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+    Err getMS2Ions(QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide);
+
+    Err getMS2IonsTopN(
+            int topNMs2Ions,
+            double mzMin,
+            double mzMax,
+            bool byIonsOnly,
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
-    Err getMS2Ions(
+    Err getMS2IonsTopN(
+            const QMap<Index, bool> &selectionList,
+            int topNMs2Ions,
+            double mzMin,
+            double mzMax,
+            bool byIonsOnly,
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
+    );
+
+    static Err getMS2Ions(
+            const QString &fragLibFilePath,
+            const AminoAcids &aminoAcids,
             double massStart,
             double massEnd,
-            QMap<PeptideSequenceChargeKey, MS2IonsSeparated> *peptideSequenceChargeKeyVsMS2Ions,
-            QMap<PeptideSequenceChargeKey, bool> *peptideSequenceChargeKeyVsMS2IonsSeparated,
-            QMap<PeptideSequenceChargeKey, double> *peptideSequenceChargeKeyVsMass
+            double mzMin,
+            double mzMax,
+            int topNMs2Ions,
+            bool byIonsOnly,
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
     );
 
     static void filterMs2IonsByMz(
@@ -255,6 +157,9 @@ public:
 
     static void getTopNMostIntenseMs2Ions(
             int topNMs2Ions,
+            double mzMin,
+            double mzMax,
+            bool byIonsOnly,
             QVector<MS2Ion> *ms2Ions
     );
 
@@ -264,9 +169,7 @@ public:
             int chargeMax,
             double mzTargetMin,
             double mzTargetMax,
-            QMap<PeptideStringWithMods, MS2IonsSeparated> *fragPreds,
-            QMap<PeptideStringWithMods, bool> *fragPredsIsDecoy,
-            QMap<PeptideStringWithMods, double> *fragPredsMass
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
             );
 
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
@@ -275,10 +178,42 @@ public:
             Charge *charge
     );
 
+    static Err fragLibReaderRowsToMs2IonsMap(
+            const QVector<FragLibReaderRow> &fragLibReaderRows,
+            const AminoAcids &aminoAcids,
+            int topNMs2Ions,
+            double mzMin,
+            double mzMax,
+            bool byIonsOnly,
+            QMap<PeptideSequenceChargeKey, CandidatePeptide> *peptideSequenceChargeKeyVsCandidatePeptide
+    );
+
+    static Err generateFragmentFrequencies(
+            const QMap<PeptideStringWithMods, CandidatePeptide> &peptideStringWithModsVsCandidatePeptide,
+            double ppmTol,
+            QMap<MzHashed, FrequencyPercent> *fragmentFrequencies
+    );
+
+    static Err convertDIANNLibToFragLib(
+            const QString &specLibFilePath,
+            const AminoAcids &aminoAcids
+            );
+
+    static Err mutateCandidatePeptideTarget(
+            const CandidatePeptide &candidatePeptideTarget,
+            CandidatePeptide *candidatePeptideDecoy
+    );
 
 private:
 
     QString m_fragLibFilePath;
+    double m_mzMin;
+    double m_mzMax;
+
+    bool m_useBYOnly;
+
+    QVector<FragLibReaderRow> m_fragLibReaderRows;
+    AminoAcids m_aminoAcids;
 
 };
 

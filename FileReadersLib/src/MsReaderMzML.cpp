@@ -654,8 +654,9 @@ Err MsReaderMzML::closeFile() {
 MsReaderBase MsReaderMzML::msReaderBase() {
 
     MsReaderBase msReaderBase;
-    msReaderBase.setScanPoints(*m_d->m_scanPoints);
+    // NOTE: it is important to set scanInfos first or setScanPoints will Err out.
     msReaderBase.setMsScanInfo(*m_d->m_msScanInfo);
+    msReaderBase.setScanPoints(*m_d->m_scanPoints);
 
     return msReaderBase;
 }
