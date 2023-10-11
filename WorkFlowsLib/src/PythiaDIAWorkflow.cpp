@@ -138,7 +138,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
 #ifndef USE_FILE_CACHING
     if (m_pythiaParameters.deisotopeScans) {
-        e = deisotopeScans(&msReaderParquet); ree;
+        e = deisotopeScans(&msReaderPointerAcc); ree;
     }
 #endif
 
