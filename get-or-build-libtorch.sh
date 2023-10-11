@@ -34,7 +34,7 @@ else
     # Build libtorch from sources
     mkdir -p "${PYTORCH_PREFIX_PATH}"
     cd "${PYTORCH_PREFIX_PATH}" || exit
-    if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch --branch v2.1.0; fi
+    if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
     cd pytorch || exit
 
     # Install Python, which is needed by the libtorch build
@@ -42,7 +42,7 @@ else
     pip install setuptools pyyaml
     
     if [ -f "${CMAKE}" ]; then PATH="$(dirname $(which "${CMAKE}")):${PATH}"; fi
-    _GLIBCXX_USE_CXX11_ABI=1 USE_CUDA=OFF BUILD_TEST=OFF python tools/build_libtorch.py
+    _GLIBCXX_USE_CXX11_ABI=1 USE_CUDA=OFF BUILD_BINARY=ON BUILD_PYTHON=OFF BUILD_TEST=OFF ATEN_NO_TEST=ON python tools/build_libtorch.py
 
 fi
 
