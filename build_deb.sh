@@ -32,15 +32,22 @@ cp bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json $pythia_bin/rnn_linear_cha
 cp bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json
 cp bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json
 cp bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json
+cp bin/iRT_Model.json $pythia_bin/iRT_Model.json
+cp bin/MS2_Mono_Model.json $pythia_bin/MS2_Mono_Model.json
+cp bin/MS2_Charge_Model.json $pythia_bin/MS2_Charge_Model.json
 cp AlgorithmsLib/libAlgorithmsLib.so $pythia_lib/libAlgorithmsLib.so
 cp ChemLib/libChemLib.so $pythia_lib/libChemLib.so
 cp EigenLib/libEigenLib.so $pythia_lib/libEigenLib.so
 cp FileReadersLib/libFileReadersLib.so $pythia_lib/libFileReadersLib.so
+cp KarnnLib/libKarnnLib.so $pythia_lib/libKarnnLib.so
 cp MachineLrnLib/libMachineLrnLib.so $pythia_lib/libMachineLrnLib.so
 cp UtilsLib/libUtilsLib.so $pythia_lib/libUtilsLib.so
 cp WorkFlowsLib/libWorkFlowsLib.so $pythia_lib/libWorkFlowsLib.so
+cp PyTorchLib/libPyTorchLib.so $pythia_lib/libPyTorchLib.so
 cp /usr/lib/libarrow.so.1100 $pythia_lib/libarrow.so.1100
 cp /usr/lib/libparquet.so.1100 $pythia_lib/libparquet.so.1100
+cp /libtorch/lib/libtorch_cpu.so $pythia_lib/libtorch_cpu.so
+cp /libtorch/lib/libtorch.so $pythia_lib/libtorch.so
 
 mkdir -p ${package_dir}/DEBIAN/
 cp control $package_dir/DEBIAN/control
