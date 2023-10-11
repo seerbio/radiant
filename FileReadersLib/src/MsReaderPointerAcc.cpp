@@ -18,9 +18,6 @@ Err MsReaderPointerAcc::openFile(const QString &filePath) {
 
     qDebug() << "Open File 2";
 
-    const double defaultIsolationWindow = 1.0;
-    const int defaultCollisionEnergy = 30;
-
     e = setMsReaderPointer(filePath); ree;
 
     ERR_RETURN
@@ -40,7 +37,10 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         e = ptr->openFile(filePath); ree;
     }
 
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false) && fi.isFile()) {
+    else if (
+            (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
+                || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
+            && fi.isFile()) {
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
         ptr = msReader;
@@ -48,6 +48,8 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     }
 
     else {
+        qDebug() << "Filepath" << filePath;
+        qDebug() << "Suffix" << fileSuffix;
         rrr(eFileIncorrectTypeError);
     }
 

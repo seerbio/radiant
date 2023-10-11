@@ -24,17 +24,17 @@ Err MS2DataExtractomatic::init(
         int topNMs2Ions,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        MsReaderParquet *msReaderParquet
+        MsReaderPointerAcc *msReaderPointerAcc
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(msReaderParquet->isInit()); ree;
+    e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(topNMs2Ions > 0); ree;
 
     m_pythiaParameters = pythiaParameters;
-    m_msReaderParquet = msReaderParquet;
+    m_msReaderPointerAcc = msReaderPointerAcc;
     m_topNMs2Ions = topNMs2Ions;
     m_useExtendedScores = useExtendedScores;
     m_useNeuralNetworkScores = useNeuralNetworkScores;
@@ -47,7 +47,7 @@ Err MS2DataExtractomatic::init(
         int topNMs2Ions,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        MsReaderParquet *msReaderParquet,
+        MsReaderPointerAcc *msReaderPointerAcc,
         const MsCalibratomatic &msCalibratomatic
         ) {
 
@@ -60,8 +60,9 @@ Err MS2DataExtractomatic::init(
             topNMs2Ions,
             useExtendedScores,
             useNeuralNetworkScores,
-            msReaderParquet
+            msReaderPointerAcc
             ); ree;
+
     m_msCalibratomatic = msCalibratomatic;
 
     ERR_RETURN
@@ -84,7 +85,7 @@ Err MS2DataExtractomatic::extractMS2ForCandidates(
 
     e = buildScoredCandidatesFDR(
             scoredCandidates,
-            m_msReaderParquet->scanTimeMinMax(),
+            m_msReaderPointerAcc->ptr->scanTimeMinMax(),
             scoredCandidatesAll
     ); ree;
 
@@ -156,7 +157,7 @@ Err MS2DataExtractomatic::extractTargetDecoyData(
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
     e = buildUniqueMsInfoScanKeyVsScanPoints(
-            m_msReaderParquet,
+            m_msReaderPointerAcc,
             &uniqueInfoScanKeyVsScanPoints,
             &scanNumberVsScanTime,
             &scanNumberVsScanTimeMS1
@@ -338,7 +339,7 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
 }
 
 Err MS2DataExtractomatic::buildUniqueMsInfoScanKeyVsScanPoints(
-        MsReaderParquet *msReaderParquet,
+        MsReaderPointerAcc *msReaderPointerAcc,
         QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
         QMap<ScanNumber, ScanTime> *scanNumberVsScanTime,
         QMap<ScanNumber, ScanPoints > *scanNumberVsScanTimeMS1
@@ -346,15 +347,15 @@ Err MS2DataExtractomatic::buildUniqueMsInfoScanKeyVsScanPoints(
 
     ERR_INIT
 
-    e = msReaderParquet->collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
+    e = msReaderPointerAcc->ptr->collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
 
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderParquet->getMsScanInfos();
+    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos();
     for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
         scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
     }
 
     const int msLevel = 1;
-    e = msReaderParquet->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
+    e = msReaderPointerAcc->ptr->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
 
     ERR_RETURN
 }

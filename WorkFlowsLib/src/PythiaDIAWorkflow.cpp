@@ -122,31 +122,31 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             msDataFilePath = msDataFilePathCached;
         }
         else {
-            MsReaderParquet msReaderParquet;
-            e = msReaderParquet.openFile(msDataFilePath); ree;
-            e = deisotopeScans(&msReaderParquet); ree;
+            MsReaderPointerAcc msReaderPointerAcc;
+            e = msReaderPointerAcc.openFile(msDataFilePath); ree;
+            e = deisotopeScans(&msReaderPointerAcc); ree;
             e = MsReaderParquet::writeMsReaderToParquet(
                     msDataFilePathCached,
-                    QSharedPointer<MsReaderBase>(new MsReaderBase(msReaderParquet))
+                    msReaderPointerAcc.ptr
             ); ree;
             msDataFilePath = msDataFilePathCached;
         }
     }
 #endif
-    MsReaderParquet msReaderParquet;
-    e = msReaderParquet.openFile(msDataFilePath); ree;
-    m_msScanInfos = msReaderParquet.getUniqueTandemMsScanInfos();
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(msDataFilePath); ree;
+    m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
 #ifndef USE_FILE_CACHING
     if (m_pythiaParameters.deisotopeScans) {
         e = deisotopeScans(&msReaderParquet); ree;
     }
 #endif
 
-    e = buildCalibration(&msReaderParquet); ree;
+    e = buildCalibration(&msReaderPointerAcc); ree;
 
 //#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
-    e = optimizeParameters(&msReaderParquet); ree;
+    e = optimizeParameters(&msReaderPointerAcc); ree;
 #else
     //Pythia Main Library
 //    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
@@ -164,14 +164,14 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
     QVector<ScoredCandidate> scoredCandidatesAll;
     e = mainAnalysis(
-            &msReaderParquet,
+            &msReaderPointerAcc,
             &scoredCandidatesTargetsFDRThresholded,
             &scoredCandidatesAll
             ); ree;
 
     QVector<ScoredCandidate> scoredCandidatesAllUpdated;
     e = removeInterferingCandidates(
-            &msReaderParquet,
+            &msReaderPointerAcc,
             scoredCandidatesTargetsFDRThresholded,
             scoredCandidatesAll,
             &scoredCandidatesAllUpdated
@@ -212,7 +212,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = applyNeuralNetClassifier(
             scoredCandidatesAll,
             scoredCandidatesAllUpdated,
-            msReaderParquet.scanTimeMinMax(),
+            msReaderPointerAcc.ptr->scanTimeMinMax(),
             &scoredCandidatesClassifierUpdated
             ); ree;
 
@@ -230,7 +230,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 
-    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 #else
     QVector<ScoredCandidate> scoredCandidatesAllThresholded;
@@ -282,7 +282,7 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
+Err PythiaDIAWorkflow::deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
@@ -299,7 +299,7 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
 
     QVector<QVector<QPair<ScanNumber, ScanPoints>>> scanPointsTranched;
     ParallelUtils::trancheMapForParallelization(
-            msReaderParquet->getScanPoints(),
+            msReaderPointerAcc->ptr->getScanPoints(),
             ParallelUtils::numberOfAvailableSystemProcessors(),
             &scanPointsTranched
     );
@@ -319,7 +319,7 @@ Err PythiaDIAWorkflow::deisotopeScans(MsReaderParquet *msReaderParquet) {
         }
     }
 
-    e = msReaderParquet->setScanPoints(deisotopedScanPoints); ree;
+    e = msReaderPointerAcc->ptr->setScanPoints(deisotopedScanPoints); ree;
 
     qDebug() << "Scans deisotoped in" << et.elapsed() << "mSec";
 
@@ -363,7 +363,7 @@ namespace {
 
 
 }//namespace
-Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
+Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
@@ -394,7 +394,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderParquet *msReaderParquet) {
             topNMs2IonsCalibration,
             useExtendedScores,
             useNeuralNetworkScores,
-            msReaderParquet
+            msReaderPointerAcc
             ); ree;
 
     while (calibrationSelectionFraction < maxTrainingFraction && onePercentFDRCount < minTrainingCount) {
@@ -765,7 +765,7 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
+Err PythiaDIAWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
@@ -808,7 +808,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
                 topNMs2IonsOptimization,
                 useExtendedScores,
                 useNeuralNetworkScores,
-                msReaderParquet,
+                msReaderPointerAcc,
                 m_msCalibratomatic
         ); ree;
 
@@ -863,7 +863,7 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderParquet *msReaderParquet) {
 }
 
 Err PythiaDIAWorkflow::mainAnalysis(
-        MsReaderParquet *msReaderParquet,
+        MsReaderPointerAcc *msReaderPointerAcc,
         QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
         QVector<ScoredCandidate> *scoredCandidatesAll
         ) {
@@ -898,7 +898,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
             topNMs2IonsMainAnalysis,
             useExtendedScores,
             useNeuralNetworkScores,
-            msReaderParquet,
+            msReaderPointerAcc,
             m_msCalibratomatic
             ); ree;
 
@@ -1080,7 +1080,7 @@ namespace {
     Err deconvolveTandemSpectra(
             const QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
             const PythiaParameters &params,
-            MsReaderParquet *msReaderParquet,
+            MsReaderPointerAcc *msReaderPointerAcc,
             QMap<ScanNumber, QMap<PeptideStringWithMods, TandemDeconvolverResult>> *scanNumberVsTandemDeconvolverResult
     ) {
 
@@ -1090,12 +1090,12 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-        const auto insertLogic = [msReaderParquet, scanNumberVsTandemPredictions](const ScanNumber sn){
+        const auto insertLogic = [msReaderPointerAcc, scanNumberVsTandemPredictions](const ScanNumber sn){
 
             DeconVol deconVol;
             deconVol.scanNumber = sn;
             deconVol.tandemPredictions = scanNumberVsTandemPredictions.value(sn);
-            msReaderParquet->getScanPoints(sn, &deconVol.scanPoints);
+            msReaderPointerAcc->ptr->getScanPoints(sn, &deconVol.scanPoints);
 
             return deconVol;
         };
@@ -1164,7 +1164,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAWorkflow::removeInterferingCandidates(
-        MsReaderParquet *msReaderParquet,
+        MsReaderPointerAcc *msReaderPointerAcc,
         const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
         const QVector<ScoredCandidate> &scoredCandidatesAll,
         QVector<ScoredCandidate> *scoredCandidatesAllUpdated
@@ -1185,7 +1185,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
     e = deconvolveTandemSpectra(
             scanNumberVsTandemPredictions,
             m_pythiaParameters,
-            msReaderParquet,
+            msReaderPointerAcc,
             &scanNumberVsTandemDeconvolverResult
     ); ree;
 

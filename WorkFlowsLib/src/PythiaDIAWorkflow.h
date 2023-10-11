@@ -40,9 +40,9 @@ public:
 
 private:
 
-    Err deisotopeScans(MsReaderParquet *msReaderParquet);
+    Err deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc);
 
-    Err buildCalibration(MsReaderParquet *msReaderParquet);
+    Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err buildCandidates(
             int topNMs2Ions,
@@ -56,16 +56,16 @@ private:
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
     );
 
-    Err optimizeParameters(MsReaderParquet *msReaderParquet);
+    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err mainAnalysis(
-            MsReaderParquet *msReaderParquet,
+            MsReaderPointerAcc *msReaderPointerAcc,
             QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
             QVector<ScoredCandidate> *scoredCandidatesAll
             );
 
     Err removeInterferingCandidates(
-            MsReaderParquet *msReaderParquet,
+            MsReaderPointerAcc *msReaderPointerAcc,
             const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
             const QVector<ScoredCandidate> &scoredCandidatesAll,
             QVector<ScoredCandidate> *scoredCandidatesAllUpdated
