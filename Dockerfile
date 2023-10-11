@@ -56,8 +56,11 @@ ENV PATH="${CMAKE_PREFIX}/bin:${PATH}"
 ENV PYTORCH_PREFIX_PATH="/src"
 COPY get-or-build-libtorch.sh /tmp/
 RUN chmod u+x /tmp/get-or-build-libtorch.sh \
-    && mkdir -p "${PYTORCH_PREFIX_PATH}" \
-    && APT='apt-get' CMAKE='cmake' /tmp/get-or-build-libtorch.sh
+    && apt-get update \
+    && APT='apt-get' CMAKE='cmake' /tmp/get-or-build-libtorch.sh \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/

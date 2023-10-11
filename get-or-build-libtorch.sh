@@ -32,18 +32,16 @@ then
 else
 
     # Build libtorch from sources
+    mkdir -p "${PYTORCH_PREFIX_PATH}"
     cd "${PYTORCH_PREFIX_PATH}" || exit
-    if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
+    if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch --branch v2.1.0; fi
     cd pytorch || exit
-
-    # Always run an update just in case package cache is out of date
-    ${APT} update
 
     # Install Python, which is needed by the libtorch build
     ${APT} install -y python3.10 python-is-python3 python3-pip
     pip install setuptools pyyaml
     
-    if [ "${CMAKE}" != "cmake" ]; then PATH="$(dirname $(realpath ${CMAKE})):${PATH}"; fi
+    if [ -f "${CMAKE}" ]; then PATH="$(dirname $(which ${CMAKE})):${PATH}"; fi
     _GLIBCXX_USE_CXX11_ABI=1 USE_CUDA=OFF BUILD_TEST=OFF python tools/build_libtorch.py
 
 fi
