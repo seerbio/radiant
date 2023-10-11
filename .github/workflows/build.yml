@@ -3,7 +3,7 @@ name: Build and Push Container
 on:
   push:
     branches:
-      - main
+      - master
 
 #TODO: configure builds for each architecture (x86_64 / aarch_64)
 jobs:
