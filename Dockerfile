@@ -41,6 +41,7 @@ FROM base AS build
 # After package installation, we remove any unnecessary packages
 # and run `apt-get clean` to remove any downloaded package archives.
 #
+ENV CMAKE_PREFIX="/usr/bin/cmake"
 COPY install-build-deps-ubuntu.sh /tmp/
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -50,12 +51,12 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# TODO: is this necessary? We should ensure it ends up somewhere that's already in $PATH...
-#ENV PATH="/usr/bin/cmake/bin:${PATH}"
+ENV PATH="${CMAKE_PREFIX}/bin:${PATH}"
 
+ENV PYTORCH_PREFIX_PATH="/src"
 COPY get-or-build-libtorch.sh /tmp/
 RUN chmod u+x /tmp/get-or-build-libtorch.sh \
-    && PYTORCH_PREFIX_PATH='/src/' /tmp/get-or-build-libtorch.sh
+    && PYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH} /tmp/get-or-build-libtorch.sh
 
 ## Copy project source into the container
 #COPY ./ /src/PythiaDIACpp/

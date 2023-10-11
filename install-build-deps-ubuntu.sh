@@ -7,6 +7,9 @@
 # If unset, use `sudo apt-get` as the apt command
 APT=${APT:-'sudo apt-get'}
 
+# If unset, install `cmake` into the current directory
+CMAKE_PREFIX=${CMAKE_PREFIX:-'./cmake'}
+
 # Get initial requirements
 ${APT} install --no-install-recommends -y ca-certificates lsb-release wget
 
@@ -34,5 +37,5 @@ ${APT} install --no-install-recommends -y \
 wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-`uname -m`.sh -q -O /tmp/cmake-install.sh
 chmod u+x /tmp/cmake-install.sh
 mkdir /usr/bin/cmake
-/tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake
+/tmp/cmake-install.sh --skip-license --prefix=${CMAKE_PREFIX}
 rm /tmp/cmake-install.sh
