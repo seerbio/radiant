@@ -1,4 +1,7 @@
+ThirdPartyLibs/libtorch
 
-.idea/
+# Vim buffer files
+.*.s??
 
-ThirdPartyLibs/libtorch/
+# JetBrains IDE settings
+.idea

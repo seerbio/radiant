@@ -19,3 +19,9 @@ Dockerfile
 ThirdPartyLibs/libtorch
 ThirdPartyLibs/arrow_parquet
 ThirdPartyLibs/arrow_src
+
+# Vim buffer files
+.*.s??
+
+# JetBrains IDE settings
+.idea
