@@ -15,6 +15,11 @@
 Dockerfile
 .dockerignore
 
+# Local build/test directories
+build
+cmake
+pytorch
+
 # Obsolete directories
 ThirdPartyLibs/libtorch
 ThirdPartyLibs/arrow_parquet
