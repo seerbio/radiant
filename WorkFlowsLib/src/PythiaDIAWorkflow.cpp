@@ -16,7 +16,7 @@
 #include "MS2DataExtractomatic.h"
 #include "MsCalibrationReader.h"
 #include "MsFrameScoretron.h"
-#include "MsReaderParquet.h"
+#include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeakIntegratomatic.h"
 #include "TandemSpectraDeconvolvotron.h"

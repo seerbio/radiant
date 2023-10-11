@@ -12,7 +12,7 @@
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
-#include "MsReaderPointerFactory.h"
+#include "MsReaderPointerAcc.h"
 #include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
 
