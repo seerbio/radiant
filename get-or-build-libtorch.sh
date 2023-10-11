@@ -41,7 +41,7 @@ else
     ${APT} install -y python3.10 python-is-python3 python3-pip
     pip install setuptools pyyaml
     
-    if [ -f "${CMAKE}" ]; then PATH="$(dirname $(which ${CMAKE})):${PATH}"; fi
+    if [ -f "${CMAKE}" ]; then PATH="$(dirname $(which "${CMAKE}")):${PATH}"; fi
     _GLIBCXX_USE_CXX11_ABI=1 USE_CUDA=OFF BUILD_TEST=OFF python tools/build_libtorch.py
 
 fi
