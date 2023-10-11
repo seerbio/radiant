@@ -13,5 +13,5 @@
 # "Strict mode"
 set -euo pipefail
 
-cmake/bin/cmake -S . -B build/ -DPYTORCH_PATH="$(realpath ./pytorch)"
+cmake/bin/cmake -S . -B build/ -DPYTORCH_PATH="$(realpath ./pytorch/build)"
 make -C build/ -j
