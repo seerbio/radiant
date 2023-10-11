@@ -39,7 +39,7 @@ else
     ${APT} install -y python3.10 python-is-python3 python3-pip
 
     _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE="$(which python)"
-    make -C build/
+    make -C build/ -j "${MAKE_JOBS:-1}"
 
 fi
 
