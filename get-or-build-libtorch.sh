@@ -9,8 +9,11 @@ PYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH:-'.'}
 
 # https://pytorch.org
 wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
-unzip /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -d ${PYTORCH_PREFIX_PATH}
-mv ${PYTORCH_PREFIX_PATH}/libtorch ${PYTORCH_PREFIX_PATH}/pytorch
+rm -rf /tmp/libtorch
+unzip /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -d /tmp/
+rm /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+rm -rf ${PYTORCH_PREFIX_PATH}/pytorch
+mv /tmp/libtorch ${PYTORCH_PREFIX_PATH}/pytorch
 
 ## Build libtorch from sources
 #WORKDIR /src/
