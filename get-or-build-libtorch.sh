@@ -11,6 +11,9 @@ APT=${APT:-'sudo apt-get'}
 # If unset, clone `pytorch` into the current directory
 PYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH:-'.'}
 
+# If unset, assume it was installed into the current directory
+CMAKE=${CMAKE:-"$(realpath ./cmake/bin/cmake)"}
+
 ARCH=$(uname -m)
 
 if [ ${ARCH} == 'x86_64' ]
@@ -34,9 +37,9 @@ else
     cd pytorch
 
     ${APT} install -y python3.10 python-is-python3 python3-pip
-    pip install --no-cache-dir setuptools pyyaml
 
-    _GLIBCXX_USE_CXX11_ABI=1 python tools/build_libtorch.py
+    _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE=$(which python)
+    make -C build/ -j
 
 fi
 
