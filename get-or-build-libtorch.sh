@@ -42,9 +42,9 @@ else
     # Install Python, which is needed by the libtorch build
     ${APT} install -y python3.10 python-is-python3 python3-pip
     pip install setuptools pyyaml
-
-    _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE="$(which python)"
-    make -C build/ -j "${MAX_JOBS:-1}"
+    
+    if [ "${CMAKE}" != "cmake" ]; then PATH="$(dirname $(realpath ${CMAKE})):${PATH}"; fi
+    _GLIBCXX_USE_CXX11_ABI=1 USE_CUDA=OFF BUILD_TEST=OFF python tools/build_libtorch.py
 
 fi
 
