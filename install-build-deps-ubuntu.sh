@@ -26,13 +26,6 @@ ${APT} install --no-install-recommends -y \
     qtbase5-dev \
     libarrow-dev \
     libparquet-dev
-    # Possibly not required; artifacts from libtorch build development?
-    #python3.10 \
-    #python-is-python3 \
-    #python3-pip \
-
-# Possibly not required; artifact from libtorch build development?
-#pip install --no-cache-dir setuptools pyyaml
 
 # Install latest CMAKE > 3.17
 wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-`uname -m`.sh -q -O /tmp/cmake-install.sh
