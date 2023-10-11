@@ -16,7 +16,7 @@ CMAKE=${CMAKE:-"$(realpath ./cmake/bin/cmake)"}
 
 ARCH=$(uname -m)
 
-if [ ${ARCH} == 'x86_64' ]
+if [ "${ARCH}" == 'x86_64' ]
 then
 
     # Download prebuilt binary
@@ -25,20 +25,20 @@ then
     rm -rf /tmp/libtorch
     unzip /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -d /tmp/
     rm /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
-    rm -rf ${PYTORCH_PREFIX_PATH}/pytorch
-    mkdir -p ${PYTORCH_PREFIX_PATH}
-    mv /tmp/libtorch ${PYTORCH_PREFIX_PATH}/pytorch
+    rm -rf "${PYTORCH_PREFIX_PATH}/pytorch"
+    mkdir -p "${PYTORCH_PREFIX_PATH}"
+    mv /tmp/libtorch "${PYTORCH_PREFIX_PATH}/pytorch"
 
 else
 
     # Build libtorch from sources
-    cd ${PYTORCH_PREFIX_PATH}
+    cd "${PYTORCH_PREFIX_PATH}" || exit
     if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
-    cd pytorch
+    cd pytorch || exit
 
     ${APT} install -y python3.10 python-is-python3 python3-pip
 
-    _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE=$(which python)
+    _GLIBCXX_USE_CXX11_ABI=1 ${CMAKE} -S . -B build/ -DBUILD_CAFFE2=1 -DUSE_CUDA=0 -DBUILD_TEST=0 -DBUILD_PYTHON=0 -DPYTHON_EXECUTABLE="$(which python)"
     make -C build/
 
 fi
