@@ -28,8 +28,8 @@ ${APT} install --no-install-recommends -y \
     libparquet-dev
 
 # Install latest CMAKE > 3.17
-wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-`uname -m`.sh -q -O /tmp/cmake-install.sh
+wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-$(uname -m).sh -q -O /tmp/cmake-install.sh
 chmod u+x /tmp/cmake-install.sh
-mkdir -p ${CMAKE_PREFIX}
-/tmp/cmake-install.sh --skip-license --prefix=${CMAKE_PREFIX}
+mkdir -p "${CMAKE_PREFIX}"
+/tmp/cmake-install.sh --skip-license --prefix="${CMAKE_PREFIX}"
 rm /tmp/cmake-install.sh
