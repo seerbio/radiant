@@ -58,13 +58,13 @@ COPY get-or-build-libtorch.sh /tmp/
 RUN chmod u+x /tmp/get-or-build-libtorch.sh \
     && PYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH} /tmp/get-or-build-libtorch.sh
 
-## Copy project source into the container
-#COPY ./ /src/PythiaDIACpp/
-#
-## Build the project in /app/
-#WORKDIR /app/
-#RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
-#    && make -j
+# Copy project source into the container
+COPY ./ /src/PythiaDIACpp/
+
+# Build the project in /app/
+WORKDIR /app/
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH}/pytorch \
+    && make -j
 
 ################################################
 #
