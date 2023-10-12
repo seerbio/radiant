@@ -3,7 +3,7 @@
 //
 
 #include "MsReaderBase.h"
-#include "MsReaderPointerFactory.h"
+#include "MsReaderPointerAcc.h"
 
 #include <QtTest/QtTest>
 
@@ -38,25 +38,32 @@ void MsReaderBaseTests::openMzMlTest() {
 
 //    QSKIP("SKIPPING FOR DEV");
 
-    QPair<Err, MsReaderPointer> msReaderFactoryResult = MsReaderPointerFactory::createInstance(m_mzMLFilePath);
-    QCOMPARE(msReaderFactoryResult.first, eNoError);
+    ERR_INIT
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(m_mzMLFilePath);
+    QCOMPARE(e, eNoError);
 
 }
 
 void MsReaderBaseTests::openPrqTest() {
 
-    QPair<Err, MsReaderPointer> msReaderFactoryResult = MsReaderPointerFactory::createInstance(m_prqFilePath);
-    QCOMPARE(msReaderFactoryResult.first, eNoError);
+    ERR_INIT
+
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(m_prqFilePath);
+    QCOMPARE(e, eNoError);
 }
 
 void MsReaderBaseTests::isDIATest() {
 
-    QPair<Err, MsReaderPointer> msReaderFactoryResult = MsReaderPointerFactory::createInstance(m_prqFilePath);
-    QCOMPARE(msReaderFactoryResult.first, eNoError);
+    ERR_INIT
 
-    MsReaderPointer msReaderPointer = msReaderFactoryResult.second;
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(m_prqFilePath);
+    QCOMPARE(e, eNoError);
 
-    const bool msFileIsDIA = msReaderPointer->isDIA();
+    const bool msFileIsDIA = msReaderPointerAcc.ptr->isDIA();
     QCOMPARE(msFileIsDIA, true);
 }
 
