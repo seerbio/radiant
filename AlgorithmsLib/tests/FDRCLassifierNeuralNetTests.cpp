@@ -85,9 +85,11 @@ void FDRCLassifierNeuralNetTests::initTest() {
 }
 
 void FDRCLassifierNeuralNetTests::execTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
+    // TODO
     const QString &scoredCandsFullFragsFilePath
             = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllFullFragIons.parquet");
 
