@@ -1,4 +1,15 @@
+# Local build/test directories
+build
+cmake
+pytorch
 
-.idea/
+# Obsolete directories
+ThirdPartyLibs/libtorch
+ThirdPartyLibs/arrow_parquet
+ThirdPartyLibs/arrow_src
 
-ThirdPartyLibs/libtorch/
+# Vim buffer files
+.*.s??
+
+# JetBrains IDE settings
+.idea

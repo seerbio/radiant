@@ -11,7 +11,6 @@
 
 # Based on Ubuntu 20.04 LTS ("Focal Fossa")
 FROM ubuntu:20.04 AS base
-
 #
 # Set locales to UTF-8
 #
@@ -42,48 +41,33 @@ FROM base AS build
 # After package installation, we remove any unnecessary packages
 # and run `apt-get clean` to remove any downloaded package archives.
 #
+ENV CMAKE_PREFIX="/usr/bin/cmake"
+COPY install-build-deps-ubuntu.sh /tmp/
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates lsb-release wget \
-    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
-    && apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
-    && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y ca-certificates wget git build-essential unzip\
-        python3.10 python-is-python3 python3-pip \
-        libboost-all-dev qtbase5-dev \
-        libarrow-dev \
-        libparquet-dev \
-    && pip install --no-cache-dir setuptools pyyaml \
+    && chmod u+x /tmp/install-build-deps-ubuntu.sh \
+    && APT='apt-get' /tmp/install-build-deps-ubuntu.sh \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest CMAKE > 3.17
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-`uname -m`.sh -q -O /tmp/cmake-install.sh \
-    && chmod u+x /tmp/cmake-install.sh \
-    && mkdir /usr/bin/cmake \
-    && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
-    && rm /tmp/cmake-install.sh
+ENV PATH="${CMAKE_PREFIX}/bin:${PATH}"
 
-ENV PATH="/usr/bin/cmake/bin:${PATH}"
-
-## https://pytorch.org
-#RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-#    && mkdir -p /src/PythiaDIACpp/ThirdPartyLibs/ \
-#    &&unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
-
-# Build libtorch from sources
-WORKDIR /src/
-RUN git clone --recursive https://github.com/pytorch/pytorch \
-    && cd pytorch \
-    && _GLIBCXX_USE_CXX11_ABI=1 python tools/build_libtorch.py
+ENV PYTORCH_PREFIX_PATH="/src"
+COPY get-or-build-libtorch.sh /tmp/
+RUN chmod u+x /tmp/get-or-build-libtorch.sh \
+    && apt-get update \
+    && APT='apt-get' CMAKE='cmake' /tmp/get-or-build-libtorch.sh \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
 
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
     && make -j
 
 ################################################
