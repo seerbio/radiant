@@ -22,8 +22,8 @@ struct ALGORITHMSLIB_EXPORTS ExtractPoints {
 
 namespace MsUtilsNamespace{
 
-    const extern auto ALGORITHMSLIB_EXPORTS sortAscMz = [](const QPointF &l, const QPointF &r){return l.x() < r.x();};
-    const extern auto ALGORITHMSLIB_EXPORTS sortAscIntensity = [](const QPointF &l, const QPointF &r){return l.y() < r.y();};
+    const extern std::function<void(void)> ALGORITHMSLIB_EXPORTS sortAscMz;
+    const extern std::function<void(void)> ALGORITHMSLIB_EXPORTS sortAscIntensity;
 }
 
 
