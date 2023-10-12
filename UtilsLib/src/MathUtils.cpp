@@ -12,13 +12,6 @@
 #include <vector>
 
 
-namespace MsUtilsNamespace{
-
-    const auto sortAscMz = [](const QPointF &l, const QPointF &r){return l.x() < r.x();};
-    const auto sortAscIntensity = [](const QPointF &l, const QPointF &r){return l.y() < r.y();};
-}
-
-
 namespace MathUtilsConstants {
 
     const double PI = 3.14159265359;

@@ -24,10 +24,10 @@ ExtractPoints MsUtils::extractPointsFromPoints(
     extractPointsOutput.intensityFoundVsSearched = QVector<QPointF>(_pointsToExtract.size(), {-1.0,-1.0});
 
     QVector<QPointF> pointsToExtract = _pointsToExtract;
-    std::sort(pointsToExtract.begin(), pointsToExtract.end(), MsUtilsNamespace::sortAscMz);
+    std::sort(pointsToExtract.begin(), pointsToExtract.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
 
     QVector<QPointF> points = _points;
-    std::sort(points.begin(), points.end(), MsUtilsNamespace::sortAscMz);
+    std::sort(points.begin(), points.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
 
     int currentExtractionIndex = 0;
     double extractionPointX = pointsToExtract.at(currentExtractionIndex).x();
