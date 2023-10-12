@@ -115,6 +115,8 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
 };
 
 
+class MsReaderPointerAcc;
+
 class FILEREADERSLIB_EXPORTS MsReaderParquet : public MsReaderBase {
 
 public:

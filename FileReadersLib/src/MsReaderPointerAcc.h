@@ -7,23 +7,33 @@
 
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
-#include "GlobalSettings.h"
 #include "MsReaderBase.h"
 
 #include <QSharedPointer>
 
 
-using MsReaderPointer = QSharedPointer<MsReaderBase>;
-
 using namespace Error;
 
-class FILEREADERSLIB_EXPORTS MsReaderPointerFactory {
+class FILEREADERSLIB_EXPORTS MsReaderPointerAcc {
 
 public:
 
-    static QPair<Err, MsReaderPointer> createInstance(const QString &filePath);
+    MsReaderPointerAcc() = default;
+
+    ~MsReaderPointerAcc() = default;
+
+    Err openFile(const QString &filePath);
+
+    QSharedPointer<MsReaderBase> ptr;
 
 
+private:
+
+    Err setMsReaderPointer(const QString &filePath);
+
+private:
+
+    QString m_cachedFilePath;
 
 };
 

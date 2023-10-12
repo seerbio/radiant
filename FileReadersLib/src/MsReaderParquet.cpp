@@ -5,6 +5,7 @@
 #include "MsReaderParquet.h"
 
 #include "ErrorUtils.h"
+#include "MsReaderPointerAcc.h"
 
 
 namespace {
@@ -143,14 +144,12 @@ Err MsReaderParquet::closeFile() {
 namespace {
 
     Err buildRowsToWrite(
-            const QSharedPointer<MsReaderBase> &sharedMsReaderBase,
+            const QMap<ScanNumber, MsScanInfo> &msScanInfos,
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
             QVector<QSharedPointer<ParquetReaderInputBase>> *ptrs
             ) {
 
         ERR_INIT
-
-        const QMap<ScanNumber, MsScanInfo> &msScanInfos = sharedMsReaderBase->getMsScanInfos();
-        const QMap<ScanNumber, ScanPoints> &scanPoints = sharedMsReaderBase->getScanPoints();
 
         QVector<MsParquetReaderRow> rowsToWrite;
         for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
@@ -201,7 +200,11 @@ Err MsReaderParquet::writeMsReaderToParquet(
     ERR_INIT
 
     QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
-    e = buildRowsToWrite(sharedMsReaderBase, &ptrs); ree;
+    e = buildRowsToWrite(
+            sharedMsReaderBase->getMsScanInfos(),
+            sharedMsReaderBase->getScanPoints(),
+            &ptrs
+            ); ree;
 
     e = ErrorUtils::isNotEmpty(ptrs); ree;
 
