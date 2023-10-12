@@ -183,7 +183,7 @@ ScanPoints TurboXIC::Private::extractSpectrum(
         scanPoints.push_back({mz, intensity});
     }
 
-    std::sort(scanPoints.begin(), scanPoints.end(), MsUtilsNamespace::sortAscMz);
+    std::sort(scanPoints.begin(), scanPoints.end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
 
     return scanPoints;
 }

@@ -361,7 +361,7 @@ Err MS2ChargeDeconvolvotron::Private::deisotopeScanPoints(
         e = updateScanPoints(chargePointsSubtracted, &ms2PointsExtractomatic); ree
     }
 
-    std::sort(scanPointsDeisotoped->begin(), scanPointsDeisotoped->end(), MsUtilsNamespace::sortAscMz);
+    std::sort(scanPointsDeisotoped->begin(), scanPointsDeisotoped->end(), [](const QPointF &l, const QPointF &r){return l.x() < r.x();});
 
     ERR_RETURN
 }

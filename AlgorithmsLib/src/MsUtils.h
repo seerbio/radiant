@@ -20,13 +20,6 @@ struct ALGORITHMSLIB_EXPORTS ExtractPoints {
 };
 
 
-namespace MsUtilsNamespace{
-
-    const extern std::function<void(void)> ALGORITHMSLIB_EXPORTS sortAscMz;
-    const extern std::function<void(void)> ALGORITHMSLIB_EXPORTS sortAscIntensity;
-}
-
-
 class ALGORITHMSLIB_EXPORTS MsUtils {
 
 
