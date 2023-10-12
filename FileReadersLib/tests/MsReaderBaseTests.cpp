@@ -35,6 +35,7 @@ private:
 };
 
 void MsReaderBaseTests::openMzMlTest() {
+    QSKIP("TODO: enable with internal test data");
 
 //    QSKIP("SKIPPING FOR DEV");
 
@@ -47,6 +48,7 @@ void MsReaderBaseTests::openMzMlTest() {
 }
 
 void MsReaderBaseTests::openPrqTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
@@ -56,6 +58,7 @@ void MsReaderBaseTests::openPrqTest() {
 }
 
 void MsReaderBaseTests::isDIATest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

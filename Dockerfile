@@ -86,7 +86,7 @@ FROM build AS test
 # resulting container. See README.md for more.
 #
 WORKDIR /app/
-CMD ["ctest"]
+CMD ["ctest", "--output-on-failure"]
 
 ################################################
 ##

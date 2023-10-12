@@ -13,4 +13,4 @@
 # "Strict mode"
 set -euo pipefail
 
-cmake/bin/ctest --test-dir build/
+cmake/bin/ctest --test-dir build/ --output-on-failure

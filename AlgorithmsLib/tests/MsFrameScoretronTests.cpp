@@ -127,9 +127,11 @@ namespace {
 
 }//namespace
 void MsFrameScoretronTests::scoreCandidatesRecalTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
+    // TODO
     const QString iRTReCalFilePath
         = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq.iRT");
 

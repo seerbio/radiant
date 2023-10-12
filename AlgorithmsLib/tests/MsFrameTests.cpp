@@ -26,9 +26,11 @@ private slots:
 
 
 void MsFrameTests::preprocessMsFrame() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
+    // TODO
     const QString prqfilepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 
