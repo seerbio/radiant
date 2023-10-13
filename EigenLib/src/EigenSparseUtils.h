@@ -33,7 +33,7 @@ public:
             return T();
         }
 
-        const Eigen:MatrixX<T> castVec = mat;
+        const Eigen::MatrixX<T> castVec = mat;
         return castVec.maxCoeff();
     }
 
