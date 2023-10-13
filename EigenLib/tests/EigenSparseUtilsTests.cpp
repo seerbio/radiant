@@ -60,8 +60,7 @@ void EigenSparseUtilsTests::initTestCase() {
     m_testVecDouble.insert(22) = 666.6;
     m_testVecDouble.insert(88) = -666.6;
 
-    // TODO: this causes a crash on aarch64!
-    //m_testVecInt = m_testVecDouble.cast<int>();
+    m_testVecInt = m_testVecDouble.cast<int>();
     m_testVecDoubleRowMajor = m_testVecDouble;
 
     m_testMatInt.resize(100, 100);
