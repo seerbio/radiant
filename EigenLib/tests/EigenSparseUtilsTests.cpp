@@ -35,6 +35,7 @@ private Q_SLOTS:
     void maxTest();
     void minTest();
     void meanTest();
+    void meanNonEmptyAllZerosTest();
     void stDevTest();
     void isValidTest();
     void medianTest();
@@ -100,6 +101,24 @@ void EigenSparseUtilsTests::meanTest() {
     QCOMPARE(EigenSparseUtils::mean(m_testMatInt), 2.25);
     QCOMPARE(EigenSparseUtils::mean(m_testMatIntRowMajor), 2.25);
     QCOMPARE(EigenSparseUtils::mean(m_testMatIntEmpty), 0.0);
+}
+
+void EigenSparseUtilsTests::meanNonEmptyAllZerosTest() {
+    Eigen::SparseVector<int> intVec;
+    intVec.resize(100);
+    QCOMPARE(EigenSparseUtils::mean(intVec), 0.0);
+
+    Eigen::SparseVector<double> doubleVec;
+    doubleVec.resize(100);
+    QCOMPARE(EigenSparseUtils::mean(doubleVec), 0.0);
+
+    Eigen::SparseMatrix<int> intMat;
+    intMat.resize(100, 100);
+    QCOMPARE(EigenSparseUtils::mean(intMat), 0.0);
+
+    Eigen::SparseMatrix<double> doubleMat;
+    doubleMat.resize(100, 100);
+    QCOMPARE(EigenSparseUtils::mean(doubleMat), 0.0);
 }
 
 
