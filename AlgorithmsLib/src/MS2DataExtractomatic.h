@@ -46,7 +46,6 @@ public:
 
     Err extractMS2ForCandidates(
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
-            double fdrThreshold,
             QVector<ScoredCandidate> *scoredCandidatesAll
             );
 

@@ -60,7 +60,6 @@ private:
 
     Err mainAnalysis(
             MsReaderPointerAcc *msReaderPointerAcc,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded,
             QVector<ScoredCandidate> *scoredCandidatesAll
             );
 

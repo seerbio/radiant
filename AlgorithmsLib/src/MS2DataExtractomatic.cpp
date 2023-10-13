@@ -70,7 +70,6 @@ Err MS2DataExtractomatic::init(
 
 Err MS2DataExtractomatic::extractMS2ForCandidates(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
-        double fdrThreshold,
         QVector<ScoredCandidate> *scoredCandidatesAll
         ) {
 
@@ -323,7 +322,9 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     ); ree;
 
     qDebug() << "Adjusted weights:" << weights;
-    qDebug() << "PSM count 10% FDR" << psmCountTenPercentFDR;
+
+    QMap<QString, int> unused;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAll, &unused); ree;
 
     ERR_RETURN
 }
