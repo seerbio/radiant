@@ -103,14 +103,16 @@ public:
     */
     template<typename T>
     static double mean(const Eigen::SparseMatrix<T> &mat){
-        if(mat.size() == 0){
+        const int nonZeros = mat.nonZeros();
+
+        if(mat.size() == 0 || nonZeros == 0){
             return double();
         }
 
         Eigen::SparseMatrix<T> copy = mat;
         copy.makeCompressed();
         const double coeffsSum = static_cast<double>(copy.coeffs().sum());
-        return coeffsSum / mat.nonZeros();
+        return coeffsSum / nonZeros;
     }
 
 
