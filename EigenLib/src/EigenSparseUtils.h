@@ -33,8 +33,8 @@ public:
             return T();
         }
 
-        const Eigen::VectorXd castVec = mat.template cast<double>();
-        return static_cast<T>(castVec.maxCoeff());
+        const Eigen::MatrixX<T> castMat = mat;
+        return castMat.maxCoeff();
     }
 
 
