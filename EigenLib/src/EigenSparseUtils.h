@@ -148,8 +148,11 @@ public:
             return double();
         }
 
-        const double meanOfVec = mean(mat);
-        const Eigen::VectorXd diffVec = mat.coeffs().array().template cast<double>() - meanOfVec;
+        Eigen::SparseMatrix<T> copy = mat;
+        copy.makeCompressed();
+
+        const double meanOfVec = mean(copy);
+        const Eigen::VectorXd diffVec = copy.coeffs().array().template cast<double>() - meanOfVec;
         return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / nonZeros);
     }
 
