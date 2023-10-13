@@ -215,50 +215,50 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     ); ree;
 #endif
 
-//#define USE_NEURAL_NET_CLASSIFIER
-//#ifdef USE_NEURAL_NET_CLASSIFIER
-//    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
-//    e = applyNeuralNetClassifier(
-//            scoredCandidatesAll,
-//            scoredCandidatesAllUpdated,
-//            msReaderPointerAcc.ptr->scanTimeMinMax(),
-//            &scoredCandidatesClassifierUpdated
-//            ); ree;
-//
-//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-//    filterScoreCandidatesByFDR(
-//            scoredCandidatesClassifierUpdated,
-//            0.01,
-//            true,
-//            &scoredCandidatesAllThresholded
-//    );
-//    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
-//
-//    e = updateProteinGroupAnnotation(
-//            m_fastaUri,
-//            &scoredCandidatesClassifierUpdated
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
-//#else
-//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-//    filterScoreCandidatesByFDR(
-//            scoredCandidatesAllUpdated,
-//            0.01,
-//            true,
-//            &scoredCandidatesAllThresholded
-//    );
-//    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
-//
-//    e = updateProteinGroupAnnotation(
-//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-//            &scoredCandidatesAllUpdated
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
-//#endif
+#define USE_NEURAL_NET_CLASSIFIER
+#ifdef USE_NEURAL_NET_CLASSIFIER
+    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
+    e = applyNeuralNetClassifier(
+            scoredCandidatesAll,
+            scoredCandidatesAllUpdated,
+            msReaderPointerAcc.ptr->scanTimeMinMax(),
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesClassifierUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+#else
+    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+    filterScoreCandidatesByFDR(
+            scoredCandidatesAllUpdated,
+            0.01,
+            true,
+            &scoredCandidatesAllThresholded
+    );
+    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
+
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredCandidatesAllUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
+#endif
 
     ERR_RETURN
 }
