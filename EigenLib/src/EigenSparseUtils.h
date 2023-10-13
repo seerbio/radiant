@@ -142,14 +142,15 @@ public:
     */
     template <typename T>
     static double stDev(const Eigen::SparseMatrix<T> &mat){
+        const int nonZeros = mat.nonZeros();
 
-        if(mat.size() == 0){
+        if(mat.size() == 0 || nonZeros == 0){
             return double();
         }
 
         const double meanOfVec = mean(mat);
         const Eigen::VectorXd diffVec = mat.coeffs().array().template cast<double>() - meanOfVec;
-        return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / static_cast<double>(mat.nonZeros()));
+        return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / nonZeros);
     }
 
 

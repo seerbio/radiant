@@ -37,6 +37,7 @@ private Q_SLOTS:
     void meanTest();
     void meanNonEmptyAllZerosTest();
     void stDevTest();
+    void stDevNonEmptyAllZerosTest();
     void isValidTest();
     void medianTest();
     void removeElementBelowThresholdTest();
@@ -129,6 +130,24 @@ void EigenSparseUtilsTests::stDevTest() {
     QCOMPARE(std::floor(EigenSparseUtils::stDev(m_testMatInt)), std::floor(470.5));
     QCOMPARE(std::floor(EigenSparseUtils::stDev(m_testMatIntRowMajor)), std::floor(470.5));
     QCOMPARE(std::floor(EigenSparseUtils::stDev(m_testMatIntEmpty)), 0.0);
+}
+
+void EigenSparseUtilsTests::stDevNonEmptyAllZerosTest() {
+    Eigen::SparseVector<int> intVec;
+    intVec.resize(100);
+    QCOMPARE(EigenSparseUtils::stDev(intVec), 0.0);
+
+    Eigen::SparseVector<double> doubleVec;
+    doubleVec.resize(100);
+    QCOMPARE(EigenSparseUtils::stDev(doubleVec), 0.0);
+
+    Eigen::SparseMatrix<int> intMat;
+    intMat.resize(100, 100);
+    QCOMPARE(EigenSparseUtils::stDev(intMat), 0.0);
+
+    Eigen::SparseMatrix<double> doubleMat;
+    doubleMat.resize(100, 100);
+    QCOMPARE(EigenSparseUtils::stDev(doubleMat), 0.0);
 }
 
 
