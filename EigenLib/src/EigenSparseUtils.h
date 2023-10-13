@@ -241,7 +241,12 @@ public:
 
     template <typename T>
     static double median(const Eigen::SparseMatrix<T> &mat){
-        const Eigen::VectorXd v = mat.coeffs().template cast<double>();
+        Eigen::SparseMatrix<T> copy = mat;
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
+
+        const Eigen::VectorXd v = copy.coeffs().template cast<double>();
         std::vector<double> qvec(v.data(), v.data() + v.size());
         return MathUtils::median(qvec);
     }
