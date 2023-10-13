@@ -110,7 +110,10 @@ public:
         }
 
         Eigen::SparseMatrix<T> copy = mat;
-        copy.makeCompressed();
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
+
         const double coeffsSum = static_cast<double>(copy.coeffs().sum());
         return coeffsSum / nonZeros;
     }
@@ -149,7 +152,9 @@ public:
         }
 
         Eigen::SparseMatrix<T> copy = mat;
-        copy.makeCompressed();
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
 
         const double meanOfVec = mean(copy);
         const Eigen::VectorXd diffVec = copy.coeffs().array().template cast<double>() - meanOfVec;
