@@ -107,8 +107,10 @@ public:
             return double();
         }
 
-        const T coeffsSum = mat.coeffs().sum();
-        return coeffsSum / static_cast<double>(mat.nonZeros());
+        Eigen::SparseMatrix<T> copy = mat;
+        copy.makeCompressed();
+        const double coeffsSum = static_cast<double>(copy.coeffs().sum());
+        return coeffsSum / mat.nonZeros();
     }
 
 
