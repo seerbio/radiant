@@ -141,33 +141,34 @@ CMD ["ctest", "--output-on-failure"]
 FROM base AS app
 
 
- Set labels
+# Set labels
 
 LABEL author="Seer, Inc."
 LABEL description="PythiaDIACpp"
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y build-essential cmake qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools  \
-    hdf5-tools libhdf5-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 libcurl4-openssl-dev  libbrotli-dev \
+    && apt-get install --no-install-recommends -y \
+        libbrotli1 \
+        libcurl4 \
+        libgomp1 \
+        libnuma1 \
+        libopenmpi3 \
+        libqt5concurrent5 \
+        libre2-5 \
+        libsnappy1v5 \
+        libthrift-0.13.0 \
+        libutf8proc2 \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=deploy /app/ /app/
-COPY --from=build /app/AlgorithmsLib/ /app/AlgorithmsLib/
-COPY --from=build /app/ChemLib/ /app/ChemLib/
-COPY --from=build /app/EigenLib/ /app/EigenLib/
-COPY --from=build /app/FileReadersLib/ /app/FileReadersLib/
-COPY --from=build /app/MachineLrnLib/ /app/MachineLrnLib/
-COPY --from=build /app/UtilsLib/ /app/UtilsLib/
-COPY --from=build /app/WorkFlowsLib/ /app/WorkFlowsLib/
-COPY --from=build /app/KarnnLib/ /app/KarnnLib/
-COPY --from=build /app/ThirdPartyLibs/arrow_parquet/release/. /app/bin/
+COPY --from=build /app/ /app/
+COPY --from=build /src/pytorch/build/lib/* /usr/lib/
 
 # Set up a dedicated folder as the normal working dir
 WORKDIR /work/
 
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
-# this binary (e.g. `docker run seer/pythia -h`). To run a different binary requires
-# overriding the entrypoint (e.g. `docker run --entrypoint /app/bin/Pythia)
-ENTRYPOINT ["/app/bin/PythiaDIACpp"]
+# this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
+# overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
+ENTRYPOINT ["/app/bin/PythiaDIA"]
