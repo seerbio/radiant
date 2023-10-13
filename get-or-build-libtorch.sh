@@ -56,7 +56,7 @@ else
 
     # Install Python, which is needed by the libtorch build
     ${APT} install -y python3.10 python-is-python3 python3-pip
-    pip install setuptools pyyaml
+    pip install setuptools pyyaml typing-extensions
     
     if [ -f "${CMAKE}" ]
     then
