@@ -47,8 +47,7 @@ public:
     Err extractMS2ForCandidates(
             const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
             double fdrThreshold,
-            QVector<ScoredCandidate> *scoredCandidatesAll,
-            QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+            QVector<ScoredCandidate> *scoredCandidatesAll
             );
 
     static Err filterScoreCandidatesByFDR(
@@ -58,7 +57,10 @@ public:
             QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
     );
 
-    static Err outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll);
+    static Err outputFDRResults(
+            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            QMap<QString, int> *fdrVsCount
+            );
 
 private:
 

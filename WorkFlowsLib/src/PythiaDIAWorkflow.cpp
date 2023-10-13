@@ -138,118 +138,118 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
 #ifndef USE_FILE_CACHING
     if (m_pythiaParameters.deisotopeScans) {
-        e = deisotopeScans(&msReaderPointerAcc); ree;
+//        e = deisotopeScans(&msReaderPointerAcc); ree;
     }
 #endif
 
     e = buildCalibration(&msReaderPointerAcc); ree;
 
-//#define BYPASS_OPTI
-#ifndef BYPASS_OPTI
-    e = optimizeParameters(&msReaderPointerAcc); ree;
-#else
-    //Pythia Main Library
-//    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
-//    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
+////#define BYPASS_OPTI
+//#ifndef BYPASS_OPTI
+//    e = optimizeParameters(&msReaderPointerAcc); ree;
+//#else
+//    //Pythia Main Library
+////    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
+////    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
+////    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+//
+//    //Entrapment libarary
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
+//    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-
-    //Entrapment libarary
-    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
-    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-#endif
-
-//#define BYPASS_MAIN_ANALYSIS
-#ifndef BYPASS_MAIN_ANALYSIS
-    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
-    QVector<ScoredCandidate> scoredCandidatesAll;
-    e = mainAnalysis(
-            &msReaderPointerAcc,
-            &scoredCandidatesTargetsFDRThresholded,
-            &scoredCandidatesAll
-            ); ree;
-
-    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
-    e = removeInterferingCandidates(
-            &msReaderPointerAcc,
-            scoredCandidatesTargetsFDRThresholded,
-            scoredCandidatesAll,
-            &scoredCandidatesAllUpdated
-            ); ree;
-
-    qDebug() << "scoredCandidatesAll size" << scoredCandidatesAll.size();
-    qDebug() << "ScoredCandidatesAllUpdated size" << scoredCandidatesAllUpdated.size();
-    qDebug() << "ScoredCandidatesThresholded size" << scoredCandidatesTargetsFDRThresholded.size();
-
-//#define WRITE_FILTERED_PSM
-#ifdef WRITE_FILTERED_PSM
-    qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
-    e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-            &scoredCandidatesAllUpdated
-    ); ree;
-    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet"); ree;
-    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet"); ree;
-#endif
-
-#else
-    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
-    e = ParquetReader::read(
-            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllUpdated.parquet",
-            &scoredCandidatesAllUpdated
-            ); ree;
-
-    QVector<ScoredCandidate> scoredCandidatesAll;
-    e = ParquetReader::read(
-            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAll.parquet",
-            &scoredCandidatesAll
-    ); ree;
-#endif
-
-#define USE_NEURAL_NET_CLASSIFIER
-#ifdef USE_NEURAL_NET_CLASSIFIER
-    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
-    e = applyNeuralNetClassifier(
-            scoredCandidatesAll,
-            scoredCandidatesAllUpdated,
-            msReaderPointerAcc.ptr->scanTimeMinMax(),
-            &scoredCandidatesClassifierUpdated
-            ); ree;
-
-    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-    filterScoreCandidatesByFDR(
-            scoredCandidatesClassifierUpdated,
-            0.01,
-            true,
-            &scoredCandidatesAllThresholded
-    );
-    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
-
-    e = updateProteinGroupAnnotation(
-            m_fastaUri,
-            &scoredCandidatesClassifierUpdated
-            ); ree;
-
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
-#else
-    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-    filterScoreCandidatesByFDR(
-            scoredCandidatesAllUpdated,
-            0.01,
-            true,
-            &scoredCandidatesAllThresholded
-    );
-    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
-
-    e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-            &scoredCandidatesAllUpdated
-            ); ree;
-
-    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
-#endif
+//#endif
+//
+////#define BYPASS_MAIN_ANALYSIS
+//#ifndef BYPASS_MAIN_ANALYSIS
+//    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+//    QVector<ScoredCandidate> scoredCandidatesAll;
+//    e = mainAnalysis(
+//            &msReaderPointerAcc,
+//            &scoredCandidatesTargetsFDRThresholded,
+//            &scoredCandidatesAll
+//            ); ree;
+//
+//    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
+//    e = removeInterferingCandidates(
+//            &msReaderPointerAcc,
+//            scoredCandidatesTargetsFDRThresholded,
+//            scoredCandidatesAll,
+//            &scoredCandidatesAllUpdated
+//            ); ree;
+//
+//    qDebug() << "scoredCandidatesAll size" << scoredCandidatesAll.size();
+//    qDebug() << "ScoredCandidatesAllUpdated size" << scoredCandidatesAllUpdated.size();
+//    qDebug() << "ScoredCandidatesThresholded size" << scoredCandidatesTargetsFDRThresholded.size();
+//
+////#define WRITE_FILTERED_PSM
+//#ifdef WRITE_FILTERED_PSM
+//    qDebug() << scoredCandidatesAllUpdated.size() << "Candidates written";
+//    e = updateProteinGroupAnnotation(
+//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+//            &scoredCandidatesAllUpdated
+//    ); ree;
+//    e = ParquetReader::write(scoredCandidatesAll, "scoredCandidatesAll.parquet"); ree;
+//    e = ParquetReader::write(scoredCandidatesAllUpdated, "scoredCandidatesAllUpdated.parquet"); ree;
+//#endif
+//
+//#else
+//    QVector<ScoredCandidate> scoredCandidatesAllUpdated;
+//    e = ParquetReader::read(
+//            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllUpdated.parquet",
+//            &scoredCandidatesAllUpdated
+//            ); ree;
+//
+//    QVector<ScoredCandidate> scoredCandidatesAll;
+//    e = ParquetReader::read(
+//            "/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAll.parquet",
+//            &scoredCandidatesAll
+//    ); ree;
+//#endif
+//
+//#define USE_NEURAL_NET_CLASSIFIER
+//#ifdef USE_NEURAL_NET_CLASSIFIER
+//    QVector<ScoredCandidate> scoredCandidatesClassifierUpdated;
+//    e = applyNeuralNetClassifier(
+//            scoredCandidatesAll,
+//            scoredCandidatesAllUpdated,
+//            msReaderPointerAcc.ptr->scanTimeMinMax(),
+//            &scoredCandidatesClassifierUpdated
+//            ); ree;
+//
+//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+//    filterScoreCandidatesByFDR(
+//            scoredCandidatesClassifierUpdated,
+//            0.01,
+//            true,
+//            &scoredCandidatesAllThresholded
+//    );
+//    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+//
+//    e = updateProteinGroupAnnotation(
+//            m_fastaUri,
+//            &scoredCandidatesClassifierUpdated
+//            ); ree;
+//
+//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+//#else
+//    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
+//    filterScoreCandidatesByFDR(
+//            scoredCandidatesAllUpdated,
+//            0.01,
+//            true,
+//            &scoredCandidatesAllThresholded
+//    );
+//    scoredCandidatesAllUpdated = scoredCandidatesAllThresholded;
+//
+//    e = updateProteinGroupAnnotation(
+//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+//            &scoredCandidatesAllUpdated
+//            ); ree;
+//
+//    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+//    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
+//#endif
 
     ERR_RETURN
 }
@@ -361,6 +361,31 @@ namespace {
         ERR_RETURN
     }
 
+    Err getBestFDRFraction(
+            const QMap<QString, int> &fdrResults,
+            int minTrainingThreshold
+            ) {
+
+        ERR_INIT
+
+        const QStringList fdrFractions = {
+                "1",
+                "2",
+                "5",
+                "10",
+        };
+
+        for (const QString &fdrStr : fdrFractions) {
+            if (fdrResults.value(fdrStr) > minTrainingThreshold) {
+                return fdrFractions;
+                ERR_RETURN
+            }
+        }
+
+
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) {
@@ -385,7 +410,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
 
     int onePercentFDRCount = 0;
-    const double maxTrainingFraction = 1.1;
+    const double maxTrainingFraction = 0.25;//1.1;
     const int minTrainingCount = 100;
 
     MS2DataExtractomatic ms2DataExtractomatic;
@@ -409,16 +434,36 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
         e = ms2DataExtractomatic.extractMS2ForCandidates(
                 uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 fdrThreshold,
-                &scoredCandidatesAll,
+                &scoredCandidatesAll
+        ); ree;
+
+        const double fdrFraction = 0.01;
+        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fdrFraction,
+                &onePercentFDRCount
+                );
+
+        e = filterScoreCandidatesByFDR(
+                scoredCandidatesAll,
+                fdrThreshold,
+                false,
                 &scoredCandidatesTargetsFDRThresholded
         ); ree;
 
-        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(scoredCandidatesAll, 0.01, &onePercentFDRCount);
+        QMap<QString, int> unused;
+        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, &unused); ree;
 
         calibrationSelectionFraction += calibrationSelectionFractionIncrement;
+
     }
 
-    if (scoredCandidatesTargetsFDRThresholded.isEmpty()) {
+    if (scoredCandidatesTargetsFDRThresholded.size() < minTrainingCount) {
+
+        QMap<QString, int> fdrResults;
+        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, &fdrResults); ree;
+
+        qDebug() << fdrResults;
 
         const double fallBackFDR = 0.1;
         e = MS2DataExtractomatic::filterScoreCandidatesByFDR(
@@ -427,7 +472,6 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
                 true,
                 &scoredCandidatesTargetsFDRThresholded
                 ); ree;
-
     }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
@@ -813,12 +857,10 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc
         ); ree;
 
         QVector<ScoredCandidate> scoredCandidatesAll;
-        QVector<ScoredCandidate> unused;
         e = ms2DataExtractomatic.extractMS2ForCandidates(
                 uniqueInfoScanKeyVsCandidatePeptideCalibration,
                 fdrThreshold,
-                &scoredCandidatesAll,
-                &unused
+                &scoredCandidatesAll
                 ); ree;
 
        int targetCountAboveFDRQValueThreshold;
@@ -905,7 +947,13 @@ Err PythiaDIAWorkflow::mainAnalysis(
     e = ms2DataExtractomatic.extractMS2ForCandidates(
             uniqueInfoScanKeyVsCandidatePeptides,
             fdrThreshold,
-            scoredCandidatesAll,
+            scoredCandidatesAll
+    ); ree;
+
+    e = MS2DataExtractomatic::filterScoreCandidatesByFDR(
+            *scoredCandidatesAll,
+            fdrThreshold,
+            true,
             scoredCandidatesTargetsFDRThresholded
     ); ree;
 
@@ -1210,7 +1258,8 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
             m_pythiaParameters.pValThreshold
             );
 
-    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated); ree;
+    QMap<QString, int> fdrCountResultsUnused;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated, &fdrCountResultsUnused); ree;
 
     ERR_RETURN
 }

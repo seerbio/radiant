@@ -71,8 +71,7 @@ Err MS2DataExtractomatic::init(
 Err MS2DataExtractomatic::extractMS2ForCandidates(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
         double fdrThreshold,
-        QVector<ScoredCandidate> *scoredCandidatesAll,
-        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+        QVector<ScoredCandidate> *scoredCandidatesAll
         ) {
 
     ERR_INIT
@@ -88,15 +87,6 @@ Err MS2DataExtractomatic::extractMS2ForCandidates(
             m_msReaderPointerAcc->ptr->scanTimeMinMax(),
             scoredCandidatesAll
     ); ree;
-
-    e = filterScoreCandidatesByFDR(
-            *scoredCandidatesAll,
-            fdrThreshold,
-            false,
-            scoredCandidatesTargetsFDRThresholded
-    ); ree;
-
-    e = outputFDRResults(*scoredCandidatesAll); ree;
 
     ERR_RETURN
 }
@@ -532,7 +522,10 @@ Err MS2DataExtractomatic::fitWeightsLogic(
     ERR_RETURN
 }
 
-Err MS2DataExtractomatic::outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
+Err MS2DataExtractomatic::outputFDRResults(
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
+        QMap<QString, int> *fdrVsCount
+        ) {
 
     ERR_INIT
 
@@ -544,8 +537,9 @@ Err MS2DataExtractomatic::outputFDRResults(const QVector<ScoredCandidate> &score
                 fdrThresh,
                 &foundAtThreshold
         ); ree;
-
-        qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
+        const double fdrPercent = fdrThresh * 100;
+        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
     }
 
     ERR_RETURN
