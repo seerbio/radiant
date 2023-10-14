@@ -72,7 +72,9 @@ using XICPoint = QPair<ScanNumber, Intensity>;
 using XVal = double;
 using YVal = double;
 
-struct UTILSLIB_EXPORTS MS2Ion {
+class UTILSLIB_EXPORTS MS2Ion {
+
+public:
 
     double mz = -1.0;
     double intensity = -1.0;
@@ -81,13 +83,14 @@ struct UTILSLIB_EXPORTS MS2Ion {
     int rank = -1;
 
     MS2Ion() = default;
+    ~MS2Ion() = default;
 
     MS2Ion(
         double mz,
         double intensity,
         QString ionLabel
     )
-    :mz(mz)
+    : mz(mz)
     , intensity(intensity)
     , ionLabel(std::move(ionLabel))
     {}

@@ -260,6 +260,8 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
 #endif
 
+    qDebug() << "testme";
+
     ERR_RETURN
 }
 
@@ -429,17 +431,8 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
     QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
 
     int onePercentFDRCount = 0;
-    const double maxTrainingFraction = 0.61;
+    const double maxTrainingFraction = 0.21;
     const int minTrainingCount = 100;
-
-    MS2DataExtractomatic ms2DataExtractomatic;
-    e = ms2DataExtractomatic.init(
-            m_pythiaParameters,
-            topNMs2IonsCalibration,
-            useExtendedScores,
-            useNeuralNetworkScores,
-            msReaderPointerAcc
-            ); ree;
 
     while (calibrationSelectionFraction < maxTrainingFraction && onePercentFDRCount < minTrainingCount) {
 
@@ -450,6 +443,15 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
                 topNMs2IonsCalibration,
                 calibrationSelectionFraction,
                 &uniqueInfoScanKeyVsCandidatePeptideCalibration
+        ); ree;
+
+        MS2DataExtractomatic ms2DataExtractomatic;
+        e = ms2DataExtractomatic.init(
+                m_pythiaParameters,
+                topNMs2IonsCalibration,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                msReaderPointerAcc
         ); ree;
 
         e = ms2DataExtractomatic.extractMS2ForCandidates(

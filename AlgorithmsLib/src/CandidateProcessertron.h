@@ -129,7 +129,12 @@ namespace ScoredCandidateNamespace {
     };
 }
 
-struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
+class FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
+
+public:
+
+    ScoredCandidate() = default;
+    ~ScoredCandidate() = default;
 
     PeptideStringWithMods peptideStringWithMods;
     double cosineSimSum100 = -1.0;
@@ -157,10 +162,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> mzFoundMeanVec;
     QVector<double> mzFoundStDevVec;
     QVector<double> intensityFoundMaxVec;
-    QVector<int> frameIndexMaxDiffFromAnchorVec;
+//    QVector<int> frameIndexMaxDiffFromAnchorVec;
     QVector<double> cosineSimToAnchorVec;
-    QVector<double> klDivToAnchorVec;
-    QVector<int> peakPointCountFoundVec;
+//    QVector<double> klDivToAnchorVec;
+//    QVector<int> peakPointCountFoundVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -204,15 +209,15 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
                 {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
                 {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
-                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
+//                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
-                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
+//                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
                 {TARGET_KEY, QVariant(targetKey)},
                 {X_CORR, QVariant(xCorr)},
                 {KL_DIV_SUM, QVariant(klDivSum)},
-                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
+//                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
@@ -273,9 +278,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
         intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
+//        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
+//        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
         xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
@@ -286,7 +291,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
         cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
-        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
+//        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();

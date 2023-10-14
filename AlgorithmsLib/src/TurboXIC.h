@@ -12,7 +12,13 @@
 
 using namespace Error;
 
-struct XICPoints {
+class XICPoints {
+
+public:
+
+    XICPoints() = default;
+    ~XICPoints() = default;
+
     QMap<ScanNumber, double> scanNumbersVsIntensityVals;
     QMap<ScanNumber, QVector<double>> scanNumberVsMzVals;
 };

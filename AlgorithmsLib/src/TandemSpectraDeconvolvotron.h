@@ -14,7 +14,13 @@
 
 using namespace Error;
 
-struct TandemDeconvolverResult {
+class TandemDeconvolverResult {
+
+public:
+
+    TandemDeconvolverResult() = default;
+    ~TandemDeconvolverResult() = default;
+
     DiscScore discScore = -1.0;
     double tTestVal = -1.0;
     double pVal = -1.0;

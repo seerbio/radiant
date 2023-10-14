@@ -92,7 +92,12 @@ Err MS2DataExtractomatic::extractMS2ForCandidates(
 
 namespace {
 
-    struct ParallelProcessingInput {
+    class ParallelProcessingInput {
+
+    public:
+        ParallelProcessingInput() = default;
+        ~ParallelProcessingInput() = default;
+
         UniqueMsInfoScanKey uniqueMsInfoScanKey;
         PythiaParameters pythiaParameters;
         MsCalibratomatic msCalibratomatic;

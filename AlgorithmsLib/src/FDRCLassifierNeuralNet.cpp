@@ -640,21 +640,21 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(scoreCandidate.discriminateScore);
         scores.push_back(std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3));
 
-        QVector<double> ppmVec;
-        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
-
-            const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
-            if (i >= scoreCandidate.mzFoundMeanVec.size()) {
-                break;
-            }
-
-            const double mzFound = scoreCandidate.mzFoundMeanVec[i];
-
-            const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-            ppmVec.push_back(std::min(ppm, 100.0));
-        }
-        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
-        scores.append(ppmMz);
+//        QVector<double> ppmVec;
+//        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
+//
+//            const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
+//            if (i >= scoreCandidate.mzFoundMeanVec.size()) {
+//                break;
+//            }
+//
+//            const double mzFound = scoreCandidate.mzFoundMeanVec[i];
+//
+//            const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
+//            ppmVec.push_back(std::min(ppm, 100.0));
+//        }
+//        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
+//        scores.append(ppmMz);
 
         scores.push_back(scoreCandidate.matrixPValue);
         scores.push_back(scoreCandidate.matrixWeight);

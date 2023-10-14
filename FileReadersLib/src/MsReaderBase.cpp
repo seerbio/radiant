@@ -338,7 +338,7 @@ Err MsReaderBase::collateTandemPrecursorTargetsDIA(
 
     e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
     e = ErrorUtils::isNotEmpty(m_scanPoints); ree;
-    e = ErrorUtils::isTrue(isDIA()); ree;
+//    e = ErrorUtils::isTrue(isDIA()); ree;
 
     const int msLevel = 2;
     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);

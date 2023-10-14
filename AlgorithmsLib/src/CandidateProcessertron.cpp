@@ -12,7 +12,10 @@
 #include "ParallelUtils.h"
 
 
-CandidateProcessertron::CandidateProcessertron() : m_peakWidthMin(3) {}
+CandidateProcessertron::CandidateProcessertron()
+: m_peakWidthMin(3)
+, m_topNMS2Ions(-1)
+{}
 
 namespace{
 
