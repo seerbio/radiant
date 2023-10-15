@@ -327,6 +327,8 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     ); ree;
 
     qDebug() << "Adjusted weights:" << weights;
+    qDebug() << "*******";
+    qDebug() << "Averages:" << b;
 
     QMap<QString, int> unused;
     e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAll, &unused); ree;
