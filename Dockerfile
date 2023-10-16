@@ -9,8 +9,8 @@
 #
 ################################################
 
-# Based on Ubuntu 20.04 LTS ("Focal Fossa")
-FROM ubuntu:20.04 AS base
+# Based on Ubuntu 22.04 LTS ("Jammy Jellyfish")
+FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
