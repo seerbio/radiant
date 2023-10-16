@@ -332,7 +332,7 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     qDebug() << "Averages:" << b;
 
     QMap<QString, int> unused;
-    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAll, &unused); ree;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAll, true, &unused); ree;
 
     ERR_RETURN
 }
@@ -533,6 +533,7 @@ Err MS2DataExtractomatic::fitWeightsLogic(
 
 Err MS2DataExtractomatic::outputFDRResults(
         const QVector<ScoredCandidate> &scoredCandidatesAll,
+        bool verbose,
         QMap<QString, int> *fdrVsCount
         ) {
 
@@ -548,6 +549,11 @@ Err MS2DataExtractomatic::outputFDRResults(
         ); ree;
         const double fdrPercent = fdrThresh * 100;
         fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+
+        if (!verbose) {
+            continue;
+        }
+
         qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
     }
 

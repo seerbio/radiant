@@ -58,6 +58,7 @@ public:
 
     static Err outputFDRResults(
             const QVector<ScoredCandidate> &scoredCandidatesAll,
+            bool verbose,
             QMap<QString, int> *fdrVsCount
             );
 

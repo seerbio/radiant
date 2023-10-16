@@ -81,6 +81,7 @@ public:
     IRT iRT = -1.0;
     QString ionLabel;
     int rank = -1;
+    int charge = -1;
 
     MS2Ion() = default;
     ~MS2Ion() = default;

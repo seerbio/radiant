@@ -73,6 +73,7 @@ namespace {
             ion.intensity = row.intensityVals.at(i);
             ion.ionLabel = ionLabels.at(i);
             ion.iRT = static_cast<float>(row.iRT);
+            ion.charge = ion.ionLabel.contains("^2") ? 2 : 1;
             ms2Ions->push_back(ion);
         }
 

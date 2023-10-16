@@ -477,7 +477,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
         ); ree;
 
         QMap<QString, int> unused;
-        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, &unused); ree;
+        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &unused); ree;
 
         calibrationSelectionFraction += calibrationSelectionFractionIncrement;
 
@@ -486,7 +486,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
     if (scoredCandidatesTargetsFDRThresholded.size() < minTrainingCount) {
 
         QMap<QString, int> fdrResults;
-        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, &fdrResults); ree;
+        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &fdrResults); ree;
 
         double fallBackFDR;
         e = getBestFDRFraction(fdrResults, minTrainingCount, &fallBackFDR); ree;
@@ -1265,7 +1265,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
             );
 
     QMap<QString, int> fdrCountResultsUnused;
-    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated, &fdrCountResultsUnused); ree;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated, false, &fdrCountResultsUnused); ree;
 
     ERR_RETURN
 }

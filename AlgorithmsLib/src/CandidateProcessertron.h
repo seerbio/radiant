@@ -313,6 +313,7 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
@@ -327,6 +328,7 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
@@ -391,6 +393,7 @@ private:
 
     PythiaParameters m_pythiaParameters;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100Shadows;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsB2B3;

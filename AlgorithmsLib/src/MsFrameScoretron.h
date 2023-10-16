@@ -70,6 +70,7 @@ private:
     Err buildMS2Peaks(
             const QMap<PeptideStringWithMods, CandidatePeptide> &candidatePeptides,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100Shadows,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints20,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPointsB2B3,

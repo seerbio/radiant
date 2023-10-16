@@ -35,6 +35,7 @@ Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
@@ -49,6 +50,7 @@ Err CandidateProcessertron::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100Shadows); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints20); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsB2B3); ree;
@@ -61,6 +63,7 @@ Err CandidateProcessertron::init(
 
     m_pythiaParameters = pythiaParameters;
     m_mzHashedVsXICPoints100 = mzHashedVsXICPoints100;
+    m_mzHashedVsXICPoints100Shadows = mzHashedVsXICPoints100Shadows;
     m_mzHashedVsXICPoints45 = mzHashedVsXICPoints45;
     m_mzHashedVsXICPoints20 = mzHashedVsXICPoints20;
     m_mzHashedVsXICPointsB2B3 = mzHashedVsXICPointsB2B3;
@@ -83,6 +86,7 @@ Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
@@ -103,6 +107,7 @@ Err CandidateProcessertron::init(
             pythiaParameters,
             topNMS2Ions,
             mzHashedVsXICPoints100,
+            mzHashedVsXICPoints100Shadows,
             mzHashedVsXICPoints45,
             mzHashedVsXICPoints20,
             mzHashedVsXICPointsB2B3,
