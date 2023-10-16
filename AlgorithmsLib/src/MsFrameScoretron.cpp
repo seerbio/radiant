@@ -57,14 +57,7 @@ Err MsFrameScoretron::init(
             scanNumberVsScanPoints,
             scanNumberVsScanTime
             ); ree;
-
-
-//NOTE: Turn off deisotoping in PythiaDIAWorkflow.cpp if using here.
-//#define DEISOTOPE
-#ifdef DEISOTOPE
-    e = m_msFrame.deisotopeMsFrame(m_params.ms2ExtractionWidthPPM); ree;
-#endif
-
+            
     e = m_msFrameMS1.init(
             scanNumberVsScanPointsMS1,
             scanNumberVsScanTime
