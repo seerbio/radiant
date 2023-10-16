@@ -987,13 +987,6 @@ Err CandidateProcessertron::buildScores(
             candidatePeptide.ms2IonMzB2B3.size()
     );
 
-    const Eigen::MatrixX<double> intensityMatrixY2Y3 = buildIntensityVecMatrix(
-            candidatePeptide.ms2IonMzY2Y3,
-            m_mzHashedVsXICPointsY2Y3,
-            summedMatVecToVec.size(),
-            candidatePeptide.ms2IonMzY2Y3.size()
-    );
-
     QVector<double> cosineSimsIndividual100;
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
@@ -1058,22 +1051,6 @@ Err CandidateProcessertron::buildScores(
             &cosineSimSumB2B3,
             &unused8,
             &unused9
-    ); ree;
-
-    QVector<double> cosineSimsIndividualY2Y3;
-    double cosineSimSumY2Y3;
-    Eigen::VectorX<double> unused11;
-    FrameIndex unused12;
-    e = calcBestCosineSimSum(
-            intensityMatrixY2Y3,
-            bestPeakIntegrationIndexes,
-            summedMatVecToVec,
-            candidatePeptide.ms2IonMzY2Y3.size(),
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividualY2Y3,
-            &cosineSimSumY2Y3,
-            &unused11,
-            &unused12
     ); ree;
 
     QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
@@ -1202,9 +1179,7 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
     scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
     scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
-    scoredCandidate->y2Corr = cosineSimsIndividualY2Y3.at(0);
-    scoredCandidate->y3Corr = cosineSimsIndividualY2Y3.at(1);
-    scoredCandidate->y2y3CosineSimSum = cosineSimSumY2Y3;
+
 
     ERR_RETURN
 }

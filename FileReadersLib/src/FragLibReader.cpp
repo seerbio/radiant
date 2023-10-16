@@ -458,11 +458,6 @@ Err FragLibReader::fragLibReaderRowsToMs2IonsMap(
                 calculateFragmentMass(peptideStringWithMods.mid(0, 3), aminoAcids, false)
         };
 
-        candidatePeptide.ms2IonMzY2Y3 = {
-                calculateFragmentMass(peptideStringWithMods.mid(peptideStringWithMods.size() - 2, 2), aminoAcids, true),
-                calculateFragmentMass(peptideStringWithMods.mid(peptideStringWithMods.size() - 3, 3), aminoAcids, true)
-        };
-
         candidatePeptide.mass = row.mass;
         candidatePeptide.iRt = row.iRT;
         candidatePeptide.isDecoy = row.isDecoy;
@@ -693,7 +688,8 @@ int FragLibReader::libarySize() {
 
 Err FragLibReader::mutateCandidatePeptideTarget(
         const CandidatePeptide &candidatePeptideTarget,
-        CandidatePeptide *candidatePeptideDecoy) {
+        CandidatePeptide *candidatePeptideDecoy
+        ) {
 
     ERR_INIT
 
@@ -780,19 +776,10 @@ Err FragLibReader::mutateCandidatePeptideTarget(
             [nTermDeltaMass](MZION mz){return mz + nTermDeltaMass;}
             );
 
-    QVector<MZION> ms2IonMzY2Y3Decoy;
-    std::transform(
-            candidatePeptideTarget.ms2IonMzY2Y3.begin(),
-            candidatePeptideTarget.ms2IonMzY2Y3.end(),
-            std::back_inserter(ms2IonMzY2Y3Decoy),
-            [cTermDeltaMass](MZION mz){return mz + cTermDeltaMass;}
-    );
-
     *candidatePeptideDecoy = candidatePeptideTarget;
     candidatePeptideDecoy->isDecoy = true;
     candidatePeptideDecoy->ms2Ions = ms2IonDecoys;
     candidatePeptideDecoy->ms2IonMzB2B3 = ms2IonMzB2B3Decoy;
-    candidatePeptideDecoy->ms2IonMzY2Y3 = ms2IonMzY2Y3Decoy;
 
     ERR_RETURN
 }

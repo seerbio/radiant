@@ -178,7 +178,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             &mzHashedVsXICPoints45,
             &mzHashedVsXICPoints20,
             &mzHashedVsXICPointsB2B3,
-            &mzHashedVsXICPointsY2Y3,
             &mzHashedVsIonPresence
             ); ree;
 
@@ -188,7 +187,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
             &mzHashedVsXICPoints45,
             &mzHashedVsXICPoints20,
             &mzHashedVsXICPointsB2B3,
-            &mzHashedVsXICPointsY2Y3,
             &mzHashedVsIonPresence
     ); ree;
 
@@ -311,13 +309,8 @@ namespace {
 
         for (auto it = fragPredsTopN.begin(); it != fragPredsTopN.end(); it++) {
 
-
             if (ionSelector == IonSelector::Y2Y3Ions) {
-                const QVector<MZION> &mzIons = it.value().ms2IonMzY2Y3;
-                for (const MZION &mz: mzIons) {
-                    const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                    mzHashedVsMzIon->insert(mzHashed, mz);
-                }
+                //removed code that was. Not collecting data for Y2Y3 anymore
             }
             else if (ionSelector == IonSelector::B2B3Ions) {
                 const QVector<MZION> &mzIons = it.value().ms2IonMzB2B3;
@@ -450,7 +443,6 @@ Err MsFrameScoretron::buildMS2Peaks(
         QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
         QMap<MzHashed, XICPoints> *mzHashedVsXICPoints20,
         QMap<MzHashed, XICPoints> *mzHashedVsXICPointsB2B3,
-        QMap<MzHashed, XICPoints> *mzHashedVsXICPointsY2Y3,
         QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
         ) {
 
@@ -472,13 +464,6 @@ Err MsFrameScoretron::buildMS2Peaks(
             &mzHashedVsMzIonB2B3
     ); ree;
 
-    QMap<MzHashed, MZION> mzHashedVsMzIonY2Y3;
-    e = buildMzHashedVsMzIon(
-            candidatePeptides,
-            IonSelector::Y2Y3Ions,
-            &mzHashedVsMzIonY2Y3
-    ); ree;
-
     e = buildMzHashedVsXICPoints(
             mzHashedVsMzIon,
             m_msFrame,
@@ -491,13 +476,6 @@ Err MsFrameScoretron::buildMS2Peaks(
             m_msFrame,
             m_params.ms2ExtractionWidthPPM,
             mzHashedVsXICPointsB2B3
-    ); ree;
-
-    e = buildMzHashedVsXICPoints(
-            mzHashedVsMzIonY2Y3,
-            m_msFrame,
-            m_params.ms2ExtractionWidthPPM,
-            mzHashedVsXICPointsY2Y3
     ); ree;
 
     e = buildMzHashedVsXICPoints(
