@@ -139,7 +139,8 @@ namespace {
 }//namespace
 Err MS2DataExtractomatic::extractTargetDecoyData(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
-        QVector<ScoredCandidate> *combinedResults) {
+        QVector<ScoredCandidate> *combinedResults
+        ) {
 
     ERR_INIT
 

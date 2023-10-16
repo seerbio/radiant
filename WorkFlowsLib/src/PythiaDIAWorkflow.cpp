@@ -282,7 +282,11 @@ namespace {
 
         QVector<QPair<ScanNumber, ScanPoints>> deisotopedScanPoints;
         for (const QPair<ScanNumber, ScanPoints> &pr : scanPointPairs) {
-            qDebug() << "Deisotoping" << pr.first;
+
+            if (pr.first % 1000 == 0) {
+                qDebug() << "Deisotoping" << pr.first;
+            }
+
             ScanPoints scanPointsIterDeisotoped;
             e = ms2ChargeDeconvolvotron.deisotopeScanPoints(pr.second, &scanPointsIterDeisotoped); rree;
 
@@ -387,6 +391,7 @@ namespace {
                 "2",
                 "5",
                 "10",
+                "20"
         };
 
         for (const QString &fdrStr : fdrFractions) {
