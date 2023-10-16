@@ -170,7 +170,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
     QMap<MzHashed, XICPoints> mzHashedVsXICPointsB2B3;
-    QMap<MzHashed, XICPoints> mzHashedVsXICPointsY2Y3;
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
     e = buildMS2Peaks(
             m_fragPredsTopN,
@@ -198,7 +197,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 mzHashedVsXICPoints45,
                 mzHashedVsXICPoints20,
                 mzHashedVsXICPointsB2B3,
-                mzHashedVsXICPointsY2Y3,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,
@@ -214,7 +212,6 @@ Err MsFrameScoretron::scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandi
                 mzHashedVsXICPoints45,
                 mzHashedVsXICPoints20,
                 mzHashedVsXICPointsB2B3,
-                mzHashedVsXICPointsY2Y3,
                 mzHashedVsIonPresence,
                 m_msFrame,
                 m_msFrameMS1,

@@ -38,7 +38,6 @@ Err CandidateProcessertron::init(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
@@ -53,7 +52,6 @@ Err CandidateProcessertron::init(
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints20); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsB2B3); ree;
-    e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsY2Y3); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(msFrame.isValid()); ree;
@@ -66,7 +64,6 @@ Err CandidateProcessertron::init(
     m_mzHashedVsXICPoints45 = mzHashedVsXICPoints45;
     m_mzHashedVsXICPoints20 = mzHashedVsXICPoints20;
     m_mzHashedVsXICPointsB2B3 = mzHashedVsXICPointsB2B3;
-    m_mzHashedVsXICPointsY2Y3 = mzHashedVsXICPointsY2Y3;
     m_mzHashedVsIonPresence = mzHashedVsIonPresence;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
     m_msFrame = msFrame;
@@ -89,7 +86,6 @@ Err CandidateProcessertron::init(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
@@ -110,7 +106,6 @@ Err CandidateProcessertron::init(
             mzHashedVsXICPoints45,
             mzHashedVsXICPoints20,
             mzHashedVsXICPointsB2B3,
-            mzHashedVsXICPointsY2Y3,
             mzHashedVsIonPresence,
             msFrame,
             msFrameMS1,
