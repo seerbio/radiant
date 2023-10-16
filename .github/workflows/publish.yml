@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  tag_container_image:
+  tag_x86_image:
     runs-on: [self-hosted, aws-master]
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
@@ -19,7 +19,14 @@ jobs:
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           build_tag_prefix: x86_64-build-
           tag_suffix: -x86_64
-          addl_tags: latest
+          addl_tags: latest-x86_64
+
+  tag_arm_image:
+    runs-on: [self-hosted, aws-master]
+    steps:
+      # Necessary to set up the token required to push the commit tag to GitHub
+      - name: Check out code
+        uses: actions/checkout@v2
 
       - name: Tag ARM container image
         uses: seerbio/action-tag-container@2.1.0
@@ -28,4 +35,4 @@ jobs:
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           build_tag_prefix: aarch64-build-
           tag_suffix: -aarch64
-          addl_tags: latest
+          addl_tags: latest-aarch64
