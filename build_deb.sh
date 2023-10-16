@@ -54,8 +54,8 @@ cp PyTorchLib/libPyTorchLib.so $pythia_lib/libPyTorchLib.so
 cp /src/pytorch/build/lib/libtorch_cpu.so $pythia_lib/libtorch_cpu.so
 cp /src/pytorch/build/lib/libtorch.so $pythia_lib/libtorch.so
 
-mkdir -p ${package_dir}/DEBIAN/
-cp "control.${ARCH}" $package_dir/DEBIAN/control
+mkdir -p "${package_dir}/DEBIAN/"
+cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
 
 echo "Building PythiaDIA DEB…"
 
