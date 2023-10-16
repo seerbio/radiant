@@ -22,41 +22,40 @@ ARCH=$(dpkg-architecture | grep 'DEB_BUILD_ARCH=' | cut -d = -f 2)
 # Required argument (as env var)
 package_dir="${package_dir}-${ARCH}"
 
-pythia_bin=${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}
-pythia_lib=${pythia_lib:=${package_dir}/usr/lib}
+pythia_bin="${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}"
+pythia_lib="${pythia_lib:=${package_dir}/usr/lib}"
 
-mkdir -p ${pythia_bin}
-mkdir -p ${pythia_lib}
+mkdir -p "${pythia_bin}"
+mkdir -p "${pythia_lib}"
 
 echo "Copying DEB contents to package_dir…"
 
-cp bin/IstrosLibraryBuilder $pythia_bin/IstrosLibraryBuilder
-cp bin/LycaonMzMLTransmorgitron $pythia_bin/LycaonMzMLTransmorgitron
-cp bin/OrpheusFastaShredder $pythia_bin/OrpheusFastaShredder
-cp bin/PythiaDIA $pythia_bin/PythiaDIA
-cp bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json
-cp bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json
-cp bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json
-cp bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json $pythia_bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json
-cp bin/iRT_Model.json $pythia_bin/iRT_Model.json
-cp bin/MS2_Mono_Model.json $pythia_bin/MS2_Mono_Model.json
-cp bin/MS2_Charge_Model.json $pythia_bin/MS2_Charge_Model.json
-
-cp AlgorithmsLib/libAlgorithmsLib.so $pythia_lib/libAlgorithmsLib.so
-cp ChemLib/libChemLib.so $pythia_lib/libChemLib.so
-cp EigenLib/libEigenLib.so $pythia_lib/libEigenLib.so
-cp FileReadersLib/libFileReadersLib.so $pythia_lib/libFileReadersLib.so
-cp KarnnLib/libKarnnLib.so $pythia_lib/libKarnnLib.so
-cp MachineLrnLib/libMachineLrnLib.so $pythia_lib/libMachineLrnLib.so
-cp UtilsLib/libUtilsLib.so $pythia_lib/libUtilsLib.so
-cp WorkFlowsLib/libWorkFlowsLib.so $pythia_lib/libWorkFlowsLib.so
-cp PyTorchLib/libPyTorchLib.so $pythia_lib/libPyTorchLib.so
-cp /src/pytorch/build/lib/libtorch_cpu.so $pythia_lib/libtorch_cpu.so
-cp /src/pytorch/build/lib/libtorch.so $pythia_lib/libtorch.so
+cp bin/IstrosLibraryBuilder "$pythia_bin/IstrosLibraryBuilder"
+cp bin/LycaonMzMLTransmorgitron "$pythia_bin/LycaonMzMLTransmorgitron"
+cp bin/OrpheusFastaShredder "$pythia_bin/OrpheusFastaShredder"
+cp bin/PythiaDIA "$pythia_bin/PythiaDIA"
+cp bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json "$pythia_bin/rnn_linear_charge_w_precursors_nce_1.hdf5.json"
+cp bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json "$pythia_bin/rnn_linear_charge_w_precursors_nce_2.hdf5.json"
+cp bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json "$pythia_bin/rnn_linear_charge_w_precursors_nce_3.hdf5.json"
+cp bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json "$pythia_bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json"
+cp bin/iRT_Model.json "$pythia_bin/iRT_Model.json"
+cp bin/MS2_Mono_Model.json "$pythia_bin/MS2_Mono_Model.json"
+cp bin/MS2_Charge_Model.json "$pythia_bin/MS2_Charge_Model.json"
+cp AlgorithmsLib/libAlgorithmsLib.so "$pythia_lib/libAlgorithmsLib.so"
+cp ChemLib/libChemLib.so "$pythia_lib/libChemLib.so"
+cp EigenLib/libEigenLib.so "$pythia_lib/libEigenLib.so"
+cp FileReadersLib/libFileReadersLib.so "$pythia_lib/libFileReadersLib.so"
+cp KarnnLib/libKarnnLib.so "$pythia_lib/libKarnnLib.so"
+cp MachineLrnLib/libMachineLrnLib.so "$pythia_lib/libMachineLrnLib.so"
+cp UtilsLib/libUtilsLib.so "$pythia_lib/libUtilsLib.so"
+cp WorkFlowsLib/libWorkFlowsLib.so "$pythia_lib/libWorkFlowsLib.so"
+cp PyTorchLib/libPyTorchLib.so "$pythia_lib/libPyTorchLib.so"
+cp /src/pytorch/build/lib/libtorch_cpu.so "$pythia_lib/libtorch_cpu.so"
+cp /src/pytorch/build/lib/libtorch.so "$pythia_lib/libtorch.so"
 
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
 
 echo "Building PythiaDIA DEB…"
 
-dpkg-deb --build $package_dir
+dpkg-deb --build "$package_dir"
