@@ -259,9 +259,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
 #endif
-
-    qDebug() << "testme";
-
+    
     ERR_RETURN
 }
 

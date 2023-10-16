@@ -121,6 +121,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
     const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
+    const QString kDeisotopeScans = QStringLiteral("deisotopeScans");
 
 }
 
@@ -278,7 +279,10 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             bool val = jsonValue.toBool();
             pythiaParameters->addDecoys = val;
         }
-
+        else if (jsonKey == kDeisotopeScans){
+            bool val = jsonValue.toBool();
+            pythiaParameters->deisotopeScans = val;
+        }
         else if (jsonKey == kTopNMs2Ions){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;

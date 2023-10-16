@@ -216,7 +216,6 @@ Err CandidateProcessertron::processCandidateTarget(
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints20); ree;
-    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsY2Y3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 

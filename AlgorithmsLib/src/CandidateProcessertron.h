@@ -394,7 +394,6 @@ private:
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsB2B3;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsY2Y3;
     QMap<MzHashed, QVector<double>> m_mzHashedVsIonPresence;
 
     PeakIntegratomatic m_peakIntegratomatic;
