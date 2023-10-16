@@ -7,7 +7,7 @@ echo "Building test container…"
 
 DEBUG=${DEBUG:-1}
 
-if [ ${DEBUG} != '0' ];
+if [ "${DEBUG}" != '0' ];
 then
 	# Build the container, with log output
 	docker build --target test .
@@ -26,7 +26,7 @@ docker run --rm "${TEST_IMG}"
 # it anywhere).
 echo "Building app container…"
 
-if [ ${DEBUG} != '0' ];
+if [ "${DEBUG}" != '0' ];
 then
 	# Build the container, with log output
 	docker build --target app .
