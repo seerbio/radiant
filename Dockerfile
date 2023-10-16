@@ -154,9 +154,9 @@ RUN apt-get update \
         libnuma1 \
         libopenmpi3 \
         libqt5concurrent5 \
-        libre2-5 \
+        libre2-9 \
         libsnappy1v5 \
-        libthrift-0.13.0 \
+        libthrift-0.16.0 \
         libutf8proc2 \
     && apt-get autoremove -y \
     && apt-get clean \
