@@ -5,8 +5,13 @@ set -eu -o pipefail
 
 echo "Building test container…"
 
-# Build the container, with log output
-docker build --target test .
+DEBUG=${DEBUG:-1}
+
+if [ "${DEBUG}" != '0' ];
+then
+	# Build the container, with log output
+	docker build --target test .
+fi
 
 # Re-run the build command to get the ID (should be cached)
 TEST_IMG=$(docker build -q --target test .)
@@ -20,6 +25,13 @@ docker run --rm "${TEST_IMG}"
 # the DEB package in a dedicated stage (but doesn't deploy
 # it anywhere).
 echo "Building app container…"
+
+if [ "${DEBUG}" != '0' ];
+then
+	# Build the container, with log output
+	docker build --target app .
+fi
+
 IMG=$(docker build -q --target app .)
 
 # Simply invoke the container with no arguments
