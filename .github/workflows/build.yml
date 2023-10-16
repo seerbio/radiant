@@ -13,9 +13,6 @@ jobs:
     # it has the necessary access to ECR.
     runs-on: [self-hosted, aws-master, X64]
 
-    env:
-      CONTAINER_TAG: x86_64-build-${{ github.run_number }}
-
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -24,6 +21,7 @@ jobs:
         uses: seerbio/action-build-container@1.1.0
         with:
           container: seer/pythia-dia
+          container_tag: x86_64-build-${{ github.run_number }}
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           test_script: ./test_container.sh
 
@@ -33,9 +31,6 @@ jobs:
     # it has the necessary access to ECR.
     runs-on: [self-hosted, aws-master, ARM64]
 
-    env:
-      CONTAINER_TAG: aarch64-build-${{ github.run_number }}
-
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -44,5 +39,6 @@ jobs:
         uses: seerbio/action-build-container@1.1.0
         with:
           container: seer/pythia-dia
+          container_tag: aarch64-build-${{ github.run_number }}
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           test_script: ./test_container.sh
