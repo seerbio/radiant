@@ -80,7 +80,6 @@ private:
 private:
 
     QMap<PeptideStringWithMods, CandidatePeptide> m_fragPredsTopN;
-    QMap<MzHashed, FrequencyPercent> m_fragmentFrequencies;
     QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
 
     PythiaParameters m_params;

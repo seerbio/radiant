@@ -53,12 +53,6 @@ Err MsFrameScoretron::init(
     m_scanNumberVsScanTime = scanNumberVsScanTime;
     m_topNMS2Ions = topNMS2Ions;
 
-    e = FragLibReader::generateFragmentFrequencies(
-            m_fragPredsTopN,
-            m_params.ms2ExtractionWidthPPM,
-            &m_fragmentFrequencies
-    ); ree
-
     e = m_msFrame.init(
             scanNumberVsScanPoints,
             scanNumberVsScanTime
