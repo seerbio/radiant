@@ -127,8 +127,8 @@ RUN cp \
 WORKDIR /app/
 
 ARG pythia_dia_version=0.0-dev
-ENV package_dir=pythia_dia_${pythia_dia_version}
-ENV PACKAGE_NAME=${package_dir}.deb
+ENV package_dir=pythiadia_${pythia_dia_version}
+ENV PACKAGE_NAME=${package_dir}
 
 # Build the package into this stage's container
 RUN /app/build_deb.sh
