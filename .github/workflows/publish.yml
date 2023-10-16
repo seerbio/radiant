@@ -15,7 +15,7 @@ jobs:
       - name: Tag x86 container image
         uses: seerbio/action-tag-container@2.1.0
         with:
-          container: seer/pythia-dia-container
+          container: seer/pythia-dia
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           build_tag_prefix: x86_64-build-
           tag_suffix: -x86_64
@@ -24,7 +24,7 @@ jobs:
       - name: Tag ARM container image
         uses: seerbio/action-tag-container@2.1.0
         with:
-          container: seer/pythia-dia-container
+          container: seer/pythia-dia
           repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
           build_tag_prefix: aarch64-build-
           tag_suffix: -aarch64
