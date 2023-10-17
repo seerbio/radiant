@@ -126,8 +126,8 @@ RUN cp \
 
 WORKDIR /app/
 
-ARG pythia_dia_version=0.0-dev
-ENV package_dir=pythiadia_${pythia_dia_version}
+ARG pythiadia_version=0.0-dev
+ENV package_dir=pythiadia_${pythiadia_version}
 ENV PACKAGE_NAME=${package_dir}
 
 # Build the package into this stage's container

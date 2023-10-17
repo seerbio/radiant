@@ -24,7 +24,7 @@ jobs:
       - name: Upload x86 deb
         env:
           CONTAINER: seer/pythia-dia
-        run: docker run --rm $(docker build -q . --target build-deb --build-arg pythia_dia_version=$(git tag --points-at | grep -Po "^($CONTAINER/)?v?\K\d+\.\d+\.\d+.*$" | sort -Vr | head -n 1))
+        run: ./deploy_deb.sh
 
   publish_arm:
     runs-on: [self-hosted, aws-master, ARM64]
@@ -45,4 +45,4 @@ jobs:
       - name: Upload ARM deb
         env:
           CONTAINER: seer/pythia-dia
-        run: docker run --rm $(docker build -q . --target build-deb --build-arg pythia_dia_version=$(git tag --points-at | grep -Po "^($CONTAINER/)?v?\K\d+\.\d+\.\d+.*$" | sort -Vr | head -n 1))
+        run: ./deploy_deb.sh
