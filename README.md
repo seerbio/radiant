@@ -1,4 +1,4 @@
-*Pythia DIA* is a search tool for bottom-up DIA-MS proteomics that offers:
+**Pythia DIA** is a search tool for bottom-up DIA-MS proteomics that offers:
 
 * near-parity with DIA-NN IDs, using cutting-edge DIA processing algorithms
 * extensive customizability via a parameters file
