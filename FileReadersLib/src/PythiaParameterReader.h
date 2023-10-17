@@ -144,7 +144,7 @@ struct PythiaParameters{
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
 
-    double cosineSimToAnchorThreshold = 0.90;
+    double cosineSimToAnchorThreshold = 0.97;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
 

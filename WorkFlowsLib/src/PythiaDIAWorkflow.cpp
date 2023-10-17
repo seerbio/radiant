@@ -154,8 +154,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 
     //Entrapment libarary
-    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
+//    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
+//    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+
+    m_pythiaParameters.ms2ExtractionWidthPPM = 10.8337;
+    m_pythiaParameters.scanTimeWindowMinutes = 2.28547;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
