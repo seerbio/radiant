@@ -13,7 +13,7 @@ echo "Found pythiadia version '${pythiadia_version}'"
 
 echo "Building deploy container…"
 DEPLOY_IMG="${CONTAINER}-deb-build:${GIT_TAG_VERSION}"
-docker build --target build_deb --build-arg pythiadia_version -t "${DEPLOY_IMG}" .
+docker build --target build-deb --build-arg pythiadia_version -t "${DEPLOY_IMG}" .
 
 # Run the default command from the `deploy` stage.
 # This builds the DEB and pushes it to S3.
