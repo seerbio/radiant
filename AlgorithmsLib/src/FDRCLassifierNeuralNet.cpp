@@ -482,6 +482,17 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
 
         const QVector<QVector<float>> &trainingDataVecs = trainingDataVecsTranched.at(tranche);
         const QVector<float> &yData = yTrainingDataTranched.at(tranche);
+        const int firstRowSize = trainingDataVecs.front().size();
+
+        qDebug() << "Tranche" << tranche;
+        qDebug() << "X Size" << trainingDataVecs.size();
+        qDebug() << "X input size" << firstRowSize;
+        qDebug() << "Y Size" << yData.size();
+        qDebug() << "X rows are uniform" << std::all_of(
+                trainingDataVecs.begin(),
+                trainingDataVecs.end(),
+                [firstRowSize](const QVector<float> &f){return f.size() == firstRowSize;}
+                );
 
         auto *candidateClassifier = new CandidateClassifier();
         bool trainingCompletedNoErrors = candidateClassifier->trainCandidateClassifier(
@@ -576,6 +587,14 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(scoreCandidate.cosineSim20MS1, 0.0)); //8
         scores.push_back(scoreCandidate.peptideStringWithMods.size()); //7
         scores.push_back(scoreCandidate.theoFragmentCount); //7
+
+        scores.push_back(std::max(scoreCandidate.shadowsCosineSimSum, 0.0)); //2
+//        const int shadowsMaxSize = 6;
+//        const QVector<double> cosineSimShadowsToAnchors
+//                = extractScoresFromVecFeatures(scoreCandidate.cosineSimShadowsToAnchorVec, shadowsMaxSize);
+//        scores.append(cosineSimShadowsToAnchors); //11-16
+
+
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
 //        scores.push_back(scoreCandidate.peakShapeRatio3);
