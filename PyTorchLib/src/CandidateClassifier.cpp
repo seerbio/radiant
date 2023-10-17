@@ -173,6 +173,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             torch::Tensor batchX = X.index({torch::indexing::Slice(i, i + batchSize)});
             torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
 
+            const int tensorRows = batchY.sizes().at(0);
+            if (tensorRows < 2) {
+                qDebug() << "Skipping batch due to low training volume" << tensorRows;
+                continue;
+            }
+
             torch::Tensor output = m_net->forward(batchX);
 
 //#define REGULARIZATION
