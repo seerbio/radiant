@@ -19,10 +19,12 @@ Dockerfile
 README.md
 CONTRIBUTING.md
 
-# Local build/test scripts
+# Build/test scripts
+test_container.sh
+deploy_deb.sh
+
 build-local.sh
 test-local.sh
-test_container.sh
 
 # Local build/test directories
 build

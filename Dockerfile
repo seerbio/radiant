@@ -155,7 +155,7 @@ RUN apt-get update \
     && apt-get install -y /app/*.deb \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /app/ /var/lib/apt/lists/*
 
 # Set up a dedicated folder as the normal working dir
 WORKDIR /work/
