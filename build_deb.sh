@@ -20,7 +20,7 @@ set -eu -o pipefail
 ARCH=$(dpkg-architecture | grep 'DEB_BUILD_ARCH=' | cut -d = -f 2)
 
 # Required argument (as env var)
-package_dir="${package_dir}-${ARCH}"
+package_dir="${package_dir}+${ARCH}"
 
 pythia_bin="${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}"
 pythia_lib="${pythia_lib:=${package_dir}/usr/lib}"
