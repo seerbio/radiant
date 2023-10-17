@@ -42,5 +42,5 @@ On ARM / Apple Silicon (`aarch64`):
 
 ## Development
 
-See [CONTRIBUTING.md]() for information about building PythiaDIA from sources
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information about building PythiaDIA from sources
 or contributing to its development.
