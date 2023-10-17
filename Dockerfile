@@ -9,8 +9,8 @@
 #
 ################################################
 
-# Based on Ubuntu 20.04 LTS ("Focal Fossa")
-FROM ubuntu:20.04 AS base
+# Based on Ubuntu 22.04 LTS ("Jammy Jellyfish")
+FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
@@ -160,9 +160,9 @@ RUN apt-get update \
         libnuma1 \
         libopenmpi3 \
         libqt5concurrent5 \
-        libre2-5 \
+        libre2-9 \
         libsnappy1v5 \
-        libthrift-0.13.0 \
+        libthrift-0.16.0 \
         libutf8proc2 \
     && apt-get autoremove -y \
     && apt-get clean \

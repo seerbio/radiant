@@ -7,26 +7,35 @@
 # GitHub Actions config
 .github
 
-# Other dev tools config
-.hadolint.yaml
-.pre-commit-config.yaml
-
 # Docker config
 Dockerfile
 .dockerignore
+
+# Dev tools config
+.hadolint.yaml
+.pre-commit-config.yaml
+
+# Documentation
+README.md
+CONTRIBUTING.md
+
+# Local build/test scripts
+build-local.sh
+test-local.sh
+test_container.sh
 
 # Local build/test directories
 build
 cmake
 pytorch
 
-# Obsolete directories
-ThirdPartyLibs/libtorch
-ThirdPartyLibs/arrow_parquet
-ThirdPartyLibs/arrow_src
-
 # Vim buffer files
 .*.s??
 
 # JetBrains IDE settings
 .idea
+
+# Obsolete directories
+ThirdPartyLibs/libtorch
+ThirdPartyLibs/arrow_parquet
+ThirdPartyLibs/arrow_src
