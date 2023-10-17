@@ -146,30 +146,16 @@ CMD ["python", "s3_package_uploader.py"]
 #################################################
 FROM base AS app
 
-
 # Set labels
-
 LABEL author="Seer, Inc."
 LABEL description="PythiaDIACpp"
 
+COPY --from=build-deb /app/*.deb /app/
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-        libbrotli1 \
-        libcurl4 \
-        libgomp1 \
-        libnuma1 \
-        libopenmpi3 \
-        libqt5concurrent5 \
-        libre2-9 \
-        libsnappy1v5 \
-        libthrift-0.16.0 \
-        libutf8proc2 \
+    && apt-get install -y /app/*.deb \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /app/ /app/
-COPY --from=build /src/pytorch/build/lib/* /usr/lib/
 
 # Set up a dedicated folder as the normal working dir
 WORKDIR /work/
@@ -177,4 +163,4 @@ WORKDIR /work/
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
 # this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
 # overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
-ENTRYPOINT ["/app/bin/PythiaDIA"]
+ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]

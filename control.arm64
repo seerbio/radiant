@@ -2,8 +2,8 @@ Package: pythiadia
 Version: 0.0-dev
 Section: base
 Priority: optional
-Architecture: amd64
-Depends: libbrotli1, libcurl4, libgomp1, libnuma1, libopenmpi3, libqt5concurrent5, libre2-5, libsnappy1v5, libthrift-0.13.0, libutf8proc2
+Architecture: arm64
+Depends: libbrotli1, libcurl4, libgomp1, libnuma1, libopenmpi3, libqt5concurrent5, libre2-9, libsnappy1v5, libthrift-0.16.0, libutf8proc2
 Maintainer: Drew Nichols anichols@seer.bio
 Description: PythiaDIA
  My precious engine
