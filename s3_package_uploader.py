@@ -36,4 +36,4 @@ upload_package_name: str = f"{now}_{package_name}-{arch}.deb"
 
 print(f"Will upload {local_package} to s3://{bucket_name}/{upload_package_name}")
 
-s3.meta.client.upload_file(f"./{package_name}", bucket_name, upload_package_name)
+s3.meta.client.upload_file(f"./{local_package}", bucket_name, upload_package_name)
