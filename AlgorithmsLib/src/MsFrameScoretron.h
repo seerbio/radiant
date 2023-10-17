@@ -31,7 +31,6 @@ class ALGORITHMSLIB_EXPORTS MsFrameScoretron {
 public:
 
     friend class MissingPeptideManualTroubleshooter;
-    friend class MsFrameScoretronProcessormaticTests;
     friend class MsFrameScoretronTests;
 
     MsFrameScoretron() = default;
@@ -60,6 +59,11 @@ public:
 
     Err scoreFrameCandidates(QVector<ScoredCandidate> *scoredCandidates);
 
+    Err scoreFrameCandidatesLogic(
+            const QVector<CandidatePeptide> &candidatePeptides,
+            QVector<ScoredCandidate> *scoredCandidates
+            );
+
 
 private:
 
@@ -68,7 +72,7 @@ private:
             );
 
     Err buildMS2Peaks(
-            const QMap<PeptideStringWithMods, CandidatePeptide> &candidatePeptides,
+            const QVector<CandidatePeptide> &candidatePeptides,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints100Shadows,
             QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
@@ -91,7 +95,6 @@ private:
     MsFrame m_msFrame;
     MsFrame m_msFrameMS1;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
-    CandidateProcessertron m_candidateProcessertron;
 
     MS2ChargeDeconvolvotron m_ms2ChargeDeconvolvotron;
 };
