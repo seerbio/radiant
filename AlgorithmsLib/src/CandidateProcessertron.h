@@ -71,6 +71,10 @@ namespace ScoredCandidateNamespace {
     const QString B3_CORR = QStringLiteral("b3Corr");
     const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
 
+    const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
+    const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
+
+
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
             COS_SIM_SUM_45,
@@ -118,7 +122,9 @@ namespace ScoredCandidateNamespace {
             PEAK_SHAPE_RATIO_3,
             B2_CORR,
             B3_CORR,
-            B2B3_COSINE_SIM_SUM
+            B2B3_COSINE_SIM_SUM,
+            SHADOWS_COSINE_SIM_SUM,
+            COS_SIM_SUM_ANCH_SHADOW_V
     };
 }
 
@@ -179,6 +185,9 @@ public:
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
 
+    QVector<double> cosineSimShadowsToAnchorVec;
+    double shadowsCosineSimSum = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace ScoredCandidateNamespace;
@@ -230,7 +239,9 @@ public:
                 {CLASSIFIER_SCORE, QVariant(classifierScore)},
                 {B2_CORR, QVariant(b2Corr)},
                 {B3_CORR, QVariant(b3Corr)},
-                {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)}
+                {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
+                {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
+                {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
         };
     }
 
@@ -296,6 +307,9 @@ public:
         b2Corr = dataMap.value(B2_CORR).toDouble();
         b3Corr = dataMap.value(B3_CORR).toDouble();
         b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
+
+        shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
+        cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
 
         ERR_RETURN
     }
