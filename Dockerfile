@@ -88,47 +88,53 @@ FROM build AS test
 WORKDIR /app/
 CMD ["ctest", "--output-on-failure"]
 
-#################################################
-###
-### Deploy stage
-###
-### Here we put everything in its right place for
-### Debian Package Deployment and build the DEB.
-### Once built, deployment is as easy as running
-### this stage's default command:
-###
-###     $ docker run --rm -it $(docker build --target deploy .)
-###
-##################################################
-#FROM build AS deploy
+###############################################
 #
-## Install Python and dependencies
-#RUN apt-get update \
-#    && apt-get upgrade -y \
-#    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/* \
-#    && pip install --no-cache-dir awscli boto3
+# DEB stage
 #
-## Copy some extra contents into /app/
-#RUN cp \
-#    /src/PythiaDIACpp/control \
-#    /src/PythiaDIACpp/build_deb.sh \
-#    /src/PythiaDIACpp/s3_package_uploader.py \
-#    /app/
+# Here we put everything in its right place for
+# Debian Package Deployment and build the DEB.
+# This DEB can then be copied out of the container
+# for later reuse. Deployment is as easy as running
+# this stage's default command:
 #
+#     # NOTE: Do not run this command!! Use GitHub
+#     # actions to deploy each new release!!
+#     $ docker run --rm -it $(docker build --target deploy .)
+#
+################################################
+FROM build AS build-deb
+
+# Install Python and dependencies
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir awscli boto3
+
+# Copy some extra contents into /app/
+RUN cp \
+    /src/PythiaDIACpp/control.* \
+    /src/PythiaDIACpp/build_deb.sh \
+    /src/PythiaDIACpp/s3_package_uploader.py \
+    /app/
+
 #RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
 #RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
-#
-#WORKDIR /app/
-#
-#ARG pythia_dia_version=1.0
-#ENV package_dir=pythia_dia_${pythia_dia_version}
-#ENV PACKAGE_NAME=${package_dir}.deb
-#
-## This should work with the default entrypoint to build and deploy.
-#CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
+
+WORKDIR /app/
+
+ARG pythiadia_version=0.0-dev
+ENV package_dir=pythiadia_${pythiadia_version}
+ENV PACKAGE_NAME=${package_dir}
+
+# Build the package into this stage's container
+RUN /app/build_deb.sh
+
+# Running this stage will deploy the DEB package
+CMD ["python", "s3_package_uploader.py"]
 
 #################################################
 ##
@@ -140,30 +146,16 @@ CMD ["ctest", "--output-on-failure"]
 #################################################
 FROM base AS app
 
-
 # Set labels
-
 LABEL author="Seer, Inc."
 LABEL description="PythiaDIACpp"
 
+COPY --from=build-deb /app/*.deb /app/
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-        libbrotli1 \
-        libcurl4 \
-        libgomp1 \
-        libnuma1 \
-        libopenmpi3 \
-        libqt5concurrent5 \
-        libre2-9 \
-        libsnappy1v5 \
-        libthrift-0.16.0 \
-        libutf8proc2 \
+    && apt-get install -y /app/*.deb \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /app/ /app/
-COPY --from=build /src/pytorch/build/lib/* /usr/lib/
 
 # Set up a dedicated folder as the normal working dir
 WORKDIR /work/
@@ -171,4 +163,4 @@ WORKDIR /work/
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
 # this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
 # overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
-ENTRYPOINT ["/app/bin/PythiaDIA"]
+ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]

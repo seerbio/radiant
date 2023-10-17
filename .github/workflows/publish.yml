@@ -5,8 +5,8 @@ on:
     types: [created]
 
 jobs:
-  tag_x86_image:
-    runs-on: [self-hosted, aws-master]
+  publish_x86:
+    runs-on: [self-hosted, aws-master, X64]
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
       - name: Check out code
@@ -21,8 +21,13 @@ jobs:
           tag_suffix: -x86_64
           addl_tags: latest-x86_64
 
-  tag_arm_image:
-    runs-on: [self-hosted, aws-master]
+      - name: Upload x86 deb
+        env:
+          CONTAINER: seer/pythia-dia
+        run: ./deploy_deb.sh
+
+  publish_arm:
+    runs-on: [self-hosted, aws-master, ARM64]
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
       - name: Check out code
@@ -36,3 +41,8 @@ jobs:
           build_tag_prefix: aarch64-build-
           tag_suffix: -aarch64
           addl_tags: latest-aarch64
+
+      - name: Upload ARM deb
+        env:
+          CONTAINER: seer/pythia-dia
+        run: ./deploy_deb.sh
