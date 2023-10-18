@@ -21,6 +21,9 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
+        src/BoostRTreeAbstractFactory.cpp
+        src/BoostRTreePoints.cpp
+        src/BoostRTreeWrapper.cpp
 #        src/CandidateProcessertron.cpp
 #        src/ClassifierWeightsManager.cpp
 #        src/MS2DataExtractomatic.cpp
@@ -49,6 +52,9 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
+        src/BoostRTreeAbstractFactory.h
+        src/BoostRTreePoints.h
+        src/BoostRTreeWrapper.h
 #        src/CandidateProcessertron.h
 #        src/ClassifierWeightsManager.h
 #        src/MS2DataExtractomatic.h
