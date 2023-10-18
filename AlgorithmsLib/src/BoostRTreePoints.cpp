@@ -87,8 +87,8 @@ Err BoostRTreePoints::Private::getPoints(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(xMin < xMax); ree;
-    e = ErrorUtils::isTrue(yMin < yMax); ree;
+    e = ErrorUtils::isTrue(xMin <= xMax); ree;
+    e = ErrorUtils::isTrue(yMin <= yMax); ree;
     e = ErrorUtils::isTrue(m_isInit); ree;
 
     const rTreeSearchBox queryBox(

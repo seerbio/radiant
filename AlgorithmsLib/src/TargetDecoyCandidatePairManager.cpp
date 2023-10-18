@@ -13,36 +13,6 @@
 #include <QtConcurrent/QtConcurrent>
 
 
-namespace {
-
-    Err buildMzIons(
-            const FragLibReaderRow &row,
-            QVector<MS2Ion> *ms2Ions
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(row.mzVals); ree;
-        e = ErrorUtils::isEqual(row.mzVals.size(), row.intensityVals.size()); ree;
-
-        const QStringList ionLabels = row.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
-
-        e = ErrorUtils::isEqual(row.mzVals.size(), ionLabels.size()); ree;
-
-        for (int i = 0; i < row.mzVals.size(); i++) {
-            MS2Ion ion;
-            ion.mz = row.mzVals.at(i);
-            ion.intensity = row.intensityVals.at(i);
-            ion.ionLabel = ionLabels.at(i);
-            ion.iRT = static_cast<float>(row.iRT);
-            ion.charge = ion.ionLabel.contains("^2") ? 2 : 1;
-            ms2Ions->push_back(ion);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibFileUri
@@ -69,13 +39,13 @@ Err TargetDecoyCandidatePairManager::init(
             &fragLibReaderRows
     );
 
-    QElapsedTimer et;
-    et.start();
+
 
     e = buildTargetDecoyCandidatePairs(fragLibReaderRows); ree;
     e = buildIndexVsTargetDecoyCandidatePairPtrs(); ree;
+    e = initBoostRTreeWrapper(); ree;
 
-    qDebug() << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
+
 
     ERR_RETURN
 }
@@ -281,6 +251,9 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     e = ErrorUtils::isNotEmpty(fragLibReaderRows); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
 
+    QElapsedTimer et;
+    et.start();
+
     m_targetDecoyCandidatePairs.reserve(fragLibReaderRows.size()); ree;
 
 #define PARALLEL_FRAGLIB_LOAD
@@ -317,6 +290,8 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     }
 #endif
 
+    qDebug() << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
+
     ERR_RETURN
 }
 
@@ -325,6 +300,13 @@ Err TargetDecoyCandidatePairManager::buildIndexVsTargetDecoyCandidatePairPtrs() 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+
+    std::sort(
+            m_targetDecoyCandidatePairs.begin(),
+            m_targetDecoyCandidatePairs.end(),
+            [](const TargetDecoyCandidatePair &l, const TargetDecoyCandidatePair &r){return l.mz() < r.mz();}
+            );
+
     for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
 
         const int currentIndexVsTargetDecoyCandidatePairPtrsSize = m_indexVsTargetDecoyCandidatePairPtrs.size();
@@ -338,6 +320,62 @@ Err TargetDecoyCandidatePairManager::buildIndexVsTargetDecoyCandidatePairPtrs() 
 
     ERR_RETURN
 }
+
+Err TargetDecoyCandidatePairManager::initBoostRTreeWrapper() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+    e = ErrorUtils::isNotEmpty(m_indexVsTargetDecoyCandidatePairPtrs); ree;
+
+    QElapsedTimer et;
+    et.start();
+
+    QVector<RTreePointData2D> dataPoints;
+    for (const TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
+        dataPoints.push_back({tdcp.mz(), 0.0, static_cast<double>(tdcp.targetDecoyCandidatePairIndex())});
+    }
+
+    e = m_boostRTreeWrapper.init(dataPoints); ree;
+
+    qDebug() <<"TargetDecoyPairs RTree loaded in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
+        double mzMin,
+        double mzMax,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
+        ) {
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+    e = ErrorUtils::isNotEmpty(m_indexVsTargetDecoyCandidatePairPtrs); ree;
+
+    QVector<RTreePointData2D> vals;
+    e = m_boostRTreeWrapper.getPoints(
+            mzMin,
+            mzMax,
+            0.0,
+            0.0,
+            &vals
+            ); ree;
+
+    const auto transformLogic = [&](const RTreePointData2D &p){
+        return m_indexVsTargetDecoyCandidatePairPtrs.value(static_cast<TargetDecoyCandidatePairIndex>(p.val));
+    };
+
+    std::transform(
+            vals.begin(),
+            vals.end(),
+            std::back_inserter(*targetDecoyPointers),
+            transformLogic
+            );
+
+    ERR_RETURN
+}
+
 
 Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
@@ -367,4 +405,5 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     ERR_RETURN
 }
+
 

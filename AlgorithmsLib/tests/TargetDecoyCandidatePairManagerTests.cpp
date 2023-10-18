@@ -33,6 +33,15 @@ void TargetDecoyCandidatePairManagerTests::loadModelTest() {
             );
     QCOMPARE(e, eNoError);
 
+    QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
+    e = targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(700.0, 710.0, &targetDecoyPointers);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(targetDecoyPointers.size(), 15792);
+
+    TargetDecoyCandidatePair* tdcp = targetDecoyPointers.at(666);
+    QVERIFY(MathUtils::tSame(tdcp->mz(), 700.381));
+    QVERIFY(MathUtils::tSame(tdcp->mass(), 1398.75));
+
 
 }
 

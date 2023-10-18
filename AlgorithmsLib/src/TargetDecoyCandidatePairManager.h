@@ -7,7 +7,7 @@
 
 #include "AlgorithmsLib_Exports.h"
 
-
+#include "BoostRTreeWrapper.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 
@@ -32,6 +32,12 @@ public:
             const QString &fragLibFileUri
             );
 
+    Err getTargetDecoyCandidatePairPointers(
+            double mzMin,
+            double mzMax,
+            QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
+            );
+
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             PeptideStringWithMods *peptideStringWithMods,
@@ -44,12 +50,16 @@ private:
 
     Err buildIndexVsTargetDecoyCandidatePairPtrs();
 
+    Err initBoostRTreeWrapper();
+
 private:
 
     QVector<TargetDecoyCandidatePair> m_targetDecoyCandidatePairs;
     QMap<TargetDecoyCandidatePairIndex, TargetDecoyCandidatePair*> m_indexVsTargetDecoyCandidatePairPtrs;
 
     PythiaParameters m_pythiaParameters;
+    BoostRTreeWrapper m_boostRTreeWrapper;
+
 };
 
 

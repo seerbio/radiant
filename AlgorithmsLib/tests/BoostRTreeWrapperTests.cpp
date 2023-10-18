@@ -38,7 +38,7 @@ void BoostRTreeWrapperTests::initPointTree() {
     QCOMPARE(p1.x, 2.0);
     QCOMPARE(p1.y, 2.0);
     QCOMPARE(p1.val, 2.0);
-    
+
     const RTreePointData2D &p2 = returnedPoints.back();
     QCOMPARE(p2.x, 3.0);
     QCOMPARE(p2.y, 3.0);
