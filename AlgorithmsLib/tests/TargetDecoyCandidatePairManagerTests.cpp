@@ -2,7 +2,6 @@
 
 #include <QtTest/QtTest>
 
-#include <iostream>
 
 class TargetDecoyCandidatePairManagerTests : public QObject
 {
