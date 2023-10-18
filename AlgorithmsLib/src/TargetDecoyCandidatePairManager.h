@@ -42,11 +42,6 @@ private:
 
     Err buildTargetDecoyCandidatePairs(const QVector<FragLibReaderRow> &fragLibReaderRows);
 
-    Err buildMS2Ions(
-            const FragLibReaderRow &flrr,
-            QVector<MS2Ion> *ms2Ions
-    ) const;
-
     Err buildIndexVsTargetDecoyCandidatePairPtrs();
 
 private:

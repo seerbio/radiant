@@ -72,3 +72,7 @@ int TargetDecoyCandidatePair::totalFragmentCount() const {
 TargetDecoyCandidatePairIndex TargetDecoyCandidatePair::targetDecoyCandidatePairIndex() const {
     return m_targetDecoyCandidatePairIndex;
 }
+
+void TargetDecoyCandidatePair::setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index) {
+    m_targetDecoyCandidatePairIndex = index;
+}

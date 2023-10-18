@@ -10,6 +10,7 @@
 #include "Molecule.h"
 
 #include <QElapsedTimer>
+#include <QtConcurrent/QtConcurrent>
 
 namespace {
 
@@ -79,6 +80,52 @@ Err TargetDecoyCandidatePairManager::init(
 }
 
 namespace {
+
+    Err buildMS2Ions(
+            const PythiaParameters &pythiaParameters,
+            const FragLibReaderRow &flrr,
+            QVector<MS2Ion> *ms2Ions
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(flrr.mzVals); ree;
+        e = ErrorUtils::isEqual(flrr.mzVals.size(), flrr.intensityVals.size());ree;
+        e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree
+
+        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+        e = ErrorUtils::isEqual(flrr.mzVals.size(), ionLabelsSplit.size());ree;
+
+        QVector<MS2Ion> ms2IonsBuilder;
+        ms2IonsBuilder.reserve(flrr.mzVals.size());
+
+        for (int i = 0; i < flrr.mzVals.size(); i++) {
+            MS2Ion ms2Ion;
+            ms2Ion.mz = flrr.mzVals.at(i);
+            ms2Ion.intensity = flrr.intensityVals.at(i);
+            ms2Ion.ionLabel = ionLabelsSplit.at(i);
+            ms2Ion.iRT = static_cast<IRT>(flrr.iRT);
+            ms2Ion.charge = flrr.charge;
+
+            ms2IonsBuilder.push_back(ms2Ion);
+        }
+
+        MS2Ion::filterMS2IonsByMz(
+                pythiaParameters.mzMinDataStructure,
+                pythiaParameters.mzMaxDataStructure,
+                &ms2IonsBuilder
+        );
+
+        MS2Ion::sortMS2IonsIntensityDesc(&ms2IonsBuilder);
+
+        const int ms2IonsSize = std::min(pythiaParameters.topNMs2Ions, ms2IonsBuilder.size());
+        ms2Ions->reserve(ms2IonsSize);
+        ms2IonsBuilder.resize(ms2IonsSize);
+
+        *ms2Ions = ms2IonsBuilder;
+
+        ERR_RETURN
+    }
 
     Err mutateCandidatePeptideTarget(
             const PeptideStringWithMods &peptideStringWithMods,
@@ -171,6 +218,58 @@ namespace {
         ERR_RETURN
     }
 
+    QPair<Err, TargetDecoyCandidatePair> targetDecoyCandidatePairsLoadLogic(
+            const FragLibReaderRow &flrr,
+            const PythiaParameters &pythiaParameters
+            ) {
+
+        ERR_INIT
+
+        PeptideStringWithMods peptideStringWithMods;
+        Charge charge;
+        e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
+                flrr.peptideSequenceChargeKey,
+                &peptideStringWithMods,
+                &charge
+        ); rree;
+
+        //TODO once incorporating PTMs in the sequence, make algo to remove them
+        // and then calculate the peptide length MODS
+        const int peptideLength = peptideStringWithMods.size();
+        if (peptideLength < pythiaParameters.peptideLengthMin
+            || peptideLength > pythiaParameters.peptideLengthMax
+            || flrr.isDecoy) {
+            return {e, {}};
+        }
+
+        QVector<MS2Ion> ms2IonsTarget;
+        e = buildMS2Ions(
+                pythiaParameters,
+                flrr,
+                &ms2IonsTarget
+        ); rree;
+
+        QVector<MS2Ion> ms2IonsDecoy;
+        e= mutateCandidatePeptideTarget(
+                peptideStringWithMods,
+                ms2IonsTarget,
+                &ms2IonsDecoy
+        ); rree;
+
+        TargetDecoyCandidatePair targetDecoyCandidatePair(
+                peptideStringWithMods,
+                ms2IonsTarget,
+                ms2IonsDecoy,
+                flrr.charge,
+                flrr.mass,
+                flrr.iRT,
+                flrr.mzVals.size(),
+                -1
+        );
+
+        return {e, targetDecoyCandidatePair};
+    }
+
 }//namespace
 Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
         const QVector<FragLibReaderRow> &fragLibReaderRows
@@ -183,94 +282,40 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
 
     m_targetDecoyCandidatePairs.reserve(fragLibReaderRows.size()); ree;
 
+#define PARALLEL_FRAGLIB_LOAD
+#ifdef PARALLEL_FRAGLIB_LOAD
+    const auto loadLogicBinder = std::bind(
+            targetDecoyCandidatePairsLoadLogic,
+            std::placeholders::_1,
+            m_pythiaParameters
+    );
+
+    QFuture<QPair<Err, TargetDecoyCandidatePair>> futures = QtConcurrent::mapped(
+            fragLibReaderRows,
+            loadLogicBinder
+            );
+    futures.waitForFinished();
+
+    for (const QPair<Err, TargetDecoyCandidatePair> &result : futures) {
+        e = result.first; ree;
+        const TargetDecoyCandidatePair &tdcp = result.second;
+        m_targetDecoyCandidatePairs.push_back(tdcp);
+    }
+#else
     for (const FragLibReaderRow &flrr : fragLibReaderRows) {
 
-        PeptideStringWithMods peptideStringWithMods;
-        Charge charge;
-        e = peptideStringWithModsFromPeptideSequenceChargeKey(
-                flrr.peptideSequenceChargeKey,
-                &peptideStringWithMods,
-                &charge
-        ); ree;
-
-        //TODO once incorporating PTMs in the sequence, make algo to remove them
-        // and then calculate the peptide length MODS
-        const int peptideLength = peptideStringWithMods.size();
-        if (peptideLength < m_pythiaParameters.peptideLengthMin
-            || peptideLength > m_pythiaParameters.peptideLengthMax
-            || flrr.isDecoy) {
-            continue;
-        }
-
-        QVector<MS2Ion> ms2IonsTarget;
-        e = buildMS2Ions(flrr, &ms2IonsTarget); ree;
-
-        QVector<MS2Ion> ms2IonsDecoy;
-        e= mutateCandidatePeptideTarget(
-                peptideStringWithMods,
-                ms2IonsTarget,
-                &ms2IonsDecoy
-                ); ree;
-
-        TargetDecoyCandidatePair targetDecoyCandidatePair(
-                peptideStringWithMods,
-                ms2IonsTarget,
-                ms2IonsDecoy,
-                flrr.charge,
-                flrr.mass,
-                flrr.iRT,
-                flrr.mzVals.size(),
-                m_targetDecoyCandidatePairs.size()
+        QPair<Err, TargetDecoyCandidatePair> result = targetDecoyCandidatePairsLoadLogic(
+                flrr,
+                m_pythiaParameters
                 );
 
-        m_targetDecoyCandidatePairs.push_back(targetDecoyCandidatePair);
+        e = result.first; ree;
+
+        const TargetDecoyCandidatePair &tdcp = result.second;
+        m_targetDecoyCandidatePairs.push_back(tdcp);
     }
-
-    ERR_RETURN
-}
-
-Err TargetDecoyCandidatePairManager::buildMS2Ions(
-        const FragLibReaderRow &flrr,
-        QVector<MS2Ion> *ms2Ions
-) const {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(flrr.mzVals); ree;
-    e = ErrorUtils::isEqual(flrr.mzVals.size(), flrr.intensityVals.size());ree;
-    e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree
-
-    const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
-    e = ErrorUtils::isEqual(flrr.mzVals.size(), ionLabelsSplit.size());ree;
-
-    QVector<MS2Ion> ms2IonsBuilder;
-    ms2IonsBuilder.reserve(flrr.mzVals.size());
-
-    for (int i = 0; i < flrr.mzVals.size(); i++) {
-        MS2Ion ms2Ion;
-        ms2Ion.mz = flrr.mzVals.at(i);
-        ms2Ion.intensity = flrr.intensityVals.at(i);
-        ms2Ion.ionLabel = ionLabelsSplit.at(i);
-        ms2Ion.iRT = static_cast<IRT>(flrr.iRT);
-        ms2Ion.charge = flrr.charge;
-
-        ms2IonsBuilder.push_back(ms2Ion);
-    }
-
-    MS2Ion::filterMS2IonsByMz(
-            m_pythiaParameters.mzMinDataStructure,
-            m_pythiaParameters.mzMaxDataStructure,
-            &ms2IonsBuilder
-            );
-
-    MS2Ion::sortMS2IonsIntensityDesc(&ms2IonsBuilder);
-
-    const int ms2IonsSize = std::min(m_pythiaParameters.topNMs2Ions, ms2IonsBuilder.size());
-    ms2Ions->reserve(ms2IonsSize);
-    ms2IonsBuilder.resize(ms2IonsSize);
-
-    *ms2Ions = ms2IonsBuilder;
-
+#endif
+    
     ERR_RETURN
 }
 
@@ -280,7 +325,14 @@ Err TargetDecoyCandidatePairManager::buildIndexVsTargetDecoyCandidatePairPtrs() 
 
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
     for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
-        m_indexVsTargetDecoyCandidatePairPtrs.insert(tdcp.targetDecoyCandidatePairIndex(), &tdcp);
+
+        const int currentIndexVsTargetDecoyCandidatePairPtrsSize = m_indexVsTargetDecoyCandidatePairPtrs.size();
+
+        tdcp.setTargetDecoyCandidatePairIndex(currentIndexVsTargetDecoyCandidatePairPtrsSize);
+        m_indexVsTargetDecoyCandidatePairPtrs.insert(
+                currentIndexVsTargetDecoyCandidatePairPtrsSize,
+                &tdcp
+                );
     }
 
     ERR_RETURN

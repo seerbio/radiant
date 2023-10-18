@@ -28,16 +28,6 @@ public:
     MS2Ion() = default;
     ~MS2Ion() = default;
 
-    MS2Ion(
-        double mz,
-        double intensity,
-        QString ionLabel
-    )
-    : mz(mz)
-    , intensity(intensity)
-    , ionLabel(std::move(ionLabel))
-    {}
-
     friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
         dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ") ";
         return dbg;
@@ -202,7 +192,7 @@ public:
 
     static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions) {
 
-        const auto convLog = [](const MS2Ion &ion){
+        const auto convLogic = [](const MS2Ion &ion){
             return QPointF(ion.mz, ion.intensity);
         };
 
@@ -211,7 +201,7 @@ public:
                 ms2Ions.begin(),
                 ms2Ions.end(),
                 std::back_inserter(predPoints),
-                convLog
+                convLogic
         );
 
         return predPoints;

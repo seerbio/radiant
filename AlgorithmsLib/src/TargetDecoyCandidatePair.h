@@ -46,6 +46,8 @@ public:
     [[nodiscard]] int totalFragmentCount() const;
     [[nodiscard]] TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex() const;
 
+    void setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index);
+
 
 private:
 
