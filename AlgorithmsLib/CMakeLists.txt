@@ -37,11 +37,13 @@ SET(SOURCE_FILES
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
-        src/XYMappermatic.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
+        src/TargetDecoyCandidatePair.cpp
+        src/TargetDecoyCandidatePairManager.cpp
         src/TurboXIC.cpp
+        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
@@ -62,11 +64,13 @@ SET(HEADER_FILES
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
-        src/XYMappermatic.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
         src/TandemSpectraDeconvolvotron.h
+        src/TargetDecoyCandidatePair.h
+        src/TargetDecoyCandidatePairManager.h
         src/TurboXIC.h
+        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

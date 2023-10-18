@@ -20,15 +20,13 @@ private Q_SLOTS:
 
     void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
     void getSM2IonsTest();
-    void convertDIANNLibToFragLibTest();
+
 };
 
 void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
 
-    QSKIP("undo me baby");
-
     FragLibReaderRow tpr;
-    tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS";
+    tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS|666";
     tpr.intensityVals = {666.6, 66.6, 6.6};
 
     const QVector<FragLibReaderRow> tprs(10, tpr);
@@ -58,65 +56,42 @@ void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedT
 
 }
 
-Err logic(const QString &testFilePath) {
-
-    ERR_INIT
-
-    const double massStart = 1000.0;
-    const double massEnd = 1002.0;
-
-    AminoAcids aminoAcids;
-    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
-
-    QMap<PeptideSequenceChargeKey, CandidatePeptide> peptideSequenceChargeKeyVsCandidatePeptide;
-    e = FragLibReader::getMS2Ions(
-            testFilePath,
-            aminoAcids,
-            massStart,
-            massEnd,
-            100.0,
-            2000.0,
-            1000,
-            true,
-            &peptideSequenceChargeKeyVsCandidatePeptide
-    ); ree;
-
-    ERR_RETURN
-}
-
 void FragLibReaderTests::getSM2IonsTest() {
 
-    QSKIP("undo me baby");
-
-    const QString testFilePath
-        = "/home/anichols/Desktop/RawData/2022_02_22_Homo_sapiens_UP000005640.fasta.fragLib";
-
-    QVector<QString> paths(60, testFilePath);
-
-    QFuture<Err> futures = QtConcurrent::mapped(
-            paths,
-            logic
-            ) ;
-    futures.waitForFinished();
-
-}
-
-void FragLibReaderTests::convertDIANNLibToFragLibTest() {
-
     ERR_INIT
 
-    QSKIP("Do not activate this");
+    const QString testFilePath
+        = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib.fragLib";
 
-    const QString diannLibraryFile = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib";
+    QVector<FragLibReaderRow> fragLibReaderRows;
 
-    AminoAcids aminoAcids;
-    aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula);
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath,
+            600.0,
+            900.0,
+            &fragLibReaderRows
+            );
 
-    e = FragLibReader::convertDIANNLibToFragLib(diannLibraryFile, aminoAcids);
     QCOMPARE(e, eNoError);
+    QCOMPARE(fragLibReaderRows.size(), 78161);
+
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath,
+            900.0,
+            600.0,
+            &fragLibReaderRows
+    );
+    QCOMPARE(e, eError);
+
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath + "CHAUNCYANDFLOPS",
+            600.0,
+            900.0,
+            &fragLibReaderRows
+    );
+    QCOMPARE(e, eFileError);
 
 }
-
 
 QTEST_MAIN(FragLibReaderTests)
 #include "FragLibReaderTests.moc"
