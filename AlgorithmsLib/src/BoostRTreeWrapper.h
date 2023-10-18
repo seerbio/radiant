@@ -7,6 +7,7 @@
 
 #include "AlgorithmsLib_Exports.h"
 
+#include "BoostRTreeAbstractFactory.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 
@@ -24,11 +25,26 @@ public:
 
     Err init(const QVector<RTreeBoxData2D> &rTreeData);
 
+    Err getPoints(
+            double xMin,
+            double xMax,
+            double yMin,
+            double yMax,
+            QVector<RTreePointData2D> *vals
+    );
+
+    Err getBoxes(
+            double xMin,
+            double xMax,
+            double yMin,
+            double yMax,
+            QVector<RTreeBoxData2D> *vals
+    );
+
 
 private:
 
-    Q_DISABLE_COPY(BoostRTreeWrapper) class Private;
-    const QScopedPointer<Private> d_ptr;
+    QSharedPointer<BoostRTreeAbstractFactory> m_rTree;
 
 
 };

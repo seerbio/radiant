@@ -16,9 +16,30 @@ class ALGORITHMSLIB_EXPORTS BoostRTreePoints : public BoostRTreeAbstractFactory 
 
 public:
 
-    Err init(const QVector<RTreePointData2D> &rTreeDataPoint2D) override;
+    BoostRTreePoints();
 
-    Err init(const QVector<RTreeBoxData2D> &rTreeDataPoint2D) override;
+    ~BoostRTreePoints() override;
+
+    Err init(const QVector<RTreePointData2D> &rTreeDataPoint2Ds) override;
+
+    Err init(const QVector<RTreeBoxData2D> &rTreeBoxPoint2Ds) override;
+
+    Err getPoints(
+            double xMin,
+            double xMax,
+            double yMin,
+            double yMax,
+            QVector<RTreePointData2D> *vals
+    ) override;
+
+    Err getBoxes(
+            double xMin,
+            double xMax,
+            double yMin,
+            double yMax,
+            QVector<RTreeBoxData2D> *vals
+    ) override;
+
 
 private:
 

@@ -27,32 +27,136 @@ public:
 
     Err init(const QVector<RTreePointData2D> &rTreeDataPoint2D);
 
+    Err getPoints(
+            double xMin,
+            double xMax,
+            double yMin,
+            double yMax,
+            QVector<RTreePointData2D> *vals
+    );
+
 
 private:
 
+    bool m_isInit;
     RTree *m_rTree;
-
 
 };
 
-BoostRTreePoints::Private::Private() {}
+BoostRTreePoints::Private::Private()
+: m_rTree(Q_NULLPTR)
+, m_isInit(false)
+{}
 
-BoostRTreePoints::Private::~Private() {}
+BoostRTreePoints::Private::~Private() {
+    delete m_rTree;
+}
 
 Err BoostRTreePoints::Private::init(const QVector<RTreePointData2D> &rTreeDataPoint2D) {
-    return eNetworkError;
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(rTreeDataPoint2D); ree;
+
+    std::vector<rTreePoint> cloudLoader;
+
+    std::transform(
+            rTreeDataPoint2D.begin(),
+            rTreeDataPoint2D.end(),
+            std::back_inserter(cloudLoader),
+            [](const RTreePointData2D &p){
+
+                const rTreeCoor coor(p.x, p.y);
+                return rTreePoint(coor, p.val);
+            }
+    );
+
+    const int maxElements = 16;
+    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    m_isInit = true;
+    ERR_RETURN
+}
+
+Err BoostRTreePoints::Private::getPoints(
+        double xMin,
+        double xMax,
+        double yMin,
+        double yMax,
+        QVector<RTreePointData2D> *vals
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(xMin < xMax); ree;
+    e = ErrorUtils::isTrue(yMin < yMax); ree;
+    e = ErrorUtils::isTrue(m_isInit); ree;
+
+    const rTreeSearchBox queryBox(
+            rTreeCoor(xMin, yMin),
+            rTreeCoor(xMax, yMax)
+            );
+
+    std::vector<rTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    for (const rTreePoint &rtp : result) {
+
+        RTreePointData2D dp;
+        dp.x = rtp.first.get<0>();
+        dp.y = rtp.first.get<1>();
+        dp.val = rtp.second;
+
+        vals->push_back(dp);
+    }
+
+    ERR_RETURN
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+BoostRTreePoints::BoostRTreePoints() : d_ptr(new Private()) {}
 
-Err BoostRTreePoints::init(const QVector<RTreePointData2D> &rTreeDataPoint2D) {
-    return eNetworkError;
+BoostRTreePoints::~BoostRTreePoints() {}
+
+Err BoostRTreePoints::init(const QVector<RTreePointData2D> &rTreeDataPoint2Ds) {
+    ERR_INIT
+    e = d_ptr->init(rTreeDataPoint2Ds); ree;
+    ERR_RETURN
 }
 
-Err BoostRTreePoints::init(const QVector<RTreeBoxData2D> &rTreeDataPoint2D) {
+Err BoostRTreePoints::init(const QVector<RTreeBoxData2D> &rTreeBoxPoint2D) {
+    qDebug() << QStringLiteral("This is a points rTree. Trying to use box rTree data");
+    return eFunctionNotImplemented;
+}
+
+Err BoostRTreePoints::getPoints(
+        double xMin,
+        double xMax,
+        double yMin,
+        double yMax,
+        QVector<RTreePointData2D> *vals
+        ) {
+
+    ERR_INIT
+    e = d_ptr->getPoints(
+            xMin,
+            xMax,
+            yMin,
+            yMax,
+            vals
+            ); ree;
+    ERR_RETURN
+}
+
+Err BoostRTreePoints::getBoxes(
+        double xMin,
+        double xMax,
+        double yMin,
+        double yMax,
+        QVector<RTreeBoxData2D> *vals
+        ) {
     qDebug() << QStringLiteral("This is a points rTree. Trying to use box rTree data");
     return eFunctionNotImplemented;
 }
