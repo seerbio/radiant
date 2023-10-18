@@ -315,7 +315,7 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
         m_targetDecoyCandidatePairs.push_back(tdcp);
     }
 #endif
-    
+
     ERR_RETURN
 }
 
