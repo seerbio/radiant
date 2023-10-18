@@ -68,7 +68,7 @@ SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/r
 #SET(PYTORCH_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtorch")
 SET(PYTORCH_PREFIX_PATH "/libtorch")
 
-#ADD_SUBDIRECTORY("AlgorithmsLib")
+ADD_SUBDIRECTORY("AlgorithmsLib")
 #ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
 #ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 #ADD_SUBDIRECTORY("Apps/OrpheusFastaShredder")

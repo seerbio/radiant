@@ -24,7 +24,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         int charge,
         double mass,
         double iRt,
-        double totalFramentCount,
+        int totalFramentCount,
         TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex
         )
         : m_peptideStringWithMods(peptideStringWithMods)

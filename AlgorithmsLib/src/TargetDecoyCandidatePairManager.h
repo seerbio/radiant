@@ -7,6 +7,7 @@
 
 #include "AlgorithmsLib_Exports.h"
 
+
 #include "Error.h"
 #include "GlobalSettings.h"
 
@@ -15,6 +16,8 @@
 
 
 using namespace Error;
+
+class FragLibReaderRow;
 
 
 class ALGORITHMSLIB_EXPORTS TargetDecoyCandidatePairManager {
@@ -29,11 +32,29 @@ public:
             const QString &fragLibFileUri
             );
 
+    static Err peptideStringWithModsFromPeptideSequenceChargeKey(
+            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
+            PeptideStringWithMods *peptideStringWithMods,
+            Charge *charge
+            );
+
+private:
+
+    Err buildTargetDecoyCandidatePairs(const QVector<FragLibReaderRow> &fragLibReaderRows);
+
+    Err buildMS2Ions(
+            const FragLibReaderRow &flrr,
+            QVector<MS2Ion> *ms2Ions
+    ) const;
+
+    Err buildIndexVsTargetDecoyCandidatePairPtrs();
+
 private:
 
     QVector<TargetDecoyCandidatePair> m_targetDecoyCandidatePairs;
-    QMap<TargetDecoyCandidatePairIndex, TargetDecoyCandidatePair*> m_indexVsTargetDecoyCandidatePairPtr;
+    QMap<TargetDecoyCandidatePairIndex, TargetDecoyCandidatePair*> m_indexVsTargetDecoyCandidatePairPtrs;
 
+    PythiaParameters m_pythiaParameters;
 };
 
 

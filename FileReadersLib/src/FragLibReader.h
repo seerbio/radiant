@@ -113,11 +113,7 @@ public:
             QVector<FragLibReaderRow> *fragLibReaderRows
     );
 
-//    static Err peptideStringWithModsFromPeptideSequenceChargeKey(
-//            const PeptideSequenceChargeKey &peptideSequenceChargeKey,
-//            PeptideStringWithMods *peptideStringWithMods,
-//            Charge *charge
-//    );
+
 
 
 //    static Err mutateCandidatePeptideTarget(

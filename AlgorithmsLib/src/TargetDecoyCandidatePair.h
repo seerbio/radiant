@@ -9,6 +9,7 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MS2Ion.h"
 
 
 using namespace Error;
@@ -28,7 +29,7 @@ public:
             int charge,
             double mass,
             double iRt,
-            double totalFramentCount,
+            int totalFramentCount,
             TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex
             );
 
@@ -48,17 +49,14 @@ public:
 
 private:
 
-    const PeptideStringWithMods m_peptideStringWithMods;
-
-    const QVector<MS2Ion> m_ms2IonsTarget;
-    const QVector<MS2Ion> m_ms2IonsDecoy;
-
-    const int m_charge;
-    const double m_mass;
-    const double m_iRt;
-    const int m_totalFragmentCount;
-
-    const TargetDecoyCandidatePairIndex m_targetDecoyCandidatePairIndex;
+    PeptideStringWithMods m_peptideStringWithMods;
+    QVector<MS2Ion> m_ms2IonsTarget;
+    QVector<MS2Ion> m_ms2IonsDecoy;
+    int m_charge;
+    double m_mass;
+    double m_iRt;
+    int m_totalFragmentCount;
+    TargetDecoyCandidatePairIndex m_targetDecoyCandidatePairIndex;
 
 };
 

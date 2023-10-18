@@ -60,6 +60,8 @@ void FragLibReaderTests::getSM2IonsTest() {
 
     ERR_INIT
 
+    //TODO accumulate this test file to S3 for DL for unit test
+    //TODO use smaller file to save on DL time.
     const QString testFilePath
         = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib.fragLib";
 
