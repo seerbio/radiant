@@ -11,6 +11,7 @@
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
 #include "MsFrame.h"
+#include "MS2Ion.h"
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TurboXIC.h"

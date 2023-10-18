@@ -15,11 +15,13 @@
 #include "MsReaderPointerAcc.h"
 #include "ProteinDigestomatic.h"
 #include "PythiaParameterReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
 
 using namespace Error;
 
 class MsReaderParquet;
+class CandidatePeptide;
 class ScoredCandidate;
 
 
@@ -88,7 +90,7 @@ private:
     QString m_fragLibUri;
     QString m_fastaUri;
 
-    FragLibReader m_fragLibReader;
+    TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
     QVector<MsScanInfo> m_msScanInfos;
 
     MsCalibratomatic m_msCalibratomatic;

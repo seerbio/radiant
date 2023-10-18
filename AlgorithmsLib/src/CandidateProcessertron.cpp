@@ -125,87 +125,87 @@ Err CandidateProcessertron::init(
 
 namespace {
 
-    int getMaxRowCount(
-            const CandidatePeptide &candidatePeptide,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
-    ) {
-
-        int maxRowCount = 0;
-        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
-
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-
-            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
-        }
-
-        return maxRowCount;
-    }
-
-    Eigen::MatrixX<double> buildSummingMatrix(
-            const CandidatePeptide &candidatePeptide,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-            int topNMs2Ions
-    ) {
-
-        const int cols = topNMs2Ions;
-        const int rows = getMaxRowCount(
-                candidatePeptide,
-                mzHashedVsIonPresence
-        );
-
-        if (rows == 0) {
-            return {};
-        }
-
-        Eigen::MatrixX<double> mat(rows, cols);
-        mat.setZero();
-
-        for (int i = 0; i < cols; i++) {
-
-            if (i >= candidatePeptide.ms2Ions.size()) {
-                break;
-            }
-
-            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
-
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-
-            if (ionPresenceVec.isEmpty()) {
-                continue;
-            }
-
-            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
-            mat.col(i) = eVec;
-        }
-
-        return mat;
-    }
-
-    void filterSummedVecPeakIntegrationsByPeakWidth(
-            const QVector<double> &summedMatToVec,
-            int summedMzPresenceMin,
-            int peakWidthMin,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-    ) {
-
-        const auto terminatorLogic = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const PeakIntegrationIndexes &pii){
-
-            const int peakWidth = pii.second - pii.first;
-            if (peakWidth < peakWidthMin) {
-                return true;
-            }
-
-            const QVector<double> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
-            const double summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
-
-            return summedPresenceIntegrationMax < summedMzPresenceMin;
-        };
-
-        const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
-        peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
-    }
+//    int getMaxRowCount(
+//            const CandidatePeptide &candidatePeptide,
+//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+//    ) {
+//
+////        int maxRowCount = 0;
+////        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
+////
+////            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+////            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+////
+////            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
+////        }
+//
+//        return maxRowCount;
+//    }
+//
+//    Eigen::MatrixX<double> buildSummingMatrix(
+//            const CandidatePeptide &candidatePeptide,
+//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
+//            int topNMs2Ions
+//    ) {
+//
+//        const int cols = topNMs2Ions;
+//        const int rows = getMaxRowCount(
+//                candidatePeptide,
+//                mzHashedVsIonPresence
+//        );
+//
+//        if (rows == 0) {
+//            return {};
+//        }
+//
+//        Eigen::MatrixX<double> mat(rows, cols);
+//        mat.setZero();
+//
+//        for (int i = 0; i < cols; i++) {
+//
+//            if (i >= candidatePeptide.ms2Ions.size()) {
+//                break;
+//            }
+//
+//            const MS2Ion &ms2Ion = candidatePeptide.ms2Ions.at(i);
+//
+//            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
+//
+//            if (ionPresenceVec.isEmpty()) {
+//                continue;
+//            }
+//
+//            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
+//            mat.col(i) = eVec;
+//        }
+//
+//        return mat;
+//    }
+//
+//    void filterSummedVecPeakIntegrationsByPeakWidth(
+//            const QVector<double> &summedMatToVec,
+//            int summedMzPresenceMin,
+//            int peakWidthMin,
+//            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+//    ) {
+//
+//        const auto terminatorLogic = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const PeakIntegrationIndexes &pii){
+//
+//            const int peakWidth = pii.second - pii.first;
+//            if (peakWidth < peakWidthMin) {
+//                return true;
+//            }
+//
+//            const QVector<double> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
+//            const double summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
+//
+//            return summedPresenceIntegrationMax < summedMzPresenceMin;
+//        };
+//
+//        const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
+//        peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
+//    }
 
 }//namespace
 Err CandidateProcessertron::processCandidateTarget(
@@ -225,53 +225,53 @@ Err CandidateProcessertron::processCandidateTarget(
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
-    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-            candidatePeptideTarget,
-            m_mzHashedVsIonPresence,
-            m_topNMS2Ions
-    );
-
-    if (presenceMatrix.rows() == 0) {
-        ERR_RETURN
-    }
-
-    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
-    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
-
-    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-
-    if (m_fragPredsPredictedScanTime.isEmpty()) {
-
-        e = findCandidateIntegrations(
-                summedMatVecToVec,
-                m_pythiaParameters.minFoundMzPeaks,
-                &peakIntegrationIndexes
-        ); ree;
-
-    }
-    else {
-
-        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
-        e = findCandidateIntegrations(
-                summedMatVecToVec,
-                m_pythiaParameters.minFoundMzPeaks,
-                scanTimePredicted,
-                m_pythiaParameters.scanTimeWindowMinutes,
-                &peakIntegrationIndexes
-        ); ree;
-
-    }
-
-    if (peakIntegrationIndexes.isEmpty()) {
-        ERR_RETURN
-    }
-
-    e = buildScores(
-            candidatePeptideTarget,
-            peakIntegrationIndexes,
-            summedMatVecToVec,
-            scoredCandidate
-            ); ree;
+//    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
+//            candidatePeptideTarget,
+//            m_mzHashedVsIonPresence,
+//            m_topNMS2Ions
+//    );
+//
+//    if (presenceMatrix.rows() == 0) {
+//        ERR_RETURN
+//    }
+//
+//    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
+//    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
+//
+//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+//
+//    if (m_fragPredsPredictedScanTime.isEmpty()) {
+//
+//        e = findCandidateIntegrations(
+//                summedMatVecToVec,
+//                m_pythiaParameters.minFoundMzPeaks,
+//                &peakIntegrationIndexes
+//        ); ree;
+//
+//    }
+//    else {
+//
+//        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
+//        e = findCandidateIntegrations(
+//                summedMatVecToVec,
+//                m_pythiaParameters.minFoundMzPeaks,
+//                scanTimePredicted,
+//                m_pythiaParameters.scanTimeWindowMinutes,
+//                &peakIntegrationIndexes
+//        ); ree;
+//
+//    }
+//
+//    if (peakIntegrationIndexes.isEmpty()) {
+//        ERR_RETURN
+//    }
+//
+//    e = buildScores(
+//            candidatePeptideTarget,
+//            peakIntegrationIndexes,
+//            summedMatVecToVec,
+//            scoredCandidate
+//            ); ree;
 
     ERR_RETURN
 }
@@ -321,23 +321,23 @@ Err CandidateProcessertron::findCandidateIntegrations(
             &summedPresenceVecSmoothed
     ); ree;
 
-    filterSummedVecPeakIntegrationsByPeakWidth(
-            summedMatToVec,
-            minFoundMzPeaks,
-            m_peakWidthMin,
-            peakIntegrationIndexes
-    );
-
-    sortPeakIntegrationsDescMaxSumFound(
-            summedMatToVec,
-            peakIntegrationIndexes
-    );
-
-    const int topNPeakIntegrations = 2;
-    const int peakIntegrationsMaxSize
-            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
-
-    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
+//    filterSummedVecPeakIntegrationsByPeakWidth(
+//            summedMatToVec,
+//            minFoundMzPeaks,
+//            m_peakWidthMin,
+//            peakIntegrationIndexes
+//    );
+//
+//    sortPeakIntegrationsDescMaxSumFound(
+//            summedMatToVec,
+//            peakIntegrationIndexes
+//    );
+//
+//    const int topNPeakIntegrations = 2;
+//    const int peakIntegrationsMaxSize
+//            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
+//
+//    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
 
     ERR_RETURN
 }
@@ -829,54 +829,54 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
-        e = ErrorUtils::isNotEmpty(candidatePeptide.ms2Ions); ree;
-        e = ErrorUtils::isFalse(MathUtils::tSame(peakIntegrationIndexes.first, peakIntegrationIndexes.second)); ree
-
-        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
-
-            mzValsSearched->push_back(ms2Ion.mz);
-
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-            if (!mzHashedVsXICPoints.contains(mzHashed)) {
-                mzMeanValsFound->push_back(0.0);
-                stdMeanValsFound->push_back(0.0);
-                continue;
-            }
-
-            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
-
-            QVector<double> mzValsForMz;
-            for (int i = peakIntegrationIndexes.first; i < peakIntegrationIndexes.second; i++) {
-
-                if (i >= peakIntegrationIndexes.second) {
-                    const double mzMean = MathUtils::mean(mzValsForMz);
-                    const double mzStd = MathUtils::stDev(mzValsForMz);
-                    mzMeanValsFound->push_back(mzMean);
-                    stdMeanValsFound->push_back(mzStd);
-                    break;
-                }
-
-                const QVector<double> &mzVals = xicPoints.scanNumberVsMzVals.value(i);
-                if (mzVals.isEmpty()) {
-                    continue;
-                }
-
-                mzValsForMz.append(mzVals);
-            }
-
-            if (mzValsForMz.isEmpty()) {
-                mzMeanValsFound->push_back(0.0);
-                stdMeanValsFound->push_back(0.0);
-                continue;
-            }
-
-            const double mzMean = MathUtils::mean(mzValsForMz);
-            const double mzStd = MathUtils::stDev(mzValsForMz);
-            mzMeanValsFound->push_back(mzMean);
-            stdMeanValsFound->push_back(mzStd);
-        }
+//        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+//        e = ErrorUtils::isNotEmpty(candidatePeptide.ms2Ions); ree;
+//        e = ErrorUtils::isFalse(MathUtils::tSame(peakIntegrationIndexes.first, peakIntegrationIndexes.second)); ree
+//
+//        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
+//
+//            mzValsSearched->push_back(ms2Ion.mz);
+//
+//            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//
+//            if (!mzHashedVsXICPoints.contains(mzHashed)) {
+//                mzMeanValsFound->push_back(0.0);
+//                stdMeanValsFound->push_back(0.0);
+//                continue;
+//            }
+//
+//            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
+//
+//            QVector<double> mzValsForMz;
+//            for (int i = peakIntegrationIndexes.first; i < peakIntegrationIndexes.second; i++) {
+//
+//                if (i >= peakIntegrationIndexes.second) {
+//                    const double mzMean = MathUtils::mean(mzValsForMz);
+//                    const double mzStd = MathUtils::stDev(mzValsForMz);
+//                    mzMeanValsFound->push_back(mzMean);
+//                    stdMeanValsFound->push_back(mzStd);
+//                    break;
+//                }
+//
+//                const QVector<double> &mzVals = xicPoints.scanNumberVsMzVals.value(i);
+//                if (mzVals.isEmpty()) {
+//                    continue;
+//                }
+//
+//                mzValsForMz.append(mzVals);
+//            }
+//
+//            if (mzValsForMz.isEmpty()) {
+//                mzMeanValsFound->push_back(0.0);
+//                stdMeanValsFound->push_back(0.0);
+//                continue;
+//            }
+//
+//            const double mzMean = MathUtils::mean(mzValsForMz);
+//            const double mzStd = MathUtils::stDev(mzValsForMz);
+//            mzMeanValsFound->push_back(mzMean);
+//            stdMeanValsFound->push_back(mzStd);
+//        }
 
         ERR_RETURN
     }
@@ -950,272 +950,272 @@ Err CandidateProcessertron::buildScores(
         ) {
     ERR_INIT
 
-    const QVector<MS2Ion> &ms2Ions = candidatePeptide.ms2Ions;
-    QVector<MZION> mzIonsTopN;
-    std::transform(
-            ms2Ions.begin(),
-            ms2Ions.end(),
-            std::back_inserter(mzIonsTopN),
-            [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
-            );
-
-    QVector<MZION> mzIonsShadow;
-    std::transform(
-            ms2Ions.begin(),
-            ms2Ions.end(),
-            std::back_inserter(mzIonsShadow),
-            [](const MS2Ion &ms2Ion){
-                const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-                return ms2Ion.mz - isoChargeDiff;
-            }
-    );
-
-    const Eigen::MatrixX<double> intensityMatrix100 = buildIntensityVecMatrix(
-            mzIonsTopN,
-            m_mzHashedVsXICPoints100,
-            summedMatVecToVec.size(),
-            m_topNMS2Ions
-    );
-
-    const Eigen::MatrixX<double> intensityMatrix100Shadow = buildIntensityVecMatrix(
-            mzIonsShadow,
-            m_mzHashedVsXICPoints100Shadows,
-            summedMatVecToVec.size(),
-            mzIonsShadow.size()
-    );
-
-    const Eigen::MatrixX<double> intensityMatrix45 = buildIntensityVecMatrix(
-            mzIonsTopN,
-            m_mzHashedVsXICPoints45,
-            summedMatVecToVec.size(),
-            m_topNMS2Ions
-    );
-
-    const Eigen::MatrixX<double> intensityMatrix20 = buildIntensityVecMatrix(
-            mzIonsTopN,
-            m_mzHashedVsXICPoints20,
-            summedMatVecToVec.size(),
-            m_topNMS2Ions
-    );
-
-    const Eigen::MatrixX<double> intensityMatrixB2B3 = buildIntensityVecMatrix(
-            candidatePeptide.ms2IonMzB2B3,
-            m_mzHashedVsXICPointsB2B3,
-            summedMatVecToVec.size(),
-            candidatePeptide.ms2IonMzB2B3.size()
-    );
-
-    QVector<double> cosineSimsIndividual100;
-    FrameIndex frameIndexIntensityApex;
-    PeakIntegrationIndexes bestPeakIntegrationIndexes;
-    Eigen::VectorX<double> bestAnchorColumn;
-    e = calculateCandidateAllignementMetrics(
-            intensityMatrix100,
-            peakIntegrationIndexes,
-            summedMatVecToVec,
-            m_topNMS2Ions,
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividual100,
-            &frameIndexIntensityApex,
-            &bestPeakIntegrationIndexes,
-            &bestAnchorColumn
-    ); ree;
-
-    const QVector<double> peakShapeRatios = calculatePeakShapeRatios(bestAnchorColumn);
-
-    QVector<double> cosineSimsIndividual45;
-    double unused1;
-    Eigen::VectorX<double> unused2;
-    FrameIndex unused3;
-    e = calcBestCosineSimSum(
-            intensityMatrix45,
-            bestPeakIntegrationIndexes,
-            summedMatVecToVec,
-            m_topNMS2Ions,
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividual45,
-            &unused1,
-            &unused2,
-            &unused3
-            ); ree;
-
-    QVector<double> cosineSimsIndividual20;
-    double unused4;
-    Eigen::VectorX<double> unused5;
-    FrameIndex unused6;
-    e = calcBestCosineSimSum(
-            intensityMatrix20,
-            bestPeakIntegrationIndexes,
-            summedMatVecToVec,
-            m_topNMS2Ions,
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividual20,
-            &unused4,
-            &unused5,
-            &unused6
-    ); ree;
-
-    QVector<double> cosineSimsIndividualB2B3;
-    double cosineSimSumB2B3;
-    Eigen::VectorX<double> unused8;
-    FrameIndex unused9;
-    e = calcBestCosineSimSum(
-            intensityMatrixB2B3,
-            bestPeakIntegrationIndexes,
-            summedMatVecToVec,
-            candidatePeptide.ms2IonMzB2B3.size(),
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividualB2B3,
-            &cosineSimSumB2B3,
-            &unused8,
-            &unused9
-    ); ree;
-
-    QVector<double> cosineSimsIndividualShadows;
-    double cosineSimSumShadows;
-    Eigen::VectorX<double> unused10;
-    FrameIndex unused11;
-    e = calcBestCosineSimSum(
-            intensityMatrix100Shadow,
-            bestPeakIntegrationIndexes,
-            summedMatVecToVec,
-            mzIonsShadow.size(),
-            m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividualShadows,
-            &cosineSimSumShadows,
-            &unused10,
-            &unused11
-    ); ree;
-
-
-    QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
-            Eigen::VectorX<double>(intensityMatrix100.row(frameIndexIntensityApex))
-    );
-
-    double cosineSimSpectrum;
-    double klDivSpectrum;
-    e = calculateSpectrumMetrics(
-            intensityMatrix100.row(frameIndexIntensityApex),
-            candidatePeptide.ms2Ions,
-            &cosineSimSpectrum,
-            &klDivSpectrum
-    ); ree;
-
-    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
-    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / candidatePeptide.charge);
-    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / candidatePeptide.charge);
-
-    double cosineSim100MS1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            precursorMz,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &cosineSim100MS1
-    ); ree;
-
-    double cosineSim100MS1Iso1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            precursorMzIso1,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &cosineSim100MS1Iso1
-    ); ree;
-
-    double cosineSim100MS1Iso2;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            precursorMzIso2,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &cosineSim100MS1Iso2
-    ); ree;
-
-    double cosineSim45MS1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
-            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
-            &m_turboXICMS1,
-            &cosineSim45MS1
-    ); ree;
-
-    double cosineSim20MS1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            bestPeakIntegrationIndexes,
-            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
-            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
-            &m_turboXICMS1,
-            &cosineSim20MS1
-    ); ree;
-
-    QVector<double> mzMeanValsFound;
-    QVector<double> stdMeanValsFound;
-    QVector<double> mzValsSearched;
-    QVector<double> theoApexIntensity;
-    e = calculateEmpiricalMzStats(
-            candidatePeptide,
-            bestPeakIntegrationIndexes,
-            &mzMeanValsFound,
-            &stdMeanValsFound,
-            &mzValsSearched,
-            &theoApexIntensity
-            ); ree;
-
-    cosineSimsIndividual100.resize(mzValsSearched.size());
-    cosineSimsIndividual45.resize(mzValsSearched.size());
-    cosineSimsIndividual20.resize(mzValsSearched.size());
-    intensityApexVals100.resize(mzValsSearched.size());
-
-    const double bestCosineSimSum100 = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
-    const double bestCosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
-    const double bestCosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
-
-    scoredCandidate->peptideStringWithMods = candidatePeptide.peptideStringWithMods;
-    scoredCandidate->cosineSimSum100 = bestCosineSimSum100;
-    scoredCandidate->cosineSimSum45 = bestCosineSimSum45;
-    scoredCandidate->cosineSimSum20 = bestCosineSimSum20;
-    scoredCandidate->isDecoy = candidatePeptide.isDecoy;
-    scoredCandidate->charge = candidatePeptide.charge;
-    scoredCandidate->mass = candidatePeptide.mass;
-    scoredCandidate->scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
-    scoredCandidate->scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate->scanNumber);
-    scoredCandidate->scanIonCount = m_msFrame.getScanPointsByScanNumber(scoredCandidate->scanNumber).size();
-
-    scoredCandidate->scanTimePredicted = m_fragPredsPredictedScanTime.isEmpty()
-            ? -1.0
-            : m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
-
-    scoredCandidate->iRTPredicted = candidatePeptide.iRt;
-    scoredCandidate->mzSearchedVec = mzValsSearched;
-    scoredCandidate->theoIntensityVec = theoApexIntensity;
-    scoredCandidate->mzFoundMeanVec = mzMeanValsFound;
-    scoredCandidate->mzFoundStDevVec = stdMeanValsFound;
-    scoredCandidate->intensityFoundMaxVec = intensityApexVals100;
-    scoredCandidate->cosineSimToAnchorVec = cosineSimsIndividual100;
-    scoredCandidate->targetKey = m_uniqueMsInfoScanKey;
-    scoredCandidate->klDivSpectrum = klDivSpectrum;
-    scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
-    scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
-    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
-    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MS1Iso2;
-    scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
-    scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
-    scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
-    scoredCandidate->peakShapeRatio1 = peakShapeRatios.at(0);
-    scoredCandidate->peakShapeRatio2 = peakShapeRatios.at(1);
-    scoredCandidate->peakShapeRatio3 = peakShapeRatios.at(2);
-    scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
-    scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
-    scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
-    scoredCandidate->shadowsCosineSimSum = cosineSimSumShadows;
-    scoredCandidate->cosineSimShadowsToAnchorVec = cosineSimsIndividualShadows;
+//    const QVector<MS2Ion> &ms2Ions = candidatePeptide.ms2Ions;
+//    QVector<MZION> mzIonsTopN;
+//    std::transform(
+//            ms2Ions.begin(),
+//            ms2Ions.end(),
+//            std::back_inserter(mzIonsTopN),
+//            [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
+//            );
+//
+//    QVector<MZION> mzIonsShadow;
+//    std::transform(
+//            ms2Ions.begin(),
+//            ms2Ions.end(),
+//            std::back_inserter(mzIonsShadow),
+//            [](const MS2Ion &ms2Ion){
+//                const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+//                return ms2Ion.mz - isoChargeDiff;
+//            }
+//    );
+//
+//    const Eigen::MatrixX<double> intensityMatrix100 = buildIntensityVecMatrix(
+//            mzIonsTopN,
+//            m_mzHashedVsXICPoints100,
+//            summedMatVecToVec.size(),
+//            m_topNMS2Ions
+//    );
+//
+//    const Eigen::MatrixX<double> intensityMatrix100Shadow = buildIntensityVecMatrix(
+//            mzIonsShadow,
+//            m_mzHashedVsXICPoints100Shadows,
+//            summedMatVecToVec.size(),
+//            mzIonsShadow.size()
+//    );
+//
+//    const Eigen::MatrixX<double> intensityMatrix45 = buildIntensityVecMatrix(
+//            mzIonsTopN,
+//            m_mzHashedVsXICPoints45,
+//            summedMatVecToVec.size(),
+//            m_topNMS2Ions
+//    );
+//
+//    const Eigen::MatrixX<double> intensityMatrix20 = buildIntensityVecMatrix(
+//            mzIonsTopN,
+//            m_mzHashedVsXICPoints20,
+//            summedMatVecToVec.size(),
+//            m_topNMS2Ions
+//    );
+//
+//    const Eigen::MatrixX<double> intensityMatrixB2B3 = buildIntensityVecMatrix(
+//            candidatePeptide.ms2IonMzB2B3,
+//            m_mzHashedVsXICPointsB2B3,
+//            summedMatVecToVec.size(),
+//            candidatePeptide.ms2IonMzB2B3.size()
+//    );
+//
+//    QVector<double> cosineSimsIndividual100;
+//    FrameIndex frameIndexIntensityApex;
+//    PeakIntegrationIndexes bestPeakIntegrationIndexes;
+//    Eigen::VectorX<double> bestAnchorColumn;
+//    e = calculateCandidateAllignementMetrics(
+//            intensityMatrix100,
+//            peakIntegrationIndexes,
+//            summedMatVecToVec,
+//            m_topNMS2Ions,
+//            m_pythiaParameters.cosineSimToAnchorThreshold,
+//            &cosineSimsIndividual100,
+//            &frameIndexIntensityApex,
+//            &bestPeakIntegrationIndexes,
+//            &bestAnchorColumn
+//    ); ree;
+//
+//    const QVector<double> peakShapeRatios = calculatePeakShapeRatios(bestAnchorColumn);
+//
+//    QVector<double> cosineSimsIndividual45;
+//    double unused1;
+//    Eigen::VectorX<double> unused2;
+//    FrameIndex unused3;
+//    e = calcBestCosineSimSum(
+//            intensityMatrix45,
+//            bestPeakIntegrationIndexes,
+//            summedMatVecToVec,
+//            m_topNMS2Ions,
+//            m_pythiaParameters.cosineSimToAnchorThreshold,
+//            &cosineSimsIndividual45,
+//            &unused1,
+//            &unused2,
+//            &unused3
+//            ); ree;
+//
+//    QVector<double> cosineSimsIndividual20;
+//    double unused4;
+//    Eigen::VectorX<double> unused5;
+//    FrameIndex unused6;
+//    e = calcBestCosineSimSum(
+//            intensityMatrix20,
+//            bestPeakIntegrationIndexes,
+//            summedMatVecToVec,
+//            m_topNMS2Ions,
+//            m_pythiaParameters.cosineSimToAnchorThreshold,
+//            &cosineSimsIndividual20,
+//            &unused4,
+//            &unused5,
+//            &unused6
+//    ); ree;
+//
+//    QVector<double> cosineSimsIndividualB2B3;
+//    double cosineSimSumB2B3;
+//    Eigen::VectorX<double> unused8;
+//    FrameIndex unused9;
+//    e = calcBestCosineSimSum(
+//            intensityMatrixB2B3,
+//            bestPeakIntegrationIndexes,
+//            summedMatVecToVec,
+//            candidatePeptide.ms2IonMzB2B3.size(),
+//            m_pythiaParameters.cosineSimToAnchorThreshold,
+//            &cosineSimsIndividualB2B3,
+//            &cosineSimSumB2B3,
+//            &unused8,
+//            &unused9
+//    ); ree;
+//
+//    QVector<double> cosineSimsIndividualShadows;
+//    double cosineSimSumShadows;
+//    Eigen::VectorX<double> unused10;
+//    FrameIndex unused11;
+//    e = calcBestCosineSimSum(
+//            intensityMatrix100Shadow,
+//            bestPeakIntegrationIndexes,
+//            summedMatVecToVec,
+//            mzIonsShadow.size(),
+//            m_pythiaParameters.cosineSimToAnchorThreshold,
+//            &cosineSimsIndividualShadows,
+//            &cosineSimSumShadows,
+//            &unused10,
+//            &unused11
+//    ); ree;
+//
+//
+//    QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
+//            Eigen::VectorX<double>(intensityMatrix100.row(frameIndexIntensityApex))
+//    );
+//
+//    double cosineSimSpectrum;
+//    double klDivSpectrum;
+//    e = calculateSpectrumMetrics(
+//            intensityMatrix100.row(frameIndexIntensityApex),
+//            candidatePeptide.ms2Ions,
+//            &cosineSimSpectrum,
+//            &klDivSpectrum
+//    ); ree;
+//
+//    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
+//    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / candidatePeptide.charge);
+//    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / candidatePeptide.charge);
+//
+//    double cosineSim100MS1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            precursorMz,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &cosineSim100MS1
+//    ); ree;
+//
+//    double cosineSim100MS1Iso1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            precursorMzIso1,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &cosineSim100MS1Iso1
+//    ); ree;
+//
+//    double cosineSim100MS1Iso2;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            precursorMzIso2,
+//            m_pythiaParameters.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &cosineSim100MS1Iso2
+//    ); ree;
+//
+//    double cosineSim45MS1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
+//            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
+//            &m_turboXICMS1,
+//            &cosineSim45MS1
+//    ); ree;
+//
+//    double cosineSim20MS1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            bestPeakIntegrationIndexes,
+//            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
+//            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
+//            &m_turboXICMS1,
+//            &cosineSim20MS1
+//    ); ree;
+//
+//    QVector<double> mzMeanValsFound;
+//    QVector<double> stdMeanValsFound;
+//    QVector<double> mzValsSearched;
+//    QVector<double> theoApexIntensity;
+//    e = calculateEmpiricalMzStats(
+//            candidatePeptide,
+//            bestPeakIntegrationIndexes,
+//            &mzMeanValsFound,
+//            &stdMeanValsFound,
+//            &mzValsSearched,
+//            &theoApexIntensity
+//            ); ree;
+//
+//    cosineSimsIndividual100.resize(mzValsSearched.size());
+//    cosineSimsIndividual45.resize(mzValsSearched.size());
+//    cosineSimsIndividual20.resize(mzValsSearched.size());
+//    intensityApexVals100.resize(mzValsSearched.size());
+//
+//    const double bestCosineSimSum100 = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
+//    const double bestCosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
+//    const double bestCosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
+//
+//    scoredCandidate->peptideStringWithMods = candidatePeptide.peptideStringWithMods;
+//    scoredCandidate->cosineSimSum100 = bestCosineSimSum100;
+//    scoredCandidate->cosineSimSum45 = bestCosineSimSum45;
+//    scoredCandidate->cosineSimSum20 = bestCosineSimSum20;
+//    scoredCandidate->isDecoy = candidatePeptide.isDecoy;
+//    scoredCandidate->charge = candidatePeptide.charge;
+//    scoredCandidate->mass = candidatePeptide.mass;
+//    scoredCandidate->scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
+//    scoredCandidate->scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate->scanNumber);
+//    scoredCandidate->scanIonCount = m_msFrame.getScanPointsByScanNumber(scoredCandidate->scanNumber).size();
+//
+//    scoredCandidate->scanTimePredicted = m_fragPredsPredictedScanTime.isEmpty()
+//            ? -1.0
+//            : m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
+//
+//    scoredCandidate->iRTPredicted = candidatePeptide.iRt;
+//    scoredCandidate->mzSearchedVec = mzValsSearched;
+//    scoredCandidate->theoIntensityVec = theoApexIntensity;
+//    scoredCandidate->mzFoundMeanVec = mzMeanValsFound;
+//    scoredCandidate->mzFoundStDevVec = stdMeanValsFound;
+//    scoredCandidate->intensityFoundMaxVec = intensityApexVals100;
+//    scoredCandidate->cosineSimToAnchorVec = cosineSimsIndividual100;
+//    scoredCandidate->targetKey = m_uniqueMsInfoScanKey;
+//    scoredCandidate->klDivSpectrum = klDivSpectrum;
+//    scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
+//    scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
+//    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
+//    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MS1Iso2;
+//    scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
+//    scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
+//    scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
+//    scoredCandidate->peakShapeRatio1 = peakShapeRatios.at(0);
+//    scoredCandidate->peakShapeRatio2 = peakShapeRatios.at(1);
+//    scoredCandidate->peakShapeRatio3 = peakShapeRatios.at(2);
+//    scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
+//    scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
+//    scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
+//    scoredCandidate->shadowsCosineSimSum = cosineSimSumShadows;
+//    scoredCandidate->cosineSimShadowsToAnchorVec = cosineSimsIndividualShadows;
 
     ERR_RETURN
 }
@@ -1253,12 +1253,12 @@ Err CandidateProcessertron::calculateEmpiricalMzStats(
             &mzFoundVsMzSearched
     ); ree
 
-    std::transform(
-            candidatePeptide.ms2Ions.begin(),
-            candidatePeptide.ms2Ions.end(),
-            std::back_inserter(*theoApexIntensity),
-            [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
-    );
+//    std::transform(
+//            candidatePeptide.ms2Ions.begin(),
+//            candidatePeptide.ms2Ions.end(),
+//            std::back_inserter(*theoApexIntensity),
+//            [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+//    );
 
     ERR_RETURN
 }
@@ -1278,49 +1278,49 @@ Err CandidateProcessertron::processCandidateDecoy(
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
-    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-            candidatePeptideDecoy,
-            m_mzHashedVsIonPresence,
-            m_topNMS2Ions
-    );
+//    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
+//            candidatePeptideDecoy,
+//            m_mzHashedVsIonPresence,
+//            m_topNMS2Ions
+//    );
+//
+//    if (presenceMatrix.rows() == 0) {
+//        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
+//        scoredCandidateDecoy->isDecoy = true;
+//        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
+//        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
+//
+//        ERR_RETURN
+//    }
+//
+//    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
+//    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
+//
+//    const int minFoundMzPeaksDecoys = 0;
+//
+//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+//    e = findCandidateIntegrations(
+//            summedMatVecToVec,
+//            minFoundMzPeaksDecoys,
+//            scanTime,
+//            m_pythiaParameters.scanTimeWindowMinutes,
+//            &peakIntegrationIndexes
+//    ); ree;
+//
+//    if (peakIntegrationIndexes.isEmpty()) {
+//        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
+//        scoredCandidateDecoy->isDecoy = true;
+//        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
+//        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
+//        ERR_RETURN
+//    }
 
-    if (presenceMatrix.rows() == 0) {
-        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
-        scoredCandidateDecoy->isDecoy = true;
-        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
-        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
-
-        ERR_RETURN
-    }
-
-    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
-    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
-
-    const int minFoundMzPeaksDecoys = 0;
-
-    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-    e = findCandidateIntegrations(
-            summedMatVecToVec,
-            minFoundMzPeaksDecoys,
-            scanTime,
-            m_pythiaParameters.scanTimeWindowMinutes,
-            &peakIntegrationIndexes
-    ); ree;
-
-    if (peakIntegrationIndexes.isEmpty()) {
-        scoredCandidateDecoy->peptideStringWithMods = candidatePeptideDecoy.peptideStringWithMods;
-        scoredCandidateDecoy->isDecoy = true;
-        scoredCandidateDecoy->charge = candidatePeptideDecoy.charge;
-        scoredCandidateDecoy->targetKey = m_uniqueMsInfoScanKey;
-        ERR_RETURN
-    }
-
-    e = buildScores(
-            candidatePeptideDecoy,
-            peakIntegrationIndexes,
-            summedMatVecToVec,
-            scoredCandidateDecoy
-    ); ree;
+//    e = buildScores(
+//            candidatePeptideDecoy,
+//            peakIntegrationIndexes,
+//            summedMatVecToVec,
+//            scoredCandidateDecoy
+//    ); ree;
 
     ERR_RETURN
 }

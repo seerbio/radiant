@@ -79,16 +79,16 @@ namespace {
         e = ErrorUtils::isNotEmpty(peptideStringWithModsVsCandidatePeptide); ree;
         e = ErrorUtils::isTrue(msCalibratomatic->isInit()); ree;
 
-        for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
-
-            const PeptideStringWithMods &peptideStringWithMods = it.key();
-            const double iRT = it.value().iRt;
-
-            double predictedScanTime;
-            e = msCalibratomatic->predictScanTime(iRT, &predictedScanTime); ree;
-
-            fragPredsPredictedScanTime->insert(peptideStringWithMods, predictedScanTime);
-        }
+//        for (auto it = peptideStringWithModsVsCandidatePeptide.begin(); it != peptideStringWithModsVsCandidatePeptide.end(); it++) {
+//
+//            const PeptideStringWithMods &peptideStringWithMods = it.key();
+//            const double iRT = it.value().iRt;
+//
+//            double predictedScanTime;
+//            e = msCalibratomatic->predictScanTime(iRT, &predictedScanTime); ree;
+//
+//            fragPredsPredictedScanTime->insert(peptideStringWithMods, predictedScanTime);
+//        }
 
         ERR_RETURN
     }
@@ -287,19 +287,19 @@ Err MsFrameScoretron::buildPeptideStringWithModsVsCandidatePeptideDecoys(
 
     e = ErrorUtils::isNotEmpty(m_fragPredsTopN); ree;
 
-    for (const CandidatePeptide &candidatePeptideTarget : m_fragPredsTopN) {
-
-        CandidatePeptide candidatePeptideDecoy;
-        e = FragLibReader::mutateCandidatePeptideTarget(
-                candidatePeptideTarget,
-                &candidatePeptideDecoy
-        ); ree;
-
-        peptideStringWithModsVsCandidatePeptideDecoys->insert(
-                candidatePeptideTarget.peptideStringWithMods,
-                candidatePeptideDecoy
-                );
-    }
+//    for (const CandidatePeptide &candidatePeptideTarget : m_fragPredsTopN) {
+//
+//        CandidatePeptide candidatePeptideDecoy;
+//        e = FragLibReader::mutateCandidatePeptideTarget(
+//                candidatePeptideTarget,
+//                &candidatePeptideDecoy
+//        ); ree;
+//
+//        peptideStringWithModsVsCandidatePeptideDecoys->insert(
+//                candidatePeptideTarget.peptideStringWithMods,
+//                candidatePeptideDecoy
+//                );
+//    }
 
     ERR_RETURN
 }
@@ -327,43 +327,43 @@ namespace {
 
         for (const CandidatePeptide &cp : candidatePeptides) {
 
-            if (ionSelector == IonSelector::Y2Y3Ions) {
-                //removed code that was. Not collecting data for Y2Y3 anymore
-            }
-            else if (ionSelector == IonSelector::B2B3Ions) {
-                const QVector<MZION> &mzIons = cp.ms2IonMzB2B3;
-                for (const MZION &mz: mzIons) {
-                    const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                    mzHashedVsMzIon->insert(mzHashed, mz);
-                }
-            }
-            else if (ionSelector == IonSelector::MS2ShadowIons) {
-
-                const QVector<MS2Ion> &ms2IonsTopN = cp.ms2Ions;
-                const int maxShadowCount = 6;
-
-                int counter = 0;
-                for (const MS2Ion &ms2Ion: ms2IonsTopN) {
-
-                    if (counter++ >= maxShadowCount) {
-                        break;
-                    }
-
-                    e = ErrorUtils::isTrue(ms2Ion.charge > 0); ree;
-                    const double isotopeChargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-                    const double mzIsotopeShadow = ms2Ion.mz - isotopeChargeDistance;
-
-                    const MzHashed mzHashed = MathUtils::hashDecimal(mzIsotopeShadow, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                    mzHashedVsMzIon->insert(mzHashed, mzIsotopeShadow);
-                }
-            }
-            else {
-                const QVector<MS2Ion> &ms2IonsTopN = cp.ms2Ions;
-                for (const MS2Ion &ms2Ion: ms2IonsTopN) {
-                    const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                    mzHashedVsMzIon->insert(mzHashed, ms2Ion.mz);
-                }
-            }
+//            if (ionSelector == IonSelector::Y2Y3Ions) {
+//                //removed code that was. Not collecting data for Y2Y3 anymore
+//            }
+//            else if (ionSelector == IonSelector::B2B3Ions) {
+//                const QVector<MZION> &mzIons = cp.ms2IonMzB2B3;
+//                for (const MZION &mz: mzIons) {
+//                    const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//                    mzHashedVsMzIon->insert(mzHashed, mz);
+//                }
+//            }
+//            else if (ionSelector == IonSelector::MS2ShadowIons) {
+//
+//                const QVector<MS2Ion> &ms2IonsTopN = cp.ms2Ions;
+//                const int maxShadowCount = 6;
+//
+//                int counter = 0;
+//                for (const MS2Ion &ms2Ion: ms2IonsTopN) {
+//
+//                    if (counter++ >= maxShadowCount) {
+//                        break;
+//                    }
+//
+//                    e = ErrorUtils::isTrue(ms2Ion.charge > 0); ree;
+//                    const double isotopeChargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+//                    const double mzIsotopeShadow = ms2Ion.mz - isotopeChargeDistance;
+//
+//                    const MzHashed mzHashed = MathUtils::hashDecimal(mzIsotopeShadow, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//                    mzHashedVsMzIon->insert(mzHashed, mzIsotopeShadow);
+//                }
+//            }
+//            else {
+//                const QVector<MS2Ion> &ms2IonsTopN = cp.ms2Ions;
+//                for (const MS2Ion &ms2Ion: ms2IonsTopN) {
+//                    const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//                    mzHashedVsMzIon->insert(mzHashed, ms2Ion.mz);
+//                }
+//            }
         }
 
         ERR_RETURN

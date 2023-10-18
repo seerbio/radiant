@@ -16,6 +16,10 @@
 
 using namespace Error;
 
+struct CandidatePeptide{
+    //TODO delete this after troubleshooting
+};
+
 namespace FragLibReaderNamespace {
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");

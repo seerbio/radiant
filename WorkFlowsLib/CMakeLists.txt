@@ -20,16 +20,16 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/ConvertMzMLToParquetWorkFlow.cpp
-        src/FastaFileToPeptidesListWorkFlow.cpp
-        src/LibraryBuilderWorkFlow.cpp
+#        src/ConvertMzMLToParquetWorkFlow.cpp
+#        src/FastaFileToPeptidesListWorkFlow.cpp
+#        src/LibraryBuilderWorkFlow.cpp
         src/PythiaDIAWorkflow.cpp
     )
 
 SET(HEADER_FILES
-        src/ConvertMzMLToParquetWorkFlow.h
-        src/FastaFileToPeptidesListWorkFlow.h
-        src/LibraryBuilderWorkFlow.h
+#        src/ConvertMzMLToParquetWorkFlow.h
+#        src/FastaFileToPeptidesListWorkFlow.h
+#        src/LibraryBuilderWorkFlow.h
         src/PythiaDIAWorkflow.h
     )
 

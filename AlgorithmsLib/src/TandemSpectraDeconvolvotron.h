@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "MS2Ion.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;

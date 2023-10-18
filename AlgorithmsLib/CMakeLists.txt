@@ -24,30 +24,30 @@ SET(SOURCE_FILES
         src/BoostRTreeAbstractFactory.cpp
         src/BoostRTreePoints.cpp
         src/BoostRTreeWrapper.cpp
-#        src/CandidateProcessertron.cpp
-#        src/ClassifierWeightsManager.cpp
-#        src/MS2DataExtractomatic.cpp
-#        src/FDRCLassifierNeuralNet.cpp
-#        src/FeatureFinderHill.cpp
-#        src/FeatureFinderHillBuilder.cpp
-#        src/IRTPredictron.cpp
-#        src/IsotopicDistributionBuilder.cpp
-#        src/MS2ChargeDeconvolvotron.cpp
+        src/CandidateProcessertron.cpp
+        src/ClassifierWeightsManager.cpp
+        src/MS2DataExtractomatic.cpp
+        src/FDRCLassifierNeuralNet.cpp
+        src/FeatureFinderHill.cpp
+        src/FeatureFinderHillBuilder.cpp
+        src/IRTPredictron.cpp
+        src/IsotopicDistributionBuilder.cpp
+        src/MS2ChargeDeconvolvotron.cpp
         src/MS2Ion.cpp
-#        src/MS2PointsExtractomatic.cpp
-#        src/MsCalibratomatic.cpp
-#        src/MsFrame.cpp
-#        src/MsFrameScoretron.cpp
-#        src/MsUtils.cpp
-#        src/PeakIntegratomatic.cpp
-#        src/ProteinDigestomatic.cpp
-#        src/TandemFragmentPredictotron.cpp
-#        src/TandemPredictionUtils.cpp
-#        src/TandemSpectraDeconvolvotron.cpp
+        src/MS2PointsExtractomatic.cpp
+        src/MsCalibratomatic.cpp
+        src/MsFrame.cpp
+        src/MsFrameScoretron.cpp
+        src/MsUtils.cpp
+        src/PeakIntegratomatic.cpp
+        src/ProteinDigestomatic.cpp
+        src/TandemFragmentPredictotron.cpp
+        src/TandemPredictionUtils.cpp
+        src/TandemSpectraDeconvolvotron.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TurboXIC.cpp
-#        src/XYMappermatic.cpp
+        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
@@ -55,30 +55,30 @@ SET(HEADER_FILES
         src/BoostRTreeAbstractFactory.h
         src/BoostRTreePoints.h
         src/BoostRTreeWrapper.h
-#        src/CandidateProcessertron.h
-#        src/ClassifierWeightsManager.h
-#        src/MS2DataExtractomatic.h
-#        src/FDRCLassifierNeuralNet.h
-#        src/FeatureFinderHill.h
-#        src/FeatureFinderHillBuilder.h
-#        src/IRTPredictron.h
-#        src/IsotopicDistributionBuilder.h
-#        src/MS2ChargeDeconvolvotron.h
+        src/CandidateProcessertron.h
+        src/ClassifierWeightsManager.h
+        src/MS2DataExtractomatic.h
+        src/FDRCLassifierNeuralNet.h
+        src/FeatureFinderHill.h
+        src/FeatureFinderHillBuilder.h
+        src/IRTPredictron.h
+        src/IsotopicDistributionBuilder.h
+        src/MS2ChargeDeconvolvotron.h
         src/MS2Ion.h
-#        src/MS2PointsExtractomatic.h
-#        src/MsCalibratomatic.h
-#        src/MsFrame.h
-#        src/MsFrameScoretron.h
-#        src/MsUtils.h
-#        src/PeakIntegratomatic.h
-#        src/ProteinDigestomatic.h
-#        src/TandemFragmentPredictotron.h
-#        src/TandemPredictionUtils.h
-#        src/TandemSpectraDeconvolvotron.h
+        src/MS2PointsExtractomatic.h
+        src/MsCalibratomatic.h
+        src/MsFrame.h
+        src/MsFrameScoretron.h
+        src/MsUtils.h
+        src/PeakIntegratomatic.h
+        src/ProteinDigestomatic.h
+        src/TandemFragmentPredictotron.h
+        src/TandemPredictionUtils.h
+        src/TandemSpectraDeconvolvotron.h
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TurboXIC.h
-#        src/XYMappermatic.h
+        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -114,8 +114,8 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         FileReadersLib
-#        MachineLrnLib
-#        PyTorchLib
+        MachineLrnLib
+        PyTorchLib
         UtilsLib
         )
 

@@ -42,7 +42,6 @@ void TargetDecoyCandidatePairManagerTests::loadModelTest() {
     QVERIFY(MathUtils::tSame(tdcp->mz(), 700.381));
     QVERIFY(MathUtils::tSame(tdcp->mass(), 1398.75));
 
-
 }
 
 
