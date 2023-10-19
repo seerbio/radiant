@@ -15,6 +15,7 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         BoostRTreeWrapperTests
 #        ClassifierWeightsManagerTests
+        CandidateScorertronTests
 #        FDRCLassifierNeuralNetTests
 #        FeatureFinderHillBuilderTests
 #        IRTPredictronTests

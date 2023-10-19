@@ -36,8 +36,8 @@ public:
     ~TargetDecoyCandidatePair() = default;
 
     PeptideStringWithMods peptideStringWithMods();
-    QVector<MS2Ion> ms2IonsTarget() const;
-    QVector<MS2Ion> ms2IonsDecoy() const;
+    [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
+    [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
 
     [[nodiscard]] double mz() const;
     [[nodiscard]] double charge() const;

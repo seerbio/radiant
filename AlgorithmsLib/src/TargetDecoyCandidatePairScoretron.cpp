@@ -4,6 +4,7 @@
 
 #include "TargetDecoyCandidatePairScoretron.h"
 
+#include "CandidateScorertron.h"
 #include "MsCalibratomatic.h"
 #include "TurboXIC.h"
 
@@ -52,7 +53,7 @@ namespace {
             double ppmTol,
             TurboXIC *turboXic,
             QMap<MzHashed, XICPoints> *cachedPoints,
-            QVector<XICPoints> *xicPointsVec
+            QMap<MzHashed, XICPoints> *xicPointMap
             ) {
 
         ERR_INIT
@@ -65,7 +66,7 @@ namespace {
 
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
             if (cachedPoints->contains(mzHashed)) {
-                xicPointsVec->push_back(cachedPoints->value(mzHashed));
+                xicPointMap->insert(mzHashed, cachedPoints->value(mzHashed));
                 continue;
             }
 
@@ -77,7 +78,7 @@ namespace {
             );
 
             cachedPoints->insert(mzHashed, xicPoints);
-            xicPointsVec->push_back(xicPoints);
+            xicPointMap->insert(mzHashed, xicPoints);
 
         }
 
@@ -90,7 +91,7 @@ namespace {
             int scanNumberMax,
             double ppmTol,
             TurboXIC *turboXic,
-            QVector<XICPoints> *xicPointsVec
+            QMap<MzHashed, XICPoints> *xicPointMap
     ) {
 
         ERR_INIT
@@ -103,7 +104,7 @@ namespace {
                 ppmTol,
                 turboXic,
                 &cachedPoints,
-                xicPointsVec
+                xicPointMap
         ); ree;
 
         ERR_RETURN
@@ -115,6 +116,8 @@ namespace {
 
         QElapsedTimer et;
         et.start();
+
+        CandidateScorertron candidateScorertron(pi.topNMs2Ions);
 
         TurboXIC turboXic;
         e = turboXic.init(pi.diaTargetFrame); ree;
@@ -149,7 +152,7 @@ namespace {
 
             } else {
 
-                QVector<XICPoints> xicPointsVec;
+                QMap<MzHashed, XICPoints> xicPointMap;
 
                 e = extractMS2Ions(
                         ms2IonsTarget,
@@ -158,8 +161,10 @@ namespace {
                         pi.ppmTol,
                         &turboXic,
                         &cachedPoints,
-                        &xicPointsVec
+                        &xicPointMap
                         ); ree;
+
+                e = candidateScorertron.calculateScores(xicPointMap, ms2IonsTarget); ree;
             }
 
             QVector<MS2Ion> ms2IonsDecoy = targetDecoyPtr->ms2IonsDecoy();
@@ -170,7 +175,7 @@ namespace {
 
             } else {
 
-                QVector<XICPoints> xicPointsVec;
+                QMap<MzHashed, XICPoints> xicPointMap;
 
                 e = extractMS2Ions(
                         ms2IonsDecoy,
@@ -179,7 +184,7 @@ namespace {
                         pi.ppmTol,
                         &turboXic,
                         &cachedPoints,
-                        &xicPointsVec
+                        &xicPointMap
                 ); ree;
             }
         }

@@ -25,6 +25,7 @@ SET(SOURCE_FILES
         src/BoostRTreePoints.cpp
         src/BoostRTreeWrapper.cpp
         src/CandidateProcessertron.cpp
+        src/CandidateScorertron.cpp
         src/ClassifierWeightsManager.cpp
         src/MS2DataExtractomatic.cpp
         src/FDRCLassifierNeuralNet.cpp
@@ -57,6 +58,7 @@ SET(HEADER_FILES
         src/BoostRTreePoints.h
         src/BoostRTreeWrapper.h
         src/CandidateProcessertron.h
+        src/CandidateScorertron.h
         src/ClassifierWeightsManager.h
         src/MS2DataExtractomatic.h
         src/FDRCLassifierNeuralNet.h

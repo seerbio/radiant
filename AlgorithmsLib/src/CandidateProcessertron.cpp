@@ -125,42 +125,42 @@ Err CandidateProcessertron::init(
 
 namespace {
 
-//    int getMaxRowCount(
-//            const CandidatePeptide &candidatePeptide,
-//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
-//    ) {
+    int getMaxRowCount(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
+    ) {
+
+        int maxRowCount = 0;
+//        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
 //
-////        int maxRowCount = 0;
-////        for (const MS2Ion &ms2Ion : candidatePeptide.ms2Ions) {
-////
-////            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-////            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-////
-////            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
-////        }
+//            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+//            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
 //
-//        return maxRowCount;
-//    }
-//
-//    Eigen::MatrixX<double> buildSummingMatrix(
-//            const CandidatePeptide &candidatePeptide,
-//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-//            int topNMs2Ions
-//    ) {
-//
-//        const int cols = topNMs2Ions;
-//        const int rows = getMaxRowCount(
-//                candidatePeptide,
-//                mzHashedVsIonPresence
-//        );
-//
-//        if (rows == 0) {
-//            return {};
+//            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
 //        }
-//
-//        Eigen::MatrixX<double> mat(rows, cols);
-//        mat.setZero();
-//
+
+        return maxRowCount;
+    }
+
+    Eigen::MatrixX<double> buildSummingMatrix(
+            const CandidatePeptide &candidatePeptide,
+            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
+            int topNMs2Ions
+    ) {
+
+        const int cols = topNMs2Ions;
+        const int rows = getMaxRowCount(
+                candidatePeptide,
+                mzHashedVsIonPresence
+        );
+
+        if (rows == 0) {
+            return {};
+        }
+
+        Eigen::MatrixX<double> mat(rows, cols);
+        mat.setZero();
+
 //        for (int i = 0; i < cols; i++) {
 //
 //            if (i >= candidatePeptide.ms2Ions.size()) {
@@ -179,9 +179,9 @@ namespace {
 //            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
 //            mat.col(i) = eVec;
 //        }
-//
-//        return mat;
-//    }
+
+        return mat;
+    }
 //
 //    void filterSummedVecPeakIntegrationsByPeakWidth(
 //            const QVector<double> &summedMatToVec,
@@ -225,30 +225,30 @@ Err CandidateProcessertron::processCandidateTarget(
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
-//    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-//            candidatePeptideTarget,
-//            m_mzHashedVsIonPresence,
-//            m_topNMS2Ions
-//    );
-//
-//    if (presenceMatrix.rows() == 0) {
-//        ERR_RETURN
-//    }
-//
-//    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
-//    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
-//
-//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-//
-//    if (m_fragPredsPredictedScanTime.isEmpty()) {
-//
-//        e = findCandidateIntegrations(
-//                summedMatVecToVec,
-//                m_pythiaParameters.minFoundMzPeaks,
-//                &peakIntegrationIndexes
-//        ); ree;
-//
-//    }
+    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
+            candidatePeptideTarget,
+            m_mzHashedVsIonPresence,
+            m_topNMS2Ions
+    );
+
+    if (presenceMatrix.rows() == 0) {
+        ERR_RETURN
+    }
+
+    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
+    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
+
+    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+
+    if (m_fragPredsPredictedScanTime.isEmpty()) {
+
+        e = findCandidateIntegrations(
+                summedMatVecToVec,
+                m_pythiaParameters.minFoundMzPeaks,
+                &peakIntegrationIndexes
+        ); ree;
+
+    }
 //    else {
 //
 //        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
