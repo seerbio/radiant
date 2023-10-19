@@ -143,7 +143,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     QElapsedTimer et;
     et.start();
     for (int i = 0; i < 100; i++) {
-        e = extractorDev(&diaTargetFrame); ree;
+
         qDebug() << i << et.restart() << "mSec";
     }
 
@@ -360,8 +360,8 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scoredCandidatesFDRThresholded); ree;
-
+//        e = ErrorUtils::isNotEmpty(scoredCandidatesFDRThresholded); ree;
+//
 //        qDebug() << scoredCandidatesFDRThresholded.size() << "Found for recalibartion";
 //
 //        const auto msCalibrationReaderRowsInsertLogic = [](const ScoredCandidate &sc){
@@ -428,7 +428,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
+//    e = ErrorUtils::isTrue(m_fragLibReader.libarySize() > 0); ree;
     const double fdrThreshold = 0.01;
 
     const double calibrationSelectionFractionIncrement = 0.2;
@@ -442,90 +442,90 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
 
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
-    QVector<ScoredCandidate> scoredCandidatesAll;
-    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
+//    QVector<ScoredCandidate> scoredCandidatesAll;
+//    QVector<ScoredCandidate> scoredCandidatesTargetsFDRThresholded;
 
     int onePercentFDRCount = 0;
     const double maxTrainingFraction = 0.21;
     const int minTrainingCount = 100;
 
-    while (calibrationSelectionFraction < maxTrainingFraction && onePercentFDRCount < minTrainingCount) {
+//    while (calibrationSelectionFraction < maxTrainingFraction && onePercentFDRCount < minTrainingCount) {
+//
+//        qDebug() << "Calibration fraction" << calibrationSelectionFraction;
+//
+//        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
+//        e = buildCandidates(
+//                topNMs2IonsCalibration,
+//                calibrationSelectionFraction,
+//                &uniqueInfoScanKeyVsCandidatePeptideCalibration
+//        ); ree;
+//
+//        MS2DataExtractomatic ms2DataExtractomatic;
+//        e = ms2DataExtractomatic.init(
+//                m_pythiaParameters,
+//                topNMs2IonsCalibration,
+//                useExtendedScores,
+//                useNeuralNetworkScores,
+//                msReaderPointerAcc
+//        ); ree;
+//
+//        e = ms2DataExtractomatic.extractMS2ForCandidates(
+//                uniqueInfoScanKeyVsCandidatePeptideCalibration,
+//                &scoredCandidatesAll
+//        ); ree;
+//
+//        const double fdrFraction = 0.01;
+//        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+//                scoredCandidatesAll,
+//                fdrFraction,
+//                &onePercentFDRCount
+//                );
+//
+//        e = filterScoreCandidatesByFDR(
+//                scoredCandidatesAll,
+//                fdrThreshold,
+//                false,
+//                &scoredCandidatesTargetsFDRThresholded
+//        ); ree;
+//
+//        QMap<QString, int> unused;
+//        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &unused); ree;
+//
+//        calibrationSelectionFraction += calibrationSelectionFractionIncrement;
+//
+//    }
 
-        qDebug() << "Calibration fraction" << calibrationSelectionFraction;
-
-        QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-        e = buildCandidates(
-                topNMs2IonsCalibration,
-                calibrationSelectionFraction,
-                &uniqueInfoScanKeyVsCandidatePeptideCalibration
-        ); ree;
-
-        MS2DataExtractomatic ms2DataExtractomatic;
-        e = ms2DataExtractomatic.init(
-                m_pythiaParameters,
-                topNMs2IonsCalibration,
-                useExtendedScores,
-                useNeuralNetworkScores,
-                msReaderPointerAcc
-        ); ree;
-
-        e = ms2DataExtractomatic.extractMS2ForCandidates(
-                uniqueInfoScanKeyVsCandidatePeptideCalibration,
-                &scoredCandidatesAll
-        ); ree;
-
-        const double fdrFraction = 0.01;
-        FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                scoredCandidatesAll,
-                fdrFraction,
-                &onePercentFDRCount
-                );
-
-        e = filterScoreCandidatesByFDR(
-                scoredCandidatesAll,
-                fdrThreshold,
-                false,
-                &scoredCandidatesTargetsFDRThresholded
-        ); ree;
-
-        QMap<QString, int> unused;
-        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &unused); ree;
-
-        calibrationSelectionFraction += calibrationSelectionFractionIncrement;
-
-    }
-
-    if (scoredCandidatesTargetsFDRThresholded.size() < minTrainingCount) {
-
-        QMap<QString, int> fdrResults;
-        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &fdrResults); ree;
-
-        double fallBackFDR;
-        e = getBestFDRFraction(fdrResults, minTrainingCount, &fallBackFDR); ree;
-        qDebug() << "Fallback FDR" << fallBackFDR;
-
-        e = MS2DataExtractomatic::filterScoreCandidatesByFDR(
-                scoredCandidatesAll,
-                fallBackFDR,
-                true,
-                &scoredCandidatesTargetsFDRThresholded
-                ); ree;
-    }
-
-    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-    e = buildMsCalibrationReaderRows(
-            scoredCandidatesTargetsFDRThresholded,
-            &msCalibrationReaderRows
-            ); ree;
-
-//#define WRITE_CALIBRATION
-#ifdef WRITE_CALIBRATION
-    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
-    e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
-    e = m_msCalibratomatic.init(resultsFilePath); ree;
-#else
-    e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
-#endif
+//    if (scoredCandidatesTargetsFDRThresholded.size() < minTrainingCount) {
+//
+//        QMap<QString, int> fdrResults;
+//        e = MS2DataExtractomatic::outputFDRResults(scoredCandidatesAll, false, &fdrResults); ree;
+//
+//        double fallBackFDR;
+//        e = getBestFDRFraction(fdrResults, minTrainingCount, &fallBackFDR); ree;
+//        qDebug() << "Fallback FDR" << fallBackFDR;
+//
+//        e = MS2DataExtractomatic::filterScoreCandidatesByFDR(
+//                scoredCandidatesAll,
+//                fallBackFDR,
+//                true,
+//                &scoredCandidatesTargetsFDRThresholded
+//                ); ree;
+//    }
+//
+//    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+//    e = buildMsCalibrationReaderRows(
+//            scoredCandidatesTargetsFDRThresholded,
+//            &msCalibrationReaderRows
+//            ); ree;
+//
+////#define WRITE_CALIBRATION
+//#ifdef WRITE_CALIBRATION
+//    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
+//    e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
+//    e = m_msCalibratomatic.init(resultsFilePath); ree;
+//#else
+//    e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
+//#endif
 
     ERR_RETURN
 }

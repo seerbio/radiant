@@ -13,13 +13,8 @@
 
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
-
     ERR_INIT
-
-    qDebug() << "Open File 2";
-
     e = setMsReaderPointer(filePath); ree;
-
     ERR_RETURN
 }
 
