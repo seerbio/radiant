@@ -39,7 +39,7 @@ public:
     Err predictScanTime(
             double iRT,
             double *predictedScanTime
-            );
+            ) const;
 
     bool isInit() const;
 

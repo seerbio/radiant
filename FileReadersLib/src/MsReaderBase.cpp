@@ -115,36 +115,53 @@ Err MsReaderBase::closeFile() {
 
 int MsReaderBase::getNearestScanNumberFromScanTime(double scanTime) {
 
-    if (m_scanTimes.isEmpty()) {
-        std::transform(
-                m_msScanInfo.begin(),
-                m_msScanInfo.end(),
-                std::back_inserter(m_scanTimes),
-                [](const MsScanInfo &si){return si.scanTime;}
-        );
+    if (m_scanNumberVsScanTime.isEmpty()) {
+        for (const MsScanInfo &msScanInfo : m_msScanInfo) {
+            m_scanNumberVsScanTime.insert(msScanInfo.scanNumber, msScanInfo.scanTime);
+        }
     }
 
-    const int nearestIndex = MathUtils::closest(m_scanTimes, scanTime);
+    const QVector<ScanTime> scanTimes = m_scanNumberVsScanTime.values().toVector();
+    const QVector<ScanNumber> scanNumbers = m_scanNumberVsScanTime.keys().toVector();
 
-    const QVector<ScanNumber> keys = m_msScanInfo.keys().toVector();
+    const int nearestIndex = MathUtils::closest(scanTimes, scanTime);
 
-    return keys.at(nearestIndex);
+    return scanNumbers.at(nearestIndex);
 }
 
-int MsReaderBase::getNearestScanNumberFromScanNumber(int scanNumber) {
+Err MsReaderBase::getNearestScanNumberFromScanTime(
+        ScanTime scanTime,
+        const QVector<ScanNumber> &scanNumbers,
+        const QVector<ScanTime> &scanTimes,
+        ScanNumber *scanNumber
+        ) {
 
-    if (m_scanNumbers.isEmpty()) {
-        std::transform(
-                m_msScanInfo.begin(),
-                m_msScanInfo.end(),
-                std::back_inserter(m_scanNumbers),
-                [](const MsScanInfo &si){return si.scanNumber;}
-        );
-    }
+    ERR_INIT
 
-    const int nearestIndex = MathUtils::closest(m_scanNumbers, scanNumber);
+    e = ErrorUtils::isNotEmpty(scanNumbers); ree;
+    e = ErrorUtils::isEqual(scanNumbers.size(), scanTimes.size()); ree;
 
-    return m_scanNumbers.at(nearestIndex);
+    const int nearestIndex = MathUtils::closest(scanTimes, scanTime);
+    *scanNumber = scanNumbers.at(nearestIndex);
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::getNearestScanNumberFromScanNumber(
+        ScanNumber scanNumber,
+        const QVector<ScanNumber> &scanNumbers,
+        ScanNumber *closestScanNumber
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scanNumbers); ree;
+
+    const int nearestIndex = MathUtils::closest(scanNumbers, scanNumber);
+
+    *closestScanNumber = scanNumbers.at(nearestIndex);
+
+    ERR_RETURN
 }
 
 QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
@@ -457,3 +474,5 @@ Err MsReaderBase::writeTargetCollisionEnergyFile() {
 
     ERR_RETURN
 }
+
+

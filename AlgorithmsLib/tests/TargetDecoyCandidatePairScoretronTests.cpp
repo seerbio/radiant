@@ -2,6 +2,7 @@
 
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
+#include "MsCalibratomatic.h"
 
 #include <QtTest/QtTest>
 
@@ -51,20 +52,24 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     TargetDecoyCandidatePairScoretron targetDecoyCandidatePairScoretron;
     e = targetDecoyCandidatePairScoretron.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
-            msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos(),
+            &msReaderPointerAcc,
             &diaTargetFrame,
             &targetDecoyCandidatePairManager
             );
     QCOMPARE(e, eNoError);
 
+    MsCalibratomatic msCalibratomatic;
+
+    int topNMS2Ions = 6;
+
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
     e = targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-            0.01,
+            topNMS2Ions,
+            0.2,
+            msCalibratomatic,
             &scoredTargetDecoyPointers
             );
     QCOMPARE(e, eNoError);
-
-    qDebug() << "SDKFJS" << scoredTargetDecoyPointers.size();
 
 }
 

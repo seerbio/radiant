@@ -82,7 +82,7 @@ public:
 
     Err init(const QVector<QPair<XVal, YVal>> &data);
 
-    Err predictY(double x, double *y);
+    Err predictY(double x, double *y) const;
 
 
 private:

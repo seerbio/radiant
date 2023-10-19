@@ -129,7 +129,18 @@ public:
 
     int getNearestScanNumberFromScanTime(double scanTime);
 
-    int getNearestScanNumberFromScanNumber(int scanNumber);
+    static Err getNearestScanNumberFromScanTime(
+            ScanTime scanTime,
+            const QVector<ScanNumber> &scanNumbers,
+            const QVector<ScanTime> &scanTimes,
+            ScanNumber *scanNumber
+            );
+
+    Err getNearestScanNumberFromScanNumber(
+            ScanNumber scanNumber,
+            const QVector<ScanNumber> &scanNumbers,
+            ScanNumber *closestScanNumber
+            );
 
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
@@ -158,8 +169,7 @@ protected:
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
 
-    QVector<ScanNumber> m_scanNumbers;
-    QVector<ScanTime> m_scanTimes;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
     QString m_filePath;
 
