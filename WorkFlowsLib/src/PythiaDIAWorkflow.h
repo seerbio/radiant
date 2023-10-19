@@ -42,8 +42,6 @@ public:
 
 private:
 
-    Err extractorDev(QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames);
-
     Err deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
