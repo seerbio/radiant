@@ -138,9 +138,10 @@ namespace {
             const int topNTarget = std::min(pi.topNMs2Ions, ms2IonsTarget.size());
             ms2IonsTarget.resize(topNTarget);
 
+            ScanTime scanTimePredicted = -1;
+
             if (pi.msCalibratomatic.isInit()) {
 
-                ScanTime scanTimePredicted;
                 e = pi.msCalibratomatic.predictScanTime(
                         targetDecoyPtr->iRt(),
                         &scanTimePredicted
@@ -164,11 +165,11 @@ namespace {
             QVector<MS2Ion> ms2IonsDecoy = targetDecoyPtr->ms2IonsDecoy();
             const int topNDecoy = std::min(pi.topNMs2Ions, ms2IonsDecoy.size());
             ms2IonsDecoy.resize(topNDecoy);
-            ms2IonsDecoy.resize(topNDecoy);
 
             if (pi.msCalibratomatic.isInit()) {
 
             } else {
+
                 QVector<XICPoints> xicPointsVec;
 
                 e = extractMS2Ions(
