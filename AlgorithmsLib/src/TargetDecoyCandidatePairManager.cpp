@@ -380,6 +380,9 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
             transformLogic
             );
 
+    std::mt19937 gen(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+    std::shuffle(targetDecoyPointers->begin(), targetDecoyPointers->end(), gen);
+
     ERR_RETURN
 }
 

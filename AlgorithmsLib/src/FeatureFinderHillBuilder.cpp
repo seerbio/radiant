@@ -442,7 +442,7 @@ namespace {
 
     Err groupConnectedCentroidsToHills(
             const QVector<Eigen::MatrixX<int>> &_connectedCentroidsMats,
-            const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
             int minScanCount,
             QVector<FeatureFinderHill> *featureFinderHills
     ) {
@@ -452,12 +452,12 @@ namespace {
         e = ErrorUtils::isNotEmpty(_connectedCentroidsMats); ree;
         featureFinderHills->clear();
 
-        const QVector<ScanNumber> scanNumbers = scanPointsByScanNumber.keys().toVector();
+        const QVector<ScanNumber> scanNumbers = scanNumberVsScanPoints.keys().toVector();
 
         //NOTE: This is not const because the next index function modifies it to zero out terminals
         QVector<Eigen::MatrixX<int>> connectedCentroidsMats = _connectedCentroidsMats;
 
-        const QList<ScanPoints> &scanPoints = scanPointsByScanNumber.values();
+        const QList<ScanPoints> &scanPoints = scanNumberVsScanPoints.values();
 
         for (ScanNumberIndex baseScanIndex = 0; baseScanIndex < connectedCentroidsMats.size(); baseScanIndex++) {
 

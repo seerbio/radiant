@@ -32,7 +32,10 @@ public:
             TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager
             );
 
-    Err scoreTargetDecoyPairs();
+    Err scoreTargetDecoyPairs(
+            double randomSelectionFraction,
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+            );
 
 private:
 
@@ -40,7 +43,6 @@ private:
             double randomSelectionFraction,
             QVector<TargetDecoyPairParallelInput> *input
             );
-
 
 
 private:

@@ -196,9 +196,9 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     const QVector<ScanPoints> scanPoints = testScanPoints();
     const QList<int> newKeys = {0, 10, 20, 30, 40};
 
-    QMap<int, ScanPoints> scanPointsByScanNumber;
+    QMap<int, ScanPoints> scanNumberVsScanPoints;
     for (int i = 0; i < newKeys.size(); i++) {
-        scanPointsByScanNumber.insert(newKeys.at(i), scanPoints.at(i));
+        scanNumberVsScanPoints.insert(newKeys.at(i), scanPoints.at(i));
     }
 
     FeatureFinderParameters params;
@@ -214,7 +214,7 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-    e = featureFinderHillBuilder.buildHills(scanPointsByScanNumber);
+    e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
     QVector<FeatureFinderHill> featureFinderHills;
@@ -254,7 +254,7 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     e = featureFinderHillBuilderSingle.init(params);
     QCOMPARE(e, eNoError);
 
-    e = featureFinderHillBuilderSingle.buildHills(scanPointsByScanNumber);
+    e = featureFinderHillBuilderSingle.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
     QVector<FeatureFinderHill> featureFinderHillsSingle;
