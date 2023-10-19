@@ -24,7 +24,7 @@ class ALGORITHMSLIB_EXPORTS TargetDecoyCandidatePairManager {
 
 public:
 
-    TargetDecoyCandidatePairManager() = default;
+    TargetDecoyCandidatePairManager();
     ~TargetDecoyCandidatePairManager() = default;
 
     Err init(
@@ -37,6 +37,15 @@ public:
             double mzMax,
             QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
             );
+
+    Err getTargetDecoyCandidatePairPointers(
+            double mzMin,
+            double mzMax,
+            double randomSelectionFraction,
+            QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
+    );
+
+    bool isInit();
 
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
@@ -59,6 +68,8 @@ private:
 
     PythiaParameters m_pythiaParameters;
     BoostRTreeWrapper m_boostRTreeWrapper;
+
+    bool m_isInit;
 
 };
 

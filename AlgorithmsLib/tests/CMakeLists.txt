@@ -32,6 +32,7 @@ SET(TEST_CLASSES
 #        TandemPredictionUtilsTests
 #        TandemSpectraDeconvolvotronTests
         TargetDecoyCandidatePairManagerTests
+        TargetDecoyCandidatePairScoretronTests
         TurboXICTests
 #        XYMappermaticTests
 )

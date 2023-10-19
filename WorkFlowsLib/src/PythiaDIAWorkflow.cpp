@@ -22,6 +22,7 @@
 //#include "ParallelUtils.h"
 //#include "PeakIntegratomatic.h"
 //#include "TandemSpectraDeconvolvotron.h"
+#include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -134,6 +135,18 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
 
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
+    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
+            &diaTargetFrame
+            ); ree;
+
+    QElapsedTimer et;
+    et.start();
+    for (int i = 0; i < 100; i++) {
+        e = extractorDev(&diaTargetFrame); ree;
+        qDebug() << i << et.restart() << "mSec";
+    }
+
 
 #ifndef USE_FILE_CACHING
 //    if (m_pythiaParameters.deisotopeScans) {
@@ -141,7 +154,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    }
 #endif
 
-    e = buildCalibration(&msReaderPointerAcc); ree;
+//    e = buildCalibration(&msReaderPointerAcc); ree;
 
 ////#define BYPASS_OPTI
 //#ifndef BYPASS_OPTI
@@ -258,6 +271,119 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    const QString resultsFilePath = msReaderParquet.filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
 //    e = ParquetReader::write(scoredCandidatesAllUpdated, resultsFilePath); ree;
 //#endif
+
+    ERR_RETURN
+}
+
+namespace {
+
+    struct ParallelInput {
+        UniqueMsInfoScanKey msInfoScanKey;
+        QMap<ScanNumber, ScanPoints>* diaTargetFrame;
+        QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
+        double ppmTol = -1.0;
+        int topNMs2Ions = -1.0;
+    };
+
+    Err parallelLogic(const ParallelInput &pi) {
+
+        ERR_INIT
+
+        QElapsedTimer et;
+        et.start();
+
+        TurboXIC turboXic;
+        e = turboXic.init(pi.diaTargetFrame); ree;
+
+        double scanNumberRtreeMin;
+        double scanNumberRtreeMax;
+        double mzRtreeMin;
+        double mzRtreeMax;
+        e = turboXic.getRTreeLimits(
+                &scanNumberRtreeMin,
+                &scanNumberRtreeMax,
+                &mzRtreeMin,
+                &mzRtreeMax
+        ); ree;
+        
+        QMap<MzHashed, XICPoints> cachedPoints;
+
+        for (const TargetDecoyCandidatePair* ptr : pi.targetDecoyPointers) {
+
+            QVector<MS2Ion> ms2IonsTarget = ptr->ms2IonsTarget();
+            const int topNTarget = std::min(pi.topNMs2Ions, ms2IonsTarget.size());
+            ms2IonsTarget.resize(topNTarget);
+
+            for (const MS2Ion &ms2Ion : ms2IonsTarget) {
+
+                const double mzTol = MathUtils::calculatePPM(ms2Ion.mz, pi.ppmTol);
+                const double mzMin = ms2Ion.mz - mzTol;
+                const double mzMax = ms2Ion.mz + mzTol;
+
+                XICPoints xicPoints;
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                if (cachedPoints.contains(mzHashed)) {
+                    xicPoints = cachedPoints.value(mzHashed);
+                    continue;
+                }
+
+                xicPoints = turboXic.extractPointsXIC(
+                        mzMin,
+                        mzMax,
+                        9000,
+                        12000
+                );
+
+                cachedPoints.insert(mzHashed, xicPoints);
+
+            }
+
+            QVector<MS2Ion> ms2IonsDecoy = ptr->ms2IonsDecoy();
+            const int topNDecoy = std::min(pi.topNMs2Ions, ms2IonsDecoy.size());
+            ms2IonsDecoy.resize(topNDecoy);
+        }
+
+        qDebug() << pi.msInfoScanKey << et.elapsed() << "mSec";
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::extractorDev(QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*diaTargetFrames); ree;
+    e = ErrorUtils::isNotEmpty(m_msScanInfos); ree;
+
+    QVector<ParallelInput> parallelInputs;
+    for (const MsScanInfo &msScanInfo : m_msScanInfos) {
+
+        const double mzMin = msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower;
+        const double mzMax = msScanInfo.precursorTargetMz + msScanInfo.isoWindowUpper;
+
+        ParallelInput pi;
+        pi.topNMs2Ions = m_pythiaParameters.topNMs2Ions;
+        pi.ppmTol = m_pythiaParameters.ms2ExtractionWidthPPM;
+        pi.diaTargetFrame = &(*diaTargetFrames)[msScanInfo.targetScanKey()];
+        pi.msInfoScanKey = msScanInfo.targetScanKey();
+        e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
+                mzMin,
+                mzMax,
+                &pi.targetDecoyPointers
+                ); ree;
+
+        parallelInputs.push_back(pi);
+
+    }
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            parallelInputs,
+            parallelLogic
+    );
+    futures.waitForFinished();
+
 
     ERR_RETURN
 }
@@ -1399,3 +1525,5 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
 
     ERR_RETURN
 }
+
+

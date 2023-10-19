@@ -346,15 +346,15 @@ Err MS2DataExtractomatic::buildUniqueMsInfoScanKeyVsScanPoints(
 
     ERR_INIT
 
-    e = msReaderPointerAcc->ptr->collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
-
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos();
-    for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
-        scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
-    }
-
-    const int msLevel = 1;
-    e = msReaderPointerAcc->ptr->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
+//    e = msReaderPointerAcc->ptr->collateTandemPrecursorTargetsDIA(diaTargetFrames); ree
+//
+//    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos();
+//    for (auto it = msScanInfos.begin(); it != msScanInfos.end(); it++) {
+//        scanNumberVsScanTime->insert(it.key(), it.value().scanTime);
+//    }
+//
+//    const int msLevel = 1;
+//    e = msReaderPointerAcc->ptr->getScanPoints(msLevel, scanNumberVsScanTimeMS1); ree;
 
     ERR_RETURN
 }

@@ -46,6 +46,7 @@ SET(SOURCE_FILES
         src/TandemSpectraDeconvolvotron.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
+        src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
         src/XYMappermatic.cpp
 )
@@ -77,6 +78,7 @@ SET(HEADER_FILES
         src/TandemSpectraDeconvolvotron.h
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
+        src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
         src/XYMappermatic.h
 )

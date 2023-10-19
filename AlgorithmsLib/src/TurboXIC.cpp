@@ -30,6 +30,8 @@ public:
 
     Err init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
 
+    Err init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber);
+
     XICPoints extractPointsXIC(
             double mzMin,
             double mzMax,
@@ -70,7 +72,6 @@ TurboXIC::Private::~Private() {
     delete m_rTree;
 }
 
-
 Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
 
     ERR_INIT
@@ -80,6 +81,31 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScan
     std::vector<rTreePoint> cloudLoader;
 
     for (auto it = scanPointsByScanNumber.begin(); it != scanPointsByScanNumber.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        const ScanPoints &scanPoints = it.value();
+
+        for (const ScanPoint &sp : scanPoints) {
+            rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
+            cloudLoader.emplace_back(coor, sp.y());
+        }
+    }
+
+    const int maxElements = 16;
+    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+
+    ERR_RETURN
+}
+
+Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(*scanPointsByScanNumber); ree;
+
+    std::vector<rTreePoint> cloudLoader;
+
+    for (auto it = scanPointsByScanNumber->begin(); it != scanPointsByScanNumber->end(); it++) {
 
         const ScanNumber scanNumber = it.key();
         const ScanPoints &scanPoints = it.value();
@@ -205,6 +231,12 @@ TurboXIC::~TurboXIC() {}
 
 Err TurboXIC::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
 
+    ERR_INIT
+    e = d_ptr->init(scanPointsByScanNumber); ree;
+    ERR_RETURN
+}
+
+Err TurboXIC::init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber) {
     ERR_INIT
     e = d_ptr->init(scanPointsByScanNumber); ree;
     ERR_RETURN

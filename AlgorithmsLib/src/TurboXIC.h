@@ -33,6 +33,7 @@ public:
     ~TurboXIC();
 
     Err init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
+    Err init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber);
 
     XICPoints extractPointsXIC(
             double mzMin,

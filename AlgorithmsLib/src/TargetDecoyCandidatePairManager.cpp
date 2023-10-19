@@ -13,6 +13,13 @@
 #include <QtConcurrent/QtConcurrent>
 
 
+TargetDecoyCandidatePairManager::TargetDecoyCandidatePairManager() : m_isInit(false) {}
+
+bool TargetDecoyCandidatePairManager::isInit() {
+    return m_isInit;
+}
+
+
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibFileUri
@@ -37,15 +44,13 @@ Err TargetDecoyCandidatePairManager::init(
             massMin,
             massMax,
             &fragLibReaderRows
-    );
-
-
+            ); ree;
 
     e = buildTargetDecoyCandidatePairs(fragLibReaderRows); ree;
     e = buildIndexVsTargetDecoyCandidatePairPtrs(); ree;
     e = initBoostRTreeWrapper(); ree;
 
-
+    m_isInit = true;
 
     ERR_RETURN
 }
@@ -348,10 +353,12 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
         double mzMax,
         QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
         ) {
+
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
     e = ErrorUtils::isNotEmpty(m_indexVsTargetDecoyCandidatePairPtrs); ree;
+    e = ErrorUtils::isTrue(mzMax >= mzMin); ree;
 
     QVector<RTreePointData2D> vals;
     e = m_boostRTreeWrapper.getPoints(
@@ -376,6 +383,42 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
     ERR_RETURN
 }
 
+Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
+        double mzMin,
+        double mzMax,
+        double randomSelectionFraction,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
+        ) {
+
+    ERR_INIT
+
+    QVector<TargetDecoyCandidatePair*> targetDecoyPointersAll;
+    e = getTargetDecoyCandidatePairPointers(
+            mzMin,
+            mzMax,
+            &targetDecoyPointersAll
+            ); ree;
+
+    const int testDataSize = static_cast<int>(targetDecoyPointersAll.size() * randomSelectionFraction);
+    const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+
+    const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
+            targetDecoyPointersAll.size(),
+            testDataSize,
+            seed
+            );
+
+    for (int i = 0; i < targetDecoyPointersAll.size(); i++) {
+
+        if (!selectionList.value(i)) {
+            continue;
+        }
+
+        targetDecoyPointers->push_back(targetDecoyPointersAll[i]);
+    }
+
+    ERR_RETURN
+}
 
 Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
@@ -405,5 +448,3 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     ERR_RETURN
 }
-
-
