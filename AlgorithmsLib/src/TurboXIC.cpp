@@ -28,9 +28,9 @@ public:
     Private();
     ~Private();
 
-    Err init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber);
+    Err init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
 
-    Err init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber);
+    Err init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
 
     XICPoints extractPointsXIC(
             double mzMin,
@@ -72,15 +72,15 @@ TurboXIC::Private::~Private() {
     delete m_rTree;
 }
 
-Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
+Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanPointsByScanNumber); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
 
     std::vector<rTreePoint> cloudLoader;
 
-    for (auto it = scanPointsByScanNumber.begin(); it != scanPointsByScanNumber.end(); it++) {
+    for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
         const ScanNumber scanNumber = it.key();
         const ScanPoints &scanPoints = it.value();
@@ -97,15 +97,15 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScan
     ERR_RETURN
 }
 
-Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber) {
+Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(*scanPointsByScanNumber); ree;
+    e = ErrorUtils::isNotEmpty(*scanNumberVsScanPoints); ree;
 
     std::vector<rTreePoint> cloudLoader;
 
-    for (auto it = scanPointsByScanNumber->begin(); it != scanPointsByScanNumber->end(); it++) {
+    for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
         const ScanNumber scanNumber = it.key();
         const ScanPoints &scanPoints = it.value();
@@ -121,7 +121,6 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber
 
     ERR_RETURN
 }
-
 
 XICPoints TurboXIC::Private::extractPointsXIC(
         double mzMin,
@@ -229,16 +228,16 @@ TurboXIC::TurboXIC() : d_ptr(new Private()) {}
 TurboXIC::~TurboXIC() {}
 
 
-Err TurboXIC::init(const QMap<ScanNumber, ScanPoints> &scanPointsByScanNumber) {
+Err TurboXIC::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
 
     ERR_INIT
-    e = d_ptr->init(scanPointsByScanNumber); ree;
+    e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
-Err TurboXIC::init(QMap<ScanNumber, ScanPoints> *scanPointsByScanNumber) {
+Err TurboXIC::init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints) {
     ERR_INIT
-    e = d_ptr->init(scanPointsByScanNumber); ree;
+    e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
