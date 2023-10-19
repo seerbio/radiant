@@ -285,5 +285,5 @@ ScanPoints TurboXIC::extractSpectrum(
 }
 
 bool TurboXIC::isInit() {
-    return false;
+    return d_ptr->isInit();
 }
