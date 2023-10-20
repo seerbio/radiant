@@ -168,8 +168,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
-        const QVector<MS2Ion> &ms2Ions,
-        ScanTime scanTimePredicted
+        const QVector<MS2Ion> &ms2Ions
         ) {
 
     ERR_INIT
@@ -201,26 +200,10 @@ Err CandidateScorertron::calculateScores(
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
 
-    if (scanTimePredicted > 0) {
-
-        e = findCandidateIntegrations(
-                summedMatVecToVec,
-                &peakIntegrationIndexes
-        ); ree;
-
-    }
-
-    else {
-
-//        e = findCandidateIntegrations(
-//                summedMatVecToVec,
-//                m_pythiaParameters.minFoundMzPeaks,
-//                scanTimePredicted,
-//                m_pythiaParameters.scanTimeWindowMinutes,
-//                &peakIntegrationIndexes
-//        ); ree;
-
-    }
+    e = findCandidateIntegrations(
+            summedMatVecToVec,
+            &peakIntegrationIndexes
+    ); ree;
 
     if (peakIntegrationIndexes.isEmpty()) {
         ERR_RETURN

@@ -29,8 +29,7 @@ public:
 
     Err calculateScores(
             const QMap<MzHashed, XICPoints> &xicPointMap,
-            const QVector<MS2Ion> &ms2Ions,
-            ScanTime scanTimePredicted
+            const QVector<MS2Ion> &ms2Ions
             );
 
 private:
