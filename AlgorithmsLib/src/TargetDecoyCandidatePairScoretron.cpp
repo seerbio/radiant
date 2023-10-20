@@ -114,6 +114,81 @@ namespace {
         ERR_RETURN
     }
 
+    Err extractScores(
+            const QVector<MS2Ion> &ms2IonsTargetOrDecoy,
+            int topNMs2Ions,
+            double ppmTol,
+            double iRT,
+            MsCalibratomatic *msCalibratomatic,
+            TurboXIC *turboXic,
+            CandidateScorertron *candidateScorertron,
+            QMap<MzHashed, XICPoints> *cachedPoints
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2IonsTargetOrDecoy); ree;
+
+        double scanNumberRtreeMin;
+        double scanNumberRtreeMax;
+        double mzRtreeMin;
+        double mzRtreeMax;
+        e = turboXic->getRTreeLimits(
+                &scanNumberRtreeMin,
+                &scanNumberRtreeMax,
+                &mzRtreeMin,
+                &mzRtreeMax
+        ); ree;
+
+        QVector<MS2Ion> ms2IonsTarget = ms2IonsTargetOrDecoy;
+        const int topNTarget = std::min(topNMs2Ions, ms2IonsTarget.size());
+        ms2IonsTarget.resize(topNTarget);
+
+        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
+
+        if (msCalibratomatic->isInit()) {
+
+            ScanTime scanTimePredicted = -1;
+            e = msCalibratomatic->predictScanTime(
+                    iRT,
+                    &scanTimePredicted
+            ); ree;
+
+            // TODO set these when calibration is working
+            ScanNumber scanNumberPredictedMin = -1;
+            ScanNumber scanNumberPredictedMax = -1;
+
+            e = extractMS2Ions(
+                    ms2IonsTarget,
+                    scanNumberPredictedMin,
+                    scanNumberPredictedMax,
+                    ppmTol,
+                    turboXic,
+                    &mzHashedVsXICPoints
+            ); ree;
+
+        } else {
+
+            e = extractMS2Ions(
+                    ms2IonsTarget,
+                    static_cast<ScanNumber>(scanNumberRtreeMin),
+                    static_cast<ScanNumber>(scanNumberRtreeMax),
+                    ppmTol,
+                    turboXic,
+                    cachedPoints,
+                    &mzHashedVsXICPoints
+            ); ree;
+
+        }
+
+        e = candidateScorertron->calculateScores(
+                mzHashedVsXICPoints,
+                ms2IonsTarget
+        ); ree;
+
+        ERR_RETURN
+    }
+
     Err parallelScoreLogic(const TargetDecoyPairParallelInput &pi) {
 
         ERR_INIT
@@ -133,82 +208,35 @@ namespace {
         TurboXIC turboXic;
         e = turboXic.init(msFrame.frameIndexVsScanPoints()); ree;
 
-        double scanNumberRtreeMin;
-        double scanNumberRtreeMax;
-        double mzRtreeMin;
-        double mzRtreeMax;
-        e = turboXic.getRTreeLimits(
-                &scanNumberRtreeMin,
-                &scanNumberRtreeMax,
-                &mzRtreeMin,
-                &mzRtreeMax
-        ); ree;
+        MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
+        //NOTE: this needs to stay outside of loop or code becomes slow because cache is reset.
         QMap<MzHashed, XICPoints> cachedPoints;
 
         for (const TargetDecoyCandidatePair* targetDecoyPtr : pi.targetDecoyPointers) {
 
-            QVector<MS2Ion> ms2IonsTarget = targetDecoyPtr->ms2IonsTarget();
-            const int topNTarget = std::min(pi.topNMs2Ions, ms2IonsTarget.size());
-            ms2IonsTarget.resize(topNTarget);
+            e = extractScores(
+                    targetDecoyPtr->ms2IonsTarget(),
+                    pi.pythiaParameters.topNMs2Ions,
+                    pi.pythiaParameters.ms2ExtractionWidthPPM,
+                    targetDecoyPtr->iRt(),
+                    &msCalibratomatic,
+                    &turboXic,
+                    &candidateScorertron,
+                    &cachedPoints
+                    ); ree;
 
-            ScanTime scanTimePredicted = -1;
+            e = extractScores(
+                    targetDecoyPtr->ms2IonsDecoy(),
+                    pi.pythiaParameters.topNMs2Ions,
+                    pi.pythiaParameters.ms2ExtractionWidthPPM,
+                    targetDecoyPtr->iRt(),
+                    &msCalibratomatic,
+                    &turboXic,
+                    &candidateScorertron,
+                    &cachedPoints
+            ); ree;
 
-            if (pi.msCalibratomatic.isInit()) {
-
-                e = pi.msCalibratomatic.predictScanTime(
-                        targetDecoyPtr->iRt(),
-                        &scanTimePredicted
-                        ); ree;
-
-            } else {
-
-                QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
-
-                e = extractMS2Ions(
-                        ms2IonsTarget,
-                        static_cast<int>(scanNumberRtreeMin),
-                        static_cast<int>(scanNumberRtreeMax),
-                        pi.pythiaParameters.ms2ExtractionWidthPPM,
-                        &turboXic,
-                        &cachedPoints,
-                        &mzHashedVsXICPoints
-                        ); ree;
-
-                e = candidateScorertron.calculateScores(
-                        mzHashedVsXICPoints,
-                        ms2IonsTarget,
-                        scanTimePredicted
-                        ); ree;
-            }
-
-            QVector<MS2Ion> ms2IonsDecoy = targetDecoyPtr->ms2IonsDecoy();
-            const int topNDecoy = std::min(pi.topNMs2Ions, ms2IonsDecoy.size());
-            ms2IonsDecoy.resize(topNDecoy);
-
-            if (pi.msCalibratomatic.isInit()) {
-
-            } else {
-
-                QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
-
-                e = extractMS2Ions(
-                        ms2IonsDecoy,
-                        static_cast<int>(scanNumberRtreeMin),
-                        static_cast<int>(scanNumberRtreeMax),
-                        pi.pythiaParameters.ms2ExtractionWidthPPM,
-                        &turboXic,
-                        &cachedPoints,
-                        &mzHashedVsXICPoints
-                ); ree;
-
-                e = candidateScorertron.calculateScores(
-                        mzHashedVsXICPoints,
-                        ms2IonsDecoy,
-                        scanTimePredicted
-                        ); ree;
-
-            }
         }
 
         qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
@@ -241,7 +269,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     //TODO use for loop here to process
 
-//#define PARALLEL_SCORE
+#define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     QFuture<Err> futures = QtConcurrent::mapped(
             parallelInputs,
