@@ -214,12 +214,12 @@ Err CandidateScorertron::calculateScores(
         ERR_RETURN
     }
 
-////    e = buildScores(
-////            candidatePeptideTarget,
-////            peakIntegrationIndexes,
-////            summedMatVecToVec,
-////            scoredCandidate
-////    ); ree;
+//    e = buildScores(
+//            candidatePeptideTarget,
+//            peakIntegrationIndexes,
+//            summedMatVecToVec,
+//            scoredCandidate
+//    ); ree;
 
     ERR_RETURN
 }
@@ -253,6 +253,31 @@ namespace {
         std::sort(peakIntegrationIndexes->rbegin(), peakIntegrationIndexes->rend(), sortLogic);
     }
 
+
+    void filterSummedVecPeakIntegrationsByPeakWidth(
+            const QVector<double> &summedMatToVec,
+            int summedMzPresenceMin,
+            int peakWidthMin,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            ) {
+
+        const auto terminatorLogic = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const PeakIntegrationIndexes &pii){
+
+            const int peakWidth = pii.second - pii.first;
+            if (peakWidth < peakWidthMin) {
+                return true;
+            }
+
+            const QVector<double> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
+            const double summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
+
+            return summedPresenceIntegrationMax < summedMzPresenceMin;
+        };
+
+        const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
+        peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
+    }
+
 }//namespace
 Err CandidateScorertron::findCandidateIntegrations(
         const QVector<double> &summedMatToVec,
@@ -266,26 +291,26 @@ Err CandidateScorertron::findCandidateIntegrations(
             summedMatToVec,
             peakIntegrationIndexes,
             &summedPresenceVecSmoothed
-    ); ree;
+            ); ree;
 
-//    const int minPeakWidth = 3;
-//    filterSummedVecPeakIntegrationsByPeakWidth(
-//            summedMatToVec,
-//            m_pythiaParameters.minFoundMzPeaks,
-//            minPeakWidth,
-//            peakIntegrationIndexes
-//    );
-//
-//    sortPeakIntegrationsDescMaxSumFound(
-//            summedMatToVec,
-//            peakIntegrationIndexes
-//    );
-//
-//    const int topNPeakIntegrations = 2;
-//    const int peakIntegrationsMaxSize
-//            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
-//
-//    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
+    const int minPeakWidth = 3;
+    filterSummedVecPeakIntegrationsByPeakWidth(
+            summedMatToVec,
+            m_pythiaParameters.minFoundMzPeaks,
+            minPeakWidth,
+            peakIntegrationIndexes
+            );
+
+    sortPeakIntegrationsDescMaxSumFound(
+            summedMatToVec,
+            peakIntegrationIndexes
+            );
+
+    const int topNPeakIntegrations = 2;
+    const int peakIntegrationsMaxSize
+            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
+
+    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
 
     ERR_RETURN
 }
