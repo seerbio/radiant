@@ -142,7 +142,8 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     for (const rTreePoint &rtp : result) {
         const auto scanNumber = static_cast<ScanNumber>(rtp.first.get<0>());
         xicPoints.scanNumbersVsIntensityVals[scanNumber] += rtp.second;
-        xicPoints.scanNumberVsMzVals[scanNumber].push_back(rtp.first.get<1>());
+//        xicPoints.scanNumberVsMzVals[scanNumber].push_back(rtp.first.get<1>());
+        xicPoints.scanNumbersVsScanPoints[scanNumber].push_back({rtp.first.get<1>(), rtp.second});
     }
 
     return xicPoints;

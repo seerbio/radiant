@@ -56,11 +56,13 @@ namespace {
         const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
         for (const XICPoints &xp : xicPoints) {
 
-            if (xp.scanNumbersVsIntensityVals.isEmpty()) {
+            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xp.scanNumbersVsIntensityVals;
+
+            if (scanNumbersVsIntensityVals.isEmpty()) {
                 continue;
             }
 
-            frameIndex = std::max(frameIndex, xp.scanNumbersVsIntensityVals.lastKey());
+            frameIndex = std::max(frameIndex, scanNumbersVsIntensityVals.lastKey());
         }
 
         return frameIndex;
@@ -87,13 +89,16 @@ namespace {
             const MzHashed mzHashed = it.key();
             const XICPoints &xicPoints = it.value();
 
-            if (xicPoints.scanNumbersVsIntensityVals.isEmpty()) {
+            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+
+
+            if (scanNumbersVsIntensityVals.isEmpty()) {
                 mzHashedVsIonPresence->insert(mzHashed, {});
                 continue;
             }
 
             Eigen::VectorX<double> vecNormalized = EigenUtils::convertQMapToEigenVector(
-                    xicPoints.scanNumbersVsIntensityVals,
+                    scanNumbersVsIntensityVals,
                     frameIndexMax
             );
             const double denom = vecNormalized.maxCoeff();

@@ -434,13 +434,15 @@ namespace {
             const MzHashed mzHashed = it.key();
             const XICPoints &xicPoints = it.value();
 
-            if (xicPoints.scanNumbersVsIntensityVals.isEmpty()) {
+            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+
+            if (scanNumbersVsIntensityVals.isEmpty()) {
                 mzHashedVsXICPointsNormalized->insert(mzHashed, {});
                 continue;
             }
 
             Eigen::VectorX<double> vecNormalized = EigenUtils::convertQMapToEigenVector(
-                    xicPoints.scanNumbersVsIntensityVals,
+                    scanNumbersVsIntensityVals,
                     scanCount
             );
             const double denom = vecNormalized.maxCoeff();

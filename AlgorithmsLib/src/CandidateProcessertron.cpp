@@ -908,7 +908,9 @@ namespace {
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        for (auto it = xicPoints.scanNumbersVsIntensityVals.begin(); it != xicPoints.scanNumbersVsIntensityVals.end(); it++) {
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+
+        for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
 
             if (frameIndex >= ms1Vec.size()) {
