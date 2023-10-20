@@ -115,7 +115,7 @@ namespace {
     }
 
     Err extractScores(
-            const QVector<MS2Ion> &ms2IonsTargetOrDecoy,
+            const QVector<MS2Ion> &ms2IonsTargetOrDecoyTheoretical,
             int topNMs2Ions,
             double ppmTol,
             double iRT,
@@ -127,7 +127,7 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(ms2IonsTargetOrDecoy); ree;
+        e = ErrorUtils::isNotEmpty(ms2IonsTargetOrDecoyTheoretical); ree;
 
         double scanNumberRtreeMin;
         double scanNumberRtreeMax;
@@ -140,9 +140,9 @@ namespace {
                 &mzRtreeMax
         ); ree;
 
-        QVector<MS2Ion> ms2IonsTarget = ms2IonsTargetOrDecoy;
-        const int topNTarget = std::min(topNMs2Ions, ms2IonsTarget.size());
-        ms2IonsTarget.resize(topNTarget);
+        QVector<MS2Ion> ms2IonsTheoretical = ms2IonsTargetOrDecoyTheoretical;
+        const int topNTarget = std::min(topNMs2Ions, ms2IonsTheoretical.size());
+        ms2IonsTheoretical.resize(topNTarget);
 
         QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
 
@@ -159,7 +159,7 @@ namespace {
             ScanNumber scanNumberPredictedMax = -1;
 
             e = extractMS2Ions(
-                    ms2IonsTarget,
+                    ms2IonsTheoretical,
                     scanNumberPredictedMin,
                     scanNumberPredictedMax,
                     ppmTol,
@@ -170,7 +170,7 @@ namespace {
         } else {
 
             e = extractMS2Ions(
-                    ms2IonsTarget,
+                    ms2IonsTheoretical,
                     static_cast<ScanNumber>(scanNumberRtreeMin),
                     static_cast<ScanNumber>(scanNumberRtreeMax),
                     ppmTol,
@@ -183,7 +183,7 @@ namespace {
 
         e = candidateScorertron->calculateScores(
                 mzHashedVsXICPoints,
-                ms2IonsTarget
+                ms2IonsTheoretical
         ); ree;
 
         ERR_RETURN

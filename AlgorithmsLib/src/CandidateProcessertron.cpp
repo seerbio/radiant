@@ -1006,7 +1006,7 @@ Err CandidateProcessertron::buildScores(
 //            summedMatVecToVec.size(),
 //            candidatePeptide.ms2IonMzB2B3.size()
 //    );
-//
+
 //    QVector<double> cosineSimsIndividual100;
 //    FrameIndex frameIndexIntensityApex;
 //    PeakIntegrationIndexes bestPeakIntegrationIndexes;

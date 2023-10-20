@@ -293,7 +293,7 @@ Err CandidateScorertron::findCandidateIntegrations(
             &summedPresenceVecSmoothed
             ); ree;
 
-    const int minPeakWidth = 3;
+    const int minPeakWidth = 2;
     filterSummedVecPeakIntegrationsByPeakWidth(
             summedMatToVec,
             m_pythiaParameters.minFoundMzPeaks,
@@ -314,5 +314,3 @@ Err CandidateScorertron::findCandidateIntegrations(
 
     ERR_RETURN
 }
-
-

@@ -26,6 +26,7 @@ SET(SOURCE_FILES
         src/BoostRTreeWrapper.cpp
         src/CandidateProcessertron.cpp
         src/CandidateScorertron.cpp
+        src/CandidateScores.cpp
         src/ClassifierWeightsManager.cpp
         src/MS2DataExtractomatic.cpp
         src/FDRCLassifierNeuralNet.cpp
@@ -42,6 +43,7 @@ SET(SOURCE_FILES
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
+        src/ScoreOverseer.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
@@ -59,6 +61,7 @@ SET(HEADER_FILES
         src/BoostRTreeWrapper.h
         src/CandidateProcessertron.h
         src/CandidateScorertron.h
+        src/CandidateScores.h
         src/ClassifierWeightsManager.h
         src/MS2DataExtractomatic.h
         src/FDRCLassifierNeuralNet.h
@@ -75,6 +78,7 @@ SET(HEADER_FILES
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
+        src/ScoreOverseer.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
         src/TandemSpectraDeconvolvotron.h
