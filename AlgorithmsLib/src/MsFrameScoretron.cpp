@@ -53,15 +53,15 @@ Err MsFrameScoretron::init(
     m_scanNumberVsScanTime = scanNumberVsScanTime;
     m_topNMS2Ions = topNMS2Ions;
 
-    e = m_msFrame.init(
-            scanNumberVsScanPoints,
-            scanNumberVsScanTime
-            ); ree;
-
-    e = m_msFrameMS1.init(
-            scanNumberVsScanPointsMS1,
-            scanNumberVsScanTime
-            ); ree;
+//    e = m_msFrame.init(
+//            &scanNumberVsScanPoints,
+//            scanNumberVsScanTime
+//            ); ree;
+//
+//    e = m_msFrameMS1.init(
+//            scanNumberVsScanPointsMS1,
+//            scanNumberVsScanTime
+//            ); ree;
 
     ERR_RETURN
 }

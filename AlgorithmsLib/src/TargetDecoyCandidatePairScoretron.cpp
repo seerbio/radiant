@@ -6,19 +6,23 @@
 
 #include "CandidateScorertron.h"
 #include "MsCalibratomatic.h"
+#include "MsFrame.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
+
+#include <iostream>
 
 class TargetDecoyPairParallelInput {
 
 public:
     UniqueMsInfoScanKey msInfoScanKey;
     MsCalibratomatic msCalibratomatic;
-    QMap<ScanNumber, ScanPoints>* diaTargetFrame;
+    QMap<ScanNumber, ScanPoints>* diaTargetFrame = nullptr;
+    QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
-    double ppmTol = -1.0;
     int topNMs2Ions = -1.0;
+    PythiaParameters pythiaParameters;
 };
 
 
@@ -117,10 +121,17 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-        CandidateScorertron candidateScorertron(pi.topNMs2Ions);
+        CandidateScorertron candidateScorertron;
+        e = candidateScorertron.init(pi.pythiaParameters, pi.topNMs2Ions); ree;
+
+        MsFrame msFrame;
+        e = msFrame.init(
+                *pi.diaTargetFrame,
+                pi.scanNumberVsScanTime
+                ); ree;
 
         TurboXIC turboXic;
-        e = turboXic.init(pi.diaTargetFrame); ree;
+        e = turboXic.init(msFrame.frameIndexVsScanPoints()); ree;
 
         double scanNumberRtreeMin;
         double scanNumberRtreeMax;
@@ -152,19 +163,23 @@ namespace {
 
             } else {
 
-                QMap<MzHashed, XICPoints> xicPointMap;
+                QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
 
                 e = extractMS2Ions(
                         ms2IonsTarget,
                         static_cast<int>(scanNumberRtreeMin),
                         static_cast<int>(scanNumberRtreeMax),
-                        pi.ppmTol,
+                        pi.pythiaParameters.ms2ExtractionWidthPPM,
                         &turboXic,
                         &cachedPoints,
-                        &xicPointMap
+                        &mzHashedVsXICPoints
                         ); ree;
 
-                e = candidateScorertron.calculateScores(xicPointMap, ms2IonsTarget); ree;
+                e = candidateScorertron.calculateScores(
+                        mzHashedVsXICPoints,
+                        ms2IonsTarget,
+                        scanTimePredicted
+                        ); ree;
             }
 
             QVector<MS2Ion> ms2IonsDecoy = targetDecoyPtr->ms2IonsDecoy();
@@ -175,17 +190,24 @@ namespace {
 
             } else {
 
-                QMap<MzHashed, XICPoints> xicPointMap;
+                QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
 
                 e = extractMS2Ions(
                         ms2IonsDecoy,
                         static_cast<int>(scanNumberRtreeMin),
                         static_cast<int>(scanNumberRtreeMax),
-                        pi.ppmTol,
+                        pi.pythiaParameters.ms2ExtractionWidthPPM,
                         &turboXic,
                         &cachedPoints,
-                        &xicPointMap
+                        &mzHashedVsXICPoints
                 ); ree;
+
+                e = candidateScorertron.calculateScores(
+                        mzHashedVsXICPoints,
+                        ms2IonsDecoy,
+                        scanTimePredicted
+                        ); ree;
+
             }
         }
 
@@ -219,7 +241,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     //TODO use for loop here to process
 
-#define PARALLEL_SCORE
+//#define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     QFuture<Err> futures = QtConcurrent::mapped(
             parallelInputs,
@@ -264,10 +286,11 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.ppmTol = m_pythiaParameters.ms2ExtractionWidthPPM;
         tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetScanKey()];
         tdppi.msInfoScanKey = msScanInfo.targetScanKey();
         tdppi.msCalibratomatic = msCalibratomatic;
+        tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
+        tdppi.pythiaParameters = m_pythiaParameters;
 
         if (randomSelectionFraction < 0) {
             e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(

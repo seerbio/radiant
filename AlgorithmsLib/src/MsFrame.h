@@ -77,13 +77,11 @@ public:
     ~MsFrame() = default;
 
     Err init(
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            QMap<ScanNumber, ScanPoints> &scanPoints,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
     [[nodiscard]] bool isValid() const ;
-
-    Err deisotopeMsFrame(double ppmTol);
 
     static Err writeFrameScans(
             const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
@@ -106,23 +104,9 @@ public:
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
-    Err smoothFrame(
-            int gaussFilterLength,
-            double sigma,
-            int smoothCount,
-            double mzMax
-            );
-
-    Err filterFrameByMz(
-            double mzMin,
-            double mzMax
-            );
-
 private:
 
     Err buildFrameIndexVsScanNumber();
-
-    Err reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints);
 
 private:
 

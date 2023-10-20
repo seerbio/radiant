@@ -8,6 +8,8 @@
 #include "AlgorithmsLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "PeakIntegratomatic.h"
+#include "PythiaParameterReader.h"
 
 class MS2Ion;
 class XICPoints;
@@ -20,17 +22,30 @@ class ALGORITHMSLIB_EXPORTS CandidateScorertron {
 
 public:
 
-    CandidateScorertron(int topNMS2Ions);
+    explicit CandidateScorertron();
     ~CandidateScorertron() = default;
+
+    Err init(const PythiaParameters &pythiaParameters, int topNMS2Ions);
 
     Err calculateScores(
             const QMap<MzHashed, XICPoints> &xicPointMap,
-            const QVector<MS2Ion> &ms2Ions
+            const QVector<MS2Ion> &ms2Ions,
+            ScanTime scanTimePredicted
             );
 
 private:
 
+    Err findCandidateIntegrations(
+            const QVector<double> &summedMatToVec,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+    );
+
+private:
+
+    PythiaParameters m_pythiaParameters;
     int m_topNMS2Ions;
+
+    PeakIntegratomatic m_peakIntegratomatic;
 
 };
 

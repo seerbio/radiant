@@ -249,8 +249,8 @@ Err CandidateProcessertron::processCandidateTarget(
         ); ree;
 
     }
-//    else {
-//
+    else {
+
 //        const ScanTime scanTimePredicted = m_fragPredsPredictedScanTime.value(candidatePeptideTarget.peptideStringWithMods);
 //        e = findCandidateIntegrations(
 //                summedMatVecToVec,
@@ -259,19 +259,19 @@ Err CandidateProcessertron::processCandidateTarget(
 //                m_pythiaParameters.scanTimeWindowMinutes,
 //                &peakIntegrationIndexes
 //        ); ree;
-//
-//    }
-//
-//    if (peakIntegrationIndexes.isEmpty()) {
-//        ERR_RETURN
-//    }
-//
-//    e = buildScores(
-//            candidatePeptideTarget,
-//            peakIntegrationIndexes,
-//            summedMatVecToVec,
-//            scoredCandidate
-//            ); ree;
+
+    }
+
+    if (peakIntegrationIndexes.isEmpty()) {
+        ERR_RETURN
+    }
+
+    e = buildScores(
+            candidatePeptideTarget,
+            peakIntegrationIndexes,
+            summedMatVecToVec,
+            scoredCandidate
+            ); ree;
 
     ERR_RETURN
 }
@@ -327,17 +327,17 @@ Err CandidateProcessertron::findCandidateIntegrations(
 //            m_peakWidthMin,
 //            peakIntegrationIndexes
 //    );
-//
-//    sortPeakIntegrationsDescMaxSumFound(
-//            summedMatToVec,
-//            peakIntegrationIndexes
-//    );
-//
-//    const int topNPeakIntegrations = 2;
-//    const int peakIntegrationsMaxSize
-//            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
-//
-//    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
+
+    sortPeakIntegrationsDescMaxSumFound(
+            summedMatToVec,
+            peakIntegrationIndexes
+    );
+
+    const int topNPeakIntegrations = 2;
+    const int peakIntegrationsMaxSize
+            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
+
+    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
 
     ERR_RETURN
 }
