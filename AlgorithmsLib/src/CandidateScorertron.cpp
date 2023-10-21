@@ -4,13 +4,12 @@
 
 #include "CandidateScorertron.h"
 
+#include "CandidateScores.h"
+#include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "ScoreOverseer.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
-
-#include "EigenUtils.h"
-
-#include <Eigen/Dense>
 
 
 CandidateScorertron::CandidateScorertron()

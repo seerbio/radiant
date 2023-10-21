@@ -11,6 +11,7 @@
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
 
+class CandidateScores;
 class MS2Ion;
 class XICPoints;
 
@@ -29,7 +30,8 @@ public:
 
     Err calculateScores(
             const QMap<MzHashed, XICPoints> &xicPointMap,
-            const QVector<MS2Ion> &ms2Ions
+            const QVector<MS2Ion> &ms2Ions,
+            CandidateScores *candidateScores
             );
 
 private:
