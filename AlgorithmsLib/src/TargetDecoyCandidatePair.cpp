@@ -37,7 +37,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         , m_targetDecoyCandidatePairIndex(targetDecoyCandidatePairIndex)
 {}
 
-PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithMods() {
+PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithMods() const {
     return m_peptideStringWithMods;
 }
 
