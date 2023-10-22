@@ -38,6 +38,7 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
 
     const QString msDataFilePath
         = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq");
+//        = QStringLiteral("/home/anichols/Downloads/EXP23109_2023astral006cX26_A.raw.mzML");
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath);
@@ -49,9 +50,15 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     );
     QCOMPARE(e, eNoError);
 
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
+    e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1);
+    QCOMPARE(e, eNoError);
+
     TargetDecoyCandidatePairScoretron targetDecoyCandidatePairScoretron;
     e = targetDecoyCandidatePairScoretron.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
+            scanNumberVsScanTimeMS1,
             &msReaderPointerAcc,
             &diaTargetFrame,
             &targetDecoyCandidatePairManager

@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MS2Ion.h"
+#include "CandidateScores.h"
 
 
 using namespace Error;
@@ -35,6 +36,9 @@ public:
 
     ~TargetDecoyCandidatePair() = default;
 
+    CandidateScores* scoresTarget();
+    CandidateScores* scoresDecoy();
+
     PeptideStringWithMods peptideStringWithMods();
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
@@ -59,6 +63,9 @@ private:
     double m_iRt;
     int m_totalFragmentCount;
     TargetDecoyCandidatePairIndex m_targetDecoyCandidatePairIndex;
+
+    CandidateScores m_scoresTarget;
+    CandidateScores m_scoresDecoy;
 
 };
 

@@ -10,9 +10,11 @@
 #include "GlobalSettings.h"
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
+#include "TurboXIC.h"
 
 class CandidateScores;
 class MS2Ion;
+class TargetDecoyCandidatePair;
 class XICPoints;
 
 
@@ -23,14 +25,22 @@ class ALGORITHMSLIB_EXPORTS CandidateScorertron {
 
 public:
 
-    explicit CandidateScorertron();
+    CandidateScorertron();
     ~CandidateScorertron() = default;
 
-    Err init(const PythiaParameters &pythiaParameters, int topNMS2Ions);
+    Err init(
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            const PythiaParameters &pythiaParameters,
+            int topNMS2Ions
+            );
 
     Err calculateScores(
-            const QMap<MzHashed, XICPoints> &xicPointMap,
-            const QVector<MS2Ion> &ms2Ions,
+            const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
+            const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
             CandidateScores *candidateScores
             );
 
@@ -47,6 +57,8 @@ private:
     int m_topNMS2Ions;
 
     PeakIntegratomatic m_peakIntegratomatic;
+
+    TurboXIC m_turboXICMS1;
 
 };
 

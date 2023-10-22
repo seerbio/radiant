@@ -21,7 +21,7 @@ const int PRECISION = 3;
 
 
 Err MsFrame::init(
-        QMap<ScanNumber, ScanPoints> &scanPoints,
+        const QMap<ScanNumber, ScanPoints> &scanPoints,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 

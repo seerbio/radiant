@@ -10,17 +10,45 @@
 #include "Error.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
-
+#include "TurboXIC.h"
 
 using namespace Error;
+
+class CandidateScores;
+class MS2Ion;
+class TargetDecoyCandidatePair;
 
 
 class ALGORITHMSLIB_EXPORTS ScoreOverseer {
 
 public:
 
-    ScoreOverseer() = default;
-    ~ScoreOverseer() = default;
+    ScoreOverseer(
+            int topNMS2Ions,
+            double cosineSimToAnchorThreshold,
+            double ppmTol,
+            const QVector<double> &summedMatVecToVec,
+            TurboXIC *turboXICMS1
+            );
+
+    ~ScoreOverseer();
+
+    Err buildScores(
+            const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+            const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+            CandidateScores *candidateScores
+    );
+
+private:
+
+    Q_DISABLE_COPY(ScoreOverseer) class Private;
+    const QScopedPointer<Private> d_ptr;
+
+    TurboXIC *m_turboXICMS1;
 
 };
 

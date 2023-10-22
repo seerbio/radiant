@@ -76,3 +76,11 @@ TargetDecoyCandidatePairIndex TargetDecoyCandidatePair::targetDecoyCandidatePair
 void TargetDecoyCandidatePair::setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index) {
     m_targetDecoyCandidatePairIndex = index;
 }
+
+CandidateScores* TargetDecoyCandidatePair::scoresTarget() {
+    return &m_scoresTarget;
+}
+
+CandidateScores* TargetDecoyCandidatePair::scoresDecoy() {
+    return &m_scoresDecoy;
+}

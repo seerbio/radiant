@@ -7,6 +7,7 @@
 #include "CandidateScores.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "MsFrame.h"
 #include "ScoreOverseer.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
@@ -30,12 +31,27 @@ namespace{
     }
 
 }//namespace
-Err CandidateScorertron::init(const PythiaParameters &pythiaParameters, int topNMS2Ions) {
+Err CandidateScorertron::init(
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        const PythiaParameters &pythiaParameters,
+        int topNMS2Ions
+        ) {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
+    e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(topNMS2Ions > 0); ree;
+
+    MsFrame ms1Frame;
+    e = ms1Frame.init(
+            scanNumberVsScanPointsMS1,
+            scanNumberVsScanTime
+            ); ree;
+
+    e = m_turboXICMS1.init(ms1Frame.frameIndexVsScanPoints()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
@@ -171,8 +187,12 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::calculateScores(
+        const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+        const QVector<MS2Ion> &ms2IonsTheoretical,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
-        const QVector<MS2Ion> &ms2Ions
+        const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+        CandidateScores *candidateScores
         ) {
 
     ERR_INIT
@@ -190,7 +210,7 @@ Err CandidateScorertron::calculateScores(
     }
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-            ms2Ions,
+            ms2IonsTheoretical,
             mzHashedVsIonPresence,
             m_topNMS2Ions
     );
@@ -199,8 +219,8 @@ Err CandidateScorertron::calculateScores(
         ERR_RETURN
     }
 
-    const Eigen::VectorX<double> summedMatVec = presenceMatrix.rowwise().sum();
-    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedMatVec);
+    const Eigen::VectorX<double> summedPresenceMatrixVec = presenceMatrix.rowwise().sum();
+    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedPresenceMatrixVec);
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
 
@@ -213,12 +233,23 @@ Err CandidateScorertron::calculateScores(
         ERR_RETURN
     }
 
-//    e = buildScores(
-//            candidatePeptideTarget,
-//            peakIntegrationIndexes,
-//            summedMatVecToVec,
-//            scoredCandidate
-//    ); ree;
+    ScoreOverseer scoreOverseer(
+            m_topNMS2Ions,
+            m_pythiaParameters.cosineSimToAnchorThreshold,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
+            summedMatVecToVec,
+            &m_turboXICMS1
+            );
+
+    e = scoreOverseer.buildScores(
+            targetDecoyCandidatePair,
+            peakIntegrationIndexes,
+            ms2IonsTheoretical,
+            mzHashedVsXICPoints,
+            ms2IonsTheoreticalIsotopeShadows,
+            mzHashedVsXICPointsIsotopeShadows,
+            candidateScores
+            ); ree;
 
     ERR_RETURN
 }

@@ -77,7 +77,7 @@ public:
     ~MsFrame() = default;
 
     Err init(
-            QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QMap<ScanNumber, ScanPoints> &scanPoints,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
