@@ -39,7 +39,7 @@ public:
     CandidateScores* scoresTarget();
     CandidateScores* scoresDecoy();
 
-    PeptideStringWithMods peptideStringWithMods() const;
+    [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
 

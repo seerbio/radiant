@@ -9,6 +9,9 @@
 
 #include "Error.h"
 
+using ScoresTargets = QVector<double>;
+using ScoresDecoys = QVector<double>;
+
 using namespace Error;
 
 class ALGORITHMSLIB_EXPORTS ClassifierWeightsManager {
@@ -48,6 +51,12 @@ public:
             QVector<QVector<double>> *A,
             QVector<double> *b
             );
+
+    static Err buildDataClassifier1(
+            const QVector<QPair<ScoresTargets, ScoresDecoys>> &targetsScoresVsDecoyScores,
+            QVector<QVector<double>> *A,
+            QVector<double> *b
+    );
 
     static Err buildDataClassifier2(
             const QVector<QVector<double>> &targets,

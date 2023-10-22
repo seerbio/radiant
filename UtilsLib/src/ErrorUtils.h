@@ -86,6 +86,10 @@ public:
         return isEqual(s1, true, e);
     }
 
+    static Err isNoError(bool s1, Err e = eError) {
+        return isEqual(e, eNoError, e);
+    }
+
     /*!
     * @brief returns specified error if value is false
     */

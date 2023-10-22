@@ -23,6 +23,7 @@ using namespace Error;
 class MsReaderParquet;
 class CandidatePeptide;
 class ScoredCandidate;
+class TargetDecoyCandidatePairScoretron;
 
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAWorkflow {
@@ -46,11 +47,13 @@ private:
 
     Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
 
+    Err buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
+
     Err buildCandidates(
             int topNMs2Ions,
             double selectionListFraction,
             QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
-    );
+            );
 
     Err buildCandidates(
             const QVector<PeptideStringWithMods> &inclusionList,
@@ -92,6 +95,7 @@ private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
     QVector<MsScanInfo> m_msScanInfos;
+    QPair<double, double> m_scanTimeMinMax;
 
     MsCalibratomatic m_msCalibratomatic;
 

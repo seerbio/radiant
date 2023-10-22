@@ -42,6 +42,8 @@ public:
             QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
             );
 
+    bool isInit();
+
 private:
 
     Err buildParallelInput(

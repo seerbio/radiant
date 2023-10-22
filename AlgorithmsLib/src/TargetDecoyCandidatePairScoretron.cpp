@@ -331,6 +331,14 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     ERR_RETURN
 }
 
+bool TargetDecoyCandidatePairScoretron::isInit() {
+
+    return m_pythiaParameters.isValid()
+            && !m_diaTargetFrames->isEmpty()
+            && !m_ms1Frame.isEmpty()
+            && m_targetDecoyCandidatePairManager->isInit();
+}
+
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         int topNMS2Ions,
         double randomSelectionFraction,

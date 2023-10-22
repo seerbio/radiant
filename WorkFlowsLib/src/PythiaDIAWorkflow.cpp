@@ -7,12 +7,12 @@
 #include "MsReaderParquet.h"
 
 //#include "CandidateClassifier.h"
-//#include "ClassifierWeightsManager.h"
+#include "ClassifierWeightsManager.h"
 //#include "EigenUtils.h"
 //#include "ErrorUtils.h"
 //#include "FastaFileToPeptidesListWorkFlow.h"
 //#include "FastaReader.h"
-//#include "FDRCLassifierNeuralNet.h"
+#include "FDRCLassifierNeuralNet.h"
 //#include "FeatureFinderHillBuilder.h"
 //#include "MS2ChargeDeconvolvotron.h"
 //#include "MS2DataExtractomatic.h"
@@ -22,6 +22,7 @@
 //#include "ParallelUtils.h"
 //#include "PeakIntegratomatic.h"
 //#include "TandemSpectraDeconvolvotron.h"
+#include "TargetDecoyCandidatePairScoretron.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -105,6 +106,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     ERR_INIT
 
     m_msScanInfos.clear();
+    m_scanTimeMinMax = {-1.0, -1.0};
 
     QString msDataFilePath = _msDataFilePath;
 
@@ -134,19 +136,25 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
+    m_scanTimeMinMax = msReaderPointerAcc.ptr->scanTimeMinMax();
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
     e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
             &diaTargetFrame
             ); ree;
 
-    QElapsedTimer et;
-    et.start();
-    for (int i = 0; i < 100; i++) {
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
+    e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
 
-        qDebug() << i << et.restart() << "mSec";
-    }
-
+    TargetDecoyCandidatePairScoretron targetDecoyCandidatePairScoretron;
+    e = targetDecoyCandidatePairScoretron.init(
+            m_pythiaParameters,
+            scanNumberVsScanTimeMS1,
+            &msReaderPointerAcc,
+            &diaTargetFrame,
+            &m_targetDecoyCandidatePairManager
+    );
 
 #ifndef USE_FILE_CACHING
 //    if (m_pythiaParameters.deisotopeScans) {
@@ -154,7 +162,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    }
 #endif
 
-//    e = buildCalibration(&msReaderPointerAcc); ree;
+    e = buildCalibration(&targetDecoyCandidatePairScoretron); ree;
 
 ////#define BYPASS_OPTI
 //#ifndef BYPASS_OPTI
@@ -468,7 +476,7 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
 //                useNeuralNetworkScores,
 //                msReaderPointerAcc
 //        ); ree;
-//
+////
 //        e = ms2DataExtractomatic.extractMS2ForCandidates(
 //                uniqueInfoScanKeyVsCandidatePeptideCalibration,
 //                &scoredCandidatesAll
@@ -526,6 +534,127 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
 //#else
 //    e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
 //#endif
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildClassifierInput(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<QPair<ScoresTargets, ScoresDecoys>> *targetsScoresVsDecoyScores,
+            QVector<QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>>> *targetDecoyCandidatePairPtrVsScorePairs
+            ) {
+
+        ERR_INIT
+
+        const int theoMzIonsSizeMin = 6;
+
+        e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
+        e = ErrorUtils::isTrue(scanTimeMinMax.second > scanTimeMinMax.first); ree;
+        e = ErrorUtils::isTrue(theoMzIonsSize >= theoMzIonsSizeMin); ree;
+
+        targetsScoresVsDecoyScores->clear();
+
+        for (TargetDecoyCandidatePair *tdc : targetDecoyCandidatePairPntrs) {
+
+            const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
+                    *tdc->scoresTarget(),
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    theoMzIonsSize,
+                    scanTimeMinMax
+                    ); ree;
+
+            const ScoresDecoys scoresDecoys = FDRCLassifierNeuralNet::buildScoreVector(
+                    *tdc->scoresDecoy(),
+                    useExtendedScores,
+                    useNeuralNetworkScores,
+                    theoMzIonsSize,
+                    scanTimeMinMax
+            ); ree;
+
+            targetsScoresVsDecoyScores->push_back({scoresTargets, scoresDecoys});
+            targetDecoyCandidatePairPtrVsScorePairs->push_back({tdc, {scoresTargets, scoresDecoys}});
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron){
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
+
+    const int topNMS2Ions = 6;
+    const double calibrationTrainingFraction = 0.2;
+
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    e = targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+            topNMS2Ions,
+            calibrationTrainingFraction,
+            m_msCalibratomatic,
+            &scoredTargetDecoyPointers
+    ); ree;
+
+    const bool useExtendedScores = false;
+    const bool useNeuralNetworkScores = false;
+
+    {
+        QVector<QPair<ScoresTargets, ScoresDecoys>> targetsScoresVsDecoyScores;
+        QVector<QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>>> targetDecoyCandidatePairPtrVsScorePairs;
+        e = buildClassifierInput(
+                scoredTargetDecoyPointers,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                topNMS2Ions,
+                m_scanTimeMinMax,
+                &targetsScoresVsDecoyScores,
+                &targetDecoyCandidatePairPtrVsScorePairs
+                ); ree;
+
+        QVector<QVector<double>> A;
+        QVector<double> b;
+        e = ClassifierWeightsManager::buildDataClassifier1(
+                targetsScoresVsDecoyScores,
+                &A,
+                &b
+                ); ree;
+
+        QVector<double> weights;
+        e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+        //TODO change fitweights out of for loop and do a matrix calc
+        for(const QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>> &tdp : targetDecoyCandidatePairPtrVsScorePairs) {
+
+            QVector<double> discScoreTargets;
+            e = ClassifierWeightsManager::applyWeights({tdp.second.first}, weights, &discScoreTargets); ree;
+
+            QVector<double> discScoreDecoys;
+            e = ClassifierWeightsManager::applyWeights({tdp.second.second}, weights, &discScoreDecoys); ree;
+            qDebug() << discScoreTargets.front() << discScoreDecoys.front();
+
+            TargetDecoyCandidatePair *tdcp = tdp.first;
+            tdcp->scoresTarget()->discriminateScore = discScoreTargets.front();
+            tdcp->scoresDecoy()->discriminateScore = discScoreDecoys.front();
+
+        }
+
+    }
+
+
+//    FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+//        scoredCandidatesAll,
+//        fdrFraction,
+//        &onePercentFDRCount
+//        );
+
 
     ERR_RETURN
 }

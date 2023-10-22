@@ -17,6 +17,8 @@
 
 using namespace Error;
 
+class CandidateScores;
+
 
 namespace NeuralNetDataNamespace {
     const QString SCORES = QStringLiteral("scores");
@@ -115,7 +117,7 @@ public:
     );
 
     static QVector<double> buildScoreVector(
-            const ScoredCandidate &scoreCandidate,
+            const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,

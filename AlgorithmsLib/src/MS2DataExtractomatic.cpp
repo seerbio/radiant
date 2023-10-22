@@ -249,24 +249,24 @@ namespace {
 
             const ScoredCandidate scDecoy = decoys.value(key);
 
-            const QVector<double> targetScores = FDRCLassifierNeuralNet::buildScoreVector(
-                    scTarget,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    theoMzIonsSize,
-                    scanTimeMinMax
-            );
-
-            const QVector<double> decoyScores = FDRCLassifierNeuralNet::buildScoreVector(
-                    scDecoy,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    theoMzIonsSize,
-                    scanTimeMinMax
-            );
-
-            targetScoresVector->push_back(targetScores);
-            decoyScoresVector->push_back(decoyScores);
+//            const QVector<double> targetScores = FDRCLassifierNeuralNet::buildScoreVector(
+//                    scTarget,
+//                    useExtendedScores,
+//                    useNeuralNetworkScores,
+//                    theoMzIonsSize,
+//                    scanTimeMinMax
+//            );
+//
+//            const QVector<double> decoyScores = FDRCLassifierNeuralNet::buildScoreVector(
+//                    scDecoy,
+//                    useExtendedScores,
+//                    useNeuralNetworkScores,
+//                    theoMzIonsSize,
+//                    scanTimeMinMax
+//            );
+//
+//            targetScoresVector->push_back(targetScores);
+//            decoyScoresVector->push_back(decoyScores);
         }
 
         e = ErrorUtils::isEqual(targetScoresVector->size(), decoyScoresVector->size()); ree;
@@ -379,37 +379,37 @@ namespace {
         e = ErrorUtils::isNotEmpty(scoredCandidatesCalibration); ree;
         e = ErrorUtils::isNotEmpty(weights); ree;
 
-        for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
-
-            QVector<double> scores = FDRCLassifierNeuralNet::buildScoreVector(
-                    sc,
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    theoMzIonsSize,
-                    scanTimeMinMax
-            );
-
-            QVector<double> results;
-            e = ClassifierWeightsManager::applyWeights({scores}, weights, &results); ree;
-
-            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
-                    sc.peptideStringWithMods,
-                    sc.targetKey,
-                    sc.charge
-            );
-
-            ScoredCandidate scoredCandidate = sc;
-            scoredCandidate.discriminateScore = results.front();
-
-            if(sc.isDecoy) {
-                peptideStringWithModsVsDiscScoreDecoys->insert(key, scoredCandidate.discriminateScore);
-                peptideStringWithModsVsScoredCandidateDecoys->insert(key, scoredCandidate);
-                continue;
-            }
-
-            peptideStringWithModsVsDiscScoreTargets->insert(key, scoredCandidate.discriminateScore);
-            peptideStringWithModsVsScoredCandidateTargets->insert(key, scoredCandidate);
-        }
+//        for (const ScoredCandidate &sc : scoredCandidatesCalibration) {
+//
+//            QVector<double> scores = FDRCLassifierNeuralNet::buildScoreVector(
+//                    sc,
+//                    useExtendedScores,
+//                    useNeuralNetworkScores,
+//                    theoMzIonsSize,
+//                    scanTimeMinMax
+//            );
+//
+//            QVector<double> results;
+//            e = ClassifierWeightsManager::applyWeights({scores}, weights, &results); ree;
+//
+//            const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
+//                    sc.peptideStringWithMods,
+//                    sc.targetKey,
+//                    sc.charge
+//            );
+//
+//            ScoredCandidate scoredCandidate = sc;
+//            scoredCandidate.discriminateScore = results.front();
+//
+//            if(sc.isDecoy) {
+//                peptideStringWithModsVsDiscScoreDecoys->insert(key, scoredCandidate.discriminateScore);
+//                peptideStringWithModsVsScoredCandidateDecoys->insert(key, scoredCandidate);
+//                continue;
+//            }
+//
+//            peptideStringWithModsVsDiscScoreTargets->insert(key, scoredCandidate.discriminateScore);
+//            peptideStringWithModsVsScoredCandidateTargets->insert(key, scoredCandidate);
+//        }
 
         ERR_RETURN
     }
