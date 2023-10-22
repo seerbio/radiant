@@ -84,3 +84,8 @@ CandidateScores* TargetDecoyCandidatePair::scoresTarget() {
 CandidateScores* TargetDecoyCandidatePair::scoresDecoy() {
     return &m_scoresDecoy;
 }
+
+void TargetDecoyCandidatePair::clearScores() {
+    m_scoresDecoy.clear();
+    m_scoresTarget.clear();
+}

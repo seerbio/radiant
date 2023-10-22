@@ -77,6 +77,7 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
             &scoredTargetDecoyPointers
             );
     QCOMPARE(e, eNoError);
+    QCOMPARE(scoredTargetDecoyPointers.size(), 228217);
 
 }
 

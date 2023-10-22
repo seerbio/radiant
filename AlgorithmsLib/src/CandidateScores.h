@@ -25,22 +25,16 @@ namespace CandidateScoresNamespace {
     const QString SCAN_NUM = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
-    const QString X_CORR = QStringLiteral("xCorr");
     const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
-
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
     const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
     const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
     const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
     const QString INTZ_FND_MAX_V = QStringLiteral("intensityFoundMaxVec");
-    const QString FRAME_IND_MAX_DIV_ANCH_V = QStringLiteral("frameIndexMaxDiffFromAnchorVec");
     const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
-    const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
     const QString TARGET_KEY = QStringLiteral("targetKey");
-
     const QString KL_DIV_SUM = QStringLiteral("klDivSum");
-    const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
     const QString COSINE_SIM_100_MS1 = QStringLiteral("cosineSim100MS1");
@@ -58,15 +52,12 @@ namespace CandidateScoresNamespace {
     const QString SCAN_NUM_CAND_CNT = QStringLiteral("scanNumberCandidateCount");
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString PROTEIN_GRP = QStringLiteral("proteinGroup");
-
     const QString PEAK_SHAPE_RATIO_1 = QStringLiteral("peakShapeRatio1");
     const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
     const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
-
     const QString B2_CORR = QStringLiteral("b2Corr");
     const QString B3_CORR = QStringLiteral("b3Corr");
     const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
-
     const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
     const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
 
@@ -87,15 +78,11 @@ namespace CandidateScoresNamespace {
             MZ_FND_MEAN_V,
             MZ_FND_STDEV_V,
             INTZ_FND_MAX_V,
-            FRAME_IND_MAX_DIV_ANCH_V,
             COS_SIM_SUM_ANCH_V,
-            PK_PNT_CNT_FND_V,
             SCAN_TIME_PRED,
             IRT_PRED,
             TARGET_KEY,
-            X_CORR,
             KL_DIV_SUM,
-            KL_DIV_TO_ANCHOR,
             KL_DIV_SPECTRUM,
             COSINE_SIM_SPECTRUM,
             COSINE_SIM_100_MS1,
@@ -141,7 +128,6 @@ public:
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
-    double xCorr = -1.0;
     double klDivSum = -1.0;
     double klDivSpectrum = -1.0;
     double cosineSimSpectrum = -1.0;
@@ -157,10 +143,7 @@ public:
     QVector<double> mzFoundMeanVec;
     QVector<double> mzFoundStDevVec;
     QVector<double> intensityFoundMaxVec;
-//    QVector<int> frameIndexMaxDiffFromAnchorVec;
     QVector<double> cosineSimToAnchorVec;
-//    QVector<double> klDivToAnchorVec;
-//    QVector<int> peakPointCountFoundVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -172,17 +155,53 @@ public:
     int scanNumberCandidateCount = -1;
     double classifierScore = -1.0;
     QString proteinGroup;
-
     double peakShapeRatio1 = -1.0;
     double peakShapeRatio2 = -1.0;
     double peakShapeRatio3 = -1.0;
-
     double b2Corr = -1.0;
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
-
     QVector<double> cosineSimShadowsToAnchorVec;
     double shadowsCosineSimSum = -1.0;
+
+    void clear() {
+        cosineSimSum100 = -1.0;
+        cosineSimSum45 = -1.0;
+        cosineSimSum20 = -1.0;
+        klDivSum = -1.0;
+        klDivSpectrum = -1.0;
+        cosineSimSpectrum = -1.0;
+        cosineSim100MS1 = -1.0;
+        cosineSim45MS1 = -1.0;
+        cosineSim20MS1 = -1.0;
+        cosineSim100MS1Iso1 = -1.0;
+        cosineSim100MS1Iso2 = -1.0;
+        scanTimePredicted = -1.0;
+        iRTPredicted = -1.0;
+        mzSearchedVec.clear();
+        theoIntensityVec.clear();
+        mzFoundMeanVec.clear();
+        mzFoundStDevVec.clear();
+        intensityFoundMaxVec.clear();
+        cosineSimToAnchorVec.clear();
+        theoFragmentCount = -1;
+        discriminateScore = -1.0;
+        qValue = 1.0;
+        decoyRatio = -1.0;
+        matrixWeight = -1.0;
+        matrixPValue = 1.0;
+        matrixError = 1.0;
+        scanNumberCandidateCount = -1;
+        classifierScore = -1.0;
+        peakShapeRatio1 = -1.0;
+        peakShapeRatio2 = -1.0;
+        peakShapeRatio3 = -1.0;
+        b2Corr = -1.0;
+        b3Corr = -1.0;
+        b2b3CosineSimSum = -1.0;
+        cosineSimShadowsToAnchorVec.clear();
+        shadowsCosineSimSum = -1.0;
+    }
 
     QMap<QString, QVariant> map() override {
 
@@ -204,15 +223,11 @@ public:
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
                 {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
                 {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
-//                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
-//                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
                 {TARGET_KEY, QVariant(targetKey)},
-                {X_CORR, QVariant(xCorr)},
                 {KL_DIV_SUM, QVariant(klDivSum)},
-//                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
@@ -276,7 +291,6 @@ public:
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
 //        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
-        xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
         cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();
@@ -309,6 +323,7 @@ public:
 
         ERR_RETURN
     }
+
 };
 
 

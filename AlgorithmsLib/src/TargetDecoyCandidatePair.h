@@ -52,6 +52,8 @@ public:
 
     void setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index);
 
+    void clearScores();
+
 
 private:
 

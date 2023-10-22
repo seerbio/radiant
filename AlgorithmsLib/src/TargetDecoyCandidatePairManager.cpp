@@ -451,3 +451,14 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     ERR_RETURN
 }
+
+Err TargetDecoyCandidatePairManager::clearScores() {
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+
+    for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
+        tdcp.clearScores();
+    }
+
+    ERR_RETURN
+}

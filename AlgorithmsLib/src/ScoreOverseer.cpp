@@ -670,6 +670,9 @@ Err ScoreOverseer::buildScores(
 
     ERR_INIT
 
+    QVector<MS2Ion> ms2IonsTheoreticalResized = ms2IonsTheoretical;
+    ms2IonsTheoreticalResized.resize(d_ptr->m_topNMS2Ions);
+
     e = d_ptr->initMatricies(
             ms2IonsTheoretical,
             mzHashedVsXICPoints100,
@@ -693,33 +696,26 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn
     ); ree;
 
-    double cosineSim100MS1;
+
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
             targetDecoyCandidatePair->mz(),
             d_ptr->m_ppmTol,
             m_turboXICMS1,
-            &cosineSim100MS1
+            &candidateScores->cosineSim100MS1
             ); ree;
 
-    double cosineSimSpectrum;
-    double klDivSpectrum;
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex),
-            ms2IonsTheoretical,
-            &cosineSimSpectrum,
-            &klDivSpectrum
+            ms2IonsTheoreticalResized,
+            &candidateScores->cosineSimSpectrum,
+            &candidateScores->klDivSpectrum
     ); ree;
 
-    const double cosineSimSum100 = std::accumulate(
-            cosineSimsIndividual100.begin(),
-            cosineSimsIndividual100.end(),
-            0.0,
-            [](double sum, double cosineSim){return sum + cosineSim;}
-            );
+    candidateScores->cosineSimSum100
+        = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
 
-    qDebug() << cosineSimSum100 << cosineSim100MS1 << cosineSimSpectrum << klDivSpectrum;
 
 //    QVector<double> cosineSimsIndividualShadows;
 //    double cosineSimSumShadows;

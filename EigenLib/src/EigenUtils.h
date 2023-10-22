@@ -244,7 +244,9 @@ public:
     template <typename EigenMatrix>
     static double klDivergence(EigenMatrix v1, EigenMatrix v2) {
 
-        const double nearZero = 1e-5;
+        const double nearZero = 1e-9;
+        v1 = v1.array() + nearZero;
+        v2 = v2.array() + nearZero;
 
         const double v1Sum = v1.sum();
         const double v2Sum = v2.sum();
@@ -253,11 +255,8 @@ public:
             return 1e4;
         }
 
-        v1 /= v1Sum;
-        v2 /= v2Sum;
-
-        v1 = (v1.array() < nearZero).select(nearZero, v1);
-        v2 = (v2.array() < nearZero).select(nearZero, v2);
+        v1 = v1.array() / v1Sum;
+        v2 = v2.array() / v2Sum;
 
         return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
     }

@@ -297,6 +297,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager->isInit()); ree;
 
+    e = m_targetDecoyCandidatePairManager->clearScores(); ree;
+
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
             topNMS2Ions,

@@ -47,6 +47,8 @@ public:
 
     bool isInit();
 
+    Err clearScores();
+
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             PeptideStringWithMods *peptideStringWithMods,
