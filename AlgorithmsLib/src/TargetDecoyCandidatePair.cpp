@@ -53,7 +53,7 @@ double TargetDecoyCandidatePair::mz() const {
     return (m_mass + (ChemConstants::PROTON * m_charge)) / m_charge;
 }
 
-double TargetDecoyCandidatePair::charge() const {
+int TargetDecoyCandidatePair::charge() const {
     return m_charge;
 }
 
@@ -90,7 +90,7 @@ void TargetDecoyCandidatePair::clearScores() {
     m_uniqueInfoScanKeyVsScoresDecoy.clear();
 }
 
-UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() {
+UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() const {
 
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     double bestDiscriminantScore = -1;
@@ -103,6 +103,18 @@ UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() {
             bestDiscriminantScore = cs.discriminateScore;
         }
     }
-    
+
     return uniqueMsInfoScanKey;
+}
+
+CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrTarget() {
+
+    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKey();
+    return &m_uniqueInfoScanKeyVsScoresTarget[uniqueMsInfoScanKeyBestDiscScore];
+
+}
+
+CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrDecoy() {
+    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKey();
+    return &m_uniqueInfoScanKeyVsScoresDecoy[uniqueMsInfoScanKeyBestDiscScore];
 }

@@ -18,6 +18,7 @@
 using namespace Error;
 
 class CandidateScores;
+class TargetDecoyCandidatePair;
 
 
 namespace NeuralNetDataNamespace {
@@ -149,6 +150,18 @@ public:
             double qValueThreshold,
             int *targetCountBelowFDRThreshold
             );
+
+    static Err countScoreCandidatesByFDR(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePair,
+            double qValueThreshold,
+            int *targetCountBelowFDRThreshold
+    );
+
+    static Err outputFDRResults(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            bool verbose,
+            QMap<QString, int> *fdrVsCount
+    );
 
 private:
 

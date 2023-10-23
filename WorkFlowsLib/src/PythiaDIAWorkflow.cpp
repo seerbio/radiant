@@ -14,6 +14,7 @@
 //#include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 //#include "FeatureFinderHillBuilder.h"
+#include "MathUtils.h"
 //#include "MS2ChargeDeconvolvotron.h"
 //#include "MS2DataExtractomatic.h"
 //#include "MsCalibrationReader.h"
@@ -22,6 +23,7 @@
 //#include "ParallelUtils.h"
 //#include "PeakIntegratomatic.h"
 //#include "TandemSpectraDeconvolvotron.h"
+#include "TandemFragmentPredictotron.h"
 #include "TargetDecoyCandidatePairScoretron.h"
 #include "TurboXIC.h"
 
@@ -633,13 +635,14 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
             topNMS2Ions
             ); ree;
 
+    e = setQValueForCandidates(scoredTargetDecoyPointers); ree;
 
-
-//    FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//        scoredCandidatesAll,
-//        fdrFraction,
-//        &onePercentFDRCount
-//        );
+    QMap<QString, int> fdrVsCount;
+    e = FDRCLassifierNeuralNet::outputFDRResults(
+            scoredTargetDecoyPointers,
+            true,
+            &fdrVsCount
+            ); ree;
 
 
     ERR_RETURN
@@ -690,18 +693,103 @@ Err PythiaDIAWorkflow::setDiscriminateScoreForCandidates(
 
         (*tdcp->uniqueInfoScanKeyVsScoresTarget())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreTargets.front();
         (*tdcp->uniqueInfoScanKeyVsScoresDecoy())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreDecoys.front();
+
     }
 
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildsetQValueForCandidatesInputs(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
+            QMap<PeptideSequenceChargeKey, double> *identifierVsTargets,
+            QMap<PeptideSequenceChargeKey, double> *identifierVsDecoys
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
+        identifierVsTargets->clear();
+        identifierVsDecoys->clear();
+
+        for (TargetDecoyCandidatePair *tdcp : targetDecoyCandidatePairPntrs) {
+
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                    tdcp->peptideStringWithMods(),
+                    tdcp->charge()
+            );
+
+            const double discriminantScoreTarget
+                    = tdcp->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore;
+
+            const double discriminantScoreDecoy
+                    = tdcp->candidateScoresBestDiscriminantScorePtrDecoy()->discriminateScore;
+
+            identifierVsTargets->insert(peptideSequenceChargeKey, discriminantScoreTarget);
+            identifierVsDecoys->insert(peptideSequenceChargeKey, discriminantScoreDecoy);
+
+        }
+
+        ERR_RETURN
+    }
+
+    Err setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
+            const QMap<PeptideSequenceChargeKey, double> &identifierVsQValue,
+            const QMap<PeptideSequenceChargeKey, double> &identifierVsDecoyRatio
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
+
+        for (TargetDecoyCandidatePair *tdcp : targetDecoyCandidatePairPntrs) {
+
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                    tdcp->peptideStringWithMods(),
+                    tdcp->charge()
+            );
+
+            e = ErrorUtils::isTrue(identifierVsQValue.contains(peptideSequenceChargeKey)); ree;
+            e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
+
+            tdcp->candidateScoresBestDiscriminantScorePtrTarget()->qValue = identifierVsQValue.value(peptideSequenceChargeKey);
+            tdcp->candidateScoresBestDiscriminantScorePtrTarget()->decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAWorkflow::setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs){
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
 
+    QMap<PeptideSequenceChargeKey, double> identifierVsTargets;
+    QMap<PeptideSequenceChargeKey, double> identifierVsDecoys;
+    e = buildsetQValueForCandidatesInputs(
+            targetDecoyCandidatePairPntrs,
+            &identifierVsTargets,
+            &identifierVsDecoys
+            ); ree;
 
+    QMap<PeptideSequenceChargeKey, double> identifierVsQValue;
+    QMap<PeptideSequenceChargeKey, double> identifierVsDecoyRatio;
+    e = MathUtils::calculateQValue(
+            identifierVsTargets,
+            identifierVsDecoys,
+            &identifierVsQValue,
+            &identifierVsDecoyRatio
+            ); ree;
+
+    e = setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
+            targetDecoyCandidatePairPntrs,
+            identifierVsQValue,
+            identifierVsDecoyRatio
+            ); ree;
 
     ERR_RETURN
 }

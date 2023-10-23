@@ -7,6 +7,7 @@
 #include "CandidateScores.h"
 #include "EigenUtils.h"
 #include "ParallelUtils.h"
+#include "TargetDecoyCandidatePair.h"
 
 #include <random>
 
@@ -698,6 +699,56 @@ Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
 
     *targetCountBelowFDRThreshold
             = static_cast<int>(std::count_if(scoredCandidatesAll.begin(), scoredCandidatesAll.end(), countLogic));
+
+    ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+        const QVector<TargetDecoyCandidatePair *> &targetDecoyCandidatePair,
+        double qValueThreshold,
+        int *targetCountBelowFDRThreshold
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidatePair); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    const auto countLogic = [qValueThreshold](TargetDecoyCandidatePair *tdcp){
+        return tdcp->candidateScoresBestDiscriminantScorePtrTarget()->qValue < qValueThreshold;
+    };
+
+    *targetCountBelowFDRThreshold
+            = static_cast<int>(std::count_if(targetDecoyCandidatePair.begin(), targetDecoyCandidatePair.end(), countLogic));
+
+    ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::outputFDRResults(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        bool verbose,
+        QMap<QString, int> *fdrVsCount
+        ) {
+
+    ERR_INIT
+
+    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005};
+    for (double fdrThresh : fdrFractions) {
+        int foundAtThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                targetDecoyCandidatePairs,
+                fdrThresh,
+                &foundAtThreshold
+        ); ree;
+        const double fdrPercent = fdrThresh * 100;
+        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+
+        if (!verbose) {
+            continue;
+        }
+
+        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
+    }
 
     ERR_RETURN
 }

@@ -96,7 +96,7 @@ public:
 
     void setIntensityThreshold(double intensityThreshold);
 
-    static QString buildPeptideSequenceChargeKey(
+    static PeptideSequenceChargeKey buildPeptideSequenceChargeKey(
             const PeptideStringWithMods &peptideStringWithMods,
             int charge
             );
