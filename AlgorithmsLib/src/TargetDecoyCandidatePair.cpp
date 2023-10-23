@@ -77,15 +77,32 @@ void TargetDecoyCandidatePair::setTargetDecoyCandidatePairIndex(TargetDecoyCandi
     m_targetDecoyCandidatePairIndex = index;
 }
 
-CandidateScores* TargetDecoyCandidatePair::scoresTarget() {
-    return &m_scoresTarget;
+QMap<UniqueMsInfoScanKey, CandidateScores>* TargetDecoyCandidatePair::uniqueInfoScanKeyVsScoresTarget() {
+    return &m_uniqueInfoScanKeyVsScoresTarget;
 }
 
-CandidateScores* TargetDecoyCandidatePair::scoresDecoy() {
-    return &m_scoresDecoy;
+QMap<UniqueMsInfoScanKey, CandidateScores>* TargetDecoyCandidatePair::uniqueInfoScanKeyVsScoresDecoy() {
+    return &m_uniqueInfoScanKeyVsScoresDecoy;
 }
 
 void TargetDecoyCandidatePair::clearScores() {
-    m_scoresDecoy.clear();
-    m_scoresTarget.clear();
+    m_uniqueInfoScanKeyVsScoresTarget.clear();
+    m_uniqueInfoScanKeyVsScoresDecoy.clear();
+}
+
+UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() {
+
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    double bestDiscriminantScore = -1;
+    for (auto it = m_uniqueInfoScanKeyVsScoresTarget.begin(); it != m_uniqueInfoScanKeyVsScoresTarget.end(); it++) {
+        const UniqueMsInfoScanKey &k = it.key();
+        const CandidateScores &cs = it.value();
+
+        if (cs.discriminateScore > bestDiscriminantScore) {
+            uniqueMsInfoScanKey = k;
+            bestDiscriminantScore = cs.discriminateScore;
+        }
+    }
+    
+    return uniqueMsInfoScanKey;
 }

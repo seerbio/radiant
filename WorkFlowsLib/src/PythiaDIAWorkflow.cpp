@@ -540,6 +540,12 @@ Err PythiaDIAWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) 
 
 namespace {
 
+    struct TargetDecoyPairTargetKey {
+        TargetDecoyCandidatePair* targetDecoyCandidatePair;
+        QPair<ScoresTargets, ScoresDecoys> scoresTargetVsScoresDecoys;
+        UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    };
+
     Err buildClassifierInput(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
             bool useExtendedScores,
@@ -547,7 +553,7 @@ namespace {
             int theoMzIonsSize,
             const QPair<double, double> &scanTimeMinMax,
             QVector<QPair<ScoresTargets, ScoresDecoys>> *targetsScoresVsDecoyScores,
-            QVector<QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>>> *targetDecoyCandidatePairPtrVsScorePairs
+            QVector<TargetDecoyPairTargetKey> *targetDecoyPairTargetKeys
             ) {
 
         ERR_INIT
@@ -562,24 +568,38 @@ namespace {
 
         for (TargetDecoyCandidatePair *tdc : targetDecoyCandidatePairPntrs) {
 
-            const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
-                    *tdc->scoresTarget(),
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    theoMzIonsSize,
-                    scanTimeMinMax
-                    ); ree;
+            const QList<UniqueMsInfoScanKey> &uniqueInfoScanKeys = tdc->uniqueInfoScanKeyVsScoresTarget()->keys();
 
-            const ScoresDecoys scoresDecoys = FDRCLassifierNeuralNet::buildScoreVector(
-                    *tdc->scoresDecoy(),
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    theoMzIonsSize,
-                    scanTimeMinMax
-            ); ree;
+            for (const UniqueMsInfoScanKey &key : uniqueInfoScanKeys) {
 
-            targetsScoresVsDecoyScores->push_back({scoresTargets, scoresDecoys});
-            targetDecoyCandidatePairPtrVsScorePairs->push_back({tdc, {scoresTargets, scoresDecoys}});
+                e = ErrorUtils::isTrue(tdc->uniqueInfoScanKeyVsScoresDecoy()->contains(key)); ree;
+
+
+                const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
+                        tdc->uniqueInfoScanKeyVsScoresTarget()->value(key),
+                        useExtendedScores,
+                        useNeuralNetworkScores,
+                        theoMzIonsSize,
+                        scanTimeMinMax
+                ); ree;
+
+                const ScoresDecoys scoresDecoys = FDRCLassifierNeuralNet::buildScoreVector(
+                        tdc->uniqueInfoScanKeyVsScoresDecoy()->value(key),
+                        useExtendedScores,
+                        useNeuralNetworkScores,
+                        theoMzIonsSize,
+                        scanTimeMinMax
+                ); ree;
+
+                TargetDecoyPairTargetKey targetDecoyPairTargetKey;
+                targetDecoyPairTargetKey.targetDecoyCandidatePair = tdc;
+                targetDecoyPairTargetKey.scoresTargetVsScoresDecoys = {scoresTargets, scoresDecoys};
+                targetDecoyPairTargetKey.uniqueMsInfoScanKey = key;
+
+                targetDecoyPairTargetKeys->push_back(targetDecoyPairTargetKey);
+                targetsScoresVsDecoyScores->push_back({scoresTargets, scoresDecoys});
+            }
+
         }
 
         ERR_RETURN
@@ -606,47 +626,13 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
 
-    {
-        QVector<QPair<ScoresTargets, ScoresDecoys>> targetsScoresVsDecoyScores;
-        QVector<QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>>> targetDecoyCandidatePairPtrVsScorePairs;
-        e = buildClassifierInput(
-                scoredTargetDecoyPointers,
-                useExtendedScores,
-                useNeuralNetworkScores,
-                topNMS2Ions,
-                m_scanTimeMinMax,
-                &targetsScoresVsDecoyScores,
-                &targetDecoyCandidatePairPtrVsScorePairs
-                ); ree;
+    e = setDiscriminateScoreForCandidates(
+            scoredTargetDecoyPointers,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            topNMS2Ions
+            ); ree;
 
-        QVector<QVector<double>> A;
-        QVector<double> b;
-        e = ClassifierWeightsManager::buildDataClassifier1(
-                targetsScoresVsDecoyScores,
-                &A,
-                &b
-                ); ree;
-
-        QVector<double> weights;
-        e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
-
-        //TODO change fitweights out of for loop and do a matrix calc
-        for(const QPair<TargetDecoyCandidatePair*, QPair<ScoresTargets, ScoresDecoys>> &tdp : targetDecoyCandidatePairPtrVsScorePairs) {
-
-            QVector<double> discScoreTargets;
-            e = ClassifierWeightsManager::applyWeights({tdp.second.first}, weights, &discScoreTargets); ree;
-
-            QVector<double> discScoreDecoys;
-            e = ClassifierWeightsManager::applyWeights({tdp.second.second}, weights, &discScoreDecoys); ree;
-            qDebug() << discScoreTargets.front() << discScoreDecoys.front();
-
-            TargetDecoyCandidatePair *tdcp = tdp.first;
-            tdcp->scoresTarget()->discriminateScore = discScoreTargets.front();
-            tdcp->scoresDecoy()->discriminateScore = discScoreDecoys.front();
-
-        }
-
-    }
 
 
 //    FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -654,6 +640,67 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 //        fdrFraction,
 //        &onePercentFDRCount
 //        );
+
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::setDiscriminateScoreForCandidates(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        int theoMzIonsSize
+        ) {
+
+    ERR_INIT
+
+    QVector<QPair<ScoresTargets, ScoresDecoys>> targetsScoresVsDecoyScores;
+    QVector<TargetDecoyPairTargetKey> targetDecoyPairTargetKeys;
+    e = buildClassifierInput(
+            targetDecoyCandidatePairPntrs,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            theoMzIonsSize,
+            m_scanTimeMinMax,
+            &targetsScoresVsDecoyScores,
+            &targetDecoyPairTargetKeys
+    ); ree;
+
+    QVector<QVector<double>> A;
+    QVector<double> b;
+    e = ClassifierWeightsManager::buildDataClassifier1(
+            targetsScoresVsDecoyScores,
+            &A,
+            &b
+    ); ree;
+
+    QVector<double> weights;
+    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+    //TODO change fitweights out of for loop and do a matrix calc
+    for(const TargetDecoyPairTargetKey &tdp : targetDecoyPairTargetKeys) {
+
+        QVector<double> discScoreTargets;
+        e = ClassifierWeightsManager::applyWeights({tdp.scoresTargetVsScoresDecoys.first}, weights, &discScoreTargets); ree;
+
+        QVector<double> discScoreDecoys;
+        e = ClassifierWeightsManager::applyWeights({tdp.scoresTargetVsScoresDecoys.second}, weights, &discScoreDecoys); ree;
+
+        TargetDecoyCandidatePair *tdcp = tdp.targetDecoyCandidatePair;
+
+        (*tdcp->uniqueInfoScanKeyVsScoresTarget())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreTargets.front();
+        (*tdcp->uniqueInfoScanKeyVsScoresDecoy())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreDecoys.front();
+    }
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs){
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
+
 
 
     ERR_RETURN

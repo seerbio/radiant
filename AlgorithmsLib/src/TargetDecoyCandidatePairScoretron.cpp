@@ -249,6 +249,7 @@ namespace {
 
         for (TargetDecoyCandidatePair* targetDecoyPtr : pi.targetDecoyPointers) {
 
+            CandidateScores candidateScoresTarget;
             e = extractScores(
                     targetDecoyPtr,
                     targetDecoyPtr->ms2IonsTarget(),
@@ -259,9 +260,12 @@ namespace {
                     &turboXic,
                     &candidateScorertron,
                     &cachedPoints,
-                    targetDecoyPtr->scoresTarget()
+                    &candidateScoresTarget
                     ); ree;
 
+            targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
+
+            CandidateScores candidateScoresDecoy;
             e = extractScores(
                     targetDecoyPtr,
                     targetDecoyPtr->ms2IonsDecoy(),
@@ -272,8 +276,10 @@ namespace {
                     &turboXic,
                     &candidateScorertron,
                     &cachedPoints,
-                    targetDecoyPtr->scoresDecoy()
+                    &candidateScoresDecoy
             ); ree;
+
+            targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
 
         }
 

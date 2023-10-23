@@ -696,6 +696,8 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn
     ); ree;
 
+    candidateScores->cosineSimSum100
+            = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
 
     e = calculateMS1Corr(
             bestAnchorColumn,
@@ -713,8 +715,7 @@ Err ScoreOverseer::buildScores(
             &candidateScores->klDivSpectrum
     ); ree;
 
-    candidateScores->cosineSimSum100
-        = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
+
 
 
 //    QVector<double> cosineSimsIndividualShadows;

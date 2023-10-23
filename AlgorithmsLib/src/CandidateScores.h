@@ -165,9 +165,25 @@ public:
     double shadowsCosineSimSum = -1.0;
 
     void clear() {
+        peptideStringWithMods= "";
+        mzSearchedVec.clear();
+        theoIntensityVec.clear();
+        mzFoundMeanVec.clear();
+        mzFoundStDevVec.clear();
+        intensityFoundMaxVec.clear();
+        cosineSimToAnchorVec.clear();
+        cosineSimShadowsToAnchorVec.clear();
+        targetKey = "";
+        proteinGroup = "";
         cosineSimSum100 = -1.0;
         cosineSimSum45 = -1.0;
         cosineSimSum20 = -1.0;
+        isDecoy = false;
+        charge = -1;
+        mass = -1.0;
+        scanNumber = -1;
+        scanTime = -1.0;
+        scanIonCount = -1;
         klDivSum = -1.0;
         klDivSpectrum = -1.0;
         cosineSimSpectrum = -1.0;
@@ -178,12 +194,6 @@ public:
         cosineSim100MS1Iso2 = -1.0;
         scanTimePredicted = -1.0;
         iRTPredicted = -1.0;
-        mzSearchedVec.clear();
-        theoIntensityVec.clear();
-        mzFoundMeanVec.clear();
-        mzFoundStDevVec.clear();
-        intensityFoundMaxVec.clear();
-        cosineSimToAnchorVec.clear();
         theoFragmentCount = -1;
         discriminateScore = -1.0;
         qValue = 1.0;
@@ -199,7 +209,6 @@ public:
         b2Corr = -1.0;
         b3Corr = -1.0;
         b2b3CosineSimSum = -1.0;
-        cosineSimShadowsToAnchorVec.clear();
         shadowsCosineSimSum = -1.0;
     }
 
@@ -287,9 +296,7 @@ public:
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
         intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-//        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-//        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
@@ -299,7 +306,6 @@ public:
         cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
         cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
-//        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();

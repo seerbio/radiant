@@ -49,6 +49,15 @@ private:
 
     Err buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
 
+    Err setDiscriminateScoreForCandidates(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            int theoMzIonsSize
+            );
+
+    Err setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs);
+
     Err buildCandidates(
             int topNMs2Ions,
             double selectionListFraction,

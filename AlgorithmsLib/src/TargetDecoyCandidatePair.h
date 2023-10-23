@@ -36,12 +36,13 @@ public:
 
     ~TargetDecoyCandidatePair() = default;
 
-    CandidateScores* scoresTarget();
-    CandidateScores* scoresDecoy();
+    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresTarget();
+    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresDecoy();
 
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
+    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKey();
 
     [[nodiscard]] double mz() const;
     [[nodiscard]] double charge() const;
@@ -66,8 +67,8 @@ private:
     int m_totalFragmentCount;
     TargetDecoyCandidatePairIndex m_targetDecoyCandidatePairIndex;
 
-    CandidateScores m_scoresTarget;
-    CandidateScores m_scoresDecoy;
+    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresTarget;
+    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresDecoy;
 
 };
 
