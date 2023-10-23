@@ -752,3 +752,32 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
 
     ERR_RETURN
 }
+
+Err
+FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+        const QVector<TargetDecoyCandidatePair *> &_targetDecoyCandidatePairs,
+        double qValueThreshold,
+        QVector<TargetDecoyCandidatePair *> *targetDecoyCandidatePairsFDRThresholded
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(_targetDecoyCandidatePairs); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    *targetDecoyCandidatePairsFDRThresholded = _targetDecoyCandidatePairs;
+
+    const auto terminatorLogic = [qValueThreshold](TargetDecoyCandidatePair *tdp){
+        return tdp->candidateScoresBestDiscriminantScorePtrTarget()->qValue > qValueThreshold;
+    };
+
+    const auto terminator = std::remove_if(
+            targetDecoyCandidatePairsFDRThresholded->begin(),
+            targetDecoyCandidatePairsFDRThresholded->end(),
+            terminatorLogic
+            );
+
+    targetDecoyCandidatePairsFDRThresholded->erase(terminator, targetDecoyCandidatePairsFDRThresholded->end());
+
+    ERR_RETURN
+}

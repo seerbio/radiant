@@ -616,6 +616,7 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 
     const int topNMS2Ions = 6;
     const double calibrationTrainingFraction = 0.2;
+    const int minTrainingCount = 100;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
     e = targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
@@ -644,7 +645,17 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
             &fdrVsCount
             ); ree;
 
+    double fallBackFDR;
+    e = getBestFDRFraction(fdrVsCount, minTrainingCount, &fallBackFDR); ree;
+    qDebug() << "Fallback FDR" << fallBackFDR  << "Count" << fdrVsCount.value(QString::number(static_cast<int>(fallBackFDR * 100)));
 
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
+    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+            scoredTargetDecoyPointers,
+            fallBackFDR,
+            &scoredTargetDecoyPointersFDRThresholded
+        ); ree;
+        
     ERR_RETURN
 }
 

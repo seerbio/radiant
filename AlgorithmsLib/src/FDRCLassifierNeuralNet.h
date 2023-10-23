@@ -163,6 +163,12 @@ public:
             QMap<QString, int> *fdrVsCount
     );
 
+    static Err filterScoreCandidatesByFDR(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            double qValueThreshold,
+            QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsFDRThresholded
+            );
+
 private:
 
     Err trainClassifier(
