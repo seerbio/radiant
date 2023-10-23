@@ -14,6 +14,7 @@
 
 class CandidateScores;
 class MS2Ion;
+class MsFrame;
 class TargetDecoyCandidatePair;
 class XICPoints;
 
@@ -41,6 +42,7 @@ public:
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+            MsFrame *msFrame,
             CandidateScores *candidateScores
             );
 

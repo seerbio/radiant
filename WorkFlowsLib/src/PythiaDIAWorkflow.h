@@ -45,9 +45,17 @@ private:
 
     Err deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc);
 
-    Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
-
     Err buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
+
+    Err setTargetDecoyCandidateScores(
+            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+            int topNMS2Ions,
+            double calibrationTrainingFraction,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+            QMap<QString, int> *fdrVsCount
+            );
 
     Err setDiscriminateScoreForCandidates(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
@@ -57,18 +65,6 @@ private:
             );
 
     Err setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs);
-
-    Err buildCandidates(
-            int topNMs2Ions,
-            double selectionListFraction,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
-            );
-
-    Err buildCandidates(
-            const QVector<PeptideStringWithMods> &inclusionList,
-            int topNMs2Ions,
-            QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> *uniqueInfoScanKeyVsCandidatePeptide
-    );
 
     Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
 

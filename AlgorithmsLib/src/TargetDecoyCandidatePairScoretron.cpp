@@ -124,6 +124,7 @@ namespace {
             int topNMs2Ions,
             double ppmTol,
             double iRT,
+            MsFrame *msFrame,
             MsCalibratomatic *msCalibratomatic,
             TurboXIC *turboXic,
             CandidateScorertron *candidateScorertron,
@@ -212,6 +213,7 @@ namespace {
                 mzHashedVsXICPoints,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsXICPointsIsotopeShadows,
+                msFrame,
                 candidateScores
         ); ree;
 
@@ -256,6 +258,7 @@ namespace {
                     pi.pythiaParameters.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
+                    &msFrame,
                     &msCalibratomatic,
                     &turboXic,
                     &candidateScorertron,
@@ -272,6 +275,7 @@ namespace {
                     pi.pythiaParameters.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
+                    &msFrame,
                     &msCalibratomatic,
                     &turboXic,
                     &candidateScorertron,

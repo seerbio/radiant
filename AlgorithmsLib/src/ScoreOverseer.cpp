@@ -9,6 +9,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MS2Ion.h"
+#include "MsFrame.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
@@ -508,7 +509,7 @@ namespace {
             const QVector<MS2Ion> &ms2IonsCandidate,
             double *cosineSimSpectrum,
             double *klDivSpectrum
-    ) {
+            ) {
 
         ERR_INIT
 
@@ -641,6 +642,52 @@ namespace {
         ERR_RETURN
     }
 
+    Err calculateEmpiricalMzStats(
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            PeakIntegrationIndexes &bestPeakIntegrationIndexes,
+            QVector<double> *mzMeanValsFound,
+            QVector<double> *stdMeanValsFound,
+            QVector<double> *mzValsSearched,
+            QVector<double> *theoApexIntensity
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(
+                bestPeakIntegrationIndexes.second,
+                bestPeakIntegrationIndexes.first,
+                ErrorUtilsParam::ExcludeThreshold
+        ); ree;
+
+        e = calculateMassAccuracyMetrics(
+                mzHashedVsXICPoints100,
+                ms2IonsTheoretical,
+                bestPeakIntegrationIndexes,
+                mzMeanValsFound,
+                stdMeanValsFound,
+                mzValsSearched
+        ); ree;
+
+        QVector<QPair<double, double>> mzFoundVsMzSearched;
+        e = ParallelUtils::zip(
+                *mzMeanValsFound,
+                *mzValsSearched,
+                &mzFoundVsMzSearched
+        ); ree
+
+
+
+        std::transform(
+                ms2IonsTheoretical.begin(),
+                ms2IonsTheoretical.end(),
+                std::back_inserter(*theoApexIntensity),
+                [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+        );
+
+        ERR_RETURN
+    }
+
     QVector<double> calculatePeakShapeRatios(const Eigen::VectorX<double> &vec) {
 
         const Eigen::VectorX<double> vecTrimmed = EigenUtils::trimVector(vec);
@@ -665,6 +712,7 @@ Err ScoreOverseer::buildScores(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+        MsFrame *msFrame,
         CandidateScores *candidateScores
 ) {
 
@@ -716,6 +764,18 @@ Err ScoreOverseer::buildScores(
     ); ree;
 
 
+    e = calculateEmpiricalMzStats(
+            mzHashedVsXICPoints100,
+            targetDecoyCandidatePair->ms2IonsTarget(),
+            bestPeakIntegrationIndexes,
+            &candidateScores->mzFoundMeanVec,
+            &candidateScores->mzFoundStDevVec,
+            &candidateScores->mzSearchedVec,
+            &candidateScores->theoIntensityVec
+            ); ree;
+
+    candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
+    candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
 
 
 //    QVector<double> cosineSimsIndividualShadows;

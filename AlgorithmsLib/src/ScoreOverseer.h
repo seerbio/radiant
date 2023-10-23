@@ -16,6 +16,7 @@ using namespace Error;
 
 class CandidateScores;
 class MS2Ion;
+class MsFrame;
 class TargetDecoyCandidatePair;
 
 
@@ -40,6 +41,7 @@ public:
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+            MsFrame *msFrame,
             CandidateScores *candidateScores
     );
 
