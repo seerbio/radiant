@@ -49,7 +49,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
     extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
-    extern const QString FILEREADERSLIB_EXPORTS kFilterOutputs;
+    extern const QString FILEREADERSLIB_EXPORTS kFilterOutput;
 }
 
 

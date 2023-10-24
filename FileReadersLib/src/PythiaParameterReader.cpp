@@ -327,7 +327,7 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
         }
         else if (jsonKey == kFilterOutput){
             bool val = jsonValue.toBool();
-            pythiaParamters->filterOutput = val;
+            pythiaParameters->filterOutput = val;
         }
     }
 
