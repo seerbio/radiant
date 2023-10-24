@@ -57,7 +57,7 @@ private:
             QMap<QString, int> *fdrVsCount
             );
 
-    Err setDiscriminateScoreForCandidates(
+    Err setDiscriminantScoreForCandidates(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
@@ -66,7 +66,7 @@ private:
 
     Err setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs);
 
-    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
+    Err optimizeParameters(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
 
     Err mainAnalysis(
             MsReaderPointerAcc *msReaderPointerAcc,

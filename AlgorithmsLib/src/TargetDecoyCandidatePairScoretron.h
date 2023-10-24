@@ -44,6 +44,8 @@ public:
 
     bool isInit();
 
+    Err setPythiaParameters(const PythiaParameters &pythiaParameters);
+
 private:
 
     Err buildParallelInput(

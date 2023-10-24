@@ -157,21 +157,21 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&targetDecoyCandidatePairScoretron); ree;
 
-////#define BYPASS_OPTI
-//#ifndef BYPASS_OPTI
-//    e = optimizeParameters(&msReaderPointerAcc); ree;
-//#else
-//    //Pythia Main Library
-////    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
-////    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
-////    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-//
-//    //Entrapment libarary
-//    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-//    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
+//#define BYPASS_OPTI
+#ifndef BYPASS_OPTI
+    e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
+#else
+    //Pythia Main Library
+//    m_pythiaParameters.ms2ExtractionWidthPPM = 12.2715;
+//    m_pythiaParameters.scanTimeWindowMinutes = 1.79397;
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
-//#endif
-//
+
+    //Entrapment libarary
+    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
+    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
+    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+#endif
+
 ////#define BYPASS_MAIN_ANALYSIS
 //#ifndef BYPASS_MAIN_ANALYSIS
 //
@@ -388,14 +388,13 @@ namespace {
 
                 e = ErrorUtils::isTrue(tdc->uniqueInfoScanKeyVsScoresDecoy()->contains(key)); ree;
 
-
                 const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
                         tdc->uniqueInfoScanKeyVsScoresTarget()->value(key),
                         useExtendedScores,
                         useNeuralNetworkScores,
                         theoMzIonsSize,
                         scanTimeMinMax
-                ); ree;
+                        ); ree;
 
                 const ScoresDecoys scoresDecoys = FDRCLassifierNeuralNet::buildScoreVector(
                         tdc->uniqueInfoScanKeyVsScoresDecoy()->value(key),
@@ -403,7 +402,7 @@ namespace {
                         useNeuralNetworkScores,
                         theoMzIonsSize,
                         scanTimeMinMax
-                ); ree;
+                        ); ree;
 
                 TargetDecoyPairTargetKey targetDecoyPairTargetKey;
                 targetDecoyPairTargetKey.targetDecoyCandidatePair = tdc;
@@ -564,7 +563,7 @@ Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
             scoredTargetDecoyPointers
     ); ree;
 
-    e = setDiscriminateScoreForCandidates(
+    e = setDiscriminantScoreForCandidates(
             *scoredTargetDecoyPointers,
             useExtendedScores,
             useNeuralNetworkScores,
@@ -582,7 +581,7 @@ Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
     ERR_RETURN
 }
 
-Err PythiaDIAWorkflow::setDiscriminateScoreForCandidates(
+Err PythiaDIAWorkflow::setDiscriminantScoreForCandidates(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
@@ -877,57 +876,54 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc) {
+Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron) {
 
     ERR_INIT
 
-//    const int topNMs2IonsOptimization = std::max(
-//            m_minTopNMs2Ions,
-//            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
-//    );
-//
-//    qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
-//
-//    const double selectionFractionValue = 0.1;
-//    const double fdrThreshold = 0.01;
-//
-//    QVector<PythiaParameters> pythiaParametersExperiments;
-//    e = buildDOE(
-//            m_pythiaParameters,
-//            m_msCalibratomatic.mzStDev(),
-//            m_msCalibratomatic.scanTimeStDev(),
-//            &pythiaParametersExperiments
-//            ); ree;
-//
-//    const bool useExtendedScores = true;
-//    const bool useNeuralNetworkScores = false;
-//
-//    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptideCalibration;
-//    e = buildCandidates(
-//            topNMs2IonsOptimization,
-//            selectionFractionValue,
-//            &uniqueInfoScanKeyVsCandidatePeptideCalibration
-//    ); ree;
-//
-//    QVector<DOEResult> results;
-//    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
-//
-//        MS2DataExtractomatic ms2DataExtractomatic;
-//        e = ms2DataExtractomatic.init(
-//                pythiaParams,
-//                topNMs2IonsOptimization,
-//                useExtendedScores,
-//                useNeuralNetworkScores,
-//                msReaderPointerAcc,
-//                m_msCalibratomatic
-//        ); ree;
-//
-//        QVector<ScoredCandidate> scoredCandidatesAll;
-//        e = ms2DataExtractomatic.extractMS2ForCandidates(
-//                uniqueInfoScanKeyVsCandidatePeptideCalibration,
-//                &scoredCandidatesAll
-//                ); ree;
-//
+    const int topNMs2IonsOptimization = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions / 2.0))
+    );
+
+    qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
+
+    const double selectionFractionValue = 0.1;
+    const double fdrThreshold = 0.01;
+
+    QVector<PythiaParameters> pythiaParametersExperiments;
+    e = buildDOE(
+            m_pythiaParameters,
+            m_msCalibratomatic.mzStDev(),
+            m_msCalibratomatic.scanTimeStDev(),
+            &pythiaParametersExperiments
+            ); ree;
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+    const int minTrainingCount = 100;
+
+    QVector<DOEResult> results;
+    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+
+        e = targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
+
+        QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+        QMap<QString, int> fdrVsCount;
+        e = setTargetDecoyCandidateScores(
+                targetDecoyCandidatePairScoretron,
+                m_minTopNMs2Ions,
+                selectionFractionValue,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                &scoredTargetDecoyPointers,
+                &fdrVsCount
+                ); ree;
+
+        double fallBackFDR;
+        e = getBestFDRFraction(fdrVsCount, minTrainingCount, &fallBackFDR); ree;
+        qDebug() << "Fallback FDR" << fallBackFDR  << "Count" << fdrVsCount.value(QString::number(static_cast<int>(fallBackFDR * 100)));
+
+
 //       int targetCountAboveFDRQValueThreshold;
 //        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
 //                scoredCandidatesAll,
@@ -941,19 +937,19 @@ Err PythiaDIAWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc
 //        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
 //        res.fdrCount = targetCountAboveFDRQValueThreshold;
 //        results.push_back(res);
-//    }
-//
-//    e = getTopFrequencyParameters(
-//            &results,
-//            &m_pythiaParameters.ms2ExtractionWidthPPM,
-//            &m_pythiaParameters.scanTimeWindowMinutes,
-//            &m_pythiaParameters.cosineSimToAnchorThreshold
-//            ); ree;
-//
-//    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-//    qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
-//    qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
-//
+    }
+
+    e = getTopFrequencyParameters(
+            &results,
+            &m_pythiaParameters.ms2ExtractionWidthPPM,
+            &m_pythiaParameters.scanTimeWindowMinutes,
+            &m_pythiaParameters.cosineSimToAnchorThreshold
+            ); ree;
+
+    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
+    qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
+    qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
+
 //    //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
 ////    const DOEResult bestParametersFDR = *std::max_element(
 ////            results.rbegin(),

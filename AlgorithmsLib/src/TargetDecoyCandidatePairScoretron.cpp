@@ -181,8 +181,8 @@ namespace {
             ); ree;
 
             // TODO set these when calibration is working
-            ScanNumber scanNumberPredictedMin = -1;
-            ScanNumber scanNumberPredictedMax = -1;
+            ScanNumber scanNumberPredictedMin = msFrame->scanNumberFromScanTime(scanTimePredicted - );
+            ScanNumber scanNumberPredictedMax = msFrame->scanNumberFromScanTime(scanTimePredicted + );
 
             e = extractMS2Ions(
                     ms2IonsTheoretical,
@@ -399,5 +399,12 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
 
     }
 
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretron::setPythiaParameters(const PythiaParameters &pythiaParameters) {
+    ERR_INIT
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    m_pythiaParameters = pythiaParameters;
     ERR_RETURN
 }
