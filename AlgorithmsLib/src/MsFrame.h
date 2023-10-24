@@ -73,8 +73,8 @@ public:
 
     friend class MsFrameTests;
 
-    MsFrame() = default;
-    ~MsFrame() = default;
+    MsFrame();
+    ~MsFrame();
 
     Err init(
             const QMap<ScanNumber, ScanPoints> &scanPoints,
@@ -100,13 +100,19 @@ public:
 
     [[nodiscard]] ScanNumber scanNumberFromScanTime(ScanTime scanTime) const;
 
+    [[nodiscard]] Err frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) const;
+
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
+
+
 private:
 
     Err buildFrameIndexVsScanNumber();
+
+    Err initFrameIndexVsScanTimeKDTree();
 
 private:
 
@@ -114,6 +120,9 @@ private:
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+
+    Q_DISABLE_COPY(MsFrame) class Private;
+    const QScopedPointer<Private> d_ptr;
 
 };
 

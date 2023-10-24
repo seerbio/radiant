@@ -69,8 +69,8 @@ Err CandidateProcessertron::init(
     m_mzHashedVsXICPointsB2B3 = mzHashedVsXICPointsB2B3;
     m_mzHashedVsIonPresence = mzHashedVsIonPresence;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
-    m_msFrame = msFrame;
-    m_msFrameMS1 = msFrameMS1;
+//    m_msFrame = msFrame;
+//    m_msFrameMS1 = msFrameMS1;
     m_uniqueMsInfoScanKey = uniqueMsInfoScanKey;
     m_topNMS2Ions = topNMS2Ions;
 

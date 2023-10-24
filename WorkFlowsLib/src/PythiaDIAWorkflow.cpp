@@ -847,22 +847,26 @@ namespace {
             qDebug() << r.ppm << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
         }
 
-        const int topNResults = 5;
-        results->resize(topNResults);
-
-        QMap<QString, int> ppmCounts;
-        QMap<QString, int> scanTimeWidthCounts;
-        QMap<QString, int> cosineSimCounts;
-        for (const DOEResult &r : *results) {
-
-            const QString ppmString = QString::number(r.ppm);
-            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
-            const QString cosineSimString = QString::number(r.cosineSimAnchor);
-
-            ppmCounts[ppmString]++;
-            scanTimeWidthCounts[scanTimeWidthString]++;
-            cosineSimCounts[cosineSimString]++;
-        }
+        *ppmSetting = results->front().ppm;
+        *scanTimeWidthSetting = results->front().scanTimeStDev;
+        *cosineSimSetting = results->front().cosineSimAnchor;
+        
+//        const int topNResults = 5;
+//        results->resize(topNResults);
+//
+//        QMap<QString, int> ppmCounts;
+//        QMap<QString, int> scanTimeWidthCounts;
+//        QMap<QString, int> cosineSimCounts;
+//        for (const DOEResult &r : *results) {
+//
+//            const QString ppmString = QString::number(r.ppm);
+//            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
+//            const QString cosineSimString = QString::number(r.cosineSimAnchor);
+//
+//            ppmCounts[ppmString]++;
+//            scanTimeWidthCounts[scanTimeWidthString]++;
+//            cosineSimCounts[cosineSimString]++;
+//        }
 
 //        const QVector<QPair<QString, int>> ppmCountsVector = ParallelUtils::convertMapToVectorPairs(ppmCounts);
 //        const QVector<QPair<QString, int>> scanTimeWidthCountsVector = ParallelUtils::convertMapToVectorPairs(scanTimeWidthCounts);
@@ -924,19 +928,19 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
         qDebug() << "Fallback FDR" << fallBackFDR  << "Count" << fdrVsCount.value(QString::number(static_cast<int>(fallBackFDR * 100)));
 
 
-//       int targetCountAboveFDRQValueThreshold;
-//        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//                scoredCandidatesAll,
-//                fdrThreshold,
-//                &targetCountAboveFDRQValueThreshold
-//                ); ree;
-//
-//        DOEResult res;
-//        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-//        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
-//        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
-//        res.fdrCount = targetCountAboveFDRQValueThreshold;
-//        results.push_back(res);
+       int targetCountAboveFDRQValueThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                scoredTargetDecoyPointers,
+                fdrThreshold,
+                &targetCountAboveFDRQValueThreshold
+                ); ree;
+
+        DOEResult res;
+        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
+        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
+        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
+        res.fdrCount = targetCountAboveFDRQValueThreshold;
+        results.push_back(res);
     }
 
     e = getTopFrequencyParameters(

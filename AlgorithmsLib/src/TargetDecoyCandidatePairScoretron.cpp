@@ -95,8 +95,8 @@ namespace {
 
     Err extractMS2Ions(
             const QVector<MS2Ion> &ms2Ions,
-            int scanNumberMin,
-            int scanNumberMax,
+            FrameIndex frameIndexMin,
+            FrameIndex frameIndexMax,
             double ppmTol,
             TurboXIC *turboXic,
             QMap<MzHashed, XICPoints> *xicPointMap
@@ -107,8 +107,8 @@ namespace {
         QMap<MzHashed, XICPoints> cachedPoints;
         e = extractMS2Ions(
                 ms2Ions,
-                scanNumberMin,
-                scanNumberMax,
+                frameIndexMin,
+                frameIndexMax,
                 ppmTol,
                 turboXic,
                 &cachedPoints,
@@ -124,6 +124,7 @@ namespace {
             int topNMs2Ions,
             double ppmTol,
             double iRT,
+            double scanTimeWindowMinutes,
             MsFrame *msFrame,
             MsCalibratomatic *msCalibratomatic,
             TurboXIC *turboXic,
@@ -135,17 +136,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(ms2IonsTargetOrDecoyTheoretical); ree;
-
-        double scanNumberRtreeMin;
-        double scanNumberRtreeMax;
-        double mzRtreeMin;
-        double mzRtreeMax;
-        e = turboXic->getRTreeLimits(
-                &scanNumberRtreeMin,
-                &scanNumberRtreeMax,
-                &mzRtreeMin,
-                &mzRtreeMax
-        ); ree;
 
         QVector<MS2Ion> ms2IonsTheoretical = ms2IonsTargetOrDecoyTheoretical;
         const int topNTarget = std::min(topNMs2Ions, ms2IonsTheoretical.size());
@@ -181,13 +171,22 @@ namespace {
             ); ree;
 
             // TODO set these when calibration is working
-            ScanNumber scanNumberPredictedMin = msFrame->scanNumberFromScanTime(scanTimePredicted - );
-            ScanNumber scanNumberPredictedMax = msFrame->scanNumberFromScanTime(scanTimePredicted + );
+            FrameIndex frameIndexPredictedMin;
+            e = msFrame->frameIndexFromScanTime(
+                    scanTimePredicted - scanTimeWindowMinutes,
+                    &frameIndexPredictedMin
+                    ); ree;
+
+            FrameIndex frameIndexPredictedMax;
+            e = msFrame->frameIndexFromScanTime(
+                    scanTimePredicted + scanTimeWindowMinutes,
+                    &frameIndexPredictedMax
+                    ); ree;
 
             e = extractMS2Ions(
                     ms2IonsTheoretical,
-                    scanNumberPredictedMin,
-                    scanNumberPredictedMax,
+                    frameIndexPredictedMin,
+                    frameIndexPredictedMax,
                     ppmTol,
                     turboXic,
                     &mzHashedVsXICPoints
@@ -195,10 +194,21 @@ namespace {
 
         } else {
 
+            double frameIndexRtreeMin;
+            double frameIndexRtreeMax;
+            double mzRtreeMin;
+            double mzRtreeMax;
+            e = turboXic->getRTreeLimits(
+                    &frameIndexRtreeMin,
+                    &frameIndexRtreeMax,
+                    &mzRtreeMin,
+                    &mzRtreeMax
+            ); ree;
+
             e = extractMS2Ions(
                     ms2IonsTheoretical,
-                    static_cast<ScanNumber>(scanNumberRtreeMin),
-                    static_cast<ScanNumber>(scanNumberRtreeMax),
+                    static_cast<FrameIndex>(frameIndexRtreeMin),
+                    static_cast<FrameIndex>(frameIndexRtreeMax),
                     ppmTol,
                     turboXic,
                     cachedPoints,
@@ -258,6 +268,7 @@ namespace {
                     pi.pythiaParameters.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
+                    pi.pythiaParameters.scanTimeWindowMinutes,
                     &msFrame,
                     &msCalibratomatic,
                     &turboXic,
@@ -275,6 +286,7 @@ namespace {
                     pi.pythiaParameters.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
+                    pi.pythiaParameters.scanTimeWindowMinutes,
                     &msFrame,
                     &msCalibratomatic,
                     &turboXic,
