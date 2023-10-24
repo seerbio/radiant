@@ -241,6 +241,17 @@ ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {
 
     const int closestIndex = MathUtils::closest(scanTimes, scanTime);
 
+    Err e = ErrorUtils::isAboveThreshold(
+            closestIndex,
+            0,
+            ErrorUtilsParam::IncludeThreshold
+    ); ree;
+    e = ErrorUtils::isBelowThreshold(
+            closestIndex,
+            static_cast<int>(scanNumbers.size()),
+            ErrorUtilsParam::ExcludeThreshold
+    ); ree;
+
     return scanNumbers.at(closestIndex);
 }
 
