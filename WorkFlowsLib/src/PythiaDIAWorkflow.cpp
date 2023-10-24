@@ -216,14 +216,17 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 
-    QVector<ScoredCandidate> scoredCandidatesAllThresholded;
-    filterScoreCandidatesByFDR(
-            scoredCandidatesClassifierUpdated,
-            0.01,
-            true,
-            &scoredCandidatesAllThresholded
-    );
-    scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+    bool filterOutput = m_pythiaParameters.filterOutput;
+    if (filterOutput) {
+        QVector <ScoredCandidate> scoredCandidatesAllThresholded;
+        filterScoreCandidatesByFDR(
+                scoredCandidatesClassifierUpdated,
+                0.01,
+                true, // exclude decoys
+                &scoredCandidatesAllThresholded
+        );
+        scoredCandidatesClassifierUpdated = scoredCandidatesAllThresholded;
+    }
 
     e = updateProteinGroupAnnotation(
             m_fastaUri,

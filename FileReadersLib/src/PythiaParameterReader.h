@@ -49,6 +49,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
     extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
+    extern const QString FILEREADERSLIB_EXPORTS kFilterOutputs;
 }
 
 
@@ -104,7 +105,6 @@ public:
 
 
 struct PythiaParameters{
-    //TODO make an is valid method to check and see if all values are initiated.
     int trancheSize = 16;
 
     QStringList nTermCleavePoints;
@@ -147,6 +147,8 @@ struct PythiaParameters{
     double cosineSimToAnchorThreshold = 0.97;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
+
+    bool filterOutput = true;
 
 
     [[nodiscard]] bool isValid() const {
@@ -236,6 +238,8 @@ struct PythiaParameters{
         qDebug() << "cosineSimToAnchorThreshold" << cosineSimToAnchorThreshold;
         qDebug() << "scanTimeWindowMinutes" << scanTimeWindowMinutes;
         qDebug() << "deisotopeScans" << deisotopeScans;
+
+        qDebug() << PythiaParameterReaderConstants::kFilterOutput << filterOutput;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

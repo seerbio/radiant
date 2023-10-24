@@ -122,6 +122,8 @@ namespace PythiaParameterReaderConstants {
     const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
 
+    const QString kFilterOutput = QStringLiteral("filterOutput");
+
 }
 
 
@@ -323,6 +325,11 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->minFoundMzPeaks = val;
         }
+        else if (jsonKey == kFilterOutput){
+            bool val;
+            e = ErrorUtils::toBool(jsonValue, &val); ree;
+            pythiaParamters->filterOutput = val;
+        }
     }
 
     e = applyFixedModificationsToAminoAcids(
@@ -427,6 +434,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
     pythiaParameters.pValThreshold = 0.05;
+    pythiaParameters.filterOutput = true;
 
     Modification carboxyAmidoMethyl(
             'C',

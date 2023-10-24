@@ -217,10 +217,10 @@ namespace {
         ERR_INIT
 
         for (const ScoredCandidate &sc : scoredCandidatesAllFullFragIons) {
-
-            if (sc.isDecoy) {
-                continue;
-            }
+            // Note: rescore decoys; they will be filtered later
+            //if (sc.isDecoy) {
+            //    continue;
+            //}
 
             const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
                     sc.peptideStringWithMods,
