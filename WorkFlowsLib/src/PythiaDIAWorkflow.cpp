@@ -111,7 +111,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-//#define USE_FILE_CACHING
+#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -1316,6 +1316,13 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
             &peptideStringWithModsVsFastaEntries
             ); ree;
 
+    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
+    for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
+        QString peptideSeqReplacedLeucines = it.key();
+        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+        peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
+    }
+
     for (int i = 0; i < scoredCandidates->size(); i++) {
 
         ScoredCandidate &sc = (*scoredCandidates)[i];
@@ -1323,7 +1330,7 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
         QString peptideSeqReplacedLeucines = sc.peptideStringWithMods;
         peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
 
-        const QVector<FastaEntry> fastaEntries = peptideStringWithModsVsFastaEntries.value(peptideSeqReplacedLeucines);
+        const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
 
         QStringList fastaDescriptions;
         std::transform(
