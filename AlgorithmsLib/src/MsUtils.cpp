@@ -417,9 +417,7 @@ int MsUtils::getCenterPointIndex(
             [](const QPointF &p){return p.x();}
     );
 
-    int closestIndex = MathUtils::closest(mzVals, mzCenterPoint.x());
-
-    return closestIndex;
+    return MathUtils::closest(mzVals, mzCenterPoint.x());
 }
 
 namespace {
@@ -455,17 +453,6 @@ namespace {
         std::copy(extractedScanPoints.begin(), extractedScanPoints.end(), extractedPointsFilled->begin());
 
         *startCenterPointIdxOG = MsUtils::getCenterPointIndex(*extractedPointsFilled, mzCenterPoint);
-
-        e = ErrorUtils::isAboveThreshold(
-                *startCenterPointIdxOG,
-                0,
-                ErrorUtilsParam::IncludeThreshold
-        ); ree;
-        e = ErrorUtils::isBelowThreshold(
-                *startCenterPointIdxOG,
-                static_cast<int>(extractedPointsFilled->size()),
-                ErrorUtilsParam::ExcludeThreshold
-        ); ree;
 
         e = ErrorUtils::isTrue(
                 MathUtils::tZero(extractedPointsFilled->at(*startCenterPointIdxOG).x() - mzCenterPoint.x())

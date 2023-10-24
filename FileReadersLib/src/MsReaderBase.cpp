@@ -128,17 +128,6 @@ int MsReaderBase::getNearestScanNumberFromScanTime(double scanTime) {
 
     const QVector<ScanNumber> keys = m_msScanInfo.keys().toVector();
 
-    Err e = ErrorUtils::isAboveThreshold(
-            nearestIndex,
-            0,
-            ErrorUtilsParam::IncludeThreshold
-    ); ree;
-    e = ErrorUtils::isBelowThreshold(
-            nearestIndex,
-            static_cast<int>(keys.size()),
-            ErrorUtilsParam::ExcludeThreshold
-    ); ree;
-
     return keys.at(nearestIndex);
 }
 
@@ -154,17 +143,6 @@ int MsReaderBase::getNearestScanNumberFromScanNumber(int scanNumber) {
     }
 
     const int nearestIndex = MathUtils::closest(m_scanNumbers, scanNumber);
-
-    Err e = ErrorUtils::isAboveThreshold(
-            nearestIndex,
-            0,
-            ErrorUtilsParam::IncludeThreshold
-    ); ree;
-    e = ErrorUtils::isBelowThreshold(
-            nearestIndex,
-            static_cast<int>(m_scanNumbers.size()),
-            ErrorUtilsParam::ExcludeThreshold
-    ); ree;
 
     return m_scanNumbers.at(nearestIndex);
 }

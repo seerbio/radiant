@@ -169,17 +169,13 @@ public:
 
     template<typename T>
     static int closest(const QVector<T> &vec, T value) {
-        if (vec.isEmpty()) {
-            // short-circuit instead of calling min_element
-            return -1;
-        }
 
+        assert(!vec.isEmpty());
         auto it = std::min_element(vec.begin(), vec.end(), [value] (double a, double b) {
             return std::abs(a - value) <= std::abs(b - value);
         });
 
         if(it == vec.end()) {
-            // should never happen; this is how min_element handles an empty range
             return -1;
         }
 

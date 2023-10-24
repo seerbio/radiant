@@ -510,11 +510,6 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isAboveThreshold(
-                bestApexRowIndex,
-                0,
-                ErrorUtilsParam::IncludeThreshold
-        ); ree;
         e = ErrorUtils::isBelowThreshold(
                 bestApexRowIndex,
                 static_cast<int>(vec->rows()),
