@@ -236,27 +236,29 @@ public:
             computeAndInsertQValue(
                     identifier,
                     score,
+                    identifierVsTarget.size(),
                     &targetScores,
                     &decoyScores,
                     identifierVsQValue,
-                    identifierVsDecoyRatio,
+                    identifierVsDecoyRatio
                     );
         }
 
         // Also compute qValue for decoy PSMs; this ensures they're included in our results
         // TODO: consider only doing this if they'll be used (i.e. filterOutput == false)
-        for (auto it = identifierVsDecoy.begin(); it != identifierVsDecoy.end(); it++) {
+        for (auto it = identifierVsDecoys.begin(); it != identifierVsDecoys.end(); it++) {
             const Identifier &identifier = it.key();
             double score = it.value();
 
             computeAndInsertQValue(
                     identifier,
                     score,
+                    identifierVsTarget.size(),
                     &targetScores,
                     &decoyScores,
                     identifierVsQValue,
-                    identifierVsDecoyRatio,
-            );
+                    identifierVsDecoyRatio
+                    );
         }
 
         ERR_RETURN
@@ -264,34 +266,36 @@ public:
 
     template<typename Identifier>
     static void computeAndInsertQValue(
-            Identifier *identifier,
+            Identifier identifier,
             double score,
+            int totalTargets,
             QVector<double> *targetScores,
             QVector<double> *decoyScores,
             QMap<Identifier, double> *identifierVsQValue,
             QMap<Identifier, double> *identifierVsDecoyRatio
             ) {
-        auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
-        const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
 
-        auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
-        if (decoyIndexLowest > decoyScores.begin()) {
-            if (*(decoyIndexLowest - 1) > decoyScores.front()) {
+        auto targetIndexLowest = std::lower_bound(targetScores->begin(), targetScores->end(), score);
+        const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores->end());
+
+        auto decoyIndexLowest = std::lower_bound(decoyScores->begin(), decoyScores->end(), score);
+        if (decoyIndexLowest > decoyScores->begin()) {
+            if (*(decoyIndexLowest - 1) > decoyScores->front()) {
                 score = *(--decoyIndexLowest);
             }
         }
 
-        targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+        targetIndexLowest = std::lower_bound(targetScores->begin(), targetScores->end(), score);
 
-        const long targetCount = std::distance(targetIndexLowest, targetScores.end());
-        const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
+        const long targetCount = std::distance(targetIndexLowest, targetScores->end());
+        const long decoyCount = std::distance(decoyIndexLowest, decoyScores->end());
 
         const double qvalue
                 = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
         identifierVsQValue->insert(identifier, qvalue);
 
         const double decoyRatio
-                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, totalTargets))));
         identifierVsDecoyRatio->insert(identifier, decoyRatio);
     }
 
