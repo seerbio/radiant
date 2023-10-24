@@ -230,36 +230,69 @@ public:
         std::sort(decoyScores.begin(), decoyScores.end());
 
         for (auto it = identifierVsTarget.begin(); it != identifierVsTarget.end(); it++) {
-
             const Identifier &identifier = it.key();
             double score = it.value();
 
-            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
-            const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
+            computeAndInsertQValue(
+                    identifier,
+                    score,
+                    &targetScores,
+                    &decoyScores,
+                    identifierVsQValue,
+                    identifierVsDecoyRatio,
+                    );
+        }
 
-            auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
-            if (decoyIndexLowest > decoyScores.begin()) {
-                if (*(decoyIndexLowest - 1) > decoyScores.front()) {
-                    score = *(--decoyIndexLowest);
-                }
-            }
+        // Also compute qValue for decoy PSMs; this ensures they're included in our results
+        // TODO: consider only doing this if they'll be used (i.e. filterOutput == false)
+        for (auto it = identifierVsDecoy.begin(); it != identifierVsDecoy.end(); it++) {
+            const Identifier &identifier = it.key();
+            double score = it.value();
 
-            targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
-
-            const long targetCount = std::distance(targetIndexLowest, targetScores.end());
-            const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
-
-            const double qvalue
-                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
-            identifierVsQValue->insert(identifier, qvalue);
-
-            const double decoyRatio
-                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
-            identifierVsDecoyRatio->insert(identifier, decoyRatio);
-
+            computeAndInsertQValue(
+                    identifier,
+                    score,
+                    &targetScores,
+                    &decoyScores,
+                    identifierVsQValue,
+                    identifierVsDecoyRatio,
+            );
         }
 
         ERR_RETURN
+    }
+
+    template<typename Identifier>
+    static void computeAndInsertQValue(
+            Identifier *identifier,
+            double score,
+            QVector<double> *targetScores,
+            QVector<double> *decoyScores,
+            QMap<Identifier, double> *identifierVsQValue,
+            QMap<Identifier, double> *identifierVsDecoyRatio
+            ) {
+        auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+        const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
+
+        auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
+        if (decoyIndexLowest > decoyScores.begin()) {
+            if (*(decoyIndexLowest - 1) > decoyScores.front()) {
+                score = *(--decoyIndexLowest);
+            }
+        }
+
+        targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+
+        const long targetCount = std::distance(targetIndexLowest, targetScores.end());
+        const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
+
+        const double qvalue
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
+        identifierVsQValue->insert(identifier, qvalue);
+
+        const double decoyRatio
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
+        identifierVsDecoyRatio->insert(identifier, decoyRatio);
     }
 
     static QMap<int, bool> generateRandomSelectionList(
