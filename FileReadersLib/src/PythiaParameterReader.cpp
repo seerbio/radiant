@@ -326,8 +326,7 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             pythiaParameters->minFoundMzPeaks = val;
         }
         else if (jsonKey == kFilterOutput){
-            bool val;
-            e = ErrorUtils::toBool(jsonValue, &val); ree;
+            bool val = jsonValue.toBool();
             pythiaParamters->filterOutput = val;
         }
     }
