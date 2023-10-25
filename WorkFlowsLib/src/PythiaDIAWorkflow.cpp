@@ -172,6 +172,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 #endif
 
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    e = mainAnalysis(
+            &targetDecoyCandidatePairScoretron,
+            &scoredTargetDecoyPointers
+            ); ree;
+
 ////#define BYPASS_MAIN_ANALYSIS
 //#ifndef BYPASS_MAIN_ANALYSIS
 //
@@ -502,7 +508,7 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = 0.05;
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
 
@@ -796,6 +802,12 @@ namespace {
             pythiaParametersExperiments->push_back(params);
         }
 
+        for (const PythiaParameters &pp : *pythiaParametersExperiments) {
+            qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM
+                     << "scanTimeWinMin" << pp.scanTimeWindowMinutes
+                     << "cosineSimSumAnchThreshold" << pp.cosineSimToAnchorThreshold;
+        }
+
         ERR_RETURN
     }
 
@@ -917,6 +929,10 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
+        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM
+                 << "scanTimeWinMin" << pythiaParams.scanTimeWindowMinutes
+                 << "cosineSimSumAnchThreshold" << pythiaParams.cosineSimToAnchorThreshold;
+
         e = targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
 
         QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
@@ -978,47 +994,46 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 }
 
 Err PythiaDIAWorkflow::mainAnalysis(
-        MsReaderPointerAcc *msReaderPointerAcc,
-        QVector<ScoredCandidate> *scoredCandidatesAll
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
         ) {
 
     ERR_INIT
 
-//    m_pythiaParameters.print();
-//
-//    const double selectionFractionBypassValue = -1.0;
-//
-//    const int topNMs2IonsMainAnalysis = std::max(
-//            m_minTopNMs2Ions,
-//            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-//    );
-//
-//    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
-//
-//    QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> uniqueInfoScanKeyVsCandidatePeptides;
-//    e = buildCandidates(
-//            topNMs2IonsMainAnalysis,
-//            selectionFractionBypassValue,
-//            &uniqueInfoScanKeyVsCandidatePeptides
-//    ); ree;
-//
-//    const bool useExtendedScores = true;
-//    const bool useNeuralNetworkScores = false;
-//
-//    MS2DataExtractomatic ms2DataExtractomatic;
-//    e = ms2DataExtractomatic.init(
-//            m_pythiaParameters,
-//            topNMs2IonsMainAnalysis,
-//            useExtendedScores,
-//            useNeuralNetworkScores,
-//            msReaderPointerAcc,
-//            m_msCalibratomatic
-//            ); ree;
-//
-//    e = ms2DataExtractomatic.extractMS2ForCandidates(
-//            uniqueInfoScanKeyVsCandidatePeptides,
-//            scoredCandidatesAll
-//    ); ree;
+    e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
+
+    m_pythiaParameters.print();
+
+    const double selectionFractionBypassValue = -1.0;
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+
+    const int topNMs2IonsMainAnalysis = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
+    );
+
+    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+
+    QMap<QString, int> fdrVsCount;
+    e = setTargetDecoyCandidateScores(
+            targetDecoyCandidatePairScoretron,
+            m_minTopNMs2Ions,
+            selectionFractionBypassValue,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            scoredTargetDecoyPointers,
+            &fdrVsCount
+    ); ree;
+
+    const double fdrFraction = 0.01;
+
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
+    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+            *scoredTargetDecoyPointers,
+            fdrFraction,
+            &scoredTargetDecoyPointersFDRThresholded
+    ); ree;
 
     ERR_RETURN
 }

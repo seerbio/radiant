@@ -69,8 +69,8 @@ private:
     Err optimizeParameters(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
 
     Err mainAnalysis(
-            MsReaderPointerAcc *msReaderPointerAcc,
-            QVector<ScoredCandidate> *scoredCandidatesAll
+            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
             );
 
     Err removeInterferingCandidates(
