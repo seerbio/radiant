@@ -147,7 +147,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &msReaderPointerAcc,
             &diaTargetFrame,
             &m_targetDecoyCandidatePairManager
-    );
+            );
 
 #ifndef USE_FILE_CACHING
 //    if (m_pythiaParameters.deisotopeScans) {
