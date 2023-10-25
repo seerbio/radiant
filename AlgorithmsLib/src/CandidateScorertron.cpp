@@ -199,6 +199,7 @@ Err CandidateScorertron::calculateScores(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
 
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
     e = buildMzHashedVsIonPresence(
@@ -216,10 +217,6 @@ Err CandidateScorertron::calculateScores(
             m_topNMS2Ions
     );
 
-    if (presenceMatrix.rows() == 0) {
-        ERR_RETURN
-    }
-
     const Eigen::VectorX<double> summedPresenceMatrixVec = presenceMatrix.rowwise().sum();
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedPresenceMatrixVec);
 
@@ -230,9 +227,9 @@ Err CandidateScorertron::calculateScores(
             &peakIntegrationIndexes
     ); ree;
 
-    if (peakIntegrationIndexes.isEmpty()) {
-        ERR_RETURN
-    }
+//    if (peakIntegrationIndexes.isEmpty()) {
+//        ERR_RETURN
+//    }
 
     ScoreOverseer scoreOverseer(
             m_topNMS2Ions,

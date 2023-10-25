@@ -49,8 +49,8 @@ public:
 private:
 
     Err buildParallelInput(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
             int topNMS2Ions,
-            double randomSelectionFraction,
             const MsCalibratomatic &msCalibratomatic,
             QVector<TargetDecoyPairParallelInput> *input
             );

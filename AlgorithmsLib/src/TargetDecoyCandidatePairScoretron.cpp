@@ -170,7 +170,6 @@ namespace {
                     &scanTimePredicted
             ); ree;
 
-            // TODO set these when calibration is working
             FrameIndex frameIndexPredictedMin;
             e = msFrame->frameIndexFromScanTime(
                     scanTimePredicted - scanTimeWindowMinutes,
@@ -190,6 +189,15 @@ namespace {
                     ppmTol,
                     turboXic,
                     &mzHashedVsXICPoints
+                    ); ree;
+
+            e = extractMS2Ions(
+                    ms2IonsTheoreticalIsotopeShadows,
+                    frameIndexPredictedMin,
+                    frameIndexPredictedMax,
+                    ppmTol,
+                    turboXic,
+                    &mzHashedVsXICPointsIsotopeShadows
             ); ree;
 
         } else {
@@ -203,7 +211,7 @@ namespace {
                     &frameIndexRtreeMax,
                     &mzRtreeMin,
                     &mzRtreeMax
-            ); ree;
+                    ); ree;
 
             e = extractMS2Ions(
                     ms2IonsTheoretical,
@@ -213,7 +221,7 @@ namespace {
                     turboXic,
                     cachedPoints,
                     &mzHashedVsXICPoints
-            ); ree;
+                    ); ree;
 
         }
 
@@ -277,8 +285,6 @@ namespace {
                     &candidateScoresTarget
                     ); ree;
 
-            targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
-
             CandidateScores candidateScoresDecoy;
             e = extractScores(
                     targetDecoyPtr,
@@ -296,7 +302,7 @@ namespace {
             ); ree;
 
             targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
-
+            targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
         }
 
         qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
@@ -321,10 +327,27 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     e = m_targetDecoyCandidatePairManager->clearScores(); ree;
 
+    if (randomSelectionFraction < 0) {
+        e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
+                m_pythiaParameters.mzMinDataStructure,
+                m_pythiaParameters.mzMaxDataStructure,
+                scoredTargetDecoyPointers
+        ); ree;
+
+    } else {
+        e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
+                m_pythiaParameters.mzMinDataStructure,
+                m_pythiaParameters.mzMaxDataStructure,
+                randomSelectionFraction,
+                scoredTargetDecoyPointers
+        ); ree;
+
+    }
+
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
+            *scoredTargetDecoyPointers,
             topNMS2Ions,
-            randomSelectionFraction,
             msCalibratomatic,
             &parallelInputs
             ); ree;
@@ -362,14 +385,15 @@ bool TargetDecoyCandidatePairScoretron::isInit() {
 }
 
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
         int topNMS2Ions,
-        double randomSelectionFraction,
         const MsCalibratomatic &msCalibratomatic,
         QVector<TargetDecoyPairParallelInput> *input
         ) {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairs); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
@@ -390,25 +414,18 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.ms1Frame = m_ms1Frame;
 
-        if (randomSelectionFraction < 0) {
-            e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
-                    mzMin,
-                    mzMax,
-                    &tdppi.targetDecoyPointers
-            ); ree;
+        for (TargetDecoyCandidatePair *p : targetDecoyCandidatePairs) {
 
-        } else {
-            e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
-                    mzMin,
-                    mzMax,
-                    randomSelectionFraction,
-                    &tdppi.targetDecoyPointers
-            ); ree;
+            const double mz = p->mz();
 
+            if (mz < mzMin || mz > mzMax) {
+                continue;
+            }
+
+            tdppi.targetDecoyPointers.push_back(p);
         }
 
         input->push_back(tdppi);
-
     }
 
     ERR_RETURN

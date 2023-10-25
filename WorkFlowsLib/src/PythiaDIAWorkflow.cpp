@@ -383,10 +383,14 @@ namespace {
         for (TargetDecoyCandidatePair *tdc : targetDecoyCandidatePairPntrs) {
 
             const QList<UniqueMsInfoScanKey> &uniqueInfoScanKeys = tdc->uniqueInfoScanKeyVsScoresTarget()->keys();
-
             for (const UniqueMsInfoScanKey &key : uniqueInfoScanKeys) {
 
-                e = ErrorUtils::isTrue(tdc->uniqueInfoScanKeyVsScoresDecoy()->contains(key)); ree;
+                const bool decoyContainsTargetKey = tdc->uniqueInfoScanKeyVsScoresDecoy()->contains(key);
+                if (!decoyContainsTargetKey) {
+                    qDebug() << "Decoy scores not found for" << key << tdc->peptideStringWithMods();
+                    qDebug() << "Keys" << uniqueInfoScanKeys << "Mz" << tdc->mz();
+                }
+                e = ErrorUtils::isTrue(decoyContainsTargetKey); ree;
 
                 const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
                         tdc->uniqueInfoScanKeyVsScoresTarget()->value(key),
@@ -497,7 +501,7 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    const double calibrationTrainingFraction = 0.05;
+    const double calibrationTrainingFraction = 0.2;
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
 
@@ -555,8 +559,6 @@ Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
         ) {
 
     ERR_INIT
-
-//    ParallelUtils::trancheVectorForParallelization()
 
     e = targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
             topNMS2Ions,

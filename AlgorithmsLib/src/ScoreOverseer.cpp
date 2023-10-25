@@ -718,6 +718,30 @@ Err ScoreOverseer::buildScores(
 
     ERR_INIT
 
+    if (peakIntegrationIndexes.isEmpty()) {
+        //NOTE: for every candidate score set when peakIntegrationIndexes are not empty,
+        // set a cooresponding null value here.  Particularly for arrays.
+        candidateScores->cosineSimSum100 = -1.0;
+        candidateScores->cosineSim100MS1 = -1.0;
+        candidateScores->cosineSimSpectrum = -1.0;
+        candidateScores->klDivSpectrum = 10;
+        candidateScores->scanNumber = -1;
+        candidateScores->scanTime = -1.0;
+
+        candidateScores->mzFoundMeanVec = QVector<double>(d_ptr->m_topNMS2Ions, -1.0);
+        candidateScores->mzFoundStDevVec = QVector<double>(d_ptr->m_topNMS2Ions, -1.0);
+        candidateScores->mzSearchedVec = QVector<double>(d_ptr->m_topNMS2Ions, -1.0);
+        candidateScores->theoIntensityVec = QVector<double>(d_ptr->m_topNMS2Ions, -1.0);
+
+        ERR_RETURN
+    }
+
+    e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
+    e = ErrorUtils::isTrue(msFrame->isValid()); ree;
+
     QVector<MS2Ion> ms2IonsTheoreticalResized = ms2IonsTheoretical;
     ms2IonsTheoreticalResized.resize(d_ptr->m_topNMS2Ions);
 
@@ -761,7 +785,7 @@ Err ScoreOverseer::buildScores(
             ms2IonsTheoreticalResized,
             &candidateScores->cosineSimSpectrum,
             &candidateScores->klDivSpectrum
-    ); ree;
+            ); ree;
 
 
     e = calculateEmpiricalMzStats(
