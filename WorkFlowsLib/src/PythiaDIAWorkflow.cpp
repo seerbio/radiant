@@ -497,7 +497,7 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = 0.05;
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
 
