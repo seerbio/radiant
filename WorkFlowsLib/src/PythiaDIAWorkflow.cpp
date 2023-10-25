@@ -389,6 +389,7 @@ namespace {
                 if (!decoyContainsTargetKey) {
                     qDebug() << "Decoy scores not found for" << key << tdc->peptideStringWithMods();
                     qDebug() << "Keys" << uniqueInfoScanKeys << "Mz" << tdc->mz();
+                    continue;
                 }
                 e = ErrorUtils::isTrue(decoyContainsTargetKey); ree;
 

@@ -7,6 +7,7 @@
 #include "CandidateScorertron.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
+#include "ParallelUtils.h"
 #include "TurboXIC.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -344,33 +345,47 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     }
 
-    QVector<TargetDecoyPairParallelInput> parallelInputs;
-    e = buildParallelInput(
+    const int trancheSizeMax = 5e4;
+    const int tranchSize = std::min(trancheSizeMax, scoredTargetDecoyPointers->size());
+    const int nTranches = scoredTargetDecoyPointers->size() / tranchSize;
+
+    QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
             *scoredTargetDecoyPointers,
-            topNMS2Ions,
-            msCalibratomatic,
-            &parallelInputs
+            nTranches,
+            &scoredTargetDecoyPointersTranched
             ); ree;
+
+    int tranchCounter = 0;
+    for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
+
+        qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size();
+
+        QVector<TargetDecoyPairParallelInput> parallelInputs;
+        e = buildParallelInput(
+                tranche,
+                topNMS2Ions,
+                msCalibratomatic,
+                &parallelInputs
+        ); ree;
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-    QFuture<Err> futures = QtConcurrent::mapped(
-            parallelInputs,
-            parallelScoreLogic
-    );
-    futures.waitForFinished();
+        QFuture<Err> futures = QtConcurrent::mapped(
+                parallelInputs,
+                parallelScoreLogic
+        );
+        futures.waitForFinished();
 
-    for (Err res : futures) {
-        e = res; ree;
-    }
+        for (Err res : futures) {
+            e = res; ree;
+        }
 #else
-    for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
-        e = parallelScoreLogic(tdppi); ree;
-    }
+        for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
+            e = parallelScoreLogic(tdppi); ree;
+        }
 #endif
 
-    for (const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
-        scoredTargetDecoyPointers->append(tdppi.targetDecoyPointers);
     }
 
     ERR_RETURN
