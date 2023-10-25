@@ -20,7 +20,7 @@
 //#include "MsCalibrationReader.h"
 //#include "MsFrameScoretron.h"
 //#include "MsReaderPointerAcc.h"
-//#include "ParallelUtils.h"
+#include "ParallelUtils.h"
 //#include "PeakIntegratomatic.h"
 //#include "TandemSpectraDeconvolvotron.h"
 #include "TandemFragmentPredictotron.h"
@@ -139,7 +139,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
     const int msLevel = 1;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
-
+    
     TargetDecoyCandidatePairScoretron targetDecoyCandidatePairScoretron;
     e = targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
@@ -556,6 +556,8 @@ Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
 
     ERR_INIT
 
+//    ParallelUtils::trancheVectorForParallelization()
+
     e = targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
             topNMS2Ions,
             calibrationTrainingFraction,
@@ -612,6 +614,9 @@ Err PythiaDIAWorkflow::setDiscriminantScoreForCandidates(
 
     QVector<double> weights;
     e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+
+    qDebug() << "Weights:" << weights;
+    qDebug() << "b:" << b;
 
     //TODO change fitweights out of for loop and do a matrix calc
     for(const TargetDecoyPairTargetKey &tdp : targetDecoyPairTargetKeys) {
@@ -850,7 +855,7 @@ namespace {
         *ppmSetting = results->front().ppm;
         *scanTimeWidthSetting = results->front().scanTimeStDev;
         *cosineSimSetting = results->front().cosineSimAnchor;
-        
+
 //        const int topNResults = 5;
 //        results->resize(topNResults);
 //
@@ -891,7 +896,7 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
     qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
 
-    const double selectionFractionValue = 0.1;
+    const double selectionFractionValue = 0.05;
     const double fdrThreshold = 0.01;
 
     QVector<PythiaParameters> pythiaParametersExperiments;
