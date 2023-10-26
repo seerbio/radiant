@@ -589,10 +589,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(candidateScores.theoFragmentCount); //7
 
         scores.push_back(std::max(candidateScores.shadowsCosineSimSum, 0.0)); //2
-//        const int shadowsMaxSize = 6;
-//        const QVector<double> cosineSimShadowsToAnchors
-//                = extractScoresFromVecFeatures(scoreCandidate.cosineSimShadowsToAnchorVec, shadowsMaxSize);
-//        scores.append(cosineSimShadowsToAnchors); //11-16
+        const int shadowsMaxSize = 6;
+        const QVector<double> cosineSimShadowsToAnchors
+                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, shadowsMaxSize);
+        scores.append(cosineSimShadowsToAnchors); //11-16
 
 
 //        scores.push_back(scoreCandidate.peakShapeRatio1);

@@ -41,6 +41,7 @@ public:
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+            double ppmTol100,
             MsFrame *msFrame,
             CandidateScores *candidateScores
     );

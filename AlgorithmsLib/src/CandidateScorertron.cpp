@@ -227,10 +227,6 @@ Err CandidateScorertron::calculateScores(
             &peakIntegrationIndexes
     ); ree;
 
-//    if (peakIntegrationIndexes.isEmpty()) {
-//        ERR_RETURN
-//    }
-
     ScoreOverseer scoreOverseer(
             m_topNMS2Ions,
             m_pythiaParameters.cosineSimToAnchorThreshold,
@@ -246,6 +242,7 @@ Err CandidateScorertron::calculateScores(
             mzHashedVsXICPoints,
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows,
+            m_pythiaParameters.ms2ExtractionWidthPPM,
             msFrame,
             candidateScores
             ); ree;

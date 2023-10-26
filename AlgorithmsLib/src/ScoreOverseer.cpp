@@ -14,6 +14,19 @@
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+using rTreeSearchBox = bg::model::box<rTreeCoor>;
+using rTreePoint = std::pair<rTreeCoor, QPair<ScanNumber, ScanPoint>> ;
+using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+
 
 class Q_DECL_HIDDEN ScoreOverseer::Private
 {
@@ -31,11 +44,15 @@ public:
     Err initMatricies(
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows
             );
 
     Eigen::MatrixX<double> m_intensityMatrix100;
+    Eigen::MatrixX<double> m_intensityMatrix45;
+    Eigen::MatrixX<double> m_intensityMatrix20;
     Eigen::MatrixX<double> m_intensityMatrix100Shadow;
 
     int m_topNMS2Ions;
@@ -104,6 +121,8 @@ namespace {
 Err ScoreOverseer::Private::initMatricies(
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows
         ) {
@@ -121,6 +140,20 @@ Err ScoreOverseer::Private::initMatricies(
     m_intensityMatrix100 = buildIntensityVecMatrix(
             mzIonsTopN,
             mzHashedVsXICPoints100,
+            m_summedMatVecToVec.size(),
+            m_topNMS2Ions
+    );
+
+    m_intensityMatrix45 = buildIntensityVecMatrix(
+            mzIonsTopN,
+            mzHashedVsXICPoints45,
+            m_summedMatVecToVec.size(),
+            m_topNMS2Ions
+    );
+
+    m_intensityMatrix20 = buildIntensityVecMatrix(
+            mzIonsTopN,
+            mzHashedVsXICPoints20,
             m_summedMatVecToVec.size(),
             m_topNMS2Ions
     );
@@ -704,6 +737,112 @@ namespace {
         };
     }
 
+    Err buildRTreeData(
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            std::vector<rTreePoint> *cloudLoader
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+
+        for (auto it = mzHashedVsXICPoints100.begin(); it != mzHashedVsXICPoints100.end(); it++) {
+
+            const MzHashed mzHashed = it.key();
+            const auto mz = MathUtils::unHashDecimal<double>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const XICPoints &xicPoints = it.value();
+
+            const QMap<ScanNumber, ScanPoints> &frame = xicPoints.scanNumbersVsScanPoints;
+
+            for (auto itt = frame.begin(); itt != frame.end(); itt++) {
+
+                const ScanNumber scanNumber = itt.key();
+                const ScanPoints &scanPoints = itt.value();
+
+                const auto loadLogic = [scanNumber, mz](const ScanPoint &sp){
+                    const double ppmDiffAbs = std::abs(1e6 * (sp.x() - mz) / mz);
+                    const rTreeCoor coor(ppmDiffAbs, mz);
+                    const QPair<ScanNumber, ScanPoint> val(scanNumber, sp);
+                    return rTreePoint(coor, val);
+                };
+
+                std::transform(
+                        scanPoints.begin(),
+                        scanPoints.end(),
+                        std::back_inserter(*cloudLoader),
+                        loadLogic
+                );
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    QMap<MzHashed, XICPoints> rebuildMzHashedVsXICPoints(const std::vector<rTreePoint> &rTreeSearchResult) {
+
+        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
+
+        for (const rTreePoint &rtp : rTreeSearchResult) {
+            const double mz = rtp.first.get<1>();
+            const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const QPair<ScanNumber, ScanPoint> val = rtp.second;
+            mzHashedVsXICPoints[mzHashed].scanNumbersVsScanPoints[val.first].push_back(val.second);
+            mzHashedVsXICPoints[mzHashed].scanNumbersVsIntensityVals[val.first] += val.second.y();
+        }
+
+        return mzHashedVsXICPoints;
+    }
+
+    Err buildTightPPMToleranceData(
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            double ppmTol100,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPoints45,
+            QMap<MzHashed, XICPoints> *mzHashedVsXICPoints20
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+
+        std::vector<rTreePoint> cloudLoader;
+        e = buildRTreeData(mzHashedVsXICPoints100, &cloudLoader); ree;
+
+        const int maxElements = 16;
+        RTree rTreeTight(cloudLoader, bgi::dynamic_quadratic(maxElements));
+
+        const auto mzMin = MathUtils::unHashDecimal<double>(
+                mzHashedVsXICPoints100.firstKey(),
+                S_GLOBAL_SETTINGS.HASHING_PRECISION
+                );
+
+        const auto mzMax = MathUtils::unHashDecimal<double>(
+                mzHashedVsXICPoints100.lastKey(),
+                S_GLOBAL_SETTINGS.HASHING_PRECISION
+        );
+
+
+        const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
+        const rTreeSearchBox queryBox45(
+                rTreeCoor(0.0, mzMin),
+                rTreeCoor(ppmTol45, mzMax)
+        );
+        std::vector<rTreePoint> rTreeSearchResult45;
+        rTreeTight.query(bgi::intersects(queryBox45), std::back_inserter(rTreeSearchResult45));
+        *mzHashedVsXICPoints45 = rebuildMzHashedVsXICPoints(rTreeSearchResult45);
+
+
+        const double ppmTol20 = S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol100;
+        const rTreeSearchBox queryBox20(
+                rTreeCoor(0.0, mzMin),
+                rTreeCoor(ppmTol20, mzMax)
+        );
+        std::vector<rTreePoint> rTreeSearchResult20;
+        rTreeTight.query(bgi::intersects(queryBox20), std::back_inserter(rTreeSearchResult20));
+        *mzHashedVsXICPoints20 = rebuildMzHashedVsXICPoints(rTreeSearchResult20);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err ScoreOverseer::buildScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
@@ -712,6 +851,7 @@ Err ScoreOverseer::buildScores(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+        double ppmTol100,
         MsFrame *msFrame,
         CandidateScores *candidateScores
 ) {
@@ -745,9 +885,20 @@ Err ScoreOverseer::buildScores(
     QVector<MS2Ion> ms2IonsTheoreticalResized = ms2IonsTheoretical;
     ms2IonsTheoreticalResized.resize(d_ptr->m_topNMS2Ions);
 
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
+    QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
+    e = buildTightPPMToleranceData(
+            mzHashedVsXICPoints100,
+            ppmTol100,
+            &mzHashedVsXICPoints45,
+            &mzHashedVsXICPoints20
+            ); ree;
+
     e = d_ptr->initMatricies(
             ms2IonsTheoretical,
             mzHashedVsXICPoints100,
+            mzHashedVsXICPoints45,
+            mzHashedVsXICPoints20,
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows
             ); ree;
@@ -768,9 +919,6 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn
     ); ree;
 
-    candidateScores->cosineSimSum100
-            = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
-
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
@@ -787,7 +935,6 @@ Err ScoreOverseer::buildScores(
             &candidateScores->klDivSpectrum
             ); ree;
 
-
     e = calculateEmpiricalMzStats(
             mzHashedVsXICPoints100,
             targetDecoyCandidatePair->ms2IonsTarget(),
@@ -798,90 +945,65 @@ Err ScoreOverseer::buildScores(
             &candidateScores->theoIntensityVec
             ); ree;
 
+    Eigen::VectorX<double> unused10;
+    FrameIndex unused11;
+    e = calcBestCosineSimSum(
+            d_ptr->m_intensityMatrix100Shadow,
+            bestPeakIntegrationIndexes,
+            d_ptr->m_summedMatVecToVec,
+            d_ptr->m_topNMS2Ions,
+            d_ptr->m_cosineSimToAnchorThreshold,
+            &candidateScores->cosineSimShadowsToAnchorVec,
+            &candidateScores->shadowsCosineSimSum,
+            &unused10,
+            &unused11
+            ); ree;
+
+    QVector<double> cosineSimsIndividual45;
+    double unused1;
+    Eigen::VectorX<double> unused2;
+    FrameIndex unused3;
+    e = calcBestCosineSimSum(
+            d_ptr->m_intensityMatrix45,
+            bestPeakIntegrationIndexes,
+            d_ptr->m_summedMatVecToVec,
+            d_ptr->m_topNMS2Ions,
+            d_ptr->m_cosineSimToAnchorThreshold,
+            &cosineSimsIndividual45,
+            &unused1,
+            &unused2,
+            &unused3
+            ); ree;
+
+    QVector<double> cosineSimsIndividual20;
+    e = calcBestCosineSimSum(
+            d_ptr->m_intensityMatrix20,
+            bestPeakIntegrationIndexes,
+            d_ptr->m_summedMatVecToVec,
+            d_ptr->m_topNMS2Ions,
+            d_ptr->m_cosineSimToAnchorThreshold,
+            &cosineSimsIndividual20,
+            &unused1,
+            &unused2,
+            &unused3
+            ); ree;
+
+    candidateScores->intensityFoundMaxVec = EigenUtils::convertEigenVectorToQVector(
+            Eigen::VectorX<double>(d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex))
+    );
+
+    candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
+    cosineSimsIndividual45.resize(candidateScores->mzSearchedVec.size());
+    cosineSimsIndividual20.resize(candidateScores->mzSearchedVec.size());
+    candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
+
     candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
     candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->cosineSimSum100
+            = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
+    candidateScores->cosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
+    candidateScores->cosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
 
-
-//    QVector<double> cosineSimsIndividualShadows;
-//    double cosineSimSumShadows;
-//    Eigen::VectorX<double> unused10;
-//    FrameIndex unused11;
-//    e = calcBestCosineSimSum(
-//            d_ptr->m_intensityMatrix100Shadow,
-//            bestPeakIntegrationIndexes,
-//            d_ptr->m_summedMatVecToVec,
-//            d_ptr->m_topNMS2Ions,
-//            d_ptr->m_cosineSimToAnchorThreshold,
-//            &cosineSimsIndividualShadows,
-//            &cosineSimSumShadows,
-//            &unused10,
-//            &unused11
-//    ); ree;
-
-//    const QVector<double> peakShapeRatios = calculatePeakShapeRatios(bestAnchorColumn);
-//
-//    QVector<double> cosineSimsIndividual45;
-//    double unused1;
-//    Eigen::VectorX<double> unused2;
-//    FrameIndex unused3;
-//    e = calcBestCosineSimSum(
-//            intensityMatrix45,
-//            bestPeakIntegrationIndexes,
-//            summedMatVecToVec,
-//            m_topNMS2Ions,
-//            m_pythiaParameters.cosineSimToAnchorThreshold,
-//            &cosineSimsIndividual45,
-//            &unused1,
-//            &unused2,
-//            &unused3
-//            ); ree;
-//
-//    QVector<double> cosineSimsIndividual20;
-//    double unused4;
-//    Eigen::VectorX<double> unused5;
-//    FrameIndex unused6;
-//    e = calcBestCosineSimSum(
-//            intensityMatrix20,
-//            bestPeakIntegrationIndexes,
-//            summedMatVecToVec,
-//            m_topNMS2Ions,
-//            m_pythiaParameters.cosineSimToAnchorThreshold,
-//            &cosineSimsIndividual20,
-//            &unused4,
-//            &unused5,
-//            &unused6
-//    ); ree;
-//
-//    QVector<double> cosineSimsIndividualB2B3;
-//    double cosineSimSumB2B3;
-//    Eigen::VectorX<double> unused8;
-//    FrameIndex unused9;
-//    e = calcBestCosineSimSum(
-//            intensityMatrixB2B3,
-//            bestPeakIntegrationIndexes,
-//            summedMatVecToVec,
-//            candidatePeptide.ms2IonMzB2B3.size(),
-//            m_pythiaParameters.cosineSimToAnchorThreshold,
-//            &cosineSimsIndividualB2B3,
-//            &cosineSimSumB2B3,
-//            &unused8,
-//            &unused9
-//    ); ree;
-
-//            d_ptr->m_intensityMatrix100,
-//            peakIntegrationIndexes,
-//            d_ptr->m_summedMatVecToVec,
-//            d_ptr->m_topNMS2Ions,
-//            d_ptr->m_cosineSimToAnchorThreshold,
-//            &cosineSimsIndividual100,
-//            &frameIndexIntensityApex,
-//            &bestPeakIntegrationIndexes,
-//            &bestAnchorColumn
-
-//    QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
-//            Eigen::VectorX<double>(intensityMatrix100.row(frameIndexIntensityApex))
-//    );
-//
 //    double cosineSimSpectrum;
 //    double klDivSpectrum;
 //    e = calculateSpectrumMetrics(
