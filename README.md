@@ -1,3 +1,5 @@
+<img alt="Pythia logo" src="./static/pythia-logo.png" height="192" style="margin: 12px; float:left">
+
 **Pythia DIA** is a search tool for bottom-up DIA-MS proteomics that offers:
 
 * near-parity with DIA-NN IDs, using cutting-edge DIA processing algorithms
