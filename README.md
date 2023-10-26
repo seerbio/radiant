@@ -1,4 +1,4 @@
-<img alt="Pythia logo" src="./static/pythia-logo.png" height="192" style="margin: 12px; float:left">
+<img alt="Pythia logo" src="./static/pythia-logo.png" height="192" align="left" style="margin: 12px">
 
 **Pythia DIA** is a search tool for bottom-up DIA-MS proteomics that offers:
 
