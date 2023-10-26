@@ -244,21 +244,19 @@ public:
     template <typename EigenMatrix>
     static double klDivergence(EigenMatrix v1, EigenMatrix v2) {
 
-        const double nearZero = 1e-9;
+        const double nearZero = 1e-5;
+        const double threshold = 0.0;
+        thresholdVector(threshold, nearZero, &v1);
+        thresholdVector(threshold, nearZero, &v2);
+
         v1 = v1.array() + nearZero;
         v2 = v2.array() + nearZero;
 
-        const double v1Sum = v1.sum();
-        const double v2Sum = v2.sum();
+        v1 = v1.array() / v1.sum();
+        v2 = v2.array() / v2.sum();
 
-        if (MathUtils::tZero(v1Sum) || MathUtils::tZero(v2Sum)) {;
-            return 1e4;
-        }
-
-        v1 = v1.array() / v1Sum;
-        v2 = v2.array() / v2Sum;
-
-        return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
+        Eigen::VectorXd log_ratio = v1.array().log() - v2.array().log();
+        return v1.dot(log_ratio);
     }
 
     template<typename T>

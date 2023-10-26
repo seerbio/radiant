@@ -129,7 +129,7 @@ public:
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
     double klDivSum = -1.0;
-    double klDivSpectrum = -1.0;
+    double klDivSpectrum = 10.0;
     double cosineSimSpectrum = -1.0;
     double cosineSim100MS1 = -1.0;
     double cosineSim45MS1 = -1.0;

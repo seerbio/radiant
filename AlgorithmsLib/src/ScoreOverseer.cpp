@@ -144,18 +144,20 @@ Err ScoreOverseer::Private::initMatricies(
             m_topNMS2Ions
     );
 
+    int top6Ions = 6;
+    const QVector<MZION> mzIonsTop6 = mzIonsTopN.mid(0, top6Ions);
     m_intensityMatrix45 = buildIntensityVecMatrix(
-            mzIonsTopN,
+            mzIonsTop6,
             mzHashedVsXICPoints45,
             m_summedMatVecToVec.size(),
-            m_topNMS2Ions
+            top6Ions
     );
 
     m_intensityMatrix20 = buildIntensityVecMatrix(
-            mzIonsTopN,
+            mzIonsTop6,
             mzHashedVsXICPoints20,
             m_summedMatVecToVec.size(),
-            m_topNMS2Ions
+            top6Ions
     );
 
     QVector<MZION> mzIonsShadow;
@@ -820,7 +822,6 @@ namespace {
                 S_GLOBAL_SETTINGS.HASHING_PRECISION
         );
 
-
         const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
         const rTreeSearchBox queryBox45(
                 rTreeCoor(0.0, mzMin),
@@ -852,6 +853,7 @@ Err ScoreOverseer::buildScores(
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
         double ppmTol100,
+        double scanTimePredicted,
         MsFrame *msFrame,
         CandidateScores *candidateScores
 ) {
@@ -895,7 +897,7 @@ Err ScoreOverseer::buildScores(
             ); ree;
 
     e = d_ptr->initMatricies(
-            ms2IonsTheoretical,
+            ms2IonsTheoreticalResized,
             mzHashedVsXICPoints100,
             mzHashedVsXICPoints45,
             mzHashedVsXICPoints20,
@@ -903,7 +905,7 @@ Err ScoreOverseer::buildScores(
             mzHashedVsXICPointsIsotopeShadows
             ); ree;
 
-    QVector<double> cosineSimsIndividual100;
+
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
     Eigen::VectorX<double> bestAnchorColumn;
@@ -911,9 +913,9 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_intensityMatrix100,
             peakIntegrationIndexes,
             d_ptr->m_summedMatVecToVec,
-            d_ptr->m_topNMS2Ions,
+            static_cast<int>(d_ptr->m_intensityMatrix100.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
-            &cosineSimsIndividual100,
+            &candidateScores->cosineSimToAnchorVec,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
             &bestAnchorColumn
@@ -945,19 +947,19 @@ Err ScoreOverseer::buildScores(
             &candidateScores->theoIntensityVec
             ); ree;
 
-    Eigen::VectorX<double> unused10;
-    FrameIndex unused11;
-    e = calcBestCosineSimSum(
-            d_ptr->m_intensityMatrix100Shadow,
-            bestPeakIntegrationIndexes,
-            d_ptr->m_summedMatVecToVec,
-            d_ptr->m_topNMS2Ions,
-            d_ptr->m_cosineSimToAnchorThreshold,
-            &candidateScores->cosineSimShadowsToAnchorVec,
-            &candidateScores->shadowsCosineSimSum,
-            &unused10,
-            &unused11
-            ); ree;
+//    Eigen::VectorX<double> unused10;
+//    FrameIndex unused11;
+//    e = calcBestCosineSimSum(
+//            d_ptr->m_intensityMatrix100Shadow,
+//            bestPeakIntegrationIndexes,
+//            d_ptr->m_summedMatVecToVec,
+//            static_cast<int>(d_ptr->m_intensityMatrix100Shadow.cols()),
+//            d_ptr->m_cosineSimToAnchorThreshold,
+//            &candidateScores->cosineSimShadowsToAnchorVec,
+//            &candidateScores->shadowsCosineSimSum,
+//            &unused10,
+//            &unused11
+//            ); ree;
 
     QVector<double> cosineSimsIndividual45;
     double unused1;
@@ -967,7 +969,7 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_intensityMatrix45,
             bestPeakIntegrationIndexes,
             d_ptr->m_summedMatVecToVec,
-            d_ptr->m_topNMS2Ions,
+            static_cast<int>(d_ptr->m_intensityMatrix45.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
             &cosineSimsIndividual45,
             &unused1,
@@ -980,7 +982,7 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_intensityMatrix20,
             bestPeakIntegrationIndexes,
             d_ptr->m_summedMatVecToVec,
-            d_ptr->m_topNMS2Ions,
+            static_cast<int>(d_ptr->m_intensityMatrix20.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
             &cosineSimsIndividual20,
             &unused1,
@@ -993,16 +995,31 @@ Err ScoreOverseer::buildScores(
     );
 
     candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
-    cosineSimsIndividual45.resize(candidateScores->mzSearchedVec.size());
-    cosineSimsIndividual20.resize(candidateScores->mzSearchedVec.size());
+
     candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
 
+    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
+
+    candidateScores->cosineSimSum100 = std::accumulate(
+            candidateScores->cosineSimToAnchorVec.begin(),
+            candidateScores->cosineSimToAnchorVec.end(),
+            0.0
+            );
+
+    candidateScores->cosineSimSum45
+            = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
+
+    candidateScores->cosineSimSum20
+            = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
+
+    candidateScores->charge = targetDecoyCandidatePair->charge();
+    candidateScores->mass = targetDecoyCandidatePair->mass();
     candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
     candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
-    candidateScores->cosineSimSum100
-            = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
-    candidateScores->cosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
-    candidateScores->cosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
+    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber).size();
+
+    candidateScores->scanTimePredicted = scanTimePredicted;
+    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
 
 //    double cosineSimSpectrum;
 //    double klDivSpectrum;

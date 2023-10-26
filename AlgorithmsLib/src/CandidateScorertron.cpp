@@ -192,6 +192,7 @@ Err CandidateScorertron::calculateScores(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
+        double scanTimePredicted,
         MsFrame *msFrame,
         CandidateScores *candidateScores
         ) {
@@ -243,6 +244,7 @@ Err CandidateScorertron::calculateScores(
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows,
             m_pythiaParameters.ms2ExtractionWidthPPM,
+            scanTimePredicted,
             msFrame,
             candidateScores
             ); ree;

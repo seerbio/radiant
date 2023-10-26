@@ -21,7 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
 #        src/ConvertMzMLToParquetWorkFlow.cpp
-#        src/FastaFileToPeptidesListWorkFlow.cpp
+        src/FastaFileToPeptidesListWorkFlow.cpp
 #        src/LibraryBuilderWorkFlow.cpp
         src/PythiaDIAWorkflow.cpp
     )

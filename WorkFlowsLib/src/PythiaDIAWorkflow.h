@@ -75,9 +75,9 @@ private:
 
     Err removeInterferingCandidates(
             MsReaderPointerAcc *msReaderPointerAcc,
-            const QVector<ScoredCandidate> &scoredCandidatesTargetsFDRThresholded,
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            QVector<ScoredCandidate> *scoredCandidatesAllUpdated
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRThresholded,
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdated
             );
 
     Err applyNeuralNetClassifier(
@@ -89,7 +89,7 @@ private:
 
     Err updateProteinGroupAnnotation(
             const QString &fastaFilePath,
-            QVector<ScoredCandidate> *scoredCandidates
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
     );
 
 private:

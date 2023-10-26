@@ -163,9 +163,9 @@ namespace {
         QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
         QMap<MzHashed, XICPoints> mzHashedVsXICPointsIsotopeShadows;
 
+        ScanTime scanTimePredicted = -1;
         if (msCalibratomatic->isInit()) {
 
-            ScanTime scanTimePredicted = -1;
             e = msCalibratomatic->predictScanTime(
                     iRT,
                     &scanTimePredicted
@@ -232,6 +232,7 @@ namespace {
                 mzHashedVsXICPoints,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsXICPointsIsotopeShadows,
+                scanTimePredicted,
                 msFrame,
                 candidateScores
         ); ree;
@@ -345,8 +346,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     }
 
-    const int trancheSizeMax = 5e4;
-    const int tranchSize = std::min(trancheSizeMax, scoredTargetDecoyPointers->size());
+    const int tranchSize = std::min(m_pythiaParameters.trancheSizeMax, scoredTargetDecoyPointers->size());
     const int nTranches = scoredTargetDecoyPointers->size() / tranchSize;
 
     QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
