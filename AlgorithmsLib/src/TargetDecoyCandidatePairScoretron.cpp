@@ -142,29 +142,30 @@ namespace {
         const int topNTarget = std::min(topNMs2Ions, ms2IonsTheoretical.size());
         ms2IonsTheoretical.resize(topNTarget);
 
-        const int top6Shadows = 6;
-        QVector<MS2Ion> ms2IonsTheoreticalTop6 = ms2IonsTargetOrDecoyTheoretical;
-        const int topNShadows = std::min(top6Shadows, ms2IonsTheoreticalTop6.size());
-        ms2IonsTheoreticalTop6.resize(topNShadows);
+        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
 
         QVector<MS2Ion> ms2IonsTheoreticalIsotopeShadows;
-        std::transform(
-                ms2IonsTheoreticalTop6.begin(),
-                ms2IonsTheoreticalTop6.end(),
-                std::back_inserter(ms2IonsTheoreticalIsotopeShadows),
-                [](const MS2Ion &ms2Ion){
-                    const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-                    MS2Ion ms2IonNew = ms2Ion;
-                    ms2IonNew.mz -= isoChargeDiff;
-                    return ms2IonNew;
-                }
-        );
-
-        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
         QMap<MzHashed, XICPoints> mzHashedVsXICPointsIsotopeShadows;
 
         ScanTime scanTimePredicted = -1;
         if (msCalibratomatic->isInit()) {
+
+            const int top6Shadows = 6;
+            QVector<MS2Ion> ms2IonsTheoreticalTop6 = ms2IonsTargetOrDecoyTheoretical;
+            const int topNShadows = std::min(top6Shadows, ms2IonsTheoreticalTop6.size());
+            ms2IonsTheoreticalTop6.resize(topNShadows);
+
+            std::transform(
+                    ms2IonsTheoreticalTop6.begin(),
+                    ms2IonsTheoreticalTop6.end(),
+                    std::back_inserter(ms2IonsTheoreticalIsotopeShadows),
+                    [](const MS2Ion &ms2Ion){
+                        const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+                        MS2Ion ms2IonNew = ms2Ion;
+                        ms2IonNew.mz -= isoChargeDiff;
+                        return ms2IonNew;
+                    }
+                    );
 
             e = msCalibratomatic->predictScanTime(
                     iRT,
@@ -235,7 +236,7 @@ namespace {
                 scanTimePredicted,
                 msFrame,
                 candidateScores
-        ); ree;
+                ); ree;
 
         ERR_RETURN
     }
@@ -275,7 +276,7 @@ namespace {
             e = extractScores(
                     targetDecoyPtr,
                     targetDecoyPtr->ms2IonsTarget(),
-                    pi.pythiaParameters.topNMs2Ions,
+                    pi.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
                     pi.pythiaParameters.scanTimeWindowMinutes,
@@ -291,7 +292,7 @@ namespace {
             e = extractScores(
                     targetDecoyPtr,
                     targetDecoyPtr->ms2IonsDecoy(),
-                    pi.pythiaParameters.topNMs2Ions,
+                    pi.topNMs2Ions,
                     pi.pythiaParameters.ms2ExtractionWidthPPM,
                     targetDecoyPtr->iRt(),
                     pi.pythiaParameters.scanTimeWindowMinutes,

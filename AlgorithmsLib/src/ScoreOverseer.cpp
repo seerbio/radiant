@@ -4,6 +4,7 @@
 
 #include "ScoreOverseer.h"
 
+#include "BiophysicalCalcs.h"
 #include "CandidateScores.h"
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
@@ -844,6 +845,65 @@ namespace {
         ERR_RETURN
     }
 
+    Err calculateCosineSimAndIntensityRatioMatriciesColWise(
+            const Eigen::MatrixX<double> &intensityMatrix100,
+            const Eigen::MatrixX<double> &intensityMatrix100Shadow,
+            const PeakIntegrationIndexes &pii,
+            const QVector<double> &summedMatToVec,
+            QVector<double> *cosineSimCols,
+            QVector<double> *intensityRatioCols
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(intensityMatrix100.cols() >= intensityMatrix100Shadow.cols()); ree;
+
+        const int colCount = static_cast<int>(intensityMatrix100Shadow.cols());
+
+        cosineSimCols->reserve(colCount);
+        intensityRatioCols->reserve(colCount);
+
+        Eigen::MatrixX<double> intensityMatrix100Cleaned;
+        FrameIndex intensityMatrix100CleanedApex;
+        e = buildAlignmentMatrix(
+                intensityMatrix100,
+                pii,
+                summedMatToVec,
+                static_cast<int>(intensityMatrix100Shadow.cols()),
+                &intensityMatrix100Cleaned,
+                &intensityMatrix100CleanedApex
+        ); ree;
+
+        Eigen::MatrixX<double> intensityMatrix100ShadowCleaned;
+        FrameIndex intensityMatrix100ShadowCleanedApex;
+        e = buildAlignmentMatrix(
+                intensityMatrix100Shadow,
+                pii,
+                summedMatToVec,
+                static_cast<int>(intensityMatrix100Shadow.cols()),
+                &intensityMatrix100ShadowCleaned,
+                &intensityMatrix100ShadowCleanedApex
+        ); ree;
+
+        for (int col = 0; col < colCount; col++) {
+
+            const Eigen::VectorX<double> v1 = intensityMatrix100.col(col);
+            const Eigen::VectorX<double> v2 = intensityMatrix100Shadow.col(col);
+            const double v1Sum = v1.sum();
+            const double v2Sum = v2.sum();
+
+            e = ErrorUtils::isEqual(v1.size(), v2.size()); ree;
+
+            const double cosineSimCol = EigenUtils::cosineSimilarity(v1, v2);
+            const double intensityRatioCol = MathUtils::tZero(v2Sum) ? -1.0 : v1Sum / v2Sum;
+
+            cosineSimCols->push_back(cosineSimCol);
+            intensityRatioCols->push_back(intensityRatioCol);
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err ScoreOverseer::buildScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
@@ -852,7 +912,6 @@ Err ScoreOverseer::buildScores(
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
-        double ppmTol100,
         double scanTimePredicted,
         MsFrame *msFrame,
         CandidateScores *candidateScores
@@ -860,9 +919,11 @@ Err ScoreOverseer::buildScores(
 
     ERR_INIT
 
+    //TODO see if having this is even necessary and if it changes the scoring.
     if (peakIntegrationIndexes.isEmpty()) {
         //NOTE: for every candidate score set when peakIntegrationIndexes are not empty,
         // set a cooresponding null value here.  Particularly for arrays.
+
         candidateScores->cosineSimSum100 = -1.0;
         candidateScores->cosineSim100MS1 = -1.0;
         candidateScores->cosineSimSpectrum = -1.0;
@@ -881,30 +942,25 @@ Err ScoreOverseer::buildScores(
     e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
-    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
     e = ErrorUtils::isTrue(msFrame->isValid()); ree;
-
-    QVector<MS2Ion> ms2IonsTheoreticalResized = ms2IonsTheoretical;
-    ms2IonsTheoreticalResized.resize(d_ptr->m_topNMS2Ions);
 
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
     e = buildTightPPMToleranceData(
             mzHashedVsXICPoints100,
-            ppmTol100,
+            d_ptr->m_ppmTol,
             &mzHashedVsXICPoints45,
             &mzHashedVsXICPoints20
             ); ree;
 
     e = d_ptr->initMatricies(
-            ms2IonsTheoreticalResized,
+            ms2IonsTheoretical,
             mzHashedVsXICPoints100,
             mzHashedVsXICPoints45,
             mzHashedVsXICPoints20,
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows
             ); ree;
-
 
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
@@ -932,7 +988,7 @@ Err ScoreOverseer::buildScores(
 
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex),
-            ms2IonsTheoreticalResized,
+            ms2IonsTheoretical,
             &candidateScores->cosineSimSpectrum,
             &candidateScores->klDivSpectrum
             ); ree;
@@ -947,19 +1003,22 @@ Err ScoreOverseer::buildScores(
             &candidateScores->theoIntensityVec
             ); ree;
 
-//    Eigen::VectorX<double> unused10;
-//    FrameIndex unused11;
-//    e = calcBestCosineSimSum(
-//            d_ptr->m_intensityMatrix100Shadow,
-//            bestPeakIntegrationIndexes,
-//            d_ptr->m_summedMatVecToVec,
-//            static_cast<int>(d_ptr->m_intensityMatrix100Shadow.cols()),
-//            d_ptr->m_cosineSimToAnchorThreshold,
-//            &candidateScores->cosineSimShadowsToAnchorVec,
-//            &candidateScores->shadowsCosineSimSum,
-//            &unused10,
-//            &unused11
-//            ); ree;
+    if (d_ptr->m_intensityMatrix100Shadow.cols() > 0) {
+
+        e = calculateCosineSimAndIntensityRatioMatriciesColWise(
+                d_ptr->m_intensityMatrix100,
+                d_ptr->m_intensityMatrix100Shadow,
+                bestPeakIntegrationIndexes,
+                d_ptr->m_summedMatVecToVec,
+                &candidateScores->cosineSimShadowsToAnchorVec,
+                &candidateScores->shadowsIntensityRatioVec
+        ); ree;
+
+        const QVector<double> &individualShadows = candidateScores->cosineSimShadowsToAnchorVec;
+        candidateScores->shadowsCosineSimSum
+                = std::accumulate(individualShadows.begin(), individualShadows.end(), 0.0);
+
+    }
 
     QVector<double> cosineSimsIndividual45;
     double unused1;
@@ -1021,49 +1080,38 @@ Err ScoreOverseer::buildScores(
     candidateScores->scanTimePredicted = scanTimePredicted;
     candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
 
-//    double cosineSimSpectrum;
-//    double klDivSpectrum;
-//    e = calculateSpectrumMetrics(
-//            intensityMatrix100.row(frameIndexIntensityApex),
-//            candidatePeptide.ms2Ions,
-//            &cosineSimSpectrum,
-//            &klDivSpectrum
-//    ); ree;
-//
-//    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge);
-//    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / candidatePeptide.charge);
-//    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / candidatePeptide.charge);
-//
-//    double cosineSim100MS1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMz,
-//            m_pythiaParameters.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &cosineSim100MS1
-//    ); ree;
-//
-//    double cosineSim100MS1Iso1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMzIso1,
-//            m_pythiaParameters.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &cosineSim100MS1Iso1
-//    ); ree;
-//
-//    double cosineSim100MS1Iso2;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMzIso2,
-//            m_pythiaParameters.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &cosineSim100MS1Iso2
-//    ); ree;
-//
+    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
+    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());
+    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / targetDecoyCandidatePair->charge());
+
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMz,
+            d_ptr->m_ppmTol,
+            m_turboXICMS1,
+            &candidateScores->cosineSim100MS1
+    ); ree;
+
+    double cosineSim100MS1Iso1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso1,
+            d_ptr->m_ppmTol,
+            m_turboXICMS1,
+            &candidateScores->cosineSim100MS1Iso1
+    ); ree;
+
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            bestPeakIntegrationIndexes,
+            precursorMzIso2,
+            d_ptr->m_ppmTol,
+            m_turboXICMS1,
+            &candidateScores->cosineSim100MS1Iso2
+    ); ree;
+
 //    double cosineSim45MS1;
 //    e = calculateMS1Corr(
 //            bestAnchorColumn,

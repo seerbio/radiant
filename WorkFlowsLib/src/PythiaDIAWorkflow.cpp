@@ -70,7 +70,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-#define USE_FILE_CACHING
+//#define USE_FILE_CACHING
 #ifdef USE_FILE_CACHING
     {
         const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
@@ -101,7 +101,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
 #ifndef USE_FILE_CACHING
     if (m_pythiaParameters.deisotopeScans) {
-        e = deisotopeScans(&msReaderPointerAcc); ree;
+//        e = deisotopeScans(&msReaderPointerAcc); ree;
     }
 #endif
 
@@ -162,19 +162,19 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //            &scoredTargetDecoyPointersUpdated
 //            ); ree;
 
-    e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-            &scoredTargetDecoyPointers
-            ); ree;
-
-    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
-    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointers) {
-        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
-        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
-    }
-
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
+//    e = updateProteinGroupAnnotation(
+//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+//            &scoredTargetDecoyPointers
+//            ); ree;
+//
+//    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
+//    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointers) {
+//        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
+//        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
+//    }
+//
+//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+//    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
 
 ////#define BYPASS_MAIN_ANALYSIS
 //#ifndef BYPASS_MAIN_ANALYSIS

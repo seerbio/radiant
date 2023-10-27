@@ -5,6 +5,7 @@
 #include "CandidateScorertron.h"
 
 #include "CandidateScores.h"
+#include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrame.h"
@@ -185,6 +186,61 @@ namespace {
         return mat;
     }
 
+    Eigen::MatrixX<double> applyGaussSmoothRowWiseToMatrix(const Eigen::MatrixX<double> &mat) {
+
+        const int filterLength = 3;
+        const double sigma = 1.0;
+        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(filterLength, sigma);
+
+        return EigenKernelUtils::applyKernelRowWiseToMatrix(mat, gaussKernel);
+    }
+
+    Err calculateMS1Corr(
+            const Eigen::VectorX<double> &bestAnchorColumn,
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
+            double mzTarget,
+            double ppmTol,
+            TurboXIC *turboXic,
+            double *cosineSimMS1
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestAnchorColumn.size() > 0); ree;
+
+        const double massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
+        const double mzStart = mzTarget - massTol;
+        const double mzEnd = mzTarget + massTol;
+
+        const XICPoints xicPoints = turboXic->extractPointsXIC(
+                mzStart,
+                mzEnd,
+                peakIntegrationIndexes.first,
+                peakIntegrationIndexes.second
+        );
+
+        Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
+        ms1Vec.setZero();
+
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+
+        for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
+            const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
+
+            if (frameIndex >= ms1Vec.size()) {
+                continue;
+            }
+
+            ms1Vec.coeffRef(frameIndex) = it.value();
+        }
+
+        ms1Vec = applyGaussSmoothRowWiseToMatrix(ms1Vec);
+
+        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::calculateScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
@@ -216,7 +272,7 @@ Err CandidateScorertron::calculateScores(
             ms2IonsTheoretical,
             mzHashedVsIonPresence,
             m_topNMS2Ions
-    );
+            );
 
     const Eigen::VectorX<double> summedPresenceMatrixVec = presenceMatrix.rowwise().sum();
     const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedPresenceMatrixVec);
@@ -243,7 +299,6 @@ Err CandidateScorertron::calculateScores(
             mzHashedVsXICPoints,
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows,
-            m_pythiaParameters.ms2ExtractionWidthPPM,
             scanTimePredicted,
             msFrame,
             candidateScores

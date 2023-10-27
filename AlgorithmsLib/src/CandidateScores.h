@@ -60,6 +60,7 @@ namespace CandidateScoresNamespace {
     const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
     const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
     const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
+    const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
 
 
     const QStringList keysToCheck = {
@@ -107,7 +108,8 @@ namespace CandidateScoresNamespace {
             B3_CORR,
             B2B3_COSINE_SIM_SUM,
             SHADOWS_COSINE_SIM_SUM,
-            COS_SIM_SUM_ANCH_SHADOW_V
+            COS_SIM_SUM_ANCH_SHADOW_V,
+            SHADOW_INTZ_RATIO_VEC
     };
 }
 
@@ -162,6 +164,7 @@ public:
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
     QVector<double> cosineSimShadowsToAnchorVec;
+    QVector<double> shadowsIntensityRatioVec;
     double shadowsCosineSimSum = -1.0;
 
     void clear() {
@@ -173,6 +176,7 @@ public:
         intensityFoundMaxVec.clear();
         cosineSimToAnchorVec.clear();
         cosineSimShadowsToAnchorVec.clear();
+        shadowsIntensityRatioVec.clear();
         targetKey = "";
         proteinGroup = "";
         cosineSimSum100 = -1.0;
@@ -262,6 +266,7 @@ public:
                 {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
                 {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
+                {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))}
         };
     }
 
@@ -326,6 +331,7 @@ public:
 
         shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
         cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
+        shadowsIntensityRatioVec = bytesArrayToQVector<double>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
 
         ERR_RETURN
     }

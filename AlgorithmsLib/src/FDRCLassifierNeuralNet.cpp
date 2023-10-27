@@ -570,13 +570,14 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 
     if (useExtendedScores || useNeuralNetworkScores) {
 
-        scores.push_back(std::abs(candidateScores.scanTime - candidateScores.scanTimePredicted)); //5
+        const double scanTimeDelta = candidateScores.scanTime - candidateScores.scanTimePredicted;
+        scores.push_back(std::abs(scanTimeDelta)); //5
 
         const double scanTimeRange = std::max(
                 std::numeric_limits<double>::min(),
                 scanTimeMinMax.second - scanTimeMinMax.first
                 );
-        const double scanTimeDelta = candidateScores.scanTime - candidateScores.scanTimePredicted;
+
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
 
@@ -588,13 +589,16 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(candidateScores.cosineSim20MS1, 0.0)); //12
         scores.push_back(candidateScores.peptideStringWithMods.size()); //13
         scores.push_back(candidateScores.theoFragmentCount); //14
+//        scores.push_back(std::max(candidateScores.shadowsCosineSimSum, 0.0)); //15
 
-        scores.push_back(std::max(candidateScores.shadowsCosineSimSum, 0.0)); //15
-        const int shadowsMaxSize = 6;
-        const QVector<double> cosineSimShadowsToAnchors
-                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, shadowsMaxSize);
-        scores.append(cosineSimShadowsToAnchors); //16-21
+//        const int shadowsMaxSize = 6;
+//        const QVector<double> cosineSimShadowsToAnchors
+//                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, shadowsMaxSize);
+//        scores.append(cosineSimShadowsToAnchors); //16-21
 
+//        const QVector<double> shadowsIntensityRatioVec
+//                = extractScoresFromVecFeatures(candidateScores.shadowsIntensityRatioVec, shadowsMaxSize);
+//        scores.append(shadowsIntensityRatioVec); //22-27
 
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
@@ -604,19 +608,19 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(candidateScores.cosineSimToAnchorVec, theoMzIonsSize);
-        scores.append(cosineSimToAnchors); //22-27
+        scores.append(cosineSimToAnchors); //28-33
 
         const QVector<double> topHalfCosineSimScores = cosineSimToAnchors.mid(0, theoMzIonsSize / 2);
         const double topHalfCosineSimScoresSum = std::accumulate(topHalfCosineSimScores.begin(), topHalfCosineSimScores.end(), 0.0);
-        scores.push_back(topHalfCosineSimScoresSum); //28
+        scores.push_back(topHalfCosineSimScoresSum); //34
 
         const QVector<double> bottomHalfCosineSimScores = cosineSimToAnchors.mid(theoMzIonsSize / 2, theoMzIonsSize / 2);
         const double bottomHalfCosineSimScoresSum = std::accumulate(bottomHalfCosineSimScores.begin(), bottomHalfCosineSimScores.end(), 0.0);
-        scores.push_back(bottomHalfCosineSimScoresSum); //29
+        scores.push_back(bottomHalfCosineSimScoresSum); //35
 
         const double topBottomRatio
             = std::log(std::max(1.0, topHalfCosineSimScoresSum) / (topHalfCosineSimScoresSum + bottomHalfCosineSimScoresSum + 1.0));
-        scores.push_back(topBottomRatio); //30
+        scores.push_back(topBottomRatio); //36
 
         const QVector<double> theoApexIntensity
                 = extractScoresFromVecFeatures(candidateScores.theoIntensityVec, theoMzIonsSize);
@@ -640,10 +644,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //                [maxIntensity](double d){return d / maxIntensity;}
 //        );
 //        scores.append(intensityFoundMaxVecNorm);
-//
-//        const QVector<double> mzStDev
-//                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
-//        scores.append(mzStDev);
+
+        const QVector<double> mzStDev
+                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
+        scores.append(mzStDev);
 
     }
 
