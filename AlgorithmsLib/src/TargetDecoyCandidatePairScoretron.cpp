@@ -150,14 +150,9 @@ namespace {
         ScanTime scanTimePredicted = -1;
         if (msCalibratomatic->isInit()) {
 
-            const int top6Shadows = 6;
-            QVector<MS2Ion> ms2IonsTheoreticalTop6 = ms2IonsTargetOrDecoyTheoretical;
-            const int topNShadows = std::min(top6Shadows, ms2IonsTheoreticalTop6.size());
-            ms2IonsTheoreticalTop6.resize(topNShadows);
-
             std::transform(
-                    ms2IonsTheoreticalTop6.begin(),
-                    ms2IonsTheoreticalTop6.end(),
+                    ms2IonsTargetOrDecoyTheoretical.begin(),
+                    ms2IonsTargetOrDecoyTheoretical.end(),
                     std::back_inserter(ms2IonsTheoreticalIsotopeShadows),
                     [](const MS2Ion &ms2Ion){
                         const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;

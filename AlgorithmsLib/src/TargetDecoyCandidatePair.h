@@ -56,7 +56,6 @@ public:
 
     void clearScores();
 
-private:
     [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKey() const;
 
 
