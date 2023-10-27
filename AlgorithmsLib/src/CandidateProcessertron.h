@@ -71,9 +71,9 @@ namespace ScoredCandidateNamespace {
     const QString B3_CORR = QStringLiteral("b3Corr");
     const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
 
-    const QString Y2_CORR = QStringLiteral("y2Corr");
-    const QString Y3_CORR = QStringLiteral("y3Corr");
-    const QString Y2Y3_COSINE_SIM_SUM = QStringLiteral("y2y3CosineSimSum");
+    const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
+    const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
+
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -123,13 +123,17 @@ namespace ScoredCandidateNamespace {
             B2_CORR,
             B3_CORR,
             B2B3_COSINE_SIM_SUM,
-            Y2_CORR,
-            Y3_CORR,
-            Y2Y3_COSINE_SIM_SUM
+            SHADOWS_COSINE_SIM_SUM,
+            COS_SIM_SUM_ANCH_SHADOW_V
     };
 }
 
-struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
+class FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
+
+public:
+
+    ScoredCandidate() = default;
+    ~ScoredCandidate() = default;
 
     PeptideStringWithMods peptideStringWithMods;
     double cosineSimSum100 = -1.0;
@@ -157,10 +161,10 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> mzFoundMeanVec;
     QVector<double> mzFoundStDevVec;
     QVector<double> intensityFoundMaxVec;
-    QVector<int> frameIndexMaxDiffFromAnchorVec;
+//    QVector<int> frameIndexMaxDiffFromAnchorVec;
     QVector<double> cosineSimToAnchorVec;
-    QVector<double> klDivToAnchorVec;
-    QVector<int> peakPointCountFoundVec;
+//    QVector<double> klDivToAnchorVec;
+//    QVector<int> peakPointCountFoundVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -180,9 +184,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     double b2Corr = -1.0;
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
-    double y2Corr = -1.0;
-    double y3Corr = -1.0;
-    double y2y3CosineSimSum = -1.0;
+
+    QVector<double> cosineSimShadowsToAnchorVec;
+    double shadowsCosineSimSum = -1.0;
 
     QMap<QString, QVariant> map() override {
 
@@ -204,15 +208,15 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
                 {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
                 {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
-                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
+//                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
-                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
+//                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
                 {TARGET_KEY, QVariant(targetKey)},
                 {X_CORR, QVariant(xCorr)},
                 {KL_DIV_SUM, QVariant(klDivSum)},
-                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
+//                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
@@ -236,9 +240,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {B2_CORR, QVariant(b2Corr)},
                 {B3_CORR, QVariant(b3Corr)},
                 {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
-                {Y2_CORR, QVariant(y2Corr)},
-                {Y3_CORR, QVariant(y3Corr)},
-                {Y2Y3_COSINE_SIM_SUM, QVariant(y2y3CosineSimSum)}
+                {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
+                {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
         };
     }
 
@@ -273,9 +276,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
         intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
+//        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
+//        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
         xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
@@ -286,7 +289,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
         cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
-        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
+//        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
@@ -304,9 +307,9 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         b2Corr = dataMap.value(B2_CORR).toDouble();
         b3Corr = dataMap.value(B3_CORR).toDouble();
         b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
-        y2Corr = dataMap.value(Y2_CORR).toDouble();
-        y3Corr = dataMap.value(Y3_CORR).toDouble();
-        y2y3CosineSimSum = dataMap.value(Y2Y3_COSINE_SIM_SUM).toDouble();
+
+        shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
+        cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
 
         ERR_RETURN
     }
@@ -324,10 +327,10 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -339,10 +342,10 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
             const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
             const MsFrame &msFrame,
             const MsFrame &msFrameMS1,
@@ -404,10 +407,10 @@ private:
 
     PythiaParameters m_pythiaParameters;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100;
+    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100Shadows;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
     QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsB2B3;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsY2Y3;
     QMap<MzHashed, QVector<double>> m_mzHashedVsIonPresence;
 
     PeakIntegratomatic m_peakIntegratomatic;

@@ -88,16 +88,21 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
 };
 
-struct CandidatePeptide {
+class CandidatePeptide {
+
+public:
+
+    CandidatePeptide() = default;
+    ~CandidatePeptide() = default;
+
     PeptideStringWithMods peptideStringWithMods;
     Charge charge = -1;
     QVector<MS2Ion> ms2Ions;
     QVector<MZION> ms2IonMzB2B3;
-    QVector<MZION> ms2IonMzY2Y3;
     bool isDecoy = false;
     double mass = -1.0;
     double iRt = -1.0;
-    int totalFragmentCount;
+    int totalFragmentCount = -1;
 };
 
 

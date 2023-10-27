@@ -12,7 +12,10 @@
 #include "ParallelUtils.h"
 
 
-CandidateProcessertron::CandidateProcessertron() : m_peakWidthMin(3) {}
+CandidateProcessertron::CandidateProcessertron()
+: m_peakWidthMin(3)
+, m_topNMS2Ions(-1)
+{}
 
 namespace{
 
@@ -32,10 +35,10 @@ Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
@@ -47,10 +50,10 @@ Err CandidateProcessertron::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100Shadows); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints20); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsB2B3); ree;
-    e = ErrorUtils::isNotEmpty(mzHashedVsXICPointsY2Y3); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsIonPresence); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(msFrame.isValid()); ree;
@@ -60,10 +63,10 @@ Err CandidateProcessertron::init(
 
     m_pythiaParameters = pythiaParameters;
     m_mzHashedVsXICPoints100 = mzHashedVsXICPoints100;
+    m_mzHashedVsXICPoints100Shadows = mzHashedVsXICPoints100Shadows;
     m_mzHashedVsXICPoints45 = mzHashedVsXICPoints45;
     m_mzHashedVsXICPoints20 = mzHashedVsXICPoints20;
     m_mzHashedVsXICPointsB2B3 = mzHashedVsXICPointsB2B3;
-    m_mzHashedVsXICPointsY2Y3 = mzHashedVsXICPointsY2Y3;
     m_mzHashedVsIonPresence = mzHashedVsIonPresence;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
     m_msFrame = msFrame;
@@ -83,10 +86,10 @@ Err CandidateProcessertron::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
+        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100Shadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
         const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
         const MsFrame &msFrame,
         const MsFrame &msFrameMS1,
@@ -104,10 +107,10 @@ Err CandidateProcessertron::init(
             pythiaParameters,
             topNMS2Ions,
             mzHashedVsXICPoints100,
+            mzHashedVsXICPoints100Shadows,
             mzHashedVsXICPoints45,
             mzHashedVsXICPoints20,
             mzHashedVsXICPointsB2B3,
-            mzHashedVsXICPointsY2Y3,
             mzHashedVsIonPresence,
             msFrame,
             msFrameMS1,
@@ -115,7 +118,7 @@ Err CandidateProcessertron::init(
             uniqueMsInfoScanKey
             ); ree;
 
-    qDebug() << "updating rt vals from iRT";
+//    qDebug() << "updating rt vals from iRT";
 
     ERR_RETURN
 }
@@ -216,9 +219,9 @@ Err CandidateProcessertron::processCandidateTarget(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100Shadows); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints20); ree;
-    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsY2Y3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
@@ -956,11 +959,29 @@ Err CandidateProcessertron::buildScores(
             [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
             );
 
+    QVector<MZION> mzIonsShadow;
+    std::transform(
+            ms2Ions.begin(),
+            ms2Ions.end(),
+            std::back_inserter(mzIonsShadow),
+            [](const MS2Ion &ms2Ion){
+                const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+                return ms2Ion.mz - isoChargeDiff;
+            }
+    );
+
     const Eigen::MatrixX<double> intensityMatrix100 = buildIntensityVecMatrix(
             mzIonsTopN,
             m_mzHashedVsXICPoints100,
             summedMatVecToVec.size(),
             m_topNMS2Ions
+    );
+
+    const Eigen::MatrixX<double> intensityMatrix100Shadow = buildIntensityVecMatrix(
+            mzIonsShadow,
+            m_mzHashedVsXICPoints100Shadows,
+            summedMatVecToVec.size(),
+            mzIonsShadow.size()
     );
 
     const Eigen::MatrixX<double> intensityMatrix45 = buildIntensityVecMatrix(
@@ -982,13 +1003,6 @@ Err CandidateProcessertron::buildScores(
             m_mzHashedVsXICPointsB2B3,
             summedMatVecToVec.size(),
             candidatePeptide.ms2IonMzB2B3.size()
-    );
-
-    const Eigen::MatrixX<double> intensityMatrixY2Y3 = buildIntensityVecMatrix(
-            candidatePeptide.ms2IonMzY2Y3,
-            m_mzHashedVsXICPointsY2Y3,
-            summedMatVecToVec.size(),
-            candidatePeptide.ms2IonMzY2Y3.size()
     );
 
     QVector<double> cosineSimsIndividual100;
@@ -1057,21 +1071,22 @@ Err CandidateProcessertron::buildScores(
             &unused9
     ); ree;
 
-    QVector<double> cosineSimsIndividualY2Y3;
-    double cosineSimSumY2Y3;
-    Eigen::VectorX<double> unused11;
-    FrameIndex unused12;
+    QVector<double> cosineSimsIndividualShadows;
+    double cosineSimSumShadows;
+    Eigen::VectorX<double> unused10;
+    FrameIndex unused11;
     e = calcBestCosineSimSum(
-            intensityMatrixY2Y3,
+            intensityMatrix100Shadow,
             bestPeakIntegrationIndexes,
             summedMatVecToVec,
-            candidatePeptide.ms2IonMzY2Y3.size(),
+            mzIonsShadow.size(),
             m_pythiaParameters.cosineSimToAnchorThreshold,
-            &cosineSimsIndividualY2Y3,
-            &cosineSimSumY2Y3,
-            &unused11,
-            &unused12
+            &cosineSimsIndividualShadows,
+            &cosineSimSumShadows,
+            &unused10,
+            &unused11
     ); ree;
+
 
     QVector<double> intensityApexVals100 = EigenUtils::convertEigenVectorToQVector(
             Eigen::VectorX<double>(intensityMatrix100.row(frameIndexIntensityApex))
@@ -1110,14 +1125,14 @@ Err CandidateProcessertron::buildScores(
             &cosineSim100MS1Iso1
     ); ree;
 
-    double cosineSim100MSIso2;
+    double cosineSim100MS1Iso2;
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
             precursorMzIso2,
             m_pythiaParameters.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
-            &cosineSim100MSIso2
+            &cosineSim100MS1Iso2
     ); ree;
 
     double cosineSim45MS1;
@@ -1189,7 +1204,7 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
     scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
     scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
-    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MSIso2;
+    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MS1Iso2;
     scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
     scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
     scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
@@ -1199,9 +1214,8 @@ Err CandidateProcessertron::buildScores(
     scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
     scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
     scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
-    scoredCandidate->y2Corr = cosineSimsIndividualY2Y3.at(0);
-    scoredCandidate->y3Corr = cosineSimsIndividualY2Y3.at(1);
-    scoredCandidate->y2y3CosineSimSum = cosineSimSumY2Y3;
+    scoredCandidate->shadowsCosineSimSum = cosineSimSumShadows;
+    scoredCandidate->cosineSimShadowsToAnchorVec = cosineSimsIndividualShadows;
 
     ERR_RETURN
 }
@@ -1258,8 +1272,10 @@ Err CandidateProcessertron::processCandidateDecoy(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints100Shadows); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints45); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPoints20); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXICPointsB2B3); ree;
     e = ErrorUtils::isNotEmpty(m_mzHashedVsIonPresence); ree
 
     const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(

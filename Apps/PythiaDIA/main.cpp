@@ -37,7 +37,6 @@ int main(int argc, char *argv[]) {
     const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
     const QString msDataFile = cliParameters.msDataFile;
 
-
     PythiaParameters pythiaParameters;
     e = PythiaParameterReader::buildPythiaParameters(
             pythiaParamsFilePath,

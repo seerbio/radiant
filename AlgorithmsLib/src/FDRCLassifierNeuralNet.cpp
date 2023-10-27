@@ -482,6 +482,17 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
 
         const QVector<QVector<float>> &trainingDataVecs = trainingDataVecsTranched.at(tranche);
         const QVector<float> &yData = yTrainingDataTranched.at(tranche);
+        const int firstRowSize = trainingDataVecs.front().size();
+
+        qDebug() << "Tranche" << tranche;
+        qDebug() << "X Size" << trainingDataVecs.size();
+        qDebug() << "X input size" << firstRowSize;
+        qDebug() << "Y Size" << yData.size();
+        qDebug() << "X rows are uniform" << std::all_of(
+                trainingDataVecs.begin(),
+                trainingDataVecs.end(),
+                [firstRowSize](const QVector<float> &f){return f.size() == firstRowSize;}
+                );
 
         auto *candidateClassifier = new CandidateClassifier();
         bool trainingCompletedNoErrors = candidateClassifier->trainCandidateClassifier(
@@ -576,6 +587,14 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(scoreCandidate.cosineSim20MS1, 0.0)); //8
         scores.push_back(scoreCandidate.peptideStringWithMods.size()); //7
         scores.push_back(scoreCandidate.theoFragmentCount); //7
+
+        scores.push_back(std::max(scoreCandidate.shadowsCosineSimSum, 0.0)); //2
+//        const int shadowsMaxSize = 6;
+//        const QVector<double> cosineSimShadowsToAnchors
+//                = extractScoresFromVecFeatures(scoreCandidate.cosineSimShadowsToAnchorVec, shadowsMaxSize);
+//        scores.append(cosineSimShadowsToAnchors); //11-16
+
+
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
 //        scores.push_back(scoreCandidate.peakShapeRatio3);
@@ -632,29 +651,26 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(scoreCandidate.b2Corr, 0.0));
         scores.push_back(std::max(scoreCandidate.b3Corr, 0.0));
         scores.push_back(std::max(scoreCandidate.b2b3CosineSimSum, 0.0));
-        scores.push_back(std::max(scoreCandidate.y2Corr, 0.0));
-        scores.push_back(std::max(scoreCandidate.y3Corr, 0.0));
-        scores.push_back(std::max(scoreCandidate.y2y3CosineSimSum, 0.0));
 
         scores.push_back(std::max(0.0, scoreCandidate.cosineSimSpectrum));
         scores.push_back(scoreCandidate.discriminateScore);
         scores.push_back(std::pow(std::max(0.0, scoreCandidate.klDivSpectrum), 3));
 
-        QVector<double> ppmVec;
-        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
-
-            const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
-            if (i >= scoreCandidate.mzFoundMeanVec.size()) {
-                break;
-            }
-
-            const double mzFound = scoreCandidate.mzFoundMeanVec[i];
-
-            const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-            ppmVec.push_back(std::min(ppm, 100.0));
-        }
-        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
-        scores.append(ppmMz);
+//        QVector<double> ppmVec;
+//        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
+//
+//            const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
+//            if (i >= scoreCandidate.mzFoundMeanVec.size()) {
+//                break;
+//            }
+//
+//            const double mzFound = scoreCandidate.mzFoundMeanVec[i];
+//
+//            const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
+//            ppmVec.push_back(std::min(ppm, 100.0));
+//        }
+//        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
+//        scores.append(ppmMz);
 
         scores.push_back(scoreCandidate.matrixPValue);
         scores.push_back(scoreCandidate.matrixWeight);

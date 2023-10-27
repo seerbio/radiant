@@ -70,9 +70,7 @@ Err MS2DataExtractomatic::init(
 
 Err MS2DataExtractomatic::extractMS2ForCandidates(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptide,
-        double fdrThreshold,
-        QVector<ScoredCandidate> *scoredCandidatesAll,
-        QVector<ScoredCandidate> *scoredCandidatesTargetsFDRThresholded
+        QVector<ScoredCandidate> *scoredCandidatesAll
         ) {
 
     ERR_INIT
@@ -89,21 +87,17 @@ Err MS2DataExtractomatic::extractMS2ForCandidates(
             scoredCandidatesAll
     ); ree;
 
-    e = filterScoreCandidatesByFDR(
-            *scoredCandidatesAll,
-            fdrThreshold,
-            false,
-            scoredCandidatesTargetsFDRThresholded
-    ); ree;
-
-    e = outputFDRResults(*scoredCandidatesAll); ree;
-
     ERR_RETURN
 }
 
 namespace {
 
-    struct ParallelProcessingInput {
+    class ParallelProcessingInput {
+
+    public:
+        ParallelProcessingInput() = default;
+        ~ParallelProcessingInput() = default;
+
         UniqueMsInfoScanKey uniqueMsInfoScanKey;
         PythiaParameters pythiaParameters;
         MsCalibratomatic msCalibratomatic;
@@ -145,7 +139,8 @@ namespace {
 }//namespace
 Err MS2DataExtractomatic::extractTargetDecoyData(
         const QMap<UniqueMsInfoScanKey, QMap<PeptideStringWithMods, CandidatePeptide>> &uniqueInfoScanKeyVsCandidatePeptideCalibration,
-        QVector<ScoredCandidate> *combinedResults) {
+        QVector<ScoredCandidate> *combinedResults
+        ) {
 
     ERR_INIT
 
@@ -333,7 +328,11 @@ Err MS2DataExtractomatic::buildScoredCandidatesFDR(
     ); ree;
 
     qDebug() << "Adjusted weights:" << weights;
-    qDebug() << "PSM count 10% FDR" << psmCountTenPercentFDR;
+    qDebug() << "*******";
+    qDebug() << "Averages:" << b;
+
+    QMap<QString, int> unused;
+    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAll, true, &unused); ree;
 
     ERR_RETURN
 }
@@ -532,7 +531,11 @@ Err MS2DataExtractomatic::fitWeightsLogic(
     ERR_RETURN
 }
 
-Err MS2DataExtractomatic::outputFDRResults(const QVector<ScoredCandidate> &scoredCandidatesAll) {
+Err MS2DataExtractomatic::outputFDRResults(
+        const QVector<ScoredCandidate> &scoredCandidatesAll,
+        bool verbose,
+        QMap<QString, int> *fdrVsCount
+        ) {
 
     ERR_INIT
 
@@ -544,8 +547,14 @@ Err MS2DataExtractomatic::outputFDRResults(const QVector<ScoredCandidate> &score
                 fdrThresh,
                 &foundAtThreshold
         ); ree;
+        const double fdrPercent = fdrThresh * 100;
+        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
 
-        qDebug() << foundAtThreshold << "PSMs found at" << fdrThresh * 100 << "% FDR";
+        if (!verbose) {
+            continue;
+        }
+
+        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
     }
 
     ERR_RETURN
