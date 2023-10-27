@@ -1,6 +1,6 @@
 # Pythia DIA
 
-<p align="center"><img alt="Pythia logo" src="./static/pythia-logo.png" style="min-width: 128px; width: 60%;"></p>
+<p align="center"><img alt="Pythia logo" src="./static/pythia-logo.png" style="width: 60%;"></p>
 
 **Pythia DIA** is a search tool for bottom-up DIA-MS proteomics that offers:
 
