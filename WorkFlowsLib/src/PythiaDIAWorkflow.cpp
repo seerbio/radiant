@@ -395,6 +395,7 @@ namespace {
         ERR_INIT
 
         const int theoMzIonsSizeMin = 6;
+        const double cosineSimSum100MinForTraining = 0.99;
 
         e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
         e = ErrorUtils::isTrue(scanTimeMinMax.second > scanTimeMinMax.first); ree;
@@ -415,8 +416,13 @@ namespace {
                 }
                 e = ErrorUtils::isTrue(decoyContainsTargetKey); ree;
 
+                const CandidateScores &candidateScores = tdc->uniqueInfoScanKeyVsScoresTarget()->value(key);
+                if (candidateScores.cosineSimSum100 < cosineSimSum100MinForTraining) {
+                    continue;
+                }
+
                 const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
-                        tdc->uniqueInfoScanKeyVsScoresTarget()->value(key),
+                        candidateScores,
                         useExtendedScores,
                         useNeuralNetworkScores,
                         theoMzIonsSize,
@@ -531,11 +537,17 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
     const int minTrainingCount = 100;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
+            m_pythiaParameters.mzMinDataStructure,
+            m_pythiaParameters.mzMaxDataStructure,
+            calibrationTrainingFraction,
+            &scoredTargetDecoyPointers
+    ); ree;
+
     QMap<QString, int> fdrVsCount;
     e = setTargetDecoyCandidateScores(
             targetDecoyCandidatePairScoretron,
             m_minTopNMs2Ions,
-            calibrationTrainingFraction,
             useExtendedScores,
             useNeuralNetworkScores,
             &scoredTargetDecoyPointers,
@@ -574,7 +586,6 @@ Err PythiaDIAWorkflow::buildCalibration(TargetDecoyCandidatePairScoretron *targe
 Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
         TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
         int topNMS2Ions,
-        double calibrationTrainingFraction,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
         QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
@@ -585,7 +596,6 @@ Err PythiaDIAWorkflow::setTargetDecoyCandidateScores(
 
     e = targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
             topNMS2Ions,
-            calibrationTrainingFraction,
             m_msCalibratomatic,
             scoredTargetDecoyPointers
     ); ree;
@@ -928,6 +938,15 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
     qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
 
     const double selectionFractionValue = 0.05;
+
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
+            m_pythiaParameters.mzMinDataStructure,
+            m_pythiaParameters.mzMaxDataStructure,
+            selectionFractionValue,
+            &scoredTargetDecoyPointers
+    ); ree;
+
     const double fdrThreshold = 0.01;
 
     QVector<PythiaParameters> pythiaParametersExperiments;
@@ -942,6 +961,7 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
     const bool useNeuralNetworkScores = false;
     const int minTrainingCount = 100;
 
+
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
@@ -951,12 +971,10 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
         e = targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
 
-        QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
         QMap<QString, int> fdrVsCount;
         e = setTargetDecoyCandidateScores(
                 targetDecoyCandidatePairScoretron,
                 topNMs2IonsOptimization,
-                selectionFractionValue,
                 useExtendedScores,
                 useNeuralNetworkScores,
                 &scoredTargetDecoyPointers,
@@ -1022,7 +1040,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     m_pythiaParameters.print();
 
-    const double selectionFractionBypassValue = -1.0;
+
     const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
 
@@ -1033,11 +1051,16 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
 
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
+            m_pythiaParameters.mzMinDataStructure,
+            m_pythiaParameters.mzMaxDataStructure,
+            scoredTargetDecoyPointers
+    ); ree;
+
     QMap<QString, int> fdrVsCount;
     e = setTargetDecoyCandidateScores(
             targetDecoyCandidatePairScoretron,
             topNMs2IonsMainAnalysis,
-            selectionFractionBypassValue,
             useExtendedScores,
             useNeuralNetworkScores,
             scoredTargetDecoyPointers,
@@ -1242,22 +1265,22 @@ namespace {
         ERR_RETURN
     }
 
-    void filterScoredCandidatesByWeightAndPVal(
-            QVector<ScoredCandidate> *scoredCandidatesAllUpdated,
-            double pValThreshold) {
-
-        const double weightThreshold = 0.0;
-        const auto terminatorLogic = [weightThreshold, pValThreshold](const ScoredCandidate &s){
-            return s.matrixWeight < weightThreshold || s.matrixPValue > pValThreshold;
-        };
-
-        const auto terminator = std::remove_if(
-                scoredCandidatesAllUpdated->begin(),
-                scoredCandidatesAllUpdated->end(),
-                terminatorLogic
-        );
-        scoredCandidatesAllUpdated->erase(terminator, scoredCandidatesAllUpdated->end());
-    }
+//    void filterScoredCandidatesByWeightAndPVal(
+//            QVector<ScoredCandidate> *scoredCandidatesAllUpdated,
+//            double pValThreshold) {
+//
+//        const double weightThreshold = 0.0;
+//        const auto terminatorLogic = [weightThreshold, pValThreshold](const ScoredCandidate &s){
+//            return s.matrixWeight < weightThreshold || s.matrixPValue > pValThreshold;
+//        };
+//
+//        const auto terminator = std::remove_if(
+//                scoredCandidatesAllUpdated->begin(),
+//                scoredCandidatesAllUpdated->end(),
+//                terminatorLogic
+//        );
+//        scoredCandidatesAllUpdated->erase(terminator, scoredCandidatesAllUpdated->end());
+//    }
 
 }//namespace
 Err PythiaDIAWorkflow::removeInterferingCandidates(

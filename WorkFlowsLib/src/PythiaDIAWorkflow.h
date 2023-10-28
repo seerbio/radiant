@@ -50,7 +50,6 @@ private:
     Err setTargetDecoyCandidateScores(
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
             int topNMS2Ions,
-            double calibrationTrainingFraction,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,

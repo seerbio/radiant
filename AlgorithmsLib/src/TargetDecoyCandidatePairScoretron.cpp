@@ -311,7 +311,6 @@ namespace {
 }//namespace
 Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
-        double randomSelectionFraction,
         const MsCalibratomatic &msCalibratomatic,
         QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
         ) {
@@ -324,23 +323,6 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager->isInit()); ree;
 
     e = m_targetDecoyCandidatePairManager->clearScores(); ree;
-
-    if (randomSelectionFraction < 0) {
-        e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
-                m_pythiaParameters.mzMinDataStructure,
-                m_pythiaParameters.mzMaxDataStructure,
-                scoredTargetDecoyPointers
-        ); ree;
-
-    } else {
-        e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
-                m_pythiaParameters.mzMinDataStructure,
-                m_pythiaParameters.mzMaxDataStructure,
-                randomSelectionFraction,
-                scoredTargetDecoyPointers
-        ); ree;
-
-    }
 
     const int tranchSize = std::min(m_pythiaParameters.trancheSizeMax, scoredTargetDecoyPointers->size());
     const int nTranches = scoredTargetDecoyPointers->size() / tranchSize;

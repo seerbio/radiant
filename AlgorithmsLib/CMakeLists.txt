@@ -24,11 +24,9 @@ SET(SOURCE_FILES
         src/BoostRTreeAbstractFactory.cpp
         src/BoostRTreePoints.cpp
         src/BoostRTreeWrapper.cpp
-        src/CandidateProcessertron.cpp
         src/CandidateScorertron.cpp
         src/CandidateScores.cpp
         src/ClassifierWeightsManager.cpp
-        src/MS2DataExtractomatic.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
@@ -39,7 +37,6 @@ SET(SOURCE_FILES
         src/MS2PointsExtractomatic.cpp
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
-        src/MsFrameScoretron.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
@@ -59,11 +56,9 @@ SET(HEADER_FILES
         src/BoostRTreeAbstractFactory.h
         src/BoostRTreePoints.h
         src/BoostRTreeWrapper.h
-        src/CandidateProcessertron.h
         src/CandidateScorertron.h
         src/CandidateScores.h
         src/ClassifierWeightsManager.h
-        src/MS2DataExtractomatic.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
@@ -74,7 +69,6 @@ SET(HEADER_FILES
         src/MS2PointsExtractomatic.h
         src/MsCalibratomatic.h
         src/MsFrame.h
-        src/MsFrameScoretron.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h

@@ -8,7 +8,6 @@
 #include "AlgorithmsLib_Exports.h"
 
 #include "CandidateClassifier.h"
-#include "CandidateProcessertron.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsReaderParquet.h"
@@ -106,10 +105,7 @@ public:
             const QPair<double, double> &scanTimeMinMax
             );
 
-    Err exec(
-            const QVector<ScoredCandidate> &trainingDataTargetsAndDecoys,
-            QVector<ScoredCandidate> *scoredCandidatesClassifier
-            );
+
 
     static QString buildTargetDecoyKey(
             const PeptideStringWithMods &peptideStringWithMods,
@@ -145,11 +141,11 @@ public:
         return vec;
     }
 
-    static Err countScoreCandidatesByFDR(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            double qValueThreshold,
-            int *targetCountBelowFDRThreshold
-            );
+//    static Err countScoreCandidatesByFDR(
+//            const QVector<ScoredCandidate> &scoredCandidatesAll,
+//            double qValueThreshold,
+//            int *targetCountBelowFDRThreshold
+//            );
 
     static Err countScoreCandidatesByFDR(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePair,
@@ -171,11 +167,11 @@ public:
 
 private:
 
-    Err trainClassifier(
-            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-            QVector<QVector<float>> *allDataVecs,
-            QVector<NeuralNetData> *trainingData
-            );
+//    Err trainClassifier(
+//            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
+//            QVector<QVector<float>> *allDataVecs,
+//            QVector<NeuralNetData> *trainingData
+//            );
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<QVector<float>>> &trainingDataVecsTranched,

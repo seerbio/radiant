@@ -37,7 +37,6 @@ public:
 
     Err scoreTargetDecoyPairs(
             int topNMS2Ions,
-            double randomSelectionFraction,
             const MsCalibratomatic &msCalibratomatic,
             QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
             );

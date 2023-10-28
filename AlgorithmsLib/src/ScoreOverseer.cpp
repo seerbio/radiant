@@ -360,11 +360,11 @@ namespace {
         for (int i = 0; i < intensityMatrixIntegratedLimitsSmoothed.cols(); i++) {
 
             QVector<double> bestCosineSimsIndividualAnchor;
-            const Eigen::VectorX<double> anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
+            const Eigen::VectorX<double> &anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
 
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
 
-                const Eigen::VectorX<double> altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
+                const Eigen::VectorX<double> &altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
 
                 const double cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
 
