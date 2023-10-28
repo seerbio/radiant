@@ -645,10 +645,11 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        );
 //        scores.append(intensityFoundMaxVecNorm);
 
-//        const QVector<double> mzStDev
-//                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
-//        scores.append(mzStDev);
+        const QVector<double> mzStDev
+                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
+        scores.append(mzStDev);
 
+        scores.push_back(candidateScores.charge);
     }
 
     if (useNeuralNetworkScores) {

@@ -115,7 +115,7 @@ namespace {
 
             Eigen::VectorX<double> vecNormalized = EigenUtils::convertQMapToEigenVector(
                     scanNumbersVsIntensityVals,
-                    frameIndexMax
+                    frameIndexMax + 1
             );
             const double denom = vecNormalized.maxCoeff();
             vecNormalized = vecNormalized.array() / denom;

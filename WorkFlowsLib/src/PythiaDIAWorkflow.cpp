@@ -135,9 +135,10 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 
     //Entrapment libarary
-    m_pythiaParameters.ms2ExtractionWidthPPM = 11.945;
-    m_pythiaParameters.scanTimeWindowMinutes = 3.60323;
+    m_pythiaParameters.ms2ExtractionWidthPPM = 17.2948;
+    m_pythiaParameters.scanTimeWindowMinutes = 1.89289;
     m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+    e = targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 #endif
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
@@ -146,13 +147,13 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredTargetDecoyPointers
             ); ree;
 
-//    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
-//    const double fdrThreshold = 0.01;
-//    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
-//            scoredTargetDecoyPointers,
-//            fdrThreshold,
-//            &scoredTargetDecoyPointersFDRThresholded
-//    ); ree;
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
+    const double fdrThreshold = 0.01;
+    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+            scoredTargetDecoyPointers,
+            fdrThreshold,
+            &scoredTargetDecoyPointersFDRThresholded
+    ); ree;
 
 //    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersUpdated;
 //    e = removeInterferingCandidates(
@@ -162,19 +163,19 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //            &scoredTargetDecoyPointersUpdated
 //            ); ree;
 
-//    e = updateProteinGroupAnnotation(
-//            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-//            &scoredTargetDecoyPointersFDRThresholded
-//            ); ree;
-//
-//    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
-//    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersFDRThresholded) {
-//        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
-////        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
-//    }
-//
-//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredTargetDecoyPointersFDRThresholded
+            ); ree;
+
+    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
+    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersFDRThresholded) {
+        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
+//        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
+    }
+
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
 
 ////#define BYPASS_MAIN_ANALYSIS
 //#ifndef BYPASS_MAIN_ANALYSIS
@@ -989,6 +990,8 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
             &m_pythiaParameters.cosineSimToAnchorThreshold
             ); ree;
 
+    e = targetDecoyCandidatePairScoretron->setPythiaParameters(m_pythiaParameters); ree;
+
     qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
     qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
     qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
@@ -1025,7 +1028,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions) / 2)
     );
 
     qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
