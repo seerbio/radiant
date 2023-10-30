@@ -50,7 +50,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
     double mass = -1.0;
     int isDecoy = 0;
     double iRT = -1.0;
-    int charge = -1; //TODO include charge as column in fragLib files.
+    int precursorCharge = -1; //TODO include charge as column in fragLib files.
 
     QMap<QString, QVariant> map() override {
 
@@ -95,7 +95,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
         //TODO after including charge as column in fragLib, delete this code.
         const int expectedSplitSize = 2;
         e = ErrorUtils::isEqual(peptideSequenceChargeKeySplit.size(), expectedSplitSize); ree;
-        e = ErrorUtils::toInt(peptideSequenceChargeKeySplit.at(1), &charge); ree;
+        e = ErrorUtils::toInt(peptideSequenceChargeKeySplit.at(1), &precursorCharge); ree;
 
         ERR_RETURN
     }

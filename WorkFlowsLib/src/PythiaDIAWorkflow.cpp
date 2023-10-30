@@ -70,40 +70,15 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     QString msDataFilePath = _msDataFilePath;
 
-#define USE_FILE_CACHING
-#ifdef USE_FILE_CACHING
-    {
-        const QString msDataFilePathCached = msDataFilePath + S_GLOBAL_SETTINGS.DOT_CACHED_FILE_EXTENSION;
-        const bool cacheFileExists = QFileInfo::exists(msDataFilePathCached);
-        qDebug() << "Using cached msdatafile" << cacheFileExists;
-
-        if (cacheFileExists) {
-            msDataFilePath = msDataFilePathCached;
-        }
-        else {
-            MsReaderPointerAcc msReaderPointerAcc;
-            e = msReaderPointerAcc.openFile(msDataFilePath); ree;
-            e = deisotopeScans(&msReaderPointerAcc); ree;
-            e = MsReaderParquet::writeMsReaderToParquet(
-                    msDataFilePathCached,
-                    msReaderPointerAcc.ptr
-            ); ree;
-            msDataFilePath = msDataFilePathCached;
-        }
-    }
-#endif
-
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
     m_msScanInfos = msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos();
     m_scanTimeMinMax = msReaderPointerAcc.ptr->scanTimeMinMax();
 
-#ifndef USE_FILE_CACHING
     if (m_pythiaParameters.deisotopeScans) {
-//        e = deisotopeScans(&msReaderPointerAcc); ree;
+        e = deisotopeScans(&msReaderPointerAcc); ree;
     }
-#endif
 
     QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
     e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
@@ -125,7 +100,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&targetDecoyCandidatePairScoretron); ree;
 
-#define BYPASS_OPTI
+//#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
 #else
@@ -135,9 +110,9 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 
     //Entrapment libarary
-    m_pythiaParameters.ms2ExtractionWidthPPM = 17.1804;
-    m_pythiaParameters.scanTimeWindowMinutes = 1.93533;
-    m_pythiaParameters.cosineSimToAnchorThreshold = 0.935;
+    m_pythiaParameters.ms2ExtractionWidthPPM = 16.8697;
+    m_pythiaParameters.scanTimeWindowMinutes = 2.08246;
+    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
     e = targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 #endif
 
@@ -165,12 +140,12 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             ); ree;
 
     e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            m_fastaUri,
             &scoredTargetsPointers50PercentFDR
             ); ree;
 
     e = updateProteinGroupAnnotation(
-            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            m_fastaUri,
             &scoredDecoysPointers50PercentFDR
     ); ree;
 

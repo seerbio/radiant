@@ -81,7 +81,7 @@ namespace {
             ms2Ion.intensity = flrr.intensityVals.at(i);
             ms2Ion.ionLabel = ionLabelsSplit.at(i);
             ms2Ion.iRT = static_cast<IRT>(flrr.iRT);
-            ms2Ion.charge = flrr.charge;
+            ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
             ms2IonsBuilder.push_back(ms2Ion);
         }
@@ -194,6 +194,54 @@ namespace {
         ERR_RETURN
     }
 
+    Err reverseCandidatePeptideTarget(
+            const PeptideStringWithMods &peptideStringWithMods,
+            const AminoAcids &aminoAcids,
+            const QVector<MS2Ion> &ms2IonTarget,
+            QVector<MS2Ion> *ms2IonDecoys
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(peptideStringWithMods); ree;
+        e = ErrorUtils::isNotEmpty(ms2IonTarget); ree;
+
+        ms2IonDecoys->clear();
+        ms2IonDecoys->reserve(ms2IonTarget.size());
+
+        PeptideStringWithMods peptideStringWithModsMiddelReversed = peptideStringWithMods;
+        std::reverse(
+                peptideStringWithModsMiddelReversed.begin() + 1,
+                peptideStringWithModsMiddelReversed.begin() + peptideStringWithModsMiddelReversed.size() - 1
+                );
+
+        for (const MS2Ion &ms2Ion : ms2IonTarget) {
+
+            MS2Ion ms2IonDecoy = ms2Ion;
+
+            QPair<IonIndex, IonType> ionLableInfo;
+            e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo); ree;
+
+            if (ionLableInfo.second.contains('b')) {
+
+
+            }
+
+            else if (ionLableInfo.second.contains('y')) {
+
+
+            }
+
+            else {
+                qDebug() << "Non b/y/a ion" << ionLableInfo;
+            }
+
+            ms2IonDecoys->push_back(ms2IonDecoy);
+        }
+
+        ERR_RETURN
+    }
+
     QPair<Err, TargetDecoyCandidatePair> targetDecoyCandidatePairsLoadLogic(
             const FragLibReaderRow &flrr,
             const PythiaParameters &pythiaParameters
@@ -232,11 +280,18 @@ namespace {
                 &ms2IonsDecoy
         ); rree;
 
+//        e= reverseCandidatePeptideTarget(
+//                peptideStringWithMods,
+//                pythiaParameters.aminoAcids,
+//                ms2IonsTarget,
+//                &ms2IonsDecoy
+//        ); rree;
+
         TargetDecoyCandidatePair targetDecoyCandidatePair(
                 peptideStringWithMods,
                 ms2IonsTarget,
                 ms2IonsDecoy,
-                flrr.charge,
+                flrr.precursorCharge,
                 flrr.mass,
                 flrr.iRT,
                 flrr.mzVals.size(),
