@@ -335,6 +335,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             ); ree;
 
     int tranchCounter = 0;
+    std::random_device rd;
+    std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
     for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
 
         qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size();
@@ -346,6 +348,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
                 msCalibratomatic,
                 &parallelInputs
         ); ree;
+
+        std::shuffle(parallelInputs.begin(), parallelInputs.end(), g);
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
