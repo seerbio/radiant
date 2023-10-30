@@ -168,8 +168,15 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredTargetDecoyPointersFDRThresholded
             ); ree;
 
+    std::sort(scoredTargetDecoyPointersFDRThresholded.rbegin(), scoredTargetDecoyPointersFDRThresholded.rend(),
+              [](TargetDecoyCandidatePair*l, TargetDecoyCandidatePair*r){
+        return l->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100
+        < r->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100;
+    });
+
     QVector<CandidateScores> candidateScoresTargetsAndDecoys;
     for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersFDRThresholded) {
+//        qDebug() << tdcp->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100;
         candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
 //        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
     }
@@ -1046,7 +1053,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions) / 2)
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
     );
 
     qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
