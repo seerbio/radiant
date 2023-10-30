@@ -15,6 +15,8 @@
 
 using namespace Error;
 
+class TargetDecoyCandidatePair;
+
 class TandemDeconvolverResult {
 
 public:
@@ -22,7 +24,7 @@ public:
     TandemDeconvolverResult() = default;
     ~TandemDeconvolverResult() = default;
 
-    DiscScore discScore = -1.0;
+    double weight = -1.0;
     double tTestVal = -1.0;
     double pVal = -1.0;
     double frameFStat = -1.0;
@@ -50,8 +52,8 @@ public:
 
     Err deconvolveTandemSpectra(
             const ScanPoints &scanPoints,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-            QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
+            const QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>> &tandemPredictions,
+            QMap<TargetDecoyCandidatePair*, TandemDeconvolverResult> *pepSeqVsWeight
             );
 
 private:

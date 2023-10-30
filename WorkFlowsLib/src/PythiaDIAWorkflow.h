@@ -21,7 +21,6 @@
 using namespace Error;
 
 class MsReaderParquet;
-class CandidatePeptide;
 class ScoredCandidate;
 class TargetDecoyCandidatePairScoretron;
 
@@ -74,9 +73,9 @@ private:
 
     Err removeInterferingCandidates(
             MsReaderPointerAcc *msReaderPointerAcc,
-            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRThresholded,
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdated
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedTargets,
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedDecoys
             );
 
     Err applyNeuralNetClassifier(

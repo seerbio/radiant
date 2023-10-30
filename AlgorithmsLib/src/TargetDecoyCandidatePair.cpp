@@ -90,7 +90,7 @@ void TargetDecoyCandidatePair::clearScores() {
     m_uniqueInfoScanKeyVsScoresDecoy.clear();
 }
 
-UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() const {
+UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKeyTarget() const {
 
     UniqueMsInfoScanKey uniqueMsInfoScanKey;
     double bestDiscriminantScore = -1;
@@ -107,14 +107,31 @@ UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKey() const {
     return uniqueMsInfoScanKey;
 }
 
+UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKeyDecoy() const {
+
+    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    double bestDiscriminantScore = -1;
+    for (auto it = m_uniqueInfoScanKeyVsScoresDecoy.begin(); it != m_uniqueInfoScanKeyVsScoresDecoy.end(); it++) {
+        const UniqueMsInfoScanKey &k = it.key();
+        const CandidateScores &cs = it.value();
+
+        if (cs.discriminateScore > bestDiscriminantScore) {
+            uniqueMsInfoScanKey = k;
+            bestDiscriminantScore = cs.discriminateScore;
+        }
+    }
+
+    return uniqueMsInfoScanKey;
+}
+
 CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrTarget() {
 
-    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKey();
+    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKeyTarget();
     return &m_uniqueInfoScanKeyVsScoresTarget[uniqueMsInfoScanKeyBestDiscScore];
 
 }
 
 CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrDecoy() {
-    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKey();
+    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKeyDecoy();
     return &m_uniqueInfoScanKeyVsScoresDecoy[uniqueMsInfoScanKeyBestDiscScore];
 }

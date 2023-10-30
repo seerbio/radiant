@@ -125,7 +125,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&targetDecoyCandidatePairScoretron); ree;
 
-//#define BYPASS_OPTI
+#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
 #else
@@ -135,9 +135,9 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 //    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
 
     //Entrapment libarary
-    m_pythiaParameters.ms2ExtractionWidthPPM = 17.2948;
-    m_pythiaParameters.scanTimeWindowMinutes = 1.89289;
-    m_pythiaParameters.cosineSimToAnchorThreshold = 0.9;
+    m_pythiaParameters.ms2ExtractionWidthPPM = 17.1804;
+    m_pythiaParameters.scanTimeWindowMinutes = 1.93533;
+    m_pythiaParameters.cosineSimToAnchorThreshold = 0.935;
     e = targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 #endif
 
@@ -155,30 +155,37 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredTargetDecoyPointersFDRThresholded
     ); ree;
 
-//    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersUpdated;
-//    e = removeInterferingCandidates(
-//            &msReaderPointerAcc,
-//            scoredTargetDecoyPointersFDRThresholded,
-//            scoredTargetDecoyPointers,
-//            &scoredTargetDecoyPointersUpdated
-//            ); ree;
+    QVector<TargetDecoyCandidatePair*> scoredTargetsPointers50PercentFDR;
+    QVector<TargetDecoyCandidatePair*> scoredDecoysPointers50PercentFDR;
+    e = removeInterferingCandidates(
+            &msReaderPointerAcc,
+            scoredTargetDecoyPointers,
+            &scoredTargetsPointers50PercentFDR,
+            &scoredDecoysPointers50PercentFDR
+            ); ree;
 
     e = updateProteinGroupAnnotation(
             "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
-            &scoredTargetDecoyPointersFDRThresholded
+            &scoredTargetsPointers50PercentFDR
             ); ree;
 
-    std::sort(scoredTargetDecoyPointersFDRThresholded.rbegin(), scoredTargetDecoyPointersFDRThresholded.rend(),
+    e = updateProteinGroupAnnotation(
+            "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta", //TODO make this proper input
+            &scoredDecoysPointers50PercentFDR
+    ); ree;
+
+    std::sort(scoredTargetsPointers50PercentFDR.rbegin(), scoredTargetsPointers50PercentFDR.rend(),
               [](TargetDecoyCandidatePair*l, TargetDecoyCandidatePair*r){
         return l->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100
         < r->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100;
     });
 
     QVector<CandidateScores> candidateScoresTargetsAndDecoys;
-    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersFDRThresholded) {
-//        qDebug() << tdcp->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100;
+    for (TargetDecoyCandidatePair *tdcp : scoredTargetsPointers50PercentFDR) {
         candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
-//        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
+    }
+    for (TargetDecoyCandidatePair *tdcp : scoredDecoysPointers50PercentFDR) {
+        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
     }
 
     const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
@@ -1074,36 +1081,71 @@ Err PythiaDIAWorkflow::mainAnalysis(
             &fdrVsCount
     ); ree;
 
-//    const double fdrFraction = 0.01;
-//
-//    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
-//    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
-//            *scoredTargetDecoyPointers,
-//            fdrFraction,
-//            &scoredTargetDecoyPointersFDRThresholded
-//    ); ree;
-
     ERR_RETURN
 }
 
 namespace {
 
+    double getMinDiscScoreOfTargets(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs) {
+
+        TargetDecoyCandidatePair* discScoreMinElement = *std::min_element(
+                targetDecoyCandidatePairs->begin(),
+                targetDecoyCandidatePairs->end(),
+                [](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){return
+                        l->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore <
+                        r->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore;
+                }
+        );
+
+        return discScoreMinElement->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore;
+    }
+
+    Err getDecoyPointersAboveDiscScore(
+            double discScoreMin,
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            QVector<TargetDecoyCandidatePair*> *decoyCandidatePairs
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairs); ree;
+
+        *decoyCandidatePairs = targetDecoyCandidatePairs;
+
+        const auto terminatorLogic = [discScoreMin](TargetDecoyCandidatePair *tdcp){
+            return tdcp->candidateScoresBestDiscriminantScorePtrDecoy()->discriminateScore < discScoreMin;
+        };
+
+        const auto terminator = std::remove_if(
+                decoyCandidatePairs->begin(),
+                decoyCandidatePairs->end(),
+                terminatorLogic
+                );
+
+        decoyCandidatePairs->erase(terminator, decoyCandidatePairs->end());
+
+        ERR_RETURN
+    }
+
     Err buildMs2IonsFromScoredCandidate(
+            bool getDecoyMS2Ions,
             TargetDecoyCandidatePair* targetDecoyCandidatePair,
             QVector<MS2Ion> *ms2Ions
     ) {
 
         ERR_INIT
 
-        if (targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrTarget()->theoIntensityVec.isEmpty()) {
-            qDebug() << targetDecoyCandidatePair->peptideStringWithMods();
+        QVector<double> theoIntensityVec;
+        QVector<double> mzSearchedVec;
+
+        if (getDecoyMS2Ions) {
+            theoIntensityVec = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrDecoy()->theoIntensityVec;
+            mzSearchedVec = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrDecoy()->mzSearchedVec;
         }
-
-        const QVector<double> &theoIntensityVec
-            = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrTarget()->theoIntensityVec;
-
-        const QVector<double> &mzSearchedVec
-                = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrTarget()->mzSearchedVec;
+        else {
+            theoIntensityVec = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrTarget()->theoIntensityVec;
+            mzSearchedVec = targetDecoyCandidatePair->candidateScoresBestDiscriminantScorePtrTarget()->mzSearchedVec;
+        }
 
         e = ErrorUtils::isNotEmpty(theoIntensityVec); ree;
         e = ErrorUtils::isEqual(theoIntensityVec.size(), mzSearchedVec.size()); ree;
@@ -1127,23 +1169,32 @@ namespace {
     }
 
     Err buildTandemDeconvolutionInput(
-            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRThresholded,
-            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
-            QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> *scanNumberVsTandemPredictions
-    ) {
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetsPointersFDRThresholded,
+            const QVector<TargetDecoyCandidatePair*> &scoredDecoysPointersFDRThresholded,
+            QMap<ScanNumber, QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>>> *scanNumberVsTandemPredictions
+            ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointersFDRThresholded); ree;
-        e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointers); ree;
+        e = ErrorUtils::isNotEmpty(scoredTargetsPointersFDRThresholded); ree;
+        e = ErrorUtils::isNotEmpty(scoredDecoysPointersFDRThresholded); ree;
 
-        for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersFDRThresholded) {
+        for (TargetDecoyCandidatePair *tdcp : scoredTargetsPointersFDRThresholded) {
 
             const CandidateScores &bestCandidateScoresTarget = *tdcp->candidateScoresBestDiscriminantScorePtrTarget();
 
             QVector<MS2Ion> ms2IonsTarget;
-            e = buildMs2IonsFromScoredCandidate(tdcp, &ms2IonsTarget); ree;
-            (*scanNumberVsTandemPredictions)[bestCandidateScoresTarget.scanNumber].insert(tdcp->peptideStringWithMods(), ms2IonsTarget);
+            e = buildMs2IonsFromScoredCandidate(false, tdcp, &ms2IonsTarget); ree;
+            (*scanNumberVsTandemPredictions)[bestCandidateScoresTarget.scanNumber].insert(tdcp, ms2IonsTarget);
+        }
+
+        for (TargetDecoyCandidatePair *tdcp : scoredDecoysPointersFDRThresholded) {
+
+            const CandidateScores &bestCandidateScoresTarget = *tdcp->candidateScoresBestDiscriminantScorePtrDecoy();
+
+            QVector<MS2Ion> ms2IonsDecoy;
+            e = buildMs2IonsFromScoredCandidate(true, tdcp, &ms2IonsDecoy); ree;
+            (*scanNumberVsTandemPredictions)[bestCandidateScoresTarget.scanNumber].insert(tdcp, ms2IonsDecoy);
         }
 
         ERR_RETURN
@@ -1152,16 +1203,16 @@ namespace {
     struct DeconVol {
         ScanNumber scanNumber = -1;
         ScanPoints scanPoints;
-        QMap<PeptideStringWithMods, QVector<MS2Ion>> tandemPredictions;
+        QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>> tandemPredictions;
     };
 
     struct DeconResult {
         Err e = eNoError;
         ScanNumber scanNumber = -1;
-        QMap<PeptideStringWithMods, TandemDeconvolverResult> tandemDeconvolverResult;
+        QMap<TargetDecoyCandidatePair*, TandemDeconvolverResult> tandemDeconvolverResult;
     };
 
-    DeconResult tandemDeconvolutionLogic(
+    Err tandemDeconvolutionLogic(
             const DeconVol &deconVol,
             const PythiaParameters &params
     ) {
@@ -1174,42 +1225,47 @@ namespace {
 
         DeconResult deconResult;
 
-//        TandemSpectraDeconvolvotron tandemSpectraDeconvolvotron;
-//        e = tandemSpectraDeconvolvotron.init(
-//                S_GLOBAL_SETTINGS.HASHING_PRECISION,
-//                params.mzMaxDataStructure,
-//                params.ms2ExtractionWidthPPM,
-//                maxIteration,
-//                stopTol,
-//                pValThreshold
-//        );
-//        if (e != eNoError){
-//            return deconResult;
-//        }
-//
-//        QMap<PeptideStringWithMods, TandemDeconvolverResult> pepSeqVsWeight;
-//        e = tandemSpectraDeconvolvotron.deconvolveTandemSpectra(
-//                deconVol.scanPoints,
-//                deconVol.tandemPredictions,
-//                &pepSeqVsWeight
-//        );
-//        if (e != eNoError){
-//            return deconResult;
-//        }
-//
-//        deconResult.e = e;
-//        deconResult.scanNumber = deconVol.scanNumber;
-//        deconResult.tandemDeconvolverResult = pepSeqVsWeight;
+        TandemSpectraDeconvolvotron tandemSpectraDeconvolvotron;
+        e = tandemSpectraDeconvolvotron.init(
+                S_GLOBAL_SETTINGS.HASHING_PRECISION,
+                params.mzMaxDataStructure,
+                params.ms2ExtractionWidthPPM,
+                maxIteration,
+                stopTol,
+                pValThreshold
+        ); ree;
 
-        return deconResult;
+        QMap<TargetDecoyCandidatePair*, TandemDeconvolverResult> result;
+        e = tandemSpectraDeconvolvotron.deconvolveTandemSpectra(
+                deconVol.scanPoints,
+                deconVol.tandemPredictions,
+                &result
+        ); ree;
+
+        for (auto it = result.begin(); it != result.end(); it++) {
+
+            TargetDecoyCandidatePair* tdcp = it.key();
+            const TandemDeconvolverResult &tdr = it.value();
+
+            CandidateScores *candidateScoresTarget = tdcp->candidateScoresBestDiscriminantScorePtrTarget();
+            candidateScoresTarget->matrixPValue = tdr.pVal;
+            candidateScoresTarget->matrixError = tdr.frameError;
+            candidateScoresTarget->matrixWeight = tdr.weight;
+
+            CandidateScores *candidateScoresDecoy = tdcp->candidateScoresBestDiscriminantScorePtrDecoy();
+            candidateScoresDecoy->matrixPValue = tdr.pVal;
+            candidateScoresDecoy->matrixError = tdr.frameError;
+            candidateScoresDecoy->matrixWeight = tdr.weight;
+        }
+
+        ERR_RETURN
     }
 
     Err deconvolveTandemSpectra(
-            const QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
+            const QMap<ScanNumber, QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>>> &scanNumberVsTandemPredictions,
             const PythiaParameters &params,
-            MsReaderPointerAcc *msReaderPointerAcc,
-            QMap<ScanNumber, QMap<PeptideStringWithMods, TandemDeconvolverResult>> *scanNumberVsTandemDeconvolverResult
-    ) {
+            MsReaderPointerAcc *msReaderPointerAcc
+            ) {
 
         ERR_INIT
         e = ErrorUtils::isNotEmpty(scanNumberVsTandemPredictions); ree;
@@ -1244,15 +1300,14 @@ namespace {
             params
         );
 
-        QFuture<DeconResult> futures = QtConcurrent::mapped(
+        QFuture<Err> futures = QtConcurrent::mapped(
                 scanPointsVsTandemPredictions,
                 deconvolutionLogicBinder
                 );
         futures.waitForFinished();
 
-        for (const DeconResult &result : futures) {
-            e = result.e; ree;
-            (*scanNumberVsTandemDeconvolverResult)[result.scanNumber] = result.tandemDeconvolverResult;
+        for (const Err &result : futures) {
+            e = result; ree;
         }
 #else
         for (const DeconVol &deconVol : scanPointsVsTandemPredictions) {
@@ -1272,73 +1327,82 @@ namespace {
         ERR_RETURN
     }
 
-//    void filterScoredCandidatesByWeightAndPVal(
-//            QVector<ScoredCandidate> *scoredCandidatesAllUpdated,
-//            double pValThreshold) {
-//
-//        const double weightThreshold = 0.0;
-//        const auto terminatorLogic = [weightThreshold, pValThreshold](const ScoredCandidate &s){
-//            return s.matrixWeight < weightThreshold || s.matrixPValue > pValThreshold;
-//        };
-//
-//        const auto terminator = std::remove_if(
-//                scoredCandidatesAllUpdated->begin(),
-//                scoredCandidatesAllUpdated->end(),
-//                terminatorLogic
-//        );
-//        scoredCandidatesAllUpdated->erase(terminator, scoredCandidatesAllUpdated->end());
-//    }
+    void filterScoredCandidatesByWeightAndPVal(
+            double pValThreshold,
+            bool filterByDecoyScores,
+            QVector<TargetDecoyCandidatePair*> *TargetDecoyCandidatePairs
+        ) {
+
+        const double weightThreshold = 0.0;
+        const auto terminatorLogic = [weightThreshold, pValThreshold, filterByDecoyScores](TargetDecoyCandidatePair *tdcp){
+
+            CandidateScores *candidateScores;
+            if (filterByDecoyScores) {
+                candidateScores = tdcp->candidateScoresBestDiscriminantScorePtrTarget();
+            }
+            else {
+                candidateScores = tdcp->candidateScoresBestDiscriminantScorePtrDecoy();
+            }
+
+            return candidateScores->matrixWeight < weightThreshold || candidateScores->matrixPValue > pValThreshold;
+        };
+
+        const auto terminator = std::remove_if(
+                TargetDecoyCandidatePairs->begin(),
+                TargetDecoyCandidatePairs->end(),
+                terminatorLogic
+        );
+        TargetDecoyCandidatePairs->erase(terminator, TargetDecoyCandidatePairs->end());
+    }
 
 }//namespace
 Err PythiaDIAWorkflow::removeInterferingCandidates(
         MsReaderPointerAcc *msReaderPointerAcc,
-        const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRThresholded,
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
-        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdated
+        QVector<TargetDecoyCandidatePair*> *scoredTargetsPointers50PercentFDR,
+        QVector<TargetDecoyCandidatePair*> *scoredDecoysPointers50PercentFDR
         ) {
 
     ERR_INIT
 
     qDebug() << "Starting interference removal of shared tandem fragments";
 
-    QMap<ScanNumber, QMap<PeptideStringWithMods, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
-    e = buildTandemDeconvolutionInput(
-            scoredTargetDecoyPointersFDRThresholded,
+    const double fdrThreshold = 0.5;
+    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
             scoredTargetDecoyPointers,
-            &scanNumberVsTandemPredictions
-    ); ree;
+            fdrThreshold,
+            scoredTargetsPointers50PercentFDR
+            ); ree;
 
-    QMap<ScanNumber, QMap<PeptideStringWithMods, TandemDeconvolverResult>> scanNumberVsTandemDeconvolverResult;
+    const double targetsDiscScoreMin = getMinDiscScoreOfTargets(scoredTargetsPointers50PercentFDR);
+
+    e = getDecoyPointersAboveDiscScore(
+            targetsDiscScoreMin,
+            scoredTargetDecoyPointers,
+            scoredDecoysPointers50PercentFDR
+            ); ree;
+
+    QMap<ScanNumber, QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>>> scanNumberVsTandemPredictions;
+    e = buildTandemDeconvolutionInput(
+            *scoredTargetsPointers50PercentFDR,
+            *scoredDecoysPointers50PercentFDR,
+            &scanNumberVsTandemPredictions
+            ); ree;
+
     e = deconvolveTandemSpectra(
             scanNumberVsTandemPredictions,
             m_pythiaParameters,
-            msReaderPointerAcc,
-            &scanNumberVsTandemDeconvolverResult
-    ); ree;
+            msReaderPointerAcc
+            ); ree;
 
-//    for (const ScoredCandidate &sc : scoredCandidatesAll) {
-//
-//        const QMap<PeptideStringWithMods, TandemDeconvolverResult> &tandemResult
-//                = scanNumberVsTandemDeconvolverResult.value(sc.scanNumber);
-//
-//        const TandemDeconvolverResult &tandemDeconvolverResult = tandemResult.value(sc.peptideStringWithMods);
-//
-//        ScoredCandidate scNew = sc;
-//        scNew.matrixWeight = tandemDeconvolverResult.discScore;
-//        scNew.matrixPValue = tandemDeconvolverResult.pVal;
-//        scNew.matrixError = tandemDeconvolverResult.frameError;
-//        scNew.scanNumberCandidateCount = tandemDeconvolverResult.scanNumberCandidateCount;
-//
-//        scoredCandidatesAllUpdated->push_back(scNew);
-//    }
-//
-//    filterScoredCandidatesByWeightAndPVal(
-//            scoredCandidatesAllUpdated,
-//            m_pythiaParameters.pValThreshold
-//            );
-//
-//    QMap<QString, int> fdrCountResultsUnused;
-//    e = MS2DataExtractomatic::outputFDRResults(*scoredCandidatesAllUpdated, false, &fdrCountResultsUnused); ree;
+    filterScoredCandidatesByWeightAndPVal(
+            m_pythiaParameters.pValThreshold,
+            false,
+            scoredTargetsPointers50PercentFDR
+            );
+
+    QMap<QString, int> fdrVsCount;
+    FDRCLassifierNeuralNet::outputFDRResults(*scoredTargetsPointers50PercentFDR, true, &fdrVsCount);
 
     ERR_RETURN
 }
@@ -1474,11 +1538,13 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
         bestScoreTarget->proteinGroup = fastaDescriptions.join(';');
         bestScoreTarget->isDecoy = false;
         bestScoreTarget->iRTPredicted = tdcp->iRt();
+        bestScoreTarget->targetKey = tdcp->bestDiscriminateScoreKeyTarget();
 
         bestScoreDecoy->proteinGroup = fastaDescriptions.join(';');
         bestScoreDecoy->isDecoy = true;
         bestScoreDecoy->iRTPredicted = tdcp->iRt();
         bestScoreDecoy->peptideStringWithMods = tdcp->peptideStringWithMods() + "_decoy";
+        bestScoreDecoy->targetKey = tdcp->bestDiscriminateScoreKeyDecoy();
     }
 
     ERR_RETURN

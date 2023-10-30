@@ -1020,7 +1020,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
     candidateScores->scanTimePredicted = scanTimePredicted;
     candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
-    candidateScores->targetKey = targetDecoyCandidatePair->bestDiscriminateScoreKey();
+    candidateScores->targetKey = targetDecoyCandidatePair->bestDiscriminateScoreKeyTarget();
 
     const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
     const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());

@@ -56,8 +56,9 @@ public:
 
     void clearScores();
 
-    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKey() const;
+    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyTarget() const;
 
+    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyDecoy() const;
 
 private:
 
