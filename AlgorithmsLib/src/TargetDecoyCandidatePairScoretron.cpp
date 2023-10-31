@@ -219,7 +219,6 @@ namespace {
                     cachedPoints,
                     &mzHashedVsXICPoints
                     ); ree;
-
         }
 
         e = candidateScorertron->calculateScores(

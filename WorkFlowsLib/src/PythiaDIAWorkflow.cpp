@@ -384,7 +384,7 @@ namespace {
         ERR_INIT
 
         const int theoMzIonsSizeMin = 6;
-        const double cosineSimSum100MinForTraining = 0.99;
+        const double cosineSimSum100MinForTraining = 0.9;
 
         e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairPntrs); ree;
         e = ErrorUtils::isTrue(scanTimeMinMax.second > scanTimeMinMax.first); ree;

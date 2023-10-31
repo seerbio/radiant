@@ -5,6 +5,7 @@
 #include "TargetDecoyCandidatePairManager.h"
 
 #include "AminoAcids.h"
+#include "BiophysicalCalcs.h"
 #include "FragLibReader.h"
 #include "MolecularFormula.h"
 #include "Molecule.h"
@@ -223,13 +224,15 @@ namespace {
             e = ms2IonDecoy.getIonLabelInfo(&ionLableInfo); ree;
 
             if (ionLableInfo.second.contains('b')) {
-
-
+                const QString bSeq = peptideStringWithModsMiddelReversed.left(ionLableInfo.first);
+                ms2IonDecoy.mz = BiophysicalCalcs::calculateThomson(bSeq, aminoAcids, ms2IonDecoy.charge);
             }
 
             else if (ionLableInfo.second.contains('y')) {
 
-
+                const QString ySeq = peptideStringWithModsMiddelReversed.right(ionLableInfo.first);
+                ms2IonDecoy.mz
+                    = BiophysicalCalcs::calculateThomson(ySeq, aminoAcids, ms2IonDecoy.charge) +  (CommonMolecules::H2O.monoisotopicMass() / ms2Ion.charge);
             }
 
             else {
@@ -274,18 +277,22 @@ namespace {
         ); rree;
 
         QVector<MS2Ion> ms2IonsDecoy;
+
+//#define REVERSE_MIDDLE_DECOY
+#ifdef REVERSE_MIDDLE_DECOY
+        e= reverseCandidatePeptideTarget(
+                peptideStringWithMods,
+                pythiaParameters.aminoAcids,
+                ms2IonsTarget,
+                &ms2IonsDecoy
+        ); rree;
+#else
         e= mutateCandidatePeptideTarget(
                 peptideStringWithMods,
                 ms2IonsTarget,
                 &ms2IonsDecoy
         ); rree;
-
-//        e= reverseCandidatePeptideTarget(
-//                peptideStringWithMods,
-//                pythiaParameters.aminoAcids,
-//                ms2IonsTarget,
-//                &ms2IonsDecoy
-//        ); rree;
+#endif
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
                 peptideStringWithMods,

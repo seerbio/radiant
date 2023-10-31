@@ -348,6 +348,7 @@ namespace {
             double cosineSimToAnchorThreshold,
             QVector<double> *bestCosineSimsIndividual,
             double *bestCosineSimSum,
+            QVector<double> *bestIntensitiesIndividual,
             Eigen::VectorX<double> *bestAnchorColumn
     ) {
 
@@ -357,9 +358,12 @@ namespace {
 
         *bestCosineSimSum = 0.0;
 
-        for (int i = 0; i < intensityMatrixIntegratedLimitsSmoothed.cols(); i++) {
+        const int topCols6OrLess = std::min(6, static_cast<int>(intensityMatrixIntegratedLimitsSmoothed.cols()));
+
+        for (int i = 0; i < topCols6OrLess; i++) {
 
             QVector<double> bestCosineSimsIndividualAnchor;
+            QVector<double> bestIndividualIntensities;
             const Eigen::VectorX<double> &anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
 
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
@@ -370,9 +374,12 @@ namespace {
 
                 if (cosineSimToAnchor < cosineSimToAnchorThreshold) {
                     bestCosineSimsIndividualAnchor.push_back(0.0);
+                    bestIndividualIntensities.push_back(0.0);
                     continue;
                 }
 
+                const double intensity = altColumn.maxCoeff();
+                bestIndividualIntensities.push_back(intensity);
                 bestCosineSimsIndividualAnchor.push_back(cosineSimToAnchor);
             }
 
@@ -380,6 +387,7 @@ namespace {
                     = std::accumulate(bestCosineSimsIndividualAnchor.begin(), bestCosineSimsIndividualAnchor.end(), 0.0);
 
             if (cosineSimSumAnchor > *bestCosineSimSum) {
+                *bestIntensitiesIndividual = bestIndividualIntensities;
                 *bestCosineSimSum = cosineSimSumAnchor;
                 *bestCosineSimsIndividual = bestCosineSimsIndividualAnchor;
                 *bestAnchorColumn = anchorColumn;
@@ -434,7 +442,7 @@ namespace {
         std::cout << "FrameIndex " << frameIndexIntensityApexIntegration << std::endl;
         std::cout << intensityMatrixIntegratedLimits << std::endl;
         std::cout << "no interference" << std::endl;
-        std::cout << intensityMatrixIntegratedLimitsNoInterference << std::endl;
+        std::cout << *intensityMatrixIntegratedLimitsNoInterference << std::endl;
         std::cout << pii.first << ", " << pii.second << std::endl;
 #endif
 
@@ -450,6 +458,7 @@ namespace {
             double cosineSimToAnchorThreshold,
             QVector<double> *cosineSimsIndividualIntegration,
             double *bestCosineSimSumIntegration,
+            QVector<double> *bestIntensitiesIndividual,
             Eigen::VectorX<double> *bestAnchorColumn,
             FrameIndex *frameIndexIntensityApexIntegration
     ) {
@@ -501,6 +510,7 @@ namespace {
             const QVector<double> v(topNMs2FragPeaks, 0.0);
             *cosineSimsIndividualIntegration = v;
             *bestCosineSimSumIntegration = 0.0;
+            *bestIntensitiesIndividual = v;
             ERR_RETURN
         }
 
@@ -509,6 +519,7 @@ namespace {
                 cosineSimToAnchorThreshold,
                 cosineSimsIndividualIntegration,
                 bestCosineSimSumIntegration,
+                bestIntensitiesIndividual,
                 bestAnchorColumn
         ); ree;
 
@@ -523,6 +534,7 @@ namespace {
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
             QVector<double> *cosineSimsIndividual,
+            QVector<double> *intensityFoundMaxVec,
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
             Eigen::VectorX<double> *bestAnchorColumn
@@ -539,6 +551,7 @@ namespace {
         for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
             QVector<double> cosineSimsIndividualIntegration;
+            QVector<double> intensitiesIndividual;
             double bestCosineSimSumIntegration;
             FrameIndex frameIndexIntensityApexIntegration;
             e = calcBestCosineSimSum(
@@ -550,6 +563,7 @@ namespace {
                     cosineSimToAnchorThreshold,
                     &cosineSimsIndividualIntegration,
                     &bestCosineSimSumIntegration,
+                    &intensitiesIndividual,
                     bestAnchorColumn,
                     &frameIndexIntensityApexIntegration
             ); ree;
@@ -559,6 +573,7 @@ namespace {
                 *cosineSimsIndividual = cosineSimsIndividualIntegration;
                 *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
                 *bestPeakIntegrationIndexes = pii;
+                *intensityFoundMaxVec = intensitiesIndividual;
             }
 
         }
@@ -595,6 +610,7 @@ namespace {
     }
 
     Err calculateMassAccuracyMetrics(
+            const QVector<double> &cosineSimToAnchorVec,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const PeakIntegrationIndexes &peakIntegrationIndexes,
@@ -608,18 +624,23 @@ namespace {
         e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
         e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
         e = ErrorUtils::isFalse(MathUtils::tSame(peakIntegrationIndexes.first, peakIntegrationIndexes.second)); ree
+        e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() >= ms2IonsTheoretical.size()); ree;
 
-        for (const MS2Ion &ms2Ion : ms2IonsTheoretical) {
+        for (int index = 0; index < ms2IonsTheoretical.size(); index++) {
+
+            const MS2Ion &ms2Ion = ms2IonsTheoretical.at(index);
+            const double cosineSimMs2Ion = cosineSimToAnchorVec.at(index);
 
             mzValsSearched->push_back(ms2Ion.mz);
 
-            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-            if (!mzHashedVsXICPoints.contains(mzHashed)) {
+            if (MathUtils::tZero(cosineSimMs2Ion)) {
                 mzMeanValsFound->push_back(0.0);
                 stdMeanValsFound->push_back(0.0);
                 continue;
             }
+
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            e = ErrorUtils::isTrue(mzHashedVsXICPoints.contains(mzHashed)); ree;
 
             const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
             const QMap<ScanNumber, QVector<double>> scanNumberVsMzVals = xicPoints.scanNumberVsMzVals();
@@ -627,15 +648,8 @@ namespace {
             QVector<double> mzValsForMz;
             for (int i = peakIntegrationIndexes.first; i < peakIntegrationIndexes.second; i++) {
 
-                if (i >= peakIntegrationIndexes.second) {
-                    const double mzMean = MathUtils::mean(mzValsForMz);
-                    const double mzStd = MathUtils::stDev(mzValsForMz);
-                    mzMeanValsFound->push_back(mzMean);
-                    stdMeanValsFound->push_back(mzStd);
-                    break;
-                }
-
                 const QVector<double> &mzVals = scanNumberVsMzVals.value(i);
+
                 if (mzVals.isEmpty()) {
                     continue;
                 }
@@ -705,6 +719,7 @@ namespace {
     }
 
     Err calculateEmpiricalMzStats(
+            const QVector<double> &cosineSimToAnchorVec,
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             PeakIntegrationIndexes &bestPeakIntegrationIndexes,
@@ -723,6 +738,7 @@ namespace {
         ); ree;
 
         e = calculateMassAccuracyMetrics(
+                cosineSimToAnchorVec,
                 mzHashedVsXICPoints100,
                 ms2IonsTheoretical,
                 bestPeakIntegrationIndexes,
@@ -737,8 +753,6 @@ namespace {
                 *mzValsSearched,
                 &mzFoundVsMzSearched
         ); ree
-
-
 
         std::transform(
                 ms2IonsTheoretical.begin(),
@@ -924,6 +938,7 @@ Err ScoreOverseer::buildScores(
             static_cast<int>(d_ptr->m_intensityMatrix100.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
             &candidateScores->cosineSimToAnchorVec,
+            &candidateScores->intensityFoundMaxVec,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
             &bestAnchorColumn
@@ -950,18 +965,20 @@ Err ScoreOverseer::buildScores(
             ); ree;
 
     e = calculateEmpiricalMzStats(
+            candidateScores->cosineSimToAnchorVec,
             mzHashedVsXICPoints100,
-            targetDecoyCandidatePair->ms2IonsTarget(),
+            ms2IonsTheoretical,
             bestPeakIntegrationIndexes,
             &candidateScores->mzFoundMeanVec,
             &candidateScores->mzFoundStDevVec,
             &candidateScores->mzSearchedVec,
             &candidateScores->theoIntensityVec
-            ); ree;
+            );
 
     QVector<double> cosineSimsIndividual45;
     double unused1;
     Eigen::VectorX<double> unused2;
+    QVector<double> unusedIntensity;
     FrameIndex unused3;
     e = calcBestCosineSimSum(
             d_ptr->m_intensityMatrix45,
@@ -972,6 +989,7 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_cosineSimToAnchorThreshold,
             &cosineSimsIndividual45,
             &unused1,
+            &unusedIntensity,
             &unused2,
             &unused3
             ); ree;
@@ -986,13 +1004,10 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_cosineSimToAnchorThreshold,
             &cosineSimsIndividual20,
             &unused1,
+            &unusedIntensity,
             &unused2,
             &unused3
             ); ree;
-
-    candidateScores->intensityFoundMaxVec = EigenUtils::convertEigenVectorToQVector(
-            Eigen::VectorX<double>(d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex))
-    );
 
     candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
 
