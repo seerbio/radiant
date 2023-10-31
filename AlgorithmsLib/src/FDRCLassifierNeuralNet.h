@@ -106,7 +106,6 @@ public:
             );
 
 
-
     static QString buildTargetDecoyKey(
             const PeptideStringWithMods &peptideStringWithMods,
             const UniqueMsInfoScanKey &uniqueMsInfoScanKey,

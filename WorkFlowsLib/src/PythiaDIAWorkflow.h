@@ -79,10 +79,9 @@ private:
             );
 
     Err applyNeuralNetClassifier(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
-            const QVector<ScoredCandidate> &scoredCandidatesCulled,
+            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
             const QPair<double, double> &scanTimeMinMax,
-            QVector<ScoredCandidate> *scoredCandidatesClassifier
+            QVector<CandidateScores> *candidateScoreClassifier
             );
 
     Err updateProteinGroupAnnotation(
