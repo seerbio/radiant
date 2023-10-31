@@ -33,6 +33,7 @@ private:
 };
 
 void MsReaderPointerAccTests::openFileTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
@@ -52,6 +53,7 @@ void MsReaderPointerAccTests::openFileTest() {
 
 
 void MsReaderPointerAccTests::openFileTest2() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

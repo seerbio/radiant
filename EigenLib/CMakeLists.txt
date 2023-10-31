@@ -46,24 +46,15 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${EIGEN_DIRECTORY}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-
 FIND_PACKAGE(Qt5 REQUIRED
-        Core
         Test
-        Network
-        )
-
-
-GET_TARGET_PROPERTY(QtCore_location Qt5::Core LOCATION)
+	Network
+)
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-        Qt5::Core
-        Qt5::Test
-        Qt5::Network
         FileReadersLib
         UtilsLib
         )

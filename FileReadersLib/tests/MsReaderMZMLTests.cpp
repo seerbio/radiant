@@ -34,11 +34,14 @@ private:
 
 
 void MsReaderMZMLTests::openFileTest() {
+    QSKIP("TODO: enable with internal test data");
 
 //    const QString &msParquetFilePath
 //            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
 
     ERR_INIT
+
+    QVERIFY2(QFileInfo::exists(m_filepath), qPrintable(QString("File not found: %1").arg(m_filepath)));
 
     MsReaderMzML reader;
     e = reader.openFile(m_filepath);

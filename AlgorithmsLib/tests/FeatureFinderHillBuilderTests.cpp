@@ -275,6 +275,7 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
 
 void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

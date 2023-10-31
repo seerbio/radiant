@@ -3,11 +3,12 @@ PROJECT(LycaonMzMLTransmorgitron)
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Core
-        Test
         Network
         Sql
+        Test
         Widgets
-        REQUIRED)
+        REQUIRED
+)
 
 SET(SOURCE_FILES
         src/CommandLineParser.cpp

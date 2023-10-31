@@ -5,7 +5,6 @@
 #ifndef PYTHIADIACPP_FEATUREFINDERHILLREADER_H
 #define PYTHIADIACPP_FEATUREFINDERHILLREADER_H
 
-#include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"

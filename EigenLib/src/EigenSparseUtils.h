@@ -33,8 +33,8 @@ public:
             return T();
         }
 
-        const Eigen::MatrixX<T> castVec = mat;
-        return castVec.maxCoeff();
+        const Eigen::MatrixX<T> castMat = mat;
+        return castMat.maxCoeff();
     }
 
 
@@ -72,8 +72,8 @@ public:
             return T();
         }
 
-        const Eigen::MatrixX<T> castVec = mat;
-        return castVec.minCoeff();
+        const Eigen::MatrixX<T> castMat = mat;
+        return castMat.minCoeff();
     }
 
 
@@ -103,12 +103,19 @@ public:
     */
     template<typename T>
     static double mean(const Eigen::SparseMatrix<T> &mat){
-        if(mat.size() == 0){
+        const int nonZeros = mat.nonZeros();
+
+        if(mat.size() == 0 || nonZeros == 0){
             return double();
         }
 
-        const T coeffsSum = mat.coeffs().sum();
-        return coeffsSum / static_cast<double>(mat.nonZeros());
+        Eigen::SparseMatrix<T> copy = mat;
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
+
+        const double coeffsSum = static_cast<double>(copy.coeffs().sum());
+        return coeffsSum / nonZeros;
     }
 
 
@@ -138,14 +145,20 @@ public:
     */
     template <typename T>
     static double stDev(const Eigen::SparseMatrix<T> &mat){
+        const int nonZeros = mat.nonZeros();
 
-        if(mat.size() == 0){
+        if(mat.size() == 0 || nonZeros == 0){
             return double();
         }
 
-        const double meanOfVec = mean(mat);
-        const Eigen::VectorXd diffVec = mat.coeffs().array().template cast<double>() - meanOfVec;
-        return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / static_cast<double>(mat.nonZeros()));
+        Eigen::SparseMatrix<T> copy = mat;
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
+
+        const double meanOfVec = mean(copy);
+        const Eigen::VectorXd diffVec = copy.coeffs().array().template cast<double>() - meanOfVec;
+        return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / nonZeros);
     }
 
 
@@ -228,7 +241,12 @@ public:
 
     template <typename T>
     static double median(const Eigen::SparseMatrix<T> &mat){
-        const Eigen::VectorXd v = mat.coeffs().template cast<double>();
+        Eigen::SparseMatrix<T> copy = mat;
+        if (!copy.isCompressed()) {
+            copy.makeCompressed();
+        }
+
+        const Eigen::VectorXd v = copy.coeffs().template cast<double>();
         std::vector<double> qvec(v.data(), v.data() + v.size());
         return MathUtils::median(qvec);
     }

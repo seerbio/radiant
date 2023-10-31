@@ -1,0 +1,48 @@
+name: Tag Container
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish_x86:
+    runs-on: [self-hosted, aws-master, X64]
+    steps:
+      # Necessary to set up the token required to push the commit tag to GitHub
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Tag x86 container image
+        uses: seerbio/action-tag-container@2.1.0
+        with:
+          container: seer/pythia-dia
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          build_tag_prefix: x86_64-build-
+          tag_suffix: -x86_64
+          addl_tags: latest-x86_64
+
+      - name: Upload x86 deb
+        env:
+          CONTAINER: seer/pythia-dia
+        run: ./deploy_deb.sh
+
+  publish_arm:
+    runs-on: [self-hosted, aws-master, ARM64]
+    steps:
+      # Necessary to set up the token required to push the commit tag to GitHub
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Tag ARM container image
+        uses: seerbio/action-tag-container@2.1.0
+        with:
+          container: seer/pythia-dia
+          repository: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          build_tag_prefix: aarch64-build-
+          tag_suffix: -aarch64
+          addl_tags: latest-aarch64
+
+      - name: Upload ARM deb
+        env:
+          CONTAINER: seer/pythia-dia
+        run: ./deploy_deb.sh

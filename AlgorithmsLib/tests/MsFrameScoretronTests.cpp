@@ -127,6 +127,7 @@ namespace {
 
 }//namespace
 void MsFrameScoretronTests::scoreCandidatesRecalTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

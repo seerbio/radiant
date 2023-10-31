@@ -6,7 +6,6 @@
 #define PYTHIACPP_PROTEINDIGESTOMATIC_H
 
 #include "AlgorithmsLib_Exports.h"
-#include "Error.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "ParquetReader.h"
