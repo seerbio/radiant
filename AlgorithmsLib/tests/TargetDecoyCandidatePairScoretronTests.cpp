@@ -72,7 +72,6 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
     e = targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMS2Ions,
-            0.2,
             msCalibratomatic,
             &scoredTargetDecoyPointers
             );

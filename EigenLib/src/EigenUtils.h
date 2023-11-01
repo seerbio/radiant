@@ -240,9 +240,8 @@ public:
         return MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
     }
 
-
-    template <typename EigenMatrix>
-    static double klDivergence(EigenMatrix v1, EigenMatrix v2) {
+    template <typename T>
+    static double klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
 
         const double nearZero = 1e-5;
         const double threshold = 0.0;
