@@ -9,7 +9,7 @@
 #include "EigenMatrixDiskUtils.h"
 #include "GlobalSettings.h"
 
-#include "../ThirdPartyLibs/nanoflann.hpp" //TODO find a better way to do this.
+#include <nanoflann.hpp>
 
 #include <Eigen/Dense>
 
