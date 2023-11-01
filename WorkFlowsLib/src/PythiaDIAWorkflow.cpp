@@ -1353,6 +1353,10 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys.end(), [](const CandidateScores &c){return !c.isDecoy;}
             );
 
+    QVector<CandidateScores> candidateScoresTargetsAndDecoysShuffled = candidateScoresTargetsAndDecoys;
+    std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+    std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
+
     qDebug() << "target vs decoy count" << targetCount << decoyCount;
 
     const int epochs = 10;
@@ -1369,10 +1373,10 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             scanTimeMinMax
             ); ree;
 
-//    e = fdrClassifierNeuralNet.exec(
-//            trainingData,
-//            scoredCandidatesClassifier
-//            ); ree;
+    e = fdrClassifierNeuralNet.exec(
+            candidateScoresTargetsAndDecoysShuffled,
+            candidateScoreClassifier
+            ); ree;
 
     ERR_RETURN
 }

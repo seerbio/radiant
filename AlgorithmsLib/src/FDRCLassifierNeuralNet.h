@@ -140,12 +140,7 @@ public:
         return vec;
     }
 
-//    static Err countScoreCandidatesByFDR(
-//            const QVector<ScoredCandidate> &scoredCandidatesAll,
-//            double qValueThreshold,
-//            int *targetCountBelowFDRThreshold
-//            );
-
+    
     static Err countScoreCandidatesByFDR(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePair,
             double qValueThreshold,
