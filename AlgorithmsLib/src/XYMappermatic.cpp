@@ -295,7 +295,7 @@ Err XYMappermatic::mapXtoY(const QVector<QPair<XVal, YVal>> &data) {
     ERR_RETURN
 }
 
-Err XYMappermatic::predictY(double x, double *y) {
+Err XYMappermatic::predictY(double x, double *y) const {
 
     ERR_INIT
 

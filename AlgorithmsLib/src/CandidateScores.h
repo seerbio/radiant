@@ -1,23 +1,19 @@
 //
-// Created by anichols on 9/5/23.
+// Created by anichols on 10/20/23.
 //
 
-#ifndef PYTHIADIACPP_CANDIDATEPROCESSERTRON_H
-#define PYTHIADIACPP_CANDIDATEPROCESSERTRON_H
+#ifndef PYTHIADIACPP_CANDIDATESCORES_H
+#define PYTHIADIACPP_CANDIDATESCORES_H
+
 
 #include "AlgorithmsLib_Exports.h"
 
 #include "Error.h"
-#include "FragLibReader.h"
 #include "GlobalSettings.h"
-#include "MsFrame.h"
-#include "PeakIntegratomatic.h"
-#include "PythiaParameterReader.h"
-#include "TurboXIC.h"
+#include "ParquetReader.h"
 
-using namespace Error;
 
-namespace ScoredCandidateNamespace {
+namespace CandidateScoresNamespace {
 
     const QString COS_SIM_SUM_100 = QStringLiteral("cosineSimSum100");
     const QString COS_SIM_SUM_45 = QStringLiteral("cosineSimSum45");
@@ -29,22 +25,16 @@ namespace ScoredCandidateNamespace {
     const QString SCAN_NUM = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
-    const QString X_CORR = QStringLiteral("xCorr");
     const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
-
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
     const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
     const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
     const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
     const QString INTZ_FND_MAX_V = QStringLiteral("intensityFoundMaxVec");
-    const QString FRAME_IND_MAX_DIV_ANCH_V = QStringLiteral("frameIndexMaxDiffFromAnchorVec");
     const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
-    const QString PK_PNT_CNT_FND_V = QStringLiteral("peakPointCountFoundVec");
     const QString TARGET_KEY = QStringLiteral("targetKey");
-
     const QString KL_DIV_SUM = QStringLiteral("klDivSum");
-    const QString KL_DIV_TO_ANCHOR = QStringLiteral("klDivToAnchorVec");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
     const QString COSINE_SIM_100_MS1 = QStringLiteral("cosineSim100MS1");
@@ -62,18 +52,16 @@ namespace ScoredCandidateNamespace {
     const QString SCAN_NUM_CAND_CNT = QStringLiteral("scanNumberCandidateCount");
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString PROTEIN_GRP = QStringLiteral("proteinGroup");
-
     const QString PEAK_SHAPE_RATIO_1 = QStringLiteral("peakShapeRatio1");
     const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
     const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
-
     const QString B2_CORR = QStringLiteral("b2Corr");
     const QString B3_CORR = QStringLiteral("b3Corr");
     const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
+    const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
+    const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
+    const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
 
-    const QString Y2_CORR = QStringLiteral("y2Corr");
-    const QString Y3_CORR = QStringLiteral("y3Corr");
-    const QString Y2Y3_COSINE_SIM_SUM = QStringLiteral("y2y3CosineSimSum");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -91,15 +79,11 @@ namespace ScoredCandidateNamespace {
             MZ_FND_MEAN_V,
             MZ_FND_STDEV_V,
             INTZ_FND_MAX_V,
-            FRAME_IND_MAX_DIV_ANCH_V,
             COS_SIM_SUM_ANCH_V,
-            PK_PNT_CNT_FND_V,
             SCAN_TIME_PRED,
             IRT_PRED,
             TARGET_KEY,
-            X_CORR,
             KL_DIV_SUM,
-            KL_DIV_TO_ANCHOR,
             KL_DIV_SPECTRUM,
             COSINE_SIM_SPECTRUM,
             COSINE_SIM_100_MS1,
@@ -123,13 +107,18 @@ namespace ScoredCandidateNamespace {
             B2_CORR,
             B3_CORR,
             B2B3_COSINE_SIM_SUM,
-            Y2_CORR,
-            Y3_CORR,
-            Y2Y3_COSINE_SIM_SUM
+            SHADOWS_COSINE_SIM_SUM,
+            COS_SIM_SUM_ANCH_SHADOW_V,
+            SHADOW_INTZ_RATIO_VEC
     };
 }
 
-struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
+class ALGORITHMSLIB_EXPORTS CandidateScores : public ParquetReaderInputBase {
+
+public:
+
+    CandidateScores() = default;
+    ~CandidateScores() = default;
 
     PeptideStringWithMods peptideStringWithMods;
     double cosineSimSum100 = -1.0;
@@ -141,9 +130,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
     int scanIonCount = -1;
-    double xCorr = -1.0;
     double klDivSum = -1.0;
-    double klDivSpectrum = -1.0;
+    double klDivSpectrum = 10.0;
     double cosineSimSpectrum = -1.0;
     double cosineSim100MS1 = -1.0;
     double cosineSim45MS1 = -1.0;
@@ -157,10 +145,7 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     QVector<double> mzFoundMeanVec;
     QVector<double> mzFoundStDevVec;
     QVector<double> intensityFoundMaxVec;
-    QVector<int> frameIndexMaxDiffFromAnchorVec;
     QVector<double> cosineSimToAnchorVec;
-    QVector<double> klDivToAnchorVec;
-    QVector<int> peakPointCountFoundVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -172,21 +157,68 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
     int scanNumberCandidateCount = -1;
     double classifierScore = -1.0;
     QString proteinGroup;
-
     double peakShapeRatio1 = -1.0;
     double peakShapeRatio2 = -1.0;
     double peakShapeRatio3 = -1.0;
-
     double b2Corr = -1.0;
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
-    double y2Corr = -1.0;
-    double y3Corr = -1.0;
-    double y2y3CosineSimSum = -1.0;
+    QVector<double> cosineSimShadowsToAnchorVec;
+    QVector<double> shadowsIntensityRatioVec;
+    double shadowsCosineSimSum = -1.0;
+
+    void clear() {
+        peptideStringWithMods= "";
+        mzSearchedVec.clear();
+        theoIntensityVec.clear();
+        mzFoundMeanVec.clear();
+        mzFoundStDevVec.clear();
+        intensityFoundMaxVec.clear();
+        cosineSimToAnchorVec.clear();
+        cosineSimShadowsToAnchorVec.clear();
+        shadowsIntensityRatioVec.clear();
+        targetKey = "";
+        proteinGroup = "";
+        cosineSimSum100 = -1.0;
+        cosineSimSum45 = -1.0;
+        cosineSimSum20 = -1.0;
+        isDecoy = false;
+        charge = -1;
+        mass = -1.0;
+        scanNumber = -1;
+        scanTime = -1.0;
+        scanIonCount = -1;
+        klDivSum = -1.0;
+        klDivSpectrum = -1.0;
+        cosineSimSpectrum = -1.0;
+        cosineSim100MS1 = -1.0;
+        cosineSim45MS1 = -1.0;
+        cosineSim20MS1 = -1.0;
+        cosineSim100MS1Iso1 = -1.0;
+        cosineSim100MS1Iso2 = -1.0;
+        scanTimePredicted = -1.0;
+        iRTPredicted = -1.0;
+        theoFragmentCount = -1;
+        discriminateScore = -1.0;
+        qValue = 1.0;
+        decoyRatio = -1.0;
+        matrixWeight = -1.0;
+        matrixPValue = 1.0;
+        matrixError = 1.0;
+        scanNumberCandidateCount = -1;
+        classifierScore = -1.0;
+        peakShapeRatio1 = -1.0;
+        peakShapeRatio2 = -1.0;
+        peakShapeRatio3 = -1.0;
+        b2Corr = -1.0;
+        b3Corr = -1.0;
+        b2b3CosineSimSum = -1.0;
+        shadowsCosineSimSum = -1.0;
+    }
 
     QMap<QString, QVariant> map() override {
 
-        using namespace ScoredCandidateNamespace;
+        using namespace CandidateScoresNamespace;
 
         return {
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
@@ -204,15 +236,11 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
                 {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
                 {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
-                {FRAME_IND_MAX_DIV_ANCH_V, QVariant(qVectorToQByteArray(frameIndexMaxDiffFromAnchorVec))},
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
-                {PK_PNT_CNT_FND_V, QVariant(qVectorToQByteArray(peakPointCountFoundVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
                 {TARGET_KEY, QVariant(targetKey)},
-                {X_CORR, QVariant(xCorr)},
                 {KL_DIV_SUM, QVariant(klDivSum)},
-                {KL_DIV_TO_ANCHOR, QVariant(qVectorToQByteArray(klDivToAnchorVec))},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
@@ -236,15 +264,15 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
                 {B2_CORR, QVariant(b2Corr)},
                 {B3_CORR, QVariant(b3Corr)},
                 {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
-                {Y2_CORR, QVariant(y2Corr)},
-                {Y3_CORR, QVariant(y3Corr)},
-                {Y2Y3_COSINE_SIM_SUM, QVariant(y2y3CosineSimSum)}
+                {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
+                {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
+                {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))}
         };
     }
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
-        using namespace ScoredCandidateNamespace;
+        using namespace CandidateScoresNamespace;
 
         ERR_INIT
 
@@ -273,11 +301,8 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
         intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-        frameIndexMaxDiffFromAnchorVec = bytesArrayToQVector<int>(dataMap.value(FRAME_IND_MAX_DIV_ANCH_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-        peakPointCountFoundVec = bytesArrayToQVector<int>(dataMap.value(PK_PNT_CNT_FND_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
-        xCorr = dataMap.value(X_CORR).toDouble();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
         cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();
@@ -286,7 +311,6 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
         cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
-        klDivToAnchorVec = bytesArrayToQVector<double>(dataMap.value(KL_DIV_TO_ANCHOR).toByteArray());
         theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
         discriminateScore = dataMap.value(DISC_SCORE).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
@@ -304,126 +328,15 @@ struct FILEREADERSLIB_EXPORTS ScoredCandidate : public ParquetReaderInputBase {
         b2Corr = dataMap.value(B2_CORR).toDouble();
         b3Corr = dataMap.value(B3_CORR).toDouble();
         b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
-        y2Corr = dataMap.value(Y2_CORR).toDouble();
-        y3Corr = dataMap.value(Y3_CORR).toDouble();
-        y2y3CosineSimSum = dataMap.value(Y2Y3_COSINE_SIM_SUM).toDouble();
+
+        shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
+        cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
+        shadowsIntensityRatioVec = bytesArrayToQVector<double>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
 
         ERR_RETURN
     }
-};
-
-
-class ALGORITHMSLIB_EXPORTS CandidateProcessertron {
-
-public:
-
-    CandidateProcessertron();
-    ~CandidateProcessertron() = default;
-
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            int topNMS2Ions,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-            const MsFrame &msFrame,
-            const MsFrame &msFrameMS1,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey
-            );
-
-    Err init(
-            const PythiaParameters &pythiaParameters,
-            int topNMS2Ions,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints45,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints20,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsB2B3,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsY2Y3,
-            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-            const MsFrame &msFrame,
-            const MsFrame &msFrameMS1,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
-            const QMap<PeptideStringWithMods, ScanTime> &fragPredsPredictedScanTime
-    );
-
-    Err processCandidateTarget(
-            const CandidatePeptide &candidatePeptideTarget,
-            ScoredCandidate *scoredCandidate
-            );
-
-    Err processCandidateDecoy(
-            const CandidatePeptide &candidatePeptideDecoy,
-            ScanTime scanTime,
-            ScoredCandidate *scoredCandidateDecoy
-            );
-
-private:
-
-    Err filterSummedVecPeakIntegrationsByPredictedScanTime(
-            ScanTime predictedScanTime,
-            double windowWidthMinutes,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-    );
-
-    Err findCandidateIntegrations(
-            const QVector<double> &summedMatToVec,
-            int minFoundMzPeaks,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-            );
-
-    Err findCandidateIntegrations(
-            const QVector<double> &summedMatToVec,
-            int minFoundMzPeaks,
-            double scanTime,
-            double scanTimeTolerance,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-    );
-
-    Err buildScores(
-            const CandidatePeptide &candidatePeptide,
-            const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
-            const QVector<double> &summedMatVecToVec,
-            ScoredCandidate *scoredCandidate
-            );
-
-    Err calculateEmpiricalMzStats(
-            const CandidatePeptide &candidatePeptide,
-            PeakIntegrationIndexes &bestPeakIntegrationIndexes,
-            QVector<double> *mzMeanValsFound,
-            QVector<double> *stdMeanValsFound,
-            QVector<double> *mzValsSearched,
-            QVector<double> *theoApexIntensity
-            );
-
-private:
-
-    PythiaParameters m_pythiaParameters;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints100;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints45;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPoints20;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsB2B3;
-    QMap<MzHashed, XICPoints> m_mzHashedVsXICPointsY2Y3;
-    QMap<MzHashed, QVector<double>> m_mzHashedVsIonPresence;
-
-    PeakIntegratomatic m_peakIntegratomatic;
-    MsFrame m_msFrame;
-    MsFrame m_msFrameMS1;
-    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
-    TurboXIC m_turboXICMS1;
-    UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
-
-    QMap<PeptideStringWithMods, ScanTime> m_fragPredsPredictedScanTime;
-
-    int m_topNMS2Ions;
-
-    const int m_peakWidthMin;
 
 };
 
 
-#endif //PYTHIADIACPP_CANDIDATEPROCESSERTRON_H
+#endif //PYTHIADIACPP_CANDIDATESCORES_H

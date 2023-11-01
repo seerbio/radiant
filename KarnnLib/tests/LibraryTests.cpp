@@ -25,7 +25,7 @@ private Q_SLOTS:
 };
 
 void LibraryTests::readLibrary() {
-
+    QSKIP("activate when proper pathing is used");
     const QString diannLibraryFile = "/home/anichols/Desktop/Testing/lib.predicted.speclib";
 
     LibraryReader lib;

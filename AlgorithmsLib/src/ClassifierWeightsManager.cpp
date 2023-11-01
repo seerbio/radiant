@@ -6,6 +6,7 @@
 
 #include "ErrorUtils.h"
 #include "EigenUtils.h"
+#include "ParallelUtils.h"
 
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
@@ -130,6 +131,56 @@ Err ClassifierWeightsManager::buildDataClassifier1(
         for (int j = 0; j < cols; j++) {
             for (int k = j; k < cols; k++) {
                 matA.coeffRef(j, k) += (targets[i][j] - decoys[i][j] - b->at(j)) * (targets[i][k] - decoys[i][k] - b->at(k));
+                matA.coeffRef(k, j) = matA.coeffRef(j, k);
+            }
+        }
+    }
+
+    matA /= rows - 1;
+    for (int i = 0; i < cols; i++) {
+        matA.coeffRef(i, i) += std::numeric_limits<double>::min();
+    }
+
+    *A = EigenUtils::convertEigenMatrixToQVectors(matA);
+
+    ERR_RETURN
+}
+
+Err ClassifierWeightsManager::buildDataClassifier1(
+        const QVector<QPair<ScoresTargets, ScoresDecoys>> &targetsScoresVsDecoyScores,
+        QVector<QVector<double>> *A,
+        QVector<double> *b
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(targetsScoresVsDecoyScores); ree;
+
+    const QPair<QVector<ScoresTargets>, QVector<ScoresDecoys>> scoresTargetVsScoresDecoy
+                                                = ParallelUtils::unZip(targetsScoresVsDecoyScores);
+
+    const QVector<ScoresTargets> scoresTarget = scoresTargetVsScoresDecoy.first;
+    const QVector<ScoresTargets> scoresDecoy = scoresTargetVsScoresDecoy.second;
+
+    const Eigen::MatrixX<double> matTargets = EigenUtils::convertQVectorsToEigenMatrix(scoresTarget);
+    const Eigen::MatrixX<double> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(scoresDecoy);
+
+    const Eigen::MatrixX<double> subtractionMat = matTargets - matDecoys;
+    const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
+    const Eigen::VectorX<double> meanMat = subtractionMatSum / matTargets.rows();
+
+    *b = EigenUtils::convertEigenVectorToQVector(meanMat);
+
+    const int rows = scoresTarget.size();
+    const int cols = scoresTarget.front().size();
+
+    Eigen::MatrixX<double> matA(cols, cols);
+    matA.setZero();
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            for (int k = j; k < cols; k++) {
+                matA.coeffRef(j, k) += (scoresTarget[i][j] - scoresDecoy[i][j] - b->at(j)) * (scoresTarget[i][k] - scoresDecoy[i][k] - b->at(k));
                 matA.coeffRef(k, j) = matA.coeffRef(j, k);
             }
         }

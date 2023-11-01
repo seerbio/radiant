@@ -114,7 +114,7 @@ struct PythiaParameters{
 
     int allowedMissedCleavages = 0;
     int peptideLengthMin = 7;
-    int peptideLengthMax = 50;
+    int peptideLengthMax = 35;
     int maxModificationsPeptide = 1;
 
     bool addDecoys = true; //TODO consider removing
@@ -147,6 +147,7 @@ struct PythiaParameters{
     double cosineSimToAnchorThreshold = 0.97;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
+    int trancheSizeMax = 1e5;
 
 
     [[nodiscard]] bool isValid() const {

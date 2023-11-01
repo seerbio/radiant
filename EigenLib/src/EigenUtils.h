@@ -210,17 +210,17 @@ public:
     }
 
     template <typename T>
-    static void thresholdMatrix(T thresholdValue,  Eigen::MatrixX<T> *mat) {
+    static void thresholdMatrix(T thresholdValue, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
     }
 
     template <typename T>
-    static void thresholdMatrix(T thresholdValue, T fillVal,  Eigen::MatrixX<T> *mat) {
+    static void thresholdMatrix(T thresholdValue, T fillVal, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
     template <typename T>
-    static void thresholdVector(T thresholdValue,  Eigen::VectorX<T> *vec) {
+    static void thresholdVector(T thresholdValue, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
     }
 
@@ -230,7 +230,7 @@ public:
     }
 
     template <typename EigenMatrix>
-    static double cosineSimilarity(const EigenMatrix &v1,  const EigenMatrix &v2) {
+    static double cosineSimilarity(const EigenMatrix &v1, const EigenMatrix &v2) {
 
         const double nearZero = 1e-5;
         const double dotProduct = v1.dot(v2);
@@ -240,26 +240,22 @@ public:
         return MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
     }
 
-
-    template <typename EigenMatrix>
-    static double klDivergence(EigenMatrix v1, EigenMatrix v2) {
+    template <typename T>
+    static double klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
 
         const double nearZero = 1e-5;
+        const double threshold = 0.0;
+        thresholdVector(threshold, nearZero, &v1);
+        thresholdVector(threshold, nearZero, &v2);
 
-        const double v1Sum = v1.sum();
-        const double v2Sum = v2.sum();
+        v1 = v1.array() + nearZero;
+        v2 = v2.array() + nearZero;
 
-        if (MathUtils::tZero(v1Sum) || MathUtils::tZero(v2Sum)) {;
-            return 1e4;
-        }
+        v1 = v1.array() / v1.sum();
+        v2 = v2.array() / v2.sum();
 
-        v1 /= v1Sum;
-        v2 /= v2Sum;
-
-        v1 = (v1.array() < nearZero).select(nearZero, v1);
-        v2 = (v2.array() < nearZero).select(nearZero, v2);
-
-        return MathUtils::pRound((v1.array() * Eigen::log2(v1.array() / v2.array())).sum(), 4);
+        Eigen::VectorXd log_ratio = v1.array().log() - v2.array().log();
+        return v1.dot(log_ratio);
     }
 
     template<typename T>
@@ -413,7 +409,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue >= rightPointValue) {
-                    apexIndicies.insert(index,  _vec.coeff(index));
+                    apexIndicies.insert(index, _vec.coeff(index));
                 }
 
                 continue;
@@ -424,7 +420,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue > leftPointValue) {
-                    apexIndicies.insert(index,  _vec.coeff(index));
+                    apexIndicies.insert(index, _vec.coeff(index));
                 }
 
                 continue;
@@ -434,7 +430,7 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
-                apexIndicies.insert(index,  _vec.coeff(index));
+                apexIndicies.insert(index, _vec.coeff(index));
             }
         }
 
@@ -472,7 +468,7 @@ public:
                 const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
                 if (centerPointValue <= rightPointValue) {
-                    troughtIndicies.insert(index,  _vec.coeff(index));
+                    troughtIndicies.insert(index, _vec.coeff(index));
                 }
 
                 continue;
@@ -483,7 +479,7 @@ public:
                 const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
 
                 if (centerPointValue < leftPointValue) {
-                    troughtIndicies.insert(index,  _vec.coeff(index));
+                    troughtIndicies.insert(index, _vec.coeff(index));
                 }
 
                 continue;
@@ -493,7 +489,7 @@ public:
             const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
 
             if(centerPointValue < leftPointValue && centerPointValue <= rightPointValue){
-                troughtIndicies.insert(index,  _vec.coeff(index));
+                troughtIndicies.insert(index, _vec.coeff(index));
             }
         }
 

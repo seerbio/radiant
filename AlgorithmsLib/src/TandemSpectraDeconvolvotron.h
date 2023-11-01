@@ -10,12 +10,21 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MathUtils.h"
+#include "MS2Ion.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;
 
-struct TandemDeconvolverResult {
-    DiscScore discScore = -1.0;
+class TargetDecoyCandidatePair;
+
+class TandemDeconvolverResult {
+
+public:
+
+    TandemDeconvolverResult() = default;
+    ~TandemDeconvolverResult() = default;
+
+    double weight = -1.0;
     double tTestVal = -1.0;
     double pVal = -1.0;
     double frameFStat = -1.0;
@@ -43,8 +52,8 @@ public:
 
     Err deconvolveTandemSpectra(
             const ScanPoints &scanPoints,
-            const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-            QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
+            const QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>> &tandemPredictions,
+            QMap<TargetDecoyCandidatePair*, TandemDeconvolverResult> *pepSeqVsWeight
             );
 
 private:

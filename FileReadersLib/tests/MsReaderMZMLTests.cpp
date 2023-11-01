@@ -36,6 +36,8 @@ private:
 void MsReaderMZMLTests::openFileTest() {
     QSKIP("TODO: enable with internal test data");
 
+    QSKIP("activate when proper pathing is used");
+
 //    const QString &msParquetFilePath
 //            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
 

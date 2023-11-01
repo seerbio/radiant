@@ -26,7 +26,7 @@ void XYMappermaticTests::loadModelTest() {
 
     ERR_INIT
 
-//    QSKIP("undo me baby");
+    QSKIP("activate when proper pathing is used");
 
     // TODO
     const QString iRTReCalFilePath
@@ -191,7 +191,7 @@ void XYMappermaticTests::loadModelTest() {
 void XYMappermaticTests::splineTest() {
     QSKIP("TODO: enable with internal test data");
 
-//    QSKIP("undo me baby");
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 

@@ -57,8 +57,9 @@ void TurboXICTests::initTest() {
     e = turboXIC.init(points);
     QCOMPARE(e, eNoError);
 
-    //e = turboXIC.init({});
-    //QCOMPARE(e, eError);
+    QMap<ScanNumber, ScanPoints> emptyPoints;
+    e = turboXIC.init(emptyPoints);
+    QCOMPARE(e, eEmptyContainerError);
 
 }
 

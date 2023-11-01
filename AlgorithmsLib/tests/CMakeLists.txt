@@ -13,7 +13,9 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 #Add classes to test here.
 SET(TEST_CLASSES
         BiophysicalCalcsTests
+        BoostRTreeWrapperTests
         ClassifierWeightsManagerTests
+        CandidateScorertronTests
         FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         IRTPredictronTests
@@ -23,13 +25,14 @@ SET(TEST_CLASSES
         MS2PointsExtractomaticTests
         MsCalibratomaticTests
         MsFrameTests
-        MsFrameScoretronTests
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests
         TandemFragmentPredictotronTests
         TandemPredictionUtilsTests
         TandemSpectraDeconvolvotronTests
+        TargetDecoyCandidatePairManagerTests
+        TargetDecoyCandidatePairScoretronTests
         TurboXICTests
         XYMappermaticTests
 )

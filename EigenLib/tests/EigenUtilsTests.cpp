@@ -171,9 +171,6 @@ void EigenUtilsTests::rowWiseKLDivergeneceTest() {
 
     Eigen::VectorX<double> res = EigenUtils::rowWiseKLDivergence(mat1, mat2);
 
-
-    EigenUtils::klDivergence(mat1.row(1), mat2.row(1));
-
     //TODO make these resluts into a test.
 //    for (int i = 0; i < 3; i++) {
 //        std::cout << EigenUtils::klDivergence(mat1.row(i), mat2.row(i)) << std::endl;

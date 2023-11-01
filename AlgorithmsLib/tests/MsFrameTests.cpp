@@ -30,7 +30,8 @@ void MsFrameTests::preprocessMsFrame() {
 
     ERR_INIT
 
-    // TODO
+    QSKIP("activate when proper pathing is used");
+
     const QString prqfilepath
             = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
 

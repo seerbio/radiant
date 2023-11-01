@@ -363,7 +363,7 @@ double MsCalibratomatic::scanTimeStDev() {
     return m_scanTimeStd;
 }
 
-Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) {
+Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) const {
     ERR_INIT
     e = m_iRTtoScanTimeMapper.predictY(iRT, predictedScanTime); ree;
     ERR_RETURN

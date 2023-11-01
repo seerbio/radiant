@@ -8,7 +8,6 @@
 #include "AlgorithmsLib_Exports.h"
 
 #include "CandidateClassifier.h"
-#include "CandidateProcessertron.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsReaderParquet.h"
@@ -16,6 +15,9 @@
 
 
 using namespace Error;
+
+class CandidateScores;
+class TargetDecoyCandidatePair;
 
 
 namespace NeuralNetDataNamespace {
@@ -104,9 +106,10 @@ public:
             );
 
     Err exec(
-            const QVector<ScoredCandidate> &trainingDataTargetsAndDecoys,
-            QVector<ScoredCandidate> *scoredCandidatesClassifier
-            );
+            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
+            QVector<CandidateScores> *candidateScoreClassifier
+    );
+
 
     static QString buildTargetDecoyKey(
             const PeptideStringWithMods &peptideStringWithMods,
@@ -115,7 +118,7 @@ public:
     );
 
     static QVector<double> buildScoreVector(
-            const ScoredCandidate &scoreCandidate,
+            const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
@@ -142,16 +145,35 @@ public:
         return vec;
     }
 
+    
     static Err countScoreCandidatesByFDR(
-            const QVector<ScoredCandidate> &scoredCandidatesAll,
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePair,
             double qValueThreshold,
             int *targetCountBelowFDRThreshold
+    );
+
+    static Err countScoreCandidatesByFDR(
+            const QVector<CandidateScores> &targetDecoyCandidatePair,
+            double qValueThreshold,
+            int *targetCountBelowFDRThreshold
+    );
+
+    static Err outputFDRResults(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            bool verbose,
+            QMap<QString, int> *fdrVsCount
+    );
+
+    static Err filterScoreCandidatesByFDR(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            double qValueThreshold,
+            QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsFDRThresholded
             );
 
 private:
 
     Err trainClassifier(
-            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
+            const QMap<QString, CandidateScores> &keyVsScoredCandidateCulled,
             QVector<QVector<float>> *allDataVecs,
             QVector<NeuralNetData> *trainingData
             );

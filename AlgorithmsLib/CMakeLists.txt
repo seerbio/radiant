@@ -21,54 +21,66 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
-        src/DecoyGeneratomatic.cpp
-        src/CandidateProcessertron.cpp
+        src/BoostRTreeAbstractFactory.cpp
+        src/BoostRTreePoints.cpp
+        src/BoostRTreeWrapper.cpp
+        src/CandidateScorertron.cpp
+        src/CandidateScores.cpp
         src/ClassifierWeightsManager.cpp
-        src/MS2DataExtractomatic.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/IRTPredictron.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2ChargeDeconvolvotron.cpp
+        src/MS2Ion.cpp
         src/MS2PointsExtractomatic.cpp
         src/MsCalibratomatic.cpp
         src/MsFrame.cpp
-        src/MsFrameScoretron.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
-        src/XYMappermatic.cpp
+        src/ScoreOverseer.cpp
         src/TandemFragmentPredictotron.cpp
         src/TandemPredictionUtils.cpp
         src/TandemSpectraDeconvolvotron.cpp
+        src/TargetDecoyCandidatePair.cpp
+        src/TargetDecoyCandidatePairManager.cpp
+        src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
+        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
-        src/DecoyGeneratomatic.h
-        src/CandidateProcessertron.h
+        src/BoostRTreeAbstractFactory.h
+        src/BoostRTreePoints.h
+        src/BoostRTreeWrapper.h
+        src/CandidateScorertron.h
+        src/CandidateScores.h
         src/ClassifierWeightsManager.h
-        src/MS2DataExtractomatic.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/IRTPredictron.h
         src/IsotopicDistributionBuilder.h
         src/MS2ChargeDeconvolvotron.h
+        src/MS2Ion.h
         src/MS2PointsExtractomatic.h
         src/MsCalibratomatic.h
         src/MsFrame.h
-        src/MsFrameScoretron.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
-        src/XYMappermatic.h
+        src/ScoreOverseer.h
         src/TandemFragmentPredictotron.h
         src/TandemPredictionUtils.h
         src/TandemSpectraDeconvolvotron.h
+        src/TargetDecoyCandidatePair.h
+        src/TargetDecoyCandidatePairManager.h
+        src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
+        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -85,6 +97,7 @@ INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
+        ${NANOFLANN_DIRECTORY}
         )
 
 FIND_PACKAGE(Qt5 COMPONENTS

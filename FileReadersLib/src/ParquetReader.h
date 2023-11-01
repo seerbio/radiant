@@ -144,6 +144,8 @@ public:
 
         ERR_INIT
 
+        e = ErrorUtils::fileExists(fileURI); ree;
+
         readerRows->clear();
 
         ParquetReader reader;

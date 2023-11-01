@@ -1,4 +1,5 @@
 #include "FDRCLassifierNeuralNet.h"
+#include "CandidateScores.h"
 
 #include <QtTest/QtTest>
 
@@ -88,39 +89,38 @@ void FDRCLassifierNeuralNetTests::execTest() {
     QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
-
-    // TODO
-    const QString &scoredCandsFullFragsFilePath
-            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllFullFragIons.parquet");
-
-    const QString &keyVsScoredCandidateCulledFilePath
-            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/keyVsScoredCandidateCulled.parquet");
-
-    QVector<ScoredCandidate> scoredCandidatesAllFullFragIons;
-    e = ParquetReader::read(scoredCandsFullFragsFilePath, &scoredCandidatesAllFullFragIons);
-    QCOMPARE(e, eNoError);
-
-    QVector<ScoredCandidate> scoredCandidateCulledVec;
-    e = ParquetReader::read(keyVsScoredCandidateCulledFilePath, &scoredCandidateCulledVec);
-    QCOMPARE(e, eNoError);
-
-    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
-    e = fdrClassifierNeuralNet.init(
-            12,
-            10,
-            6,
-            0.1,
-            0.001,
-            {1,20}
-    );
-    QCOMPARE(e, eNoError);
-
-    QVector<ScoredCandidate> scoredCandidatesClassifier;
-    e = fdrClassifierNeuralNet.exec(
-            scoredCandidateCulledVec,
-            &scoredCandidatesClassifier
-            );
-    QCOMPARE(e, eNoError);
+//TODO figure out proper filepathing for tests.
+//    const QString &scoredCandsFullFragsFilePath
+//            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/scoredCandidatesAllFullFragIons.parquet");
+//
+//    const QString &keyVsScoredCandidateCulledFilePath
+//            = QStringLiteral("/home/anichols/Repositories/Builds/PythiaDIACpp/bin/keyVsScoredCandidateCulled.parquet");
+//
+//    QVector<CandidateScores> scoredCandidatesAllFullFragIons;
+//    e = ParquetReader::read(scoredCandsFullFragsFilePath, &scoredCandidatesAllFullFragIons);
+//    QCOMPARE(e, eNoError);
+//
+//    QVector<CandidateScores> scoredCandidateCulledVec;
+//    e = ParquetReader::read(keyVsScoredCandidateCulledFilePath, &scoredCandidateCulledVec);
+//    QCOMPARE(e, eNoError);
+//
+//    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+//    e = fdrClassifierNeuralNet.init(
+//            12,
+//            10,
+//            6,
+//            0.1,
+//            0.001,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eNoError);
+//
+//    QVector<CandidateScores> scoredCandidatesClassifier;
+//    e = fdrClassifierNeuralNet.exec(
+//            scoredCandidateCulledVec,
+//            &scoredCandidatesClassifier
+//            );
+//    QCOMPARE(e, eNoError);
 
 }
 

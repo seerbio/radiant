@@ -7,6 +7,7 @@
 
 #include "AlgorithmsLib_Exports.h"
 
+#include "Error.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
 #include "ParquetReader.h"
@@ -72,8 +73,8 @@ public:
 
     friend class MsFrameTests;
 
-    MsFrame() = default;
-    ~MsFrame() = default;
+    MsFrame();
+    ~MsFrame();
 
     Err init(
             const QMap<ScanNumber, ScanPoints> &scanPoints,
@@ -81,8 +82,6 @@ public:
             );
 
     [[nodiscard]] bool isValid() const ;
-
-    Err deisotopeMsFrame(double ppmTol);
 
     static Err writeFrameScans(
             const QMap<FrameIndex, ScanPoints> &framesVsScanPoints,
@@ -101,27 +100,19 @@ public:
 
     [[nodiscard]] ScanNumber scanNumberFromScanTime(ScanTime scanTime) const;
 
+    [[nodiscard]] Err frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) const;
+
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
     [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
-    Err smoothFrame(
-            int gaussFilterLength,
-            double sigma,
-            int smoothCount,
-            double mzMax
-            );
 
-    Err filterFrameByMz(
-            double mzMin,
-            double mzMax
-            );
 
 private:
 
     Err buildFrameIndexVsScanNumber();
 
-    Err reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints);
+    Err initFrameIndexVsScanTimeKDTree();
 
 private:
 
@@ -129,6 +120,9 @@ private:
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+
+    Q_DISABLE_COPY(MsFrame) class Private;
+    const QScopedPointer<Private> d_ptr;
 
 };
 

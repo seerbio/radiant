@@ -121,6 +121,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
     const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
+    const QString kDeisotopeScans = QStringLiteral("deisotopeScans");
 
 }
 
@@ -278,7 +279,10 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             bool val = jsonValue.toBool();
             pythiaParameters->addDecoys = val;
         }
-
+        else if (jsonKey == kDeisotopeScans){
+            bool val = jsonValue.toBool();
+            pythiaParameters->deisotopeScans = val;
+        }
         else if (jsonKey == kTopNMs2Ions){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
@@ -410,7 +414,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     pythiaParameters.returnPSMTopN = 500;
     pythiaParameters.maxTandemPointCount = 2;
-    pythiaParameters.ms2ExtractionWidthPPM = 17.0;
+    pythiaParameters.ms2ExtractionWidthPPM = 20.0;
     pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
@@ -421,7 +425,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 6;
+    pythiaParameters.topNMs2Ions = 12;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;

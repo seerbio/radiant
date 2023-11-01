@@ -13,12 +13,114 @@
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 
+#include <nanoflann.hpp>
+
 #include <QElapsedTimer>
 
-using SparseMatrixPoint = EigenSparseUtils::SparseMatrixPoint;
 
-const int PRECISION = 3;
+class Q_DECL_HIDDEN MsFrame::Private
+{
 
+
+public:
+
+    using KDTree = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd>;
+
+    Private();
+    ~Private();
+
+    Err init(const QMap<FrameIndex, ScanTime> &frameIndexVsScanTime);
+
+    Err frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex);
+
+    bool isInit();
+
+private:
+
+    QMap<FrameIndex, ScanTime> m_frameIndexVsScanTime;
+    QMap<Index, FrameIndex > m_indexVsFrameIndex;
+    bool m_isInit;
+
+    Eigen::MatrixX<double> *m_mat;
+    KDTree *m_kdTree;
+
+};
+
+MsFrame::Private::Private() : m_isInit(false) {}
+
+MsFrame::Private::~Private() {
+    delete m_kdTree;
+    delete m_mat;
+}
+
+
+Err MsFrame::Private::init(const QMap<FrameIndex, ScanTime> &frameIndexVsScanTime) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(frameIndexVsScanTime); ree;
+    m_frameIndexVsScanTime = frameIndexVsScanTime;
+
+    const int nDims = 2;
+    m_mat = new Eigen::MatrixX<double>(frameIndexVsScanTime.size(), nDims);
+
+    int index = 0;
+    for (auto it = m_frameIndexVsScanTime.begin(); it != m_frameIndexVsScanTime.end(); it++) {
+
+        const FrameIndex frameIndex = it.key();
+        const ScanTime  scanTime = it.value();
+
+        m_mat->coeffRef(index, 0) = scanTime;
+        m_mat->coeffRef(index, 1) = 0.0;
+
+        m_indexVsFrameIndex.insert(index++, frameIndex);
+    }
+
+    const int treeLeafSize = 15;
+    m_kdTree = new KDTree(nDims, *m_mat, treeLeafSize);
+    m_isInit = true;
+
+    ERR_RETURN
+}
+
+bool MsFrame::Private::isInit() {
+    return m_isInit;
+}
+
+Err MsFrame::Private::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(isInit());
+
+    const size_t numResults = 1;
+    std::vector<double> queryPt = {scanTime, 0.0};
+    std::vector<long> retIndex(numResults);
+    std::vector<double> outDistSqr(numResults);
+
+    std::vector<std::pair<Eigen::Index, double>> matches;
+
+    const size_t resultsSize = m_kdTree->index->knnSearch(
+            queryPt.data(),
+            numResults,
+            retIndex.data(),
+            outDistSqr.data()
+    );
+
+    *frameIndex = m_indexVsFrameIndex.value(static_cast<int>(retIndex.front()));
+
+    ERR_RETURN
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//END PRIVATE
+///////////////////////////////////////////////////////////////////////////////////////////
+
+MsFrame::MsFrame() : d_ptr(new Private()) {}
+
+MsFrame::~MsFrame() {}
 
 Err MsFrame::init(
         const QMap<ScanNumber, ScanPoints> &scanPoints,
@@ -27,7 +129,7 @@ Err MsFrame::init(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanPoints); ree
+    e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
     m_frame = scanPoints;
 
@@ -35,6 +137,7 @@ Err MsFrame::init(
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     e = buildFrameIndexVsScanNumber(); ree
+    e = initFrameIndexVsScanTimeKDTree(); ree;
 
     ERR_RETURN
 }
@@ -43,9 +146,9 @@ Err MsFrame::buildFrameIndexVsScanNumber() {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_frame); ree;
+    e = ErrorUtils::isFalse(m_frame.isEmpty()); ree;
 
-    for (const ScanNumber &sn : m_frame.keys()) {
+    for (const ScanNumber sn : m_frame.keys()) {
         m_frameIndexVsScanNumber.insert(m_frameIndexVsScanNumber.size(), sn);
     }
 
@@ -127,113 +230,6 @@ bool MsFrame::isValid() const {
     return scanCount() > minScanCount;
 }
 
-namespace {
-
-    Err smoothEigenMatrix(
-            int gaussFilterLength,
-            double sigma,
-            int smoothCount,
-            Eigen::SparseMatrix<double, Eigen::ColMajor> *mat
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(mat->nonZeros() > 0); ree
-
-        const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(
-                gaussFilterLength,
-                sigma,
-                false
-                );
-
-        for (int i = 0; i <= smoothCount; i++) {
-
-            *mat = EigenKernelUtils::applyKernelColumnWiseToMatrix(
-                    *mat,
-                    gaussKernel,
-                    false
-                    );
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err MsFrame::smoothFrame(
-        int gaussFilterLength,
-        double sigma,
-        int smoothCount,
-        double mzMax
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(isValid()); ree
-
-    const QMap<FrameIndex, ScanPoints> scanPoints = frameIndexVsScanPoints();
-
-    Eigen::SparseMatrix<double, Eigen::ColMajor> mat = EigenSparseUtils::loadFrameToSparseMatrixColMajor(
-            scanPoints,
-            PRECISION,
-            mzMax
-            );
-
-    e = smoothEigenMatrix(
-            gaussFilterLength,
-            sigma,
-            smoothCount,
-            &mat
-            ); ree
-
-    const QMap<int, ScanPoints> reFrame = EigenSparseUtils::loadSparseMatrixToFrame(
-            mat,
-            PRECISION
-            );
-
-    e = reloadMFrame(reFrame); ree;
-
-    ERR_RETURN
-}
-
-Err MsFrame::reloadMFrame(const QMap<FrameIndex, ScanPoints> &scanPoints) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scanPoints); ree
-
-    m_frame.clear();
-
-    for (auto it = scanPoints.begin(); it != scanPoints.end(); it++) {
-
-        const FrameIndex frameIndex = it.key();
-        const ScanNumber scanNumber = scanNumberFromFrameIndex(frameIndex);
-        const ScanPoints &fiScanPoints = it.value();
-
-        m_frame.insert(scanNumber, fiScanPoints);
-    }
-
-    ERR_RETURN
-}
-
-Err MsFrame::filterFrameByMz(
-        double mzMin,
-        double mzMax
-        ) {
-
-    ERR_INIT
-
-    const auto terminatorLogic = [&](const ScanPoint &p){return !(mzMin < p.x() && p.x() < mzMax);};
-
-    for (ScanPoints &pnts : m_frame) {
-
-        const auto terminator = std::remove_if(pnts.begin(), pnts.end(), terminatorLogic);
-
-        pnts.erase(terminator, pnts.end());
-    }
-
-    ERR_RETURN
-}
-
 ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {
 
     const QVector<ScanNumber> scanNumbers = m_scanNumberVsScanTime.keys().toVector();
@@ -244,35 +240,50 @@ ScanNumber MsFrame::scanNumberFromScanTime(ScanTime scanTime) const {
     return scanNumbers.at(closestIndex);
 }
 
-Err MsFrame::deisotopeMsFrame(double ppmTol) {
+Err MsFrame::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *frameIndex) const {
+    ERR_INIT
+    e = d_ptr->frameIndexFromScanTime(scanTime, frameIndex); ree;
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildFrameIndexVsScanTime(
+            const QMap<FrameIndex, ScanNumber> &frameIndexVsScanNumber,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            QMap<FrameIndex, ScanTime> *frameIndexVsScanTime
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(frameIndexVsScanNumber); ree;
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
+
+        for (auto it = frameIndexVsScanNumber.begin(); it != frameIndexVsScanNumber.end(); it++) {
+            const FrameIndex frameIndex = it.key();
+            const ScanNumber scanNumber = it.value();
+            const ScanTime scanTime = scanNumberVsScanTime.value(scanNumber);
+            frameIndexVsScanTime->insert(frameIndex, scanTime);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err MsFrame::initFrameIndexVsScanTimeKDTree() {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_frame);
+    QMap<FrameIndex, ScanTime> frameIndexVsScanTime;
+    e = buildFrameIndexVsScanTime(
+            m_frameIndexVsScanNumber,
+            m_scanNumberVsScanTime,
+            &frameIndexVsScanTime
+            ); ree;
 
-    const QString &chargeModelFilePath
-            = QDir(qApp->applicationDirPath()).filePath("MS2_Charge_Model.json");
-
-    const QString &monoModelFilePath
-            = QDir(qApp->applicationDirPath()).filePath("MS2_Mono_Model.json");
-
-    MS2ChargeDeconvolvotron ms2ChargeDeconvolvotron;
-    e = ms2ChargeDeconvolvotron.init(chargeModelFilePath, monoModelFilePath, ppmTol);
-
-    QMap<ScanNumber, ScanPoints> scanPointsDeisotoped;
-    for (auto it = m_frame.begin(); it != m_frame.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPointsIter = it.value();
-
-        ScanPoints scanPointsIterDeisotoped;
-        e = ms2ChargeDeconvolvotron.deisotopeScanPoints(scanPointsIter, &scanPointsIterDeisotoped);
-
-        scanPointsDeisotoped.insert(scanNumber, scanPointsIterDeisotoped);
-    }
-
-    m_frame = scanPointsDeisotoped;
-    e = buildFrameIndexVsScanNumber(); ree
+    d_ptr->init(frameIndexVsScanTime); ree;
 
     ERR_RETURN
 }
+
+

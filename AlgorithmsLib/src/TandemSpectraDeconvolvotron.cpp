@@ -8,6 +8,7 @@
 #include "MsUtils.h"
 #include "MathUtils.h"
 #include "FragLibReader.h"
+#include "TargetDecoyCandidatePair.h"
 
 #include <Eigen/Sparse>
 
@@ -219,8 +220,8 @@ namespace {
 }//namespace
 Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         const ScanPoints &scanPoints,
-        const QMap<PeptideStringWithMods, QVector<MS2Ion>> &tandemPredictions,
-        QMap<PeptideStringWithMods, TandemDeconvolverResult> *pepSeqVsWeight
+        const QMap<TargetDecoyCandidatePair*, QVector<MS2Ion>> &tandemPredictions,
+        QMap<TargetDecoyCandidatePair*, TandemDeconvolverResult> *pepSeqVsWeight
         ) {
 
     ERR_INIT
@@ -290,7 +291,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
     if (tandemPredictions.size() < minScanSize) {
 
         TandemDeconvolverResult tdr;
-        tdr.discScore = x.coeff(0);
+        tdr.weight = x.coeff(0);
         tdr.tTestVal = 1000;
         tdr.pVal = 0;
         tdr.frameFStat = -1.0;
@@ -298,8 +299,8 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.frameError = error;
         tdr.scanNumberCandidateCount = static_cast<int>(x.size());
 
-        const PeptideStringWithMods &peptideSequenceChargeKey = tandemPredictions.firstKey();
-        pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
+        TargetDecoyCandidatePair* targetDecoyCandidatePair = tandemPredictions.firstKey();
+        pepSeqVsWeight->insert(targetDecoyCandidatePair, tdr);
 
         ERR_RETURN
     }
@@ -318,16 +319,16 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
             &coeffsPVal
             ); ree;
 
-    const QList<PeptideStringWithMods> &keys = tandemPredictions.keys();
+    const QList<TargetDecoyCandidatePair*> &keys = tandemPredictions.keys();
     e = ErrorUtils::isEqual(coeffsTTests.size(), coeffsPVal.size()); ree;
     e = ErrorUtils::isEqual(coeffsTTests.size(), keys.size()); ree;
 
     for (int i = 0; i < keys.size(); i++) {
 
-        const PeptideStringWithMods &peptideSequenceChargeKey = keys.at(i);
+        TargetDecoyCandidatePair* targetDecoyCandidatePair = keys.at(i);
 
         TandemDeconvolverResult tdr;
-        tdr.discScore = x.coeff(i);
+        tdr.weight = x.coeff(i);
         tdr.tTestVal = coeffsTTests.at(i);
         tdr.pVal = coeffsPVal.at(i);
         tdr.frameFStat = fStat;
@@ -335,7 +336,7 @@ Err TandemSpectraDeconvolvotron::deconvolveTandemSpectra(
         tdr.frameError = error;
         tdr.scanNumberCandidateCount = static_cast<int>(x.size());
 
-        pepSeqVsWeight->insert(peptideSequenceChargeKey, tdr);
+        pepSeqVsWeight->insert(targetDecoyCandidatePair, tdr);
     }
 
 //#define DEBUG_MAT_SOLVE

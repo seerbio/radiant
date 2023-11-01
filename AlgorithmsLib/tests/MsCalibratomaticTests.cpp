@@ -36,12 +36,12 @@ void MsCalibratomaticTests::execTests() {
 
     ERR_INIT
 
-    const QString reCalFile
-            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq.cached.pythiaCAL");
-
-    MsCalibratomatic calibratomatic;
-    e = calibratomatic.init(reCalFile);
-    QCOMPARE(e, eNoError);
+//    const QString reCalFile
+//            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq.cached.pythiaCAL");
+//
+//    MsCalibratomatic calibratomatic;
+//    e = calibratomatic.init(reCalFile);
+//    QCOMPARE(e, eNoError);
 
 
 
