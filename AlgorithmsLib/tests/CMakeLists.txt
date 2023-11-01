@@ -14,28 +14,27 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         BiophysicalCalcsTests
         BoostRTreeWrapperTests
-#        ClassifierWeightsManagerTests
+        ClassifierWeightsManagerTests
         CandidateScorertronTests
-#        FDRCLassifierNeuralNetTests
-#        FeatureFinderHillBuilderTests
-#        IRTPredictronTests
-#        IsotopeDistributionBuilderTests
-#        MissingPeptideManualTroubleshooter
-#        MS2ChargeDeconvolvotronTests
-#        MS2PointsExtractomaticTests
-#        MsCalibratomaticTests
-#        MsFrameTests
-#        MsFrameScoretronTests
-#        MsUtilsTests
-#        PeakIntegratomaticTests
-#        ProteinDigestomaticTests
-#        TandemFragmentPredictotronTests
-#        TandemPredictionUtilsTests
-#        TandemSpectraDeconvolvotronTests
+        FDRCLassifierNeuralNetTests
+        FeatureFinderHillBuilderTests
+        IRTPredictronTests
+        IsotopeDistributionBuilderTests
+        MissingPeptideManualTroubleshooter
+        MS2ChargeDeconvolvotronTests
+        MS2PointsExtractomaticTests
+        MsCalibratomaticTests
+        MsFrameTests
+        MsUtilsTests
+        PeakIntegratomaticTests
+        ProteinDigestomaticTests
+        TandemFragmentPredictotronTests
+        TandemPredictionUtilsTests
+        TandemSpectraDeconvolvotronTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TurboXICTests
-#        XYMappermaticTests
+        XYMappermaticTests
 )
 
 foreach(class ${TEST_CLASSES})

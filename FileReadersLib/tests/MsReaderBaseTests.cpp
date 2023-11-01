@@ -37,7 +37,7 @@ private:
 void MsReaderBaseTests::openMzMlTest() {
     QSKIP("TODO: enable with internal test data");
 
-//    QSKIP("SKIPPING FOR DEV");
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
@@ -50,6 +50,8 @@ void MsReaderBaseTests::openMzMlTest() {
 void MsReaderBaseTests::openPrqTest() {
     QSKIP("TODO: enable with internal test data");
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     MsReaderPointerAcc msReaderPointerAcc;
@@ -59,6 +61,8 @@ void MsReaderBaseTests::openPrqTest() {
 
 void MsReaderBaseTests::isDIATest() {
     QSKIP("TODO: enable with internal test data");
+
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 

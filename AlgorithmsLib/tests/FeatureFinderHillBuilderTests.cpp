@@ -277,6 +277,8 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
     QSKIP("TODO: enable with internal test data");
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     //TODO use proper pathing here

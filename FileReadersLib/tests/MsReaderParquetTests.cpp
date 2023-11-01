@@ -96,6 +96,7 @@ void MsReaderParquetTests::readFilteredTest() {
 
     ERR_INIT
 
+    QSKIP("activate when proper pathing is used");
     //TODO add this to test files.
     const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
 
@@ -115,8 +116,7 @@ void MsReaderParquetTests::readFilteredTest() {
 }
 
 void MsReaderParquetTests::readUniqueTest() {
-    QSKIP("TODO: enable with internal test data");
-
+    QSKIP("activate when proper pathing is used");
     ERR_INIT
 
     //TODO add this to test files.

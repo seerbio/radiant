@@ -62,6 +62,9 @@ void FragLibReaderTests::getSM2IonsTest() {
 
     ERR_INIT
 
+
+    QSKIP("activate when proper pathing is used");
+
     //TODO accumulate this test file to S3 for DL for unit test
     //TODO use smaller file to save on DL time.
     const QString testFilePath
