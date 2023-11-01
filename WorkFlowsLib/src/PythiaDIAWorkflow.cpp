@@ -100,7 +100,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
 
     e = buildCalibration(&targetDecoyCandidatePairScoretron); ree;
 
-#define BYPASS_OPTI
+//#define BYPASS_OPTI
 #ifndef BYPASS_OPTI
     e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
 #else
