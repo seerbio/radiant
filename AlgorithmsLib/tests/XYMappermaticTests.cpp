@@ -25,7 +25,7 @@ void XYMappermaticTests::loadModelTest() {
 
     ERR_INIT
 
-//    QSKIP("undo me baby");
+    QSKIP("activate when proper pathing is used");
 
     const QString iRTReCalFilePath
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/TestData.iRT");
@@ -188,7 +188,7 @@ void XYMappermaticTests::loadModelTest() {
 
 void XYMappermaticTests::splineTest() {
 
-//    QSKIP("undo me baby");
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 

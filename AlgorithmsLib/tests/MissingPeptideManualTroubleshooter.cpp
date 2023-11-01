@@ -4,7 +4,6 @@
 
 #include "BiophysicalCalcs.h"
 #include "MsReaderParquet.h"
-#include "MsFrameScoretron.h"
 #include "ParallelUtils.h"
 #include "PythiaParameterReader.h"
 
@@ -25,8 +24,6 @@ struct TroubleshootOutput : public ParquetReaderInputBase {
     QVector<double> intzPred;
 
     QMap<QString, QVariant> map() override {
-
-        using namespace PSMsReaderRowNamespace;
 
         return {
                 {"mzScan", QVariant(qVectorToQByteArray(mzScan))},
@@ -63,6 +60,8 @@ class FrameIndexScoreResultOfTarget;
 void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 
     ERR_INIT
+
+    QSKIP("activate when proper pathing is used");
 
     const QString missingPeptide = "CQXEXNFNTXQTK";
     const double scanTime = 20.5298;

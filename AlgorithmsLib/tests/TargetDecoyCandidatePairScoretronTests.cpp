@@ -26,6 +26,8 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
 
     ERR_INIT
 
+    QSKIP("reactivate when file pathing is figured out.");
+
     const QString fragLibUri
         = QStringLiteral("/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib.fragLib");
 

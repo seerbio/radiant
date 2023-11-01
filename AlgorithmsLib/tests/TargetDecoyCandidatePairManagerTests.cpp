@@ -24,6 +24,8 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
 
     ERR_INIT
 
+    QSKIP("activate when proper pathing is used");
+
     //TODO accumulate this test file to S3 for DL for unit test
     //TODO use smaller file to save on DL time.
     const QString testFilePath
@@ -57,6 +59,8 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
 
     ERR_INIT
 
+    QSKIP("activate when proper pathing is used");
+
     //TODO accumulate this test file to S3 for DL for unit test
     //TODO use smaller file to save on DL time.
     const QString testFilePath
@@ -79,6 +83,8 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
 void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTest2() {
 
     ERR_INIT
+
+    QSKIP("activate when proper pathing is used");
 
     //TODO accumulate this test file to S3 for DL for unit test
     //TODO use smaller file to save on DL time.

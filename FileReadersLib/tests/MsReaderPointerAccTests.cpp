@@ -33,7 +33,7 @@ private:
 };
 
 void MsReaderPointerAccTests::openFileTest() {
-
+    QSKIP("activate when proper pathing is used");
     ERR_INIT
 
     MsReaderPointerAcc reader;
@@ -52,7 +52,7 @@ void MsReaderPointerAccTests::openFileTest() {
 
 
 void MsReaderPointerAccTests::openFileTest2() {
-
+    QSKIP("activate when proper pathing is used");
     ERR_INIT
 
     const QString prqFile

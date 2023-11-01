@@ -45,11 +45,11 @@ void NearestNeighborsSearchTests::initTest()
 
     NearestNeighborsSearch seeker;
     e = seeker.init(QVector<QPair<double, Coors>>());
-    QCOMPARE(e, eError);
+    QCOMPARE(e, eEmptyContainerError);
 
     e = seeker.init(testPoints);
     QCOMPARE(e, eNoError);
-
+    QSKIP("activate when proper pathing is used");
 }
 
 void NearestNeighborsSearchTests::kNearestNeighborsSearchTest() {

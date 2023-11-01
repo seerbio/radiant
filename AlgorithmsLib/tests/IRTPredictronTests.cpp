@@ -87,6 +87,8 @@ void IRTPredictronTests::testPredictionFail() {
 
 void IRTPredictronTests::buildNearestNeighborsIRTDataTest() {
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     //TODO ad this to testing files and properly make the path.
@@ -102,6 +104,8 @@ void IRTPredictronTests::buildNearestNeighborsIRTDataTest() {
 }
 
 void IRTPredictronTests::iRTToScanTimeTest() {
+
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 

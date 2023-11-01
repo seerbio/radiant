@@ -36,7 +36,7 @@ private:
 
 void MsReaderBaseTests::openMzMlTest() {
 
-//    QSKIP("SKIPPING FOR DEV");
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
@@ -48,6 +48,8 @@ void MsReaderBaseTests::openMzMlTest() {
 
 void MsReaderBaseTests::openPrqTest() {
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     MsReaderPointerAcc msReaderPointerAcc;
@@ -56,6 +58,8 @@ void MsReaderBaseTests::openPrqTest() {
 }
 
 void MsReaderBaseTests::isDIATest() {
+
+    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
