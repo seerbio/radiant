@@ -67,6 +67,8 @@ SET(ARROW_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/rel
 SET(PARQUET_SHARED_LIBRARY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100")
 #SET(PYTORCH_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/libtorch")
 SET(PYTORCH_PREFIX_PATH "/libtorch")
+SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
+
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
 #ADD_SUBDIRECTORY("Apps/IstrosLibraryBuilder")
