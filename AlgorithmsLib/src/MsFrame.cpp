@@ -13,7 +13,7 @@
 #include "MsReaderParquet.h"
 #include "ParallelUtils.h"
 
-#include "nanoflann.hpp"
+#include "../ThirdPartyLibs/nanoflann.hpp" //TODO find a better way to do this.
 
 #include <QElapsedTimer>
 

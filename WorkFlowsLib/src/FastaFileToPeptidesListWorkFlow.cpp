@@ -5,7 +5,6 @@
 #include "FastaFileToPeptidesListWorkFlow.h"
 
 #include "BiophysicalCalcs.h"
-#include "DecoyGeneratomatic.h"
 #include "DIAMzTargetsReader.h"
 #include "ErrorUtils.h"
 #include "FastaReader.h"
@@ -188,11 +187,47 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
 namespace {
 
+    const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
+
+    QString shufflePeptide(const QString& peptideSeq) {
+
+        std::mt19937 rng(666); //TODO make this settable.
+
+        const int minSizePeptideShuffle = 5;
+        const int peptideLen = peptideSeq.size();
+        if (peptideLen < minSizePeptideShuffle) {
+            return peptideSeq;
+        }
+
+        QStringList strList = peptideSeq.split("", QString::SkipEmptyParts);
+
+        std::reverse(strList.rbegin() + 1, strList.rend() - 1);
+
+        std::shuffle(
+                strList.begin() + 1,
+                strList.begin() + peptideLen - 1,
+                rng
+        );
+
+        return strList.join("");
+    }
+
     PeptideSequence parallelAddDecoysLogic(const PeptideSequence &ps) {
 
         PeptideSequence newPepSeq = ps;
         newPepSeq.isDecoy = true;
-        newPepSeq.sequence = DecoyGeneratomatic::diannDecoyLogic(ps.sequence);
+
+        int retries = 0;
+        const int maxRetryCount = 10;
+        while (newPepSeq.sequence == ps.sequence) {
+
+            newPepSeq.sequence = shufflePeptide(ps.sequence);
+
+            if (retries++ > maxRetryCount) {
+                newPepSeq.sequence = FAILED_SHUFFLE;
+                return newPepSeq;
+            }
+        }
 
         return newPepSeq;
     }
@@ -219,7 +254,7 @@ Err FastaFileToPeptidesListWorkFlow::addDecoys(
 
     for (const PeptideSequence &pepSeq : futures) {
 
-        if (pepSeq.sequence == S_GLOBAL_SETTINGS.FAILED_SHUFFLE) {
+        if (pepSeq.sequence == FAILED_SHUFFLE) {
             continue;
         }
 
