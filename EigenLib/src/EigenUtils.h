@@ -219,13 +219,13 @@ public:
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
-    template <typename T, typename EigenMatrix>
-    static void thresholdVector(T thresholdValue, EigenMatrix *vec) {
+    template <typename T>
+    static void thresholdVector(T thresholdValue, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
     }
 
-    template <typename T, typename EigenMatrix>
-    static void thresholdVector(T thresholdValue, T fillVal, EigenMatrix *vec) {
+    template <typename T>
+    static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
 
