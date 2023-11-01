@@ -58,6 +58,8 @@ void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedT
 
 void FragLibReaderTests::getSM2IonsTest() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     //TODO accumulate this test file to S3 for DL for unit test

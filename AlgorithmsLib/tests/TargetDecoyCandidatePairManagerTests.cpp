@@ -22,6 +22,8 @@ private Q_SLOTS:
 
 void TargetDecoyCandidatePairManagerTests::initTest() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     //TODO accumulate this test file to S3 for DL for unit test
@@ -55,6 +57,8 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
 
 void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTest1() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     //TODO accumulate this test file to S3 for DL for unit test
@@ -77,6 +81,8 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
 }
 
 void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTest2() {
+
+    QSKIP("TODO: use bundled test data");
 
     ERR_INIT
 
