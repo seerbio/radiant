@@ -163,10 +163,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
         candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
     }
 
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
-
-//#define USE_NEURAL_NET_CLASSIFIER
+#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<CandidateScores> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
@@ -175,6 +172,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 #endif
 
@@ -1293,46 +1291,6 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
     ERR_RETURN
 }
 
-namespace {
-
-//    void filterTargetsOut(QVector<ScoredCandidate> *scoredCandidatesAll) {
-//
-//        const auto terminatorLogic = [](const ScoredCandidate &sc){
-//            return sc.isDecoy == 0;
-//        };
-//
-//        const auto terminator
-//            = std::remove_if(scoredCandidatesAll->begin(), scoredCandidatesAll->end(), terminatorLogic);
-//
-//        scoredCandidatesAll->erase(terminator, scoredCandidatesAll->end());
-//    }
-//
-//    Err getTopDecoys(
-//            const QVector<ScoredCandidate> &scoredCandidatesAll,
-//            int decoyCount,
-//            QVector<ScoredCandidate> *decoys
-//            ) {
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-//
-//        QVector<ScoredCandidate> scoredCandidatesDecoys = scoredCandidatesAll;
-//        filterTargetsOut(&scoredCandidatesDecoys);
-//
-//        const auto sortLogicCosineSimSumDesc = [](const ScoredCandidate &l, const ScoredCandidate &r){
-//            return l.cosineSimSum100 < r.cosineSimSum100;
-//        };
-//
-//        std::sort(scoredCandidatesDecoys.rbegin(), scoredCandidatesDecoys.rend(), sortLogicCosineSimSumDesc);
-//        scoredCandidatesDecoys.resize(decoyCount);
-//
-//        *decoys = scoredCandidatesDecoys;
-//
-//        ERR_RETURN
-//    }
-
-}//namespace
 Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
         const QPair<double, double> &scanTimeMinMax,
@@ -1359,7 +1317,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
 
     qDebug() << "target vs decoy count" << targetCount << decoyCount;
 
-    const int epochs = 10;
+    const int epochs = 5;
     const int baggingSize = 6;
     const double batchFraction = 0.01;
     const double learningRate = 0.001;

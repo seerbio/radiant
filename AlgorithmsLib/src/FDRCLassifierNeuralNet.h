@@ -105,6 +105,11 @@ public:
             const QPair<double, double> &scanTimeMinMax
             );
 
+    Err exec(
+            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
+            QVector<CandidateScores> *candidateScoreClassifier
+    );
+
 
     static QString buildTargetDecoyKey(
             const PeptideStringWithMods &peptideStringWithMods,
@@ -147,6 +152,12 @@ public:
             int *targetCountBelowFDRThreshold
     );
 
+    static Err countScoreCandidatesByFDR(
+            const QVector<CandidateScores> &targetDecoyCandidatePair,
+            double qValueThreshold,
+            int *targetCountBelowFDRThreshold
+    );
+
     static Err outputFDRResults(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
             bool verbose,
@@ -161,11 +172,11 @@ public:
 
 private:
 
-//    Err trainClassifier(
-//            const QMap<QString, ScoredCandidate> &keyVsScoredCandidateCulled,
-//            QVector<QVector<float>> *allDataVecs,
-//            QVector<NeuralNetData> *trainingData
-//            );
+    Err trainClassifier(
+            const QMap<QString, CandidateScores> &keyVsScoredCandidateCulled,
+            QVector<QVector<float>> *allDataVecs,
+            QVector<NeuralNetData> *trainingData
+            );
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<QVector<float>>> &trainingDataVecsTranched,
