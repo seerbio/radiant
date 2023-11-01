@@ -24,6 +24,8 @@ private Q_SLOTS:
 
 void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     const QString fragLibUri
@@ -72,7 +74,6 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
     e = targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMS2Ions,
-            0.2,
             msCalibratomatic,
             &scoredTargetDecoyPointers
             );
