@@ -552,20 +552,30 @@ Err PythiaDIAWorkflow::setDiscriminantScoreForCandidates(
     qDebug() << "Weights:" << weights;
     qDebug() << "b:" << b;
 
-    //TODO change fitweights out of for loop and do a matrix calc
+
+    QVector<ScoresTargets> scoresTargets;
+    QVector<ScoresDecoys> scoresDecoys;
     for(const TargetDecoyPairTargetKey &tdp : targetDecoyPairTargetKeys) {
+        scoresTargets.push_back(tdp.scoresTargetVsScoresDecoys.first);
+        scoresDecoys.push_back(tdp.scoresTargetVsScoresDecoys.second);
+    }
 
-        QVector<double> discScoreTargets;
-        e = ClassifierWeightsManager::applyWeights({tdp.scoresTargetVsScoresDecoys.first}, weights, &discScoreTargets); ree;
+    QVector<double> discScoreTargets;
+    e = ClassifierWeightsManager::applyWeights(scoresTargets, weights, &discScoreTargets); ree;
 
-        QVector<double> discScoreDecoys;
-        e = ClassifierWeightsManager::applyWeights({tdp.scoresTargetVsScoresDecoys.second}, weights, &discScoreDecoys); ree;
+    QVector<double> discScoreDecoys;
+    e = ClassifierWeightsManager::applyWeights(scoresDecoys, weights, &discScoreDecoys); ree;
 
-        TargetDecoyCandidatePair *tdcp = tdp.targetDecoyCandidatePair;
+    e = ErrorUtils::isEqual(scoresTargets.size(), scoresDecoys.size()); ree;
+    e = ErrorUtils::isEqual(scoresTargets.size(), targetDecoyPairTargetKeys.size()); ree;
 
-        (*tdcp->uniqueInfoScanKeyVsScoresTarget())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreTargets.front();
-        (*tdcp->uniqueInfoScanKeyVsScoresDecoy())[tdp.uniqueMsInfoScanKey].discriminateScore = discScoreDecoys.front();
+    for (int i = 0; i < targetDecoyPairTargetKeys.size(); i++) {
 
+        const TargetDecoyPairTargetKey &tdptk = targetDecoyPairTargetKeys.at(i);
+        TargetDecoyCandidatePair *tdcp = tdptk.targetDecoyCandidatePair;
+
+        (*tdcp->uniqueInfoScanKeyVsScoresTarget())[tdptk.uniqueMsInfoScanKey].discriminateScore = discScoreTargets.at(i);
+        (*tdcp->uniqueInfoScanKeyVsScoresDecoy())[tdptk.uniqueMsInfoScanKey].discriminateScore = discScoreDecoys.at(i);
     }
 
     ERR_RETURN
