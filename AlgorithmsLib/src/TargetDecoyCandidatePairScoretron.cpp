@@ -302,7 +302,10 @@ namespace {
             targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
         }
 
-        qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
+        if (pi.pythiaParameters.verbosity > 1) {
+            qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
+        }
+
 
         ERR_RETURN
     }
@@ -357,10 +360,10 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             &scoredTargetDecoyPointersTranched
             ); ree;
 
+    QElapsedTimer et;
+    et.start();
     int tranchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
-
-        qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size();
 
         QVector<TargetDecoyPairParallelInput> parallelInputs;
         e = buildParallelInput(
@@ -388,6 +391,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             e = parallelScoreLogic(tdppi); ree;
         }
 #endif
+
+        qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size() << "mSec" << et.restart();
 
     }
 
