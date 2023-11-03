@@ -307,6 +307,30 @@ namespace {
         ERR_RETURN
     }
 
+    Err reorderParallelInputs(QVector<TargetDecoyPairParallelInput> *parallelInputs) {
+
+        ERR_INIT
+        e = ErrorUtils::isFalse(parallelInputs->isEmpty()); ree;
+
+        QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
+        e = ParallelUtils::trancheVectorForParallelization(
+                *parallelInputs,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &parallelInputsTranched
+                ); ree;
+
+        parallelInputs->clear();
+
+        for (const QVector<TargetDecoyPairParallelInput> &tranche : parallelInputsTranched) {
+
+            for (const TargetDecoyPairParallelInput &pi : tranche) {
+                parallelInputs->append(pi);
+            }
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
@@ -334,8 +358,6 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             ); ree;
 
     int tranchCounter = 0;
-    std::random_device rd;
-    std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
     for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
 
         qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size();
@@ -348,7 +370,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
                 &parallelInputs
         ); ree;
 
-        std::shuffle(parallelInputs.begin(), parallelInputs.end(), g);
+        e = reorderParallelInputs(&parallelInputs); ree;
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
