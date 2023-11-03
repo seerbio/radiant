@@ -148,11 +148,10 @@ struct PythiaParameters{
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
 
-    double cosineSimToAnchorThreshold = 0.97;
+    double cosineSimToAnchorThreshold = 0.9;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
     int trancheSizeMax = 5e4;
-
 
     [[nodiscard]] bool isValid() const {
 
