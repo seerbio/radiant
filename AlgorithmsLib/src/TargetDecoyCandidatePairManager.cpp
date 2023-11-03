@@ -265,6 +265,8 @@ namespace {
         const int peptideLength = peptideStringWithMods.size();
         if (peptideLength < pythiaParameters.peptideLengthMin
             || peptideLength > pythiaParameters.peptideLengthMax
+            || charge < pythiaParameters.chargeStateMin
+            || charge > pythiaParameters.chargeStateMax
             || flrr.isDecoy) {
             return {e, {}};
         }
