@@ -57,7 +57,6 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 1);
     QCOMPARE(pythiaParameters.percentFDR, 2);
     QCOMPARE(pythiaParameters.maxModificationsPeptide, 5);
-    QCOMPARE(pythiaParameters.addDecoys, true);
 
     const Modification &mod = pythiaParameters.modifications.at(0);
     QCOMPARE(mod.name, "Carbamidomethyl");

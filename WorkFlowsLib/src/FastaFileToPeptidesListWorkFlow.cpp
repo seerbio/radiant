@@ -77,14 +77,6 @@ Err FastaFileToPeptidesListWorkFlow::exec(
             &peptideSequences
             ); ree;
 
-//TODO see if you want to reconsider this
-//    if (m_params.addDecoys) {
-//        e = addDecoys(
-//                666,
-//                &peptideSequences
-//                ); ree;
-//    }
-
     e = writeLibraryBuilderCSV(
             peptideSequences,
             targetMzCollisionCSVFilePath,
