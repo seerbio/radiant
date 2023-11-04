@@ -44,7 +44,11 @@ private:
 
     Err deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc);
 
-    Err buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
+    Err buildCalibration(
+            double calibrationTrainingFraction,
+            bool useExtendedScores,
+            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron
+            );
 
     Err setTargetDecoyCandidateScores(
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
@@ -74,8 +78,7 @@ private:
     Err removeInterferingCandidates(
             MsReaderPointerAcc *msReaderPointerAcc,
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedTargets,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedDecoys
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedTargets
             );
 
     Err applyNeuralNetClassifier(
