@@ -150,10 +150,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
         candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
     }
 
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
-
-//#define USE_NEURAL_NET_CLASSIFIER
+#define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<CandidateScores> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
@@ -162,6 +159,9 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredCandidatesClassifierUpdated
             ); ree;
 #endif
+
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
 
     ERR_RETURN
 }
