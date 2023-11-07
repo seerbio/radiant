@@ -9,9 +9,8 @@
 #
 ################################################
 
-# Based on Ubuntu 20.04 LTS ("Focal Fossa")
-FROM ubuntu:20.04 AS base
-
+# Based on Ubuntu 22.04 LTS ("Jammy Jellyfish")
+FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
@@ -32,6 +31,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 #
 ################################################
 FROM base AS build
+
 #
 # Update, upgrade packages. Install build dependencies.
 #
@@ -41,44 +41,43 @@ FROM base AS build
 # After package installation, we remove any unnecessary packages
 # and run `apt-get clean` to remove any downloaded package archives.
 #
+ENV CMAKE_PREFIX="/usr/bin/cmake"
+COPY install-build-deps-ubuntu.sh /tmp/
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y ca-certificates wget build-essential  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools hdf5-tools  \
-    libcurl4-openssl-dev  libhdf5-dev libbrotli-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 \
-    unzip=6.0-25ubuntu1.1 \
+    && chmod u+x /tmp/install-build-deps-ubuntu.sh \
+    && APT='apt-get' /tmp/install-build-deps-ubuntu.sh \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest CMAKE > 3.17
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-x86_64.sh -q -O /tmp/cmake-install.sh \
-      && chmod u+x /tmp/cmake-install.sh \
-      && mkdir /usr/bin/cmake \
-      && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin/cmake \
-      && rm /tmp/cmake-install.sh
+ENV PATH="${CMAKE_PREFIX}/bin:${PATH}"
 
-ENV PATH="/usr/bin/cmake/bin:${PATH}"
+ENV PYTORCH_PREFIX_PATH="/src"
+COPY get-or-build-libtorch.sh /tmp/
+RUN chmod u+x /tmp/get-or-build-libtorch.sh \
+    && apt-get update \
+    && APT='apt-get' CMAKE='cmake' /tmp/get-or-build-libtorch.sh \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
 
-# https://pytorch.org
-RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip \
-&& unzip ./libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
-
-### Build the project in /app/
+# Build the project in /app/
 WORKDIR /app/
-RUN cmake -DCMAKE_BUILD_TYPE=Release -S /src/PythiaDIACpp/ -B /app/ \
-    && make
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
+    && make -j
 
-#################################################
-##
-## Test stage
-##
-## Here we add test dependencies to the build container
-## and define an ENTRYPOINT that will run them.
-##
-#################################################
+################################################
+#
+# Test stage
+#
+# Here we add test dependencies to the build container
+# and define an ENTRYPOINT that will run them.
+#
+################################################
 FROM build AS test
 
 #
@@ -87,21 +86,24 @@ FROM build AS test
 # resulting container. See README.md for more.
 #
 WORKDIR /app/
-CMD ["ctest"]
+CMD ["ctest", "--output-on-failure"]
 
+###############################################
+#
+# DEB stage
+#
+# Here we put everything in its right place for
+# Debian Package Deployment and build the DEB.
+# This DEB can then be copied out of the container
+# for later reuse. Deployment is as easy as running
+# this stage's default command:
+#
+#     # NOTE: Do not run this command!! Use GitHub
+#     # actions to deploy each new release!!
+#     $ docker run --rm -it $(docker build --target deploy .)
+#
 ################################################
-##
-## Deploy stage
-##
-## Here we put everything in its right place for
-## Debian Package Deployment and build the DEB.
-## Once built, deployment is as easy as running
-## this stage's default command:
-##
-##     $ docker run --rm -it $(docker build --target deploy .)
-##
-#################################################
-FROM build AS deploy
+FROM build AS build-deb
 
 # Install Python and dependencies
 RUN apt-get update \
@@ -114,61 +116,51 @@ RUN apt-get update \
 
 # Copy some extra contents into /app/
 RUN cp \
-    /src/PythiaDIACpp/control \
+    /src/PythiaDIACpp/control.* \
     /src/PythiaDIACpp/build_deb.sh \
     /src/PythiaDIACpp/s3_package_uploader.py \
     /app/
 
-RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
-RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
 
 WORKDIR /app/
 
-ARG pythia_dia_version=1.0
-ENV package_dir=pythia_dia_${pythia_dia_version}
-ENV PACKAGE_NAME=${package_dir}.deb
+ARG pythiadia_version=0.0-dev
+ENV package_dir=pythiadia_${pythiadia_version}
+ENV PACKAGE_NAME=${package_dir}
 
-# This should work with the default entrypoint to build and deploy.
-CMD ["/bin/bash -c ./build_deb.sh && python s3_package_uploader.py"]
+# Build the package into this stage's container
+RUN /app/build_deb.sh
 
-##################################################
-###
-### App stage
-###
-### Here we build the final container used to run the app in production.
-### Must be the last stage for compatibility with GitHub Actions build.
-###
-##################################################
-#FROM base AS app
+# Running this stage will deploy the DEB package
+CMD ["python", "s3_package_uploader.py"]
 
-#
+#################################################
+##
+## App stage
+##
+## Here we build the final container used to run the app in production.
+## Must be the last stage for compatibility with GitHub Actions build.
+##
+#################################################
+FROM base AS app
+
 # Set labels
-#
-#LABEL author="Seer, Inc."
-#LABEL description="PythiaDIACpp"
-#
-#RUN apt-get update \
-#    && apt-get install --no-install-recommends -y build-essential cmake qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools  \
-#    hdf5-tools libhdf5-dev libboost-all-dev libutf8proc2 libre2-5 libsnappy1v5 libthrift-0.13.0 libcurl4-openssl-dev  libbrotli-dev \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/*
-#
-#COPY --from=deploy /app/ /app/
-#COPY --from=build /app/AlgorithmsLib/ /app/AlgorithmsLib/
-#COPY --from=build /app/ChemLib/ /app/ChemLib/
-#COPY --from=build /app/EigenLib/ /app/EigenLib/
-#COPY --from=build /app/FileReadersLib/ /app/FileReadersLib/
-#COPY --from=build /app/MachineLrnLib/ /app/MachineLrnLib/
-#COPY --from=build /app/UtilsLib/ /app/UtilsLib/
-#COPY --from=build /app/WorkFlowsLib/ /app/WorkFlowsLib/
-#COPY --from=build /app/KarnnLib/ /app/KarnnLib/
-#COPY --from=build /app/ThirdPartyLibs/arrow_parquet/release/. /app/bin/
+LABEL author="Seer, Inc."
+LABEL description="PythiaDIACpp"
 
-## Set up a dedicated folder as the normal working dir
-#WORKDIR /work/
-#
-## Using this entrypoint means the "command" passed to `docker run` will be arguments to
-## this binary (e.g. `docker run seer/pythia -h`). To run a different binary requires
-## overriding the entrypoint (e.g. `docker run --entrypoint /app/bin/Pythia)
-#ENTRYPOINT ["/app/bin/PythiaDIACpp"]
+COPY --from=build-deb /app/*.deb /app/
+RUN apt-get update \
+    && apt-get install -y /app/*.deb \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /app/ /var/lib/apt/lists/*
+
+# Set up a dedicated folder as the normal working dir
+WORKDIR /work/
+
+# Using this entrypoint means the "command" passed to `docker run` will be arguments to
+# this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
+# overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
+ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]

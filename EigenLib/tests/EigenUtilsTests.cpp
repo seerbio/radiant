@@ -21,10 +21,10 @@ public:
 private:
     Eigen::VectorX<int> m_testVecInt;
     Eigen::VectorX<double> m_testVecDouble;
-    Eigen::MatrixX<double> m_testVecDoubleRowMajor;
-    Eigen::VectorX<int> m_testMatInt;
+    Eigen::VectorX<double> m_testVecDoubleRowMajor;
+    Eigen::MatrixX<int> m_testMatInt;
     Eigen::MatrixX<int> m_testMatIntRowMajor;
-    Eigen::VectorX<int> m_testMatIntEmpty;
+    Eigen::MatrixX<int> m_testMatIntEmpty;
 
 
 private Q_SLOTS:

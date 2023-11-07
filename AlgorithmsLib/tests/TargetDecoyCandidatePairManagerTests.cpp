@@ -22,6 +22,8 @@ private Q_SLOTS:
 
 void TargetDecoyCandidatePairManagerTests::initTest() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     QSKIP("activate when proper pathing is used");
@@ -57,6 +59,8 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
 
 void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTest1() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     QSKIP("activate when proper pathing is used");
@@ -81,6 +85,8 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
 }
 
 void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTest2() {
+
+    QSKIP("TODO: use bundled test data");
 
     ERR_INIT
 

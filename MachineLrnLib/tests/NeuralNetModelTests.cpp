@@ -1,5 +1,7 @@
 #include "NeuralNetModel.h"
 
+#include "MathUtils.h"
+
 #include <QElapsedTimer>
 #include <QtTest/QtTest>
 
@@ -143,7 +145,7 @@ void NeuralNetModelTests::testPrediction() {
         const float actual = predVec.at(i);
         const float expected = expectedTestResult.at(i);
 
-        QVERIFY(qFuzzyCompare(actual, expected));
+        QVERIFY2(MathUtils::tSame(actual, expected, 1e-6 * expected + 1e-6), qPrintable(QString("Values differ at index %1; expected %2, got %3").arg(i).arg(expected).arg(actual)));
     }
 
 }

@@ -1,0 +1,43 @@
+# Files that should be ignored by Docker (not sent to the build context)
+
+# Git files
+.git
+.gitignore
+
+# GitHub Actions config
+.github
+
+# Docker config
+Dockerfile
+.dockerignore
+
+# Dev tools config
+.hadolint.yaml
+.pre-commit-config.yaml
+
+# Documentation
+README.md
+CONTRIBUTING.md
+
+# Build/test scripts
+test_container.sh
+deploy_deb.sh
+
+build-local.sh
+test-local.sh
+
+# Local build/test directories
+build
+cmake
+pytorch
+
+# Vim buffer files
+.*.s??
+
+# JetBrains IDE settings
+.idea
+
+# Obsolete directories
+ThirdPartyLibs/libtorch
+ThirdPartyLibs/arrow_parquet
+ThirdPartyLibs/arrow_src

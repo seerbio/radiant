@@ -92,12 +92,15 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
 }
 
 void MsReaderParquetTests::readFilteredTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
     QSKIP("activate when proper pathing is used");
     //TODO add this to test files.
     const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+
+    QVERIFY2(QFileInfo::exists(testFilePath), qPrintable(QString("File not found: %1").arg(testFilePath)));
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(
@@ -118,6 +121,8 @@ void MsReaderParquetTests::readUniqueTest() {
 
     //TODO add this to test files.
     const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+
+    QVERIFY2(QFileInfo::exists(testFilePath), qPrintable(QString("File not found: %1").arg(testFilePath)));
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(

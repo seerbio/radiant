@@ -24,6 +24,8 @@ private Q_SLOTS:
 
 void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
 
+    QSKIP("TODO: use bundled test data");
+
     ERR_INIT
 
     QSKIP("reactivate when file pathing is figured out.");

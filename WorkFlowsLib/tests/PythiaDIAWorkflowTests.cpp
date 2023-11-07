@@ -24,7 +24,7 @@ private slots:
 
 void PythiaDIAWorkflowTests::execTest() {
 
-    QSKIP("undo me baby");
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
@@ -54,6 +54,8 @@ void PythiaDIAWorkflowTests::execTest() {
 }
 
 void PythiaDIAWorkflowTests::execIRTTest() {
+
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

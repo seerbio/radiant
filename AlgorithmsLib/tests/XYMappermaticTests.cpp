@@ -22,11 +22,13 @@ private Q_SLOTS:
 };
 
 void XYMappermaticTests::loadModelTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
     QSKIP("activate when proper pathing is used");
 
+    // TODO
     const QString iRTReCalFilePath
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/TestData.iRT");
 
@@ -187,11 +189,13 @@ void XYMappermaticTests::loadModelTest() {
 }
 
 void XYMappermaticTests::splineTest() {
+    QSKIP("TODO: enable with internal test data");
 
     QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
+    // TODO
     const QString iRTReCalFilePath
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/TestData.iRT");
 

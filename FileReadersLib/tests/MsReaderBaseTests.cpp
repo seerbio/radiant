@@ -35,6 +35,7 @@ private:
 };
 
 void MsReaderBaseTests::openMzMlTest() {
+    QSKIP("TODO: enable with internal test data");
 
     QSKIP("activate when proper pathing is used");
 
@@ -47,6 +48,9 @@ void MsReaderBaseTests::openMzMlTest() {
 }
 
 void MsReaderBaseTests::openPrqTest() {
+    QSKIP("TODO: enable with internal test data");
+
+    QSKIP("activate when proper pathing is used");
 
     QSKIP("activate when proper pathing is used");
 
@@ -58,6 +62,9 @@ void MsReaderBaseTests::openPrqTest() {
 }
 
 void MsReaderBaseTests::isDIATest() {
+    QSKIP("TODO: enable with internal test data");
+
+    QSKIP("activate when proper pathing is used");
 
     QSKIP("activate when proper pathing is used");
 

@@ -86,6 +86,7 @@ void FDRCLassifierNeuralNetTests::initTest() {
 }
 
 void FDRCLassifierNeuralNetTests::execTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 //TODO figure out proper filepathing for tests.

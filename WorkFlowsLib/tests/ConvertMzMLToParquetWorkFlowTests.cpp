@@ -24,6 +24,7 @@ private slots:
 };
 
 void ConvertMzMLToParquetWorkFlowTests::convertMzMLToParquetRunTest() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

@@ -51,7 +51,16 @@ FIND_PACKAGE(Qt5 REQUIRED
         Sql
         )
 
-list(APPEND CMAKE_PREFIX_PATH ${PYTORCH_PREFIX_PATH})
+# Determine if PyTorch dir is a from-source build or not.
+if (IS_DIRECTORY "${PYTORCH_PATH}/build/CMakeFiles")
+    # Build from source; specify the repo root
+    list(APPEND CMAKE_PREFIX_PATH "${PYTORCH_PATH}")
+else()
+    # Binary distribution; assume it's been unzipped into
+    # the `build` folder, so binaries are in the same place
+    # as a from-source build.
+    list(APPEND CMAKE_PREFIX_PATH "${PYTORCH_PATH}/build")
+endif()
 
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")

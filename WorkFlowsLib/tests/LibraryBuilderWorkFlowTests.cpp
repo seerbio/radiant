@@ -41,7 +41,7 @@ void LibraryBuilderWorkFlowTests::execTest() {
             peptidesCSVFilePath,
             &fragLibFilePath
             );
-    QCOMPARE(e, eError);
+    QCOMPARE(e, eEmptyContainerError);
 
     e = libraryBuilderWorkFlow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),

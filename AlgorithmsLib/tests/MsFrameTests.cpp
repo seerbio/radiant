@@ -26,6 +26,7 @@ private slots:
 
 
 void MsFrameTests::preprocessMsFrame() {
+    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 

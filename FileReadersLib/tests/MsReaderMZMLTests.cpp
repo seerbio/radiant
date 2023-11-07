@@ -34,6 +34,9 @@ private:
 
 
 void MsReaderMZMLTests::openFileTest() {
+    QSKIP("TODO: enable with internal test data");
+
+    QSKIP("activate when proper pathing is used");
 
     QSKIP("activate when proper pathing is used");
 
@@ -41,6 +44,8 @@ void MsReaderMZMLTests::openFileTest() {
 //            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
 
     ERR_INIT
+
+    QVERIFY2(QFileInfo::exists(m_filepath), qPrintable(QString("File not found: %1").arg(m_filepath)));
 
     MsReaderMzML reader;
     e = reader.openFile(m_filepath);
