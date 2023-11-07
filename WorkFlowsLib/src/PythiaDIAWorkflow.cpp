@@ -119,49 +119,45 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
-    const double fdrThreshold = 0.01;
+    const double fdrThreshold = 0.2;
     e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
             scoredTargetDecoyPointers,
             fdrThreshold,
             &scoredTargetDecoyPointersFDRThresholded
     ); ree;
 
-    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersUpdatedTargets;
-    e = removeInterferingCandidates(
-            &msReaderPointerAcc,
-            scoredTargetDecoyPointers,
-            &scoredTargetDecoyPointersUpdatedTargets
-            ); ree;
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRFiltered = scoredTargetDecoyPointersFDRThresholded;
+//    e = removeInterferingCandidates(
+//            &msReaderPointerAcc,
+//            scoredTargetDecoyPointersFDRThresholded,
+//            &scoredTargetDecoyPointersFDRFiltered
+//            ); ree;
 
     e = updateProteinGroupAnnotation(
             m_fastaUri,
-            &scoredTargetDecoyPointersUpdatedTargets
+            &scoredTargetDecoyPointersFDRFiltered
             ); ree;
 
-    std::sort(scoredTargetDecoyPointersUpdatedTargets.rbegin(), scoredTargetDecoyPointersUpdatedTargets.rend(),
+    std::sort(scoredTargetDecoyPointersFDRFiltered.rbegin(), scoredTargetDecoyPointersFDRFiltered.rend(),
               [](TargetDecoyCandidatePair*l, TargetDecoyCandidatePair*r){
         return l->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100
         < r->candidateScoresBestDiscriminantScorePtrTarget()->cosineSimSum100;
     });
 
-    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
-    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointersUpdatedTargets) {
-        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrTarget());
-        candidateScoresTargetsAndDecoys.push_back(*tdcp->candidateScoresBestDiscriminantScorePtrDecoy());
-    }
 
 #define USE_NEURAL_NET_CLASSIFIER
 #ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<CandidateScores> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
-            candidateScoresTargetsAndDecoys,
+            scoredTargetDecoyPointers,
+            scoredTargetDecoyPointersFDRFiltered,
             msReaderPointerAcc.ptr->scanTimeMinMax(),
             &scoredCandidatesClassifierUpdated
             ); ree;
 #endif
 
     const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoresTargetsAndDecoys, resultsFilePath); ree;
+    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 
     ERR_RETURN
 }
@@ -1323,33 +1319,57 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 }
 
 Err PythiaDIAWorkflow::applyNeuralNetClassifier(
-        const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
+        const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
+        const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
         const QPair<double, double> &scanTimeMinMax,
         QVector<CandidateScores> *candidateScoreClassifier
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys); ree;
+    e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointers); ree;
+    e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointersFDRFiltered); ree;
 
-    const long decoyCount = std::count_if(
-            candidateScoresTargetsAndDecoys.begin(),
-            candidateScoresTargetsAndDecoys.end(), [](const CandidateScores &c){return c.isDecoy;}
+    QVector<CandidateScores> candidateScoresTargets;
+    std::transform(
+            scoredTargetDecoyPointersFDRFiltered.begin(),
+            scoredTargetDecoyPointersFDRFiltered.end(),
+            std::back_inserter(candidateScoresTargets),
+            [](TargetDecoyCandidatePair* tdp){return *tdp->candidateScoresBestDiscriminantScorePtrTarget();}
             );
 
-    const long targetCount = std::count_if(
-            candidateScoresTargetsAndDecoys.begin(),
-            candidateScoresTargetsAndDecoys.end(), [](const CandidateScores &c){return !c.isDecoy;}
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersSorted = scoredTargetDecoyPointers;
+    std::sort(
+            scoredTargetDecoyPointersSorted.rbegin(),
+            scoredTargetDecoyPointersSorted.rend(),
+            [](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){
+                return l->candidateScoresBestDiscriminantScorePtrDecoy()->discriminateScore
+                    < r->candidateScoresBestDiscriminantScorePtrDecoy()->discriminateScore;
+                }
             );
 
-    QVector<CandidateScores> candidateScoresTargetsAndDecoysShuffled = candidateScoresTargetsAndDecoys;
+    const int resizeVal = std::min(candidateScoresTargets.size() * 2, scoredTargetDecoyPointersSorted.size());
+    scoredTargetDecoyPointersSorted.resize(resizeVal);
+
+    QVector<CandidateScores> candidateScoresDecoys;
+    std::transform(
+            scoredTargetDecoyPointersSorted.begin(),
+            scoredTargetDecoyPointersSorted.end(),
+            std::back_inserter(candidateScoresDecoys),
+            [](TargetDecoyCandidatePair* tdp){return *tdp->candidateScoresBestDiscriminantScorePtrDecoy();}
+            );
+
+    QVector<CandidateScores> candidateScoresTargetsAndDecoysShuffled;
+    candidateScoresTargetsAndDecoysShuffled.append(candidateScoresTargets);
+    candidateScoresTargetsAndDecoysShuffled.append(candidateScoresDecoys);
+
     std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
     std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
 
-    qDebug() << "target vs decoy count" << targetCount << decoyCount;
+    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size();
 
-    const int epochs = 5;
-    const int baggingSize = 6;
+    const int epochs = 1;
+    const int baggingSize = 12;
     const double batchFraction = 0.01;
     const double learningRate = 0.001;
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;

@@ -82,7 +82,8 @@ private:
             );
 
     Err applyNeuralNetClassifier(
-            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
             const QPair<double, double> &scanTimeMinMax,
             QVector<CandidateScores> *candidateScoreClassifier
             );

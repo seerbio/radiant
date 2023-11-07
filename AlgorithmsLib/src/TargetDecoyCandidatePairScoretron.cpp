@@ -298,6 +298,7 @@ namespace {
                     &candidateScoresDecoy
             ); ree;
 
+            candidateScoresDecoy.isDecoy = true;
             targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
             targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
         }
