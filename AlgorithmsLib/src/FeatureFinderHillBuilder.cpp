@@ -866,7 +866,7 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
 
             const Eigen::VectorX<int> &v = mat.row(row);
             std::vector<int> vecReturn(v.data(), v.data() + v.size());
-            vec.append(QVector<int>::fromStdVector(vecReturn));
+            vec.append(QVector<int>(vecReturn.begin(), vecReturn.end()));
 
         }
 

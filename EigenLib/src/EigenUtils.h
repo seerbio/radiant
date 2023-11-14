@@ -351,7 +351,7 @@ public:
     template <typename T>
     static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
         std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
-        return QVector<T>::fromStdVector(vecReturn);
+        return QVector<T>(vecReturn.begin(), vecReturn.end());
     }
 
     template <typename T>
