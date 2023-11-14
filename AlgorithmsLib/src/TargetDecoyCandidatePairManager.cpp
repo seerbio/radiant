@@ -70,7 +70,7 @@ namespace {
         e = ErrorUtils::isEqual(flrr.mzVals.size(), flrr.intensityVals.size());ree;
         e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree
 
-        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
         e = ErrorUtils::isEqual(flrr.mzVals.size(), ionLabelsSplit.size());ree;
 
         QVector<MS2Ion> ms2IonsBuilder;
@@ -499,7 +499,7 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
             S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
-            QString::SkipEmptyParts
+            Qt::SkipEmptyParts
     );
 
     e = ErrorUtils::isEqual(

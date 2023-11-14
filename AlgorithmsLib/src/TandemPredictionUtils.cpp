@@ -291,12 +291,12 @@ namespace {
         const int expectedModSplitSize = 2;
 
         const QStringList modStringSplit
-                = modString.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+                = modString.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
 
         for (const QString &mod : modStringSplit) {
 
             const QStringList modSplit
-                    = mod.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP, QString::SkipEmptyParts);
+                    = mod.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP, Qt::SkipEmptyParts);
 
             e = ErrorUtils::isEqual(modSplit.size(), expectedModSplitSize); ree;
 

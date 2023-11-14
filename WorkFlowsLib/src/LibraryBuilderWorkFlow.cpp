@@ -146,7 +146,7 @@ namespace {
 
             const PeptideString peptideString = peptideSequenceChargeKey.split(
                     S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
-                    QString::SkipEmptyParts
+                    Qt::SkipEmptyParts
                     ).front();
 
             FragLibReaderRow row;

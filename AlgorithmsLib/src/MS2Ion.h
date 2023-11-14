@@ -71,7 +71,7 @@ public:
             QStringList ionLabelSplit;
             if (ionLabel.contains("-")) {
 
-                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                ionLabelSplit = ionLabel.split("-", Qt::SkipEmptyParts);
                 e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
 
                 const QString labelFront = ionLabelSplit.front().replace("y", "");
@@ -83,7 +83,7 @@ public:
                 ERR_RETURN
             }
             else if (ionLabel.contains("^")) {
-                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                ionLabelSplit = ionLabel.split("^", Qt::SkipEmptyParts);
                 e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
 
                 const QString labelFront = ionLabelSplit.front().replace("y", "");
@@ -109,7 +109,7 @@ public:
             QStringList ionLabelSplit;
             if (ionLabel.contains("-")) {
 
-                ionLabelSplit = ionLabel.split("-", QString::SkipEmptyParts);
+                ionLabelSplit = ionLabel.split("-", Qt::SkipEmptyParts);
                 e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
 
                 const QString labelFront = ionLabelSplit.front().replace("b", "");
@@ -121,7 +121,7 @@ public:
                 ERR_RETURN
             }
             else if (ionLabel.contains("^")) {
-                ionLabelSplit = ionLabel.split("^", QString::SkipEmptyParts);
+                ionLabelSplit = ionLabel.split("^", Qt::SkipEmptyParts);
                 e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
 
                 const QString labelFront = ionLabelSplit.front().replace("b", "");

@@ -191,7 +191,7 @@ namespace {
             return peptideSeq;
         }
 
-        QStringList strList = peptideSeq.split("", QString::SkipEmptyParts);
+        QStringList strList = peptideSeq.split("", Qt::SkipEmptyParts);
 
         std::reverse(strList.rbegin() + 1, strList.rend() - 1);
 
