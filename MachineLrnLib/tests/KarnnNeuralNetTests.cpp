@@ -178,10 +178,22 @@ void KarnnNeuralNetTests::runTest() {
             );
 
     int counter = 0;
+    int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargets) {
         std::cout << ++ counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
+
+        if (rp.nnScore > 0.5) {
+            break;
+        }
+
+        if (rp.isDecoy){
+            falsePositives++;
+        }
     }
 
+    qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+    QVERIFY(counter > 11600);
+    QVERIFY(falsePositives < 40);
 
 }
 
