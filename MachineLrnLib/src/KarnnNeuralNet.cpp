@@ -128,6 +128,51 @@ Err KarnnNeuralNet::run(
             [](std::vector<float> &ff){return ff.data();}
         );
 
+    QVector<NN> nets;
+    const int cols = trainingData.front().size();
+    const int rows = trainingData.size();
+    e = initNeuralNets(
+            rows,
+            cols,
+            epochs,
+            dataVecPointers,
+            labelVec,
+            &nets
+            ); ree;
+
+    QVector<NN*> netsPointers;
+    std::transform(
+            nets.begin(),
+            nets.end(),
+            std::back_inserter(netsPointers),
+            [](NN &n){return &n;}
+            );
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            netsPointers,
+            train
+    );
+    futures.waitForFinished();
+
+
+
+    ERR_RETURN
+}
+
+Err KarnnNeuralNet::initNeuralNets(
+        int rows,
+        int cols,
+        int epochs,
+        std::vector<float*> &dataVecPointers,
+        std::vector<float*> &labelVec,
+        QVector<NN> *nets
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(dataVecPointers.empty()); ree;
+    e = ErrorUtils::isFalse(labelVec.empty()); ree;
+
     size_t* hiddenSize = (size_t*)alloca(m_hiddenLayerCount * sizeof(size_t));
     Activation* hiddenActivation = (Activation*)alloca(m_hiddenLayerCount * sizeof(Activation));
     for (int i = 0; i < m_hiddenLayerCount; i++) {
@@ -135,10 +180,7 @@ Err KarnnNeuralNet::run(
         hiddenActivation[i] = tanH;
     }
 
-    const int cols = trainingData.front().size();
-    const int rows = trainingData.size();
 
-    QVector<NN> nets;
     for (int i = 0; i < m_bagginCount; i++) {
 
         DataSet* trainingDataSet = matrix::createDataSet(rows, cols, &(dataVecPointers[0]));
@@ -161,24 +203,8 @@ Err KarnnNeuralNet::run(
         net.classes = trainingClasses;
         net.maxIters = static_cast<int>((rows * epochs) / net.batchSize);
 
-        nets.push_back(net);
+        nets->push_back(net);
     }
-
-    QVector<NN*> netsPointers;
-    std::transform(
-            nets.begin(),
-            nets.end(),
-            std::back_inserter(netsPointers),
-            [](NN &n){return &n;}
-            );
-
-    QFuture<Err> futures = QtConcurrent::mapped(
-            netsPointers,
-            train
-    );
-    futures.waitForFinished();
-
-
 
     ERR_RETURN
 }

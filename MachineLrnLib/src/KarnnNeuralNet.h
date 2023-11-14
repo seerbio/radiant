@@ -34,6 +34,15 @@ public:
 
 private:
 
+    Err initNeuralNets(
+            int rows,
+            int cols,
+            int epochs,
+            std::vector<float*> &dataVecPointers,
+            std::vector<float*> &labelVec,
+            QVector<NN> *nets
+            );
+
 
 private:
 
