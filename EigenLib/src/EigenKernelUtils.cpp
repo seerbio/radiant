@@ -219,7 +219,7 @@ Eigen::VectorXd EigenKernelUtils::convolveVectorWithKernel(
         const Eigen::VectorXd &_kernel
 ) {
 
-    std::vector<double> vec = _vec.toStdVector();
+    std::vector<double> vec(_vec.begin(), _vec.end());
     //TODO replace w/ EigenUtils::convertQvectorToEigenVector
     Eigen::VectorX<double> ev
         = Eigen::Map<Eigen::VectorX<double>, Eigen::Unaligned>(vec.data(), vec.size());

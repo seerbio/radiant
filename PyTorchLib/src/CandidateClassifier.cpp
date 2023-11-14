@@ -151,7 +151,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
     torch::Tensor X = torch::from_blob(flatData.data(), {static_cast<long>(xData.size()), input_size}, torch::kFloat);
 
-    std::vector<float> yStdVec = yData.toStdVector();
+    std::vector<float> yStdVec(yData.begin(), yData.end());
     torch::Tensor y = torch::from_blob(yStdVec.data(), {static_cast<long>(yStdVec.size()), 1}, torch::kFloat);
 
     torch::nn::BCELoss loss_function;

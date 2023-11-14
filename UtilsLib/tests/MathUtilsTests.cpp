@@ -69,7 +69,7 @@ void MathUtilsTests::meanTest()
 {
     const QVector<int> v1 = {};
     const QVector<int> v2 = {1,2,3,4,5};
-    const std::vector<int> v1Std = v1.toStdVector();
+    const std::vector<int> v1Std(v1.begin(), v1.end());
 
     const double meanV1 = MathUtils::mean(v1);
     const double meanV2 = MathUtils::mean(v2);
