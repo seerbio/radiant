@@ -13,3 +13,5 @@ ThirdPartyLibs/arrow_src
 
 # JetBrains IDE settings
 .idea
+
+cmake-build-release/

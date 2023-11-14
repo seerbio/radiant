@@ -102,7 +102,7 @@ namespace {
 
 #define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
-        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
+        const QString dataFilePath = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML.prq.nnTrainingData";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;
 #endif
 
@@ -559,8 +559,8 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        );
 //        scores.append(intensityFoundMaxVecNorm);
 
-        const QVector<double> mzStDev
-                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
+//        const QVector<double> mzStDev
+//                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
 //        scores.append(mzStDev);
 
         scores.push_back(candidateScores.charge);

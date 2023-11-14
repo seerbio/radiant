@@ -96,13 +96,38 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &msReaderPointerAcc,
             &diaTargetFrame,
             &m_targetDecoyCandidatePairManager
-            );
+            ); ree;
 
     e = buildCalibration(
             0.2,
             false,
             &targetDecoyCandidatePairScoretron
             ); ree;
+
+    { //FIGURE OUT RECALIBRATION
+//        const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame.keys();
+//        for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
+//            qDebug() << k;
+//            QMap<ScanNumber, ScanPoints> points;
+//            e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame.value(k), &points);
+//            ree;
+//            diaTargetFrame[k] = points;
+//        }
+//
+//        QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1Recal;
+//        e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1, &scanNumberVsScanTimeMS1Recal);
+//        ree;
+//        scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1Recal;
+//
+//        e = targetDecoyCandidatePairScoretron.init(
+//                m_pythiaParameters,
+//                scanNumberVsScanTimeMS1,
+//                &msReaderPointerAcc,
+//                &diaTargetFrame,
+//                &m_targetDecoyCandidatePairManager
+//        );
+//        ree;
+    }
 
     e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
 

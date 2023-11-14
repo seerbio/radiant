@@ -13,6 +13,7 @@ SET(JSON_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/json/include")
 SET(MODELS_DIRECTORY "${PROJECT_SOURCE_DIR}/MachineLrnLib/Models")
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
+SET(CRANIUM_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/Cranium/src")
 
 
 ADD_SUBDIRECTORY("AlgorithmsLib")
