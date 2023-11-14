@@ -12,6 +12,13 @@ using namespace Error;
 
 class NN;
 
+struct KarnnNNTarget {
+    QString seq;
+    float nnScore = 0.0;
+    bool isDecoy = false;
+    QVector<double> scoreVec;
+};
+
 class MACHINELRNLIB_EXPORTS KarnnNeuralNet {
 
 public:
@@ -29,7 +36,7 @@ public:
             const QVector<QVector<double>> &trainingData,
             const QVector<bool> &labels,
             int epochs,
-            std::vector<float> *nnScores
+            QVector<KarnnNNTarget> *karnnNNTargets
             );
 
 private:
@@ -43,6 +50,11 @@ private:
             QVector<NN> *nets
             );
 
+    Err calculatedNNScores(
+            int cols,
+            QVector<NN> *net,
+            QVector<KarnnNNTarget> *karnnNNTargets
+            );
 
 private:
 

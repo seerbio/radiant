@@ -134,15 +134,25 @@ void KarnnNeuralNetTests::runTest() {
     QStringList seqsList;
     int rows;
     int cols;
-    QVector<bool> isDecoy;
+    QVector<bool> isDecoys;
     const bool ranOK = readDataCSV(
             dataPath,
             &dataVec,
             &seqsList,
-            &isDecoy,
+            &isDecoys,
             &rows,
             &cols
     );
+    QCOMPARE(ranOK, true);
+
+    QVector<KarnnNNTarget> karnnNNTargets;
+    for (int i = 0; i < seqsList.size(); i++) {
+        KarnnNNTarget karnnNnTarget;
+        karnnNnTarget.seq = seqsList.at(i);
+        karnnNnTarget.isDecoy = isDecoys.at(i);
+        karnnNnTarget.scoreVec = dataVec.at(i);
+        karnnNNTargets.push_back(karnnNnTarget);
+    }
 
     KarnnNeuralNet karnnNeuralNet;
     e = karnnNeuralNet.init(
@@ -153,15 +163,24 @@ void KarnnNeuralNetTests::runTest() {
     QCOMPARE(e, eNoError);
 
     const int epochs = 1;
-    std::vector<float> nnScores;
     e = karnnNeuralNet.run(
             dataVec,
-            isDecoy,
+            isDecoys,
             epochs,
-            &nnScores
+            &karnnNNTargets
             );
     QCOMPARE(e, eNoError);
 
+    std::sort(
+            karnnNNTargets.begin(),
+            karnnNNTargets.end(),
+            [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
+            );
+
+    int counter = 0;
+    for (const KarnnNNTarget &rp : karnnNNTargets) {
+        std::cout << ++ counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
+    }
 
 
 }
@@ -169,6 +188,3 @@ void KarnnNeuralNetTests::runTest() {
 
 QTEST_MAIN(KarnnNeuralNetTests)
 #include "KarnnNeuralNetTests.moc"
-
-
-

@@ -85,13 +85,12 @@ namespace {
         return eNoError;
     }
 
-
 }//namespace
 Err KarnnNeuralNet::run(
         const QVector<QVector<double>> &trainingData,
         const QVector<bool> &labels,
         int epochs,
-        std::vector<float> *nnScores
+        QVector<KarnnNNTarget> *karnnNNTargets
         ) {
 
     ERR_INIT
@@ -154,7 +153,13 @@ Err KarnnNeuralNet::run(
     );
     futures.waitForFinished();
 
+    e = calculatedNNScores(cols, &nets, karnnNNTargets); ree;
 
+//    for (int i = 0; i < nets.size(); i++) {
+//        free(nets[i].data);
+//        free(nets[i].classes);
+//        destroyNetwork(nets[i].network);
+//    }
 
     ERR_RETURN
 }
@@ -180,11 +185,10 @@ Err KarnnNeuralNet::initNeuralNets(
         hiddenActivation[i] = tanH;
     }
 
+    DataSet* trainingDataSet = matrix::createDataSet(rows, cols, &(dataVecPointers[0]));
+    DataSet* trainingClasses = matrix::createDataSet(rows, 2, &(labelVec[0]));
 
     for (int i = 0; i < m_bagginCount; i++) {
-
-        DataSet* trainingDataSet = matrix::createDataSet(rows, cols, &(dataVecPointers[0]));
-        DataSet* trainingClasses = matrix::createDataSet(rows, 2, &(labelVec[0]));
 
         NN net;
 
@@ -209,4 +213,44 @@ Err KarnnNeuralNet::initNeuralNets(
     ERR_RETURN
 }
 
+Err KarnnNeuralNet::calculatedNNScores(
+        int cols,
+        QVector<NN> *net,
+        QVector<KarnnNNTarget> *karnnNNTargets
+) {
 
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(net->empty()); ree;
+    e = ErrorUtils::isTrue(cols > 0);
+    e = ErrorUtils::isFalse(karnnNNTargets->isEmpty()); ree;
+
+    std::vector<std::vector<float>> dataVecs;
+    for (const KarnnNNTarget &t : *karnnNNTargets) {
+        std::vector<float> f;
+        for (double d : t.scoreVec) {
+            f.push_back(static_cast<float>(d));
+        }
+        dataVecs.push_back(f);
+    }
+
+    std::vector<float*> dataVecsPointers;
+    std::transform(
+            dataVecs.begin(),
+            dataVecs.end(),
+            std::back_inserter(dataVecsPointers),
+            [](std::vector<float> &ff){return ff.data();}
+            );
+
+    DataSet* dataset = matrix::createDataSet(dataVecsPointers.size(), cols, &(dataVecsPointers[0]));
+
+    for (int i = 0; i < m_bagginCount; i++) {
+        forwardPassDataSet((*net)[i].network, dataset);
+        Matrix* result = getOuput((*net)[i].network);
+        for (int j = 0; j < result->rows; j++) {
+            (*karnnNNTargets)[j].nnScore += matrix::getMatrix(result, j, 0) / m_bagginCount;
+        }
+    }
+
+    ERR_RETURN
+}
