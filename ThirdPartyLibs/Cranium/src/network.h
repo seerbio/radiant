@@ -82,9 +82,8 @@ static Network* createNetwork(size_t numFeatures, size_t numHiddenLayers, size_t
         }
     }
     network->layers = layers;
-
     network->numConnections = network->numLayers - 1;
-    Connection** connections = (Connection**)malloc(sizeof(Connection*) * network->numConnections);
+    Connection** connections = (Connection**)malloc(std::min(sizeof(Connection*) * network->numConnections, static_cast<unsigned long>(9223372036854775807)));
     for (i = 0; i < network->numConnections; i++){
         connections[i] = createConnection(network->layers[i], network->layers[i + 1]);
         initializeConnection(connections[i], gen);

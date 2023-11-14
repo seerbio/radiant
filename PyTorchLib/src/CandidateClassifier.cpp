@@ -114,7 +114,7 @@ namespace {
         const float* data = tensor.data_ptr<float>();
         std::vector<float> vec(data, data + numel);
 
-        return QVector<float>(vec.begin(), vec.end();
+        return QVector<float>(vec.begin(), vec.end());
     }
 
 } //namespace

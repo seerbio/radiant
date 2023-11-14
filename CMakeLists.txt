@@ -7,6 +7,10 @@ SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
 
 SET(CMAKE_CXX_STANDARD 17)
 
+# ignore BOOST deprecated headers
+add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
+add_definitions("-DBOOST_BIND_GLOBAL_PLACEHOLDERS")
+
 SET(FUNCTIONAL_PLUS_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/FunctionalPlus/include")
 SET(FRUGALLY_DEEP_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/frugally-deep/include")
 SET(JSON_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/json/include")
