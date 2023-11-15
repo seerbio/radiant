@@ -163,9 +163,9 @@ Err KarnnNeuralNet::run(
     e = calculatedNNScores(cols, &nets, karnnNNTargets); ree;
 
 //    for (int i = 0; i < nets.size(); i++) {
-//        free(nets[i].data);
-//        free(nets[i].classes);
-//        destroyNetwork(nets[i].network);
+////        free(nets[i].data);
+////        free(nets[i].classes);
+////        destroyNetwork(nets[i].network);
 //    }
 
     ERR_RETURN

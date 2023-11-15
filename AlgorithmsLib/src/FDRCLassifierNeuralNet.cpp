@@ -568,9 +568,9 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 
     if (useNeuralNetworkScores) {
 
-        scores.push_back(std::max(candidateScores.b2Corr, 0.0));
-        scores.push_back(std::max(candidateScores.b3Corr, 0.0));
-        scores.push_back(std::max(candidateScores.b2b3CosineSimSum, 0.0));
+//        scores.push_back(std::max(candidateScores.b2Corr, 0.0));
+//        scores.push_back(std::max(candidateScores.b3Corr, 0.0));
+//        scores.push_back(std::max(candidateScores.b2b3CosineSimSum, 0.0));
 
         scores.push_back(std::max(0.0, candidateScores.cosineSimSpectrum));
         scores.push_back(candidateScores.discriminateScore);
@@ -592,10 +592,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
 //        scores.append(ppmMz);
 
-        scores.push_back(candidateScores.matrixPValue);
-        scores.push_back(candidateScores.matrixWeight);
-        scores.push_back(candidateScores.matrixError);
-        scores.push_back(candidateScores.scanNumberCandidateCount);
+//        scores.push_back(candidateScores.matrixPValue);
+//        scores.push_back(candidateScores.matrixWeight);
+//        scores.push_back(candidateScores.matrixError);
+//        scores.push_back(candidateScores.scanNumberCandidateCount);
 
     }
 
