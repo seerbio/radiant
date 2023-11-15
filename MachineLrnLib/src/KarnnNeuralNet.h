@@ -17,6 +17,7 @@ struct KarnnNNTarget {
     float nnScore = 0.0;
     bool isDecoy = false;
     QVector<double> scoreVec;
+    int index = -1;
 };
 
 class MACHINELRNLIB_EXPORTS KarnnNeuralNet {

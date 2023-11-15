@@ -117,12 +117,13 @@ public:
             Charge charge
     );
 
-    static QVector<double> buildScoreVector(
+    static Err buildScoreVector(
             const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
-            const QPair<double, double> &scanTimeMinMax
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<double> *scoreVec
     );
 
     template <typename T>
@@ -169,6 +170,12 @@ public:
             double qValueThreshold,
             QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsFDRThresholded
             );
+
+    static Err filterScoreCandidatesByFDR(
+            const QVector<CandidateScores> &targetDecoyCandidatePairs,
+            double qValueThreshold,
+            QVector<CandidateScores> *targetDecoyCandidatePairsFDRThresholded
+    );
 
 private:
 

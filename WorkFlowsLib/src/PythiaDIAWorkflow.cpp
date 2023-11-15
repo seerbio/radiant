@@ -325,20 +325,24 @@ namespace {
                     continue;
                 }
 
-                const ScoresTargets scoresTargets = FDRCLassifierNeuralNet::buildScoreVector(
+                ScoresTargets scoresTargets;
+                e = FDRCLassifierNeuralNet::buildScoreVector(
                         candidateScores,
                         useExtendedScores,
                         useNeuralNetworkScores,
                         theoMzIonsSize,
-                        scanTimeMinMax
+                        scanTimeMinMax,
+                        &scoresTargets
                         ); ree;
 
-                const ScoresDecoys scoresDecoys = FDRCLassifierNeuralNet::buildScoreVector(
+                ScoresDecoys scoresDecoys;
+                e = FDRCLassifierNeuralNet::buildScoreVector(
                         tdc->uniqueInfoScanKeyVsScoresDecoy()->value(key),
                         useExtendedScores,
                         useNeuralNetworkScores,
                         theoMzIonsSize,
-                        scanTimeMinMax
+                        scanTimeMinMax,
+                        &scoresDecoys
                         ); ree;
 
                 TargetDecoyPairTargetKey targetDecoyPairTargetKey;
@@ -990,7 +994,7 @@ Err PythiaDIAWorkflow::mainAnalysis(
 
 
     const bool useExtendedScores = true;
-    const bool useNeuralNetworkScores = false;
+    const bool useNeuralNetworkScores = true;
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
@@ -1442,17 +1446,20 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size();
 
     QVector<KarnnNNTarget> karnnNNTargets;
-    for (const CandidateScores &cs : candidateScoresTargetsAndDecoysShuffled) {
+    for (int i = 0; i < candidateScoresTargetsAndDecoysShuffled.size(); i++) {
+        const CandidateScores &cs = candidateScoresTargetsAndDecoysShuffled.at(i);
         KarnnNNTarget karnnNnTarget;
         karnnNnTarget.seq = cs.peptideStringWithMods;
         karnnNnTarget.isDecoy = cs.isDecoy;
-        karnnNnTarget.scoreVec = FDRCLassifierNeuralNet::buildScoreVector(
+
+        e = FDRCLassifierNeuralNet::buildScoreVector(
                 cs,
                 true,
                 true,
                 m_pythiaParameters.topNMs2Ions,
-                scanTimeMinMax
-                );
+                scanTimeMinMax,
+                &karnnNnTarget.scoreVec
+                ); ree;
         karnnNNTargets.push_back(karnnNnTarget);
     }
 
@@ -1485,6 +1492,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     int counter = 0;
     int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+
         std::cout << ++counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
         if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
@@ -1493,6 +1501,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
 
         if (rp.isDecoy){
             falsePositives++;
+            continue;
         }
     }
 

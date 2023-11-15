@@ -4,6 +4,7 @@
 
 #include "FDRCLassifierNeuralNet.h"
 
+#include "BiophysicalCalcs.h"
 #include "CandidateScores.h"
 #include "EigenUtils.h"
 #include "ParallelUtils.h"
@@ -75,13 +76,15 @@ namespace {
         QVector<QPair<CandidateScores, QVector<double>>> targetPairs;
         for (const CandidateScores &sc: keyVsScoredCandidates) {
 
-            const QVector<double> scoreVector = FDRCLassifierNeuralNet::buildScoreVector(
+            QVector<double> scoreVector;
+            e = FDRCLassifierNeuralNet::buildScoreVector(
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
                     topNMs2IonsFull,
-                    scanTimeMinMax
-            );
+                    scanTimeMinMax,
+                    &scoreVector
+            ); ree;
 
             targetPairs.push_back({sc, scoreVector});
         }
@@ -467,13 +470,16 @@ QString FDRCLassifierNeuralNet::buildTargetDecoyKey(
     return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
 }
 
-QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
+Err FDRCLassifierNeuralNet::buildScoreVector(
         const CandidateScores &candidateScores,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
         int theoMzIonsSize,
-        const QPair<double, double> &scanTimeMinMax
+        const QPair<double, double> &scanTimeMinMax,
+        QVector<double> *scoreVec
         ) {
+
+    ERR_INIT
 
     QVector<double> scores = {
             std::max(candidateScores.cosineSimSum100, 0.0), //1
@@ -501,18 +507,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(candidateScores.cosineSimSum20, 0.0)); //10
         scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
         scores.push_back(std::max(candidateScores.cosineSim20MS1, 0.0)); //12
-        scores.push_back(candidateScores.peptideStringWithMods.size()); //13
+
+        const double pepLength = (-10.0 + candidateScores.peptideStringWithMods.size()) / 10.0;
+        scores.push_back(pepLength); //13
         scores.push_back(candidateScores.theoFragmentCount); //14
-//        scores.push_back(std::max(candidateScores.shadowsCosineSimSum, 0.0)); //15
-
-//        const int shadowsMaxSize = 6;
-//        const QVector<double> cosineSimShadowsToAnchors
-//                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, shadowsMaxSize);
-//        scores.append(cosineSimShadowsToAnchors); //16-21
-
-//        const QVector<double> shadowsIntensityRatioVec
-//                = extractScoresFromVecFeatures(candidateScores.shadowsIntensityRatioVec, shadowsMaxSize);
-//        scores.append(shadowsIntensityRatioVec); //22-27
 
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
@@ -563,7 +561,8 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
 //        scores.append(mzStDev);
 
-        scores.push_back(candidateScores.charge);
+        const double charge = -2.0 + candidateScores.charge;
+        scores.push_back(charge);
     }
 
     if (useNeuralNetworkScores) {
@@ -575,6 +574,49 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(0.0, candidateScores.cosineSimSpectrum));
         scores.push_back(candidateScores.discriminateScore);
         scores.push_back(std::pow(std::max(0.0, candidateScores.klDivSpectrum), 3));
+
+        QMap<QChar, int> aminoAcidCounts = {
+                {'A', 0},
+                {'C', 0},
+                {'D', 0},
+                {'E', 0},
+                {'F', 0},
+                {'G', 0},
+                {'H', 0},
+                {'I', 0},
+                {'K', 0},
+                {'L', 0},
+                {'M', 0},
+                {'N', 0},
+                {'P', 0},
+                {'Q', 0},
+                {'R', 0},
+                {'S', 0},
+                {'T', 0},
+                {'V', 0},
+                {'W', 0},
+                {'Y', 0}
+        };
+
+        for (const QChar aminoAcid : candidateScores.peptideStringWithMods) {
+
+            if (!aminoAcidCounts.contains(aminoAcid)) {
+                qDebug() << candidateScores.peptideStringWithMods << "SDLKFSDJL";
+            }
+
+            e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
+            aminoAcidCounts[aminoAcid]++;
+        }
+
+        for (int cnt : aminoAcidCounts.values()) {
+            scores.push_back(static_cast<double>(cnt));
+        }
+
+        const double mz = BiophysicalCalcs::calculateThomsonFromMass(
+                candidateScores.mass,
+                candidateScores.charge
+                );
+        scores.push_back((mz - 600.0) * 0.002);
 
 //        QVector<double> ppmVec;
 //        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
@@ -599,7 +641,9 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 
     }
 
-    return scores;
+    *scoreVec = scores;
+
+    ERR_RETURN
 }
 
 //Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -694,8 +738,7 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
     ERR_RETURN
 }
 
-Err
-FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
         const QVector<TargetDecoyCandidatePair *> &_targetDecoyCandidatePairs,
         double qValueThreshold,
         QVector<TargetDecoyCandidatePair *> *targetDecoyCandidatePairsFDRThresholded
@@ -719,6 +762,35 @@ FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
             );
 
     targetDecoyCandidatePairsFDRThresholded->erase(terminator, targetDecoyCandidatePairsFDRThresholded->end());
+
+    ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+        const QVector<CandidateScores> &candidateScores,
+        double qValueThreshold,
+        QVector<CandidateScores> *candidateScoresFDRThresholded
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    *candidateScoresFDRThresholded = candidateScores;
+
+    const auto terminatorLogic = [qValueThreshold](const CandidateScores &cs){
+        return cs.qValue > qValueThreshold;
+    };
+
+    const auto terminator = std::remove_if(
+            candidateScoresFDRThresholded->begin(),
+            candidateScoresFDRThresholded->end(),
+            terminatorLogic
+    );
+
+    candidateScoresFDRThresholded->erase(terminator, candidateScoresFDRThresholded->end());
+
 
     ERR_RETURN
 }
