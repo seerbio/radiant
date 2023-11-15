@@ -1494,7 +1494,9 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
-        candidateScoreClassifier->push_back(candidateScoresTargetsAndDecoysShuffled.at(rp.index));
+        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
+        candidateScoresNew.classifierScore = rp.nnScore;
+        candidateScoreClassifier->push_back(candidateScoresNew);
 
         ++counter;
 //        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
