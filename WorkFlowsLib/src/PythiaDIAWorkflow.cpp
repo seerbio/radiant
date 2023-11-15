@@ -174,13 +174,13 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             ); ree;
 #endif
 
-//    e = updateProteinGroupAnnotation(
-//            m_fastaUri,
-//            &scoredTargetDecoyPointersFDRFiltered
-//            ); ree;
-//
-//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &scoredCandidatesClassifierUpdated
+            ); ree;
+
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(scoredCandidatesClassifierUpdated, resultsFilePath); ree;
 
     ERR_RETURN
 }
@@ -1494,6 +1494,8 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
+        candidateScoreClassifier->push_back(candidateScoresTargetsAndDecoysShuffled.at(rp.index));
+
         ++counter;
 //        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
@@ -1515,12 +1517,12 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
 
 Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
         const QString &fastaFilePath,
-        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+        QVector<CandidateScores> *candidateScores
 ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(*scoredTargetDecoyPointers); ree;
+    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
 
     FastaReader fastaReader;
     e = fastaReader.parseFastaFile(fastaFilePath); ree;
@@ -1541,11 +1543,11 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
         peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
     }
 
-    for (int i = 0; i < scoredTargetDecoyPointers->size(); i++) {
+    for (int i = 0; i < candidateScores->size(); i++) {
 
-        TargetDecoyCandidatePair *tdcp = scoredTargetDecoyPointers->at(i);
+        CandidateScores &cs = (*candidateScores)[i];
 
-        QString peptideSeqReplacedLeucines = tdcp->peptideStringWithMods();
+        QString peptideSeqReplacedLeucines = cs.peptideStringWithMods;
         peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
 
         const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
@@ -1558,19 +1560,8 @@ Err PythiaDIAWorkflow::updateProteinGroupAnnotation(
                 [](const FastaEntry &fe){return fe.fastaDescription;}
                 );
 
-        CandidateScores *bestScoreTarget = tdcp->candidateScoresBestDiscriminantScorePtrTarget();
-        CandidateScores *bestScoreDecoy = tdcp->candidateScoresBestDiscriminantScorePtrDecoy();
+        cs.proteinGroup = fastaDescriptions.join(';');
 
-        bestScoreTarget->proteinGroup = fastaDescriptions.join(';');
-        bestScoreTarget->isDecoy = false;
-        bestScoreTarget->iRTPredicted = tdcp->iRt();
-        bestScoreTarget->targetKey = tdcp->bestDiscriminateScoreKeyTarget();
-
-        bestScoreDecoy->proteinGroup = "DECOY";
-        bestScoreDecoy->isDecoy = true;
-        bestScoreDecoy->iRTPredicted = tdcp->iRt();
-        bestScoreDecoy->peptideStringWithMods = tdcp->peptideStringWithMods() + "_decoy";
-        bestScoreDecoy->targetKey = tdcp->bestDiscriminateScoreKeyDecoy();
     }
 
     ERR_RETURN

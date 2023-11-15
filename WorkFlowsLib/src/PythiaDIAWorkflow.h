@@ -90,7 +90,7 @@ private:
 
     Err updateProteinGroupAnnotation(
             const QString &fastaFilePath,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+            QVector<CandidateScores> *candidateScores
     );
 
 private:
