@@ -1451,6 +1451,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         KarnnNNTarget karnnNnTarget;
         karnnNnTarget.seq = cs.peptideStringWithMods;
         karnnNnTarget.isDecoy = cs.isDecoy;
+        karnnNnTarget.index = i;
 
         e = FDRCLassifierNeuralNet::buildScoreVector(
                 cs,
@@ -1493,7 +1494,8 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
-        std::cout << ++counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
+        ++counter;
+//        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
         if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
             break;
