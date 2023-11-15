@@ -164,8 +164,6 @@ void KarnnNeuralNetTests::runTest() {
 
     const int epochs = 1;
     e = karnnNeuralNet.run(
-            dataVec,
-            isDecoys,
             epochs,
             &karnnNNTargets
             );

@@ -87,13 +87,20 @@ namespace {
 
 }//namespace
 Err KarnnNeuralNet::run(
-        const QVector<QVector<double>> &trainingData,
-        const QVector<bool> &labels,
         int epochs,
         QVector<KarnnNNTarget> *karnnNNTargets
         ) {
 
     ERR_INIT
+
+    e = ErrorUtils::isFalse(karnnNNTargets->isEmpty()); ree;
+
+    QVector<QVector<double>> trainingData;
+    QVector<bool> labels;
+    for (const KarnnNNTarget &kt : *karnnNNTargets) {
+        trainingData.push_back(kt.scoreVec);
+        labels.push_back(kt.isDecoy);
+    }
 
     e = ErrorUtils::isNotEmpty(trainingData); ree;
     e = ErrorUtils::isEqual(trainingData.size(), labels.size()); ree;

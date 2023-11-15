@@ -33,8 +33,6 @@ public:
             );
 
     Err run(
-            const QVector<QVector<double>> &trainingData,
-            const QVector<bool> &labels,
             int epochs,
             QVector<KarnnNNTarget> *karnnNNTargets
             );
