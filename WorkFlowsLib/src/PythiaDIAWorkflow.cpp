@@ -154,17 +154,19 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &scoredTargetDecoyPointersFDRThresholded
     ); ree;
 
-    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRFiltered = scoredTargetDecoyPointersFDRThresholded;
-////    e = removeInterferingCandidates(
-////            &msReaderPointerAcc,
-////            scoredTargetDecoyPointersFDRThresholded,
-////            &scoredTargetDecoyPointersFDRFiltered
-////            ); ree;
-//
+    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRFiltered;
 
+//#define REMOVE_INTERFERENCE
+#ifdef REMOVE_INTERFERENCE
+    e = removeInterferingCandidates(
+            &msReaderPointerAcc,
+            scoredTargetDecoyPointersFDRThresholded,
+            &scoredTargetDecoyPointersFDRFiltered
+            ); ree;
+#else
+    scoredTargetDecoyPointersFDRFiltered = scoredTargetDecoyPointersFDRThresholded;
+#endif
 
-#define USE_NEURAL_NET_CLASSIFIER
-#ifdef USE_NEURAL_NET_CLASSIFIER
     QVector<CandidateScores> scoredCandidatesClassifierUpdated;
     e = applyNeuralNetClassifier(
             scoredTargetDecoyPointers,
@@ -172,7 +174,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             msReaderPointerAcc.ptr->scanTimeMinMax(),
             &scoredCandidatesClassifierUpdated
             ); ree;
-#endif
+
 
     e = updateProteinGroupAnnotation(
             m_fastaUri,
@@ -1304,7 +1306,7 @@ Err PythiaDIAWorkflow::removeInterferingCandidates(
 
     qDebug() << "Starting interference removal of shared tandem fragments";
 
-    const double fdrThreshold = 0.2;
+    const double fdrThreshold = 0.1;
     e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
             scoredTargetDecoyPointers,
             fdrThreshold,
