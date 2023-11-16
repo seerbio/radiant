@@ -165,6 +165,7 @@ void KarnnNeuralNetTests::runTest() {
     const int epochs = 1;
     e = karnnNeuralNet.run(
             epochs,
+            666,
             &karnnNNTargets
             );
     QCOMPARE(e, eNoError);

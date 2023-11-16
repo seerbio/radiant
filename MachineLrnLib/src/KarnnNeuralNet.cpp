@@ -88,6 +88,7 @@ namespace {
 }//namespace
 Err KarnnNeuralNet::run(
         int epochs,
+        int seed,
         QVector<KarnnNNTarget> *karnnNNTargets
         ) {
 
@@ -141,6 +142,7 @@ Err KarnnNeuralNet::run(
             rows,
             cols,
             epochs,
+            seed,
             dataVecPointers,
             labelVec,
             &nets
@@ -175,6 +177,7 @@ Err KarnnNeuralNet::initNeuralNets(
         int rows,
         int cols,
         int epochs,
+        int seed,
         std::vector<float*> &dataVecPointers,
         std::vector<float*> &labelVec,
         QVector<NN> *nets
@@ -200,7 +203,7 @@ Err KarnnNeuralNet::initNeuralNets(
         NN net;
 
         net.network = createNetwork(cols, m_hiddenLayerCount, hiddenSize, hiddenActivation, 2, softmax, net.random);
-        net.seed(i);
+        net.seed(i + seed);
         net.lossFunction = CROSS_ENTROPY_LOSS;
         net.batchSize = std::min(50, std::max(1, static_cast<int>(rows / 100.0)));
         net.learningRate = m_learningRate;

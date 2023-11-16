@@ -1481,39 +1481,51 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     ); ree;
 
     const int epochs = 1;
-    e = karnnNeuralNet.run(
-            epochs,
-            &karnnNNTargetsNorm
-    ); ree;
+    int cycles = 0;
+    int cycleDecoysFound = -1;
+    while (cycles < 5 && cycleDecoysFound < 2) {
 
-    std::sort(
-            karnnNNTargetsNorm.begin(),
-            karnnNNTargetsNorm.end(),
-            [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
-    );
+        qDebug() << "Training Cycle" << cycles;
 
-    int counter = 0;
-    int falsePositives = 0;
-    for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+        candidateScoreClassifier->clear();
 
-        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
-        candidateScoresNew.classifierScore = rp.nnScore;
-        candidateScoreClassifier->push_back(candidateScoresNew);
+        e = karnnNeuralNet.run(
+                epochs,
+                S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + cycles,
+                &karnnNNTargetsNorm
+        ); ree;
 
-        ++counter;
+        std::sort(
+                karnnNNTargetsNorm.begin(),
+                karnnNNTargetsNorm.end(),
+                [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
+        );
+
+        int counter = 0;
+        int falsePositives = 0;
+        for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+
+            CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
+            candidateScoresNew.classifierScore = rp.nnScore;
+            candidateScoreClassifier->push_back(candidateScoresNew);
+
+            ++counter;
 //        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
-        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
-            break;
+            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
+                break;
+            }
+
+            if (rp.isDecoy){
+                falsePositives++;
+                continue;
+            }
         }
 
-        if (rp.isDecoy){
-            falsePositives++;
-            continue;
-        }
+        cycleDecoysFound = falsePositives;
+        qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
     }
 
-    qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
 
 
     ERR_RETURN

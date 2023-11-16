@@ -35,6 +35,7 @@ public:
 
     Err run(
             int epochs,
+            int seed,
             QVector<KarnnNNTarget> *karnnNNTargets
             );
 
@@ -44,6 +45,7 @@ private:
             int rows,
             int cols,
             int epochs,
+            int seed,
             std::vector<float*> &dataVecPointers,
             std::vector<float*> &labelVec,
             QVector<NN> *nets
