@@ -151,7 +151,7 @@ struct PythiaParameters{
     double cosineSimToAnchorThreshold = 0.9;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
-    int trancheSizeMax = 5e4;
+    int trancheSizeMax = 1e4;
 
     int verbosity = 2;
 
