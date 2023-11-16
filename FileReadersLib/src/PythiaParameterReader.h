@@ -153,7 +153,7 @@ struct PythiaParameters{
     double ms2ExtractionWidthPPM = -1.0;
     int trancheSizeMax = 5e4;
 
-    int verbosity = 1;
+    int verbosity = 2;
 
     [[nodiscard]] bool isValid() const {
 
