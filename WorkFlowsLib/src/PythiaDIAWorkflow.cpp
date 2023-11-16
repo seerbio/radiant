@@ -1501,7 +1501,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         ++counter;
 //        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
-        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
+        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
             break;
         }
 
