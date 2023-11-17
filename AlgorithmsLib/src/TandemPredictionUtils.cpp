@@ -291,12 +291,12 @@ namespace {
         const int expectedModSplitSize = 2;
 
         const QStringList modStringSplit
-                = modString.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+                = modString.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
 
         for (const QString &mod : modStringSplit) {
 
             const QStringList modSplit
-                    = mod.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP, QString::SkipEmptyParts);
+                    = mod.split(S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP, Qt::SkipEmptyParts);
 
             e = ErrorUtils::isEqual(modSplit.size(), expectedModSplitSize); ree;
 
@@ -668,13 +668,13 @@ QVector<double> TandemPredictionUtils::buildTheoreticalMzListBYOnly(
     cumSumBSeries.coeffRef(cumSumBSeries.size() - 1) += waterMonoisotopicMass; //TODO comment this line out and uncomment other lines when TandemScanLibrary is implemented
     std::vector<double> bSeriesVec(cumSumBSeries.data(), cumSumBSeries.data() + cumSumBSeries.size());
 //    bSeriesVec.pop_back();
-    bySeries.append(QVector<double>::fromStdVector(bSeriesVec));
+    bySeries.append(QVector<double>(bSeriesVec.begin(), bSeriesVec.end()));
 
     Eigen::VectorXd cumSumYSeries = buildThomsonValues(seq, aa, true);
     cumSumYSeries = cumSumYSeries.array() + PROTON + waterMonoisotopicMass;
     std::vector<double> ySeriesVec(cumSumYSeries.data(), cumSumYSeries.data() + cumSumYSeries.size());
 //    ySeriesVec.pop_front();
-    bySeries.append(QVector<double>::fromStdVector(ySeriesVec));
+    bySeries.append(QVector<double>(ySeriesVec.begin(), ySeriesVec.end()));
 
 //#define USE_CHARGE2_IONS_FRAGGING
 #ifdef USE_CHARGE2_IONS_FRAGGING
@@ -722,8 +722,8 @@ QPair<QVector<double>, QVector<double>> TandemPredictionUtils::buildTheoreticalM
     removeMzMassesOutOfRange(mzMin, mzMax, &bSeriesStdVec);
     removeMzMassesOutOfRange(mzMin, mzMax, &ySeriesStdVec);
 
-    const QVector<double> bSeriesVec = QVector<double>::fromStdVector(bSeriesStdVec);
-    const QVector<double> ySeriesVec = QVector<double>::fromStdVector(ySeriesStdVec);
+    const QVector<double> bSeriesVec = QVector<double>(bSeriesStdVec.begin(), bSeriesStdVec.end());
+    const QVector<double> ySeriesVec = QVector<double>(ySeriesStdVec.begin(), ySeriesStdVec.end());
 
     return {bSeriesVec, ySeriesVec};
 }

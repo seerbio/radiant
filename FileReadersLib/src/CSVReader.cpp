@@ -75,7 +75,7 @@ Err CSVReader::readDataFromCSV(
     while(!in.atEnd()) {
 
         const QString line = in.readLine().trimmed();
-        const QStringList lineSplit = line.split(S_GLOBAL_SETTINGS.COMMA, QString::SkipEmptyParts);
+        const QStringList lineSplit = line.split(S_GLOBAL_SETTINGS.COMMA, Qt::SkipEmptyParts);
 
         if (headerSplit.isEmpty()) {
             headerSplit = lineSplit;

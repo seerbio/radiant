@@ -261,48 +261,88 @@ namespace {
 
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
-        //NOTE: this needs to stay outside of loop or code becomes slow because cache is reset.
-        QMap<MzHashed, XICPoints> cachedPoints;
+        const int tranchSize = std::min(pi.pythiaParameters.trancheSizeMax, pi.targetDecoyPointers.size());
+        const int nTranches = pi.targetDecoyPointers.size() / tranchSize;
 
-        for (TargetDecoyCandidatePair* targetDecoyPtr : pi.targetDecoyPointers) {
+        QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
+        e = ParallelUtils::trancheVectorForParallelization(
+                pi.targetDecoyPointers,
+                nTranches,
+                &scoredTargetDecoyPointersTranched
+        ); ree;
 
-            CandidateScores candidateScoresTarget;
-            e = extractScores(
-                    targetDecoyPtr,
-                    targetDecoyPtr->ms2IonsTarget(),
-                    pi.topNMs2Ions,
-                    pi.pythiaParameters.ms2ExtractionWidthPPM,
-                    targetDecoyPtr->iRt(),
-                    pi.pythiaParameters.scanTimeWindowMinutes,
-                    &msFrame,
-                    &msCalibratomatic,
-                    &turboXic,
-                    &candidateScorertron,
-                    &cachedPoints,
-                    &candidateScoresTarget
-                    ); ree;
+        for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
 
-            CandidateScores candidateScoresDecoy;
-            e = extractScores(
-                    targetDecoyPtr,
-                    targetDecoyPtr->ms2IonsDecoy(),
-                    pi.topNMs2Ions,
-                    pi.pythiaParameters.ms2ExtractionWidthPPM,
-                    targetDecoyPtr->iRt(),
-                    pi.pythiaParameters.scanTimeWindowMinutes,
-                    &msFrame,
-                    &msCalibratomatic,
-                    &turboXic,
-                    &candidateScorertron,
-                    &cachedPoints,
-                    &candidateScoresDecoy
-            ); ree;
+            //NOTE: this needs to stay outside of the subsequent loop or code becomes slow because cache is reset.
+            QMap<MzHashed, XICPoints> cachedPoints;
 
-            targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
-            targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
+            for (TargetDecoyCandidatePair* targetDecoyPtr : tranche) {
+
+                CandidateScores candidateScoresTarget;
+                e = extractScores(
+                        targetDecoyPtr,
+                        targetDecoyPtr->ms2IonsTarget(),
+                        pi.topNMs2Ions,
+                        pi.pythiaParameters.ms2ExtractionWidthPPM,
+                        targetDecoyPtr->iRt(),
+                        pi.pythiaParameters.scanTimeWindowMinutes,
+                        &msFrame,
+                        &msCalibratomatic,
+                        &turboXic,
+                        &candidateScorertron,
+                        &cachedPoints,
+                        &candidateScoresTarget
+                ); ree;
+
+                CandidateScores candidateScoresDecoy;
+                e = extractScores(
+                        targetDecoyPtr,
+                        targetDecoyPtr->ms2IonsDecoy(),
+                        pi.topNMs2Ions,
+                        pi.pythiaParameters.ms2ExtractionWidthPPM,
+                        targetDecoyPtr->iRt(),
+                        pi.pythiaParameters.scanTimeWindowMinutes,
+                        &msFrame,
+                        &msCalibratomatic,
+                        &turboXic,
+                        &candidateScorertron,
+                        &cachedPoints,
+                        &candidateScoresDecoy
+                ); ree;
+
+                candidateScoresDecoy.isDecoy = true;
+                targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
+                targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
+            }
         }
 
-        qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
+        if (pi.pythiaParameters.verbosity > 1) {
+            qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
+        }
+        
+        ERR_RETURN
+    }
+
+    Err reorderParallelInputs(QVector<TargetDecoyPairParallelInput> *parallelInputs) {
+
+        ERR_INIT
+        e = ErrorUtils::isFalse(parallelInputs->isEmpty()); ree;
+
+        QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
+        e = ParallelUtils::trancheVectorForParallelization(
+                *parallelInputs,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &parallelInputsTranched
+                ); ree;
+
+        parallelInputs->clear();
+
+        for (const QVector<TargetDecoyPairParallelInput> &tranche : parallelInputsTranched) {
+
+            for (const TargetDecoyPairParallelInput &pi : tranche) {
+                parallelInputs->append(pi);
+            }
+        }
 
         ERR_RETURN
     }
@@ -323,51 +363,36 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     e = m_targetDecoyCandidatePairManager->clearScores(); ree;
 
-    const int tranchSize = std::min(m_pythiaParameters.trancheSizeMax, scoredTargetDecoyPointers->size());
-    const int nTranches = scoredTargetDecoyPointers->size() / tranchSize;
-
-    QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
+    QVector<TargetDecoyPairParallelInput> parallelInputs;
+    e = buildParallelInput(
             *scoredTargetDecoyPointers,
-            nTranches,
-            &scoredTargetDecoyPointersTranched
-            ); ree;
+            topNMS2Ions,
+            msCalibratomatic,
+            &parallelInputs
+    ); ree;
 
-    int tranchCounter = 0;
-    std::random_device rd;
-    std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-    for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
-
-        qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size();
-
-        QVector<TargetDecoyPairParallelInput> parallelInputs;
-        e = buildParallelInput(
-                tranche,
-                topNMS2Ions,
-                msCalibratomatic,
-                &parallelInputs
-        ); ree;
-
-        std::shuffle(parallelInputs.begin(), parallelInputs.end(), g);
+    e = reorderParallelInputs(&parallelInputs); ree;
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-        QFuture<Err> futures = QtConcurrent::mapped(
-                parallelInputs,
-                parallelScoreLogic
-        );
-        futures.waitForFinished();
+    QFuture<Err> futures = QtConcurrent::mapped(
+            parallelInputs,
+            parallelScoreLogic
+    );
+    futures.waitForFinished();
 
-        for (Err res : futures) {
-            e = res; ree;
-        }
+    for (Err res : futures) {
+        e = res; ree;
+    }
 #else
-        for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
-            e = parallelScoreLogic(tdppi); ree;
-        }
+    for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
+        e = parallelScoreLogic(tdppi); ree;
+    }
 #endif
 
-    }
+//    qDebug() << "Tranche" << ++tranchCounter << "Size" << tranche.size() << "mSec" << et.restart();
+
+
 
     ERR_RETURN
 }

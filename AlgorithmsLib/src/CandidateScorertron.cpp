@@ -107,7 +107,6 @@ namespace {
 
             const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
 
-
             if (scanNumbersVsIntensityVals.isEmpty()) {
                 mzHashedVsIonPresence->insert(mzHashed, {});
                 continue;
@@ -258,6 +257,7 @@ Err CandidateScorertron::calculateScores(
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
 
+    //LAST BIGGEST
     QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
     e = buildMzHashedVsIonPresence(
             mzHashedVsXICPoints,
@@ -279,6 +279,7 @@ Err CandidateScorertron::calculateScores(
 
     QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
 
+    //NEXT BIGGEST TIME
     e = findCandidateIntegrations(
             summedMatVecToVec,
             &peakIntegrationIndexes
@@ -292,6 +293,7 @@ Err CandidateScorertron::calculateScores(
             &m_turboXICMS1
             );
 
+    //BIGGEST TIME
     e = scoreOverseer.buildScores(
             targetDecoyCandidatePair,
             peakIntegrationIndexes,

@@ -72,15 +72,15 @@ Err CHEMLIB_EXPORTS parseMolecularFormulaString(const QString &_formulaString, M
     formulaString = formulaString.remove(" ");
 
     QHash<QString, int> formulaHash;
-    for (const QString &c : allowedAtoms.split("", QString::SkipEmptyParts)) {
+    for (const QString &c : allowedAtoms.split("", Qt::SkipEmptyParts)) {
         formulaHash.insert(c, 0);
     }
 
-    QStringList molStringSplit = formulaString.split("", QString::SkipEmptyParts);
+    QStringList molStringSplit = formulaString.split("", Qt::SkipEmptyParts);
 
     const QRegExp rx(QLatin1String("[-0-9]+"));
     auto&& atomsInString
-            = formulaString.split(rx, QString::SkipEmptyParts).join("").split("", QString::SkipEmptyParts);
+            = formulaString.split(rx, Qt::SkipEmptyParts).join("").split("", Qt::SkipEmptyParts);
 
     const auto logic = [allowedAtoms](const QString &c){return !allowedAtoms.contains(c); };
     const bool areIllegalAtomsInFormula = std::any_of(atomsInString.begin(), atomsInString.end(), logic);

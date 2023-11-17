@@ -122,7 +122,8 @@ namespace {
 
         QVector<QVector<float>> returnPredictions;
         for (const auto &pred : predictions){
-            const QVector<float> vec = QVector<float>::fromStdVector(pred.front().to_vector());
+            const std::vector<float> v = pred.front().to_vector();
+            const QVector<float> vec(v.begin(), v.end());
             returnPredictions.push_back(vec);
         }
 
@@ -172,7 +173,8 @@ QVector<float> NeuralNetModel::Private::predict(const Eigen::VectorX<double> &ve
 
     const fdeep::tensors pred = m_model->predict({t});
 
-    const QVector<float> vecRet = QVector<float>::fromStdVector(pred.front().to_vector());
+    const std::vector<float> v = pred.front().to_vector();
+    const QVector<float> vecRet(v.begin(), v.end());
 
     return vecRet;
 }

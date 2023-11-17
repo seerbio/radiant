@@ -77,14 +77,6 @@ Err FastaFileToPeptidesListWorkFlow::exec(
             &peptideSequences
             ); ree;
 
-//TODO see if you want to reconsider this
-//    if (m_params.addDecoys) {
-//        e = addDecoys(
-//                666,
-//                &peptideSequences
-//                ); ree;
-//    }
-
     e = writeLibraryBuilderCSV(
             peptideSequences,
             targetMzCollisionCSVFilePath,
@@ -199,7 +191,7 @@ namespace {
             return peptideSeq;
         }
 
-        QStringList strList = peptideSeq.split("", QString::SkipEmptyParts);
+        QStringList strList = peptideSeq.split("", Qt::SkipEmptyParts);
 
         std::reverse(strList.rbegin() + 1, strList.rend() - 1);
 

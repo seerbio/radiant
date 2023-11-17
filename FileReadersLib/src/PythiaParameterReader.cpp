@@ -86,7 +86,6 @@ QString Modification::cTermProtein() {
 
 
 namespace PythiaParameterReaderConstants {
-    const QString kAddDecoys = QStringLiteral("addDecoys");
     const QString kNTermCleavePoints = QStringLiteral("nTermCleavePoints");
     const QString kCTermCleavePoints = QStringLiteral("cTermCleavePoints");
     const QString kRaggedness = QStringLiteral("raggedness");
@@ -122,6 +121,10 @@ namespace PythiaParameterReaderConstants {
     const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
     const QString kDeisotopeScans = QStringLiteral("deisotopeScans");
+    const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
+    const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
+    const QString kScanTimeWindowMinutes = QStringLiteral("scanTimeWindowMinutes");
+    const QString kReportDecoys = QStringLiteral("reportDecoys");
 
 }
 
@@ -275,10 +278,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->chargeStateMax = val;
         }
-        else if (jsonKey == kAddDecoys){
-            bool val = jsonValue.toBool();
-            pythiaParameters->addDecoys = val;
-        }
         else if (jsonKey == kDeisotopeScans){
             bool val = jsonValue.toBool();
             pythiaParameters->deisotopeScans = val;
@@ -292,6 +291,11 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->skipScanCount = val;
+        }
+        else if (jsonKey == kReportDecoys){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->reportDecoys = static_cast<bool>(val);
         }
         else if (jsonKey == kMinScanCount){
             int val;
@@ -311,6 +315,11 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->smoothCount = val;
+        }
+        else if (jsonKey == kTrancheSizeMax){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->trancheSizeMax = val;
         }
         else if (jsonKey == kSigma){
             double val;
@@ -363,7 +372,6 @@ Err PythiaParameterReader::validateJsonKeys() {
             kMS2ExtractionWidthPPM,
             kPrecursorExtractionWindowThomsons,
             kPercentFDR,
-            kAddDecoys,
 
             kTopNMs2Ions,
             kSkipScanCount,

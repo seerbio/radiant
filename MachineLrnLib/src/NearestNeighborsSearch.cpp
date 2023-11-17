@@ -234,7 +234,7 @@ Err NearestNeighborsSearch::Private::kNearestNeighborsSearch(
 
     for (const QVector<double> &coor : searchPointCoors) {
 
-        std::vector<double> queryPt = coor.toStdVector();
+        std::vector<double> queryPt(coor.begin(), coor.end());
         std::vector<long> retIndex(k);
         std::vector<double> outDistSqr(k);
 

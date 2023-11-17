@@ -16,7 +16,6 @@
     "peptideLengthMin": 7,
     "peptideLengthMax": 30,
     "maxModificationsPeptide": 1,
-    "addDecoys": true,
     "modifications": [
         {
             "residue": "C",

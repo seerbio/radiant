@@ -22,8 +22,8 @@ class TargetDecoyCandidatePair;
 
 namespace NeuralNetDataNamespace {
     const QString SCORES = QStringLiteral("scores");
+    const QString DISC_SCORE = QStringLiteral("discScore");
     const QString IS_DECOY = QStringLiteral("isDecoy");
-    const QString IS_TEST = QStringLiteral("isTest");
     const QString PEP_STR = QStringLiteral("peptideStringWithMods");
     const QString CHARGE = QStringLiteral("charge");
     const QString TARGET_KEY = QStringLiteral("targetKey");
@@ -34,8 +34,8 @@ struct NeuralNetData : public ParquetReaderInputBase {
 public:
 
     QVector<double> scores;
+    double discScore;
     bool isDecoy = false;
-    bool isTest = false;
     Charge charge = -1;
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
@@ -46,8 +46,8 @@ public:
 
         return {
                 {SCORES, QVariant(qVectorToQByteArray(scores))},
+                {DISC_SCORE, QVariant(discScore)},
                 {IS_DECOY, QVariant(isDecoy)},
-                {IS_TEST, QVariant(isTest)},
                 {CHARGE, QVariant(charge)},
                 {TARGET_KEY, QVariant(targetKey)},
                 {PEP_STR, QVariant(peptideStringWithMods)}
@@ -62,8 +62,8 @@ public:
 
         const QStringList keysToCheck = {
                 SCORES,
+                DISC_SCORE,
                 IS_DECOY,
-                IS_TEST,
                 CHARGE,
                 TARGET_KEY,
                 PEP_STR
@@ -79,10 +79,10 @@ public:
 
         scores = bytesArrayToQVector<double>(dataMap.value(SCORES).toByteArray());
         isDecoy = dataMap.value(IS_DECOY).toBool();
-        isTest = dataMap.value(IS_TEST).toBool();
         peptideStringWithMods = dataMap.value(PEP_STR).toString();
         charge = dataMap.value(CHARGE).toInt();
         targetKey = dataMap.value(TARGET_KEY).toString();
+        discScore = dataMap.value(DISC_SCORE).toDouble();
 
         ERR_RETURN
     }
@@ -117,12 +117,13 @@ public:
             Charge charge
     );
 
-    static QVector<double> buildScoreVector(
+    static Err buildScoreVector(
             const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             int theoMzIonsSize,
-            const QPair<double, double> &scanTimeMinMax
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<double> *scoreVec
     );
 
     template <typename T>
@@ -169,6 +170,12 @@ public:
             double qValueThreshold,
             QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsFDRThresholded
             );
+
+    static Err filterScoreCandidatesByFDR(
+            const QVector<CandidateScores> &targetDecoyCandidatePairs,
+            double qValueThreshold,
+            QVector<CandidateScores> *targetDecoyCandidatePairsFDRThresholded
+    );
 
 private:
 

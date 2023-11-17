@@ -14,7 +14,6 @@
 using namespace Error;
 
 namespace PythiaParameterReaderConstants {
-    extern const QString FILEREADERSLIB_EXPORTS kAddDecoys;
     extern const QString FILEREADERSLIB_EXPORTS kNTermCleavePoints;
     extern const QString FILEREADERSLIB_EXPORTS kCTermCleavePoints;
     extern const QString FILEREADERSLIB_EXPORTS kRaggedness;
@@ -49,6 +48,13 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
     extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
+
+    extern const QString FILEREADERSLIB_EXPORTS kDeisotopeScans;
+    extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
+    extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
+    extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowMinutes;
+    extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
+
 }
 
 
@@ -94,8 +100,10 @@ public:
     static QString cTermPeptide();
     static QString cTermProtein();
 
-    int positionalLocationIndexes(const QString &positionalLocation,
-                                  const QString &peptideSequence);
+    int positionalLocationIndexes(
+            const QString &positionalLocation,
+            const QString &peptideSequence
+            );
 
     static QStringList modKeys();
 
@@ -104,8 +112,7 @@ public:
 
 
 struct PythiaParameters{
-    //TODO make an is valid method to check and see if all values are initiated.
-    int trancheSize = 16;
+
 
     QStringList nTermCleavePoints;
     QStringList cTermCleavePoints;
@@ -116,8 +123,6 @@ struct PythiaParameters{
     int peptideLengthMin = 7;
     int peptideLengthMax = 35;
     int maxModificationsPeptide = 1;
-
-    bool addDecoys = true; //TODO consider removing
 
     int chargeStateMin = -1;
     int chargeStateMax = -1;
@@ -144,11 +149,13 @@ struct PythiaParameters{
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
 
-    double cosineSimToAnchorThreshold = 0.97;
+    double cosineSimToAnchorThreshold = 0.9;
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
-    int trancheSizeMax = 1e5;
+    int trancheSizeMax = 5e4;
 
+    int verbosity = 1;
+    bool reportDecoys = false;
 
     [[nodiscard]] bool isValid() const {
 
@@ -223,7 +230,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons << precursorExtractionWindowThomsons;
         qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
         qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
-        qDebug() << PythiaParameterReaderConstants::kAddDecoys << addDecoys;
 
         qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
         qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
@@ -234,9 +240,11 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
         qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
-        qDebug() << "cosineSimToAnchorThreshold" << cosineSimToAnchorThreshold;
-        qDebug() << "scanTimeWindowMinutes" << scanTimeWindowMinutes;
-        qDebug() << "deisotopeScans" << deisotopeScans;
+        qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
+        qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
+        qDebug() << PythiaParameterReaderConstants::kDeisotopeScans << deisotopeScans;
+        qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
+        qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

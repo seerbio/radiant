@@ -52,6 +52,8 @@ void MsReaderBaseTests::openPrqTest() {
 
     QSKIP("activate when proper pathing is used");
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     MsReaderPointerAcc msReaderPointerAcc;
@@ -61,6 +63,8 @@ void MsReaderBaseTests::openPrqTest() {
 
 void MsReaderBaseTests::isDIATest() {
     QSKIP("TODO: enable with internal test data");
+
+    QSKIP("activate when proper pathing is used");
 
     QSKIP("activate when proper pathing is used");
 

@@ -242,7 +242,7 @@ Err ProteinDigestomatic::createRaggedSegments(QVector<PeptideSequence> *peptideS
     for(const PeptideSequence &pepSeq : *peptideSequences){
 
         const int seqSize = pepSeq.sequence.size() - 2;
-        const QStringList seqSplit = pepSeq.sequence.split("", QString::SkipEmptyParts);
+        const QStringList seqSplit = pepSeq.sequence.split("", Qt::SkipEmptyParts);
 
         QStringList cRaggedBuilder = seqSplit;
         QStringList nRaggedBuilder = seqSplit;

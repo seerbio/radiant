@@ -102,7 +102,7 @@ BiophysicalCalcs::buildTandemFragmentMasses(
     }
 
     std::vector<double> vec(cumSumAminoAcidsMassValues.data(), cumSumAminoAcidsMassValues.data() + maxLength);
-    return QVector<double>::fromStdVector(vec);
+    return QVector<double>(vec.begin(), vec.end());
 }
 
 double BiophysicalCalcs::calculateThomson(

@@ -4,6 +4,7 @@
 
 #include "FDRCLassifierNeuralNet.h"
 
+#include "BiophysicalCalcs.h"
 #include "CandidateScores.h"
 #include "EigenUtils.h"
 #include "ParallelUtils.h"
@@ -59,7 +60,7 @@ Err FDRCLassifierNeuralNet::init(
 namespace {
 
     Err buildNeuralNetworkInput(
-            const QMap<QString, CandidateScores> &keyVsScoredCandidateCulled,
+            const QMap<QString, CandidateScores> &keyVsScoredCandidates,
             int topNMs2IonsFull,
             const QPair<double, double> &scanTimeMinMax,
             QVector<NeuralNetData> *trainingData
@@ -67,102 +68,60 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
+        e = ErrorUtils::isNotEmpty(keyVsScoredCandidates); ree;
 
-        const double qValueMin = 0.01;
-        const double cosineSimSumMin = 0.0;
         const bool useExtendedScores = true;
         const bool useNeuralNetworkScores = false;
 
         QVector<QPair<CandidateScores, QVector<double>>> targetPairs;
-        QVector<QPair<CandidateScores, QVector<double>>> decoyPairs;
-        QVector<QPair<CandidateScores, QVector<double>>> testPairs;
-        for (const CandidateScores &sc: keyVsScoredCandidateCulled) {
+        for (const CandidateScores &sc: keyVsScoredCandidates) {
 
-            const QVector<double> scoreVector = FDRCLassifierNeuralNet::buildScoreVector(
+            QVector<double> scoreVector;
+            e = FDRCLassifierNeuralNet::buildScoreVector(
                     sc,
                     useExtendedScores,
                     useNeuralNetworkScores,
                     topNMs2IonsFull,
-                    scanTimeMinMax
-            );
-
-            if (sc.isDecoy && sc.cosineSimSum100 > cosineSimSumMin) {
-                decoyPairs.push_back({sc, scoreVector});
-                continue;
-            }
-
-            if (sc.qValue > qValueMin && !sc.isDecoy) {
-                testPairs.push_back({sc, scoreVector});
-                continue;
-            }
+                    scanTimeMinMax,
+                    &scoreVector
+            ); ree;
 
             targetPairs.push_back({sc, scoreVector});
         }
 
-        // TODO decide whether to shuffle this rather than sort.
-        using PR = QPair<CandidateScores, QVector<double>>;
-        std::sort(
-                decoyPairs.rbegin(),
-                decoyPairs.rend(),
-                [](const PR &l, const PR &r){return l.first.discriminateScore < r.first.discriminateScore;}
-        );
-
-        const int decoySize = std::min(decoyPairs.size(), targetPairs.size());
-        decoyPairs.resize(decoySize);
-
-        qDebug() << "target count training" << targetPairs.size() << "decoy count training" << decoyPairs.size();
-
-        QVector<QPair<CandidateScores, QVector<double>>> targetDecoyPairs;
-        targetDecoyPairs.append(targetPairs);
-        targetDecoyPairs.append(decoyPairs);
-
-        std::random_device rd;
         std::mt19937 g(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        std::shuffle(targetPairs.begin(),targetPairs.end(), g);
 
-        std::shuffle(targetDecoyPairs.begin(), targetDecoyPairs.end(), g);
-
-        for (const QPair<CandidateScores, QVector<double>> &scPair : targetDecoyPairs) {
+        for (const QPair<CandidateScores, QVector<double>> &scPair : targetPairs) {
             NeuralNetData td;
             td.peptideStringWithMods = scPair.first.peptideStringWithMods;
             td.isDecoy = scPair.first.isDecoy;
+            td.discScore = scPair.first.discriminateScore;
             td.scores = scPair.second;
-            td.isTest = false;
             td.charge = scPair.first.charge;
             td.targetKey = scPair.first.targetKey;
             trainingData->push_back(td);
         }
 
-        for (const QPair<CandidateScores, QVector<double>> &scPair : testPairs) {
-            NeuralNetData td;
-            td.peptideStringWithMods = scPair.first.peptideStringWithMods;
-            td.isDecoy = scPair.first.isDecoy;
-            td.scores = scPair.second;
-            td.isTest = true;
-            td.charge = scPair.first.charge;
-            td.targetKey = scPair.first.targetKey;
-            trainingData->push_back(td);
-        }
-
-//#define WRITE_NN_TRAIN_DATA
+#define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
-        const QString dataFilePath = "/home/anichols/Desktop/Testing/LatestStuff/trainingData.parquet";
+        const QString dataFilePath = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML.prq.nnTrainingData";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;
 #endif
 
         ERR_RETURN
     }
 
-    Err buildKeyVsScoredCandidateCulled(
-            const QVector<CandidateScores> &scoredCandidateCulled,
+    Err buildKeyVsScoredCandidates(
+            const QVector<CandidateScores> &scoredCandidates,
             QMap<QString, CandidateScores> *keyVsScoredCandidateCulled
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scoredCandidateCulled); ree;
+        e = ErrorUtils::isNotEmpty(scoredCandidates); ree;
 
-        for (const CandidateScores &sc : scoredCandidateCulled) {
+        for (const CandidateScores &sc : scoredCandidates) {
             const QString key = FDRCLassifierNeuralNet::buildTargetDecoyKey(
                     sc.peptideStringWithMods,
                     sc.targetKey,
@@ -270,6 +229,8 @@ namespace {
                 &identifierVsDecoys
                 ); ree;
 
+        qDebug() << identifierVsTarget.size() << identifierVsDecoys.size() << "SLDKJFS";
+
         QMap<QString, double> identifierVsQValue;
         QMap<QString, double> identifierVsDecoyRatio;
         e = MathUtils::calculateQValue(
@@ -317,13 +278,8 @@ Err FDRCLassifierNeuralNet::exec(
     e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys); ree;
     candidateScoreClassifier->clear();
 
-    const int topNMs2IonsFull = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_topNMs2Ions / 2))
-    );
-
     QMap<QString, CandidateScores> keyVsScoredCandidateTargetsAndDecoys;
-    e = buildKeyVsScoredCandidateCulled(
+    e = buildKeyVsScoredCandidates(
             candidateScoresTargetsAndDecoys,
             &keyVsScoredCandidateTargetsAndDecoys
             ); ree;
@@ -332,7 +288,7 @@ Err FDRCLassifierNeuralNet::exec(
     QVector<NeuralNetData> trainingData;
     e = buildNeuralNetworkInput(
             keyVsScoredCandidateTargetsAndDecoys,
-            topNMs2IonsFull,
+            m_topNMs2Ions,
             m_scanTimeMinMax,
             &trainingData
     ); ree;
@@ -359,36 +315,9 @@ Err FDRCLassifierNeuralNet::exec(
 
 namespace {
 
-    Err separateTrainingDataFromAllData(
-            const QVector<NeuralNetData> &trainingData,
-            const QVector<QVector<float>> &allDataVecs,
-            QVector<QVector<float>> *trainingDataVecs
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(trainingData); ree;
-        e = ErrorUtils::isNotEmpty(allDataVecs); ree;
-        e = ErrorUtils::isEqual(trainingData.size(), allDataVecs.size()); ree;
-
-        for (int i = 0; i < trainingData.size(); i++) {
-
-            const bool isTest = trainingData.at(i).isTest;
-
-            if (isTest) {
-                continue;
-            }
-
-            trainingDataVecs->push_back(allDataVecs.at(i));
-        }
-
-        ERR_RETURN
-    }
-
     Err buildNeuralNetworkNormalizedVectors(
             const QVector<NeuralNetData> &trainingData,
             QVector<QVector<float>> *allDataVecs,
-            QVector<QVector<float>> *trainingDataVecs,
             QVector<float> *yData
             ) {
 
@@ -407,23 +336,12 @@ namespace {
         Eigen::MatrixX<float> matFloat = mat.cast<float>();
         *allDataVecs = EigenUtils::convertEigenMatrixToQVectors(matFloat);
 
-        e = separateTrainingDataFromAllData(
-                trainingData,
-                *allDataVecs,
-                trainingDataVecs
-                ); ree;
-
         for (const NeuralNetData &nnd : trainingData) {
-
-            if (nnd.isTest) {
-                continue;
-            }
-
             yData->push_back(static_cast<float>(nnd.isDecoy));
         }
 
         e = ErrorUtils::isNotEmpty(*yData); ree;
-        e = ErrorUtils::isEqual(yData->size(), trainingDataVecs->size()); ree;
+        e = ErrorUtils::isEqual(yData->size(), allDataVecs->size()); ree;
 
         ERR_RETURN
     }
@@ -439,18 +357,16 @@ Err FDRCLassifierNeuralNet::trainClassifier(
 
     e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
 
-    QVector<QVector<float>> trainingDataVecs;
     QVector<float> yData;
     e = buildNeuralNetworkNormalizedVectors(
             *trainingData,
             allDataVecs,
-            &trainingDataVecs,
             &yData
             ); ree;
 
     QVector<QVector<QVector<float>>> allTrainingVecsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
-            trainingDataVecs,
+            *allDataVecs,
             m_baggingSize,
             &allTrainingVecsTranched
             ); ree;
@@ -554,13 +470,16 @@ QString FDRCLassifierNeuralNet::buildTargetDecoyKey(
     return peptideStringWithMods + sep + QString::number(charge) + sep + uniqueMsInfoScanKey;
 }
 
-QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
+Err FDRCLassifierNeuralNet::buildScoreVector(
         const CandidateScores &candidateScores,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
         int theoMzIonsSize,
-        const QPair<double, double> &scanTimeMinMax
+        const QPair<double, double> &scanTimeMinMax,
+        QVector<double> *scoreVec
         ) {
+
+    ERR_INIT
 
     QVector<double> scores = {
             std::max(candidateScores.cosineSimSum100, 0.0), //1
@@ -588,18 +507,10 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(std::max(candidateScores.cosineSimSum20, 0.0)); //10
         scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
         scores.push_back(std::max(candidateScores.cosineSim20MS1, 0.0)); //12
-        scores.push_back(candidateScores.peptideStringWithMods.size()); //13
+
+        const double pepLength = (-10.0 + candidateScores.peptideStringWithMods.size()) / 10.0;
+        scores.push_back(pepLength); //13
         scores.push_back(candidateScores.theoFragmentCount); //14
-//        scores.push_back(std::max(candidateScores.shadowsCosineSimSum, 0.0)); //15
-
-//        const int shadowsMaxSize = 6;
-//        const QVector<double> cosineSimShadowsToAnchors
-//                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, shadowsMaxSize);
-//        scores.append(cosineSimShadowsToAnchors); //16-21
-
-//        const QVector<double> shadowsIntensityRatioVec
-//                = extractScoresFromVecFeatures(candidateScores.shadowsIntensityRatioVec, shadowsMaxSize);
-//        scores.append(shadowsIntensityRatioVec); //22-27
 
 //        scores.push_back(scoreCandidate.peakShapeRatio1);
 //        scores.push_back(scoreCandidate.peakShapeRatio2);
@@ -646,22 +557,66 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        );
 //        scores.append(intensityFoundMaxVecNorm);
 
-        const QVector<double> mzStDev
-                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
-        scores.append(mzStDev);
+//        const QVector<double> mzStDev
+//                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
+//        scores.append(mzStDev);
 
-        scores.push_back(candidateScores.charge);
+        const double charge = -2.0 + candidateScores.charge;
+        scores.push_back(charge);
     }
 
     if (useNeuralNetworkScores) {
 
-        scores.push_back(std::max(candidateScores.b2Corr, 0.0));
-        scores.push_back(std::max(candidateScores.b3Corr, 0.0));
-        scores.push_back(std::max(candidateScores.b2b3CosineSimSum, 0.0));
+//        scores.push_back(std::max(candidateScores.b2Corr, 0.0));
+//        scores.push_back(std::max(candidateScores.b3Corr, 0.0));
+//        scores.push_back(std::max(candidateScores.b2b3CosineSimSum, 0.0));
 
         scores.push_back(std::max(0.0, candidateScores.cosineSimSpectrum));
         scores.push_back(candidateScores.discriminateScore);
         scores.push_back(std::pow(std::max(0.0, candidateScores.klDivSpectrum), 3));
+
+        QMap<QChar, int> aminoAcidCounts = {
+                {'A', 0},
+                {'C', 0},
+                {'D', 0},
+                {'E', 0},
+                {'F', 0},
+                {'G', 0},
+                {'H', 0},
+                {'I', 0},
+                {'K', 0},
+                {'L', 0},
+                {'M', 0},
+                {'N', 0},
+                {'P', 0},
+                {'Q', 0},
+                {'R', 0},
+                {'S', 0},
+                {'T', 0},
+                {'V', 0},
+                {'W', 0},
+                {'Y', 0}
+        };
+
+        for (const QChar aminoAcid : candidateScores.peptideStringWithMods) {
+
+            if (!aminoAcidCounts.contains(aminoAcid)) {
+                qDebug() << candidateScores.peptideStringWithMods << "SDLKFSDJL";
+            }
+
+            e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
+            aminoAcidCounts[aminoAcid]++;
+        }
+
+        for (int cnt : aminoAcidCounts.values()) {
+            scores.push_back(static_cast<double>(cnt));
+        }
+
+        const double mz = BiophysicalCalcs::calculateThomsonFromMass(
+                candidateScores.mass,
+                candidateScores.charge
+                );
+        scores.push_back((mz - 600.0) * 0.002);
 
 //        QVector<double> ppmVec;
 //        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
@@ -679,14 +634,16 @@ QVector<double> FDRCLassifierNeuralNet::buildScoreVector(
 //        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
 //        scores.append(ppmMz);
 
-        scores.push_back(candidateScores.matrixPValue);
-        scores.push_back(candidateScores.matrixWeight);
-        scores.push_back(candidateScores.matrixError);
-        scores.push_back(candidateScores.scanNumberCandidateCount);
+//        scores.push_back(candidateScores.matrixPValue);
+//        scores.push_back(candidateScores.matrixWeight);
+//        scores.push_back(candidateScores.matrixError);
+//        scores.push_back(candidateScores.scanNumberCandidateCount);
 
     }
 
-    return scores;
+    *scoreVec = scores;
+
+    ERR_RETURN
 }
 
 //Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -781,8 +738,7 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
     ERR_RETURN
 }
 
-Err
-FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
         const QVector<TargetDecoyCandidatePair *> &_targetDecoyCandidatePairs,
         double qValueThreshold,
         QVector<TargetDecoyCandidatePair *> *targetDecoyCandidatePairsFDRThresholded
@@ -806,6 +762,35 @@ FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
             );
 
     targetDecoyCandidatePairsFDRThresholded->erase(terminator, targetDecoyCandidatePairsFDRThresholded->end());
+
+    ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
+        const QVector<CandidateScores> &candidateScores,
+        double qValueThreshold,
+        QVector<CandidateScores> *candidateScoresFDRThresholded
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    *candidateScoresFDRThresholded = candidateScores;
+
+    const auto terminatorLogic = [qValueThreshold](const CandidateScores &cs){
+        return cs.qValue > qValueThreshold;
+    };
+
+    const auto terminator = std::remove_if(
+            candidateScoresFDRThresholded->begin(),
+            candidateScoresFDRThresholded->end(),
+            terminatorLogic
+    );
+
+    candidateScoresFDRThresholded->erase(terminator, candidateScoresFDRThresholded->end());
+
 
     ERR_RETURN
 }

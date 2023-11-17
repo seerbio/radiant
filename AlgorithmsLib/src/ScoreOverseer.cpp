@@ -414,7 +414,7 @@ namespace {
                              : static_cast<int>(intensityMatrix.rows()) - pii.first;
 
         const int colStart = 0;
-        const int colCount = intensityMatrix.cols();
+        const int colCount = static_cast<int>(intensityMatrix.cols());
 
         const Eigen::MatrixX<double> intensityMatrixIntegratedLimits = intensityMatrix.block(
                 rowStart,

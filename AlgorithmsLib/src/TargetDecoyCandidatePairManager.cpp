@@ -20,7 +20,29 @@ bool TargetDecoyCandidatePairManager::isInit() {
     return m_isInit;
 }
 
+namespace {
 
+    void removeNonSequencesWithNonCanonicalAminoAcids(QVector<FragLibReaderRow> *fragLibReaderRows) {
+
+        const QString verbodenAminoAcids = QStringLiteral("BJOUXZ");
+        const auto terminatorLogic = [verbodenAminoAcids](const FragLibReaderRow &flrr){
+            return std::any_of(
+                    verbodenAminoAcids.begin(),
+                    verbodenAminoAcids.end(),
+                    [flrr](const QChar &aa){return flrr.peptideSequenceChargeKey.contains(aa);}
+                    ) ;
+        };
+
+        const auto terminator = std::remove_if(
+                fragLibReaderRows->begin(),
+                fragLibReaderRows->end(),
+                terminatorLogic
+                );
+
+        fragLibReaderRows->erase(terminator, fragLibReaderRows->end());
+    }
+
+}
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibFileUri
@@ -47,6 +69,8 @@ Err TargetDecoyCandidatePairManager::init(
             &fragLibReaderRows
             ); ree;
 
+    removeNonSequencesWithNonCanonicalAminoAcids(&fragLibReaderRows);
+
     e = buildTargetDecoyCandidatePairs(fragLibReaderRows); ree;
     e = buildIndexVsTargetDecoyCandidatePairPtrs(); ree;
     e = initBoostRTreeWrapper(); ree;
@@ -70,7 +94,7 @@ namespace {
         e = ErrorUtils::isEqual(flrr.mzVals.size(), flrr.intensityVals.size());ree;
         e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree
 
-        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, QString::SkipEmptyParts);
+        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
         e = ErrorUtils::isEqual(flrr.mzVals.size(), ionLabelsSplit.size());ree;
 
         QVector<MS2Ion> ms2IonsBuilder;
@@ -265,6 +289,8 @@ namespace {
         const int peptideLength = peptideStringWithMods.size();
         if (peptideLength < pythiaParameters.peptideLengthMin
             || peptideLength > pythiaParameters.peptideLengthMax
+            || charge < pythiaParameters.chargeStateMin
+            || charge > pythiaParameters.chargeStateMax
             || flrr.isDecoy) {
             return {e, {}};
         }
@@ -497,7 +523,7 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
             S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
-            QString::SkipEmptyParts
+            Qt::SkipEmptyParts
     );
 
     e = ErrorUtils::isEqual(

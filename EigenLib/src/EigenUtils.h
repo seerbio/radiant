@@ -341,7 +341,7 @@ public:
     template <typename T>
     static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
 
-        std::vector<T> vec = _vec.toStdVector();
+        std::vector<T> vec(_vec.begin(), _vec.end());
         Eigen::VectorX<T> ev
                 = Eigen::Map<Eigen::VectorX<T>, Eigen::Unaligned>(vec.data(), vec.size());
 
@@ -351,7 +351,7 @@ public:
     template <typename T>
     static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
         std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
-        return QVector<T>::fromStdVector(vecReturn);
+        return QVector<T>(vecReturn.begin(), vecReturn.end());
     }
 
     template <typename T>

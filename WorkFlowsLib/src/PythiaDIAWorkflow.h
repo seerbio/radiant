@@ -44,16 +44,27 @@ private:
 
     Err deisotopeScans(MsReaderPointerAcc *msReaderPointerAcc);
 
-    Err buildCalibration(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
+    Err buildCalibration(
+            double calibrationTrainingFraction,
+            bool useExtendedScores,
+            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron
+            );
+
+    Err recalibrateMzVals(
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+            MsReaderPointerAcc *msReaderPointerAcc
+            );
 
     Err setTargetDecoyCandidateScores(
-            TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-            int topNMS2Ions,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
-            QMap<QString, int> *fdrVsCount
-            );
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        int topNMS2Ions,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+        QMap<QString, int> *fdrVsCount
+        );
 
     Err setDiscriminantScoreForCandidates(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
@@ -63,6 +74,8 @@ private:
             );
 
     static Err setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs);
+
+    static Err setQValueForCandidates(QVector<CandidateScores> *candidateScores);
 
     Err optimizeParameters(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
 
@@ -74,19 +87,20 @@ private:
     Err removeInterferingCandidates(
             MsReaderPointerAcc *msReaderPointerAcc,
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedTargets,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedDecoys
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointersUpdatedTargets
             );
 
     Err applyNeuralNetClassifier(
-            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
+            const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
             const QPair<double, double> &scanTimeMinMax,
+            bool reportDecoys,
             QVector<CandidateScores> *candidateScoreClassifier
             );
 
     Err updateProteinGroupAnnotation(
             const QString &fastaFilePath,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+            QVector<CandidateScores> *candidateScores
     );
 
 private:
@@ -102,8 +116,7 @@ private:
     MsCalibratomatic m_msCalibratomatic;
 
     const int m_minTopNMs2Ions;
-    const bool m_byIonsOnly;
-
+    
 };
 
 

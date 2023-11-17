@@ -140,7 +140,7 @@ namespace {
             EigenUtils::thresholdVector(static_cast<float>(1e-2), &eVec);
 
             std::vector<float> vecReturn(eVec.data(), eVec.data() + eVec.size());
-            returnVecs.push_back(QVector<float>::fromStdVector(vecReturn));
+            returnVecs.push_back(QVector<float>(vecReturn.begin(), vecReturn.end()));
         }
 
         return returnVecs;

@@ -35,7 +35,6 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
 
     PythiaParameters params = PythiaParameterReader::genericPythiaParametersForTests();
     params.cTermCleavePoints = QStringList({"K", "R"});
-    params.addDecoys = true;
     params.peptideLengthMin = 7;
     params.peptideLengthMax = 40;
     params.chargeStateMin = 2;

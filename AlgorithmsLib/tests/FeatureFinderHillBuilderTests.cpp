@@ -279,6 +279,8 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     QSKIP("activate when proper pathing is used");
 
+    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
     //TODO use proper pathing here
