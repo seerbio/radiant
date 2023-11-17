@@ -271,10 +271,11 @@ namespace {
                 &scoredTargetDecoyPointersTranched
         ); ree;
 
-        //NOTE: this needs to stay outside of loop or code becomes slow because cache is reset.
-        QMap<MzHashed, XICPoints> cachedPoints;
-
         for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
+
+            //NOTE: this needs to stay outside of the subsequent loop or code becomes slow because cache is reset.
+            QMap<MzHashed, XICPoints> cachedPoints;
+
             for (TargetDecoyCandidatePair* targetDecoyPtr : tranche) {
 
                 CandidateScores candidateScoresTarget;
