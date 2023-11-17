@@ -127,6 +127,8 @@ void KarnnNeuralNetTests::runTest() {
 
     ERR_INIT
 
+    QSKIP("reactivate when pathing issue solved");
+
     //TODO use proper paths and file storage
     const std::string dataPath = "/home/anichols/Desktop/Data/Reports/vec1.csv";
 
