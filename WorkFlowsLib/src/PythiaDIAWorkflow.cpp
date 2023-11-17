@@ -162,8 +162,11 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             scoredTargetDecoyPointers,
             scoredTargetDecoyPointersFDRFiltered,
             msReaderPointerAcc.ptr->scanTimeMinMax(),
+            m_pythiaParameters.reportDecoys,
             &scoredCandidatesClassifierUpdated
             ); ree;
+
+    qDebug() << "Updating" << scoredCandidatesClassifierUpdated.size() << "PSMs";
 
     e = updateProteinGroupAnnotation(
             m_fastaUri,
@@ -724,6 +727,107 @@ Err PythiaDIAWorkflow::setQValueForCandidates(const QVector<TargetDecoyCandidate
             identifierVsQValue,
             identifierVsDecoyRatio
             ); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildsetQValueForCandidateScoresInputs(
+            QVector<CandidateScores> *candidateScores,
+            QMap<PeptideSequenceChargeKey, double> *identifierVsTargets,
+            QMap<PeptideSequenceChargeKey, double> *identifierVsDecoys
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+        identifierVsTargets->clear();
+        identifierVsDecoys->clear();
+
+        for (const CandidateScores &cs : *candidateScores) {
+
+            const QString decoyToString = cs.isDecoy ? "_1" : "_0";
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                    cs.peptideStringWithMods,
+                    cs.charge
+            ) + decoyToString;
+
+            const double classifierScore = cs.classifierScore;
+
+            if (cs.isDecoy) {
+                identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
+                continue;
+            }
+
+            identifierVsTargets->insert(peptideSequenceChargeKey, classifierScore);
+
+        }
+
+        ERR_RETURN
+    }
+
+    Err setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
+            const QMap<PeptideSequenceChargeKey, double> &identifierVsQValue,
+            const QMap<PeptideSequenceChargeKey, double> &identifierVsDecoyRatio,
+            QVector<CandidateScores> *candidateScores
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+
+        for (CandidateScores &cs : *candidateScores) {
+
+            if (cs.isDecoy) {
+                continue;
+            }
+
+            const QString decoyToString = cs.isDecoy ? "_1" : "_0";
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = TandemFragmentPredictotron::buildPeptideSequenceChargeKey(
+                    cs.peptideStringWithMods,
+                    cs.charge
+            ) + decoyToString;
+
+            e = ErrorUtils::isTrue(identifierVsQValue.contains(peptideSequenceChargeKey)); ree;
+            e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
+
+            cs.qValue = identifierVsQValue.value(peptideSequenceChargeKey);
+            cs.decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAWorkflow::setQValueForCandidates(QVector<CandidateScores> *candidateScores) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+
+    QMap<PeptideSequenceChargeKey, double> identifierVsTargets;
+    QMap<PeptideSequenceChargeKey, double> identifierVsDecoys;
+    e = buildsetQValueForCandidateScoresInputs(
+            candidateScores,
+            &identifierVsTargets,
+            &identifierVsDecoys
+    ); ree;
+
+    QMap<PeptideSequenceChargeKey, double> identifierVsQValue;
+    QMap<PeptideSequenceChargeKey, double> identifierVsDecoyRatio;
+    e = MathUtils::calculateQValue(
+            identifierVsTargets,
+            identifierVsDecoys,
+            &identifierVsQValue,
+            &identifierVsDecoyRatio
+    ); ree;
+
+    e = setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
+            identifierVsQValue,
+            identifierVsDecoyRatio,
+            candidateScores
+    ); ree;
 
     ERR_RETURN
 }
@@ -1431,6 +1535,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
         const QPair<double, double> &scanTimeMinMax,
+        bool reportDecoys,
         QVector<CandidateScores> *candidateScoreClassifier
         ) {
 
@@ -1471,7 +1576,8 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
     std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
 
-    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size();
+    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size()
+             << "total" << candidateScoresTargetsAndDecoysShuffled.size();
 
     QVector<KarnnNNTarget> karnnNNTargets;
     for (int i = 0; i < candidateScoresTargetsAndDecoysShuffled.size(); i++) {
@@ -1536,15 +1642,19 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             candidateScoreClassifier->push_back(candidateScoresNew);
 
             ++counter;
-//        std::cout << counter << " " << rp.nnScore << " " << rp.seq.toStdString() << " " << rp.isDecoy << std::endl;
 
             if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
-                break;
+                if (!reportDecoys) {
+                    break;
+                }
+                else {
+                    counter--;
+                    continue;
+                }
             }
 
             if (rp.isDecoy){
                 falsePositives++;
-                continue;
             }
         }
 
@@ -1552,7 +1662,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
     }
 
-
+    e = setQValueForCandidates(candidateScoreClassifier); ree
 
     ERR_RETURN
 }

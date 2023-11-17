@@ -124,6 +124,7 @@ namespace PythiaParameterReaderConstants {
     const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowMinutes = QStringLiteral("scanTimeWindowMinutes");
+    const QString kReportDecoys = QStringLiteral("reportDecoys");
 
 }
 
@@ -290,6 +291,11 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->skipScanCount = val;
+        }
+        else if (jsonKey == kReportDecoys){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->reportDecoys = static_cast<bool>(val);
         }
         else if (jsonKey == kMinScanCount){
             int val;

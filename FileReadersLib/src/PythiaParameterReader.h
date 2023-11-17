@@ -53,6 +53,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
     extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowMinutes;
+    extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
 }
 
@@ -154,6 +155,7 @@ struct PythiaParameters{
     int trancheSizeMax = 5e4;
 
     int verbosity = 1;
+    bool reportDecoys = false;
 
     [[nodiscard]] bool isValid() const {
 
@@ -242,6 +244,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
         qDebug() << PythiaParameterReaderConstants::kDeisotopeScans << deisotopeScans;
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
+        qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

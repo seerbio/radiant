@@ -75,6 +75,8 @@ private:
 
     static Err setQValueForCandidates(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs);
 
+    static Err setQValueForCandidates(QVector<CandidateScores> *candidateScores);
+
     Err optimizeParameters(TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron);
 
     Err mainAnalysis(
@@ -92,6 +94,7 @@ private:
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
             const QPair<double, double> &scanTimeMinMax,
+            bool reportDecoys,
             QVector<CandidateScores> *candidateScoreClassifier
             );
 
