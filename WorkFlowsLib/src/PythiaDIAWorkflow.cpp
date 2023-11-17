@@ -101,43 +101,33 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &m_targetDecoyCandidatePairManager
             ); ree;
 
+    const double calibrationTrainingFraction = 0.2;
     e = buildCalibration(
-            0.2,
+            calibrationTrainingFraction,
             false,
             &targetDecoyCandidatePairScoretron
             ); ree;
 
-    { //FIGURE OUT RECALIBRATION
-//        const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame.keys();
-//        for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
-//            qDebug() << k;
-//            QMap<ScanNumber, ScanPoints> points;
-//            e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame.value(k), &points);
-//            ree;
-//            diaTargetFrame[k] = points;
-//        }
-//
-//        QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1Recal;
-//        e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1, &scanNumberVsScanTimeMS1Recal);
-//        ree;
-//        scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1Recal;
-//
-//        e = targetDecoyCandidatePairScoretron.init(
-//                m_pythiaParameters,
-//                scanNumberVsScanTimeMS1,
-//                &msReaderPointerAcc,
-//                &diaTargetFrame,
-//                &m_targetDecoyCandidatePairManager
-//        );
-//        ree;
-    }
+    e = recalibrateMzVals(
+            &diaTargetFrame,
+            &scanNumberVsScanTimeMS1,
+            &targetDecoyCandidatePairScoretron,
+            &msReaderPointerAcc
+            ); ree;
 
     e = optimizeParameters(&targetDecoyCandidatePairScoretron); ree;
 
     e = buildCalibration(
-            0.2,
+            calibrationTrainingFraction,
             true,
             &targetDecoyCandidatePairScoretron
+            ); ree;
+
+    e = recalibrateMzVals(
+            &diaTargetFrame,
+            &scanNumberVsScanTimeMS1,
+            &targetDecoyCandidatePairScoretron,
+            &msReaderPointerAcc
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
@@ -174,7 +164,6 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             msReaderPointerAcc.ptr->scanTimeMinMax(),
             &scoredCandidatesClassifierUpdated
             ); ree;
-
 
     e = updateProteinGroupAnnotation(
             m_fastaUri,
@@ -504,6 +493,43 @@ Err PythiaDIAWorkflow::buildCalibration(
 #else
     e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
 #endif
+
+    ERR_RETURN
+}
+
+Err PythiaDIAWorkflow::recalibrateMzVals(
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
+    e = ErrorUtils::isFalse(diaTargetFrame->isEmpty()); ree;
+    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+
+    const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame->keys();
+    for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
+        qDebug() << "Recalibrating mz vals frame" << k;
+        QMap<ScanNumber, ScanPoints> points;
+        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k), &points); ree;
+        (*diaTargetFrame)[k] = points;
+    }
+
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1Recal;
+    qDebug() << "Recalibrating MS1 mz vals frame";
+    e = m_msCalibratomatic.recalibrateScanPoints(*scanNumberVsScanTimeMS1, &scanNumberVsScanTimeMS1Recal); ree;
+    *scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1Recal;
+
+    e = targetDecoyCandidatePairScoretron->init(
+            m_pythiaParameters,
+            *scanNumberVsScanTimeMS1,
+            msReaderPointerAcc,
+            diaTargetFrame,
+            &m_targetDecoyCandidatePairManager
+    ); ree;
 
     ERR_RETURN
 }

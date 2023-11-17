@@ -50,14 +50,21 @@ private:
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron
             );
 
-    Err setTargetDecoyCandidateScores(
+    Err recalibrateMzVals(
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-            int topNMS2Ions,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
-            QMap<QString, int> *fdrVsCount
+            MsReaderPointerAcc *msReaderPointerAcc
             );
+
+    Err setTargetDecoyCandidateScores(
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        int topNMS2Ions,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+        QMap<QString, int> *fdrVsCount
+        );
 
     Err setDiscriminantScoreForCandidates(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairPntrs,
