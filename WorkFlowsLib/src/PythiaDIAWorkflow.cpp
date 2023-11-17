@@ -35,7 +35,6 @@
 
 PythiaDIAWorkflow::PythiaDIAWorkflow()
 : m_minTopNMs2Ions(6)
-, m_byIonsOnly(true)
 {}
 
 Err PythiaDIAWorkflow::init(
