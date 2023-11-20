@@ -540,9 +540,31 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
 
         const QVector<double> intensityFoundMaxVec
                 = extractScoresFromVecFeatures(candidateScores.intensityFoundMaxVec, theoMzIonsSize);
-        const double totalIntensity = std::accumulate(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end(), 0.0);
+        const double totalIntensity = std::accumulate(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end(), 0.0001);
         const double totalIntensityLog = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
-        scores.append(totalIntensityLog);
+        scores.push_back(totalIntensityLog);
+
+        if (useNeuralNetworkScores) {
+
+            for (double intzFound : intensityFoundMaxVec) {
+                scores.push_back(intzFound / totalIntensity);
+            }
+
+            const int topSix = 6;
+            QVector<double> ppmVec;
+            for (int i = 0; i < topSix; i++) {
+
+                const double mzSearched = candidateScores.mzSearchedVec.at(i);
+                if (i >= candidateScores.mzFoundMeanVec.size()) {
+                    break;
+                }
+
+                const double mzFound = candidateScores.mzFoundMeanVec[i];
+
+                const double ppm = cosineSimToAnchors.at(i) * std::abs(mzFound - mzSearched) / mzSearched;
+                ppmVec.push_back(ppm);
+            }
+        }
 
 //        const double maxIntensity = std::max(
 //                *std::max(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end()),
@@ -618,19 +640,6 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
                 );
         scores.push_back((mz - 600.0) * 0.002);
 
-//        QVector<double> ppmVec;
-//        for (int i = 0; i < scoreCandidate.mzSearchedVec.size(); i++) {
-//
-//            const double mzSearched = scoreCandidate.mzSearchedVec.at(i);
-//            if (i >= scoreCandidate.mzFoundMeanVec.size()) {
-//                break;
-//            }
-//
-//            const double mzFound = scoreCandidate.mzFoundMeanVec[i];
-//
-//            const double ppm = 1e6 * (mzFound - mzSearched) / mzSearched;
-//            ppmVec.push_back(std::min(ppm, 100.0));
-//        }
 //        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
 //        scores.append(ppmMz);
 
