@@ -123,7 +123,7 @@ MsFrame::MsFrame() : d_ptr(new Private()) {}
 MsFrame::~MsFrame() {}
 
 Err MsFrame::init(
-        const QMap<ScanNumber, ScanPoints> &scanPoints,
+        const QMap<ScanNumber, ScanPoints*> &scanPoints,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 
@@ -159,11 +159,11 @@ int MsFrame::scanCount() const {
     return m_frameIndexVsScanNumber.size();
 }
 
-QMap<FrameIndex, ScanPoints> MsFrame::frameIndexVsScanPoints() const {
+QMap<FrameIndex, ScanPoints*> MsFrame::frameIndexVsScanPoints() const {
 
-    QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints;
+    QMap<FrameIndex, ScanPoints*> frameIndexVsScanPoints;
 
-    for (const ScanPoints &sp : m_frame) {
+    for (ScanPoints *sp : m_frame) {
         frameIndexVsScanPoints.insert(frameIndexVsScanPoints.size(), sp);
     }
 
@@ -217,11 +217,11 @@ ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
     return m_frameIndexVsScanNumber.key(scanNumber);
 }
 
-ScanPoints MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
+ScanPoints* MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
     return m_frame.value(scanNumber);
 }
 
-QMap<ScanNumber, ScanPoints> MsFrame::scanNumberVsScanPoints() const {
+QMap<ScanNumber, ScanPoints*> MsFrame::scanNumberVsScanPoints() const {
     return m_frame;
 }
 
@@ -285,5 +285,3 @@ Err MsFrame::initFrameIndexVsScanTimeKDTree() {
 
     ERR_RETURN
 }
-
-

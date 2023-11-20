@@ -29,8 +29,7 @@ public:
 
     // either FrameIndex, or ScanNumber can be key as they are both ints.
     Err recalibrateScanPoints(
-            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
-            QMap<ScanNumber, ScanPoints> *recalScanNumberVsScanPoints
+            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
             );
 
     [[nodiscard]] double mzStDev();

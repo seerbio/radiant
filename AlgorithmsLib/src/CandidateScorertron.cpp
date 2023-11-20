@@ -33,7 +33,7 @@ namespace{
 
 }//namespace
 Err CandidateScorertron::init(
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPointsMS1,
+        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPointsMS1,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions

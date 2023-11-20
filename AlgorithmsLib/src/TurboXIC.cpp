@@ -28,9 +28,9 @@ public:
     Private();
     ~Private();
 
-    Err init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
+    Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
-    Err init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
+    Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
 
     XICPoints extractPointsXIC(
             double mzMin,
@@ -72,7 +72,7 @@ TurboXIC::Private::~Private() {
     delete m_rTree;
 }
 
-Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
+Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
 
     ERR_INIT
 
@@ -83,9 +83,9 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScan
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
         const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPoints = it.value();
+        ScanPoints *scanPoints = it.value();
 
-        for (const ScanPoint &sp : scanPoints) {
+        for (ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
             cloudLoader.emplace_back(coor, sp.y());
         }
@@ -97,7 +97,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScan
     ERR_RETURN
 }
 
-Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints) {
+Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) {
 
     ERR_INIT
 
@@ -108,9 +108,9 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
         const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPoints = it.value();
+        ScanPoints *scanPoints = it.value();
 
-        for (const ScanPoint &sp : scanPoints) {
+        for (const ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
             cloudLoader.emplace_back(coor, sp.y());
         }
@@ -230,14 +230,14 @@ TurboXIC::TurboXIC() : d_ptr(new Private()) {}
 TurboXIC::~TurboXIC() {}
 
 
-Err TurboXIC::init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
+Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
 
     ERR_INIT
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
-Err TurboXIC::init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints) {
+Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) {
     ERR_INIT
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN

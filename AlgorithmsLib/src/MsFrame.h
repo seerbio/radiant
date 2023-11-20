@@ -77,7 +77,7 @@ public:
     ~MsFrame();
 
     Err init(
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QMap<ScanNumber, ScanPoints*> &scanPoints,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
@@ -90,9 +90,9 @@ public:
 
     [[nodiscard]] int scanCount() const;
 
-    [[nodiscard]] QMap<FrameIndex, ScanPoints> frameIndexVsScanPoints() const;
+    [[nodiscard]] QMap<FrameIndex, ScanPoints*> frameIndexVsScanPoints() const;
 
-    [[nodiscard]] QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints() const;
+    [[nodiscard]] QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints() const;
 
     [[nodiscard]] ScanNumber scanNumberFromFrameIndex(FrameIndex frameIndex) const;
 
@@ -104,7 +104,7 @@ public:
 
     [[nodiscard]] ScanNumber frameIndexFromScanNumber(ScanNumber scanNumber) const;
 
-    [[nodiscard]] ScanPoints getScanPointsByScanNumber(ScanNumber scanNumber) const;
+    [[nodiscard]] ScanPoints* getScanPointsByScanNumber(ScanNumber scanNumber) const;
 
 
 
@@ -116,7 +116,7 @@ private:
 
 private:
 
-    QMap<ScanNumber, ScanPoints> m_frame;
+    QMap<ScanNumber, ScanPoints*> m_frame;
     UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;

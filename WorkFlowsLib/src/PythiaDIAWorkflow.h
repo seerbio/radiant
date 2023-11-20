@@ -51,8 +51,8 @@ private:
             );
 
     Err recalibrateMzVals(
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame,
+            QMap<ScanNumber, ScanPoints*> *scanNumberVsScanTimeMS1,
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
             MsReaderPointerAcc *msReaderPointerAcc
             );
