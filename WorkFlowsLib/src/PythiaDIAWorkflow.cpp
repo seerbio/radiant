@@ -130,9 +130,11 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    int psmCountOnePercentFDR;
     e = mainAnalysis(
             &targetDecoyCandidatePairScoretron,
-            &scoredTargetDecoyPointers
+            &scoredTargetDecoyPointers,
+            &psmCountOnePercentFDR
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
@@ -161,6 +163,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             scoredTargetDecoyPointers,
             scoredTargetDecoyPointersFDRFiltered,
             msReaderPointerAcc.ptr->scanTimeMinMax(),
+            psmCountOnePercentFDR,
             m_pythiaParameters.reportDecoys,
             &scoredCandidatesClassifierUpdated
             ); ree;
@@ -883,6 +886,7 @@ namespace {
                 {2.5,  2.0},
                 {3.5,  2.0},
                 {4.5, 2.0},
+                {5.5, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
@@ -1126,7 +1130,8 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
 Err PythiaDIAWorkflow::mainAnalysis(
         TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+        int *psmCountOnePercentFDR
         ) {
 
     ERR_INIT
@@ -1161,6 +1166,8 @@ Err PythiaDIAWorkflow::mainAnalysis(
             scoredTargetDecoyPointers,
             &fdrVsCount
     ); ree;
+
+    *psmCountOnePercentFDR = fdrVsCount.value("1");
 
     ERR_RETURN
 }
@@ -1546,6 +1553,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
         const QPair<double, double> &scanTimeMinMax,
+        int psmCountOnePercentFDR,
         bool reportDecoys,
         QVector<CandidateScores> *candidateScoreClassifier
         ) {
@@ -1625,10 +1633,10 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
 
     const int epochs = 1;
     int cycles = 0;
-    int cycleDecoysFound = -1;
-    while (cycles < 5 && cycleDecoysFound < 2) {
+    int counter = 0;
+    while (cycles < 5 && counter < psmCountOnePercentFDR) {
 
-        qDebug() << "Training Cycle" << cycles;
+        qDebug() << "Training Cycle" << cycles++;
 
         candidateScoreClassifier->clear();
 
@@ -1644,7 +1652,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
                 [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
         );
 
-        int counter = 0;
+        counter = 0;
         int falsePositives = 0;
         for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
@@ -1669,7 +1677,6 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             }
         }
 
-        cycleDecoysFound = falsePositives;
         qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
     }
 
