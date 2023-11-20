@@ -78,13 +78,13 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
     QCOMPARE(readMsScanInfo.ionMobilityDriftTime, msScanInfo.ionMobilityDriftTime);
     QCOMPARE(readMsScanInfo.ionMobilityIndex, msScanInfo.ionMobilityIndex);
 
-    ScanPoints scanPointsRead;
-    e = msReaderParquet.getScanPoints(
-            readMsScanInfo.scanNumber,
-            &scanPointsRead
-            );
+
+    QPair<Err, ScanPoints*> scanPointsResult = msReaderParquet.getScanPoints(readMsScanInfo.scanNumber);
+    e = scanPointsResult.first;
     QCOMPARE(e, eNoError);
-    QCOMPARE(scanPointsRead, scanPoints);
+
+    ScanPoints* scanPointsRead = scanPointsResult.second;
+    QCOMPARE(*scanPointsRead, scanPoints);
 
     QFile::remove(msParquetFilePath);
     QFileInfo checkFile2(msParquetFilePath);

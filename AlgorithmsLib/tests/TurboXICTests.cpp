@@ -49,7 +49,12 @@ QMap<int, QVector<QPointF>> TurboXICTests::buildPoints() const {
 
 void TurboXICTests::initTest() {
 
-    const QMap<int, QVector<QPointF>> points = buildPoints();
+    QMap<int, QVector<QPointF>> _points = buildPoints();
+
+    QMap<int, QVector<QPointF>*> points;
+    for (auto it = _points.begin(); it != _points.end(); it++) {
+        points.insert(it.key(), &it.value());
+    }
 
     ERR_INIT
 
@@ -57,7 +62,7 @@ void TurboXICTests::initTest() {
     e = turboXIC.init(points);
     QCOMPARE(e, eNoError);
 
-    QMap<ScanNumber, ScanPoints> emptyPoints;
+    QMap<ScanNumber, ScanPoints*> emptyPoints;
     e = turboXIC.init(emptyPoints);
     QCOMPARE(e, eEmptyContainerError);
 
@@ -66,7 +71,12 @@ void TurboXICTests::initTest() {
 
 void TurboXICTests::extractPointsTest() {
 
-    const QMap<int, QVector<QPointF>> points = buildPoints();
+    QMap<int, QVector<QPointF>> _points = buildPoints();
+
+    QMap<int, QVector<QPointF>*> points;
+    for (auto it = _points.begin(); it != _points.end(); it++) {
+        points.insert(it.key(), &it.value());
+    }
 
     ERR_INIT
 
