@@ -64,12 +64,11 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(msScanInfo.isoWindowLower, 5.5);
     QCOMPARE(msScanInfo.isoWindowUpper, 5.5);
 
-    ScanPoints scanPoints;
-    e = reader.getScanPoints(
-            msScanInfo.scanNumber,
-            &scanPoints
-            );
+    QPair<Err, ScanPoints*> scanPointsResult = reader.getScanPoints(msScanInfo.scanNumber);
+    e = scanPointsResult.first;
     QCOMPARE(e, eNoError);
+
+    const ScanPoints scanPoints = *scanPointsResult.second;
 
     QCOMPARE(int(149.045), int(scanPoints.first().x()));
     QCOMPARE(int(3574.26), int(scanPoints.first().y()));

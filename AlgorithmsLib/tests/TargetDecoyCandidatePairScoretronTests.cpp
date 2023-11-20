@@ -48,14 +48,14 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     e = msReaderPointerAcc.openFile(msDataFilePath);
     QCOMPARE(e, eNoError);
 
-    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrame;
     e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
             &diaTargetFrame
     );
     QCOMPARE(e, eNoError);
 
     const int msLevel = 1;
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
+    QMap<ScanNumber, ScanPoints*> scanNumberVsScanTimeMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1);
     QCOMPARE(e, eNoError);
 
