@@ -316,7 +316,7 @@ namespace {
             }
         }
 
-        if (pi.pythiaParameters.verbosity > 1) {
+        if (pi.pythiaParameters.verbosity >= 1) {
             qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
         }
         
