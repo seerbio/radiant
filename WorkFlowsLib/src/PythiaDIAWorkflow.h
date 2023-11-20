@@ -81,7 +81,8 @@ private:
 
     Err mainAnalysis(
             TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+            QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+            int *psmCountOnePercentFDR
             );
 
     Err removeInterferingCandidates(
@@ -94,6 +95,7 @@ private:
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
             const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
             const QPair<double, double> &scanTimeMinMax,
+            int psmCountOnePercentFDR,
             bool reportDecoys,
             QVector<CandidateScores> *candidateScoreClassifier
             );

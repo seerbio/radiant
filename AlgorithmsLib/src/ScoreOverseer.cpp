@@ -403,7 +403,8 @@ namespace {
             const PeakIntegrationIndexes &pii,
             const QVector<double> &summedMatToVec,
             Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference,
-            FrameIndex *frameIndexIntensityApexIntegration
+            FrameIndex *frameIndexIntensityApexIntegration,
+            int *allignedMaxIndexesCount
     ) {
 
         ERR_INIT
@@ -429,13 +430,46 @@ namespace {
         }
 
         const QVector<double> peakCountsPerRow = summedMatToVec.mid(rowStart, rowCount);
-        *frameIndexIntensityApexIntegration = MathUtils::findMaxIndexInVector(peakCountsPerRow) + rowStart;
+
+        const int maxIndexPeakCountsPerRow = MathUtils::findMaxIndexInVector(peakCountsPerRow);
+        *frameIndexIntensityApexIntegration = maxIndexPeakCountsPerRow + rowStart;
 
         e = removeInterferingPeaksInMatrix(
                 intensityMatrixIntegratedLimits,
                 peakCountsPerRow,
                 intensityMatrixIntegratedLimitsNoInterference
-        ); ree;
+                ); ree;
+
+        int maxIndex = -1;
+        double maxIndexValue = -1.0;
+        QVector<int> maxIndexesTemp;
+        for (int col = 0; col < intensityMatrixIntegratedLimitsNoInterference->cols(); col++) {
+
+            const Eigen::VectorX<double> &vCol = intensityMatrixIntegratedLimitsNoInterference->col(col);
+
+            const int maxIndexVec = MathUtils::findMaxIndexInVector(EigenUtils::convertEigenVectorToQVector(vCol));
+            maxIndexesTemp.push_back(maxIndexVec);
+            const double maxIndexVecVal = vCol.maxCoeff();
+            if (maxIndexVecVal > maxIndexValue) {
+                maxIndexValue = maxIndexVecVal;
+                maxIndex = maxIndexVec;
+            }
+        }
+
+        QVector<int> maxIndexes;
+        std::transform(
+                maxIndexesTemp.begin(),
+                maxIndexesTemp.end(),
+                std::back_inserter(maxIndexes),
+                [maxIndex](int i){return i - maxIndex;}
+                );
+
+        *allignedMaxIndexesCount = static_cast<int>(std::count_if(
+                maxIndexes.begin(),
+                maxIndexes.end(),
+                [](int i){return i == 0;}
+                )
+                        );
 
 //#define CHECK_ALIGNMENT
 #ifdef CHECK_ALIGNMENT
@@ -443,6 +477,7 @@ namespace {
         std::cout << intensityMatrixIntegratedLimits << std::endl;
         std::cout << "no interference" << std::endl;
         std::cout << *intensityMatrixIntegratedLimitsNoInterference << std::endl;
+        std::cout << "alilignedMaxIndexCount " << allignedMaxIndexesCount << std::endl;
         std::cout << pii.first << ", " << pii.second << std::endl;
 #endif
 
@@ -460,7 +495,8 @@ namespace {
             double *bestCosineSimSumIntegration,
             QVector<double> *bestIntensitiesIndividual,
             Eigen::VectorX<double> *bestAnchorColumn,
-            FrameIndex *frameIndexIntensityApexIntegration
+            FrameIndex *frameIndexIntensityApexIntegration,
+            int *allignedMaxIndexesCount
     ) {
 
         ERR_INIT
@@ -471,7 +507,8 @@ namespace {
                 pii,
                 summedMatToVec,
                 &intensityMatrixIntegratedLimitsNoInterference,
-                frameIndexIntensityApexIntegration
+                frameIndexIntensityApexIntegration,
+                allignedMaxIndexesCount
                 ); ree;
 
         intensityMatrixIntegratedLimitsNoInterference
@@ -481,12 +518,14 @@ namespace {
 
             FrameIndex unused;
             Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterferenceShadows;
+            int allignedMaxIndexesCountUnused;
             e = buildAlignmentMatrix(
                     intensityMatrixShadows,
                     pii,
                     summedMatToVec,
                     &intensityMatrixIntegratedLimitsNoInterferenceShadows,
-                    &unused
+                    &unused,
+                    &allignedMaxIndexesCountUnused
             ); ree;
 
             e = ErrorUtils::isEqual(
@@ -537,7 +576,8 @@ namespace {
             QVector<double> *intensityFoundMaxVec,
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
-            Eigen::VectorX<double> *bestAnchorColumn
+            Eigen::VectorX<double> *bestAnchorColumn,
+            int *allignedMaxIndexesCount
     ) {
 
         ERR_INIT
@@ -554,6 +594,7 @@ namespace {
             QVector<double> intensitiesIndividual;
             double bestCosineSimSumIntegration;
             FrameIndex frameIndexIntensityApexIntegration;
+            int allignedMaxIndexesCountTemp;
             e = calcBestCosineSimSum(
                     intensityMatrix,
                     intensityMatrixShadows,
@@ -565,7 +606,8 @@ namespace {
                     &bestCosineSimSumIntegration,
                     &intensitiesIndividual,
                     bestAnchorColumn,
-                    &frameIndexIntensityApexIntegration
+                    &frameIndexIntensityApexIntegration,
+                    &allignedMaxIndexesCountTemp
             ); ree;
 
             if (bestCosineSimSumIntegration > bestCosineSimSum) {
@@ -574,6 +616,7 @@ namespace {
                 *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
                 *bestPeakIntegrationIndexes = pii;
                 *intensityFoundMaxVec = intensitiesIndividual;
+                *allignedMaxIndexesCount = allignedMaxIndexesCountTemp;
             }
 
         }
@@ -930,6 +973,7 @@ Err ScoreOverseer::buildScores(
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
     Eigen::VectorX<double> bestAnchorColumn;
+    int allignedMaxIndexesCount;
     e = calculateCandidateAllignementMetrics(
             d_ptr->m_intensityMatrix100,
             d_ptr->m_intensityMatrix100Shadow,
@@ -941,7 +985,8 @@ Err ScoreOverseer::buildScores(
             &candidateScores->intensityFoundMaxVec,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
-            &bestAnchorColumn
+            &bestAnchorColumn,
+            &allignedMaxIndexesCount
     ); ree;
 
     if (bestAnchorColumn.rows() < 1) {
@@ -979,6 +1024,7 @@ Err ScoreOverseer::buildScores(
     double unused1;
     Eigen::VectorX<double> unused2;
     QVector<double> unusedIntensity;
+    int allignedMaxIndexesCountUnused;
     FrameIndex unused3;
     e = calcBestCosineSimSum(
             d_ptr->m_intensityMatrix45,
@@ -991,7 +1037,8 @@ Err ScoreOverseer::buildScores(
             &unused1,
             &unusedIntensity,
             &unused2,
-            &unused3
+            &unused3,
+            &allignedMaxIndexesCountUnused
             ); ree;
 
     QVector<double> cosineSimsIndividual20;
@@ -1006,7 +1053,8 @@ Err ScoreOverseer::buildScores(
             &unused1,
             &unusedIntensity,
             &unused2,
-            &unused3
+            &unused3,
+            &allignedMaxIndexesCountUnused
             ); ree;
 
     candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
@@ -1014,6 +1062,8 @@ Err ScoreOverseer::buildScores(
     candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
 
     candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
+
+    candidateScores->allignedMaxIndexesCount = allignedMaxIndexesCount;
 
     candidateScores->cosineSimSum100 = std::accumulate(
             candidateScores->cosineSimToAnchorVec.begin(),
@@ -1041,6 +1091,42 @@ Err ScoreOverseer::buildScores(
     const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());
     const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / targetDecoyCandidatePair->charge());
 
+    const double chunkDivision = 3.0;
+
+    QVector<double> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
+    const auto terminatorLogic = [](double d){return d < 1.0;};
+    const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
+    bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
+    const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
+    const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
+
+    if (bestAnchorColumnVec.size() < chunkDivision) {
+        candidateScores->peakShapeRatio1 = 0.0;
+        candidateScores->peakShapeRatio2 = 1.0;
+        candidateScores->peakShapeRatio3 = 0.0;
+    }
+    else {
+
+        candidateScores->peakShapeRatio1 = std::accumulate(
+                bestAnchorColumnVec.begin(),
+                bestAnchorColumnVec.begin() + chunkSize,
+                0.0
+        ) / bestAnchorColumnVecSum;
+
+        candidateScores->peakShapeRatio2 = std::accumulate(
+                bestAnchorColumnVec.begin() + chunkSize,
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                0.0
+        ) / bestAnchorColumnVecSum;
+
+        candidateScores->peakShapeRatio3 = std::accumulate(
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                bestAnchorColumnVec.end(),
+                0.0
+        ) / bestAnchorColumnVecSum;
+
+    }
+
     e = calculateMS1Corr(
             bestAnchorColumn,
             bestPeakIntegrationIndexes,
@@ -1067,75 +1153,6 @@ Err ScoreOverseer::buildScores(
             m_turboXICMS1,
             &candidateScores->cosineSim100MS1Iso2
     ); ree;
-
-//    double cosineSim45MS1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
-//            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
-//            &m_turboXICMS1,
-//            &cosineSim45MS1
-//    ); ree;
-//
-//    double cosineSim20MS1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            BiophysicalCalcs::calculateThomsonFromMass(candidatePeptide.mass, candidatePeptide.charge),
-//            m_pythiaParameters.ms2ExtractionWidthPPM * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
-//            &m_turboXICMS1,
-//            &cosineSim20MS1
-//    ); ree;
-
-//    cosineSimsIndividual100.resize(mzValsSearched.size());
-//    cosineSimsIndividual45.resize(mzValsSearched.size());
-//    cosineSimsIndividual20.resize(mzValsSearched.size());
-//    intensityApexVals100.resize(mzValsSearched.size());
-//
-//    const double bestCosineSimSum100 = std::accumulate(cosineSimsIndividual100.begin(), cosineSimsIndividual100.end(), 0.0);
-//    const double bestCosineSimSum45 = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
-//    const double bestCosineSimSum20 = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
-//
-//    scoredCandidate->peptideStringWithMods = candidatePeptide.peptideStringWithMods;
-//    scoredCandidate->cosineSimSum100 = bestCosineSimSum100;
-//    scoredCandidate->cosineSimSum45 = bestCosineSimSum45;
-//    scoredCandidate->cosineSimSum20 = bestCosineSimSum20;
-//    scoredCandidate->isDecoy = candidatePeptide.isDecoy;
-//    scoredCandidate->charge = candidatePeptide.charge;
-//    scoredCandidate->mass = candidatePeptide.mass;
-//    scoredCandidate->scanNumber = m_msFrame.scanNumberFromFrameIndex(frameIndexIntensityApex);
-//    scoredCandidate->scanTime = m_msFrame.scanTimeFromScanNumber(scoredCandidate->scanNumber);
-//    scoredCandidate->scanIonCount = m_msFrame.getScanPointsByScanNumber(scoredCandidate->scanNumber).size();
-//
-//    scoredCandidate->scanTimePredicted = m_fragPredsPredictedScanTime.isEmpty()
-//            ? -1.0
-//            : m_fragPredsPredictedScanTime.value(candidatePeptide.peptideStringWithMods);
-//
-//    scoredCandidate->iRTPredicted = candidatePeptide.iRt;
-//    scoredCandidate->mzSearchedVec = mzValsSearched;
-//    scoredCandidate->theoIntensityVec = theoApexIntensity;
-//    scoredCandidate->mzFoundMeanVec = mzMeanValsFound;
-//    scoredCandidate->mzFoundStDevVec = stdMeanValsFound;
-//    scoredCandidate->intensityFoundMaxVec = intensityApexVals100;
-//    scoredCandidate->cosineSimToAnchorVec = cosineSimsIndividual100;
-//    scoredCandidate->targetKey = m_uniqueMsInfoScanKey;
-//    scoredCandidate->klDivSpectrum = klDivSpectrum;
-//    scoredCandidate->cosineSimSpectrum = cosineSimSpectrum;
-//    scoredCandidate->cosineSim100MS1 = cosineSim100MS1;
-//    scoredCandidate->cosineSim100MS1Iso1 = cosineSim100MS1Iso1;
-//    scoredCandidate->cosineSim100MS1Iso2 = cosineSim100MS1Iso2;
-//    scoredCandidate->cosineSim45MS1 = cosineSim45MS1;
-//    scoredCandidate->cosineSim20MS1 = cosineSim20MS1;
-//    scoredCandidate->theoFragmentCount = candidatePeptide.totalFragmentCount;
-//    scoredCandidate->peakShapeRatio1 = peakShapeRatios.at(0);
-//    scoredCandidate->peakShapeRatio2 = peakShapeRatios.at(1);
-//    scoredCandidate->peakShapeRatio3 = peakShapeRatios.at(2);
-//    scoredCandidate->b2Corr = cosineSimsIndividualB2B3.at(0);
-//    scoredCandidate->b3Corr = cosineSimsIndividualB2B3.at(1);
-//    scoredCandidate->b2b3CosineSimSum = cosineSimSumB2B3;
-//    scoredCandidate->shadowsCosineSimSum = cosineSimSumShadows;
-//    scoredCandidate->cosineSimShadowsToAnchorVec = cosineSimsIndividualShadows;
 
     ERR_RETURN
 }

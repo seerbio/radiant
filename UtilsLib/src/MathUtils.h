@@ -186,6 +186,12 @@ public:
 
     template<typename T>
     static int findMaxIndexInVector(const QVector<T> &vec) {
+
+        const int sum = std::accumulate(vec.begin(), vec.end(), 0);
+        if (sum == 0) {
+            return -1;
+        }
+
         return std::max_element(vec.begin(), vec.end()) - vec.begin();
     }
 

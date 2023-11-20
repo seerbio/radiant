@@ -100,7 +100,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &m_targetDecoyCandidatePairManager
             ); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = 0.1;
     e = buildCalibration(
             calibrationTrainingFraction,
             false,
@@ -130,9 +130,11 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
+    int psmCountOnePercentFDR;
     e = mainAnalysis(
             &targetDecoyCandidatePairScoretron,
-            &scoredTargetDecoyPointers
+            &scoredTargetDecoyPointers,
+            &psmCountOnePercentFDR
             ); ree;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
@@ -161,6 +163,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             scoredTargetDecoyPointers,
             scoredTargetDecoyPointersFDRFiltered,
             msReaderPointerAcc.ptr->scanTimeMinMax(),
+            psmCountOnePercentFDR,
             m_pythiaParameters.reportDecoys,
             &scoredCandidatesClassifierUpdated
             ); ree;
@@ -489,7 +492,7 @@ Err PythiaDIAWorkflow::buildCalibration(
 
 //#define WRITE_CALIBRATION
 #ifdef WRITE_CALIBRATION
-    const QString resultsFilePath = msReaderParquet->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
+    const QString resultsFilePath = "testing" + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
     e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
     e = m_msCalibratomatic.init(resultsFilePath); ree;
 #else
@@ -512,9 +515,11 @@ Err PythiaDIAWorkflow::recalibrateMzVals(
     e = ErrorUtils::isFalse(diaTargetFrame->isEmpty()); ree;
     e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
+    qDebug() << "Recalibrating mz vals";
+
     const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame->keys();
     for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
-        qDebug() << "Recalibrating mz vals frame" << k;
+//        qDebug() << "Recalibrating mz vals frame" << k;
         QMap<ScanNumber, ScanPoints> points;
         e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k), &points); ree;
         (*diaTargetFrame)[k] = points;
@@ -869,13 +874,21 @@ namespace {
 //                {2.5,  2.0,  2.0}
 //        };
 
+//        const QVector<QVector<double>> experiments = {
+//                {2.5, 1.0},
+//                {3.5, 1.0},
+//                {2.5,  3.0},
+//                {3.5,  3.0},
+//                {2.5,  2.0},
+//                {3.5,  2.0}
+//        };
+
         const QVector<QVector<double>> experiments = {
-                {2.5, 1.0},
-                {3.5, 1.0},
-                {2.5,  3.0},
-                {3.5,  3.0},
+                {2.0, 2.0},
                 {2.5,  2.0},
-                {3.5,  2.0}
+                {3.5,  2.0},
+                {4.5, 2.0},
+                {5.5, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
@@ -948,8 +961,8 @@ namespace {
 
     Err getTopFrequencyParameters(
             QVector<DOEResult> *results,
-            double *ppmSetting,
-            double *scanTimeWidthSetting
+            double *ppmSetting
+//            double *scanTimeWidthSetting
 //            double *cosineSimSetting
             ) {
 
@@ -967,30 +980,33 @@ namespace {
             qDebug() << r.ppm << r.scanTimeStDev << r.fdrCount;
         }
 
-        const int topNResults = 3;
-        results->resize(topNResults);
+        *ppmSetting = results->front().ppm;
+//        *scanTimeWidthSetting = results->front().scanTimeStDev;
 
-        QMap<QString, int> ppmCounts;
-        QMap<QString, int> scanTimeWidthCounts;
-//        QMap<QString, int> cosineSimCounts;
-        for (const DOEResult &r : *results) {
-
-            const QString ppmString = QString::number(r.ppm);
-            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
-//            const QString cosineSimString = QString::number(r.cosineSimAnchor);
-
-            ppmCounts[ppmString]++;
-            scanTimeWidthCounts[scanTimeWidthString]++;
-//            cosineSimCounts[cosineSimString]++;
-        }
-
-        const QVector<QPair<QString, int>> ppmCountsVector = ParallelUtils::convertMapToVectorPairs(ppmCounts);
-        const QVector<QPair<QString, int>> scanTimeWidthCountsVector = ParallelUtils::convertMapToVectorPairs(scanTimeWidthCounts);
-//        const QVector<QPair<QString, int>> cosineSimCountsVector = ParallelUtils::convertMapToVectorPairs(cosineSimCounts);
-
-        e = findMostFrequentValue(ppmCountsVector, ppmSetting); ree;
-        e = findMostFrequentValue(scanTimeWidthCountsVector, scanTimeWidthSetting); ree;
-//        e = findMostFrequentValue(cosineSimCountsVector, cosineSimSetting); ree;
+//        const int topNResults = 3;
+//        results->resize(topNResults);
+//
+//        QMap<QString, int> ppmCounts;
+//        QMap<QString, int> scanTimeWidthCounts;
+////        QMap<QString, int> cosineSimCounts;
+//        for (const DOEResult &r : *results) {
+//
+//            const QString ppmString = QString::number(r.ppm);
+//            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
+////            const QString cosineSimString = QString::number(r.cosineSimAnchor);
+//
+//            ppmCounts[ppmString]++;
+//            scanTimeWidthCounts[scanTimeWidthString]++;
+////            cosineSimCounts[cosineSimString]++;
+//        }
+//
+//        const QVector<QPair<QString, int>> ppmCountsVector = ParallelUtils::convertMapToVectorPairs(ppmCounts);
+//        const QVector<QPair<QString, int>> scanTimeWidthCountsVector = ParallelUtils::convertMapToVectorPairs(scanTimeWidthCounts);
+////        const QVector<QPair<QString, int>> cosineSimCountsVector = ParallelUtils::convertMapToVectorPairs(cosineSimCounts);
+//
+//        e = findMostFrequentValue(ppmCountsVector, ppmSetting); ree;
+//        e = findMostFrequentValue(scanTimeWidthCountsVector, scanTimeWidthSetting); ree;
+////        e = findMostFrequentValue(cosineSimCountsVector, cosineSimSetting); ree;
 
         ERR_RETURN
     }
@@ -1084,10 +1100,12 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
         results.push_back(res);
     }
 
+    m_pythiaParameters.scanTimeWindowMinutes = m_msCalibratomatic.scanTimeStDev() * 2.0;
+
     e = getTopFrequencyParameters(
             &results,
-            &m_pythiaParameters.ms2ExtractionWidthPPM,
-            &m_pythiaParameters.scanTimeWindowMinutes
+            &m_pythiaParameters.ms2ExtractionWidthPPM
+//            &m_pythiaParameters.scanTimeWindowMinutes
 //            &m_pythiaParameters.cosineSimToAnchorThreshold
             ); ree;
 
@@ -1114,7 +1132,8 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
 Err PythiaDIAWorkflow::mainAnalysis(
         TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers
+        QVector<TargetDecoyCandidatePair*> *scoredTargetDecoyPointers,
+        int *psmCountOnePercentFDR
         ) {
 
     ERR_INIT
@@ -1149,6 +1168,8 @@ Err PythiaDIAWorkflow::mainAnalysis(
             scoredTargetDecoyPointers,
             &fdrVsCount
     ); ree;
+
+    *psmCountOnePercentFDR = fdrVsCount.value("1");
 
     ERR_RETURN
 }
@@ -1534,6 +1555,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointers,
         const QVector<TargetDecoyCandidatePair*> &scoredTargetDecoyPointersFDRFiltered,
         const QPair<double, double> &scanTimeMinMax,
+        int psmCountOnePercentFDR,
         bool reportDecoys,
         QVector<CandidateScores> *candidateScoreClassifier
         ) {
@@ -1611,12 +1633,16 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             learningRate
     ); ree;
 
-    const int epochs = 1;
+    int epochs = 1;
     int cycles = 0;
-    int cycleDecoysFound = -1;
-    while (cycles < 5 && cycleDecoysFound < 2) {
+    int counter = 0;
+    while (cycles < 5 && counter < psmCountOnePercentFDR && epochs < 3) {
 
-        qDebug() << "Training Cycle" << cycles;
+        qDebug() << "Training Cycle" << cycles++;
+        if (cycles == 5) {
+            epochs++;
+            cycles = 0;
+        }
 
         candidateScoreClassifier->clear();
 
@@ -1632,7 +1658,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
                 [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
         );
 
-        int counter = 0;
+        counter = 0;
         int falsePositives = 0;
         for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
@@ -1657,7 +1683,6 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             }
         }
 
-        cycleDecoysFound = falsePositives;
         qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
     }
 
