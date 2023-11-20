@@ -100,7 +100,7 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
             &m_targetDecoyCandidatePairManager
             ); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = 0.1;
     e = buildCalibration(
             calibrationTrainingFraction,
             false,
@@ -515,9 +515,11 @@ Err PythiaDIAWorkflow::recalibrateMzVals(
     e = ErrorUtils::isFalse(diaTargetFrame->isEmpty()); ree;
     e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
+    qDebug() << "Recalibrating mz vals";
+
     const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame->keys();
     for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
-        qDebug() << "Recalibrating mz vals frame" << k;
+//        qDebug() << "Recalibrating mz vals frame" << k;
         QMap<ScanNumber, ScanPoints> points;
         e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k), &points); ree;
         (*diaTargetFrame)[k] = points;
@@ -1631,12 +1633,16 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
             learningRate
     ); ree;
 
-    const int epochs = 1;
+    int epochs = 1;
     int cycles = 0;
     int counter = 0;
-    while (cycles < 5 && counter < psmCountOnePercentFDR) {
+    while (cycles < 5 && counter < psmCountOnePercentFDR && epochs < 3) {
 
         qDebug() << "Training Cycle" << cycles++;
+        if (cycles == 5) {
+            epochs++;
+            cycles = 0;
+        }
 
         candidateScoreClassifier->clear();
 

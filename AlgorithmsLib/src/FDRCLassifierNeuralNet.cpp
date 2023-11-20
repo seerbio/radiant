@@ -513,12 +513,6 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(pepLength); //13
         scores.push_back(candidateScores.theoFragmentCount); //14
 
-//        scores.push_back(scoreCandidate.peakShapeRatio1);
-//        scores.push_back(scoreCandidate.peakShapeRatio2);
-//        scores.push_back(scoreCandidate.peakShapeRatio3);
-//        scores.push_back(std::max(scoreCandidate.b2Corr, 0.0));
-//        scores.push_back(std::max(scoreCandidate.b3Corr, 0.0));
-
         const QVector<double> cosineSimToAnchors
                 = extractScoresFromVecFeatures(candidateScores.cosineSimToAnchorVec, theoMzIonsSize);
         scores.append(cosineSimToAnchors); //28-33
@@ -561,38 +555,16 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
                 }
 
                 const double mzFound = candidateScores.mzFoundMeanVec[i];
-
                 const double ppm = cosineSimToAnchors.at(i) * std::abs(mzFound - mzSearched) / mzSearched;
                 ppmVec.push_back(ppm);
             }
         }
-
-//        const double maxIntensity = std::max(
-//                *std::max(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end()),
-//                1.0
-//        );
-//        QVector<double> intensityFoundMaxVecNorm;
-//        std::transform(
-//                intensityFoundMaxVec.begin(),
-//                intensityFoundMaxVec.end(),
-//                std::back_inserter(intensityFoundMaxVecNorm),
-//                [maxIntensity](double d){return d / maxIntensity;}
-//        );
-//        scores.append(intensityFoundMaxVecNorm);
-
-//        const QVector<double> mzStDev
-//                = extractScoresFromVecFeatures(candidateScores.mzFoundStDevVec, theoMzIonsSize);
-//        scores.append(mzStDev);
 
         const double charge = -2.0 + candidateScores.charge;
         scores.push_back(charge);
     }
 
     if (useNeuralNetworkScores) {
-
-//        scores.push_back(std::max(candidateScores.b2Corr, 0.0));
-//        scores.push_back(std::max(candidateScores.b3Corr, 0.0));
-//        scores.push_back(std::max(candidateScores.b2b3CosineSimSum, 0.0));
 
         scores.push_back(std::max(0.0, candidateScores.cosineSimSpectrum));
         scores.push_back(candidateScores.discriminateScore);
@@ -624,7 +596,7 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
         for (const QChar aminoAcid : candidateScores.peptideStringWithMods) {
 
             if (!aminoAcidCounts.contains(aminoAcid)) {
-                qDebug() << candidateScores.peptideStringWithMods << "SDLKFSDJL";
+                qDebug() << candidateScores.peptideStringWithMods << "missing amino acid";
             }
 
             e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
@@ -641,13 +613,9 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
                 );
         scores.push_back((mz - 600.0) * 0.002);
 
-//        const QVector<double> ppmMz = extractScoresFromVecFeatures(ppmVec, theoMzIonsSize);
-//        scores.append(ppmMz);
-
-//        scores.push_back(candidateScores.matrixPValue);
-//        scores.push_back(candidateScores.matrixWeight);
-//        scores.push_back(candidateScores.matrixError);
-//        scores.push_back(candidateScores.scanNumberCandidateCount);
+        scores.push_back(candidateScores.peakShapeRatio1);
+        scores.push_back(candidateScores.peakShapeRatio2);
+        scores.push_back(candidateScores.peakShapeRatio3);
 
     }
 
@@ -655,27 +623,6 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
 
     ERR_RETURN
 }
-
-//Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//        const QVector<ScoredCandidate> &scoredCandidatesAll,
-//        double qValueThreshold,
-//        int *targetCountBelowFDRThreshold
-//        ) {
-//
-//    ERR_INIT
-//
-//    e = ErrorUtils::isNotEmpty(scoredCandidatesAll); ree;
-//    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
-//
-//    const auto countLogic = [qValueThreshold](const ScoredCandidate &sc){
-//        return !sc.isDecoy && sc.qValue < qValueThreshold;
-//    };
-//
-//    *targetCountBelowFDRThreshold
-//            = static_cast<int>(std::count_if(scoredCandidatesAll.begin(), scoredCandidatesAll.end(), countLogic));
-//
-//    ERR_RETURN
-//}
 
 Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
         const QVector<TargetDecoyCandidatePair *> &targetDecoyCandidatePair,
