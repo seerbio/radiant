@@ -1069,7 +1069,7 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
                  << "cosineSimSumAnchThreshold" << pythiaParams.cosineSimToAnchorThreshold;
 
         e = targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
-
+        qDebug() << "STarting opt";
         QMap<QString, int> fdrVsCount;
         e = setTargetDecoyCandidateScores(
                 targetDecoyCandidatePairScoretron,
@@ -1079,6 +1079,7 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
                 &scoredTargetDecoyPointers,
                 &fdrVsCount
                 ); ree;
+        qDebug() << "Ending opt";
 
         double fallBackFDR;
         e = getBestFDRFraction(fdrVsCount, minTrainingCount, &fallBackFDR); ree;
