@@ -61,6 +61,7 @@ namespace CandidateScoresNamespace {
     const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
     const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
     const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
+    const QString ALL_MAX_IND_CNT = QStringLiteral("allignedMaxIndexesCount");
 
 
     const QStringList keysToCheck = {
@@ -109,7 +110,8 @@ namespace CandidateScoresNamespace {
             B2B3_COSINE_SIM_SUM,
             SHADOWS_COSINE_SIM_SUM,
             COS_SIM_SUM_ANCH_SHADOW_V,
-            SHADOW_INTZ_RATIO_VEC
+            SHADOW_INTZ_RATIO_VEC,
+            ALL_MAX_IND_CNT
     };
 }
 
@@ -166,6 +168,7 @@ public:
     QVector<double> cosineSimShadowsToAnchorVec;
     QVector<double> shadowsIntensityRatioVec;
     double shadowsCosineSimSum = -1.0;
+    int allignedMaxIndexesCount = -1;
 
     void clear() {
         peptideStringWithMods= "";
@@ -214,6 +217,7 @@ public:
         b3Corr = -1.0;
         b2b3CosineSimSum = -1.0;
         shadowsCosineSimSum = -1.0;
+        allignedMaxIndexesCount = -1;
     }
 
     QMap<QString, QVariant> map() override {
@@ -266,7 +270,8 @@ public:
                 {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
                 {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
-                {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))}
+                {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
+                {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)}
         };
     }
 
@@ -332,6 +337,7 @@ public:
         shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
         cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
         shadowsIntensityRatioVec = bytesArrayToQVector<double>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
+        allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
 
         ERR_RETURN
     }

@@ -482,6 +482,7 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
     ERR_INIT
 
     QVector<double> scores = {
+            static_cast<double>(std::max(0, candidateScores.allignedMaxIndexesCount)),
             std::max(candidateScores.cosineSimSum100, 0.0), //1
             std::max(candidateScores.cosineSim100MS1, 0.0), //2
             std::pow(std::max(0.0, candidateScores.cosineSimSpectrum), 3), //3
