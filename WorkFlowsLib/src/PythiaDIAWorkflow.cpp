@@ -82,13 +82,13 @@ Err PythiaDIAWorkflow::processFile(const QString &_msDataFilePath) {
         e = deisotopeScans(&msReaderPointerAcc); ree;
     }
 
-    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> diaTargetFrame;
+    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrame;
     e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
             &diaTargetFrame
             ); ree;
 
     const int msLevel = 1;
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
+    QMap<ScanNumber, ScanPoints*> scanNumberVsScanTimeMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
 
     TargetDecoyCandidatePairScoretron targetDecoyCandidatePairScoretron;
@@ -503,8 +503,8 @@ Err PythiaDIAWorkflow::buildCalibration(
 }
 
 Err PythiaDIAWorkflow::recalibrateMzVals(
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame,
+        QMap<ScanNumber, ScanPoints*> *scanNumberVsScanTimeMS1,
         TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
         MsReaderPointerAcc *msReaderPointerAcc
         ) {
@@ -520,15 +520,11 @@ Err PythiaDIAWorkflow::recalibrateMzVals(
     const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame->keys();
     for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
 //        qDebug() << "Recalibrating mz vals frame" << k;
-        QMap<ScanNumber, ScanPoints> points;
-        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k), &points); ree;
-        (*diaTargetFrame)[k] = points;
+        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k)); ree;
     }
 
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1Recal;
     qDebug() << "Recalibrating MS1 mz vals frame";
-    e = m_msCalibratomatic.recalibrateScanPoints(*scanNumberVsScanTimeMS1, &scanNumberVsScanTimeMS1Recal); ree;
-    *scanNumberVsScanTimeMS1 = scanNumberVsScanTimeMS1Recal;
+    e = m_msCalibratomatic.recalibrateScanPoints(*scanNumberVsScanTimeMS1); ree;
 
     e = targetDecoyCandidatePairScoretron->init(
             m_pythiaParameters,
@@ -1362,56 +1358,58 @@ namespace {
         e = ErrorUtils::isNotEmpty(scanNumberVsTandemPredictions); ree;
 
         QElapsedTimer et;
-        et.start();
-
-        const auto insertLogic = [msReaderPointerAcc, scanNumberVsTandemPredictions](const ScanNumber sn){
-
-            DeconVol deconVol;
-            deconVol.scanNumber = sn;
-            deconVol.tandemPredictions = scanNumberVsTandemPredictions.value(sn);
-            msReaderPointerAcc->ptr->getScanPoints(sn, &deconVol.scanPoints);
-
-            return deconVol;
-        };
-
-        QVector<DeconVol> scanPointsVsTandemPredictions;
-        const QList<ScanNumber> &scanNumbers = scanNumberVsTandemPredictions.keys();
-        std::transform(
-                scanNumbers.begin(),
-                scanNumbers.end(),
-                std::back_inserter(scanPointsVsTandemPredictions),
-                insertLogic
-        );
-
-#define PARALLEL_DECONVOLVE
-#ifdef PARALLEL_DECONVOLVE
-        const auto deconvolutionLogicBinder = std::bind(
-            tandemDeconvolutionLogic,
-            std::placeholders::_1,
-            params
-        );
-
-        QFuture<Err> futures = QtConcurrent::mapped(
-                scanPointsVsTandemPredictions,
-                deconvolutionLogicBinder
-                );
-        futures.waitForFinished();
-
-        for (const Err &result : futures) {
-            e = result; ree;
-        }
-#else
-        for (const DeconVol &deconVol : scanPointsVsTandemPredictions) {
-
-            const DeconResult result = tandemDeconvolutionLogic(
-                    deconVol,
-                    params
-            );
-
-            e = result.e; ree;
-            (*scanNumberVsTandemDeconvolverResult)[result.scanNumber] = result.tandemDeconvolverResult;
-        }
-#endif
+//        et.start();
+//
+//        const auto insertLogic = [msReaderPointerAcc, scanNumberVsTandemPredictions](const ScanNumber sn){
+//
+//            DeconVol deconVol;
+//            deconVol.scanNumber = sn;
+//            deconVol.tandemPredictions = scanNumberVsTandemPredictions.value(sn);
+//            QPair<Err, ScanPoints*> scanPointsResult = msReaderPointerAcc->ptr->getScanPoints(sn);
+//
+//            deconVol.scanPoints = scanPointsResult.second;
+//
+//            return deconVol;
+//        };
+//
+//        QVector<DeconVol> scanPointsVsTandemPredictions;
+//        const QList<ScanNumber> &scanNumbers = scanNumberVsTandemPredictions.keys();
+//        std::transform(
+//                scanNumbers.begin(),
+//                scanNumbers.end(),
+//                std::back_inserter(scanPointsVsTandemPredictions),
+//                insertLogic
+//        );
+//
+//#define PARALLEL_DECONVOLVE
+//#ifdef PARALLEL_DECONVOLVE
+//        const auto deconvolutionLogicBinder = std::bind(
+//            tandemDeconvolutionLogic,
+//            std::placeholders::_1,
+//            params
+//        );
+//
+//        QFuture<Err> futures = QtConcurrent::mapped(
+//                scanPointsVsTandemPredictions,
+//                deconvolutionLogicBinder
+//                );
+//        futures.waitForFinished();
+//
+//        for (const Err &result : futures) {
+//            e = result; ree;
+//        }
+//#else
+//        for (const DeconVol &deconVol : scanPointsVsTandemPredictions) {
+//
+//            const DeconResult result = tandemDeconvolutionLogic(
+//                    deconVol,
+//                    params
+//            );
+//
+//            e = result.e; ree;
+//            (*scanNumberVsTandemDeconvolverResult)[result.scanNumber] = result.tandemDeconvolverResult;
+//        }
+//#endif
 
         qDebug() << "Deconvolution finished in" << et.elapsed() << "mSec";
 

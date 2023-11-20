@@ -1081,7 +1081,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->mass = targetDecoyCandidatePair->mass();
     candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
     candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
-    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber).size();
+    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
     candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
     candidateScores->scanTimePredicted = scanTimePredicted;
     candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();

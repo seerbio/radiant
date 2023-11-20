@@ -218,6 +218,31 @@ Err MsReaderBase::getScanPoints(
     ERR_RETURN;
 }
 
+Err MsReaderBase::getScanPoints(
+        int msLevel,
+        QMap<ScanNumber, ScanPoints*> *scanPoints
+        ) {
+
+    ERR_INIT
+
+    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        ScanPoints *scanPointsVec = &it.value();
+
+        MsScanInfo msScanInfo;
+        e = getMsScanInfo(scanNumber, &msScanInfo); ree
+
+        if (msScanInfo.msLevel != msLevel) {
+            continue;
+        }
+
+        scanPoints->insert(scanNumber, scanPointsVec);
+    }
+
+    ERR_RETURN;
+}
+
 QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos() {
     return m_msScanInfo;
 }
@@ -257,19 +282,13 @@ Err MsReaderBase::getMsScanInfo(
     ERR_RETURN
 }
 
-Err MsReaderBase::getScanPoints(
-        int scanNumber,
-        ScanPoints *scanPoints
-        ) {
+QPair<Err, ScanPoints*> MsReaderBase::getScanPoints(int scanNumber) {
 
     ERR_INIT
 
-    scanPoints->clear();
-
-    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
-    *scanPoints = m_scanPoints.value(scanNumber);
-
-    ERR_RETURN
+    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); rree;
+    e = ErrorUtils::isTrue(m_scanPoints.contains(scanNumber)); rree;
+    return {e, &m_scanPoints[scanNumber]};
 }
 
 void MsReaderBase::printSize() {
@@ -348,8 +367,7 @@ bool MsReaderBase::isDIA() {
 }
 
 Err MsReaderBase::collateTandemPrecursorTargetsDIA(
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame
-        ) {
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame) {
 
     ERR_INIT
 
@@ -365,13 +383,9 @@ Err MsReaderBase::collateTandemPrecursorTargetsDIA(
         const ScanNumber scanNumber = it.key();
         const MsScanInfo msScanInfo = it.value();
 
-        ScanPoints scanPoints;
-        e = getScanPoints(
-                scanNumber,
-                &scanPoints
-                ); ree;
-
-        (*diaTargetFrame)[msScanInfo.targetScanKey()].insert(scanNumber, scanPoints);
+        QPair<Err, ScanPoints*> scanPointsResult = getScanPoints(scanNumber);
+        e = scanPointsResult.first; ree;
+        (*diaTargetFrame)[msScanInfo.targetScanKey()].insert(scanNumber, scanPointsResult.second);
     }
 
     qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
@@ -474,5 +488,3 @@ Err MsReaderBase::writeTargetCollisionEnergyFile() {
 
     ERR_RETURN
 }
-
-

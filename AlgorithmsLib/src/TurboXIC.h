@@ -50,8 +50,8 @@ public:
     TurboXIC();
     ~TurboXIC();
 
-    Err init(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
-    Err init(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
+    Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+    Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
 
     XICPoints extractPointsXIC(
             double mzMin,

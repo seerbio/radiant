@@ -19,8 +19,8 @@ class TargetDecoyPairParallelInput {
 public:
     UniqueMsInfoScanKey msInfoScanKey;
     MsCalibratomatic msCalibratomatic;
-    QMap<ScanNumber, ScanPoints>* diaTargetFrame = nullptr;
-    QMap<ScanNumber, ScanPoints> ms1Frame;
+    QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
+    QMap<ScanNumber, ScanPoints*> ms1Frame;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
@@ -30,9 +30,9 @@ public:
 
 Err TargetDecoyCandidatePairScoretron::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
+        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanTimeMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames,
+        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager
         ) {
 

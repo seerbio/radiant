@@ -331,25 +331,20 @@ Err MsCalibratomatic::buildMzCalibrator() {
 }
 
 Err MsCalibratomatic::recalibrateScanPoints(
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
-        QMap<ScanNumber, ScanPoints> *reCalScanNumberVsScanPoints
+        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
         ) {
 
     ERR_INIT
 
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
-        const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPoints = it.value();
+        ScanPoints *scanPoints = it.value();
 
-        ScanPoints scanPointsRecal;
-        for (const ScanPoint &sp : scanPoints) {
+        for (ScanPoint &sp : *scanPoints) {
             double mzRecal;
             e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-            scanPointsRecal.push_back({mzRecal, sp.y()});
+            sp.rx() = mzRecal;
         }
-
-        reCalScanNumberVsScanPoints->insert(scanNumber, scanPointsRecal);
     }
 
     ERR_RETURN

@@ -96,9 +96,11 @@ public:
             );
 
     Err getScanPoints(
-            int scanNumber,
-            ScanPoints *scanPoints
-            );
+            int msLevel,
+            QMap<ScanNumber, ScanPoints*> *scanPoints
+    );
+
+    QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
 
     Err getMsScanInfo(
             ScanNumber scanNumber,
@@ -106,8 +108,8 @@ public:
             ) const;
 
     Err collateTandemPrecursorTargetsDIA(
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrame
-            );
+            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
+    );
 
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();
 
