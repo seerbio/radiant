@@ -616,6 +616,8 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
         scores.push_back(candidateScores.peakShapeRatio1);
         scores.push_back(candidateScores.peakShapeRatio2);
         scores.push_back(candidateScores.peakShapeRatio3);
+        scores.push_back(candidateScores.cosineSimSumBottom6);
+        scores.push_back(candidateScores.cosineSimSumBottom6 / candidateScores.theoFragmentCount);
 
     }
 

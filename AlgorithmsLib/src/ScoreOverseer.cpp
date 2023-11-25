@@ -1084,6 +1084,14 @@ Err ScoreOverseer::buildScores(
             0.0
             );
 
+    if (candidateScores->cosineSimToAnchorVec.size() > top6) {
+        candidateScores->cosineSimSumBottom6 = std::accumulate(
+                candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
+                candidateScores->cosineSimToAnchorVec.end(),
+                0.0
+        );
+    }
+
     candidateScores->charge = targetDecoyCandidatePair->charge();
     candidateScores->mass = targetDecoyCandidatePair->mass();
     candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);

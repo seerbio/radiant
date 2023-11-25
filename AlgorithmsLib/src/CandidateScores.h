@@ -62,6 +62,7 @@ namespace CandidateScoresNamespace {
     const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
     const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
     const QString ALL_MAX_IND_CNT = QStringLiteral("allignedMaxIndexesCount");
+    const QString COSINE_SIM_SUM_BOTTOM_6 = QStringLiteral("cosineSimSumBottom6");
 
 
     const QStringList keysToCheck = {
@@ -111,7 +112,8 @@ namespace CandidateScoresNamespace {
             SHADOWS_COSINE_SIM_SUM,
             COS_SIM_SUM_ANCH_SHADOW_V,
             SHADOW_INTZ_RATIO_VEC,
-            ALL_MAX_IND_CNT
+            ALL_MAX_IND_CNT,
+            COSINE_SIM_SUM_BOTTOM_6
     };
 }
 
@@ -126,6 +128,7 @@ public:
     double cosineSimSum100 = -1.0;
     double cosineSimSum45 = -1.0;
     double cosineSimSum20 = -1.0;
+    double cosineSimSumBottom6 = -1.0;
     bool isDecoy = false;
     Charge charge = -1;
     double mass = -1.0;
@@ -185,6 +188,7 @@ public:
         cosineSimSum100 = -1.0;
         cosineSimSum45 = -1.0;
         cosineSimSum20 = -1.0;
+        cosineSimSumBottom6 = -1.0;
         isDecoy = false;
         charge = -1;
         mass = -1.0;
@@ -271,7 +275,8 @@ public:
                 {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
                 {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
-                {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)}
+                {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
+                {COSINE_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)}
         };
     }
 
@@ -338,6 +343,7 @@ public:
         cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
         shadowsIntensityRatioVec = bytesArrayToQVector<double>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
         allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
+        cosineSimSumBottom6 = dataMap.value(COSINE_SIM_SUM_BOTTOM_6).toDouble();
 
         ERR_RETURN
     }
