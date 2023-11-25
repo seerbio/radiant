@@ -473,6 +473,17 @@ Err PythiaDIAWorkflow::buildCalibration(
             &fdrVsCount
             ); ree;
 
+#define WRITE_TARGET_DECOYS
+#ifdef WRITE_TARGET_DECOYS
+    if(useExtendedScores) {
+        QVector<CandidateScores> candidateScores;
+        for (TargetDecoyCandidatePair* ptr : scoredTargetDecoyPointers) {
+            candidateScores.push_back(*ptr->candidateScoresBestDiscriminantScorePtrTarget());
+        }
+        e = ParquetReader::write(candidateScores, "scoresCalibrationAsstroll.prq"); ree;
+    }
+#endif
+
     double fallBackFDR;
     e = getBestFDRFraction(fdrVsCount, minTrainingCount, &fallBackFDR); ree;
     qDebug() << "Fallback FDR" << fallBackFDR  << "Count" << fdrVsCount.value(QString::number(static_cast<int>(fallBackFDR * 100)));

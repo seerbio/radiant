@@ -21,7 +21,6 @@
 using namespace Error;
 
 class MsReaderParquet;
-class ScoredCandidate;
 class TargetDecoyCandidatePairScoretron;
 
 
