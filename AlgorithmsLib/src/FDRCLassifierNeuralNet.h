@@ -97,17 +97,16 @@ public:
     ~FDRCLassifierNeuralNet();
 
     Err init(
-            int topNMs2Ions,
             int epochs,
             int baggingSize,
-            double batchFraction,
-            double learningRate,
-            const QPair<double, double> &scanTimeMinMax
+            int batchSize,
+            double learningRate
             );
 
     Err exec(
-            const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
-            QVector<CandidateScores> *candidateScoreClassifier
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData,
+            QVector<float> *meanPredictions
     );
 
 
@@ -180,14 +179,13 @@ public:
 private:
 
     Err trainClassifier(
-            const QMap<QString, CandidateScores> &keyVsScoredCandidateCulled,
-            QVector<QVector<float>> *allDataVecs,
-            QVector<NeuralNetData> *trainingData
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData
             );
 
     Err trainBaggedNeuralNets(
-            const QVector<QVector<QVector<float>>> &trainingDataVecsTranched,
-            const QVector<QVector<float>> &ytrainingDataTranched
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData
             );
 
     Err predictBaggedClassifiers(
@@ -200,7 +198,7 @@ private:
     int m_epochs;
     int m_baggingSize;
     int m_topNMs2Ions;
-    double m_batchFraction;
+    int m_batchSize;
     double m_learningRate;
 
     const int m_minTopNMs2Ions;

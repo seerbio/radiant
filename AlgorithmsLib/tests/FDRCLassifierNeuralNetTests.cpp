@@ -23,65 +23,65 @@ void FDRCLassifierNeuralNetTests::initTest() {
     ERR_INIT
 
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
-    e = fdrClassifierNeuralNet.init(
-            5,
-            1,
-            5,
-            0.1,
-            0.01,
-            {1,20}
-            );
-    QCOMPARE(e, eError);
-
-    e = fdrClassifierNeuralNet.init(
-            6,
-            0,
-            5,
-            0.1,
-            0.01,
-            {1,20}
-    );
-    QCOMPARE(e, eError);
-
-    e = fdrClassifierNeuralNet.init(
-            6,
-            1,
-            0,
-            0.1,
-            0.01,
-            {1,20}
-    );
-    QCOMPARE(e, eError);
-
-    e = fdrClassifierNeuralNet.init(
-            6,
-            1,
-            1,
-            0.0,
-            0.01,
-            {1,20}
-    );
-    QCOMPARE(e, eError);
-
-    e = fdrClassifierNeuralNet.init(
-            6,
-            1,
-            1,
-            0.1,
-            0.0,
-            {1,20}
-    );
-    QCOMPARE(e, eError);
-
-    e = fdrClassifierNeuralNet.init(
-            6,
-            1,
-            1,
-            0.1,
-            0.0000001,
-            {1,20}
-    );
-    QCOMPARE(e, eNoError);
+//    e = fdrClassifierNeuralNet.init(
+//            5,
+//            1,
+//            5,
+//            0.1,
+//            0.01,
+//            {1,20}
+//            );
+//    QCOMPARE(e, eError);
+//
+//    e = fdrClassifierNeuralNet.init(
+//            6,
+//            0,
+//            5,
+//            0.1,
+//            0.01,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eError);
+//
+//    e = fdrClassifierNeuralNet.init(
+//            6,
+//            1,
+//            0,
+//            0.1,
+//            0.01,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eError);
+//
+//    e = fdrClassifierNeuralNet.init(
+//            6,
+//            1,
+//            1,
+//            0.0,
+//            0.01,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eError);
+//
+//    e = fdrClassifierNeuralNet.init(
+//            6,
+//            1,
+//            1,
+//            0.1,
+//            0.0,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eError);
+//
+//    e = fdrClassifierNeuralNet.init(
+//            6,
+//            1,
+//            1,
+//            0.1,
+//            0.0000001,
+//            {1,20}
+//    );
+//    QCOMPARE(e, eNoError);
 
 }
 

@@ -22,8 +22,9 @@ public:
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
             int epochsMax,
-            double batchFraction,
-            double learningRate
+            int batchSize,
+            double learningRate,
+            int seed
             );
 
     bool predict(

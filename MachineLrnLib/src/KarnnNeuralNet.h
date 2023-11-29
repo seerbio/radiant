@@ -60,7 +60,6 @@ private:
 private:
 
     float m_regularization;
-    int m_threads;
 
     int m_bagginCount;
     int m_hiddenLayerCount;

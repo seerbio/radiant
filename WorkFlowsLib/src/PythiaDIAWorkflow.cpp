@@ -6,7 +6,7 @@
 
 #include "MsReaderParquet.h"
 
-//#include "CandidateClassifier.h"
+#include "CandidateClassifier.h"
 #include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
@@ -509,6 +509,9 @@ Err PythiaDIAWorkflow::buildCalibration(
 #else
     e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
 #endif
+
+    m_pythiaParameters.scanTimeWindowMinutes = m_msCalibratomatic.scanTimeStDev() * 2.0;
+    e = targetDecoyCandidatePairScoretron->setPythiaParameters(m_pythiaParameters); ree;
 
     ERR_RETURN
 }
@@ -1635,66 +1638,71 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     const int baggingSize = 12;
     const int hiddenLayers = 5;
     const float learningRate = 0.003;
+    const int epochs = 1;
 
-    KarnnNeuralNet karnnNeuralNet;
-    e = karnnNeuralNet.init(
-            baggingSize,
-            hiddenLayers,
-            learningRate
-    ); ree;
+    const int batchSize = std::min(50, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+    const int maxIters = 1;
+    qDebug() << "Batch Size:" << batchSize << "MaxIters:" << maxIters;
 
-    int epochs = 1;
+    QVector<QVector<float>> xData;
+    QVector<float> yData;
+    for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+        xData.push_back(QVector<float>(kt.scoreVec.begin(), kt.scoreVec.end()));
+        yData.push_back(kt.isDecoy ? 1.0 : 0.0);
+    }
+
     int cycles = 0;
     int counter = 0;
-    while (cycles < 5 && counter < psmCountOnePercentFDR && epochs < 3) {
 
-        qDebug() << "Training Cycle" << cycles++;
-        if (cycles == 5) {
-            epochs++;
-            cycles = 0;
-        }
+    candidateScoreClassifier->clear();
 
-        candidateScoreClassifier->clear();
+    FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
+    e = fdrcLassifierNeuralNet.init(
+            epochs,
+            baggingSize,
+            batchSize,
+            learningRate
+            ); ree;
 
-        e = karnnNeuralNet.run(
-                epochs,
-                S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + cycles,
-                &karnnNNTargetsNorm
-        ); ree;
+    QVector<float> predictions;
+    e = fdrcLassifierNeuralNet.exec(xData, yData, &predictions); ree;
 
-        std::sort(
-                karnnNNTargetsNorm.begin(),
-                karnnNNTargetsNorm.end(),
-                [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
-        );
-
-        counter = 0;
-        int falsePositives = 0;
-        for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
-
-            CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
-            candidateScoresNew.classifierScore = rp.nnScore;
-            candidateScoreClassifier->push_back(candidateScoresNew);
-
-            ++counter;
-
-            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
-                if (!reportDecoys) {
-                    break;
-                }
-                else {
-                    counter--;
-                    continue;
-                }
-            }
-
-            if (rp.isDecoy){
-                falsePositives++;
-            }
-        }
-
-        qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+    for (int i = 0; i < yData.size(); i++) {
+        karnnNNTargetsNorm[i].nnScore = predictions.at(i);
     }
+
+    std::sort(
+            karnnNNTargetsNorm.begin(),
+            karnnNNTargetsNorm.end(),
+            [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
+    );
+
+    counter = 0;
+    int falsePositives = 0;
+    for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+
+        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
+        candidateScoresNew.classifierScore = rp.nnScore;
+        candidateScoreClassifier->push_back(candidateScoresNew);
+
+        ++counter;
+
+        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
+            if (!reportDecoys) {
+                break;
+            }
+            else {
+                counter--;
+                continue;
+            }
+        }
+
+        if (rp.isDecoy){
+            falsePositives++;
+        }
+    }
+
+    qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
 
     e = setQValueForCandidates(candidateScoreClassifier); ree
 

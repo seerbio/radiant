@@ -15,40 +15,43 @@
 #include <iostream>
 #include <random>
 
-const int NUMBER_OF_THE_BEAST = 666;
-
 struct Net : torch::nn::Module {
 
     torch::nn::Linear layer1{nullptr};
     torch::nn::Linear layer2{nullptr};
-//    torch::nn::Linear layer3{nullptr};
+    torch::nn::Linear layer3{nullptr};
     torch::nn::Linear layer4{nullptr};
+    torch::nn::Linear layer5{nullptr};
+    torch::nn::Linear layer6{nullptr};
 
-    torch::nn::BatchNorm1d batchNorm1{nullptr};
-    torch::nn::BatchNorm1d batchNorm2{nullptr};
+//    torch::nn::BatchNorm1d batchNorm1{nullptr};
+//    torch::nn::BatchNorm1d batchNorm2{nullptr};
 //    torch::nn::BatchNorm1d batchNorm3{nullptr};
 
     Net(int input_size, int nodes, int num_classes) {
-        layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(false)));
-        batchNorm1 = register_module("batchNorm1", torch::nn::BatchNorm1d(nodes));
-        layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(false)));
-        batchNorm2 = register_module("batchNorm2", torch::nn::BatchNorm1d(nodes));
-//        layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(false)));
-//        batchNorm3 = register_module("batchNorm3", torch::nn::BatchNorm1d(nodes));
-        layer4 = register_module("layer4", torch::nn::Linear(nodes, num_classes));
+        layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(true)));
+        layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        layer4 = register_module("layer4", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        layer5 = register_module("layer5", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        layer6 = register_module("layer6", torch::nn::Linear(nodes, num_classes));
 
         torch::nn::init::xavier_uniform_(layer1->weight);
         torch::nn::init::xavier_uniform_(layer2->weight);
-//        torch::nn::init::xavier_uniform_(layer3->weight);
+        torch::nn::init::xavier_uniform_(layer3->weight);
         torch::nn::init::xavier_uniform_(layer4->weight);
-        torch::nn::init::constant_(layer4->bias, 0.01);
+        torch::nn::init::xavier_uniform_(layer5->weight);
+        torch::nn::init::xavier_uniform_(layer6->weight);
+        torch::nn::init::constant_(layer6->bias, 0.01);
     }
 
     torch::Tensor forward(torch::Tensor x) {
-        x = torch::relu(batchNorm1->forward(layer1->forward(x)));
-        x = torch::relu(batchNorm2->forward(layer2->forward(x)));
-//        x = torch::relu(batchNorm3->forward(layer3->forward(x)));
-        x = torch::sigmoid(layer4->forward(x));
+        x = torch::tanh(layer1->forward(x));
+        x = torch::tanh(layer2->forward(x));
+        x = torch::tanh(layer3->forward(x));
+        x = torch::tanh(layer4->forward(x));
+        x = torch::tanh(layer5->forward(x));
+        x = torch::sigmoid(layer6->forward(x));
         return x;
     }
 };
@@ -64,8 +67,9 @@ public:
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
             int epochsMax,
-            double batchFraction,
-            double learningRate
+            int batchSize,
+            double learningRate,
+            int seed
     );
 
     bool predict(
@@ -122,11 +126,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
         int epochsMax,
-        double batchFraction,
-        double learningRate
+        int batchSize,
+        double learningRate,
+        int seed
         ) {
 
-    torch::manual_seed(NUMBER_OF_THE_BEAST);
+    torch::manual_seed(seed);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -139,9 +144,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = 20;
+    const int nodes = xData.front().size();
     const int num_classes = 1;
-    const int batchSize = static_cast<int>(batchFraction * xData.size());
 
     m_net = new Net(input_size, nodes, num_classes);
 
@@ -282,15 +286,17 @@ bool CandidateClassifier::trainCandidateClassifier(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
         int epochsMax,
-        double batchFraction,
-        double learningRate
+        int batchSize,
+        double learningRate,
+        int seed
         ) {
     return d_ptr->trainCandidateClassifier(
             xData,
             yData,
             epochsMax,
-            batchFraction,
-            learningRate
+            batchSize,
+            learningRate,
+            seed
             );
 }
 

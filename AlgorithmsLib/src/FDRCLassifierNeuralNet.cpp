@@ -15,7 +15,7 @@
 
 FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 : m_epochs(-1)
-, m_batchFraction(-1.0)
+, m_batchSize(-1)
 , m_learningRate(-1.0)
 , m_minTopNMs2Ions(6)
 , m_isInit(false)
@@ -29,28 +29,23 @@ FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
 }
 
 Err FDRCLassifierNeuralNet::init(
-        int topNMs2Ions,
         int epochs,
         int baggingSize,
-        double batchFraction,
-        double learningRate,
-        const QPair<double, double> &scanTimeMinMax
+        int batchSize,
+        double learningRate
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(topNMs2Ions >= m_minTopNMs2Ions); ree;
     e = ErrorUtils::isTrue(epochs > 0); ree;
     e = ErrorUtils::isTrue(baggingSize >= 1); ree;
-    e = ErrorUtils::isTrue(batchFraction > 0 & batchFraction < 1 & !MathUtils::tZero(batchFraction)); ree;
+    e = ErrorUtils::isTrue(batchSize > 0); ree;
     e = ErrorUtils::isTrue(learningRate > 0 & learningRate < 1 & !MathUtils::tZero(learningRate)); ree;
 
-    m_topNMs2Ions = topNMs2Ions;
     m_epochs = epochs;
     m_baggingSize = baggingSize;
-    m_batchFraction = batchFraction;
+    m_batchSize = batchSize;
     m_learningRate = learningRate;
-    m_scanTimeMinMax = scanTimeMinMax;
 
     m_isInit = true;
 
@@ -268,46 +263,29 @@ namespace {
 
 }//namespace
 Err FDRCLassifierNeuralNet::exec(
-        const QVector<CandidateScores> &candidateScoresTargetsAndDecoys,
-        QVector<CandidateScores> *candidateScoreClassifier
+        const QVector<QVector<float>> &xData,
+        const QVector<float> &yData,
+        QVector<float> *meanPredictions
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_isInit); ree;
-    e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys); ree;
-    candidateScoreClassifier->clear();
-
-    QMap<QString, CandidateScores> keyVsScoredCandidateTargetsAndDecoys;
-    e = buildKeyVsScoredCandidates(
-            candidateScoresTargetsAndDecoys,
-            &keyVsScoredCandidateTargetsAndDecoys
-            ); ree;
-
-    QVector<QVector<float>> allDataVecs;
-    QVector<NeuralNetData> trainingData;
-    e = buildNeuralNetworkInput(
-            keyVsScoredCandidateTargetsAndDecoys,
-            m_topNMs2Ions,
-            m_scanTimeMinMax,
-            &trainingData
-    ); ree;
+    e = ErrorUtils::isNotEmpty(xData); ree;
 
     e = trainClassifier(
-            keyVsScoredCandidateTargetsAndDecoys,
-            &allDataVecs,
-            &trainingData
+            xData,
+            yData
             ); ree;
 
-    QVector<float> meanPredictions;
-    e = predictBaggedClassifiers(allDataVecs, &meanPredictions); ree;
+    e = predictBaggedClassifiers(xData, meanPredictions); ree;
 
-    e = recalculateQValsFromNeuralNetScore(
-        trainingData,
-        meanPredictions,
-        keyVsScoredCandidateTargetsAndDecoys.values().toVector(),
-        candidateScoreClassifier
-        ); ree;
+//    e = recalculateQValsFromNeuralNetScore(
+//        trainingData,
+//        meanPredictions,
+//        keyVsScoredCandidateTargetsAndDecoys.values().toVector(),
+//        candidateScoreClassifier
+//        ); ree;
 
     ERR_RETURN
 }
@@ -348,77 +326,55 @@ namespace {
 
 }//namespace
 Err FDRCLassifierNeuralNet::trainClassifier(
-        const QMap<QString, CandidateScores> &keyVsScoredCandidateCulled,
-        QVector<QVector<float>> *allDataVecs,
-        QVector<NeuralNetData> *trainingData
+        const QVector<QVector<float>> &xData,
+        const QVector<float> &yData
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(keyVsScoredCandidateCulled); ree;
-
-    QVector<float> yData;
-    e = buildNeuralNetworkNormalizedVectors(
-            *trainingData,
-            allDataVecs,
-            &yData
-            ); ree;
-
-    QVector<QVector<QVector<float>>> allTrainingVecsTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            *allDataVecs,
-            m_baggingSize,
-            &allTrainingVecsTranched
-            ); ree;
-
-    QVector<QVector<float>> yDataTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            yData,
-            m_baggingSize,
-            &yDataTranched
-            ); ree;
+    e = ErrorUtils::isNotEmpty(xData); ree;
+    e = ErrorUtils::isEqual(xData.size(), yData.size());
 
     e = trainBaggedNeuralNets(
-            allTrainingVecsTranched,
-            yDataTranched
+            xData,
+            yData
             ); ree;
 
     ERR_RETURN
 }
 
 Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
-        const QVector<QVector<QVector<float>>> &trainingDataVecsTranched,
-        const QVector<QVector<float>> &yTrainingDataTranched
+        const QVector<QVector<float>> &xData,
+        const QVector<float> &yData
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(trainingDataVecsTranched);
-    e = ErrorUtils::isEqual(trainingDataVecsTranched.size(), yTrainingDataTranched.size()); ree;
+    e = ErrorUtils::isNotEmpty(xData);
+    e = ErrorUtils::isEqual(xData.size(), yData.size()); ree;
 
-    for (int tranche = 0; tranche < trainingDataVecsTranched.size(); tranche++) {
+    for (int bag = 0; bag < m_baggingSize; bag++) {
 
-        const QVector<QVector<float>> &trainingDataVecs = trainingDataVecsTranched.at(tranche);
-        const QVector<float> &yData = yTrainingDataTranched.at(tranche);
-        const int firstRowSize = trainingDataVecs.front().size();
-
-        qDebug() << "Tranche" << tranche;
-        qDebug() << "X Size" << trainingDataVecs.size();
-        qDebug() << "X input size" << firstRowSize;
-        qDebug() << "Y Size" << yData.size();
-        qDebug() << "X rows are uniform" << std::all_of(
-                trainingDataVecs.begin(),
-                trainingDataVecs.end(),
-                [firstRowSize](const QVector<float> &f){return f.size() == firstRowSize;}
-                );
+//        const int firstRowSize = trainingDataVecs.front().size();
+//
+//        qDebug() << "Tranche" << tranche;
+//        qDebug() << "X Size" << trainingDataVecs.size();
+//        qDebug() << "X input size" << firstRowSize;
+//        qDebug() << "Y Size" << yData.size();
+//        qDebug() << "X rows are uniform" << std::all_of(
+//                trainingDataVecs.begin(),
+//                trainingDataVecs.end(),
+//                [firstRowSize](const QVector<float> &f){return f.size() == firstRowSize;}
+//                );
 
         auto *candidateClassifier = new CandidateClassifier();
         bool trainingCompletedNoErrors = candidateClassifier->trainCandidateClassifier(
-                trainingDataVecs,
+                xData,
                 yData,
                 m_epochs,
-                m_batchFraction,
-                m_learningRate
+                m_batchSize,
+                m_learningRate,
+                bag
         );
         e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
 

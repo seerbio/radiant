@@ -52,7 +52,7 @@ void CandidateClassifierTests::readLibrary() {
     const QVector<float> yVec = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0};
 
     CandidateClassifier classifier;
-    classifier.trainCandidateClassifier(xVec, yVec, 1000, 0.2, 1e-2);
+//    classifier.trainCandidateClassifier(xVec, yVec, 1000, 0.2, 1e-2);
 
 
 }

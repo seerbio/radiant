@@ -14,7 +14,6 @@
 
 KarnnNeuralNet::KarnnNeuralNet()
 : m_regularization(0.000001)
-, m_threads(ParallelUtils::numberOfAvailableSystemProcessors())
 {}
 
 Err KarnnNeuralNet::init(
