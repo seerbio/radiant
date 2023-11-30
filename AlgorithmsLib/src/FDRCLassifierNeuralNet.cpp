@@ -98,7 +98,7 @@ namespace {
             trainingData->push_back(td);
         }
 
-#define WRITE_NN_TRAIN_DATA
+//#define WRITE_NN_TRAIN_DATA
 #ifdef WRITE_NN_TRAIN_DATA
         const QString dataFilePath = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML.prq.nnTrainingData";
         e = ParquetReader::write(*trainingData, dataFilePath); ree;

@@ -20,14 +20,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/ConvexOptimizer.cpp
-        src/KarnnNeuralNet.cpp
         src/NearestNeighborsSearch.cpp
         src/NeuralNetModel.cpp
         )
 
 SET(HEADER_FILES
         src/ConvexOptimizer.h
-        src/KarnnNeuralNet.h
         src/NearestNeighborsSearch.h
         src/NeuralNetModel.h
         )
@@ -35,8 +33,6 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        src/KarnnNeuralNet.cpp
-        src/KarnnNeuralNet.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
@@ -52,7 +48,6 @@ INCLUDE_DIRECTORIES(
         "${JSON_DIRECTORY}"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${NANOFLANN_DIRECTORY}"
-        "${CRANIUM_DIRECTORY}"
 )
 
 FIND_PACKAGE(Qt5 COMPONENTS

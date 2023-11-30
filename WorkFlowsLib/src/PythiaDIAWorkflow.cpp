@@ -13,7 +13,6 @@
 #include "FastaFileToPeptidesListWorkFlow.h"
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
-#include "KarnnNeuralNet.h"
 //#include "FeatureFinderHillBuilder.h"
 #include "MathUtils.h"
 #include "MS2ChargeDeconvolvotron.h"
