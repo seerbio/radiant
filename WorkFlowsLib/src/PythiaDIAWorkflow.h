@@ -20,8 +20,15 @@
 
 using namespace Error;
 
+struct KarnnNNTarget {
+    QString seq;
+    float nnScore = 0.0;
+    bool isDecoy = false;
+    QVector<double> scoreVec;
+    int index = -1;
+};
+
 class MsReaderParquet;
-class ScoredCandidate;
 class TargetDecoyCandidatePairScoretron;
 
 

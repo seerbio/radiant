@@ -1065,17 +1065,32 @@ Err ScoreOverseer::buildScores(
 
     candidateScores->allignedMaxIndexesCount = allignedMaxIndexesCount;
 
+    const int top6 = 6;
     candidateScores->cosineSimSum100 = std::accumulate(
             candidateScores->cosineSimToAnchorVec.begin(),
-            candidateScores->cosineSimToAnchorVec.end(),
+            candidateScores->cosineSimToAnchorVec.begin() + top6,
             0.0
             );
 
-    candidateScores->cosineSimSum45
-            = std::accumulate(cosineSimsIndividual45.begin(), cosineSimsIndividual45.end(), 0.0);
+    candidateScores->cosineSimSum45 = std::accumulate(
+            cosineSimsIndividual45.begin(),
+            cosineSimsIndividual45.begin() + top6,
+            0.0
+            );
 
-    candidateScores->cosineSimSum20
-            = std::accumulate(cosineSimsIndividual20.begin(), cosineSimsIndividual20.end(), 0.0);
+    candidateScores->cosineSimSum20 = std::accumulate(
+            cosineSimsIndividual20.begin(),
+            cosineSimsIndividual20.begin() + top6,
+            0.0
+            );
+
+    if (candidateScores->cosineSimToAnchorVec.size() > top6) {
+        candidateScores->cosineSimSumBottom6 = std::accumulate(
+                candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
+                candidateScores->cosineSimToAnchorVec.end(),
+                0.0
+        );
+    }
 
     candidateScores->charge = targetDecoyCandidatePair->charge();
     candidateScores->mass = targetDecoyCandidatePair->mass();
