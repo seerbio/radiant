@@ -807,78 +807,6 @@ namespace {
         ERR_RETURN
     }
 
-    QVector<double> calculatePeakShapeRatios(const Eigen::VectorX<double> &vec) {
-
-        const Eigen::VectorX<double> vecTrimmed = EigenUtils::trimVector(vec);
-        const int segmentSize = std::round(vecTrimmed.size() / 3.0);
-
-        const double seg1Sum = vecTrimmed.segment(0, segmentSize).sum();
-        const double seg2Sum = vecTrimmed.segment(segmentSize, segmentSize).sum();
-        const double seg3Sum = vecTrimmed.segment(segmentSize * 2, segmentSize).sum();
-
-        return {
-                seg1Sum / seg2Sum,
-                seg3Sum / seg2Sum,
-                seg1Sum / std::max(seg3Sum, std::numeric_limits<double>::min())
-        };
-    }
-
-    Err buildRTreeData(
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
-            std::vector<rTreePoint> *cloudLoader
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
-
-        for (auto it = mzHashedVsXICPoints100.begin(); it != mzHashedVsXICPoints100.end(); it++) {
-
-            const MzHashed mzHashed = it.key();
-            const auto mz = MathUtils::unHashDecimal<double>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const XICPoints &xicPoints = it.value();
-
-            const QMap<ScanNumber, ScanPoints> &frame = xicPoints.scanNumbersVsScanPoints;
-
-            for (auto itt = frame.begin(); itt != frame.end(); itt++) {
-
-                const ScanNumber scanNumber = itt.key();
-                const ScanPoints &scanPoints = itt.value();
-
-                const auto loadLogic = [scanNumber, mz](const ScanPoint &sp){
-                    const double ppmDiffAbs = std::abs(1e6 * (sp.x() - mz) / mz);
-                    const rTreeCoor coor(ppmDiffAbs, mz);
-                    const QPair<ScanNumber, ScanPoint> val(scanNumber, sp);
-                    return rTreePoint(coor, val);
-                };
-
-                std::transform(
-                        scanPoints.begin(),
-                        scanPoints.end(),
-                        std::back_inserter(*cloudLoader),
-                        loadLogic
-                );
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    QMap<MzHashed, XICPoints> rebuildMzHashedVsXICPoints(const std::vector<rTreePoint> &rTreeSearchResult) {
-
-        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
-
-        for (const rTreePoint &rtp : rTreeSearchResult) {
-            const double mz = rtp.first.get<1>();
-            const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QPair<ScanNumber, ScanPoint> val = rtp.second;
-            mzHashedVsXICPoints[mzHashed].scanNumbersVsScanPoints[val.first].push_back(val.second);
-            mzHashedVsXICPoints[mzHashed].scanNumbersVsIntensityVals[val.first] += val.second.y();
-        }
-
-        return mzHashedVsXICPoints;
-    }
-
     Err buildTightPPMToleranceData(
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             double ppmTol100,
@@ -890,40 +818,63 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
 
-        std::vector<rTreePoint> cloudLoader;
-        e = buildRTreeData(mzHashedVsXICPoints100, &cloudLoader); ree;
+        const double ppmTight1 = ppmTol100 * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION;
+        const double ppmTight2 = ppmTol100 * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION;
 
-        const int maxElements = 16;
-        RTree rTreeTight(cloudLoader, bgi::dynamic_quadratic(maxElements));
+        for (auto it = mzHashedVsXICPoints100.begin(); it != mzHashedVsXICPoints100.end(); it++) {
 
-        const auto mzMin = MathUtils::unHashDecimal<double>(
-                mzHashedVsXICPoints100.firstKey(),
-                S_GLOBAL_SETTINGS.HASHING_PRECISION
-                );
+            const MzHashed mzHashed = it.key();
+            const XICPoints &xicPoints = it.value();
+            const QMap<ScanNumber, ScanPoints> &scanNumbersVsScanPoints = xicPoints.scanNumbersVsScanPoints;
 
-        const auto mzMax = MathUtils::unHashDecimal<double>(
-                mzHashedVsXICPoints100.lastKey(),
-                S_GLOBAL_SETTINGS.HASHING_PRECISION
-        );
+            const auto mz = MathUtils::unHashDecimal<double>(
+                    mzHashed,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
 
-        const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
-        const rTreeSearchBox queryBox45(
-                rTreeCoor(0.0, mzMin),
-                rTreeCoor(ppmTol45, mzMax)
-        );
-        std::vector<rTreePoint> rTreeSearchResult45;
-        rTreeTight.query(bgi::intersects(queryBox45), std::back_inserter(rTreeSearchResult45));
-        *mzHashedVsXICPoints45 = rebuildMzHashedVsXICPoints(rTreeSearchResult45);
+            XICPoints xicPointsTight1New;
+            XICPoints xicPointsTight2New;
+            for (auto itt = scanNumbersVsScanPoints.begin(); itt != scanNumbersVsScanPoints.end(); itt++) {
+
+                const ScanNumber scanNumber = itt.key();
+                const ScanPoints &scanPoints = itt.value();
+
+                for (const ScanPoint &sp : scanPoints) {
+                    const double ppmDiff = std::abs(1e6 * (sp.x() - mz)) / mz;
+                    if (ppmDiff <= ppmTight1) {
+                        xicPointsTight1New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
+                        xicPointsTight1New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+
+                        if (ppmDiff <= ppmTight2) {
+                            xicPointsTight2New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
+                            xicPointsTight2New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+                        }
+                    }
+                }
+            }
+            mzHashedVsXICPoints45->insert(mzHashed, xicPointsTight1New);
+            mzHashedVsXICPoints20->insert(mzHashed, xicPointsTight2New);
+        }
 
 
-        const double ppmTol20 = S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol100;
-        const rTreeSearchBox queryBox20(
-                rTreeCoor(0.0, mzMin),
-                rTreeCoor(ppmTol20, mzMax)
-        );
-        std::vector<rTreePoint> rTreeSearchResult20;
-        rTreeTight.query(bgi::intersects(queryBox20), std::back_inserter(rTreeSearchResult20));
-        *mzHashedVsXICPoints20 = rebuildMzHashedVsXICPoints(rTreeSearchResult20);
+//        const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
+//        const rTreeSearchBox queryBox45(
+//                rTreeCoor(0.0, mzMin),
+//                rTreeCoor(ppmTol45, mzMax)
+//        );
+//        std::vector<rTreePoint> rTreeSearchResult45;
+//        rTreeTight.query(bgi::intersects(queryBox45), std::back_inserter(rTreeSearchResult45));
+//        *mzHashedVsXICPoints45 = rebuildMzHashedVsXICPoints(rTreeSearchResult45);
+//
+//
+//        const double ppmTol20 = S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol100;
+//        const rTreeSearchBox queryBox20(
+//                rTreeCoor(0.0, mzMin),
+//                rTreeCoor(ppmTol20, mzMax)
+//        );
+//        std::vector<rTreePoint> rTreeSearchResult20;
+//        rTreeTight.query(bgi::intersects(queryBox20), std::back_inserter(rTreeSearchResult20));
+//        *mzHashedVsXICPoints20 = rebuildMzHashedVsXICPoints(rTreeSearchResult20);
 
         ERR_RETURN
     }
@@ -952,6 +903,9 @@ Err ScoreOverseer::buildScores(
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
     e = ErrorUtils::isTrue(msFrame->isValid()); ree;
 
+    QElapsedTimer et;
+    et.start();
+
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
     e = buildTightPPMToleranceData(
@@ -961,6 +915,8 @@ Err ScoreOverseer::buildScores(
             &mzHashedVsXICPoints20
             ); ree;
 
+//    qDebug() << "1" << et.nsecsElapsed() << et.restart();
+
     e = d_ptr->initMatricies(
             ms2IonsTheoretical,
             mzHashedVsXICPoints100,
@@ -969,6 +925,8 @@ Err ScoreOverseer::buildScores(
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows
             ); ree;
+
+//    qDebug() << "2" << et.nsecsElapsed() << et.restart();
 
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
@@ -989,6 +947,8 @@ Err ScoreOverseer::buildScores(
             &allignedMaxIndexesCount
     ); ree;
 
+//    qDebug() << "3" << et.nsecsElapsed() << et.restart();
+
     if (bestAnchorColumn.rows() < 1) {
         ERR_RETURN
     }
@@ -1002,12 +962,16 @@ Err ScoreOverseer::buildScores(
             &candidateScores->cosineSim100MS1
             ); ree;
 
+//    qDebug() << "4" << et.nsecsElapsed() << et.restart();
+
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex),
             ms2IonsTheoretical,
             &candidateScores->cosineSimSpectrum,
             &candidateScores->klDivSpectrum
             ); ree;
+
+//    qDebug() << "5" << et.nsecsElapsed() << et.restart();
 
     e = calculateEmpiricalMzStats(
             candidateScores->cosineSimToAnchorVec,
@@ -1019,6 +983,8 @@ Err ScoreOverseer::buildScores(
             &candidateScores->mzSearchedVec,
             &candidateScores->theoIntensityVec
             );
+
+//    qDebug() << "6" << et.nsecsElapsed() << et.restart();
 
     QVector<double> cosineSimsIndividual45;
     double unused1;
@@ -1041,6 +1007,8 @@ Err ScoreOverseer::buildScores(
             &allignedMaxIndexesCountUnused
             ); ree;
 
+//    qDebug() << "7" << et.nsecsElapsed() << et.restart();
+
     QVector<double> cosineSimsIndividual20;
     e = calcBestCosineSimSum(
             d_ptr->m_intensityMatrix20,
@@ -1056,6 +1024,8 @@ Err ScoreOverseer::buildScores(
             &unused3,
             &allignedMaxIndexesCountUnused
             ); ree;
+
+//    qDebug() << "8" << et.nsecsElapsed() << et.restart();
 
     candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
 
