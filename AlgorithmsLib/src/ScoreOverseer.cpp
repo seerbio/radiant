@@ -856,26 +856,6 @@ namespace {
             mzHashedVsXICPoints20->insert(mzHashed, xicPointsTight2New);
         }
 
-
-//        const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
-//        const rTreeSearchBox queryBox45(
-//                rTreeCoor(0.0, mzMin),
-//                rTreeCoor(ppmTol45, mzMax)
-//        );
-//        std::vector<rTreePoint> rTreeSearchResult45;
-//        rTreeTight.query(bgi::intersects(queryBox45), std::back_inserter(rTreeSearchResult45));
-//        *mzHashedVsXICPoints45 = rebuildMzHashedVsXICPoints(rTreeSearchResult45);
-//
-//
-//        const double ppmTol20 = S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol100;
-//        const rTreeSearchBox queryBox20(
-//                rTreeCoor(0.0, mzMin),
-//                rTreeCoor(ppmTol20, mzMax)
-//        );
-//        std::vector<rTreePoint> rTreeSearchResult20;
-//        rTreeTight.query(bgi::intersects(queryBox20), std::back_inserter(rTreeSearchResult20));
-//        *mzHashedVsXICPoints20 = rebuildMzHashedVsXICPoints(rTreeSearchResult20);
-
         ERR_RETURN
     }
 
