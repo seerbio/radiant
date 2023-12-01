@@ -103,7 +103,7 @@ namespace {
             const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
             QVector<double> intensityVals = ParallelUtils::convertMapToVector(
-                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals,
+                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals(),
                     rows
             );
 
@@ -742,7 +742,7 @@ namespace {
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals();
 
         for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
@@ -843,11 +843,11 @@ namespace {
                     const double ppmDiff = std::abs(1e6 * (sp.x() - mz)) / mz;
                     if (ppmDiff <= ppmTight1) {
                         xicPointsTight1New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
-                        xicPointsTight1New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+//                        xicPointsTight1New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
 
                         if (ppmDiff <= ppmTight2) {
                             xicPointsTight2New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
-                            xicPointsTight2New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+//                            xicPointsTight2New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
                         }
                     }
                 }
