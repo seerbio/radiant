@@ -1606,104 +1606,126 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     candidateScoresTargetsAndDecoysShuffled.append(candidateScoresTargets);
     candidateScoresTargetsAndDecoysShuffled.append(candidateScoresDecoys);
 
-    std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-    std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
-
-    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size()
-             << "total" << candidateScoresTargetsAndDecoysShuffled.size();
-
-    QVector<KarnnNNTarget> karnnNNTargets;
-    for (int i = 0; i < candidateScoresTargetsAndDecoysShuffled.size(); i++) {
-        const CandidateScores &cs = candidateScoresTargetsAndDecoysShuffled.at(i);
-        KarnnNNTarget karnnNnTarget;
-        karnnNnTarget.seq = cs.peptideStringWithMods;
-        karnnNnTarget.isDecoy = cs.isDecoy;
-        karnnNnTarget.index = i;
-
-        e = FDRCLassifierNeuralNet::buildScoreVector(
-                cs,
-                true,
-                true,
-                m_pythiaParameters.topNMs2Ions,
-                scanTimeMinMax,
-                &karnnNnTarget.scoreVec
-                ); ree;
-        karnnNNTargets.push_back(karnnNnTarget);
-    }
-
-    QVector<KarnnNNTarget> karnnNNTargetsNorm;
-    e = minMaxScaleScores(karnnNNTargets, &karnnNNTargetsNorm); ree;
-
-    const int baggingSize = 12;
-    const int hiddenLayers = 5;
-    const float learningRate = 0.003;
-    const int epochs = 1;
-
-    const int batchSize = std::min(50, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
-    const int maxIters = 1;
-    qDebug() << "Batch Size:" << batchSize << "MaxIters:" << maxIters;
-
-    QVector<QVector<float>> xData;
-    QVector<float> yData;
-    for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-        xData.push_back(QVector<float>(kt.scoreVec.begin(), kt.scoreVec.end()));
-        yData.push_back(kt.isDecoy ? 1.0 : 0.0);
-    }
-
-    int cycles = 0;
-    int counter = 0;
-
-    candidateScoreClassifier->clear();
-
-    FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
-    e = fdrcLassifierNeuralNet.init(
-            epochs,
-            baggingSize,
-            batchSize,
-            learningRate
-            ); ree;
-
-    QVector<float> predictions;
-    e = fdrcLassifierNeuralNet.exec(xData, yData, &predictions); ree;
-
-    for (int i = 0; i < yData.size(); i++) {
-        karnnNNTargetsNorm[i].nnScore = predictions.at(i);
-    }
-
     std::sort(
-            karnnNNTargetsNorm.begin(),
-            karnnNNTargetsNorm.end(),
-            [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
-    );
+            candidateScoresTargetsAndDecoysShuffled.rbegin(),
+            candidateScoresTargetsAndDecoysShuffled.rend(),
+            [](const CandidateScores &l, const CandidateScores &r){return l.discriminateScore < r.discriminateScore;}
+            );
 
-    counter = 0;
-    int falsePositives = 0;
-    for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+    int counter = 0;
+    int decoyCounter = 0;
+    for (const CandidateScores &cs : candidateScoresTargetsAndDecoysShuffled) {
 
-        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
-        candidateScoresNew.classifierScore = rp.nnScore;
-        candidateScoreClassifier->push_back(candidateScoresNew);
-
-        ++counter;
-
-        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
-            if (!reportDecoys) {
-                break;
-            }
-            else {
-                counter--;
-                continue;
-            }
+        if (cs.isDecoy) {
+            decoyCounter++;
         }
 
-        if (rp.isDecoy){
-            falsePositives++;
+        const double qVal = static_cast<double>(decoyCounter) / ++counter;
+        if (qVal > 0.01) {
+            break;
         }
+
+        candidateScoreClassifier->push_back(cs);
     }
 
-    qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
-
-    e = setQValueForCandidates(candidateScoreClassifier); ree
+//    std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+//    std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
+//
+//    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size()
+//             << "total" << candidateScoresTargetsAndDecoysShuffled.size();
+//
+//    QVector<KarnnNNTarget> karnnNNTargets;
+//    for (int i = 0; i < candidateScoresTargetsAndDecoysShuffled.size(); i++) {
+//        const CandidateScores &cs = candidateScoresTargetsAndDecoysShuffled.at(i);
+//        KarnnNNTarget karnnNnTarget;
+//        karnnNnTarget.seq = cs.peptideStringWithMods;
+//        karnnNnTarget.isDecoy = cs.isDecoy;
+//        karnnNnTarget.index = i;
+//
+//        e = FDRCLassifierNeuralNet::buildScoreVector(
+//                cs,
+//                true,
+//                true,
+//                m_pythiaParameters.topNMs2Ions,
+//                scanTimeMinMax,
+//                &karnnNnTarget.scoreVec
+//                ); ree;
+//        karnnNNTargets.push_back(karnnNnTarget);
+//    }
+//
+//    QVector<KarnnNNTarget> karnnNNTargetsNorm;
+//    e = minMaxScaleScores(karnnNNTargets, &karnnNNTargetsNorm); ree;
+//
+//    const int baggingSize = 12;
+//    const int hiddenLayers = 5;
+//    const float learningRate = 0.003;
+//    const int epochs = 1;
+//
+//    const int batchSize = std::min(50, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+//    const int maxIters = 1;
+//    qDebug() << "Batch Size:" << batchSize << "MaxIters:" << maxIters;
+//
+//    QVector<QVector<float>> xData;
+//    QVector<float> yData;
+//    for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+//        xData.push_back(QVector<float>(kt.scoreVec.begin(), kt.scoreVec.end()));
+//        yData.push_back(kt.isDecoy ? 1.0 : 0.0);
+//    }
+//
+//    int cycles = 0;
+//    int counter = 0;
+//
+//    candidateScoreClassifier->clear();
+//
+//    FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
+//    e = fdrcLassifierNeuralNet.init(
+//            epochs,
+//            baggingSize,
+//            batchSize,
+//            learningRate
+//            ); ree;
+//
+//    QVector<float> predictions;
+//    e = fdrcLassifierNeuralNet.exec(xData, yData, &predictions); ree;
+//
+//    for (int i = 0; i < yData.size(); i++) {
+//        karnnNNTargetsNorm[i].nnScore = predictions.at(i);
+//    }
+//
+//    std::sort(
+//            karnnNNTargetsNorm.begin(),
+//            karnnNNTargetsNorm.end(),
+//            [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
+//    );
+//
+//    counter = 0;
+//    int falsePositives = 0;
+//    for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
+//
+//        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
+//        candidateScoresNew.classifierScore = rp.nnScore;
+//        candidateScoreClassifier->push_back(candidateScoresNew);
+//
+//        ++counter;
+//
+//        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.0075) {
+//            if (!reportDecoys) {
+//                break;
+//            }
+//            else {
+//                counter--;
+//                continue;
+//            }
+//        }
+//
+//        if (rp.isDecoy){
+//            falsePositives++;
+//        }
+//    }
+//
+//    qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+//
+//    e = setQValueForCandidates(candidateScoreClassifier); ree
 
     ERR_RETURN
 }
