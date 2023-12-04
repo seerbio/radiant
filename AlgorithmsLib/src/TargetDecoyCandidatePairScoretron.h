@@ -24,7 +24,7 @@ class ALGORITHMSLIB_EXPORTS TargetDecoyCandidatePairScoretron {
 
 public:
 
-    TargetDecoyCandidatePairScoretron() = default;
+    TargetDecoyCandidatePairScoretron();
     ~TargetDecoyCandidatePairScoretron() = default;
 
     Err init(

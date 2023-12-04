@@ -491,12 +491,15 @@ namespace {
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
+            bool subtractShadows,
             QVector<double> *cosineSimsIndividualIntegration,
             double *bestCosineSimSumIntegration,
             QVector<double> *bestIntensitiesIndividual,
             Eigen::VectorX<double> *bestAnchorColumn,
             FrameIndex *frameIndexIntensityApexIntegration,
-            int *allignedMaxIndexesCount
+            int *allignedMaxIndexesCount,
+            QVector<double> *cosineSimsShadowIndividual,
+            QVector<double> *shadowsIntensityRatioPeakIntVec
     ) {
 
         ERR_INIT
@@ -541,8 +544,32 @@ namespace {
             intensityMatrixIntegratedLimitsNoInterferenceShadows
                 = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimitsNoInterferenceShadows);
 
-            intensityMatrixIntegratedLimitsNoInterference -= intensityMatrixIntegratedLimitsNoInterferenceShadows;
-            EigenUtils::thresholdMatrix(0.0, &intensityMatrixIntegratedLimitsNoInterference);
+            if (subtractShadows) {
+                intensityMatrixIntegratedLimitsNoInterference -= intensityMatrixIntegratedLimitsNoInterferenceShadows;
+                EigenUtils::thresholdMatrix(0.0, &intensityMatrixIntegratedLimitsNoInterference);
+            }
+
+            for (int col = 0; col < intensityMatrixIntegratedLimitsNoInterference.cols(); col++) {
+
+                const Eigen::VectorX<double> &mzPeak = intensityMatrixIntegratedLimitsNoInterference.col(col);
+                const Eigen::VectorX<double> &mzPeakShadow = intensityMatrixIntegratedLimitsNoInterferenceShadows.col(col);
+
+                const double cosineSimToShadow = EigenUtils::cosineSimilarity(
+                        mzPeak,
+                        mzPeakShadow
+                        );
+
+                cosineSimsShadowIndividual->push_back(cosineSimToShadow);
+
+                if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
+                    const double ratio = mzPeak.maxCoeff() / mzPeakShadow.maxCoeff();
+                    shadowsIntensityRatioPeakIntVec->push_back(ratio);
+                }
+                else{
+                    shadowsIntensityRatioPeakIntVec->push_back(0.0);
+                }
+            }
+
         }
 
         if (MathUtils::tZero(intensityMatrixIntegratedLimitsNoInterference.maxCoeff())) {
@@ -572,8 +599,11 @@ namespace {
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
+            bool subtractShadows,
             QVector<double> *cosineSimsIndividual,
             QVector<double> *intensityFoundMaxVec,
+            QVector<double> *cosineSimsShadowIndividual,
+            QVector<double> *shadowsIntensityRatioVec,
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
             Eigen::VectorX<double> *bestAnchorColumn,
@@ -592,6 +622,8 @@ namespace {
 
             QVector<double> cosineSimsIndividualIntegration;
             QVector<double> intensitiesIndividual;
+            QVector<double> cosineSimsShadowIndividualPeakIntVec;
+            QVector<double> shadowsIntensityRatioPeakIntVec;
             double bestCosineSimSumIntegration;
             FrameIndex frameIndexIntensityApexIntegration;
             int allignedMaxIndexesCountTemp;
@@ -602,12 +634,15 @@ namespace {
                     summedMatToVec,
                     topNMs2FragPeaks,
                     cosineSimToAnchorThreshold,
+                    subtractShadows,
                     &cosineSimsIndividualIntegration,
                     &bestCosineSimSumIntegration,
                     &intensitiesIndividual,
                     bestAnchorColumn,
                     &frameIndexIntensityApexIntegration,
-                    &allignedMaxIndexesCountTemp
+                    &allignedMaxIndexesCountTemp,
+                    &cosineSimsShadowIndividualPeakIntVec,
+                    &shadowsIntensityRatioPeakIntVec
             ); ree;
 
             if (bestCosineSimSumIntegration > bestCosineSimSum) {
@@ -617,6 +652,8 @@ namespace {
                 *bestPeakIntegrationIndexes = pii;
                 *intensityFoundMaxVec = intensitiesIndividual;
                 *allignedMaxIndexesCount = allignedMaxIndexesCountTemp;
+                *cosineSimsShadowIndividual = cosineSimsShadowIndividualPeakIntVec;
+                *shadowsIntensityRatioVec = shadowsIntensityRatioPeakIntVec;
             }
 
         }
@@ -868,6 +905,7 @@ Err ScoreOverseer::buildScores(
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
         double scanTimePredicted,
+        bool subtractShadows,
         MsFrame *msFrame,
         CandidateScores *candidateScores
 ) {
@@ -919,13 +957,22 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix100.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &candidateScores->cosineSimToAnchorVec,
             &candidateScores->intensityFoundMaxVec,
+            &candidateScores->cosineSimShadowsToAnchorVec,
+            &candidateScores->shadowsIntensityRatioVec,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
             &bestAnchorColumn,
             &allignedMaxIndexesCount
     ); ree;
+
+    candidateScores->shadowsCosineSimSum = std::accumulate(
+            candidateScores->cosineSimShadowsToAnchorVec.begin(),
+            candidateScores->cosineSimShadowsToAnchorVec.end(),
+            0.0
+            );
 
 //    qDebug() << "3" << et.nsecsElapsed() << et.restart();
 
@@ -971,6 +1018,8 @@ Err ScoreOverseer::buildScores(
     Eigen::VectorX<double> unused2;
     QVector<double> unusedIntensity;
     int allignedMaxIndexesCountUnused;
+    QVector<double> unusedShadows;
+    QVector<double> unusedShadowsRatios;
     FrameIndex unused3;
     e = calcBestCosineSimSum(
             d_ptr->m_intensityMatrix45,
@@ -979,12 +1028,15 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix45.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &cosineSimsIndividual45,
             &unused1,
             &unusedIntensity,
             &unused2,
             &unused3,
-            &allignedMaxIndexesCountUnused
+            &allignedMaxIndexesCountUnused,
+            &unusedShadows,
+            &unusedShadowsRatios
             ); ree;
 
 //    qDebug() << "7" << et.nsecsElapsed() << et.restart();
@@ -997,12 +1049,15 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix20.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &cosineSimsIndividual20,
             &unused1,
             &unusedIntensity,
             &unused2,
             &unused3,
-            &allignedMaxIndexesCountUnused
+            &allignedMaxIndexesCountUnused,
+            &unusedShadows,
+            &unusedShadowsRatios
             ); ree;
 
 //    qDebug() << "8" << et.nsecsElapsed() << et.restart();

@@ -150,6 +150,8 @@ struct PythiaParameters{
     int minFoundMzPeaks = -1;
 
     double cosineSimToAnchorThreshold = 0.9;
+    bool subtractShadows = true;
+
     double scanTimeWindowMinutes = 5.0;
     double ms2ExtractionWidthPPM = -1.0;
     int trancheSizeMax = 5e4;

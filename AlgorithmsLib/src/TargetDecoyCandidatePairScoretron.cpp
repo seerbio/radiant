@@ -14,6 +14,14 @@
 
 #include <iostream>
 
+
+TargetDecoyCandidatePairScoretron::TargetDecoyCandidatePairScoretron()
+: m_diaTargetFrames(nullptr)
+, m_msReaderPointerAcc(nullptr)
+, m_targetDecoyCandidatePairManager(nullptr)
+{}
+
+
 class TargetDecoyPairParallelInput {
 
 public:
@@ -26,7 +34,6 @@ public:
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
 };
-
 
 Err TargetDecoyCandidatePairScoretron::init(
         const PythiaParameters &pythiaParameters,
@@ -316,7 +323,7 @@ namespace {
             }
         }
 
-        if (pi.pythiaParameters.verbosity >= 1) {
+        if (pi.pythiaParameters.verbosity > 1) {
             qDebug() << "Target key processed in" << pi.msInfoScanKey << et.elapsed() << "mSec";
         }
         

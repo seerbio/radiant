@@ -302,6 +302,7 @@ Err CandidateScorertron::calculateScores(
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows,
             scanTimePredicted,
+            m_pythiaParameters.subtractShadows,
             msFrame,
             candidateScores
             ); ree;
