@@ -495,17 +495,17 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
         const double totalIntensityLog = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
         scores.push_back(totalIntensityLog);
 
-        const QVector<double> cosineSimShadowsToAnchorVec
-                = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, theoMzIonsSize);
-        scores.append(cosineSimShadowsToAnchorVec);
-
-        scores.push_back(candidateScores.shadowsCosineSimSum);
-
-        const QVector<double> shadowsIntensityRatioVec
-                = extractScoresFromVecFeatures(candidateScores.shadowsIntensityRatioVec, theoMzIonsSize);
-        scores.append(shadowsIntensityRatioVec);
-
         if (useNeuralNetworkScores) {
+
+            const QVector<double> cosineSimShadowsToAnchorVec
+                    = extractScoresFromVecFeatures(candidateScores.cosineSimShadowsToAnchorVec, theoMzIonsSize);
+            scores.append(cosineSimShadowsToAnchorVec);
+
+            scores.push_back(candidateScores.shadowsCosineSimSum);
+
+            const QVector<double> shadowsIntensityRatioVec
+                    = extractScoresFromVecFeatures(candidateScores.shadowsIntensityRatioVec, theoMzIonsSize);
+            scores.append(shadowsIntensityRatioVec);
 
             for (double intzFound : intensityFoundMaxVec) {
                 scores.push_back(intzFound / totalIntensity);
