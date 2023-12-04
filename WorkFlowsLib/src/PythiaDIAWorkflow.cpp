@@ -451,7 +451,7 @@ Err PythiaDIAWorkflow::buildCalibration(
             ); ree;
 
     const double sizePerTranche = 5000.0;
-    const int trancheSize = static_cast<int>(scoredTargetDecoyPointers.size() / sizePerTranche);
+    const int trancheSize = std::max(static_cast<int>(scoredTargetDecoyPointers.size() / sizePerTranche), 1);
 
     QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
     e = ParallelUtils::trancheVectorForParallelization(
