@@ -527,31 +527,6 @@ Err PythiaDIAWorkflow::buildCalibration(
     }
 #endif
 
-//    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFDRThresholded;
-//    e = FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
-//            scoredTargetDecoyPointers,
-//            fallBackFDR,
-//            &scoredTargetDecoyPointersFDRThresholded
-//        ); ree;
-//
-//    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-//    e = buildMsCalibrationReaderRows(
-//            scoredTargetDecoyPointersFDRThresholded,
-//            &msCalibrationReaderRows
-//            ); ree;
-//
-////#define WRITE_CALIBRATION
-//#ifdef WRITE_CALIBRATION
-//    const QString resultsFilePath = "testing" + S_GLOBAL_SETTINGS.DOT_PYTHIA_CAL_FILE_EXTENSION;
-//    e = ParquetReader::write(msCalibrationReaderRows, resultsFilePath); ree;
-//    e = m_msCalibratomatic.init(resultsFilePath); ree;
-//#else
-//    e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
-//#endif
-//
-//    m_pythiaParameters.scanTimeWindowMinutes = m_msCalibratomatic.scanTimeStDev() * 2.0;
-//    e = targetDecoyCandidatePairScoretron->setPythiaParameters(m_pythiaParameters); ree;
-
     ERR_RETURN
 }
 
@@ -1072,7 +1047,7 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
     qDebug() << "Using top:" << topNMs2IonsOptimization << "fragments for optimization";
 
-    const double selectionFractionValue = 0.05;
+    const double selectionFractionValue = 0.01;
 
     QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
 
@@ -1144,13 +1119,11 @@ Err PythiaDIAWorkflow::optimizeParameters(TargetDecoyCandidatePairScoretron *tar
 
         DOEResult res;
         res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
+//        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
 //        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
         res.fdrCount = targetCountAboveFDRQValueThreshold;
         results.push_back(res);
     }
-
-    m_pythiaParameters.scanTimeWindowMinutes = m_msCalibratomatic.scanTimeStDev() * 2.0;
 
     e = getTopFrequencyParameters(
             &results,
@@ -1617,34 +1590,51 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointers); ree;
     e = ErrorUtils::isNotEmpty(scoredTargetDecoyPointersFDRFiltered); ree;
 
-    QVector<CandidateScores> candidateScoresTargets;
-    std::transform(
+    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
+    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointers) {
+
+        QMap<UniqueMsInfoScanKey, CandidateScores> *uniqueInfoScanKeyVsScoresTarget = tdcp->uniqueInfoScanKeyVsScoresTarget();
+        for (auto it = uniqueInfoScanKeyVsScoresTarget->begin(); it != uniqueInfoScanKeyVsScoresTarget->end(); it++) {
+            candidateScoresTargetsAndDecoys.push_back(it.value());
+        }
+
+        QMap<UniqueMsInfoScanKey, CandidateScores> *uniqueInfoScanKeyVsScoresDecoy = tdcp->uniqueInfoScanKeyVsScoresDecoy();
+        for (auto it = uniqueInfoScanKeyVsScoresDecoy->begin(); it != uniqueInfoScanKeyVsScoresDecoy->end(); it++) {
+            candidateScoresTargetsAndDecoys.push_back(it.value());
+        }
+    }
+
+    std::sort(
+            candidateScoresTargetsAndDecoys.rbegin(),
+            candidateScoresTargetsAndDecoys.rend(),
+            [](const CandidateScores &l, const CandidateScores &r){return l.discriminateScore < r.discriminateScore;}
+            );
+
+    TargetDecoyCandidatePair* discriminantScoreMinElement = *std::min_element(
             scoredTargetDecoyPointersFDRFiltered.begin(),
             scoredTargetDecoyPointersFDRFiltered.end(),
-            std::back_inserter(candidateScoresTargets),
-            [](TargetDecoyCandidatePair *tdp) { return *tdp->candidateScoresBestDiscriminantScorePtrTarget(); }
-    );
+            [](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){
+                return l->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore
+                        < r->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore;
+            });
 
-    const double candidateScoresTargetsMinDiscriminantScore = std::min_element(
-            candidateScoresTargets.begin(),
-            candidateScoresTargets.end(),
-            [](const CandidateScores &l, const CandidateScores &r) {return l.discriminateScore < r.discriminateScore;}
-    )->discriminateScore;
 
-    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointersFiltered = scoredTargetDecoyPointers;
-    filterDecoys(candidateScoresTargetsMinDiscriminantScore, &scoredTargetDecoyPointersFiltered);
 
-    QVector<CandidateScores> candidateScoresDecoys;
-    std::transform(
-            scoredTargetDecoyPointersFiltered.begin(),
-            scoredTargetDecoyPointersFiltered.end(),
-            std::back_inserter(candidateScoresDecoys),
-            [](TargetDecoyCandidatePair *tdp) { return *tdp->candidateScoresBestDiscriminantScorePtrDecoy(); }
-    );
+    int decoyCounter = 0;
+    int counter = 0;
+    for (const CandidateScores &cs : candidateScoresTargetsAndDecoys) {
 
-    QVector<CandidateScores> candidateScoresTargetsAndDecoysShuffled;
-    candidateScoresTargetsAndDecoysShuffled.append(candidateScoresTargets);
-    candidateScoresTargetsAndDecoysShuffled.append(candidateScoresDecoys);
+        counter++;
+        if (cs.isDecoy) {
+            decoyCounter++;
+        }
+
+        if (cs.discriminateScore < discriminantScoreMinElement->candidateScoresBestDiscriminantScorePtrTarget()->discriminateScore) {
+            break;
+        }
+    }
+
+    candidateScoresTargetsAndDecoys.resize(counter);
 
 //#define BYPASS_NEURAL_NET
 #ifdef BYPASS_NEURAL_NET
@@ -1671,14 +1661,13 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     }
 #else
     std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-    std::shuffle(candidateScoresTargetsAndDecoysShuffled.begin(), candidateScoresTargetsAndDecoysShuffled.end(),rng);
+    std::shuffle(candidateScoresTargetsAndDecoys.begin(), candidateScoresTargetsAndDecoys.end(),rng);
 
-    qDebug() << "target vs decoy count" << candidateScoresTargets.size() << candidateScoresDecoys.size()
-             << "total" << candidateScoresTargetsAndDecoysShuffled.size();
+    qDebug() << "target vs decoy count" << counter - decoyCounter << decoyCounter << "total" << counter;
 
     QVector<KarnnNNTarget> karnnNNTargets;
-    for (int i = 0; i < candidateScoresTargetsAndDecoysShuffled.size(); i++) {
-        const CandidateScores &cs = candidateScoresTargetsAndDecoysShuffled.at(i);
+    for (int i = 0; i < candidateScoresTargetsAndDecoys.size(); i++) {
+        const CandidateScores &cs = candidateScoresTargetsAndDecoys.at(i);
         KarnnNNTarget karnnNnTarget;
         karnnNnTarget.seq = cs.peptideStringWithMods;
         karnnNnTarget.isDecoy = cs.isDecoy;
@@ -1715,7 +1704,7 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     }
 
     int cycles = 0;
-    int counter = 0;
+    counter = 0;
 
     candidateScoreClassifier->clear();
 
@@ -1744,13 +1733,13 @@ Err PythiaDIAWorkflow::applyNeuralNetClassifier(
     int falsePositives = 0;
     for (const KarnnNNTarget &rp : karnnNNTargetsNorm) {
 
-        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoysShuffled.at(rp.index);
+        CandidateScores candidateScoresNew = candidateScoresTargetsAndDecoys.at(rp.index);
         candidateScoresNew.classifierScore = rp.nnScore;
         candidateScoreClassifier->push_back(candidateScoresNew);
 
         ++counter;
 
-        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
+        if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.008) {
             if (!reportDecoys) {
                 break;
             }
