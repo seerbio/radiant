@@ -32,6 +32,7 @@ public:
         output->reserve(desiredTrancheSize);
 
         e = ErrorUtils::isNotEmpty(input); ree;
+        e = ErrorUtils::isNotEqual(desiredTrancheSize, 0); ree;
 
         if (desiredTrancheSize == -1) {
             desiredTrancheSize = numberOfAvailableSystemProcessors();
@@ -66,6 +67,8 @@ public:
         output->reserve(desiredTrancheSegments);
 
         e = ErrorUtils::isNotEmpty(input); ree;
+        e = ErrorUtils::isNotEqual(desiredTrancheSegments, 0); ree;
+
         if (desiredTrancheSegments == -1) {
             desiredTrancheSegments = numberOfAvailableSystemProcessors();
         }

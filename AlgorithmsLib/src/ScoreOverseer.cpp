@@ -103,7 +103,7 @@ namespace {
             const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
             QVector<double> intensityVals = ParallelUtils::convertMapToVector(
-                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals,
+                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals(),
                     rows
             );
 
@@ -491,12 +491,15 @@ namespace {
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
+            bool subtractShadows,
             QVector<double> *cosineSimsIndividualIntegration,
             double *bestCosineSimSumIntegration,
             QVector<double> *bestIntensitiesIndividual,
             Eigen::VectorX<double> *bestAnchorColumn,
             FrameIndex *frameIndexIntensityApexIntegration,
-            int *allignedMaxIndexesCount
+            int *allignedMaxIndexesCount,
+            QVector<double> *cosineSimsShadowIndividual,
+            QVector<double> *shadowsIntensityRatioPeakIntVec
     ) {
 
         ERR_INIT
@@ -541,8 +544,32 @@ namespace {
             intensityMatrixIntegratedLimitsNoInterferenceShadows
                 = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimitsNoInterferenceShadows);
 
-            intensityMatrixIntegratedLimitsNoInterference -= intensityMatrixIntegratedLimitsNoInterferenceShadows;
-            EigenUtils::thresholdMatrix(0.0, &intensityMatrixIntegratedLimitsNoInterference);
+            if (subtractShadows) {
+                intensityMatrixIntegratedLimitsNoInterference -= intensityMatrixIntegratedLimitsNoInterferenceShadows;
+                EigenUtils::thresholdMatrix(0.0, &intensityMatrixIntegratedLimitsNoInterference);
+            }
+
+            for (int col = 0; col < intensityMatrixIntegratedLimitsNoInterference.cols(); col++) {
+
+                const Eigen::VectorX<double> &mzPeak = intensityMatrixIntegratedLimitsNoInterference.col(col);
+                const Eigen::VectorX<double> &mzPeakShadow = intensityMatrixIntegratedLimitsNoInterferenceShadows.col(col);
+
+                const double cosineSimToShadow = EigenUtils::cosineSimilarity(
+                        mzPeak,
+                        mzPeakShadow
+                        );
+
+                cosineSimsShadowIndividual->push_back(cosineSimToShadow);
+
+                if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
+                    const double ratio = mzPeak.maxCoeff() / mzPeakShadow.maxCoeff();
+                    shadowsIntensityRatioPeakIntVec->push_back(ratio);
+                }
+                else{
+                    shadowsIntensityRatioPeakIntVec->push_back(0.0);
+                }
+            }
+
         }
 
         if (MathUtils::tZero(intensityMatrixIntegratedLimitsNoInterference.maxCoeff())) {
@@ -572,8 +599,11 @@ namespace {
             const QVector<double> &summedMatToVec,
             int topNMs2FragPeaks,
             double cosineSimToAnchorThreshold,
+            bool subtractShadows,
             QVector<double> *cosineSimsIndividual,
             QVector<double> *intensityFoundMaxVec,
+            QVector<double> *cosineSimsShadowIndividual,
+            QVector<double> *shadowsIntensityRatioVec,
             FrameIndex *frameIndexIntensityApex,
             PeakIntegrationIndexes *bestPeakIntegrationIndexes,
             Eigen::VectorX<double> *bestAnchorColumn,
@@ -592,6 +622,8 @@ namespace {
 
             QVector<double> cosineSimsIndividualIntegration;
             QVector<double> intensitiesIndividual;
+            QVector<double> cosineSimsShadowIndividualPeakIntVec;
+            QVector<double> shadowsIntensityRatioPeakIntVec;
             double bestCosineSimSumIntegration;
             FrameIndex frameIndexIntensityApexIntegration;
             int allignedMaxIndexesCountTemp;
@@ -602,12 +634,15 @@ namespace {
                     summedMatToVec,
                     topNMs2FragPeaks,
                     cosineSimToAnchorThreshold,
+                    subtractShadows,
                     &cosineSimsIndividualIntegration,
                     &bestCosineSimSumIntegration,
                     &intensitiesIndividual,
                     bestAnchorColumn,
                     &frameIndexIntensityApexIntegration,
-                    &allignedMaxIndexesCountTemp
+                    &allignedMaxIndexesCountTemp,
+                    &cosineSimsShadowIndividualPeakIntVec,
+                    &shadowsIntensityRatioPeakIntVec
             ); ree;
 
             if (bestCosineSimSumIntegration > bestCosineSimSum) {
@@ -617,6 +652,8 @@ namespace {
                 *bestPeakIntegrationIndexes = pii;
                 *intensityFoundMaxVec = intensitiesIndividual;
                 *allignedMaxIndexesCount = allignedMaxIndexesCountTemp;
+                *cosineSimsShadowIndividual = cosineSimsShadowIndividualPeakIntVec;
+                *shadowsIntensityRatioVec = shadowsIntensityRatioPeakIntVec;
             }
 
         }
@@ -742,7 +779,7 @@ namespace {
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals;
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals();
 
         for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
@@ -807,78 +844,6 @@ namespace {
         ERR_RETURN
     }
 
-    QVector<double> calculatePeakShapeRatios(const Eigen::VectorX<double> &vec) {
-
-        const Eigen::VectorX<double> vecTrimmed = EigenUtils::trimVector(vec);
-        const int segmentSize = std::round(vecTrimmed.size() / 3.0);
-
-        const double seg1Sum = vecTrimmed.segment(0, segmentSize).sum();
-        const double seg2Sum = vecTrimmed.segment(segmentSize, segmentSize).sum();
-        const double seg3Sum = vecTrimmed.segment(segmentSize * 2, segmentSize).sum();
-
-        return {
-                seg1Sum / seg2Sum,
-                seg3Sum / seg2Sum,
-                seg1Sum / std::max(seg3Sum, std::numeric_limits<double>::min())
-        };
-    }
-
-    Err buildRTreeData(
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
-            std::vector<rTreePoint> *cloudLoader
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
-
-        for (auto it = mzHashedVsXICPoints100.begin(); it != mzHashedVsXICPoints100.end(); it++) {
-
-            const MzHashed mzHashed = it.key();
-            const auto mz = MathUtils::unHashDecimal<double>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const XICPoints &xicPoints = it.value();
-
-            const QMap<ScanNumber, ScanPoints> &frame = xicPoints.scanNumbersVsScanPoints;
-
-            for (auto itt = frame.begin(); itt != frame.end(); itt++) {
-
-                const ScanNumber scanNumber = itt.key();
-                const ScanPoints &scanPoints = itt.value();
-
-                const auto loadLogic = [scanNumber, mz](const ScanPoint &sp){
-                    const double ppmDiffAbs = std::abs(1e6 * (sp.x() - mz) / mz);
-                    const rTreeCoor coor(ppmDiffAbs, mz);
-                    const QPair<ScanNumber, ScanPoint> val(scanNumber, sp);
-                    return rTreePoint(coor, val);
-                };
-
-                std::transform(
-                        scanPoints.begin(),
-                        scanPoints.end(),
-                        std::back_inserter(*cloudLoader),
-                        loadLogic
-                );
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    QMap<MzHashed, XICPoints> rebuildMzHashedVsXICPoints(const std::vector<rTreePoint> &rTreeSearchResult) {
-
-        QMap<MzHashed, XICPoints> mzHashedVsXICPoints;
-
-        for (const rTreePoint &rtp : rTreeSearchResult) {
-            const double mz = rtp.first.get<1>();
-            const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            const QPair<ScanNumber, ScanPoint> val = rtp.second;
-            mzHashedVsXICPoints[mzHashed].scanNumbersVsScanPoints[val.first].push_back(val.second);
-            mzHashedVsXICPoints[mzHashed].scanNumbersVsIntensityVals[val.first] += val.second.y();
-        }
-
-        return mzHashedVsXICPoints;
-    }
-
     Err buildTightPPMToleranceData(
             const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints100,
             double ppmTol100,
@@ -890,40 +855,43 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
 
-        std::vector<rTreePoint> cloudLoader;
-        e = buildRTreeData(mzHashedVsXICPoints100, &cloudLoader); ree;
+        const double ppmTight1 = ppmTol100 * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION;
+        const double ppmTight2 = ppmTol100 * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION;
 
-        const int maxElements = 16;
-        RTree rTreeTight(cloudLoader, bgi::dynamic_quadratic(maxElements));
+        for (auto it = mzHashedVsXICPoints100.begin(); it != mzHashedVsXICPoints100.end(); it++) {
 
-        const auto mzMin = MathUtils::unHashDecimal<double>(
-                mzHashedVsXICPoints100.firstKey(),
-                S_GLOBAL_SETTINGS.HASHING_PRECISION
-                );
+            const MzHashed mzHashed = it.key();
+            const XICPoints &xicPoints = it.value();
+            const QMap<ScanNumber, ScanPoints> &scanNumbersVsScanPoints = xicPoints.scanNumbersVsScanPoints;
 
-        const auto mzMax = MathUtils::unHashDecimal<double>(
-                mzHashedVsXICPoints100.lastKey(),
-                S_GLOBAL_SETTINGS.HASHING_PRECISION
-        );
+            const auto mz = MathUtils::unHashDecimal<double>(
+                    mzHashed,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
 
-        const double ppmTol45 = S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol100;
-        const rTreeSearchBox queryBox45(
-                rTreeCoor(0.0, mzMin),
-                rTreeCoor(ppmTol45, mzMax)
-        );
-        std::vector<rTreePoint> rTreeSearchResult45;
-        rTreeTight.query(bgi::intersects(queryBox45), std::back_inserter(rTreeSearchResult45));
-        *mzHashedVsXICPoints45 = rebuildMzHashedVsXICPoints(rTreeSearchResult45);
+            XICPoints xicPointsTight1New;
+            XICPoints xicPointsTight2New;
+            for (auto itt = scanNumbersVsScanPoints.begin(); itt != scanNumbersVsScanPoints.end(); itt++) {
 
+                const ScanNumber scanNumber = itt.key();
+                const ScanPoints &scanPoints = itt.value();
 
-        const double ppmTol20 = S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol100;
-        const rTreeSearchBox queryBox20(
-                rTreeCoor(0.0, mzMin),
-                rTreeCoor(ppmTol20, mzMax)
-        );
-        std::vector<rTreePoint> rTreeSearchResult20;
-        rTreeTight.query(bgi::intersects(queryBox20), std::back_inserter(rTreeSearchResult20));
-        *mzHashedVsXICPoints20 = rebuildMzHashedVsXICPoints(rTreeSearchResult20);
+                for (const ScanPoint &sp : scanPoints) {
+                    const double ppmDiff = std::abs(1e6 * (sp.x() - mz)) / mz;
+                    if (ppmDiff <= ppmTight1) {
+                        xicPointsTight1New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
+//                        xicPointsTight1New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+
+                        if (ppmDiff <= ppmTight2) {
+                            xicPointsTight2New.scanNumbersVsScanPoints[scanNumber].push_back(sp);
+//                            xicPointsTight2New.scanNumbersVsIntensityVals[scanNumber] += sp.y();
+                        }
+                    }
+                }
+            }
+            mzHashedVsXICPoints45->insert(mzHashed, xicPointsTight1New);
+            mzHashedVsXICPoints20->insert(mzHashed, xicPointsTight2New);
+        }
 
         ERR_RETURN
     }
@@ -937,6 +905,7 @@ Err ScoreOverseer::buildScores(
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
         double scanTimePredicted,
+        bool subtractShadows,
         MsFrame *msFrame,
         CandidateScores *candidateScores
 ) {
@@ -952,6 +921,9 @@ Err ScoreOverseer::buildScores(
     e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints100); ree;
     e = ErrorUtils::isTrue(msFrame->isValid()); ree;
 
+    QElapsedTimer et;
+    et.start();
+
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints45;
     QMap<MzHashed, XICPoints> mzHashedVsXICPoints20;
     e = buildTightPPMToleranceData(
@@ -961,6 +933,8 @@ Err ScoreOverseer::buildScores(
             &mzHashedVsXICPoints20
             ); ree;
 
+//    qDebug() << "1" << et.nsecsElapsed() << et.restart();
+
     e = d_ptr->initMatricies(
             ms2IonsTheoretical,
             mzHashedVsXICPoints100,
@@ -969,6 +943,8 @@ Err ScoreOverseer::buildScores(
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsXICPointsIsotopeShadows
             ); ree;
+
+//    qDebug() << "2" << et.nsecsElapsed() << et.restart();
 
     FrameIndex frameIndexIntensityApex;
     PeakIntegrationIndexes bestPeakIntegrationIndexes;
@@ -981,13 +957,24 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix100.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &candidateScores->cosineSimToAnchorVec,
             &candidateScores->intensityFoundMaxVec,
+            &candidateScores->cosineSimShadowsToAnchorVec,
+            &candidateScores->shadowsIntensityRatioVec,
             &frameIndexIntensityApex,
             &bestPeakIntegrationIndexes,
             &bestAnchorColumn,
             &allignedMaxIndexesCount
     ); ree;
+
+    candidateScores->shadowsCosineSimSum = std::accumulate(
+            candidateScores->cosineSimShadowsToAnchorVec.begin(),
+            candidateScores->cosineSimShadowsToAnchorVec.end(),
+            0.0
+            );
+
+//    qDebug() << "3" << et.nsecsElapsed() << et.restart();
 
     if (bestAnchorColumn.rows() < 1) {
         ERR_RETURN
@@ -1002,12 +989,16 @@ Err ScoreOverseer::buildScores(
             &candidateScores->cosineSim100MS1
             ); ree;
 
+//    qDebug() << "4" << et.nsecsElapsed() << et.restart();
+
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100.row(frameIndexIntensityApex),
             ms2IonsTheoretical,
             &candidateScores->cosineSimSpectrum,
             &candidateScores->klDivSpectrum
             ); ree;
+
+//    qDebug() << "5" << et.nsecsElapsed() << et.restart();
 
     e = calculateEmpiricalMzStats(
             candidateScores->cosineSimToAnchorVec,
@@ -1020,11 +1011,15 @@ Err ScoreOverseer::buildScores(
             &candidateScores->theoIntensityVec
             );
 
+//    qDebug() << "6" << et.nsecsElapsed() << et.restart();
+
     QVector<double> cosineSimsIndividual45;
     double unused1;
     Eigen::VectorX<double> unused2;
     QVector<double> unusedIntensity;
     int allignedMaxIndexesCountUnused;
+    QVector<double> unusedShadows;
+    QVector<double> unusedShadowsRatios;
     FrameIndex unused3;
     e = calcBestCosineSimSum(
             d_ptr->m_intensityMatrix45,
@@ -1033,13 +1028,18 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix45.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &cosineSimsIndividual45,
             &unused1,
             &unusedIntensity,
             &unused2,
             &unused3,
-            &allignedMaxIndexesCountUnused
+            &allignedMaxIndexesCountUnused,
+            &unusedShadows,
+            &unusedShadowsRatios
             ); ree;
+
+//    qDebug() << "7" << et.nsecsElapsed() << et.restart();
 
     QVector<double> cosineSimsIndividual20;
     e = calcBestCosineSimSum(
@@ -1049,13 +1049,18 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_summedMatVecToVec,
             static_cast<int>(d_ptr->m_intensityMatrix20.cols()),
             d_ptr->m_cosineSimToAnchorThreshold,
+            subtractShadows,
             &cosineSimsIndividual20,
             &unused1,
             &unusedIntensity,
             &unused2,
             &unused3,
-            &allignedMaxIndexesCountUnused
+            &allignedMaxIndexesCountUnused,
+            &unusedShadows,
+            &unusedShadowsRatios
             ); ree;
+
+//    qDebug() << "8" << et.nsecsElapsed() << et.restart();
 
     candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
 

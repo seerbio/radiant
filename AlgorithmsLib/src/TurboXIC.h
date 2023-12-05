@@ -20,7 +20,23 @@ public:
     ~XICPoints() = default;
 
     QMap<ScanNumber, ScanPoints> scanNumbersVsScanPoints;
-    QMap<ScanNumber, double> scanNumbersVsIntensityVals;
+
+    [[nodiscard]] QMap<ScanNumber, double> scanNumbersVsIntensityVals() const {
+
+        QMap<ScanNumber, double> scanNumberVsIntensity;
+
+        for (auto it = scanNumbersVsScanPoints.begin(); it != scanNumbersVsScanPoints.end(); it++) {
+
+            const ScanNumber scanNumber = it.key();
+            const ScanPoints &scanPoints = it.value();
+            for (const ScanPoint &sp : scanPoints) {
+                scanNumberVsIntensity[scanNumber] += sp.y();
+            }
+
+        }
+
+        return scanNumberVsIntensity;
+    }
 
     [[nodiscard]] QMap<ScanNumber, QVector<double>> scanNumberVsMzVals() const {
 
