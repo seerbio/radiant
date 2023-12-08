@@ -59,7 +59,7 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
     double ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
     QVector<double> mzVals;
-    QVector<double> intensityVals;
+    QVector<float> intensityVals;
     QString targetKey;
 
     QMap<QString, QVariant> map() override {
@@ -106,7 +106,7 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
         ionMobilityDriftTime = dataMap.value(IM_DRIFT_TIME).toDouble();
         ionMobilityIndex = dataMap.value(IM_IND).toInt();
         mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
-        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
 
         ERR_RETURN

@@ -25,6 +25,8 @@ private Q_SLOTS:
     void yTest();
     void rxTest();
     void ryTest();
+    void equalOperatorTest();
+    void notEqualOperatorTest();
 
 };
 
@@ -67,6 +69,28 @@ void PointDFTests::ryTest() {
 
     pointDFLive.ry() += 1.0;
     QVERIFY(MathUtils::tSame(pointDFLive.ry(), static_cast<float>(778.0)));
+}
+
+void PointDFTests::equalOperatorTest() {
+
+    PointDF pointDF1(666.0, 777.0);
+    PointDF pointDF2(667.0, 777.0);
+    PointDF pointDF3(667.0, 778.0);
+
+    QVERIFY(pointDF1 == pointDF1);
+    QCOMPARE((pointDF1 == pointDF2), false);
+    QCOMPARE((pointDF1 == pointDF3), false);
+
+}
+
+void PointDFTests::notEqualOperatorTest() {
+    PointDF pointDF1(666.0, 777.0);
+    PointDF pointDF2(667.0, 777.0);
+    PointDF pointDF3(667.0, 778.0);
+
+    QCOMPARE(pointDF1 != pointDF1, false);
+    QVERIFY((pointDF1 != pointDF2));
+    QVERIFY((pointDF1 != pointDF3));
 }
 
 

@@ -178,7 +178,7 @@ QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 Err MsReaderBase::splitScanPoints(
         const ScanPoints &scanPoints,
         QVector<double> *mzVals,
-        QVector<double> *intensityVals
+        QVector<float> *intensityVals
 ) {
 
     ERR_INIT
@@ -253,7 +253,7 @@ QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
 
 Err MsReaderBase::zipScanPoints(
         const QVector<double> &mzVals,
-        const QVector<double> &intensityVals,
+        const QVector<float> &intensityVals,
         ScanPoints *scanPoints
         ) {
 

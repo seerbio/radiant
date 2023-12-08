@@ -149,12 +149,12 @@ public:
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
             QVector<double> *mzVals,
-            QVector<double> *intensityVals
+            QVector<float> *intensityVals
             );
 
     static Err zipScanPoints(
             const QVector<double> &mzVals,
-            const QVector<double> &intensityVals,
+            const QVector<float> &intensityVals,
             ScanPoints *scanPoints
             );
 

@@ -5,6 +5,9 @@
 #ifndef PYTHIADIACPP_POINTDF_H
 #define PYTHIADIACPP_POINTDF_H
 
+#include "MathUtils.h"
+
+#include <QDebug>
 
 class PointDF {
 
@@ -18,8 +21,34 @@ public:
     double x();
     float y();
 
+    [[nodiscard]] double x() const;
+    [[nodiscard]] float y() const;
+
     double& rx();
     float& ry();
+
+    friend QDebug operator<<(QDebug dbg, const PointDF& obj) {
+        dbg.nospace() << "PointDF(" << obj.x() << ", " << obj.y() << ") ";
+        return dbg;
+    }
+
+    bool operator==(const PointDF& other) const {
+
+        if (MathUtils::tSame(x(), other.x()) && MathUtils::tSame(y(), other.y())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool operator!=(const PointDF& other) const {
+
+        if (*this == other) {
+            return false;
+        }
+
+        return true;
+    }
 
 private:
 

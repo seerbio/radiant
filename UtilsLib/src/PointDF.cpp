@@ -23,6 +23,14 @@ float PointDF::y() {
     return m_y;
 }
 
+double PointDF::x() const {
+    return m_x;
+}
+
+float PointDF::y() const {
+    return m_y;
+}
+
 double &PointDF::rx() {
     return m_x;
 }

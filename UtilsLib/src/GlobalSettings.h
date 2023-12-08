@@ -8,6 +8,7 @@
 #include "UtilsLib_Exports.h"
 
 #include "ErrorUtils.h"
+#include "PointDF.h"
 
 #include <QPointF>
 #include <QString>
@@ -57,8 +58,8 @@ using ReScore = double;
 using ResidueIndex = int;
 using ScanNumber = int;
 using ScanNumberIndex = int;
-using ScanPoint = QPointF;
-using ScanPoints = QVector<QPointF>;
+using ScanPoint = PointDF;
+using ScanPoints = QVector<PointDF>;
 using ScanTime = double;
 using Score = double;
 using TandemScansIndex = int;
