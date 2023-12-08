@@ -317,7 +317,7 @@ Err MsReaderBase::updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUp
 }
 
 bool doUniqueKeysCycle(
-        const QVector<UniqueMsInfoScanKey> &uniqueInfoKeys,
+        const QVector<MzTargetKey> &uniqueInfoKeys,
         const QList<MsScanInfo> &msScanInfos
         ) {
 
@@ -331,7 +331,7 @@ bool doUniqueKeysCycle(
             uniqueInfoKeysIndex = 0;
         }
 
-        if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.targetScanKey()) {
+        if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.mzTargetKey()) {
             return false;
         }
 
@@ -350,12 +350,12 @@ bool MsReaderBase::isDIA() {
 
     const int msLevel = 2;
 
-    QMap<UniqueMsInfoScanKey, int> uniqueKeyCounter;
+    QMap<MzTargetKey, int> uniqueKeyCounter;
 
     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
 
     for (const MsScanInfo &msScanInfo : tandemScanInfos) {
-        uniqueKeyCounter[msScanInfo.targetScanKey()]++;
+        uniqueKeyCounter[msScanInfo.mzTargetKey()]++;
     }
 
     const bool uniqueKeysCycle = doUniqueKeysCycle(
@@ -367,7 +367,7 @@ bool MsReaderBase::isDIA() {
 }
 
 Err MsReaderBase::collateTandemPrecursorTargetsDIA(
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame) {
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame) {
 
     ERR_INIT
 
@@ -385,7 +385,7 @@ Err MsReaderBase::collateTandemPrecursorTargetsDIA(
 
         QPair<Err, ScanPoints*> scanPointsResult = getScanPoints(scanNumber);
         e = scanPointsResult.first; ree;
-        (*diaTargetFrame)[msScanInfo.targetScanKey()].insert(scanNumber, scanPointsResult.second);
+        (*diaTargetFrame)[msScanInfo.mzTargetKey()].insert(scanNumber, scanPointsResult.second);
     }
 
     qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
@@ -397,10 +397,10 @@ QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
     const int msLevel = 2;
     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
 
-    QMap<UniqueMsInfoScanKey, MsScanInfo> uniqueMsScanInfos;
+    QMap<MzTargetKey, MsScanInfo> uniqueMsScanInfos;
 
     for (const MsScanInfo &info : tandemScanInfos) {
-        uniqueMsScanInfos[info.targetScanKey()] = info;
+        uniqueMsScanInfos[info.mzTargetKey()] = info;
     }
 
     return uniqueMsScanInfos.values().toVector();

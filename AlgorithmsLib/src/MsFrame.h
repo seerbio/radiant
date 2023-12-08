@@ -117,7 +117,7 @@ private:
 private:
 
     QMap<ScanNumber, ScanPoints*> m_frame;
-    UniqueMsInfoScanKey m_uniqueMsInfoScanKey;
+    MzTargetKey m_uniqueMsInfoScanKey;
     QMap<FrameIndex, ScanNumber> m_frameIndexVsScanNumber;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 

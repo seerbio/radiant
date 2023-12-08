@@ -107,7 +107,7 @@ void MissingPeptideManualTroubleshooter::troubleshootMissingPeptide() {
 //
 //    const bool applySmooth2D = true;
 //
-//    const QString uniqueMsInfoScanKey = msScanInfo.targetScanKey();
+//    const QString uniqueMsInfoScanKey = msScanInfo.mzTargetKey();
 //
 //    MsFrame msFrame;
 //    e = MsFrameScoretron::buildMsFrame(

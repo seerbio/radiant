@@ -31,7 +31,7 @@ public:
             const PythiaParameters &pythiaParameters,
             const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanTimeMS1,
             MsReaderPointerAcc *msReaderPointerAcc,
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
             TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager
             );
 
@@ -59,7 +59,7 @@ private:
 
     PythiaParameters m_pythiaParameters;
     MsReaderPointerAcc *m_msReaderPointerAcc;
-    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *m_diaTargetFrames;
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *m_diaTargetFrames;
     QMap<ScanNumber, ScanPoints*> m_ms1Frame;
     TargetDecoyCandidatePairManager *m_targetDecoyCandidatePairManager;
 

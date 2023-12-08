@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
 using namespace Error;
 
@@ -37,13 +38,17 @@ public:
 
 private:
 
+    Err buildCalibration();
+
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            const QList<MsScanInfo> &msScanInfos,
+            const QVector<MsScanInfo> &msScanInfos,
             double selectionFraction,
-            QMap<UniqueMsInfoScanKey, TargetDecoyCandidatePair> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
+            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
             );
 
 private:
+
+    TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;

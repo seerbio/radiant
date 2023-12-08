@@ -33,6 +33,9 @@ public:
             const QString &fragLibFileUri
             );
 
+    bool isInit();
+
+
     Err getTargetDecoyCandidatePairPointers(
             double mzMin,
             double mzMax,

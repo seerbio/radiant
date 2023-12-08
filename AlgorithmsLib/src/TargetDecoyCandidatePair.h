@@ -39,8 +39,8 @@ public:
     CandidateScores* candidateScoresBestDiscriminantScorePtrTarget();
     CandidateScores* candidateScoresBestDiscriminantScorePtrDecoy();
 
-    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresTarget();
-    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresDecoy();
+    QMap<MzTargetKey, CandidateScores>* uniqueInfoScanKeyVsScoresTarget();
+    QMap<MzTargetKey, CandidateScores>* uniqueInfoScanKeyVsScoresDecoy();
 
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
@@ -56,9 +56,9 @@ public:
 
     void clearScores();
 
-    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyTarget() const;
+    [[nodiscard]] MzTargetKey bestDiscriminateScoreKeyTarget() const;
 
-    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyDecoy() const;
+    [[nodiscard]] MzTargetKey bestDiscriminateScoreKeyDecoy() const;
 
 private:
 
@@ -72,8 +72,8 @@ private:
     double m_iRt;
     int m_totalFragmentCount;
 
-    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresTarget;
-    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresDecoy;
+    QMap<MzTargetKey, CandidateScores> m_uniqueInfoScanKeyVsScoresTarget;
+    QMap<MzTargetKey, CandidateScores> m_uniqueInfoScanKeyVsScoresDecoy;
 
 };
 

@@ -116,7 +116,7 @@ struct FILEREADERSLIB_EXPORTS PSMsReaderRow : public ParquetReaderInputBase {
     FrameIndex frameIndex = -1;
     ScanNumber scanNumber = -1;
     Charge charge = -1;
-    UniqueMsInfoScanKey uniqueMsInfoScanKey;
+    MzTargetKey uniqueMsInfoScanKey;
 
     PeptideStringWithMods peptideStringWithMods;
 

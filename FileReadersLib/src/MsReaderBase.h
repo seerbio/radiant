@@ -36,14 +36,14 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
     double ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
 
-    [[nodiscard]] QString targetScanKey() const {
-        return targetScanKey(
+    [[nodiscard]] MzTargetKey mzTargetKey() const {
+        return mzTargetKey(
                 precursorTargetMz - isoWindowLower,
                 precursorTargetMz + isoWindowUpper
                 );
     }
 
-    static UniqueMsInfoScanKey targetScanKey(double mzStart, double mzEnd) {
+    static MzTargetKey mzTargetKey(double mzStart, double mzEnd) {
         return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };
@@ -108,7 +108,7 @@ public:
             ) const;
 
     Err collateTandemPrecursorTargetsDIA(
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
     );
 
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();

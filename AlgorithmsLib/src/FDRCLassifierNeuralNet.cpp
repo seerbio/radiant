@@ -418,7 +418,7 @@ Err FDRCLassifierNeuralNet::predictBaggedClassifiers(
 
 QString FDRCLassifierNeuralNet::buildTargetDecoyKey(
         const PeptideStringWithMods &peptideStringWithMods,
-        const UniqueMsInfoScanKey &uniqueMsInfoScanKey,
+        const MzTargetKey &uniqueMsInfoScanKey,
         Charge charge
         ) {
 

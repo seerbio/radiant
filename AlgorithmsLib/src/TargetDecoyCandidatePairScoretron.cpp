@@ -25,7 +25,7 @@ TargetDecoyCandidatePairScoretron::TargetDecoyCandidatePairScoretron()
 class TargetDecoyPairParallelInput {
 
 public:
-    UniqueMsInfoScanKey msInfoScanKey;
+    MzTargetKey msInfoScanKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
     QMap<ScanNumber, ScanPoints*> ms1Frame;
@@ -39,7 +39,7 @@ Err TargetDecoyCandidatePairScoretron::init(
         const PythiaParameters &pythiaParameters,
         const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanTimeMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
-        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager
         ) {
 
@@ -435,8 +435,8 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetScanKey()];
-        tdppi.msInfoScanKey = msScanInfo.targetScanKey();
+        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.mzTargetKey()];
+        tdppi.msInfoScanKey = msScanInfo.mzTargetKey();
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;

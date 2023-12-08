@@ -81,7 +81,7 @@
 //        e = deisotopeScans(&msReaderPointerAcc); ree;
 //    }
 //
-//    QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+//    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
 //    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
 //            &diaTargetFrames
 //            ); ree;
@@ -278,7 +278,7 @@
 //    struct TargetDecoyPairTargetKey {
 //        TargetDecoyCandidatePair* targetDecoyCandidatePair;
 //        QPair<ScoresTargets, ScoresDecoys> scoresTargetVsScoresDecoys;
-//        UniqueMsInfoScanKey uniqueMsInfoScanKey;
+//        MzTargetKey uniqueMsInfoScanKey;
 //    };
 //
 //    Err buildClassifierInput(
@@ -304,8 +304,8 @@
 //
 //        for (TargetDecoyCandidatePair *tdc : targetDecoyCandidatePairPntrs) {
 //
-//            const QList<UniqueMsInfoScanKey> &uniqueInfoScanKeys = tdc->uniqueInfoScanKeyVsScoresTarget()->keys();
-//            for (const UniqueMsInfoScanKey &key : uniqueInfoScanKeys) {
+//            const QList<MzTargetKey> &uniqueInfoScanKeys = tdc->uniqueInfoScanKeyVsScoresTarget()->keys();
+//            for (const MzTargetKey &key : uniqueInfoScanKeys) {
 //
 //                const bool decoyContainsTargetKey = tdc->uniqueInfoScanKeyVsScoresDecoy()->contains(key);
 //                if (!decoyContainsTargetKey) {
@@ -531,7 +531,7 @@
 //}
 //
 //Err PythiaDIAWorkflow::recalibrateMzVals(
-//        QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame,
+//        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame,
 //        QMap<ScanNumber, ScanPoints*> *scanNumberVsScanTimeMS1,
 //        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
 //        MsReaderPointerAcc *msReaderPointerAcc
@@ -545,8 +545,8 @@
 //
 //    qDebug() << "Recalibrating mz vals";
 //
-//    const QList<UniqueMsInfoScanKey> &diaTargetFrameKeys = diaTargetFrame->keys();
-//    for (const UniqueMsInfoScanKey &k: diaTargetFrameKeys) {
+//    const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrame->keys();
+//    for (const MzTargetKey &k: diaTargetFrameKeys) {
 ////        qDebug() << "Recalibrating mz vals frame" << k;
 //        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrame->value(k)); ree;
 //    }
@@ -1593,12 +1593,12 @@
 //    QVector<CandidateScores> candidateScoresTargetsAndDecoys;
 //    for (TargetDecoyCandidatePair *tdcp : scoredTargetDecoyPointers) {
 //
-//        QMap<UniqueMsInfoScanKey, CandidateScores> *uniqueInfoScanKeyVsScoresTarget = tdcp->uniqueInfoScanKeyVsScoresTarget();
+//        QMap<MzTargetKey, CandidateScores> *uniqueInfoScanKeyVsScoresTarget = tdcp->uniqueInfoScanKeyVsScoresTarget();
 //        for (auto it = uniqueInfoScanKeyVsScoresTarget->begin(); it != uniqueInfoScanKeyVsScoresTarget->end(); it++) {
 //            candidateScoresTargetsAndDecoys.push_back(it.value());
 //        }
 //
-//        QMap<UniqueMsInfoScanKey, CandidateScores> *uniqueInfoScanKeyVsScoresDecoy = tdcp->uniqueInfoScanKeyVsScoresDecoy();
+//        QMap<MzTargetKey, CandidateScores> *uniqueInfoScanKeyVsScoresDecoy = tdcp->uniqueInfoScanKeyVsScoresDecoy();
 //        for (auto it = uniqueInfoScanKeyVsScoresDecoy->begin(); it != uniqueInfoScanKeyVsScoresDecoy->end(); it++) {
 //            candidateScoresTargetsAndDecoys.push_back(it.value());
 //        }

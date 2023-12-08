@@ -108,6 +108,7 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
     );
     QVERIFY(targetDecoyPointers.front()->mz() >= 666.0);
     QVERIFY(targetDecoyPointers.back()->mz() <= 667.00);
+
 }
 
 void TargetDecoyCandidatePairManagerTests::peptideStringWithModsFromPeptideSequenceChargeKeyTest() {

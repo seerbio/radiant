@@ -523,6 +523,11 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
             &targetDecoyPointersAll
             ); ree;
 
+    if (randomSelectionFraction < 0) {
+        *targetDecoyPointers = targetDecoyPointersAll;
+        ERR_RETURN
+    }
+
     const int testDataSize = static_cast<int>(targetDecoyPointersAll.size() * randomSelectionFraction);
     const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
@@ -572,4 +577,8 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
     ); ree
 
     ERR_RETURN
+}
+
+bool TargetDecoyCandidatePairManager::isInit() {
+    return m_targetDecoyCandidatePairs.size() > 0;
 }

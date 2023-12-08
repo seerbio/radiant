@@ -106,7 +106,7 @@ void TurboXICTests::turboXICUtility() {
 //    const QString msDataFilePath
 //            = QStringLiteral("/home/anichols/Desktop/Testing/EXP22092_2022ms0742X32_A.raw.mzML.reCal.prq");
 //
-//    const UniqueMsInfoScanKey uniqueMsInfoScanKey = "454957";
+//    const MzTargetKey uniqueMsInfoScanKey = "454957";
 //    double target = 454.957;
 //    double window = 5.5;
 //
