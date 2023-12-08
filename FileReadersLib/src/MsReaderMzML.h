@@ -15,6 +15,9 @@
 
 using namespace Error;
 
+namespace MzMLNamespace {
+    const QString MZML_SUFFIX = QStringLiteral("mzML");
+}
 
 class FILEREADERSLIB_EXPORTS MsReaderMzML : public MsReaderBase {
 

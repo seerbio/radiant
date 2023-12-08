@@ -7,7 +7,6 @@
 
 #include <utility>
 
-
 #include "Error.h"
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"

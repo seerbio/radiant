@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iostream>
 #include <QDebug>
+#include <QFileInfo>
 
 
 const QString dataProcessingElementName = QStringLiteral("dataProcessing");
@@ -640,6 +641,14 @@ Err MsReaderMzML::openFile(const QString &filePath) {
 
     e = ErrorUtils::isNotEmpty(filePath); ree;
     m_filePath = filePath;
+
+    QFileInfo fi(filePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            MzMLNamespace::MZML_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+    ); ree;
 
     e = m_d->openFile(filePath); ree;
 
