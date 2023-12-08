@@ -44,7 +44,7 @@ public:
     [[nodiscard]] double mass() const;
     [[nodiscard]] double iRt() const;
     [[nodiscard]] int totalFragmentCount() const;
-    
+
 private:
 
     PeptideStringWithMods m_peptideStringWithMods;

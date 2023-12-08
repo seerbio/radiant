@@ -114,13 +114,8 @@ Err TargetDecoyCandidatePairManager::Private::getPoints(
 
 
 TargetDecoyCandidatePairManager::TargetDecoyCandidatePairManager()
-: m_isInit(false)
-, d_ptr(new Private())
+: d_ptr(new Private())
 {}
-
-bool TargetDecoyCandidatePairManager::isInit() {
-    return m_isInit;
-}
 
 namespace {
 
@@ -176,7 +171,6 @@ Err TargetDecoyCandidatePairManager::init(
     e = buildTargetDecoyCandidatePairs(fragLibReaderRows); ree;
 
     e = d_ptr->init(&m_targetDecoyCandidatePairs); ree;
-    m_isInit = true;
 
     ERR_RETURN
 }

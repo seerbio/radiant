@@ -44,10 +44,6 @@ public:
             QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
     );
 
-    bool isInit();
-
-    Err clearScores();
-
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             PeptideStringWithMods *peptideStringWithMods,
@@ -62,10 +58,7 @@ private:
 private:
 
     QVector<TargetDecoyCandidatePair> m_targetDecoyCandidatePairs;
-
     PythiaParameters m_pythiaParameters;
-
-    bool m_isInit;
 
     Q_DISABLE_COPY(TargetDecoyCandidatePairManager) class Private;
     const QScopedPointer<Private> d_ptr;
