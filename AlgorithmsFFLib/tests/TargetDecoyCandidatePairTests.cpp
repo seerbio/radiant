@@ -13,9 +13,56 @@ public:
 
 private Q_SLOTS:
 
+    void gettersTest();
+
 
 };
 
+void TargetDecoyCandidatePairTests::gettersTest() {
+
+    MS2Ion ms2Ion1;
+    ms2Ion1.mz = 666.6;
+
+    MS2Ion ms2Ion2;
+    ms2Ion2.mz = 777.7;
+
+    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("CHAUNCYANDFLOPS");
+    const QVector<MS2Ion> ms2IonsTarget = {ms2Ion1};
+    const QVector<MS2Ion> ms2IonsDecoy = {ms2Ion2};
+    const int charge = 2;
+    const double mass = 666.6;
+    const double iRt = 66.6;
+    const int totalFramentCount = 12;
+
+    TargetDecoyCandidatePair targetDecoyCandidatePair(
+            peptideStringWithMods,
+            ms2IonsTarget,
+            ms2IonsDecoy,
+            charge,
+            mass,
+            iRt,
+            totalFramentCount
+            );
+
+    targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100 = 6.6;
+    targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100 = 7.7;
+
+    QCOMPARE(targetDecoyCandidatePair.peptideStringWithMods(), peptideStringWithMods);
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(), 334.3072));
+    QCOMPARE(targetDecoyCandidatePair.charge(), charge);
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100, 6.6));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100, 7.7));
+    QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
+
+    targetDecoyCandidatePair.clearScores();
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100, -1.0));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100, -1.0));
+
+}
 
 
 QTEST_MAIN(TargetDecoyCandidatePairTests)
