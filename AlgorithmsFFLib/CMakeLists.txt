@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(WorkFlowsLib
+PROJECT(AlgorithmsFFLib
         VERSION "1.0"
         )
 
 INCLUDE(GenerateExportHeader)
 INCLUDE(CMakePackageConfigHelpers)
 
-SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
@@ -20,20 +20,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-#        src/ConvertMzMLToParquetWorkFlow.cpp
-        src/FastaFileToPeptidesListWorkFlow.cpp
-#        src/LibraryBuilderWorkFlow.cpp
-        src/PythiaDIAWorkflow.cpp
-        src/PythiaDIAFFWorkflow.cpp
-    )
+
+)
 
 SET(HEADER_FILES
-#        src/ConvertMzMLToParquetWorkFlow.h
-#        src/FastaFileToPeptidesListWorkFlow.h
-#        src/LibraryBuilderWorkFlow.h
-        src/PythiaDIAWorkflow.h
-        src/PythiaDIAFFWorkflow.h
-    )
+
+)
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
@@ -45,13 +37,12 @@ SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
-
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        ${DLIB_DIRECTORY}
         ${EIGEN_DIRECTORY}
-)
+        ${NANOFLANN_DIRECTORY}
+        )
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
@@ -60,14 +51,17 @@ FIND_PACKAGE(Qt5 COMPONENTS
         REQUIRED
 )
 
+
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         Qt5::Core
         Qt5::Test
-        AlgorithmsLib
+        ChemLib
         EigenLib
         FileReadersLib
+        MachineLrnLib
+        PyTorchLib
         UtilsLib
         )
 
@@ -125,8 +119,5 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         FILE ${PROJECT_NAME}Targets.cmake
         COMPONENT Devel
         )
-
-# for MSVS
-SOURCE_GROUP("Source Files" FILES ${${PROJECT_NAME}_LIB_SOURCES})
 
 ADD_SUBDIRECTORY("tests")
