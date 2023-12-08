@@ -8,16 +8,21 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 
 using namespace Error;
 
 
+class MsScanInfo;
+class TargetDecoyCandidatePair;
 
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflow {
 
 public:
+
+    friend class PythiaDIAFFWorkflowTests;
 
     PythiaDIAFFWorkflow();
     ~PythiaDIAFFWorkflow() = default;
@@ -32,7 +37,11 @@ public:
 
 private:
 
-
+    Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            const QList<MsScanInfo> &msScanInfos,
+            double selectionFraction,
+            QMap<UniqueMsInfoScanKey, TargetDecoyCandidatePair> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
+            );
 
 private:
 
@@ -40,8 +49,6 @@ private:
     QString m_fragLibUri;
     QString m_fastaUri;
 
-
-    
 };
 
 

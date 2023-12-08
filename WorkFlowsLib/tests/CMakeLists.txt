@@ -19,6 +19,7 @@ SET(TEST_CLASSES
 #        FastaFileToPeptidesListWorkFlowTests
 #        LibraryBuilderWorkFlowTests
 #        PythiaDIAWorkflowTests
+        PythiaDIAFFWorkflowTests
         )
 
 foreach(class ${TEST_CLASSES})

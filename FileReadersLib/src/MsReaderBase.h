@@ -43,7 +43,7 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
                 );
     }
 
-    static QString targetScanKey(double mzStart, double mzEnd) {
+    static UniqueMsInfoScanKey targetScanKey(double mzStart, double mzEnd) {
         return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };

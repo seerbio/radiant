@@ -114,7 +114,7 @@ private:
 
 private:
 
-    PythiaParameters m_pythiaParameters;
+//    PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_fastaUri;
 

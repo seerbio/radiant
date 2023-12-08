@@ -5,8 +5,7 @@
 #include "PythiaDIAFFWorkflow.h"
 
 #include "MsReaderParquet.h"
-
-
+#include "TargetDecoyCandidatePairManager.h"
 
 
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow(){}
@@ -35,11 +34,37 @@ Err PythiaDIAFFWorkflow::init(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::processFile(const QString &_msDataFilePath) {
+Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
 
+
+
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+        const QList<MsScanInfo> &msScanInfos,
+        double selectionFraction,
+        QMap<UniqueMsInfoScanKey, TargetDecoyCandidatePair> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(msScanInfos); ree;
+    uniqueInfoScanKeyVsTargetDecoyCandidatePointers->clear();
+
+    TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
+    e = targetDecoyCandidatePairManager.init(
+            m_pythiaParameters,
+            m_fragLibUri
+            ); ree;
+
+    for (const MsScanInfo &msScanInfo : msScanInfos) {
+        qDebug() << msScanInfo.precursorTargetMz << msScanInfo.isoWindowLower << msScanInfo.isoWindowUpper;
+    }
 
     ERR_RETURN
 }
