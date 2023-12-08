@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         ErrorUtilsTests
         MathUtilsTests
         ParallelUtilsTests
+        PointDFTests
         SqlUtilsTests
         )
 

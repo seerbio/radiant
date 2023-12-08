@@ -27,6 +27,7 @@ SET(SOURCE_FILES
         src/GlobalSettings.cpp
         src/MathUtils.cpp
         src/ParallelUtils.cpp
+        src/PointDF.cpp
         src/SqlUtils.cpp
         src/StringUtils.cpp
         )
@@ -37,6 +38,7 @@ SET(HEADER_FILES
         src/GlobalSettings.h
         src/MathUtils.h
         src/ParallelUtils.h
+        src/PointDF.h
         src/SqlUtils.h
         src/StringUtils.h
         )
@@ -44,7 +46,9 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        )
+        src/PointDF.cpp
+        src/PointDF.h
+)
 
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}
