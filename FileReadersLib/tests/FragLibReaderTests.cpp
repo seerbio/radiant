@@ -58,29 +58,22 @@ void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedT
 
 void FragLibReaderTests::getSM2IonsTest() {
 
-    QSKIP("TODO: use bundled test data");
-
     ERR_INIT
 
-
-    QSKIP("activate when proper pathing is used");
-
-    //TODO accumulate this test file to S3 for DL for unit test
-    //TODO use smaller file to save on DL time.
-    const QString testFilePath
-        = "/home/anichols/Downloads/human_plasma_arath_entrapment.fasta.predicted.speclib.fragLib";
+    const QString &testFilePath
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
 
     QVector<FragLibReaderRow> fragLibReaderRows;
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,
-            600.0,
-            900.0,
+            100.0,
+            40000.0,
             &fragLibReaderRows
             );
 
     QCOMPARE(e, eNoError);
-    QCOMPARE(fragLibReaderRows.size(), 78161);
+    QCOMPARE(fragLibReaderRows.size(), 9581);
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,

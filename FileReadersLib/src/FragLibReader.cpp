@@ -5,6 +5,7 @@
 #include "FragLibReader.h"
 
 #include <QElapsedTimer>
+#include <QFileInfo>
 
 Err FragLibReader::getFragLibReaderRows(
         const QString &fragLibFilePath,
@@ -17,6 +18,14 @@ Err FragLibReader::getFragLibReaderRows(
 
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
     e = ErrorUtils::isTrue(massEnd > massStart); ree;
+
+    QFileInfo fi(fragLibFilePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            FragLibReaderNamespace::FRAG_LIB_DF_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+            ); ree;
 
     fragLibReaderRows->clear();
 
