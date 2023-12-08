@@ -44,9 +44,6 @@ void TargetDecoyCandidatePairTests::gettersTest() {
             totalFramentCount
             );
 
-    targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100 = 6.6;
-    targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100 = 7.7;
-
     QCOMPARE(targetDecoyCandidatePair.peptideStringWithMods(), peptideStringWithMods);
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6));
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7));
@@ -54,13 +51,7 @@ void TargetDecoyCandidatePairTests::gettersTest() {
     QCOMPARE(targetDecoyCandidatePair.charge(), charge);
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6));
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100, 6.6));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100, 7.7));
     QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
-
-    targetDecoyCandidatePair.clearScores();
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrTarget()->cosineSimSum100, -1.0));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.candidateScoresPtrDecoy()->cosineSimSum100, -1.0));
 
 }
 

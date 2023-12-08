@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/CandidateScores.cpp
         src/MS2Ion.cpp
         src/TargetDecoyCandidatePair.cpp
+        src/TargetDecoyCandidatePairManager.cpp
 )
 
 SET(HEADER_FILES
@@ -31,6 +32,7 @@ SET(HEADER_FILES
         src/CandidateScores.h
         src/MS2Ion.h
         src/TargetDecoyCandidatePair.h
+        src/TargetDecoyCandidatePairManager.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

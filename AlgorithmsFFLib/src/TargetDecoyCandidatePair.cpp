@@ -65,16 +65,3 @@ double TargetDecoyCandidatePair::iRt() const {
 int TargetDecoyCandidatePair::totalFragmentCount() const {
     return m_totalFragmentCount;
 }
-
-CandidateScores* TargetDecoyCandidatePair::candidateScoresPtrTarget() {
-    return &m_candidateScoresTarget;
-}
-
-CandidateScores* TargetDecoyCandidatePair::candidateScoresPtrDecoy() {
-    return &m_candidateScoresDecoy;
-}
-
-void TargetDecoyCandidatePair::clearScores() {
-    m_candidateScoresTarget.clear();
-    m_candidateScoresDecoy.clear();
-}

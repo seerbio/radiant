@@ -36,9 +36,6 @@ public:
 
     ~TargetDecoyCandidatePair() = default;
 
-    CandidateScores* candidateScoresPtrTarget();
-    CandidateScores* candidateScoresPtrDecoy();
-
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
@@ -47,9 +44,7 @@ public:
     [[nodiscard]] double mass() const;
     [[nodiscard]] double iRt() const;
     [[nodiscard]] int totalFragmentCount() const;
-
-    void clearScores();
-
+    
 private:
 
     PeptideStringWithMods m_peptideStringWithMods;
@@ -60,8 +55,6 @@ private:
     double m_iRt;
     int m_totalFragmentCount;
 
-    CandidateScores m_candidateScoresTarget;
-    CandidateScores m_candidateScoresDecoy;
 };
 
 

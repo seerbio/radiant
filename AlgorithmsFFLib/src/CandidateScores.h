@@ -12,7 +12,7 @@
 #include "GlobalSettings.h"
 #include "ParquetReader.h"
 
-
+//TODO make unit tests.
 namespace CandidateScoresNamespace {
 
     const QString COS_SIM_SUM_100 = QStringLiteral("cosineSimSum100");
