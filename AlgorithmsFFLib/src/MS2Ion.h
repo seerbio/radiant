@@ -194,7 +194,7 @@ public:
     static ScanPoints ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions) {
 
         const auto convLogic = [](const MS2Ion &ion){
-            return QPointF(ion.mz, ion.intensity);
+            return ScanPoint (ion.mz, ion.intensity);
         };
 
         ScanPoints predPoints;

@@ -16,10 +16,6 @@
 
 using namespace Error;
 
-struct CandidatePeptide{
-    //TODO delete this after troubleshooting
-};
-
 namespace FragLibReaderNamespace {
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");
@@ -45,7 +41,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
     PeptideSequenceChargeKey peptideSequenceChargeKey;
     QVector<double> mzVals;
-    QVector<double> intensityVals;
+    QVector<float> intensityVals;
     QString ionLabels;
     double mass = -1.0;
     int isDecoy = 0;
@@ -83,7 +79,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
         peptideSequenceChargeKey = dataMap.value(PEP_SEQ_CHRG_KEY).toString();
         mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
-        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
         mass = dataMap.value(MASS).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toInt();
         ionLabels = dataMap.value(ION_LABLES).toString();
@@ -116,15 +112,6 @@ public:
             double massEnd,
             QVector<FragLibReaderRow> *fragLibReaderRows
     );
-
-
-
-
-//    static Err mutateCandidatePeptideTarget(
-//            const CandidatePeptide &candidatePeptideTarget,
-//            CandidatePeptide *candidatePeptideDecoy
-//    );
-
 
 };
 

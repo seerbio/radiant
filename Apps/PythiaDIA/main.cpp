@@ -6,7 +6,7 @@
 #include "CommandLineParserUtils.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
-#include "PythiaDIAWorkflow.h"
+#include "PythiaDIAFFWorkflow.h"
 #include "StringUtils.h"
 
 #include <QCoreApplication>
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    PythiaDIAWorkflow pythiaDiaWorkflow;
-    e = pythiaDiaWorkflow.init(
+    PythiaDIAFFWorkflow pythiaDiaFFWorkflow;
+    e = pythiaDiaFFWorkflow.init(
             pythiaParameters,
             fragLibPath,
             fastaFilePath
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    e = pythiaDiaWorkflow.processFile(cliParameters.msDataFile);
+    e = pythiaDiaFFWorkflow.processFile(cliParameters.msDataFile);
     if (e != eNoError) {
         qDebug() << cliParameters.msDataFile << "Did not run completely";
         return 1;
