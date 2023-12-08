@@ -72,7 +72,7 @@ namespace {
         const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
         for (const XICPoints &xp : xicPoints) {
 
-            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xp.scanNumbersVsIntensityVals();
+            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xp.scanNumbersVsIntensity;
 
             if (scanNumbersVsIntensityVals.isEmpty()) {
                 continue;
@@ -105,7 +105,7 @@ namespace {
             const MzHashed mzHashed = it.key();
             const XICPoints &xicPoints = it.value();
 
-            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals();
+            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
 
             if (scanNumbersVsIntensityVals.isEmpty()) {
                 mzHashedVsIonPresence->insert(mzHashed, {});
@@ -221,7 +221,7 @@ namespace {
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals();
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
 
         for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;

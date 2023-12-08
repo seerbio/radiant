@@ -67,7 +67,6 @@ using Tranche = int;
 using UniqueMsInfoScanKey = QString;
 using UniqueHashedMzAndTarget = QString;
 using Value = double;
-using XICPoint = QPair<ScanNumber, Intensity>;
 using XVal = double;
 using YVal = double;
 

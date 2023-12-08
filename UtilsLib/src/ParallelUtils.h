@@ -113,7 +113,8 @@ public:
     template <typename T>
     static QVector<T> convertMapToVector(const QMap<int, T> &m, int vecSize){
 
-        QVector<double> vec(vecSize);
+        QVector<T> vec(vecSize, 0.0);
+        vec.reserve(vecSize);
 
         for (auto it = m.begin(); it != m.end(); it++) {
 

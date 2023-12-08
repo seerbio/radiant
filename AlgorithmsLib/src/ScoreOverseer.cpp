@@ -103,7 +103,7 @@ namespace {
             const MzHashed mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
             QVector<double> intensityVals = ParallelUtils::convertMapToVector(
-                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensityVals(),
+                    mzHashedVsXICPoints.value(mzHashed).scanNumbersVsIntensity,
                     rows
             );
 
@@ -312,7 +312,9 @@ namespace {
     Err removeInterferingPeaksInMatrix(
             const Eigen::MatrixX<double> &_intensityMatrixIntegratedLimits,
             const QVector<double> &peakCountsPerRow,
-            Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference
+            Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference,
+            int *bestApexRowIndex,
+            QVector<int> *apexIndexes
     ) {
 
         ERR_INIT
@@ -322,19 +324,22 @@ namespace {
 
         Eigen::MatrixX<double> intensityMatrixIntegratedLimits = _intensityMatrixIntegratedLimits;
 
-        int bestApexRowIndex;
-        e = findBestApexRowInMatrix(intensityMatrixIntegratedLimits, peakCountsPerRow, &bestApexRowIndex); ree;
+        e = findBestApexRowInMatrix(intensityMatrixIntegratedLimits, peakCountsPerRow, bestApexRowIndex); ree;
 
         for (int col = 0; col < intensityMatrixIntegratedLimits.cols(); col++) {
 
             Eigen::VectorX<double> colVec = intensityMatrixIntegratedLimits.col(col);
-            const QMap<int, double> columnApexes = EigenUtils::apexes(colVec);
+            const QVector<int> columnApexes = EigenUtils::apexesIndexesOnly(colVec);
 
-            const QList<int> &keys = columnApexes.keys();
-            const int bestApexIndexColumn = keys.at(MathUtils::closest(keys.toVector(), bestApexRowIndex));
+            if (columnApexes.isEmpty()) {
+                continue;
+            }
+
+            const int bestApexIndexColumn = columnApexes.at(MathUtils::closest(columnApexes, *bestApexRowIndex));
 
             e = removeInterferingPeaksInColumn(bestApexIndexColumn, &colVec); ree;
             intensityMatrixIntegratedLimits.col(col) = colVec;
+            apexIndexes->push_back(bestApexIndexColumn);
 
         }
 
@@ -434,41 +439,20 @@ namespace {
         const int maxIndexPeakCountsPerRow = MathUtils::findMaxIndexInVector(peakCountsPerRow);
         *frameIndexIntensityApexIntegration = maxIndexPeakCountsPerRow + rowStart;
 
+        int bestApexRowIndex;
+        QVector<int> apexIndexes;
         e = removeInterferingPeaksInMatrix(
                 intensityMatrixIntegratedLimits,
                 peakCountsPerRow,
-                intensityMatrixIntegratedLimitsNoInterference
+                intensityMatrixIntegratedLimitsNoInterference,
+                &bestApexRowIndex,
+                &apexIndexes
                 ); ree;
 
-        int maxIndex = -1;
-        double maxIndexValue = -1.0;
-        QVector<int> maxIndexesTemp;
-        for (int col = 0; col < intensityMatrixIntegratedLimitsNoInterference->cols(); col++) {
-
-            const Eigen::VectorX<double> &vCol = intensityMatrixIntegratedLimitsNoInterference->col(col);
-
-            const int maxIndexVec = MathUtils::findMaxIndexInVector(EigenUtils::convertEigenVectorToQVector(vCol));
-            maxIndexesTemp.push_back(maxIndexVec);
-            const double maxIndexVecVal = vCol.maxCoeff();
-            if (maxIndexVecVal > maxIndexValue) {
-                maxIndexValue = maxIndexVecVal;
-                maxIndex = maxIndexVec;
-            }
-        }
-
-        QVector<int> maxIndexes;
-        std::transform(
-                maxIndexesTemp.begin(),
-                maxIndexesTemp.end(),
-                std::back_inserter(maxIndexes),
-                [maxIndex](int i){return i - maxIndex;}
-                );
-
         *allignedMaxIndexesCount = static_cast<int>(std::count_if(
-                maxIndexes.begin(),
-                maxIndexes.end(),
-                [](int i){return i == 0;}
-                )
+                apexIndexes.begin(),
+                apexIndexes.end(),
+                [bestApexRowIndex](int i){return i == bestApexRowIndex;})
                         );
 
 //#define CHECK_ALIGNMENT
@@ -779,7 +763,7 @@ namespace {
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensityVals();
+        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
 
         for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
@@ -889,6 +873,8 @@ namespace {
                     }
                 }
             }
+            e = xicPointsTight1New.buildScanNumbersVsIntensityVals(); ree;
+            e = xicPointsTight2New.buildScanNumbersVsIntensityVals(); ree;
             mzHashedVsXICPoints45->insert(mzHashed, xicPointsTight1New);
             mzHashedVsXICPoints20->insert(mzHashed, xicPointsTight2New);
         }

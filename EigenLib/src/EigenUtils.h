@@ -229,8 +229,8 @@ public:
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
 
-    template <typename EigenMatrix>
-    static double cosineSimilarity(const EigenMatrix &v1, const EigenMatrix &v2) {
+    template <typename T>
+    static double cosineSimilarity(const Eigen::VectorX<T> &v1, const Eigen::VectorX<T> &v2) {
 
         const double nearZero = 1e-5;
         const double dotProduct = v1.dot(v2);
@@ -431,6 +431,64 @@ public:
 
             if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
                 apexIndicies.insert(index, _vec.coeff(index));
+            }
+        }
+
+        return apexIndicies;
+    }
+
+    /*!
+    * \brief Finds all apexes in a eigen vector and returns the apexes only w/ no regard to order.
+     *
+     *  Returns a QVector of all found apexes
+    */
+    template <typename T>
+    static QVector<int> apexesIndexesOnly(
+            const Eigen::VectorX<T> &_vec,
+            int precision = 1e4
+    ){
+
+        QVector<int> apexIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
+
+        const int vecSize = static_cast<int>(vec.size());
+        for (int index = 0; index < vecSize; index++) {
+
+            const auto centerPointValue = static_cast<int>(std::round(vec.coeff(index) * precision));
+
+            if(index < 1){
+
+                const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
+
+                if (centerPointValue >= rightPointValue) {
+                    apexIndicies.push_back(index);
+                }
+
+                continue;
+            }
+
+            if (index >= vecSize - 1) {
+
+                const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
+
+                if (centerPointValue > leftPointValue) {
+                    apexIndicies.push_back(index);
+                }
+
+                continue;
+            }
+
+            const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
+            const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
+
+            if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
+                apexIndicies.push_back(index);
             }
         }
 

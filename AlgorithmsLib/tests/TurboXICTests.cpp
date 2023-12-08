@@ -85,15 +85,15 @@ void TurboXICTests::extractPointsTest() {
     QCOMPARE(e, eNoError);
 
     const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
-    QCOMPARE(xicPoints.scanNumbersVsIntensityVals().size(), 2);
-    QCOMPARE(xicPoints.scanNumbersVsIntensityVals().firstKey(), 2);
-    QCOMPARE(xicPoints.scanNumbersVsIntensityVals().first(), 100.2);
-    QCOMPARE(xicPoints.scanNumbersVsIntensityVals().lastKey(), 3);
-    QCOMPARE(xicPoints.scanNumbersVsIntensityVals().last(), 100.3);
+    QCOMPARE(xicPoints.scanNumbersVsIntensity.size(), 2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensity.firstKey(), 2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensity.first(), 100.2);
+    QCOMPARE(xicPoints.scanNumbersVsIntensity.lastKey(), 3);
+    QCOMPARE(xicPoints.scanNumbersVsIntensity.last(), 100.3);
 
     const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
-    QCOMPARE(xicPointsSum.scanNumbersVsIntensityVals().size(), 4);
-    QCOMPARE(xicPointsSum.scanNumbersVsIntensityVals().last(), 201.);
+    QCOMPARE(xicPointsSum.scanNumbersVsIntensity.size(), 4);
+    QCOMPARE(xicPointsSum.scanNumbersVsIntensity.last(), 201.);
 
 }
 

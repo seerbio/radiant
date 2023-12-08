@@ -511,7 +511,7 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
                 scores.push_back(intzFound / totalIntensity);
             }
 
-            const int topSix = 6;
+            const int topSix = std::min(6, candidateScores.mzSearchedVec.size());
             QVector<double> ppmVec;
             for (int i = 0; i < topSix; i++) {
 

@@ -146,6 +146,7 @@ XICPoints TurboXIC::Private::extractPointsXIC(
         xicPoints.scanNumbersVsScanPoints[scanNumber].push_back({rtp.first.get<1>(), rtp.second});
     }
 
+    Err e = xicPoints.buildScanNumbersVsIntensityVals();
     return xicPoints;
 }
 
