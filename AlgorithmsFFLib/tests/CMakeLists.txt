@@ -15,6 +15,7 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         MS2IonTests
         TargetDecoyCandidatePairTests
+        TargetDecoyCandidatePairManagerTests
 )
 
 foreach(class ${TEST_CLASSES})

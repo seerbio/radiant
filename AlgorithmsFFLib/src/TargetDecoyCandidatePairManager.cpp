@@ -117,6 +117,8 @@ TargetDecoyCandidatePairManager::TargetDecoyCandidatePairManager()
 : d_ptr(new Private())
 {}
 
+TargetDecoyCandidatePairManager::~TargetDecoyCandidatePairManager() {}
+
 namespace {
 
     void removeNonSequencesWithNonCanonicalAminoAcids(QVector<FragLibReaderRow> *fragLibReaderRows) {
@@ -559,7 +561,8 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 
     e = ErrorUtils::isEqual(
             peptideSequenceChargeKeySplit.size(),
-            expectedSplitSize); ree;
+            expectedSplitSize
+            ); ree;
 
     *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
 

@@ -23,8 +23,10 @@ class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairManager {
 
 public:
 
+    friend class TargetDecoyCandidatePairManagerTests;
+
     TargetDecoyCandidatePairManager();
-    ~TargetDecoyCandidatePairManager() = default;
+    ~TargetDecoyCandidatePairManager();
 
     Err init(
             const PythiaParameters &pythiaParameters,
