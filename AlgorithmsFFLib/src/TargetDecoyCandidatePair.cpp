@@ -4,7 +4,7 @@
 
 #include "TargetDecoyCandidatePair.h"
 
-#include "ChemConstants.h"
+#include "BiophysicalCalcs.h"
 
 TargetDecoyCandidatePair::TargetDecoyCandidatePair()
 : m_peptideStringWithMods("")
@@ -14,7 +14,6 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair()
 , m_mass(-1.0)
 , m_iRt(-1.0)
 , m_totalFragmentCount(-1)
-, m_targetDecoyCandidatePairIndex(-1)
 {}
 
 TargetDecoyCandidatePair::TargetDecoyCandidatePair(
@@ -24,17 +23,15 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         int charge,
         double mass,
         double iRt,
-        int totalFramentCount,
-        TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex
-        )
-        : m_peptideStringWithMods(peptideStringWithMods)
-        , m_ms2IonsTarget(ms2IonsTarget)
-        , m_ms2IonsDecoy(ms2IonsDecoy)
-        , m_charge(charge)
-        , m_mass(mass)
-        , m_iRt(iRt)
-        , m_totalFragmentCount(totalFramentCount)
-        , m_targetDecoyCandidatePairIndex(targetDecoyCandidatePairIndex)
+        int totalFramentCount
+)
+: m_peptideStringWithMods(peptideStringWithMods)
+, m_ms2IonsTarget(ms2IonsTarget)
+, m_ms2IonsDecoy(ms2IonsDecoy)
+, m_charge(charge)
+, m_mass(mass)
+, m_iRt(iRt)
+, m_totalFragmentCount(totalFramentCount)
 {}
 
 PeptideStringWithMods TargetDecoyCandidatePair::peptideStringWithMods() const {
@@ -50,7 +47,7 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
 }
 
 double TargetDecoyCandidatePair::mz() const {
-    return (m_mass + (ChemConstants::PROTON * m_charge)) / m_charge;
+    return BiophysicalCalcs::calculateThomsonFromMass(m_mass, m_charge);
 }
 
 int TargetDecoyCandidatePair::charge() const {
@@ -69,69 +66,15 @@ int TargetDecoyCandidatePair::totalFragmentCount() const {
     return m_totalFragmentCount;
 }
 
-TargetDecoyCandidatePairIndex TargetDecoyCandidatePair::targetDecoyCandidatePairIndex() const {
-    return m_targetDecoyCandidatePairIndex;
+CandidateScores* TargetDecoyCandidatePair::candidateScoresPtrTarget() {
+    return &m_candidateScoresTarget;
 }
 
-void TargetDecoyCandidatePair::setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index) {
-    m_targetDecoyCandidatePairIndex = index;
-}
-
-QMap<UniqueMsInfoScanKey, CandidateScores>* TargetDecoyCandidatePair::uniqueInfoScanKeyVsScoresTarget() {
-    return &m_uniqueInfoScanKeyVsScoresTarget;
-}
-
-QMap<UniqueMsInfoScanKey, CandidateScores>* TargetDecoyCandidatePair::uniqueInfoScanKeyVsScoresDecoy() {
-    return &m_uniqueInfoScanKeyVsScoresDecoy;
+CandidateScores* TargetDecoyCandidatePair::candidateScoresPtrDecoy() {
+    return &m_candidateScoresDecoy;
 }
 
 void TargetDecoyCandidatePair::clearScores() {
-    m_uniqueInfoScanKeyVsScoresTarget.clear();
-    m_uniqueInfoScanKeyVsScoresDecoy.clear();
-}
-
-UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKeyTarget() const {
-
-    UniqueMsInfoScanKey uniqueMsInfoScanKey;
-    double bestDiscriminantScore = -1;
-    for (auto it = m_uniqueInfoScanKeyVsScoresTarget.begin(); it != m_uniqueInfoScanKeyVsScoresTarget.end(); it++) {
-        const UniqueMsInfoScanKey &k = it.key();
-        const CandidateScores &cs = it.value();
-
-        if (cs.discriminateScore > bestDiscriminantScore) {
-            uniqueMsInfoScanKey = k;
-            bestDiscriminantScore = cs.discriminateScore;
-        }
-    }
-
-    return uniqueMsInfoScanKey;
-}
-
-UniqueMsInfoScanKey TargetDecoyCandidatePair::bestDiscriminateScoreKeyDecoy() const {
-
-    UniqueMsInfoScanKey uniqueMsInfoScanKey;
-    double bestDiscriminantScore = -1;
-    for (auto it = m_uniqueInfoScanKeyVsScoresDecoy.begin(); it != m_uniqueInfoScanKeyVsScoresDecoy.end(); it++) {
-        const UniqueMsInfoScanKey &k = it.key();
-        const CandidateScores &cs = it.value();
-
-        if (cs.discriminateScore > bestDiscriminantScore) {
-            uniqueMsInfoScanKey = k;
-            bestDiscriminantScore = cs.discriminateScore;
-        }
-    }
-
-    return uniqueMsInfoScanKey;
-}
-
-CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrTarget() {
-
-    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKeyTarget();
-    return &m_uniqueInfoScanKeyVsScoresTarget[uniqueMsInfoScanKeyBestDiscScore];
-
-}
-
-CandidateScores *TargetDecoyCandidatePair::candidateScoresBestDiscriminantScorePtrDecoy() {
-    const UniqueMsInfoScanKey uniqueMsInfoScanKeyBestDiscScore = bestDiscriminateScoreKeyDecoy();
-    return &m_uniqueInfoScanKeyVsScoresDecoy[uniqueMsInfoScanKeyBestDiscScore];
+    m_candidateScoresTarget.clear();
+    m_candidateScoresDecoy.clear();
 }

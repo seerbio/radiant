@@ -23,6 +23,7 @@ class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 public:
 
     TargetDecoyCandidatePair();
+
     TargetDecoyCandidatePair(
             const PeptideStringWithMods &peptideStringWithMods,
             const QVector<MS2Ion> &ms2IonsTarget,
@@ -30,17 +31,13 @@ public:
             int charge,
             double mass,
             double iRt,
-            int totalFramentCount,
-            TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex
+            int totalFramentCount
             );
 
     ~TargetDecoyCandidatePair() = default;
 
-    CandidateScores* candidateScoresBestDiscriminantScorePtrTarget();
-    CandidateScores* candidateScoresBestDiscriminantScorePtrDecoy();
-
-    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresTarget();
-    QMap<UniqueMsInfoScanKey, CandidateScores>* uniqueInfoScanKeyVsScoresDecoy();
+    CandidateScores* candidateScoresPtrTarget();
+    CandidateScores* candidateScoresPtrDecoy();
 
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
@@ -50,19 +47,10 @@ public:
     [[nodiscard]] double mass() const;
     [[nodiscard]] double iRt() const;
     [[nodiscard]] int totalFragmentCount() const;
-    [[nodiscard]] TargetDecoyCandidatePairIndex targetDecoyCandidatePairIndex() const;
-
-    void setTargetDecoyCandidatePairIndex(TargetDecoyCandidatePairIndex index);
 
     void clearScores();
 
-    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyTarget() const;
-
-    [[nodiscard]] UniqueMsInfoScanKey bestDiscriminateScoreKeyDecoy() const;
-
 private:
-
-    TargetDecoyCandidatePairIndex m_targetDecoyCandidatePairIndex;
 
     PeptideStringWithMods m_peptideStringWithMods;
     QVector<MS2Ion> m_ms2IonsTarget;
@@ -72,9 +60,8 @@ private:
     double m_iRt;
     int m_totalFragmentCount;
 
-    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresTarget;
-    QMap<UniqueMsInfoScanKey, CandidateScores> m_uniqueInfoScanKeyVsScoresDecoy;
-
+    CandidateScores m_candidateScoresTarget;
+    CandidateScores m_candidateScoresDecoy;
 };
 
 
