@@ -27,7 +27,7 @@ public:
     MzTargetKey mzTargetKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
-    QMap<ScanNumber, ScanPoints*> ms1Frame;
+    QVector<FeatureFinderHill*> ms1FeatureFinderHills;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
@@ -413,6 +413,14 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
     e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
 
+    FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
+    FeatureFinderHillBuilder featureFinderHillBuilder;
+    e = featureFinderHillBuilder.init(featureFinderParameters); ree;
+    e = featureFinderHillBuilder.buildHills(m_ms1Frame); ree;
+
+    QVector<FeatureFinderHill*> ms1FeatureFinderHills;
+    e = featureFinderHillBuilder.getHills(&ms1FeatureFinderHills); ree;
+
     for (const MsScanInfo &msScanInfo : m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos()) {
 
         TargetDecoyPairParallelInput tdppi;
@@ -422,7 +430,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;
-        tdppi.ms1Frame = m_ms1Frame;
+        tdppi.ms1FeatureFinderHills = ms1FeatureFinderHills;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.mzTargetKey);
 
         input->push_back(tdppi);

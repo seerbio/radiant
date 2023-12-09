@@ -13,6 +13,7 @@
 #include "TurboXIC.h"
 
 class CandidateScores;
+class FeatureFinderHill;
 class MS2Ion;
 class MsFrame;
 class TargetDecoyCandidatePair;
@@ -30,7 +31,8 @@ public:
     ~CandidateScorertron() = default;
 
     Err init(
-            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPointsMS1,
+            const QVector<FeatureFinderHill*> &ms1FeatureFinderHills,
+            const QVector<FeatureFinderHill*> &ms2FeatureFinderHills,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions
@@ -39,11 +41,8 @@ public:
     Err calculateScores(
             const TargetDecoyCandidatePair* targetDecoyCandidatePair,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-            const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
             double scanTimePredicted,
-            MsFrame *msFrame,
             CandidateScores *candidateScores
             );
 

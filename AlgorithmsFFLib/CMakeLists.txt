@@ -60,7 +60,9 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        )
+        src/FeatureFinderHillRTree.cpp
+        src/FeatureFinderHillRTree.h
+)
 
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}

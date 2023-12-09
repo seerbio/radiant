@@ -33,7 +33,8 @@ namespace{
 
 }//namespace
 Err CandidateScorertron::init(
-        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPointsMS1,
+        const QVector<FeatureFinderHill*> &ms1FeatureFinderHills,
+        const QVector<FeatureFinderHill*> &ms2FeatureFinderHills,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions
@@ -41,18 +42,11 @@ Err CandidateScorertron::init(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
+    e = ErrorUtils::isNotEmpty(ms1FeatureFinderHills); ree;
+    e = ErrorUtils::isNotEmpty(ms2FeatureFinderHills); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(topNMS2Ions > 0); ree;
-
-    MsFrame ms1Frame;
-    e = ms1Frame.init(
-            scanNumberVsScanPointsMS1,
-            scanNumberVsScanTime
-            ); ree;
-
-    e = m_turboXICMS1.init(ms1Frame.frameIndexVsScanPoints()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
@@ -244,68 +238,65 @@ namespace {
 Err CandidateScorertron::calculateScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2IonsTheoretical,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-        const QMap<MzHashed, XICPoints> &mzHashedVsXICPointsIsotopeShadows,
         double scanTimePredicted,
-        MsFrame *msFrame,
         CandidateScores *candidateScores
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
 
-    //LAST BIGGEST
-    QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
-    e = buildMzHashedVsIonPresence(
-            mzHashedVsXICPoints,
-            &mzHashedVsIonPresence
-            ); ree;
-
-    if (mzHashedVsIonPresence.isEmpty()) {
-        ERR_RETURN
-    }
-
-    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
-            ms2IonsTheoretical,
-            mzHashedVsIonPresence,
-            m_topNMS2Ions
-            );
-
-    const Eigen::VectorX<double> summedPresenceMatrixVec = presenceMatrix.rowwise().sum();
-    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedPresenceMatrixVec);
-
-    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-
-    //NEXT BIGGEST TIME
-    e = findCandidateIntegrations(
-            summedMatVecToVec,
-            &peakIntegrationIndexes
-    ); ree;
-
-//    ScoreOverseer scoreOverseer(
-//            m_topNMS2Ions,
-//            m_pythiaParameters.cosineSimToAnchorThreshold,
-//            m_pythiaParameters.ms2ExtractionWidthPPM,
-//            summedMatVecToVec,
-//            &m_turboXICMS1
+//    //LAST BIGGEST
+//    QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
+//    e = buildMzHashedVsIonPresence(
+//            mzHashedVsXICPoints,
+//            &mzHashedVsIonPresence
+//            ); ree;
+//
+//    if (mzHashedVsIonPresence.isEmpty()) {
+//        ERR_RETURN
+//    }
+//
+//    const Eigen::MatrixX<double> presenceMatrix = buildSummingMatrix(
+//            ms2IonsTheoretical,
+//            mzHashedVsIonPresence,
+//            m_topNMS2Ions
 //            );
 //
-//    //BIGGEST TIME
-//    e = scoreOverseer.buildScores(
-//            targetDecoyCandidatePair,
-//            peakIntegrationIndexes,
-//            ms2IonsTheoretical,
-//            mzHashedVsXICPoints,
-//            ms2IonsTheoreticalIsotopeShadows,
-//            mzHashedVsXICPointsIsotopeShadows,
-//            scanTimePredicted,
-//            m_pythiaParameters.subtractShadows,
-//            msFrame,
-//            candidateScores
-//            ); ree;
+//    const Eigen::VectorX<double> summedPresenceMatrixVec = presenceMatrix.rowwise().sum();
+//    const QVector<double> summedMatVecToVec = EigenUtils::convertEigenVectorToQVector(summedPresenceMatrixVec);
+//
+//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+//
+//    //NEXT BIGGEST TIME
+//    e = findCandidateIntegrations(
+//            summedMatVecToVec,
+//            &peakIntegrationIndexes
+//    ); ree;
+//
+////    ScoreOverseer scoreOverseer(
+////            m_topNMS2Ions,
+////            m_pythiaParameters.cosineSimToAnchorThreshold,
+////            m_pythiaParameters.ms2ExtractionWidthPPM,
+////            summedMatVecToVec,
+////            &m_turboXICMS1
+////            );
+////
+////    //BIGGEST TIME
+////    e = scoreOverseer.buildScores(
+////            targetDecoyCandidatePair,
+////            peakIntegrationIndexes,
+////            ms2IonsTheoretical,
+////            mzHashedVsXICPoints,
+////            ms2IonsTheoreticalIsotopeShadows,
+////            mzHashedVsXICPointsIsotopeShadows,
+////            scanTimePredicted,
+////            m_pythiaParameters.subtractShadows,
+////            msFrame,
+////            candidateScores
+////            ); ree;
 
     ERR_RETURN
 }
