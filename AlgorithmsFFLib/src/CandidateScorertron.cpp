@@ -8,6 +8,7 @@
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
+#include "FeatureFinderHillBuilder.h"
 #include "MsFrame.h"
 //#include "ScoreOverseer.h"
 #include "TargetDecoyCandidatePair.h"
@@ -33,17 +34,16 @@ namespace{
 
 }//namespace
 Err CandidateScorertron::init(
-        const QVector<FeatureFinderHill*> &ms1FeatureFinderHills,
-        const QVector<FeatureFinderHill*> &ms2FeatureFinderHills,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const PythiaParameters &pythiaParameters,
-        int topNMS2Ions
+        int topNMS2Ions,
+        MsCalibratomatic *msCalibratomatic,
+        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1,
+        FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(ms1FeatureFinderHills); ree;
-    e = ErrorUtils::isNotEmpty(ms2FeatureFinderHills); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(topNMS2Ions > 0); ree;
@@ -54,10 +54,32 @@ Err CandidateScorertron::init(
     const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_pythiaParameters);
     e = m_peakIntegratomatic.init(ffParams); ree;
 
+    m_msCalibratomatic = msCalibratomatic;
+    m_featureFinderHillsBuilderMS1 = featureFinderHillsBuilderMS1;
+    m_featureFinderHillsBuilderMS2 = featureFinderHillsBuilderMS2;
+
     ERR_RETURN
 }
 
 namespace {
+
+    void buildMS2TheoreticalIsotopeShadows(
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            QVector<MS2Ion> *ms2IonsTheoreticalIsotopeShadows
+            ) {
+
+        std::transform(
+        ms2IonsTheoretical.begin(),
+        ms2IonsTheoretical.end(),
+        std::back_inserter(*ms2IonsTheoreticalIsotopeShadows),
+        [](const MS2Ion &ms2Ion){
+            const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+            MS2Ion ms2IonNew = ms2Ion;
+            ms2IonNew.mz -= isoChargeDiff;
+            return ms2IonNew;
+        }
+        );
+    }
 
     FrameIndex getMaxFrameIndexFromMzHashedVsXICPoints(const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints) {
 
@@ -238,15 +260,24 @@ namespace {
 Err CandidateScorertron::calculateScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
         const QVector<MS2Ion> &ms2IonsTheoretical,
-        const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-        double scanTimePredicted,
         CandidateScores *candidateScores
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
+
+    QVector<MS2Ion> ms2IonsTheoreticalIsotopeShadows;
+    buildMS2TheoreticalIsotopeShadows(
+            ms2IonsTheoretical,
+            &ms2IonsTheoreticalIsotopeShadows
+            );
+
+    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHills;
+    e = extractHills(ms2IonsTheoretical, &mzHashedVsfeatureFinderHills);
+
+    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
+    e = extractHills(ms2IonsTheoreticalIsotopeShadows, &mzHashedVsfeatureFinderHillsShadows);
 
 //    //LAST BIGGEST
 //    QMap<MzHashed, QVector<double>> mzHashedVsIonPresence;
@@ -297,6 +328,48 @@ Err CandidateScorertron::calculateScores(
 ////            msFrame,
 ////            candidateScores
 ////            ); ree;
+
+    ERR_RETURN
+}
+
+Err CandidateScorertron::extractHills(
+        const QVector<MS2Ion> &ms2IonsTheoretical,
+        QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHills
+        ) {
+    ERR_INIT
+
+    for (const MS2Ion &ms2Ion : ms2IonsTheoretical) {
+
+        const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+        if (m_mzHashedVsFeatureFinderHillsCached.contains(mzHashed)) {
+            mzHashedVsfeatureFinderHills->insert(mzHashed, m_mzHashedVsFeatureFinderHillsCached.value(mzHashed));
+            continue;
+        }
+
+        const double mzTol = MathUtils::calculatePPM(
+                ms2Ion.mz,
+                m_pythiaParameters.ms2ExtractionWidthPPM
+        );
+        const double mzMin = ms2Ion.mz - mzTol;
+        const double mzMax = ms2Ion.mz + mzTol;
+
+        QVector<FeatureFinderHill*> mzFeatureFinderHills;
+
+        if (m_msCalibratomatic->isInit()) {
+//            e = m_featureFinderHillRTreeMS2.getHills(); ree;
+        }
+
+        else {
+            e = m_featureFinderHillsBuilderMS2->getHills(
+                    mzMin,
+                    mzMax,
+                    &mzFeatureFinderHills
+            ); ree;
+        }
+
+        (*mzHashedVsfeatureFinderHills)[mzHashed].append(mzFeatureFinderHills);
+        m_mzHashedVsFeatureFinderHillsCached.insert(mzHashed, mzHashedVsfeatureFinderHills->value(mzHashed));
+    }
 
     ERR_RETURN
 }

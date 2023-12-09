@@ -4,7 +4,7 @@
 
 #include "TargetDecoyCandidatePairScoretron.h"
 
-//#include "CandidateScorertron.h"
+#include "CandidateScorertron.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MsCalibratomatic.h"
 //#include "MsFrame.h"
@@ -27,7 +27,7 @@ public:
     MzTargetKey mzTargetKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
-    QVector<FeatureFinderHill*> ms1FeatureFinderHills;
+    QMap<ScanNumber, ScanPoints> ms1Frame;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
@@ -36,7 +36,7 @@ public:
 
 Err TargetDecoyCandidatePairScoretron::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanTimeMS1,
+        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames
         ) {
@@ -245,75 +245,60 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-//        CandidateScorertron candidateScorertron;
-//        e = candidateScorertron.init(
-//                pi.ms1Frame,
-//                pi.scanNumberVsScanTime,
-//                pi.pythiaParameters,
-//                pi.topNMs2Ions
-//                ); ree;
-
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
-        const int tranchSize = std::min(pi.pythiaParameters.trancheSizeMax, pi.targetDecoyPointers.size());
-        const int nTranches = pi.targetDecoyPointers.size() / tranchSize;
-
-        QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
-        e = ParallelUtils::trancheVectorForParallelization(
-                pi.targetDecoyPointers,
-                nTranches,
-                &scoredTargetDecoyPointersTranched
-        ); ree;
+//        const int tranchSize = std::min(pi.pythiaParameters.trancheSizeMax, pi.targetDecoyPointers.size());
+//        const int nTranches = pi.targetDecoyPointers.size() / tranchSize;
+//
+//        QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
+//        e = ParallelUtils::trancheVectorForParallelization(
+//                pi.targetDecoyPointers,
+//                nTranches,
+//                &scoredTargetDecoyPointersTranched
+//        ); ree;
 
         FeatureFinderParameters featureFinderParameters(pi.pythiaParameters);
 
-        FeatureFinderHillBuilder featureFinderHillBuilder;
-        e = featureFinderHillBuilder.init(featureFinderParameters); ree;
-        e = featureFinderHillBuilder.buildHills(*pi.diaTargetFrame); ree;
+        FeatureFinderHillBuilder featureFinderHillBuilderMS2;
+        e = featureFinderHillBuilderMS2.init(featureFinderParameters); ree;
+        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); ree;
 
-        QVector<FeatureFinderHill*> hills;
-        e = featureFinderHillBuilder.getHills(&hills); ree;
+        QMap<FrameIndex, ScanPoints> ms1Frame = pi.ms1Frame;
+        QMap<FrameIndex, ScanPoints*> ms1FramePntrs;
+        for (auto it = ms1Frame.begin(); it != ms1Frame.end(); it++) {
+            ms1FramePntrs.insert(it.key(), &it.value());
+        }
 
-        for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
+        FeatureFinderHillBuilder featureFinderHillBuilderMS1;
+        e = featureFinderHillBuilderMS1.init(featureFinderParameters); ree;
+        e = featureFinderHillBuilderMS1.buildHills(ms1FramePntrs); ree;
 
-//            for (TargetDecoyCandidatePair* targetDecoyPtr : tranche) {
-//
-//                CandidateScores candidateScoresTarget;
-//                e = extractScores(
-//                        targetDecoyPtr,
-//                        targetDecoyPtr->ms2IonsTarget(),
-//                        pi.topNMs2Ions,
-//                        pi.pythiaParameters.ms2ExtractionWidthPPM,
-//                        targetDecoyPtr->iRt(),
-//                        pi.pythiaParameters.scanTimeWindowMinutes,
-//                        &msFrame,
-//                        &msCalibratomatic,
-//                        &turboXic,
-//                        &candidateScorertron,
-//                        &cachedPoints,
-//                        &candidateScoresTarget
-//                ); ree;
-//
-//                CandidateScores candidateScoresDecoy;
-//                e = extractScores(
-//                        targetDecoyPtr,
-//                        targetDecoyPtr->ms2IonsDecoy(),
-//                        pi.topNMs2Ions,
-//                        pi.pythiaParameters.ms2ExtractionWidthPPM,
-//                        targetDecoyPtr->iRt(),
-//                        pi.pythiaParameters.scanTimeWindowMinutes,
-//                        &msFrame,
-//                        &msCalibratomatic,
-//                        &turboXic,
-//                        &candidateScorertron,
-//                        &cachedPoints,
-//                        &candidateScoresDecoy
-//                ); ree;
-//
-//                candidateScoresDecoy.isDecoy = true;
-//                targetDecoyPtr->uniqueInfoScanKeyVsScoresDecoy()->insert(pi.msInfoScanKey, candidateScoresDecoy);
-//                targetDecoyPtr->uniqueInfoScanKeyVsScoresTarget()->insert(pi.msInfoScanKey, candidateScoresTarget);
-//            }
+        CandidateScorertron candidateScorertron;
+        e = candidateScorertron.init(
+                pi.scanNumberVsScanTime,
+                pi.pythiaParameters,
+                pi.topNMs2Ions,
+                &msCalibratomatic,
+                &featureFinderHillBuilderMS2,
+                &featureFinderHillBuilderMS2
+                ); ree;
+
+        for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
+
+            CandidateScores candidateScoresTarget;
+            e = candidateScorertron.calculateScores(
+                    tdcp,
+                    tdcp->ms2IonsTarget(),
+                    &candidateScoresTarget
+                    ); ree;
+
+            CandidateScores candidateScoresDecoy;
+            e = candidateScorertron.calculateScores(
+                    tdcp,
+                    tdcp->ms2IonsDecoy(),
+                    &candidateScoresDecoy
+                    ); ree;
+
         }
 
         if (pi.pythiaParameters.verbosity >= 1) {
@@ -413,14 +398,6 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
     e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
 
-    FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
-    FeatureFinderHillBuilder featureFinderHillBuilder;
-    e = featureFinderHillBuilder.init(featureFinderParameters); ree;
-    e = featureFinderHillBuilder.buildHills(m_ms1Frame); ree;
-
-    QVector<FeatureFinderHill*> ms1FeatureFinderHills;
-    e = featureFinderHillBuilder.getHills(&ms1FeatureFinderHills); ree;
-
     for (const MsScanInfo &msScanInfo : m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos()) {
 
         TargetDecoyPairParallelInput tdppi;
@@ -430,7 +407,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;
-        tdppi.ms1FeatureFinderHills = ms1FeatureFinderHills;
+        tdppi.ms1Frame = m_ms1Frame;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.mzTargetKey);
 
         input->push_back(tdppi);

@@ -68,7 +68,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
 
     const int msLevel = 1;
-    QMap<ScanNumber, ScanPoints*> scanNumberVsScanTimeMS1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
 
     e = m_targetDecoyCandidatePairScoretron.init(
@@ -89,7 +89,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = -0.2;
     const bool useNeuralNetworkScores = false;
     const int minTrainingCountTranche = 50;
 

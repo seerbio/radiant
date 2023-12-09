@@ -17,10 +17,23 @@
 
 #include <iostream>
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
 
 class Q_DECL_HIDDEN FeatureFinderHillBuilder::Private
 {
 public:
+
+    using RTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+    using RTreeBox = bg::model::box<RTreeCoor>;
+    using RTreePoint = std::pair<RTreeBox, FeatureFinderHill*> ;
+    using RTree = bgi::rtree<RTreePoint, bgi::dynamic_quadratic>;
 
     Private();
     ~Private();
@@ -43,28 +56,51 @@ public:
 
     Err refineHills(bool useSmoothing);
 
-    Err getHills(QVector<FeatureFinderHill*> *featureFinderHills);
-
     void setRunParallel(bool runParallel);
 
-    Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
+    Err initRTree();
+
+    Err getRTreeLimits(
+            double *mzMin,
+            double *mzMax,
+            FrameIndex *frameIndexMin,
+            FrameIndex *frameIndexMax
+    );
+
+    Err getHills(
+            double mzMin,
+            double mzMax,
+            FrameIndex frameIndexMin,
+            FrameIndex frameIndexMax,
+            QVector<FeatureFinderHill*> *featureFinderHills
+    );
+
+    Err getHills(
+            double mzMin,
+            double mzMax,
+            QVector<FeatureFinderHill*> *featureFinderHills
+    );
 
 private:
 
     QVector<FeatureFinderHill> m_featureFinderHills;
-    QMap<Id, FeatureFinderHill> m_idVsFeatureFinderHills;
     FeatureFinderParameters m_featureFinderParameters;
     bool m_runParallel;
+    bool m_isInit;
 
     QMap<ScanNumberIndex, ScanNumber> m_scanNumberIndexVsScanNumber;
 
-
+    RTree *m_rTree;
 };
 
 FeatureFinderHillBuilder::Private::Private()
-: m_runParallel(false) {}
+: m_runParallel(false)
+, m_isInit(false)
+{}
 
-FeatureFinderHillBuilder::Private::~Private(){}
+FeatureFinderHillBuilder::Private::~Private(){
+    delete m_rTree;
+}
 
 Err FeatureFinderHillBuilder::Private::init(const FeatureFinderParameters &featureFinderParameters) {
 
@@ -170,7 +206,6 @@ namespace {
         return output;
     }
 
-
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
         const QVector<ScanPoints*> &allScanPoints,
@@ -184,46 +219,6 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
     groupedMzVals->clear();
     groupedIntensityVals->clear();
 
-//  While this does speed things up a bit, it is not the most accurate.
-//  Speeds things up by about 100 mSec.
-
-//#define GROUP_SCANS_PARALLEL
-#ifdef GROUP_SCANS_PARALLEL
-//    qDebug() << "Running buildScanPointGroups parallel";
-
-    const int processorCount = ParallelUtils::numberOfAvailableSystemProcessors();
-    const int defaultExtraGroup = 1;
-
-    QVector<QVector<ScanPoints>> tranchedScanPoints;
-    ParallelUtils::trancheVectorForParallelizationInOrder(
-            allScanPoints,
-            processorCount,
-            m_featureFinderParameters.skipScanCount + defaultExtraGroup,
-            &tranchedScanPoints
-    );
-
-    const QVector<ScanGroupingParallelInput> scanGroupingParallelInputs = buildScanGroupingParallelInputs(
-            tranchedScanPoints,
-            m_featureFinderParameters.skipScanCount
-    );
-
-    QFuture<ScanGroupingParallelOutput> futures = QtConcurrent::mapped(
-            scanGroupingParallelInputs,
-            scanGroupingParallelLogic
-    );
-
-    futures.waitForFinished();
-
-    int counter = 0;
-    for (const ScanGroupingParallelOutput &sgpi : futures) {
-        e = sgpi.e; ree;
-        groupedMzVals->append(sgpi.groupedMzVals);
-        groupedIntensityVals->append(sgpi.groupedIntensityVals);
-    }
-
-#else
-//    qDebug() << "Running buildScanPointGroups serial";
-
     ScanGroupingParallelInput scanGroupingParallelInput;
     scanGroupingParallelInput.skipScanCount = m_featureFinderParameters.skipScanCount;
     scanGroupingParallelInput.allScanPointsTranch = allScanPoints;
@@ -233,7 +228,6 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
     *groupedMzVals = output.groupedMzVals;
     *groupedIntensityVals = output.groupedIntensityVals;
     e = output.e; ree;
-#endif
 
     ERR_RETURN
 }
@@ -340,7 +334,6 @@ namespace {
         return returnMat;
     }
 
-
 }//namespace
 Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
         const QVector<QVector<QVector<double>>> &groupedMzVals,
@@ -359,8 +352,6 @@ Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
 
     if (m_runParallel) {
 
-//        qDebug() << "Running connectCentroidsInGroupedMzVals parallel";
-
         QFuture<Eigen::MatrixX<int>> futures
                 = QtConcurrent::mapped(inputs, connectCentroidsInGroupedMzValsParallelLogic);
 
@@ -372,8 +363,6 @@ Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
     }
 
     else {
-
-//        qDebug() << "Running connectCentroidsInGroupedMzVals serial";
 
         for (const ConnectCentroidsInGroupedMzValsInput &input: inputs) {
             const Eigen::MatrixX<int> mat = connectCentroidsInGroupedMzValsParallelLogic(input);
@@ -603,9 +592,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &m_featureFinderHills
     ); ree;
 
-    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
-
-//    qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
+    e = initRTree(); ree;
 
     ERR_RETURN
 }
@@ -779,9 +766,8 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
 
     m_featureFinderHills.clear();
     m_featureFinderHills = refinedHills;
-    m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills);
 
-//    qDebug() << "Refined Hill Count" << m_idVsFeatureFinderHills.size();
+    e = initRTree(); ree;
 
     ERR_RETURN
 }
@@ -790,30 +776,116 @@ void FeatureFinderHillBuilder::Private::setRunParallel(bool runParallel) {
     m_runParallel = runParallel;
 }
 
+Err FeatureFinderHillBuilder::Private::initRTree() {
 
-Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree
-    featureFinderHills->reserve(m_featureFinderHills.size());
-    *featureFinderHills = m_featureFinderHills;
-    ERR_RETURN
-}
+    e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree;
 
-Err FeatureFinderHillBuilder::Private::getHills(QVector<FeatureFinderHill*> *featureFinderHills) {
-    ERR_INIT
-
-    featureFinderHills->reserve(m_featureFinderHills.size());
+    std::vector<RTreePoint> cloudLoader;
+    cloudLoader.reserve(m_featureFinderHills.size());
     std::transform(
             m_featureFinderHills.begin(),
             m_featureFinderHills.end(),
-            std::back_inserter(*featureFinderHills),
-            [](FeatureFinderHill &ffh){return &ffh;}
-            );
+            std::back_inserter(cloudLoader),
+            [](FeatureFinderHill &ffh){
+
+                const QPair<double, double> mzMinMax = ffh.mzMinMax();
+                const QPair<ScanNumber, ScanNumber> intensityMinMax = ffh.scanNumberIndexMinMax();
+
+                const RTreeBox box(
+                        RTreeCoor(mzMinMax.first, static_cast<double>(intensityMinMax.first)),
+                        RTreeCoor(mzMinMax.second, static_cast<double>(intensityMinMax.second))
+                );
+                const RTreePoint rTreePoint(box, &ffh);
+                return rTreePoint;
+            }
+    );
+
+    const int maxElements = 16;
+    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    e = ErrorUtils::isFalse(m_rTree->empty()); ree;
+
+    m_isInit = true;
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::Private::getRTreeLimits(
+        double *mzMin,
+        double *mzMax,
+        FrameIndex *frameIndexMin,
+        FrameIndex *frameIndexMax
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(m_rTree->empty()); ree
+
+    *mzMin = m_rTree->bounds().min_corner().get<0>();
+    *mzMax = m_rTree->bounds().max_corner().get<0>();
+    *frameIndexMin = static_cast<FrameIndex>(m_rTree->bounds().min_corner().get<1>());
+    *frameIndexMax = static_cast<FrameIndex>(m_rTree->bounds().max_corner().get<1>());
 
     ERR_RETURN
 }
 
+Err FeatureFinderHillBuilder::Private::getHills(
+        double mzMin,
+        double mzMax,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax,
+        QVector<FeatureFinderHill*> *featureFinderHills
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_isInit); ree;
+
+    const RTreeBox queryBox(
+            RTreeCoor(mzMin, static_cast<double>(frameIndexMin)),
+            RTreeCoor(mzMax,static_cast<double>(frameIndexMax))
+    );
+
+    std::vector<RTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    for (const RTreePoint &rtp : result) {
+        featureFinderHills->push_back(rtp.second);
+    }
+
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::Private::getHills(
+        double mzMin,
+        double mzMax,
+        QVector<FeatureFinderHill*> *featureFinderHills
+        ) {
+
+    ERR_INIT
+
+    double mzMinRTree;
+    double mzMaxRTree;
+    FrameIndex frameIndexMinRTree;
+    FrameIndex frameIndexMaxRTree;
+
+    e = getRTreeLimits(
+            &mzMinRTree,
+            &mzMaxRTree,
+            &frameIndexMinRTree,
+            &frameIndexMaxRTree
+            ); ree;
+
+    e = getHills(
+            mzMin,
+            mzMax,
+            frameIndexMinRTree,
+            frameIndexMaxRTree,
+            featureFinderHills
+            ); ree;
+
+    ERR_RETURN
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
@@ -955,14 +1027,34 @@ Err FeatureFinderHillBuilder::refineHills(bool useSmoothing) {
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
+Err FeatureFinderHillBuilder::getHills(
+        double mzMin,
+        double mzMax,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax,
+        QVector<FeatureFinderHill*> *featureFinderHills
+        ) {
     ERR_INIT
-    e = d_ptr->featureFinderHills(featureFinderHills); ree
+    e = d_ptr->getHills(
+            mzMin,
+            mzMax,
+            frameIndexMin,
+            frameIndexMax,
+            featureFinderHills
+            ); ree;
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::getHills(QVector<FeatureFinderHill*> *featureFinderHills) {
+Err FeatureFinderHillBuilder::getHills(
+        double mzMin,
+        double mzMax,
+        QVector<FeatureFinderHill*> *featureFinderHills
+) {
     ERR_INIT
-    e = d_ptr->getHills(featureFinderHills); ree;
+    e = d_ptr->getHills(
+            mzMin,
+            mzMax,
+            featureFinderHills
+    ); ree;
     ERR_RETURN
 }

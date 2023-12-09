@@ -8,16 +8,17 @@
 #include "AlgorithmsFFLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MsCalibratomatic.h"
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
-#include "TurboXIC.h"
 
 class CandidateScores;
 class FeatureFinderHill;
+class FeatureFinderHillBuilder;
 class MS2Ion;
 class MsFrame;
 class TargetDecoyCandidatePair;
-class XICPoints;
+
 
 
 using namespace Error;
@@ -31,19 +32,23 @@ public:
     ~CandidateScorertron() = default;
 
     Err init(
-            const QVector<FeatureFinderHill*> &ms1FeatureFinderHills,
-            const QVector<FeatureFinderHill*> &ms2FeatureFinderHills,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const PythiaParameters &pythiaParameters,
-            int topNMS2Ions
+            int topNMS2Ions,
+            MsCalibratomatic *msCalibratomatic,
+            FeatureFinderHillBuilder *featureFinderHillsBuilderMS1,
+            FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
             );
 
     Err calculateScores(
             const TargetDecoyCandidatePair* targetDecoyCandidatePair,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-            double scanTimePredicted,
             CandidateScores *candidateScores
+            );
+
+    Err extractHills(
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHills
             );
 
 private:
@@ -59,8 +64,12 @@ private:
     int m_topNMS2Ions;
 
     PeakIntegratomatic m_peakIntegratomatic;
+    MsCalibratomatic *m_msCalibratomatic;
 
-    TurboXIC m_turboXICMS1;
+    FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS1;
+    FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS2;
+
+    QHash<MzHashed , QVector<FeatureFinderHill*>> m_mzHashedVsFeatureFinderHillsCached;
 
 };
 

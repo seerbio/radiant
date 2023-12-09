@@ -91,11 +91,21 @@ public:
 
     Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
-    Err getHills(QVector<FeatureFinderHill*> *featureFinderHills);
+    Err getHills(
+            double mzMin,
+            double mzMax,
+            FrameIndex frameIndexMin,
+            FrameIndex frameIndexMax,
+            QVector<FeatureFinderHill*> *featureFinderHills
+            );
+
+    Err getHills(
+            double mzMin,
+            double mzMax,
+            QVector<FeatureFinderHill*> *featureFinderHills
+    );
 
     Err refineHills(bool useSmoothing);
-
-    Err featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills);
 
     void setRunParallel(bool runParallel);
 

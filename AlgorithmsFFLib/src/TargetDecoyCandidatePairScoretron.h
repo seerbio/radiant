@@ -29,7 +29,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanTimeMS1,
+            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
             MsReaderPointerAcc *msReaderPointerAcc,
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames
             );
@@ -60,7 +60,7 @@ private:
     PythiaParameters m_pythiaParameters;
     MsReaderPointerAcc *m_msReaderPointerAcc;
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *m_diaTargetFrames;
-    QMap<ScanNumber, ScanPoints*> m_ms1Frame;
+    QMap<ScanNumber, ScanPoints> m_ms1Frame;
 
 };
 
