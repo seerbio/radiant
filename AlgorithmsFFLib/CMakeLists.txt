@@ -22,26 +22,38 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/CandidateScores.cpp
+        src/CandidateScorertron.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
         src/MsCalibratomatic.cpp
+        src/MsFrame.cpp
+        src/MsUtils.cpp
+        src/PeakIntegratomatic.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
+        src/TurboXIC.cpp
         src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/CandidateScores.h
+        src/CandidateScorertron.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
         src/MsCalibratomatic.h
+        src/MsFrame.h
+        src/MsUtils.h
+        src/PeakIntegratomatic.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
+        src/TurboXIC.h
         src/XYMappermatic.h
 )
 

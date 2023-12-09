@@ -23,9 +23,8 @@ public:
     FeatureFinderHill() = default;
     ~FeatureFinderHill() = default;
 
-    bool operator == (const FeatureFinderHill &c) const
-    {
-        if (mzMean() == c.mzMean() && maxIntensityScanNumberIndex() == c.maxIntensityScanNumber())
+    bool operator == (const FeatureFinderHill &c) const {
+        if (mzMean() == c.mzMean() && maxIntensityScanNumberIndex() == c.maxIntensityScanNumberIndex())
             return true;
         return false;
     }

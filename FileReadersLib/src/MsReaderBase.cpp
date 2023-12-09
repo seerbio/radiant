@@ -67,27 +67,24 @@ namespace {
     constexpr auto IonsSortIntensityAsc = [](const ScanPoint &l, const ScanPoint &r){return l.y() < r.y();};
 
 }//namespace
-ScanPoints MsReaderBase::sortScanPoints(
-        const ScanPoints &scanPoints,
-        const ScanPointsSort &sort
+void MsReaderBase::sortScanPoints(
+        const ScanPointsSort &sort,
+        ScanPoints *scanPoints
         ) {
 
-    ScanPoints vd = scanPoints;
-
     if (sort == ScanPointsSort::AscMz) {
-        std::sort(vd.begin(),  vd.end(), IonsSortMzAsc);
+        std::sort(scanPoints->begin(),  scanPoints->end(), IonsSortMzAsc);
     }
     else if (sort == ScanPointsSort::DescMz) {
-        std::sort(vd.rbegin(),  vd.rend(), IonsSortMzAsc);
+        std::sort(scanPoints->rbegin(),  scanPoints->rend(), IonsSortMzAsc);
     }
     else if (sort == ScanPointsSort::AscIntensity) {
-        std::sort(vd.begin(),  vd.end(), IonsSortIntensityAsc);
+        std::sort(scanPoints->begin(),  scanPoints->end(), IonsSortIntensityAsc);
     }
     else if (sort == ScanPointsSort::DescIntensity) {
-        std::sort(vd.rbegin(),  vd.rend(), IonsSortIntensityAsc);
+        std::sort(scanPoints->rbegin(),  scanPoints->rend(), IonsSortIntensityAsc);
     }
 
-    return vd;
 }
 
 Err MsReaderBase::openFile(const QString &filePath) {

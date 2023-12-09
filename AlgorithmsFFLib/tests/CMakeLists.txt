@@ -16,9 +16,12 @@ SET(TEST_CLASSES
         FeatureFinderHillBuilderTests
         MS2IonTests
         MsCalibratomaticTests
+        MsFrameTests
+        MsUtilsTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
+        TurboXICTests
         XYMappermaticTests
 )
 

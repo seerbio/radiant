@@ -124,9 +124,9 @@ public:
             MsScanInfo *msScanInfo
             );
 
-    static ScanPoints sortScanPoints(
-            const ScanPoints &scanPoints,
-            const ScanPointsSort &sort = ScanPointsSort::AscMz
+    static void sortScanPoints(
+            const ScanPointsSort &sort,
+            ScanPoints *scanPoints
                     );
 
     int getNearestScanNumberFromScanTime(double scanTime);
