@@ -731,6 +731,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
     };
 
     QVector<RefineHillsInput> refineHillsInput;
+    refineHillsInput.reserve(m_featureFinderHills.size());
     std::transform(
             m_featureFinderHills.begin(),
             m_featureFinderHills.end(),
@@ -802,6 +803,7 @@ Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderH
 Err FeatureFinderHillBuilder::Private::getHills(QVector<FeatureFinderHill*> *featureFinderHills) {
     ERR_INIT
 
+    featureFinderHills->reserve(m_featureFinderHills.size());
     std::transform(
             m_featureFinderHills.begin(),
             m_featureFinderHills.end(),

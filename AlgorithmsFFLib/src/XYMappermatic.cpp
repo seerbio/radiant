@@ -36,6 +36,7 @@ Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
         = [](const XYMappermaticRow &r){return QPair<double, double>(r.x, r.y);};
 
     QVector<QPair<XVal, YVal>> data;
+    data.reserve(xyMappermaticRows.size());
     std::transform(
             xyMappermaticRows.begin(),
             xyMappermaticRows.end(),

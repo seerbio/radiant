@@ -65,7 +65,7 @@ Err TargetDecoyCandidatePairManager::Private::init(QVector<TargetDecoyCandidateP
     e = ErrorUtils::isFalse(targetDecoyCandidatePairPntrs->isEmpty()); ree;
 
     std::vector<RTreePoint> cloudLoader;
-
+    cloudLoader.reserve(targetDecoyCandidatePairPntrs->size());
     std::transform(
             targetDecoyCandidatePairPntrs->begin(),
             targetDecoyCandidatePairPntrs->end(),

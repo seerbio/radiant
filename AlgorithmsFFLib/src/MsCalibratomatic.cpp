@@ -115,6 +115,7 @@ Err MsCalibratomatic::buildIRTCalibrator() {
     };
 
     QVector<QPair<XVal, YVal>> data;
+    data.reserve(m_msCalibarationReaderRows.size());
     std::transform(
             m_msCalibarationReaderRows.begin(),
             m_msCalibarationReaderRows.end(),
@@ -185,6 +186,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(*inp); ree;
 
         QVector<double> ppms;
+        ppms.reserve(inp->size());
         std::transform(
                 inp->begin(),
                 inp->end(),
@@ -193,6 +195,7 @@ namespace {
                 );
 
         QVector<double> stDevs;
+        stDevs.reserve(inp->size());
         std::transform(
                 inp->begin(),
                 inp->end(),
@@ -247,6 +250,7 @@ namespace {
         const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<double, double>> data;
+        data.reserve(inputs.size());
         std::transform(
                 inputs.begin(),
                 inputs.end(),
@@ -318,6 +322,7 @@ Err MsCalibratomatic::buildMzCalibrator() {
     m_mzStDev = stDevMz;
 
     QVector<QPair<double, double>> data;
+    data.reserve(inputs.size());
     std::transform(
             inputs.begin(),
             inputs.end(),

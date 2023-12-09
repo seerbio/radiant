@@ -146,6 +146,7 @@ ScanPoints MS2Ion::ms2IonsToScanPoints(const QVector<MS2Ion> &ms2Ions) {
     };
 
     ScanPoints predPoints;
+    predPoints.reserve(ms2Ions.size());
     std::transform(
             ms2Ions.begin(),
             ms2Ions.end(),
