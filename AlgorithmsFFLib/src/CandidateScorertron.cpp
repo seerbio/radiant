@@ -259,13 +259,17 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
-        const QVector<MS2Ion> &ms2IonsTheoretical,
+        const QVector<MS2Ion> &_ms2IonsTheoretical,
         CandidateScores *candidateScores
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
+    e = ErrorUtils::isNotEmpty(_ms2IonsTheoretical); ree;
+
+    const int topNMS2Ions = std::min(m_topNMS2Ions, _ms2IonsTheoretical.size());
+    QVector<MS2Ion> ms2IonsTheoretical = _ms2IonsTheoretical;
+    ms2IonsTheoretical.resize(topNMS2Ions);
 
     QVector<MS2Ion> ms2IonsTheoreticalIsotopeShadows;
     buildMS2TheoreticalIsotopeShadows(
