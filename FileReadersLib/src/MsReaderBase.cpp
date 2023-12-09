@@ -193,6 +193,24 @@ Err MsReaderBase::splitScanPoints(
     ERR_RETURN
 }
 
+Err MsReaderBase::splitScanPoints(
+        ScanPoints* scanPoints,
+        QVector<double> *mzVals,
+        QVector<float> *intensityVals
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(scanPoints->isEmpty()); ree;
+
+    for (const ScanPoint &sp : *scanPoints) {
+        mzVals->push_back(sp.x());
+        intensityVals->push_back(sp.y());
+    }
+
+    ERR_RETURN
+}
+
 Err MsReaderBase::getScanPoints(
         int msLevel,
         QMap<ScanNumber, ScanPoints> *scanPoints
@@ -366,7 +384,7 @@ bool MsReaderBase::isDIA() {
     return uniqueKeysCycle;
 }
 
-Err MsReaderBase::collateTandemPrecursorTargetsDIA(
+Err MsReaderBase::collateMS2MzTargetFrames(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame) {
 
     ERR_INIT

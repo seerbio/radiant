@@ -9,8 +9,10 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
+#include "TargetDecoyCandidatePairScoretron.h"
 
 using namespace Error;
 
@@ -50,7 +52,8 @@ private:
 private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
-//    MsCalibratomatic m_msCalibratomatic;
+    TargetDecoyCandidatePairScoretron m_targetDecoyCandidatePairScoretron;
+    MsCalibratomatic m_msCalibratomatic;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;

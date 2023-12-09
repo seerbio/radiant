@@ -82,7 +82,7 @@
 //    }
 //
 //    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-//    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
+//    e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(
 //            &diaTargetFrames
 //            ); ree;
 //

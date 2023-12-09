@@ -57,20 +57,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-    QVector<MsScanInfo> msScanInfos;
-    QPair<double, double> scanTimeMinMax;
+    e = ErrorUtils::fileExists(msDataFilePath); ree;
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
+    e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(
             &diaTargetFrames
             ); ree;
 
-    while (true) {
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints*> scanNumberVsScanTimeMS1;
+    e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
 
-    }
+    e = m_targetDecoyCandidatePairScoretron.init(
+            m_pythiaParameters,
+            scanNumberVsScanTimeMS1,
+            &msReaderPointerAcc,
+            &diaTargetFrames
+            ); ree;
+
+    e = buildCalibration(&msReaderPointerAcc); ree;
 
 
     ERR_RETURN
@@ -82,18 +90,25 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
+    const double calibrationTrainingFraction = 0.2;
     const bool useNeuralNetworkScores = false;
     const int minTrainingCountTranche = 50;
-
-    QVector<TargetDecoyCandidatePair*> scoredTargetDecoyPointers;
-
-    const double calibrationTrainingFraction = 0.2;
 
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
     e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
             calibrationTrainingFraction,
             &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
+
+    const int topNMS2IonsCalibration = 6;
+
+    QVector<CandidateScores> candidateScores;
+    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            topNMS2IonsCalibration,
+            m_msCalibratomatic,
+            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &candidateScores
             ); ree;
 
     ERR_RETURN

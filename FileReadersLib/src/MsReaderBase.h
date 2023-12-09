@@ -107,7 +107,7 @@ public:
             MsScanInfo *msScanInfo
             ) const;
 
-    Err collateTandemPrecursorTargetsDIA(
+    Err collateMS2MzTargetFrames(
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
     );
 
@@ -151,6 +151,12 @@ public:
             QVector<double> *mzVals,
             QVector<float> *intensityVals
             );
+
+    static Err splitScanPoints(
+            ScanPoints *scanPoints,
+            QVector<double> *mzVals,
+            QVector<float> *intensityVals
+    );
 
     static Err zipScanPoints(
             const QVector<double> &mzVals,

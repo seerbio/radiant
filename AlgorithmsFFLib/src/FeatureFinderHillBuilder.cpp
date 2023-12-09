@@ -9,7 +9,7 @@
 #include "MathUtils.h"
 #include "MsReaderBase.h"
 #include "ParallelUtils.h"
-#include "PeakIntegratomatic.h"
+//#include "PeakIntegratomatic.h"
 
 #include <Eigen/Dense>
 
@@ -28,10 +28,10 @@ public:
     Err init(const FeatureFinderParameters &featureFinderParameters);
 
     Err buildScanPointGroups(
-            const QVector<ScanPoints> &allScanPoints,
+            const QVector<ScanPoints*> &allScanPoints,
             QVector<QVector<QVector<double>>> *groupedMzVals,
-            QVector<QVector<QVector<double>>> *groupedIntensityVals
-    ) const;
+            QVector<QVector<QVector<float>>> *groupedIntensityVals
+    );
 
     Err connectCentroidsInGroupedMzVals(
             const QVector<QVector<QVector<double>>> &groupedMzVals,
@@ -39,18 +39,11 @@ public:
             QVector<Eigen::MatrixX<int>> *connectedCentroids
     ) const;
 
-    Err buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints);
+    Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
     Err refineHills(bool useSmoothing);
 
-    Err getHills(
-            FrameIndex
-            frameIndexStart,
-            FrameIndex frameIndexEnd,
-            double mz,
-            double ppmTolerance,
-            QVector<FeatureFinderHill> *featureFinderHills
-            );
+    Err getHills(QVector<FeatureFinderHill*> *featureFinderHills);
 
     void setRunParallel(bool runParallel);
 
@@ -88,17 +81,17 @@ namespace {
     struct ScanGroupingParallelInput {
         int skipScanCount = -1;
         bool isLastTranche = false;
-        QVector<ScanPoints> allScanPointsTranch;
+        QVector<ScanPoints*> allScanPointsTranch;
     };
 
     struct ScanGroupingParallelOutput {
         Err e = Error::eNoError;
         QVector<QVector<QVector<double>>> groupedMzVals;
-        QVector<QVector<QVector<double>>> groupedIntensityVals;
+        QVector<QVector<QVector<float>>> groupedIntensityVals;
     };
 
     QVector<ScanGroupingParallelInput> buildScanGroupingParallelInputs(
-            const QVector<QVector<ScanPoints>> &tranchedScanPoints,
+            const QVector<QVector<ScanPoints*>> &tranchedScanPoints,
             int skipScanCount
     ) {
 
@@ -106,7 +99,7 @@ namespace {
 
         const int minAllowableGroupCount = 2;
 
-        for (const QVector<ScanPoints> &spVec : tranchedScanPoints) {
+        for (const QVector<ScanPoints*> &spVec : tranchedScanPoints) {
 
             if (spVec.size() < minAllowableGroupCount) {
                 continue;
@@ -144,7 +137,7 @@ namespace {
                 = scanIndex + sgpi.skipScanCount + defaultGroupPadding;
 
             QVector<QVector<double>> mzValsGroup;
-            QVector<QVector<double>> intensityValsGroup;
+            QVector<QVector<float>> intensityValsGroup;
 
             for (ScanNumberIndex nextScanIndex = scanIndex; nextScanIndex < stopNextScanIndex; ++nextScanIndex) {
 
@@ -152,10 +145,10 @@ namespace {
                     break;
                 }
 
-                const ScanPoints &scanPoints = sgpi.allScanPointsTranch.at(nextScanIndex);
+                ScanPoints* scanPoints = sgpi.allScanPointsTranch.at(nextScanIndex);
 
                 QVector<double> mzVals;
-                QVector<double> intensityVals;
+                QVector<float> intensityVals;
                 output.e = MsReaderBase::splitScanPoints(
                         scanPoints,
                         &mzVals,
@@ -180,10 +173,10 @@ namespace {
 
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
-        const QVector<ScanPoints> &allScanPoints,
+        const QVector<ScanPoints*> &allScanPoints,
         QVector<QVector<QVector<double>>> *groupedMzVals,
-        QVector<QVector<QVector<double>>> *groupedIntensityVals
-) const {
+        QVector<QVector<QVector<float>>> *groupedIntensityVals
+) {
 
     ERR_INIT
 
@@ -442,7 +435,7 @@ namespace {
 
     Err groupConnectedCentroidsToHills(
             const QVector<Eigen::MatrixX<int>> &_connectedCentroidsMats,
-            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints,
             int minScanCount,
             QVector<FeatureFinderHill> *featureFinderHills
     ) {
@@ -457,7 +450,7 @@ namespace {
         //NOTE: This is not const because the next index function modifies it to zero out terminals
         QVector<Eigen::MatrixX<int>> connectedCentroidsMats = _connectedCentroidsMats;
 
-        const QList<ScanPoints> &scanPoints = scanNumberVsScanPoints.values();
+        const QList<ScanPoints*> &scanPoints = scanNumberVsScanPoints.values();
 
         for (ScanNumberIndex baseScanIndex = 0; baseScanIndex < connectedCentroidsMats.size(); baseScanIndex++) {
 
@@ -470,7 +463,7 @@ namespace {
 
                 if (colVecMaxForSinglePointAddition == -1) {
 
-                    ScanPoint currentScanPoint = scanPoints.at(baseScanIndex).at(baseCentroidsColInd);
+                    ScanPoint currentScanPoint = scanPoints.at(baseScanIndex)->at(baseCentroidsColInd);
                     ScanNumberIndex currentScanIndex = baseScanIndex;
 
                     FeatureFinderHill featureFinderHill;
@@ -495,7 +488,7 @@ namespace {
                         continue;
                     }
 
-                    ScanPoint currentScanPoint = scanPoints.at(baseScanIndex).at(baseCentroidsColInd);
+                    ScanPoint currentScanPoint = scanPoints.at(baseScanIndex)->at(baseCentroidsColInd);
 
                     int currentIndexVal = baseCentroidsColInd;
                     ScanNumberIndex currentScanIndex = baseScanIndex;
@@ -526,7 +519,7 @@ namespace {
                             break;
                         }
 
-                        currentScanPoint = scanPoints.at(currentScanIndex).at(currentIndexVal);
+                        currentScanPoint = scanPoints.at(currentScanIndex)->at(currentIndexVal);
                         featureFinderHill.addPoint(
                                 currentScanIndex,
                                 scanNumbers.at(currentScanIndex),
@@ -535,7 +528,7 @@ namespace {
                         );
                     }
 
-                    currentScanPoint = scanPoints.at(currentScanIndex).at(currentIndexVal);
+                    currentScanPoint = scanPoints.at(currentScanIndex)->at(currentIndexVal);
                     featureFinderHill.addPoint(
                             currentScanIndex,
                             scanNumbers.at(currentScanIndex),
@@ -556,7 +549,7 @@ namespace {
     }
 
     Err buildScanNumberIndexVsScanNumber(
-            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints,
+            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints,
             QMap<ScanNumberIndex, ScanNumber> *scanNumberIndexVsScanNumbers
             ) {
 
@@ -573,7 +566,7 @@ namespace {
 
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildHills(
-        const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints
+        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
 ) {
 
     QElapsedTimer et;
@@ -589,7 +582,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             ); ree;
 
     QVector<QVector<QVector<double>>> groupedMzVals;
-    QVector<QVector<QVector<double>>> groupedIntensityVals;
+    QVector<QVector<QVector<float>>> groupedIntensityVals;
     e = buildScanPointGroups(
             scanNumberVsScanPoints.values().toVector(),
             &groupedMzVals,
@@ -612,7 +605,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
 
     m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills); ree;
 
-    qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
+//    qDebug() << "Hill Count" << m_idVsFeatureFinderHills.size();
 
     ERR_RETURN
 }
@@ -651,7 +644,7 @@ namespace {
                 = featureFinderHill.scanNumberIndexes().mid(pii.first, distance);
             const QVector<ScanNumber> scanNumbers
                 = featureFinderHill.scanNumbers().mid(pii.first, distance);
-            const QVector<double> intensities = featureFinderHill.intensities().mid(pii.first, distance);
+            const QVector<float> intensities = featureFinderHill.intensities().mid(pii.first, distance);
 
             FeatureFinderHill splitHill;
             for (int i = 0; i < scanNumbers.size(); i++) {
@@ -678,45 +671,45 @@ namespace {
 
         ERR_INIT
 
-        PeakIntegratomaticParameters params;
-        params.smoothCount = useSmoothing ? rhi.params.smoothCount : 0;
-        params.filterLength = rhi.params.filterLength;
-        params.sigma = rhi.params.sigma;
-        params.signalToNoiseRatio = rhi.params.signalToNoiseRatio;
-
-        PeakIntegratomatic peakIntegratomatic;
-        e = peakIntegratomatic.init(params); rree;
-
-        QVector<PeakIntegrationIndexes> peakLimits;
-        QVector<double> intensityVecSmoothed;
-        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
-                rhi.featureFinderHill.intensities(),
-                &peakLimits,
-                &intensityVecSmoothed
-        ); rree;
-
-        if (peakLimits.isEmpty()) {
-
-            FeatureFinderHill ffh = rhi.featureFinderHill;
-
-//            qDebug() << intensityVecSmoothed;
-//            qDebug() << ffh.intensities();
-//            qDebug() << ffh.scanNumberIndexes();
-//            qDebug() << ffh.scanNumbers();
-//            qDebug() << "**";
-
-            return {e, {rhi.featureFinderHill}};
-        }
-
+//        PeakIntegratomaticParameters params;
+//        params.smoothCount = useSmoothing ? rhi.params.smoothCount : 0;
+//        params.filterLength = rhi.params.filterLength;
+//        params.sigma = rhi.params.sigma;
+//        params.signalToNoiseRatio = rhi.params.signalToNoiseRatio;
+//
+//        PeakIntegratomatic peakIntegratomatic;
+//        e = peakIntegratomatic.init(params); rree;
+//
+//        QVector<PeakIntegrationIndexes> peakLimits;
+//        QVector<double> intensityVecSmoothed;
+//        e = peakIntegratomatic.findAllPeaksLimitsInXIC(
+//                rhi.featureFinderHill.intensities(),
+//                &peakLimits,
+//                &intensityVecSmoothed
+//        ); rree;
+//
+//        if (peakLimits.isEmpty()) {
+//
+//            FeatureFinderHill ffh = rhi.featureFinderHill;
+//
+////            qDebug() << intensityVecSmoothed;
+////            qDebug() << ffh.intensities();
+////            qDebug() << ffh.scanNumberIndexes();
+////            qDebug() << ffh.scanNumbers();
+////            qDebug() << "**";
+//
+//            return {e, {rhi.featureFinderHill}};
+//        }
+//
         QVector<FeatureFinderHill> newHills;
-        e = splitHill(
-                scanNumberIndexVsScanNumber,
-                rhi.featureFinderHill,
-                intensityVecSmoothed,
-                peakLimits,
-                rhi.minScanCount,
-                &newHills
-        ); rree;
+//        e = splitHill(
+//                scanNumberIndexVsScanNumber,
+//                rhi.featureFinderHill,
+//                intensityVecSmoothed,
+//                peakLimits,
+//                rhi.minScanCount,
+//                &newHills
+//        ); rree;
 
         return {e, newHills};
     }
@@ -787,8 +780,7 @@ Err FeatureFinderHillBuilder::Private::refineHills(bool useSmoothing) {
     m_featureFinderHills = refinedHills;
     m_idVsFeatureFinderHills = ParallelUtils::convertVectorToMap(m_featureFinderHills);
 
-
-    qDebug() << "Refined Hill Count" << m_idVsFeatureFinderHills.size();
+//    qDebug() << "Refined Hill Count" << m_idVsFeatureFinderHills.size();
 
     ERR_RETURN
 }
@@ -798,15 +790,25 @@ void FeatureFinderHillBuilder::Private::setRunParallel(bool runParallel) {
 }
 
 
-
-
-
 Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_featureFinderHills); ree
     featureFinderHills->reserve(m_featureFinderHills.size());
     *featureFinderHills = m_featureFinderHills;
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::Private::getHills(QVector<FeatureFinderHill*> *featureFinderHills) {
+    ERR_INIT
+
+    std::transform(
+            m_featureFinderHills.begin(),
+            m_featureFinderHills.end(),
+            std::back_inserter(*featureFinderHills),
+            [](FeatureFinderHill &ffh){return &ffh;}
+            );
+
     ERR_RETURN
 }
 
@@ -826,9 +828,9 @@ Err FeatureFinderHillBuilder::init(const FeatureFinderParameters &featureFinderP
 }
 
 Err FeatureFinderHillBuilder::buildScanPointGroupsTest(
-        const QVector<ScanPoints> &allScanPoints,
+        const QVector<ScanPoints*> &allScanPoints,
         QVector<QVector<QVector<double>>> *groupedMzVals,
-        QVector<QVector<QVector<double>>> *groupedIntensityVals
+        QVector<QVector<QVector<float>>> *groupedIntensityVals
 ) {
 
     ERR_INIT
@@ -876,7 +878,7 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints) {
+Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
     ERR_INIT
     e = d_ptr->buildHills(scanNumberVsScanPoints); ree;
     ERR_RETURN
@@ -954,5 +956,11 @@ Err FeatureFinderHillBuilder::refineHills(bool useSmoothing) {
 Err FeatureFinderHillBuilder::featureFinderHills(QVector<FeatureFinderHill> *featureFinderHills) {
     ERR_INIT
     e = d_ptr->featureFinderHills(featureFinderHills); ree
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::getHills(QVector<FeatureFinderHill*> *featureFinderHills) {
+    ERR_INIT
+    e = d_ptr->getHills(featureFinderHills); ree;
     ERR_RETURN
 }

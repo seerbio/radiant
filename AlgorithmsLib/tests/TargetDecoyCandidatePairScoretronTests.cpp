@@ -49,7 +49,7 @@ void TargetDecoyCandidatePairScoretronTests::loadModelTest() {
     QCOMPARE(e, eNoError);
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrame;
-    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
+    e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(
             &diaTargetFrame
     );
     QCOMPARE(e, eNoError);

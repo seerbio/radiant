@@ -22,17 +22,27 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/CandidateScores.cpp
+        src/FeatureFinderHill.cpp
+        src/FeatureFinderHillBuilder.cpp
         src/MS2Ion.cpp
+        src/MsCalibratomatic.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
+        src/TargetDecoyCandidatePairScoretron.cpp
+        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/CandidateScores.h
+        src/FeatureFinderHill.h
+        src/FeatureFinderHillBuilder.h
         src/MS2Ion.h
+        src/MsCalibratomatic.h
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
+        src/TargetDecoyCandidatePairScoretron.h
+        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
