@@ -271,6 +271,9 @@ namespace {
         e = featureFinderHillBuilder.init(featureFinderParameters); ree;
         e = featureFinderHillBuilder.buildHills(*pi.diaTargetFrame); ree;
 
+        QVector<FeatureFinderHill*> hills;
+        e = featureFinderHillBuilder.getHills(&hills); ree;
+
         for (const QVector<TargetDecoyCandidatePair*> &tranche : scoredTargetDecoyPointersTranched) {
 
 //            for (TargetDecoyCandidatePair* targetDecoyPtr : tranche) {
@@ -313,7 +316,7 @@ namespace {
 //            }
         }
 
-        if (pi.pythiaParameters.verbosity > 1) {
+        if (pi.pythiaParameters.verbosity >= 1) {
             qDebug() << "Target key processed in" << pi.mzTargetKey << et.elapsed() << "mSec";
         }
 

@@ -80,7 +80,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = buildCalibration(&msReaderPointerAcc); ree;
 
-
     ERR_RETURN
 }
 
@@ -147,5 +146,3 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
 
     ERR_RETURN
 }
-
-
