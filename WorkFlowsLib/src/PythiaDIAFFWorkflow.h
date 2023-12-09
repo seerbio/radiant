@@ -16,6 +16,7 @@ using namespace Error;
 
 
 class MsScanInfo;
+class MsReaderPointerAcc;
 class TargetDecoyCandidatePair;
 
 
@@ -38,17 +39,18 @@ public:
 
 private:
 
-    Err buildCalibration();
+    Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             const QVector<MsScanInfo> &msScanInfos,
             double selectionFraction,
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
+            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
             );
 
 private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
+//    MsCalibratomatic m_msCalibratomatic;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;

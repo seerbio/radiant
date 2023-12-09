@@ -84,10 +84,10 @@ public:
     const QString DOT_CAL = QStringLiteral(".cal");
     const QString DOT_CSV = QStringLiteral(".csv");
     const QString DOT_FASTA = QStringLiteral(".fasta");
-    const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
+    const QString DOT_FRAGLIB_DF = QStringLiteral(".fragLibDF");
     const QString DOT_LIB = QStringLiteral(".lib");
     const QString DOT_MAT = QStringLiteral(".mat");
-    const QString DOT_PRQ = QStringLiteral(".prq");
+    const QString DOT_PRQ_DF = QStringLiteral(".prqDF");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
     const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
@@ -109,7 +109,7 @@ public:
     const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");
     const QString HDF_FILE_EXTENSION = QStringLiteral("hdf");
     const QString MZML_FILE_EXTENSION = QStringLiteral("mzml");
-    const QString PRQ_FILE_EXTENSION = QStringLiteral("prq");
+    const QString PRQ_FILE_EXTENSION = QStringLiteral("prqDF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");

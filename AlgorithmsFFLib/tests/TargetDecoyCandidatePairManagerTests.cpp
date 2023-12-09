@@ -1,5 +1,6 @@
 #include "TargetDecoyCandidatePairManager.h"
 
+#include "FragLibReader.h"
 #include "PythiaParameterReader.h"
 
 #include <QtTest/QtTest>
@@ -29,18 +30,28 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
     const QString &testFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
 
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath,
+            0,
+            4000,
+            &fragLibReaderRows
+    );
+    QCOMPARE(e, eNoError);
+
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
     e = targetDecoyCandidatePairManager.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
-            testFilePath
+            &fragLibReaderRows
             );
     QCOMPARE(e, eNoError);
 
+    fragLibReaderRows.clear();
     e = targetDecoyCandidatePairManager.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
-            testFilePath + QStringLiteral("BelltrixAndKalliope")
+            &fragLibReaderRows
     );
-    QCOMPARE(e, eFileError);
+    QCOMPARE(e, eError);
 
 }
 
@@ -51,10 +62,19 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
     const QString &testFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
 
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath,
+            0,
+            4000,
+            &fragLibReaderRows
+    );
+    QCOMPARE(e, eNoError);
+
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
     e = targetDecoyCandidatePairManager.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
-            testFilePath
+            &fragLibReaderRows
     );
     QCOMPARE(e, eNoError);
 
@@ -84,10 +104,19 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
     const QString &testFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
 
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+            testFilePath,
+            0,
+            4000,
+            &fragLibReaderRows
+    );
+    QCOMPARE(e, eNoError);
+
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
     e = targetDecoyCandidatePairManager.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
-            testFilePath
+            &fragLibReaderRows
     );
     QCOMPARE(e, eNoError);
 

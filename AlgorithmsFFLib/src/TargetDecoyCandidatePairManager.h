@@ -30,7 +30,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QString &fragLibFileUri
+            QVector<FragLibReaderRow> *fragLibReaderRows
             );
 
     bool isInit();

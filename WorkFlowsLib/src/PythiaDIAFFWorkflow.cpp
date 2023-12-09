@@ -4,7 +4,8 @@
 
 #include "PythiaDIAFFWorkflow.h"
 
-#include "MsReaderParquet.h"
+#include "FragLibReader.h"
+#include "MsReaderPointerAcc.h"
 
 
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow(){}
@@ -30,9 +31,23 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
 
+    const double massMin
+        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::alanineFormula).monoisotopicMass();
+
+    const double massMax
+            = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
+
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+            m_fragLibUri,
+            massMin,
+            massMax,
+            &fragLibReaderRows
+            ); ree;
+
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
-            m_fragLibUri
+            &fragLibReaderRows
             ); ree;
 
     ERR_RETURN
@@ -42,15 +57,26 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
+    QVector<MsScanInfo> msScanInfos;
+    QPair<double, double> scanTimeMinMax;
 
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+    e = msReaderPointerAcc.ptr->collateTandemPrecursorTargetsDIA(
+            &diaTargetFrames
+            ); ree;
 
+    while (true) {
+
+    }
 
 
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::buildCalibration() {
+Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
@@ -63,13 +89,12 @@ Err PythiaDIAFFWorkflow::buildCalibration() {
 
     const double calibrationTrainingFraction = 0.2;
 
-    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
-            m_pythiaParameters.mzMinDataStructure,
-            m_pythiaParameters.mzMaxDataStructure,
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
             calibrationTrainingFraction,
-            &scoredTargetDecoyPointers
+            &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
-
 
     ERR_RETURN
 }
@@ -77,7 +102,7 @@ Err PythiaDIAFFWorkflow::buildCalibration() {
 Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
         const QVector<MsScanInfo> &msScanInfos,
         double selectionFraction,
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *uniqueInfoScanKeyVsTargetDecoyCandidatePointers
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         ) {
 
     ERR_INIT
@@ -85,7 +110,7 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    uniqueInfoScanKeyVsTargetDecoyCandidatePointers->clear();
+    mzTargetKeyVsTargetDecoyCandidatePointers->clear();
 
     for (const MsScanInfo &msScanInfo : msScanInfos) {
 
@@ -101,7 +126,7 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
                 &targetDecoyPointers
                 ); ree;
 
-        uniqueInfoScanKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.mzTargetKey(), targetDecoyPointers);
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.mzTargetKey(), targetDecoyPointers);
         qDebug() << "MzTargetKey" << msScanInfo.mzTargetKey() << targetDecoyPointers.size() << "targetDecoyPairs found";
     }
 

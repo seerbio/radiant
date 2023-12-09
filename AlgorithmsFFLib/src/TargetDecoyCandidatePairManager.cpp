@@ -144,33 +144,19 @@ namespace {
 }
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
-        const QString &fragLibFileUri
+        QVector<FragLibReaderRow> *fragLibReaderRows
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::fileExists(fragLibFileUri); ree;
+    e = ErrorUtils::isFalse(fragLibReaderRows->isEmpty()); ree;
 
     m_pythiaParameters = pythiaParameters;
 
-    const double massMin
-        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::alanineFormula).monoisotopicMass();
+    removeNonSequencesWithNonCanonicalAminoAcids(fragLibReaderRows);
 
-    const double massMax
-            = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
-
-    QVector<FragLibReaderRow> fragLibReaderRows;
-    e = FragLibReader::getFragLibReaderRows(
-            fragLibFileUri,
-            massMin,
-            massMax,
-            &fragLibReaderRows
-            ); ree;
-
-    removeNonSequencesWithNonCanonicalAminoAcids(&fragLibReaderRows);
-
-    e = buildTargetDecoyCandidatePairs(fragLibReaderRows); ree;
+    e = buildTargetDecoyCandidatePairs(*fragLibReaderRows); ree;
 
     e = d_ptr->init(&m_targetDecoyCandidatePairs); ree;
 
