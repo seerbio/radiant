@@ -158,6 +158,8 @@ namespace {
             const MS2Ion &ms2Ion = ms2IonsTheoretical.at(col);
 
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            QVector<float> eigenVectorLoader(rowCount);
+            eigenVectorLoader.reserve(rowCount);
 
             const QVector<FeatureFinderHill*> &ffhs = mzHashedVsfeatureFinderHills.value(mzHashed);
             for (FeatureFinderHill *ffh : ffhs) {
@@ -174,10 +176,11 @@ namespace {
                         continue;
                     }
 
-                    mat->coeffRef(frameIndexAdjusted, col) = intensities.at(i);
+                    eigenVectorLoader[frameIndexAdjusted] = intensities.at(i);
                 }
             }
 
+            mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoader);
         }
 
         ERR_RETURN
@@ -455,19 +458,19 @@ Err CandidateScorertron::calculateScores(
             &matShadows
             ); ree;
 
-    const Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
-            mat,
-            m_pythiaParameters,
-            d_ptr->gaussKernel
-            );
-    const Eigen::MatrixX<float> matShadowsSmoothed = applyGaussSmoothRowWiseToMatrix(
-            matShadows,
-            m_pythiaParameters,
-            d_ptr->gaussKernel
-    );
-
-    Eigen::MatrixX<float> matIsotopesSubtracted = matSmoothed.array() - matShadowsSmoothed.array();
-    EigenUtils::thresholdMatrix(static_cast<float>(0.0), &matIsotopesSubtracted);
+//    const Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
+//            mat,
+//            m_pythiaParameters,
+//            d_ptr->gaussKernel
+//            );
+//    const Eigen::MatrixX<float> matShadowsSmoothed = applyGaussSmoothRowWiseToMatrix(
+//            matShadows,
+//            m_pythiaParameters,
+//            d_ptr->gaussKernel
+//    );
+//
+//    Eigen::MatrixX<float> matIsotopesSubtracted = matSmoothed.array() - matShadowsSmoothed.array();
+//    EigenUtils::thresholdMatrix(static_cast<float>(0.0), &matIsotopesSubtracted);
 
 
 //    const Eigen::MatrixX<float>
