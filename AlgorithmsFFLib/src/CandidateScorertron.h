@@ -56,6 +56,11 @@ private:
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
     );
 
+    Err simpleIntegrator(
+            const QVector<float> &vec,
+            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+    );
+
 
 private:
 

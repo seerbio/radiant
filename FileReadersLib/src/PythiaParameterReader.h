@@ -148,6 +148,7 @@ struct PythiaParameters{
     double signalToNoiseRatio = -1.0;
     int topNMs2Ions = -1;
     int minFoundMzPeaks = -1;
+    float stopThresholdFraction = 0.2;
 
     double cosineSimToAnchorThreshold = 0.4;
     bool subtractShadows = true;

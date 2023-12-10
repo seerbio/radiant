@@ -54,12 +54,12 @@ public:
     );
 
     static Err simpleIntegrator(
-            const QVector<double> &vec,
-            double stopThresholdFraction,
+            const QVector<float> &vec,
+            float stopThresholdFraction,
             int filterLength,
             int smoothCount,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes,
-            QVector<double> *smoothedVec
+            QVector<float> *smoothedVec
     );
 
 private:

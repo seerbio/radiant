@@ -238,7 +238,7 @@ namespace {
     Err smoothVector(
             int filterLength,
             int smoothCount,
-            Eigen::VectorX<double> *vec
+            Eigen::VectorX<float> *vec
             ) {
 
         ERR_INIT
@@ -266,12 +266,12 @@ namespace {
 
 }//namespace
 Err PeakIntegratomatic::simpleIntegrator(
-        const QVector<double> &vec,
-        double stopThresholdFraction,
+        const QVector<float> &vec,
+        float stopThresholdFraction,
         int filterLength,
         int smoothCount,
         QVector<PeakIntegrationIndexes> *peakIntegrationIndexes,
-        QVector<double> *smoothedVec
+        QVector<float> *smoothedVec
 ) {
 
     ERR_INIT
@@ -285,40 +285,55 @@ Err PeakIntegratomatic::simpleIntegrator(
             ErrorUtilsParam::IncludeThreshold
     ); ree;
 
-    const double minStopThresholdFraction = 0.005;
+    const float minStopThresholdFraction = 0.005;
     e = ErrorUtils::isAboveThreshold(
             stopThresholdFraction,
             minStopThresholdFraction,
             ErrorUtilsParam::IncludeThreshold
     ); ree;
 
-    Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(vec);
+    Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
     e = smoothVector(
             filterLength,
             smoothCount,
             &eVec
     ); ree;
 
-    const int topNApexes = std::numeric_limits<int>::max();
-    const QVector<QPair<int, double>> vecApexs = EigenUtils::returnTopXIndexAndValues(eVec, topNApexes);
+    EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
 
-    for (const auto &v : vecApexs) {
-        qDebug() << v;
+    const int topNApexes = 10;
+    const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
+
+    if (vecApexs.isEmpty()) {
+        ERR_RETURN
     }
-    qDebug() << vecApexs.size();
 
-    for (const QPair<int, double> &vecApex : vecApexs) {
-        const int apexIndex = vecApex.first;
-        const double apexValue = vecApex.second;
-        const double stopThreshold = apexValue * stopThresholdFraction;
+    Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
+    QVector<QPair<int, float>> apexPaairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
 
-        double rightStopVal = apexValue;
+    if (eVec.maxCoeff() < 5) {
+        ERR_RETURN
+    }
+
+    for (auto it : apexPaairs) {
+        qDebug() << it.first << it.second;
+    }
+    qDebug() << vec;
+    qDebug() << EigenUtils::convertEigenVectorToQVector(eVec);
+    qDebug() << "**********" << vecApexs.size();
+
+    for (auto it = vecApexs.begin(); it != vecApexs.end(); it++) {
+        const int apexIndex = it.key();
+        const float apexValue = it.value();
+        const float stopThreshold = apexValue * stopThresholdFraction;
+
+        float rightStopVal = apexValue;
         int rightStopIndex = apexIndex;
 
         int rightCurrentIndex = apexIndex;
         while (rightCurrentIndex < eVec.size()) {
 
-            const double currentValue = eVec(rightCurrentIndex);
+            const float currentValue = eVec(rightCurrentIndex);
             if (currentValue < stopThreshold) {
                 rightStopIndex = rightCurrentIndex;
                 break;
@@ -334,13 +349,13 @@ Err PeakIntegratomatic::simpleIntegrator(
             break;
         }
 
-        double leftStopVal = apexValue;
+        float leftStopVal = apexValue;
         int leftStopIndex = apexIndex;
 
         int leftCurrentIndex = apexIndex;
         while (leftCurrentIndex < eVec.size()) {
 
-            const double currentValue = eVec(leftCurrentIndex);
+            const float currentValue = eVec(leftCurrentIndex);
             if (currentValue < stopThreshold) {
                 leftStopIndex = leftCurrentIndex;
                 break;

@@ -75,6 +75,8 @@ public:
             QVector<FeatureFinderHill*> *featureFinderHills
     );
 
+    Err featureFinderHills(QVector<FeatureFinderHill*> *featureFinderHills);
+
     Err getHills(
             double mzMin,
             double mzMax,
@@ -887,6 +889,16 @@ Err FeatureFinderHillBuilder::Private::getHills(
     ERR_RETURN
 }
 
+Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderHill *> *featureFinderHills) {
+    ERR_INIT
+
+    for (FeatureFinderHill &ffh : m_featureFinderHills) {
+        featureFinderHills->push_back(&ffh);
+    }
+
+    ERR_RETURN
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1056,5 +1068,11 @@ Err FeatureFinderHillBuilder::getHills(
             mzMax,
             featureFinderHills
     ); ree;
+    ERR_RETURN
+}
+
+Err FeatureFinderHillBuilder::featureFinderHills(QVector<FeatureFinderHill *> *featureFinderHills) {
+    ERR_INIT
+    e = d_ptr->featureFinderHills(featureFinderHills); ree;
     ERR_RETURN
 }

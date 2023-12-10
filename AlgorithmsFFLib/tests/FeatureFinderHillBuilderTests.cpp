@@ -232,13 +232,13 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
-    QVector<FeatureFinderHill> featureFinderHills;
+    QVector<FeatureFinderHill*> featureFinderHills;
     e = featureFinderHillBuilder.featureFinderHills(&featureFinderHills);
     QCOMPARE(e, eNoError);
     QCOMPARE(featureFinderHills.size(), 5);
 
-    const auto sortLogic = [](const FeatureFinderHill &l, const FeatureFinderHill &r){
-        return l.mzMean() < r.mzMean();
+    const auto sortLogic = [](const FeatureFinderHill* l, const FeatureFinderHill *r){
+        return l->mzMean() < r->mzMean();
     };
 
     std::sort(featureFinderHills.begin(), featureFinderHills.end(), sortLogic);
@@ -254,14 +254,14 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
     for (int i = 0; i < featureFinderHills.size(); i++) {
 
-        const FeatureFinderHill &ffh = featureFinderHills.at(i);
+        const FeatureFinderHill* ffh = featureFinderHills.at(i);
         const double expectedMz = expectedMzVals.at(i);
         const QVector<int> &expectedScanNumbers = expectedScanNumbersAll.at(i);
 
-        qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
+        qDebug() << ffh->mzMean() << ffh->scanNumberIndexes() << ffh->scanNumberIndexMinMax();
 
-        QCOMPARE(ffh.mzMean(), expectedMz);
-        QCOMPARE(ffh.scanCount(), expectedScanNumbers.size());
+        QCOMPARE(ffh->mzMean(), expectedMz);
+        QCOMPARE(ffh->scanCount(), expectedScanNumbers.size());
     }
 
     params.minScanCount = 1;
@@ -272,7 +272,7 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
     e = featureFinderHillBuilderSingle.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
-    QVector<FeatureFinderHill> featureFinderHillsSingle;
+    QVector<FeatureFinderHill*> featureFinderHillsSingle;
     e = featureFinderHillBuilderSingle.featureFinderHills(&featureFinderHillsSingle);
     QCOMPARE(e, eNoError);
     QCOMPARE(featureFinderHillsSingle.size(), 15);
@@ -281,8 +281,8 @@ void FeatureFinderHillBuilderTests::buildHillsTest() {
 
     for (int i = 0; i < featureFinderHillsSingle.size(); i++) {
 
-        const FeatureFinderHill &ffh = featureFinderHillsSingle.at(i);
-        qDebug() << ffh.mzMean() << ffh.scanNumberIndexes() << ffh.scanNumberIndexMinMax();
+        const FeatureFinderHill *ffh = featureFinderHillsSingle.at(i);
+        qDebug() << ffh->mzMean() << ffh->scanNumberIndexes() << ffh->scanNumberIndexMinMax();
 
     }
 
@@ -325,7 +325,7 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
             );
     QCOMPARE(e, eNoError);
 
-    QVector<FeatureFinderHill> featureFinderHills;
+    QVector<FeatureFinderHill*> featureFinderHills;
     e = featureFinderHillBuilder.buildHills(scanNumberVsScanPoints);
     QCOMPARE(e, eNoError);
 
@@ -337,7 +337,7 @@ void FeatureFinderHillBuilderTests::buildHillsRealDataTest() {
 
     qDebug() << "Hills found to write" << featureFinderHills.size();
 
-#define WRITE_TO_MZRT
+//#define WRITE_TO_MZRT
 #ifdef WRITE_TO_MZRT
     e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
             msReader.getScanNumberVsScanTime(),

@@ -28,19 +28,19 @@ private Q_SLOTS:
 
 private:
 
-    QMap<int, QVector<QPointF>> buildPoints() const;
+    QMap<int, QVector<PointDF>> buildPoints() const;
 
 };
 
 
-QMap<int, QVector<QPointF>> TurboXICTests::buildPoints() const {
+QMap<int, QVector<PointDF>> TurboXICTests::buildPoints() const {
 
-    QMap<int, QVector<QPointF>> points;
-    points.insert(1, {QPointF(100.11, 100.1), QPointF(200.11, 200.1)});
-    points.insert(2, {QPointF(100.12, 100.2), QPointF(200.12, 200.2)});
-    points.insert(3, {QPointF(100.13, 100.3), QPointF(200.13, 200.3)});
-    points.insert(4, {QPointF(100.14, 100.4), QPointF(200.14, 200.4)});
-    points.insert(5, {QPointF(100.15, 100.5), QPointF(100.151, 100.5), QPointF(200.15, 200.5)});
+    QMap<int, QVector<PointDF>> points;
+    points.insert(1, {PointDF(100.11, 100.1), PointDF(200.11, 200.1)});
+    points.insert(2, {PointDF(100.12, 100.2), PointDF(200.12, 200.2)});
+    points.insert(3, {PointDF(100.13, 100.3), PointDF(200.13, 200.3)});
+    points.insert(4, {PointDF(100.14, 100.4), PointDF(200.14, 200.4)});
+    points.insert(5, {PointDF(100.15, 100.5), PointDF(100.151, 100.5), PointDF(200.15, 200.5)});
 
 
     return points;
@@ -49,9 +49,9 @@ QMap<int, QVector<QPointF>> TurboXICTests::buildPoints() const {
 
 void TurboXICTests::initTest() {
 
-    QMap<int, QVector<QPointF>> _points = buildPoints();
+    QMap<int, QVector<PointDF>> _points = buildPoints();
 
-    QMap<int, QVector<QPointF>*> points;
+    QMap<int, QVector<PointDF>*> points;
     for (auto it = _points.begin(); it != _points.end(); it++) {
         points.insert(it.key(), &it.value());
     }
@@ -71,9 +71,9 @@ void TurboXICTests::initTest() {
 
 void TurboXICTests::extractPointsTest() {
 
-    QMap<int, QVector<QPointF>> _points = buildPoints();
+    QMap<int, QVector<PointDF>> _points = buildPoints();
 
-    QMap<int, QVector<QPointF>*> points;
+    QMap<int, QVector<PointDF>*> points;
     for (auto it = _points.begin(); it != _points.end(); it++) {
         points.insert(it.key(), &it.value());
     }
@@ -127,7 +127,7 @@ void TurboXICTests::turboXICUtility() {
 //            );
 //    QCOMPARE(e, eNoError);
 //
-//    const QMap<int, QVector<QPointF>> &points = msFrame.scanNumberVsScanPoints();
+//    const QMap<int, QVector<PointDF>> &points = msFrame.scanNumberVsScanPoints();
 //
 //    TurboXIC turboXIC;
 //    e = turboXIC.init(points);
@@ -145,9 +145,9 @@ void TurboXICTests::turboXICUtility() {
 //            );
 //
 //    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
-//    const QVector<QPointF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
+//    const QVector<PointDF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
 //
-//    for (const QPointF &p : vec) {
+//    for (const PointDF &p : vec) {
 //        qDebug() << p;
 //    }
 //

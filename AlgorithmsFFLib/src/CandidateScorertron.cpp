@@ -38,6 +38,7 @@ void CandidateScorertron::Private::initGaussKernel(const PythiaParameters &pythi
             pythiaParameters.sigma
     );
 
+    gaussKernel /= gaussKernel.maxCoeff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -474,13 +475,13 @@ Err CandidateScorertron::calculateScores(
     QVector<float> integrationVector;
     e = buildIntegrationVector(mzHashedVsfeatureFinderHills, &integrationVector); ree;
 
-//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
-//    e = findCandidateIntegrations(
-//            integrationVector,
-//            &peakIntegrationIndexes
-//            ); ree;
+    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+    e = findCandidateIntegrations(
+            integrationVector,
+            &peakIntegrationIndexes
+            ); ree;
 
-
+    
 
 
 //    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
@@ -618,34 +619,6 @@ Err CandidateScorertron::extractHills(
 
 namespace {
 
-    void sortPeakIntegrationsDescMaxSumFound(
-            const QVector<float> &summedMatToVec,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
-    ) {
-
-        const auto sortLogic = [summedMatToVec](const PeakIntegrationIndexes &l, const PeakIntegrationIndexes &r){
-
-            const int peakWidthL = l.second - l.first;
-            const int peakWidthR = r.second - r.first;
-
-            const QVector<float> summedMatVecMaxL = summedMatToVec.mid(l.first, peakWidthL);
-            const QVector<float> summedMatVecMaxR = summedMatToVec.mid(r.first, peakWidthR);
-
-            const float summedPresenceIntegrationMaxL = *std::max_element(summedMatVecMaxL.begin(), summedMatVecMaxL.end());
-            const float summedPresenceIntegrationMaxR = *std::max_element(summedMatVecMaxR.begin(), summedMatVecMaxR.end());
-
-            if (MathUtils::tSame(summedPresenceIntegrationMaxL, summedPresenceIntegrationMaxR)) {
-                return std::accumulate(summedMatVecMaxL.begin(), summedMatVecMaxL.end(), 0.0)
-                       < std::accumulate(summedMatVecMaxR.begin(), summedMatVecMaxR.end(), 0.0);
-            }
-
-            return summedPresenceIntegrationMaxL < summedPresenceIntegrationMaxR;
-        };
-
-        std::sort(peakIntegrationIndexes->rbegin(), peakIntegrationIndexes->rend(), sortLogic);
-    }
-
-
     void filterSummedVecPeakIntegrationsByPeakWidth(
             const QVector<float> &summedMatToVec,
             int summedMzPresenceMin,
@@ -672,37 +645,118 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::findCandidateIntegrations(
-        const QVector<float> &summedMatToVec,
+        const QVector<float> &integrationVector,
         QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
 ) {
 
     ERR_INIT
 
-    QVector<float> summedPresenceVecSmoothedUnused;
-    e = m_peakIntegratomatic.findAllPeaksLimitsInXIC(
-            summedMatToVec,
-            peakIntegrationIndexes,
-            &summedPresenceVecSmoothedUnused
+    e = simpleIntegrator(
+            integrationVector,
+            peakIntegrationIndexes
             ); ree;
 
     const int minPeakWidth = 2;
     filterSummedVecPeakIntegrationsByPeakWidth(
-            summedMatToVec,
+            integrationVector,
             m_pythiaParameters.minFoundMzPeaks,
             minPeakWidth,
             peakIntegrationIndexes
             );
 
-    sortPeakIntegrationsDescMaxSumFound(
-            summedMatToVec,
-            peakIntegrationIndexes
-            );
+    const int maxPeakIntegrationIndexesReturned = 2;
+    peakIntegrationIndexes->resize(std::min(maxPeakIntegrationIndexesReturned, peakIntegrationIndexes->size()));
 
-    const int topNPeakIntegrations = 2;
-    const int peakIntegrationsMaxSize
-            = std::min(topNPeakIntegrations, peakIntegrationIndexes->size());
+    ERR_RETURN
+}
 
-    peakIntegrationIndexes->resize(peakIntegrationsMaxSize);
+Err CandidateScorertron::simpleIntegrator(
+        const QVector<float> &vec,
+        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(vec); ree;
+
+    Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
+    EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
+    for (int smoothCount = 0; smoothCount < m_pythiaParameters.smoothCount; smoothCount++) {
+        eVec = EigenKernelUtils::convolveVectorWithKernel(eVec, d_ptr->gaussKernel);
+    }
+
+    const int topNApexes = 10;
+    const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
+
+    if (vecApexs.isEmpty()) {
+        ERR_RETURN
+    }
+
+    Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
+    QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
+
+    const int maxPeakIntegrations = 5;
+    apexPairs.resize(std::min(maxPeakIntegrations, apexPairs.size()));
+    for (const QPair<int, float> &pr : apexPairs) {
+
+        const int apexIndex = pr.first;
+        const float apexValue = pr.second;
+
+        if (MathUtils::tZero(apexValue)) {
+            continue;
+        }
+
+        const float stopThreshold = apexValue * m_pythiaParameters.stopThresholdFraction;
+
+        float rightStopVal = apexValue;
+        int rightStopIndex = apexIndex;
+
+        int rightCurrentIndex = apexIndex;
+        while (rightCurrentIndex < eVec.size()) {
+
+            const float currentValue = eVec(rightCurrentIndex);
+            if (currentValue < stopThreshold) {
+                rightStopIndex = rightCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= rightStopVal) {
+                rightStopVal = currentValue;
+                rightStopIndex = rightCurrentIndex;
+                rightCurrentIndex++;
+                continue;
+            }
+
+            break;
+        }
+
+        float leftStopVal = apexValue;
+        int leftStopIndex = apexIndex;
+
+        int leftCurrentIndex = apexIndex;
+        while (leftCurrentIndex < eVec.size()) {
+
+            const float currentValue = eVec(leftCurrentIndex);
+            if (currentValue < stopThreshold) {
+                leftStopIndex = leftCurrentIndex;
+                break;
+            }
+
+            if (currentValue <= leftStopVal) {
+                leftStopVal = currentValue;
+                leftStopIndex = leftCurrentIndex;
+                leftCurrentIndex--;
+                continue;
+            }
+
+            break;
+        }
+
+        peakIntegrationIndexes->push_back({leftStopIndex, rightStopIndex});
+        for (int i = leftStopIndex; i <= rightStopIndex; i++) {
+            eVec.coeffRef(i) = 0.0;
+        }
+    }
 
     ERR_RETURN
 }

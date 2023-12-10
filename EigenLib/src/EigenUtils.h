@@ -321,16 +321,16 @@ public:
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
 //        topX = std::min(topX, static_cast<int>(vec.size()));
-        topX = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
+        topX = std::min( (topX), static_cast<int>(vec.size() - 1) );
 
-        std::vector<double> stdVec(vec.data(), vec.data() + vec.size());
+        std::vector<T> stdVec(vec.data(), vec.data() + vec.size());
 
-        QVector<QPair<int, double>> ogIndexPoints;
+        QVector<QPair<int, T>> ogIndexPoints;
         for (int i = 0; i < stdVec.size(); i++) {
             ogIndexPoints.push_back({i, stdVec.at(i)});
         }
 
-        const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
+        const auto sortLogic = [](const QPair<int, T> &l, const QPair<int, T> &r){return l.second > r.second;};
         std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + topX, ogIndexPoints.end(), sortLogic);
 
         ogIndexPoints.resize(topX);

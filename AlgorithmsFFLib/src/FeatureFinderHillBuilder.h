@@ -99,6 +99,8 @@ public:
             QVector<FeatureFinderHill*> *featureFinderHills
             );
 
+    Err featureFinderHills(QVector<FeatureFinderHill*> *featureFinderHills);
+
     Err getHills(
             double mzMin,
             double mzMax,
