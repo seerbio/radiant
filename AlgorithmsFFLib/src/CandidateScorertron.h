@@ -19,8 +19,6 @@ class MS2Ion;
 class MsFrame;
 class TargetDecoyCandidatePair;
 
-
-
 using namespace Error;
 
 
@@ -29,7 +27,7 @@ class ALGORITHMSFFLIB_EXPORTS CandidateScorertron {
 public:
 
     CandidateScorertron();
-    ~CandidateScorertron() = default;
+    ~CandidateScorertron();
 
     Err init(
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
@@ -58,6 +56,7 @@ private:
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
     );
 
+
 private:
 
     PythiaParameters m_pythiaParameters;
@@ -70,6 +69,9 @@ private:
     FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS2;
 
     QHash<MzHashed , QVector<FeatureFinderHill*>> m_mzHashedVsFeatureFinderHillsCached;
+
+    Q_DISABLE_COPY(CandidateScorertron) class Private;
+    const QScopedPointer<Private> d_ptr;
 
 };
 

@@ -205,7 +205,7 @@ namespace {
         const double sigma = 1.0;
         const Eigen::VectorX<double> gaussKernel = EigenKernelUtils::buildGaussianFilter1D(filterLength, sigma);
 
-        return EigenKernelUtils::applyKernelRowWiseToMatrix(mat, gaussKernel);
+        return EigenKernelUtils::applyKernelToEachColumnInMatrix(mat, gaussKernel);
     }
 
     Err findBestApexRowInMatrix(

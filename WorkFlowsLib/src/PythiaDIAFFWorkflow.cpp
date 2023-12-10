@@ -89,7 +89,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    const double calibrationTrainingFraction = 0.2;
+    const double calibrationTrainingFraction = -0.2;
     const bool useNeuralNetworkScores = false;
     const int minTrainingCountTranche = 50;
 
@@ -100,7 +100,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
-    const int topNMS2IonsCalibration = 6;
+    const int topNMS2IonsCalibration = 12;
 
     QVector<CandidateScores> candidateScores;
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
