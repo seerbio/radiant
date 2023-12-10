@@ -46,12 +46,12 @@ Err PeakIntegratomatic::Private::init(const PeakIntegratomaticParameters &params
     e = ErrorUtils::isTrue(params.isValid(), Error::eValueError); ree;
     m_params = params;
 
-    m_gaussFilter = EigenKernelUtils::buildGaussianFilter1D(
+    m_gaussFilter = EigenKernelUtils::buildGaussianFilter1D<double>(
             m_params.filterLength,
             m_params.sigma
     );
 
-    m_mexicanHatFilter = EigenKernelUtils::buildMexicanHatFilter1D(
+    m_mexicanHatFilter = EigenKernelUtils::buildMexicanHatFilter1D<double>(
             m_params.filterLength,
             m_params.sigma * 1.5
     );

@@ -138,7 +138,7 @@ public:
 
         for (int i = 0; i < ls.size(); i++) {
 
-            double &l = ls.coeffRef(i);
+            T &l = ls.coeffRef(i);
 
             r = sqrt(l * l);
             l = (std::exp( -(r * r) / s)) / (static_cast<float>(M_PI) * s);

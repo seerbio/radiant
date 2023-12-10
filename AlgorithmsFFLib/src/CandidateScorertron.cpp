@@ -33,12 +33,11 @@ CandidateScorertron::Private::~Private() {}
 
 void CandidateScorertron::Private::initGaussKernel(const PythiaParameters &pythiaParameters) {
 
-    Eigen::VectorX<double> gaussKernelDouble = EigenKernelUtils::buildGaussianFilter1D(
+    gaussKernel = EigenKernelUtils::buildGaussianFilter1D<float>(
             pythiaParameters.filterLength,
             pythiaParameters.sigma
     );
 
-    gaussKernel = gaussKernelDouble.cast<float>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +227,7 @@ namespace {
     Eigen::MatrixX<float> applyGaussSmoothRowWiseToMatrix(
             const Eigen::MatrixX<float> &mat,
             const PythiaParameters &pythiaParameters,
-            const Eigen::VectorX<float> gaussKernel
+            const Eigen::VectorX<float> &gaussKernel
             ) {
 
         Eigen::MatrixX<float> matSmoothed = mat;
