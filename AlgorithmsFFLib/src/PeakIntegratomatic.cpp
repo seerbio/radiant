@@ -21,16 +21,16 @@ public:
     Err init(const PeakIntegratomaticParameters &params);
 
     Err findAllPeaksLimitsInXIC(
-            const QVector<double> &intensityVec,
+            const QVector<float> &intensityVec,
             QVector<PeakIntegrationIndexes> *peakLimits,
-            QVector<double> *intensityVecSmoothed
+            QVector<float> *intensityVecSmoothed
     );
 
 private:
 
     PeakIntegratomaticParameters m_params;
-    Eigen::VectorX<double> m_gaussFilter;
-    Eigen::VectorX<double> m_mexicanHatFilter;
+    Eigen::VectorX<float> m_gaussFilter;
+    Eigen::VectorX<float> m_mexicanHatFilter;
 
 };
 
@@ -46,12 +46,12 @@ Err PeakIntegratomatic::Private::init(const PeakIntegratomaticParameters &params
     e = ErrorUtils::isTrue(params.isValid(), Error::eValueError); ree;
     m_params = params;
 
-    m_gaussFilter = EigenKernelUtils::buildGaussianFilter1D<double>(
+    m_gaussFilter = EigenKernelUtils::buildGaussianFilter1D<float>(
             m_params.filterLength,
             m_params.sigma
     );
 
-    m_mexicanHatFilter = EigenKernelUtils::buildMexicanHatFilter1D<double>(
+    m_mexicanHatFilter = EigenKernelUtils::buildMexicanHatFilter1D<float>(
             m_params.filterLength,
             m_params.sigma * 1.5
     );
@@ -63,23 +63,24 @@ Err PeakIntegratomatic::Private::init(const PeakIntegratomaticParameters &params
 namespace {
 
     double maxOfVectorSegment(
-            const QVector<double> &vec,
+            const QVector<float> &vec,
             int startIndex,
             int endIndex
     ) {
 
-        const QVector<double> vecTrunc = vec.mid(startIndex, 1 + endIndex - startIndex);
+        const QVector<float> vecTrunc = vec.mid(startIndex, 1 + endIndex - startIndex);
         return *std::max_element(vecTrunc.begin(), vecTrunc.end());
     }
 
-    Eigen::VectorX<double> addPaddingToVector(
-            const Eigen::VectorX<double> &vec,
+    //TODO add this to eigen kernel utils
+    Eigen::VectorX<float> addPaddingToVector(
+            const Eigen::VectorX<float> &vec,
             int paddingCount
             ) {
 
         const int finalPaddingSize = vec.size() > paddingCount ? paddingCount : 2 * paddingCount;
 
-        Eigen::VectorX<double> vecPadded(vec.size() + finalPaddingSize);
+        Eigen::VectorX<float> vecPadded(vec.size() + finalPaddingSize);
         vecPadded.setZero();
 
         const int vecInsertPoint = vec.size() > paddingCount ? 0 : paddingCount;
@@ -90,9 +91,9 @@ namespace {
 
 }//namespace
 Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
-        const QVector<double> &intensityVec,
+        const QVector<float> &intensityVec,
         QVector<PeakIntegrationIndexes> *peakLimits,
-        QVector<double> *intensityVecSmoothed
+        QVector<float> *intensityVecSmoothed
 ) {
 
     ERR_INIT
@@ -103,12 +104,12 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
     peakLimits->clear();
     intensityVecSmoothed->clear();
 
-    const Eigen::VectorX<double> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
+    const Eigen::VectorX<float> smoothedVec = EigenUtils::convertQVectorToEigenVector(intensityVec);
 
     const int paddingMultiplier = 1;
     const int paddingSize = static_cast<int>(m_gaussFilter.size()) * paddingMultiplier;
 
-    Eigen::VectorX<double> smoothedVecPadded = addPaddingToVector(
+    Eigen::VectorX<float> smoothedVecPadded = addPaddingToVector(
             smoothedVec,
             paddingSize
             );
@@ -125,9 +126,9 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     smoothedVecPadded /= maxVal;
 
-    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<float>(smoothedVecPadded);
 
-    Eigen::VectorX<double> mexicanHatsmoothedVec
+    Eigen::VectorX<float> mexicanHatsmoothedVec
         = EigenKernelUtils::convolveVectorWithKernel(smoothedVecPadded, m_mexicanHatFilter);
 
 //#define PRINT_VECS
@@ -137,11 +138,11 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
     qDebug() << EigenUtils::convertEigenVectorToQVector<double>(mexicanHatsmoothedVec);
 #endif
 
-    Eigen::VectorX<double> mexicanHatsmoothedVecApexes = mexicanHatsmoothedVec;
-    EigenUtils::thresholdVector(0.0, &mexicanHatsmoothedVecApexes);
-    const QMap<int, double> maxima = EigenUtils::apexes(mexicanHatsmoothedVecApexes);
+    Eigen::VectorX<float> mexicanHatsmoothedVecApexes = mexicanHatsmoothedVec;
+    EigenUtils::thresholdVector(static_cast<float>(0.0), &mexicanHatsmoothedVecApexes);
+    const QMap<int, float> maxima = EigenUtils::apexes(mexicanHatsmoothedVecApexes);
 
-    QMap<int, double> minima = EigenUtils::troughs(mexicanHatsmoothedVec);
+    QMap<int, float> minima = EigenUtils::troughs(mexicanHatsmoothedVec);
     minima.insert(-1, 0);
     minima.insert(static_cast<int>(mexicanHatsmoothedVec.size()) - 1, 0);
 
@@ -172,7 +173,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
                 continue;
             }
 
-            const double maxOfVecSegment = maxOfVectorSegment(*intensityVecSmoothed, startVal, endVal);
+            const float maxOfVecSegment = maxOfVectorSegment(*intensityVecSmoothed, startVal, endVal);
 
             if (maxOfVecSegment > signalToNoiseThreshold) {
 
@@ -191,7 +192,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 
     smoothedVecPadded /= smoothedVecPadded.maxCoeff();
     smoothedVecPadded *= maxVal;
-    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<double>(smoothedVecPadded);
+    *intensityVecSmoothed = EigenUtils::convertEigenVectorToQVector<float>(smoothedVecPadded);
 
     ERR_RETURN
 }
@@ -216,9 +217,9 @@ Err PeakIntegratomatic::init(const PeakIntegratomaticParameters &params) {
 
 
 Err PeakIntegratomatic::findAllPeaksLimitsInXIC(
-        const QVector<double> &intensityVec,
+        const QVector<float> &intensityVec,
         QVector<PeakIntegrationIndexes> *peakLimits,
-        QVector<double> *intensityVecSmoothed
+        QVector<float> *intensityVecSmoothed
 ){
 
     ERR_INIT

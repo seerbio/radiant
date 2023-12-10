@@ -48,9 +48,9 @@ public:
     Err init(const PeakIntegratomaticParameters &params);
 
     Err findAllPeaksLimitsInXIC(
-            const QVector<double> &intensityVec,
+            const QVector<float> &intensityVec,
             QVector<PeakIntegrationIndexes> *peakLimits,
-            QVector<double> *intensityVecSmoothed
+            QVector<float> *intensityVecSmoothed
     );
 
     static Err simpleIntegrator(

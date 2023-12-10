@@ -52,7 +52,7 @@ public:
 private:
 
     Err findCandidateIntegrations(
-            const QVector<double> &summedMatToVec,
+            const QVector<float> &summedMatToVec,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
     );
 

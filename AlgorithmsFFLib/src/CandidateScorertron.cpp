@@ -138,6 +138,35 @@ namespace {
         return minMaxFrameIndexes;
     }
 
+    Err buildIntegrationVector(
+            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            QVector<float> *integrationVector
+            ) {
+
+        ERR_INIT
+
+        const QPair<FrameIndex, FrameIndex> minMaxFrameIndexes = getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
+        const int buffer = 2;
+        const int vecSize = minMaxFrameIndexes.second + buffer;
+
+        QVector<float> eigenLoadingVector(vecSize, static_cast<float>(0.0));
+        eigenLoadingVector.reserve(vecSize);
+
+        for (const QVector<FeatureFinderHill*> &ffhs : mzHashedVsfeatureFinderHills) {
+            for (FeatureFinderHill *ffh : ffhs) {
+                const QVector<FrameIndex> frameIndexes = ffh->scanNumberIndexes();
+                for (int i = 0; i < frameIndexes.size(); i++) {
+                    e = ErrorUtils::isTrue(frameIndexes[i] < vecSize); ree;
+                    eigenLoadingVector[frameIndexes[i]] += 1.0;
+                }
+            }
+        }
+
+        *integrationVector = eigenLoadingVector;
+
+        ERR_RETURN
+    }
+
     Err loadMzHashedVsFeatureFinderHillsToMatrix(
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
@@ -438,25 +467,36 @@ Err CandidateScorertron::calculateScores(
             [](const QVector<FeatureFinderHill*> &ffhs){return !ffhs.isEmpty();}
             ));
 
-
     if (mzIonsFound < m_pythiaParameters.minFoundMzPeaks) {
         ERR_RETURN
     }
 
-    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
-    e = extractHills(ms2IonsTheoreticalIsotopeShadows, &mzHashedVsfeatureFinderHillsShadows);
+    QVector<float> integrationVector;
+    e = buildIntegrationVector(mzHashedVsfeatureFinderHills, &integrationVector); ree;
 
-    Eigen::MatrixX<float> mat;
-    Eigen::MatrixX<float> matShadows;
-    e = buildAlignmentMatricies(
-            ms2IonsTheoretical,
-            ms2IonsTheoreticalIsotopeShadows,
-            m_pythiaParameters.filterLength,
-            mzHashedVsfeatureFinderHills,
-            mzHashedVsfeatureFinderHillsShadows,
-            &mat,
-            &matShadows
-            ); ree;
+//    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+//    e = findCandidateIntegrations(
+//            integrationVector,
+//            &peakIntegrationIndexes
+//            ); ree;
+
+
+
+
+//    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
+//    e = extractHills(ms2IonsTheoreticalIsotopeShadows, &mzHashedVsfeatureFinderHillsShadows);
+
+//    Eigen::MatrixX<float> mat;
+//    Eigen::MatrixX<float> matShadows;
+//    e = buildAlignmentMatricies(
+//            ms2IonsTheoretical,
+//            ms2IonsTheoreticalIsotopeShadows,
+//            m_pythiaParameters.filterLength,
+//            mzHashedVsfeatureFinderHills,
+//            mzHashedVsfeatureFinderHillsShadows,
+//            &mat,
+//            &matShadows
+//            ); ree;
 
 //    const Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
 //            mat,
@@ -472,6 +512,12 @@ Err CandidateScorertron::calculateScores(
 //    Eigen::MatrixX<float> matIsotopesSubtracted = matSmoothed.array() - matShadowsSmoothed.array();
 //    EigenUtils::thresholdMatrix(static_cast<float>(0.0), &matIsotopesSubtracted);
 
+
+
+
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 
 //    const Eigen::MatrixX<float>
 
@@ -573,7 +619,7 @@ Err CandidateScorertron::extractHills(
 namespace {
 
     void sortPeakIntegrationsDescMaxSumFound(
-            const QVector<double> &summedMatToVec,
+            const QVector<float> &summedMatToVec,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
     ) {
 
@@ -582,11 +628,11 @@ namespace {
             const int peakWidthL = l.second - l.first;
             const int peakWidthR = r.second - r.first;
 
-            const QVector<double> summedMatVecMaxL = summedMatToVec.mid(l.first, peakWidthL);
-            const QVector<double> summedMatVecMaxR = summedMatToVec.mid(r.first, peakWidthR);
+            const QVector<float> summedMatVecMaxL = summedMatToVec.mid(l.first, peakWidthL);
+            const QVector<float> summedMatVecMaxR = summedMatToVec.mid(r.first, peakWidthR);
 
-            const double summedPresenceIntegrationMaxL = *std::max_element(summedMatVecMaxL.begin(), summedMatVecMaxL.end());
-            const double summedPresenceIntegrationMaxR = *std::max_element(summedMatVecMaxR.begin(), summedMatVecMaxR.end());
+            const float summedPresenceIntegrationMaxL = *std::max_element(summedMatVecMaxL.begin(), summedMatVecMaxL.end());
+            const float summedPresenceIntegrationMaxR = *std::max_element(summedMatVecMaxR.begin(), summedMatVecMaxR.end());
 
             if (MathUtils::tSame(summedPresenceIntegrationMaxL, summedPresenceIntegrationMaxR)) {
                 return std::accumulate(summedMatVecMaxL.begin(), summedMatVecMaxL.end(), 0.0)
@@ -601,7 +647,7 @@ namespace {
 
 
     void filterSummedVecPeakIntegrationsByPeakWidth(
-            const QVector<double> &summedMatToVec,
+            const QVector<float> &summedMatToVec,
             int summedMzPresenceMin,
             int peakWidthMin,
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
@@ -614,10 +660,10 @@ namespace {
                 return true;
             }
 
-            const QVector<double> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
-            const double summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
+            const QVector<float> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
+            const float summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
 
-            return summedPresenceIntegrationMax < summedMzPresenceMin;
+            return (summedPresenceIntegrationMax < static_cast<float>(summedMzPresenceMin));
         };
 
         const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
@@ -626,17 +672,17 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::findCandidateIntegrations(
-        const QVector<double> &summedMatToVec,
+        const QVector<float> &summedMatToVec,
         QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
 ) {
 
     ERR_INIT
 
-    QVector<double> summedPresenceVecSmoothed;
+    QVector<float> summedPresenceVecSmoothedUnused;
     e = m_peakIntegratomatic.findAllPeaksLimitsInXIC(
             summedMatToVec,
             peakIntegrationIndexes,
-            &summedPresenceVecSmoothed
+            &summedPresenceVecSmoothedUnused
             ); ree;
 
     const int minPeakWidth = 2;
