@@ -271,126 +271,6 @@ namespace {
         return matSmoothed;
     }
 
-//    FrameIndex getMaxFrameIndexFromMzHashedVsXICPoints(const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints) {
-//
-//        FrameIndex frameIndex = -1;
-//
-//        const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
-//        for (const XICPoints &xp : xicPoints) {
-//
-//            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xp.scanNumbersVsIntensity;
-//
-//            if (scanNumbersVsIntensityVals.isEmpty()) {
-//                continue;
-//            }
-//
-//            frameIndex = std::max(frameIndex, scanNumbersVsIntensityVals.lastKey());
-//        }
-//
-//        return frameIndex;
-//    }
-//
-//    Err buildMzHashedVsIonPresence(
-//            const QMap<MzHashed, XICPoints> &mzHashedVsXICPoints,
-//            QMap<MzHashed, QVector<double>> *mzHashedVsIonPresence
-//            ) {
-//
-//        ERR_INIT
-//
-//        mzHashedVsIonPresence->clear();
-//
-//        e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
-//
-//        const FrameIndex frameIndexMax = getMaxFrameIndexFromMzHashedVsXICPoints(mzHashedVsXICPoints);
-//        if (frameIndexMax < 0) {
-//            ERR_RETURN
-//        }
-//
-//        for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
-//
-//            const MzHashed mzHashed = it.key();
-//            const XICPoints &xicPoints = it.value();
-//
-//            const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
-//
-//            if (scanNumbersVsIntensityVals.isEmpty()) {
-//                mzHashedVsIonPresence->insert(mzHashed, {});
-//                continue;
-//            }
-//
-//            Eigen::VectorX<double> vecNormalized = EigenUtils::convertQMapToEigenVector(
-//                    scanNumbersVsIntensityVals,
-//                    frameIndexMax + 1
-//            );
-//            const double denom = vecNormalized.maxCoeff();
-//            vecNormalized = vecNormalized.array() / denom;
-//
-//            Eigen::VectorX<double> vecPresence = vecNormalized.array() / vecNormalized.array();
-//            EigenUtils::replaceNaN(0.0, &vecPresence);
-//            mzHashedVsIonPresence->insert(mzHashed, EigenUtils::convertEigenVectorToQVector(vecPresence));
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//    int getMaxRowCount(
-//            const QVector<MS2Ion> &ms2Ions,
-//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence
-//    ) {
-//
-//        int maxRowCount = 0;
-//        for (const MS2Ion &ms2Ion : ms2Ions) {
-//
-//            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-//            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-//
-//            maxRowCount = std::max(maxRowCount, ionPresenceVec.size());
-//        }
-//
-//        return maxRowCount;
-//    }
-//
-//    Eigen::MatrixX<double> buildSummingMatrix(
-//            const QVector<MS2Ion> &ms2Ions,
-//            const QMap<MzHashed, QVector<double>> &mzHashedVsIonPresence,
-//            int topNMs2Ions
-//    ) {
-//
-//        const int cols = topNMs2Ions;
-//        const int rows = getMaxRowCount(
-//                ms2Ions,
-//                mzHashedVsIonPresence
-//        );
-//
-//        if (rows == 0) {
-//            return {};
-//        }
-//
-//        Eigen::MatrixX<double> mat(rows, cols);
-//        mat.setZero();
-//
-//        for (int i = 0; i < cols; i++) {
-//
-//            if (i >= ms2Ions.size()) {
-//                break;
-//            }
-//
-//            const MS2Ion &ms2Ion = ms2Ions.at(i);
-//
-//            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-//            const QVector<double> &ionPresenceVec = mzHashedVsIonPresence.value(mzHashed);
-//
-//            if (ionPresenceVec.isEmpty()) {
-//                continue;
-//            }
-//
-//            const Eigen::VectorX<double> eVec = EigenUtils::convertQVectorToEigenVector(ionPresenceVec);
-//            mat.col(i) = eVec;
-//        }
-//
-//        return mat;
-//    }
-
 //    Err calculateMS1Corr(
 //            const Eigen::VectorX<double> &bestAnchorColumn,
 //            const PeakIntegrationIndexes &peakIntegrationIndexes,
@@ -481,7 +361,7 @@ Err CandidateScorertron::calculateScores(
             &peakIntegrationIndexes
             ); ree;
 
-    
+
 
 
 //    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
