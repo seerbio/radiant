@@ -44,12 +44,12 @@ public:
             CandidateScores *candidateScores
             );
 
+private:
+
     Err extractHills(
             const QVector<MS2Ion> &ms2IonsTheoretical,
             QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHills
-            );
-
-private:
+    );
 
     Err findCandidateIntegrations(
             const QVector<float> &summedMatToVec,
@@ -61,6 +61,13 @@ private:
             QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
     );
 
+    Err processPeakIntegrationIndexes(
+            const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+            QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            const QVector<MS2Ion> &ms2IonsTheoretical,
+            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows
+            );
 
 private:
 

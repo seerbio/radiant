@@ -246,17 +246,7 @@ namespace {
         et.start();
 
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
-
-//        const int tranchSize = std::min(pi.pythiaParameters.trancheSizeMax, pi.targetDecoyPointers.size());
-//        const int nTranches = pi.targetDecoyPointers.size() / tranchSize;
-//
-//        QVector<QVector<TargetDecoyCandidatePair*>> scoredTargetDecoyPointersTranched;
-//        e = ParallelUtils::trancheVectorForParallelization(
-//                pi.targetDecoyPointers,
-//                nTranches,
-//                &scoredTargetDecoyPointersTranched
-//        ); ree;
-
+        
         FeatureFinderParameters featureFinderParameters(pi.pythiaParameters);
 
         FeatureFinderHillBuilder featureFinderHillBuilderMS2;
@@ -291,6 +281,7 @@ namespace {
                     tdcp->ms2IonsTarget(),
                     &candidateScoresTarget
                     ); ree;
+            candidateScoresTarget.isDecoy = false;
 
             CandidateScores candidateScoresDecoy;
             e = candidateScorertron.calculateScores(
@@ -298,7 +289,7 @@ namespace {
                     tdcp->ms2IonsDecoy(),
                     &candidateScoresDecoy
                     ); ree;
-
+            candidateScoresDecoy.isDecoy = true;
         }
 
         if (pi.pythiaParameters.verbosity >= 1) {

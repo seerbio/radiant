@@ -339,7 +339,10 @@ Err CandidateScorertron::calculateScores(
             );
 
     QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHills;
-    e = extractHills(ms2IonsTheoretical, &mzHashedVsfeatureFinderHills);
+    e = extractHills(
+            ms2IonsTheoretical,
+            &mzHashedVsfeatureFinderHills
+            ); ree;
 
     const QList<QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsVals = mzHashedVsfeatureFinderHills.values();
     const int mzIonsFound = static_cast<int>(std::count_if(
@@ -361,11 +364,17 @@ Err CandidateScorertron::calculateScores(
             &peakIntegrationIndexes
             ); ree;
 
+    if (peakIntegrationIndexes.isEmpty()) {
+        ERR_RETURN
+    }
 
-
-
-//    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
-//    e = extractHills(ms2IonsTheoreticalIsotopeShadows, &mzHashedVsfeatureFinderHillsShadows);
+    e = processPeakIntegrationIndexes(
+            targetDecoyCandidatePair,
+            peakIntegrationIndexes,
+            ms2IonsTheoretical,
+            mzHashedVsfeatureFinderHills,
+            ms2IonsTheoreticalIsotopeShadows
+            ); ree;
 
 //    Eigen::MatrixX<float> mat;
 //    Eigen::MatrixX<float> matShadows;
@@ -455,17 +464,43 @@ Err CandidateScorertron::calculateScores(
     ERR_RETURN
 }
 
+namespace {
+
+    void filterFeatureFinderHills(
+            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            FrameIndex frameIndexMin,
+            FrameIndex frameIndexMax,
+            QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHillsFiltered
+            ) {
+        for (auto it = mzHashedVsfeatureFinderHills.begin(); it != mzHashedVsfeatureFinderHills.end(); it++) {
+            const MzHashed mzHashed = it.key();
+            const QVector<FeatureFinderHill*> &ffhs = it.value();
+            for (FeatureFinderHill *ffh : ffhs) {
+                const QPair<FrameIndex, FrameIndex> ffhFrameIndexMinMax = ffh->scanNumberIndexMinMax();
+
+                if(ffhFrameIndexMinMax.second < frameIndexMin || ffhFrameIndexMinMax.first > frameIndexMax) {
+                    continue;
+                }
+                (*mzHashedVsfeatureFinderHillsFiltered)[mzHashed].push_back(ffh);
+            }
+        }
+    }
+
+}//namespace
 Err CandidateScorertron::extractHills(
         const QVector<MS2Ion> &ms2IonsTheoretical,
         QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHills
         ) {
     ERR_INIT
 
+    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsTemp;
+
     for (const MS2Ion &ms2Ion : ms2IonsTheoretical) {
 
         const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
         if (m_mzHashedVsFeatureFinderHillsCached.contains(mzHashed)) {
-            mzHashedVsfeatureFinderHills->insert(mzHashed, m_mzHashedVsFeatureFinderHillsCached.value(mzHashed));
+            mzHashedVsfeatureFinderHillsTemp.insert(mzHashed, m_mzHashedVsFeatureFinderHillsCached.value(mzHashed));
             continue;
         }
 
@@ -477,23 +512,17 @@ Err CandidateScorertron::extractHills(
         const double mzMax = ms2Ion.mz + mzTol;
 
         QVector<FeatureFinderHill*> mzFeatureFinderHills;
+        e = m_featureFinderHillsBuilderMS2->getHills(
+                mzMin,
+                mzMax,
+                &mzFeatureFinderHills
+        ); ree;
 
-        if (m_msCalibratomatic->isInit()) {
-//            e = m_featureFinderHillRTreeMS2.getHills(); ree;
-        }
-
-        else {
-            e = m_featureFinderHillsBuilderMS2->getHills(
-                    mzMin,
-                    mzMax,
-                    &mzFeatureFinderHills
-            ); ree;
-        }
-
-        (*mzHashedVsfeatureFinderHills)[mzHashed].append(mzFeatureFinderHills);
-        m_mzHashedVsFeatureFinderHillsCached.insert(mzHashed, mzHashedVsfeatureFinderHills->value(mzHashed));
+        mzHashedVsfeatureFinderHillsTemp[mzHashed].append(mzFeatureFinderHills);
+        m_mzHashedVsFeatureFinderHillsCached.insert(mzHashed, mzHashedVsfeatureFinderHillsTemp.value(mzHashed));
     }
 
+    *mzHashedVsfeatureFinderHills = mzHashedVsfeatureFinderHillsTemp;
     ERR_RETURN
 }
 
@@ -640,3 +669,44 @@ Err CandidateScorertron::simpleIntegrator(
 
     ERR_RETURN
 }
+
+Err CandidateScorertron::processPeakIntegrationIndexes(
+        const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+        QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+        const QVector<MS2Ion> &ms2IonsTheoretical,
+        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+        const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows
+        ) {
+
+    ERR_INIT
+
+    QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadows;
+    e = extractHills(
+            ms2IonsTheoreticalIsotopeShadows,
+            &mzHashedVsfeatureFinderHillsShadows
+            ); ree;
+
+    for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
+
+        e = ErrorUtils::isTrue(pii.second > pii.first); ree;
+
+        QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsFiltered;
+        filterFeatureFinderHills(
+                mzHashedVsfeatureFinderHills,
+                pii.first,
+                pii.second,
+                &mzHashedVsfeatureFinderHillsFiltered
+                );
+
+        QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadowsFiltered;
+        filterFeatureFinderHills(
+                mzHashedVsfeatureFinderHillsShadows,
+                pii.first,
+                pii.second,
+                &mzHashedVsfeatureFinderHillsShadowsFiltered
+                );
+    }
+
+    ERR_RETURN
+}
+
