@@ -231,8 +231,8 @@ namespace {
             ) {
 
         Eigen::MatrixX<float> matSmoothed = mat;
-        for (int smoothIter = 0; smoothIter < pythiaParameters.smoothCount; smoothIter) {
-//            matSmoothed = EigenKernelUtils::applyKernelToEachColumnInMatrix(matSmoothed, gaussKernel);
+        for (int smoothIter = 0; smoothIter < pythiaParameters.smoothCount; smoothIter++) {
+            matSmoothed = EigenKernelUtils::applyKernelToEachColumnInMatrix(matSmoothed, gaussKernel);
         }
 
         return matSmoothed;
@@ -455,21 +455,20 @@ Err CandidateScorertron::calculateScores(
             &matShadows
             ); ree;
 
-    Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
+    const Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
             mat,
             m_pythiaParameters,
             d_ptr->gaussKernel
             );
-    Eigen::MatrixX<float> matShadowsSmoothed = applyGaussSmoothRowWiseToMatrix(
+    const Eigen::MatrixX<float> matShadowsSmoothed = applyGaussSmoothRowWiseToMatrix(
             matShadows,
             m_pythiaParameters,
             d_ptr->gaussKernel
     );
 
     Eigen::MatrixX<float> matIsotopesSubtracted = matSmoothed.array() - matShadowsSmoothed.array();
+    EigenUtils::thresholdMatrix(static_cast<float>(0.0), &matIsotopesSubtracted);
 
-//    std::cout << mat << std::endl;
-//    std::cout << "***" << std::endl;
 
 //    const Eigen::MatrixX<float>
 
