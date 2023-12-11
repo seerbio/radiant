@@ -230,12 +230,12 @@ public:
     }
 
     template <typename T>
-    static double cosineSimilarity(const Eigen::VectorX<T> &v1, const Eigen::VectorX<T> &v2) {
+    static T cosineSimilarity(const Eigen::VectorX<T> &v1, const Eigen::VectorX<T> &v2) {
 
-        const double nearZero = 1e-5;
-        const double dotProduct = v1.dot(v2);
-        const double v1Magnitude = std::max(std::sqrt(v1.array().square().sum()), nearZero);
-        const double v2Magnitude = std::max(std::sqrt(v2.array().square().sum()), nearZero);
+        const T nearZero = 1e-5;
+        const T dotProduct = v1.dot(v2);
+        const T v1Magnitude = std::max(std::sqrt(v1.array().square().sum()), nearZero);
+        const T v2Magnitude = std::max(std::sqrt(v2.array().square().sum()), nearZero);
 
         return MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
     }

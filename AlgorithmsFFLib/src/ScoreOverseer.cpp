@@ -35,8 +35,17 @@ public:
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows
     );
 
-    Eigen::VectorX<float> m_gaussKernel;
+    Err calculateCandidateAllignementMetrics(
+            QVector<float> *cosineSimsIndividual,
+            QVector<float> *intensityFoundMaxVec,
+            QVector<float> *cosineSimsShadowIndividual,
+            QVector<float> *shadowsIntensityRatioVec,
+            FrameIndex *frameIndexIntensityApex,
+            Eigen::VectorX<float> *bestAnchorColumn,
+            int *allignedMaxIndexesCount
+    );
 
+    Eigen::VectorX<float> m_gaussKernel;
     Eigen::MatrixX<float> m_intensityMatrix100;
     Eigen::MatrixX<float> m_intensityMatrix45;
     Eigen::MatrixX<float> m_intensityMatrix20;
@@ -212,93 +221,15 @@ namespace {
         return matSmoothed;
     }
 
-}// namespace
-Err ScoreOverseer::Private::buildAlignmentMatricies(
-        const QVector<MS2Ion> &ms2IonsTheoretical,
-        const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
-        const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
-    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalShadows); ree;
-    e = ErrorUtils::isEqual(ms2IonsTheoretical.size(), ms2IonsTheoreticalShadows.size()); ree;
-
-    const int cols = ms2IonsTheoretical.size();
-
-    const QPair<FrameIndex, FrameIndex> minMaxFrameIndex
-            = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
-
-    e = ErrorUtils::isTrue(minMaxFrameIndex.second >= minMaxFrameIndex.first); ree;
-    const int rows = std::max(minMaxFrameIndex.second - minMaxFrameIndex.first + 1, m_pythiaParams.filterLength);
-
-    m_intensityMatrix100.resize(rows, cols);
-    e = loadMzHashedVsFeatureFinderHillsToMatrix(
-            ms2IonsTheoretical,
-            mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex.first,
-            &m_intensityMatrix100
-    ); ree;
-    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-            m_intensityMatrix100,
-            m_pythiaParams,
-            m_gaussKernel
-            );
-
-    m_intensityMatrix100Shadow.resize(rows, cols);
-    e = loadMzHashedVsFeatureFinderHillsToMatrix(
-            ms2IonsTheoreticalShadows,
-            mzHashedVsfeatureFinderHillsShadows,
-            minMaxFrameIndex.first,
-            &m_intensityMatrix100Shadow
-    ); ree;
-    m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
-            m_intensityMatrix100Shadow,
-            m_pythiaParams,
-            m_gaussKernel
-            );
-
-    const int tightColsMax = 6;
-    m_intensityMatrix45.resize(rows, tightColsMax);
-    m_intensityMatrix20.resize(rows, tightColsMax);
-    e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
-            ms2IonsTheoretical,
-            mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex.first,
-            m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_intensityMatrix45,
-            &m_intensityMatrix20
-    ); ree;
-
-    ERR_RETURN
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
-//END PRIVATE
-///////////////////////////////////////////////////////////////////////////////////////////
-
-
-ScoreOverseer::ScoreOverseer()
-: d_ptr(new Private())
-{}
-
-ScoreOverseer::~ScoreOverseer() {}
-
-namespace {
-
-
     Err findBestApexRowInMatrix(
-            const Eigen::MatrixX<double> &intensityMatrixIntegratedLimits,
-            const QVector<double> &peakCountsPerRow,
+            const Eigen::MatrixX<float> &intensityMatrix,
             int *bestApexRowIndex
-    ) {
+            ) {
 
         ERR_INIT
 
-        using RowMax = double;
-        using RowSum = double;
+        using RowMax = float;
+        using RowSum = float;
 
         struct SearchObject {
             RowMax rowMax = -1.0;
@@ -306,11 +237,16 @@ namespace {
             int index = -1;
         };
 
-        const Eigen::VectorX<double> rowSums = intensityMatrixIntegratedLimits.rowwise().sum();
-        const QVector<double> rowSumsVec = EigenUtils::convertEigenVectorToQVector(rowSums);
+        const Eigen::VectorX<float> rowSums = intensityMatrix.rowwise().sum();
+        Eigen::MatrixX<float> rowCountMat = (intensityMatrix.array() / intensityMatrix.array());
+        EigenUtils::replaceNaN(0.0f, &rowCountMat);
+        Eigen::VectorX<float> rowCount = rowCountMat.rowwise().sum();
+
+        const QVector<float> rowSumsVec = EigenUtils::convertEigenVectorToQVector(rowSums);
+        const QVector<float> rowCountVec = EigenUtils::convertEigenVectorToQVector(rowCount);
 
         QVector<QPair<RowMax, RowSum>> rowMaxVsRowSum;
-        e = ParallelUtils::zip(peakCountsPerRow, rowSumsVec, &rowMaxVsRowSum); ree;
+        e = ParallelUtils::zip(rowCountVec, rowSumsVec, &rowMaxVsRowSum); ree;
 
         int counter = 0;
         const auto insertLogic = [&counter](const QPair<RowMax, RowSum> &item){
@@ -345,7 +281,7 @@ namespace {
 
     Err removeInterferingPeaksInColumn(
             int bestApexRowIndex,
-            Eigen::VectorX<double> *vec
+            Eigen::VectorX<float> *vec
             ) {
 
         ERR_INIT
@@ -392,25 +328,26 @@ namespace {
     }
 
     Err removeInterferingPeaksInMatrix(
-            const Eigen::MatrixX<double> &_intensityMatrixIntegratedLimits,
-            const QVector<double> &peakCountsPerRow,
-            Eigen::MatrixX<double> *intensityMatrixIntegratedLimitsNoInterference,
+            const Eigen::MatrixX<float> &_intensityMatrix,
+            Eigen::MatrixX<float> *intensityMatrixNoInterference,
             int *bestApexRowIndex,
             QVector<int> *apexIndexes
     ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(peakCountsPerRow); ree;
-        e = ErrorUtils::isTrue(_intensityMatrixIntegratedLimits.maxCoeff() > 0); ree;
+        e = ErrorUtils::isTrue(_intensityMatrix.maxCoeff() > 0); ree;
 
-        Eigen::MatrixX<double> intensityMatrixIntegratedLimits = _intensityMatrixIntegratedLimits;
+        Eigen::MatrixX<float> intensityMatrixCopy = _intensityMatrix;
 
-        e = findBestApexRowInMatrix(intensityMatrixIntegratedLimits, peakCountsPerRow, bestApexRowIndex); ree;
+        e = findBestApexRowInMatrix(
+                intensityMatrixCopy,
+                bestApexRowIndex
+                ); ree;
 
-        for (int col = 0; col < intensityMatrixIntegratedLimits.cols(); col++) {
+        for (int col = 0; col < intensityMatrixCopy.cols(); col++) {
 
-            Eigen::VectorX<double> colVec = intensityMatrixIntegratedLimits.col(col);
+            Eigen::VectorX<float> colVec = intensityMatrixCopy.col(col);
             const QVector<int> columnApexes = EigenUtils::apexesIndexesOnly(colVec);
 
             if (columnApexes.isEmpty()) {
@@ -420,24 +357,114 @@ namespace {
             const int bestApexIndexColumn = columnApexes.at(MathUtils::closest(columnApexes, *bestApexRowIndex));
 
             e = removeInterferingPeaksInColumn(bestApexIndexColumn, &colVec); ree;
-            intensityMatrixIntegratedLimits.col(col) = colVec;
+            intensityMatrixCopy.col(col) = colVec;
             apexIndexes->push_back(bestApexIndexColumn);
 
         }
 
-        *intensityMatrixIntegratedLimitsNoInterference = intensityMatrixIntegratedLimits;
+        *intensityMatrixNoInterference = intensityMatrixCopy;
 
         ERR_RETURN
     }
 
+
+}// namespace
+Err ScoreOverseer::Private::buildAlignmentMatricies(
+        const QVector<MS2Ion> &ms2IonsTheoretical,
+        const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
+        const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
+    e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalShadows); ree;
+    e = ErrorUtils::isEqual(ms2IonsTheoretical.size(), ms2IonsTheoreticalShadows.size()); ree;
+
+    const int cols = ms2IonsTheoretical.size();
+
+    const QPair<FrameIndex, FrameIndex> minMaxFrameIndex
+            = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
+
+    e = ErrorUtils::isTrue(minMaxFrameIndex.second >= minMaxFrameIndex.first); ree;
+    const int rows = std::max(minMaxFrameIndex.second - minMaxFrameIndex.first + 1, m_pythiaParams.filterLength);
+
+    m_intensityMatrix100.resize(rows, cols);
+    e = loadMzHashedVsFeatureFinderHillsToMatrix(
+            ms2IonsTheoretical,
+            mzHashedVsfeatureFinderHills,
+            minMaxFrameIndex.first,
+            &m_intensityMatrix100
+    ); ree;
+
+    Eigen::MatrixX<float> intensityMatrixNoInterference;
+    int bestApexRowIndex;
+    QVector<int> apexIndexes;
+    e = removeInterferingPeaksInMatrix(
+            m_intensityMatrix100,
+            &intensityMatrixNoInterference,
+            &bestApexRowIndex,
+            &apexIndexes
+            ); ree;
+
+    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+            intensityMatrixNoInterference,
+            m_pythiaParams,
+            m_gaussKernel
+            );
+
+    m_intensityMatrix100Shadow.resize(rows, cols);
+    e = loadMzHashedVsFeatureFinderHillsToMatrix(
+            ms2IonsTheoreticalShadows,
+            mzHashedVsfeatureFinderHillsShadows,
+            minMaxFrameIndex.first,
+            &m_intensityMatrix100Shadow
+    ); ree;
+
+    if (m_intensityMatrix100Shadow.maxCoeff() > 0.0f) {
+        Eigen::MatrixX<float> intensityMatrixNoInterferenceShadows;
+        int bestApexRowIndexShadows;
+        QVector<int> apexIndexesShadows;
+        e = removeInterferingPeaksInMatrix(
+                m_intensityMatrix100Shadow,
+                &intensityMatrixNoInterferenceShadows,
+                &bestApexRowIndexShadows,
+                &apexIndexesShadows
+        ); ree;
+
+        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+                intensityMatrixNoInterferenceShadows,
+                m_pythiaParams,
+                m_gaussKernel
+        );
+    }
+
+    const int tightColsMax = 6;
+    m_intensityMatrix45.resize(rows, tightColsMax);
+    m_intensityMatrix20.resize(rows, tightColsMax);
+    e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
+            ms2IonsTheoretical,
+            mzHashedVsfeatureFinderHills,
+            minMaxFrameIndex.first,
+            m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_intensityMatrix45,
+            &m_intensityMatrix20
+    ); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
     Err calcBestCosineSimSumLogic(
-            const Eigen::MatrixX<double> &intensityMatrixIntegratedLimitsSmoothed,
+            const Eigen::MatrixX<float> &intensityMatrixIntegratedLimitsSmoothed,
             double cosineSimToAnchorThreshold,
-            QVector<double> *bestCosineSimsIndividual,
+            QVector<float> *bestCosineSimsIndividual,
             double *bestCosineSimSum,
-            QVector<double> *bestIntensitiesIndividual,
-            Eigen::VectorX<double> *bestAnchorColumn
-            ) {
+            QVector<float> *bestIntensitiesIndividual,
+            Eigen::VectorX<float> *bestAnchorColumn
+    ) {
 
         ERR_INIT
 
@@ -449,13 +476,17 @@ namespace {
 
         for (int i = 0; i < topCols6OrLess; i++) {
 
-            QVector<double> bestCosineSimsIndividualAnchor;
-            QVector<double> bestIndividualIntensities;
-            const Eigen::VectorX<double> &anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
+            QVector<float> bestCosineSimsIndividualAnchor;
+            QVector<float> bestIndividualIntensities;
+            const Eigen::VectorX<float> &anchorColumn = intensityMatrixIntegratedLimitsSmoothed.col(i);
+
+            if (MathUtils::tZero(anchorColumn.maxCoeff())) {
+                continue;
+            }
 
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
 
-                const Eigen::VectorX<double> &altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
+                const Eigen::VectorX<float> &altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
 
                 const double cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
 
@@ -485,182 +516,92 @@ namespace {
         ERR_RETURN
     }
 
-    Err calcBestCosineSimSum(
-            const Eigen::MatrixX<double> &intensityMatrix,
-            const Eigen::MatrixX<double> &intensityMatrixShadows,
-            const PeakIntegrationIndexes &pii,
-            const QVector<double> &summedMatToVec,
-            int topNMs2FragPeaks,
-            double cosineSimToAnchorThreshold,
-            bool subtractShadows,
-            QVector<double> *cosineSimsIndividualIntegration,
-            double *bestCosineSimSumIntegration,
-            QVector<double> *bestIntensitiesIndividual,
-            Eigen::VectorX<double> *bestAnchorColumn,
-            FrameIndex *frameIndexIntensityApexIntegration,
-            int *allignedMaxIndexesCount,
-            QVector<double> *cosineSimsShadowIndividual,
-            QVector<double> *shadowsIntensityRatioPeakIntVec
-            ) {
+}//namespace
+Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
+        QVector<float> *cosineSimsIndividual,
+        QVector<float> *intensityFoundMaxVec,
+        QVector<float> *cosineSimsShadowIndividual,
+        QVector<float> *shadowsIntensityRatioVec,
+        FrameIndex *frameIndexIntensityApex,
+        Eigen::VectorX<float> *bestAnchorColumn,
+        int *allignedMaxIndexesCount
+        ) {
 
-        ERR_INIT
+    ERR_INIT
 
-        Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterference;
-//        e = buildAlignmentMatrix(
-//                intensityMatrix,
-//                pii,
-//                summedMatToVec,
-//                &intensityMatrixIntegratedLimitsNoInterference,
-//                frameIndexIntensityApexIntegration,
-//                allignedMaxIndexesCount
-//                ); ree;
-//
-//        intensityMatrixIntegratedLimitsNoInterference
-//                = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimitsNoInterference);
+    e = ErrorUtils::isTrue(m_intensityMatrix100.nonZeros() > 1); ree;
 
-        if (intensityMatrixShadows.cols() > 0) {
+    if (m_intensityMatrix100Shadow.cols() > 0) {
 
-            FrameIndex unused;
-            Eigen::MatrixX<double> intensityMatrixIntegratedLimitsNoInterferenceShadows;
-            int allignedMaxIndexesCountUnused;
-//            e = buildAlignmentMatrix(
-//                    intensityMatrixShadows,
-//                    pii,
-//                    summedMatToVec,
-//                    &intensityMatrixIntegratedLimitsNoInterferenceShadows,
-//                    &unused,
-//                    &allignedMaxIndexesCountUnused
-//            ); ree;
+        e = ErrorUtils::isEqual(m_intensityMatrix100.cols(), m_intensityMatrix100Shadow.cols()); ree;
+        e = ErrorUtils::isEqual(m_intensityMatrix100.rows(), m_intensityMatrix100Shadow.rows()); ree;
 
-            e = ErrorUtils::isEqual(
-                    intensityMatrixIntegratedLimitsNoInterference.cols(),
-                    intensityMatrixIntegratedLimitsNoInterferenceShadows.cols()
-                    ); ree;
-
-            e = ErrorUtils::isEqual(
-                    intensityMatrixIntegratedLimitsNoInterference.rows(),
-                    intensityMatrixIntegratedLimitsNoInterferenceShadows.rows()
-            ); ree;
-
-//            intensityMatrixIntegratedLimitsNoInterferenceShadows
-//                = applyGaussSmoothRowWiseToMatrix(intensityMatrixIntegratedLimitsNoInterferenceShadows);
-
-            if (subtractShadows) {
-                intensityMatrixIntegratedLimitsNoInterference -= intensityMatrixIntegratedLimitsNoInterferenceShadows;
-                EigenUtils::thresholdMatrix(0.0, &intensityMatrixIntegratedLimitsNoInterference);
-            }
-
-            for (int col = 0; col < intensityMatrixIntegratedLimitsNoInterference.cols(); col++) {
-
-                const Eigen::VectorX<double> &mzPeak = intensityMatrixIntegratedLimitsNoInterference.col(col);
-                const Eigen::VectorX<double> &mzPeakShadow = intensityMatrixIntegratedLimitsNoInterferenceShadows.col(col);
-
-                const double cosineSimToShadow = EigenUtils::cosineSimilarity(
-                        mzPeak,
-                        mzPeakShadow
-                        );
-
-                cosineSimsShadowIndividual->push_back(cosineSimToShadow);
-
-                if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
-                    const double ratio = mzPeak.maxCoeff() / mzPeakShadow.maxCoeff();
-                    shadowsIntensityRatioPeakIntVec->push_back(ratio);
-                }
-                else{
-                    shadowsIntensityRatioPeakIntVec->push_back(0.0);
-                }
-            }
-
+        if (m_pythiaParams.subtractShadows) {
+            m_intensityMatrix100 -= m_intensityMatrix100Shadow;
+            EigenUtils::thresholdMatrix(0.0f, &m_intensityMatrix100);
         }
 
-        if (MathUtils::tZero(intensityMatrixIntegratedLimitsNoInterference.maxCoeff())) {
-            const QVector<double> v(topNMs2FragPeaks, 0.0);
-            *cosineSimsIndividualIntegration = v;
-            *bestCosineSimSumIntegration = 0.0;
-            *bestIntensitiesIndividual = v;
-            ERR_RETURN
+        for (int col = 0; col < m_intensityMatrix100.cols(); col++) {
+
+            const Eigen::VectorX<float> &mzPeak = m_intensityMatrix100.col(col);
+            const Eigen::VectorX<float> &mzPeakShadow = m_intensityMatrix100Shadow.col(col);
+
+            const float cosineSimToShadow = EigenUtils::cosineSimilarity(mzPeak, mzPeakShadow);
+            cosineSimsShadowIndividual->push_back(cosineSimToShadow);
+
+            if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
+                const float ratio = mzPeak.maxCoeff() / mzPeakShadow.maxCoeff();
+                shadowsIntensityRatioVec->push_back(ratio);
+            }
+            else{
+                shadowsIntensityRatioVec->push_back(0.0);
+            }
         }
 
-        e = calcBestCosineSimSumLogic(
-                intensityMatrixIntegratedLimitsNoInterference,
-                cosineSimToAnchorThreshold,
-                cosineSimsIndividualIntegration,
-                bestCosineSimSumIntegration,
-                bestIntensitiesIndividual,
-                bestAnchorColumn
-        ); ree;
+    }
 
+    if (MathUtils::tZero(m_intensityMatrix100.maxCoeff())) {
         ERR_RETURN
     }
 
-    Err calculateCandidateAllignementMetrics(
-            const Eigen::MatrixX<double> &intensityMatrix,
-            const Eigen::MatrixX<double> &intensityMatrixShadows,
-            const QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
-            const QVector<double> &summedMatToVec,
-            int topNMs2FragPeaks,
-            double cosineSimToAnchorThreshold,
-            bool subtractShadows,
-            QVector<double> *cosineSimsIndividual,
-            QVector<double> *intensityFoundMaxVec,
-            QVector<double> *cosineSimsShadowIndividual,
-            QVector<double> *shadowsIntensityRatioVec,
-            FrameIndex *frameIndexIntensityApex,
-            PeakIntegrationIndexes *bestPeakIntegrationIndexes,
-            Eigen::VectorX<double> *bestAnchorColumn,
-            int *allignedMaxIndexesCount
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(intensityMatrix.nonZeros() > 1); ree;
-        e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
-        e = ErrorUtils::isNotEmpty(summedMatToVec); ree;
-
-        double bestCosineSimSum = 0.0;
-
-        for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
-
-            QVector<double> cosineSimsIndividualIntegration;
-            QVector<double> intensitiesIndividual;
-            QVector<double> cosineSimsShadowIndividualPeakIntVec;
-            QVector<double> shadowsIntensityRatioPeakIntVec;
-            double bestCosineSimSumIntegration;
-            FrameIndex frameIndexIntensityApexIntegration;
-            int allignedMaxIndexesCountTemp;
-            e = calcBestCosineSimSum(
-                    intensityMatrix,
-                    intensityMatrixShadows,
-                    pii,
-                    summedMatToVec,
-                    topNMs2FragPeaks,
-                    cosineSimToAnchorThreshold,
-                    subtractShadows,
-                    &cosineSimsIndividualIntegration,
-                    &bestCosineSimSumIntegration,
-                    &intensitiesIndividual,
-                    bestAnchorColumn,
-                    &frameIndexIntensityApexIntegration,
-                    &allignedMaxIndexesCountTemp,
-                    &cosineSimsShadowIndividualPeakIntVec,
-                    &shadowsIntensityRatioPeakIntVec
+    double bestCosineSimSum;
+    QVector<float> bestIntensitiesIndividual;
+    e = calcBestCosineSimSumLogic(
+            m_intensityMatrix100,
+            m_pythiaParams.cosineSimToAnchorThreshold,
+            cosineSimsIndividual,
+            &bestCosineSimSum,
+            &bestIntensitiesIndividual,
+            bestAnchorColumn
             ); ree;
 
-            if (bestCosineSimSumIntegration > bestCosineSimSum) {
-                bestCosineSimSum = bestCosineSimSumIntegration;
-                *cosineSimsIndividual = cosineSimsIndividualIntegration;
-                *frameIndexIntensityApex = frameIndexIntensityApexIntegration;
-                *bestPeakIntegrationIndexes = pii;
-                *intensityFoundMaxVec = intensitiesIndividual;
-                *allignedMaxIndexesCount = allignedMaxIndexesCountTemp;
-                *cosineSimsShadowIndividual = cosineSimsShadowIndividualPeakIntVec;
-                *shadowsIntensityRatioVec = shadowsIntensityRatioPeakIntVec;
-            }
+    ERR_RETURN
+}
 
-        }
+///////////////////////////////////////////////////////////////////////////////////////////
+//END PRIVATE
+///////////////////////////////////////////////////////////////////////////////////////////
 
-        ERR_RETURN
-    }
+
+ScoreOverseer::ScoreOverseer()
+: d_ptr(new Private())
+{}
+
+ScoreOverseer::~ScoreOverseer() {}
+
+Err ScoreOverseer::init(
+        const PythiaParameters &pythiaParameters,
+        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
+) {
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = d_ptr->init(pythiaParameters); ree;
+    m_featureFinderHillsBuilderMS1 = featureFinderHillsBuilderMS1;
+    ERR_RETURN
+}
+
+namespace {
 
     Err calculateSpectrumMetrics(
             const Eigen::VectorX<double> &intensityApexVector,
@@ -931,29 +872,18 @@ Err ScoreOverseer::buildScores(
             mzHashedVsfeatureFinderHillsShadows
     );
 
-//    qDebug() << "2" << et.nsecsElapsed() << et.restart();
-
     FrameIndex frameIndexIntensityApex;
-    PeakIntegrationIndexes bestPeakIntegrationIndexes;
-    Eigen::VectorX<double> bestAnchorColumn;
+    Eigen::VectorX<float> bestAnchorColumn;
     int allignedMaxIndexesCount;
-//    e = calculateCandidateAllignementMetrics(
-//            d_ptr->m_intensityMatrix100,
-//            d_ptr->m_intensityMatrix100Shadow,
-//            peakIntegrationIndexes,
-//            d_ptr->m_summedMatVecToVec,
-//            static_cast<int>(d_ptr->m_intensityMatrix100.cols()),
-//            d_ptr->m_cosineSimToAnchorThreshold,
-//            subtractShadows,
-//            &candidateScores->cosineSimToAnchorVec,
-//            &candidateScores->intensityFoundMaxVec,
-//            &candidateScores->cosineSimShadowsToAnchorVec,
-//            &candidateScores->shadowsIntensityRatioVec,
-//            &frameIndexIntensityApex,
-//            &bestPeakIntegrationIndexes,
-//            &bestAnchorColumn,
-//            &allignedMaxIndexesCount
-//    ); ree;
+    e = d_ptr->calculateCandidateAllignementMetrics(
+            &candidateScores->cosineSimToAnchorVec,
+            &candidateScores->intensityFoundMaxVec,
+            &candidateScores->cosineSimShadowsToAnchorVec,
+            &candidateScores->shadowsIntensityRatioVec,
+            &frameIndexIntensityApex,
+            &bestAnchorColumn,
+            &allignedMaxIndexesCount
+    ); ree;
 
 //    candidateScores->shadowsCosineSimSum = std::accumulate(
 //            candidateScores->cosineSimShadowsToAnchorVec.begin(),
@@ -1161,18 +1091,6 @@ Err ScoreOverseer::buildScores(
 //            &candidateScores->cosineSim100MS1Iso2
 //    ); ree;
 
-    ERR_RETURN
-}
-
-Err ScoreOverseer::init(
-        const PythiaParameters &pythiaParameters,
-        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
-        ) {
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = d_ptr->init(pythiaParameters); ree;
-    m_featureFinderHillsBuilderMS1 = featureFinderHillsBuilderMS1;
     ERR_RETURN
 }
 

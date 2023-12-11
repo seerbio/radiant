@@ -146,11 +146,11 @@ public:
     ScanTime scanTimePredicted = -1.0;
     double iRTPredicted = -1.0;
     QVector<double> mzSearchedVec;
-    QVector<double> theoIntensityVec;
+    QVector<float> theoIntensityVec;
     QVector<double> mzFoundMeanVec;
     QVector<double> mzFoundStDevVec;
-    QVector<double> intensityFoundMaxVec;
-    QVector<double> cosineSimToAnchorVec;
+    QVector<float> intensityFoundMaxVec;
+    QVector<float> cosineSimToAnchorVec;
     QString targetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
@@ -168,8 +168,8 @@ public:
     double b2Corr = -1.0;
     double b3Corr = -1.0;
     double b2b3CosineSimSum = -1.0;
-    QVector<double> cosineSimShadowsToAnchorVec;
-    QVector<double> shadowsIntensityRatioVec;
+    QVector<float> cosineSimShadowsToAnchorVec;
+    QVector<float> shadowsIntensityRatioVec;
     double shadowsCosineSimSum = -1.0;
     int allignedMaxIndexesCount = -1;
 
@@ -307,11 +307,11 @@ public:
         scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toDouble();
         iRTPredicted = dataMap.value(IRT_PRED).toDouble();
         mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
-        theoIntensityVec = bytesArrayToQVector<double>(dataMap.value(THEO_INTZ_V).toByteArray());
+        theoIntensityVec = bytesArrayToQVector<float>(dataMap.value(THEO_INTZ_V).toByteArray());
         mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
-        intensityFoundMaxVec = bytesArrayToQVector<double>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-        cosineSimToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
+        intensityFoundMaxVec = bytesArrayToQVector<float>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
+        cosineSimToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
@@ -340,8 +340,8 @@ public:
         b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
 
         shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
-        cosineSimShadowsToAnchorVec = bytesArrayToQVector<double>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
-        shadowsIntensityRatioVec = bytesArrayToQVector<double>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
+        cosineSimShadowsToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
+        shadowsIntensityRatioVec = bytesArrayToQVector<float>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
         allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
         cosineSimSumBottom6 = dataMap.value(COSINE_SIM_SUM_BOTTOM_6).toDouble();
 
