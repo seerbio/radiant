@@ -241,10 +241,10 @@ public:
     }
 
     template <typename T>
-    static double klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
+    static T klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
 
-        const double nearZero = 1e-5;
-        const double threshold = 0.0;
+        const T nearZero = 1e-5;
+        const T threshold = 0.0;
         thresholdVector(threshold, nearZero, &v1);
         thresholdVector(threshold, nearZero, &v2);
 
@@ -254,7 +254,7 @@ public:
         v1 = v1.array() / v1.sum();
         v2 = v2.array() / v2.sum();
 
-        Eigen::VectorXd log_ratio = v1.array().log() - v2.array().log();
+        Eigen::VectorX<T> log_ratio = v1.array().log() - v2.array().log();
         return v1.dot(log_ratio);
     }
 
