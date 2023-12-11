@@ -238,20 +238,22 @@ namespace {
 //        ERR_RETURN
 //    }
 
-    Err parallelScoreLogic(const TargetDecoyPairParallelInput &pi) {
+    QPair<Err, QVector<CandidateScores>> parallelScoreLogic(const TargetDecoyPairParallelInput &pi) {
 
         ERR_INIT
 
         QElapsedTimer et;
         et.start();
 
+        QVector<CandidateScores> allCandidateScores;
+
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
-        
+
         FeatureFinderParameters featureFinderParameters(pi.pythiaParameters);
 
         FeatureFinderHillBuilder featureFinderHillBuilderMS2;
-        e = featureFinderHillBuilderMS2.init(featureFinderParameters); ree;
-        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); ree;
+        e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
+        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
 
         QMap<FrameIndex, ScanPoints> ms1Frame = pi.ms1Frame;
         QMap<FrameIndex, ScanPoints*> ms1FramePntrs;
@@ -260,8 +262,8 @@ namespace {
         }
 
         FeatureFinderHillBuilder featureFinderHillBuilderMS1;
-        e = featureFinderHillBuilderMS1.init(featureFinderParameters); ree;
-        e = featureFinderHillBuilderMS1.buildHills(ms1FramePntrs); ree;
+        e = featureFinderHillBuilderMS1.init(featureFinderParameters); rree;
+        e = featureFinderHillBuilderMS1.buildHills(ms1FramePntrs); rree;
 
         CandidateScorertron candidateScorertron;
         e = candidateScorertron.init(
@@ -271,7 +273,7 @@ namespace {
                 &msCalibratomatic,
                 &featureFinderHillBuilderMS2,
                 &featureFinderHillBuilderMS2
-                ); ree;
+                ); rree;
 
         for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
@@ -280,7 +282,7 @@ namespace {
                     tdcp,
                     tdcp->ms2IonsTarget(),
                     &candidateScoresTarget
-                    ); ree;
+                    ); rree;
             candidateScoresTarget.isDecoy = false;
 
             CandidateScores candidateScoresDecoy;
@@ -288,7 +290,7 @@ namespace {
                     tdcp,
                     tdcp->ms2IonsDecoy(),
                     &candidateScoresDecoy
-                    ); ree;
+                    ); rree;
             candidateScoresDecoy.isDecoy = true;
         }
 
@@ -296,31 +298,7 @@ namespace {
             qDebug() << "Target key processed in" << pi.mzTargetKey << et.elapsed() << "mSec";
         }
 
-        ERR_RETURN
-    }
-
-    Err reorderParallelInputs(QVector<TargetDecoyPairParallelInput> *parallelInputs) {
-
-        ERR_INIT
-        e = ErrorUtils::isFalse(parallelInputs->isEmpty()); ree;
-
-        QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
-        e = ParallelUtils::trancheVectorForParallelization(
-                *parallelInputs,
-                ParallelUtils::numberOfAvailableSystemProcessors(),
-                &parallelInputsTranched
-                ); ree;
-
-        parallelInputs->clear();
-
-        for (const QVector<TargetDecoyPairParallelInput> &tranche : parallelInputsTranched) {
-
-            for (const TargetDecoyPairParallelInput &pi : tranche) {
-                parallelInputs->append(pi);
-            }
-        }
-
-        ERR_RETURN
+        return {e, allCandidateScores};
     }
 
 }//namespace
@@ -345,22 +323,25 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             &parallelInputs
     ); ree;
 
-    e = reorderParallelInputs(&parallelInputs); ree;
-
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-    QFuture<Err> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QVector<CandidateScores>>> futures = QtConcurrent::mapped(
             parallelInputs,
             parallelScoreLogic
     );
     futures.waitForFinished();
 
-    for (Err res : futures) {
-        e = res; ree;
+    for (const QPair<Err, QVector<CandidateScores>> &res : futures) {
+        e = res.first; ree;
+        const QVector<CandidateScores> &candidateScoresTargetMz = res.second;
     }
+
+    //TODO write here or pass.
+
 #else
     for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
-        e = parallelScoreLogic(tdppi); ree;
+        const QPair<Err, QVector<CandidateScores>> res = parallelScoreLogic(tdppi); ree;
+        e = res.first; ree;
     }
 #endif
 

@@ -31,6 +31,7 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
@@ -50,6 +51,7 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.cpp
+        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
