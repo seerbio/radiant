@@ -977,52 +977,38 @@ Err ScoreOverseer::buildScores(
             &cosineSimSum20
             ); ree;
 
-//    candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
-//    candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
+    candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
+    candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
 
-//    candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
-//
-//    candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
-//
-//    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
-//
-//    candidateScores->allignedMaxIndexesCount = allignedMaxIndexesCount;
-//
-//    const int top6 = 6;
-//    candidateScores->cosineSimSum100 = std::accumulate(
-//            candidateScores->cosineSimToAnchorVec.begin(),
-//            candidateScores->cosineSimToAnchorVec.begin() + top6,
-//            0.0
-//            );
-//
-//    candidateScores->cosineSimSum45 = std::accumulate(
-//            cosineSimsIndividual45.begin(),
-//            cosineSimsIndividual45.begin() + top6,
-//            0.0
-//            );
-//
-//    candidateScores->cosineSimSum20 = std::accumulate(
-//            cosineSimsIndividual20.begin(),
-//            cosineSimsIndividual20.begin() + top6,
-//            0.0
-//            );
-//
-//    if (candidateScores->cosineSimToAnchorVec.size() > top6) {
-//        candidateScores->cosineSimSumBottom6 = std::accumulate(
-//                candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
-//                candidateScores->cosineSimToAnchorVec.end(),
-//                0.0
-//        );
-//    }
-//
-//    candidateScores->charge = targetDecoyCandidatePair->charge();
-//    candidateScores->mass = targetDecoyCandidatePair->mass();
+    candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
+
+    candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
+
+    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
+
+    const int top6 = 6;
+    candidateScores->cosineSimSum100 = std::accumulate(
+            candidateScores->cosineSimToAnchorVec.begin(),
+            candidateScores->cosineSimToAnchorVec.begin() + top6,
+            0.0
+            );
+
+    if (candidateScores->cosineSimToAnchorVec.size() > top6) {
+        candidateScores->cosineSimSumBottom6 = std::accumulate(
+                candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
+                candidateScores->cosineSimToAnchorVec.end(),
+                0.0
+        );
+    }
+
+    candidateScores->charge = targetDecoyCandidatePair->charge();
+    candidateScores->mass = targetDecoyCandidatePair->mass();
+    candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
+    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
 //    candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
 //    candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
 //    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
-//    candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
 //    candidateScores->scanTimePredicted = scanTimePredicted;
-//    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
 //    candidateScores->targetKey = targetDecoyCandidatePair->bestDiscriminateScoreKeyTarget();
 
 //    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
