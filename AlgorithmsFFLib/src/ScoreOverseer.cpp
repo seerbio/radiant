@@ -111,7 +111,6 @@ namespace {
         e = ErrorUtils::isTrue(mat->rows() > 0); ree;
 
         const int rowCount = static_cast<int>(mat->rows());
-        mat->setZero();
 
         mzMeanValsFound->reserve(ms2IonsTheoretical.size());
         stdMeanValsFound->reserve(ms2IonsTheoretical.size());
@@ -434,9 +433,7 @@ namespace {
 
         const Eigen::VectorX<float> vec = mat.rowwise().sum();
 
-        float rightStopVal = vec.coeff(apexRowIndex);
         int rightStopIndex = apexRowIndex;
-
         int rightCurrentIndex = apexRowIndex;
         while (rightCurrentIndex < mat.rows()) {
 
@@ -446,8 +443,7 @@ namespace {
                 break;
             }
 
-            if (currentValue <= rightStopVal) {
-                rightStopVal = currentValue;
+            if (currentValue > nearZero) {
                 rightStopIndex = rightCurrentIndex;
                 rightCurrentIndex++;
                 continue;
@@ -456,7 +452,6 @@ namespace {
             break;
         }
 
-        float leftStopVal = vec.coeff(apexRowIndex);;
         int leftStopIndex = apexRowIndex;
 
         int leftCurrentIndex = apexRowIndex;
@@ -468,8 +463,7 @@ namespace {
                 break;
             }
 
-            if (currentValue <= leftStopVal) {
-                leftStopVal = currentValue;
+            if (currentValue > nearZero) {
                 leftStopIndex = leftCurrentIndex;
                 leftCurrentIndex--;
                 continue;
@@ -521,6 +515,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalShadows); ree;
     e = ErrorUtils::isEqual(ms2IonsTheoretical.size(), ms2IonsTheoreticalShadows.size()); ree;
+
+    m_mzMeanValsFound.clear();
+    m_stdMeanValsFound.clear();
+    m_mzValsSearched.clear();
+    m_theoApexIntensity.clear();
 
     const int cols = ms2IonsTheoretical.size();
 
@@ -647,6 +646,10 @@ namespace {
             for (int j = 0; j < intensityMatrixIntegratedLimitsSmoothed.cols(); j++) {
 
                 const Eigen::VectorX<float> &altColumn = intensityMatrixIntegratedLimitsSmoothed.col(j);
+                if (MathUtils::tZero(altColumn.maxCoeff())) {
+                    bestCosineSimsIndividualAnchor.push_back(0.0);
+                    continue;
+                }
 
                 const float cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
 
@@ -715,6 +718,8 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
     }
 
     if (MathUtils::tZero(m_intensityMatrix100.maxCoeff())) {
+        QVector<float> v(static_cast<int>(m_intensityMatrix100.cols()) , 0.0f);
+        *cosineSimsIndividual = v;
         ERR_RETURN
     }
 
@@ -863,7 +868,7 @@ namespace {
                 mzEnd,
                 peakIntegrationIndexes.first,
                 peakIntegrationIndexes.second
-        );
+                );
 
         Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
@@ -980,24 +985,20 @@ Err ScoreOverseer::buildScores(
     candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
     candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
 
-    candidateScores->cosineSimToAnchorVec.resize(candidateScores->mzSearchedVec.size());
-
-    candidateScores->intensityFoundMaxVec.resize(candidateScores->mzSearchedVec.size());
-
     candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
 
-    const int top6 = 6;
+    const int top6 = std::min(6, candidateScores->cosineSimToAnchorVec.size());
     candidateScores->cosineSimSum100 = std::accumulate(
             candidateScores->cosineSimToAnchorVec.begin(),
             candidateScores->cosineSimToAnchorVec.begin() + top6,
-            0.0
+            0.0f
             );
 
     if (candidateScores->cosineSimToAnchorVec.size() > top6) {
         candidateScores->cosineSimSumBottom6 = std::accumulate(
                 candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
                 candidateScores->cosineSimToAnchorVec.end(),
-                0.0
+                0.0f
         );
     }
 
@@ -1005,6 +1006,11 @@ Err ScoreOverseer::buildScores(
     candidateScores->mass = targetDecoyCandidatePair->mass();
     candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
     candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
+    candidateScores->mzFoundMeanVec = d_ptr->m_mzMeanValsFound;
+    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
+    candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
+    candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
+
 //    candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
 //    candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
 //    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
