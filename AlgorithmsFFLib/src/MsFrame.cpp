@@ -48,8 +48,10 @@ private:
 MsFrame::Private::Private() : m_isInit(false) {}
 
 MsFrame::Private::~Private() {
-    delete m_kdTree;
-    delete m_mat;
+    if (m_isInit) {
+        delete m_kdTree;
+        delete m_mat;
+    }
 }
 
 
@@ -130,7 +132,7 @@ Err MsFrame::init(
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
-    m_frame = scanPoints;
+    m_framePntrs = scanPoints;
 
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree
     m_scanNumberVsScanTime = scanNumberVsScanTime;
@@ -145,9 +147,9 @@ Err MsFrame::buildFrameIndexVsScanNumber() {
 
     ERR_INIT
 
-    e = ErrorUtils::isFalse(m_frame.isEmpty()); ree;
+    e = ErrorUtils::isFalse(m_framePntrs.isEmpty()); ree;
 
-    for (const ScanNumber sn : m_frame.keys()) {
+    for (const ScanNumber sn : m_framePntrs.keys()) {
         m_frameIndexVsScanNumber.insert(m_frameIndexVsScanNumber.size(), sn);
     }
 
@@ -162,7 +164,7 @@ QMap<FrameIndex, ScanPoints*> MsFrame::frameIndexVsScanPoints() const {
 
     QMap<FrameIndex, ScanPoints*> frameIndexVsScanPoints;
 
-    for (ScanPoints *sp : m_frame) {
+    for (ScanPoints *sp : m_framePntrs) {
         frameIndexVsScanPoints.insert(frameIndexVsScanPoints.size(), sp);
     }
 
@@ -217,11 +219,11 @@ ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
 }
 
 ScanPoints* MsFrame::getScanPointsByScanNumber(ScanNumber scanNumber) const {
-    return m_frame.value(scanNumber);
+    return m_framePntrs.value(scanNumber);
 }
 
 QMap<ScanNumber, ScanPoints*> MsFrame::scanNumberVsScanPoints() const {
-    return m_frame;
+    return m_framePntrs;
 }
 
 bool MsFrame::isValid() const {

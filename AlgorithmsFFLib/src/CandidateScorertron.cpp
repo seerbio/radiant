@@ -23,7 +23,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
-            const QMap<ScanNumber, ScanPoints> &ms1Frame
+            const QMap<ScanNumber, ScanPoints> &ms1Frame,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
             );
 
     Eigen::VectorX<float> m_gaussKernel;
@@ -38,7 +39,8 @@ CandidateScorertron::Private::~Private() {}
 Err CandidateScorertron::Private::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
-        const QMap<ScanNumber, ScanPoints> &ms1Frame
+        const QMap<ScanNumber, ScanPoints> &ms1Frame,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         ) {
 
     ERR_INIT
@@ -53,7 +55,8 @@ Err CandidateScorertron::Private::init(
 
     e = m_scoreOverseer.init(
             pythiaParameters,
-            ms1Frame
+            ms1Frame,
+            scanNumberVsScanTime
             ); ree;
 
     ERR_RETURN
@@ -110,7 +113,12 @@ Err CandidateScorertron::init(
     m_msCalibratomatic = msCalibratomatic;
     m_featureFinderHillsBuilderMS2 = featureFinderHillsBuilderMS2;
 
-    e = d_ptr->init(pythiaParameters, m_topNMS2Ions, scanPointsMS1); ree;
+    e = d_ptr->init(
+            pythiaParameters,
+            m_topNMS2Ions,
+            scanPointsMS1,
+            scanNumberVsScanTime
+            ); ree;
 
     ERR_RETURN
 }

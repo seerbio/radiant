@@ -12,10 +12,9 @@
 #include "FeatureFinderHill.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MS2Ion.h"
-#include "MsFrame.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
-#include "TurboXIC.h"
+
 
 
 class Q_DECL_HIDDEN ScoreOverseer::Private
@@ -806,13 +805,18 @@ ScoreOverseer::~ScoreOverseer() {}
 
 Err ScoreOverseer::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints> &ms1Frame
+        const QMap<ScanNumber, ScanPoints> &ms1ScanPoints,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
 ) {
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = d_ptr->init(pythiaParameters); ree;
-    m_ms1Frame = ms1Frame;
+    m_ms1ScanPoints = ms1ScanPoints;
+    m_scanNumberVsScanTime = scanNumberVsScanTime;
+//    e = m_ms1Frame.init(m_ms1ScanPoints, m_scanNumberVsScanTime); ree;
+
+
     ERR_RETURN
 }
 
