@@ -805,24 +805,19 @@ ScoreOverseer::~ScoreOverseer() {}
 
 Err ScoreOverseer::init(
         const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanPoints> &ms1ScanPoints,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const MzTargetKey &mzTargetKey
+        const MzTargetKey &targetKey,
+        MsFrame *ms1Frame
 ) {
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = d_ptr->init(pythiaParameters); ree;
-    m_ms1ScanPoints = ms1ScanPoints;
-    m_scanNumberVsScanTime = scanNumberVsScanTime;
-    m_mzTargetKey = mzTargetKey;
+    e = ErrorUtils::isTrue(ms1Frame->isValid()); ree;
 
-    for (auto it = m_ms1ScanPoints.begin(); it != m_ms1ScanPoints.end(); it++) {
-        m_ms1ScanPointsPntrs.insert(it.key(), &it.value());
-    }
+    m_ms1Frame = ms1Frame;
+    m_mzTargetKey = targetKey;
 
-    e = m_ms1Frame.init(m_ms1ScanPointsPntrs, m_scanNumberVsScanTime); ree;
-    e = m_turboXICMS1.init(m_ms1Frame.frameIndexVsScanPoints()); ree;
+    e = m_turboXICMS1.init(m_ms1Frame->frameIndexVsScanPoints()); ree;
 
     ERR_RETURN
 }
@@ -1049,11 +1044,12 @@ Err ScoreOverseer::buildScores(
     candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
     candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
 
-    candidateScores->scanNumber = m_ms1Frame.scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex);
-    candidateScores->scanTime = m_ms1Frame.scanTimeFromScanNumber(candidateScores->scanNumber);
-    candidateScores->scanIonCount = m_ms1Frame.getScanPointsByScanNumber(candidateScores->scanNumber)->size();
+    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex);
+    candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
 //    candidateScores->scanTimePredicted = scanTimePredicted;
-    candidateScores->mzTargetKey = m_mzTargetKey;
+    candidateScores->targetKey = m_mzTargetKey;
+
 
 //    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
 //    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());

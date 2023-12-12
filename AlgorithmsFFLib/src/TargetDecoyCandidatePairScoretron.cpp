@@ -24,7 +24,7 @@ TargetDecoyCandidatePairScoretron::TargetDecoyCandidatePairScoretron()
 class TargetDecoyPairParallelInput {
 
 public:
-    MzTargetKey mzTargetKey;
+    MzTargetKey targetKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
     QMap<ScanNumber, ScanPoints> ms1Frame;
@@ -260,7 +260,7 @@ namespace {
                 pi.scanNumberVsScanTime,
                 pi.ms1Frame,
                 pi.pythiaParameters,
-                pi.mzTargetKey,
+                pi.targetKey,
                 pi.topNMs2Ions,
                 &msCalibratomatic,
                 &featureFinderHillBuilderMS2
@@ -275,6 +275,7 @@ namespace {
                     &candidateScoresTarget
                     ); rree;
             candidateScoresTarget.isDecoy = false;
+            allCandidateScores.push_back(candidateScoresTarget);
 
             CandidateScores candidateScoresDecoy;
             e = candidateScorertron.calculateScores(
@@ -283,10 +284,11 @@ namespace {
                     &candidateScoresDecoy
                     ); rree;
             candidateScoresDecoy.isDecoy = true;
+            allCandidateScores.push_back(candidateScoresDecoy);
         }
 
         if (pi.pythiaParameters.verbosity >= 1) {
-            qDebug() << "Target key processed in" << pi.mzTargetKey << et.elapsed() << "mSec";
+            qDebug() << "Target key processed in" << pi.targetKey << et.elapsed() << "mSec";
         }
 
         return {e, allCandidateScores};
@@ -297,7 +299,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
-        QVector<CandidateScores> *candidateScores
+        QVector<CandidateScores> *candidateScoresVec
         ) {
 
     ERR_INIT
@@ -325,6 +327,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     for (const QPair<Err, QVector<CandidateScores>> &res : futures) {
         e = res.first; ree;
         const QVector<CandidateScores> &candidateScoresTargetMz = res.second;
+        candidateScoresVec->append(candidateScoresTargetMz);
     }
 
     //TODO write here or pass.
@@ -365,13 +368,13 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.mzTargetKey()];
-        tdppi.mzTargetKey = msScanInfo.mzTargetKey();
+        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
+        tdppi.targetKey = msScanInfo.targetKey();
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.ms1Frame = m_ms1Frame;
-        tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.mzTargetKey);
+        tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
 
         input->push_back(tdppi);
     }

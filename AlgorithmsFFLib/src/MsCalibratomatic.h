@@ -33,7 +33,7 @@ public:
             );
 
     [[nodiscard]] double mzStDev();
-    [[nodiscard]] double scanTimeStDev();
+    [[nodiscard]] double scanTimeStDev(int nStdDevs = 1);
 
     Err predictScanTime(
             double iRT,

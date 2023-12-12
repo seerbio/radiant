@@ -359,8 +359,8 @@ double MsCalibratomatic::mzStDev() {
     return m_mzStDev;
 }
 
-double MsCalibratomatic::scanTimeStDev() {
-    return m_scanTimeStd;
+double MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) {
+    return m_scanTimeStd * nStdDevs;
 }
 
 Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) const {

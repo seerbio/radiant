@@ -9,6 +9,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
+#include "MsFrame.h"
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
 
@@ -33,7 +34,7 @@ public:
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
-            const MzTargetKey &mzTargetKey,
+            const MzTargetKey &targetKey,
             int topNMS2Ions,
             MsCalibratomatic *msCalibratomatic,
             FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
@@ -80,8 +81,11 @@ private:
     MsCalibratomatic *m_msCalibratomatic;
 
     FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS2;
-
     QHash<MzHashed , QVector<FeatureFinderHill*>> m_mzHashedVsFeatureFinderHillsCached;
+
+    MsFrame m_ms1Frame;
+    QMap<ScanNumber, ScanPoints> m_scanNumberVsScanPointsMS1;
+    QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

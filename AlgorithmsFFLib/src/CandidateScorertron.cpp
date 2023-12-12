@@ -23,9 +23,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
-            const QMap<ScanNumber, ScanPoints> &ms1Frame,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const MzTargetKey &mzTargetKey
+            const MzTargetKey &targetKey,
+            MsFrame *ms1Frame
             );
 
     Eigen::VectorX<float> m_gaussKernel;
@@ -40,9 +39,8 @@ CandidateScorertron::Private::~Private() {}
 Err CandidateScorertron::Private::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
-        const QMap<ScanNumber, ScanPoints> &ms1Frame,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const MzTargetKey &mzTargetKey
+        const MzTargetKey &targetKey,
+        MsFrame *ms1Frame
         ) {
 
     ERR_INIT
@@ -57,9 +55,8 @@ Err CandidateScorertron::Private::init(
 
     e = m_scoreOverseer.init(
             pythiaParameters,
-            ms1Frame,
-            scanNumberVsScanTime,
-            mzTargetKey
+            targetKey,
+            ms1Frame
             ); ree;
 
     ERR_RETURN
@@ -96,7 +93,7 @@ Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
         const PythiaParameters &pythiaParameters,
-        const MzTargetKey &mzTargetKey,
+        const MzTargetKey &targetKey,
         int topNMS2Ions,
         MsCalibratomatic *msCalibratomatic,
         FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
@@ -117,13 +114,19 @@ Err CandidateScorertron::init(
     m_msCalibratomatic = msCalibratomatic;
     m_featureFinderHillsBuilderMS2 = featureFinderHillsBuilderMS2;
 
+    m_scanNumberVsScanPointsMS1 = scanPointsMS1;
+    for (auto it = m_scanNumberVsScanPointsMS1.begin(); it != m_scanNumberVsScanPointsMS1.end(); it++) {
+        m_scanNumberVsScanPointsMS1Pntrs.insert(it.key(), &it.value());
+    }
+
+    e = m_ms1Frame.init(m_scanNumberVsScanPointsMS1Pntrs, scanNumberVsScanTime); ree;
+
     e = d_ptr->init(
             pythiaParameters,
             m_topNMS2Ions,
-            scanPointsMS1,
-            scanNumberVsScanTime,
-            mzTargetKey
-            ); ree;
+            targetKey,
+            &m_ms1Frame
+    ); ree;
 
     ERR_RETURN
 }
@@ -192,6 +195,36 @@ Err CandidateScorertron::calculateScores(
     QVector<MS2Ion> ms2IonsTheoretical = _ms2IonsTheoretical;
     ms2IonsTheoretical.resize(topNMS2Ions);
 
+    const int nStdDevsScanTimeWindow = 3;
+
+    double scanTimePredicted = -1.0;
+    FrameIndex frameIndexPredictedMin = -1;
+    FrameIndex frameIndexPredictedMax = -1;
+    //TODO test whether it is better to filter out the points before integration, i.e. in extractHills(),
+    // or filter out the integrations that don't intersect the predicted time range afterward afterwards.
+    // I'm leaning towards the latter as this will not cut off a peak in the middle.
+    if (m_msCalibratomatic->isInit()) {
+
+        const double scanTimeWindow = m_msCalibratomatic->scanTimeStDev(nStdDevsScanTimeWindow);
+
+        e = m_msCalibratomatic->predictScanTime(
+                targetDecoyCandidatePair->iRt(),
+                &scanTimePredicted
+        ); ree;
+
+        e = m_ms1Frame.frameIndexFromScanTime(
+                scanTimePredicted - scanTimeWindow,
+                &frameIndexPredictedMin
+        ); ree;
+
+        e = m_ms1Frame.frameIndexFromScanTime(
+                scanTimePredicted + scanTimeWindow,
+                &frameIndexPredictedMax
+        ); ree;
+
+        //TODO write code to filter peakIntegration Indexes by FrameIndex
+    }
+
     QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHills;
     e = extractHills(
             ms2IonsTheoretical,
@@ -217,11 +250,6 @@ Err CandidateScorertron::calculateScores(
             integrationVector,
             &peakIntegrationIndexes
             ); ree;
-
-    if (m_msCalibratomatic->isInit()) {
-        //TODO write code to predict rt then convert to FrameIndex
-        //TODO write code to filter peakIntegration Indexes by FrameIndex
-    }
 
     if (peakIntegrationIndexes.isEmpty()) {
         ERR_RETURN
@@ -516,6 +544,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 &mzHashedVsfeatureFinderHillsShadowsFiltered
                 );
 
+        CandidateScores candidateScoresPII;
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
                 pii,
@@ -523,8 +552,12 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsFiltered,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
-                candidateScores
+                &candidateScoresPII
                 ); ree;
+
+        if (candidateScores->cosineSimSum100 < candidateScoresPII.cosineSimSum100) {
+            *candidateScores = candidateScoresPII;
+        }
 
     }
 

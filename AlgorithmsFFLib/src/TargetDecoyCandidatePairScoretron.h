@@ -38,7 +38,7 @@ public:
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
-            QVector<CandidateScores> *candidateScores
+            QVector<CandidateScores> *candidateScoresVec
             );
 
     bool isInit();

@@ -49,6 +49,14 @@ private:
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
             );
 
+    Err setDiscriminantScoreForCandidates(
+        const QPair<double, double> &scanTimeMinMax,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        int theoMzIonsSize,
+        QVector<CandidateScores> *candidateScores
+        );
+
 private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;

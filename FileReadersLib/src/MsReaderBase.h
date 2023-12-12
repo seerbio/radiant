@@ -36,14 +36,14 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
     double ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
 
-    [[nodiscard]] MzTargetKey mzTargetKey() const {
-        return mzTargetKey(
+    [[nodiscard]] MzTargetKey targetKey() const {
+        return targetKey(
                 precursorTargetMz - isoWindowLower,
                 precursorTargetMz + isoWindowUpper
                 );
     }
 
-    static MzTargetKey mzTargetKey(double mzStart, double mzEnd) {
+    static MzTargetKey targetKey(double mzStart, double mzEnd) {
         return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };

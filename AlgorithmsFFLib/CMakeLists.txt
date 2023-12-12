@@ -23,6 +23,8 @@ SET(SOURCE_FILES
         src/BiophysicalCalcs.cpp
         src/CandidateScores.cpp
         src/CandidateScorertron.cpp
+        src/ClassifierWeightsManager.cpp
+        src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
         src/IsotopicDistributionBuilder.cpp
@@ -43,6 +45,8 @@ SET(HEADER_FILES
         src/BiophysicalCalcs.h
         src/CandidateScores.h
         src/CandidateScorertron.h
+        src/ClassifierWeightsManager.h
+        src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
         src/IsotopicDistributionBuilder.h

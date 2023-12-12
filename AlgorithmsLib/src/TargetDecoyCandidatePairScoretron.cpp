@@ -435,8 +435,8 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.mzTargetKey()];
-        tdppi.msInfoScanKey = msScanInfo.mzTargetKey();
+        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
+        tdppi.msInfoScanKey = msScanInfo.targetKey();
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;

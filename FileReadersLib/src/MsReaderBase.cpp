@@ -346,7 +346,7 @@ bool doUniqueKeysCycle(
             uniqueInfoKeysIndex = 0;
         }
 
-        if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.mzTargetKey()) {
+        if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.targetKey()) {
             return false;
         }
 
@@ -370,7 +370,7 @@ bool MsReaderBase::isDIA() {
     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
 
     for (const MsScanInfo &msScanInfo : tandemScanInfos) {
-        uniqueKeyCounter[msScanInfo.mzTargetKey()]++;
+        uniqueKeyCounter[msScanInfo.targetKey()]++;
     }
 
     const bool uniqueKeysCycle = doUniqueKeysCycle(
@@ -400,7 +400,7 @@ Err MsReaderBase::collateMS2MzTargetFrames(
 
         QPair<Err, ScanPoints*> scanPointsResult = getScanPoints(scanNumber);
         e = scanPointsResult.first; ree;
-        (*diaTargetFrame)[msScanInfo.mzTargetKey()].insert(scanNumber, scanPointsResult.second);
+        (*diaTargetFrame)[msScanInfo.targetKey()].insert(scanNumber, scanPointsResult.second);
     }
 
     qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
@@ -415,7 +415,7 @@ QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
     QMap<MzTargetKey, MsScanInfo> uniqueMsScanInfos;
 
     for (const MsScanInfo &info : tandemScanInfos) {
-        uniqueMsScanInfos[info.mzTargetKey()] = info;
+        uniqueMsScanInfos[info.targetKey()] = info;
     }
 
     return uniqueMsScanInfos.values().toVector();
