@@ -513,7 +513,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
 
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
-                peakIntegrationIndexes,
+                pii,
                 ms2IonsTheoretical,
                 mzHashedVsfeatureFinderHillsFiltered,
                 ms2IonsTheoreticalIsotopeShadows,

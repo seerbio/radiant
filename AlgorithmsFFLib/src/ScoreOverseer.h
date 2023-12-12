@@ -39,7 +39,7 @@ public:
 
     Err buildScores(
             const TargetDecoyCandidatePair* targetDecoyCandidatePair,
-            QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,

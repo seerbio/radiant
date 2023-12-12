@@ -820,7 +820,7 @@ Err ScoreOverseer::init(
     }
 
     e = m_ms1Frame.init(m_ms1ScanPointsPntrs, m_scanNumberVsScanTime); ree;
-    e = m_turboXICMS1.init(m_ms1ScanPointsPntrs); ree;
+    e = m_turboXICMS1.init(m_ms1Frame.frameIndexVsScanPoints()); ree;
 
     ERR_RETURN
 }
@@ -856,7 +856,7 @@ namespace {
     }
 
     Err calculateMS1Corr(
-            const Eigen::VectorX<double> &bestAnchorColumn,
+            const Eigen::VectorX<float> &bestAnchorColumn,
             const PeakIntegrationIndexes &peakIntegrationIndexes,
             double mzTarget,
             double ppmTol,
@@ -879,7 +879,7 @@ namespace {
                 peakIntegrationIndexes.second
                 );
 
-        Eigen::VectorX<double> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
+        Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
         const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
@@ -891,7 +891,7 @@ namespace {
                 continue;
             }
 
-            ms1Vec.coeffRef(frameIndex) = it.value();
+            ms1Vec.coeffRef(frameIndex) = static_cast<float>(it.value());
         }
 
 //        ms1Vec = applyGaussSmoothRowWiseToMatrix(ms1Vec);
@@ -904,7 +904,7 @@ namespace {
 }//namespace
 Err ScoreOverseer::buildScores(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
-        QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+        const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
@@ -914,11 +914,6 @@ Err ScoreOverseer::buildScores(
 
     ERR_INIT
 
-    if (peakIntegrationIndexes.isEmpty()) {
-        ERR_RETURN
-    }
-
-    e = ErrorUtils::isNotEmpty(peakIntegrationIndexes); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
     e = ErrorUtils::isNotEmpty(mzHashedVsfeatureFinderHills); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
@@ -967,14 +962,14 @@ Err ScoreOverseer::buildScores(
         ERR_RETURN
     }
 
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            targetDecoyCandidatePair->mz(),
-//            d_ptr->m_ppmTol,
-//            m_turboXICMS1,
-//            &candidateScores->cosineSim100MS1
-//            ); ree;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            targetDecoyCandidatePair->mz(),
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &candidateScores->cosineSim100MS1
+            ); ree;
 
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100ApexRow,
