@@ -63,7 +63,7 @@ namespace CandidateScoresNamespace {
     const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
     const QString ALL_MAX_IND_CNT = QStringLiteral("allignedMaxIndexesCount");
     const QString COSINE_SIM_SUM_BOTTOM_6 = QStringLiteral("cosineSimSumBottom6");
-
+    const QString MZ_PEAK_LENGTHS_VEC = QStringLiteral("mzPeakLengthsVec");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -113,7 +113,8 @@ namespace CandidateScoresNamespace {
             COS_SIM_SUM_ANCH_SHADOW_V,
             SHADOW_INTZ_RATIO_VEC,
             ALL_MAX_IND_CNT,
-            COSINE_SIM_SUM_BOTTOM_6
+            COSINE_SIM_SUM_BOTTOM_6,
+            MZ_PEAK_LENGTHS_VEC
     };
 }
 
@@ -172,6 +173,7 @@ public:
     QVector<float> shadowsIntensityRatioVec;
     double shadowsCosineSimSum = -1.0;
     int allignedMaxIndexesCount = -1;
+    QVector<int> mzPeakLengthsVec;
 
     void clear() {
         peptideStringWithMods= "";
@@ -222,6 +224,7 @@ public:
         b2b3CosineSimSum = -1.0;
         shadowsCosineSimSum = -1.0;
         allignedMaxIndexesCount = -1;
+        mzPeakLengthsVec.clear();
     }
 
     QMap<QString, QVariant> map() override {
@@ -276,7 +279,8 @@ public:
                 {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
                 {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
                 {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
-                {COSINE_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)}
+                {COSINE_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
+                {MZ_PEAK_LENGTHS_VEC, QVariant(qVectorToQByteArray(mzPeakLengthsVec))}
         };
     }
 
@@ -344,6 +348,7 @@ public:
         shadowsIntensityRatioVec = bytesArrayToQVector<float>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
         allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
         cosineSimSumBottom6 = dataMap.value(COSINE_SIM_SUM_BOTTOM_6).toDouble();
+        mzPeakLengthsVec = bytesArrayToQVector<int>(dataMap.value(MZ_PEAK_LENGTHS_VEC).toByteArray());
 
         ERR_RETURN
     }

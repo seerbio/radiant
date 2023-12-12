@@ -512,7 +512,6 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
                 candidateScores
                 ); ree;
-
     }
 
     ERR_RETURN
