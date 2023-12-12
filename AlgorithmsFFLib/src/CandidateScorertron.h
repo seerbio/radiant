@@ -31,10 +31,10 @@ public:
 
     Err init(
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             MsCalibratomatic *msCalibratomatic,
-            FeatureFinderHillBuilder *featureFinderHillsBuilderMS1,
             FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
             );
 
@@ -78,7 +78,6 @@ private:
     PeakIntegratomatic m_peakIntegratomatic;
     MsCalibratomatic *m_msCalibratomatic;
 
-    FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS1;
     FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS2;
 
     QHash<MzHashed , QVector<FeatureFinderHill*>> m_mzHashedVsFeatureFinderHillsCached;

@@ -255,23 +255,13 @@ namespace {
         e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
         e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
 
-        QMap<FrameIndex, ScanPoints> ms1Frame = pi.ms1Frame;
-        QMap<FrameIndex, ScanPoints*> ms1FramePntrs;
-        for (auto it = ms1Frame.begin(); it != ms1Frame.end(); it++) {
-            ms1FramePntrs.insert(it.key(), &it.value());
-        }
-
-        FeatureFinderHillBuilder featureFinderHillBuilderMS1;
-        e = featureFinderHillBuilderMS1.init(featureFinderParameters); rree;
-        e = featureFinderHillBuilderMS1.buildHills(ms1FramePntrs); rree;
-
         CandidateScorertron candidateScorertron;
         e = candidateScorertron.init(
                 pi.scanNumberVsScanTime,
+                pi.ms1Frame,
                 pi.pythiaParameters,
                 pi.topNMs2Ions,
                 &msCalibratomatic,
-                &featureFinderHillBuilderMS2,
                 &featureFinderHillBuilderMS2
                 ); rree;
 

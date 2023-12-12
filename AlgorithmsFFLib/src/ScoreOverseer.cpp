@@ -806,13 +806,13 @@ ScoreOverseer::~ScoreOverseer() {}
 
 Err ScoreOverseer::init(
         const PythiaParameters &pythiaParameters,
-        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
+        const QMap<ScanNumber, ScanPoints> &ms1Frame
 ) {
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = d_ptr->init(pythiaParameters); ree;
-    m_featureFinderHillsBuilderMS1 = featureFinderHillsBuilderMS1;
+    m_ms1Frame = ms1Frame;
     ERR_RETURN
 }
 

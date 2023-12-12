@@ -23,7 +23,7 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
-            FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
+            const QMap<ScanNumber, ScanPoints> &ms1Frame
             );
 
     Eigen::VectorX<float> m_gaussKernel;
@@ -38,7 +38,7 @@ CandidateScorertron::Private::~Private() {}
 Err CandidateScorertron::Private::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
-        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
+        const QMap<ScanNumber, ScanPoints> &ms1Frame
         ) {
 
     ERR_INIT
@@ -53,7 +53,7 @@ Err CandidateScorertron::Private::init(
 
     e = m_scoreOverseer.init(
             pythiaParameters,
-            featureFinderHillsBuilderMS1
+            ms1Frame
             ); ree;
 
     ERR_RETURN
@@ -66,7 +66,6 @@ Err CandidateScorertron::Private::init(
 CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_msCalibratomatic(nullptr)
-, m_featureFinderHillsBuilderMS1(nullptr)
 , m_featureFinderHillsBuilderMS2(nullptr)
 , d_ptr(new Private())
 {}
@@ -89,10 +88,10 @@ namespace{
 }//namespace
 Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         MsCalibratomatic *msCalibratomatic,
-        FeatureFinderHillBuilder *featureFinderHillsBuilderMS1,
         FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
         ) {
 
@@ -109,10 +108,9 @@ Err CandidateScorertron::init(
     e = m_peakIntegratomatic.init(ffParams); ree;
 
     m_msCalibratomatic = msCalibratomatic;
-    m_featureFinderHillsBuilderMS1 = featureFinderHillsBuilderMS1;
     m_featureFinderHillsBuilderMS2 = featureFinderHillsBuilderMS2;
 
-    e = d_ptr->init(pythiaParameters, m_topNMS2Ions, m_featureFinderHillsBuilderMS1); ree;
+    e = d_ptr->init(pythiaParameters, m_topNMS2Ions, scanPointsMS1); ree;
 
     ERR_RETURN
 }

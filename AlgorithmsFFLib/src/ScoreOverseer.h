@@ -30,7 +30,7 @@ public:
 
     Err init(
             const PythiaParameters &pythiaParameters,
-            FeatureFinderHillBuilder *featureFinderHillsBuilderMS1
+            const QMap<ScanNumber, ScanPoints> &m_ms1Frame
             );
 
     ~ScoreOverseer();
@@ -51,7 +51,7 @@ public:
 
 private:
 
-    FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS1;
+    QMap<ScanNumber, ScanPoints> m_ms1Frame;
 
     Q_DISABLE_COPY(ScoreOverseer) class Private;
     const QScopedPointer<Private> d_ptr;
