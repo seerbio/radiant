@@ -489,6 +489,8 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
             &mzHashedVsfeatureFinderHillsShadows
             ); ree;
 
+    //TODO figure out a way to empirially pick the best integration index instead
+    // of wasting cycles analyzing the top 2;
     for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
 
         e = ErrorUtils::isTrue(pii.second > pii.first); ree;
@@ -518,7 +520,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
                 candidateScores
                 ); ree;
-
+        break;
     }
 
     ERR_RETURN

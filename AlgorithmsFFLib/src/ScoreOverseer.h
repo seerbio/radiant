@@ -54,6 +54,7 @@ public:
 private:
 
     QMap<ScanNumber, ScanPoints> m_ms1ScanPoints;
+    QMap<ScanNumber, ScanPoints*> m_ms1ScanPointsPntrs;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     MsFrame m_ms1Frame;
     TurboXIC m_turboXICMS1;

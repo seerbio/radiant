@@ -814,8 +814,13 @@ Err ScoreOverseer::init(
     e = d_ptr->init(pythiaParameters); ree;
     m_ms1ScanPoints = ms1ScanPoints;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
-//    e = m_ms1Frame.init(m_ms1ScanPoints, m_scanNumberVsScanTime); ree;
 
+    for (auto it = m_ms1ScanPoints.begin(); it != m_ms1ScanPoints.end(); it++) {
+        m_ms1ScanPointsPntrs.insert(it.key(), &it.value());
+    }
+
+    e = m_ms1Frame.init(m_ms1ScanPointsPntrs, m_scanNumberVsScanTime); ree;
+    e = m_turboXICMS1.init(m_ms1ScanPointsPntrs); ree;
 
     ERR_RETURN
 }
