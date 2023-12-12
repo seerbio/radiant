@@ -33,6 +33,7 @@ public:
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
+            const MzTargetKey &mzTargetKey,
             int topNMS2Ions,
             MsCalibratomatic *msCalibratomatic,
             FeatureFinderHillBuilder *featureFinderHillsBuilderMS2

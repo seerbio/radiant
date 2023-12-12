@@ -24,7 +24,8 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const QMap<ScanNumber, ScanPoints> &ms1Frame,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            const MzTargetKey &mzTargetKey
             );
 
     Eigen::VectorX<float> m_gaussKernel;
@@ -40,7 +41,8 @@ Err CandidateScorertron::Private::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const QMap<ScanNumber, ScanPoints> &ms1Frame,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        const MzTargetKey &mzTargetKey
         ) {
 
     ERR_INIT
@@ -56,7 +58,8 @@ Err CandidateScorertron::Private::init(
     e = m_scoreOverseer.init(
             pythiaParameters,
             ms1Frame,
-            scanNumberVsScanTime
+            scanNumberVsScanTime,
+            mzTargetKey
             ); ree;
 
     ERR_RETURN
@@ -93,6 +96,7 @@ Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
         const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
         const PythiaParameters &pythiaParameters,
+        const MzTargetKey &mzTargetKey,
         int topNMS2Ions,
         MsCalibratomatic *msCalibratomatic,
         FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
@@ -117,7 +121,8 @@ Err CandidateScorertron::init(
             pythiaParameters,
             m_topNMS2Ions,
             scanPointsMS1,
-            scanNumberVsScanTime
+            scanNumberVsScanTime,
+            mzTargetKey
             ); ree;
 
     ERR_RETURN
@@ -520,7 +525,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
                 candidateScores
                 ); ree;
-        break;
+
     }
 
     ERR_RETURN

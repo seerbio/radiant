@@ -806,7 +806,8 @@ ScoreOverseer::~ScoreOverseer() {}
 Err ScoreOverseer::init(
         const PythiaParameters &pythiaParameters,
         const QMap<ScanNumber, ScanPoints> &ms1ScanPoints,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        const MzTargetKey &mzTargetKey
 ) {
     ERR_INIT
 
@@ -814,6 +815,7 @@ Err ScoreOverseer::init(
     e = d_ptr->init(pythiaParameters); ree;
     m_ms1ScanPoints = ms1ScanPoints;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
+    m_mzTargetKey = mzTargetKey;
 
     for (auto it = m_ms1ScanPoints.begin(); it != m_ms1ScanPoints.end(); it++) {
         m_ms1ScanPointsPntrs.insert(it.key(), &it.value());
@@ -861,6 +863,7 @@ namespace {
             double mzTarget,
             double ppmTol,
             TurboXIC *turboXic,
+            Eigen::VectorX<float> *gaussKernel,
             double *cosineSimMS1
     ) {
 
@@ -894,7 +897,7 @@ namespace {
             ms1Vec.coeffRef(frameIndex) = static_cast<float>(it.value());
         }
 
-//        ms1Vec = applyGaussSmoothRowWiseToMatrix(ms1Vec);
+        ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
 
         *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
 
@@ -968,8 +971,39 @@ Err ScoreOverseer::buildScores(
             targetDecoyCandidatePair->mz(),
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
             &candidateScores->cosineSim100MS1
             ); ree;
+
+    const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            1
+            );
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso1,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &candidateScores->cosineSim100MS1Iso1
+    ); ree;
+
+    const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            2
+    );
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso2,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &candidateScores->cosineSim100MS1Iso2
+    ); ree;
 
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100ApexRow,
@@ -1015,11 +1049,11 @@ Err ScoreOverseer::buildScores(
     candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
     candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
 
-//    candidateScores->scanNumber = msFrame->scanNumberFromFrameIndex(frameIndexIntensityApex);
-//    candidateScores->scanTime = msFrame->scanTimeFromScanNumber(candidateScores->scanNumber);
-//    candidateScores->scanIonCount = msFrame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
+    candidateScores->scanNumber = m_ms1Frame.scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex);
+    candidateScores->scanTime = m_ms1Frame.scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->scanIonCount = m_ms1Frame.getScanPointsByScanNumber(candidateScores->scanNumber)->size();
 //    candidateScores->scanTimePredicted = scanTimePredicted;
-//    candidateScores->targetKey = targetDecoyCandidatePair->bestDiscriminateScoreKeyTarget();
+    candidateScores->mzTargetKey = m_mzTargetKey;
 
 //    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
 //    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());

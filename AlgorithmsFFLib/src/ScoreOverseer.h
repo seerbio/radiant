@@ -32,7 +32,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             const QMap<ScanNumber, ScanPoints> &ms1ScanPoints,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            const MzTargetKey &mzTargetKey
             );
 
     ~ScoreOverseer();
@@ -58,6 +59,7 @@ private:
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     MsFrame m_ms1Frame;
     TurboXIC m_turboXICMS1;
+    MzTargetKey m_mzTargetKey;
 
     Q_DISABLE_COPY(ScoreOverseer) class Private;
     const QScopedPointer<Private> d_ptr;

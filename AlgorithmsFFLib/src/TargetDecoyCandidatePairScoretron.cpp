@@ -260,6 +260,7 @@ namespace {
                 pi.scanNumberVsScanTime,
                 pi.ms1Frame,
                 pi.pythiaParameters,
+                pi.mzTargetKey,
                 pi.topNMs2Ions,
                 &msCalibratomatic,
                 &featureFinderHillBuilderMS2

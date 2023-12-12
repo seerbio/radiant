@@ -35,7 +35,8 @@ public:
 
     static double calculateThomsonFromMass(
             double mass,
-            int charge
+            int charge,
+            int monoOffset = 0
             );
 
     static QVector<double> buildTandemFragmentMasses(

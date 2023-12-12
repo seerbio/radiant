@@ -33,7 +33,7 @@ namespace CandidateScoresNamespace {
     const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
     const QString INTZ_FND_MAX_V = QStringLiteral("intensityFoundMaxVec");
     const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
-    const QString TARGET_KEY = QStringLiteral("targetKey");
+    const QString TARGET_KEY = QStringLiteral("mzTargetKey");
     const QString KL_DIV_SUM = QStringLiteral("klDivSum");
     const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
     const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
@@ -152,7 +152,7 @@ public:
     QVector<double> mzFoundStDevVec;
     QVector<float> intensityFoundMaxVec;
     QVector<float> cosineSimToAnchorVec;
-    QString targetKey;
+    QString mzTargetKey;
     int theoFragmentCount = -1;
     double discriminateScore = -1.0;
     double qValue = 1.0;
@@ -185,7 +185,7 @@ public:
         cosineSimToAnchorVec.clear();
         cosineSimShadowsToAnchorVec.clear();
         shadowsIntensityRatioVec.clear();
-        targetKey = "";
+        mzTargetKey = "";
         proteinGroup = "";
         cosineSimSum100 = -1.0;
         cosineSimSum45 = -1.0;
@@ -250,7 +250,7 @@ public:
                 {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
                 {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
                 {IRT_PRED , QVariant(iRTPredicted)},
-                {TARGET_KEY, QVariant(targetKey)},
+                {TARGET_KEY, QVariant(mzTargetKey)},
                 {KL_DIV_SUM, QVariant(klDivSum)},
                 {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
@@ -316,7 +316,7 @@ public:
         mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
         intensityFoundMaxVec = bytesArrayToQVector<float>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
         cosineSimToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-        targetKey = dataMap.value(TARGET_KEY).toString();
+        mzTargetKey = dataMap.value(TARGET_KEY).toString();
         klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
         klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
         cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();

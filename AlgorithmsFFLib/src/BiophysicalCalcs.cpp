@@ -58,9 +58,10 @@ QVector<QPair<PeptideString, double>> BiophysicalCalcs::calculatePeptideMasses(
 
 double BiophysicalCalcs::calculateThomsonFromMass(
         double mass,
-        int charge
+        int charge,
+        int monoOffset /* =0 */
         ) {
-    return (mass + (charge * ChemConstants::PROTON)) / charge ;
+    return (mass + (charge * ChemConstants::PROTON) + (monoOffset * ChemConstants::NEUTRON) ) / charge ;
 }
 
 QVector<double>
