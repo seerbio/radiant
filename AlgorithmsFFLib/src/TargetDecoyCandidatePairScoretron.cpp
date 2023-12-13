@@ -71,6 +71,28 @@ namespace {
         e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
         e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
 
+//#define WRITE_HILLS
+#ifdef WRITE_HILLS
+        QVector<FeatureFinderHill*> featureFinderHillsPtrs;
+        e = featureFinderHillBuilderMS2.featureFinderHills(&featureFinderHillsPtrs);
+
+        QVector<FeatureFinderHill> featureFinderHills;
+        std::transform(
+                featureFinderHillsPtrs.begin(),
+                featureFinderHillsPtrs.end(),
+                std::back_inserter(featureFinderHills),
+                [](FeatureFinderHill *ffh){return *ffh;}
+                );
+
+        QString dest = QStringLiteral("/home/anichols/Desktop/Data/Temp2/ffh_") + pi.targetKey + QStringLiteral(".mzrt.csv");
+
+        e = FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
+                pi.scanNumberVsScanTime,
+                featureFinderHills,
+                dest
+                ); rree;
+#endif
+
         CandidateScorertron candidateScorertron;
         e = candidateScorertron.init(
                 pi.scanNumberVsScanTime,

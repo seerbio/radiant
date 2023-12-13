@@ -978,6 +978,12 @@ Err FeatureFinderHillBuilder::writeHillsToBatmassMzMrtFile(
 
     ERR_INIT
 
+    e = ErrorUtils::isTrue(destinationFilePath.contains(".mzrt.csv"));
+    if (e != eNoError) {
+        qDebug() << "to write hills and view in Batmass, file extension must be .mzrt.csv";
+        rrr(eError)
+    }
+
     struct MzRtRow : public CSVReaderInputBase {
         double mzLo = -1.0;
         double mzHi = -1.0;
