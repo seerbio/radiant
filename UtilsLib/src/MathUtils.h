@@ -17,6 +17,8 @@
 #include <cmath>
 #include <vector>
 
+//NOTE: ErrorUtils is not used here because something funky happens when it's imported.
+
 using namespace Error;
 
 namespace MathUtilsConstants {
