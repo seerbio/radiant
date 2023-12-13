@@ -593,27 +593,6 @@ Err FDRCLassifierNeuralNet::buildScoreVector(
 }
 
 Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-        const QVector<TargetDecoyCandidatePair *> &targetDecoyCandidatePair,
-        double qValueThreshold,
-        int *targetCountBelowFDRThreshold
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(targetDecoyCandidatePair); ree;
-    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
-
-//    const auto countLogic = [qValueThreshold](TargetDecoyCandidatePair *tdcp){
-//        return tdcp->candidateScoresBestDiscriminantScorePtrTarget()->qValue < qValueThreshold;
-//    };
-//
-//    *targetCountBelowFDRThreshold
-//            = static_cast<int>(std::count_if(targetDecoyCandidatePair.begin(), targetDecoyCandidatePair.end(), countLogic));
-
-    ERR_RETURN
-}
-
-Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
         const QVector<CandidateScores> &candidateScores,
         double qValueThreshold,
         int *targetCountBelowFDRThreshold
@@ -635,7 +614,7 @@ Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
 }
 
 Err FDRCLassifierNeuralNet::outputFDRResults(
-        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const QVector<CandidateScores> &candidateScores,
         bool verbose,
         QMap<QString, int> *fdrVsCount
         ) {
@@ -646,7 +625,7 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
     for (double fdrThresh : fdrFractions) {
         int foundAtThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                targetDecoyCandidatePairs,
+                candidateScores,
                 fdrThresh,
                 &foundAtThreshold
         ); ree;
@@ -679,7 +658,7 @@ Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
 //    const auto terminatorLogic = [qValueThreshold](TargetDecoyCandidatePair *tdp){
 //        return tdp->candidateScoresBestDiscriminantScorePtrTarget()->qValue > qValueThreshold;
 //    };
-//
+
 //    const auto terminator = std::remove_if(
 //            targetDecoyCandidatePairsFDRThresholded->begin(),
 //            targetDecoyCandidatePairsFDRThresholded->end(),

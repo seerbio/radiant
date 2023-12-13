@@ -128,6 +128,8 @@ Err CandidateScorertron::init(
             &m_ms1Frame
     ); ree;
 
+    m_targetKey = targetKey;
+
     ERR_RETURN
 }
 
@@ -191,13 +193,16 @@ Err CandidateScorertron::calculateScores(
 
     e = ErrorUtils::isNotEmpty(_ms2IonsTheoretical); ree;
 
+    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
+    candidateScores->charge = targetDecoyCandidatePair->charge();
+    candidateScores->targetKey = m_targetKey;
+
     const int topNMS2Ions = std::min(m_topNMS2Ions, _ms2IonsTheoretical.size());
     QVector<MS2Ion> ms2IonsTheoretical = _ms2IonsTheoretical;
     ms2IonsTheoretical.resize(topNMS2Ions);
 
     const int nStdDevsScanTimeWindow = 3;
 
-    double scanTimePredicted = -1.0;
     FrameIndex frameIndexPredictedMin = -1;
     FrameIndex frameIndexPredictedMax = -1;
     //TODO test whether it is better to filter out the points before integration, i.e. in extractHills(),
@@ -209,16 +214,16 @@ Err CandidateScorertron::calculateScores(
 
         e = m_msCalibratomatic->predictScanTime(
                 targetDecoyCandidatePair->iRt(),
-                &scanTimePredicted
+                &candidateScores->scanTimePredicted
         ); ree;
 
         e = m_ms1Frame.frameIndexFromScanTime(
-                scanTimePredicted - scanTimeWindow,
+                candidateScores->scanTimePredicted - scanTimeWindow,
                 &frameIndexPredictedMin
         ); ree;
 
         e = m_ms1Frame.frameIndexFromScanTime(
-                scanTimePredicted + scanTimeWindow,
+                candidateScores->scanTimePredicted + scanTimeWindow,
                 &frameIndexPredictedMax
         ); ree;
 

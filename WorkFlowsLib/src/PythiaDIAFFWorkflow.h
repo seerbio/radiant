@@ -21,6 +21,10 @@ class MsScanInfo;
 class MsReaderPointerAcc;
 class TargetDecoyCandidatePair;
 
+enum class QValueScoreType {
+    DiscriminantScore,
+    NNClassifierScore
+};
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflow {
 
@@ -39,6 +43,7 @@ public:
 
     Err processFile(const QString &msDataFilePath);
 
+
 private:
 
     Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
@@ -56,6 +61,12 @@ private:
         int theoMzIonsSize,
         QVector<CandidateScores> *candidateScores
         );
+
+    static Err setQValueForCandidates(
+            const QValueScoreType &qValueScoreType,
+            QVector<CandidateScores> *candidateScores
+            );
+
 
 private:
 

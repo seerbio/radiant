@@ -87,6 +87,8 @@ private:
     QMap<ScanNumber, ScanPoints> m_scanNumberVsScanPointsMS1;
     QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
 
+    MzTargetKey m_targetKey;
+
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;
 

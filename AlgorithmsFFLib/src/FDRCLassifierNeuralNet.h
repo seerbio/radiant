@@ -145,13 +145,6 @@ public:
         return vec;
     }
 
-    
-    static Err countScoreCandidatesByFDR(
-            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePair,
-            double qValueThreshold,
-            int *targetCountBelowFDRThreshold
-    );
-
     static Err countScoreCandidatesByFDR(
             const QVector<CandidateScores> &targetDecoyCandidatePair,
             double qValueThreshold,
@@ -159,7 +152,7 @@ public:
     );
 
     static Err outputFDRResults(
-            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+            const QVector<CandidateScores> &candidateScores,
             bool verbose,
             QMap<QString, int> *fdrVsCount
     );
