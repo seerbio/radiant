@@ -129,14 +129,12 @@ struct PythiaParameters{
     int maxTandemPointCount = -1;
     int returnPSMTopN = -1;
 
-    bool deisotopeScans = true;
-
-    double precursorExtractionWindowThomsons = -1.0;
+    double precursorExtractionWindowThomsons = 0.0;
     double percentFDR = 1.0;
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
-    double fragIntensityThreshold = 0.025;
 
+    double fragIntensityThreshold = 0.025;
     double pValThreshold = 0.05;
 
     int skipScanCount = 2;
@@ -153,7 +151,7 @@ struct PythiaParameters{
     double cosineSimToAnchorThreshold = 0.4;
     bool subtractShadows = true;
 
-    double scanTimeWindowMinutes = 5.0;
+    double scanTimeWindowMinutes = -1.0;
     double ms2ExtractionWidthPPM = -1.0;
     int trancheSizeMax = 5e4;
 
@@ -245,7 +243,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
-        qDebug() << PythiaParameterReaderConstants::kDeisotopeScans << deisotopeScans;
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
 

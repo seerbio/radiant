@@ -56,17 +56,18 @@ private:
 
     Err findCandidateIntegrations(
             const QVector<float> &summedMatToVec,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            double filterDeltaScoreValue,
+            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
     );
 
     Err simpleIntegrator(
             const QVector<float> &vec,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
     );
 
     Err processPeakIntegrationIndexes(
             const TargetDecoyCandidatePair* targetDecoyCandidatePair,
-            QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+            QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,

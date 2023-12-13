@@ -250,13 +250,16 @@ Err CandidateScorertron::calculateScores(
     QVector<float> integrationVector;
     e = buildIntegrationVector(mzHashedVsfeatureFinderHills, &integrationVector); ree;
 
-    QVector<PeakIntegrationIndexes> peakIntegrationIndexes;
+    const double filterDeltaScoreValue = 1.0; //TODO consider making this settable
+
+    QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
     e = findCandidateIntegrations(
             integrationVector,
-            &peakIntegrationIndexes
+            filterDeltaScoreValue,
+            &peakIntegrationIndexesVsIntensity
             ); ree;
 
-    if (peakIntegrationIndexes.isEmpty()) {
+    if (peakIntegrationIndexesVsIntensity.isEmpty()) {
         ERR_RETURN
     }
 
@@ -268,7 +271,7 @@ Err CandidateScorertron::calculateScores(
 
     e = processPeakIntegrationIndexes(
             targetDecoyCandidatePair,
-            peakIntegrationIndexes,
+            peakIntegrationIndexesVsIntensity,
             ms2IonsTheoretical,
             mzHashedVsfeatureFinderHills,
             ms2IonsTheoreticalIsotopeShadows,
@@ -349,37 +352,88 @@ namespace {
             const QVector<float> &summedMatToVec,
             int summedMzPresenceMin,
             int peakWidthMin,
-            QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
             ) {
 
-        const auto terminatorLogic = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const PeakIntegrationIndexes &pii){
+        const auto terminatorLogic
+            = [summedMatToVec, summedMzPresenceMin, peakWidthMin](const QPair<PeakIntegrationIndexes, float> &pii){
 
-            const int peakWidth = pii.second - pii.first;
+            const int peakWidth = pii.first.second - pii.first.first;
             if (peakWidth < peakWidthMin) {
                 return true;
             }
 
-            const QVector<float> summedMatVecMax = summedMatToVec.mid(pii.first, peakWidth);
+            const QVector<float> summedMatVecMax = summedMatToVec.mid(pii.first.first, peakWidth);
             const float summedPresenceIntegrationMax = *std::max_element(summedMatVecMax.begin(), summedMatVecMax.end());
 
             return (summedPresenceIntegrationMax < static_cast<float>(summedMzPresenceMin));
         };
 
-        const auto terminator = std::remove_if(peakIntegrationIndexes->begin(), peakIntegrationIndexes->end(), terminatorLogic);
-        peakIntegrationIndexes->erase(terminator, peakIntegrationIndexes->end());
+        const auto terminator = std::remove_if(
+                peakIntegrationIndexesVsIntensity->begin(),
+                peakIntegrationIndexesVsIntensity->end(),
+                terminatorLogic
+                );
+
+        peakIntegrationIndexesVsIntensity->erase(terminator, peakIntegrationIndexesVsIntensity->end());
+    }
+
+    Err filterByDeltaScore(
+            double filterDeltaScoreValue,
+            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+            ) {
+
+        ERR_INIT
+
+        if (peakIntegrationIndexesVsIntensity->size() < 2) {
+            ERR_RETURN;
+        }
+
+        using PR = QPair<PeakIntegrationIndexes, float>;
+
+        std::sort(
+                peakIntegrationIndexesVsIntensity->rbegin(),
+                peakIntegrationIndexesVsIntensity->rend(),
+                [](const PR &l, const PR &r){return l.second < r.second;}
+                );
+
+        QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensityFiltered;
+        for (int i = 0; i < peakIntegrationIndexesVsIntensity->size(); i++) {
+
+            if (i == peakIntegrationIndexesVsIntensity->size() - 1) {
+                peakIntegrationIndexesVsIntensityFiltered.push_back(peakIntegrationIndexesVsIntensity->at(i));
+                break;
+            }
+
+            const float &topIntensity = peakIntegrationIndexesVsIntensity->at(i).second;
+            const float &bottomIntensity = peakIntegrationIndexesVsIntensity->at(i+1).second;
+
+            e = ErrorUtils::isTrue(topIntensity >= bottomIntensity); ree;
+
+            peakIntegrationIndexesVsIntensityFiltered.push_back(peakIntegrationIndexesVsIntensity->at(i));
+
+            if (topIntensity - bottomIntensity > filterDeltaScoreValue) {
+                break;
+            }
+        }
+
+        *peakIntegrationIndexesVsIntensity = peakIntegrationIndexesVsIntensityFiltered;
+
+        ERR_RETURN
     }
 
 }//namespace
 Err CandidateScorertron::findCandidateIntegrations(
         const QVector<float> &integrationVector,
-        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+        double filterDeltaScoreValue,
+        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
 ) {
 
     ERR_INIT
 
     e = simpleIntegrator(
             integrationVector,
-            peakIntegrationIndexes
+            peakIntegrationIndexesVsIntensity
             ); ree;
 
     const int minPeakWidth = 2;
@@ -387,18 +441,22 @@ Err CandidateScorertron::findCandidateIntegrations(
             integrationVector,
             m_pythiaParameters.minFoundMzPeaks,
             minPeakWidth,
-            peakIntegrationIndexes
+            peakIntegrationIndexesVsIntensity
             );
 
-    const int maxPeakIntegrationIndexesReturned = 2;
-    peakIntegrationIndexes->resize(std::min(maxPeakIntegrationIndexesReturned, peakIntegrationIndexes->size()));
+    const int maxPeakIntegrationIndexesReturned = 2; //TODO consider making this settable
+    peakIntegrationIndexesVsIntensity->resize(
+            std::min(maxPeakIntegrationIndexesReturned, peakIntegrationIndexesVsIntensity->size())
+            );
+
+    e = filterByDeltaScore(filterDeltaScoreValue, peakIntegrationIndexesVsIntensity); ree;
 
     ERR_RETURN
 }
 
 Err CandidateScorertron::simpleIntegrator(
         const QVector<float> &vec,
-        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes
+        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
 ) {
 
     ERR_INIT
@@ -478,7 +536,7 @@ Err CandidateScorertron::simpleIntegrator(
             break;
         }
 
-        peakIntegrationIndexes->push_back({leftStopIndex, rightStopIndex});
+        peakIntegrationIndexesVsIntensity->push_back({{leftStopIndex, rightStopIndex}, apexValue});
         for (int i = leftStopIndex; i <= rightStopIndex; i++) {
             eVec.coeffRef(i) = 0.0;
         }
@@ -512,7 +570,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::processPeakIntegrationIndexes(
         const TargetDecoyCandidatePair* targetDecoyCandidatePair,
-        QVector<PeakIntegrationIndexes> &peakIntegrationIndexes,
+        QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
@@ -529,37 +587,37 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
 
     //TODO figure out a way to empirially pick the best integration index instead
     // of wasting cycles analyzing the top 2;
-    for (const PeakIntegrationIndexes &pii : peakIntegrationIndexes) {
+    for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
 
-        e = ErrorUtils::isTrue(pii.second > pii.first); ree;
+        e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
 
         QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsFiltered;
         filterFeatureFinderHillsByFrameIndex(
                 mzHashedVsfeatureFinderHills,
-                pii.first,
-                pii.second,
+                pii.first.first,
+                pii.first.second,
                 &mzHashedVsfeatureFinderHillsFiltered
                 );
 
         QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadowsFiltered;
         filterFeatureFinderHillsByFrameIndex(
                 mzHashedVsfeatureFinderHillsShadows,
-                pii.first,
-                pii.second,
+                pii.first.first,
+                pii.first.second,
                 &mzHashedVsfeatureFinderHillsShadowsFiltered
                 );
 
         CandidateScores candidateScoresPII;
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
-                pii,
+                pii.first,
                 ms2IonsTheoretical,
                 mzHashedVsfeatureFinderHillsFiltered,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
                 &candidateScoresPII
                 ); ree;
-
+//        qDebug() << candidateScoresPII.cosineSimSum100 << candidateScoresPII.cosineSimToAnchorVec;
         if (candidateScores->cosineSimSum100 < candidateScoresPII.cosineSimSum100) {
             *candidateScores = candidateScoresPII;
         }

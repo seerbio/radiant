@@ -152,6 +152,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
         const QPair<Err, QVector<CandidateScores>> res = parallelScoreLogic(tdppi); ree;
         e = res.first; ree;
+        candidateScoresVec->append(res.second);
     }
 #endif
 

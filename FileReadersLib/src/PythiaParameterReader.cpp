@@ -278,10 +278,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->chargeStateMax = val;
         }
-        else if (jsonKey == kDeisotopeScans){
-            bool val = jsonValue.toBool();
-            pythiaParameters->deisotopeScans = val;
-        }
         else if (jsonKey == kTopNMs2Ions){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
