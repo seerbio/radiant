@@ -10,6 +10,7 @@
 #include "Error.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QMap>
 #include <QPointF>
 
@@ -229,6 +230,9 @@ public:
         identifierVsQValue->clear();
         identifierVsDecoyRatio->clear();
 
+        QElapsedTimer et;
+        et.start();
+
         QVector<double> targetScores = identifierVsTarget.values().toVector();
         std::sort(targetScores.begin(), targetScores.end());
 
@@ -240,9 +244,6 @@ public:
             const Identifier &identifier = it.key();
             double score = it.value();
 
-            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
-            const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
-
             auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
             if (decoyIndexLowest > decoyScores.begin()) {
                 if (*(decoyIndexLowest - 1) > decoyScores.front()) {
@@ -250,7 +251,7 @@ public:
                 }
             }
 
-            targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
 
             const long targetCount = std::distance(targetIndexLowest, targetScores.end());
             const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
