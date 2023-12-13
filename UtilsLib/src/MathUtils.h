@@ -214,10 +214,10 @@ public:
 
     template<typename Identifier>
     static Err calculateQValue(
-            const QMap<Identifier, double> &identifierVsTarget,
-            const QMap<Identifier, double> &identifierVsDecoys,
-            QMap<Identifier, double> *identifierVsQValue,
-            QMap<Identifier, double> *identifierVsDecoyRatio
+            const QHash<Identifier, double> &identifierVsTarget,
+            const QHash<Identifier, double> &identifierVsDecoys,
+            QHash<Identifier, double> *identifierVsQValue,
+            QHash<Identifier, double> *identifierVsDecoyRatio
             ) {
 
         ERR_INIT

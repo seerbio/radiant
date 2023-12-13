@@ -46,6 +46,7 @@ public:
             CandidateScores *candidateScores
             );
 
+
 private:
 
     Err extractHills(

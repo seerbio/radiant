@@ -353,6 +353,36 @@ public:
         ERR_RETURN
     }
 
+
+    template <typename T>
+    static QVector<double> extractScoresFromVecFeatures(
+            const QVector<T> &featureVec,
+            int theoMzIonsSize
+            ) {
+
+        QVector<double> vec(theoMzIonsSize, 0.0);
+
+        for (int i = 0; i < theoMzIonsSize; i++) {
+
+            if (i >= featureVec.size()) {
+                break;
+            }
+
+            vec[i] = static_cast<double>(featureVec[i]);
+        }
+
+        return vec;
+    }
+
+    static Err buildScoreVector(
+            const CandidateScores &candidateScores,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax,
+            QVector<double> *scoreVec
+    );
+
 };
 
 
