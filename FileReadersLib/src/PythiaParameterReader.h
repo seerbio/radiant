@@ -244,6 +244,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
+        qDebug() << "SubtractShadows" << subtractShadows;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

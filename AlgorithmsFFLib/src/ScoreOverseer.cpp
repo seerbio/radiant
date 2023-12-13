@@ -109,6 +109,8 @@ namespace {
         e = ErrorUtils::isTrue(frameIndexMin >= 0); ree;
         e = ErrorUtils::isTrue(mat->rows() > 0); ree;
 
+        mat->setZero();
+
         const int rowCount = static_cast<int>(mat->rows());
 
         mzMeanValsFound->reserve(ms2IonsTheoretical.size());
@@ -117,6 +119,10 @@ namespace {
         theoApexIntensity->reserve(ms2IonsTheoretical.size());
 
         for (int col = 0; col < ms2IonsTheoretical.size(); col++) {
+
+            if (col >= mat->cols()) {
+                break;
+            }
 
             const MS2Ion &ms2Ion = ms2IonsTheoretical.at(col);
             mzValsSearched->push_back(ms2Ion.mz);
@@ -128,7 +134,7 @@ namespace {
             stdMeanValsFoundMS2Ion.reserve(ms2IonsTheoretical.size());
 
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-            QVector<float> eigenVectorLoader(rowCount);
+            QVector<float> eigenVectorLoader(rowCount, 0.0f);
             eigenVectorLoader.reserve(rowCount);
 
             const QVector<FeatureFinderHill*> &ffhs = mzHashedVsfeatureFinderHills.value(mzHashed);
@@ -246,14 +252,14 @@ namespace {
                 0,
                 alignmentMatrixLimits.second - alignmentMatrixLimits.first + 1,
                 matTight1->cols()
-                );
+                ).eval();
 
         *matTight2 = matTight2->block(
                 alignmentMatrixLimits.first,
                 0,
                 alignmentMatrixLimits.second - alignmentMatrixLimits.first + 1,
                 matTight2->cols()
-        );
+        ).eval();
 
         ERR_RETURN
     }
@@ -490,7 +496,7 @@ namespace {
                 0,
                 anchorColumnPeakLimits->second - anchorColumnPeakLimits->first + 1,
                 mat.cols()
-                );
+                ).eval();
 
         return newMatrix;
     }
@@ -581,12 +587,15 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             &unused4
     ); ree;
 
-    m_intensityMatrix100Shadow = m_intensityMatrix100Shadow.block(
-            alignmentMatrixLimits->first,
-            0,
-            alignmentMatrixLimits->second - alignmentMatrixLimits->first + 1,
-            m_intensityMatrix100Shadow.cols()
-    );
+    const int rowSize = alignmentMatrixLimits->second - alignmentMatrixLimits->first + 1;
+    if (rowSize < m_intensityMatrix100Shadow.rows()) {
+        m_intensityMatrix100Shadow = m_intensityMatrix100Shadow.block(
+                alignmentMatrixLimits->first,
+                0,
+                rowSize,
+                m_intensityMatrix100Shadow.cols()
+        ).eval();
+    }
 
     if (m_intensityMatrix100Shadow.maxCoeff() > 0.0f) {
 
@@ -755,14 +764,14 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     Eigen::MatrixX<float> intensityMatrix20;
 
     if (colCount100 > colCount45) {
-        intensityMat100TopCols = m_intensityMatrix100.block(0, 0, m_intensityMatrix100.rows(), colCount45);
+        intensityMat100TopCols = m_intensityMatrix100.block(0, 0, m_intensityMatrix100.rows(), colCount45).eval();
         intensityMatrix45 = m_intensityMatrix45;
         intensityMatrix20 = m_intensityMatrix20;
     }
     else{
         intensityMat100TopCols = m_intensityMatrix100;
-        intensityMatrix45 = m_intensityMatrix45.block(0, 0, m_intensityMatrix45.rows(), colCount100);
-        intensityMatrix20 = m_intensityMatrix20.block(0, 0, m_intensityMatrix20.rows(), colCount100);
+        intensityMatrix45 = m_intensityMatrix45.block(0, 0, m_intensityMatrix45.rows(), colCount100).eval();
+        intensityMatrix20 = m_intensityMatrix20.block(0, 0, m_intensityMatrix20.rows(), colCount100).eval();
     }
 
     Eigen::MatrixX<float> peakMaskMat = intensityMat100TopCols.array() / intensityMat100TopCols.array();
