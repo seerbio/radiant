@@ -36,6 +36,7 @@ public:
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
             QVector<int> *columnPeakLengths,
+            QPair<FrameIndex, FrameIndex> *minMaxFrameIndex,
             QPair<int, int> *alignmentMatrixLimits
     );
 
@@ -512,6 +513,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
         QVector<int> *columnPeakLengths,
+        QPair<FrameIndex, FrameIndex> *minMaxFrameIndex,
         QPair<int, int> *alignmentMatrixLimits
         ) {
 
@@ -528,17 +530,17 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     const int cols = ms2IonsTheoretical.size();
 
-    const QPair<FrameIndex, FrameIndex> minMaxFrameIndex
-            = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
 
-    e = ErrorUtils::isTrue(minMaxFrameIndex.second >= minMaxFrameIndex.first); ree;
-    const int rows = std::max(minMaxFrameIndex.second - minMaxFrameIndex.first + 1, m_pythiaParams.filterLength);
+    *minMaxFrameIndex = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
+
+    e = ErrorUtils::isTrue(minMaxFrameIndex->second >= minMaxFrameIndex->first); ree;
+    const int rows = std::max(minMaxFrameIndex->second - minMaxFrameIndex->first + 1, m_pythiaParams.filterLength);
 
     m_intensityMatrix100.resize(rows, cols);
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
             ms2IonsTheoretical,
             mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex.first,
+            minMaxFrameIndex->first,
             &m_intensityMatrix100,
             &m_mzMeanValsFound,
             &m_stdMeanValsFound,
@@ -579,7 +581,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
             ms2IonsTheoreticalShadows,
             mzHashedVsfeatureFinderHillsShadows,
-            minMaxFrameIndex.first,
+            minMaxFrameIndex->first,
             &m_intensityMatrix100Shadow,
             &unused1,
             &unused2,
@@ -613,7 +615,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
             ms2IonsTheoretical,
             mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex.first,
+            minMaxFrameIndex->first,
             m_pythiaParams.ms2ExtractionWidthPPM,
             *alignmentMatrixLimits,
             &m_intensityMatrix45,
@@ -930,6 +932,7 @@ Err ScoreOverseer::buildScores(
 
     int bestAlignmentMatrixRowIndex;
     QVector<int> columnApexIndexes;
+    QPair<FrameIndex, FrameIndex> frameIndexMinMaxHills;
     QPair<int, int> alignmentMatrixLimits;
     e = d_ptr->buildAlignmentMatricies(
             ms2IonsTheoretical,
@@ -940,6 +943,7 @@ Err ScoreOverseer::buildScores(
             &columnApexIndexes,
             &candidateScores->intensityFoundMaxVec,
             &candidateScores->mzPeakLengthsVec,
+            &frameIndexMinMaxHills,
             &alignmentMatrixLimits
             );
 
@@ -1053,7 +1057,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
     candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
 
-    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex);
+    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
     candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
 //    candidateScores->scanTimePredicted = scanTimePredicted;

@@ -57,6 +57,8 @@ private:
     Err findCandidateIntegrations(
             const QVector<float> &summedMatToVec,
             double filterDeltaScoreValue,
+            FrameIndex frameIndexPredictedMin,
+            FrameIndex frameIndexPredictedMax,
             QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
     );
 

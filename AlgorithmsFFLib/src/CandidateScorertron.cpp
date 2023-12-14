@@ -226,8 +226,6 @@ Err CandidateScorertron::calculateScores(
                 candidateScores->scanTimePredicted + scanTimeWindow,
                 &frameIndexPredictedMax
         ); ree;
-
-        //TODO write code to filter peakIntegration Indexes by FrameIndex
     }
 
     QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHills;
@@ -256,6 +254,8 @@ Err CandidateScorertron::calculateScores(
     e = findCandidateIntegrations(
             integrationVector,
             filterDeltaScoreValue,
+            frameIndexPredictedMin,
+            frameIndexPredictedMax,
             &peakIntegrationIndexesVsIntensity
             ); ree;
 
@@ -348,6 +348,29 @@ Err CandidateScorertron::extractHills(
 
 namespace {
 
+    void filterByFrameIndexes(
+            FrameIndex frameIndexPredictedMin,
+            FrameIndex frameIndexPredictedMax,
+            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+            ) {
+
+        if (frameIndexPredictedMin < 0 || frameIndexPredictedMax < 0) {
+            return;
+        }
+
+        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const QPair<PeakIntegrationIndexes, float> &pr){
+            return pr.first.first > frameIndexPredictedMax || pr.first.second < frameIndexPredictedMin;
+        };
+
+        const auto terminator = std::remove_if(
+                peakIntegrationIndexesVsIntensity->begin(),
+                peakIntegrationIndexesVsIntensity->end(),
+                terminatorLogic
+                );
+
+        peakIntegrationIndexesVsIntensity->erase(terminator, peakIntegrationIndexesVsIntensity->end());
+    }
+
     void filterSummedVecPeakIntegrationsByPeakWidth(
             const QVector<float> &summedMatToVec,
             int summedMzPresenceMin,
@@ -426,6 +449,8 @@ namespace {
 Err CandidateScorertron::findCandidateIntegrations(
         const QVector<float> &integrationVector,
         double filterDeltaScoreValue,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
         QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
 ) {
 
@@ -435,6 +460,12 @@ Err CandidateScorertron::findCandidateIntegrations(
             integrationVector,
             peakIntegrationIndexesVsIntensity
             ); ree;
+
+    filterByFrameIndexes(
+            frameIndexPredictedMin,
+            frameIndexPredictedMax,
+            peakIntegrationIndexesVsIntensity
+            );
 
     const int minPeakWidth = 2;
     filterSummedVecPeakIntegrationsByPeakWidth(

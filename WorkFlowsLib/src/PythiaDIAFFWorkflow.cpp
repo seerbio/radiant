@@ -84,6 +84,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = buildCalibration(&msReaderPointerAcc); ree;
 
+//    write method in scoretron to limit integration ranges based on newly set window when calibration is set
+//    limit what scores are collected depending on extendedScores or NeuralNetScores is set
+
     ERR_RETURN
 }
 
@@ -109,6 +112,7 @@ namespace {
             row.mzSearchedVec = cs.mzSearchedVec;
             row.mzFoundMeanVec = cs.mzFoundMeanVec;
             row.mzFoundStDevVec = cs.mzFoundStDevVec;
+
             return row;
         };
 
@@ -204,7 +208,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
         const int numberOfStDevs = 3;
         timeWindowStDevs.push_back(m_msCalibratomatic.scanTimeStDev(1));
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
-
     }
 
     qDebug() << timeWindowStDevs << MathUtils::mean(timeWindowStDevs);
