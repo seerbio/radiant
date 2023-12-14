@@ -35,6 +35,7 @@ public:
 
     bool isInit();
 
+    int targetsCount();
 
     Err getTargetDecoyCandidatePairPointers(
             double mzMin,

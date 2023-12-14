@@ -12,7 +12,6 @@
 
 #include <QElapsedTimer>
 
-PythiaDIAFFWorkflow::PythiaDIAFFWorkflow(){}
 
 Err PythiaDIAFFWorkflow::init(
         const PythiaParameters &pythiaParameters,
@@ -21,8 +20,6 @@ Err PythiaDIAFFWorkflow::init(
         ) {
 
     ERR_INIT
-
-    pythiaParameters.print();
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::fileExists(fragLibUri); ree;
@@ -92,16 +89,43 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 namespace {
 
+    void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores> *candidateScores) {
+
+        QHash<QString, CandidateScores> keyVsCandidatesFoundBest;
+        for (const CandidateScores &cs : *candidateScores) {
+
+            const QString key = cs.peptideStringWithMods + QString::number(cs.charge);
+            if (keyVsCandidatesFoundBest.contains(key)) {
+
+                const CandidateScores &csLocal = keyVsCandidatesFoundBest.value(key);
+
+                if (cs.discriminateScore > csLocal.discriminateScore) {
+                    keyVsCandidatesFoundBest[key] = cs;
+                }
+
+                continue;
+            }
+
+            keyVsCandidatesFoundBest.insert(key, cs);
+        }
+
+        *candidateScores = keyVsCandidatesFoundBest.values().toVector();
+    }
+
     Err buildMsCalibrationReaderRows(
-            const QVector<CandidateScores> &candidateScores,
+            const QVector<CandidateScores> &_candidateScores,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
     ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(candidateScores); ree;
+        e = ErrorUtils::isNotEmpty(_candidateScores); ree;
 
-        qDebug() << candidateScores.size() << "Found for recalibartion";
+        qDebug() << _candidateScores.size() << "Found for recalibartion";
+
+        QVector<CandidateScores> candidateScoresFiltered = _candidateScores;
+        filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
+        qDebug() << candidateScoresFiltered.size() << "Found for recalibartion filtered";
 
         const auto msCalibrationReaderRowsInsertLogic = [](const CandidateScores &cs){
 
@@ -117,8 +141,8 @@ namespace {
         };
 
         std::transform(
-                candidateScores.begin(),
-                candidateScores.end(),
+                candidateScoresFiltered.begin(),
+                candidateScoresFiltered.end(),
                 std::back_inserter(*msCalibrationReaderRows),
                 msCalibrationReaderRowsInsertLogic
         );
@@ -134,7 +158,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    const double calibrationTrainingFraction = -1.0;
+    const double calibrationTrainingFraction = 1.0;
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
     const int minTrainingCountTranche = 50;
@@ -146,34 +170,47 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
-    const int numberOfTrances = 5;
+    const int targetCount = std::accumulate(
+            mzTargetKeyVsTargetDecoyCandidatePointers.begin(),
+            mzTargetKeyVsTargetDecoyCandidatePointers.end(),
+            0,
+            [](int sum, const QVector<TargetDecoyCandidatePair*> &tv){return sum + tv.size();}
+            );
+
+    const double sizePerTranche = 7500.0;
+    const int trancheSize = std::max(static_cast<int>(targetCount / sizePerTranche), 1);
+    qDebug() << "Tranch size for calibration:" << trancheSize << "target count:" << targetCount << "sizePerTranche:" << static_cast<int>(sizePerTranche);
+
     QVector<QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>>> mzTargetKeyVsTargetDecoyCandidatePointersTranched;
     e = ParallelUtils::trancheMapValueVectorsByKeyForParallelization(
             mzTargetKeyVsTargetDecoyCandidatePointers,
-            numberOfTrances,
+            trancheSize,
             &mzTargetKeyVsTargetDecoyCandidatePointersTranched
             ); ree;
 
     const int topNMS2IonsCalibration = 6;
 
     QVector<double> timeWindowStDevs;
-    for (int i = 0; i < numberOfTrances; i++) {
+    for (int i = 0; i < mzTargetKeyVsTargetDecoyCandidatePointers.size(); i++) {
 
-        QVector<CandidateScores> candidateScoresCombined;
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> localTranches;
+
         for (int j = 0; j <= i; j++) {
-
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> tranche = mzTargetKeyVsTargetDecoyCandidatePointersTranched.at(i);
-
-            QVector<CandidateScores> candidateScores;
-            e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-                    topNMS2IonsCalibration,
-                    m_msCalibratomatic,
-                    &tranche,
-                    &candidateScores
-            ); ree;
-
-            candidateScoresCombined.append(candidateScores);
+            const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tranche = mzTargetKeyVsTargetDecoyCandidatePointersTranched.at(j);
+            for (auto it = tranche.begin(); it != tranche.end(); it++) {
+                const MzTargetKey &mzTargetKey = it.key();
+                const QVector<TargetDecoyCandidatePair*> &tdcps = it.value();
+                localTranches[mzTargetKey].append(tdcps);
+            }
         }
+
+        QVector<CandidateScores> candidateScores;
+        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+                topNMS2IonsCalibration,
+                m_msCalibratomatic,
+                &localTranches,
+                &candidateScores
+                ); ree;
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
@@ -181,14 +218,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
                 useExtendedScores,
                 useNeuralNetworkScores,
                 topNMS2IonsCalibration,
-                &candidateScoresCombined
+                &candidateScores
         ); ree;
 
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresCombined); ree;
+        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScores); ree;
 
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
-                candidateScoresCombined,
+                candidateScores,
                 true,
                 &fdrVsCount
         ); ree;
@@ -196,30 +233,33 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
         const double fdrThreshold = 0.1;
         int targetCountBelowFDRThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                candidateScoresCombined,
+                candidateScores,
                 fdrThreshold,
                 &targetCountBelowFDRThreshold
         ); ree;
 
-        std::sort(candidateScoresCombined.rbegin(), candidateScoresCombined.rend(), [](const CandidateScores &l, const CandidateScores &r){
+        std::sort(candidateScores.rbegin(), candidateScores.rend(), [](const CandidateScores &l, const CandidateScores &r){
             return l.discriminateScore < r.discriminateScore;
         });
 
-        const int minTrainingCount = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold);
+        const int idealTrainingCountAtGivenFDR = 1000;
+        int minTrainingCount = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold);
+        minTrainingCount = std::min(minTrainingCount, idealTrainingCountAtGivenFDR);
         qDebug() << "Training RT count 10% FDR:" << minTrainingCount;
 
-        candidateScoresCombined.resize(minTrainingCount);
+        candidateScores.resize(minTrainingCount);
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-        e = buildMsCalibrationReaderRows(candidateScoresCombined, &msCalibrationReaderRows); ree;
+        e = buildMsCalibrationReaderRows(candidateScores, &msCalibrationReaderRows); ree;
 
         e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
         const int numberOfStDevs = 3;
         timeWindowStDevs.push_back(m_msCalibratomatic.scanTimeStDev(1));
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
-    }
 
-    qDebug() << timeWindowStDevs << MathUtils::median(timeWindowStDevs);
-    m_msCalibratomatic.setScanTimeStDev(MathUtils::median(timeWindowStDevs));
+        if (minTrainingCount >= idealTrainingCountAtGivenFDR) {
+            break;
+        }
+    }
 
     ERR_RETURN
 }

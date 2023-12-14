@@ -448,7 +448,7 @@ namespace {
                     e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); ree;
 
                     for (int i = 0; i < mzValues.size(); i++) {
-                        const ScanPoint point(mzValues.at(i), intensityValues.at(i));
+                        const ScanPoint point(mzValues.at(i), static_cast<float>(intensityValues.at(i)));
                         scanPoints->push_back(point);
                     }
 

@@ -154,14 +154,14 @@ public:
     template <typename T, typename U>
     static Err trancheMapValueVectorsByKeyForParallelization(
             const QMap<T, QVector<U>> &map,
-            int numberOfProcesses,
+            int numberOfTranches,
             QVector<QMap<T, QVector<U>>> *tranchedMaps
     ) {
 
         ERR_INIT
 
-        tranchedMaps->resize(numberOfProcesses);
-        tranchedMaps->reserve(numberOfProcesses);
+        tranchedMaps->resize(numberOfTranches);
+        tranchedMaps->reserve(numberOfTranches);
 
         for (auto it = map.begin(); it != map.end(); it++) {
             const T key = it.key();
@@ -170,7 +170,7 @@ public:
             QVector<QVector<U>> valTranched;
             e = trancheVectorForParallelization(
                     val,
-                    numberOfProcesses,
+                    numberOfTranches,
                     &valTranched
             ); ree;
 

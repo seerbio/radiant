@@ -32,7 +32,7 @@ public:
 
     friend class PythiaDIAFFWorkflowTests;
 
-    PythiaDIAFFWorkflow();
+    PythiaDIAFFWorkflow() = default;
     ~PythiaDIAFFWorkflow() = default;
 
     Err init(

@@ -566,5 +566,9 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
 }
 
 bool TargetDecoyCandidatePairManager::isInit() {
-    return m_targetDecoyCandidatePairs.size() > 0;
+    return !m_targetDecoyCandidatePairs.empty();
+}
+
+int TargetDecoyCandidatePairManager::targetsCount() {
+    return m_targetDecoyCandidatePairs.size();
 }

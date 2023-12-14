@@ -156,7 +156,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             &parallelInputs
     ); ree;
 
-//#define PARALLEL_SCORE
+#define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     QFuture<QPair<Err, QVector<CandidateScores>>> futures = QtConcurrent::mapped(
             parallelInputs,
