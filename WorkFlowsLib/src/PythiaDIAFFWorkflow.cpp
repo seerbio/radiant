@@ -157,15 +157,23 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
     const int topNMS2IonsCalibration = 6;
 
     QVector<double> timeWindowStDevs;
-    for (QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tranche : mzTargetKeyVsTargetDecoyCandidatePointersTranched) {
+    for (int i = 0; i < numberOfTrances; i++) {
 
-        QVector<CandidateScores> candidateScores;
-        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-                topNMS2IonsCalibration,
-                m_msCalibratomatic,
-                &tranche,
-                &candidateScores
-        ); ree;
+        QVector<CandidateScores> candidateScoresCombined;
+        for (int j = 0; j <= i; j++) {
+
+            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> tranche = mzTargetKeyVsTargetDecoyCandidatePointersTranched.at(i);
+
+            QVector<CandidateScores> candidateScores;
+            e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+                    topNMS2IonsCalibration,
+                    m_msCalibratomatic,
+                    &tranche,
+                    &candidateScores
+            ); ree;
+
+            candidateScoresCombined.append(candidateScores);
+        }
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
@@ -173,14 +181,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
                 useExtendedScores,
                 useNeuralNetworkScores,
                 topNMS2IonsCalibration,
-                &candidateScores
+                &candidateScoresCombined
         ); ree;
 
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScores); ree;
+        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresCombined); ree;
 
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
-                candidateScores,
+                candidateScoresCombined,
                 true,
                 &fdrVsCount
         ); ree;
@@ -188,21 +196,21 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
         const double fdrThreshold = 0.1;
         int targetCountBelowFDRThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                candidateScores,
+                candidateScoresCombined,
                 fdrThreshold,
                 &targetCountBelowFDRThreshold
         ); ree;
 
-        std::sort(candidateScores.rbegin(), candidateScores.rend(), [](const CandidateScores &l, const CandidateScores &r){
+        std::sort(candidateScoresCombined.rbegin(), candidateScoresCombined.rend(), [](const CandidateScores &l, const CandidateScores &r){
             return l.discriminateScore < r.discriminateScore;
         });
 
         const int minTrainingCount = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold);
         qDebug() << "Training RT count 10% FDR:" << minTrainingCount;
 
-        candidateScores.resize(minTrainingCount);
+        candidateScoresCombined.resize(minTrainingCount);
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-        e = buildMsCalibrationReaderRows(candidateScores, &msCalibrationReaderRows); ree;
+        e = buildMsCalibrationReaderRows(candidateScoresCombined, &msCalibrationReaderRows); ree;
 
         e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
         const int numberOfStDevs = 3;
@@ -210,8 +218,8 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
     }
 
-    qDebug() << timeWindowStDevs << MathUtils::mean(timeWindowStDevs);
-    m_msCalibratomatic.setScanTimeStDev(MathUtils::mean(timeWindowStDevs));
+    qDebug() << timeWindowStDevs << MathUtils::median(timeWindowStDevs);
+    m_msCalibratomatic.setScanTimeStDev(MathUtils::median(timeWindowStDevs));
 
     ERR_RETURN
 }

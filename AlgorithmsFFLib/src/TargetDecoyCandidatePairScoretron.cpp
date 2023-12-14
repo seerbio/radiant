@@ -146,6 +146,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
 
+    candidateScoresVec->clear();
+
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
             topNMS2Ions,
