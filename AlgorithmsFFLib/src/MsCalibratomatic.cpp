@@ -372,3 +372,9 @@ Err MsCalibratomatic::predictScanTime(double iRT, double *predictedScanTime) con
 bool MsCalibratomatic::isInit() const {
     return m_isInit;
 }
+
+void MsCalibratomatic::setScanTimeStDev(double val) {
+    m_scanTimeStd = val;
+    qDebug() << "scanTimeStDev has been set to:" << scanTimeStDev() << "seconds";
+    qDebug() << "scanTimeStDev x 3:" << scanTimeStDev(3) << "seconds";
+}

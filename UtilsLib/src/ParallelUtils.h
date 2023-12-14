@@ -146,7 +146,39 @@ public:
                 pairs,
                 numberOfProcesses,
                 tranchedMaps
-                );
+                ); ree;
+
+        ERR_RETURN
+    }
+
+    template <typename T, typename U>
+    static Err trancheMapValueVectorsByKeyForParallelization(
+            const QMap<T, QVector<U>> &map,
+            int numberOfProcesses,
+            QVector<QMap<T, QVector<U>>> *tranchedMaps
+    ) {
+
+        ERR_INIT
+
+        tranchedMaps->resize(numberOfProcesses);
+        tranchedMaps->reserve(numberOfProcesses);
+
+        for (auto it = map.begin(); it != map.end(); it++) {
+            const T key = it.key();
+            const QVector<U> &val = it.value();
+
+            QVector<QVector<U>> valTranched;
+            e = trancheVectorForParallelization(
+                    val,
+                    numberOfProcesses,
+                    &valTranched
+            ); ree;
+
+            for (int i = 0; i < valTranched.size(); i++) {
+                e = ErrorUtils::isTrue(i < tranchedMaps->size());
+                (*tranchedMaps)[i][key] = valTranched[i];
+            }
+        }
 
         ERR_RETURN
     }
@@ -174,7 +206,7 @@ public:
 
         ERR_INIT
 
-        e = ErrorUtils::isEqual(z1.size(), z2.size());
+        e = ErrorUtils::isEqual(z1.size(), z2.size()); ree;
 
         for (int i = 0; i < z1.size(); i++) {
             zipResult->push_back({z1.at(i), z2.at(i)});
@@ -192,7 +224,7 @@ public:
 
         ERR_INIT
 
-        e = ErrorUtils::isEqual(z1.size(), z2.size());
+        e = ErrorUtils::isEqual(z1.size(), z2.size()); ree;
 
         for (int i = 0; i < z1.size(); i++) {
             zipResult->push_back({z1.at(i), z2.at(i)});
@@ -210,7 +242,7 @@ public:
 
         ERR_INIT
 
-        e = ErrorUtils::isEqual(z1.size(), z2.size());
+        e = ErrorUtils::isEqual(z1.size(), z2.size()); ree;
 
         for (int i = 0; i < z1.size(); i++) {
             zipResult->push_back({z1.at(i), z2.at(i)});

@@ -34,6 +34,8 @@ public:
 
     [[nodiscard]] double mzStDev();
     [[nodiscard]] double scanTimeStDev(int nStdDevs = 1);
+    void setScanTimeStDev(double val);
+
 
     Err predictScanTime(
             double iRT,

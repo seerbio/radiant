@@ -8,6 +8,7 @@
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "MsReaderPointerAcc.h"
+#include "ParallelUtils.h"
 
 #include <QElapsedTimer>
 
@@ -86,13 +87,50 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildMsCalibrationReaderRows(
+            const QVector<CandidateScores> &candidateScores,
+            QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(candidateScores); ree;
+
+        qDebug() << candidateScores.size() << "Found for recalibartion";
+
+        const auto msCalibrationReaderRowsInsertLogic = [](const CandidateScores &cs){
+
+            MsCalibarationReaderRow row;
+            row.peptideStringWithMods = cs.peptideStringWithMods;
+            row.iRTPredicted = static_cast<float>(cs.iRTPredicted);
+            row.scanTime = cs.scanTime;
+            row.mzSearchedVec = cs.mzSearchedVec;
+            row.mzFoundMeanVec = cs.mzFoundMeanVec;
+            row.mzFoundStDevVec = cs.mzFoundStDevVec;
+            return row;
+        };
+
+        std::transform(
+                candidateScores.begin(),
+                candidateScores.end(),
+                std::back_inserter(*msCalibrationReaderRows),
+                msCalibrationReaderRowsInsertLogic
+        );
+
+        ERR_RETURN
+    }
+
+
+}//namespace
 Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    const double calibrationTrainingFraction = -0.2;
+    const double calibrationTrainingFraction = -1.0;
     const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
     const int minTrainingCountTranche = 50;
@@ -104,48 +142,73 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
+    const int numberOfTrances = 5;
+    QVector<QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>>> mzTargetKeyVsTargetDecoyCandidatePointersTranched;
+    e = ParallelUtils::trancheMapValueVectorsByKeyForParallelization(
+            mzTargetKeyVsTargetDecoyCandidatePointers,
+            numberOfTrances,
+            &mzTargetKeyVsTargetDecoyCandidatePointersTranched
+            ); ree;
+
     const int topNMS2IonsCalibration = 6;
 
-    QVector<CandidateScores> candidateScores;
-    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-            topNMS2IonsCalibration,
-            m_msCalibratomatic,
-            &mzTargetKeyVsTargetDecoyCandidatePointers,
-            &candidateScores
-            ); ree;
+    QVector<double> timeWindowStDevs;
+    for (QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tranche : mzTargetKeyVsTargetDecoyCandidatePointersTranched) {
 
-//#define WRITE_CANDIDATES
-#ifdef WRITE_CANDIDATES
-    const QString candidateScoresFileName = msReaderPointerAcc->ptr->filePath() + ".scores";
-    e = ParquetReader::write(candidateScores, candidateScoresFileName); ree;
-#endif
-
-    QElapsedTimer et;
-    et.start();
-
-    const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
-    e = setDiscriminantScoreForCandidates(
-            scanTimeMinMax,
-            useExtendedScores,
-            useNeuralNetworkScores,
-            topNMS2IonsCalibration,
-            &candidateScores
-            ); ree;
-
-    qDebug() << "DiscScore set" << et.restart() << "mSec";
-
-    e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScores); ree;
-
-    qDebug() << "QVals set" << et.restart() << "mSec";
-
-    QMap<QString, int> fdrVsCount;
-    e = FDRCLassifierNeuralNet::outputFDRResults(
-        candidateScores,
-        true,
-        &fdrVsCount
+        QVector<CandidateScores> candidateScores;
+        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+                topNMS2IonsCalibration,
+                m_msCalibratomatic,
+                &tranche,
+                &candidateScores
         ); ree;
 
-    qDebug() << "FDR calc'd" << et.restart() << "mSec";
+        const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
+        e = setDiscriminantScoreForCandidates(
+                scanTimeMinMax,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                topNMS2IonsCalibration,
+                &candidateScores
+        ); ree;
+
+        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScores); ree;
+
+        QMap<QString, int> fdrVsCount;
+        e = FDRCLassifierNeuralNet::outputFDRResults(
+                candidateScores,
+                true,
+                &fdrVsCount
+        ); ree;
+
+        const double fdrThreshold = 0.1;
+        int targetCountBelowFDRThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                candidateScores,
+                fdrThreshold,
+                &targetCountBelowFDRThreshold
+        ); ree;
+
+        std::sort(candidateScores.rbegin(), candidateScores.rend(), [](const CandidateScores &l, const CandidateScores &r){
+            return l.discriminateScore < r.discriminateScore;
+        });
+
+        const int minTrainingCount = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold);
+        qDebug() << "Training RT count 10% FDR:" << minTrainingCount;
+
+        candidateScores.resize(minTrainingCount);
+        QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+        e = buildMsCalibrationReaderRows(candidateScores, &msCalibrationReaderRows); ree;
+
+        e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
+        const int numberOfStDevs = 3;
+        timeWindowStDevs.push_back(m_msCalibratomatic.scanTimeStDev(1));
+        qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
+
+    }
+
+    qDebug() << timeWindowStDevs << MathUtils::mean(timeWindowStDevs);
+    m_msCalibratomatic.setScanTimeStDev(MathUtils::mean(timeWindowStDevs));
 
     ERR_RETURN
 }
@@ -171,8 +234,8 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
 
         QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
         e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
-                msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower,
-                msScanInfo.precursorTargetMz + msScanInfo.isoWindowLower,
+                msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
+                msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
                 selectionFraction,
                 &targetDecoyPointers
                 ); ree;
