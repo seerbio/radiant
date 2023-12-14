@@ -157,6 +157,8 @@ struct PythiaParameters{
     int verbosity = 1;
     bool reportDecoys = false;
 
+    int mzCalPolynomialOrder = 11;
+
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin > chargeStateMax) {

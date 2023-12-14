@@ -79,7 +79,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &diaTargetFrames
             ); ree;
 
-    e = buildCalibration(&msReaderPointerAcc); ree;
+    e = buildCalibration(
+            &msReaderPointerAcc,
+            &diaTargetFrames,
+            &scanNumberVsScanTimeMS1
+            ); ree;
 
 //    write method in scoretron to limit integration ranges based on newly set window when calibration is set
 //    limit what scores are collected depending on extendedScores or NeuralNetScores is set
@@ -152,7 +156,11 @@ namespace {
 
 
 }//namespace
-Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc) {
+Err PythiaDIAFFWorkflow::buildCalibration(
+        MsReaderPointerAcc *msReaderPointerAcc,
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
+        ) {
 
     ERR_INIT
 
@@ -190,7 +198,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
 
     const int topNMS2IonsCalibration = 6;
 
-    QVector<double> timeWindowStDevs;
     for (int i = 0; i < mzTargetKeyVsTargetDecoyCandidatePointers.size(); i++) {
 
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> localTranches;
@@ -251,12 +258,27 @@ Err PythiaDIAFFWorkflow::buildCalibration(MsReaderPointerAcc *msReaderPointerAcc
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
         e = buildMsCalibrationReaderRows(candidateScores, &msCalibrationReaderRows); ree;
 
-        e = m_msCalibratomatic.init(msCalibrationReaderRows); ree;
         const int numberOfStDevs = 3;
-        timeWindowStDevs.push_back(m_msCalibratomatic.scanTimeStDev(1));
+
+        e = m_msCalibratomatic.initRtOnly(msCalibrationReaderRows); ree;
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
+        const QString onePercenFDRKey = "1";
+        if (fdrVsCount.value(onePercenFDRKey) > 200) {
+
+            msCalibrationReaderRows.resize(fdrVsCount.value(onePercenFDRKey));
+            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
+
+            e = recalibrateMzVals(
+                    diaTargetFrames,
+                    scanNumberVsScanTimeMS1,
+                    &m_targetDecoyCandidatePairScoretron,
+                    msReaderPointerAcc
+            ); ree;
+        }
+
         if (minTrainingCount >= idealTrainingCountAtGivenFDR) {
+            qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
             break;
         }
     }
@@ -412,6 +434,45 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
     ERR_RETURN
 
+}
+
+Err PythiaDIAFFWorkflow::recalibrateMzVals(
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
+    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+
+    qDebug() << "Recalibrating mz vals";
+
+    QElapsedTimer et;
+    et.start();
+
+    const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
+
+    for (const MzTargetKey &k: diaTargetFrameKeys) {
+        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrames->value(k)); ree;
+    }
+
+    qDebug() << "Recalibrating MS1 mz vals frame";
+    e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
+
+    e = targetDecoyCandidatePairScoretron->init(
+            m_pythiaParameters,
+            *scanNumberVsScanTimeMS1,
+            msReaderPointerAcc,
+            diaTargetFrames
+            ); ree;
+
+    qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
 }
 
 namespace {

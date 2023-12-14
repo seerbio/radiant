@@ -89,7 +89,7 @@ private:
 
     Err mapXtoY(const QVector<QPair<double, double>> &data);
 
-    static Err _splineTestAcces(
+    static Err _splineTestAccess(
             const QVector<QPair<double, double>> &data,
             int segments,
             QVector<double> *coeffs,

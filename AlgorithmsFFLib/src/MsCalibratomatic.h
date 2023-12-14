@@ -27,10 +27,16 @@ public:
 
     Err init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
+    Err initRtOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
+
+    Err initMzOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
+
     // either FrameIndex, or ScanNumber can be key as they are both ints.
     Err recalibrateScanPoints(
             const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
             );
+
+    Err recalibrateScanPoints(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
 
     [[nodiscard]] double mzStDev();
     [[nodiscard]] double scanTimeStDev(int nStdDevs = 1);
@@ -43,6 +49,8 @@ public:
             ) const;
 
     bool isInit() const;
+
+    Err recalibrateMz(double mz, double *mzRecal);
 
 private:
 
@@ -60,7 +68,7 @@ private:
     QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;
 
     XYMappermatic m_iRTtoScanTimeMapper;
-    XYMappermatic m_mzToRecalMz;
+    QVector<double> m_calibrationCoeffs;
 
     bool m_isInit;
 

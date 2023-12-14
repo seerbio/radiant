@@ -46,7 +46,11 @@ public:
 
 private:
 
-    Err buildCalibration(MsReaderPointerAcc *msReaderPointerAcc);
+    Err buildCalibration(
+            MsReaderPointerAcc *msReaderPointerAcc,
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
+            );
 
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             const QVector<MsScanInfo> &msScanInfos,
@@ -60,6 +64,13 @@ private:
         bool useNeuralNetworkScores,
         int theoMzIonsSize,
         QVector<CandidateScores> *candidateScores
+        );
+
+    Err recalibrateMzVals(
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc
         );
 
     static Err setQValueForCandidates(

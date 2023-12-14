@@ -305,7 +305,7 @@ Err XYMappermatic::predictY(double x, double *y) const {
     ERR_RETURN
 }
 
-Err XYMappermatic::_splineTestAcces(
+Err XYMappermatic::_splineTestAccess(
         const QVector<QPair<XVal, YVal>> &data,
         int segments,
         QVector<double> *coeffs,

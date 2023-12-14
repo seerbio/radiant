@@ -143,7 +143,7 @@ public:
     static void fitPolynomialQRDecomposition(
             const Eigen::MatrixXd &points,
             int order,
-            QVector<double> *coeff
+            QVector<double> *coeffs
             ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
@@ -160,9 +160,9 @@ public:
         // solve for linear least squares fit
         const Eigen::VectorXd result = A.householderQr().solve(yv_mapped);
 
-        coeff->resize(order + 1);
+        coeffs->resize(order + 1);
         for (int i = 0; i <= order; ++i) {
-            (*coeff)[i] = result[i];
+            (*coeffs)[i] = result[i];
         }
 
     }

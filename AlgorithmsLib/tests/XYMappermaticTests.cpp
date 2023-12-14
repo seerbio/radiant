@@ -221,7 +221,7 @@ void XYMappermaticTests::splineTest() {
 
     QVector<double> coeffs;
     QVector<double> points;
-    e = XYMappermatic::_splineTestAcces(data, segments, &coeffs, &points);
+    e = XYMappermatic::_splineTestAccess(data, segments, &coeffs, &points);
 
     const QVector<double> coeffsExpected = {
             7.35077, -0.0169544, 9.39689, 0.0793673, 10.5833, -0.0670844, 11.8166, 0.234296, 12.6249, -0.167043,
