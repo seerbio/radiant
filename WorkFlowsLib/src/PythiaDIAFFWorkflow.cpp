@@ -349,6 +349,100 @@ namespace {
         return candidateScores.peptideStringWithMods + QString::number(candidateScores.charge) + candidateScores.targetKey + decoyToString;
     }
 
+    struct BuildClassiferParallelInput {
+        QVector<ScoresTargets> scoresTargets;
+        QVector<ScoresDecoys> scoresDecoys;
+    };
+
+    struct BuildClassifierParallelOutput {
+        QVector<QVector<double>> A;
+        QVector<double> b;
+    };
+
+    Err buildParallelInput(
+            const QVector<ScoresTargets> &scoresTargets,
+            const QVector<ScoresDecoys> &scoresDecoys,
+            QVector<BuildClassiferParallelInput> *inputs
+            ) {
+        ERR_INIT
+
+        QVector<QVector<ScoresTargets>> scoresTargetsTranched;
+        QVector<QVector<ScoresDecoys>> scoresDecoysTranched;
+
+        e = ParallelUtils::trancheVectorForParallelization(
+                scoresTargets,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &scoresTargetsTranched
+                ); ree;
+
+        e = ParallelUtils::trancheVectorForParallelization(
+                scoresDecoys,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &scoresDecoysTranched
+                ); ree;
+
+        e = ErrorUtils::isEqual(scoresTargetsTranched.size(), scoresDecoysTranched.size()); ree;
+        for (int i = 0; i < scoresDecoysTranched.size(); i++) {
+            BuildClassiferParallelInput input;
+            input.scoresTargets = scoresTargetsTranched.at(i);
+            input.scoresDecoys = scoresDecoysTranched.at(i);
+            inputs->push_back(input);
+        }
+
+        ERR_RETURN
+    }
+
+    QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel(const BuildClassiferParallelInput &input) {
+
+        ERR_INIT
+
+        BuildClassifierParallelOutput output;
+
+        e = ClassifierWeightsManager::buildDataClassifier1(
+                input.scoresTargets,
+                input.scoresDecoys,
+                &output.A,
+                &output.b
+        ); rree;
+
+        return {e, output};
+    }
+
+    Err processParallelResults(
+            const QPair<Err, BuildClassifierParallelOutput> &result,
+            int inputsSize,
+            QVector<QVector<double>> *A,
+            QVector<double> *b
+            ) {
+
+        ERR_INIT
+        e = result.first; ree;
+
+        const QVector<QVector<double>> &ALocal = result.second.A;
+        const QVector<double> bLocal = result.second.b;
+
+        if (A->isEmpty() || b->isEmpty()) {
+            A->resize(ALocal.size());
+            for(int row = 0; row < A->size(); row++) {
+                QVector<double> v(ALocal.front().size(), 0.0);
+                (*A)[row] = v;
+            }
+            b->resize(bLocal.size());
+        }
+
+        for (int row = 0; row < A->size(); row++) {
+            for (int col = 0; col < A->front().size(); col++) {
+                (*A)[row][col] += ALocal[row][col] / inputsSize;
+            }
+        }
+
+        for (int row = 0; row < bLocal.size(); row++) {
+            (*b)[row] += bLocal[row] / inputsSize;
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         const QPair<double, double> &scanTimeMinMax,
@@ -414,15 +508,29 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     }
     qDebug() << "build separate" << et.restart() << "mSec";
 
-    QVector<QVector<double>> A;
-    QVector<double> b;
-
-    e = ClassifierWeightsManager::buildDataClassifier1(
+    QVector<BuildClassiferParallelInput> inputs;
+    e = buildParallelInput(
             scoresTargets,
             scoresDecoys,
-            &A,
-            &b
+            &inputs
     ); ree;
+
+    QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
+            inputs,
+            buildClassifierDataParallel
+            );
+    futures.waitForFinished();
+
+    QVector<QVector<double>> A;
+    QVector<double> b;
+    for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
+        e = processParallelResults(
+                result,
+                inputs.size(),
+                &A,
+                &b
+                ); ree;
+    }
     qDebug() << "build classifier" << et.restart() << "mSec";
 
     QVector<double> weights;
