@@ -505,9 +505,9 @@ Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
 }
 
 Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
-        const QVector<CandidateScores> &candidateScores,
+        const QVector<CandidateScores*> &candidateScores,
         double qValueThreshold,
-        QVector<CandidateScores> *candidateScoresFDRThresholded
+        QVector<CandidateScores*> *candidateScoresFDRThresholded
         ) {
 
     ERR_INIT
@@ -517,8 +517,8 @@ Err FDRCLassifierNeuralNet::filterScoreCandidatesByFDR(
 
     *candidateScoresFDRThresholded = candidateScores;
 
-    const auto terminatorLogic = [qValueThreshold](const CandidateScores &cs){
-        return cs.qValue > qValueThreshold;
+    const auto terminatorLogic = [qValueThreshold](const CandidateScores* cs){
+        return cs->qValue > qValueThreshold;
     };
 
     const auto terminator = std::remove_if(

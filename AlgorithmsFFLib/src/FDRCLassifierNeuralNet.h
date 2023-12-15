@@ -135,9 +135,9 @@ public:
             );
 
     static Err filterScoreCandidatesByFDR(
-            const QVector<CandidateScores> &targetDecoyCandidatePairs,
+            const QVector<CandidateScores*> &targetDecoyCandidatePairs,
             double qValueThreshold,
-            QVector<CandidateScores> *targetDecoyCandidatePairsFDRThresholded
+            QVector<CandidateScores*> *targetDecoyCandidatePairsFDRThresholded
     );
 
 private:

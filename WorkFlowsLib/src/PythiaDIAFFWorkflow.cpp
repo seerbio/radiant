@@ -5,6 +5,7 @@
 #include "PythiaDIAFFWorkflow.h"
 
 #include "ClassifierWeightsManager.h"
+#include "EigenUtils.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "MsReaderPointerAcc.h"
@@ -93,6 +94,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     }
 
     e = mainAnalysis(&msReaderPointerAcc); ree;
+
+    e = applyNeuralNetClassifier(
+            msReaderPointerAcc.ptr->scanTimeMinMax(),
+            m_pythiaParameters.reportDecoys
+            ); ree;
 
 //    limit what scores are collected depending on extendedScores or NeuralNetScores is set
 
@@ -233,11 +239,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 scanTimeMinMax,
                 useExtendedScores,
                 useNeuralNetworkScores,
-                topNMS2IonsCalibration,
-                &m_candidateScores
+                topNMS2IonsCalibration
         ); ree;
 
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &m_candidateScores); ree;
+        QVector<CandidateScores*> candidateScoresPntrs;
+        e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
 
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
@@ -253,9 +260,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 fdrThreshold,
                 &targetCountBelowFDRThreshold
         ); ree;
-
-        QVector<CandidateScores*> candidateScoresPntrs;
-        e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
 
         std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
             return l->discriminateScore < r->discriminateScore;
@@ -472,13 +476,12 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         const QPair<double, double> &scanTimeMinMax,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        int theoMzIonsSize,
-        QVector<CandidateScores> *candidateScores
+        int theoMzIonsSize
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+    e = ErrorUtils::isFalse(m_candidateScores.isEmpty()); ree;
 
     QElapsedTimer et;
     et.start();
@@ -495,7 +498,7 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     //TODO clean this up. Abstract sub processes into methods.
 
     QFuture<QPair<Err, QVector<double>>> futuresScoreBuilder = QtConcurrent::mapped(
-            *candidateScores,
+            m_candidateScores,
             scoreBuildBinder
             );
     futuresScoreBuilder.waitForFinished();
@@ -506,13 +509,13 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         scoreVectors.push_back(res.second);
     }
 
-    e = ErrorUtils::isEqual(candidateScores->size(), scoreVectors.size()); ree;
+    e = ErrorUtils::isEqual(m_candidateScores.size(), scoreVectors.size()); ree;
 
-    QHash<QString, TargetDecoyCandidateScores> keyVsTargetDecoyCandidateScores;
+    QMap<QString, TargetDecoyCandidateScores> keyVsTargetDecoyCandidateScores;
 
     for(int i = 0; i < scoreVectors.size(); i++) {
 
-        CandidateScores *cs = &(*candidateScores)[i];
+        CandidateScores *cs = &m_candidateScores[i];
 
         const QString key = cs->peptideStringWithMods + QString::number(cs->charge) + cs->targetKey;
         QVector<double> *sv = &scoreVectors[i];
@@ -655,7 +658,7 @@ namespace {
 
     Err buildsetQValueForCandidateScoresInputs(
             const QValueScoreType &qValueScoreType,
-            QVector<CandidateScores> *candidateScores,
+            QVector<CandidateScores*> *candidateScores,
             QHash<PeptideSequenceChargeKey, double> *identifierVsTargets,
             QHash<PeptideSequenceChargeKey, double> *identifierVsDecoys
 
@@ -667,21 +670,21 @@ namespace {
         identifierVsTargets->clear();
         identifierVsDecoys->clear();
 
-        for (const CandidateScores &cs : *candidateScores) {
+        for (const CandidateScores *cs : *candidateScores) {
 
 
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(cs);
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
 
             double classifierScore = -1.0;
             if (qValueScoreType == QValueScoreType::NNClassifierScore) {
-                classifierScore = cs.classifierScore;
+                classifierScore = cs->classifierScore;
             }
             else {
-                classifierScore = cs.discriminateScore;
+                classifierScore = cs->discriminateScore;
             }
 
 
-            if (cs.isDecoy) {
+            if (cs->isDecoy) {
                 identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
                 continue;
             }
@@ -696,26 +699,26 @@ namespace {
     Err setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
             const QHash<PeptideSequenceChargeKey, double> &identifierVsQValue,
             const QHash<PeptideSequenceChargeKey, double> &identifierVsDecoyRatio,
-            QVector<CandidateScores> *candidateScores
+            QVector<CandidateScores*> *candidateScores
     ) {
 
         ERR_INIT
 
         e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
 
-        for (CandidateScores &cs : *candidateScores) {
+        for (CandidateScores *cs : *candidateScores) {
 
-            if (cs.isDecoy) {
+            if (cs->isDecoy) {
                 continue;
             }
 
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(cs);
+            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
 
             e = ErrorUtils::isTrue(identifierVsQValue.contains(peptideSequenceChargeKey)); ree;
             e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
 
-            cs.qValue = identifierVsQValue.value(peptideSequenceChargeKey);
-            cs.decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
+            cs->qValue = identifierVsQValue.value(peptideSequenceChargeKey);
+            cs->decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
         }
 
         ERR_RETURN
@@ -724,7 +727,7 @@ namespace {
 }//namespace
 Err PythiaDIAFFWorkflow::setQValueForCandidates(
         const QValueScoreType &qValueScoreType,
-        QVector<CandidateScores> *candidateScores
+        QVector<CandidateScores*> *candidateScores
         ) {
 
     ERR_INIT
@@ -978,12 +981,12 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
         qDebug() << "STarting opt";
 
-        QVector<CandidateScores> candidateScoresExperiment;
+        m_candidateScores.clear();
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsOptimization,
                 m_msCalibratomatic,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &candidateScoresExperiment
+                &m_candidateScores
         ); ree;
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
@@ -991,15 +994,16 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
                 scanTimeMinMax,
                 useExtendedScores,
                 useNeuralNetworkScores,
-                topNMS2IonsOptimization,
-                &candidateScoresExperiment
+                topNMS2IonsOptimization
         ); ree;
 
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresExperiment); ree;
+        QVector<CandidateScores*> candidateScoresPntrs;
+        e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
 
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
-                candidateScoresExperiment,
+                m_candidateScores,
                 true,
                 &fdrVsCount
         ); ree;
@@ -1008,7 +1012,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
         const double fdrThreshold = 0.1;
         int targetCountAboveFDRQValueThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                candidateScoresExperiment,
+                m_candidateScores,
                 fdrThreshold,
                 &targetCountAboveFDRQValueThreshold
                 ); ree;
@@ -1093,12 +1097,13 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
             scanTimeMinMax,
             useExtendedScores,
             useNeuralNetworkScores,
-            topNMs2IonsMainAnalysis,
-            &m_candidateScores
+            topNMs2IonsMainAnalysis
     ); ree;
     qDebug() << "Targets discriminated" << et.restart() << "mSec";
 
-    e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &m_candidateScores); ree;
+    QVector<CandidateScores*> candidateScoresPntrs;
+    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+    e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
     qDebug() << "Targets qval'd" << et.restart() << "mSec";
 
     QMap<QString, int> fdrVsCount;
@@ -1119,8 +1124,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
     qDebug() << "Targets counted" << et.restart() << "mSec";
 
 
-    QVector<CandidateScores*> candidateScoresPntrs;
-    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
 
     std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
         return l->discriminateScore < r->discriminateScore;
@@ -1142,6 +1145,276 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *can
             std::back_inserter(*candidateScoresPntrs),
             [](CandidateScores &cs){return &cs;}
     );
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err filterScoredCandidatesTo50PercentFDR(
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
+
+        std::sort(
+                candidateScoresTargetsAndDecoys->rbegin(),
+                candidateScoresTargetsAndDecoys->rend(),
+                [](const CandidateScores *l, const CandidateScores *r){return l->discriminateScore < r->discriminateScore;}
+        );
+
+        const double fdrThreshold = 0.5;
+        for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
+
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered->push_back(csp);
+
+            if (csp->qValue >= fdrThreshold && !csp->isDecoy) {
+                break;
+            }
+        }
+
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        std::shuffle(
+                candidateScoresTargetsAndDecoys50PercentFDRFiltered->begin(),
+                candidateScoresTargetsAndDecoys50PercentFDRFiltered->end(),
+                rng
+                );
+
+        ERR_RETURN
+    }
+
+    Err minMaxScaleScores(
+            const QVector<KarnnNNTarget> &karnnNNTargets,
+            QVector<KarnnNNTarget> *karnnNNTargetsNorm
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(karnnNNTargets); ree;
+
+        QVector<QVector<double>> vecs;
+        std::transform(
+                karnnNNTargets.begin(),
+                karnnNNTargets.end(),
+                std::back_inserter(vecs),
+                [](const KarnnNNTarget &kt){return kt.scoreVec;}
+                );
+
+        Eigen::MatrixX<double> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
+        EigenUtils::minMaxScaleMatrix(&mat);
+
+        const QVector<QVector<double>> vecsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
+
+        e = ErrorUtils::isEqual(vecsNorm.size(), karnnNNTargets.size()); ree;
+
+        for (int i = 0; i < vecsNorm.size(); i++) {
+            KarnnNNTarget ktNew = karnnNNTargets.at(i);
+            ktNew.scoreVec = vecsNorm.at(i);
+            karnnNNTargetsNorm->push_back(ktNew);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildKarnnNNTargetsNormalized(
+            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            const QPair<double, double> scanTimeMinMax,
+            int topNMs2Ions,
+            QVector<KarnnNNTarget> *karnnNNTargetsNorm
+    ){
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+        e = ErrorUtils::isTrue(scanTimeMinMax.second > scanTimeMinMax.first); ree;
+
+        QVector<KarnnNNTarget> karnnNNTargets;
+        for (int i = 0; i < candidateScoresTargetsAndDecoys50PercentFDRFiltered.size(); i++) {
+            const CandidateScores *cs = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(i);
+            KarnnNNTarget karnnNnTarget;
+            karnnNnTarget.seq = cs->peptideStringWithMods;
+            karnnNnTarget.isDecoy = cs->isDecoy;
+            karnnNnTarget.index = i;
+
+            e = CandidateScores::buildScoreVector(
+                    *cs,
+                    true,
+                    true,
+                    topNMs2Ions,
+                    scanTimeMinMax,
+                    &karnnNnTarget.scoreVec
+            ); ree;
+            karnnNNTargets.push_back(karnnNnTarget);
+        }
+
+        e = minMaxScaleScores(karnnNNTargets, karnnNNTargetsNorm); ree;
+
+        ERR_RETURN
+    }
+
+    Err predictNNScores(
+            const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+            QVector<float> *predictions
+            ) {
+
+        ERR_INIT
+
+        const int batchSize = std::min(50, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+        const int maxIters = 1;
+        qDebug() << "Batch Size:" << batchSize << "MaxIters:" << maxIters;
+
+        QVector<QVector<float>> xData;
+        QVector<float> yData;
+        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+            xData.push_back(QVector<float>(kt.scoreVec.begin(), kt.scoreVec.end()));
+            yData.push_back(kt.isDecoy ? 1.0 : 0.0);
+        }
+
+        const int baggingSize = 12;
+        const float learningRate = 0.003;
+        const int epochs = 1;
+        FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
+        e = fdrcLassifierNeuralNet.init(
+                epochs,
+                baggingSize,
+                batchSize,
+                learningRate
+        ); ree;
+
+        e = fdrcLassifierNeuralNet.exec(xData, yData, predictions); ree;
+
+        ERR_RETURN
+    }
+
+    Err processPredictions(
+            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            const QVector<float> &predictions,
+            bool reportDecoys,
+            QVector<KarnnNNTarget> *karnnNNTargetsNorm,
+            QVector<CandidateScores*> *candidateScoreClassifier
+            ) {
+
+        ERR_INIT
+
+        for (int i = 0; i < predictions.size(); i++) {
+            (*karnnNNTargetsNorm)[i].nnScore = predictions.at(i);
+        }
+
+        std::sort(
+                karnnNNTargetsNorm->begin(),
+                karnnNNTargetsNorm->end(),
+                [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
+        );
+
+        int counter = 0;
+        int falsePositives = 0;
+        for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
+
+            CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
+            candidateScoresNew->classifierScore = rp.nnScore;
+            candidateScoreClassifier->push_back(candidateScoresNew);
+
+            ++counter;
+
+            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
+                if (!reportDecoys) {
+                    break;
+                }
+                else {
+                    counter--;
+                    continue;
+                }
+            }
+
+            if (rp.isDecoy){
+                falsePositives++;
+            }
+        }
+
+        qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
+        const QPair<double, double> &scanTimeMinMax,
+        bool reportDecoys
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
+    e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
+    e = filterScoredCandidatesTo50PercentFDR(
+            &candidateScoresTargetsAndDecoys,
+            &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+            ); ree;
+
+//#define BYPASS_NEURAL_NET
+#ifdef BYPASS_NEURAL_NET
+    std::sort(
+            candidateScoresTargetsAndDecoysShuffled.rbegin(),
+            candidateScoresTargetsAndDecoysShuffled.rend(),
+            [](const CandidateScores &l, const CandidateScores &r){return l.discriminateScore < r.discriminateScore;}
+            );
+
+    int counter = 0;
+    int decoyCounter = 0;
+    for (const CandidateScores &cs : candidateScoresTargetsAndDecoysShuffled) {
+
+        if (cs.isDecoy) {
+            decoyCounter++;
+        }
+
+        const double qVal = static_cast<double>(decoyCounter) / ++counter;
+        if (qVal > 0.01) {
+            break;
+        }
+
+        candidateScoreClassifier->push_back(cs);
+    }
+#else
+
+    const int totalCount = candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
+    const int decoyCount = static_cast<int>(std::count_if(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+            [](const CandidateScores* cs){return cs->isDecoy;}
+            ));
+
+    qDebug() << "target vs decoy count" << totalCount - decoyCount << decoyCount
+             << "total" << totalCount;
+
+    QVector<KarnnNNTarget> karnnNNTargetsNorm;
+    e = buildKarnnNNTargetsNormalized(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            scanTimeMinMax,
+            m_pythiaParameters.topNMs2Ions,
+            &karnnNNTargetsNorm
+            ); ree;
+
+    QVector<float> predictions;
+    e = predictNNScores(karnnNNTargetsNorm, &predictions); ree;
+
+    QVector<CandidateScores*> candidateScoreClassifier;
+    e = processPredictions(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            predictions,
+            m_pythiaParameters.reportDecoys,
+            &karnnNNTargetsNorm,
+            &candidateScoreClassifier
+            ); ree;
+
+    e = setQValueForCandidates(QValueScoreType::NNClassifierScore, &candidateScoreClassifier); ree
+#endif
 
     ERR_RETURN
 }

@@ -26,6 +26,14 @@ enum class QValueScoreType {
     NNClassifierScore
 };
 
+struct KarnnNNTarget {
+    QString seq;
+    float nnScore = 0.0;
+    bool isDecoy = false;
+    QVector<double> scoreVec;
+    int index = -1;
+};
+
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflow {
 
 public:
@@ -62,8 +70,7 @@ private:
         const QPair<double, double> &scanTimeMinMax,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
-        int theoMzIonsSize,
-        QVector<CandidateScores> *candidateScores
+        int theoMzIonsSize
         );
 
     Err recalibrateMzVals(
@@ -79,9 +86,15 @@ private:
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
+    Err applyNeuralNetClassifier(
+        const QPair<double, double> &scanTimeMinMax,
+        bool reportDecoys
+        );
+
+
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
-            QVector<CandidateScores> *candidateScores
+            QVector<CandidateScores*> *candidateScores
             );
 
 
