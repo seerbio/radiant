@@ -21,13 +21,11 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/ConvexOptimizer.cpp
         src/NearestNeighborsSearch.cpp
-        src/NeuralNetModel.cpp
         )
 
 SET(HEADER_FILES
         src/ConvexOptimizer.h
         src/NearestNeighborsSearch.h
-        src/NeuralNetModel.h
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -43,9 +41,6 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${EIGEN_DIRECTORY}"
-        "${FUNCTIONAL_PLUS_DIRECTORY}"
-        "${FRUGALLY_DEEP_DIRECTORY}"
-        "${JSON_DIRECTORY}"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${NANOFLANN_DIRECTORY}"
 )

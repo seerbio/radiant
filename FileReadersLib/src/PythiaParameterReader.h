@@ -156,7 +156,7 @@ struct PythiaParameters{
 
     int verbosity = 1;
     bool reportDecoys = false;
-    bool turboMode = false;
+    bool turboMode = true;
 
     int mzCalPolynomialOrder = 11;
 

@@ -85,7 +85,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
         UtilsLib
-        KarnnLib
         Parquet::parquet_static
         )
 
