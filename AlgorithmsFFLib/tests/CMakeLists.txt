@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         MsCalibratomaticTests
         MsFrameTests
         MsUtilsTests
+        ProteinDigestomaticTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests

@@ -33,6 +33,7 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/ProteinDigestomatic.cpp
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
@@ -54,7 +55,8 @@ SET(HEADER_FILES
         src/MsCalibratomatic.h
         src/MsFrame.h
         src/MsUtils.h
-        src/PeakIntegratomatic.cpp
+        src/PeakIntegratomatic.h
+        src/ProteinDigestomatic.h
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h

@@ -6,10 +6,13 @@
 
 #include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
+#include "FastaFileToPeptidesListWorkFlow.h"
+#include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
+#include "ProteinDigestomatic.h"
 
 #include <QElapsedTimer>
 
@@ -95,10 +98,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = mainAnalysis(&msReaderPointerAcc); ree;
 
+    QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
             msReaderPointerAcc.ptr->scanTimeMinMax(),
-            m_pythiaParameters.reportDecoys
+            &candidateScoreClassifierPntrs
             ); ree;
+
+    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &candidateScoreClassifierPntrs
+            ); ree;
+
+    QVector<CandidateScores> candidateScoreClassifier;
+    std::transform(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            std::back_inserter(candidateScoreClassifier),
+            [](const CandidateScores *cs){return *cs;}
+            );
+
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = ParquetReader::write(candidateScoreClassifier, resultsFilePath); ree;
 
 //    limit what scores are collected depending on extendedScores or NeuralNetScores is set
 
@@ -126,7 +147,7 @@ namespace {
     Err buildMsCalibrationReaderRows(
             const QVector<CandidateScores*> &_candidateScores,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
-    ) {
+            ) {
 
         ERR_INIT
 
@@ -1311,6 +1332,7 @@ namespace {
 
         int counter = 0;
         int falsePositives = 0;
+        const double fdrCutoff = 0.008;
         for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
 
             CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
@@ -1319,7 +1341,7 @@ namespace {
 
             ++counter;
 
-            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > 0.01) {
+            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > fdrCutoff) {
                 if (!reportDecoys) {
                     break;
                 }
@@ -1342,7 +1364,7 @@ namespace {
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QPair<double, double> &scanTimeMinMax,
-        bool reportDecoys
+        QVector<CandidateScores*> *candidateScoreClassifier
         ) {
 
     ERR_INIT
@@ -1404,17 +1426,69 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     QVector<float> predictions;
     e = predictNNScores(karnnNNTargetsNorm, &predictions); ree;
 
-    QVector<CandidateScores*> candidateScoreClassifier;
+
     e = processPredictions(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
             m_pythiaParameters.reportDecoys,
             &karnnNNTargetsNorm,
-            &candidateScoreClassifier
+            candidateScoreClassifier
             ); ree;
 
-    e = setQValueForCandidates(QValueScoreType::NNClassifierScore, &candidateScoreClassifier); ree
+    e = setQValueForCandidates(QValueScoreType::NNClassifierScore, candidateScoreClassifier); ree
 #endif
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
+        const QString &fastaFilePath,
+        QVector<CandidateScores*> *candidateScores
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+
+    FastaReader fastaReader;
+    e = fastaReader.parseFastaFile(fastaFilePath); ree;
+
+    QVector<PeptideSequence> peptideSequences;
+    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntries;
+    e = FastaFileToPeptidesListWorkFlow::digestFastaEntries(
+            m_pythiaParameters,
+            fastaReader.fastaEntries(),
+            &peptideSequences,
+            &peptideStringWithModsVsFastaEntries
+            ); ree;
+
+    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
+    for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
+        QString peptideSeqReplacedLeucines = it.key();
+        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+        peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
+    }
+
+    for (int i = 0; i < candidateScores->size(); i++) {
+
+        CandidateScores *cs = (*candidateScores)[i];
+
+        QString peptideSeqReplacedLeucines = cs->peptideStringWithMods;
+        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+
+        const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
+
+        QStringList fastaDescriptions;
+        std::transform(
+                fastaEntries.begin(),
+                fastaEntries.end(),
+                std::back_inserter(fastaDescriptions),
+                [](const FastaEntry &fe){return fe.fastaDescription;}
+                );
+
+        cs->proteinGroup = fastaDescriptions.join(';');
+
+    }
 
     ERR_RETURN
 }
