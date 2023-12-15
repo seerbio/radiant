@@ -77,6 +77,8 @@ private:
 
     Err mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc);
 
+    Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
+
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
             QVector<CandidateScores> *candidateScores
@@ -94,6 +96,8 @@ private:
     QString m_fastaUri;
 
     int m_minTopNMs2Ions;
+
+    QVector<CandidateScores> m_candidateScores;
 
 };
 
