@@ -136,12 +136,10 @@ struct PythiaParameters{
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
 
-    double fragIntensityThreshold = 0.025;
     double pValThreshold = 0.05;
 
     int skipScanCount = 2;
     int minScanCount = 3;
-    bool useMeanMz = true;
     int filterLength = -1;
     int smoothCount = -1;
     double sigma = -1.0;

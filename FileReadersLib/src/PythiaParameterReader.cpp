@@ -309,10 +309,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->minScanCount = val;
         }
-        else if (jsonKey == kUseMeanMz){
-            bool val = jsonValue.toBool();
-            pythiaParameters->useMeanMz = val;
-        }
         else if (jsonKey == kFilterLength){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
@@ -435,7 +431,6 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;
     pythiaParameters.skipScanCount = 0;
-    pythiaParameters.useMeanMz = true;
     pythiaParameters.filterLength = 5;
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
