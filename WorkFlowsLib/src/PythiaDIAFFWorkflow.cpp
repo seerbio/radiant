@@ -13,6 +13,8 @@
 #include <QElapsedTimer>
 
 
+PythiaDIAFFWorkflow::PythiaDIAFFWorkflow() : m_minTopNMs2Ions(6) {}
+
 Err PythiaDIAFFWorkflow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri,
@@ -79,15 +81,19 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &diaTargetFrames
             ); ree;
 
-    e = buildCalibration(
-            &msReaderPointerAcc,
-            &diaTargetFrames,
-            &scanNumberVsScanTimeMS1
-            ); ree;
+    if (!m_pythiaParameters.turboMode) {
 
-    e = optimizeParameters(&msReaderPointerAcc); ree;
+        e = buildCalibration(
+                &msReaderPointerAcc,
+                &diaTargetFrames,
+                &scanNumberVsScanTimeMS1
+        ); ree;
 
-//    write method in scoretron to limit integration ranges based on newly set window when calibration is set
+        e = optimizeParameters(&msReaderPointerAcc); ree;
+    }
+
+    e = mainAnalysis(&msReaderPointerAcc); ree;
+
 //    limit what scores are collected depending on extendedScores or NeuralNetScores is set
 
     ERR_RETURN
@@ -266,7 +272,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
         const QString onePercenFDRKey = "1";
-        if (fdrVsCount.value(onePercenFDRKey) > 200) {
+        if (fdrVsCount.value(onePercenFDRKey) >= 200) {
 
             msCalibrationReaderRows.resize(fdrVsCount.value(onePercenFDRKey));
             e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
@@ -283,6 +289,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
             break;
         }
+
     }
 
     ERR_RETURN
@@ -767,6 +774,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 
     ERR_INIT
 
+    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
+
     const int topNMS2IonsOptimization = 6;
     qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
 
@@ -789,9 +798,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
             &pythiaParametersExperiments
             ); ree;
 
-    const bool useExtendedScores = true;
+    const bool useExtendedScores = false;
     const bool useNeuralNetworkScores = false;
-    const int minTrainingCount = 100;
 
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -870,6 +878,74 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 ////    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
 ////    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
 //    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
+
+    m_pythiaParameters.print();
+
+    const bool useExtendedScores = !m_pythiaParameters.turboMode;
+    const bool useNeuralNetworkScores = !m_pythiaParameters.turboMode;
+
+    const int topNMs2IonsMainAnalysis = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
+            );
+
+    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+
+    const double selectionFractionBypass = -1.0;
+
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
+            selectionFractionBypass,
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+    ); ree;
+
+    QVector<CandidateScores> candidateScores;
+    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            topNMs2IonsMainAnalysis,
+            m_msCalibratomatic,
+            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &candidateScores
+    ); ree;
+
+    const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
+    e = setDiscriminantScoreForCandidates(
+            scanTimeMinMax,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            topNMs2IonsMainAnalysis,
+            &candidateScores
+    ); ree;
+
+    e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScores); ree;
+
+    QMap<QString, int> fdrVsCount;
+    e = FDRCLassifierNeuralNet::outputFDRResults(
+            candidateScores,
+            true,
+            &fdrVsCount
+    ); ree;
+
+    const double fdrThreshold = 0.1;
+    int targetCountBelowFDRThreshold;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+            candidateScores,
+            fdrThreshold,
+            &targetCountBelowFDRThreshold
+    ); ree;
+
+//    std::sort(candidateScores.rbegin(), candidateScores.rend(), [](const CandidateScores &l, const CandidateScores &r){
+//        return l.discriminateScore < r.discriminateScore;
+//    });
 
     ERR_RETURN
 }

@@ -32,7 +32,7 @@ public:
 
     friend class PythiaDIAFFWorkflowTests;
 
-    PythiaDIAFFWorkflow() = default;
+    PythiaDIAFFWorkflow();
     ~PythiaDIAFFWorkflow() = default;
 
     Err init(
@@ -75,6 +75,8 @@ private:
 
     Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
 
+    Err mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc);
+
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
             QVector<CandidateScores> *candidateScores
@@ -90,6 +92,8 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_fastaUri;
+
+    int m_minTopNMs2Ions;
 
 };
 
