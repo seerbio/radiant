@@ -54,6 +54,9 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowMinutes;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
+    extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
+    extern const QString FILEREADERSLIB_EXPORTS kTurboMode;
+
 }
 
 
@@ -148,7 +151,6 @@ struct PythiaParameters{
     float stopThresholdFraction = 0.2;
 
     double cosineSimToAnchorThreshold = 0.4;
-    bool subtractShadows = true;
 
     double scanTimeWindowMinutes = -1.0;
     double ms2ExtractionWidthPPM = -1.0;
@@ -156,7 +158,8 @@ struct PythiaParameters{
 
     int verbosity = 1;
     bool reportDecoys = false;
-    bool turboMode = true;
+    bool subtractShadows = true;
+    bool turboMode = false;
 
     int mzCalPolynomialOrder = 11;
 
@@ -236,7 +239,6 @@ struct PythiaParameters{
 
         qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
         qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
-        qDebug() << PythiaParameterReaderConstants::kUseMeanMz << useMeanMz;
         qDebug() << PythiaParameterReaderConstants::kFilterLength << filterLength;
         qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
         qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
@@ -247,7 +249,8 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
-        qDebug() << "SubtractShadows" << subtractShadows;
+        qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
+        qDebug() << PythiaParameterReaderConstants::kTurboMode << turboMode;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

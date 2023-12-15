@@ -124,6 +124,8 @@ namespace PythiaParameterReaderConstants {
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowMinutes = QStringLiteral("scanTimeWindowMinutes");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
+    const QString  kSubtractShadows = QStringLiteral("subtractShadows");
+    const QString  kTurboMode = QStringLiteral("turboMode");
 
 }
 
@@ -291,6 +293,16 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->reportDecoys = static_cast<bool>(val);
+        }
+        else if (jsonKey == kSubtractShadows){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->subtractShadows = static_cast<bool>(val);
+        }
+        else if (jsonKey == kTurboMode){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->turboMode = static_cast<bool>(val);
         }
         else if (jsonKey == kMinScanCount){
             int val;

@@ -26,14 +26,12 @@ SET(SOURCE_FILES
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
-        src/FrameExtractsReader.cpp
         src/JsonParametersReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/MsReaderPointerAcc.cpp
         src/ParquetReader.cpp
-        src/PSMsReader.cpp
         src/PythiaParameterReader.cpp
         )
 
@@ -45,14 +43,12 @@ SET(HEADER_FILES
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
-        src/FrameExtractsReader.h
         src/JsonParametersReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/MsReaderPointerAcc.h
         src/ParquetReader.h
-        src/PSMsReader.h
         src/PythiaParameterReader.h
         src/toml.hpp
         )
