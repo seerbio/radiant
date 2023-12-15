@@ -95,18 +95,11 @@ namespace {
 
     void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores> *candidateScores) {
 
-        QHash<QString, CandidateScores> keyVsCandidatesFoundBest;
+        QMap<QString, CandidateScores> keyVsCandidatesFoundBest;
         for (const CandidateScores &cs : *candidateScores) {
 
             const QString key = cs.peptideStringWithMods + QString::number(cs.charge);
             if (keyVsCandidatesFoundBest.contains(key)) {
-
-                const CandidateScores &csLocal = keyVsCandidatesFoundBest.value(key);
-
-                if (cs.discriminateScore > csLocal.discriminateScore) {
-                    keyVsCandidatesFoundBest[key] = cs;
-                }
-
                 continue;
             }
 
@@ -150,6 +143,13 @@ namespace {
                 std::back_inserter(*msCalibrationReaderRows),
                 msCalibrationReaderRowsInsertLogic
         );
+
+//#define WRITE_CALIBRATION_ROWS_TS
+#ifdef WRITE_CALIBRATION_ROWS_TS
+        qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CAL FILE IN:"; einfo;
+        const QString filename = QStringLiteral("/home/anichols/temp/cal2.prq");
+        e = ParquetReader::write(*msCalibrationReaderRows, filename); ree;
+#endif
 
         ERR_RETURN
     }

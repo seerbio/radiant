@@ -445,6 +445,7 @@ Err MsReaderBase::printFileInfo() {
 
 //#define WRITE_TARGET_CE_FILE
 #ifdef WRITE_TARGET_CE_FILE
+    qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CF FILE IN:"; einfo;
     writeTargetCollisionEnergyFile();
 #endif
 
