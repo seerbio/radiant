@@ -35,7 +35,7 @@ void ConvertMzMLToParquetWorkFlowTests::convertMzMLToParquetRunTest() {
             = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML");
 
     const QString expectedOutputFilePath
-            = mzMLFilepath + S_GLOBAL_SETTINGS.DOT_PRQ;
+            = mzMLFilepath + S_GLOBAL_SETTINGS.DOT_PRQ_DF;
 
 //    const QString &fastaFilePath
 //            = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
