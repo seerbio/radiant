@@ -32,6 +32,7 @@ public:
             const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
             const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+            bool collectBaseFeaturesOnly,
             int *bestAlignmentMatrixRow,
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
@@ -509,6 +510,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
         const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+        bool collectBaseFeaturesOnly,
         int *bestAlignmentMatrixRowIndex,
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
@@ -609,18 +611,21 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     }
 
-    const int tightColsMax = 6;
-    m_intensityMatrix45.resize(rows, tightColsMax);
-    m_intensityMatrix20.resize(rows, tightColsMax);
-    e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
-            ms2IonsTheoretical,
-            mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex->first,
-            m_pythiaParams.ms2ExtractionWidthPPM,
-            *alignmentMatrixLimits,
-            &m_intensityMatrix45,
-            &m_intensityMatrix20
-            ); ree;
+    if (!collectBaseFeaturesOnly) {
+        const int tightColsMax = 6;
+        m_intensityMatrix45.resize(rows, tightColsMax);
+        m_intensityMatrix20.resize(rows, tightColsMax);
+        e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
+                ms2IonsTheoretical,
+                mzHashedVsfeatureFinderHills,
+                minMaxFrameIndex->first,
+                m_pythiaParams.ms2ExtractionWidthPPM,
+                *alignmentMatrixLimits,
+                &m_intensityMatrix45,
+                &m_intensityMatrix20
+        );
+        ree;
+    }
 
     ERR_RETURN
 }
@@ -918,6 +923,7 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+        bool collectBaseFeaturesOnly,
         CandidateScores *candidateScores
         ) {
 
@@ -939,6 +945,7 @@ Err ScoreOverseer::buildScores(
             ms2IonsTheoreticalIsotopeShadows,
             mzHashedVsfeatureFinderHills,
             mzHashedVsfeatureFinderHillsShadows,
+            collectBaseFeaturesOnly,
             &bestAlignmentMatrixRowIndex,
             &columnApexIndexes,
             &candidateScores->intensityFoundMaxVec,
@@ -973,6 +980,13 @@ Err ScoreOverseer::buildScores(
         ERR_RETURN
     }
 
+    e = calculateSpectrumMetrics(
+            d_ptr->m_intensityMatrix100ApexRow,
+            ms2IonsTheoretical,
+            &candidateScores->cosineSimSpectrum,
+            &candidateScores->klDivSpectrum
+    ); ree;
+
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -983,53 +997,49 @@ Err ScoreOverseer::buildScores(
             &candidateScores->cosineSim100MS1
             ); ree;
 
-    const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            1
-            );
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            mzIso1,
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &candidateScores->cosineSim100MS1Iso1
-    ); ree;
+    if (!collectBaseFeaturesOnly) {
 
-    const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            2
-    );
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            mzIso2,
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &candidateScores->cosineSim100MS1Iso2
-    ); ree;
+        const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
+                targetDecoyCandidatePair->mass(),
+                targetDecoyCandidatePair->charge(),
+                1
+        );
+        e = calculateMS1Corr(
+                bestAnchorColumn,
+                peakIntegrationIndexes,
+                mzIso1,
+                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+                &m_turboXICMS1,
+                &d_ptr->m_gaussKernel,
+                &candidateScores->cosineSim100MS1Iso1
+        ); ree;
 
-    e = calculateSpectrumMetrics(
-            d_ptr->m_intensityMatrix100ApexRow,
-            ms2IonsTheoretical,
-            &candidateScores->cosineSimSpectrum,
-            &candidateScores->klDivSpectrum
-            ); ree;
+        const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
+                targetDecoyCandidatePair->mass(),
+                targetDecoyCandidatePair->charge(),
+                2
+        );
+        e = calculateMS1Corr(
+                bestAnchorColumn,
+                peakIntegrationIndexes,
+                mzIso2,
+                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+                &m_turboXICMS1,
+                &d_ptr->m_gaussKernel,
+                &candidateScores->cosineSim100MS1Iso2
+        ); ree;
 
-    float cosineSimSum45;
-    float cosineSimSum20;
-    e = d_ptr->calculateCosineSimSumTight(
-            bestAnchorColumnIndex,
-            &cosineSimSum45,
-            &cosineSimSum20
-            ); ree;
+        float cosineSimSum45;
+        float cosineSimSum20;
+        e = d_ptr->calculateCosineSimSumTight(
+                bestAnchorColumnIndex,
+                &cosineSimSum45,
+                &cosineSimSum20
+        ); ree;
 
-    candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
-    candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
+        candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
+        candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
+    }
 
     candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
 

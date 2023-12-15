@@ -27,6 +27,7 @@ public:
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
+    bool collectBaseFeaturesOnly = false;
     PythiaParameters pythiaParameters;
 };
 
@@ -100,6 +101,7 @@ namespace {
                 pi.pythiaParameters,
                 pi.targetKey,
                 pi.topNMs2Ions,
+                pi.collectBaseFeaturesOnly,
                 &msCalibratomatic,
                 &featureFinderHillBuilderMS2
                 ); rree;
@@ -136,11 +138,19 @@ namespace {
 Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
+        bool collectBaseFeaturesOnly,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) {
 
     ERR_INIT
+
+    if (collectBaseFeaturesOnly) {
+        qDebug() << "Collecting base features only";
+    }
+    else {
+        qDebug() << "Collecting full features set";
+    }
 
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
@@ -152,6 +162,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     e = buildParallelInput(
             topNMS2Ions,
             msCalibratomatic,
+            collectBaseFeaturesOnly,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
     ); ree;
@@ -193,6 +204,7 @@ bool TargetDecoyCandidatePairScoretron::isInit() {
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
+        bool collectBaseFeaturesOnly,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) {
@@ -216,6 +228,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.ms1Frame = m_ms1Frame;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
+        tdppi.collectBaseFeaturesOnly = collectBaseFeaturesOnly;
 
         input->push_back(tdppi);
     }

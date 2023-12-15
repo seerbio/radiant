@@ -37,6 +37,7 @@ public:
     Err scoreTargetDecoyPairs(
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
+            bool collectBaseFeaturesOnly,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             );
@@ -50,6 +51,7 @@ private:
     Err buildParallelInput(
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
+            bool collectBaseFeaturesOnly,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             );

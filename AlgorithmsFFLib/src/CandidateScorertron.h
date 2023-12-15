@@ -36,6 +36,7 @@ public:
             const PythiaParameters &pythiaParameters,
             const MzTargetKey &targetKey,
             int topNMS2Ions,
+            bool collectBaseFeaturesOnly,
             MsCalibratomatic *msCalibratomatic,
             FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
             );
@@ -80,6 +81,7 @@ private:
 
     PythiaParameters m_pythiaParameters;
     int m_topNMS2Ions;
+    bool m_collectBaseFeaturesOnly;
 
     PeakIntegratomatic m_peakIntegratomatic;
     MsCalibratomatic *m_msCalibratomatic;

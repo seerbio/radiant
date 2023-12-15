@@ -248,9 +248,11 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         m_candidateScores.clear();
 
+        const bool collectBaseFeaturesOnly = true;
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
+                collectBaseFeaturesOnly,
                 &localTranches,
                 &m_candidateScores
                 ); ree;
@@ -1003,9 +1005,12 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
         qDebug() << "STarting opt";
 
         m_candidateScores.clear();
+
+        const bool collectBaseFeaturesOnly = true;
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsOptimization,
                 m_msCalibratomatic,
+                collectBaseFeaturesOnly,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
         ); ree;
@@ -1105,9 +1110,11 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
     ); ree;
     qDebug() << "Targets fetched" << et.restart() << "mSec";
 
+    const bool collectBaseFeaturesOnly = false;
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
+            collectBaseFeaturesOnly,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
     ); ree;

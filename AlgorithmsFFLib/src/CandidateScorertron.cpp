@@ -70,6 +70,7 @@ CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_msCalibratomatic(nullptr)
 , m_featureFinderHillsBuilderMS2(nullptr)
+, m_collectBaseFeaturesOnly(false)
 , d_ptr(new Private())
 {}
 
@@ -95,6 +96,7 @@ Err CandidateScorertron::init(
         const PythiaParameters &pythiaParameters,
         const MzTargetKey &targetKey,
         int topNMS2Ions,
+        bool collectBaseFeaturesOnly,
         MsCalibratomatic *msCalibratomatic,
         FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
         ) {
@@ -129,6 +131,7 @@ Err CandidateScorertron::init(
     ); ree;
 
     m_targetKey = targetKey;
+    m_collectBaseFeaturesOnly = collectBaseFeaturesOnly;
 
     ERR_RETURN
 }
@@ -646,9 +649,10 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsFiltered,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
+                m_collectBaseFeaturesOnly,
                 &candidateScoresPII
                 ); ree;
-//        qDebug() << candidateScoresPII.cosineSimSum100 << candidateScoresPII.cosineSimToAnchorVec;
+
         if (candidateScores->cosineSimSum100 < candidateScoresPII.cosineSimSum100) {
             *candidateScores = candidateScoresPII;
         }
