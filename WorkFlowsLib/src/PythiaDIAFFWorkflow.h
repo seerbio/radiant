@@ -73,6 +73,8 @@ private:
         MsReaderPointerAcc *msReaderPointerAcc
         );
 
+    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
+
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
             QVector<CandidateScores> *candidateScores

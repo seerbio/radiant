@@ -502,6 +502,8 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
 
     ERR_INIT
 
+    e = ErrorUtils::isTrue(randomSelectionFraction <= 1.0 && randomSelectionFraction > 0.0); ree;
+
     QVector<TargetDecoyCandidatePair*> targetDecoyPointersAll;
     e = getTargetDecoyCandidatePairPointers(
             mzMin,
