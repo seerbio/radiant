@@ -340,8 +340,8 @@ namespace {
     struct TargetDecoyCandidateScores {
         CandidateScores *candidateScoresTarget;
         CandidateScores *candidateScoresDecoy;
-        ScoresTargets scoresTarget;
-        ScoresDecoys  scoresDecoy;
+        ScoresTargets *scoresTarget;
+        ScoresDecoys  *scoresDecoy;
     };
 
     QString buildCandidateKey(const CandidateScores &candidateScores) {
@@ -350,8 +350,8 @@ namespace {
     }
 
     struct BuildClassiferParallelInput {
-        QVector<ScoresTargets> scoresTargets;
-        QVector<ScoresDecoys> scoresDecoys;
+        QVector<ScoresTargets*> scoresTargets;
+        QVector<ScoresDecoys*> scoresDecoys;
     };
 
     struct BuildClassifierParallelOutput {
@@ -360,14 +360,14 @@ namespace {
     };
 
     Err buildParallelInput(
-            const QVector<ScoresTargets> &scoresTargets,
-            const QVector<ScoresDecoys> &scoresDecoys,
+            const QVector<ScoresTargets*> &scoresTargets,
+            const QVector<ScoresDecoys*> &scoresDecoys,
             QVector<BuildClassiferParallelInput> *inputs
             ) {
         ERR_INIT
 
-        QVector<QVector<ScoresTargets>> scoresTargetsTranched;
-        QVector<QVector<ScoresDecoys>> scoresDecoysTranched;
+        QVector<QVector<ScoresTargets*>> scoresTargetsTranched;
+        QVector<QVector<ScoresDecoys*>> scoresDecoysTranched;
 
         e = ParallelUtils::trancheVectorForParallelization(
                 scoresTargets,
@@ -443,6 +443,30 @@ namespace {
         ERR_RETURN
     }
 
+    QPair<Err, QVector<double>> scoreVectorParallel(
+            const CandidateScores &candidateScores,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            int theoMzIonsSize,
+            const QPair<double, double> &scanTimeMinMax
+            ) {
+
+        ERR_INIT
+
+        QVector<double> vec;
+        e = CandidateScores::buildScoreVector(
+                candidateScores,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                theoMzIonsSize,
+                scanTimeMinMax,
+                &vec
+                ); rree;
+
+        return {e, vec};
+    }
+
+
 }//namespace
 Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         const QPair<double, double> &scanTimeMinMax,
@@ -459,34 +483,53 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     QElapsedTimer et;
     et.start();
 
+    const auto scoreBuildBinder = std::bind(
+            scoreVectorParallel,
+            std::placeholders::_1,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            theoMzIonsSize,
+            scanTimeMinMax
+    );
+
+    //TODO clean this up. Abstract sub processes into methods.
+
+    QFuture<QPair<Err, QVector<double>>> futuresScoreBuilder = QtConcurrent::mapped(
+            *candidateScores,
+            scoreBuildBinder
+            );
+    futuresScoreBuilder.waitForFinished();
+
+    QVector<QVector<double>> scoreVectors;
+    for (const QPair<Err, QVector<double>> &res : futuresScoreBuilder) {
+        e = res.first; ree;
+        scoreVectors.push_back(res.second);
+    }
+
+    e = ErrorUtils::isEqual(candidateScores->size(), scoreVectors.size()); ree;
+
     QHash<QString, TargetDecoyCandidateScores> keyVsTargetDecoyCandidateScores;
-    for(CandidateScores &cs : *candidateScores) {
 
-        const QString key = cs.peptideStringWithMods + QString::number(cs.charge) + cs.targetKey;
+    for(int i = 0; i < scoreVectors.size(); i++) {
 
-        QVector<double> scoreVector;
-        e = CandidateScores::buildScoreVector(
-                cs,
-                useExtendedScores,
-                useNeuralNetworkScores,
-                theoMzIonsSize,
-                scanTimeMinMax,
-                &scoreVector
-        ); ree;
+        CandidateScores *cs = &(*candidateScores)[i];
 
-        if (cs.isDecoy) {
-            keyVsTargetDecoyCandidateScores[key].scoresDecoy = scoreVector;
-            keyVsTargetDecoyCandidateScores[key].candidateScoresDecoy = &cs;
+        const QString key = cs->peptideStringWithMods + QString::number(cs->charge) + cs->targetKey;
+        QVector<double> *sv = &scoreVectors[i];
+
+        if (cs->isDecoy) {
+            keyVsTargetDecoyCandidateScores[key].scoresDecoy = sv;
+            keyVsTargetDecoyCandidateScores[key].candidateScoresDecoy = cs;
             continue;
         }
 
-        keyVsTargetDecoyCandidateScores[key].candidateScoresTarget = &cs;
-        keyVsTargetDecoyCandidateScores[key].scoresTarget = scoreVector;
+        keyVsTargetDecoyCandidateScores[key].candidateScoresTarget = cs;
+        keyVsTargetDecoyCandidateScores[key].scoresTarget = sv;
     }
     qDebug() << "build key vs scores" << et.restart() << "mSec";
 
-    QVector<ScoresTargets> scoresTargets;
-    QVector<ScoresDecoys> scoresDecoys;
+    QVector<ScoresTargets*> scoresTargets;
+    QVector<ScoresDecoys*> scoresDecoys;
     QVector<CandidateScores*> candidateScoresTargetsPtrs;
     QVector<CandidateScores*> candidateScoresDecoysPtrs;
 
@@ -495,7 +538,7 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         const QString &key = it.key();
         const TargetDecoyCandidateScores &tdcs = it.value();
 
-        e = ErrorUtils::isEqual(tdcs.scoresTarget.size(), tdcs.scoresDecoy.size());
+        e = ErrorUtils::isEqual(tdcs.scoresTarget->size(), tdcs.scoresDecoy->size());
         if (e != eNoError) {
             qDebug() << "target decoys not paired for key" << key;
             rrr(eValueError);

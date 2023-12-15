@@ -728,6 +728,23 @@ public:
     }
 
     template<typename T>
+    static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>*> &matA) {
+
+        const int rows = matA.size();
+        const int columns = matA.front()->size();
+        Eigen::MatrixX<T> mat(rows, columns);
+        mat.setZero();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                mat.coeffRef(i, j) = matA[i]->at(j);
+            }
+        }
+
+        return mat;
+    }
+
+    template<typename T>
     static QVector<QVector<T>> convertEigenMatrixToQVectors(const Eigen::MatrixX<T> &mat) {
 
         QVector<QVector<T>> vecs;

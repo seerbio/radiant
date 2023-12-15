@@ -47,8 +47,8 @@ public:
     void setSelectionWeightsBest(const QVector<double> &selectionWeightsBest);
 
     static Err buildDataClassifier1(
-            const QVector<QVector<double>> &targets,
-            const QVector<QVector<double>> &decoys,
+            const QVector<QVector<double>*> &targets,
+            const QVector<QVector<double>*> &decoys,
             QVector<QVector<double>> *A,
             QVector<double> *b
             );
@@ -73,7 +73,7 @@ public:
             );
 
     static Err applyWeights(
-            const QVector<QVector<double>> &matA,
+            const QVector<QVector<double>*> &matA,
             const QVector<double> &weights,
             QVector<double> *results
             );

@@ -100,8 +100,8 @@ Err ClassifierWeightsManager::fitWeights(
 }
 
 Err ClassifierWeightsManager::buildDataClassifier1(
-        const QVector<QVector<double>> &targets,
-        const QVector<QVector<double>> &decoys,
+        const QVector<QVector<double>*> &targets,
+        const QVector<QVector<double>*> &decoys,
         QVector<QVector<double>> *A,
         QVector<double> *b
         ) {
@@ -110,7 +110,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
 
     e = ErrorUtils::isNotEmpty(targets); ree;
     e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
-    e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
+    e = ErrorUtils::isEqual(targets.front()->size(), decoys.front()->size()); ree;
 
     const Eigen::MatrixX<double> matTargets = EigenUtils::convertQVectorsToEigenMatrix(targets);
     const Eigen::MatrixX<double> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(decoys);
@@ -122,7 +122,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     *b = EigenUtils::convertEigenVectorToQVector(meanMat);
 
     const int rows = targets.size();
-    const int cols = targets.front().size();
+    const int cols = targets.front()->size();
 
     Eigen::MatrixX<double> matA(cols, cols);
     matA.setZero();
@@ -130,7 +130,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             for (int k = j; k < cols; k++) {
-                matA.coeffRef(j, k) += (targets[i][j] - decoys[i][j] - b->at(j)) * (targets[i][k] - decoys[i][k] - b->at(k));
+                matA.coeffRef(j, k) += (targets[i]->at(j) - decoys[i]->at(j) - b->at(j)) * (targets[i]->at(k) - decoys[i]->at(k) - b->at(k));
                 matA.coeffRef(k, j) = matA.coeffRef(j, k);
             }
         }
@@ -252,7 +252,7 @@ Err ClassifierWeightsManager::buildDataClassifier2(
 }
 
 Err ClassifierWeightsManager::applyWeights(
-        const QVector<QVector<double>> &matA,
+        const QVector<QVector<double>*> &matA,
         const QVector<double> &weights,
         QVector<double> *results
         ) {
@@ -260,8 +260,8 @@ Err ClassifierWeightsManager::applyWeights(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(matA); ree;
-    e = ErrorUtils::isNotEmpty(matA.front()); ree;
-    e = ErrorUtils::isEqual(matA.front().size(), weights.size()); ree;
+    e = ErrorUtils::isFalse(matA.front()->isEmpty()); ree;
+    e = ErrorUtils::isEqual(matA.front()->size(), weights.size()); ree;
 
     const Eigen::MatrixX<double> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
     const Eigen::VectorX<double> x = EigenUtils::convertQVectorToEigenVector(weights);
