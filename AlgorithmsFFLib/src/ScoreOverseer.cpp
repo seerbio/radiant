@@ -423,7 +423,13 @@ namespace {
             intensityMatrixCopy.col(col) = colVec;
             columnApexIndexes->push_back(bestApexIndexColumn);
             intensityFoundMaxVec->push_back(colApexIntensity);
-            columnPeakLengths->push_back(static_cast<int>(colVec.nonZeros()));
+
+            Eigen::VectorX<float> zerosVec = colVec.array() / colVec.array();
+            EigenUtils::replaceNaN(0.0f, &zerosVec);
+
+            const int nonZeros = static_cast<int>(std::round(zerosVec.sum()));
+            columnPeakLengths->push_back(static_cast<int>(nonZeros));
+
         }
 
         *intensityMatrixNoInterference = intensityMatrixCopy;
@@ -970,6 +976,15 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumnIndex
     ); ree;
 
+    const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
+    const double columnApexIndexesSize = columnApexIndexes.size();
+    std::transform(
+            columnApexIndexes.begin(),
+            columnApexIndexes.end(),
+            std::back_inserter(candidateScores->columnApexIndexRatiosToAnchor),
+            [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
+            );
+
     candidateScores->shadowsCosineSimSum = std::accumulate(
             candidateScores->cosineSimShadowsToAnchorVec.begin(),
             candidateScores->cosineSimShadowsToAnchorVec.end(),
@@ -998,6 +1013,22 @@ Err ScoreOverseer::buildScores(
             ); ree;
 
     if (!collectBaseFeaturesOnly) {
+
+        const double mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
+                targetDecoyCandidatePair->mass(),
+                targetDecoyCandidatePair->charge(),
+                -1
+        );
+        e = calculateMS1Corr(
+                bestAnchorColumn,
+                peakIntegrationIndexes,
+                mzPreMono,
+                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+                &m_turboXICMS1,
+                &d_ptr->m_gaussKernel,
+                &candidateScores->cosineSim100MS1PreMono
+        ); ree;
+
 
         const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
                 targetDecoyCandidatePair->mass(),
@@ -1041,14 +1072,12 @@ Err ScoreOverseer::buildScores(
         candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
 
         const double chunkDivision = 3.0;
-
         QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
         const auto terminatorLogic = [](double d){return d < 1.0;};
         const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
         bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
         const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
         const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
-
         if (bestAnchorColumnVec.size() < chunkDivision) {
             candidateScores->peakShapeRatio1 = 0.0;
             candidateScores->peakShapeRatio2 = 1.0;

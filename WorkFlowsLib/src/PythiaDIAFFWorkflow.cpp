@@ -302,10 +302,11 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         e = m_msCalibratomatic.initRtOnly(msCalibrationReaderRows); ree;
         qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
-        const QString onePercenFDRKey = "1";
-        if (fdrVsCount.value(onePercenFDRKey) >= 200) {
+        const int minMzTrainingSize = 200;
+        const QString twoPercenFDRKey = "2";
+        if (fdrVsCount.value(twoPercenFDRKey) >= minMzTrainingSize) {
 
-            msCalibrationReaderRows.resize(fdrVsCount.value(onePercenFDRKey));
+            msCalibrationReaderRows.resize(fdrVsCount.value(twoPercenFDRKey));
             e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
 
             e = recalibrateMzVals(

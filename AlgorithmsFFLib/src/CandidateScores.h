@@ -61,6 +61,9 @@ namespace CandidateScoresNamespace {
     const QString ALL_MAX_IND_CNT = QStringLiteral("allignedMaxIndexesCount");
     const QString COSINE_SIM_SUM_BOTTOM_6 = QStringLiteral("cosineSimSumBottom6");
     const QString MZ_PEAK_LENGTHS_VEC = QStringLiteral("mzPeakLengthsVec");
+    const QString COL_APEX_IND_RATIO_TO_ANCHOR = QStringLiteral("columnApexIndexRatiosToAnchor");
+
+
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -108,7 +111,8 @@ namespace CandidateScoresNamespace {
             SHADOW_INTZ_RATIO_VEC,
             ALL_MAX_IND_CNT,
             COSINE_SIM_SUM_BOTTOM_6,
-            MZ_PEAK_LENGTHS_VEC
+            MZ_PEAK_LENGTHS_VEC,
+            COL_APEX_IND_RATIO_TO_ANCHOR
     };
 }
 
@@ -136,6 +140,7 @@ public:
     double cosineSim100MS1 = -1.0;
     double cosineSim45MS1 = -1.0;
     double cosineSim20MS1 = -1.0;
+    double cosineSim100MS1PreMono = -1.0;
     double cosineSim100MS1Iso1 = -1.0;
     double cosineSim100MS1Iso2 = -1.0;
     ScanTime scanTimePredicted = -1.0;
@@ -165,6 +170,8 @@ public:
     double shadowsCosineSimSum = -1.0;
     int allignedMaxIndexesCount = -1;
     QVector<int> mzPeakLengthsVec;
+
+    QVector<double> columnApexIndexRatiosToAnchor;
 
     void clear() {
         peptideStringWithMods= "";
@@ -213,6 +220,8 @@ public:
         shadowsCosineSimSum = -1.0;
         allignedMaxIndexesCount = -1;
         mzPeakLengthsVec.clear();
+
+        columnApexIndexRatiosToAnchor.clear();
     }
 
     QMap<QString, QVariant> map() override {
@@ -265,7 +274,8 @@ public:
                 {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
                 {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
                 {COSINE_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
-                {MZ_PEAK_LENGTHS_VEC, QVariant(qVectorToQByteArray(mzPeakLengthsVec))}
+                {MZ_PEAK_LENGTHS_VEC, QVariant(qVectorToQByteArray(mzPeakLengthsVec))},
+                {COL_APEX_IND_RATIO_TO_ANCHOR, QVariant(qVectorToQByteArray(columnApexIndexRatiosToAnchor))}
         };
     }
 
@@ -330,6 +340,7 @@ public:
         allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
         cosineSimSumBottom6 = dataMap.value(COSINE_SIM_SUM_BOTTOM_6).toDouble();
         mzPeakLengthsVec = bytesArrayToQVector<int>(dataMap.value(MZ_PEAK_LENGTHS_VEC).toByteArray());
+        columnApexIndexRatiosToAnchor = bytesArrayToQVector<double>(dataMap.value(COL_APEX_IND_RATIO_TO_ANCHOR).toByteArray());
 
         ERR_RETURN
     }

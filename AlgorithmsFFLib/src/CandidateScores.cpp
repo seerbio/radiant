@@ -18,14 +18,40 @@ Err CandidateScores::buildScoreVector(
     ERR_INIT
 
     QVector<double> scores = {
-            static_cast<double>(std::max(0, candidateScores.allignedMaxIndexesCount)),
+            static_cast<double>(std::max(0, candidateScores.allignedMaxIndexesCount)), //0
             std::max(candidateScores.cosineSimSum100, 0.0), //1
             std::max(candidateScores.cosineSim100MS1, 0.0), //2
             std::pow(std::max(0.0, candidateScores.cosineSimSpectrum), 3), //3
-            std::pow(std::max(0.0, candidateScores.klDivSpectrum), 1/3.0) //4
+            std::pow(std::max(0.0, candidateScores.klDivSpectrum), 1 / 3.0) //4
     };
 
+    scores.push_back(std::max(candidateScores.cosineSim100MS1PreMono, 0.0)); //7
+    scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
+    scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
+
+//    const QVector<double> columnApexIndexRatiosToAnchorVec
+//            = extractScoresFromVecFeatures(candidateScores.columnApexIndexRatiosToAnchor, theoMzIonsSize);
+//    scores.append(columnApexIndexRatiosToAnchorVec);
+
     if (useExtendedScores || useNeuralNetworkScores) {
+
+        const int mzPeakLengthsSum = std::accumulate(
+                candidateScores.mzPeakLengthsVec.begin(),
+                candidateScores.mzPeakLengthsVec.end(),
+                0
+        );
+        QVector<double> mzPeakLengthsNormalized;
+        if (mzPeakLengthsSum != 0) {
+            std::transform(
+                    candidateScores.mzPeakLengthsVec.begin(),
+                    candidateScores.mzPeakLengthsVec.end(),
+                    std::back_inserter(mzPeakLengthsNormalized),
+                    [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
+            );
+        }
+        const QVector<double> mzPeakLengthsNormalizedVec
+                = extractScoresFromVecFeatures(mzPeakLengthsNormalized, theoMzIonsSize);
+        scores.append(mzPeakLengthsNormalizedVec);
 
         const double scanTimeDelta = candidateScores.scanTime - candidateScores.scanTimePredicted;
         scores.push_back(std::abs(scanTimeDelta)); //5
@@ -38,8 +64,8 @@ Err CandidateScores::buildScoreVector(
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
 
-        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
-        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
+//        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
+//        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
         scores.push_back(std::max(candidateScores.cosineSimSum45, 0.0)); //9
         scores.push_back(std::max(candidateScores.cosineSimSum20, 0.0)); //10
 //        scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
@@ -112,7 +138,7 @@ Err CandidateScores::buildScoreVector(
     }
 
     if (useNeuralNetworkScores) {
-
+//        std::pow(std::max(0.0, candidateScores.cosineSimSpectrum), 3), //3
         scores.push_back(std::max(0.0, candidateScores.cosineSimSpectrum));
         scores.push_back(candidateScores.discriminateScore);
         scores.push_back(std::pow(std::max(0.0, candidateScores.klDivSpectrum), 3));
