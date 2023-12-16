@@ -42,10 +42,11 @@ Err CandidateScores::buildScoreVector(
         scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
         scores.push_back(std::max(candidateScores.cosineSimSum45, 0.0)); //9
         scores.push_back(std::max(candidateScores.cosineSimSum20, 0.0)); //10
-        scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
-        scores.push_back(std::max(candidateScores.cosineSim20MS1, 0.0)); //12
+//        scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
+//        scores.push_back(std::max(candidateScores.cosineSim20MS1, 0.0)); //12
 
         const double pepLength = (-10.0 + candidateScores.peptideStringWithMods.size()) / 10.0;
+
         scores.push_back(pepLength); //13
         scores.push_back(candidateScores.theoFragmentCount); //14
 

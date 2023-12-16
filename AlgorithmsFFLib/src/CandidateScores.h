@@ -55,9 +55,6 @@ namespace CandidateScoresNamespace {
     const QString PEAK_SHAPE_RATIO_1 = QStringLiteral("peakShapeRatio1");
     const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
     const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
-    const QString B2_CORR = QStringLiteral("b2Corr");
-    const QString B3_CORR = QStringLiteral("b3Corr");
-    const QString B2B3_COSINE_SIM_SUM = QStringLiteral("b2b3CosineSimSum");
     const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
     const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
     const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
@@ -106,9 +103,6 @@ namespace CandidateScoresNamespace {
             PEAK_SHAPE_RATIO_1,
             PEAK_SHAPE_RATIO_2,
             PEAK_SHAPE_RATIO_3,
-            B2_CORR,
-            B3_CORR,
-            B2B3_COSINE_SIM_SUM,
             SHADOWS_COSINE_SIM_SUM,
             COS_SIM_SUM_ANCH_SHADOW_V,
             SHADOW_INTZ_RATIO_VEC,
@@ -166,9 +160,6 @@ public:
     double peakShapeRatio1 = -1.0;
     double peakShapeRatio2 = -1.0;
     double peakShapeRatio3 = -1.0;
-    double b2Corr = -1.0;
-    double b3Corr = -1.0;
-    double b2b3CosineSimSum = -1.0;
     QVector<float> cosineSimShadowsToAnchorVec;
     QVector<float> shadowsIntensityRatioVec;
     double shadowsCosineSimSum = -1.0;
@@ -219,9 +210,6 @@ public:
         peakShapeRatio1 = -1.0;
         peakShapeRatio2 = -1.0;
         peakShapeRatio3 = -1.0;
-        b2Corr = -1.0;
-        b3Corr = -1.0;
-        b2b3CosineSimSum = -1.0;
         shadowsCosineSimSum = -1.0;
         allignedMaxIndexesCount = -1;
         mzPeakLengthsVec.clear();
@@ -272,9 +260,6 @@ public:
                 {PEAK_SHAPE_RATIO_2, QVariant(peakShapeRatio2)},
                 {PEAK_SHAPE_RATIO_3, QVariant(peakShapeRatio3)},
                 {CLASSIFIER_SCORE, QVariant(classifierScore)},
-                {B2_CORR, QVariant(b2Corr)},
-                {B3_CORR, QVariant(b3Corr)},
-                {B2B3_COSINE_SIM_SUM, QVariant(b2b3CosineSimSum)},
                 {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
                 {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
@@ -338,10 +323,6 @@ public:
         peakShapeRatio1 = dataMap.value(PEAK_SHAPE_RATIO_1).toDouble();
         peakShapeRatio2 = dataMap.value(PEAK_SHAPE_RATIO_2).toDouble();
         peakShapeRatio3 = dataMap.value(PEAK_SHAPE_RATIO_3).toDouble();
-
-        b2Corr = dataMap.value(B2_CORR).toDouble();
-        b3Corr = dataMap.value(B3_CORR).toDouble();
-        b2b3CosineSimSum = dataMap.value(B2B3_COSINE_SIM_SUM).toDouble();
 
         shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
         cosineSimShadowsToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
