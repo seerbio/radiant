@@ -1039,6 +1039,42 @@ Err ScoreOverseer::buildScores(
 
         candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
         candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
+
+        const double chunkDivision = 3.0;
+
+        QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
+        const auto terminatorLogic = [](double d){return d < 1.0;};
+        const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
+        bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
+        const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
+        const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
+
+        if (bestAnchorColumnVec.size() < chunkDivision) {
+            candidateScores->peakShapeRatio1 = 0.0;
+            candidateScores->peakShapeRatio2 = 1.0;
+            candidateScores->peakShapeRatio3 = 0.0;
+        }
+        else {
+
+            candidateScores->peakShapeRatio1 = std::accumulate(
+                    bestAnchorColumnVec.begin(),
+                    bestAnchorColumnVec.begin() + chunkSize,
+                    0.0
+            ) / bestAnchorColumnVecSum;
+
+            candidateScores->peakShapeRatio2 = std::accumulate(
+                    bestAnchorColumnVec.begin() + chunkSize,
+                    bestAnchorColumnVec.begin() + (chunkSize * 2),
+                    0.0
+            ) / bestAnchorColumnVecSum;
+
+            candidateScores->peakShapeRatio3 = std::accumulate(
+                    bestAnchorColumnVec.begin() + (chunkSize * 2),
+                    bestAnchorColumnVec.end(),
+                    0.0
+            ) / bestAnchorColumnVecSum;
+
+        }
     }
 
     candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
@@ -1070,76 +1106,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
     candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
-//    candidateScores->scanTimePredicted = scanTimePredicted;
     candidateScores->targetKey = m_mzTargetKey;
-
-
-//    const double precursorMz = BiophysicalCalcs::calculateThomsonFromMass(targetDecoyCandidatePair->mass(), targetDecoyCandidatePair->charge());
-//    const double precursorMzIso1 = precursorMz + (S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge());
-//    const double precursorMzIso2 = precursorMz + ((2 * S_GLOBAL_SETTINGS.ISO_DIFF) / targetDecoyCandidatePair->charge());
-//
-//    const double chunkDivision = 3.0;
-//
-//    QVector<double> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
-//    const auto terminatorLogic = [](double d){return d < 1.0;};
-//    const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
-//    bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
-//    const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
-//    const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
-//
-//    if (bestAnchorColumnVec.size() < chunkDivision) {
-//        candidateScores->peakShapeRatio1 = 0.0;
-//        candidateScores->peakShapeRatio2 = 1.0;
-//        candidateScores->peakShapeRatio3 = 0.0;
-//    }
-//    else {
-//
-//        candidateScores->peakShapeRatio1 = std::accumulate(
-//                bestAnchorColumnVec.begin(),
-//                bestAnchorColumnVec.begin() + chunkSize,
-//                0.0
-//        ) / bestAnchorColumnVecSum;
-//
-//        candidateScores->peakShapeRatio2 = std::accumulate(
-//                bestAnchorColumnVec.begin() + chunkSize,
-//                bestAnchorColumnVec.begin() + (chunkSize * 2),
-//                0.0
-//        ) / bestAnchorColumnVecSum;
-//
-//        candidateScores->peakShapeRatio3 = std::accumulate(
-//                bestAnchorColumnVec.begin() + (chunkSize * 2),
-//                bestAnchorColumnVec.end(),
-//                0.0
-//        ) / bestAnchorColumnVecSum;
-//
-//    }
-
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMz,
-//            d_ptr->m_ppmTol,
-//            m_turboXICMS1,
-//            &candidateScores->cosineSim100MS1
-//    ); ree;
-
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMzIso1,
-//            d_ptr->m_ppmTol,
-//            m_turboXICMS1,
-//            &candidateScores->cosineSim100MS1Iso1
-//    ); ree;
-//
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            bestPeakIntegrationIndexes,
-//            precursorMzIso2,
-//            d_ptr->m_ppmTol,
-//            m_turboXICMS1,
-//            &candidateScores->cosineSim100MS1Iso2
-//    ); ree;
 
     ERR_RETURN
 }
