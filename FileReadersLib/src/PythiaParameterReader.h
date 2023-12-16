@@ -31,8 +31,6 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kNTermRagged;
     extern const QString FILEREADERSLIB_EXPORTS kBothRagged;
 
-    extern const QString FILEREADERSLIB_EXPORTS kMaxTandemPointCount;
-    extern const QString FILEREADERSLIB_EXPORTS kReturnPSMTopN;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMax;
     extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
@@ -128,8 +126,6 @@ struct PythiaParameters{
 
     int chargeStateMin = -1;
     int chargeStateMax = -1;
-    int maxTandemPointCount = -1;
-    int returnPSMTopN = -1;
 
     double precursorExtractionWindowThomsons = 0.0;
     double percentFDR = 1.0;
@@ -152,7 +148,7 @@ struct PythiaParameters{
 
     double scanTimeWindowMinutes = -1.0;
     double ms2ExtractionWidthPPM = -1.0;
-    int trancheSizeMax = 5e4;
+    int trancheSizeMax = 1e4;
 
     int verbosity = 1;
     bool reportDecoys = false;
@@ -176,16 +172,6 @@ struct PythiaParameters{
         if (chargeStateMax < 1) {
             print();
             qDebug() << chargeStateMax << "charge state max";
-            return false;
-        }
-        if (maxTandemPointCount < 0) {
-            print();
-            qDebug() << maxTandemPointCount << "max tandem point count";
-            return false;
-        }
-        if (returnPSMTopN < 0) {
-            print();
-            qDebug() << returnPSMTopN << "return PSM Top N";
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
@@ -226,8 +212,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kMzMaxDataStructure << mzMaxDataStructure;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
-        qDebug() << PythiaParameterReaderConstants::kMaxTandemPointCount << maxTandemPointCount;
-        qDebug() << PythiaParameterReaderConstants::kReturnPSMTopN << returnPSMTopN;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMax << chargeStateMax;
         qDebug() << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM << ms2ExtractionWidthPPM;

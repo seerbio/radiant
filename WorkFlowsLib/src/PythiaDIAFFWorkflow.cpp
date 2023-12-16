@@ -220,7 +220,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             [](int sum, const QVector<TargetDecoyCandidatePair*> &tv){return sum + tv.size();}
             );
 
-    const double sizePerTranche = 10000.0;
+    const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax);
     const int trancheSize = std::max(static_cast<int>(targetCount / sizePerTranche), 1);
     qDebug() << "Tranch size for calibration:" << trancheSize << "target count:" << targetCount << "sizePerTranche:" << static_cast<int>(sizePerTranche);
 
