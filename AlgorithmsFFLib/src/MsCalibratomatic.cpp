@@ -274,7 +274,6 @@ namespace {
 
     Err generateMetricsMzReCal(
             const QVector<Inp> &inputs,
-            int polynomialOrder,
             double *stDevMz
     ) {
 
@@ -285,13 +284,12 @@ namespace {
         const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<double, double>> data;
-        data.reserve(inputs.size());
         std::transform(
                 inputs.begin(),
                 inputs.end(),
                 std::back_inserter(data),
                 [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
-                );
+        );
 
         QVector<QPair<XVal, YVal>> trainingData;
         QVector<QPair<XVal, YVal>> testData;
@@ -303,41 +301,25 @@ namespace {
                 &testData
         ); ree;
 
-        Eigen::MatrixX<double> matTraining(trainingData.size(), 2);
-        for (int row = 0; row < matTraining.rows(); row++) {
-            matTraining.coeffRef(row, 0) = inputs.at(row).mzSearched;
-            matTraining.coeffRef(row, 1) = 1e6 * (inputs.at(row).mzFound - inputs.at(row).mzSearched) / inputs.at(row).mzSearched;
-        }
-
-        QVector<double> coeffsTraining;
-        EigenUtils::fitPolynomialQRDecomposition(
-                matTraining,
-                polynomialOrder,
-                &coeffsTraining
-        );
+        XYMappermatic mapperMetrics;
+        e = mapperMetrics.init(trainingData); ree;
 
         QVector<QPair<double, double>> actualVsPredicted;
+
         QVector<double> ppmOriginals;
         QVector<double> ppmReCals;
         for (const QPair<XVal, YVal> &pr : testData) {
 
-            double ppm = 0.0;
-
-            for (int coeffIndex = 0; coeffIndex < coeffsTraining.size(); coeffIndex++) {
-                const double coeff = coeffsTraining.at(coeffIndex);
-                ppm += coeff * std::pow(pr.first, coeffIndex);
-            }
-
-            const double massDiff = (ppm * pr.first) / 1e6;
-            const double correctedMass = pr.first - massDiff;
-
-            actualVsPredicted.push_back({pr.second, correctedMass});
+            double yPredicted;
+            e = mapperMetrics.predictY(pr.first, &yPredicted);
+            actualVsPredicted.push_back({pr.second, yPredicted});
 
             const double ppmOriginal = 1e6 * (pr.first - pr.second) / pr.second;
-            const double ppmReCal = 1e6 * (correctedMass - pr.second) / pr.second;
+            const double ppmReCal = 1e6 * (yPredicted - pr.second) / pr.second;
 
             ppmOriginals.push_back(ppmOriginal);
             ppmReCals.push_back(ppmReCal);
+
         }
 
         const double rmse = MathUtils::rmse(actualVsPredicted);
@@ -360,6 +342,7 @@ Err MsCalibratomatic::buildMzCalibrator() {
 
     ERR_INIT
 
+
     e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
 
     //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
@@ -369,20 +352,18 @@ Err MsCalibratomatic::buildMzCalibrator() {
     e = removeMassOutliers(&inputs); ree;
 
     double stDevMz;
-    e = generateMetricsMzReCal(inputs, m_params.mzCalPolynomialOrder, &stDevMz); ree;
+    e = generateMetricsMzReCal(inputs, &stDevMz); ree;
     m_mzStDev = stDevMz;
 
-    Eigen::MatrixX<double> data(inputs.size(), 2);
-    for (int row = 0; row < data.rows(); row++) {
-        data.coeffRef(row, 0) = inputs.at(row).mzSearched;
-        data.coeffRef(row, 1) = inputs.at(row).ppm;
-    }
+    QVector<QPair<double, double>> data;
+    std::transform(
+            inputs.begin(),
+            inputs.end(),
+            std::back_inserter(data),
+            [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
+    );
 
-    EigenUtils::fitPolynomialQRDecomposition(
-            data,
-            m_params.mzCalPolynomialOrder,
-            &m_calibrationCoeffs
-            );
+    e = m_mzToRecalMz.init(data); ree;
 
     ERR_RETURN
 }
@@ -399,7 +380,7 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
         for (ScanPoint &sp : *scanPoints) {
             double mzRecal;
-            e = recalibrateMz(sp.x(), &mzRecal); ree;
+            e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
             sp.rx() = mzRecal;
         }
     }
@@ -420,28 +401,10 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
         for (ScanPoint &sp : scanPoints) {
             double mzRecal;
-            e = recalibrateMz(sp.x(), &mzRecal); ree;
+            e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
             sp.rx() = mzRecal;
         }
     }
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::recalibrateMz(double mz, double *mzRecal) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_calibrationCoeffs); ree;
-
-    double ppm = 0.0;
-    for (int coeffIndex = 0; coeffIndex < m_calibrationCoeffs.size(); coeffIndex++) {
-        const double coeff = m_calibrationCoeffs.at(coeffIndex);
-        ppm += coeff * std::pow(mz, coeffIndex);
-    }
-
-    const double correctionMass = (ppm * mz) / 1e6;
-    *mzRecal = mz - correctionMass;
 
     ERR_RETURN
 }

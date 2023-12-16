@@ -50,8 +50,6 @@ public:
 
     bool isInit() const;
 
-    Err recalibrateMz(double mz, double *mzRecal);
-
 private:
 
     Err buildMzCalibrator();
@@ -68,7 +66,7 @@ private:
     QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;
 
     XYMappermatic m_iRTtoScanTimeMapper;
-    QVector<double> m_calibrationCoeffs;
+    XYMappermatic m_mzToRecalMz;
 
     bool m_isInit;
 
