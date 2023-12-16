@@ -109,13 +109,6 @@ public:
             QVector<float> *meanPredictions
     );
 
-
-    static QString buildTargetDecoyKey(
-            const PeptideStringWithMods &peptideStringWithMods,
-            const MzTargetKey &uniqueMsInfoScanKey,
-            Charge charge
-    );
-
     static Err countScoreCandidatesByFDR(
             const QVector<CandidateScores> &targetDecoyCandidatePair,
             double qValueThreshold,
@@ -126,18 +119,6 @@ public:
             const QVector<CandidateScores> &candidateScores,
             bool verbose,
             QMap<QString, int> *fdrVsCount
-    );
-
-    static Err filterScoreCandidatesByFDR(
-            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-            double qValueThreshold,
-            QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsFDRThresholded
-            );
-
-    static Err filterScoreCandidatesByFDR(
-            const QVector<CandidateScores*> &targetDecoyCandidatePairs,
-            double qValueThreshold,
-            QVector<CandidateScores*> *targetDecoyCandidatePairsFDRThresholded
     );
 
 private:
