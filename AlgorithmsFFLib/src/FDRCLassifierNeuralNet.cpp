@@ -17,9 +17,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 : m_epochs(-1)
 , m_batchSize(-1)
 , m_learningRate(-1.0)
-, m_minTopNMs2Ions(6)
 , m_isInit(false)
-, m_topNMs2Ions(-1)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {

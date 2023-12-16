@@ -146,7 +146,7 @@ private:
     double m_learningRate;
 
     bool m_isInit;
-    
+
     QVector<CandidateClassifier*> m_candidateClassifiers;
 
 };
