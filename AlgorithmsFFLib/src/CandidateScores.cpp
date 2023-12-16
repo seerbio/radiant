@@ -25,11 +25,11 @@ Err CandidateScores::buildScoreVector(
             std::pow(std::max(0.0, candidateScores.klDivSpectrum), 1 / 3.0) //4
     };
 
-//    const QVector<double> columnApexIndexRatiosToAnchorVec
-//            = extractScoresFromVecFeatures(candidateScores.columnApexIndexRatiosToAnchor, theoMzIonsSize);
-//    scores.append(columnApexIndexRatiosToAnchorVec);
-
     if (useExtendedScores || useNeuralNetworkScores) {
+
+        const QVector<double> columnApexIndexRatiosToAnchorVec
+                = extractScoresFromVecFeatures(candidateScores.columnApexIndexRatiosToAnchor, theoMzIonsSize);
+        scores.append(columnApexIndexRatiosToAnchorVec);
 
         const int mzPeakLengthsSum = std::accumulate(
                 candidateScores.mzPeakLengthsVec.begin(),
