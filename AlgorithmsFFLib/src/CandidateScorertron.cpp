@@ -251,7 +251,7 @@ Err CandidateScorertron::calculateScores(
     QVector<float> integrationVector;
     e = buildIntegrationVector(mzHashedVsfeatureFinderHills, &integrationVector); ree;
 
-    const double filterDeltaScoreValue = 1.0; //TODO consider making this settable
+    const double filterDeltaScoreValue = 2.0; //TODO consider making this settable
 
     QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
     e = findCandidateIntegrations(
