@@ -30,8 +30,10 @@ public:
     Err buildAlignmentMatricies(
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
+            const MS2Ion &ms2IonUnfragPrecursor,
             const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+            const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
             bool collectBaseFeaturesOnly,
             int *bestAlignmentMatrixRow,
             QVector<int> *columnApexIndexes,
@@ -60,6 +62,7 @@ public:
     Eigen::MatrixX<float> m_intensityMatrix100Shadow;
     Eigen::MatrixX<float> m_intensityMatrix45;
     Eigen::MatrixX<float> m_intensityMatrix20;
+    Eigen::MatrixX<float> m_unfragPrecursorVec;
 
     Eigen::VectorX<float> m_intensityMatrix100ApexRow;
 
@@ -514,8 +517,10 @@ namespace {
 Err ScoreOverseer::Private::buildAlignmentMatricies(
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
+        const MS2Ion &ms2IonUnfragPrecursor,
         const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+        const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
         bool collectBaseFeaturesOnly,
         int *bestAlignmentMatrixRowIndex,
         QVector<int> *columnApexIndexes,
@@ -538,7 +543,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     const int cols = ms2IonsTheoretical.size();
 
-
     *minMaxFrameIndex = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
 
     e = ErrorUtils::isTrue(minMaxFrameIndex->second >= minMaxFrameIndex->first); ree;
@@ -557,7 +561,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             ); ree;
 
     Eigen::MatrixX<float> intensityMatrixNoInterference;
-
     e = removeInterferingPeaksInMatrix(
             m_intensityMatrix100,
             &intensityMatrixNoInterference,
@@ -617,6 +620,37 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     }
 
+    m_unfragPrecursorVec.resize(rows, 1);
+    e = loadMzHashedVsFeatureFinderHillsToMatrix(
+            {ms2IonUnfragPrecursor},
+            unfragPrecursorVsfeatureFinderHills,
+            minMaxFrameIndex->first,
+            &m_unfragPrecursorVec,
+            &unused1,
+            &unused2,
+            &unused3,
+            &unused4
+    ); ree;
+
+    if (rowSize < m_unfragPrecursorVec.rows()) {
+        m_unfragPrecursorVec = m_unfragPrecursorVec.block(
+                alignmentMatrixLimits->first,
+                0,
+                rowSize,
+                m_unfragPrecursorVec.cols()
+        ).eval();
+    }
+
+    if (m_unfragPrecursorVec.maxCoeff() > 0.0f) {
+
+        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
+                m_unfragPrecursorVec,
+                m_pythiaParams,
+                m_gaussKernel
+        );
+
+    }
+
     if (!collectBaseFeaturesOnly) {
         const int tightColsMax = 6;
         m_intensityMatrix45.resize(rows, tightColsMax);
@@ -652,6 +686,7 @@ namespace {
         e = ErrorUtils::isTrue(intensityMatrixIntegratedLimitsSmoothed.rows() > 0); ree;
 
         float bestCosineSimSum = 0.0;
+        *bestAnchorColumnIndex = -1;
 
         const int topCols6OrLess = std::min(6, static_cast<int>(intensityMatrixIntegratedLimitsSmoothed.cols()));
 
@@ -717,6 +752,10 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
         if (m_pythiaParams.subtractShadows) {
             m_intensityMatrix100 -= m_intensityMatrix100Shadow;
             EigenUtils::thresholdMatrix(0.0f, &m_intensityMatrix100);
+
+            if (MathUtils::tZero(m_intensityMatrix100.maxCoeff())) {
+                ERR_RETURN
+            }
         }
 
         for (int col = 0; col < m_intensityMatrix100.cols(); col++) {
@@ -929,6 +968,8 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+        const MS2Ion &ms2IonUnfragPrecursor,
+        const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
         bool collectBaseFeaturesOnly,
         CandidateScores *candidateScores
         ) {
@@ -949,8 +990,10 @@ Err ScoreOverseer::buildScores(
     e = d_ptr->buildAlignmentMatricies(
             ms2IonsTheoretical,
             ms2IonsTheoreticalIsotopeShadows,
+            ms2IonUnfragPrecursor,
             mzHashedVsfeatureFinderHills,
             mzHashedVsfeatureFinderHillsShadows,
+            unfragPrecursorVsfeatureFinderHills,
             collectBaseFeaturesOnly,
             &bestAlignmentMatrixRowIndex,
             &columnApexIndexes,
@@ -959,6 +1002,20 @@ Err ScoreOverseer::buildScores(
             &frameIndexMinMaxHills,
             &alignmentMatrixLimits
             );
+
+    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
+    candidateScores->charge = targetDecoyCandidatePair->charge();
+    candidateScores->mass = targetDecoyCandidatePair->mass();
+    candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
+    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
+    candidateScores->mzFoundMeanVec = d_ptr->m_mzMeanValsFound;
+    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
+    candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
+    candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
+    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
+    candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
+    candidateScores->targetKey = m_mzTargetKey;
 
     candidateScores->allignedMaxIndexesCount = static_cast<int>(std::count_if(
             columnApexIndexes.begin(),
@@ -975,6 +1032,21 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn,
             &bestAnchorColumnIndex
     ); ree;
+
+    if (MathUtils::tZero(d_ptr->m_intensityMatrix100.maxCoeff()) || bestAnchorColumnIndex < 0) {
+        ERR_RETURN
+    }
+
+    if (!MathUtils::tZero(d_ptr->m_unfragPrecursorVec.maxCoeff())) {
+
+        const Eigen::VectorX<float> unfragPrecursorEigVed(d_ptr->m_unfragPrecursorVec);
+
+        e = ErrorUtils::isEqual(bestAnchorColumn.size(), unfragPrecursorEigVed.rows()); ree;
+        candidateScores->unfragPrecursorCosineSim = EigenUtils::cosineSimilarity(
+                bestAnchorColumn,
+                unfragPrecursorEigVed
+                        );
+    }
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
@@ -1106,8 +1178,6 @@ Err ScoreOverseer::buildScores(
         }
     }
 
-    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
-
     const int top6 = std::min(6, candidateScores->cosineSimToAnchorVec.size());
     candidateScores->cosineSimSum100 = std::accumulate(
             candidateScores->cosineSimToAnchorVec.begin(),
@@ -1122,20 +1192,6 @@ Err ScoreOverseer::buildScores(
                 0.0f
         );
     }
-
-    candidateScores->charge = targetDecoyCandidatePair->charge();
-    candidateScores->mass = targetDecoyCandidatePair->mass();
-    candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
-    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
-    candidateScores->mzFoundMeanVec = d_ptr->m_mzMeanValsFound;
-    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
-    candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
-    candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
-
-    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
-    candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
-    candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
-    candidateScores->targetKey = m_mzTargetKey;
 
     ERR_RETURN
 }

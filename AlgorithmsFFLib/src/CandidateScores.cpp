@@ -99,6 +99,8 @@ Err CandidateScores::buildScoreVector(
         const double totalIntensityLog = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
         scores.push_back(totalIntensityLog);
 
+        scores.push_back(std::max(0.0, static_cast<double>(candidateScores.unfragPrecursorCosineSim)));
+
         if (useNeuralNetworkScores) {
 
             const QVector<double> cosineSimShadowsToAnchorVec
@@ -188,7 +190,6 @@ Err CandidateScores::buildScoreVector(
         scores.push_back(candidateScores.peakShapeRatio3);
         scores.push_back(candidateScores.cosineSimSumBottom6);
         scores.push_back(candidateScores.cosineSimSumBottom6 / candidateScores.theoFragmentCount);
-
     }
 
     *scoreVec = scores;

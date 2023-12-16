@@ -170,6 +170,7 @@ public:
     double shadowsCosineSimSum = -1.0;
     int allignedMaxIndexesCount = -1;
     QVector<int> mzPeakLengthsVec;
+    float unfragPrecursorCosineSim = -1.0;
 
     QVector<double> columnApexIndexRatiosToAnchor;
 

@@ -619,6 +619,19 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
             &mzHashedVsfeatureFinderHillsShadows
             ); ree;
 
+    const double unfragPrecursorMass = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            0
+    );
+    QHash<MzHashed , QVector<FeatureFinderHill*>> unfragPrecursorVsfeatureFinderHills;
+    MS2Ion ms2IonUnfragPrecursor;
+    ms2IonUnfragPrecursor.mz = unfragPrecursorMass;
+    e = extractHills(
+            {ms2IonUnfragPrecursor},
+            &unfragPrecursorVsfeatureFinderHills
+    ); ree;
+
     //TODO figure out a way to empirially pick the best integration index instead
     // of wasting cycles analyzing the top 2;
     for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
@@ -641,6 +654,14 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 &mzHashedVsfeatureFinderHillsShadowsFiltered
                 );
 
+        QHash<MzHashed , QVector<FeatureFinderHill*>> unfragPrecursorVsfeatureFinderHillsFiltered;
+        filterFeatureFinderHillsByFrameIndex(
+                unfragPrecursorVsfeatureFinderHills,
+                pii.first.first,
+                pii.first.second,
+                &unfragPrecursorVsfeatureFinderHillsFiltered
+                );
+
         CandidateScores candidateScoresPII;
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
@@ -649,6 +670,8 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsFiltered,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
+                ms2IonUnfragPrecursor,
+                unfragPrecursorVsfeatureFinderHillsFiltered,
                 m_collectBaseFeaturesOnly,
                 &candidateScoresPII
                 ); ree;

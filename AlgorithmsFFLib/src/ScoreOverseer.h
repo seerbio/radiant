@@ -44,6 +44,8 @@ public:
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+            const MS2Ion &ms2IonUnfragPrecursor,
+            const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
             bool collectBaseFeaturesOnly,
             CandidateScores *candidateScores
     );
