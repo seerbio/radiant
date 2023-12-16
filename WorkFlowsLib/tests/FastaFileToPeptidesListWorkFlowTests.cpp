@@ -39,8 +39,6 @@ void FastaFileToPeptidesListWorkFlowTests::execTest() {
     params.peptideLengthMax = 40;
     params.chargeStateMin = 2;
     params.chargeStateMax = 3;
-    params.maxTandemPointCount = 500;
-    params.returnPSMTopN = 1;
     params.ms2ExtractionWidthPPM = 12.0;
     params.precursorExtractionWindowThomsons = 1.0;
 

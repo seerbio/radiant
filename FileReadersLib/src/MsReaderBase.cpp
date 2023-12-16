@@ -5,7 +5,6 @@
 #include "MsReaderBase.h"
 
 #include "ErrorUtils.h"
-#include "DIAMzTargetsReader.h"
 
 #include <QElapsedTimer>
 #include <QFile>
@@ -466,41 +465,4 @@ QPair<double, double> MsReaderBase::scanTimeMinMax() {
 
 bool MsReaderBase::isInit() {
     return !m_msScanInfo.isEmpty() && !m_scanPoints.isEmpty();
-}
-
-Err MsReaderBase::writeTargetCollisionEnergyFile() {
-    ERR_INIT
-
-    const QVector<MsScanInfo> uniqueTandemScanInfos = getUniqueTandemMsScanInfos();
-
-    if (isDIA()) {
-
-        QVector<DIAMzTargetsReaderRow> ops;
-        for (const MsScanInfo &si : uniqueTandemScanInfos) {
-            qDebug() << "TargetMz:" << si.precursorTargetMz
-                     << "IsoWinLo:" << si.isoWindowLower
-                     << "IsoWinHi:" << si.isoWindowUpper;
-            DIAMzTargetsReaderRow op;
-            op.targetMz = si.precursorTargetMz;
-            op.isoWindowLo = si.isoWindowLower;
-            op.isoWindowHi = si.isoWindowUpper;
-            op.collisionEnergy = si.collisionEnergy;
-
-            ops.push_back(op);
-        }
-
-        const QString outputFileName = m_filePath + ".CE_Profile" + S_GLOBAL_SETTINGS.DOT_CSV;
-
-        e = CSVReader::write(
-                ops,
-                outputFileName
-        ); ree;
-
-        qDebug() << "Target CSV written to" << outputFileName;
-        ERR_RETURN
-    }
-
-    qDebug() << "No CE profile was printed as file is DDA";
-
-    ERR_RETURN
 }

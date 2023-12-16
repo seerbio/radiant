@@ -49,8 +49,6 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.mzMaxDataStructure, 1992);
     QCOMPARE(pythiaParameters.peptideLengthMin, 8);
     QCOMPARE(pythiaParameters.peptideLengthMax, 30);
-    QCOMPARE(pythiaParameters.maxTandemPointCount,401 );
-    QCOMPARE(pythiaParameters.returnPSMTopN, 31);
     QCOMPARE(pythiaParameters.chargeStateMin, 5);
     QCOMPARE(pythiaParameters.chargeStateMax, 3);
     QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 11);

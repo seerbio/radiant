@@ -51,12 +51,6 @@ private:
             QVector<PeptideSequence> *peptideSequences
     );
 
-    Err writeLibraryBuilderCSV(
-            const QVector<PeptideSequence> &peptideSequences,
-            const QString &targetMzCollisionCSV,
-            const QString &outputFilePath
-    ) const;
-
 private:
 
     PythiaParameters m_params;
