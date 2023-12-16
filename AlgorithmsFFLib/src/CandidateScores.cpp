@@ -25,10 +25,6 @@ Err CandidateScores::buildScoreVector(
             std::pow(std::max(0.0, candidateScores.klDivSpectrum), 1 / 3.0) //4
     };
 
-    scores.push_back(std::max(candidateScores.cosineSim100MS1PreMono, 0.0)); //7
-    scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
-    scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
-
 //    const QVector<double> columnApexIndexRatiosToAnchorVec
 //            = extractScoresFromVecFeatures(candidateScores.columnApexIndexRatiosToAnchor, theoMzIonsSize);
 //    scores.append(columnApexIndexRatiosToAnchorVec);
@@ -64,8 +60,9 @@ Err CandidateScores::buildScoreVector(
         const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
         scores.push_back(pdScanTime); //6
 
-//        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
-//        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
+        scores.push_back(std::max(candidateScores.cosineSim100MS1PreMono, 0.0)); //7
+        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso1, 0.0)); //7
+        scores.push_back(std::max(candidateScores.cosineSim100MS1Iso2, 0.0)); //8
         scores.push_back(std::max(candidateScores.cosineSimSum45, 0.0)); //9
         scores.push_back(std::max(candidateScores.cosineSimSum20, 0.0)); //10
 //        scores.push_back(std::max(candidateScores.cosineSim45MS1, 0.0)); //11
