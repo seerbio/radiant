@@ -142,14 +142,11 @@ private:
 
     int m_epochs;
     int m_baggingSize;
-    int m_topNMs2Ions;
     int m_batchSize;
     double m_learningRate;
 
-    const int m_minTopNMs2Ions;
     bool m_isInit;
-
-    QPair<double, double> m_scanTimeMinMax;
+    
     QVector<CandidateClassifier*> m_candidateClassifiers;
 
 };
