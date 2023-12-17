@@ -128,7 +128,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             break;
         }
 
-        qDebug() << cs->classifierScore << cs->proteinGroup;
     }
     qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap;
 
@@ -409,8 +408,8 @@ namespace {
     };
 
     struct BuildClassifierParallelOutput {
-        QVector<QVector<double>> A;
-        QVector<double> b;
+        QVector<QVector<float>> A;
+        QVector<float> b;
     };
 
     Err buildParallelInput(
@@ -465,20 +464,20 @@ namespace {
     Err processParallelResults(
             const QPair<Err, BuildClassifierParallelOutput> &result,
             int inputsSize,
-            QVector<QVector<double>> *A,
-            QVector<double> *b
+            QVector<QVector<float>> *A,
+            QVector<float> *b
             ) {
 
         ERR_INIT
         e = result.first; ree;
 
-        const QVector<QVector<double>> &ALocal = result.second.A;
-        const QVector<double> bLocal = result.second.b;
+        const QVector<QVector<float>> &ALocal = result.second.A;
+        const QVector<float> bLocal = result.second.b;
 
         if (A->isEmpty() || b->isEmpty()) {
             A->resize(ALocal.size());
             for(int row = 0; row < A->size(); row++) {
-                QVector<double> v(ALocal.front().size(), 0.0);
+                QVector<float> v(ALocal.front().size(), 0.0);
                 (*A)[row] = v;
             }
             b->resize(bLocal.size());
@@ -486,18 +485,18 @@ namespace {
 
         for (int row = 0; row < A->size(); row++) {
             for (int col = 0; col < A->front().size(); col++) {
-                (*A)[row][col] += ALocal[row][col] / inputsSize;
+                (*A)[row][col] += ALocal[row][col] / static_cast<float>(inputsSize);
             }
         }
 
         for (int row = 0; row < bLocal.size(); row++) {
-            (*b)[row] += bLocal[row] / inputsSize;
+            (*b)[row] += bLocal[row] / static_cast<float>(inputsSize);
         }
 
         ERR_RETURN
     }
 
-    QPair<Err, QVector<double>> scoreVectorParallel(
+    QPair<Err, QVector<float>> scoreVectorParallel(
             const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
@@ -507,10 +506,11 @@ namespace {
 
         ERR_INIT
 
-        QVector<double> vec;
+        QVector<float> vec;
 
         if (useNeuralNetworkScores) {
-            vec = candidateScores.featuresArray;
+            e = candidateScores.featuresArrayEssentials(&vec); rree;
+//            e = candidateScores.featuresArrayNeuralNet(&vec); rree;
         }
         else if (useExtendedScores) {
             vec = candidateScores.featuresArray;
@@ -548,14 +548,14 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
     //TODO clean this up. Abstract sub processes into methods.
 
-    QFuture<QPair<Err, QVector<double>>> futuresScoreBuilder = QtConcurrent::mapped(
+    QFuture<QPair<Err, QVector<float>>> futuresScoreBuilder = QtConcurrent::mapped(
             m_candidateScores,
             scoreBuildBinder
             );
     futuresScoreBuilder.waitForFinished();
 
-    QVector<QVector<double>> scoreVectors;
-    for (const QPair<Err, QVector<double>> &res : futuresScoreBuilder) {
+    QVector<QVector<float>> scoreVectors;
+    for (const QPair<Err, QVector<float>> &res : futuresScoreBuilder) {
         e = res.first; ree;
         scoreVectors.push_back(res.second);
     }
@@ -570,7 +570,7 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
         const QString key = cs->targetDecoyCandidatePair->peptideStringWithMods()
                                 + QString::number(cs->targetDecoyCandidatePair->charge()) + cs->targetKey;
-        QVector<double> *sv = &scoreVectors[i];
+        QVector<float> *sv = &scoreVectors[i];
 
         if (cs->isDecoy) {
             keyVsTargetDecoyCandidateScores[key].scoresDecoy = sv;
@@ -619,8 +619,8 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
             );
     futures.waitForFinished();
 
-    QVector<QVector<double>> A;
-    QVector<double> b;
+    QVector<QVector<float>> A;
+    QVector<float> b;
     for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
         e = processParallelResults(
                 result,
@@ -631,17 +631,17 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     }
     qDebug() << "build classifier" << et.restart() << "mSec";
 
-    QVector<double> weights;
+    QVector<float> weights;
     e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
     qDebug() << "fit weights" << et.restart() << "mSec";
 
     qDebug() << "Weights:" << weights;
     qDebug() << "b:" << b;
 
-    QVector<double> discScoreTargets;
+    QVector<float> discScoreTargets;
     e = ClassifierWeightsManager::applyWeights(scoresTargets, weights, &discScoreTargets); ree;
 
-    QVector<double> discScoreDecoys;
+    QVector<float> discScoreDecoys;
     e = ClassifierWeightsManager::applyWeights(scoresDecoys, weights, &discScoreDecoys); ree;
 
     qDebug() << "apply weights scores" << et.restart() << "mSec";
@@ -1251,7 +1251,7 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(karnnNNTargets); ree;
 
-        QVector<QVector<double>> vecs;
+        QVector<QVector<float>> vecs;
         std::transform(
                 karnnNNTargets.begin(),
                 karnnNNTargets.end(),
@@ -1259,10 +1259,10 @@ namespace {
                 [](const KarnnNNTarget &kt){return kt.scoreVec;}
                 );
 
-        Eigen::MatrixX<double> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
+        Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
         EigenUtils::minMaxScaleMatrix(&mat);
 
-        const QVector<QVector<double>> vecsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
+        const QVector<QVector<float>> vecsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
 
         e = ErrorUtils::isEqual(vecsNorm.size(), karnnNNTargets.size()); ree;
 
@@ -1295,7 +1295,6 @@ namespace {
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
             e = cs->featuresArrayNeuralNet(&karnnNnTarget.scoreVec); ree;
-            
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
@@ -1453,7 +1452,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     QVector<float> predictions;
     e = predictNNScores(karnnNNTargetsNorm, &predictions); ree;
-
 
     e = processPredictions(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,

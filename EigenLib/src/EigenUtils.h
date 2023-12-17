@@ -711,7 +711,7 @@ public:
     }
 
     template<typename T>
-    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
+    static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
 
         const int rows = matA.size();
         const int columns = matA.front().size();

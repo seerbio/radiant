@@ -198,18 +198,18 @@
 //}
 
 void CandidateScores::initFeaturesArray() {
-    featuresArray = QVector<double>(Features::FeaturesSize, 0.0);
+    featuresArray = QVector<float>(Features::FeaturesSize, 0.0f);
     featuresArray.reserve(Features::FeaturesSize);
 }
 
-Err CandidateScores::featuresArrayEssentials(QVector<double> *vecOutput) const {
+Err CandidateScores::featuresArrayEssentials(QVector<float> *vecOutput) const {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(featuresArray); ree;
 
     const int essentialFeaturesSize = 5;
-    QVector<double> vec(essentialFeaturesSize, 0.0);
+    QVector<float> vec(essentialFeaturesSize, 0.0);
     vec.reserve(essentialFeaturesSize);
     vec = {
             featuresArray[Features::AllignedMaxIndexesCount],
@@ -223,11 +223,11 @@ Err CandidateScores::featuresArrayEssentials(QVector<double> *vecOutput) const {
     ERR_RETURN
 }
 
-QVector<double> CandidateScores::featuresArrayExtended() const {
-    return QVector<double>();
+QVector<float> CandidateScores::featuresArrayExtended() const {
+    return QVector<float>();
 }
 
-Err CandidateScores::featuresArrayNeuralNet(QVector<double> *vecOutput) const {
+Err CandidateScores::featuresArrayNeuralNet(QVector<float> *vecOutput) const {
     ERR_INIT
     e = ErrorUtils::isNotEmpty(featuresArray); ree;
     *vecOutput = featuresArray;

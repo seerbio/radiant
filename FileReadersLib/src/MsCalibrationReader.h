@@ -38,9 +38,9 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
     PeptideStringWithMods peptideStringWithMods;
     IRT iRTPredicted = -1.0;
     ScanTime scanTime = -1.0;
-    QVector<double> mzSearchedVec;
-    QVector<double> mzFoundMeanVec;
-    QVector<double> mzFoundStDevVec;
+    QVector<float> mzSearchedVec;
+    QVector<float> mzFoundMeanVec;
+    QVector<float> mzFoundStDevVec;
 
     QMap<QString, QVariant> map() override {
 
@@ -78,9 +78,9 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
         peptideStringWithMods = dataMap.value(PEP_STR_MODS).toString();
         iRTPredicted = dataMap.value(IRT_PRED).toDouble();
         scanTime = dataMap.value(SCAN_TIME).toDouble();
-        mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
-        mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
-        mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
+        mzSearchedVec = bytesArrayToQVector<float>(dataMap.value(MZ_SRCH_V).toByteArray());
+        mzFoundMeanVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
+        mzFoundStDevVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
 
         ERR_RETURN
     }

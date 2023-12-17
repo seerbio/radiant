@@ -30,7 +30,7 @@ struct KarnnNNTarget {
     QString seq;
     float nnScore = 0.0;
     bool isDecoy = false;
-    QVector<double> scoreVec;
+    QVector<float> scoreVec;
     int index = -1;
 };
 

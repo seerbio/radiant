@@ -9,9 +9,9 @@
 
 #include "Error.h"
 
-using ScoresTargets = QVector<double>;
-using ScoresDecoys = QVector<double>;
-using ScoresTargetsAndDecoys = QVector<double>;
+using ScoresTargets = QVector<float>;
+using ScoresDecoys = QVector<float>;
+using ScoresTargetsAndDecoys = QVector<float>;
 
 using namespace Error;
 
@@ -47,16 +47,16 @@ public:
     void setSelectionWeightsBest(const QVector<double> &selectionWeightsBest);
 
     static Err buildDataClassifier1(
-            const QVector<QVector<double>*> &targets,
-            const QVector<QVector<double>*> &decoys,
-            QVector<QVector<double>> *A,
-            QVector<double> *b
+            const QVector<QVector<float>*> &targets,
+            const QVector<QVector<float>*> &decoys,
+            QVector<QVector<float>> *A,
+            QVector<float> *b
             );
 
     static Err buildDataClassifier1(
             const QVector<QPair<ScoresTargets, ScoresDecoys>> &targetsScoresVsDecoyScores,
-            QVector<QVector<double>> *A,
-            QVector<double> *b
+            QVector<QVector<float>> *A,
+            QVector<float> *b
     );
 
     static Err buildDataClassifier2(
@@ -67,15 +67,15 @@ public:
     );
 
     static Err fitWeights(
-            const QVector<QVector<double>> &matA,
-            const QVector<double> &vecB,
-            QVector<double> *weights
+            const QVector<QVector<float>> &matA,
+            const QVector<float> &vecB,
+            QVector<float> *weights
             );
 
     static Err applyWeights(
-            const QVector<QVector<double>*> &matA,
-            const QVector<double> &weights,
-            QVector<double> *results
+            const QVector<QVector<float>*> &matA,
+            const QVector<float> &weights,
+            QVector<float> *results
             );
 
 private:

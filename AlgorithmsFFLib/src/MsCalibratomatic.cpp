@@ -185,9 +185,9 @@ namespace {
 
         for (const MsCalibarationReaderRow &row : msCalibarationReaderRows){
 
-            const QVector<double> &mzSearchedVec = row.mzSearchedVec;
-            const QVector<double> &mzFoundMeanVec = row.mzFoundMeanVec;
-            const QVector<double> &mzFoundStDevVec = row.mzFoundStDevVec;
+            const QVector<float> &mzSearchedVec = row.mzSearchedVec;
+            const QVector<float> &mzFoundMeanVec = row.mzFoundMeanVec;
+            const QVector<float> &mzFoundStDevVec = row.mzFoundStDevVec;
 
             e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundMeanVec.size()); ree;
             e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundStDevVec.size()); ree;
@@ -196,7 +196,7 @@ namespace {
                 Inp inp;
                 inp.mzFound = mzFoundMeanVec.at(i);
                 inp.mzSearched = mzSearchedVec.at(i);
-                inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<double>::min());
+                inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<float>::min());
 
                 if (MathUtils::tZero(inp.mzSearched) || MathUtils::tZero(inp.mzFound)) {
                     continue;

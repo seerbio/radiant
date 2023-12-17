@@ -1154,6 +1154,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = std::pow(std::max(0.0, cosineSimSpectrum), 3);
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0);
 
+    double cosineSimMS1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1161,9 +1162,9 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
+            &cosineSimMS1
             ); ree;
-
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
 
 
     const double mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
@@ -1171,6 +1172,7 @@ Err ScoreOverseer::buildScores(
             targetDecoyCandidatePair->charge(),
             -1
     );
+    double mzPreMonoCosineSimMS1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1178,15 +1180,16 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+            &mzPreMonoCosineSimMS1
     ); ree;
-
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
 
     const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
             targetDecoyCandidatePair->charge(),
             1
     );
+    double cosineSimMzIso1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1194,14 +1197,16 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+            &cosineSimMzIso1
     ); ree;
+    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
 
     const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
             targetDecoyCandidatePair->charge(),
             2
     );
+    double cosineSimMzIso2;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1209,8 +1214,9 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+            &cosineSimMzIso2
     ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
 
     float cosineSimSum45;
     float cosineSimSum20;

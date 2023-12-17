@@ -214,13 +214,13 @@ public:
     double qValue = 1.0;
     double decoyRatio = -1.0;
 
-    QVector<double> featuresArray;
+    QVector<float> featuresArray;
 
-    [[nodiscard]] Err featuresArrayEssentials(QVector<double> *vecOutput) const;
+    [[nodiscard]] Err featuresArrayEssentials(QVector<float> *vecOutput) const;
 
-    [[nodiscard]] QVector<double> featuresArrayExtended() const;
+    [[nodiscard]] QVector<float> featuresArrayExtended() const;
 
-    [[nodiscard]] Err featuresArrayNeuralNet(QVector<double> *vecOutput) const;
+    [[nodiscard]] Err featuresArrayNeuralNet(QVector<float> *vecOutput) const;
 
     void initFeaturesArray();
 
