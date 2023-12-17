@@ -10,7 +10,6 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MS2Ion.h"
-#include "CandidateScores.h"
 
 
 using namespace Error;

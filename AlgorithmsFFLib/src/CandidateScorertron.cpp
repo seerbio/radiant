@@ -70,7 +70,6 @@ CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_msCalibratomatic(nullptr)
 , m_featureFinderHillsBuilderMS2(nullptr)
-, m_collectBaseFeaturesOnly(false)
 , d_ptr(new Private())
 {}
 
@@ -95,8 +94,8 @@ Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
         const PythiaParameters &pythiaParameters,
         const MzTargetKey &targetKey,
+        const QPair<double, double> &scanTimeMinMax,
         int topNMS2Ions,
-        bool collectBaseFeaturesOnly,
         MsCalibratomatic *msCalibratomatic,
         FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
         ) {
@@ -109,6 +108,7 @@ Err CandidateScorertron::init(
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
+    m_scanTimeMinMax = scanTimeMinMax;
 
     const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_pythiaParameters);
     e = m_peakIntegratomatic.init(ffParams); ree;
@@ -131,7 +131,6 @@ Err CandidateScorertron::init(
     ); ree;
 
     m_targetKey = targetKey;
-    m_collectBaseFeaturesOnly = collectBaseFeaturesOnly;
 
     ERR_RETURN
 }
@@ -187,8 +186,8 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::calculateScores(
-        const TargetDecoyCandidatePair* targetDecoyCandidatePair,
         const QVector<MS2Ion> &_ms2IonsTheoretical,
+        TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
         ) {
 
@@ -196,9 +195,9 @@ Err CandidateScorertron::calculateScores(
 
     e = ErrorUtils::isNotEmpty(_ms2IonsTheoretical); ree;
 
-    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
-    candidateScores->charge = targetDecoyCandidatePair->charge();
     candidateScores->targetKey = m_targetKey;
+    candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
+    candidateScores->initFeaturesArray();
 
     const int topNMS2Ions = std::min(m_topNMS2Ions, _ms2IonsTheoretical.size());
     QVector<MS2Ion> ms2IonsTheoretical = _ms2IonsTheoretical;
@@ -273,39 +272,13 @@ Err CandidateScorertron::calculateScores(
     );
 
     e = processPeakIntegrationIndexes(
-            targetDecoyCandidatePair,
             peakIntegrationIndexesVsIntensity,
             ms2IonsTheoretical,
             mzHashedVsfeatureFinderHills,
             ms2IonsTheoreticalIsotopeShadows,
+            targetDecoyCandidatePair,
             candidateScores
             ); ree;
-
-//    Eigen::MatrixX<float> mat;
-//    Eigen::MatrixX<float> matShadows;
-//    e = buildAlignmentMatricies(
-//            ms2IonsTheoretical,
-//            ms2IonsTheoreticalIsotopeShadows,
-//            m_pythiaParameters.filterLength,
-//            mzHashedVsfeatureFinderHills,
-//            mzHashedVsfeatureFinderHillsShadows,
-//            &mat,
-//            &matShadows
-//            ); ree;
-
-//    const Eigen::MatrixX<float> matSmoothed = applyGaussSmoothRowWiseToMatrix(
-//            mat,
-//            m_pythiaParameters,
-//            d_ptr->gaussKernel
-//            );
-//    const Eigen::MatrixX<float> matShadowsSmoothed = applyGaussSmoothRowWiseToMatrix(
-//            matShadows,
-//            m_pythiaParameters,
-//            d_ptr->gaussKernel
-//    );
-//
-//    Eigen::MatrixX<float> matIsotopesSubtracted = matSmoothed.array() - matShadowsSmoothed.array();
-//    EigenUtils::thresholdMatrix(static_cast<float>(0.0), &matIsotopesSubtracted);
 
     ERR_RETURN
 }
@@ -603,11 +576,11 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::processPeakIntegrationIndexes(
-        const TargetDecoyCandidatePair* targetDecoyCandidatePair,
         QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
+        TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
         ) {
 
@@ -665,6 +638,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
         CandidateScores candidateScoresPII;
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
+                m_scanTimeMinMax,
                 pii.first,
                 ms2IonsTheoretical,
                 mzHashedVsfeatureFinderHillsFiltered,
@@ -672,14 +646,13 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsfeatureFinderHillsShadowsFiltered,
                 ms2IonUnfragPrecursor,
                 unfragPrecursorVsfeatureFinderHillsFiltered,
-                m_collectBaseFeaturesOnly,
                 &candidateScoresPII
                 ); ree;
 
-        if (candidateScores->cosineSimSum100 < candidateScoresPII.cosineSimSum100) {
+        if (candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100]
+            < candidateScoresPII.featuresArray[CandidateScores::Features::CosineSimSum100]) {
             *candidateScores = candidateScoresPII;
         }
-
     }
 
     ERR_RETURN

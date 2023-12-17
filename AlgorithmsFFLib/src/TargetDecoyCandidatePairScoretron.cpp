@@ -4,6 +4,7 @@
 
 #include "TargetDecoyCandidatePairScoretron.h"
 
+#include "CandidateScores.h"
 #include "CandidateScorertron.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MsCalibratomatic.h"
@@ -27,8 +28,8 @@ public:
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
-    bool collectBaseFeaturesOnly = false;
     PythiaParameters pythiaParameters;
+    QPair<double, double> scanTimeMinMax;
 };
 
 Err TargetDecoyCandidatePairScoretron::init(
@@ -78,8 +79,8 @@ namespace {
                 pi.ms1Frame,
                 pi.pythiaParameters,
                 pi.targetKey,
+                pi.scanTimeMinMax,
                 pi.topNMs2Ions,
-                pi.collectBaseFeaturesOnly,
                 &msCalibratomatic,
                 &featureFinderHillBuilderMS2
                 ); rree;
@@ -88,8 +89,8 @@ namespace {
 
             CandidateScores candidateScoresTarget;
             e = candidateScorertron.calculateScores(
-                    tdcp,
                     tdcp->ms2IonsTarget(),
+                    tdcp,
                     &candidateScoresTarget
                     ); rree;
             candidateScoresTarget.isDecoy = false;
@@ -97,8 +98,8 @@ namespace {
 
             CandidateScores candidateScoresDecoy;
             e = candidateScorertron.calculateScores(
-                    tdcp,
                     tdcp->ms2IonsDecoy(),
+                    tdcp,
                     &candidateScoresDecoy
                     ); rree;
             candidateScoresDecoy.isDecoy = true;
@@ -115,20 +116,13 @@ namespace {
 }//namespace
 Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
-        bool collectBaseFeaturesOnly,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) {
 
     ERR_INIT
-
-    if (collectBaseFeaturesOnly) {
-        qDebug() << "Collecting base features only";
-    }
-    else {
-        qDebug() << "Collecting full features set";
-    }
 
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
@@ -139,13 +133,13 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
             topNMS2Ions,
+            scanTimeMinMax,
             msCalibratomatic,
-            collectBaseFeaturesOnly,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
     ); ree;
 
-#define PARALLEL_SCORE
+//#define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     QFuture<QPair<Err, QVector<CandidateScores>>> futures = QtConcurrent::mapped(
             parallelInputs,
@@ -181,8 +175,8 @@ bool TargetDecoyCandidatePairScoretron::isInit() {
 
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
-        bool collectBaseFeaturesOnly,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) {
@@ -206,7 +200,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.ms1Frame = m_ms1Frame;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
-        tdppi.collectBaseFeaturesOnly = collectBaseFeaturesOnly;
+        tdppi.scanTimeMinMax = scanTimeMinMax;
 
         input->push_back(tdppi);
     }

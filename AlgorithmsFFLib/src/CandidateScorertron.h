@@ -35,15 +35,15 @@ public:
             const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
             const MzTargetKey &targetKey,
+            const QPair<double, double> &scanTimeMinMax,
             int topNMS2Ions,
-            bool collectBaseFeaturesOnly,
             MsCalibratomatic *msCalibratomatic,
             FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
             );
 
     Err calculateScores(
-            const TargetDecoyCandidatePair* targetDecoyCandidatePair,
             const QVector<MS2Ion> &ms2IonsTheoretical,
+            TargetDecoyCandidatePair* targetDecoyCandidatePair,
             CandidateScores *candidateScores
             );
 
@@ -69,11 +69,11 @@ private:
     );
 
     Err processPeakIntegrationIndexes(
-            const TargetDecoyCandidatePair* targetDecoyCandidatePair,
             QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
+            TargetDecoyCandidatePair* targetDecoyCandidatePair,
             CandidateScores *candidateScores
             );
 
@@ -81,7 +81,6 @@ private:
 
     PythiaParameters m_pythiaParameters;
     int m_topNMS2Ions;
-    bool m_collectBaseFeaturesOnly;
 
     PeakIntegratomatic m_peakIntegratomatic;
     MsCalibratomatic *m_msCalibratomatic;
@@ -94,6 +93,7 @@ private:
     QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
 
     MzTargetKey m_targetKey;
+    QPair<double, double> m_scanTimeMinMax;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

@@ -34,7 +34,6 @@ public:
             const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
             const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
-            bool collectBaseFeaturesOnly,
             int *bestAlignmentMatrixRow,
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
@@ -68,8 +67,6 @@ public:
 
     QVector<double> m_mzMeanValsFound;
     QVector<double> m_stdMeanValsFound;
-    QVector<double> m_mzValsSearched;
-    QVector<float> m_theoApexIntensity;
 
     PythiaParameters m_pythiaParams;
 
@@ -104,9 +101,7 @@ namespace {
             int frameIndexMin,
             Eigen::MatrixX<float> *mat,
             QVector<double> *mzMeanValsFound,
-            QVector<double> *stdMeanValsFound,
-            QVector<double> *mzValsSearched,
-            QVector<float> *theoApexIntensity
+            QVector<double> *stdMeanValsFound
             ) {
 
         ERR_INIT
@@ -120,8 +115,6 @@ namespace {
 
         mzMeanValsFound->reserve(ms2IonsTheoretical.size());
         stdMeanValsFound->reserve(ms2IonsTheoretical.size());
-        mzValsSearched->reserve(ms2IonsTheoretical.size());
-        theoApexIntensity->reserve(ms2IonsTheoretical.size());
 
         for (int col = 0; col < ms2IonsTheoretical.size(); col++) {
 
@@ -130,8 +123,6 @@ namespace {
             }
 
             const MS2Ion &ms2Ion = ms2IonsTheoretical.at(col);
-            mzValsSearched->push_back(ms2Ion.mz);
-            theoApexIntensity->push_back(ms2Ion.intensity);
 
             QVector<double> mzMeanValsFoundMS2Ion;
             QVector<double> stdMeanValsFoundMS2Ion;
@@ -521,7 +512,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
-        bool collectBaseFeaturesOnly,
         int *bestAlignmentMatrixRowIndex,
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
@@ -538,8 +528,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     m_mzMeanValsFound.clear();
     m_stdMeanValsFound.clear();
-    m_mzValsSearched.clear();
-    m_theoApexIntensity.clear();
 
     const int cols = ms2IonsTheoretical.size();
 
@@ -555,9 +543,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             minMaxFrameIndex->first,
             &m_intensityMatrix100,
             &m_mzMeanValsFound,
-            &m_stdMeanValsFound,
-            &m_mzValsSearched,
-            &m_theoApexIntensity
+            &m_stdMeanValsFound
             ); ree;
 
     Eigen::MatrixX<float> intensityMatrixNoInterference;
@@ -587,17 +573,13 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<double> unused1;
     QVector<double> unused2;
-    QVector<double> unused3;
-    QVector<float> unused4;
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
             ms2IonsTheoreticalShadows,
             mzHashedVsfeatureFinderHillsShadows,
             minMaxFrameIndex->first,
             &m_intensityMatrix100Shadow,
             &unused1,
-            &unused2,
-            &unused3,
-            &unused4
+            &unused2
     ); ree;
 
     const int rowSize = alignmentMatrixLimits->second - alignmentMatrixLimits->first + 1;
@@ -627,9 +609,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             minMaxFrameIndex->first,
             &m_unfragPrecursorVec,
             &unused1,
-            &unused2,
-            &unused3,
-            &unused4
+            &unused2
     ); ree;
 
     if (rowSize < m_unfragPrecursorVec.rows()) {
@@ -651,21 +631,20 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     }
 
-    if (!collectBaseFeaturesOnly) {
-        const int tightColsMax = 6;
-        m_intensityMatrix45.resize(rows, tightColsMax);
-        m_intensityMatrix20.resize(rows, tightColsMax);
-        e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
-                ms2IonsTheoretical,
-                mzHashedVsfeatureFinderHills,
-                minMaxFrameIndex->first,
-                m_pythiaParams.ms2ExtractionWidthPPM,
-                *alignmentMatrixLimits,
-                &m_intensityMatrix45,
-                &m_intensityMatrix20
-        );
-        ree;
-    }
+    const int tightColsMax = 6;
+    m_intensityMatrix45.resize(rows, tightColsMax);
+    m_intensityMatrix20.resize(rows, tightColsMax);
+    e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
+            ms2IonsTheoretical,
+            mzHashedVsfeatureFinderHills,
+            minMaxFrameIndex->first,
+            m_pythiaParams.ms2ExtractionWidthPPM,
+            *alignmentMatrixLimits,
+            &m_intensityMatrix45,
+            &m_intensityMatrix20
+    );
+    ree;
+
 
     ERR_RETURN
 }
@@ -869,6 +848,7 @@ Err ScoreOverseer::init(
         const MzTargetKey &targetKey,
         MsFrame *ms1Frame
 ) {
+
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
@@ -962,7 +942,8 @@ namespace {
 
 }//namespace
 Err ScoreOverseer::buildScores(
-        const TargetDecoyCandidatePair* targetDecoyCandidatePair,
+        TargetDecoyCandidatePair* targetDecoyCandidatePair,
+        const QPair<double, double> &scanTimeMinMax,
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
@@ -970,7 +951,6 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
         const MS2Ion &ms2IonUnfragPrecursor,
         const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
-        bool collectBaseFeaturesOnly,
         CandidateScores *candidateScores
         ) {
 
@@ -983,8 +963,13 @@ Err ScoreOverseer::buildScores(
     QElapsedTimer et;
     et.start();
 
+    candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
+    candidateScores->initFeaturesArray();
+
     int bestAlignmentMatrixRowIndex;
     QVector<int> columnApexIndexes;
+    QVector<float> intensityFoundMaxVec;
+    QVector<int> mzPeakLengthsVec;
     QPair<FrameIndex, FrameIndex> frameIndexMinMaxHills;
     QPair<int, int> alignmentMatrixLimits;
     e = d_ptr->buildAlignmentMatricies(
@@ -994,30 +979,55 @@ Err ScoreOverseer::buildScores(
             mzHashedVsfeatureFinderHills,
             mzHashedVsfeatureFinderHillsShadows,
             unfragPrecursorVsfeatureFinderHills,
-            collectBaseFeaturesOnly,
             &bestAlignmentMatrixRowIndex,
             &columnApexIndexes,
-            &candidateScores->intensityFoundMaxVec,
-            &candidateScores->mzPeakLengthsVec,
+            &intensityFoundMaxVec,
+            &mzPeakLengthsVec,
             &frameIndexMinMaxHills,
             &alignmentMatrixLimits
             );
 
-    candidateScores->peptideStringWithMods = targetDecoyCandidatePair->peptideStringWithMods();
-    candidateScores->charge = targetDecoyCandidatePair->charge();
-    candidateScores->mass = targetDecoyCandidatePair->mass();
-    candidateScores->iRTPredicted = targetDecoyCandidatePair->iRt();
-    candidateScores->theoFragmentCount = targetDecoyCandidatePair->totalFragmentCount();
-    candidateScores->mzFoundMeanVec = d_ptr->m_mzMeanValsFound;
-    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
-    candidateScores->mzSearchedVec = d_ptr->m_mzValsSearched;
-    candidateScores->theoIntensityVec = d_ptr->m_theoApexIntensity;
+    candidateScores->targetKey = m_mzTargetKey;
     candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
     candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
-    candidateScores->scanIonCount = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
-    candidateScores->targetKey = m_mzTargetKey;
 
-    candidateScores->allignedMaxIndexesCount = static_cast<int>(std::count_if(
+    //Figure out if you want to use this as well.
+//    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
+
+    const int arraySizeMax = 12;
+
+    e = ErrorUtils::isTrue(d_ptr->m_mzMeanValsFound.size() < arraySizeMax); ree;
+    for (int i = 0; i < d_ptr->m_mzMeanValsFound.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i] = d_ptr->m_mzMeanValsFound.at(i);
+    }
+
+    e = ErrorUtils::isTrue(d_ptr->m_stdMeanValsFound.size() < arraySizeMax); ree;
+    for (int i = 0; i < d_ptr->m_stdMeanValsFound.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = d_ptr->m_stdMeanValsFound.at(i);
+    }
+
+    const double totalIntensity = std::accumulate(intensityFoundMaxVec.begin(), intensityFoundMaxVec.end(), 0.0001);
+    candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog] = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
+
+    const double totalArea = d_ptr->m_intensityMatrix100.sum();
+    const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.rowwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
+    e = ErrorUtils::isTrue(matrixColumnSums.cols() < arraySizeMax); ree;
+    for (int i = 0; i < matrixColumnSums.cols(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = matrixColumnSums.coeff(i) / totalArea;
+    }
+
+    e = ErrorUtils::isTrue(ms2IonsTheoretical.size() < arraySizeMax); ree;
+    for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
+        const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
+        candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = ms2Ion.mz;
+        candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
+    }
+
+    candidateScores->featuresArray[CandidateScores::Features::Mass] = targetDecoyCandidatePair->mass();
+    candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = targetDecoyCandidatePair->iRt();
+    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount] = targetDecoyCandidatePair->totalFragmentCount();
+    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
+    candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<int>(std::count_if(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
             [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
@@ -1025,13 +1035,31 @@ Err ScoreOverseer::buildScores(
 
     Eigen::VectorX<float> bestAnchorColumn;
     int bestAnchorColumnIndex;
+    QVector<float> cosineSimToAnchorVec;
+    QVector<float> cosineSimShadowsToAnchorVec;
+    QVector<float> shadowsIntensityRatioVec;
     e = d_ptr->calculateCandidateAllignementMetrics(
-            &candidateScores->cosineSimToAnchorVec,
-            &candidateScores->cosineSimShadowsToAnchorVec,
-            &candidateScores->shadowsIntensityRatioVec,
+            &cosineSimToAnchorVec,
+            &cosineSimShadowsToAnchorVec,
+            &shadowsIntensityRatioVec,
             &bestAnchorColumn,
             &bestAnchorColumnIndex
     ); ree;
+
+    e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() < arraySizeMax); ree;
+    for (int i = 0; i < cosineSimToAnchorVec.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = cosineSimToAnchorVec.at(i);
+    }
+
+    e = ErrorUtils::isTrue(cosineSimShadowsToAnchorVec.size() < arraySizeMax); ree;
+    for (int i = 0; i < cosineSimShadowsToAnchorVec.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
+    }
+
+    e = ErrorUtils::isTrue(shadowsIntensityRatioVec.size() < arraySizeMax); ree;
+    for (int i = 0; i < shadowsIntensityRatioVec.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + i] = shadowsIntensityRatioVec.at(i);
+    }
 
     if (MathUtils::tZero(d_ptr->m_intensityMatrix100.maxCoeff()) || bestAnchorColumnIndex < 0) {
         ERR_RETURN
@@ -1042,7 +1070,7 @@ Err ScoreOverseer::buildScores(
         const Eigen::VectorX<float> unfragPrecursorEigVed(d_ptr->m_unfragPrecursorVec);
 
         e = ErrorUtils::isEqual(bestAnchorColumn.size(), unfragPrecursorEigVed.rows()); ree;
-        candidateScores->unfragPrecursorCosineSim = EigenUtils::cosineSimilarity(
+        candidateScores->featuresArray[CandidateScores::Features::UnfragPrecursorCosineSim] = EigenUtils::cosineSimilarity(
                 bestAnchorColumn,
                 unfragPrecursorEigVed
                         );
@@ -1050,29 +1078,81 @@ Err ScoreOverseer::buildScores(
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
+    QVector<int> columnApexIndexRatiosToAnchor;
     std::transform(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
-            std::back_inserter(candidateScores->columnApexIndexRatiosToAnchor),
+            std::back_inserter(columnApexIndexRatiosToAnchor),
             [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
             );
 
-    candidateScores->shadowsCosineSimSum = std::accumulate(
-            candidateScores->cosineSimShadowsToAnchorVec.begin(),
-            candidateScores->cosineSimShadowsToAnchorVec.end(),
+    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() < arraySizeMax); ree;
+    for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
+    }
+
+    const int mzPeakLengthsSum = std::accumulate(
+            mzPeakLengthsVec.begin(),
+            mzPeakLengthsVec.end(),
+            0
+    );
+    QVector<double> mzPeakLengthsNormalized;
+    if (mzPeakLengthsSum != 0) {
+        std::transform(
+                mzPeakLengthsVec.begin(),
+                mzPeakLengthsVec.end(),
+                std::back_inserter(mzPeakLengthsNormalized),
+                [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
+        );
+    }
+    e = ErrorUtils::isTrue(mzPeakLengthsNormalized.size() < arraySizeMax); ree;
+    for (int i = 0; i < mzPeakLengthsNormalized.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
+    }
+
+    const double scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
+    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = -2.0 + candidateScores->targetDecoyCandidatePair->charge();
+
+    const double scanTimeRange = std::max(
+            std::numeric_limits<double>::min(),
+            scanTimeMinMax.second - scanTimeMinMax.first
+    );
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange] = scanTimeRange;
+
+    candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] = std::accumulate(
+            cosineSimShadowsToAnchorVec.begin(),
+            cosineSimShadowsToAnchorVec.end(),
             0.0
             );
+
+    const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = pdScanTime;
+
+    const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideStringWithMods().size()) / 10.0;
+    candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = pepLength;
+
+    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount]
+                                            = candidateScores->targetDecoyCandidatePair->totalFragmentCount();
+
 
     if (bestAnchorColumn.rows() < 1) {
         ERR_RETURN
     }
 
+    double cosineSimSpectrum;
+    double klDivSpectrum;
     e = calculateSpectrumMetrics(
             d_ptr->m_intensityMatrix100ApexRow,
             ms2IonsTheoretical,
-            &candidateScores->cosineSimSpectrum,
-            &candidateScores->klDivSpectrum
+            &cosineSimSpectrum,
+            &klDivSpectrum
     ); ree;
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimSpectrum;
+    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivSpectrum;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = std::pow(std::max(0.0, cosineSimSpectrum), 3);
+    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0);
 
     e = calculateMS1Corr(
             bestAnchorColumn,
@@ -1081,117 +1161,192 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             &m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &candidateScores->cosineSim100MS1
+            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
             ); ree;
 
-    if (!collectBaseFeaturesOnly) {
-
-        const double mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
-                targetDecoyCandidatePair->mass(),
-                targetDecoyCandidatePair->charge(),
-                -1
-        );
-        e = calculateMS1Corr(
-                bestAnchorColumn,
-                peakIntegrationIndexes,
-                mzPreMono,
-                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-                &m_turboXICMS1,
-                &d_ptr->m_gaussKernel,
-                &candidateScores->cosineSim100MS1PreMono
-        ); ree;
 
 
-        const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
-                targetDecoyCandidatePair->mass(),
-                targetDecoyCandidatePair->charge(),
-                1
-        );
-        e = calculateMS1Corr(
-                bestAnchorColumn,
-                peakIntegrationIndexes,
-                mzIso1,
-                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-                &m_turboXICMS1,
-                &d_ptr->m_gaussKernel,
-                &candidateScores->cosineSim100MS1Iso1
-        ); ree;
+    const double mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            -1
+    );
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzPreMono,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+    ); ree;
 
-        const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
-                targetDecoyCandidatePair->mass(),
-                targetDecoyCandidatePair->charge(),
-                2
-        );
-        e = calculateMS1Corr(
-                bestAnchorColumn,
-                peakIntegrationIndexes,
-                mzIso2,
-                d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-                &m_turboXICMS1,
-                &d_ptr->m_gaussKernel,
-                &candidateScores->cosineSim100MS1Iso2
-        ); ree;
 
-        float cosineSimSum45;
-        float cosineSimSum20;
-        e = d_ptr->calculateCosineSimSumTight(
-                bestAnchorColumnIndex,
-                &cosineSimSum45,
-                &cosineSimSum20
-        ); ree;
+    const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            1
+    );
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso1,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+    ); ree;
 
-        candidateScores->cosineSimSum45 = static_cast<float>(cosineSimSum45);
-        candidateScores->cosineSimSum20 = static_cast<float>(cosineSimSum20);
+    const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            2
+    );
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso2,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            &m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+    ); ree;
 
-        const double chunkDivision = 3.0;
-        QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
-        const auto terminatorLogic = [](double d){return d < 1.0;};
-        const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
-        bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
-        const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
-        const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
-        if (bestAnchorColumnVec.size() < chunkDivision) {
-            candidateScores->peakShapeRatio1 = 0.0;
-            candidateScores->peakShapeRatio2 = 1.0;
-            candidateScores->peakShapeRatio3 = 0.0;
-        }
-        else {
+    float cosineSimSum45;
+    float cosineSimSum20;
+    e = d_ptr->calculateCosineSimSumTight(
+            bestAnchorColumnIndex,
+            &cosineSimSum45,
+            &cosineSimSum20
+    ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45] = cosineSimSum45;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20] = cosineSimSum20;
 
-            candidateScores->peakShapeRatio1 = std::accumulate(
-                    bestAnchorColumnVec.begin(),
-                    bestAnchorColumnVec.begin() + chunkSize,
-                    0.0
-            ) / bestAnchorColumnVecSum;
+    const double chunkDivision = 3.0;
+    QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
+    const auto terminatorLogic = [](double d){return d < 1.0;};
+    const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
+    bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
+    const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
+    const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
+    if (bestAnchorColumnVec.size() < chunkDivision) {
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = 0.0;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = 1.0;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = 0.0;
+    }
+    else {
 
-            candidateScores->peakShapeRatio2 = std::accumulate(
-                    bestAnchorColumnVec.begin() + chunkSize,
-                    bestAnchorColumnVec.begin() + (chunkSize * 2),
-                    0.0
-            ) / bestAnchorColumnVecSum;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::accumulate(
+                bestAnchorColumnVec.begin(),
+                bestAnchorColumnVec.begin() + chunkSize,
+                0.0
+        ) / bestAnchorColumnVecSum;
 
-            candidateScores->peakShapeRatio3 = std::accumulate(
-                    bestAnchorColumnVec.begin() + (chunkSize * 2),
-                    bestAnchorColumnVec.end(),
-                    0.0
-            ) / bestAnchorColumnVecSum;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = std::accumulate(
+                bestAnchorColumnVec.begin() + chunkSize,
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                0.0
+        ) / bestAnchorColumnVecSum;
 
-        }
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::accumulate(
+                bestAnchorColumnVec.begin() + (chunkSize * 2),
+                bestAnchorColumnVec.end(),
+                0.0
+        ) / bestAnchorColumnVecSum;
+
     }
 
-    const int top6 = std::min(6, candidateScores->cosineSimToAnchorVec.size());
-    candidateScores->cosineSimSum100 = std::accumulate(
-            candidateScores->cosineSimToAnchorVec.begin(),
-            candidateScores->cosineSimToAnchorVec.begin() + top6,
+    //TODO revisit if you want to use all 12 and have a separate one for top 6
+    const int top6 = std::min(6, cosineSimToAnchorVec.size());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = std::accumulate(
+            cosineSimToAnchorVec.begin(),
+            cosineSimToAnchorVec.begin() + top6,
             0.0f
             );
 
-    if (candidateScores->cosineSimToAnchorVec.size() > top6) {
-        candidateScores->cosineSimSumBottom6 = std::accumulate(
-                candidateScores->cosineSimToAnchorVec.begin() + top6 + 1,
-                candidateScores->cosineSimToAnchorVec.end(),
+    if (cosineSimToAnchorVec.size() > top6) {
+
+        const float cosineSimSumTop6 = std::accumulate(
+                cosineSimToAnchorVec.begin(),
+                cosineSimToAnchorVec.begin() + top6,
                 0.0f
         );
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop6] = cosineSimSumTop6;
+
+        const float cosineSimSumBottom6 = std::accumulate(
+                cosineSimToAnchorVec.begin() + top6 + 1,
+                cosineSimToAnchorVec.end(),
+                0.0f
+        );
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6] = cosineSimSumBottom6;
+
+        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
+                = std::log(std::max(1.0f, cosineSimSumTop6) / (cosineSimSumTop6 + cosineSimSumBottom6 + 1.0));
+
+        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
+                = cosineSimSumBottom6 / candidateScores->targetDecoyCandidatePair->totalFragmentCount();
     }
+
+    QMap<QChar, int> aminoAcidCounts = {
+            {'A', 0},
+            {'C', 0},
+            {'D', 0},
+            {'E', 0},
+            {'F', 0},
+            {'G', 0},
+            {'H', 0},
+            {'I', 0},
+            {'K', 0},
+            {'L', 0},
+            {'M', 0},
+            {'N', 0},
+            {'P', 0},
+            {'Q', 0},
+            {'R', 0},
+            {'S', 0},
+            {'T', 0},
+            {'V', 0},
+            {'W', 0},
+            {'Y', 0}
+    };
+
+    for (const QChar aminoAcid : candidateScores->targetDecoyCandidatePair->peptideStringWithMods()) {
+
+        if (!aminoAcidCounts.contains(aminoAcid)) {
+            qDebug() << candidateScores->targetDecoyCandidatePair->peptideStringWithMods() << "missing amino acid";
+        }
+
+        e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
+        aminoAcidCounts[aminoAcid]++;
+    }
+
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA] = aminoAcidCounts['A'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC] = aminoAcidCounts['C'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD] = aminoAcidCounts['D'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE] = aminoAcidCounts['E'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF] = aminoAcidCounts['F'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG] = aminoAcidCounts['G'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH] = aminoAcidCounts['H'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI] = aminoAcidCounts['I'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK] = aminoAcidCounts['K'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL] = aminoAcidCounts['L'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM] = aminoAcidCounts['M'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN] = aminoAcidCounts['N'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP] = aminoAcidCounts['P'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ] = aminoAcidCounts['Q'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR] = aminoAcidCounts['R'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS] = aminoAcidCounts['S'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT] = aminoAcidCounts['T'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = aminoAcidCounts['V'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = aminoAcidCounts['W'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = aminoAcidCounts['Y'];
+
+    const double mz = BiophysicalCalcs::calculateThomsonFromMass(
+            candidateScores->targetDecoyCandidatePair->mass(),
+            candidateScores->targetDecoyCandidatePair->charge()
+    );
+
+    candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0) * 0.002;
 
     ERR_RETURN
 }

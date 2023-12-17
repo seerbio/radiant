@@ -7,6 +7,7 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 
+#include "CandidateScores.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsReaderBase.h"
@@ -16,8 +17,9 @@
 
 using namespace Error;
 
-class TargetDecoyPairParallelInput;
+
 class MsCalibratomatic;
+class TargetDecoyPairParallelInput;
 
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron {
@@ -36,8 +38,8 @@ public:
 
     Err scoreTargetDecoyPairs(
             int topNMS2Ions,
+            const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
-            bool collectBaseFeaturesOnly,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             );
@@ -50,8 +52,8 @@ private:
 
     Err buildParallelInput(
             int topNMS2Ions,
+            const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
-            bool collectBaseFeaturesOnly,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             );

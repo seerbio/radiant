@@ -16,7 +16,7 @@
 
 using namespace Error;
 
-
+class CandidateScores;
 class MsScanInfo;
 class MsReaderPointerAcc;
 class TargetDecoyCandidatePair;

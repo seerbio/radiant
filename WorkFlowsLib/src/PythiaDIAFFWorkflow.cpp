@@ -4,6 +4,7 @@
 
 #include "PythiaDIAFFWorkflow.h"
 
+#include "CandidateScores.h"
 #include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
 #include "FastaFileToPeptidesListWorkFlow.h"
@@ -91,7 +92,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &msReaderPointerAcc,
                 &diaTargetFrames,
                 &scanNumberVsScanTimeMS1
-        ); ree;
+                ); ree;
 
         e = optimizeParameters(&msReaderPointerAcc); ree;
     }
@@ -104,22 +105,22 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
-    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
-    e = updateProteinGroupAnnotation(
-            m_fastaUri,
-            &candidateScoreClassifierPntrs
-            ); ree;
+//    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
+//    e = updateProteinGroupAnnotation(
+//            m_fastaUri,
+//            &candidateScoreClassifierPntrs
+//            ); ree;
 
-    QVector<CandidateScores> candidateScoreClassifier;
-    std::transform(
-            candidateScoreClassifierPntrs.begin(),
-            candidateScoreClassifierPntrs.end(),
-            std::back_inserter(candidateScoreClassifier),
-            [](const CandidateScores *cs){return *cs;}
-            );
+//    QVector<CandidateScores> candidateScoreClassifier;
+//    std::transform(
+//            candidateScoreClassifierPntrs.begin(),
+//            candidateScoreClassifierPntrs.end(),
+//            std::back_inserter(candidateScoreClassifier),
+//            [](const CandidateScores *cs){return *cs;}
+//            );
 
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoreClassifier, resultsFilePath); ree;
+//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+//    e = ParquetReader::write(candidateScoreClassifier, resultsFilePath); ree;
 
 //    limit what scores are collected depending on extendedScores or NeuralNetScores is set
 
@@ -133,7 +134,8 @@ namespace {
         QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
         for (CandidateScores *cs : *candidateScores) {
 
-            const QString key = cs->peptideStringWithMods + QString::number(cs->charge);
+            const QString key
+                = cs->targetDecoyCandidatePair->peptideStringWithMods() + QString::number(cs->targetDecoyCandidatePair->charge());
             if (keyVsCandidatesFoundBest.contains(key)) {
                 continue;
             }
@@ -159,15 +161,16 @@ namespace {
         filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
         qDebug() << candidateScoresFiltered.size() << "Found for recalibartion filtered";
 
+        const int top6 = 6;
         const auto msCalibrationReaderRowsInsertLogic = [](CandidateScores *cs){
 
             MsCalibarationReaderRow row;
-            row.peptideStringWithMods = cs->peptideStringWithMods;
-            row.iRTPredicted = static_cast<float>(cs->iRTPredicted);
+            row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
+            row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
             row.scanTime = cs->scanTime;
-            row.mzSearchedVec = cs->mzSearchedVec;
-            row.mzFoundMeanVec = cs->mzFoundMeanVec;
-            row.mzFoundStDevVec = cs->mzFoundStDevVec;
+            row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
+            row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
+            row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
 
             return row;
         };
@@ -248,11 +251,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         m_candidateScores.clear();
 
-        const bool collectBaseFeaturesOnly = true;
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsCalibration,
+                msReaderPointerAcc->ptr->scanTimeMinMax(),
                 m_msCalibratomatic,
-                collectBaseFeaturesOnly,
                 &localTranches,
                 &m_candidateScores
                 ); ree;
@@ -285,7 +287,8 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         ); ree;
 
         std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-            return l->discriminateScore < r->discriminateScore;
+            return l->featuresArray[CandidateScores::Features::DiscriminateScore]
+                   < r->featuresArray[CandidateScores::Features::DiscriminateScore];
         });
 
         const int idealTrainingCountAtGivenFDR = 1000;
@@ -354,10 +357,10 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
                 ); ree;
 
         mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyPointers);
+
         if (m_pythiaParameters.verbosity > 1) {
             qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyPointers.size() << "targetDecoyPairs found";
         }
-
     }
 
     ERR_RETURN
@@ -374,7 +377,8 @@ namespace {
 
     QString buildCandidateKey(const CandidateScores &candidateScores) {
         const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
-        return candidateScores.peptideStringWithMods + QString::number(candidateScores.charge) + candidateScores.targetKey + decoyToString;
+        return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
+                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
     }
 
     struct BuildClassiferParallelInput {
@@ -482,18 +486,19 @@ namespace {
         ERR_INIT
 
         QVector<double> vec;
-        e = CandidateScores::buildScoreVector(
-                candidateScores,
-                useExtendedScores,
-                useNeuralNetworkScores,
-                theoMzIonsSize,
-                scanTimeMinMax,
-                &vec
-                ); rree;
+
+        if (useExtendedScores) {
+
+        }
+        else if (useNeuralNetworkScores) {
+
+        }
+        else {
+            e = candidateScores.featuresArrayEssentials(&vec); rree;
+        }
 
         return {e, vec};
     }
-
 
 }//namespace
 Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
@@ -541,7 +546,8 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
         CandidateScores *cs = &m_candidateScores[i];
 
-        const QString key = cs->peptideStringWithMods + QString::number(cs->charge) + cs->targetKey;
+        const QString key = cs->targetDecoyCandidatePair->peptideStringWithMods()
+                                + QString::number(cs->targetDecoyCandidatePair->charge()) + cs->targetKey;
         QVector<double> *sv = &scoreVectors[i];
 
         if (cs->isDecoy) {
@@ -627,16 +633,14 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     for (int i = 0; i < scoresDecoys.size(); i++) {
 
         CandidateScores* csTarget = candidateScoresTargetsPtrs.at(i);
-        csTarget->discriminateScore = discScoreTargets.at(i);
+        csTarget->featuresArray[CandidateScores::Features::DiscriminateScore] = discScoreTargets.at(i);
 
         CandidateScores* csDecoy = candidateScoresDecoysPtrs.at(i);
-        csDecoy->discriminateScore = discScoreDecoys.at(i);
-
+        csDecoy->featuresArray[CandidateScores::Features::DiscriminateScore] = discScoreDecoys.at(i);
     }
     qDebug() << "Setting scores" << et.restart() << "mSec";
 
     ERR_RETURN
-
 }
 
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
@@ -704,9 +708,8 @@ namespace {
                 classifierScore = cs->classifierScore;
             }
             else {
-                classifierScore = cs->discriminateScore;
+                classifierScore = cs->featuresArray[CandidateScores::Features::DiscriminateScore];
             }
-
 
             if (cs->isDecoy) {
                 identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
@@ -1007,11 +1010,10 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 
         m_candidateScores.clear();
 
-        const bool collectBaseFeaturesOnly = true;
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsOptimization,
+                msReaderPointerAcc->ptr->scanTimeMinMax(),
                 m_msCalibratomatic,
-                collectBaseFeaturesOnly,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
         ); ree;
@@ -1111,11 +1113,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
     ); ree;
     qDebug() << "Targets fetched" << et.restart() << "mSec";
 
-    const bool collectBaseFeaturesOnly = false;
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
+            msReaderPointerAcc->ptr->scanTimeMinMax(),
             m_msCalibratomatic,
-            collectBaseFeaturesOnly,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
     ); ree;
@@ -1155,7 +1156,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
 
 
     std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-        return l->discriminateScore < r->discriminateScore;
+        return l->featuresArray[CandidateScores::Features::DiscriminateScore]
+                < r->featuresArray[CandidateScores::Features::DiscriminateScore];
     });
     qDebug() << "Targets sorted" << et.restart() << "mSec";
 
@@ -1192,7 +1194,10 @@ namespace {
         std::sort(
                 candidateScoresTargetsAndDecoys->rbegin(),
                 candidateScoresTargetsAndDecoys->rend(),
-                [](const CandidateScores *l, const CandidateScores *r){return l->discriminateScore < r->discriminateScore;}
+                [](const CandidateScores *l, const CandidateScores *r){
+                    return l->featuresArray[CandidateScores::Features::DiscriminateScore]
+                           < r->featuresArray[CandidateScores::Features::DiscriminateScore];
+                }
         );
 
         const double fdrThreshold = 0.5;
@@ -1264,18 +1269,21 @@ namespace {
         for (int i = 0; i < candidateScoresTargetsAndDecoys50PercentFDRFiltered.size(); i++) {
             const CandidateScores *cs = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
-            karnnNnTarget.seq = cs->peptideStringWithMods;
+            karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
 
-            e = CandidateScores::buildScoreVector(
-                    *cs,
-                    true,
-                    true,
-                    topNMs2Ions,
-                    scanTimeMinMax,
-                    &karnnNnTarget.scoreVec
-            ); ree;
+//            e = CandidateScores::buildScoreVector(
+//                    *cs,
+//                    true,
+//                    true,
+//                    topNMs2Ions,
+//                    scanTimeMinMax,
+//                    &karnnNnTarget.scoreVec
+//            ); ree;
+
+            karnnNnTarget.scoreVec = cs->featuresArrayNeuralNet();
+
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
@@ -1481,7 +1489,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
         CandidateScores *cs = (*candidateScores)[i];
 
-        QString peptideSeqReplacedLeucines = cs->peptideStringWithMods;
+        QString peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods();
         peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
 
         const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);

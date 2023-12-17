@@ -10,371 +10,219 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "TargetDecoyCandidatePair.h"
 #include "ParquetReader.h"
 
-//TODO make unit tests.
-namespace CandidateScoresNamespace {
 
-    const QString COS_SIM_SUM_100 = QStringLiteral("cosineSimSum100");
-    const QString COS_SIM_SUM_45 = QStringLiteral("cosineSimSum45");
-    const QString COS_SIM_SUM_20 = QStringLiteral("cosineSimSum20");
-    const QString IS_DECOY = QStringLiteral("isDecoy");
-    const QString PEP_STR_W_MODS = QStringLiteral("peptideStringWithMods");
-    const QString CHARGE = QStringLiteral("charge");
-    const QString MASS = QStringLiteral("mass");
-    const QString SCAN_NUM = QStringLiteral("scanNumber");
-    const QString SCAN_TIME = QStringLiteral("scanTime");
-    const QString SCAN_ION_CNT = QStringLiteral("scanIonCount");
-    const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
-    const QString IRT_PRED = QStringLiteral("iRTPredicted");
-    const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
-    const QString THEO_INTZ_V = QStringLiteral("theoIntensityVec");
-    const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
-    const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
-    const QString INTZ_FND_MAX_V = QStringLiteral("intensityFoundMaxVec");
-    const QString COS_SIM_SUM_ANCH_V = QStringLiteral("cosineSimToAnchorVec");
-    const QString TARGET_KEY = QStringLiteral("targetKey");
-    const QString KL_DIV_SUM = QStringLiteral("klDivSum");
-    const QString KL_DIV_SPECTRUM = QStringLiteral("klDivSpectrum");
-    const QString COSINE_SIM_SPECTRUM = QStringLiteral("cosineSimSpectrum");
-    const QString COSINE_SIM_100_MS1 = QStringLiteral("cosineSim100MS1");
-    const QString COSINE_SIM_100_MS1_ISO1 = QStringLiteral("cosineSim100MS1Iso1");
-    const QString COSINE_SIM_100_MS1_ISO2 = QStringLiteral("cosineSim100MS1Iso2");
-    const QString COSINE_SIM_45_MS1 = QStringLiteral("cosineSim45MS1");
-    const QString COSINE_SIM_20_MS1 = QStringLiteral("cosineSim20MS1");
-    const QString THEO_FRAG_CNT = QStringLiteral("theoFragmentCount");
-    const QString DISC_SCORE = QStringLiteral("discriminateScore");
-    const QString Q_VAL = QStringLiteral("qValue");
-    const QString DECOY_RATIO = QStringLiteral("decoyRatio");
-    const QString MATRIX_WEIGHT = QStringLiteral("matrixWeight");
-    const QString MATRIX_PVAL = QStringLiteral("matrixPVal");
-    const QString MATRIX_ERROR = QStringLiteral("matrixError");
-    const QString SCAN_NUM_CAND_CNT = QStringLiteral("scanNumberCandidateCount");
-    const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
-    const QString PROTEIN_GRP = QStringLiteral("proteinGroup");
-    const QString PEAK_SHAPE_RATIO_1 = QStringLiteral("peakShapeRatio1");
-    const QString PEAK_SHAPE_RATIO_2 = QStringLiteral("peakShapeRatio2");
-    const QString PEAK_SHAPE_RATIO_3 = QStringLiteral("peakShapeRatio3");
-    const QString SHADOWS_COSINE_SIM_SUM = QStringLiteral("shadowsCosineSimSum");
-    const QString COS_SIM_SUM_ANCH_SHADOW_V = QStringLiteral("cosineSimShadowsToAnchorVec");
-    const QString SHADOW_INTZ_RATIO_VEC = QStringLiteral("shadowIntensityRatioVec");
-    const QString ALL_MAX_IND_CNT = QStringLiteral("allignedMaxIndexesCount");
-    const QString COSINE_SIM_SUM_BOTTOM_6 = QStringLiteral("cosineSimSumBottom6");
-    const QString MZ_PEAK_LENGTHS_VEC = QStringLiteral("mzPeakLengthsVec");
-    const QString COL_APEX_IND_RATIO_TO_ANCHOR = QStringLiteral("columnApexIndexRatiosToAnchor");
-
-
-
-    const QStringList keysToCheck = {
-            COS_SIM_SUM_100,
-            COS_SIM_SUM_45,
-            COS_SIM_SUM_20,
-            IS_DECOY,
-            PEP_STR_W_MODS,
-            CHARGE,
-            MASS,
-            SCAN_NUM,
-            SCAN_TIME,
-            SCAN_ION_CNT,
-            MZ_SRCH_V,
-            THEO_INTZ_V,
-            MZ_FND_MEAN_V,
-            MZ_FND_STDEV_V,
-            INTZ_FND_MAX_V,
-            COS_SIM_SUM_ANCH_V,
-            SCAN_TIME_PRED,
-            IRT_PRED,
-            TARGET_KEY,
-            KL_DIV_SUM,
-            KL_DIV_SPECTRUM,
-            COSINE_SIM_SPECTRUM,
-            COSINE_SIM_100_MS1,
-            COSINE_SIM_100_MS1_ISO1,
-            COSINE_SIM_100_MS1_ISO2,
-            COSINE_SIM_45_MS1,
-            COSINE_SIM_20_MS1,
-            THEO_FRAG_CNT,
-            DISC_SCORE,
-            Q_VAL,
-            DECOY_RATIO,
-            MATRIX_WEIGHT,
-            MATRIX_PVAL,
-            MATRIX_ERROR,
-            SCAN_NUM_CAND_CNT,
-            CLASSIFIER_SCORE,
-            PROTEIN_GRP,
-            PEAK_SHAPE_RATIO_1,
-            PEAK_SHAPE_RATIO_2,
-            PEAK_SHAPE_RATIO_3,
-            SHADOWS_COSINE_SIM_SUM,
-            COS_SIM_SUM_ANCH_SHADOW_V,
-            SHADOW_INTZ_RATIO_VEC,
-            ALL_MAX_IND_CNT,
-            COSINE_SIM_SUM_BOTTOM_6,
-            MZ_PEAK_LENGTHS_VEC,
-            COL_APEX_IND_RATIO_TO_ANCHOR
-    };
-}
-
-class ALGORITHMSFFLIB_EXPORTS CandidateScores : public ParquetReaderInputBase {
+class ALGORITHMSFFLIB_EXPORTS CandidateScores {
 
 public:
+
+    enum Features {
+        CosineSimSum100 = 0,
+        CosineSimSum45,
+        CosineSimSum20,
+        CosineSimSumTop6,
+        CosineSimSumBottom6,
+        TopBottomRatio,
+        TopBottomRatioNorm,
+        ChargeNorm,
+        Mass,
+        ScanTimeDelta,
+        ScanTimeRange,
+        ScanTimePd,
+        ScanIonCount,
+        MzNorm,
+        KlDivSum,
+        KlDivSpectrum,
+        KlDivSpectrumCubeRoot,
+        CosineSimSpectrum,
+        CosineSimSpectrumCubed,
+        CosineSim100MS1,
+        CosineSim45MS1,
+        CosineSim20MS1,
+        CosineSim100MS1PreMono,
+        CosineSim100MS1Iso1,
+        CosineSim100MS1Iso2,
+        PeptideLengthNorm,
+        ScanTimePredicted,
+        TheoFragmentCount,
+        TotalIntensityLog,
+        DiscriminateScore,
+        ScanNumberCandidateCount,
+        PeakShapeRatio1,
+        PeakShapeRatio2,
+        PeakShapeRatio3,
+        UnfragPrecursorCosineSim,
+        ShadowsCosineSimSum,
+        AllignedMaxIndexesCount,
+        IRTPredicted,
+        MzSearched1,
+        MzSearched2,
+        MzSearched3,
+        MzSearched4,
+        MzSearched5,
+        MzSearched6,
+        MzSearched7,
+        MzSearched8,
+        MzSearched9,
+        MzSearched10,
+        MzSearched11,
+        MzSearched12,
+        TheoIntensity1,
+        TheoIntensity2,
+        TheoIntensity3,
+        TheoIntensity4,
+        TheoIntensity5,
+        TheoIntensity6,
+        TheoIntensity7,
+        TheoIntensity8,
+        TheoIntensity9,
+        TheoIntensity10,
+        TheoIntensity11,
+        TheoIntensity12,
+        MzFoundMean1,
+        MzFoundMean2,
+        MzFoundMean3,
+        MzFoundMean4,
+        MzFoundMean5,
+        MzFoundMean6,
+        MzFoundMean7,
+        MzFoundMean8,
+        MzFoundMean9,
+        MzFoundMean10,
+        MzFoundMean11,
+        MzFoundMean12,
+        MzFoundStDev1,
+        MzFoundStDev2,
+        MzFoundStDev3,
+        MzFoundStDev4,
+        MzFoundStDev5,
+        MzFoundStDev6,
+        MzFoundStDev7,
+        MzFoundStDev8,
+        MzFoundStDev9,
+        MzFoundStDev10,
+        MzFoundStDev11,
+        MzFoundStDev12,
+        IntensityFoundMax1,
+        IntensityFoundMax2,
+        IntensityFoundMax3,
+        IntensityFoundMax4,
+        IntensityFoundMax5,
+        IntensityFoundMax6,
+        IntensityFoundMax7,
+        IntensityFoundMax8,
+        IntensityFoundMax9,
+        IntensityFoundMax10,
+        IntensityFoundMax11,
+        IntensityFoundMax12,
+        CosineSimToAnchor1,
+        CosineSimToAnchor2,
+        CosineSimToAnchor3,
+        CosineSimToAnchor4,
+        CosineSimToAnchor5,
+        CosineSimToAnchor6,
+        CosineSimToAnchor7,
+        CosineSimToAnchor8,
+        CosineSimToAnchor9,
+        CosineSimToAnchor10,
+        CosineSimToAnchor11,
+        CosineSimToAnchor12,
+        CosineSimShadowsToAnchor1,
+        CosineSimShadowsToAnchor2,
+        CosineSimShadowsToAnchor3,
+        CosineSimShadowsToAnchor4,
+        CosineSimShadowsToAnchor5,
+        CosineSimShadowsToAnchor6,
+        CosineSimShadowsToAnchor7,
+        CosineSimShadowsToAnchor8,
+        CosineSimShadowsToAnchor9,
+        CosineSimShadowsToAnchor10,
+        CosineSimShadowsToAnchor11,
+        CosineSimShadowsToAnchor12,
+        ShadowsIntensityRatio1,
+        ShadowsIntensityRatio2,
+        ShadowsIntensityRatio3,
+        ShadowsIntensityRatio4,
+        ShadowsIntensityRatio5,
+        ShadowsIntensityRatio6,
+        ShadowsIntensityRatio7,
+        ShadowsIntensityRatio8,
+        ShadowsIntensityRatio9,
+        ShadowsIntensityRatio10,
+        ShadowsIntensityRatio11,
+        ShadowsIntensityRatio12,
+        MzPeakLengthsNorm1,
+        MzPeakLengthsNorm2,
+        MzPeakLengthsNorm3,
+        MzPeakLengthsNorm4,
+        MzPeakLengthsNorm5,
+        MzPeakLengthsNorm6,
+        MzPeakLengthsNorm7,
+        MzPeakLengthsNorm8,
+        MzPeakLengthsNorm9,
+        MzPeakLengthsNorm10,
+        MzPeakLengthsNorm11,
+        MzPeakLengthsNorm12,
+        ColumnApexIndexRatiosToAnchor1,
+        ColumnApexIndexRatiosToAnchor2,
+        ColumnApexIndexRatiosToAnchor3,
+        ColumnApexIndexRatiosToAnchor4,
+        ColumnApexIndexRatiosToAnchor5,
+        ColumnApexIndexRatiosToAnchor6,
+        ColumnApexIndexRatiosToAnchor7,
+        ColumnApexIndexRatiosToAnchor8,
+        ColumnApexIndexRatiosToAnchor9,
+        ColumnApexIndexRatiosToAnchor10,
+        ColumnApexIndexRatiosToAnchor11,
+        ColumnApexIndexRatiosToAnchor12,
+        AminoAcidCountA,
+        AminoAcidCountC,
+        AminoAcidCountD,
+        AminoAcidCountE,
+        AminoAcidCountF,
+        AminoAcidCountG,
+        AminoAcidCountH,
+        AminoAcidCountI,
+        AminoAcidCountK,
+        AminoAcidCountL,
+        AminoAcidCountM,
+        AminoAcidCountN,
+        AminoAcidCountP,
+        AminoAcidCountQ,
+        AminoAcidCountR,
+        AminoAcidCountS,
+        AminoAcidCountT,
+        AminoAcidCountV,
+        AminoAcidCountW,
+        AminoAcidCountY,
+        FeaturesSize
+    };
 
     CandidateScores() = default;
     ~CandidateScores() = default;
 
-    PeptideStringWithMods peptideStringWithMods;
-    double cosineSimSum100 = -1.0;
-    double cosineSimSum45 = -1.0;
-    double cosineSimSum20 = -1.0;
-    double cosineSimSumBottom6 = -1.0;
+    TargetDecoyCandidatePair *targetDecoyCandidatePair;
+    QString targetKey;
+    QString proteinGroup;
     bool isDecoy = false;
-    Charge charge = -1;
-    double mass = -1.0;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
-    int scanIonCount = -1;
-    double klDivSum = -1.0;
-    double klDivSpectrum = 10.0;
-    double cosineSimSpectrum = -1.0;
-    double cosineSim100MS1 = -1.0;
-    double cosineSim45MS1 = -1.0;
-    double cosineSim20MS1 = -1.0;
-    double cosineSim100MS1PreMono = -1.0;
-    double cosineSim100MS1Iso1 = -1.0;
-    double cosineSim100MS1Iso2 = -1.0;
     ScanTime scanTimePredicted = -1.0;
-    double iRTPredicted = -1.0;
-    QVector<double> mzSearchedVec;
-    QVector<float> theoIntensityVec;
-    QVector<double> mzFoundMeanVec;
-    QVector<double> mzFoundStDevVec;
-    QVector<float> intensityFoundMaxVec;
-    QVector<float> cosineSimToAnchorVec;
-    QString targetKey;
-    int theoFragmentCount = -1;
-    double discriminateScore = -1.0;
+    double classifierScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
-    double matrixWeight = -1.0;
-    double matrixPValue = 1.0;
-    double matrixError = 1.0;
-    int scanNumberCandidateCount = -1;
-    double classifierScore = -1.0;
-    QString proteinGroup;
-    double peakShapeRatio1 = -1.0;
-    double peakShapeRatio2 = -1.0;
-    double peakShapeRatio3 = -1.0;
-    QVector<float> cosineSimShadowsToAnchorVec;
-    QVector<float> shadowsIntensityRatioVec;
-    double shadowsCosineSimSum = -1.0;
-    int allignedMaxIndexesCount = -1;
-    QVector<int> mzPeakLengthsVec;
-    float unfragPrecursorCosineSim = -1.0;
 
-    QVector<double> columnApexIndexRatiosToAnchor;
+    QVector<double> featuresArray;
 
-    void clear() {
-        peptideStringWithMods= "";
-        mzSearchedVec.clear();
-        theoIntensityVec.clear();
-        mzFoundMeanVec.clear();
-        mzFoundStDevVec.clear();
-        intensityFoundMaxVec.clear();
-        cosineSimToAnchorVec.clear();
-        cosineSimShadowsToAnchorVec.clear();
-        shadowsIntensityRatioVec.clear();
-        targetKey = "";
-        proteinGroup = "";
-        cosineSimSum100 = -1.0;
-        cosineSimSum45 = -1.0;
-        cosineSimSum20 = -1.0;
-        cosineSimSumBottom6 = -1.0;
-        isDecoy = false;
-        charge = -1;
-        mass = -1.0;
-        scanNumber = -1;
-        scanTime = -1.0;
-        scanIonCount = -1;
-        klDivSum = -1.0;
-        klDivSpectrum = -1.0;
-        cosineSimSpectrum = -1.0;
-        cosineSim100MS1 = -1.0;
-        cosineSim45MS1 = -1.0;
-        cosineSim20MS1 = -1.0;
-        cosineSim100MS1Iso1 = -1.0;
-        cosineSim100MS1Iso2 = -1.0;
-        scanTimePredicted = -1.0;
-        iRTPredicted = -1.0;
-        theoFragmentCount = -1;
-        discriminateScore = -1.0;
-        qValue = 1.0;
-        decoyRatio = -1.0;
-        matrixWeight = -1.0;
-        matrixPValue = 1.0;
-        matrixError = 1.0;
-        scanNumberCandidateCount = -1;
-        classifierScore = -1.0;
-        peakShapeRatio1 = -1.0;
-        peakShapeRatio2 = -1.0;
-        peakShapeRatio3 = -1.0;
-        shadowsCosineSimSum = -1.0;
-        allignedMaxIndexesCount = -1;
-        mzPeakLengthsVec.clear();
+    [[nodiscard]] Err featuresArrayEssentials(QVector<double> *vecOutput) const;
 
-        columnApexIndexRatiosToAnchor.clear();
-    }
+    [[nodiscard]] QVector<double> featuresArrayExtended() const;
 
-    QMap<QString, QVariant> map() override {
+    [[nodiscard]] QVector<double> featuresArrayNeuralNet() const;
 
-        using namespace CandidateScoresNamespace;
-
-        return {
-                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
-                {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
-                {COS_SIM_SUM_45, QVariant(cosineSimSum45)},
-                {COS_SIM_SUM_20, QVariant(cosineSimSum20)},
-                {IS_DECOY, QVariant(isDecoy)},
-                {CHARGE, QVariant(charge)},
-                {MASS, QVariant(mass)},
-                {SCAN_NUM, QVariant(scanNumber)},
-                {SCAN_TIME, QVariant(scanTime)},
-                {SCAN_ION_CNT, QVariant(scanIonCount)},
-                {MZ_SRCH_V, QVariant(qVectorToQByteArray(mzSearchedVec))},
-                {THEO_INTZ_V, QVariant(qVectorToQByteArray(theoIntensityVec))},
-                {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
-                {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
-                {INTZ_FND_MAX_V, QVariant(qVectorToQByteArray(intensityFoundMaxVec))},
-                {COS_SIM_SUM_ANCH_V, QVariant(qVectorToQByteArray(cosineSimToAnchorVec))},
-                {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
-                {IRT_PRED , QVariant(iRTPredicted)},
-                {TARGET_KEY, QVariant(targetKey)},
-                {KL_DIV_SUM, QVariant(klDivSum)},
-                {KL_DIV_SPECTRUM, QVariant(klDivSpectrum)},
-                {COSINE_SIM_SPECTRUM, QVariant(cosineSimSpectrum)},
-                {COSINE_SIM_100_MS1, QVariant(cosineSim100MS1)},
-                {COSINE_SIM_100_MS1_ISO1, QVariant(cosineSim100MS1Iso1)},
-                {COSINE_SIM_100_MS1_ISO2, QVariant(cosineSim100MS1Iso2)},
-                {COSINE_SIM_45_MS1, QVariant(cosineSim45MS1)},
-                {COSINE_SIM_20_MS1, QVariant(cosineSim20MS1)},
-                {THEO_FRAG_CNT, QVariant(theoFragmentCount)},
-                {DISC_SCORE, QVariant(discriminateScore)},
-                {Q_VAL, QVariant(qValue)},
-                {DECOY_RATIO, QVariant(decoyRatio)},
-                {MATRIX_WEIGHT, QVariant(matrixWeight)},
-                {MATRIX_PVAL, QVariant(matrixPValue)},
-                {MATRIX_ERROR, QVariant(matrixError)},
-                {SCAN_NUM_CAND_CNT, QVariant(scanNumberCandidateCount)},
-                {PROTEIN_GRP, QVariant(proteinGroup)},
-                {PEAK_SHAPE_RATIO_1, QVariant(peakShapeRatio1)},
-                {PEAK_SHAPE_RATIO_2, QVariant(peakShapeRatio2)},
-                {PEAK_SHAPE_RATIO_3, QVariant(peakShapeRatio3)},
-                {CLASSIFIER_SCORE, QVariant(classifierScore)},
-                {SHADOWS_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
-                {COS_SIM_SUM_ANCH_SHADOW_V, QVariant(qVectorToQByteArray(cosineSimShadowsToAnchorVec))},
-                {SHADOW_INTZ_RATIO_VEC, QVariant(qVectorToQByteArray(shadowsIntensityRatioVec))},
-                {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
-                {COSINE_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
-                {MZ_PEAK_LENGTHS_VEC, QVariant(qVectorToQByteArray(mzPeakLengthsVec))},
-                {COL_APEX_IND_RATIO_TO_ANCHOR, QVariant(qVectorToQByteArray(columnApexIndexRatiosToAnchor))}
-        };
-    }
-
-    Err initFromRead(const ParquetReaderInputBase &row) override {
-
-        using namespace CandidateScoresNamespace;
-
-        ERR_INIT
-
-        const QMap<QString, QVariant> &dataMap = row.dataMap();
-        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
-                dataMap,
-                keysToCheck
-        );
-
-        e = ErrorUtils::isTrue(allKeysPresent); ree;
-
-        cosineSimSum100 = dataMap.value(COS_SIM_SUM_100).toDouble();
-        cosineSimSum45 = dataMap.value(COS_SIM_SUM_45).toDouble();
-        cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toDouble();
-        isDecoy = dataMap.value(IS_DECOY).toBool();
-        peptideStringWithMods = dataMap.value(PEP_STR_W_MODS).toString();
-        charge = dataMap.value(CHARGE).toInt();
-        mass = dataMap.value(MASS).toDouble();
-        scanNumber = dataMap.value(SCAN_NUM).toInt();
-        scanTime = dataMap.value(SCAN_TIME).toDouble();
-        scanIonCount = dataMap.value(SCAN_ION_CNT).toInt();
-        scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toDouble();
-        iRTPredicted = dataMap.value(IRT_PRED).toDouble();
-        mzSearchedVec = bytesArrayToQVector<double>(dataMap.value(MZ_SRCH_V).toByteArray());
-        theoIntensityVec = bytesArrayToQVector<float>(dataMap.value(THEO_INTZ_V).toByteArray());
-        mzFoundMeanVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
-        mzFoundStDevVec = bytesArrayToQVector<double>(dataMap.value(MZ_FND_STDEV_V).toByteArray());
-        intensityFoundMaxVec = bytesArrayToQVector<float>(dataMap.value(INTZ_FND_MAX_V).toByteArray());
-        cosineSimToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_V).toByteArray());
-        targetKey = dataMap.value(TARGET_KEY).toString();
-        klDivSum = dataMap.value(KL_DIV_SUM).toDouble();
-        klDivSpectrum = dataMap.value(KL_DIV_SPECTRUM).toDouble();
-        cosineSim100MS1 = dataMap.value(COSINE_SIM_100_MS1).toDouble();
-        cosineSim100MS1Iso1 = dataMap.value(COSINE_SIM_100_MS1_ISO1).toDouble();
-        cosineSim100MS1Iso2 = dataMap.value(COSINE_SIM_100_MS1_ISO2).toDouble();
-        cosineSim45MS1 = dataMap.value(COSINE_SIM_45_MS1).toDouble();
-        cosineSim20MS1 = dataMap.value(COSINE_SIM_20_MS1).toDouble();
-        cosineSimSpectrum = dataMap.value(COSINE_SIM_SPECTRUM).toDouble();
-        theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toInt();
-        discriminateScore = dataMap.value(DISC_SCORE).toDouble();
-        qValue = dataMap.value(Q_VAL).toDouble();
-        decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
-        matrixWeight = dataMap.value(MATRIX_WEIGHT).toDouble();
-        matrixPValue = dataMap.value(MATRIX_PVAL).toDouble();
-        matrixError = dataMap.value(MATRIX_ERROR).toDouble();
-        scanNumberCandidateCount = dataMap.value(SCAN_NUM_CAND_CNT).toInt();
-        classifierScore = dataMap.value(CLASSIFIER_SCORE).toDouble();
-        proteinGroup = dataMap.value(PROTEIN_GRP).toString();
-        peakShapeRatio1 = dataMap.value(PEAK_SHAPE_RATIO_1).toDouble();
-        peakShapeRatio2 = dataMap.value(PEAK_SHAPE_RATIO_2).toDouble();
-        peakShapeRatio3 = dataMap.value(PEAK_SHAPE_RATIO_3).toDouble();
-
-        shadowsCosineSimSum = dataMap.value(SHADOWS_COSINE_SIM_SUM).toDouble();
-        cosineSimShadowsToAnchorVec = bytesArrayToQVector<float>(dataMap.value(COS_SIM_SUM_ANCH_SHADOW_V).toByteArray());
-        shadowsIntensityRatioVec = bytesArrayToQVector<float>(dataMap.value(SHADOW_INTZ_RATIO_VEC).toByteArray());
-        allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toInt();
-        cosineSimSumBottom6 = dataMap.value(COSINE_SIM_SUM_BOTTOM_6).toDouble();
-        mzPeakLengthsVec = bytesArrayToQVector<int>(dataMap.value(MZ_PEAK_LENGTHS_VEC).toByteArray());
-        columnApexIndexRatiosToAnchor = bytesArrayToQVector<double>(dataMap.value(COL_APEX_IND_RATIO_TO_ANCHOR).toByteArray());
-
-        ERR_RETURN
-    }
-
-
-    template <typename T>
-    static QVector<double> extractScoresFromVecFeatures(
-            const QVector<T> &featureVec,
-            int theoMzIonsSize
-            ) {
-
-        QVector<double> vec(theoMzIonsSize, 0.0);
-
-        for (int i = 0; i < theoMzIonsSize; i++) {
-
-            if (i >= featureVec.size()) {
-                break;
-            }
-
-            vec[i] = static_cast<double>(featureVec[i]);
-        }
-
-        return vec;
-    }
-
-    static Err buildScoreVector(
-            const CandidateScores &candidateScores,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
-            int theoMzIonsSize,
-            const QPair<double, double> &scanTimeMinMax,
-            QVector<double> *scoreVec
-    );
+    void initFeaturesArray();
 
 };
 
