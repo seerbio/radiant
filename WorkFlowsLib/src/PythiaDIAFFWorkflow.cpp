@@ -1295,17 +1295,7 @@ namespace {
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
             e = cs->featuresArrayNeuralNet(&karnnNnTarget.scoreVec); ree;
-//            e = CandidateScores::buildScoreVector(
-//                    *cs,
-//                    true,
-//                    true,
-//                    topNMs2Ions,
-//                    scanTimeMinMax,
-//                    &karnnNnTarget.scoreVec
-//            ); ree;
-
-            karnnNnTarget.scoreVec = cs->featuresArrayNeuralNet();
-
+            
             karnnNNTargets.push_back(karnnNnTarget);
         }
 

@@ -220,7 +220,7 @@ public:
 
     [[nodiscard]] QVector<double> featuresArrayExtended() const;
 
-    [[nodiscard]] QVector<double> featuresArrayNeuralNet() const;
+    [[nodiscard]] Err featuresArrayNeuralNet(QVector<double> *vecOutput) const;
 
     void initFeaturesArray();
 

@@ -227,7 +227,7 @@ QVector<double> CandidateScores::featuresArrayExtended() const {
     return QVector<double>();
 }
 
-Err CandidateScores::featuresArrayNeuralNet(QVector<float> *vecOutput) const {
+Err CandidateScores::featuresArrayNeuralNet(QVector<double> *vecOutput) const {
     ERR_INIT
     e = ErrorUtils::isNotEmpty(featuresArray); ree;
     *vecOutput = featuresArray;
