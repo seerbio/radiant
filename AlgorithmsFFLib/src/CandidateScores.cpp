@@ -206,6 +206,8 @@ Err CandidateScores::featuresArrayEssentials(QVector<double> *vecOutput) const {
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(featuresArray); ree;
+
     const int essentialFeaturesSize = 5;
     QVector<double> vec(essentialFeaturesSize, 0.0);
     vec.reserve(essentialFeaturesSize);
@@ -225,6 +227,9 @@ QVector<double> CandidateScores::featuresArrayExtended() const {
     return QVector<double>();
 }
 
-QVector<double> CandidateScores::featuresArrayNeuralNet() const {
-    return QVector<double>();
+Err CandidateScores::featuresArrayNeuralNet(QVector<float> *vecOutput) const {
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(featuresArray); ree;
+    *vecOutput = featuresArray;
+    ERR_RETURN
 }

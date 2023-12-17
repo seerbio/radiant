@@ -105,11 +105,33 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
-//    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
-//    e = updateProteinGroupAnnotation(
-//            m_fastaUri,
-//            &candidateScoreClassifierPntrs
-//            ); ree;
+    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &candidateScoreClassifierPntrs
+            ); ree;
+
+    int counter = 0;
+    int decoys = 0;
+    int entrap = 0;
+    for (CandidateScores *cs : candidateScoreClassifierPntrs) {
+        counter++;
+
+        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN")) {
+            entrap++;
+        }
+
+        if (cs->isDecoy) {
+            decoys++;
+        }
+        if (decoys/(double)counter >= 0.8) {
+            break;
+        }
+
+        qDebug() << cs->classifierScore << cs->proteinGroup;
+    }
+    qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap;
+
 
 //    QVector<CandidateScores> candidateScoreClassifier;
 //    std::transform(
@@ -487,11 +509,11 @@ namespace {
 
         QVector<double> vec;
 
-        if (useExtendedScores) {
-
+        if (useNeuralNetworkScores) {
+            vec = candidateScores.featuresArray;
         }
-        else if (useNeuralNetworkScores) {
-
+        else if (useExtendedScores) {
+            vec = candidateScores.featuresArray;
         }
         else {
             e = candidateScores.featuresArrayEssentials(&vec); rree;
@@ -1272,7 +1294,7 @@ namespace {
             karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
-
+            e = cs->featuresArrayNeuralNet(&karnnNnTarget.scoreVec); ree;
 //            e = CandidateScores::buildScoreVector(
 //                    *cs,
 //                    true,

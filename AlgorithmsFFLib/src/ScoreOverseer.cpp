@@ -996,12 +996,12 @@ Err ScoreOverseer::buildScores(
 
     const int arraySizeMax = 12;
 
-    e = ErrorUtils::isTrue(d_ptr->m_mzMeanValsFound.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(d_ptr->m_mzMeanValsFound.size() <= arraySizeMax); ree;
     for (int i = 0; i < d_ptr->m_mzMeanValsFound.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i] = d_ptr->m_mzMeanValsFound.at(i);
     }
 
-    e = ErrorUtils::isTrue(d_ptr->m_stdMeanValsFound.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(d_ptr->m_stdMeanValsFound.size() <= arraySizeMax); ree;
     for (int i = 0; i < d_ptr->m_stdMeanValsFound.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = d_ptr->m_stdMeanValsFound.at(i);
     }
@@ -1011,12 +1011,12 @@ Err ScoreOverseer::buildScores(
 
     const double totalArea = d_ptr->m_intensityMatrix100.sum();
     const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.rowwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
-    e = ErrorUtils::isTrue(matrixColumnSums.cols() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(matrixColumnSums.cols() <= arraySizeMax); ree;
     for (int i = 0; i < matrixColumnSums.cols(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = matrixColumnSums.coeff(i) / totalArea;
     }
 
-    e = ErrorUtils::isTrue(ms2IonsTheoretical.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(ms2IonsTheoretical.size() <= arraySizeMax); ree;
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
         candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = ms2Ion.mz;
@@ -1046,17 +1046,17 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumnIndex
     ); ree;
 
-    e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < cosineSimToAnchorVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = cosineSimToAnchorVec.at(i);
     }
 
-    e = ErrorUtils::isTrue(cosineSimShadowsToAnchorVec.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(cosineSimShadowsToAnchorVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < cosineSimShadowsToAnchorVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
     }
 
-    e = ErrorUtils::isTrue(shadowsIntensityRatioVec.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(shadowsIntensityRatioVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < shadowsIntensityRatioVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + i] = shadowsIntensityRatioVec.at(i);
     }
@@ -1086,7 +1086,7 @@ Err ScoreOverseer::buildScores(
             [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
             );
 
-    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
     for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
     }
@@ -1105,7 +1105,7 @@ Err ScoreOverseer::buildScores(
                 [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
         );
     }
-    e = ErrorUtils::isTrue(mzPeakLengthsNormalized.size() < arraySizeMax); ree;
+    e = ErrorUtils::isTrue(mzPeakLengthsNormalized.size() <= arraySizeMax); ree;
     for (int i = 0; i < mzPeakLengthsNormalized.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
     }
