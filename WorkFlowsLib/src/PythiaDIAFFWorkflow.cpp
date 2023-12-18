@@ -1136,14 +1136,18 @@ namespace {
         );
 
         const double fdrThreshold = 0.5;
+        int counter = 0;
         for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered->push_back(csp);
+            counter++;
 
             if (csp->qValue >= fdrThreshold && !csp->isDecoy) {
                 break;
             }
         }
+
+        *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
+        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(static_cast<int>(counter));
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
         std::shuffle(
