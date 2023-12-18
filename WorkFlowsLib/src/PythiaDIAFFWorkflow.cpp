@@ -506,7 +506,7 @@ namespace {
             return {e, vec};
         }
         else if (useExtendedScores) {
-            QVector<float> &vec = candidateScores->featuresArray;
+            QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::CosineSimToAnchor1);
             return {e, vec};
         }
         else {
