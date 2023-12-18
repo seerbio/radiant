@@ -1013,21 +1013,21 @@ Err ScoreOverseer::buildScores(
     const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.rowwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
     e = ErrorUtils::isTrue(matrixColumnSums.cols() <= arraySizeMax); ree;
     for (int i = 0; i < matrixColumnSums.cols(); i++) {
-        candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = matrixColumnSums.coeff(i) / totalArea;
+        candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = static_cast<float>(matrixColumnSums.coeff(i) / totalArea);
     }
 
     e = ErrorUtils::isTrue(ms2IonsTheoretical.size() <= arraySizeMax); ree;
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
-        candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = ms2Ion.mz;
+        candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = static_cast<float>(ms2Ion.mz);
         candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
     }
 
-    candidateScores->featuresArray[CandidateScores::Features::Mass] = targetDecoyCandidatePair->mass();
-    candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = targetDecoyCandidatePair->iRt();
-    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount] = targetDecoyCandidatePair->totalFragmentCount();
-    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size();
-    candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<int>(std::count_if(
+    candidateScores->featuresArray[CandidateScores::Features::Mass] = static_cast<float>(targetDecoyCandidatePair->mass());
+    candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = static_cast<float>(targetDecoyCandidatePair->iRt());
+    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount] = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
+    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
+    candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
             [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
@@ -1086,10 +1086,10 @@ Err ScoreOverseer::buildScores(
             [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
             );
 
-    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
-    for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
-        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
-    }
+//    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
+//    for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
+//        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
+//    }
 
     const int mzPeakLengthsSum = std::accumulate(
             mzPeakLengthsVec.begin(),
@@ -1133,8 +1133,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = pepLength;
 
     candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount]
-                                            = candidateScores->targetDecoyCandidatePair->totalFragmentCount();
-
+                                            = static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
     if (bestAnchorColumn.rows() < 1) {
         ERR_RETURN
@@ -1149,10 +1148,10 @@ Err ScoreOverseer::buildScores(
             &klDivSpectrum
     ); ree;
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimSpectrum;
-    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivSpectrum;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = std::pow(std::max(0.0, cosineSimSpectrum), 3);
-    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = static_cast<float>(cosineSimSpectrum);
+    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = static_cast<float>(klDivSpectrum);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
+    candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
     double cosineSimMS1;
     e = calculateMS1Corr(
