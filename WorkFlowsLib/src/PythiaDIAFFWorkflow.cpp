@@ -1015,19 +1015,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
     qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
     qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
     qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
-
-//    //TODO replace this with response surface derived DOE parameters when you figure out how to do it.
-////    const DOEResult bestParametersFDR = *std::max_element(
-////            results.rbegin(),
-////            results.rend(),
-////            [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
-////    );
-////
-////    m_pythiaParameters.ms2ExtractionWidthPPM = bestParametersFDR.ppm;
-////    m_pythiaParameters.scanTimeWindowMinutes = bestParametersFDR.scanTimeStDev;
-////    m_pythiaParameters.cosineSimToAnchorThreshold = bestParametersFDR.cosineSimAnchor;
-//    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
+    
     ERR_RETURN
 }
 
