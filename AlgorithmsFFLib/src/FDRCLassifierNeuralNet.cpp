@@ -89,6 +89,36 @@ Err FDRCLassifierNeuralNet::trainClassifier(
     ERR_RETURN
 }
 
+namespace {
+
+    struct CandidateClassifierParallelInput {
+        CandidateClassifier *candidateClassifier;
+        QVector<QVector<float>> xData;
+        QVector<float> yData;
+        int epochs = -1;
+        int batchSize = -1;
+        double learningRate = -1.0;
+        int bag = -1;
+    };
+
+    Err trainingLogic(const CandidateClassifierParallelInput &input) {
+
+        ERR_INIT
+
+        bool trainingCompletedNoErrors = input.candidateClassifier->trainCandidateClassifier(
+                input.xData,
+                input.yData,
+                input.epochs,
+                input.batchSize,
+                input.learningRate,
+                input.bag
+        );
+        e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData
@@ -99,22 +129,45 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     e = ErrorUtils::isNotEmpty(xData);
     e = ErrorUtils::isEqual(xData.size(), yData.size()); ree;
 
+    QElapsedTimer et;
+    et.start();
+
+    QVector<CandidateClassifierParallelInput> parallelInputs;
     for (int bag = 0; bag < m_baggingSize; bag++) {
 
         auto *candidateClassifier = new CandidateClassifier();
-        bool trainingCompletedNoErrors = candidateClassifier->trainCandidateClassifier(
-                xData,
-                yData,
-                m_epochs,
-                m_batchSize,
-                m_learningRate,
-                bag
-        );
-        e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
-
         m_candidateClassifiers.push_back(candidateClassifier);
+
+        CandidateClassifierParallelInput ccpi;
+        ccpi.candidateClassifier = candidateClassifier;
+        ccpi.xData = xData;
+        ccpi.yData = yData;
+        ccpi.epochs = m_epochs;
+        ccpi.batchSize = m_batchSize;
+        ccpi.learningRate = m_learningRate;
+        ccpi.bag = bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+
+        parallelInputs.push_back(ccpi);
     }
 
+#define PARALLEL_TRAIN_NN
+#ifdef PARALLEL_TRAIN_NN
+    QFuture<Err> futures = QtConcurrent::mapped(
+            parallelInputs,
+            trainingLogic
+            );
+    futures.waitForFinished();
+
+    for (const Err &result : futures) {
+        e = result; ree;
+    }
+#else
+    for (const CandidateClassifierParallelInput &ccpi : parallelInputs) {
+        e = trainingLogic(ccpi); ree;
+    }
+#endif
+
+    qDebug() << "Neural nets trained in:" << et.elapsed() << "mSec";
     ERR_RETURN
 }
 

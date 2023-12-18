@@ -134,6 +134,10 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         ) {
 
     torch::manual_seed(seed);
+    if (torch::cuda::is_available()) {
+        torch::cuda::manual_seed_all(seed);
+    }
+    torch::globalContext().setDeterministicCuDNN(true);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -179,7 +183,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             torch::Tensor batchX = X.index({torch::indexing::Slice(i, i + batchSize)});
             torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
 
-            const int tensorRows = batchY.sizes().at(0);
+            const int tensorRows = static_cast<int>(batchY.sizes().at(0));
             if (tensorRows < 2) {
                 qDebug() << "Skipping batch due to low training volume" << tensorRows;
                 continue;
