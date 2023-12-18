@@ -86,10 +86,7 @@ private:
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
-    Err applyNeuralNetClassifier(
-            const QPair<double, double> &scanTimeMinMax,
-            QVector<CandidateScores*> *candidateScoreClassifier
-            );
+    Err applyNeuralNetClassifier(QVector<CandidateScores*> *candidateScoreClassifier);
 
     Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,

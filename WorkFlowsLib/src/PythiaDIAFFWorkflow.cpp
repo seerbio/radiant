@@ -100,10 +100,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = mainAnalysis(&msReaderPointerAcc); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    e = applyNeuralNetClassifier(
-            msReaderPointerAcc.ptr->scanTimeMinMax(),
-            &candidateScoreClassifierPntrs
-            ); ree;
+    e = applyNeuralNetClassifier(&candidateScoreClassifierPntrs); ree;
 
     qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
     e = updateProteinGroupAnnotation(
@@ -1277,7 +1274,6 @@ namespace {
 
     Err buildKarnnNNTargetsNormalized(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            const QPair<double, double> scanTimeMinMax,
             int topNMs2Ions,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm
     ){
@@ -1285,7 +1281,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
-        e = ErrorUtils::isTrue(scanTimeMinMax.second > scanTimeMinMax.first); ree;
 
         QVector<KarnnNNTarget> karnnNNTargets;
         for (int i = 0; i < candidateScoresTargetsAndDecoys50PercentFDRFiltered.size(); i++) {
@@ -1389,10 +1384,7 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
-        const QPair<double, double> &scanTimeMinMax,
-        QVector<CandidateScores*> *candidateScoreClassifier
-        ) {
+Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(QVector<CandidateScores*> *candidateScoreClassifier) {
 
     ERR_INIT
 
@@ -1445,7 +1437,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            scanTimeMinMax,
             m_pythiaParameters.topNMs2Ions,
             &karnnNNTargetsNorm
             ); ree;
