@@ -49,7 +49,7 @@ public:
         ScanTimePredicted,
         TheoFragmentCount,
         TotalIntensityLog,
-        DiscriminateScore,
+//        DiscriminateScore,
         ScanNumberCandidateCount,
         PeakShapeRatio1,
         PeakShapeRatio2,
@@ -211,6 +211,7 @@ public:
     ScanTime scanTime = -1.0;
     ScanTime scanTimePredicted = -1.0;
     double classifierScore = -1.0;
+    double discriminantScore = -1.0;
     double qValue = 1.0;
     double decoyRatio = -1.0;
 

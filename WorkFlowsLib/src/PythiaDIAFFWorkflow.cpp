@@ -305,8 +305,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         ); ree;
 
         std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-            return l->featuresArray[CandidateScores::Features::DiscriminateScore]
-                   < r->featuresArray[CandidateScores::Features::DiscriminateScore];
+            return l->discriminantScore < r->discriminantScore;
         });
 
         const int idealTrainingCountAtGivenFDR = 1000;
@@ -652,10 +651,10 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     for (int i = 0; i < scoresDecoys.size(); i++) {
 
         CandidateScores* csTarget = candidateScoresTargetsPtrs.at(i);
-        csTarget->featuresArray[CandidateScores::Features::DiscriminateScore] = discScoreTargets.at(i);
+        csTarget->discriminantScore = discScoreTargets.at(i);
 
         CandidateScores* csDecoy = candidateScoresDecoysPtrs.at(i);
-        csDecoy->featuresArray[CandidateScores::Features::DiscriminateScore] = discScoreDecoys.at(i);
+        csDecoy->discriminantScore = discScoreDecoys.at(i);
     }
     qDebug() << "Setting scores" << et.restart() << "mSec";
 
@@ -727,7 +726,7 @@ namespace {
                 classifierScore = cs->classifierScore;
             }
             else {
-                classifierScore = cs->featuresArray[CandidateScores::Features::DiscriminateScore];
+                classifierScore = cs->discriminantScore;
             }
 
             if (cs->isDecoy) {
@@ -858,11 +857,11 @@ namespace {
 //        };
 
         const QVector<QVector<double>> experiments = {
+                {1.5, 2.0},
                 {2.0, 2.0},
                 {2.5,  2.0},
                 {3.5,  2.0},
-                {4.5, 2.0},
-                {5.5, 2.0}
+                {4.5, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
@@ -1175,8 +1174,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
 
 
     std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-        return l->featuresArray[CandidateScores::Features::DiscriminateScore]
-                < r->featuresArray[CandidateScores::Features::DiscriminateScore];
+        return l->discriminantScore < r->discriminantScore;
     });
     qDebug() << "Targets sorted" << et.restart() << "mSec";
 
@@ -1214,8 +1212,7 @@ namespace {
                 candidateScoresTargetsAndDecoys->rbegin(),
                 candidateScoresTargetsAndDecoys->rend(),
                 [](const CandidateScores *l, const CandidateScores *r){
-                    return l->featuresArray[CandidateScores::Features::DiscriminateScore]
-                           < r->featuresArray[CandidateScores::Features::DiscriminateScore];
+                    return l->discriminantScore < r->discriminantScore;
                 }
         );
 
@@ -1354,7 +1351,7 @@ namespace {
 
         int counter = 0;
         int falsePositives = 0;
-        const double fdrCutoff = 0.008;
+        const double fdrCutoff = 0.01; //TODO make this settable
         for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
 
             CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
