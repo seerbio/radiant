@@ -896,47 +896,9 @@ namespace {
         ERR_RETURN
     }
 
-
-    Err findMostFrequentValue(
-            const QVector<QPair<QString, int>> &countsVector,
-            double *value
-            ) {
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(countsVector); ree;
-
-        if (countsVector.size() == 1) {
-            e = ErrorUtils::toDouble(countsVector.front().first, value); ree;
-            ERR_RETURN
-        }
-
-        QVector<QPair<QString, int>> cv = countsVector;
-
-        std::sort(cv.rbegin(), cv.rend(), [](const QPair<QString, int> &l, const QPair<QString, int> &r){
-            return l.second < r.second;
-        });
-
-        if (cv.at(0).second == cv.at(1).second) {
-            double v1;
-            e = ErrorUtils::toDouble(cv.at(0).first, &v1); ree;
-
-            double v2;
-            e = ErrorUtils::toDouble(cv.at(1).first, &v2); ree;
-
-            * value = (v1 + v2) / 2;
-            ERR_RETURN
-        }
-
-        e = ErrorUtils::toDouble(cv.front().first, value); ree;
-
-        ERR_RETURN
-    }
-
     Err getTopFrequencyParameters(
             QVector<DOEResult> *results,
             double *ppmSetting
-//            double *scanTimeWidthSetting
-//            double *cosineSimSetting
             ) {
 
         ERR_INIT
@@ -949,37 +911,10 @@ namespace {
                 );
 
         for (const DOEResult &r : *results) {
-//            qDebug() << r.ppm << r.scanTimeStDev << r.cosineSimAnchor << r.fdrCount;
             qDebug() << r.ppm << r.scanTimeStDev << r.fdrCount;
         }
 
         *ppmSetting = results->front().ppm;
-//        *scanTimeWidthSetting = results->front().scanTimeStDev;
-
-//        const int topNResults = 3;
-//        results->resize(topNResults);
-//
-//        QMap<QString, int> ppmCounts;
-//        QMap<QString, int> scanTimeWidthCounts;
-////        QMap<QString, int> cosineSimCounts;
-//        for (const DOEResult &r : *results) {
-//
-//            const QString ppmString = QString::number(r.ppm);
-//            const QString scanTimeWidthString = QString::number(r.scanTimeStDev);
-////            const QString cosineSimString = QString::number(r.cosineSimAnchor);
-//
-//            ppmCounts[ppmString]++;
-//            scanTimeWidthCounts[scanTimeWidthString]++;
-////            cosineSimCounts[cosineSimString]++;
-//        }
-//
-//        const QVector<QPair<QString, int>> ppmCountsVector = ParallelUtils::convertMapToVectorPairs(ppmCounts);
-//        const QVector<QPair<QString, int>> scanTimeWidthCountsVector = ParallelUtils::convertMapToVectorPairs(scanTimeWidthCounts);
-////        const QVector<QPair<QString, int>> cosineSimCountsVector = ParallelUtils::convertMapToVectorPairs(cosineSimCounts);
-//
-//        e = findMostFrequentValue(ppmCountsVector, ppmSetting); ree;
-//        e = findMostFrequentValue(scanTimeWidthCountsVector, scanTimeWidthSetting); ree;
-////        e = findMostFrequentValue(cosineSimCountsVector, cosineSimSetting); ree;
 
         ERR_RETURN
     }
@@ -1066,8 +1001,6 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 
         DOEResult res;
         res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-//        res.scanTimeStDev = pythiaParams.scanTimeWindowMinutes;
-//        res.cosineSimAnchor = pythiaParams.cosineSimToAnchorThreshold;
         res.fdrCount = targetCountAboveFDRQValueThreshold;
         results.push_back(res);
     }
@@ -1075,8 +1008,6 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
     e = getTopFrequencyParameters(
             &results,
             &m_pythiaParameters.ms2ExtractionWidthPPM
-//            &m_pythiaParameters.scanTimeWindowMinutes
-//            &m_pythiaParameters.cosineSimToAnchorThreshold
             ); ree;
 
     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
