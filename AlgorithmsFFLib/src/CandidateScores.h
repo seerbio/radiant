@@ -20,6 +20,10 @@ public:
 
     enum Features {
         CosineSimSum100 = 0,
+        AllignedMaxIndexesCount,
+        CosineSim100MS1,
+        CosineSimSpectrumCubed,
+        KlDivSpectrumCubeRoot,
         CosineSimSum45,
         CosineSimSum20,
         CosineSimSumTop6,
@@ -35,10 +39,7 @@ public:
         MzNorm,
         KlDivSum,
         KlDivSpectrum,
-        KlDivSpectrumCubeRoot,
         CosineSimSpectrum,
-        CosineSimSpectrumCubed,
-        CosineSim100MS1,
         CosineSim45MS1,
         CosineSim20MS1,
         CosineSim100MS1PreMono,
@@ -55,7 +56,6 @@ public:
         PeakShapeRatio3,
         UnfragPrecursorCosineSim,
         ShadowsCosineSimSum,
-        AllignedMaxIndexesCount,
         IRTPredicted,
         MzSearched1,
         MzSearched2,
@@ -216,11 +216,11 @@ public:
 
     QVector<float> featuresArray;
 
-    [[nodiscard]] Err featuresArrayEssentials(QVector<float> *vecOutput) const;
+//    [[nodiscard]] Err featuresArrayEssentials(QVector<float> *vecOutput) const;
 
-    [[nodiscard]] QVector<float> featuresArrayExtended() const;
+    [[nodiscard]] QVector<float>* featuresArrayRef();
 
-    [[nodiscard]] Err featuresArrayNeuralNet(QVector<float> *vecOutput) const;
+//    [[nodiscard]] Err featuresArrayNeuralNet(QVector<float> **vecOutput) const;
 
     void initFeaturesArray();
 

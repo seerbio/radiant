@@ -202,34 +202,34 @@ void CandidateScores::initFeaturesArray() {
     featuresArray.reserve(Features::FeaturesSize);
 }
 
-Err CandidateScores::featuresArrayEssentials(QVector<float> *vecOutput) const {
+//Err CandidateScores::featuresArrayEssentials(QVector<float> *vecOutput) const {
+//
+//    ERR_INIT
+//
+//    e = ErrorUtils::isNotEmpty(featuresArray); ree;
+//
+//    const int essentialFeaturesSize = 5;
+//    QVector<float> vec(essentialFeaturesSize, 0.0);
+//    vec.reserve(essentialFeaturesSize);
+//    vec = {
+//            featuresArray[Features::AllignedMaxIndexesCount],
+//            featuresArray[Features::CosineSimSum100],
+//            featuresArray[Features::CosineSim100MS1],
+//            featuresArray[Features::CosineSimSpectrumCubed],
+//            featuresArray[Features::KlDivSpectrumCubeRoot]
+//    };
+//
+//    *vecOutput = vec;
+//    ERR_RETURN
+//}
 
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(featuresArray); ree;
-
-    const int essentialFeaturesSize = 5;
-    QVector<float> vec(essentialFeaturesSize, 0.0);
-    vec.reserve(essentialFeaturesSize);
-    vec = {
-            featuresArray[Features::AllignedMaxIndexesCount],
-            featuresArray[Features::CosineSimSum100],
-            featuresArray[Features::CosineSim100MS1],
-            featuresArray[Features::CosineSimSpectrumCubed],
-            featuresArray[Features::KlDivSpectrumCubeRoot]
-    };
-
-    *vecOutput = vec;
-    ERR_RETURN
+QVector<float>* CandidateScores::featuresArrayRef() {
+    return &featuresArray;
 }
 
-QVector<float> CandidateScores::featuresArrayExtended() const {
-    return QVector<float>();
-}
-
-Err CandidateScores::featuresArrayNeuralNet(QVector<float> *vecOutput) const {
-    ERR_INIT
-    e = ErrorUtils::isNotEmpty(featuresArray); ree;
-    *vecOutput = featuresArray;
-    ERR_RETURN
-}
+//Err CandidateScores::featuresArrayNeuralNet(QVector<float> *vecOutput) const {
+//    ERR_INIT
+//    e = ErrorUtils::isNotEmpty(featuresArray); ree;
+//    *vecOutput = featuresArray;
+//    ERR_RETURN
+//}

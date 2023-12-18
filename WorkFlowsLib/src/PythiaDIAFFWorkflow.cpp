@@ -124,7 +124,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         if (cs->isDecoy) {
             decoys++;
         }
-        if (decoys/(double)counter >= 0.8) {
+        if (decoys/(double)counter >= 0.01) {
             break;
         }
 
@@ -497,29 +497,28 @@ namespace {
     }
 
     QPair<Err, QVector<float>> scoreVectorParallel(
-            const CandidateScores &candidateScores,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
-            int theoMzIonsSize,
-            const QPair<double, double> &scanTimeMinMax
+            CandidateScores* candidateScores
             ) {
 
         ERR_INIT
 
-        QVector<float> vec;
 
         if (useNeuralNetworkScores) {
-            e = candidateScores.featuresArrayEssentials(&vec); rree;
-//            e = candidateScores.featuresArrayNeuralNet(&vec); rree;
+            QVector<float> &vec = candidateScores->featuresArray;
+            return {e, vec};
         }
         else if (useExtendedScores) {
-            vec = candidateScores.featuresArray;
+            QVector<float> &vec = candidateScores->featuresArray;
+            return {e, vec};
         }
         else {
-            e = candidateScores.featuresArrayEssentials(&vec); rree;
+            QVector<float> vec = candidateScores->featuresArray.mid(0, 5);
+            return {e, vec};
         }
 
-        return {e, vec};
+        return {eError, {}};
     }
 
 }//namespace
@@ -539,17 +538,18 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
     const auto scoreBuildBinder = std::bind(
             scoreVectorParallel,
-            std::placeholders::_1,
             useExtendedScores,
             useNeuralNetworkScores,
-            theoMzIonsSize,
-            scanTimeMinMax
+            std::placeholders::_1
     );
 
     //TODO clean this up. Abstract sub processes into methods.
 
+    QVector<CandidateScores*> candidateScoresPntrs;
+    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+
     QFuture<QPair<Err, QVector<float>>> futuresScoreBuilder = QtConcurrent::mapped(
-            m_candidateScores,
+            candidateScoresPntrs,
             scoreBuildBinder
             );
     futuresScoreBuilder.waitForFinished();
@@ -1112,8 +1112,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
 
     m_candidateScores.clear();
 
-    const bool useExtendedScores = !m_pythiaParameters.turboMode;
-    const bool useNeuralNetworkScores = !m_pythiaParameters.turboMode;
+    const bool useExtendedScores = false;
+    const bool useNeuralNetworkScores = false;
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,
@@ -1294,7 +1294,7 @@ namespace {
             karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
-            e = cs->featuresArrayNeuralNet(&karnnNnTarget.scoreVec); ree;
+            karnnNnTarget.scoreVec = cs->featuresArray;
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
@@ -1317,7 +1317,7 @@ namespace {
         QVector<QVector<float>> xData;
         QVector<float> yData;
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            xData.push_back(QVector<float>(kt.scoreVec.begin(), kt.scoreVec.end()));
+            xData.push_back(kt.scoreVec);
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
