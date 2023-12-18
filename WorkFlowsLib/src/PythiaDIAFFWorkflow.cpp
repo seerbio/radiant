@@ -126,7 +126,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         }
 
     }
-    qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap;
+    qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap << "Entrap%" << entrap / (double)counter;
 
 
 //    QVector<CandidateScores> candidateScoreClassifier;
