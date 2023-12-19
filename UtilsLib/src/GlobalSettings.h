@@ -145,6 +145,8 @@ public:
 
     const int NUMBER_OF_THE_BEAST = 666;
 
+    const QString MS1Key = QStringLiteral("MS1Key");
+
     static QString VERSION();
 };
 

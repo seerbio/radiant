@@ -464,5 +464,5 @@ QPair<double, double> MsReaderBase::scanTimeMinMax() {
 }
 
 bool MsReaderBase::isInit() {
-    return !m_msScanInfo.isEmpty() && !m_scanPoints.isEmpty();
+    return !m_msScanInfo.isEmpty();
 }

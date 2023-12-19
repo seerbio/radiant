@@ -30,6 +30,8 @@ public:
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
     QPair<double, double> scanTimeMinMax;
+    QString ms2CachedFilePath;
+    QString ms1CachedFilePath;
 };
 
 Err TargetDecoyCandidatePairScoretron::init(
@@ -43,13 +45,16 @@ Err TargetDecoyCandidatePairScoretron::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
-    e = ErrorUtils::isNotEmpty(*diaTargetFrames); ree;
-    e = ErrorUtils::isNotEmpty(scanNumberVsScanTimeMS1); ree;
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty() && msReaderPointerAcc->mzTargetKeyVsFilePathCache().isEmpty()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_msReaderPointerAcc = msReaderPointerAcc;
-    m_diaTargetFrames = diaTargetFrames;
-    m_ms1Frame = scanNumberVsScanTimeMS1;
+
+    if (!diaTargetFrames->isEmpty()) {
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanTimeMS1); ree;
+        m_diaTargetFrames = diaTargetFrames;
+        m_ms1Frame = scanNumberVsScanTimeMS1;
+    }
 
     ERR_RETURN
 }
@@ -63,27 +68,86 @@ namespace {
         QElapsedTimer et;
         et.start();
 
+        e = ErrorUtils::isFalse(!(pi.diaTargetFrame == nullptr) && !pi.ms2CachedFilePath.isEmpty()); rree;
+        if (!pi.ms2CachedFilePath.isEmpty()) {
+            e = ErrorUtils::isNotEmpty(pi.ms1CachedFilePath); rree;
+        }
+        else if (!pi.ms1CachedFilePath.isEmpty()) {
+            e = ErrorUtils::isNotEmpty(pi.ms2CachedFilePath); rree;
+        }
+        else {
+            e = ErrorUtils::isFalse(pi.diaTargetFrame->isEmpty()); rree;
+            e = ErrorUtils::isNotEmpty(pi.ms1Frame); rree;
+        }
+
         QVector<CandidateScores> allCandidateScores;
 
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
         FeatureFinderParameters featureFinderParameters(pi.pythiaParameters);
 
+        QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
+        QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS2;
+        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+
+        const bool usingCache = !pi.ms2CachedFilePath.isEmpty();
+        if (usingCache) {
+
+            e = MsReaderPointerAcc::readFrameCache(
+                    pi.ms2CachedFilePath,
+                    &scanNumberVsScanPointsMS2,
+                    &scanNumberVsScanTime
+                    ); rree;
+
+            e = MsReaderPointerAcc::readFrameCache(
+                    pi.ms2CachedFilePath,
+                    &scanNumberVsScanPointsMS1,
+                    &scanNumberVsScanTime
+            ); rree;
+        }
+
+        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsMS2Pntrs;
+        for (auto it = scanNumberVsScanPointsMS2.begin(); it != scanNumberVsScanPointsMS2.end(); it++) {
+            scanNumberVsScanPointsMS2Pntrs.insert(it.key(), &it.value());
+        }
+
         FeatureFinderHillBuilder featureFinderHillBuilderMS2;
         e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
-        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
+
+        if (!usingCache) {
+            e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
+        }
+        else {
+            e = featureFinderHillBuilderMS2.buildHills(scanNumberVsScanPointsMS2Pntrs); rree;
+        }
 
         CandidateScorertron candidateScorertron;
-        e = candidateScorertron.init(
-                pi.scanNumberVsScanTime,
-                pi.ms1Frame,
-                pi.pythiaParameters,
-                pi.targetKey,
-                pi.scanTimeMinMax,
-                pi.topNMs2Ions,
-                &msCalibratomatic,
-                &featureFinderHillBuilderMS2
-                ); rree;
+
+        if (!usingCache) {
+            e = candidateScorertron.init(
+                    pi.scanNumberVsScanTime,
+                    pi.ms1Frame,
+                    pi.pythiaParameters,
+                    pi.targetKey,
+                    pi.scanTimeMinMax,
+                    pi.topNMs2Ions,
+                    &msCalibratomatic,
+                    &featureFinderHillBuilderMS2
+            ); rree;
+        }
+        else {
+            e = candidateScorertron.init(
+                    scanNumberVsScanTime,
+                    scanNumberVsScanPointsMS1,
+                    pi.pythiaParameters,
+                    pi.targetKey,
+                    pi.scanTimeMinMax,
+                    pi.topNMs2Ions,
+                    &msCalibratomatic,
+                    &featureFinderHillBuilderMS2
+            ); rree;
+        }
+
 
         for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
@@ -126,7 +190,10 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
-    e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
+
+    if (!usingCache()) {
+        e = ErrorUtils::isFalse(m_diaTargetFrames->isEmpty()); ree;
+    }
 
     candidateScoresVec->clear();
 
@@ -137,7 +204,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             msCalibratomatic,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
-    ); ree;
+            ); ree;
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
@@ -168,9 +235,14 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
 bool TargetDecoyCandidatePairScoretron::isInit() {
 
-    return m_pythiaParameters.isValid()
-            && !m_diaTargetFrames->isEmpty()
-            && !m_ms1Frame.isEmpty();
+    if (!usingCache()) {
+        return m_pythiaParameters.isValid()
+               && !m_diaTargetFrames->isEmpty()
+               && !m_ms1Frame.isEmpty();
+    }
+
+    return m_msReaderPointerAcc->ptr->isInit();
+
 }
 
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
@@ -186,21 +258,34 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
     e = ErrorUtils::isFalse(mzTargetKeyVsTargetDecoyCandidatePointers->isEmpty()); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
-    e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
-    e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
+
+    if (!usingCache()) {
+        e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
+        e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
+    }
 
     for (const MsScanInfo &msScanInfo : m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos()) {
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
         tdppi.targetKey = msScanInfo.targetKey();
         tdppi.msCalibratomatic = msCalibratomatic;
-        tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
         tdppi.pythiaParameters = m_pythiaParameters;
-        tdppi.ms1Frame = m_ms1Frame;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
+
+        if (!usingCache()) {
+            tdppi.ms1Frame = m_ms1Frame;
+            tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
+            tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
+        }
+        else {
+            const QMap<MzTargetKey, FilePath> mzTargetKeyVsFilePath = m_msReaderPointerAcc->mzTargetKeyVsFilePathCache();
+
+            e = ErrorUtils::isNotEmpty(mzTargetKeyVsFilePath); ree;
+            tdppi.ms1CachedFilePath = mzTargetKeyVsFilePath.value(S_GLOBAL_SETTINGS.MS1Key);
+            tdppi.ms2CachedFilePath = mzTargetKeyVsFilePath.value(tdppi.targetKey);
+        }
 
         input->push_back(tdppi);
     }
@@ -213,4 +298,8 @@ Err TargetDecoyCandidatePairScoretron::setPythiaParameters(const PythiaParameter
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_pythiaParameters = pythiaParameters;
     ERR_RETURN
+}
+
+bool TargetDecoyCandidatePairScoretron::usingCache() {
+    return m_diaTargetFrames == nullptr;
 }

@@ -72,7 +72,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsPntrs); rree;
 
         const QString filePathTargetKey = filePath + mzTargetKey;
-        const QByteArray hash = QCryptographicHash::hash(filePath.toUtf8(), QCryptographicHash::Sha256);
+        const QByteArray hash = QCryptographicHash::hash(filePathTargetKey.toUtf8(), QCryptographicHash::Sha256);
         const QString hashHex = hash.toHex().toUpper() + ".pythiaCache";
 
         QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
@@ -108,8 +108,13 @@ Err MsReaderPointerAcc::openFileWithCache(const QString &filePath) {
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
         QSharedPointer<MsReaderBase> msReader(new MsReaderMzML);
-        ptr = msReader;
+        localPointer = msReader;
         e = localPointer->openFile(filePath); ree;
+
+        QSharedPointer<MsReaderBase> msReaderDummy(new MsReaderMzML);
+        msReaderDummy->setMsScanInfo(msReader->getMsScanInfos());
+
+        ptr = msReaderDummy;
     }
 
     else if (
@@ -118,8 +123,13 @@ Err MsReaderPointerAcc::openFileWithCache(const QString &filePath) {
             && fi.isFile()) {
 
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
-        ptr = msReader;
+        localPointer = msReader;
         e = localPointer->openFile(filePath); ree;
+
+        QSharedPointer<MsReaderBase> msReaderDummy(new MsReaderParquet);
+        msReaderDummy->setMsScanInfo(msReader->getMsScanInfos());
+
+        ptr = msReaderDummy;
     }
 
     else {
@@ -129,9 +139,7 @@ Err MsReaderPointerAcc::openFileWithCache(const QString &filePath) {
     }
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    e = localPointer->collateMS2MzTargetFrames(
-            &diaTargetFrames
-            ); ree;
+    e = localPointer->collateMS2MzTargetFrames(&diaTargetFrames); ree;
 
     for (auto it = diaTargetFrames.begin(); it != diaTargetFrames.end(); it++) {
 
@@ -149,9 +157,28 @@ Err MsReaderPointerAcc::openFileWithCache(const QString &filePath) {
         m_mzTargetKeyVsFilePathCache.insert(mzTargetKey, result.second);
     }
 
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
+    QMap<ScanNumber, ScanPoints*> scanNumberVsScanTimeMS1Pntrs;
+    e = localPointer->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
+    for (auto it = scanNumberVsScanTimeMS1.begin(); it != scanNumberVsScanTimeMS1.end(); it++) {
+        scanNumberVsScanTimeMS1Pntrs.insert(it.key(), &it.value());
+    }
+
+    QPair<Err, FilePath> resultMS1 = buildFrameCacheFileLogic(
+            filePath,
+            S_GLOBAL_SETTINGS.MS1Key,
+            scanNumberVsScanTimeMS1Pntrs,
+            localPointer->getScanNumberVsScanTime()
+            );
+    e = resultMS1.first; ree;
+    m_mzTargetKeyVsFilePathCache.insert(S_GLOBAL_SETTINGS.MS1Key, resultMS1.second);
+
     const QString msReaderType = typeid(*localPointer).name();
     const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
     qDebug() << "MsReader Derived Type" << msReaderType << isMsReaderBase;
+
+    localPointer.clear();
 
     ERR_RETURN
 }
@@ -180,5 +207,13 @@ Err MsReaderPointerAcc::readFrameCache(
     file.close();
 
     ERR_RETURN
+}
+
+QMap<MzTargetKey, FilePath> MsReaderPointerAcc::mzTargetKeyVsFilePathCache() {
+    return m_mzTargetKeyVsFilePathCache;
+}
+
+bool MsReaderPointerAcc::usingCache() {
+    return !m_mzTargetKeyVsFilePathCache.isEmpty();
 }
 

@@ -57,7 +57,8 @@ private:
     Err buildCalibration(
             MsReaderPointerAcc *msReaderPointerAcc,
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+            QVector<CandidateScores*> *candidateScoresForTrainings
             );
 
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
@@ -80,7 +81,10 @@ private:
         MsReaderPointerAcc *msReaderPointerAcc
         );
 
-    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
+    Err optimizeParameters(
+            const QVector<CandidateScores*> &candidateScoresTrainings,
+            MsReaderPointerAcc *msReaderPointerAcc
+            );
 
     Err mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc);
 

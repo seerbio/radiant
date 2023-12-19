@@ -58,6 +58,7 @@ private:
             QVector<TargetDecoyPairParallelInput> *input
             );
 
+    bool usingCache();
 
 private:
 

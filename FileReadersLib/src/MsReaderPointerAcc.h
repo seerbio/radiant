@@ -26,11 +26,15 @@ public:
 
     Err openFileWithCache(const QString &filePath);
 
-    Err readFrameCache(
+    bool usingCache();
+
+    static Err readFrameCache(
             const QString &cachedFilePath,
             QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
             QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
             );
+
+    QMap<MzTargetKey, FilePath> mzTargetKeyVsFilePathCache();
 
     QSharedPointer<MsReaderBase> ptr;
 
