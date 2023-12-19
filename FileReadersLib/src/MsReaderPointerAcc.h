@@ -24,6 +24,14 @@ public:
 
     Err openFile(const QString &filePath);
 
+    Err openFileWithCache(const QString &filePath);
+
+    Err readFrameCache(
+            const QString &cachedFilePath,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints,
+            QMap<ScanNumber, ScanTime> *scanNumberVsScanTime
+            );
+
     QSharedPointer<MsReaderBase> ptr;
 
 
@@ -34,6 +42,7 @@ private:
 private:
 
     QString m_cachedFilePath;
+    QMap<MzTargetKey, FilePath> m_mzTargetKeyVsFilePathCache;
 
 };
 

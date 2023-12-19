@@ -21,6 +21,7 @@ using Coors = QVector<double>;
 using CosineSimSum = double;
 using DecoyRatio = double;
 using DiscScore = double;
+using FilePath = QString;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
 using FrequencyPercent = double;

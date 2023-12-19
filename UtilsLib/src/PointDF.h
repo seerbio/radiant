@@ -7,6 +7,7 @@
 
 #include "MathUtils.h"
 
+#include <QDataStream>
 #include <QDebug>
 
 class PointDF {
@@ -30,6 +31,16 @@ public:
     friend QDebug operator<<(QDebug dbg, const PointDF& obj) {
         dbg.nospace() << "PointDF(" << obj.x() << ", " << obj.y() << ") ";
         return dbg;
+    }
+
+    friend QDataStream& operator<<(QDataStream &stream, const PointDF &obj) {
+        stream << obj.x() << obj.y();
+        return stream;
+    }
+
+    friend QDataStream& operator>>(QDataStream &stream, PointDF &obj) {
+        stream >> obj.rx() >> obj.ry();
+        return stream;
     }
 
     bool operator==(const PointDF& other) const {
