@@ -106,6 +106,7 @@ public:
     Err exec(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
+            int seed,
             QVector<float> *meanPredictions
     );
 
@@ -125,12 +126,14 @@ private:
 
     Err trainClassifier(
             const QVector<QVector<float>> &xData,
-            const QVector<float> &yData
+            const QVector<float> &yData,
+            int seed
             );
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<float>> &xData,
-            const QVector<float> &yData
+            const QVector<float> &yData,
+            int seed
             );
 
     Err predictBaggedClassifiers(

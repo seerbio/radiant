@@ -86,11 +86,17 @@ private:
             MsReaderPointerAcc *msReaderPointerAcc
             );
 
-    Err mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc);
+    Err mainAnalysis(
+            MsReaderPointerAcc *msReaderPointerAcc,
+            int *targetCountBelowFDRThresholdOnePercent
+            );
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
-    Err applyNeuralNetClassifier(QVector<CandidateScores*> *candidateScoreClassifier);
+    Err applyNeuralNetClassifier(
+            int seed,
+            QVector<CandidateScores*> *candidateScoreClassifier
+            );
 
     Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,

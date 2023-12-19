@@ -228,6 +228,7 @@ Err CandidateScorertron::calculateScores(
                 candidateScores->scanTimePredicted + scanTimeWindow,
                 &frameIndexPredictedMax
         ); ree;
+
     }
 
     QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHills;
@@ -606,7 +607,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
     ); ree;
 
     //TODO figure out a way to empirially pick the best integration index instead
-    // of wasting cycles analyzing the top 2;
+    // of wasting cycles analyzing the top 2; put break at the bottom of loop as temp fix.
     for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
 
         e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
@@ -653,6 +654,8 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
             < candidateScoresPII.featuresArray[CandidateScores::Features::CosineSimSum100]) {
             *candidateScores = candidateScoresPII;
         }
+
+        break;
     }
 
     ERR_RETURN

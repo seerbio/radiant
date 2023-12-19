@@ -106,10 +106,34 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 ); ree;
     }
 
-    e = mainAnalysis(&msReaderPointerAcc); ree;
+    int targetCountBelowFDRThreshold;
+    e = mainAnalysis(
+            &msReaderPointerAcc,
+            &targetCountBelowFDRThreshold
+            ); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    e = applyNeuralNetClassifier(&candidateScoreClassifierPntrs); ree;
+    const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+    e = applyNeuralNetClassifier(seedFirstTry, &candidateScoreClassifierPntrs); ree;
+
+    if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold) {
+        const int seedSecondTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + 111;
+        candidateScoreClassifierPntrs.clear();
+        e = applyNeuralNetClassifier(seedSecondTry, &candidateScoreClassifierPntrs); ree;
+
+        if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold){
+            QVector<CandidateScores*> candidateScoresPntrs;
+            buildCandidateScoresPtrs(&candidateScoresPntrs);
+
+            std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
+                return l->discriminantScore < r->discriminantScore;
+            });
+
+            candidateScoresPntrs.resize(targetCountBelowFDRThreshold);
+            candidateScoreClassifierPntrs = candidateScoresPntrs;
+        }
+
+    }
 
     qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
     e = updateProteinGroupAnnotation(
@@ -268,8 +292,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
     for (int i = 0; i < mzTargetKeyVsTargetDecoyCandidatePointers.size(); i++) {
 
-        const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tranche = mzTargetKeyVsTargetDecoyCandidatePointersTranched.at(i);
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> topScoresOfTranchesAndTrancheCombined = tranche;
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> topScoresOfTranchesAndTrancheCombined = mzTargetKeyVsTargetDecoyCandidatePointersTranched.at(i);;
         for (auto it = topScoresOfTranches.begin(); it != topScoresOfTranches.end(); it++) {
             const MzTargetKey &mzTargetKey = it.key();
             const QVector<TargetDecoyCandidatePair*> &tdcps = it.value();
@@ -298,6 +321,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
         e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
 
+        std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
+            return l->discriminantScore < r->discriminantScore;
+        });
+
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
                 m_candidateScores,
@@ -313,18 +340,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 &targetCountBelowFDRThreshold
         ); ree;
 
-        std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-            return l->discriminantScore < r->discriminantScore;
-        });
-
         const int idealTrainingCountAtGivenFDR = 1000;
         int minTrainingCount = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold);
-        int minTrainingCountDouble = std::max(minTrainingCountTranche, targetCountBelowFDRThreshold * 2);
         minTrainingCount = std::min(minTrainingCount, idealTrainingCountAtGivenFDR);
         qDebug() << "Training RT count 10% FDR:" << minTrainingCount;
-
-        candidateScoresPntrs.resize(minTrainingCountDouble);
-        *candidateScoresForTrainings = candidateScoresPntrs;
 
         candidateScoresPntrs.resize(minTrainingCount);
 
@@ -358,6 +377,15 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 }
             }
 
+            QVector<CandidateScores*> candidateScoresPntrsOpt;
+            e = buildCandidateScoresPtrs(&candidateScoresPntrsOpt); ree;
+            std::sort(candidateScoresPntrsOpt.rbegin(), candidateScoresPntrsOpt.rend(), [](CandidateScores *l, CandidateScores *r){
+                return l->discriminantScore < r->discriminantScore;
+            });
+
+            candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
+
+            *candidateScoresForTrainings = candidateScoresPntrsOpt;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
             break;
         }
@@ -959,6 +987,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
     for (CandidateScores *cs : candidateScoresTrainings) {
         mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
+//        qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->targetKey;
     }
 
     QVector<PythiaParameters> pythiaParametersExperiments;
@@ -1040,7 +1069,10 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
+Err PythiaDIAFFWorkflow::mainAnalysis(
+        MsReaderPointerAcc *msReaderPointerAcc,
+        int *targetCountBelowFDRThresholdOnePercent
+        ) {
 
     ERR_INIT
 
@@ -1109,9 +1141,14 @@ Err PythiaDIAFFWorkflow::mainAnalysis(MsReaderPointerAcc *msReaderPointerAcc) {
             fdrThreshold,
             &targetCountBelowFDRThreshold
     ); ree;
+
+    const double fdrThresholdOnePercent = 0.01;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+            m_candidateScores,
+            fdrThresholdOnePercent,
+            targetCountBelowFDRThresholdOnePercent
+    ); ree;
     qDebug() << "Targets counted" << et.restart() << "mSec";
-
-
 
     std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
         return l->discriminantScore < r->discriminantScore;
@@ -1241,6 +1278,7 @@ namespace {
 
     Err predictNNScores(
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+            int seed,
             QVector<float> *predictions
             ) {
 
@@ -1268,7 +1306,12 @@ namespace {
                 learningRate
         ); ree;
 
-        e = fdrcLassifierNeuralNet.exec(xData, yData, predictions); ree;
+        e = fdrcLassifierNeuralNet.exec(
+                xData,
+                yData,
+                seed,
+                predictions
+                ); ree;
 
         ERR_RETURN
     }
@@ -1325,7 +1368,10 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(QVector<CandidateScores*> *candidateScoreClassifier) {
+Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
+        int seed,
+        QVector<CandidateScores*> *candidateScoreClassifier
+        ) {
 
     ERR_INIT
 
@@ -1383,7 +1429,11 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(QVector<CandidateScores*> *can
             ); ree;
 
     QVector<float> predictions;
-    e = predictNNScores(karnnNNTargetsNorm, &predictions); ree;
+    e = predictNNScores(
+            karnnNNTargetsNorm,
+            seed,
+            &predictions
+            ); ree;
 
     e = processPredictions(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,

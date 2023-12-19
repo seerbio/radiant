@@ -53,6 +53,7 @@ Err FDRCLassifierNeuralNet::init(
 Err FDRCLassifierNeuralNet::exec(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
+        int seed,
         QVector<float> *meanPredictions
         ) {
 
@@ -63,7 +64,8 @@ Err FDRCLassifierNeuralNet::exec(
 
     e = trainClassifier(
             xData,
-            yData
+            yData,
+            seed
             ); ree;
 
     e = predictBaggedClassifiers(xData, meanPredictions); ree;
@@ -73,7 +75,8 @@ Err FDRCLassifierNeuralNet::exec(
 
 Err FDRCLassifierNeuralNet::trainClassifier(
         const QVector<QVector<float>> &xData,
-        const QVector<float> &yData
+        const QVector<float> &yData,
+        int seed
         ) {
 
     ERR_INIT
@@ -83,7 +86,8 @@ Err FDRCLassifierNeuralNet::trainClassifier(
 
     e = trainBaggedNeuralNets(
             xData,
-            yData
+            yData,
+            seed
             ); ree;
 
     ERR_RETURN
@@ -121,7 +125,8 @@ namespace {
 }//namespace
 Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         const QVector<QVector<float>> &xData,
-        const QVector<float> &yData
+        const QVector<float> &yData,
+        int seed
         ) {
 
     ERR_INIT
@@ -145,7 +150,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         ccpi.epochs = m_epochs;
         ccpi.batchSize = m_batchSize;
         ccpi.learningRate = m_learningRate;
-        ccpi.bag = bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+        ccpi.bag = bag + S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + seed;
 
         parallelInputs.push_back(ccpi);
     }
