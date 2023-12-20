@@ -106,10 +106,13 @@ Err MsReaderBase::openFile(
 }
 
 Err MsReaderBase::closeFile() {
+    QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
+    QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
+    QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
     return Error::eNoError;
 }
 
-int MsReaderBase::getNearestScanNumberFromScanTime(double scanTime) {
+int MsReaderBase::getNearestScanNumberFromScanTime(ScanTime scanTime) {
 
     if (m_scanNumberVsScanTime.isEmpty()) {
         for (const MsScanInfo &msScanInfo : m_msScanInfo) {
@@ -162,7 +165,7 @@ Err MsReaderBase::getNearestScanNumberFromScanNumber(
 
 QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 
-    QMap<ScanNumber, double> scanNumberVsScanTime;
+    QMap<ScanNumber, ScanTime > scanNumberVsScanTime;
 
     for (const MsScanInfo &msi : m_msScanInfo) {
         scanNumberVsScanTime.insert(msi.scanNumber, msi.scanTime);
@@ -173,7 +176,7 @@ QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 
 Err MsReaderBase::splitScanPoints(
         const ScanPoints &scanPoints,
-        QVector<double> *mzVals,
+        QVector<float> *mzVals,
         QVector<float> *intensityVals
 ) {
 
@@ -191,7 +194,7 @@ Err MsReaderBase::splitScanPoints(
 
 Err MsReaderBase::splitScanPoints(
         ScanPoints* scanPoints,
-        QVector<double> *mzVals,
+        QVector<float> *mzVals,
         QVector<float> *intensityVals
 ) {
 
@@ -266,7 +269,7 @@ QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
 }
 
 Err MsReaderBase::zipScanPoints(
-        const QVector<double> &mzVals,
+        const QVector<float> &mzVals,
         const QVector<float> &intensityVals,
         ScanPoints *scanPoints
         ) {
@@ -459,7 +462,7 @@ int MsReaderBase::getFrameCount() {
     return getUniqueTandemMsScanInfos().size();
 }
 
-QPair<double, double> MsReaderBase::scanTimeMinMax() {
+QPair<ScanTime, ScanTime > MsReaderBase::scanTimeMinMax() {
     return {m_msScanInfo.first().scanTime, m_msScanInfo.last().scanTime};
 }
 

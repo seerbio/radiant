@@ -176,7 +176,7 @@ namespace {
 
             const ScanPoints &scanPointsVec = scanPoints.value(scanNumber);
 
-            QVector<double> mzVals;
+            QVector<float> mzVals;
             QVector<float> intensityVals;
             e = MsReaderBase::splitScanPoints(
                     scanPointsVec,

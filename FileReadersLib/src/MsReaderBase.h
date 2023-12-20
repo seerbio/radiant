@@ -28,12 +28,12 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
 
     int msLevel = -1;
     ScanNumber scanNumber = 1;
-    double scanTime = -1.0;
-    double collisionEnergy = -1.0;
-    double precursorTargetMz = -1.0;
-    double isoWindowLower = -1.0;
-    double isoWindowUpper = -1.0;
-    double ionMobilityDriftTime = -1.0;
+    float scanTime = -1.0;
+    float collisionEnergy = -1.0;
+    float precursorTargetMz = -1.0;
+    float isoWindowLower = -1.0;
+    float isoWindowUpper = -1.0;
+    float ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
 
     [[nodiscard]] MzTargetKey targetKey() const {
@@ -43,7 +43,7 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
                 );
     }
 
-    static MzTargetKey targetKey(double mzStart, double mzEnd) {
+    static MzTargetKey targetKey(float mzStart, float mzEnd) {
         return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };
@@ -88,7 +88,7 @@ public:
 
     bool isInit();
 
-    QPair<double, double> scanTimeMinMax();
+    QPair<ScanTime , ScanTime > scanTimeMinMax();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
@@ -131,7 +131,7 @@ public:
             ScanPoints *scanPoints
                     );
 
-    int getNearestScanNumberFromScanTime(double scanTime);
+    int getNearestScanNumberFromScanTime(ScanTime scanTime);
 
     static Err getNearestScanNumberFromScanTime(
             ScanTime scanTime,
@@ -150,18 +150,18 @@ public:
 
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
-            QVector<double> *mzVals,
+            QVector<float> *mzVals,
             QVector<float> *intensityVals
             );
 
     static Err splitScanPoints(
             ScanPoints *scanPoints,
-            QVector<double> *mzVals,
+            QVector<float> *mzVals,
             QVector<float> *intensityVals
     );
 
     static Err zipScanPoints(
-            const QVector<double> &mzVals,
+            const QVector<float> &mzVals,
             const QVector<float> &intensityVals,
             ScanPoints *scanPoints
             );

@@ -9,6 +9,7 @@
 
 #include "ErrorUtils.h"
 #include "PointDF.h"
+#include "PointFF.h"
 
 #include <QPointF>
 #include <QString>
@@ -59,9 +60,9 @@ using ReScore = double;
 using ResidueIndex = int;
 using ScanNumber = int;
 using ScanNumberIndex = int;
-using ScanPoint = PointDF;
-using ScanPoints = QVector<PointDF>;
-using ScanTime = double;
+using ScanPoint = PointFF;
+using ScanPoints = QVector<ScanPoint>;
+using ScanTime = float;
 using Score = double;
 using TandemScansIndex = int;
 using TARGETMZ = double;
