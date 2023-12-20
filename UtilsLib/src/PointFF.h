@@ -2,49 +2,49 @@
 // Created by anichols on 12/8/23.
 //
 
-#ifndef PYTHIADIACPP_POINTDF_H
-#define PYTHIADIACPP_POINTDF_H
+#ifndef PYTHIADIACPP_POINTFF_H
+#define PYTHIADIACPP_POINTFF_H
 
-#include "MathUtils.h"
 #include "UtilsLib_Exports.h"
+#include "MathUtils.h"
 
 #include <QDataStream>
 #include <QDebug>
 
-class UTILSLIB_EXPORTS PointDF {
+class UTILSLIB_EXPORTS PointFF {
 
 public:
 
-    PointDF();
-    PointDF(double x, float y);
+    PointFF();
+    PointFF(float x, float y);
 
-    ~PointDF() = default;
+    ~PointFF() = default;
 
-    double x();
+    float x();
     float y();
 
-    [[nodiscard]] double x() const;
+    [[nodiscard]] float x() const;
     [[nodiscard]] float y() const;
 
-    double& rx();
+    float& rx();
     float& ry();
 
-    friend QDebug operator<<(QDebug dbg, const PointDF& obj) {
-        dbg.nospace() << "PointDF(" << obj.x() << ", " << obj.y() << ") ";
+    friend QDebug operator<<(QDebug dbg, const PointFF& obj) {
+        dbg.nospace() << "PointFF(" << obj.x() << ", " << obj.y() << ") ";
         return dbg;
     }
 
-    friend QDataStream& operator<<(QDataStream &stream, const PointDF &obj) {
+    friend QDataStream& operator<<(QDataStream &stream, const PointFF &obj) {
         stream << obj.x() << obj.y();
         return stream;
     }
 
-    friend QDataStream& operator>>(QDataStream &stream, PointDF &obj) {
+    friend QDataStream& operator>>(QDataStream &stream, PointFF &obj) {
         stream >> obj.rx() >> obj.ry();
         return stream;
     }
 
-    bool operator==(const PointDF& other) const {
+    bool operator==(const PointFF& other) const {
 
         if (MathUtils::tSame(x(), other.x()) && MathUtils::tSame(y(), other.y())) {
             return true;
@@ -53,7 +53,7 @@ public:
         return false;
     }
 
-    bool operator!=(const PointDF& other) const {
+    bool operator!=(const PointFF& other) const {
 
         if (*this == other) {
             return false;
@@ -64,7 +64,7 @@ public:
 
 private:
 
-    double m_x;
+    float m_x;
     float m_y;
 
 };

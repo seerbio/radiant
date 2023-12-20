@@ -28,6 +28,7 @@ SET(SOURCE_FILES
         src/MathUtils.cpp
         src/ParallelUtils.cpp
         src/PointDF.cpp
+        src/PointFF.cpp
         src/SqlUtils.cpp
         src/StringUtils.cpp
         )
@@ -38,6 +39,7 @@ SET(HEADER_FILES
         src/GlobalSettings.h
         src/MathUtils.h
         src/ParallelUtils.h
+        src/PointFF.h
         src/PointDF.h
         src/SqlUtils.h
         src/StringUtils.h
