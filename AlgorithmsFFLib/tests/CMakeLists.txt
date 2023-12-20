@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         BiophysicalCalcsTests
         FeatureFinderHillBuilderTests
+        FeatureFinderHillTests
         MS2IonTests
         MsCalibratomaticTests
         MsFrameTests

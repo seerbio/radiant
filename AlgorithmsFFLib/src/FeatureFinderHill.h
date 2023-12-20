@@ -10,11 +10,72 @@
 #include "CSVReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "ParquetReader.h"
 
 #include <QVector>
 
 
 using namespace Error;
+
+namespace FeatureFinderHillEntryNamespace {
+
+    const QString SCAN_NUMBER_VALS = QStringLiteral("scanNumberVals");
+    const QString MZ_VALS = QStringLiteral("mzVals");
+    const QString INTENSITY_VALS = QStringLiteral("intensityVals");
+    const QString FRAME_INDEX_VALS = QStringLiteral("frameIndexVals");
+
+    const QStringList keysToCheck = {
+            SCAN_NUMBER_VALS,
+            MZ_VALS,
+            INTENSITY_VALS,
+            FRAME_INDEX_VALS
+    };
+
+}
+
+struct FILEREADERSLIB_EXPORTS FeatureFinderHillEntry : public ParquetReaderInputBase {
+
+    QVector<ScanNumber> scanNumberVals;
+    QVector<double> mzVals;
+    QVector<float> intensityVals;
+    QVector<FrameIndex> frameIndexVals;
+
+    QMap<QString, QVariant> map() override {
+
+        using namespace FeatureFinderHillEntryNamespace;
+
+        return {
+                {SCAN_NUMBER_VALS, QVariant(qVectorToQByteArray(scanNumberVals))},
+                {MZ_VALS, QVariant(qVectorToQByteArray(mzVals))},
+                {INTENSITY_VALS, QVariant(qVectorToQByteArray(intensityVals))},
+                {FRAME_INDEX_VALS, QVariant(qVectorToQByteArray(frameIndexVals))}
+        };
+    }
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        using namespace FeatureFinderHillEntryNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        scanNumberVals = bytesArrayToQVector<ScanNumber>(dataMap.value(SCAN_NUMBER_VALS).toByteArray());
+        mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
+        frameIndexVals = bytesArrayToQVector<FrameIndex>(dataMap.value(FRAME_INDEX_VALS).toByteArray());
+
+        ERR_RETURN
+    }
+
+};
+
 
 class ALGORITHMSFFLIB_EXPORTS FeatureFinderHill {
 
@@ -35,6 +96,10 @@ public:
         double mzVal,
         float intensityVal
     );
+
+    FeatureFinderHillEntry featureFinderHillEntry();
+
+    Err initFromFeatureFinderHillEntry(const FeatureFinderHillEntry &featureFinderHillEntry);
 
     [[nodiscard]] double mzMean() const;
 

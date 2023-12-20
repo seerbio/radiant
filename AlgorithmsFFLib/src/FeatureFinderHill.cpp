@@ -71,3 +71,30 @@ float FeatureFinderHill::intensityValueMax() const {
 QVector<double> FeatureFinderHill::mzVals() const {
     return m_mzVals;
 }
+
+FeatureFinderHillEntry FeatureFinderHill::featureFinderHillEntry() {
+
+    FeatureFinderHillEntry ffhe;
+    ffhe.mzVals = mzVals();
+    ffhe.intensityVals = intensities();
+    ffhe.frameIndexVals = scanNumberIndexes();
+    ffhe.scanNumberVals = scanNumbers();
+
+    return ffhe;
+}
+
+Err FeatureFinderHill::initFromFeatureFinderHillEntry(const FeatureFinderHillEntry &featureFinderHillEntry) {
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.scanNumberVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.mzVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.intensityVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.frameIndexVals); ree;
+
+    m_scanNumbers = featureFinderHillEntry.scanNumberVals;
+    m_mzVals = featureFinderHillEntry.mzVals;
+    m_intensities = featureFinderHillEntry.intensityVals;
+    m_scanNumberIndexes = featureFinderHillEntry.frameIndexVals;
+
+    ERR_RETURN
+}
