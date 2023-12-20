@@ -447,12 +447,16 @@ namespace {
 
                     e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); ree;
 
+                    ScanPoints scanPointsLocal(mzValues.size());
+                    scanPoints->reserve(mzValues.size());
+
                     for (int i = 0; i < mzValues.size(); i++) {
                         const ScanPoint point(mzValues.at(i), static_cast<float>(intensityValues.at(i)));
-                        scanPoints->push_back(point);
+                        scanPointsLocal[i] = point;
                     }
 
-                    filterZeroIntensityQPoints(scanPoints);
+                    filterZeroIntensityQPoints(&scanPointsLocal);
+                    scanPointsLocal.swap(*scanPoints);
 
                     ERR_RETURN
                 }
