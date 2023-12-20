@@ -155,7 +155,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         parallelInputs.push_back(ccpi);
     }
 
-#define PARALLEL_TRAIN_NN
+//#define PARALLEL_TRAIN_NN
 #ifdef PARALLEL_TRAIN_NN
     QFuture<Err> futures = QtConcurrent::mapped(
             parallelInputs,

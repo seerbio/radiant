@@ -71,7 +71,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanTimeMS1;
-    if (true) {
+    if (false) {
         e = msReaderPointerAcc.openFile(msDataFilePath); ree;
         e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(
                 &diaTargetFrames
@@ -1338,7 +1338,7 @@ namespace {
 
         int counter = 0;
         int falsePositives = 0;
-        const double fdrCutoff = 0.01; //TODO make this settable
+        const double fdrCutoff = 0.0075; //TODO make this settable
         for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
 
             CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
