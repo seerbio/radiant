@@ -444,7 +444,7 @@ Err CandidateScorertron::findCandidateIntegrations(
             peakIntegrationIndexesVsIntensity
             );
 
-    const int minPeakWidth = 2;
+    const int minPeakWidth = 1;
     filterSummedVecPeakIntegrationsByPeakWidth(
             integrationVector,
             m_pythiaParameters.minFoundMzPeaks,

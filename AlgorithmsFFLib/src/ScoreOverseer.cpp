@@ -564,11 +564,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             alignmentMatrixLimits
             );
 
-    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-            m_intensityMatrix100,
-            m_pythiaParams,
-            m_gaussKernel
-            );
+//    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+//            m_intensityMatrix100,
+//            m_pythiaParams,
+//            m_gaussKernel
+//            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<double> unused1;
@@ -592,15 +592,15 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         ).eval();
     }
 
-    if (m_intensityMatrix100Shadow.maxCoeff() > 0.0f) {
-
-        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
-                m_intensityMatrix100Shadow,
-                m_pythiaParams,
-                m_gaussKernel
-        );
-
-    }
+//    if (m_intensityMatrix100Shadow.maxCoeff() > 0.0f) {
+//
+//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+//                m_intensityMatrix100Shadow,
+//                m_pythiaParams,
+//                m_gaussKernel
+//        );
+//
+//    }
 
     m_unfragPrecursorVec.resize(rows, 1);
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
@@ -623,11 +623,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 
     if (m_unfragPrecursorVec.maxCoeff() > 0.0f) {
 
-        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
-                m_unfragPrecursorVec,
-                m_pythiaParams,
-                m_gaussKernel
-        );
+//        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
+//                m_unfragPrecursorVec,
+//                m_pythiaParams,
+//                m_gaussKernel
+//        );
 
     }
 
@@ -814,8 +814,8 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     intensityMatrix45 = intensityMatrix45.array() * peakMaskMat.array();
     intensityMatrix20 = intensityMatrix20.array() * peakMaskMat.array();
 
-    intensityMatrix45 = applyGaussSmoothRowWiseToMatrix(intensityMatrix45, m_pythiaParams, m_gaussKernel);
-    intensityMatrix20 = applyGaussSmoothRowWiseToMatrix(intensityMatrix20, m_pythiaParams, m_gaussKernel);
+//    intensityMatrix45 = applyGaussSmoothRowWiseToMatrix(intensityMatrix45, m_pythiaParams, m_gaussKernel);
+//    intensityMatrix20 = applyGaussSmoothRowWiseToMatrix(intensityMatrix20, m_pythiaParams, m_gaussKernel);
 
     const Eigen::VectorX<float> anchorCol45 = intensityMatrix45.col(anchorColumnIndex);
     const Eigen::VectorX<float> anchorCol20 = intensityMatrix20.col(anchorColumnIndex);
