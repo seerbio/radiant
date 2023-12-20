@@ -23,6 +23,7 @@ public:
 private Q_SLOTS:
 
     void openFileTest();
+    void realWorldTest();
 
 private:
 
@@ -76,6 +77,25 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(int(1360.38), int(scanPoints.last().y()));
     qDebug() << scanPoints.last();
     QCOMPARE(scanPoints.size(), 35);
+
+}
+
+void MsReaderMZMLTests::realWorldTest() {
+
+    QSKIP("Turned off for production");
+
+    ERR_INIT
+
+    const QString filePath = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX43_A.raw.mzML";
+
+    QElapsedTimer et;
+    et.start();
+
+    MsReaderMzML msReaderMzMl;
+    e = msReaderMzMl.openFile(filePath);
+    QCOMPARE(e, eNoError);
+
+    qDebug() << "Opened in" << et.elapsed() << "mSec";
 
 }
 
