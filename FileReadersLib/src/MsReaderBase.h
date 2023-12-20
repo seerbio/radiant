@@ -65,6 +65,8 @@ public:
 
     Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
 
+    void reset();
+
     virtual Err openFile(const QString &filePath);
 
     virtual Err openFile(
@@ -168,7 +170,6 @@ public:
 
     Err printFileInfo();
 
-    Err writeTargetCollisionEnergyFile();
 
 protected:
 

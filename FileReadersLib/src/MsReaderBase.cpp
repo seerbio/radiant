@@ -466,3 +466,7 @@ QPair<double, double> MsReaderBase::scanTimeMinMax() {
 bool MsReaderBase::isInit() {
     return !m_msScanInfo.isEmpty();
 }
+
+void MsReaderBase::reset() {
+    QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
+}
