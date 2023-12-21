@@ -245,7 +245,7 @@ Err CandidateScorertron::calculateScores(
             ms2IonsTheoretical,
             &mzHashedVsXICPoints
             ); ree;
-
+            
 //    const QList<QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsVals = mzHashedVsfeatureFinderHills.values();
 //    const int mzIonsFound = static_cast<int>(std::count_if(
 //            mzHashedVsfeatureFinderHillsVals.begin(),
@@ -304,7 +304,6 @@ Err CandidateScorertron::extractXICs(
         const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
         if (ms2Ion.mz < m_mzMin || ms2Ion.mz > m_mzMax) {
-            mzHashedVsXICPoints->insert(mzHashed, {});
             continue;
         }
 

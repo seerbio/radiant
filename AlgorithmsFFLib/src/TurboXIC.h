@@ -23,9 +23,7 @@ public:
     QMap<ScanNumber, ScanPoints> scanNumbersVsScanPoints;
     QMap<ScanNumber, float> scanNumbersVsIntensity;
 
-    [[nodiscard]] Err buildScanNumbersVsIntensityVals() {
-
-        ERR_INIT
+    void buildScanNumbersVsIntensityVals() {
 
         if (scanNumbersVsIntensity.isEmpty()) {
 
@@ -43,8 +41,6 @@ public:
 
             scanNumbersVsIntensity = scanNumberVsIntensity;
         }
-
-        ERR_RETURN
     }
 
     [[nodiscard]] QMap<ScanNumber, QVector<double>> scanNumberVsMzVals() const {

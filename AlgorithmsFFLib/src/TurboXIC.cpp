@@ -78,7 +78,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
             m_scanNumberVsIntensityPtrs.push_back(pr);
-            cloudLoader.emplace_back(coor, &pr);
+            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs.back());
         }
     }
 
@@ -109,7 +109,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
             m_scanNumberVsIntensityPtrs.push_back(pr);
-            cloudLoader.emplace_back(coor, &pr);
+            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs.back());
         }
     }
 
