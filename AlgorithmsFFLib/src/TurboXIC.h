@@ -8,6 +8,7 @@
 #include "AlgorithmsFFLib_Exports.h"
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "PointFF.h"
 
 
 using namespace Error;
@@ -20,7 +21,7 @@ public:
     ~XICPoints() = default;
 
     QMap<ScanNumber, ScanPoints> scanNumbersVsScanPoints;
-    QMap<ScanNumber, double> scanNumbersVsIntensity;
+    QMap<ScanNumber, float> scanNumbersVsIntensity;
 
     [[nodiscard]] Err buildScanNumbersVsIntensityVals() {
 
@@ -28,7 +29,7 @@ public:
 
         if (scanNumbersVsIntensity.isEmpty()) {
 
-            QMap<ScanNumber, double> scanNumberVsIntensity;
+            QMap<ScanNumber, float> scanNumberVsIntensity;
 
             for (auto it = scanNumbersVsScanPoints.begin(); it != scanNumbersVsScanPoints.end(); it++) {
 
@@ -78,24 +79,24 @@ public:
     Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
 
     XICPoints extractPointsXIC(
-            double mzMin,
-            double mzMax,
+            float mzMin,
+            float mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
     );
 
     [[nodiscard]] ScanPoints extractSpectrum(
-            double mzMin,
-            double mzMax,
+            float mzMin,
+            float mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
             ) const;
 
     Err getRTreeLimits(
-            double *scanNumberMin,
-            double *scanNumberMax,
-            double *mzMin,
-            double *mzMax
+            float *scanNumberMin,
+            float *scanNumberMax,
+            float *mzMin,
+            float *mzMax
             ) const;
 
     bool isInit();

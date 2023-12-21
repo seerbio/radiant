@@ -185,7 +185,7 @@ namespace {
 
                 ScanPoints* scanPoints = sgpi.allScanPointsTranch.at(nextScanIndex);
 
-                QVector<double> mzVals;
+                QVector<float> mzVals;
                 QVector<float> intensityVals;
                 output.e = MsReaderBase::splitScanPoints(
                         scanPoints,

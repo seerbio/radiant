@@ -61,7 +61,7 @@ using ResidueIndex = int;
 using ScanNumber = int;
 using ScanNumberIndex = int;
 using ScanPoint = PointFF;
-using ScanPoints = QVector<ScanPoint>;
+using ScanPoints = std::vector<ScanPoint>;
 using ScanTime = float;
 using Score = double;
 using TandemScansIndex = int;
@@ -111,7 +111,7 @@ public:
     const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");
     const QString HDF_FILE_EXTENSION = QStringLiteral("hdf");
     const QString MZML_FILE_EXTENSION = QStringLiteral("mzml");
-    const QString PRQ_FILE_EXTENSION = QStringLiteral("prqDF");
+    const QString PRQ_FILE_EXTENSION = QStringLiteral("prqFF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");

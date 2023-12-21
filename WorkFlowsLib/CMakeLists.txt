@@ -21,13 +21,13 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/ConvertMzMLToParquetWorkFlow.cpp
-        src/FastaFileToPeptidesListWorkFlow.cpp
+#        src/FastaFileToPeptidesListWorkFlow.cpp
         src/PythiaDIAFFWorkflow.cpp
     )
 
 SET(HEADER_FILES
         src/ConvertMzMLToParquetWorkFlow.h
-        src/FastaFileToPeptidesListWorkFlow.h
+#        src/FastaFileToPeptidesListWorkFlow.h
         src/PythiaDIAFFWorkflow.h
     )
 

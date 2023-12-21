@@ -4,6 +4,7 @@
 
 #include "ErrorUtils.h"
 #include "MsFrame.h"
+#include "MsReaderMzML.h"
 #include "MsUtils.h"
 #include "ParallelUtils.h"
 #include "TurboXIC.h"
@@ -22,36 +23,35 @@ private Q_SLOTS:
 
     void initTest();
     void extractPointsTest();
-
     void turboXICUtility();
+    void mzMLMemoryTest();
 
 
 private:
 
-    QMap<int, QVector<PointDF>> buildPoints() const;
+    QMap<int, QVector<PointFF>> buildPoints() const;
 
 };
 
 
-QMap<int, QVector<PointDF>> TurboXICTests::buildPoints() const {
+QMap<int, QVector<PointFF>> TurboXICTests::buildPoints() const {
 
-    QMap<int, QVector<PointDF>> points;
-    points.insert(1, {PointDF(100.11, 100.1), PointDF(200.11, 200.1)});
-    points.insert(2, {PointDF(100.12, 100.2), PointDF(200.12, 200.2)});
-    points.insert(3, {PointDF(100.13, 100.3), PointDF(200.13, 200.3)});
-    points.insert(4, {PointDF(100.14, 100.4), PointDF(200.14, 200.4)});
-    points.insert(5, {PointDF(100.15, 100.5), PointDF(100.151, 100.5), PointDF(200.15, 200.5)});
+    QMap<int, QVector<PointFF>> points;
+    points.insert(1, {PointFF(100.11, 100.1), PointFF(200.11, 200.1)});
+    points.insert(2, {PointFF(100.12, 100.2), PointFF(200.12, 200.2)});
+    points.insert(3, {PointFF(100.13, 100.3), PointFF(200.13, 200.3)});
+    points.insert(4, {PointFF(100.14, 100.4), PointFF(200.14, 200.4)});
+    points.insert(5, {PointFF(100.15, 100.5), PointFF(100.151, 100.5), PointFF(200.15, 200.5)});
 
 
     return points;
 }
 
-
 void TurboXICTests::initTest() {
 
-    QMap<int, QVector<PointDF>> _points = buildPoints();
+    QMap<int, QVector<PointFF>> _points = buildPoints();
 
-    QMap<int, QVector<PointDF>*> points;
+    QMap<int, QVector<PointFF>*> points;
     for (auto it = _points.begin(); it != _points.end(); it++) {
         points.insert(it.key(), &it.value());
     }
@@ -68,12 +68,11 @@ void TurboXICTests::initTest() {
 
 }
 
-
 void TurboXICTests::extractPointsTest() {
 
-    QMap<int, QVector<PointDF>> _points = buildPoints();
+    QMap<int, QVector<PointFF>> _points = buildPoints();
 
-    QMap<int, QVector<PointDF>*> points;
+    QMap<int, QVector<PointFF>*> points;
     for (auto it = _points.begin(); it != _points.end(); it++) {
         points.insert(it.key(), &it.value());
     }
@@ -87,9 +86,9 @@ void TurboXICTests::extractPointsTest() {
     const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
     QCOMPARE(xicPoints.scanNumbersVsIntensity.size(), 2);
     QCOMPARE(xicPoints.scanNumbersVsIntensity.firstKey(), 2);
-    QCOMPARE(xicPoints.scanNumbersVsIntensity.first(), 100.2);
+    QCOMPARE(MathUtils::pRound(xicPoints.scanNumbersVsIntensity.first(), 1), 100.2);
     QCOMPARE(xicPoints.scanNumbersVsIntensity.lastKey(), 3);
-    QCOMPARE(xicPoints.scanNumbersVsIntensity.last(), 100.3);
+    QCOMPARE(MathUtils::pRound(xicPoints.scanNumbersVsIntensity.last(), 1), 100.3);
 
     const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
     QCOMPARE(xicPointsSum.scanNumbersVsIntensity.size(), 4);
@@ -127,7 +126,7 @@ void TurboXICTests::turboXICUtility() {
 //            );
 //    QCOMPARE(e, eNoError);
 //
-//    const QMap<int, QVector<PointDF>> &points = msFrame.scanNumberVsScanPoints();
+//    const QMap<int, QVector<PointFF>> &points = msFrame.scanNumberVsScanPoints();
 //
 //    TurboXIC turboXIC;
 //    e = turboXIC.init(points);
@@ -145,14 +144,76 @@ void TurboXICTests::turboXICUtility() {
 //            );
 //
 //    qDebug() << xicPoints.scanNumbersVsIntensityVals.size();
-//    const QVector<PointDF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
+//    const QVector<PointFF> vec = ParallelUtils::convertMapToPoints(xicPoints.scanNumbersVsIntensityVals);
 //
-//    for (const PointDF &p : vec) {
+//    for (const PointFF &p : vec) {
 //        qDebug() << p;
 //    }
 //
 //    e = MsUtils::writePointsToCSV(vec, "xic.csv");
 //    QCOMPARE(e, eNoError);
+
+}
+
+void TurboXICTests::mzMLMemoryTest() {
+
+    ERR_INIT
+
+    const QString file = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX43_A.raw.mzML";
+
+//    QVector<int> test(2000);
+//    QVector<QVector<int>> fdsa;
+//    for (int i = 0; i < 200000; i++) {
+//
+//        if (i % 1000 == 0) {
+//            qDebug() << i;
+//        }
+//
+//        int testC[test.size()];
+//        test.reserve(2000);
+//
+//        for (int j = 0; j < 2000; j++) {
+//            testC[j] = j;
+//        }
+//
+//        Eigen::VectorXi vec = Eigen::Map<Eigen::VectorXi>(testC, test.size());
+////        std::vector<int> vec3(testC, testC + test.size());
+////        fdsa.push_back(test);
+//    }
+
+    MsReaderMzML readerMzMl;
+    e = readerMzMl.openFile(file);
+
+    QMap<MzTargetKey, QMap<int, ScanPoints*>> pss;
+    e = readerMzMl.collateMS2MzTargetFrames(&pss);
+
+    QElapsedTimer et;
+    et.start();
+
+    QMap<MzTargetKey, TurboXIC*> turbos;
+    for (auto it = pss.begin(); it != pss.end(); it++) {
+
+        QMap<int, ScanPoints*> &ps = it.value();
+
+        QElapsedTimer etLocal;
+        etLocal.start();
+        auto *turboXic = new TurboXIC();
+        e = turboXic->init(ps);
+        turbos.insert(it.key(), turboXic);
+        qDebug() << it.key() << etLocal.elapsed() << "mSec";
+
+        for (ScanPoints *p : ps) {
+            ScanPoints().swap(*p);
+        }
+        QMap<int, ScanPoints*>().swap(ps);
+    }
+
+    readerMzMl.reset();
+    qDebug() << et.elapsed();
+
+    for (TurboXIC* ti : turbos) {
+        delete ti;
+    }
 
 }
 

@@ -11,7 +11,7 @@
 
 
 namespace {
-    const QString ARG_FRAGLIB_PATH = QStringLiteral("fraglibdf-path");
+    const QString ARG_FRAGLIB_PATH = QStringLiteral("fraglibff-path");
     const QString ARG_FASTA_PATH = QStringLiteral("fasta-path");
     const QString ARG_PYTHIA_PARAMS = QStringLiteral("pythia-path");
     const QString ARG_DATAFILE_PATH = QStringLiteral("data-file-path");
@@ -19,7 +19,7 @@ namespace {
 
 CommandLineParser::CommandLineParser() {
     addHelpOption();
-    addPositionalArgument(ARG_FRAGLIB_PATH, QObject::tr("*.fragLibDF file"));
+    addPositionalArgument(ARG_FRAGLIB_PATH, QObject::tr("*.fragLibFF file"));
     addPositionalArgument(ARG_FASTA_PATH, QObject::tr("*.fasta file"));
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.pythia file"));
     addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data directory path"));
@@ -72,7 +72,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     }
 
     m_cliParams.msDataFile = args[4];
-    const bool dataFilesPathIsValid = CommandLineParserUtils::checkFileNameExtension(m_cliParams.msDataFile, "prqDF")
+    const bool dataFilesPathIsValid = CommandLineParserUtils::checkFileNameExtension(m_cliParams.msDataFile, "prqFF")
                                    || CommandLineParserUtils::checkFileNameExtension(m_cliParams.msDataFile, "mzML");
     if (!dataFilesPathIsValid) {
         qCritical() << QStringLiteral("Fourth command line argument data directory path argument invalid");

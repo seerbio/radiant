@@ -18,7 +18,7 @@ namespace bgi = boost::geometry::index;
 
 class Q_DECL_HIDDEN TurboXIC::Private
 {
-    using rTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
+    using rTreeCoor = bg::model::point<float, 2, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
     using rTreePoint = std::pair<rTreeCoor, float> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
@@ -33,24 +33,24 @@ public:
     Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
 
     XICPoints extractPointsXIC(
-            double mzMin,
-            double mzMax,
+            float mzMin,
+            float mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
     );
 
     ScanPoints extractSpectrum(
-            double mzMin,
-            double mzMax,
+            float mzMin,
+            float mzMax,
             ScanNumber scanNumberMin,
             ScanNumber scanNumberMax
     );
 
     Err getRTreeLimits(
-            double *scanNumberMin,
-            double *scanNumberMax,
-            double *mzMin,
-            double *mzMax
+            float *scanNumberMin,
+            float *scanNumberMax,
+            float *mzMin,
+            float *mzMax
             );
 
     bool isInit();
@@ -86,7 +86,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
         ScanPoints *scanPoints = it.value();
 
         for (ScanPoint &sp : *scanPoints) {
-            rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
+            rTreeCoor coor(static_cast<float>(scanNumber), sp.x());
             cloudLoader.emplace_back(coor, sp.y());
         }
     }
@@ -111,7 +111,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         ScanPoints *scanPoints = it.value();
 
         for (const ScanPoint &sp : *scanPoints) {
-            rTreeCoor coor(static_cast<double>(scanNumber), sp.x());
+            rTreeCoor coor(static_cast<float>(scanNumber), sp.x());
             cloudLoader.emplace_back(coor, sp.y());
         }
     }
@@ -123,8 +123,8 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
 }
 
 XICPoints TurboXIC::Private::extractPointsXIC(
-        double mzMin,
-        double mzMax,
+        float mzMin,
+        float mzMax,
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMax
 ) {
@@ -132,8 +132,8 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     XICPoints xicPoints;
 
     const rTreeSearchBox queryBox(
-            rTreeCoor(scanNumberMin, mzMin),
-            rTreeCoor(scanNumberMax, mzMax)
+            rTreeCoor(static_cast<float>(scanNumberMin), mzMin),
+            rTreeCoor(static_cast<float>(scanNumberMax), mzMax)
     );
 
     std::vector<rTreePoint> result;
@@ -141,8 +141,6 @@ XICPoints TurboXIC::Private::extractPointsXIC(
 
     for (const rTreePoint &rtp : result) {
         const auto scanNumber = static_cast<ScanNumber>(rtp.first.get<0>());
-//        xicPoints.scanNumbersVsIntensityVals[scanNumber] += static_cast<double>(rtp.second);
-//        xicPoints.scanNumberVsMzVals[scanNumber].push_back(rtp.first.get<1>());
         xicPoints.scanNumbersVsScanPoints[scanNumber].push_back({rtp.first.get<1>(), rtp.second});
     }
 
@@ -151,10 +149,10 @@ XICPoints TurboXIC::Private::extractPointsXIC(
 }
 
 Err TurboXIC::Private::getRTreeLimits(
-        double *scanNumberMin,
-        double *scanNumberMax,
-        double *mzMin,
-        double *mzMax
+        float *scanNumberMin,
+        float *scanNumberMax,
+        float *mzMin,
+        float *mzMax
         ) {
 
     ERR_INIT
@@ -170,8 +168,8 @@ Err TurboXIC::Private::getRTreeLimits(
 }
 
 ScanPoints TurboXIC::Private::extractSpectrum(
-        double mzMin,
-        double mzMax,
+        float mzMin,
+        float mzMax,
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMax
         ) {
@@ -190,12 +188,12 @@ ScanPoints TurboXIC::Private::extractSpectrum(
             m_defaultPrecision
             );
 
-    Eigen::SparseVector<double> vec(vecSize);
+    Eigen::SparseVector<float> vec(vecSize);
     vec.setZero();
 
     for (const rTreePoint &rtp : result) {
 
-        const double mz = rtp.first.get<1>();
+        const float mz = rtp.first.get<1>();
         const int mzHashed = MathUtils::hashDecimal(mz, m_defaultPrecision);
 
         vec.coeffRef(mzHashed) += rtp.second;
@@ -203,15 +201,15 @@ ScanPoints TurboXIC::Private::extractSpectrum(
 
     ScanPoints scanPoints;
 
-    for (Eigen::SparseVector<double>::InnerIterator it(vec); it; ++it) {
+    for (Eigen::SparseVector<float>::InnerIterator it(vec); it; ++it) {
 
-        const auto mz = MathUtils::unHashDecimal<double>(it.index(), m_defaultPrecision);
+        const auto mz = MathUtils::unHashDecimal<float>(it.index(), m_defaultPrecision);
         const float intensity = it.value();
 
         scanPoints.push_back({mz, intensity});
     }
 
-    std::sort(scanPoints.begin(), scanPoints.end(), [](const PointDF &l, const PointDF &r){return l.x() < r.x();});
+    std::sort(scanPoints.begin(), scanPoints.end(), [](const PointFF &l, const PointFF &r){return l.x() < r.x();});
 
     return scanPoints;
 }
@@ -246,8 +244,8 @@ Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) {
 
 
 XICPoints TurboXIC::extractPointsXIC(
-        double mzMin,
-        double mzMax,
+        float mzMin,
+        float mzMax,
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMax
 ) {
@@ -260,10 +258,10 @@ XICPoints TurboXIC::extractPointsXIC(
 }
 
 Err TurboXIC::getRTreeLimits(
-        double *scanNumberMin,
-        double *scanNumberMax,
-        double *mzMin,
-        double *mzMax
+        float *scanNumberMin,
+        float *scanNumberMax,
+        float *mzMin,
+        float *mzMax
         ) const {
     ERR_INIT
 
@@ -278,8 +276,8 @@ Err TurboXIC::getRTreeLimits(
 }
 
 ScanPoints TurboXIC::extractSpectrum(
-        double mzMin,
-        double mzMax,
+        float mzMin,
+        float mzMax,
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMax
         ) const {
