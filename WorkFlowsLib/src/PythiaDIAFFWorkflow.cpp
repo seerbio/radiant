@@ -4,17 +4,17 @@
 
 #include "PythiaDIAFFWorkflow.h"
 
-//#include "CandidateScores.h"
-//#include "ClassifierWeightsManager.h"
+#include "CandidateScores.h"
+#include "ClassifierWeightsManager.h"
 #include "EigenUtils.h"
-//#include "FastaFileToPeptidesListWorkFlow.h"
-//#include "FastaReader.h"
-//#include "FDRCLassifierNeuralNet.h"
+#include "FastaFileToPeptidesListWorkFlow.h"
+#include "FastaReader.h"
+#include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "MsReaderMzML.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
-//#include "ProteinDigestomatic.h"
+#include "ProteinDigestomatic.h"
 #include "TurboXIC.h"
 
 #include <QElapsedTimer>
@@ -56,28 +56,14 @@ Err PythiaDIAFFWorkflow::init(
             &fragLibReaderRows
             ); ree;
 
-//    e = m_targetDecoyCandidatePairManager.init(
-//            m_pythiaParameters,
-//            &fragLibReaderRows
-//            ); ree;
+    e = m_targetDecoyCandidatePairManager.init(
+            m_pythiaParameters,
+            &fragLibReaderRows
+            ); ree;
 
     ERR_RETURN
 }
 
-namespace {
-
-    Err parallelLoadLogic(const QMap<ScanNumber, ScanPoints*> &scanPointPtrs) {
-
-        ERR_INIT
-
-        auto *turboXIC = new TurboXIC();
-        e = turboXIC->init(scanPointPtrs); ree;
-        delete turboXIC;
-
-        ERR_RETURN
-    }
-
-}
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
@@ -90,20 +76,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
     msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames);
 
-    QElapsedTimer et;
-    et.start();
-
-    QFuture<Err> futures = QtConcurrent::mapped(
-            diaTargetFrames,
-            parallelLoadLogic
-            );
-    futures.waitForFinished();
-
-    qDebug() << "TurboXICs loaded in:" << et.elapsed() << "mSec";
-
-//    while (true){}
-
-
     const int msLevel = 1;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
@@ -113,6 +85,23 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             scanNumberVsScanPointsMS1,
             &msReaderPointerAcc,
             &diaTargetFrames
+            ); ree;
+
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            msReaderPointerAcc.ptr->getUniqueTandemMsScanInfos(),
+            -1.0,
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
+
+    qDebug() << mzTargetKeyVsTargetDecoyCandidatePointers.size();
+
+    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            12,
+            msReaderPointerAcc.ptr->scanTimeMinMax(),
+            m_msCalibratomatic,
+            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &m_candidateScores
             ); ree;
 
 //    if (!m_pythiaParameters.turboMode) {
@@ -428,167 +417,167 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
-//    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
-//
-//    mzTargetKeyVsTargetDecoyCandidatePointers->clear();
-//
-//    for (const MsScanInfo &msScanInfo : msScanInfos) {
-//
-//        if (msScanInfo.msLevel < 2) {
-//            continue;
-//        }
-//
-//        QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
-//        e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
-//                msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
-//                msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
-//                selectionFraction,
-//                &targetDecoyPointers
-//                ); ree;
-//
-//        mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyPointers);
-//
-//        if (m_pythiaParameters.verbosity > 1) {
-//            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyPointers.size() << "targetDecoyPairs found";
-//        }
-//    }
+    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
+
+    mzTargetKeyVsTargetDecoyCandidatePointers->clear();
+
+    for (const MsScanInfo &msScanInfo : msScanInfos) {
+
+        if (msScanInfo.msLevel < 2) {
+            continue;
+        }
+
+        QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
+        e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
+                msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
+                msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
+                selectionFraction,
+                &targetDecoyPointers
+                ); ree;
+
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyPointers);
+
+        if (m_pythiaParameters.verbosity > 1) {
+            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyPointers.size() << "targetDecoyPairs found";
+        }
+    }
 
     ERR_RETURN
 }
 
 namespace {
 
-//    struct TargetDecoyCandidateScores {
-//        CandidateScores *candidateScoresTarget;
-//        CandidateScores *candidateScoresDecoy;
-//        ScoresTargets *scoresTarget;
-//        ScoresDecoys  *scoresDecoy;
-//    };
-//
-//    QString buildCandidateKey(const CandidateScores &candidateScores) {
-//        const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
-//        return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
-//                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
-//    }
-//
-//    struct BuildClassiferParallelInput {
-//        QVector<ScoresTargets*> scoresTargets;
-//        QVector<ScoresDecoys*> scoresDecoys;
-//    };
-//
-//    struct BuildClassifierParallelOutput {
-//        QVector<QVector<float>> A;
-//        QVector<float> b;
-//    };
-//
-//    Err buildParallelInput(
-//            const QVector<ScoresTargets*> &scoresTargets,
-//            const QVector<ScoresDecoys*> &scoresDecoys,
-//            QVector<BuildClassiferParallelInput> *inputs
-//            ) {
-//        ERR_INIT
-//
-//        QVector<QVector<ScoresTargets*>> scoresTargetsTranched;
-//        QVector<QVector<ScoresDecoys*>> scoresDecoysTranched;
-//
-//        e = ParallelUtils::trancheVectorForParallelization(
-//                scoresTargets,
-//                ParallelUtils::numberOfAvailableSystemProcessors(),
-//                &scoresTargetsTranched
-//                ); ree;
-//
-//        e = ParallelUtils::trancheVectorForParallelization(
-//                scoresDecoys,
-//                ParallelUtils::numberOfAvailableSystemProcessors(),
-//                &scoresDecoysTranched
-//                ); ree;
-//
-//        e = ErrorUtils::isEqual(scoresTargetsTranched.size(), scoresDecoysTranched.size()); ree;
-//        for (int i = 0; i < scoresDecoysTranched.size(); i++) {
-//            BuildClassiferParallelInput input;
-//            input.scoresTargets = scoresTargetsTranched.at(i);
-//            input.scoresDecoys = scoresDecoysTranched.at(i);
-//            inputs->push_back(input);
-//        }
-//
-//        ERR_RETURN
-//    }
-//
-//    QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel(const BuildClassiferParallelInput &input) {
-//
-//        ERR_INIT
-//
-//        BuildClassifierParallelOutput output;
-//
-//        e = ClassifierWeightsManager::buildDataClassifier1(
-//                input.scoresTargets,
-//                input.scoresDecoys,
-//                &output.A,
-//                &output.b
-//        ); rree;
-//
-//        return {e, output};
-//    }
+    struct TargetDecoyCandidateScores {
+        CandidateScores *candidateScoresTarget;
+        CandidateScores *candidateScoresDecoy;
+        ScoresTargets *scoresTarget;
+        ScoresDecoys  *scoresDecoy;
+    };
 
-//    Err processParallelResults(
-//            const QPair<Err, BuildClassifierParallelOutput> &result,
-//            int inputsSize,
-//            QVector<QVector<float>> *A,
-//            QVector<float> *b
-//            ) {
-//
-//        ERR_INIT
-//        e = result.first; ree;
-//
-//        const QVector<QVector<float>> &ALocal = result.second.A;
-//        const QVector<float> bLocal = result.second.b;
-//
-//        if (A->isEmpty() || b->isEmpty()) {
-//            A->resize(ALocal.size());
-//            for(int row = 0; row < A->size(); row++) {
-//                QVector<float> v(ALocal.front().size(), 0.0);
-//                (*A)[row] = v;
-//            }
-//            b->resize(bLocal.size());
-//        }
-//
-//        for (int row = 0; row < A->size(); row++) {
-//            for (int col = 0; col < A->front().size(); col++) {
-//                (*A)[row][col] += ALocal[row][col] / static_cast<float>(inputsSize);
-//            }
-//        }
-//
-//        for (int row = 0; row < bLocal.size(); row++) {
-//            (*b)[row] += bLocal[row] / static_cast<float>(inputsSize);
-//        }
-//
-//        ERR_RETURN
-//    }
+    QString buildCandidateKey(const CandidateScores &candidateScores) {
+        const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
+        return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
+                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
+    }
 
-//    QPair<Err, QVector<float>> scoreVectorParallel(
-//            bool useExtendedScores,
-//            bool useNeuralNetworkScores,
-//            CandidateScores* candidateScores
-//            ) {
-//
-//        ERR_INIT
-//
-//
-//        if (useNeuralNetworkScores) {
-//            QVector<float> &vec = candidateScores->featuresArray;
-//            return {e, vec};
-//        }
-//        else if (useExtendedScores) {
-//            QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::CosineSimToAnchor1);
-//            return {e, vec};
-//        }
-//        else {
-//            QVector<float> vec = candidateScores->featuresArray.mid(0, 5);
-//            return {e, vec};
-//        }
-//
-//        return {eError, {}};
-//    }
+    struct BuildClassiferParallelInput {
+        QVector<ScoresTargets*> scoresTargets;
+        QVector<ScoresDecoys*> scoresDecoys;
+    };
+
+    struct BuildClassifierParallelOutput {
+        QVector<QVector<float>> A;
+        QVector<float> b;
+    };
+
+    Err buildParallelInput(
+            const QVector<ScoresTargets*> &scoresTargets,
+            const QVector<ScoresDecoys*> &scoresDecoys,
+            QVector<BuildClassiferParallelInput> *inputs
+            ) {
+        ERR_INIT
+
+        QVector<QVector<ScoresTargets*>> scoresTargetsTranched;
+        QVector<QVector<ScoresDecoys*>> scoresDecoysTranched;
+
+        e = ParallelUtils::trancheVectorForParallelization(
+                scoresTargets,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &scoresTargetsTranched
+                ); ree;
+
+        e = ParallelUtils::trancheVectorForParallelization(
+                scoresDecoys,
+                ParallelUtils::numberOfAvailableSystemProcessors(),
+                &scoresDecoysTranched
+                ); ree;
+
+        e = ErrorUtils::isEqual(scoresTargetsTranched.size(), scoresDecoysTranched.size()); ree;
+        for (int i = 0; i < scoresDecoysTranched.size(); i++) {
+            BuildClassiferParallelInput input;
+            input.scoresTargets = scoresTargetsTranched.at(i);
+            input.scoresDecoys = scoresDecoysTranched.at(i);
+            inputs->push_back(input);
+        }
+
+        ERR_RETURN
+    }
+
+    QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel(const BuildClassiferParallelInput &input) {
+
+        ERR_INIT
+
+        BuildClassifierParallelOutput output;
+
+        e = ClassifierWeightsManager::buildDataClassifier1(
+                input.scoresTargets,
+                input.scoresDecoys,
+                &output.A,
+                &output.b
+        ); rree;
+
+        return {e, output};
+    }
+
+    Err processParallelResults(
+            const QPair<Err, BuildClassifierParallelOutput> &result,
+            int inputsSize,
+            QVector<QVector<float>> *A,
+            QVector<float> *b
+            ) {
+
+        ERR_INIT
+        e = result.first; ree;
+
+        const QVector<QVector<float>> &ALocal = result.second.A;
+        const QVector<float> bLocal = result.second.b;
+
+        if (A->isEmpty() || b->isEmpty()) {
+            A->resize(ALocal.size());
+            for(int row = 0; row < A->size(); row++) {
+                QVector<float> v(ALocal.front().size(), 0.0);
+                (*A)[row] = v;
+            }
+            b->resize(bLocal.size());
+        }
+
+        for (int row = 0; row < A->size(); row++) {
+            for (int col = 0; col < A->front().size(); col++) {
+                (*A)[row][col] += ALocal[row][col] / static_cast<float>(inputsSize);
+            }
+        }
+
+        for (int row = 0; row < bLocal.size(); row++) {
+            (*b)[row] += bLocal[row] / static_cast<float>(inputsSize);
+        }
+
+        ERR_RETURN
+    }
+
+    QPair<Err, QVector<float>> scoreVectorParallel(
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            CandidateScores* candidateScores
+            ) {
+
+        ERR_INIT
+
+
+        if (useNeuralNetworkScores) {
+            QVector<float> &vec = candidateScores->featuresArray;
+            return {e, vec};
+        }
+        else if (useExtendedScores) {
+            QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::CosineSimToAnchor1);
+            return {e, vec};
+        }
+        else {
+            QVector<float> vec = candidateScores->featuresArray.mid(0, 5);
+            return {e, vec};
+        }
+
+        return {eError, {}};
+    }
 
 }//namespace
 Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
@@ -600,179 +589,179 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
     ERR_INIT
 
-//    e = ErrorUtils::isFalse(m_candidateScores.isEmpty()); ree;
-//
-//    QElapsedTimer et;
-//    et.start();
-//
-//    const auto scoreBuildBinder = std::bind(
-//            scoreVectorParallel,
-//            useExtendedScores,
-//            useNeuralNetworkScores,
-//            std::placeholders::_1
-//    );
-//
-//    //TODO clean this up. Abstract sub processes into methods.
-//
-//    QVector<CandidateScores*> candidateScoresPntrs;
-//    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-//
-//    QFuture<QPair<Err, QVector<float>>> futuresScoreBuilder = QtConcurrent::mapped(
-//            candidateScoresPntrs,
-//            scoreBuildBinder
-//            );
-//    futuresScoreBuilder.waitForFinished();
-//
-//    QVector<QVector<float>> scoreVectors;
-//    for (const QPair<Err, QVector<float>> &res : futuresScoreBuilder) {
-//        e = res.first; ree;
-//        scoreVectors.push_back(res.second);
-//    }
-//
-//    e = ErrorUtils::isEqual(m_candidateScores.size(), scoreVectors.size()); ree;
-//
-//    QMap<QString, TargetDecoyCandidateScores> keyVsTargetDecoyCandidateScores;
-//
-//    for(int i = 0; i < scoreVectors.size(); i++) {
-//
-//        CandidateScores *cs = &m_candidateScores[i];
-//
-//        const QString key = cs->targetDecoyCandidatePair->peptideStringWithMods()
-//                                + QString::number(cs->targetDecoyCandidatePair->charge()) + cs->targetKey;
-//        QVector<float> *sv = &scoreVectors[i];
-//
-//        if (cs->isDecoy) {
-//            keyVsTargetDecoyCandidateScores[key].scoresDecoy = sv;
-//            keyVsTargetDecoyCandidateScores[key].candidateScoresDecoy = cs;
-//            continue;
-//        }
-//
-//        keyVsTargetDecoyCandidateScores[key].candidateScoresTarget = cs;
-//        keyVsTargetDecoyCandidateScores[key].scoresTarget = sv;
-//    }
-//    qDebug() << "build key vs scores" << et.restart() << "mSec";
-//
-//    QVector<ScoresTargets*> scoresTargets;
-//    QVector<ScoresDecoys*> scoresDecoys;
-//    QVector<CandidateScores*> candidateScoresTargetsPtrs;
-//    QVector<CandidateScores*> candidateScoresDecoysPtrs;
-//
-//    for (auto it = keyVsTargetDecoyCandidateScores.begin(); it != keyVsTargetDecoyCandidateScores.end(); it++) {
-//
-//        const QString &key = it.key();
-//        const TargetDecoyCandidateScores &tdcs = it.value();
-//
-//        e = ErrorUtils::isEqual(tdcs.scoresTarget->size(), tdcs.scoresDecoy->size());
-//        if (e != eNoError) {
-//            qDebug() << "target decoys not paired for key" << key;
-//            rrr(eValueError);
-//        }
-//
-//        scoresTargets.push_back(tdcs.scoresTarget);
-//        scoresDecoys.push_back(tdcs.scoresDecoy);
-//        candidateScoresTargetsPtrs.push_back(tdcs.candidateScoresTarget);
-//        candidateScoresDecoysPtrs.push_back(tdcs.candidateScoresDecoy);
-//    }
-//    qDebug() << "build separate" << et.restart() << "mSec";
-//
-//    QVector<BuildClassiferParallelInput> inputs;
-//    e = buildParallelInput(
-//            scoresTargets,
-//            scoresDecoys,
-//            &inputs
-//    ); ree;
-//
-//    QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
-//            inputs,
-//            buildClassifierDataParallel
-//            );
-//    futures.waitForFinished();
-//
-//    QVector<QVector<float>> A;
-//    QVector<float> b;
-//    for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
-//        e = processParallelResults(
-//                result,
-//                inputs.size(),
-//                &A,
-//                &b
-//                ); ree;
-//    }
-//    qDebug() << "build classifier" << et.restart() << "mSec";
-//
-//    QVector<float> weights;
-//    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
-//    qDebug() << "fit weights" << et.restart() << "mSec";
-//
-//    qDebug() << "Weights:" << weights;
-//    qDebug() << "b:" << b;
-//
-//    QVector<float> discScoreTargets;
-//    e = ClassifierWeightsManager::applyWeights(scoresTargets, weights, &discScoreTargets); ree;
-//
-//    QVector<float> discScoreDecoys;
-//    e = ClassifierWeightsManager::applyWeights(scoresDecoys, weights, &discScoreDecoys); ree;
-//
-//    qDebug() << "apply weights scores" << et.restart() << "mSec";
-//
-//    e = ErrorUtils::isEqual(scoresTargets.size(), scoresDecoys.size()); ree;
-//    e = ErrorUtils::isEqual(scoresTargets.size(), candidateScoresTargetsPtrs.size()); ree;
-//    e = ErrorUtils::isEqual(scoresDecoys.size(), candidateScoresDecoysPtrs.size()); ree;
-//    e = ErrorUtils::isEqual(discScoreTargets.size(), scoresTargets.size());
-//    e = ErrorUtils::isEqual(discScoreDecoys.size(), scoresDecoys.size());
-//
-//    for (int i = 0; i < scoresDecoys.size(); i++) {
-//
-//        CandidateScores* csTarget = candidateScoresTargetsPtrs.at(i);
-//        csTarget->discriminantScore = discScoreTargets.at(i);
-//
-//        CandidateScores* csDecoy = candidateScoresDecoysPtrs.at(i);
-//        csDecoy->discriminantScore = discScoreDecoys.at(i);
-//    }
-//    qDebug() << "Setting scores" << et.restart() << "mSec";
+    e = ErrorUtils::isFalse(m_candidateScores.isEmpty()); ree;
+
+    QElapsedTimer et;
+    et.start();
+
+    const auto scoreBuildBinder = std::bind(
+            scoreVectorParallel,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            std::placeholders::_1
+    );
+
+    //TODO clean this up. Abstract sub processes into methods.
+
+    QVector<CandidateScores*> candidateScoresPntrs;
+    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+
+    QFuture<QPair<Err, QVector<float>>> futuresScoreBuilder = QtConcurrent::mapped(
+            candidateScoresPntrs,
+            scoreBuildBinder
+            );
+    futuresScoreBuilder.waitForFinished();
+
+    QVector<QVector<float>> scoreVectors;
+    for (const QPair<Err, QVector<float>> &res : futuresScoreBuilder) {
+        e = res.first; ree;
+        scoreVectors.push_back(res.second);
+    }
+
+    e = ErrorUtils::isEqual(m_candidateScores.size(), scoreVectors.size()); ree;
+
+    QMap<QString, TargetDecoyCandidateScores> keyVsTargetDecoyCandidateScores;
+
+    for(int i = 0; i < scoreVectors.size(); i++) {
+
+        CandidateScores *cs = &m_candidateScores[i];
+
+        const QString key = cs->targetDecoyCandidatePair->peptideStringWithMods()
+                                + QString::number(cs->targetDecoyCandidatePair->charge()) + cs->targetKey;
+        QVector<float> *sv = &scoreVectors[i];
+
+        if (cs->isDecoy) {
+            keyVsTargetDecoyCandidateScores[key].scoresDecoy = sv;
+            keyVsTargetDecoyCandidateScores[key].candidateScoresDecoy = cs;
+            continue;
+        }
+
+        keyVsTargetDecoyCandidateScores[key].candidateScoresTarget = cs;
+        keyVsTargetDecoyCandidateScores[key].scoresTarget = sv;
+    }
+    qDebug() << "build key vs scores" << et.restart() << "mSec";
+
+    QVector<ScoresTargets*> scoresTargets;
+    QVector<ScoresDecoys*> scoresDecoys;
+    QVector<CandidateScores*> candidateScoresTargetsPtrs;
+    QVector<CandidateScores*> candidateScoresDecoysPtrs;
+
+    for (auto it = keyVsTargetDecoyCandidateScores.begin(); it != keyVsTargetDecoyCandidateScores.end(); it++) {
+
+        const QString &key = it.key();
+        const TargetDecoyCandidateScores &tdcs = it.value();
+
+        e = ErrorUtils::isEqual(tdcs.scoresTarget->size(), tdcs.scoresDecoy->size());
+        if (e != eNoError) {
+            qDebug() << "target decoys not paired for key" << key;
+            rrr(eValueError);
+        }
+
+        scoresTargets.push_back(tdcs.scoresTarget);
+        scoresDecoys.push_back(tdcs.scoresDecoy);
+        candidateScoresTargetsPtrs.push_back(tdcs.candidateScoresTarget);
+        candidateScoresDecoysPtrs.push_back(tdcs.candidateScoresDecoy);
+    }
+    qDebug() << "build separate" << et.restart() << "mSec";
+
+    QVector<BuildClassiferParallelInput> inputs;
+    e = buildParallelInput(
+            scoresTargets,
+            scoresDecoys,
+            &inputs
+    ); ree;
+
+    QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
+            inputs,
+            buildClassifierDataParallel
+            );
+    futures.waitForFinished();
+
+    QVector<QVector<float>> A;
+    QVector<float> b;
+    for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
+        e = processParallelResults(
+                result,
+                inputs.size(),
+                &A,
+                &b
+                ); ree;
+    }
+    qDebug() << "build classifier" << et.restart() << "mSec";
+
+    QVector<float> weights;
+    e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
+    qDebug() << "fit weights" << et.restart() << "mSec";
+
+    qDebug() << "Weights:" << weights;
+    qDebug() << "b:" << b;
+
+    QVector<float> discScoreTargets;
+    e = ClassifierWeightsManager::applyWeights(scoresTargets, weights, &discScoreTargets); ree;
+
+    QVector<float> discScoreDecoys;
+    e = ClassifierWeightsManager::applyWeights(scoresDecoys, weights, &discScoreDecoys); ree;
+
+    qDebug() << "apply weights scores" << et.restart() << "mSec";
+
+    e = ErrorUtils::isEqual(scoresTargets.size(), scoresDecoys.size()); ree;
+    e = ErrorUtils::isEqual(scoresTargets.size(), candidateScoresTargetsPtrs.size()); ree;
+    e = ErrorUtils::isEqual(scoresDecoys.size(), candidateScoresDecoysPtrs.size()); ree;
+    e = ErrorUtils::isEqual(discScoreTargets.size(), scoresTargets.size());
+    e = ErrorUtils::isEqual(discScoreDecoys.size(), scoresDecoys.size());
+
+    for (int i = 0; i < scoresDecoys.size(); i++) {
+
+        CandidateScores* csTarget = candidateScoresTargetsPtrs.at(i);
+        csTarget->discriminantScore = discScoreTargets.at(i);
+
+        CandidateScores* csDecoy = candidateScoresDecoysPtrs.at(i);
+        csDecoy->discriminantScore = discScoreDecoys.at(i);
+    }
+    qDebug() << "Setting scores" << et.restart() << "mSec";
 
     ERR_RETURN
 }
 
-//Err PythiaDIAFFWorkflow::recalibrateMzVals(
-//        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-//        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
-//        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-//        MsReaderPointerAcc *msReaderPointerAcc
-//        ) {
-//
-//    ERR_INIT
-//
-//    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
-//
-//    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-//    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
-//
-//    qDebug() << "Recalibrating mz vals";
-//
-//    QElapsedTimer et;
-//    et.start();
-//
-//    const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
-//
-//    for (const MzTargetKey &k: diaTargetFrameKeys) {
-//        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrames->value(k)); ree;
-//    }
-//
-//    qDebug() << "Recalibrating MS1 mz vals frame";
-//    e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
-//
-//    e = targetDecoyCandidatePairScoretron->init(
-//            m_pythiaParameters,
-//            *scanNumberVsScanTimeMS1,
-//            msReaderPointerAcc,
-//            diaTargetFrames
-//            ); ree;
-//
-//    qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
-//
-//    ERR_RETURN
-//}
+Err PythiaDIAFFWorkflow::recalibrateMzVals(
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
+
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
+    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+
+    qDebug() << "Recalibrating mz vals";
+
+    QElapsedTimer et;
+    et.start();
+
+    const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
+
+    for (const MzTargetKey &k: diaTargetFrameKeys) {
+        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrames->value(k)); ree;
+    }
+
+    qDebug() << "Recalibrating MS1 mz vals frame";
+    e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
+
+    e = targetDecoyCandidatePairScoretron->init(
+            m_pythiaParameters,
+            *scanNumberVsScanTimeMS1,
+            msReaderPointerAcc,
+            diaTargetFrames
+            ); ree;
+
+    qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
 
 namespace {
 

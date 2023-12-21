@@ -42,7 +42,7 @@ namespace FragLibReaderNamespace {
 struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
     PeptideSequenceChargeKey peptideSequenceChargeKey;
-    QVector<double> mzVals;
+    QVector<float> mzVals;
     QVector<float> intensityVals;
     QString ionLabels;
     double mass = -1.0;
@@ -80,7 +80,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         peptideSequenceChargeKey = dataMap.value(PEP_SEQ_CHRG_KEY).toString();
-        mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
+        mzVals = bytesArrayToQVector<float>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
         mass = dataMap.value(MASS).toDouble();
         isDecoy = dataMap.value(IS_DECOY).toInt();

@@ -9,7 +9,7 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-//#include "MsCalibratomatic.h"
+#include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 #include "TargetDecoyCandidatePairScoretron.h"
@@ -74,12 +74,12 @@ private:
         int theoMzIonsSize
         );
 
-//    Err recalibrateMzVals(
-//        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-//        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
-//        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-//        MsReaderPointerAcc *msReaderPointerAcc
-//        );
+    Err recalibrateMzVals(
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc
+        );
 
     Err optimizeParameters(
             const QVector<CandidateScores*> &candidateScoresTrainings,
@@ -114,7 +114,7 @@ private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
     TargetDecoyCandidatePairScoretron m_targetDecoyCandidatePairScoretron;
-//    MsCalibratomatic m_msCalibratomatic;
+    MsCalibratomatic m_msCalibratomatic;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
@@ -122,7 +122,7 @@ private:
 
     int m_minTopNMs2Ions;
 
-//    QVector<CandidateScores> m_candidateScores;
+    QVector<CandidateScores> m_candidateScores;
 
 };
 

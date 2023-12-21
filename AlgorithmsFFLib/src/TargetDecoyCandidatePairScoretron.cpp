@@ -30,8 +30,6 @@ public:
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
     QPair<double, double> scanTimeMinMax;
-    QString ms2CachedFilePath;
-    QString ms1CachedFilePath;
 };
 
 Err TargetDecoyCandidatePairScoretron::init(
@@ -67,17 +65,8 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-        e = ErrorUtils::isFalse(!(pi.diaTargetFrame == nullptr) && !pi.ms2CachedFilePath.isEmpty()); rree;
-        if (!pi.ms2CachedFilePath.isEmpty()) {
-            e = ErrorUtils::isNotEmpty(pi.ms1CachedFilePath); rree;
-        }
-        else if (!pi.ms1CachedFilePath.isEmpty()) {
-            e = ErrorUtils::isNotEmpty(pi.ms2CachedFilePath); rree;
-        }
-        else {
-            e = ErrorUtils::isFalse(pi.diaTargetFrame->isEmpty()); rree;
-            e = ErrorUtils::isNotEmpty(pi.ms1Frame); rree;
-        }
+        e = ErrorUtils::isFalse(pi.diaTargetFrame->isEmpty()); rree;
+        e = ErrorUtils::isNotEmpty(pi.ms1Frame); rree;
 
         QVector<CandidateScores> allCandidateScores;
 
@@ -96,7 +85,6 @@ namespace {
 
         FeatureFinderHillBuilder featureFinderHillBuilderMS2;
         e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
-
         e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
 
         CandidateScorertron candidateScorertron;
@@ -142,7 +130,7 @@ namespace {
 }//namespace
 Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
         int topNMS2Ions,
-        const QPair<double, double> &scanTimeMinMax,
+        const QPair<ScanTime , ScanTime > &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
@@ -152,10 +140,7 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
-
-    if (!usingCache()) {
-        e = ErrorUtils::isFalse(m_diaTargetFrames->isEmpty()); ree;
-    }
+    e = ErrorUtils::isFalse(m_diaTargetFrames->isEmpty()); ree;
 
     candidateScoresVec->clear();
 
@@ -197,14 +182,9 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
 bool TargetDecoyCandidatePairScoretron::isInit() {
 
-    if (!usingCache()) {
-        return m_pythiaParameters.isValid()
-               && !m_diaTargetFrames->isEmpty()
-               && !m_ms1Frame.isEmpty();
-    }
-
-    return m_msReaderPointerAcc->ptr->isInit();
-
+    return m_pythiaParameters.isValid()
+       && !m_diaTargetFrames->isEmpty()
+       && !m_ms1Frame.isEmpty();
 }
 
 Err TargetDecoyCandidatePairScoretron::buildParallelInput(
@@ -220,11 +200,9 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
     e = ErrorUtils::isFalse(mzTargetKeyVsTargetDecoyCandidatePointers->isEmpty()); ree;
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
+    e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
 
-    if (!usingCache()) {
-        e = ErrorUtils::isNotEmpty(*m_diaTargetFrames); ree;
-        e = ErrorUtils::isNotEmpty(m_ms1Frame); ree;
-    }
 
     for (const MsScanInfo &msScanInfo : m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos()) {
 
@@ -250,8 +228,4 @@ Err TargetDecoyCandidatePairScoretron::setPythiaParameters(const PythiaParameter
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     m_pythiaParameters = pythiaParameters;
     ERR_RETURN
-}
-
-bool TargetDecoyCandidatePairScoretron::usingCache() {
-    return m_diaTargetFrames == nullptr;
 }
