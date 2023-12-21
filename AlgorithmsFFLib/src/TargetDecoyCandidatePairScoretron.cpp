@@ -58,6 +58,29 @@ Err TargetDecoyCandidatePairScoretron::init(
 
 namespace {
 
+    Err buildMzHashedVsCount(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+            QHash<MzHashed, int> *mzHashedVsCount
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyPointers); ree;
+
+        for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                (*mzHashedVsCount)[mzHashed]++;
+            }
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                (*mzHashedVsCount)[mzHashed]++;
+            }
+        }
+
+        ERR_RETURN
+    }
+
     QPair<Err, QVector<CandidateScores>> parallelScoreLogic(const TargetDecoyPairParallelInput &pi) {
 
         ERR_INIT
@@ -72,6 +95,9 @@ namespace {
 
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
+        QHash<MzHashed, int> mzHashedVsCount;
+        e = buildMzHashedVsCount(pi.targetDecoyPointers, &mzHashedVsCount); rree;
+
         CandidateScorertron candidateScorertron;
         e = candidateScorertron.init(
                 pi.diaTargetFrame,
@@ -81,21 +107,9 @@ namespace {
                 pi.targetKey,
                 pi.scanTimeMinMax,
                 pi.topNMs2Ions,
+                mzHashedVsCount,
                 &msCalibratomatic
         ); rree;
-
-//        QVector<TargetDecoyCandidatePair*> ptrsCopy = pi.targetDecoyPointers;
-//        const int aminoAcidToSortByCount = 4;
-//        std::sort(
-//                ptrsCopy.begin(),
-//                ptrsCopy.end(),
-//                [aminoAcidToSortByCount](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){
-//                    QString seqL = l->peptideStringWithMods().right(aminoAcidToSortByCount);
-//                    std::reverse(seqL.begin(), seqL.end());
-//                    QString seqR = r->peptideStringWithMods().right(aminoAcidToSortByCount);
-//                    std::reverse(seqR.begin(), seqR.end());
-//                    return seqL < seqR;
-//                });
 
         for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 

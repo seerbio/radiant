@@ -39,6 +39,7 @@ public:
             const MzTargetKey &targetKey,
             const QPair<double, double> &scanTimeMinMax,
             int topNMS2Ions,
+            const QHash<MzHashed, int> &mzHashedVsCount,
             MsCalibratomatic *msCalibratomatic
             );
 
@@ -51,7 +52,7 @@ public:
 
 private:
 
-    Err extractHills(
+    Err extractXICs(
             const QVector<MS2Ion> &ms2IonsTheoretical,
             QHash<MzHashed , XICPoints> *mzHashedVsXICPoints
     );
@@ -93,6 +94,7 @@ private:
     QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
 
     QHash<MzHashed , XICPoints> m_mzHashedVsXICPointsCached;
+    QHash<MzHashed, int> m_mzHashedVsCount;
 
     MzTargetKey m_targetKey;
     QPair<double, double> m_scanTimeMinMax;

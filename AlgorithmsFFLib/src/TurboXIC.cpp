@@ -111,10 +111,14 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         ScanPoints *scanPoints = it.value();
 
         for (const ScanPoint &sp : *scanPoints) {
-            rTreeCoor coor(static_cast<float>(scanNumber), sp.x());
+            rTreeCoor coor(sp.x(), 0.0);
             cloudLoader.emplace_back(coor, sp.y());
         }
     }
+
+    std::sort(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &l, const rTreePoint &r){
+        return l.first.get<0>() < r.first.get<0>();
+    });
 
     const int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
@@ -132,16 +136,16 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     XICPoints xicPoints;
 
     const rTreeSearchBox queryBox(
-            rTreeCoor(static_cast<float>(scanNumberMin), mzMin),
-            rTreeCoor(static_cast<float>(scanNumberMax), mzMax)
+            rTreeCoor(mzMin, -0.01),
+            rTreeCoor(mzMax, 0.01)
     );
 
     std::vector<rTreePoint> result;
     m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
 
     for (const rTreePoint &rtp : result) {
-        const auto scanNumber = static_cast<ScanNumber>(rtp.first.get<0>());
-        xicPoints.scanNumbersVsScanPoints[scanNumber].push_back({rtp.first.get<1>(), rtp.second});
+        const auto scanNumber = static_cast<ScanNumber>(rtp.first.get<1>());
+        xicPoints.scanNumbersVsScanPoints[scanNumber].push_back({rtp.first.get<0>(), rtp.second});
     }
 
     Err e = xicPoints.buildScanNumbersVsIntensityVals();

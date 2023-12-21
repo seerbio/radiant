@@ -96,6 +96,7 @@ Err CandidateScorertron::init(
         const MzTargetKey &targetKey,
         const QPair<double, double> &scanTimeMinMax,
         int topNMS2Ions,
+        const QHash<MzHashed, int> &mzHashedVsCount,
         MsCalibratomatic *msCalibratomatic
         ) {
 
@@ -108,6 +109,7 @@ Err CandidateScorertron::init(
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
     m_scanTimeMinMax = scanTimeMinMax;
+    m_mzHashedVsCount = mzHashedVsCount;
 
     const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_pythiaParameters);
     e = m_peakIntegratomatic.init(ffParams); ree;
@@ -241,7 +243,7 @@ Err CandidateScorertron::calculateScores(
     }
 
     QHash<MzHashed , XICPoints> mzHashedVsXICPoints;
-    e = extractHills(
+    e = extractXICs(
             ms2IonsTheoretical,
             &mzHashedVsXICPoints
             ); ree;
@@ -293,7 +295,7 @@ Err CandidateScorertron::calculateScores(
     ERR_RETURN
 }
 
-Err CandidateScorertron::extractHills(
+Err CandidateScorertron::extractXICs(
         const QVector<MS2Ion> &ms2IonsTheoretical,
         QHash<MzHashed , XICPoints> *mzHashedVsXICPoints
         ) {
@@ -329,15 +331,15 @@ Err CandidateScorertron::extractHills(
 
         mzHashedVsXICPoints->insert(mzHashed, xicPoints);
 
-        if (m_mzHashedVsXICPointsCached.size() > 2.5e4) {
+        const int cacheSizeMax = 2.5e4;
+        if (m_mzHashedVsXICPointsCached.size() > cacheSizeMax) {
             m_mzHashedVsXICPointsCached.clear();
         }
 
-        const float mzCacheMax = 600.0;
-        if (ms2Ion.mz < mzCacheMax) {
+        const int minCountToCache = 2;
+        if (m_mzHashedVsCount.value(mzHashed) >= minCountToCache) {
             m_mzHashedVsXICPointsCached.insert(mzHashed, xicPoints);
         }
-
     }
 
     ERR_RETURN
