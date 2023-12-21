@@ -409,11 +409,11 @@ Err MsCalibratomatic::recalibrateScanPoints(
     ERR_RETURN
 }
 
-double MsCalibratomatic::mzStDev() {
+float MsCalibratomatic::mzStDev() {
     return m_mzStDev;
 }
 
-double MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) {
+float MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) {
     return m_scanTimeStd * nStdDevs;
 }
 

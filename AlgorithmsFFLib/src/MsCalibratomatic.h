@@ -38,8 +38,8 @@ public:
 
     Err recalibrateScanPoints(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
 
-    [[nodiscard]] double mzStDev();
-    [[nodiscard]] double scanTimeStDev(int nStdDevs = 1);
+    [[nodiscard]] float mzStDev();
+    [[nodiscard]] float scanTimeStDev(int nStdDevs = 1);
     void setScanTimeStDev(double val);
 
 

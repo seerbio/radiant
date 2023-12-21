@@ -12,6 +12,7 @@
 #include "MsFrame.h"
 #include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
+#include "TurboXIC.h"
 
 class CandidateScores;
 class FeatureFinderHill;
@@ -31,14 +32,14 @@ public:
     ~CandidateScorertron();
 
     Err init(
+            const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
             const MzTargetKey &targetKey,
             const QPair<double, double> &scanTimeMinMax,
             int topNMS2Ions,
-            MsCalibratomatic *msCalibratomatic,
-            FeatureFinderHillBuilder *featureFinderHillsBuilderMS2
+            MsCalibratomatic *msCalibratomatic
             );
 
     Err calculateScores(
@@ -52,7 +53,7 @@ private:
 
     Err extractHills(
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHills
+            QHash<MzHashed , XICPoints> *mzHashedVsXICPoints
     );
 
     Err findCandidateIntegrations(
@@ -85,15 +86,20 @@ private:
     PeakIntegratomatic m_peakIntegratomatic;
     MsCalibratomatic *m_msCalibratomatic;
 
-    FeatureFinderHillBuilder *m_featureFinderHillsBuilderMS2;
-    QHash<MzHashed , QVector<FeatureFinderHill*>> m_mzHashedVsFeatureFinderHillsCached;
+    TurboXIC m_turboXIC;
 
     MsFrame m_ms1Frame;
     QMap<ScanNumber, ScanPoints> m_scanNumberVsScanPointsMS1;
     QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
 
+    QHash<MzHashed , XICPoints> m_mzHashedVsXICPointsCached;
+
     MzTargetKey m_targetKey;
     QPair<double, double> m_scanTimeMinMax;
+    float m_frameIndexMin;
+    float m_frameIndexMax;
+    float m_mzMin;
+    float m_mzMax;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

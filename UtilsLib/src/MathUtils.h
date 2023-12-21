@@ -167,7 +167,7 @@ public:
     }
 
     template<typename T>
-    static double calculatePPM(T val, T ppmTolerance) {
+    static T calculatePPM(T val, T ppmTolerance) {
         return (val * ppmTolerance) / 1e6;
     }
 

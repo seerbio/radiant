@@ -168,7 +168,7 @@ namespace {
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
             int frameIndexMin,
-            double ppmTol,
+            float ppmTol,
             const QPair<int, int> &alignmentMatrixLimits,
             Eigen::MatrixX<float> *matTight1,
             Eigen::MatrixX<float> *matTight2
@@ -214,9 +214,9 @@ namespace {
                         continue;
                     }
 
-                    const double mzTolTight1 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol);
-                    const double mzMinTight1 = ms2Ion.mz - mzTolTight1;
-                    const double mzMaxTight1 = ms2Ion.mz + mzTolTight1;
+                    const float mzTolTight1 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol);
+                    const float mzMinTight1 = ms2Ion.mz - mzTolTight1;
+                    const float mzMaxTight1 = ms2Ion.mz + mzTolTight1;
 
                     const double mz = mzVals.at(i);
 

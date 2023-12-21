@@ -23,7 +23,7 @@ class TargetDecoyPairParallelInput {
 public:
     MzTargetKey targetKey;
     MsCalibratomatic msCalibratomatic;
-    QMap<ScanNumber, ScanPoints*> *diaTargetFrame = nullptr;
+    QMap<ScanNumber, ScanPoints*> diaTargetFrame;
     QMap<ScanNumber, ScanPoints> ms1Frame;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
@@ -65,39 +65,37 @@ namespace {
         QElapsedTimer et;
         et.start();
 
-        e = ErrorUtils::isFalse(pi.diaTargetFrame->isEmpty()); rree;
+        e = ErrorUtils::isNotEmpty(pi.diaTargetFrame); rree;
         e = ErrorUtils::isNotEmpty(pi.ms1Frame); rree;
 
         QVector<CandidateScores> allCandidateScores;
 
         MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
-        FeatureFinderParameters featureFinderParameters(pi.pythiaParameters);
-
-        QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
-        QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS2;
-        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-
-        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsMS2Pntrs;
-        for (auto it = scanNumberVsScanPointsMS2.begin(); it != scanNumberVsScanPointsMS2.end(); it++) {
-            scanNumberVsScanPointsMS2Pntrs.insert(it.key(), &it.value());
-        }
-
-        FeatureFinderHillBuilder featureFinderHillBuilderMS2;
-        e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
-        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
-
         CandidateScorertron candidateScorertron;
         e = candidateScorertron.init(
+                pi.diaTargetFrame,
                 pi.scanNumberVsScanTime,
                 pi.ms1Frame,
                 pi.pythiaParameters,
                 pi.targetKey,
                 pi.scanTimeMinMax,
                 pi.topNMs2Ions,
-                &msCalibratomatic,
-                &featureFinderHillBuilderMS2
+                &msCalibratomatic
         ); rree;
+
+//        QVector<TargetDecoyCandidatePair*> ptrsCopy = pi.targetDecoyPointers;
+//        const int aminoAcidToSortByCount = 4;
+//        std::sort(
+//                ptrsCopy.begin(),
+//                ptrsCopy.end(),
+//                [aminoAcidToSortByCount](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){
+//                    QString seqL = l->peptideStringWithMods().right(aminoAcidToSortByCount);
+//                    std::reverse(seqL.begin(), seqL.end());
+//                    QString seqR = r->peptideStringWithMods().right(aminoAcidToSortByCount);
+//                    std::reverse(seqR.begin(), seqR.end());
+//                    return seqL < seqR;
+//                });
 
         for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
@@ -120,7 +118,7 @@ namespace {
             allCandidateScores.push_back(candidateScoresDecoy);
         }
 
-        if (pi.pythiaParameters.verbosity > 1) {
+        if (pi.pythiaParameters.verbosity >= 1) {
             qDebug() << "Target key processed in" << pi.targetKey << et.elapsed() << "mSec";
         }
 
@@ -214,7 +212,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
         tdppi.ms1Frame = m_ms1Frame;
-        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
+        tdppi.diaTargetFrame = m_diaTargetFrames->value(msScanInfo.targetKey());
         tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
 
         input->push_back(tdppi);

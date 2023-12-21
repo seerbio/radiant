@@ -142,8 +142,8 @@ public:
     const QString B_H2O_IONS = QStringLiteral("bH20");
     const QString PRECURSOR_IONS = QStringLiteral("precursorIons");
 
-    const double TIGHT_1_FRACTION = 0.45;
-    const double TIGHT_2_FRACTION = 0.2;
+    const float TIGHT_1_FRACTION = 0.45;
+    const float TIGHT_2_FRACTION = 0.2;
 
     const int NUMBER_OF_THE_BEAST = 666;
 
