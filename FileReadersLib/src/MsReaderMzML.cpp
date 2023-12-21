@@ -367,7 +367,7 @@ namespace {
         vec->erase(terminator, vec->end());
     }
 
-    Err processBinaryData(QXmlStreamReader &reader, QVector<ScanPoint> *scanPoints) {
+    Err processBinaryData(QXmlStreamReader &reader, ScanPoints *scanPoints) {
 
         ERR_INIT
 
