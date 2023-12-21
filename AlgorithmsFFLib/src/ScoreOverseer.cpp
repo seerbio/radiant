@@ -913,9 +913,7 @@ namespace {
 
         const XICPoints xicPoints = turboXic->extractPointsXIC(
                 mzStart,
-                mzEnd,
-                peakIntegrationIndexes.first,
-                peakIntegrationIndexes.second
+                mzEnd
                 );
 
         Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));

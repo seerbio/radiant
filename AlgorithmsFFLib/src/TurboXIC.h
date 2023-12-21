@@ -80,21 +80,10 @@ public:
 
     XICPoints extractPointsXIC(
             float mzMin,
-            float mzMax,
-            ScanNumber scanNumberMin,
-            ScanNumber scanNumberMax
+            float mzMax
     );
 
-    [[nodiscard]] ScanPoints extractSpectrum(
-            float mzMin,
-            float mzMax,
-            ScanNumber scanNumberMin,
-            ScanNumber scanNumberMax
-            ) const;
-
     Err getRTreeLimits(
-            float *scanNumberMin,
-            float *scanNumberMax,
             float *mzMin,
             float *mzMax
             ) const;

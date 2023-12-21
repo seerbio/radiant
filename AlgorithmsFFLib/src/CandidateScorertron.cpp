@@ -121,8 +121,6 @@ Err CandidateScorertron::init(
     e = m_turboXIC.init(msFrame.frameIndexVsScanPoints()); ree;
 
     e = m_turboXIC.getRTreeLimits(
-            &m_frameIndexMin,
-            &m_frameIndexMax,
             &m_mzMin,
             &m_mzMax
             );
@@ -324,9 +322,7 @@ Err CandidateScorertron::extractXICs(
 
         const XICPoints xicPoints = m_turboXIC.extractPointsXIC(
                 mzMin,
-                mzMax,
-                static_cast<FrameIndex>(m_frameIndexMin),
-                static_cast<FrameIndex>(m_frameIndexMax)
+                mzMax
                 );
 
         mzHashedVsXICPoints->insert(mzHashed, xicPoints);
