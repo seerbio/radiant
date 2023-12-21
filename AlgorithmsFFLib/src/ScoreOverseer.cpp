@@ -921,7 +921,7 @@ namespace {
         Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, double> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
+        const QMap<ScanNumber, float> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
 
         for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
             const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;

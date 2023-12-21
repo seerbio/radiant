@@ -42,12 +42,12 @@ public:
 
     Err buildScanPointGroups(
             const QVector<ScanPoints*> &allScanPoints,
-            QVector<QVector<QVector<double>>> *groupedMzVals,
+            QVector<QVector<QVector<float>>> *groupedMzVals,
             QVector<QVector<QVector<float>>> *groupedIntensityVals
     );
 
     Err connectCentroidsInGroupedMzVals(
-            const QVector<QVector<QVector<double>>> &groupedMzVals,
+            const QVector<QVector<QVector<float>>> &groupedMzVals,
             double tolerancePPM,
             QVector<Eigen::MatrixX<int>> *connectedCentroids
     ) const;
@@ -124,7 +124,7 @@ namespace {
 
     struct ScanGroupingParallelOutput {
         Err e = Error::eNoError;
-        QVector<QVector<QVector<double>>> groupedMzVals;
+        QVector<QVector<QVector<float>>> groupedMzVals;
         QVector<QVector<QVector<float>>> groupedIntensityVals;
     };
 
@@ -174,7 +174,7 @@ namespace {
             const ScanNumberIndex stopNextScanIndex
                 = scanIndex + sgpi.skipScanCount + defaultGroupPadding;
 
-            QVector<QVector<double>> mzValsGroup;
+            QVector<QVector<float>> mzValsGroup;
             QVector<QVector<float>> intensityValsGroup;
 
             for (ScanNumberIndex nextScanIndex = scanIndex; nextScanIndex < stopNextScanIndex; ++nextScanIndex) {
@@ -211,7 +211,7 @@ namespace {
 }//namespace
 Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
         const QVector<ScanPoints*> &allScanPoints,
-        QVector<QVector<QVector<double>>> *groupedMzVals,
+        QVector<QVector<QVector<float>>> *groupedMzVals,
         QVector<QVector<QVector<float>>> *groupedIntensityVals
 ) {
 
@@ -237,19 +237,19 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
 namespace {
 
     struct ConnectCentroidsInGroupedMzValsInput {
-        QVector<QVector<double>> mzValsGroup;
+        QVector<QVector<float>> mzValsGroup;
         double tolerancePPM = -1.0;
     };
 
 
     QVector<ConnectCentroidsInGroupedMzValsInput> buildConnectCentroidsInGroupedMzValsInputVec(
-            const QVector<QVector<QVector<double>>> &groupedMzVals,
+            const QVector<QVector<QVector<float>>> &groupedMzVals,
             double tolerancePPM
     ) {
 
         QVector<ConnectCentroidsInGroupedMzValsInput> inputs;
 
-        for (const QVector<QVector<double>> &mzValsGroup : groupedMzVals) {
+        for (const QVector<QVector<float>> &mzValsGroup : groupedMzVals) {
 
             ConnectCentroidsInGroupedMzValsInput input;
             input.mzValsGroup = mzValsGroup;
@@ -263,8 +263,8 @@ namespace {
 
 
     Eigen::VectorX<int> findCentroidConnections(
-            const QVector<double> &referenceScan,
-            const QVector<double> &nextScan,
+            const QVector<float> &referenceScan,
+            const QVector<float> &nextScan,
             double tolerancePPM
     ) {
 
@@ -315,7 +315,7 @@ namespace {
             const ConnectCentroidsInGroupedMzValsInput &input
     ) {
 
-        const QVector<double> &referenceScan = input.mzValsGroup.front();
+        const QVector<float> &referenceScan = input.mzValsGroup.front();
 
         const int returnMatRows = input.mzValsGroup.size() - 1;
         const int returnMatCols = referenceScan.size();
@@ -323,7 +323,7 @@ namespace {
 
         for (ScanNumberIndex nextScanIndex = 1; nextScanIndex < input.mzValsGroup.size(); nextScanIndex++) {
 
-            const QVector<double> &nextScan = input.mzValsGroup.at(nextScanIndex);
+            const QVector<float> &nextScan = input.mzValsGroup.at(nextScanIndex);
             const Eigen::VectorX<int> connectedCentroidsNextScan = findCentroidConnections(
                     referenceScan,
                     nextScan,
@@ -338,7 +338,7 @@ namespace {
 
 }//namespace
 Err FeatureFinderHillBuilder::Private::connectCentroidsInGroupedMzVals(
-        const QVector<QVector<QVector<double>>> &groupedMzVals,
+        const QVector<QVector<QVector<float>>> &groupedMzVals,
         double tolerancePPM,
         QVector<Eigen::MatrixX<int>> *connectedCentroids
 ) const {
@@ -572,7 +572,7 @@ Err FeatureFinderHillBuilder::Private::buildHills(
             &m_scanNumberIndexVsScanNumber
             ); ree;
 
-    QVector<QVector<QVector<double>>> groupedMzVals;
+    QVector<QVector<QVector<float>>> groupedMzVals;
     QVector<QVector<QVector<float>>> groupedIntensityVals;
     e = buildScanPointGroups(
             scanNumberVsScanPoints.values().toVector(),
@@ -915,7 +915,7 @@ Err FeatureFinderHillBuilder::init(const FeatureFinderParameters &featureFinderP
 
 Err FeatureFinderHillBuilder::buildScanPointGroupsTest(
         const QVector<ScanPoints*> &allScanPoints,
-        QVector<QVector<QVector<double>>> *groupedMzVals,
+        QVector<QVector<QVector<float>>> *groupedMzVals,
         QVector<QVector<QVector<float>>> *groupedIntensityVals
 ) {
 
@@ -931,7 +931,7 @@ Err FeatureFinderHillBuilder::buildScanPointGroupsTest(
 }
 
 Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
-        const QVector<QVector<QVector<double>>> &groupedMzVals,
+        const QVector<QVector<QVector<float>>> &groupedMzVals,
         double tolerancePPM,
         QVector<QVector<int>> *connectedCentroidsVecs
 ) {

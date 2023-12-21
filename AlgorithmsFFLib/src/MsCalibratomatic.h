@@ -44,8 +44,8 @@ public:
 
 
     Err predictScanTime(
-            double iRT,
-            double *predictedScanTime
+            float iRT,
+            float *predictedScanTime
             ) const;
 
     bool isInit() const;

@@ -124,12 +124,12 @@ private:
 
     Err buildScanPointGroupsTest(
             const QVector<ScanPoints*> &allScanPoints,
-            QVector<QVector<QVector<double>>> *groupedMzVals,
+            QVector<QVector<QVector<float>>> *groupedMzVals,
             QVector<QVector<QVector<float>>> *groupedIntensityVals
     );
 
     Err connectCentroidsInGroupedMzValsTest(
-            const QVector<QVector<QVector<double>>> &groupedMzVals,
+            const QVector<QVector<QVector<float>>> &groupedMzVals,
             double tolerancePPM,
             QVector<QVector<int>> *connectedCentroidsVecs
     );

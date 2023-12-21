@@ -29,7 +29,7 @@ namespace MsFrameScanPointRowsNamespace {
 struct ALGORITHMSFFLIB_EXPORTS MsFrameScanPointRows : public ParquetReaderInputBase {
 
     FrameIndex frameIndex = -1;
-    QVector<double> mzVals;
+    QVector<float> mzVals;
     QVector<float> intensityVals;
 
     QMap<QString, QVariant> map() override {
@@ -58,7 +58,7 @@ struct ALGORITHMSFFLIB_EXPORTS MsFrameScanPointRows : public ParquetReaderInputB
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
         frameIndex = dataMap.value(FRAME_INDEX).toInt();
-        mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
+        mzVals = bytesArrayToQVector<float>(dataMap.value(MZ_VALS).toByteArray());
         intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
 
         ERR_RETURN

@@ -28,8 +28,8 @@ public:
             const QVector<MS2Ion> &ms2IonsTarget,
             const QVector<MS2Ion> &ms2IonsDecoy,
             int charge,
-            double mass,
-            double iRt,
+            float mass,
+            float iRt,
             int totalFramentCount
             );
 
@@ -38,10 +38,10 @@ public:
     [[nodiscard]] PeptideStringWithMods peptideStringWithMods() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
-    [[nodiscard]] double mz() const;
+    [[nodiscard]] float mz() const;
     [[nodiscard]] int charge() const;
-    [[nodiscard]] double mass() const;
-    [[nodiscard]] double iRt() const;
+    [[nodiscard]] float mass() const;
+    [[nodiscard]] float iRt() const;
     [[nodiscard]] int totalFragmentCount() const;
 
 private:
@@ -50,8 +50,8 @@ private:
     QVector<MS2Ion> m_ms2IonsTarget;
     QVector<MS2Ion> m_ms2IonsDecoy;
     int m_charge;
-    double m_mass;
-    double m_iRt;
+    float m_mass;
+    float m_iRt;
     int m_totalFragmentCount;
 
 };

@@ -45,7 +45,6 @@ Err TargetDecoyCandidatePairScoretron::init(
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
-    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty() && msReaderPointerAcc->mzTargetKeyVsFilePathCache().isEmpty()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_msReaderPointerAcc = msReaderPointerAcc;
@@ -90,22 +89,6 @@ namespace {
         QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS2;
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
 
-        const bool usingCache = !pi.ms2CachedFilePath.isEmpty();
-        if (usingCache) {
-
-            e = MsReaderPointerAcc::readFrameCache(
-                    pi.ms2CachedFilePath,
-                    &scanNumberVsScanPointsMS2,
-                    &scanNumberVsScanTime
-                    ); rree;
-
-            e = MsReaderPointerAcc::readFrameCache(
-                    pi.ms2CachedFilePath,
-                    &scanNumberVsScanPointsMS1,
-                    &scanNumberVsScanTime
-            ); rree;
-        }
-
         QMap<ScanNumber, ScanPoints*> scanNumberVsScanPointsMS2Pntrs;
         for (auto it = scanNumberVsScanPointsMS2.begin(); it != scanNumberVsScanPointsMS2.end(); it++) {
             scanNumberVsScanPointsMS2Pntrs.insert(it.key(), &it.value());
@@ -114,40 +97,19 @@ namespace {
         FeatureFinderHillBuilder featureFinderHillBuilderMS2;
         e = featureFinderHillBuilderMS2.init(featureFinderParameters); rree;
 
-        if (!usingCache) {
-            e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
-        }
-        else {
-            e = featureFinderHillBuilderMS2.buildHills(scanNumberVsScanPointsMS2Pntrs); rree;
-        }
+        e = featureFinderHillBuilderMS2.buildHills(*pi.diaTargetFrame); rree;
 
         CandidateScorertron candidateScorertron;
-
-        if (!usingCache) {
-            e = candidateScorertron.init(
-                    pi.scanNumberVsScanTime,
-                    pi.ms1Frame,
-                    pi.pythiaParameters,
-                    pi.targetKey,
-                    pi.scanTimeMinMax,
-                    pi.topNMs2Ions,
-                    &msCalibratomatic,
-                    &featureFinderHillBuilderMS2
-            ); rree;
-        }
-        else {
-            e = candidateScorertron.init(
-                    scanNumberVsScanTime,
-                    scanNumberVsScanPointsMS1,
-                    pi.pythiaParameters,
-                    pi.targetKey,
-                    pi.scanTimeMinMax,
-                    pi.topNMs2Ions,
-                    &msCalibratomatic,
-                    &featureFinderHillBuilderMS2
-            ); rree;
-        }
-
+        e = candidateScorertron.init(
+                pi.scanNumberVsScanTime,
+                pi.ms1Frame,
+                pi.pythiaParameters,
+                pi.targetKey,
+                pi.scanTimeMinMax,
+                pi.topNMs2Ions,
+                &msCalibratomatic,
+                &featureFinderHillBuilderMS2
+        ); rree;
 
         for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
@@ -273,19 +235,9 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
-
-        if (!usingCache()) {
-            tdppi.ms1Frame = m_ms1Frame;
-            tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
-            tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
-        }
-        else {
-            const QMap<MzTargetKey, FilePath> mzTargetKeyVsFilePath = m_msReaderPointerAcc->mzTargetKeyVsFilePathCache();
-
-            e = ErrorUtils::isNotEmpty(mzTargetKeyVsFilePath); ree;
-            tdppi.ms1CachedFilePath = mzTargetKeyVsFilePath.value(S_GLOBAL_SETTINGS.MS1Key);
-            tdppi.ms2CachedFilePath = mzTargetKeyVsFilePath.value(tdppi.targetKey);
-        }
+        tdppi.ms1Frame = m_ms1Frame;
+        tdppi.diaTargetFrame = &(*m_diaTargetFrames)[msScanInfo.targetKey()];
+        tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
 
         input->push_back(tdppi);
     }

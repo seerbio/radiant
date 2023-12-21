@@ -23,7 +23,7 @@ Err FragLibReader::getFragLibReaderRows(
     const QString fileSuffix = fi.suffix();
 
     e = ErrorUtils::isTrue(
-            FragLibReaderNamespace::FRAG_LIB_DF_SUFFIX == fileSuffix,
+            FragLibReaderNamespace::FRAG_LIB_FF_SUFFIX == fileSuffix,
             eFileIncorrectTypeError
             ); ree;
 

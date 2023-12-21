@@ -18,6 +18,7 @@ using namespace Error;
 namespace FragLibReaderNamespace {
 
     const QString FRAG_LIB_DF_SUFFIX = QStringLiteral("fragLibDF");
+    const QString FRAG_LIB_FF_SUFFIX = QStringLiteral("fragLibFF");
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");
     const QString MZ_VALS = QStringLiteral("mzVals");

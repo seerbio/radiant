@@ -10,7 +10,7 @@
 //#include "FastaFileToPeptidesListWorkFlow.h"
 //#include "FastaReader.h"
 //#include "FDRCLassifierNeuralNet.h"
-//#include "FragLibReader.h"
+#include "FragLibReader.h"
 #include "MsReaderMzML.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
@@ -48,14 +48,14 @@ Err PythiaDIAFFWorkflow::init(
     const double massMax
             = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
 
-//    QVector<FragLibReaderRow> fragLibReaderRows;
-//    e = FragLibReader::getFragLibReaderRows(
-//            m_fragLibUri,
-//            massMin,
-//            massMax,
-//            &fragLibReaderRows
-//            ); ree;
-//
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+            m_fragLibUri,
+            massMin,
+            massMax,
+            &fragLibReaderRows
+            ); ree;
+
 //    e = m_targetDecoyCandidatePairManager.init(
 //            m_pythiaParameters,
 //            &fragLibReaderRows
@@ -87,14 +87,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
-    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrame;
-    msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrame);
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+    msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames);
 
     QElapsedTimer et;
     et.start();
 
     QFuture<Err> futures = QtConcurrent::mapped(
-            diaTargetFrame,
+            diaTargetFrames,
             parallelLoadLogic
             );
     futures.waitForFinished();
@@ -104,17 +104,17 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 //    while (true){}
 
 
-//    const int msLevel = 1;
-//    e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanTimeMS1); ree;
-//
+    const int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
+    e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
 
-//    e = m_targetDecoyCandidatePairScoretron.init(
-//            m_pythiaParameters,
-//            scanNumberVsScanTimeMS1,
-//            &msReaderPointerAcc,
-//            &diaTargetFrames
-//            ); ree;
-//
+    e = m_targetDecoyCandidatePairScoretron.init(
+            m_pythiaParameters,
+            scanNumberVsScanPointsMS1,
+            &msReaderPointerAcc,
+            &diaTargetFrames
+            ); ree;
+
 //    if (!m_pythiaParameters.turboMode) {
 //
 //        QVector<CandidateScores*> candidateScoresTrainings;
