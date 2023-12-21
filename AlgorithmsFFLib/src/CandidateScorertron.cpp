@@ -245,7 +245,12 @@ Err CandidateScorertron::calculateScores(
             ms2IonsTheoretical,
             &mzHashedVsXICPoints
             ); ree;
-            
+
+//    for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
+//        qDebug() << it.key() << it.value().scanNumbersVsScanPoints;
+//    }
+//    qDebug() << "**********";
+
 //    const QList<QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsVals = mzHashedVsfeatureFinderHills.values();
 //    const int mzIonsFound = static_cast<int>(std::count_if(
 //            mzHashedVsfeatureFinderHillsVals.begin(),
@@ -309,6 +314,11 @@ Err CandidateScorertron::extractXICs(
 
         if (m_mzHashedVsXICPointsCached.contains(mzHashed)) {
             mzHashedVsXICPoints->insert(mzHashed, m_mzHashedVsXICPointsCached.value(mzHashed));
+
+            if (m_mzHashedVsCount.value(mzHashed) == 2) {
+                m_mzHashedVsXICPointsCached.remove(mzHashed);
+            }
+
             continue;
         }
 
@@ -326,7 +336,7 @@ Err CandidateScorertron::extractXICs(
 
         mzHashedVsXICPoints->insert(mzHashed, xicPoints);
 
-        const int cacheSizeMax = 2.5e4;
+        const int cacheSizeMax = 2e4;
         if (m_mzHashedVsXICPointsCached.size() > cacheSizeMax) {
             m_mzHashedVsXICPointsCached.clear();
         }

@@ -24,6 +24,12 @@ class Q_DECL_HIDDEN TurboXIC::Private
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
     using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>*> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
+    
+    struct Ms2Point {
+        float mz = -1.0;
+        float intensity = -1.0;
+        FrameIndex frameIndex = -1;
+    };
 
 public:
 
@@ -61,14 +67,26 @@ TurboXIC::Private::~Private() {
     delete m_rTree;
 }
 
+
 Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
 
-    std::vector<rTreePoint> cloudLoader;
+    const int scanPointsCount = std::accumulate(
+            scanNumberVsScanPoints.begin(),
+            scanNumberVsScanPoints.end(),
+            0,
+            [](int sum, ScanPoints *sp){return sum + sp->size();}
+            );
+    qDebug() << scanPointsCount << "Points in msFrame";
 
+    m_scanNumberVsIntensityPtrs.resize(scanPointsCount);
+    m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
+    int pointCounter = 0;
+
+    std::vector<rTreePoint> cloudLoader;
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
         const ScanNumber scanNumber = it.key();
@@ -77,8 +95,8 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
         for (ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
-            m_scanNumberVsIntensityPtrs.push_back(pr);
-            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs.back());
+            m_scanNumberVsIntensityPtrs[pointCounter] = pr;
+            cloudLoader.push_back(std::make_pair(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]));
         }
     }
 
@@ -98,8 +116,18 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
 
     e = ErrorUtils::isNotEmpty(*scanNumberVsScanPoints); ree;
 
-    std::vector<rTreePoint> cloudLoader;
+    const int scanPointsCount = std::accumulate(
+            scanNumberVsScanPoints->begin(),
+            scanNumberVsScanPoints->end(),
+            0,
+            [](int sum, ScanPoints *sp){return sum + sp->size();}
+    );
 
+    m_scanNumberVsIntensityPtrs.resize(scanPointsCount);
+    m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
+    int pointCounter = 0;
+
+    std::vector<rTreePoint> cloudLoader;
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
         const ScanNumber scanNumber = it.key();
@@ -108,8 +136,8 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         for (const ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
-            m_scanNumberVsIntensityPtrs.push_back(pr);
-            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs.back());
+            m_scanNumberVsIntensityPtrs[pointCounter] = pr;
+            cloudLoader.push_back(std::make_pair(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]));
         }
     }
 
