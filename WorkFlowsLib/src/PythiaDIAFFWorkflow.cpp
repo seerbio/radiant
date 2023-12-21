@@ -15,8 +15,10 @@
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 //#include "ProteinDigestomatic.h"
+#include "TurboXIC.h"
 
 #include <QElapsedTimer>
+
 
 
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow() : m_minTopNMs2Ions(6) {}
@@ -62,6 +64,20 @@ Err PythiaDIAFFWorkflow::init(
     ERR_RETURN
 }
 
+namespace {
+
+    Err parallelLoadLogic(const QMap<ScanNumber, ScanPoints*> &scanPointPtrs) {
+
+        ERR_INIT
+
+        auto *turboXIC = new TurboXIC();
+        e = turboXIC->init(scanPointPtrs); ree;
+        delete turboXIC;
+
+        ERR_RETURN
+    }
+
+}
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
@@ -74,7 +90,18 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrame;
     msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrame);
 
-    while (true){}
+    QElapsedTimer et;
+    et.start();
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            diaTargetFrame,
+            parallelLoadLogic
+            );
+    futures.waitForFinished();
+
+    qDebug() << "TurboXICs loaded in:" << et.elapsed() << "mSec";
+
+//    while (true){}
 
 
 //    const int msLevel = 1;

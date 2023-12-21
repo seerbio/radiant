@@ -39,10 +39,10 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
     m_cliParams.fragLibFilePath = args[1];
     const bool fragLibFilePathIsValid = CommandLineParserUtils::checkFileNameExtension(
             m_cliParams.fragLibFilePath,
-            S_GLOBAL_SETTINGS.DOT_FRAGLIB_DF.mid(1, 9)
+            S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF.mid(1, 9)
             );
     if (!fragLibFilePathIsValid) {
-        qCritical() << QStringLiteral("First command line argument *.fragLibDF, argument invalid");
+        qCritical() << QStringLiteral("First command line argument *.fragLibFF, argument invalid");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;
