@@ -605,10 +605,7 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
             if (stringMatch(currentReaderName, BINARY_DATA_ARRAY)) {
                 QVector<ScanPoint> scanPoints;
                 e = processBinaryData(reader, &scanPoints); ree;
-
-                for (const ScanPoint &sp : scanPoints) {
-                    (*m_scanPoints)[msScanInfo.scanNumber].push_back({sp.x(), sp.y()});
-                }
+                (*m_scanPoints)[msScanInfo.scanNumber] = scanPoints;
             }
 
             continue;
