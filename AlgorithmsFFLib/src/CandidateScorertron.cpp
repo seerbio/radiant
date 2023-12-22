@@ -259,11 +259,6 @@ Err CandidateScorertron::calculateScores(
             &mzHashedVsXICPoints
             ); ree;
 
-//    for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
-//        qDebug() << it.key() << it.value();
-//    }
-//    qDebug() << "**********";
-
     const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
     const int mzIonsFound = static_cast<int>(std::count_if(
             xicPoints.begin(),

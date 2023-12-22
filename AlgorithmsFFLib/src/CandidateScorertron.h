@@ -97,7 +97,7 @@ private:
     QHash<MzHashed, int> m_mzHashedVsCount;
 
     MzTargetKey m_targetKey;
-    QPair<double, double> m_scanTimeMinMax;
+    QPair<float, float> m_scanTimeMinMax;
     float m_frameIndexMin;
     float m_frameIndexMax;
     float m_mzMin;

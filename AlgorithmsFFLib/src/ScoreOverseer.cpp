@@ -39,7 +39,6 @@ public:
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
             QVector<int> *columnPeakLengths,
-            QPair<FrameIndex, FrameIndex> *minMaxFrameIndex,
             QPair<int, int> *alignmentMatrixLimits
     );
 
@@ -119,6 +118,8 @@ namespace {
 
         const int rowCount = static_cast<int>(mat->rows());
 
+        mzMeanValsFound->resize(ms2IonsTheoretical.size());
+        stdMeanValsFound->resize(ms2IonsTheoretical.size());
         mzMeanValsFound->reserve(ms2IonsTheoretical.size());
         stdMeanValsFound->reserve(ms2IonsTheoretical.size());
 
@@ -543,7 +544,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
         QVector<int> *columnPeakLengths,
-        QPair<FrameIndex, FrameIndex> *minMaxFrameIndex,
         QPair<int, int> *alignmentMatrixLimits
         ) {
 
@@ -928,44 +928,65 @@ namespace {
     Err calculateMS1Corr(
             const Eigen::VectorX<float> &bestAnchorColumn,
             const PeakIntegrationIndexes &peakIntegrationIndexes,
-            double mzTarget,
-            double ppmTol,
+            float mzTarget,
+            float ppmTol,
             TurboXIC *turboXic,
             Eigen::VectorX<float> *gaussKernel,
-            double *cosineSimMS1
+            float *cosineSimMS1
     ) {
 
         ERR_INIT
 
+        std::cout << "Starter hre FIX ME!!!" << std::endl;
+
         e = ErrorUtils::isTrue(bestAnchorColumn.size() > 0); ree;
 
-        const double massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
-        const double mzStart = mzTarget - massTol;
-        const double mzEnd = mzTarget + massTol;
+        std::cout << "Starter hre" << std::endl;
+
+        const float massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
+        const float mzStart = mzTarget - massTol;
+        const float mzEnd = mzTarget + massTol;
 
         const XICPoints xicPoints = turboXic->extractPointsXIC(
                 mzStart,
                 mzEnd
                 );
 
+        std::cout << "Starter hre" << std::endl;
+
+        if (xicPoints.empty()) {
+            *cosineSimMS1 = 0.0f;
+        }
+
+        std::cout << "Starter hre" << std::endl;
+
         Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-//        const QMap<ScanNumber, float> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
-//
-//        for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
-//            const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
-//
-//            if (frameIndex >= ms1Vec.size()) {
-//                continue;
-//            }
-//
-//            ms1Vec.coeffRef(frameIndex) = static_cast<float>(it.value());
-//        }
-//
-//        ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
-//
-//        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+        for (const XICPoint &xp : xicPoints) {
+            const FrameIndex frameIndex = xp.scanNumber - peakIntegrationIndexes.first;
+
+            if (frameIndex >= ms1Vec.size()) {
+                continue;
+            }
+
+            ms1Vec.coeffRef(frameIndex) = static_cast<float>(xp.intensity);
+        }
+
+        std::cout << "Starter hre" << std::endl;
+
+        if (MathUtils::tZero(ms1Vec.maxCoeff())) {
+            *cosineSimMS1 = 0.0f;
+        }
+
+        std::cout << "Starter hre" << std::endl;
+
+        ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
+        std::cout << Eigen::RowVectorXf(ms1Vec) << std::endl;
+        std::cout << Eigen::RowVectorXf(bestAnchorColumn) << std::endl;
+        std::cout << "***********" << std::endl;
+
+        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
 
         ERR_RETURN
     }
@@ -973,7 +994,7 @@ namespace {
 }//namespace
 Err ScoreOverseer::buildScores(
         TargetDecoyCandidatePair* targetDecoyCandidatePair,
-        const QPair<double, double> &scanTimeMinMax,
+        const QPair<float, float> &scanTimeMinMax,
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
@@ -1000,7 +1021,6 @@ Err ScoreOverseer::buildScores(
     QVector<int> columnApexIndexes;
     QVector<float> intensityFoundMaxVec;
     QVector<int> mzPeakLengthsVec;
-    QPair<FrameIndex, FrameIndex> frameIndexMinMaxHills;
     QPair<int, int> alignmentMatrixLimits;
     e = d_ptr->buildAlignmentMatricies(
             peakIntegrationIndexes,
@@ -1014,12 +1034,11 @@ Err ScoreOverseer::buildScores(
             &columnApexIndexes,
             &intensityFoundMaxVec,
             &mzPeakLengthsVec,
-            &frameIndexMinMaxHills,
             &alignmentMatrixLimits
             );
 
     candidateScores->targetKey = m_mzTargetKey;
-    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + frameIndexMinMaxHills.first);
+    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + peakIntegrationIndexes.first);
     candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
 
     //Figure out if you want to use this as well.
@@ -1127,7 +1146,7 @@ Err ScoreOverseer::buildScores(
             mzPeakLengthsVec.end(),
             0
     );
-    QVector<double> mzPeakLengthsNormalized;
+    QVector<float> mzPeakLengthsNormalized;
     if (mzPeakLengthsSum != 0) {
         std::transform(
                 mzPeakLengthsVec.begin(),
@@ -1141,12 +1160,12 @@ Err ScoreOverseer::buildScores(
         candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
     }
 
-    const double scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
+    const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
-    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = -2.0 + candidateScores->targetDecoyCandidatePair->charge();
+    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = -2.0f + static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
-    const double scanTimeRange = std::max(
-            std::numeric_limits<double>::min(),
+    const float scanTimeRange = std::max(
+            std::numeric_limits<float>::min(),
             scanTimeMinMax.second - scanTimeMinMax.first
     );
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange] = scanTimeRange;
@@ -1184,69 +1203,69 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
-    double cosineSimMS1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            targetDecoyCandidatePair->mz(),
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &cosineSimMS1
-            ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
+//    float cosineSimMS1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            peakIntegrationIndexes,
+//            targetDecoyCandidatePair->mz(),
+//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &d_ptr->m_gaussKernel,
+//            &cosineSimMS1
+//            ); ree;
+//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
 
 
-    const double mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            -1
-    );
-    double mzPreMonoCosineSimMS1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            mzPreMono,
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &mzPreMonoCosineSimMS1
-    ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
-
-    const double mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            1
-    );
-    double cosineSimMzIso1;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            mzIso1,
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &cosineSimMzIso1
-    ); ree;
-    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
-
-    const double mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            2
-    );
-    double cosineSimMzIso2;
-    e = calculateMS1Corr(
-            bestAnchorColumn,
-            peakIntegrationIndexes,
-            mzIso2,
-            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-            &m_turboXICMS1,
-            &d_ptr->m_gaussKernel,
-            &cosineSimMzIso2
-    ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
+//    const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
+//            targetDecoyCandidatePair->mass(),
+//            targetDecoyCandidatePair->charge(),
+//            -1
+//    );
+//    float mzPreMonoCosineSimMS1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            peakIntegrationIndexes,
+//            mzPreMono,
+//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &d_ptr->m_gaussKernel,
+//            &mzPreMonoCosineSimMS1
+//    ); ree;
+//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
+//
+//    const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
+//            targetDecoyCandidatePair->mass(),
+//            targetDecoyCandidatePair->charge(),
+//            1
+//    );
+//    float cosineSimMzIso1;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            peakIntegrationIndexes,
+//            mzIso1,
+//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &d_ptr->m_gaussKernel,
+//            &cosineSimMzIso1
+//    ); ree;
+//    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
+//
+//    const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
+//            targetDecoyCandidatePair->mass(),
+//            targetDecoyCandidatePair->charge(),
+//            2
+//    );
+//    float cosineSimMzIso2;
+//    e = calculateMS1Corr(
+//            bestAnchorColumn,
+//            peakIntegrationIndexes,
+//            mzIso2,
+//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+//            &m_turboXICMS1,
+//            &d_ptr->m_gaussKernel,
+//            &cosineSimMzIso2
+//    ); ree;
+//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
 
     float cosineSimSum45;
     float cosineSimSum20;

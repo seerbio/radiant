@@ -62,6 +62,10 @@ Err MsCalibratomatic::initRtOnly(const QVector<MsCalibarationReaderRow> &msCalib
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
     m_msCalibarationReaderRows = msCalibarationReaderRows;
 
+//    for (const MsCalibarationReaderRow &r : m_msCalibarationReaderRows) {
+//        qDebug() << r.peptideStringWithMods << r.mzSearchedVec << r.mzFoundMeanVec << r.mzFoundStDevVec << r.scanTime << r.iRTPredicted << "SDLKFSL";
+//    }
+
     e = buildIRTCalibrator(); ree
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
@@ -183,6 +187,7 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
 
+        int c = 0;
         for (const MsCalibarationReaderRow &row : msCalibarationReaderRows){
 
             const QVector<float> &mzSearchedVec = row.mzSearchedVec;
