@@ -80,7 +80,6 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
             0,
             [](int sum, ScanPoints *sp){return sum + sp->size();}
             );
-    qDebug() << scanPointsCount << "Points in msFrame";
 
     m_scanNumberVsIntensityPtrs.resize(scanPointsCount);
     m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
