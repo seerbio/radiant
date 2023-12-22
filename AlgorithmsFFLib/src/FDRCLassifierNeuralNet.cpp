@@ -109,6 +109,9 @@ namespace {
 
         ERR_INIT
 
+        e = ErrorUtils::isNotEmpty(input.xData); ree;
+        e = ErrorUtils::isEqual(input.xData.size(), input.yData.size()); ree;
+
         bool trainingCompletedNoErrors = input.candidateClassifier->trainCandidateClassifier(
                 input.xData,
                 input.yData,

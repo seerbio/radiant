@@ -708,6 +708,8 @@ public:
             minMaxScaleVector(&vec);
             mat->col(col) = vec;
         }
+
+        EigenUtils::replaceNaN(0.0f, mat);
     }
 
     template<typename T>
