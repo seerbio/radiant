@@ -71,9 +71,9 @@ private:
     );
 
     Err processPeakIntegrationIndexes(
-            QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
+            const QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             TargetDecoyCandidatePair* targetDecoyCandidatePair,
             CandidateScores *candidateScores

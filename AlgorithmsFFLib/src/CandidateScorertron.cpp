@@ -158,7 +158,7 @@ namespace {
         [](const MS2Ion &ms2Ion){
             const double isoChargeDiff = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
             MS2Ion ms2IonNew = ms2Ion;
-            ms2IonNew.mz -= isoChargeDiff;
+            ms2IonNew.mz -= static_cast<float>(isoChargeDiff);
             return ms2IonNew;
         }
         );
@@ -171,34 +171,37 @@ namespace {
 
         ERR_INIT
 
-        FrameIndex frameIndexMax = -1;
-//        for (const XICPoints &xicPoints : mzHashedVsXICPoints) {
-//
-//            if (xicPoints.scanNumbersVsScanPoints.isEmpty()) {
-//                continue;
-//            }
-//
-//            frameIndexMax = std::max(xicPoints.scanNumbersVsScanPoints.lastKey(), frameIndexMax);
-//        }
-//
-//        const int buffer = 2;
-//        const int vecSize = frameIndexMax + buffer;
-//
-//        QVector<float> eigenLoadingVector(vecSize, 0.0f);
-//        eigenLoadingVector.reserve(vecSize);
-//
-//        for (const XICPoints &xic : mzHashedVsXICPoints) {
-//            for (auto it = xic.scanNumbersVsScanPoints.begin(); it != xic.scanNumbersVsScanPoints.end(); it++) {
-//                const FrameIndex frameIndex = it.key();
-//                if (it.value().isEmpty()) {
-//                    continue;
-//                }
-//                e = ErrorUtils::isTrue(frameIndex < vecSize); ree;
-//                eigenLoadingVector[frameIndex] += 1.0;
-//            }
-//        }
+        FrameIndex frameIndexAllXICsMax = -1;
+        for (const XICPoints &xicPoints : mzHashedVsXICPoints) {
 
-//        *integrationVector = eigenLoadingVector;
+            if (xicPoints.empty()) {
+                continue;
+            }
+
+            const FrameIndex frameIndexXICMax = std::max_element(
+                    xicPoints.begin(),
+                    xicPoints.end(),
+                    [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;})->scanNumber;
+
+            frameIndexAllXICsMax = std::max(frameIndexAllXICsMax, frameIndexXICMax);
+        }
+
+        const int buffer = 2;
+        const int vecSize = frameIndexAllXICsMax + buffer;
+
+        QVector<float> eigenLoadingVector(vecSize, 0.0f);
+        eigenLoadingVector.reserve(vecSize);
+
+        for (const XICPoints &xic : mzHashedVsXICPoints) {
+
+            for (const XICPoint &xp : xic) {
+                const FrameIndex frameIndex = xp.scanNumber;
+
+                eigenLoadingVector[frameIndex] += 1.0;
+            }
+        }
+
+        *integrationVector = eigenLoadingVector;
 
         ERR_RETURN
     }
@@ -257,53 +260,53 @@ Err CandidateScorertron::calculateScores(
             ); ree;
 
 //    for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
-//        qDebug() << it.key() << it.value().scanNumbersVsScanPoints;
+//        qDebug() << it.key() << it.value();
 //    }
 //    qDebug() << "**********";
 
-//    const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
-//    const int mzIonsFound = static_cast<int>(std::count_if(
-//            xicPoints.begin(),
-//            xicPoints.end(),
-//            [](const XICPoints &xic){return !xic.scanNumbersVsScanPoints.isEmpty();}
-//            ));
-//
-//    if (mzIonsFound < m_pythiaParameters.minFoundMzPeaks) {
-//        ERR_RETURN
-//    }
-//
-//    QVector<float> integrationVector;
-//    e = buildIntegrationVector(mzHashedVsXICPoints, &integrationVector); ree;
+    const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
+    const int mzIonsFound = static_cast<int>(std::count_if(
+            xicPoints.begin(),
+            xicPoints.end(),
+            [](const XICPoints &xic){return !xic.empty();}
+            ));
 
-//    const double filterDeltaScoreValue = 2.0; //TODO consider making this settable
-//
-//    QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
-//    e = findCandidateIntegrations(
-//            integrationVector,
-//            filterDeltaScoreValue,
-//            frameIndexPredictedMin,
-//            frameIndexPredictedMax,
-//            &peakIntegrationIndexesVsIntensity
-//            ); ree;
-//
-//    if (peakIntegrationIndexesVsIntensity.isEmpty()) {
-//        ERR_RETURN
-//    }
-//
-//    QVector<MS2Ion> ms2IonsTheoreticalIsotopeShadows;
-//    buildMS2TheoreticalIsotopeShadows(
-//            ms2IonsTheoretical,
-//            &ms2IonsTheoreticalIsotopeShadows
-//    );
-//
-//    e = processPeakIntegrationIndexes(
-//            peakIntegrationIndexesVsIntensity,
-//            ms2IonsTheoretical,
-//            mzHashedVsfeatureFinderHills,
-//            ms2IonsTheoreticalIsotopeShadows,
-//            targetDecoyCandidatePair,
-//            candidateScores
-//            ); ree;
+    if (mzIonsFound < m_pythiaParameters.minFoundMzPeaks) {
+        ERR_RETURN
+    }
+
+    QVector<float> integrationVector;
+    e = buildIntegrationVector(mzHashedVsXICPoints, &integrationVector); ree;
+
+    const double filterDeltaScoreValue = 2.0; //TODO consider making this settable
+
+    QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+    e = findCandidateIntegrations(
+            integrationVector,
+            filterDeltaScoreValue,
+            frameIndexPredictedMin,
+            frameIndexPredictedMax,
+            &peakIntegrationIndexesVsIntensity
+            ); ree;
+
+    if (peakIntegrationIndexesVsIntensity.isEmpty()) {
+        ERR_RETURN
+    }
+
+    QVector<MS2Ion> ms2IonsTheoreticalIsotopeShadows;
+    buildMS2TheoreticalIsotopeShadows(
+            ms2IonsTheoretical,
+            &ms2IonsTheoreticalIsotopeShadows
+    );
+
+    e = processPeakIntegrationIndexes(
+            peakIntegrationIndexesVsIntensity,
+            ms2IonsTheoretical,
+            mzHashedVsXICPoints,
+            ms2IonsTheoreticalIsotopeShadows,
+            targetDecoyCandidatePair,
+            candidateScores
+            ); ree;
 
     ERR_RETURN
 }
@@ -581,7 +584,11 @@ Err CandidateScorertron::simpleIntegrator(
             break;
         }
 
-        peakIntegrationIndexesVsIntensity->push_back({{leftStopIndex, rightStopIndex}, apexValue});
+        peakIntegrationIndexesVsIntensity->push_back({
+            {std::max(leftStopIndex, 0), std::min(rightStopIndex, vec.size() -1)},
+            apexValue}
+            );
+
         for (int i = leftStopIndex; i <= rightStopIndex; i++) {
             eVec.coeffRef(i) = 0.0;
         }
@@ -590,33 +597,10 @@ Err CandidateScorertron::simpleIntegrator(
     ERR_RETURN
 }
 
-namespace {
-
-    void filterFeatureFinderHillsByFrameIndex(
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-            FrameIndex frameIndexMin,
-            FrameIndex frameIndexMax,
-            QHash<MzHashed , QVector<FeatureFinderHill*>> *mzHashedVsfeatureFinderHillsFiltered
-    ) {
-        for (auto it = mzHashedVsfeatureFinderHills.begin(); it != mzHashedVsfeatureFinderHills.end(); it++) {
-            const MzHashed mzHashed = it.key();
-            const QVector<FeatureFinderHill*> &ffhs = it.value();
-            for (FeatureFinderHill *ffh : ffhs) {
-                const QPair<FrameIndex, FrameIndex> ffhFrameIndexMinMax = ffh->scanNumberIndexMinMax();
-
-                if(ffhFrameIndexMinMax.second < frameIndexMin || ffhFrameIndexMinMax.first > frameIndexMax) {
-                    continue;
-                }
-                (*mzHashedVsfeatureFinderHillsFiltered)[mzHashed].push_back(ffh);
-            }
-        }
-    }
-
-}//namespace
 Err CandidateScorertron::processPeakIntegrationIndexes(
-        QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
+        const QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
         const QVector<MS2Ion> &ms2IonsTheoretical,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
@@ -624,77 +608,53 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
 
     ERR_INIT
 
-//    QHash<MzHashed , XICPoints> mzHashedVsXICPointsShadows;
-//    e = extractHills(
-//            ms2IonsTheoreticalIsotopeShadows,
-//            &mzHashedVsXICPointsShadows
-//            ); ree;
-//
-//    const auto unfragPrecursorMass = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
-//            targetDecoyCandidatePair->mass(),
-//            targetDecoyCandidatePair->charge(),
-//            0
-//    ));
-//
-//    QHash<MzHashed , XICPoints> unfragPrecursorVsfeatureFinderHills;
-//    MS2Ion ms2IonUnfragPrecursor;
-//    ms2IonUnfragPrecursor.mz = unfragPrecursorMass;
-//    e = extractHills(
-//            {ms2IonUnfragPrecursor},
-//            &unfragPrecursorVsfeatureFinderHills
-//    ); ree;
-//
-//    //TODO figure out a way to empirially pick the best integration index instead
-//    // of wasting cycles analyzing the top 2; put break at the bottom of loop as temp fix.
-//    for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
-//
-//        e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
-//
-//        QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsFiltered;
-//        filterFeatureFinderHillsByFrameIndex(
-//                mzHashedVsfeatureFinderHills,
-//                pii.first.first,
-//                pii.first.second,
-//                &mzHashedVsfeatureFinderHillsFiltered
-//                );
-//
-//        QHash<MzHashed , QVector<FeatureFinderHill*>> mzHashedVsfeatureFinderHillsShadowsFiltered;
-//        filterFeatureFinderHillsByFrameIndex(
-//                mzHashedVsfeatureFinderHillsShadows,
-//                pii.first.first,
-//                pii.first.second,
-//                &mzHashedVsfeatureFinderHillsShadowsFiltered
-//                );
-//
-//        QHash<MzHashed , QVector<FeatureFinderHill*>> unfragPrecursorVsfeatureFinderHillsFiltered;
-//        filterFeatureFinderHillsByFrameIndex(
-//                unfragPrecursorVsfeatureFinderHills,
-//                pii.first.first,
-//                pii.first.second,
-//                &unfragPrecursorVsfeatureFinderHillsFiltered
-//                );
-//
-//        CandidateScores candidateScoresPII;
-//        e = d_ptr->m_scoreOverseer.buildScores(
-//                targetDecoyCandidatePair,
-//                m_scanTimeMinMax,
-//                pii.first,
-//                ms2IonsTheoretical,
-//                mzHashedVsfeatureFinderHillsFiltered,
-//                ms2IonsTheoreticalIsotopeShadows,
-//                mzHashedVsfeatureFinderHillsShadowsFiltered,
-//                ms2IonUnfragPrecursor,
-//                unfragPrecursorVsfeatureFinderHillsFiltered,
-//                &candidateScoresPII
-//                ); ree;
-//
-//        if (candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100]
-//            < candidateScoresPII.featuresArray[CandidateScores::Features::CosineSimSum100]) {
-//            *candidateScores = candidateScoresPII;
-//        }
-//
-//        break;
-//    }
+    QHash<MzHashed , XICPoints> mzHashedVsXICPointsShadows;
+    e = extractXICs(
+            ms2IonsTheoreticalIsotopeShadows,
+            &mzHashedVsXICPointsShadows
+            ); ree;
+
+    const auto unfragPrecursorMass = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            0
+    ));
+
+    QHash<MzHashed , XICPoints> mzHashedVsXICPointsUnfragPrecursor;
+    MS2Ion ms2IonUnfragPrecursor;
+    ms2IonUnfragPrecursor.mz = unfragPrecursorMass;
+    e = extractXICs(
+            {ms2IonUnfragPrecursor},
+            &mzHashedVsXICPointsUnfragPrecursor
+    ); ree;
+
+    //TODO figure out a way to empirially pick the best integration index instead
+    // of wasting cycles analyzing the top 2; put break at the bottom of loop as temp fix.
+    for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
+
+        e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
+
+        CandidateScores candidateScoresPII;
+        e = d_ptr->m_scoreOverseer.buildScores(
+                targetDecoyCandidatePair,
+                m_scanTimeMinMax,
+                pii.first,
+                ms2IonsTheoretical,
+                mzHashedVsXICPoints,
+                ms2IonsTheoreticalIsotopeShadows,
+                mzHashedVsXICPointsShadows,
+                ms2IonUnfragPrecursor,
+                mzHashedVsXICPointsUnfragPrecursor,
+                &candidateScoresPII
+                ); ree;
+
+        if (candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100]
+            < candidateScoresPII.featuresArray[CandidateScores::Features::CosineSimSum100]) {
+            *candidateScores = candidateScoresPII;
+        }
+
+        break;
+    }
 
     ERR_RETURN
 }

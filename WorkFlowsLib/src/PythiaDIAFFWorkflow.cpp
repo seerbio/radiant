@@ -94,8 +94,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
-    qDebug() << mzTargetKeyVsTargetDecoyCandidatePointers.size();
-
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             12,
             msReaderPointerAcc.ptr->scanTimeMinMax(),

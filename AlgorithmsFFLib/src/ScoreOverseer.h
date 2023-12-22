@@ -42,16 +42,12 @@ public:
             const QPair<double, double> &scanTimeMinMax,
             const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
             const MS2Ion &ms2IonUnfragPrecursor,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
             CandidateScores *candidateScores
-    );
-
-    static QPair<FrameIndex, FrameIndex> getMinMaxFrameIndexes(
-            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills
     );
 
 private:

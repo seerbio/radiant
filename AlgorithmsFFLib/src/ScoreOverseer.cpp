@@ -28,12 +28,13 @@ public:
     Err init(const PythiaParameters &pythiaParameters);
 
     Err buildAlignmentMatricies(
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
             const MS2Ion &ms2IonUnfragPrecursor,
-            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
-            const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
             int *bestAlignmentMatrixRow,
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
@@ -61,12 +62,12 @@ public:
     Eigen::MatrixX<float> m_intensityMatrix100Shadow;
     Eigen::MatrixX<float> m_intensityMatrix45;
     Eigen::MatrixX<float> m_intensityMatrix20;
-    Eigen::MatrixX<float> m_unfragPrecursorVec;
+//    Eigen::MatrixX<float> m_unfragPrecursorVec;
 
     Eigen::VectorX<float> m_intensityMatrix100ApexRow;
 
-    QVector<double> m_mzMeanValsFound;
-    QVector<double> m_stdMeanValsFound;
+    QVector<float> m_mzMeanValsFound;
+    QVector<float> m_stdMeanValsFound;
 
     PythiaParameters m_pythiaParams;
 
@@ -96,17 +97,22 @@ Err ScoreOverseer::Private::init(const PythiaParameters &pythiaParameters) {
 namespace {
 
     Err loadMzHashedVsFeatureFinderHillsToMatrix(
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-            int frameIndexMin,
+            const QHash<MzHashed, XICPoints> &mzHashedVsXICPoints,
             Eigen::MatrixX<float> *mat,
-            QVector<double> *mzMeanValsFound,
-            QVector<double> *stdMeanValsFound
+            QVector<float> *mzMeanValsFound,
+            QVector<float> *stdMeanValsFound
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(frameIndexMin >= 0); ree;
+        e = ErrorUtils::isAboveThreshold(
+                peakIntegrationIndexes.first,
+                0,
+                ErrorUtilsParam::IncludeThreshold
+                ); ree;
+
         e = ErrorUtils::isTrue(mat->rows() > 0); ree;
 
         mat->setZero();
@@ -123,41 +129,37 @@ namespace {
             }
 
             const MS2Ion &ms2Ion = ms2IonsTheoretical.at(col);
-
-            QVector<double> mzMeanValsFoundMS2Ion;
-            QVector<double> stdMeanValsFoundMS2Ion;
-            mzMeanValsFoundMS2Ion.reserve(ms2IonsTheoretical.size());
-            stdMeanValsFoundMS2Ion.reserve(ms2IonsTheoretical.size());
-
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
+
             QVector<float> eigenVectorLoader(rowCount, 0.0f);
             eigenVectorLoader.reserve(rowCount);
+            for (int i = 0; i < xicPoints.size(); i++) {
 
-            const QVector<FeatureFinderHill*> &ffhs = mzHashedVsfeatureFinderHills.value(mzHashed);
-            for (FeatureFinderHill *ffh : ffhs) {
-
-                mzMeanValsFoundMS2Ion.push_back(ffh->mzMean());
-                stdMeanValsFoundMS2Ion.push_back(ffh->mzStDev());
-
-                const QVector<FrameIndex> frameIndexes = ffh->scanNumberIndexes();
-                const QVector<float> intensities = ffh->intensities();
-
-                e = ErrorUtils::isEqual(frameIndexes.size(), intensities.size()); ree;
-
-                for (int i = 0; i < frameIndexes.size(); i++) {
-
-                    const int frameIndexAdjusted = frameIndexes.at(i) - frameIndexMin;
-
-                    if (frameIndexAdjusted < 0 || frameIndexAdjusted >= rowCount) {
-                        continue;
-                    }
-
-                    eigenVectorLoader[frameIndexAdjusted] = intensities.at(i);
+                if (xicPoints[i].scanNumber < peakIntegrationIndexes.first
+                 || xicPoints[i].scanNumber > peakIntegrationIndexes.second) {
+                    continue;
                 }
+
+                const int frameIndexAdjusted = xicPoints[i].scanNumber - peakIntegrationIndexes.first;
+
+                if (frameIndexAdjusted < 0 || frameIndexAdjusted >= rowCount) {
+                    continue;
+                }
+
+                eigenVectorLoader[frameIndexAdjusted] = xicPoints[i].intensity;
             }
 
-            mzMeanValsFound->push_back(MathUtils::mean(mzMeanValsFoundMS2Ion));
-            stdMeanValsFound->push_back(MathUtils::mean(stdMeanValsFoundMS2Ion));
+            QVector<float> mzVals;
+            std::transform(
+                    xicPoints.begin(),
+                    xicPoints.end(),
+                    std::back_inserter(mzVals),
+                    [](const XICPoint &xp){return xp.mz;}
+                    );
+
+            (*mzMeanValsFound)[col] = static_cast<float>(MathUtils::mean(mzVals));
+            (*stdMeanValsFound)[col] = static_cast<float>(MathUtils::stDev(mzVals));
             mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoader);
         }
 
@@ -165,9 +167,9 @@ namespace {
     }
 
     Err loadMzHashedVsFeatureFinderHillsToMatrixTight(
+            const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
-            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-            int frameIndexMin,
+            const QHash<MzHashed, XICPoints> &mzHashedVsXICPoints,
             float ppmTol,
             const QPair<int, int> &alignmentMatrixLimits,
             Eigen::MatrixX<float> *matTight1,
@@ -176,7 +178,13 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(frameIndexMin >= 0); ree;
+        e = ErrorUtils::isAboveThreshold(peakIntegrationIndexes.first, 0, ErrorUtilsParam::IncludeThreshold); ree;
+        e = ErrorUtils::isBelowThreshold(
+                peakIntegrationIndexes.first,
+                peakIntegrationIndexes.second,
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree;
+
         e = ErrorUtils::isTrue(matTight1->rows() > 0); ree;
         e = ErrorUtils::isTrue(matTight2->rows() > 0); ree;
 
@@ -198,45 +206,42 @@ namespace {
             QVector<float> eigenVectorLoaderTight2(rowCount);
             eigenVectorLoaderTight2.reserve(rowCount);
 
-            const QVector<FeatureFinderHill*> &ffhs = mzHashedVsfeatureFinderHills.value(mzHashed);
-            for (FeatureFinderHill *ffh : ffhs) {
+            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
 
-                const QVector<FrameIndex> frameIndexes = ffh->scanNumberIndexes();
-                const QVector<float> intensities = ffh->intensities();
-                const QVector<double> mzVals = ffh->mzVals();
+            for (int i = 0; i < xicPoints.size(); i++) {
 
-                e = ErrorUtils::isEqual(frameIndexes.size(), intensities.size()); ree;
-
-                for (int i = 0; i < frameIndexes.size(); i++) {
-
-                    const int frameIndexAdjusted = frameIndexes.at(i) - frameIndexMin;
-                    if (frameIndexAdjusted < 0 || frameIndexAdjusted >= rowCount) {
-                        continue;
-                    }
-
-                    const float mzTolTight1 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol);
-                    const float mzMinTight1 = ms2Ion.mz - mzTolTight1;
-                    const float mzMaxTight1 = ms2Ion.mz + mzTolTight1;
-
-                    const double mz = mzVals.at(i);
-
-                    if (mz < mzMinTight1 || mz > mzMaxTight1) {
-                        continue;
-                    }
-
-                    eigenVectorLoaderTight1[frameIndexAdjusted] = intensities.at(i);
-
-                    const double mzTolTight2 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol);
-                    const double mzMinTight2 = ms2Ion.mz - mzTolTight2;
-                    const double mzMaxTight2 = ms2Ion.mz + mzTolTight2;
-
-                    if (mz < mzMinTight2 || mz > mzMaxTight2) {
-                        continue;
-                    }
-
-                    eigenVectorLoaderTight2[frameIndexAdjusted] = intensities.at(i);
-
+                if (xicPoints[i].scanNumber < peakIntegrationIndexes.first
+                 || xicPoints[i].scanNumber > peakIntegrationIndexes.second) {
+                    continue;
                 }
+
+                const int frameIndexAdjusted = xicPoints[i].scanNumber - peakIntegrationIndexes.first;
+                if (frameIndexAdjusted < 0 || frameIndexAdjusted >= rowCount) {
+                    continue;
+                }
+
+                const float mzTolTight1 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_1_FRACTION * ppmTol);
+                const float mzMinTight1 = ms2Ion.mz - mzTolTight1;
+                const float mzMaxTight1 = ms2Ion.mz + mzTolTight1;
+
+                const double mz = xicPoints[i].mz;
+
+                if (mz < mzMinTight1 || mz > mzMaxTight1) {
+                    continue;
+                }
+
+                eigenVectorLoaderTight1[frameIndexAdjusted] = xicPoints[i].intensity;
+
+                const double mzTolTight2 = MathUtils::calculatePPM(ms2Ion.mz, S_GLOBAL_SETTINGS.TIGHT_2_FRACTION * ppmTol);
+                const double mzMinTight2 = ms2Ion.mz - mzTolTight2;
+                const double mzMaxTight2 = ms2Ion.mz + mzTolTight2;
+
+                if (mz < mzMinTight2 || mz > mzMaxTight2) {
+                    continue;
+                }
+
+                eigenVectorLoaderTight2[frameIndexAdjusted] = xicPoints[i].intensity;
+
             }
 
             matTight1->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoaderTight1);
@@ -503,15 +508,37 @@ namespace {
         return newMatrix;
     }
 
+    QPair<FrameIndex, FrameIndex> getMinMaxFrameIndexofMzHashVsXICs(const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints) {
+
+        QPair<FrameIndex, FrameIndex> minMaxFrameIndexLocal = {std::numeric_limits<int>::max(), 0};
+        for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
+            const XICPoints &xicPoints = it.value();
+
+            if (xicPoints.empty()) {
+                continue;
+            }
+
+            const auto minMaxMzXIC = std::minmax_element(
+                    xicPoints.begin(),
+                    xicPoints.end(),
+                    [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
+            );
+            minMaxFrameIndexLocal.first = std::min(minMaxFrameIndexLocal.first, minMaxMzXIC.first->scanNumber);
+            minMaxFrameIndexLocal.second = std::max(minMaxFrameIndexLocal.second, minMaxMzXIC.second->scanNumber);
+        }
+
+        return minMaxFrameIndexLocal;
+    }
 
 }// namespace
 Err ScoreOverseer::Private::buildAlignmentMatricies(
+        const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
         const MS2Ion &ms2IonUnfragPrecursor,
-        const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
         int *bestAlignmentMatrixRowIndex,
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
@@ -525,22 +552,23 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalShadows); ree;
     e = ErrorUtils::isEqual(ms2IonsTheoretical.size(), ms2IonsTheoreticalShadows.size()); ree;
+    e = ErrorUtils::isBelowThreshold(
+            peakIntegrationIndexes.first,
+            peakIntegrationIndexes.second,
+            ErrorUtilsParam::ExcludeThreshold
+            ); ree;
 
     m_mzMeanValsFound.clear();
     m_stdMeanValsFound.clear();
 
     const int cols = ms2IonsTheoretical.size();
-
-    *minMaxFrameIndex = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
-
-    e = ErrorUtils::isTrue(minMaxFrameIndex->second >= minMaxFrameIndex->first); ree;
-    const int rows = std::max(minMaxFrameIndex->second - minMaxFrameIndex->first + 1, m_pythiaParams.filterLength);
+    const int rows = std::max(peakIntegrationIndexes.second - peakIntegrationIndexes.first + 1, m_pythiaParams.filterLength);
 
     m_intensityMatrix100.resize(rows, cols);
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
+            peakIntegrationIndexes,
             ms2IonsTheoretical,
-            mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex->first,
+            mzHashedVsXICPoints,
             &m_intensityMatrix100,
             &m_mzMeanValsFound,
             &m_stdMeanValsFound
@@ -564,6 +592,12 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             alignmentMatrixLimits
             );
 
+//#define CHECK_ALIGNMENT_MATRIX
+#ifdef CHECK_ALIGNMENT_MATRIX
+    std::cout << m_intensityMatrix100 << std::endl;
+    std::cout << "****" << std::endl;
+#endif
+
 //    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
 //            m_intensityMatrix100,
 //            m_pythiaParams,
@@ -571,12 +605,12 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 //            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
-    QVector<double> unused1;
-    QVector<double> unused2;
+    QVector<float> unused1;
+    QVector<float> unused2;
     e = loadMzHashedVsFeatureFinderHillsToMatrix(
+            peakIntegrationIndexes,
             ms2IonsTheoreticalShadows,
-            mzHashedVsfeatureFinderHillsShadows,
-            minMaxFrameIndex->first,
+            mzHashedVsXICPointsShadows,
             &m_intensityMatrix100Shadow,
             &unused1,
             &unused2
@@ -602,49 +636,48 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
 //
 //    }
 
-    m_unfragPrecursorVec.resize(rows, 1);
-    e = loadMzHashedVsFeatureFinderHillsToMatrix(
-            {ms2IonUnfragPrecursor},
-            unfragPrecursorVsfeatureFinderHills,
-            minMaxFrameIndex->first,
-            &m_unfragPrecursorVec,
-            &unused1,
-            &unused2
-    ); ree;
-
-    if (rowSize < m_unfragPrecursorVec.rows()) {
-        m_unfragPrecursorVec = m_unfragPrecursorVec.block(
-                alignmentMatrixLimits->first,
-                0,
-                rowSize,
-                m_unfragPrecursorVec.cols()
-        ).eval();
-    }
-
-    if (m_unfragPrecursorVec.maxCoeff() > 0.0f) {
-
-//        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
-//                m_unfragPrecursorVec,
-//                m_pythiaParams,
-//                m_gaussKernel
-//        );
-
-    }
+//    m_unfragPrecursorVec.resize(rows, 1);
+//    e = loadMzHashedVsFeatureFinderHillsToMatrix(
+//            {ms2IonUnfragPrecursor},
+//            mzHashedVsXICPointsUnfragPrecursor,
+//            minMaxFrameIndex->first,
+//            &m_unfragPrecursorVec,
+//            &unused1,
+//            &unused2
+//    ); ree;
+//
+//    if (rowSize < m_unfragPrecursorVec.rows()) {
+//        m_unfragPrecursorVec = m_unfragPrecursorVec.block(
+//                alignmentMatrixLimits->first,
+//                0,
+//                rowSize,
+//                m_unfragPrecursorVec.cols()
+//        ).eval();
+//    }
+//
+//    if (m_unfragPrecursorVec.maxCoeff() > 0.0f) {
+//
+////        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
+////                m_unfragPrecursorVec,
+////                m_pythiaParams,
+////                m_gaussKernel
+////        );
+//
+//    }
 
     const int tightColsMax = 6;
     m_intensityMatrix45.resize(rows, tightColsMax);
     m_intensityMatrix20.resize(rows, tightColsMax);
     e = loadMzHashedVsFeatureFinderHillsToMatrixTight(
+            peakIntegrationIndexes,
             ms2IonsTheoretical,
-            mzHashedVsfeatureFinderHills,
-            minMaxFrameIndex->first,
-            m_pythiaParams.ms2ExtractionWidthPPM,
+            mzHashedVsXICPoints,
+            static_cast<float>(m_pythiaParams.ms2ExtractionWidthPPM),
             *alignmentMatrixLimits,
             &m_intensityMatrix45,
             &m_intensityMatrix20
     );
     ree;
-
 
     ERR_RETURN
 }
@@ -657,8 +690,7 @@ namespace {
             QVector<float> *bestCosineSimsIndividual,
             Eigen::VectorX<float> *bestAnchorColumn,
             int *bestAnchorColumnIndex
-
-    ) {
+            ) {
 
         ERR_INIT
 
@@ -944,18 +976,18 @@ Err ScoreOverseer::buildScores(
         const QPair<double, double> &scanTimeMinMax,
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsShadows,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
         const MS2Ion &ms2IonUnfragPrecursor,
-        const QHash<MzHashed , QVector<FeatureFinderHill*>> &unfragPrecursorVsfeatureFinderHills,
+        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
         CandidateScores *candidateScores
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(ms2IonsTheoretical); ree;
-    e = ErrorUtils::isNotEmpty(mzHashedVsfeatureFinderHills); ree;
+    e = ErrorUtils::isNotEmpty(mzHashedVsXICPoints); ree;
     e = ErrorUtils::isNotEmpty(ms2IonsTheoreticalIsotopeShadows); ree;
 
     QElapsedTimer et;
@@ -971,12 +1003,13 @@ Err ScoreOverseer::buildScores(
     QPair<FrameIndex, FrameIndex> frameIndexMinMaxHills;
     QPair<int, int> alignmentMatrixLimits;
     e = d_ptr->buildAlignmentMatricies(
+            peakIntegrationIndexes,
             ms2IonsTheoretical,
             ms2IonsTheoreticalIsotopeShadows,
             ms2IonUnfragPrecursor,
-            mzHashedVsfeatureFinderHills,
-            mzHashedVsfeatureFinderHillsShadows,
-            unfragPrecursorVsfeatureFinderHills,
+            mzHashedVsXICPoints,
+            mzHashedVsXICPointsShadows,
+            mzHashedVsXICPointsUnfragPrecursor,
             &bestAlignmentMatrixRowIndex,
             &columnApexIndexes,
             &intensityFoundMaxVec,
@@ -1063,16 +1096,16 @@ Err ScoreOverseer::buildScores(
         ERR_RETURN
     }
 
-    if (!MathUtils::tZero(d_ptr->m_unfragPrecursorVec.maxCoeff())) {
-
-        const Eigen::VectorX<float> unfragPrecursorEigVed(d_ptr->m_unfragPrecursorVec);
-
-        e = ErrorUtils::isEqual(bestAnchorColumn.size(), unfragPrecursorEigVed.rows()); ree;
-        candidateScores->featuresArray[CandidateScores::Features::UnfragPrecursorCosineSim] = EigenUtils::cosineSimilarity(
-                bestAnchorColumn,
-                unfragPrecursorEigVed
-                        );
-    }
+//    if (!MathUtils::tZero(d_ptr->m_unfragPrecursorVec.maxCoeff())) {
+//
+//        const Eigen::VectorX<float> unfragPrecursorEigVed(d_ptr->m_unfragPrecursorVec);
+//
+//        e = ErrorUtils::isEqual(bestAnchorColumn.size(), unfragPrecursorEigVed.rows()); ree;
+//        candidateScores->featuresArray[CandidateScores::Features::UnfragPrecursorCosineSim] = EigenUtils::cosineSimilarity(
+//                bestAnchorColumn,
+//                unfragPrecursorEigVed
+//                        );
+//    }
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
@@ -1242,13 +1275,13 @@ Err ScoreOverseer::buildScores(
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::accumulate(
                 bestAnchorColumnVec.begin(),
                 bestAnchorColumnVec.begin() + chunkSize,
-                0.0
+                0.0f
         ) / bestAnchorColumnVecSum;
 
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = std::accumulate(
                 bestAnchorColumnVec.begin() + chunkSize,
                 bestAnchorColumnVec.begin() + (chunkSize * 2),
-                0.0
+                0.0f
         ) / bestAnchorColumnVecSum;
 
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::accumulate(
@@ -1284,10 +1317,10 @@ Err ScoreOverseer::buildScores(
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6] = cosineSimSumBottom6;
 
         candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
-                = std::log(std::max(1.0f, cosineSimSumTop6) / (cosineSimSumTop6 + cosineSimSumBottom6 + 1.0));
+                = std::log(std::max(1.0f, cosineSimSumTop6) / (cosineSimSumTop6 + cosineSimSumBottom6 + 1.0f));
 
         candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
-                = cosineSimSumBottom6 / candidateScores->targetDecoyCandidatePair->totalFragmentCount();
+                = cosineSimSumBottom6 / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
     }
 
     QMap<QChar, int> aminoAcidCounts = {
@@ -1344,32 +1377,12 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = aminoAcidCounts['W'];
     candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = aminoAcidCounts['Y'];
 
-    const double mz = BiophysicalCalcs::calculateThomsonFromMass(
+    const auto mz = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
             candidateScores->targetDecoyCandidatePair->mass(),
-            candidateScores->targetDecoyCandidatePair->charge()
+            candidateScores->targetDecoyCandidatePair->charge())
     );
 
-    candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0) * 0.002;
+    candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
 
     ERR_RETURN
-}
-
-QPair<FrameIndex, FrameIndex> ScoreOverseer::getMinMaxFrameIndexes(
-        const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills
-) {
-
-    QPair<FrameIndex, FrameIndex> minMaxFrameIndexes = {
-            std::numeric_limits<FrameIndex>::max(),
-            std::numeric_limits<FrameIndex>::min()
-    };
-
-    for (const QVector<FeatureFinderHill*> &ffhs : mzHashedVsfeatureFinderHills.values()) {
-        for (FeatureFinderHill* ffh : ffhs) {
-            const QPair<FrameIndex, FrameIndex> &ffhMinMaxFrameIndex = ffh->scanNumberIndexMinMax();
-            minMaxFrameIndexes.first = std::min(minMaxFrameIndexes.first, ffhMinMaxFrameIndex.first);
-            minMaxFrameIndexes.second = std::max(minMaxFrameIndexes.second, ffhMinMaxFrameIndex.second);
-        }
-    }
-
-    return minMaxFrameIndexes;
 }
