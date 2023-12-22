@@ -13,6 +13,12 @@
 
 using namespace Error;
 
+struct ALGORITHMSFFLIB_EXPORTS XICPoint {
+    float mz = -1.0;
+    float intensity = -1.0;
+    ScanNumber scanNumber = -1;
+};
+
 class ALGORITHMSFFLIB_EXPORTS XICPoints {
 
 public:
@@ -20,45 +26,7 @@ public:
     XICPoints() = default;
     ~XICPoints() = default;
 
-    QMap<ScanNumber, ScanPoints> scanNumbersVsScanPoints;
-    QMap<ScanNumber, float> scanNumbersVsIntensity;
-
-    void buildScanNumbersVsIntensityVals() {
-
-        if (scanNumbersVsIntensity.isEmpty()) {
-
-            QMap<ScanNumber, float> scanNumberVsIntensity;
-
-            for (auto it = scanNumbersVsScanPoints.begin(); it != scanNumbersVsScanPoints.end(); it++) {
-
-                const ScanNumber scanNumber = it.key();
-                const ScanPoints &scanPoints = it.value();
-                for (const ScanPoint &sp : scanPoints) {
-                    scanNumberVsIntensity[scanNumber] += sp.y();
-                }
-
-            }
-
-            scanNumbersVsIntensity = scanNumberVsIntensity;
-        }
-    }
-
-    [[nodiscard]] QMap<ScanNumber, QVector<double>> scanNumberVsMzVals() const {
-
-        QMap<ScanNumber, QVector<double>> output;
-
-        for (auto it = scanNumbersVsScanPoints.begin(); it != scanNumbersVsScanPoints.end(); it++) {
-
-            const ScanNumber scanNumber = it.key();
-            const ScanPoints &scanPoints = it.value();
-            for (const ScanPoint &sp : scanPoints) {
-                output[it.key()].push_back(sp.x());
-            }
-
-        }
-
-        return output;
-    }
+    std::vector<XICPoint> xicPoints;
 
 };
 

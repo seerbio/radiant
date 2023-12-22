@@ -919,21 +919,21 @@ namespace {
         Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
         ms1Vec.setZero();
 
-        const QMap<ScanNumber, float> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
-
-        for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
-            const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
-
-            if (frameIndex >= ms1Vec.size()) {
-                continue;
-            }
-
-            ms1Vec.coeffRef(frameIndex) = static_cast<float>(it.value());
-        }
-
-        ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
-
-        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+//        const QMap<ScanNumber, float> &scanNumbersVsIntensityVals = xicPoints.scanNumbersVsIntensity;
+//
+//        for (auto it = scanNumbersVsIntensityVals.begin(); it != scanNumbersVsIntensityVals.end(); it++) {
+//            const FrameIndex frameIndex = it.key() - peakIntegrationIndexes.first;
+//
+//            if (frameIndex >= ms1Vec.size()) {
+//                continue;
+//            }
+//
+//            ms1Vec.coeffRef(frameIndex) = static_cast<float>(it.value());
+//        }
+//
+//        ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
+//
+//        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
 
         ERR_RETURN
     }

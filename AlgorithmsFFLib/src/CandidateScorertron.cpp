@@ -165,30 +165,40 @@ namespace {
     }
 
     Err buildIntegrationVector(
-            const QHash<MzHashed, QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHills,
+            const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             QVector<float> *integrationVector
             ) {
 
         ERR_INIT
 
-        const QPair<FrameIndex, FrameIndex> minMaxFrameIndexes = ScoreOverseer::getMinMaxFrameIndexes(mzHashedVsfeatureFinderHills);
-        const int buffer = 2;
-        const int vecSize = minMaxFrameIndexes.second + buffer;
+        FrameIndex frameIndexMax = -1;
+//        for (const XICPoints &xicPoints : mzHashedVsXICPoints) {
+//
+//            if (xicPoints.scanNumbersVsScanPoints.isEmpty()) {
+//                continue;
+//            }
+//
+//            frameIndexMax = std::max(xicPoints.scanNumbersVsScanPoints.lastKey(), frameIndexMax);
+//        }
+//
+//        const int buffer = 2;
+//        const int vecSize = frameIndexMax + buffer;
+//
+//        QVector<float> eigenLoadingVector(vecSize, 0.0f);
+//        eigenLoadingVector.reserve(vecSize);
+//
+//        for (const XICPoints &xic : mzHashedVsXICPoints) {
+//            for (auto it = xic.scanNumbersVsScanPoints.begin(); it != xic.scanNumbersVsScanPoints.end(); it++) {
+//                const FrameIndex frameIndex = it.key();
+//                if (it.value().isEmpty()) {
+//                    continue;
+//                }
+//                e = ErrorUtils::isTrue(frameIndex < vecSize); ree;
+//                eigenLoadingVector[frameIndex] += 1.0;
+//            }
+//        }
 
-        QVector<float> eigenLoadingVector(vecSize, static_cast<float>(0.0));
-        eigenLoadingVector.reserve(vecSize);
-
-        for (const QVector<FeatureFinderHill*> &ffhs : mzHashedVsfeatureFinderHills) {
-            for (FeatureFinderHill *ffh : ffhs) {
-                const QVector<FrameIndex> frameIndexes = ffh->scanNumberIndexes();
-                for (int i = 0; i < frameIndexes.size(); i++) {
-                    e = ErrorUtils::isTrue(frameIndexes[i] < vecSize); ree;
-                    eigenLoadingVector[frameIndexes[i]] += 1.0;
-                }
-            }
-        }
-
-        *integrationVector = eigenLoadingVector;
+//        *integrationVector = eigenLoadingVector;
 
         ERR_RETURN
     }
@@ -251,11 +261,11 @@ Err CandidateScorertron::calculateScores(
 //    }
 //    qDebug() << "**********";
 
-//    const QList<QVector<FeatureFinderHill*>> &mzHashedVsfeatureFinderHillsVals = mzHashedVsfeatureFinderHills.values();
+//    const QList<XICPoints> &xicPoints = mzHashedVsXICPoints.values();
 //    const int mzIonsFound = static_cast<int>(std::count_if(
-//            mzHashedVsfeatureFinderHillsVals.begin(),
-//            mzHashedVsfeatureFinderHillsVals.end(),
-//            [](const QVector<FeatureFinderHill*> &ffhs){return !ffhs.isEmpty();}
+//            xicPoints.begin(),
+//            xicPoints.end(),
+//            [](const XICPoints &xic){return !xic.scanNumbersVsScanPoints.isEmpty();}
 //            ));
 //
 //    if (mzIonsFound < m_pythiaParameters.minFoundMzPeaks) {
@@ -263,8 +273,8 @@ Err CandidateScorertron::calculateScores(
 //    }
 //
 //    QVector<float> integrationVector;
-//    e = buildIntegrationVector(mzHashedVsfeatureFinderHills, &integrationVector); ree;
-//
+//    e = buildIntegrationVector(mzHashedVsXICPoints, &integrationVector); ree;
+
 //    const double filterDeltaScoreValue = 2.0; //TODO consider making this settable
 //
 //    QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;

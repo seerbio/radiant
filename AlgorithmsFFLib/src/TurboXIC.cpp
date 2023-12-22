@@ -165,10 +165,24 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     std::vector<rTreePoint> result;
     m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
 
-    for (const rTreePoint &rtp : result) {
+    const ulong loaderSize = result.size();
+    XICPoint xicPointsLoader[loaderSize];
+
+    for (int i = 0; i <  result.size(); i++) {
+
+        const rTreePoint &rtp = result[i];
         std::pair<rTreeScanNumber , rTreeIntensity> *pr = rtp.second;
-        xicPoints.scanNumbersVsScanPoints[static_cast<int>(pr->first)].push_back({rtp.first.get<0>(), pr->second});
+
+        XICPoint xp;
+        xp.mz = rtp.first.get<0>();
+        xp.intensity = pr->second;
+        xp.scanNumber = static_cast<ScanNumber>(pr->first);
+
+        xicPointsLoader[i] = xp;
     }
+
+    std::vector<XICPoint> xic(xicPointsLoader, xicPointsLoader + loaderSize);
+    xicPoints.xicPoints = xic;
 
     return xicPoints;
 }
