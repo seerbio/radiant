@@ -19,16 +19,18 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
     ScanNumber scanNumber = -1;
 };
 
-class ALGORITHMSFFLIB_EXPORTS XICPoints {
+using XICPoints = std::vector<XICPoint>;
 
-public:
-
-    XICPoints() = default;
-    ~XICPoints() = default;
-
-    std::vector<XICPoint> xicPoints;
-
-};
+//class ALGORITHMSFFLIB_EXPORTS XICPoints {
+//
+//public:
+//
+//    XICPoints() = default;
+//    ~XICPoints() = default;
+//
+//    std::vector<XICPoint> xicPoints;
+//
+//};
 
 
 class ALGORITHMSFFLIB_EXPORTS TurboXIC {

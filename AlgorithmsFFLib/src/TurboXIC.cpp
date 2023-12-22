@@ -155,8 +155,6 @@ XICPoints TurboXIC::Private::extractPointsXIC(
         float mzMax
 ) {
 
-    XICPoints xicPoints;
-
     const rTreeSearchBox queryBox(
             (rTreeCoor(mzMin)),
             rTreeCoor(mzMax)
@@ -181,10 +179,7 @@ XICPoints TurboXIC::Private::extractPointsXIC(
         xicPointsLoader[i] = xp;
     }
 
-    std::vector<XICPoint> xic(xicPointsLoader, xicPointsLoader + loaderSize);
-    xicPoints.xicPoints = xic;
-
-    return xicPoints;
+    return std::vector<XICPoint>(xicPointsLoader, xicPointsLoader + loaderSize);
 }
 
 Err TurboXIC::Private::getRTreeLimits(
