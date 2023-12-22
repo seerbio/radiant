@@ -45,12 +45,12 @@ void TargetDecoyCandidatePairTests::gettersTest() {
             );
 
     QCOMPARE(targetDecoyCandidatePair.peptideStringWithMods(), peptideStringWithMods);
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(), 334.3072));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6f));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7f));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(), 334.3072f));
     QCOMPARE(targetDecoyCandidatePair.charge(), charge);
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6f));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6f));
     QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
 
 }

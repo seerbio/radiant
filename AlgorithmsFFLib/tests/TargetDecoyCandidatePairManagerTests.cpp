@@ -92,8 +92,8 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
             targetDecoyPointers.end(),
             [](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){return l->mz() < r->mz();}
             );
-    QVERIFY(MathUtils::tSame(targetDecoyPointers.front()->mz(), 666.016));
-    QVERIFY(MathUtils::tSame(targetDecoyPointers.back()->mz(), 666.88));
+    QVERIFY(MathUtils::tSame(targetDecoyPointers.front()->mz(), 666.016f));
+    QVERIFY(MathUtils::tSame(targetDecoyPointers.back()->mz(), 666.88f));
 
 }
 

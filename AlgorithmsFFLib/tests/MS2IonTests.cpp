@@ -117,10 +117,10 @@ void MS2IonTests::sortMS2IonsMzAscTest() {
 
     MS2Ion::sortMS2IonsMzAsc(&ms2Ions);
 
-    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 666.6));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 777.7));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(2).mz, 888.8));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(3).mz, 999.9));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 666.6f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 777.7f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(2).mz, 888.8f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(3).mz, 999.9f));
 
 }
 
@@ -130,10 +130,10 @@ void MS2IonTests::sortMS2IonsIntensityDescTest() {
 
     MS2Ion::sortMS2IonsIntensityDesc(&ms2Ions);
 
-    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 888.8));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 666.6));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(2).mz, 777.7));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(3).mz, 999.9));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 888.8f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 666.6f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(2).mz, 777.7f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(3).mz, 999.9f));
 
 }
 
@@ -144,8 +144,8 @@ void MS2IonTests::filterMS2IonsByMzTest() {
     MS2Ion::filterMS2IonsByMz(700.0, 900.0, &ms2Ions);
     MS2Ion::sortMS2IonsMzAsc(&ms2Ions);
 
-    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 777.7));
-    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 888.8));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(0).mz, 777.7f));
+    QVERIFY(MathUtils::tSame(ms2Ions.at(1).mz, 888.8f));
 
 }
 
@@ -154,10 +154,10 @@ void MS2IonTests::ms2IonsToScanPointsTests() {
     const QVector<MS2Ion> ms2Ions = buildMS2Ions();
     ScanPoints scanPoints = MS2Ion::ms2IonsToScanPoints(ms2Ions);
 
-    QVERIFY(MathUtils::tSame(scanPoints.at(0).x(), 888.8));
-    QVERIFY(MathUtils::tSame(scanPoints.at(1).x(), 777.7));
-    QVERIFY(MathUtils::tSame(scanPoints.at(2).x(), 666.6));
-    QVERIFY(MathUtils::tSame(scanPoints.at(3).x(), 999.9));
+    QVERIFY(MathUtils::tSame(scanPoints.at(0).x(), 888.8f));
+    QVERIFY(MathUtils::tSame(scanPoints.at(1).x(), 777.7f));
+    QVERIFY(MathUtils::tSame(scanPoints.at(2).x(), 666.6f));
+    QVERIFY(MathUtils::tSame(scanPoints.at(3).x(), 999.9f));
 
 }
 
