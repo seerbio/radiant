@@ -937,11 +937,7 @@ namespace {
 
         ERR_INIT
 
-        std::cout << "Starter hre FIX ME!!!" << std::endl;
-
         e = ErrorUtils::isTrue(bestAnchorColumn.size() > 0); ree;
-
-        std::cout << "Starter hre" << std::endl;
 
         const float massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
         const float mzStart = mzTarget - massTol;
@@ -952,39 +948,38 @@ namespace {
                 mzEnd
                 );
 
-        std::cout << "Starter hre" << std::endl;
-
         if (xicPoints.empty()) {
             *cosineSimMS1 = 0.0f;
+            ERR_RETURN
         }
 
-        std::cout << "Starter hre" << std::endl;
+        const int ms1VecSize = static_cast<int>(bestAnchorColumn.size());
 
-        Eigen::VectorX<float> ms1Vec(static_cast<int>(bestAnchorColumn.size()));
-        ms1Vec.setZero();
+        float ms1VecLoadingVec[ms1VecSize];
 
-        for (const XICPoint &xp : xicPoints) {
+        for (int i = 0; i < xicPoints.size(); i++) {
+
+            const XICPoint &xp = xicPoints.at(i);
+
             const FrameIndex frameIndex = xp.scanNumber - peakIntegrationIndexes.first;
 
-            if (frameIndex >= ms1Vec.size()) {
+            if (frameIndex >= ms1VecSize || frameIndex < 0) {
                 continue;
             }
 
-            ms1Vec.coeffRef(frameIndex) = static_cast<float>(xp.intensity);
+            ms1VecLoadingVec[frameIndex] = xp.intensity;
         }
 
-        std::cout << "Starter hre" << std::endl;
+        Eigen::VectorX<float> ms1Vec(ms1VecSize);
+        ms1Vec.setZero();
+        ms1Vec = Eigen::Map<Eigen::VectorX<float>>(ms1VecLoadingVec, ms1VecSize);
 
         if (MathUtils::tZero(ms1Vec.maxCoeff())) {
             *cosineSimMS1 = 0.0f;
+            ERR_RETURN
         }
 
-        std::cout << "Starter hre" << std::endl;
-
         ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
-        std::cout << Eigen::RowVectorXf(ms1Vec) << std::endl;
-        std::cout << Eigen::RowVectorXf(bestAnchorColumn) << std::endl;
-        std::cout << "***********" << std::endl;
 
         *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
 
@@ -1136,10 +1131,10 @@ Err ScoreOverseer::buildScores(
             [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
             );
 
-//    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
-//    for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
-//        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
-//    }
+    e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
+    for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
+    }
 
     const int mzPeakLengthsSum = std::accumulate(
             mzPeakLengthsVec.begin(),
@@ -1203,69 +1198,69 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
-//    float cosineSimMS1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            peakIntegrationIndexes,
-//            targetDecoyCandidatePair->mz(),
-//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &d_ptr->m_gaussKernel,
-//            &cosineSimMS1
-//            ); ree;
-//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
+    float cosineSimMS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            targetDecoyCandidatePair->mz(),
+            static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM),
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &cosineSimMS1
+            ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
 
 
-//    const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
-//            targetDecoyCandidatePair->mass(),
-//            targetDecoyCandidatePair->charge(),
-//            -1
-//    );
-//    float mzPreMonoCosineSimMS1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            peakIntegrationIndexes,
-//            mzPreMono,
-//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &d_ptr->m_gaussKernel,
-//            &mzPreMonoCosineSimMS1
-//    ); ree;
-//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
-//
-//    const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
-//            targetDecoyCandidatePair->mass(),
-//            targetDecoyCandidatePair->charge(),
-//            1
-//    );
-//    float cosineSimMzIso1;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            peakIntegrationIndexes,
-//            mzIso1,
-//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &d_ptr->m_gaussKernel,
-//            &cosineSimMzIso1
-//    ); ree;
-//    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
-//
-//    const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
-//            targetDecoyCandidatePair->mass(),
-//            targetDecoyCandidatePair->charge(),
-//            2
-//    );
-//    float cosineSimMzIso2;
-//    e = calculateMS1Corr(
-//            bestAnchorColumn,
-//            peakIntegrationIndexes,
-//            mzIso2,
-//            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
-//            &m_turboXICMS1,
-//            &d_ptr->m_gaussKernel,
-//            &cosineSimMzIso2
-//    ); ree;
-//    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
+    const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            -1
+    );
+    float mzPreMonoCosineSimMS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzPreMono,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &mzPreMonoCosineSimMS1
+    ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
+
+    const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            1
+    );
+    float cosineSimMzIso1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso1,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &cosineSimMzIso1
+    ); ree;
+    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
+
+    const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
+            targetDecoyCandidatePair->mass(),
+            targetDecoyCandidatePair->charge(),
+            2
+    );
+    float cosineSimMzIso2;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            mzIso2,
+            d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &cosineSimMzIso2
+    ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
 
     float cosineSimSum45;
     float cosineSimSum20;

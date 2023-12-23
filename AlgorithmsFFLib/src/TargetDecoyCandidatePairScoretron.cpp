@@ -185,15 +185,15 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
             &parallelInputs
             ); ree;
 
-#define PARALLEL_SCORE
-#ifdef PARALLEL_SCORE
-
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
             ParallelUtils::numberOfAvailableSystemProcessors(),
             &parallelInputsTranched
-            ); ree;
+    ); ree;
+
+#define PARALLEL_SCORE
+#ifdef PARALLEL_SCORE
 
     const auto refineHillsLogicBinder = std::bind(
             parallelScoreLogic,
@@ -221,10 +221,18 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     //TODO write here or pass.
 
 #else
-    for(const TargetDecoyPairParallelInput &tdppi : parallelInputs) {
-        const QPair<Err, QVector<CandidateScores>> res = parallelScoreLogic(tdppi); ree;
-        e = res.first; ree;
-        candidateScoresVec->append(res.second);
+    for(const QVector<TargetDecoyPairParallelInput> &tdppis : parallelInputsTranched) {
+
+        const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
+                tdppis,
+                m_ms1Frame,
+                m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()
+                ); ree;
+
+        for (const QPair<Err, QVector<CandidateScores>> &res : results) {
+            e = res.first; ree;
+            candidateScoresVec->append(res.second);
+        }
     }
 #endif
 
