@@ -24,7 +24,8 @@ public:
             const PythiaParameters &pythiaParameters,
             int topNMS2Ions,
             const MzTargetKey &targetKey,
-            MsFrame *ms1Frame
+            MsFrame *msFrameTandem,
+            TurboXIC *turboXICMS1
             );
 
     Eigen::VectorX<float> m_gaussKernel;
@@ -40,7 +41,8 @@ Err CandidateScorertron::Private::init(
         const PythiaParameters &pythiaParameters,
         int topNMS2Ions,
         const MzTargetKey &targetKey,
-        MsFrame *ms1Frame
+        MsFrame *msFrameTandem,
+        TurboXIC *turboXICMS1
         ) {
 
     ERR_INIT
@@ -56,7 +58,8 @@ Err CandidateScorertron::Private::init(
     e = m_scoreOverseer.init(
             pythiaParameters,
             targetKey,
-            ms1Frame
+            msFrameTandem,
+            turboXICMS1
             ); ree;
 
     ERR_RETURN
@@ -91,13 +94,13 @@ namespace{
 Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
         const PythiaParameters &pythiaParameters,
         const MzTargetKey &targetKey,
         const QPair<double, double> &scanTimeMinMax,
         int topNMS2Ions,
         const QHash<MzHashed, int> &mzHashedVsCount,
-        MsCalibratomatic *msCalibratomatic
+        MsCalibratomatic *msCalibratomatic,
+        TurboXIC *turboXICMS1
         ) {
 
     ERR_INIT
@@ -116,27 +119,20 @@ Err CandidateScorertron::init(
 
     m_msCalibratomatic = msCalibratomatic;
 
-    MsFrame msFrame;
-    e = msFrame.init(diaTargetFrame, scanNumberVsScanTime); ree;
-    e = m_turboXIC.init(msFrame.frameIndexVsScanPoints()); ree;
+    e = m_msFrameTandemScans.init(diaTargetFrame, scanNumberVsScanTime); ree;
+    e = m_turboXIC.init(m_msFrameTandemScans.frameIndexVsScanPoints()); ree;
 
     e = m_turboXIC.getRTreeLimits(
             &m_mzMin,
             &m_mzMax
             );
 
-    m_scanNumberVsScanPointsMS1 = scanPointsMS1;
-    for (auto it = m_scanNumberVsScanPointsMS1.begin(); it != m_scanNumberVsScanPointsMS1.end(); it++) {
-        m_scanNumberVsScanPointsMS1Pntrs.insert(it.key(), &it.value());
-    }
-
-    e = m_ms1Frame.init(m_scanNumberVsScanPointsMS1Pntrs, scanNumberVsScanTime); ree;
-
     e = d_ptr->init(
             pythiaParameters,
             m_topNMS2Ions,
             targetKey,
-            &m_ms1Frame
+            &m_msFrameTandemScans,
+            turboXICMS1
     ); ree;
 
     m_targetKey = targetKey;
@@ -241,12 +237,12 @@ Err CandidateScorertron::calculateScores(
                 &candidateScores->scanTimePredicted
         ); ree;
 
-        e = m_ms1Frame.frameIndexFromScanTime(
+        e = m_msFrameTandemScans.frameIndexFromScanTime(
                 candidateScores->scanTimePredicted - scanTimeWindow,
                 &frameIndexPredictedMin
         ); ree;
 
-        e = m_ms1Frame.frameIndexFromScanTime(
+        e = m_msFrameTandemScans.frameIndexFromScanTime(
                 candidateScores->scanTimePredicted + scanTimeWindow,
                 &frameIndexPredictedMax
         ); ree;

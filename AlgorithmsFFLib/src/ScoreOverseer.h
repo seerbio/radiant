@@ -32,7 +32,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             const MzTargetKey &targetKey,
-            MsFrame *ms1Frame
+            MsFrame *msFrameTandem,
+            TurboXIC *turboXICMS1
             );
 
     ~ScoreOverseer();
@@ -52,9 +53,9 @@ public:
 
 private:
 
-    TurboXIC m_turboXICMS1;
     MzTargetKey m_mzTargetKey;
-    MsFrame *m_ms1Frame;
+    MsFrame *m_msFrameTandem;
+    TurboXIC *m_turboXICMS1;
 
     Q_DISABLE_COPY(ScoreOverseer) class Private;
     const QScopedPointer<Private> d_ptr;

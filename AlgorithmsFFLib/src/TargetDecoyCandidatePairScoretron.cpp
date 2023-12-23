@@ -8,6 +8,7 @@
 #include "CandidateScorertron.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MsCalibratomatic.h"
+#include "ParallelUtils.h"
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -24,8 +25,6 @@ public:
     MzTargetKey targetKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> diaTargetFrame;
-    QMap<ScanNumber, ScanPoints> ms1Frame;
-    QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
@@ -81,62 +80,83 @@ namespace {
         ERR_RETURN
     }
 
-    QPair<Err, QVector<CandidateScores>> parallelScoreLogic(const TargetDecoyPairParallelInput &pi) {
+    QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
+            const QVector<TargetDecoyPairParallelInput> &inputs,
+            const QMap<ScanNumber, ScanPoints> &ms1Frame,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+            ) {
 
         ERR_INIT
 
         QElapsedTimer et;
         et.start();
 
-        e = ErrorUtils::isNotEmpty(pi.diaTargetFrame); rree;
-        e = ErrorUtils::isNotEmpty(pi.ms1Frame); rree;
+        e = ErrorUtils::isNotEmpty(inputs); rree;
+        e = ErrorUtils::isNotEmpty(ms1Frame); rree;
 
-        QVector<CandidateScores> allCandidateScores;
+        QMap<ScanNumber, ScanPoints> ms1FrameCopy = ms1Frame;
 
-        MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
-
-        QHash<MzHashed, int> mzHashedVsCount;
-        e = buildMzHashedVsCount(pi.targetDecoyPointers, &mzHashedVsCount); rree;
-
-        CandidateScorertron candidateScorertron;
-        e = candidateScorertron.init(
-                pi.diaTargetFrame,
-                pi.scanNumberVsScanTime,
-                pi.ms1Frame,
-                pi.pythiaParameters,
-                pi.targetKey,
-                pi.scanTimeMinMax,
-                pi.topNMs2Ions,
-                mzHashedVsCount,
-                &msCalibratomatic
-        ); rree;
-
-        for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
-
-            CandidateScores candidateScoresTarget;
-            e = candidateScorertron.calculateScores(
-                    tdcp->ms2IonsTarget(),
-                    tdcp,
-                    &candidateScoresTarget
-                    ); rree;
-            candidateScoresTarget.isDecoy = false;
-            allCandidateScores.push_back(candidateScoresTarget);
-
-            CandidateScores candidateScoresDecoy;
-            e = candidateScorertron.calculateScores(
-                    tdcp->ms2IonsDecoy(),
-                    tdcp,
-                    &candidateScoresDecoy
-                    ); rree;
-            candidateScoresDecoy.isDecoy = true;
-            allCandidateScores.push_back(candidateScoresDecoy);
+        QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
+        for (auto it = ms1FrameCopy.begin(); it != ms1FrameCopy.end(); it++) {
+            ms1FramePtrs.insert(it.key(), &it.value());
         }
 
-        if (pi.pythiaParameters.verbosity >= 1) {
-            qDebug() << "Target key processed in" << pi.targetKey << et.elapsed() << "mSec";
+        TurboXIC turboXICMS1;
+        e = turboXICMS1.init(ms1FramePtrs); rree;
+
+        QVector<QPair<Err, QVector<CandidateScores>>> outputs;
+
+        for (const TargetDecoyPairParallelInput &pi : inputs) {
+
+            QVector<CandidateScores> allCandidateScores;
+
+            MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
+
+            QHash<MzHashed, int> mzHashedVsCount;
+            e = buildMzHashedVsCount(pi.targetDecoyPointers, &mzHashedVsCount); rree;
+
+            CandidateScorertron candidateScorertron;
+            e = candidateScorertron.init(
+                    pi.diaTargetFrame,
+                    scanNumberVsScanTime,
+                    pi.pythiaParameters,
+                    pi.targetKey,
+                    pi.scanTimeMinMax,
+                    pi.topNMs2Ions,
+                    mzHashedVsCount,
+                    &msCalibratomatic,
+                    &turboXICMS1
+            ); rree;
+
+            for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
+
+                CandidateScores candidateScoresTarget;
+                e = candidateScorertron.calculateScores(
+                        tdcp->ms2IonsTarget(),
+                        tdcp,
+                        &candidateScoresTarget
+                ); rree;
+                candidateScoresTarget.isDecoy = false;
+                allCandidateScores.push_back(candidateScoresTarget);
+
+                CandidateScores candidateScoresDecoy;
+                e = candidateScorertron.calculateScores(
+                        tdcp->ms2IonsDecoy(),
+                        tdcp,
+                        &candidateScoresDecoy
+                ); rree;
+                candidateScoresDecoy.isDecoy = true;
+                allCandidateScores.push_back(candidateScoresDecoy);
+            }
+
+            if (pi.pythiaParameters.verbosity >= 1) {
+                qDebug() << "Target key processed in" << pi.targetKey << et.restart() << "mSec";
+            }
+
+            outputs.push_back({e, allCandidateScores});
         }
 
-        return {e, allCandidateScores};
+        return outputs;
     }
 
 }//namespace
@@ -167,16 +187,35 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-    QFuture<QPair<Err, QVector<CandidateScores>>> futures = QtConcurrent::mapped(
+
+    QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
-            parallelScoreLogic
+            ParallelUtils::numberOfAvailableSystemProcessors(),
+            &parallelInputsTranched
+            ); ree;
+
+    const auto refineHillsLogicBinder = std::bind(
+            parallelScoreLogic,
+            std::placeholders::_1,
+            m_ms1Frame,
+            m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()
+    );
+
+    QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
+            parallelInputsTranched,
+            refineHillsLogicBinder
     );
     futures.waitForFinished();
 
-    for (const QPair<Err, QVector<CandidateScores>> &res : futures) {
-        e = res.first; ree;
-        const QVector<CandidateScores> &candidateScoresTargetMz = res.second;
-        candidateScoresVec->append(candidateScoresTargetMz);
+    for (const QVector<QPair<Err, QVector<CandidateScores>>> &results : futures) {
+
+        const QVector<QPair<Err, QVector<CandidateScores>>> &result = results;
+        for (const QPair<Err, QVector<CandidateScores>> &r : result) {
+            e = r.first; ree;
+            const QVector<CandidateScores> &candidateScoresTargetMz = r.second;
+            candidateScoresVec->append(candidateScoresTargetMz);
+        }
     }
 
     //TODO write here or pass.
@@ -225,9 +264,7 @@ Err TargetDecoyCandidatePairScoretron::buildParallelInput(
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
-        tdppi.ms1Frame = m_ms1Frame;
         tdppi.diaTargetFrame = m_diaTargetFrames->value(msScanInfo.targetKey());
-        tdppi.scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
 
         input->push_back(tdppi);
     }

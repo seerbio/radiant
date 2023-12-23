@@ -878,19 +878,19 @@ ScoreOverseer::~ScoreOverseer() {}
 Err ScoreOverseer::init(
         const PythiaParameters &pythiaParameters,
         const MzTargetKey &targetKey,
-        MsFrame *ms1Frame
+        MsFrame *msFrameTandem,
+        TurboXIC *turboXICMS1
 ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = d_ptr->init(pythiaParameters); ree;
-    e = ErrorUtils::isTrue(ms1Frame->isValid()); ree;
+    e = ErrorUtils::isTrue(msFrameTandem->isValid()); ree;
 
-    m_ms1Frame = ms1Frame;
+    m_msFrameTandem = msFrameTandem;
     m_mzTargetKey = targetKey;
-
-    e = m_turboXICMS1.init(m_ms1Frame->frameIndexVsScanPoints()); ree;
+    m_turboXICMS1 = turboXICMS1;
 
     ERR_RETURN
 }
@@ -1038,8 +1038,8 @@ Err ScoreOverseer::buildScores(
             );
 
     candidateScores->targetKey = m_mzTargetKey;
-    candidateScores->scanNumber = m_ms1Frame->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + peakIntegrationIndexes.first);
-    candidateScores->scanTime = m_ms1Frame->scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->scanNumber = m_msFrameTandem->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + peakIntegrationIndexes.first);
+    candidateScores->scanTime = m_msFrameTandem->scanTimeFromScanNumber(candidateScores->scanNumber);
 
     //Figure out if you want to use this as well.
 //    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
@@ -1076,7 +1076,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::Mass] = static_cast<float>(targetDecoyCandidatePair->mass());
     candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = static_cast<float>(targetDecoyCandidatePair->iRt());
     candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount] = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
-    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_ms1Frame->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
+    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_msFrameTandem->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
     candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),

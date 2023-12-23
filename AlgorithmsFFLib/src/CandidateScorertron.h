@@ -34,13 +34,13 @@ public:
     Err init(
             const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
             const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-            const QMap<ScanNumber, ScanPoints> &scanPointsMS1,
             const PythiaParameters &pythiaParameters,
             const MzTargetKey &targetKey,
             const QPair<double, double> &scanTimeMinMax,
             int topNMS2Ions,
             const QHash<MzHashed, int> &mzHashedVsCount,
-            MsCalibratomatic *msCalibratomatic
+            MsCalibratomatic *msCalibratomatic,
+            TurboXIC *turboXICMS1
             );
 
     Err calculateScores(
@@ -88,18 +88,13 @@ private:
     MsCalibratomatic *m_msCalibratomatic;
 
     TurboXIC m_turboXIC;
-
-    MsFrame m_ms1Frame;
-    QMap<ScanNumber, ScanPoints> m_scanNumberVsScanPointsMS1;
-    QMap<ScanNumber, ScanPoints*> m_scanNumberVsScanPointsMS1Pntrs;
+    MsFrame m_msFrameTandemScans;
 
     QHash<MzHashed , XICPoints> m_mzHashedVsXICPointsCached;
     QHash<MzHashed, int> m_mzHashedVsCount;
 
     MzTargetKey m_targetKey;
     QPair<float, float> m_scanTimeMinMax;
-    float m_frameIndexMin;
-    float m_frameIndexMax;
     float m_mzMin;
     float m_mzMax;
 
