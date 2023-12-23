@@ -89,6 +89,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 const CommandLineParser::CliParameters &CommandLineParser::getCliParams() const {
 
     qDebug() << ARG_FRAGLIB_PATH << m_cliParams.fragLibFilePath;
+    qDebug() << ARG_FASTA_PATH << m_cliParams.fastaFilePath;
     qDebug() << ARG_PYTHIA_PARAMS  << m_cliParams.pythiaParametersFilePath;
     qDebug() << ARG_DATAFILE_PATH  << m_cliParams.msDataFile;
 
