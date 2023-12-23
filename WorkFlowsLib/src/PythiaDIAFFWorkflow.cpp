@@ -146,6 +146,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &candidateScoresTrainings
                 ); ree;
 
+        e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
+        e = m_targetDecoyCandidatePairScoretron.init(
+                m_pythiaParameters,
+                scanNumberVsScanPointsMS1,
+                &msReaderPointerAcc,
+                &diaTargetFrames
+        ); ree;
+
         e = optimizeParameters(
                 candidateScoresTrainings,
                 &msReaderPointerAcc
@@ -391,10 +399,8 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
-                scanTimeMinMax,
                 useExtendedScores,
-                useNeuralNetworkScores,
-                topNMS2IonsCalibration
+                useNeuralNetworkScores
         ); ree;
 
         QVector<CandidateScores*> candidateScoresPntrs;
@@ -645,10 +651,8 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
-        const QPair<double, double> &scanTimeMinMax,
         bool useExtendedScores,
-        bool useNeuralNetworkScores,
-        int theoMzIonsSize
+        bool useNeuralNetworkScores
         ) {
 
     ERR_INIT
@@ -995,7 +999,6 @@ namespace {
 
             PythiaParameters params = pythiaParameters;
             params.ms2ExtractionWidthPPM = mzPPMStDev * exp.at(0);
-            params.scanTimeWindowMinutes = scanTimeStDev * exp.at(1);
 
 //            switch (static_cast<int>(exp.at(2))) {
 //                case 1:
@@ -1015,9 +1018,7 @@ namespace {
         }
 
         for (const PythiaParameters &pp : *pythiaParametersExperiments) {
-            qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM
-                     << "scanTimeWinMin" << pp.scanTimeWindowMinutes
-                     << "cosineSimSumAnchThreshold" << pp.cosineSimToAnchorThreshold;
+            qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM;
         }
 
         ERR_RETURN
@@ -1082,9 +1083,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
-        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM
-                 << "scanTimeWinMin" << pythiaParams.scanTimeWindowMinutes
-                 << "cosineSimSumAnchThreshold" << pythiaParams.cosineSimToAnchorThreshold;
+        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
 
         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
         qDebug() << "STarting opt";
@@ -1101,10 +1100,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
-                scanTimeMinMax,
                 useExtendedScores,
-                useNeuralNetworkScores,
-                topNMS2IonsOptimization
+                useNeuralNetworkScores
         ); ree;
 
         QVector<CandidateScores*> candidateScoresPntrs;
@@ -1141,8 +1138,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
     qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-    qDebug() << "Optimal scanTimeWindow setting:" << m_pythiaParameters.scanTimeWindowMinutes;
-    qDebug() << "Optimal cosineSimSum setting:" << m_pythiaParameters.cosineSimToAnchorThreshold;
+    qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+
 
     ERR_RETURN
 }
@@ -1189,13 +1186,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &m_candidateScores
     ); ree;
     qDebug() << "Targets scored" << et.restart() << "mSec";
-
-    const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
+    
     e = setDiscriminantScoreForCandidates(
-            scanTimeMinMax,
             useExtendedScores,
-            useNeuralNetworkScores,
-            topNMs2IonsMainAnalysis
+            useNeuralNetworkScores
     ); ree;
     qDebug() << "Targets discriminated" << et.restart() << "mSec";
 

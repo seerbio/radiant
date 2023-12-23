@@ -68,10 +68,8 @@ private:
             );
 
     Err setDiscriminantScoreForCandidates(
-        const QPair<double, double> &scanTimeMinMax,
         bool useExtendedScores,
-        bool useNeuralNetworkScores,
-        int theoMzIonsSize
+        bool useNeuralNetworkScores
         );
 
     Err recalibrateMzVals(

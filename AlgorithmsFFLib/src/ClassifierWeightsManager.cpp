@@ -136,7 +136,7 @@ Err ClassifierWeightsManager::buildDataClassifier1(
         }
     }
 
-    matA /= rows - 1;
+    matA /= static_cast<float>(rows - 1);
     for (int i = 0; i < cols; i++) {
         matA.coeffRef(i, i) += std::numeric_limits<float>::min();
     }

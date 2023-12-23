@@ -217,6 +217,8 @@ Err MsReaderBase::getScanPoints(
 
     ERR_INIT
 
+    scanPoints->clear();
+
     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
 
         const ScanNumber scanNumber = it.key();

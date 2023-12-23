@@ -121,13 +121,11 @@ namespace PythiaParameterReaderConstants {
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
     const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
-    const QString kScanTimeWindowMinutes = QStringLiteral("scanTimeWindowMinutes");
+    const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
     const QString  kSubtractShadows = QStringLiteral("subtractShadows");
     const QString  kTurboMode = QStringLiteral("turboMode");
-
 }
-
 
 //TODO validate these better.
 Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParameters) {

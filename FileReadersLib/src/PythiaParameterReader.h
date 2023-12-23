@@ -49,7 +49,7 @@ namespace PythiaParameterReaderConstants {
 
     extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
     extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
-    extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowMinutes;
+    extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
@@ -146,7 +146,7 @@ struct PythiaParameters{
 
     double cosineSimToAnchorThreshold = 0.4;
 
-    double scanTimeWindowMinutes = -1.0;
+    int scanTimeWindowStDevs = 3;
     double ms2ExtractionWidthPPM = -1.0;
     int trancheSizeMax = 1e4;
 
@@ -228,7 +228,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
-        qDebug() << PythiaParameterReaderConstants::kScanTimeWindowMinutes << scanTimeWindowMinutes;
+        qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;

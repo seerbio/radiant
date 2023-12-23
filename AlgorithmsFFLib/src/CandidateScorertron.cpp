@@ -221,8 +221,6 @@ Err CandidateScorertron::calculateScores(
     QVector<MS2Ion> ms2IonsTheoretical = _ms2IonsTheoretical;
     ms2IonsTheoretical.resize(topNMS2Ions);
 
-    const int nStdDevsScanTimeWindow = 3;
-
     FrameIndex frameIndexPredictedMin = -1;
     FrameIndex frameIndexPredictedMax = -1;
     //TODO test whether it is better to filter out the points before integration, i.e. in extractHills(),
@@ -230,7 +228,7 @@ Err CandidateScorertron::calculateScores(
     // I'm leaning towards the latter as this will not cut off a peak in the middle.
     if (m_msCalibratomatic->isInit()) {
 
-        const float scanTimeWindow = m_msCalibratomatic->scanTimeStDev(nStdDevsScanTimeWindow);
+        const float scanTimeWindow = m_msCalibratomatic->scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
 
         e = m_msCalibratomatic->predictScanTime(
                 targetDecoyCandidatePair->iRt(),

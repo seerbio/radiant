@@ -789,7 +789,7 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
     }
 
     if (MathUtils::tZero(m_intensityMatrix100.maxCoeff())) {
-        QVector<float> v(static_cast<int>(m_intensityMatrix100.cols()) , 0.0f);
+        QVector<float> v(static_cast<int>(m_intensityMatrix100.cols()) , std::numeric_limits<float>::min());
         *cosineSimsIndividual = v;
         ERR_RETURN
     }
@@ -838,7 +838,7 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     }
 
     Eigen::MatrixX<float> peakMaskMat = intensityMat100TopCols.array() / intensityMat100TopCols.array();
-    EigenUtils::replaceNaN(0.0f , &peakMaskMat);
+    EigenUtils::replaceNaN(std::numeric_limits<float>::min() , &peakMaskMat);
 
     e = ErrorUtils::isEqual(peakMaskMat.cols(), intensityMatrix45.cols()); ree;
     e = ErrorUtils::isEqual(peakMaskMat.cols(), intensityMatrix20.cols()); ree;
@@ -930,7 +930,7 @@ namespace {
             const PeakIntegrationIndexes &peakIntegrationIndexes,
             float mzTarget,
             float ppmTol,
-            TurboXIC *turboXic,
+            TurboXIC *turboXicMS1,
             Eigen::VectorX<float> *gaussKernel,
             float *cosineSimMS1
     ) {
@@ -943,13 +943,13 @@ namespace {
         const float mzStart = mzTarget - massTol;
         const float mzEnd = mzTarget + massTol;
 
-        const XICPoints xicPoints = turboXic->extractPointsXIC(
+        const XICPoints xicPoints = turboXicMS1->extractPointsXIC(
                 mzStart,
                 mzEnd
                 );
 
         if (xicPoints.empty()) {
-            *cosineSimMS1 = 0.0f;
+            *cosineSimMS1 = std::numeric_limits<float>::min();
             ERR_RETURN
         }
 
@@ -975,13 +975,19 @@ namespace {
         ms1Vec = Eigen::Map<Eigen::VectorX<float>>(ms1VecLoadingVec, ms1VecSize);
 
         if (MathUtils::tZero(ms1Vec.maxCoeff())) {
-            *cosineSimMS1 = 0.0f;
+            *cosineSimMS1 = std::numeric_limits<float>::min();
             ERR_RETURN
         }
 
         ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
+        EigenUtils::replaceNaN(std::numeric_limits<float>::min(), &ms1Vec);
 
-        *cosineSimMS1 = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+        float cosineSimMS1Local = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+        if(std::isnan(cosineSimMS1Local)) {
+            cosineSimMS1Local = std::numeric_limits<float>::min();
+        }
+
+        *cosineSimMS1 = cosineSimMS1Local;
 
         ERR_RETURN
     }
@@ -1208,8 +1214,7 @@ Err ScoreOverseer::buildScores(
             &d_ptr->m_gaussKernel,
             &cosineSimMS1
             ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = static_cast<float>(cosineSimMS1);
-
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), std::numeric_limits<float>::min());
 
     const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1226,7 +1231,8 @@ Err ScoreOverseer::buildScores(
             &d_ptr->m_gaussKernel,
             &mzPreMonoCosineSimMS1
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = static_cast<float>(mzPreMonoCosineSimMS1);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+                    = std::max(static_cast<float>(mzPreMonoCosineSimMS1), std::numeric_limits<float>::min());
 
     const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1243,7 +1249,8 @@ Err ScoreOverseer::buildScores(
             &d_ptr->m_gaussKernel,
             &cosineSimMzIso1
     ); ree;
-    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = static_cast<float>(cosineSimMzIso1);
+    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+                = std::max(static_cast<float>(cosineSimMzIso1), std::numeric_limits<float>::min());
 
     const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1260,7 +1267,8 @@ Err ScoreOverseer::buildScores(
             &d_ptr->m_gaussKernel,
             &cosineSimMzIso2
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = static_cast<float>(cosineSimMzIso2);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+                    = std::max(static_cast<float>(cosineSimMzIso2), std::numeric_limits<float>::min());
 
     float cosineSimSum45;
     float cosineSimSum20;
@@ -1269,8 +1277,8 @@ Err ScoreOverseer::buildScores(
             &cosineSimSum45,
             &cosineSimSum20
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45] = cosineSimSum45;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20] = cosineSimSum20;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45] = std::max(cosineSimSum45, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20] = std::max(cosineSimSum20, std::numeric_limits<float>::min());
 
     const double chunkDivision = 3.0;
     QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
@@ -1280,22 +1288,22 @@ Err ScoreOverseer::buildScores(
     const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
     const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
     if (bestAnchorColumnVec.size() < chunkDivision) {
-        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = 0.0;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::numeric_limits<float>::min();
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = 1.0;
-        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = 0.0;
+        candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::numeric_limits<float>::min();
     }
     else {
 
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::accumulate(
                 bestAnchorColumnVec.begin(),
                 bestAnchorColumnVec.begin() + chunkSize,
-                0.0f
+                std::numeric_limits<float>::min()
         ) / bestAnchorColumnVecSum;
 
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = std::accumulate(
                 bestAnchorColumnVec.begin() + chunkSize,
                 bestAnchorColumnVec.begin() + (chunkSize * 2),
-                0.0f
+                std::numeric_limits<float>::min()
         ) / bestAnchorColumnVecSum;
 
         candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::accumulate(
@@ -1311,7 +1319,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = std::accumulate(
             cosineSimToAnchorVec.begin(),
             cosineSimToAnchorVec.begin() + top6,
-            0.0f
+            std::numeric_limits<float>::min()
             );
 
     if (cosineSimToAnchorVec.size() > top6) {
@@ -1319,14 +1327,14 @@ Err ScoreOverseer::buildScores(
         const float cosineSimSumTop6 = std::accumulate(
                 cosineSimToAnchorVec.begin(),
                 cosineSimToAnchorVec.begin() + top6,
-                0.0f
+                std::numeric_limits<float>::min()
         );
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop6] = cosineSimSumTop6;
 
         const float cosineSimSumBottom6 = std::accumulate(
                 cosineSimToAnchorVec.begin() + top6 + 1,
                 cosineSimToAnchorVec.end(),
-                0.0f
+                std::numeric_limits<float>::min()
         );
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6] = cosineSimSumBottom6;
 
