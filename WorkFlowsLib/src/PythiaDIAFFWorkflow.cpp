@@ -1186,7 +1186,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &m_candidateScores
     ); ree;
     qDebug() << "Targets scored" << et.restart() << "mSec";
-    
+
     e = setDiscriminantScoreForCandidates(
             useExtendedScores,
             useNeuralNetworkScores

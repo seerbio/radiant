@@ -101,8 +101,11 @@ namespace {
             ms1FramePtrs.insert(it.key(), &it.value());
         }
 
+        MsFrame msFrameMS1;
+        e = msFrameMS1.init(ms1FramePtrs, scanNumberVsScanTime); rree;
+
         TurboXIC turboXICMS1;
-        e = turboXICMS1.init(ms1FramePtrs); rree;
+        e = turboXICMS1.init(msFrameMS1.frameIndexVsScanPoints()); rree;
 
         QVector<QPair<Err, QVector<CandidateScores>>> outputs;
 

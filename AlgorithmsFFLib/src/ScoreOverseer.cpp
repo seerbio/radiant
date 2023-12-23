@@ -1204,6 +1204,8 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
+    e = ErrorUtils::isTrue(m_turboXICMS1->isInit()); ree;
+
     float cosineSimMS1;
     e = calculateMS1Corr(
             bestAnchorColumn,
