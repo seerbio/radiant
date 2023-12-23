@@ -94,6 +94,7 @@ private:
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
     Err applyNeuralNetClassifier(
+            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             int seed,
             QVector<CandidateScores*> *candidateScoreClassifier
             );

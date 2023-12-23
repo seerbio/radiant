@@ -64,6 +64,55 @@ Err PythiaDIAFFWorkflow::init(
     ERR_RETURN
 }
 
+namespace {
+
+    Err filterScoredCandidatesTo50PercentFDR(
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
+
+        std::sort(
+                candidateScoresTargetsAndDecoys->rbegin(),
+                candidateScoresTargetsAndDecoys->rend(),
+                [](const CandidateScores *l, const CandidateScores *r){
+                    return l->discriminantScore < r->discriminantScore;
+                }
+        );
+
+        const double fdrThreshold = 0.5;
+        int counter = 0;
+        for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
+
+            counter++;
+
+            if (csp->qValue >= fdrThreshold && !csp->isDecoy) {
+                break;
+            }
+        }
+
+        *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
+        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(static_cast<int>(counter));
+
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+
+        const int shuffleCount = 3;
+        for (int i = 0; i < shuffleCount; i++) {
+            std::shuffle(
+                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->begin(),
+                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->end(),
+                    rng
+            );
+        }
+
+        ERR_RETURN
+    }
+
+
+}//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
@@ -109,14 +158,39 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &targetCountBelowFDRThreshold
             ); ree;
 
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
+    e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
+    e = filterScoredCandidatesTo50PercentFDR(
+            &candidateScoresTargetsAndDecoys,
+            &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+    ); ree;
+
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
-    e = applyNeuralNetClassifier(seedFirstTry, &candidateScoreClassifierPntrs); ree;
+    e = applyNeuralNetClassifier(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            seedFirstTry,
+            &candidateScoreClassifierPntrs
+            ); ree;
 
     if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold) {
+
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        std::shuffle(
+                candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
+                candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+                rng
+        );
+
         const int seedSecondTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + 111;
         candidateScoreClassifierPntrs.clear();
-        e = applyNeuralNetClassifier(seedSecondTry, &candidateScoreClassifierPntrs); ree;
+        e = applyNeuralNetClassifier(
+                candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+                seedSecondTry,
+                &candidateScoreClassifierPntrs
+                ); ree;
 
         if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold){
             QVector<CandidateScores*> candidateScoresPntrs;
@@ -1180,47 +1254,6 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *can
 
 namespace {
 
-    Err filterScoredCandidatesTo50PercentFDR(
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
-
-        std::sort(
-                candidateScoresTargetsAndDecoys->rbegin(),
-                candidateScoresTargetsAndDecoys->rend(),
-                [](const CandidateScores *l, const CandidateScores *r){
-                    return l->discriminantScore < r->discriminantScore;
-                }
-        );
-
-        const double fdrThreshold = 0.5;
-        int counter = 0;
-        for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
-
-            counter++;
-
-            if (csp->qValue >= fdrThreshold && !csp->isDecoy) {
-                break;
-            }
-        }
-
-        *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(static_cast<int>(counter));
-
-        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-        std::shuffle(
-                candidateScoresTargetsAndDecoys50PercentFDRFiltered->begin(),
-                candidateScoresTargetsAndDecoys50PercentFDRFiltered->end(),
-                rng
-                );
-
-        ERR_RETURN
-    }
-
     Err minMaxScaleScores(
             const QVector<KarnnNNTarget> &karnnNNTargets,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm
@@ -1256,7 +1289,6 @@ namespace {
 
     Err buildKarnnNNTargetsNormalized(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            int topNMs2Ions,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm
     ){
 
@@ -1373,6 +1405,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
         ) {
@@ -1380,40 +1413,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
-
-    QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
-    e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
-
-    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
-    e = filterScoredCandidatesTo50PercentFDR(
-            &candidateScoresTargetsAndDecoys,
-            &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-            ); ree;
-
-//#define BYPASS_NEURAL_NET
-#ifdef BYPASS_NEURAL_NET
-    std::sort(
-            candidateScoresTargetsAndDecoysShuffled.rbegin(),
-            candidateScoresTargetsAndDecoysShuffled.rend(),
-            [](const CandidateScores &l, const CandidateScores &r){return l.discriminateScore < r.discriminateScore;}
-            );
-
-    int counter = 0;
-    int decoyCounter = 0;
-    for (const CandidateScores &cs : candidateScoresTargetsAndDecoysShuffled) {
-
-        if (cs.isDecoy) {
-            decoyCounter++;
-        }
-
-        const double qVal = static_cast<double>(decoyCounter) / ++counter;
-        if (qVal > 0.01) {
-            break;
-        }
-
-        candidateScoreClassifier->push_back(cs);
-    }
-#else
 
     const int totalCount = candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
     const int decoyCount = static_cast<int>(std::count_if(
@@ -1428,7 +1427,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            m_pythiaParameters.topNMs2Ions,
             &karnnNNTargetsNorm
             ); ree;
 
@@ -1448,7 +1446,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             ); ree;
 
     e = setQValueForCandidates(QValueScoreType::NNClassifierScore, candidateScoreClassifier); ree
-#endif
 
     ERR_RETURN
 }
