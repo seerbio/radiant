@@ -304,7 +304,16 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 m_msCalibratomatic,
                 &topScoresOfTranchesAndTrancheCombined,
                 &m_candidateScores
-                ); ree;
+                ); ree
+
+        std::sort(
+                m_candidateScores.rbegin(),
+                m_candidateScores.rend(),
+                [](const CandidateScores &l, const CandidateScores &r){
+                    return l.featuresArray[CandidateScores::Features::CosineSimSum100]
+                         < r.featuresArray[CandidateScores::Features::CosineSimSum100];
+                }
+                );
 
         const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
