@@ -20,7 +20,7 @@ using namespace Error;
 
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
-
+class TurboXIC;
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron {
 
@@ -33,7 +33,8 @@ public:
             const PythiaParameters &pythiaParameters,
             const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
             MsReaderPointerAcc *msReaderPointerAcc,
-            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+            TurboXIC *turboXICMS1
             );
 
     Err scoreTargetDecoyPairs(
@@ -62,6 +63,8 @@ private:
 
     PythiaParameters m_pythiaParameters;
     MsReaderPointerAcc *m_msReaderPointerAcc;
+    TurboXIC *m_turboXICMS1;
+
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *m_diaTargetFrames;
     QMap<ScanNumber, ScanPoints> m_ms1Frame;
 

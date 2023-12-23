@@ -35,16 +35,19 @@ Err TargetDecoyCandidatePairScoretron::init(
         const PythiaParameters &pythiaParameters,
         const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
         MsReaderPointerAcc *msReaderPointerAcc,
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+        TurboXIC *turboXICMS1
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isTrue(turboXICMS1->isInit()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_msReaderPointerAcc = msReaderPointerAcc;
+    m_turboXICMS1 = turboXICMS1;
 
     if (!diaTargetFrames->isEmpty()) {
         e = ErrorUtils::isNotEmpty(scanNumberVsScanTimeMS1); ree;
@@ -82,8 +85,8 @@ namespace {
 
     QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs,
-            const QMap<ScanNumber, ScanPoints> &ms1Frame,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            TurboXIC *turboXICMS1
             ) {
 
         ERR_INIT
@@ -92,20 +95,7 @@ namespace {
         et.start();
 
         e = ErrorUtils::isNotEmpty(inputs); rree;
-        e = ErrorUtils::isNotEmpty(ms1Frame); rree;
-
-        QMap<ScanNumber, ScanPoints> ms1FrameCopy = ms1Frame;
-
-        QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
-        for (auto it = ms1FrameCopy.begin(); it != ms1FrameCopy.end(); it++) {
-            ms1FramePtrs.insert(it.key(), &it.value());
-        }
-
-        MsFrame msFrameMS1;
-        e = msFrameMS1.init(ms1FramePtrs, scanNumberVsScanTime); rree;
-
-        TurboXIC turboXICMS1;
-        e = turboXICMS1.init(msFrameMS1.frameIndexVsScanPoints()); rree;
+        e = ErrorUtils::isTrue(turboXICMS1->isInit()); rree;
 
         QVector<QPair<Err, QVector<CandidateScores>>> outputs;
 
@@ -128,7 +118,7 @@ namespace {
                     pi.topNMs2Ions,
                     mzHashedVsCount,
                     &msCalibratomatic,
-                    &turboXICMS1
+                    turboXICMS1
             ); rree;
 
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
@@ -201,8 +191,8 @@ Err TargetDecoyCandidatePairScoretron::scoreTargetDecoyPairs(
     const auto refineHillsLogicBinder = std::bind(
             parallelScoreLogic,
             std::placeholders::_1,
-            m_ms1Frame,
-            m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()
+            m_msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
+            m_turboXICMS1
     );
 
     QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(

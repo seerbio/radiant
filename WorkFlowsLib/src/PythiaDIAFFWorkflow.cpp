@@ -11,6 +11,7 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
+#include "MsFrame.h"
 #include "MsReaderMzML.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
@@ -129,11 +130,23 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
     e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
 
+    QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
+    for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
+        ms1FramePtrs.insert(it.key(), &it.value());
+    }
+
+    MsFrame msFrameMS1;
+    e = msFrameMS1.init(ms1FramePtrs, msReaderPointerAcc.ptr->getScanNumberVsScanTime()); ree;
+
+    TurboXIC turboXICMS1;
+    e = turboXICMS1.init(msFrameMS1.frameIndexVsScanPoints()); ree;
+
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
             scanNumberVsScanPointsMS1,
             &msReaderPointerAcc,
-            &diaTargetFrames
+            &diaTargetFrames,
+            &turboXICMS1
             ); ree;
 
     if (!m_pythiaParameters.turboMode) {
@@ -146,13 +159,22 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &candidateScoresTrainings
                 ); ree;
 
+
         e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
+        ms1FramePtrs.clear();
+        for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
+            ms1FramePtrs.insert(it.key(), &it.value());
+        }
+        e = msFrameMS1.init(ms1FramePtrs, msReaderPointerAcc.ptr->getScanNumberVsScanTime()); ree;
+        e = turboXICMS1.init(msFrameMS1.frameIndexVsScanPoints()); ree;
+
         e = m_targetDecoyCandidatePairScoretron.init(
                 m_pythiaParameters,
                 scanNumberVsScanPointsMS1,
                 &msReaderPointerAcc,
-                &diaTargetFrames
-        ); ree;
+                &diaTargetFrames,
+                &turboXICMS1
+                ); ree;
 
         e = optimizeParameters(
                 candidateScoresTrainings,
@@ -818,13 +840,6 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
     qDebug() << "Recalibrating MS1 mz vals frame";
     e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
-
-    e = targetDecoyCandidatePairScoretron->init(
-            m_pythiaParameters,
-            *scanNumberVsScanTimeMS1,
-            msReaderPointerAcc,
-            diaTargetFrames
-            ); ree;
 
     qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
 
