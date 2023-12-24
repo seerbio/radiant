@@ -67,7 +67,7 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(targetDecoyPointers); ree;
+        e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
 
         for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
             for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
