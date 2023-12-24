@@ -522,7 +522,7 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
         QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
         e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(
                 msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
-                msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons),
+                msScanInfo.precursorTargetMz + (msScanInfo.isoWindowUpper + m_pythiaParameters.precursorExtractionWindowThomsons),
                 selectionFraction,
                 &targetDecoyPointers
                 ); ree;
