@@ -158,7 +158,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &candidateScoresTrainings
                 ); ree;
 
-
         e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
         ms1FramePtrs.clear();
         for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
@@ -324,9 +323,11 @@ namespace {
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
             row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
             row.scanTime = cs->scanTime;
+            row.scanNumber = cs->scanNumber;
             row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
             row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
             row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
+            row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
 
             return row;
         };
@@ -337,13 +338,6 @@ namespace {
                 std::back_inserter(*msCalibrationReaderRows),
                 msCalibrationReaderRowsInsertLogic
         );
-
-//#define WRITE_CALIBRATION_ROWS_TS
-#ifdef WRITE_CALIBRATION_ROWS_TS
-        qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CAL FILE IN:"; einfo;
-        const QString filename = QStringLiteral("/home/anichols/temp/cal2.prq");
-        e = ParquetReader::write(*msCalibrationReaderRows, filename); ree;
-#endif
 
         ERR_RETURN
     }
@@ -484,7 +478,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                         &m_targetDecoyCandidatePairScoretron,
                         msReaderPointerAcc
                         ); ree;
-
             }
 
             QVector<CandidateScores*> candidateScoresPntrsOpt;
@@ -497,6 +490,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
             *candidateScoresForTrainings = candidateScoresPntrsOpt;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
+
+#define WRITE_CALIBRATION_ROWS_TS
+#ifdef WRITE_CALIBRATION_ROWS_TS
+            qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CAL FILE IN:"; einfo;
+            const QString filename = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
+            e = ParquetReader::write(msCalibrationReaderRows, filename); ree;
+#endif
+
             break;
         }
     }
