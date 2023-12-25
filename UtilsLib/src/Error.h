@@ -41,7 +41,7 @@ extern const UTILSLIB_EXPORTS QMap<Err, QString> errorMap;
 #define rrr(...) { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" << errorMap.value(__VA_ARGS__); return __VA_ARGS__; }
 
 //if error, return no error.
-#define eee_absorb { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" << errorMap.value(e); e = eNoError;}
+#define eee_absorb if (e) { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" << errorMap.value(e); e = eNoError;}
 
 }//NAMESPACE
 

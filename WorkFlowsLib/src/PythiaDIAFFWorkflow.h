@@ -91,6 +91,11 @@ private:
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
+    Err removeInterferingCandidates(
+            int ionsSharedToReject,
+            QVector<CandidateScores*> *candidates
+            );
+
     Err applyNeuralNetClassifier(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             int seed,

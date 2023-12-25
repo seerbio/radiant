@@ -112,7 +112,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
@@ -196,6 +195,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoresTargetsAndDecoys,
             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
     ); ree;
+
+    qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
+    const int ionsSharedToReject = 4;
+    e = removeInterferingCandidates(ionsSharedToReject, &candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+    qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
@@ -1257,6 +1261,96 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *can
             std::back_inserter(*candidateScoresPntrs),
             [](CandidateScores &cs){return &cs;}
     );
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::removeInterferingCandidates(
+        int ionsSharedToReject,
+        QVector<CandidateScores*> *candidates
+        ) {
+
+    ERR_INIT
+
+    QMap<ScanNumber, QVector<CandidateScores*>> scanNumberVsCandidateScoresPtr;
+    for (int i = 0; i < candidates->size(); i++) {
+        CandidateScores *cs = candidates->at(i);
+        scanNumberVsCandidateScoresPtr[cs->scanNumber].push_back(cs);
+    }
+
+    QVector<CandidateScores*> filteredCandidates;
+    for (auto it = scanNumberVsCandidateScoresPtr.begin(); it != scanNumberVsCandidateScoresPtr.end(); it++) {
+
+        const ScanNumber scanNumber = it.key();
+        QVector<CandidateScores*> &scanNumberCandidates = it.value();
+        const int foundCandidatesCountInScan = scanNumberCandidates.size();
+
+        std::sort(
+                scanNumberCandidates.rbegin(),
+                scanNumberCandidates.rend(),
+                [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+                );
+
+        if (foundCandidatesCountInScan == 1) {
+            filteredCandidates.push_back(scanNumberCandidates.front());
+            continue;
+        }
+
+        const int cols = static_cast<int>(std::round(m_pythiaParameters.mzMaxDataStructure - m_pythiaParameters.mzMinDataStructure));
+        const int rows = foundCandidatesCountInScan;
+        Eigen::MatrixX<float> mat(rows, cols);
+        mat.setZero();
+
+        int top6MzValsFound = 6;
+
+        for (int row = 0; row < rows; row++) {
+
+            const CandidateScores* cs = scanNumberCandidates.at(row);
+
+            const QVector<float> top6MzValsFoundArr = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6MzValsFound);
+            for (float mz : top6MzValsFoundArr) {
+                const int col = static_cast<int>(std::round(mz));
+
+                if (col < 0 || col >= cols) {
+                    continue;
+                }
+                mat.coeffRef(row, col) = 1.0f;
+            }
+        }
+
+        QSet<int> excludeIndexes;
+        for (int row = 0; row < rows - 1; row++) {
+
+            const Eigen::VectorX<float> &vecBase = mat.row(row);
+
+            int rowNext = row + 1;
+            const Eigen::MatrixX<float> &matNext = mat.block(rowNext, 0, rows - rowNext, cols);
+
+            const Eigen::VectorX<float> dotProds =  matNext * vecBase;
+
+            if (static_cast<int>(dotProds.maxCoeff()) < ionsSharedToReject) {
+                continue;
+            }
+
+            for (int i = 0; i < dotProds.size(); i++) {
+                const float sharedIons = dotProds.coeff(i);
+                if (static_cast<int>(sharedIons) >= ionsSharedToReject) {
+                    excludeIndexes.insert(row + i + 1);
+                }
+            }
+        }
+
+        for (int i = 0; i < scanNumberCandidates.size(); i++) {
+            CandidateScores *cs = scanNumberCandidates.at(i);
+            if (excludeIndexes.contains(i)) {
+                continue;
+            }
+            filteredCandidates.push_back(cs);
+        }
+    }
+
+    candidates->clear();
+    *candidates = filteredCandidates;
 
     ERR_RETURN
 }
