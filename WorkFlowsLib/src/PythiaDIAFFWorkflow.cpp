@@ -417,7 +417,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 }
                 );
 
-        const QPair<double, double> scanTimeMinMax = msReaderPointerAcc->ptr->scanTimeMinMax();
         e = setDiscriminantScoreForCandidates(
                 useExtendedScores,
                 useNeuralNetworkScores
@@ -487,7 +486,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             });
 
             candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
-
+            
             *candidateScoresForTrainings = candidateScoresPntrsOpt;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
