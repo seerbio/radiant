@@ -955,7 +955,8 @@ namespace {
 
         const int ms1VecSize = static_cast<int>(bestAnchorColumn.size());
 
-        float ms1VecLoadingVec[ms1VecSize];
+        std::vector<float> ms1VecLoadingVec(ms1VecSize, 0.0f);
+        ms1VecLoadingVec.reserve(ms1VecSize);
 
         for (int i = 0; i < xicPoints.size(); i++) {
 
@@ -972,7 +973,8 @@ namespace {
 
         Eigen::VectorX<float> ms1Vec(ms1VecSize);
         ms1Vec.setZero();
-        ms1Vec = Eigen::Map<Eigen::VectorX<float>>(ms1VecLoadingVec, ms1VecSize);
+        ms1Vec
+            = EigenUtils::convertQVectorToEigenVector(QVector<float>(ms1VecLoadingVec.begin(), ms1VecLoadingVec.end()));
 
         if (MathUtils::tZero(ms1Vec.maxCoeff())) {
             *cosineSimMS1 = std::numeric_limits<float>::min();
