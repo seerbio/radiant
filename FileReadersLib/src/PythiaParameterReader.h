@@ -155,6 +155,8 @@ struct PythiaParameters{
     bool subtractShadows = true;
     bool turboMode = false;
 
+    int ionsSharedToReject = 4;
+
     int mzCalPolynomialOrder = 11;
 
     [[nodiscard]] bool isValid() const {

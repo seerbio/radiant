@@ -196,8 +196,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ); ree;
 
     qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
-    const int ionsSharedToReject = 4;
-    e = removeInterferingCandidates(ionsSharedToReject, &candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+
+    e = removeInterferingCandidates(
+            m_pythiaParameters.ionsSharedToReject,
+            &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+            ); ree;
     qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
@@ -452,6 +455,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         candidateScoresPntrs.resize(minTrainingCount);
 
+        e = removeInterferingCandidates(m_pythiaParameters.ionsSharedToReject, &candidateScoresPntrs); ree;
+        qDebug() << candidateScoresPntrs.size() << "after filtering";
+
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
         e = buildMsCalibrationReaderRows(candidateScoresPntrs, &msCalibrationReaderRows); ree;
         topScoresOfTranches.clear();
@@ -486,7 +492,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             });
 
             candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
-            
+
             *candidateScoresForTrainings = candidateScoresPntrsOpt;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
@@ -1301,7 +1307,7 @@ Err PythiaDIAFFWorkflow::removeInterferingCandidates(
         Eigen::MatrixX<float> mat(rows, cols);
         mat.setZero();
 
-        int top6MzValsFound = 6;
+        int top6MzValsFound = 12;
 
         for (int row = 0; row < rows; row++) {
 
