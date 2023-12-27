@@ -1064,8 +1064,8 @@ Err ScoreOverseer::buildScores(
 
     const double totalArea = d_ptr->m_intensityMatrix100.sum();
     const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.colwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
-    e = ErrorUtils::isTrue(matrixColumnSums.cols() <= arraySizeMax); ree;
-    for (int i = 0; i < matrixColumnSums.cols(); i++) {
+    e = ErrorUtils::isTrue(matrixColumnSums.rows() <= arraySizeMax); ree;
+    for (int i = 0; i < matrixColumnSums.rows(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = static_cast<float>(matrixColumnSums.coeff(i) / totalArea);
     }
 
