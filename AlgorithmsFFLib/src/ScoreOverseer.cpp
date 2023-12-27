@@ -299,7 +299,7 @@ namespace {
         const Eigen::VectorX<float> rowSums = intensityMatrix.rowwise().sum();
         Eigen::MatrixX<float> rowCountMat = (intensityMatrix.array() / intensityMatrix.array());
         EigenUtils::replaceNaN(0.0f, &rowCountMat);
-        Eigen::VectorX<float> rowCount = rowCountMat.rowwise().sum();
+        const Eigen::VectorX<float> rowCount = rowCountMat.rowwise().sum();
 
         const QVector<float> rowSumsVec = EigenUtils::convertEigenVectorToQVector(rowSums);
         const QVector<float> rowCountVec = EigenUtils::convertEigenVectorToQVector(rowCount);
@@ -1063,7 +1063,7 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog] = std::log(std::max(totalIntensity, std::numeric_limits<double>::min()));
 
     const double totalArea = d_ptr->m_intensityMatrix100.sum();
-    const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.rowwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
+    const Eigen::VectorX<float> matrixColumnSums = d_ptr->m_intensityMatrix100.colwise().sum(); //replace this w/ m_intensityMatrix100ApexRow if it doesn't work out
     e = ErrorUtils::isTrue(matrixColumnSums.cols() <= arraySizeMax); ree;
     for (int i = 0; i < matrixColumnSums.cols(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = static_cast<float>(matrixColumnSums.coeff(i) / totalArea);

@@ -32,20 +32,23 @@ private Q_SLOTS:
 MsCalibratomaticTests::MsCalibratomaticTests() : QObject(){}
 
 void MsCalibratomaticTests::execTests() {
-    QSKIP("TODO: reenable with internal test data");
+//    QSKIP("TODO: reenable with internal test data");
 
     ERR_INIT
 
-//    const QString reCalFile
-//            = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq.cached.pythiaCAL");
-//
-//    MsCalibratomatic calibratomatic;
-//    e = calibratomatic.init(reCalFile);
-//    QCOMPARE(e, eNoError);
+    const QString reCalFile = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
 
+    MsCalibratomatic calibratomatic;
+    e = calibratomatic.init(reCalFile);
+    QCOMPARE(e, eNoError);
 
+    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+    e = ParquetReader::read(reCalFile, &msCalibrationReaderRows);
+    QCOMPARE(e, eNoError);
 
-    //TODO add more tests to actually test the corrected points.
+    e = calibratomatic.initMzOnly(msCalibrationReaderRows);
+    QCOMPARE(e, eNoError);
+
 
 }
 
