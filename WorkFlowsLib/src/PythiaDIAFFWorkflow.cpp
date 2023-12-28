@@ -331,7 +331,7 @@ namespace {
             row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
             row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
             row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
-            
+
             return row;
         };
 
@@ -496,7 +496,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             *candidateScoresForTrainings = candidateScoresPntrsOpt;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
-#define WRITE_CALIBRATION_ROWS_TS
+//#define WRITE_CALIBRATION_ROWS_TS
 #ifdef WRITE_CALIBRATION_ROWS_TS
             qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CAL FILE IN:"; einfo;
             const QString filename = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
