@@ -37,7 +37,6 @@ public:
         ScanTimePd,
         ScanIonCount,
         MzNorm,
-//        KlDivSum,
         KlDivSpectrum,
         CosineSimSpectrum,
 //        CosineSim45MS1,

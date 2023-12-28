@@ -948,6 +948,8 @@ namespace {
                 mzEnd
                 );
 
+        
+
         if (xicPoints.empty()) {
             *cosineSimMS1 = std::numeric_limits<float>::min();
             ERR_RETURN
