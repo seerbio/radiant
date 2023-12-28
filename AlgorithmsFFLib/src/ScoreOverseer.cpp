@@ -948,8 +948,6 @@ namespace {
                 mzEnd
                 );
 
-        
-
         if (xicPoints.empty()) {
             *cosineSimMS1 = std::numeric_limits<float>::min();
             ERR_RETURN
@@ -1221,6 +1219,30 @@ Err ScoreOverseer::buildScores(
             &cosineSimMS1
             ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), std::numeric_limits<float>::min());
+    
+    float cosineSim45MS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            targetDecoyCandidatePair->mz(),
+            static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM) * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &cosineSim45MS1
+    ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1] = std::max(static_cast<float>(cosineSim45MS1), std::numeric_limits<float>::min());
+
+    float cosineSim20MS1;
+    e = calculateMS1Corr(
+            bestAnchorColumn,
+            peakIntegrationIndexes,
+            targetDecoyCandidatePair->mz(),
+            static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM) * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
+            m_turboXICMS1,
+            &d_ptr->m_gaussKernel,
+            &cosineSim20MS1
+    ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1] = std::max(static_cast<float>(cosineSim20MS1), std::numeric_limits<float>::min());
 
     const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
