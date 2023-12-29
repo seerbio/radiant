@@ -1061,6 +1061,23 @@ Err ScoreOverseer::buildScores(
         candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
     }
 
+    for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
+        const MS2Ion &ms2IonSearched = ms2IonsTheoretical.at(i);
+
+        float mzFound = 0.0;
+        if (i < d_ptr->m_mzMeanValsFound.size()) {
+            mzFound = d_ptr->m_mzMeanValsFound.at(i);
+        }
+
+        float corr = 0.0;
+        if (i < cosineSimToAnchorVec.size()) {
+            corr = cosineSimToAnchorVec.at(i);
+        }
+
+        const float accuracy = corr * (std::abs(mzFound - ms2IonSearched.mz) / ms2IonSearched.mz);
+        candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = accuracy;
+    }
+
     e = ErrorUtils::isTrue(shadowsIntensityRatioVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < shadowsIntensityRatioVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + i] = shadowsIntensityRatioVec.at(i);

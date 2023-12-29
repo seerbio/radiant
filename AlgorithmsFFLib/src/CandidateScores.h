@@ -193,6 +193,18 @@ public:
         MzFoundStDev10,
         MzFoundStDev11,
         MzFoundStDev12,
+        MzAccuracy1,
+        MzAccuracy2,
+        MzAccuracy3,
+        MzAccuracy4,
+        MzAccuracy5,
+        MzAccuracy6,
+        MzAccuracy7,
+        MzAccuracy8,
+        MzAccuracy9,
+        MzAccuracy10,
+        MzAccuracy11,
+        MzAccuracy12,
         FeaturesSize
     };
 
