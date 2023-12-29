@@ -211,7 +211,7 @@ public:
     CandidateScores() = default;
     ~CandidateScores() = default;
 
-    TargetDecoyCandidatePair *targetDecoyCandidatePair;
+    TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
     QString targetKey;
     QString proteinGroup;
     bool isDecoy = false;
@@ -225,11 +225,7 @@ public:
 
     QVector<float> featuresArray;
 
-//    [[nodiscard]] Err featuresArrayEssentials(QVector<float> *vecOutput) const;
-
     [[nodiscard]] QVector<float>* featuresArrayRef();
-
-//    [[nodiscard]] Err featuresArrayNeuralNet(QVector<float> **vecOutput) const;
 
     void initFeaturesArray();
 
