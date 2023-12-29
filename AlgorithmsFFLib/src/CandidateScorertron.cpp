@@ -603,20 +603,6 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
             &mzHashedVsXICPointsShadows
             ); ree;
 
-    const auto unfragPrecursorMass = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
-            targetDecoyCandidatePair->mass(),
-            targetDecoyCandidatePair->charge(),
-            0
-    ));
-
-    QHash<MzHashed , XICPoints> mzHashedVsXICPointsUnfragPrecursor;
-    MS2Ion ms2IonUnfragPrecursor;
-    ms2IonUnfragPrecursor.mz = unfragPrecursorMass;
-    e = extractXICs(
-            {ms2IonUnfragPrecursor},
-            &mzHashedVsXICPointsUnfragPrecursor
-    ); ree;
-
     //TODO figure out a way to empirially pick the best integration index instead
     // of wasting cycles analyzing the top 2; put break at the bottom of loop as temp fix.
     for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
@@ -632,8 +618,6 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsXICPoints,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsXICPointsShadows,
-                ms2IonUnfragPrecursor,
-                mzHashedVsXICPointsUnfragPrecursor,
                 &candidateScoresPII
                 ); ree;
 

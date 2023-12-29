@@ -46,8 +46,6 @@ public:
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
-            const MS2Ion &ms2IonUnfragPrecursor,
-            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
             CandidateScores *candidateScores
     );
 

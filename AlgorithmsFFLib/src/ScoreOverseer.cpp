@@ -31,10 +31,8 @@ public:
             const PeakIntegrationIndexes &peakIntegrationIndexes,
             const QVector<MS2Ion> &ms2IonsTheoretical,
             const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
-            const MS2Ion &ms2IonUnfragPrecursor,
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
-            const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
             int *bestAlignmentMatrixRow,
             QVector<int> *columnApexIndexes,
             QVector<float> *intensityFoundMaxVec,
@@ -61,7 +59,6 @@ public:
     Eigen::MatrixX<float> m_intensityMatrix100Shadow;
     Eigen::MatrixX<float> m_intensityMatrix45;
     Eigen::MatrixX<float> m_intensityMatrix20;
-//    Eigen::MatrixX<float> m_unfragPrecursorVec;
 
     Eigen::VectorX<float> m_intensityMatrix100ApexRow;
 
@@ -536,10 +533,8 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         const QVector<MS2Ion> &ms2IonsTheoretical,
         const QVector<MS2Ion> &ms2IonsTheoreticalShadows,
-        const MS2Ion &ms2IonUnfragPrecursor,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
-        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
         int *bestAlignmentMatrixRowIndex,
         QVector<int> *columnApexIndexes,
         QVector<float> *intensityFoundMaxVec,
@@ -625,45 +620,6 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
                 m_intensityMatrix100Shadow.cols()
         ).eval();
     }
-
-//    if (m_intensityMatrix100Shadow.maxCoeff() > 0.0f) {
-//
-//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
-//                m_intensityMatrix100Shadow,
-//                m_pythiaParams,
-//                m_gaussKernel
-//        );
-//
-//    }
-
-//    m_unfragPrecursorVec.resize(rows, 1);
-//    e = loadMzHashedVsFeatureFinderHillsToMatrix(
-//            {ms2IonUnfragPrecursor},
-//            mzHashedVsXICPointsUnfragPrecursor,
-//            minMaxFrameIndex->first,
-//            &m_unfragPrecursorVec,
-//            &unused1,
-//            &unused2
-//    ); ree;
-//
-//    if (rowSize < m_unfragPrecursorVec.rows()) {
-//        m_unfragPrecursorVec = m_unfragPrecursorVec.block(
-//                alignmentMatrixLimits->first,
-//                0,
-//                rowSize,
-//                m_unfragPrecursorVec.cols()
-//        ).eval();
-//    }
-//
-//    if (m_unfragPrecursorVec.maxCoeff() > 0.0f) {
-//
-////        m_unfragPrecursorVec = applyGaussSmoothRowWiseToMatrix(
-////                m_unfragPrecursorVec,
-////                m_pythiaParams,
-////                m_gaussKernel
-////        );
-//
-//    }
 
     const int tightColsMax = 6;
     m_intensityMatrix45.resize(rows, tightColsMax);
@@ -1003,8 +959,6 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
-        const MS2Ion &ms2IonUnfragPrecursor,
-        const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsUnfragPrecursor,
         CandidateScores *candidateScores
         ) {
 
@@ -1029,10 +983,8 @@ Err ScoreOverseer::buildScores(
             peakIntegrationIndexes,
             ms2IonsTheoretical,
             ms2IonsTheoreticalIsotopeShadows,
-            ms2IonUnfragPrecursor,
             mzHashedVsXICPoints,
             mzHashedVsXICPointsShadows,
-            mzHashedVsXICPointsUnfragPrecursor,
             &bestAlignmentMatrixRowIndex,
             &columnApexIndexes,
             &intensityFoundMaxVec,
@@ -1118,17 +1070,6 @@ Err ScoreOverseer::buildScores(
         ERR_RETURN
     }
 
-//    if (!MathUtils::tZero(d_ptr->m_unfragPrecursorVec.maxCoeff())) {
-//
-//        const Eigen::VectorX<float> unfragPrecursorEigVed(d_ptr->m_unfragPrecursorVec);
-//
-//        e = ErrorUtils::isEqual(bestAnchorColumn.size(), unfragPrecursorEigVed.rows()); ree;
-//        candidateScores->featuresArray[CandidateScores::Features::UnfragPrecursorCosineSim] = EigenUtils::cosineSimilarity(
-//                bestAnchorColumn,
-//                unfragPrecursorEigVed
-//                        );
-//    }
-
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
     QVector<int> columnApexIndexRatiosToAnchor;
@@ -1172,6 +1113,8 @@ Err ScoreOverseer::buildScores(
             scanTimeMinMax.second - scanTimeMinMax.first
     );
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange] = scanTimeRange;
+
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
 
     candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] = std::accumulate(
             cosineSimShadowsToAnchorVec.begin(),
