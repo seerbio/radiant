@@ -1013,11 +1013,12 @@ namespace {
 //        };
 
         const QVector<QVector<double>> experiments = {
-                {1.5, 2.0},
+//                {1.5, 2.0},
                 {2.0, 2.0},
                 {2.5,  2.0},
                 {3.5,  2.0},
-                {4.5, 2.0}
+                {4.5, 2.0},
+                {5.5, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
