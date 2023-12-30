@@ -1099,7 +1099,8 @@ Err ScoreOverseer::buildScores(
 
     e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
     for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
-        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
+        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i]
+                                                                        = static_cast<int>(columnApexIndexRatiosToAnchor.at(i));
     }
 
     const int mzPeakLengthsSum = std::accumulate(
