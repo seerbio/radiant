@@ -112,6 +112,8 @@ namespace {
         ERR_RETURN
     }
 
+
+
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
@@ -269,18 +271,16 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap << "Entrap%" << entrap / (double)counter;
 
 
-//    QVector<CandidateScores> candidateScoreClassifier;
-//    std::transform(
-//            candidateScoreClassifierPntrs.begin(),
-//            candidateScoreClassifierPntrs.end(),
-//            std::back_inserter(candidateScoreClassifier),
-//            [](const CandidateScores *cs){return *cs;}
-//            );
+    QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
+    std::transform(
+            candidateScoreClassifierPntrs.begin(),
+            candidateScoreClassifierPntrs.end(),
+            std::back_inserter(candidateScoreReaderRows),
+            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+            );
 
-//    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//    e = ParquetReader::write(candidateScoreClassifier, resultsFilePath); ree;
-
-//    limit what scores are collected depending on extendedScores or NeuralNetScores is set
+    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+    e = CSVReader::write(candidateScoreReaderRows, resultsFilePath); ree;
 
     ERR_RETURN
 }
@@ -1606,6 +1606,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
                 );
 
         cs->proteinGroup = fastaDescriptions.join(';');
+        cs->proteinGroup.replace(",", " ");
 
     }
 
