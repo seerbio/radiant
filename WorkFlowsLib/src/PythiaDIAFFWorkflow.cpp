@@ -1232,14 +1232,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     ); ree;
     qDebug() << "Targets resulted" << et.restart() << "mSec";
 
-    const double fdrThreshold = 0.1;
-    int targetCountBelowFDRThreshold;
-    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-            m_candidateScores,
-            fdrThreshold,
-            &targetCountBelowFDRThreshold
-    ); ree;
-
     const double fdrThresholdOnePercent = 0.01;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
             m_candidateScores,
