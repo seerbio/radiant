@@ -28,7 +28,7 @@ public:
         CosineSimSumTop6,
         CosineSimSumBottom6,
         TopBottomRatio,
-        TopBottomRatioNorm,
+        TopBottomRatioNorm,//10
         ChargeNorm,
         Mass,
         ScanTimeDelta,
@@ -38,7 +38,7 @@ public:
         MzNorm,
         KlDivSpectrum,
         CosineSimSpectrum,
-        CosineSim45MS1,
+        CosineSim45MS1,//20
         CosineSim20MS1,
         CosineSim100MS1PreMono,
         CosineSim100MS1Iso1,
@@ -48,7 +48,7 @@ public:
         TheoFragmentCount,
         TotalIntensityLog,
         PeakShapeRatio1,
-        PeakShapeRatio2,
+        PeakShapeRatio2,//30
         PeakShapeRatio3,
         ShadowsCosineSimSum,
         IRTPredicted,
@@ -58,7 +58,7 @@ public:
         CosineSimToAnchor4,
         CosineSimToAnchor5,
         CosineSimToAnchor6,
-        CosineSimToAnchor7,
+        CosineSimToAnchor7,//40
         CosineSimToAnchor8,
         CosineSimToAnchor9,
         CosineSimToAnchor10,
@@ -68,7 +68,7 @@ public:
         CosineSimShadowsToAnchor2,
         CosineSimShadowsToAnchor3,
         CosineSimShadowsToAnchor4,
-        CosineSimShadowsToAnchor5,
+        CosineSimShadowsToAnchor5,//50
         CosineSimShadowsToAnchor6,
         CosineSimShadowsToAnchor7,
         CosineSimShadowsToAnchor8,
@@ -78,7 +78,7 @@ public:
         CosineSimShadowsToAnchor12,
         ShadowsIntensityRatio1,
         ShadowsIntensityRatio2,
-        ShadowsIntensityRatio3,
+        ShadowsIntensityRatio3,//60
         ShadowsIntensityRatio4,
         ShadowsIntensityRatio5,
         ShadowsIntensityRatio6,
@@ -88,7 +88,7 @@ public:
         ShadowsIntensityRatio10,
         ShadowsIntensityRatio11,
         ShadowsIntensityRatio12,
-        MzSearched1,
+        MzSearched1,//70
         MzSearched2,
         MzSearched3,
         MzSearched4,
@@ -98,7 +98,7 @@ public:
         MzSearched8,
         MzSearched9,
         MzSearched10,
-        MzSearched11,
+        MzSearched11,//80
         MzSearched12,
         TheoIntensity1,
         TheoIntensity2,
@@ -108,7 +108,7 @@ public:
         TheoIntensity6,
         TheoIntensity7,
         TheoIntensity8,
-        TheoIntensity9,
+        TheoIntensity9,//90
         TheoIntensity10,
         TheoIntensity11,
         TheoIntensity12,
@@ -118,7 +118,7 @@ public:
         MzFoundMean4,
         MzFoundMean5,
         MzFoundMean6,
-        MzFoundMean7,
+        MzFoundMean7,//100
         MzFoundMean8,
         MzFoundMean9,
         MzFoundMean10,
@@ -128,7 +128,7 @@ public:
         IntensityFoundMax2,
         IntensityFoundMax3,
         IntensityFoundMax4,
-        IntensityFoundMax5,
+        IntensityFoundMax5,//110
         IntensityFoundMax6,
         IntensityFoundMax7,
         IntensityFoundMax8,
@@ -138,7 +138,7 @@ public:
         IntensityFoundMax12,
         MzPeakLengthsNorm1,
         MzPeakLengthsNorm2,
-        MzPeakLengthsNorm3,
+        MzPeakLengthsNorm3,//120
         MzPeakLengthsNorm4,
         MzPeakLengthsNorm5,
         MzPeakLengthsNorm6,
@@ -148,7 +148,7 @@ public:
         MzPeakLengthsNorm10,
         MzPeakLengthsNorm11,
         MzPeakLengthsNorm12,
-        ColumnApexIndexRatiosToAnchor1,
+        ColumnApexIndexRatiosToAnchor1,//130
         ColumnApexIndexRatiosToAnchor2,
         ColumnApexIndexRatiosToAnchor3,
         ColumnApexIndexRatiosToAnchor4,
@@ -158,7 +158,7 @@ public:
         ColumnApexIndexRatiosToAnchor8,
         ColumnApexIndexRatiosToAnchor9,
         ColumnApexIndexRatiosToAnchor10,
-        ColumnApexIndexRatiosToAnchor11,
+        ColumnApexIndexRatiosToAnchor11,//140
         ColumnApexIndexRatiosToAnchor12,
         AminoAcidCountA,
         AminoAcidCountC,
@@ -168,7 +168,7 @@ public:
         AminoAcidCountG,
         AminoAcidCountH,
         AminoAcidCountI,
-        AminoAcidCountK,
+        AminoAcidCountK,//150
         AminoAcidCountL,
         AminoAcidCountM,
         AminoAcidCountN,
@@ -178,7 +178,7 @@ public:
         AminoAcidCountS,
         AminoAcidCountT,
         AminoAcidCountV,
-        AminoAcidCountW,
+        AminoAcidCountW,//160
         AminoAcidCountY,
         MzFoundStDev1,
         MzFoundStDev2,
@@ -188,7 +188,7 @@ public:
         MzFoundStDev6,
         MzFoundStDev7,
         MzFoundStDev8,
-        MzFoundStDev9,
+        MzFoundStDev9,//170
         MzFoundStDev10,
         MzFoundStDev11,
         MzFoundStDev12,
@@ -198,7 +198,7 @@ public:
         MzAccuracy4,
         MzAccuracy5,
         MzAccuracy6,
-        MzAccuracy7,
+        MzAccuracy7,//180
         MzAccuracy8,
         MzAccuracy9,
         MzAccuracy10,
