@@ -1089,7 +1089,7 @@ Err ScoreOverseer::buildScores(
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
-    QVector<float> columnApexIndexRatiosToAnchor;
+    QVector<int> columnApexIndexRatiosToAnchor;
     std::transform(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
