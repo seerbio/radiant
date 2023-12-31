@@ -1089,7 +1089,7 @@ Err ScoreOverseer::buildScores(
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
-    QVector<int> columnApexIndexRatiosToAnchor;
+    QVector<float> columnApexIndexRatiosToAnchor;
     std::transform(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
@@ -1099,8 +1099,7 @@ Err ScoreOverseer::buildScores(
 
     e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
     for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
-        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i]
-                                                                        = static_cast<int>(columnApexIndexRatiosToAnchor.at(i));
+        candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
     }
 
     const int mzPeakLengthsSum = std::accumulate(

@@ -150,7 +150,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = static_cast<int>(xData.front().size() / 2);
+    const int nodes = static_cast<int>(xData.front().size());
     const int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);
