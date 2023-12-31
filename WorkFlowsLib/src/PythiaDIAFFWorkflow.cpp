@@ -796,6 +796,14 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     qDebug() << "Weights:" << weights;
     qDebug() << "b:" << b;
 
+//#define ENUMERATE_B
+#ifdef ENUMERATE_B
+    for (int i = 0; i < b.size(); i++) {
+        qDebug() << i << b.at(i);
+    }
+    einfo;
+#endif
+
     QVector<float> discScoreTargets;
     e = ClassifierWeightsManager::applyWeights(scoresTargets, weights, &discScoreTargets); ree;
 
