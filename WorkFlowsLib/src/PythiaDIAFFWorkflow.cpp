@@ -476,6 +476,15 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             if (fdrVsCount.value(twoPercenFDRKey) >= minMzTrainingSize) {
 
                 msCalibrationReaderRows.resize(fdrVsCount.value(twoPercenFDRKey));
+
+//#define TIGHT_IRT_CAL
+#ifdef TIGHT_IRT_CAL
+
+//TODO Test this en masse for stats
+
+                e = m_msCalibratomatic.initRtOnly(msCalibrationReaderRows); ree;
+                qDebug() << "scanTimeWindowStDev x" << numberOfStDevs <<":" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
+#endif
                 e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
                 e = recalibrateMzVals(
                         diaTargetFrames,
@@ -1534,16 +1543,19 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     qDebug() << "target vs decoy count" << totalCount - decoyCount << decoyCount
              << "total" << totalCount;
 
-//    Eigen::VectorX<float> vec(CandidateScores::Features::FeaturesSize);
-//    vec.setZero();
-//    for (const CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
-//        vec += EigenUtils::convertQVectorToEigenVector(cs->featuresArray);
-//    }
-//    vec /= candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
-//    for(int i = 0; i < vec.size(); i++) {
-//        qDebug() << i << vec.coeff(i);
-//    }
-//    einfo;
+//#define PRINT_AVERAGES
+#ifdef PRINT_AVERAGES
+    Eigen::VectorX<float> vec(CandidateScores::Features::FeaturesSize);
+    vec.setZero();
+    for (const CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
+        vec += EigenUtils::convertQVectorToEigenVector(cs->featuresArray);
+    }
+    vec /= candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
+    for(int i = 0; i < vec.size(); i++) {
+        qDebug() << i << vec.coeff(i);
+    }
+    einfo;
+#endif
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
