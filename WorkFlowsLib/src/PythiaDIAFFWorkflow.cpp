@@ -1534,6 +1534,17 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     qDebug() << "target vs decoy count" << totalCount - decoyCount << decoyCount
              << "total" << totalCount;
 
+//    Eigen::VectorX<float> vec(CandidateScores::Features::FeaturesSize);
+//    vec.setZero();
+//    for (const CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
+//        vec += EigenUtils::convertQVectorToEigenVector(cs->featuresArray);
+//    }
+//    vec /= candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
+//    for(int i = 0; i < vec.size(); i++) {
+//        qDebug() << i << vec.coeff(i);
+//    }
+//    einfo;
+
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,

@@ -157,7 +157,8 @@ namespace {
                     );
 
             (*mzMeanValsFound)[col] = static_cast<float>(MathUtils::mean(mzVals));
-            (*stdMeanValsFound)[col] = static_cast<float>(MathUtils::stDev(mzVals));
+            (*stdMeanValsFound)[col] = mzVals.isEmpty() ? 0 : static_cast<float>(MathUtils::stDev(mzVals));
+
             mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoader);
         }
 
