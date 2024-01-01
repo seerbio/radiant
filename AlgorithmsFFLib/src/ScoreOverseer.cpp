@@ -1336,7 +1336,6 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
             = cosineSimSumBottom6 / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
-
     QMap<QChar, int> aminoAcidCounts = {
             {'A', 0},
             {'C', 0},
@@ -1370,26 +1369,26 @@ Err ScoreOverseer::buildScores(
         aminoAcidCounts[aminoAcid]++;
     }
 
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA] = aminoAcidCounts['A'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC] = aminoAcidCounts['C'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD] = aminoAcidCounts['D'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE] = aminoAcidCounts['E'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF] = aminoAcidCounts['F'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG] = aminoAcidCounts['G'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH] = aminoAcidCounts['H'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI] = aminoAcidCounts['I'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK] = aminoAcidCounts['K'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL] = aminoAcidCounts['L'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM] = aminoAcidCounts['M'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN] = aminoAcidCounts['N'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP] = aminoAcidCounts['P'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ] = aminoAcidCounts['Q'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR] = aminoAcidCounts['R'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS] = aminoAcidCounts['S'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT] = aminoAcidCounts['T'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = aminoAcidCounts['V'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = aminoAcidCounts['W'];
-    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = aminoAcidCounts['Y'];
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA] = static_cast<float>(aminoAcidCounts['A']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC] = static_cast<float>(aminoAcidCounts['C']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD] = static_cast<float>(aminoAcidCounts['D']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE] = static_cast<float>(aminoAcidCounts['E']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF] = static_cast<float>(aminoAcidCounts['F']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG] = static_cast<float>(aminoAcidCounts['G']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH] = static_cast<float>(aminoAcidCounts['H']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI] = static_cast<float>(aminoAcidCounts['I']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK] = static_cast<float>(aminoAcidCounts['K']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL] = static_cast<float>(aminoAcidCounts['L']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM] = static_cast<float>(aminoAcidCounts['M']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN] = static_cast<float>(aminoAcidCounts['N']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP] = static_cast<float>(aminoAcidCounts['P']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ] = static_cast<float>(aminoAcidCounts['Q']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR] = static_cast<float>(aminoAcidCounts['R']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS] = static_cast<float>(aminoAcidCounts['S']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT] = static_cast<float>(aminoAcidCounts['T']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = static_cast<float>(aminoAcidCounts['V']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = static_cast<float>(aminoAcidCounts['W']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = static_cast<float>(aminoAcidCounts['Y']);
 
     const auto mz = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
             candidateScores->targetDecoyCandidatePair->mass(),
