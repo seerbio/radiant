@@ -1439,9 +1439,9 @@ namespace {
 
         ERR_INIT
 
-        const int batchSize = std::min(50, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
-        const int maxIters = 1;
-        qDebug() << "Batch Size:" << batchSize << "MaxIters:" << maxIters;
+        const int batchSize = std::min(200, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+
+        qDebug() << "Batch Size:" << batchSize;
 
         QVector<QVector<float>> xData;
         QVector<float> yData;
