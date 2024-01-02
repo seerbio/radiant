@@ -20,11 +20,6 @@ namespace MathUtilsConstants {
 }//NAMESPACE
 
 
-double MathUtils::calculatePPM(double val, double ppmTolerance) {
-    return (val * ppmTolerance) / 1e6;
-}
-
-
 double MathUtils::factorial(int n) {
 
     if (n < 0 ) {

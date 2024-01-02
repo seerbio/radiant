@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iostream>
 #include <QDebug>
+#include <QFileInfo>
 
 
 const QString dataProcessingElementName = QStringLiteral("dataProcessing");
@@ -230,30 +231,6 @@ namespace {
                | ((n & 0xff000000) >> 24);
     }
 
-    // pwiz
-    inline unsigned long long endianize(unsigned long long n) {
-        return ((n & 0x00000000000000ffll) << 56) |
-               ((n & 0x000000000000ff00ll) << 40) |
-               ((n & 0x0000000000ff0000ll) << 24) |
-               ((n & 0x00000000ff000000ll) << 8) |
-               ((n & 0x000000ff00000000ll) >> 8) |
-               ((n & 0x0000ff0000000000ll) >> 24) |
-               ((n & 0x00ff000000000000ll) >> 40) |
-               ((n & 0xff00000000000000ll) >> 56);
-    }
-
-    inline float endianize(float n) {
-        static_assert(sizeof(unsigned int) == sizeof(float), "Wrong unsigned int/float size");
-        unsigned int i = endianize(*reinterpret_cast<unsigned int *>(&n));
-        return *reinterpret_cast<float *>(&i);
-    }
-
-    inline double endianize(double n) {
-        static_assert(sizeof(unsigned long long) == sizeof(double), "Wrong unsigned long long/double size");
-        unsigned long long l = endianize(*reinterpret_cast<unsigned long long *>(&n));
-        return *reinterpret_cast<double *>(&l);
-    }
-
     bool decompress(const QByteArray &input, QByteArray *output) {
 
         Q_ASSERT(output);
@@ -316,7 +293,6 @@ namespace {
                         return false;
                 }
 
-
                 const int have = (gzipChunkSize - strm.avail_out);
 
                 if (have > 0) {
@@ -366,7 +342,7 @@ namespace {
         vec->erase(terminator, vec->end());
     }
 
-    Err processBinaryData(QXmlStreamReader &reader, QVector<ScanPoint> *scanPoints) {
+    Err processBinaryData(QXmlStreamReader &reader, ScanPoints *scanPoints) {
 
         ERR_INIT
 
@@ -446,9 +422,15 @@ namespace {
 
                     e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); ree;
 
+                    scanPoints->resize(mzValues.size());
+                    scanPoints->reserve(mzValues.size());
+
                     for (int i = 0; i < mzValues.size(); i++) {
-                        const ScanPoint point(mzValues.at(i), intensityValues.at(i));
-                        scanPoints->push_back(point);
+                        const ScanPoint point(
+                                static_cast<float>(mzValues.at(i)),
+                                static_cast<float>(intensityValues.at(i))
+                                );
+                        (*scanPoints)[i] = point;
                     }
 
                     filterZeroIntensityQPoints(scanPoints);
@@ -598,10 +580,7 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
             if (stringMatch(currentReaderName, BINARY_DATA_ARRAY)) {
                 QVector<ScanPoint> scanPoints;
                 e = processBinaryData(reader, &scanPoints); ree;
-
-                for (const ScanPoint &sp : scanPoints) {
-                    (*m_scanPoints)[msScanInfo.scanNumber].push_back({sp.x(), sp.y()});
-                }
+                (*m_scanPoints)[msScanInfo.scanNumber] = scanPoints;
             }
 
             continue;
@@ -640,6 +619,14 @@ Err MsReaderMzML::openFile(const QString &filePath) {
 
     e = ErrorUtils::isNotEmpty(filePath); ree;
     m_filePath = filePath;
+
+    QFileInfo fi(filePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            MzMLNamespace::MZML_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+    ); ree;
 
     e = m_d->openFile(filePath); ree;
 

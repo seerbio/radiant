@@ -1,0 +1,100 @@
+//
+// Created by anichols on 12/11/22.
+//
+
+#include "FeatureFinderHill.h"
+
+#include "MathUtils.h"
+
+
+void FeatureFinderHill::addPoint(
+        ScanNumberIndex scanNumberIndex,
+        ScanNumber scanNumber,
+        double mzVal,
+        float intensityVal
+) {
+    m_scanNumberIndexes.push_back(scanNumberIndex);
+    m_mzVals.push_back(mzVal);
+    m_scanNumbers.push_back(scanNumber);
+    m_intensities.push_back(intensityVal);
+}
+
+double FeatureFinderHill::mzMean() const {
+    return MathUtils::mean(m_mzVals);
+}
+
+double FeatureFinderHill::mzStDev() const {
+    return MathUtils::stDev(m_mzVals);
+}
+
+int FeatureFinderHill::maxIntensityScanNumber() const {
+    return m_scanNumbers.at(MathUtils::findMaxIndexInVector(m_intensities));
+}
+
+int FeatureFinderHill::maxIntensityScanNumberIndex() const {
+    return m_scanNumberIndexes.at(MathUtils::findMaxIndexInVector(m_intensities));
+}
+
+int FeatureFinderHill::scanCount() const {
+    return m_scanNumbers.size();
+}
+
+QVector<int> FeatureFinderHill::scanNumbers() const {
+    return m_scanNumbers;
+}
+
+QVector<int> FeatureFinderHill::scanNumberIndexes() const {
+    return m_scanNumberIndexes;
+}
+
+QVector<float> FeatureFinderHill::intensities() const {
+    return m_intensities;
+}
+
+QPair<double, double> FeatureFinderHill::mzMinMax() const {
+    const auto minMaxMz = std::minmax_element(m_mzVals.begin(), m_mzVals.end());
+    return {*minMaxMz.first, *minMaxMz.second};
+}
+
+QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberMinMax() const {
+    return {m_scanNumbers.front(), m_scanNumbers.back()};
+}
+
+QPair<ScanNumber , ScanNumber> FeatureFinderHill::scanNumberIndexMinMax() const {
+    return {m_scanNumberIndexes.front(), m_scanNumberIndexes.back()};
+}
+
+float FeatureFinderHill::intensityValueMax() const {
+    return *std::max_element(m_intensities.begin(), m_intensities.end());
+}
+
+QVector<double> FeatureFinderHill::mzVals() const {
+    return m_mzVals;
+}
+
+FeatureFinderHillEntry FeatureFinderHill::featureFinderHillEntry() {
+
+    FeatureFinderHillEntry ffhe;
+    ffhe.mzVals = mzVals();
+    ffhe.intensityVals = intensities();
+    ffhe.frameIndexVals = scanNumberIndexes();
+    ffhe.scanNumberVals = scanNumbers();
+
+    return ffhe;
+}
+
+Err FeatureFinderHill::initFromFeatureFinderHillEntry(const FeatureFinderHillEntry &featureFinderHillEntry) {
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.scanNumberVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.mzVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.intensityVals); ree;
+    e = ErrorUtils::isNotEmpty(featureFinderHillEntry.frameIndexVals); ree;
+
+    m_scanNumbers = featureFinderHillEntry.scanNumberVals;
+    m_mzVals = featureFinderHillEntry.mzVals;
+    m_intensities = featureFinderHillEntry.intensityVals;
+    m_scanNumberIndexes = featureFinderHillEntry.frameIndexVals;
+
+    ERR_RETURN
+}

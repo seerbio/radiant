@@ -8,6 +8,8 @@
 #include "UtilsLib_Exports.h"
 
 #include "ErrorUtils.h"
+#include "PointDF.h"
+#include "PointFF.h"
 
 #include <QPointF>
 #include <QString>
@@ -20,6 +22,7 @@ using Coors = QVector<double>;
 using CosineSimSum = double;
 using DecoyRatio = double;
 using DiscScore = double;
+using FilePath = QString;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
 using FrequencyPercent = double;
@@ -57,17 +60,16 @@ using ReScore = double;
 using ResidueIndex = int;
 using ScanNumber = int;
 using ScanNumberIndex = int;
-using ScanPoint = QPointF;
-using ScanPoints = QVector<QPointF>;
-using ScanTime = double;
+using ScanPoint = PointFF;
+using ScanPoints = QVector<ScanPoint>;
+using ScanTime = float;
 using Score = double;
 using TandemScansIndex = int;
 using TARGETMZ = double;
 using Tranche = int;
-using UniqueMsInfoScanKey = QString;
+using MzTargetKey = QString;
 using UniqueHashedMzAndTarget = QString;
 using Value = double;
-using XICPoint = QPair<ScanNumber, Intensity>;
 using XVal = double;
 using YVal = double;
 
@@ -84,10 +86,11 @@ public:
     const QString DOT_CAL = QStringLiteral(".cal");
     const QString DOT_CSV = QStringLiteral(".csv");
     const QString DOT_FASTA = QStringLiteral(".fasta");
-    const QString DOT_FRAGLIB = QStringLiteral(".fragLib");
+    const QString DOT_FRAGLIB_DF = QStringLiteral(".fragLibDF");
+    const QString DOT_FRAGLIB_FF = QStringLiteral(".fragLibFF");
     const QString DOT_LIB = QStringLiteral(".lib");
     const QString DOT_MAT = QStringLiteral(".mat");
-    const QString DOT_PRQ = QStringLiteral(".prq");
+    const QString DOT_PRQ_DF = QStringLiteral(".prqDF");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
     const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
@@ -109,7 +112,7 @@ public:
     const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");
     const QString HDF_FILE_EXTENSION = QStringLiteral("hdf");
     const QString MZML_FILE_EXTENSION = QStringLiteral("mzml");
-    const QString PRQ_FILE_EXTENSION = QStringLiteral("prq");
+    const QString PRQ_FILE_EXTENSION = QStringLiteral("prqFF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
     const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");
@@ -139,10 +142,12 @@ public:
     const QString B_H2O_IONS = QStringLiteral("bH20");
     const QString PRECURSOR_IONS = QStringLiteral("precursorIons");
 
-    const double TIGHT_1_FRACTION = 0.45;
-    const double TIGHT_2_FRACTION = 0.2;
+    const float TIGHT_1_FRACTION = 0.45;
+    const float TIGHT_2_FRACTION = 0.2;
 
     const int NUMBER_OF_THE_BEAST = 666;
+
+    const QString MS1Key = QStringLiteral("MS1Key");
 
     static QString VERSION();
 };

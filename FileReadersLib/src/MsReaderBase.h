@@ -28,22 +28,22 @@ struct FILEREADERSLIB_EXPORTS MsScanInfo {
 
     int msLevel = -1;
     ScanNumber scanNumber = 1;
-    double scanTime = -1.0;
-    double collisionEnergy = -1.0;
-    double precursorTargetMz = -1.0;
-    double isoWindowLower = -1.0;
-    double isoWindowUpper = -1.0;
-    double ionMobilityDriftTime = -1.0;
+    float scanTime = -1.0;
+    float collisionEnergy = -1.0;
+    float precursorTargetMz = -1.0;
+    float isoWindowLower = -1.0;
+    float isoWindowUpper = -1.0;
+    float ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
 
-    [[nodiscard]] QString targetScanKey() const {
-        return targetScanKey(
+    [[nodiscard]] MzTargetKey targetKey() const {
+        return targetKey(
                 precursorTargetMz - isoWindowLower,
                 precursorTargetMz + isoWindowUpper
                 );
     }
 
-    static QString targetScanKey(double mzStart, double mzEnd) {
+    static MzTargetKey targetKey(float mzStart, float mzEnd) {
         return QString::number(std::round(1000 * ((mzStart + mzEnd) / 2)));
     }
 };
@@ -64,6 +64,8 @@ public:
     void setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos);
 
     Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
+
+    void reset();
 
     virtual Err openFile(const QString &filePath);
 
@@ -86,7 +88,7 @@ public:
 
     bool isInit();
 
-    QPair<double, double> scanTimeMinMax();
+    QPair<ScanTime , ScanTime > scanTimeMinMax();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
 
@@ -107,8 +109,8 @@ public:
             MsScanInfo *msScanInfo
             ) const;
 
-    Err collateTandemPrecursorTargetsDIA(
-            QMap<UniqueMsInfoScanKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
+    Err collateMS2MzTargetFrames(
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
     );
 
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();
@@ -124,12 +126,12 @@ public:
             MsScanInfo *msScanInfo
             );
 
-    static ScanPoints sortScanPoints(
-            const ScanPoints &scanPoints,
-            const ScanPointsSort &sort = ScanPointsSort::AscMz
+    static void sortScanPoints(
+            const ScanPointsSort &sort,
+            ScanPoints *scanPoints
                     );
 
-    int getNearestScanNumberFromScanTime(double scanTime);
+    int getNearestScanNumberFromScanTime(ScanTime scanTime);
 
     static Err getNearestScanNumberFromScanTime(
             ScanTime scanTime,
@@ -148,13 +150,19 @@ public:
 
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
-            QVector<double> *mzVals,
-            QVector<double> *intensityVals
+            QVector<float> *mzVals,
+            QVector<float> *intensityVals
             );
 
+    static Err splitScanPoints(
+            ScanPoints *scanPoints,
+            QVector<float> *mzVals,
+            QVector<float> *intensityVals
+    );
+
     static Err zipScanPoints(
-            const QVector<double> &mzVals,
-            const QVector<double> &intensityVals,
+            const QVector<float> &mzVals,
+            const QVector<float> &intensityVals,
             ScanPoints *scanPoints
             );
 
@@ -162,7 +170,6 @@ public:
 
     Err printFileInfo();
 
-    Err writeTargetCollisionEnergyFile();
 
 protected:
 

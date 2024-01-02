@@ -9,6 +9,10 @@
 #include "MsReaderMzML.h"
 #include "StringUtils.h"
 
+#include <QByteArray>
+#include <QCryptographicHash>
+#include <QDataStream>
+#include <QFile>
 #include <QFileInfo>
 
 
@@ -17,7 +21,6 @@ Err MsReaderPointerAcc::openFile(const QString &filePath) {
     e = setMsReaderPointer(filePath); ree;
     ERR_RETURN
 }
-
 
 Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
 
@@ -54,3 +57,4 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
 
     ERR_RETURN
 }
+

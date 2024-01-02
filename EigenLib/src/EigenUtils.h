@@ -143,7 +143,7 @@ public:
     static void fitPolynomialQRDecomposition(
             const Eigen::MatrixXd &points,
             int order,
-            QVector<double> *coeff
+            QVector<double> *coeffs
             ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
@@ -160,9 +160,9 @@ public:
         // solve for linear least squares fit
         const Eigen::VectorXd result = A.householderQr().solve(yv_mapped);
 
-        coeff->resize(order + 1);
+        coeffs->resize(order + 1);
         for (int i = 0; i <= order; ++i) {
-            (*coeff)[i] = result[i];
+            (*coeffs)[i] = result[i];
         }
 
     }
@@ -229,22 +229,22 @@ public:
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
 
-    template <typename EigenMatrix>
-    static double cosineSimilarity(const EigenMatrix &v1, const EigenMatrix &v2) {
+    template <typename T>
+    static T cosineSimilarity(const Eigen::VectorX<T> &v1, const Eigen::VectorX<T> &v2) {
 
-        const double nearZero = 1e-5;
-        const double dotProduct = v1.dot(v2);
-        const double v1Magnitude = std::max(std::sqrt(v1.array().square().sum()), nearZero);
-        const double v2Magnitude = std::max(std::sqrt(v2.array().square().sum()), nearZero);
+        const T nearZero = 1e-5;
+        const T dotProduct = v1.dot(v2);
+        const T v1Magnitude = std::max(std::sqrt(v1.array().square().sum()), nearZero);
+        const T v2Magnitude = std::max(std::sqrt(v2.array().square().sum()), nearZero);
 
         return MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
     }
 
     template <typename T>
-    static double klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
+    static T klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
 
-        const double nearZero = 1e-5;
-        const double threshold = 0.0;
+        const T nearZero = 1e-5;
+        const T threshold = 0.0;
         thresholdVector(threshold, nearZero, &v1);
         thresholdVector(threshold, nearZero, &v2);
 
@@ -254,7 +254,7 @@ public:
         v1 = v1.array() / v1.sum();
         v2 = v2.array() / v2.sum();
 
-        Eigen::VectorXd log_ratio = v1.array().log() - v2.array().log();
+        Eigen::VectorX<T> log_ratio = v1.array().log() - v2.array().log();
         return v1.dot(log_ratio);
     }
 
@@ -321,16 +321,16 @@ public:
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
 //        topX = std::min(topX, static_cast<int>(vec.size()));
-        topX = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
+        topX = std::min( (topX), static_cast<int>(vec.size() - 1) );
 
-        std::vector<double> stdVec(vec.data(), vec.data() + vec.size());
+        std::vector<T> stdVec(vec.data(), vec.data() + vec.size());
 
-        QVector<QPair<int, double>> ogIndexPoints;
+        QVector<QPair<int, T>> ogIndexPoints;
         for (int i = 0; i < stdVec.size(); i++) {
             ogIndexPoints.push_back({i, stdVec.at(i)});
         }
 
-        const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
+        const auto sortLogic = [](const QPair<int, T> &l, const QPair<int, T> &r){return l.second > r.second;};
         std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + topX, ogIndexPoints.end(), sortLogic);
 
         ogIndexPoints.resize(topX);
@@ -431,6 +431,64 @@ public:
 
             if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
                 apexIndicies.insert(index, _vec.coeff(index));
+            }
+        }
+
+        return apexIndicies;
+    }
+
+    /*!
+    * \brief Finds all apexes in a eigen vector and returns the apexes only w/ no regard to order.
+     *
+     *  Returns a QVector of all found apexes
+    */
+    template <typename T>
+    static QVector<int> apexesIndexesOnly(
+            const Eigen::VectorX<T> &_vec,
+            int precision = 1e4
+    ){
+
+        QVector<int> apexIndicies;
+
+        Eigen::VectorX<T> vec = _vec;
+        if (MathUtils::tZero(vec.sum())) {
+            return {};
+        }
+
+        vec /= vec.maxCoeff();
+
+        const int vecSize = static_cast<int>(vec.size());
+        for (int index = 0; index < vecSize; index++) {
+
+            const auto centerPointValue = static_cast<int>(std::round(vec.coeff(index) * precision));
+
+            if(index < 1){
+
+                const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
+
+                if (centerPointValue >= rightPointValue) {
+                    apexIndicies.push_back(index);
+                }
+
+                continue;
+            }
+
+            if (index >= vecSize - 1) {
+
+                const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
+
+                if (centerPointValue > leftPointValue) {
+                    apexIndicies.push_back(index);
+                }
+
+                continue;
+            }
+
+            const auto leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
+            const auto rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
+
+            if(centerPointValue > leftPointValue && centerPointValue >= rightPointValue){
+                apexIndicies.push_back(index);
             }
         }
 
@@ -650,10 +708,12 @@ public:
             minMaxScaleVector(&vec);
             mat->col(col) = vec;
         }
+
+        EigenUtils::replaceNaN(0.0f, mat);
     }
 
     template<typename T>
-    static Eigen::MatrixX<double> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
+    static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
 
         const int rows = matA.size();
         const int columns = matA.front().size();
@@ -663,6 +723,23 @@ public:
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
                 mat.coeffRef(i, j) = matA[i][j];
+            }
+        }
+
+        return mat;
+    }
+
+    template<typename T>
+    static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>*> &matA) {
+
+        const int rows = matA.size();
+        const int columns = matA.front()->size();
+        Eigen::MatrixX<T> mat(rows, columns);
+        mat.setZero();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                mat.coeffRef(i, j) = matA[i]->at(j);
             }
         }
 

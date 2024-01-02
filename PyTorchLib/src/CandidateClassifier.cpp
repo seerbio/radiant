@@ -24,11 +24,8 @@ struct Net : torch::nn::Module {
     torch::nn::Linear layer5{nullptr};
     torch::nn::Linear layer6{nullptr};
 
-//    torch::nn::BatchNorm1d batchNorm1{nullptr};
-//    torch::nn::BatchNorm1d batchNorm2{nullptr};
-//    torch::nn::BatchNorm1d batchNorm3{nullptr};
-
     Net(int input_size, int nodes, int num_classes) {
+
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(true)));
         layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
@@ -36,12 +33,17 @@ struct Net : torch::nn::Module {
         layer5 = register_module("layer5", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer6 = register_module("layer6", torch::nn::Linear(nodes, num_classes));
 
-        torch::nn::init::xavier_uniform_(layer1->weight);
-        torch::nn::init::xavier_uniform_(layer2->weight);
-        torch::nn::init::xavier_uniform_(layer3->weight);
-        torch::nn::init::xavier_uniform_(layer4->weight);
-        torch::nn::init::xavier_uniform_(layer5->weight);
-        torch::nn::init::xavier_uniform_(layer6->weight);
+        torch::nn::init::kaiming_uniform_(layer1->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer2->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer3->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer4->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer5->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer6->weight, 0, torch::kFanIn, torch::kSigmoid);
+        torch::nn::init::constant_(layer1->bias, 0.01);
+        torch::nn::init::constant_(layer2->bias, 0.01);
+        torch::nn::init::constant_(layer3->bias, 0.01);
+        torch::nn::init::constant_(layer4->bias, 0.01);
+        torch::nn::init::constant_(layer5->bias, 0.01);
         torch::nn::init::constant_(layer6->bias, 0.01);
     }
 
@@ -121,6 +123,8 @@ namespace {
         return QVector<float>(vec.begin(), vec.end());
     }
 
+    
+
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
         const QVector<QVector<float>> &xData,
@@ -132,6 +136,10 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         ) {
 
     torch::manual_seed(seed);
+    if (torch::cuda::is_available()) {
+        torch::cuda::manual_seed_all(seed);
+    }
+    torch::globalContext().setDeterministicCuDNN(true);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -144,7 +152,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = xData.front().size();
+    const int nodes = static_cast<int>(xData.front().size() / 2.0);
     const int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);
@@ -177,7 +185,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             torch::Tensor batchX = X.index({torch::indexing::Slice(i, i + batchSize)});
             torch::Tensor batchY = y.index({torch::indexing::Slice(i, i + batchSize)});
 
-            const int tensorRows = batchY.sizes().at(0);
+            const int tensorRows = static_cast<int>(batchY.sizes().at(0));
             if (tensorRows < 2) {
                 qDebug() << "Skipping batch due to low training volume" << tensorRows;
                 continue;

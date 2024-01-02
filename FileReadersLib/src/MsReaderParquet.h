@@ -18,6 +18,8 @@ using namespace Error;
 
 namespace MsParquetReaderNamespace {
 
+    const QString PRQ_DF_SUFFIX = QStringLiteral("prqDF");
+
     const QString MS_LEVEL = QStringLiteral("msLevel");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
     const QString SCAN_TIME = QStringLiteral("scanTime");
@@ -51,15 +53,15 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
 
     int msLevel = -1;
     ScanNumber scanNumber = 1;
-    double scanTime = -1.0;
-    double collisionEnergy = -1.0;
-    double precursorTargetMz = -1.0;
-    double isoWindowLower = -1.0;
-    double isoWindowUpper = -1.0;
-    double ionMobilityDriftTime = -1.0;
+    float scanTime = -1.0;
+    float collisionEnergy = -1.0;
+    float precursorTargetMz = -1.0;
+    float isoWindowLower = -1.0;
+    float isoWindowUpper = -1.0;
+    float ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
-    QVector<double> mzVals;
-    QVector<double> intensityVals;
+    QVector<float> mzVals;
+    QVector<float> intensityVals;
     QString targetKey;
 
     QMap<QString, QVariant> map() override {
@@ -98,15 +100,15 @@ struct FILEREADERSLIB_EXPORTS MsParquetReaderRow : public ParquetReaderInputBase
 
         msLevel = dataMap.value(MS_LEVEL).toInt();
         scanNumber = dataMap.value(SCAN_NUMBER).toInt();
-        scanTime = dataMap.value(SCAN_TIME).toDouble();
-        collisionEnergy = dataMap.value(COLLISION_ENERGY).toDouble();
-        precursorTargetMz = dataMap.value(PERCURSOR_TARGET_MZ).toDouble();
-        isoWindowLower = dataMap.value(ISO_WINDOW_LOWER).toDouble();
-        isoWindowUpper = dataMap.value(ISO_WINDOW_UPPER).toDouble();
-        ionMobilityDriftTime = dataMap.value(IM_DRIFT_TIME).toDouble();
+        scanTime = dataMap.value(SCAN_TIME).toFloat();
+        collisionEnergy = dataMap.value(COLLISION_ENERGY).toFloat();
+        precursorTargetMz = dataMap.value(PERCURSOR_TARGET_MZ).toFloat();
+        isoWindowLower = dataMap.value(ISO_WINDOW_LOWER).toFloat();
+        isoWindowUpper = dataMap.value(ISO_WINDOW_UPPER).toFloat();
+        ionMobilityDriftTime = dataMap.value(IM_DRIFT_TIME).toFloat();
         ionMobilityIndex = dataMap.value(IM_IND).toInt();
-        mzVals = bytesArrayToQVector<double>(dataMap.value(MZ_VALS).toByteArray());
-        intensityVals = bytesArrayToQVector<double>(dataMap.value(INTENSITY_VALS).toByteArray());
+        mzVals = bytesArrayToQVector<float>(dataMap.value(MZ_VALS).toByteArray());
+        intensityVals = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS).toByteArray());
         targetKey = dataMap.value(TARGET_KEY).toString();
 
         ERR_RETURN

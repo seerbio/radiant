@@ -10,11 +10,14 @@
 #include "Error.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QMap>
 #include <QPointF>
 
 #include <cmath>
 #include <vector>
+
+//NOTE: ErrorUtils is not used here because something funky happens when it's imported.
 
 using namespace Error;
 
@@ -141,7 +144,7 @@ public:
     template <typename T>
     static T pRound(T val, int precision = 1)
     {
-        const double precisionMultiplier = pow(10, precision);
+        const T precisionMultiplier = pow(10, precision);
         return round(val * precisionMultiplier) / precisionMultiplier;
     }
 
@@ -163,7 +166,10 @@ public:
         return static_cast<T>(val / precisionMultiplier);
     }
 
-    static double calculatePPM(double val, double ppmTolerance);
+    template<typename T>
+    static T calculatePPM(T val, T ppmTolerance) {
+        return (val * ppmTolerance) / 1e6;
+    }
 
     static double factorial(int n);
 
@@ -171,7 +177,22 @@ public:
     static int closest(const QVector<T> &vec, T value) {
 
         assert(!vec.isEmpty());
-        auto it = std::min_element(vec.begin(), vec.end(), [value] (double a, double b) {
+        auto it = std::min_element(vec.begin(), vec.end(), [value] (T a, T b) {
+            return std::abs(a - value) <= std::abs(b - value);
+        });
+
+        if(it == vec.end()) {
+            return -1;
+        }
+
+        return it - vec.begin();
+    }
+
+    template<typename T>
+    static int closest(const std::vector<T> &vec, T value) {
+
+        assert(!vec.isEmpty());
+        auto it = std::min_element(vec.begin(), vec.end(), [value] (T a, T b) {
             return std::abs(a - value) <= std::abs(b - value);
         });
 
@@ -184,8 +205,8 @@ public:
 
     static QPointF closestXValPoint(const QVector<QPointF> &vec, double value);
 
-    template<typename T>
-    static int findMaxIndexInVector(const QVector<T> &vec) {
+    template<typename Vector>
+    static int findMaxIndexInVector(const Vector &vec) {
 
         const int sum = std::accumulate(vec.begin(), vec.end(), 0);
         if (sum == 0) {
@@ -196,7 +217,7 @@ public:
     }
 
     template<typename T>
-    static double rmse(const QVector<QPair<T, T>> &actualVsPredicted) {
+    static T rmse(const QVector<QPair<T, T>> &actualVsPredicted) {
 
         const auto accLogic = [](T sum, const QPair<T, T> &pr){
             return sum + std::pow((pr.first - pr.second), 2);
@@ -212,12 +233,12 @@ public:
         return std::sqrt(squaredDiffs / actualVsPredicted.size());
     }
 
-    template<typename Identifier>
+    template<typename Identifier, typename T>
     static Err calculateQValue(
-            const QMap<Identifier, double> &identifierVsTarget,
-            const QMap<Identifier, double> &identifierVsDecoys,
-            QMap<Identifier, double> *identifierVsQValue,
-            QMap<Identifier, double> *identifierVsDecoyRatio
+            const QHash<Identifier, T> &identifierVsTarget,
+            const QHash<Identifier, T> &identifierVsDecoys,
+            QHash<Identifier, T> *identifierVsQValue,
+            QHash<Identifier, T> *identifierVsDecoyRatio
             ) {
 
         ERR_INIT
@@ -229,19 +250,19 @@ public:
         identifierVsQValue->clear();
         identifierVsDecoyRatio->clear();
 
-        QVector<double> targetScores = identifierVsTarget.values().toVector();
+        QElapsedTimer et;
+        et.start();
+
+        QVector<T> targetScores = identifierVsTarget.values().toVector();
         std::sort(targetScores.begin(), targetScores.end());
 
-        QVector<double> decoyScores = identifierVsDecoys.values().toVector();
+        QVector<T> decoyScores = identifierVsDecoys.values().toVector();
         std::sort(decoyScores.begin(), decoyScores.end());
 
         for (auto it = identifierVsTarget.begin(); it != identifierVsTarget.end(); it++) {
 
             const Identifier &identifier = it.key();
-            double score = it.value();
-
-            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
-            const long betterThanNumberIndex = std::distance(targetIndexLowest, targetScores.end());
+            T score = it.value();
 
             auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
             if (decoyIndexLowest > decoyScores.begin()) {
@@ -250,16 +271,16 @@ public:
                 }
             }
 
-            targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
+            auto targetIndexLowest = std::lower_bound(targetScores.begin(), targetScores.end(), score);
 
             const long targetCount = std::distance(targetIndexLowest, targetScores.end());
             const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
 
-            const double qvalue
+            const T qvalue
                 = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
             identifierVsQValue->insert(identifier, qvalue);
 
-            const double decoyRatio
+            const T decoyRatio
                 = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
             identifierVsDecoyRatio->insert(identifier, decoyRatio);
 

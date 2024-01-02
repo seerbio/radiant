@@ -17,7 +17,6 @@ MESSAGE(${CMAKE_BINARY_DIR}/bin)
 SET(TEST_CLASSES
         ConvexOptimizerTests
         NearestNeighborsSearchTests
-        NeuralNetModelTests
         )
 
 foreach(class ${TEST_CLASSES})

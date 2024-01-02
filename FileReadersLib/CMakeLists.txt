@@ -22,18 +22,15 @@ SET(SOURCE_FILES
         src/MsCalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
-        src/DIAMzTargetsReader.cpp
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
-        src/FrameExtractsReader.cpp
         src/JsonParametersReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
         src/MsReaderPointerAcc.cpp
         src/ParquetReader.cpp
-        src/PSMsReader.cpp
         src/PythiaParameterReader.cpp
         )
 
@@ -41,18 +38,15 @@ SET(HEADER_FILES
         src/MsCalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
-        src/DIAMzTargetsReader.h
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
-        src/FrameExtractsReader.h
         src/JsonParametersReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
         src/MsReaderPointerAcc.h
         src/ParquetReader.h
-        src/PSMsReader.h
         src/PythiaParameterReader.h
         src/toml.hpp
         )
@@ -85,7 +79,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
         UtilsLib
-        KarnnLib
         Parquet::parquet_static
         )
 

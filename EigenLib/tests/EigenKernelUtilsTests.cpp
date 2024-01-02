@@ -28,7 +28,7 @@ private Q_SLOTS:
 
     void addPaddingToMatrixRowWiseTest();
 
-    void applyKernelRowumnWiseToMatrixTest();
+    void applyKernelToEachColumnInMatrix();
 
 };
 
@@ -68,7 +68,7 @@ void EigenKernelUtilsTests::buildGaussianFilterTest() {
 
     const int filterLen = 3;
     const double sigma = 2.0;
-    Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D(
+    Eigen::VectorX<double> gaussianFilter = EigenKernelUtils::buildGaussianFilter1D<double>(
             filterLen,
             sigma
     );
@@ -99,15 +99,15 @@ void EigenKernelUtilsTests::addPaddingToMatrixRowWiseTest() {
 
 }
 
-void EigenKernelUtilsTests::applyKernelRowumnWiseToMatrixTest() {
+void EigenKernelUtilsTests::applyKernelToEachColumnInMatrix() {
 
     Eigen::VectorX<double> kernel(3);
     kernel.setOnes();
 
     Eigen::MatrixX<double> mat(5,2);
-    mat << 1,1,2,2,3,3,4,4,5,5;
+    mat << 1,0,2,0,3,0,4,0,5,0;
 
-    const Eigen::MatrixX<double> matSmoothed = EigenKernelUtils::applyKernelRowWiseToMatrix(
+    const Eigen::MatrixX<double> matSmoothed = EigenKernelUtils::applyKernelToEachColumnInMatrix(
             mat,
             kernel
             ) ;
@@ -116,7 +116,12 @@ void EigenKernelUtilsTests::applyKernelRowumnWiseToMatrixTest() {
     QCOMPARE(static_cast<int>(matSmoothed.cols()), 2);
     QCOMPARE(matSmoothed.coeff(0,0), 3.0);
     QCOMPARE(matSmoothed.coeff(1,0), 6.0);
+    QCOMPARE(matSmoothed.coeff(2,0), 9.0);
+    QCOMPARE(matSmoothed.coeff(3,0), 12.0);
     QCOMPARE(matSmoothed.coeff(4,0), 9.0);
+    QCOMPARE(matSmoothed.coeff(0,1), 0.0);
+    QCOMPARE(matSmoothed.coeff(1,1), 0.0);
+    QCOMPARE(matSmoothed.coeff(4,2), 0.0);
 
 }
 

@@ -20,17 +20,15 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-#        src/ConvertMzMLToParquetWorkFlow.cpp
+        src/ConvertMzMLToParquetWorkFlow.cpp
         src/FastaFileToPeptidesListWorkFlow.cpp
-#        src/LibraryBuilderWorkFlow.cpp
-        src/PythiaDIAWorkflow.cpp
+        src/PythiaDIAFFWorkflow.cpp
     )
 
 SET(HEADER_FILES
-#        src/ConvertMzMLToParquetWorkFlow.h
-#        src/FastaFileToPeptidesListWorkFlow.h
-#        src/LibraryBuilderWorkFlow.h
-        src/PythiaDIAWorkflow.h
+        src/ConvertMzMLToParquetWorkFlow.h
+        src/FastaFileToPeptidesListWorkFlow.h
+        src/PythiaDIAFFWorkflow.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -63,7 +61,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         Qt5::Core
         Qt5::Test
-        AlgorithmsLib
+        AlgorithmsFFLib
         EigenLib
         FileReadersLib
         UtilsLib

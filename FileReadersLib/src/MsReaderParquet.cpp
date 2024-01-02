@@ -7,7 +7,6 @@
 #include "ErrorUtils.h"
 #include "MsReaderPointerAcc.h"
 
-
 namespace {
 
     Err convertForMemberVars(
@@ -85,6 +84,14 @@ Err MsReaderParquet::openFile(
     e = ErrorUtils::fileExists(filePath); ree;
     m_filePath = filePath;
 
+    QFileInfo fi(filePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            MsParquetReaderNamespace::PRQ_DF_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+    ); ree;
+
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
             filePath,
@@ -111,6 +118,14 @@ Err MsReaderParquet::openFile(
 
     e = ErrorUtils::fileExists(filePath); ree;
     m_filePath = filePath;
+
+    QFileInfo fi(filePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            MsParquetReaderNamespace::PRQ_DF_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+    ); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -161,8 +176,8 @@ namespace {
 
             const ScanPoints &scanPointsVec = scanPoints.value(scanNumber);
 
-            QVector<double> mzVals;
-            QVector<double> intensityVals;
+            QVector<float> mzVals;
+            QVector<float> intensityVals;
             e = MsReaderBase::splitScanPoints(
                     scanPointsVec,
                     &mzVals,

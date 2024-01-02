@@ -5,12 +5,10 @@
 #include "FastaFileToPeptidesListWorkFlow.h"
 
 #include "BiophysicalCalcs.h"
-#include "DIAMzTargetsReader.h"
 #include "ErrorUtils.h"
 #include "FastaReader.h"
 #include "MathUtils.h"
 #include "ProteinDigestomatic.h"
-#include "TandemFragmentPredictotron.h"
 
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
@@ -75,12 +73,6 @@ Err FastaFileToPeptidesListWorkFlow::exec(
     e = digestFastaEntries(
             fastaEntries,
             &peptideSequences
-            ); ree;
-
-    e = writeLibraryBuilderCSV(
-            peptideSequences,
-            targetMzCollisionCSVFilePath,
-            outputFilePath
             ); ree;
 
     ERR_RETURN
@@ -272,91 +264,5 @@ Err FastaFileToPeptidesListWorkFlow::addDecoys(
     peptideSequences->append(newPepSeqs);
 #endif
 
-    ERR_RETURN
-}
-
-
-namespace {
-
-    Err buildtargetMzVsCollisionEnergyLookUpMap(
-            const QString &targetMzCollisionCSV,
-            QMap<double, double> *lookupMap,
-            double *maxAlloableMz
-            ) {
-
-        ERR_INIT
-
-        QVector<DIAMzTargetsReaderRow> diaMzTargetRows;
-
-        e = CSVReader::read(
-                targetMzCollisionCSV,
-                &diaMzTargetRows
-        ); ree;
-
-        e = ErrorUtils::isNotEmpty(diaMzTargetRows); ree;
-
-        const auto sortTargetMzAscLogic
-            = [](const DIAMzTargetsReaderRow &l, const DIAMzTargetsReaderRow &r){
-            return l.targetMz < r.targetMz;
-        };
-
-        std::sort(diaMzTargetRows.begin(), diaMzTargetRows.end(), sortTargetMzAscLogic);
-
-        const double buffer = 1.0;
-        for (const DIAMzTargetsReaderRow &r : diaMzTargetRows) {
-            lookupMap->insert(r.targetMz, r.collisionEnergy);
-            *maxAlloableMz = r.targetMz + r.isoWindowHi + buffer;
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err FastaFileToPeptidesListWorkFlow::writeLibraryBuilderCSV(
-        const QVector<PeptideSequence> &peptideSequences,
-        const QString &targetMzCollisionCSV,
-        const QString &outputFilePath
-) const {
-
-    ERR_INIT
-
-    double maxAllowableMz = -1.0;
-    QMap<double, double> targetMzVsCollisionEnergy;
-    e = buildtargetMzVsCollisionEnergyLookUpMap(
-            targetMzCollisionCSV,
-            &targetMzVsCollisionEnergy,
-            &maxAllowableMz
-            ); ree;
-
-    const QVector<double> ceLookUpVecKey = targetMzVsCollisionEnergy.keys().toVector();
-    const QVector<double> ceLookUpVecVals = targetMzVsCollisionEnergy.values().toVector();
-
-    QVector<PeptidePredictionInput> rowsToWrite;
-
-    for (int chrg = m_params.chargeStateMin; chrg <= m_params.chargeStateMax; ++chrg) {
-
-        for (const PeptideSequence &ps : peptideSequences) {
-
-            const double mz = BiophysicalCalcs::calculateThomsonFromMass(ps.mass, chrg);
-            const int ceLookUpVecValsIndex = MathUtils::closest(ceLookUpVecKey, mz);
-            const double collisionEnergy = ceLookUpVecVals.at(ceLookUpVecValsIndex);
-
-            if (mz > maxAllowableMz) {
-                continue;
-            }
-
-            PeptidePredictionInput row;
-            row.peptideSequence = ps.sequence;
-            row.charge = chrg;
-            row.collisionEnergy = collisionEnergy;
-            row.isDecoy = ps.isDecoy;
-
-            rowsToWrite.push_back(row);
-        }
-    }
-
-    e = CSVReader::write(rowsToWrite, outputFilePath); ree;
-
-    qDebug() << "Library build csv written to:" << outputFilePath;
     ERR_RETURN
 }

@@ -11,6 +11,8 @@
 #include "GlobalSettings.h"
 #include "SqlUtils.h"
 
+#include <QFileInfo>
+
 using namespace Error;
 
 struct FILEREADERSLIB_EXPORTS ParquetReaderInputBase {

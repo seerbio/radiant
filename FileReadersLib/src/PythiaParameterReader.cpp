@@ -103,7 +103,6 @@ namespace PythiaParameterReaderConstants {
     const QString kNTermRagged = QStringLiteral("NTermRagged");
     const QString kBothRagged = QStringLiteral("BothRagged");
 
-    const QString kMaxTandemPointCount  = QStringLiteral("maxTandemPointCount");
     const QString kReturnPSMTopN = QStringLiteral("returnPSMTopN");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
     const QString kChargeStateMax = QStringLiteral("chargeStateMax");
@@ -120,14 +119,12 @@ namespace PythiaParameterReaderConstants {
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
     const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
-    const QString kDeisotopeScans = QStringLiteral("deisotopeScans");
     const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
-    const QString kScanTimeWindowMinutes = QStringLiteral("scanTimeWindowMinutes");
+    const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
-
+    const QString  kSubtractShadows = QStringLiteral("subtractShadows");
 }
-
 
 //TODO validate these better.
 Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParameters) {
@@ -253,16 +250,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toDouble(jsonValue, &val); ree;
             pythiaParameters->percentFDR = val;
         }
-        else if (jsonKey == kMaxTandemPointCount){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->maxTandemPointCount = val;
-        }
-        else if (jsonKey == kReturnPSMTopN){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->returnPSMTopN = val;
-        }
         else if (jsonKey == kMS2ExtractionWidthPPM){
             double val;
             e = ErrorUtils::toDouble(jsonValue, &val); ree;
@@ -277,10 +264,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->chargeStateMax = val;
-        }
-        else if (jsonKey == kDeisotopeScans){
-            bool val = jsonValue.toBool();
-            pythiaParameters->deisotopeScans = val;
         }
         else if (jsonKey == kTopNMs2Ions){
             int val;
@@ -297,14 +280,15 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->reportDecoys = static_cast<bool>(val);
         }
+        else if (jsonKey == kSubtractShadows){
+            int val;
+            e = ErrorUtils::toInt(jsonValue, &val); ree;
+            pythiaParameters->subtractShadows = static_cast<bool>(val);
+        }
         else if (jsonKey == kMinScanCount){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->minScanCount = val;
-        }
-        else if (jsonKey == kUseMeanMz){
-            bool val = jsonValue.toBool();
-            pythiaParameters->useMeanMz = val;
         }
         else if (jsonKey == kFilterLength){
             int val;
@@ -365,7 +349,6 @@ Err PythiaParameterReader::validateJsonKeys() {
             kModifications,
             kMaxModificationsPeptide,
 
-            kMaxTandemPointCount,
             kReturnPSMTopN,
             kChargeStateMin,
             kChargeStateMax,
@@ -420,15 +403,12 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 
     PythiaParameters pythiaParameters;
 
-    pythiaParameters.returnPSMTopN = 500;
-    pythiaParameters.maxTandemPointCount = 2;
     pythiaParameters.ms2ExtractionWidthPPM = 20.0;
     pythiaParameters.precursorExtractionWindowThomsons = 0.0;
     pythiaParameters.chargeStateMin = 2;
     pythiaParameters.chargeStateMax = 3;
     pythiaParameters.minScanCount = 2;
     pythiaParameters.skipScanCount = 0;
-    pythiaParameters.useMeanMz = true;
     pythiaParameters.filterLength = 5;
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;

@@ -34,6 +34,7 @@ private:
 private:
 
     QString m_cachedFilePath;
+    QMap<MzTargetKey, FilePath> m_mzTargetKeyVsFilePathCache;
 
 };
 
