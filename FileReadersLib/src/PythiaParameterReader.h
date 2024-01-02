@@ -53,7 +53,6 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
-    extern const QString FILEREADERSLIB_EXPORTS kTurboMode;
 
 }
 
@@ -153,7 +152,6 @@ struct PythiaParameters{
     int verbosity = 1;
     bool reportDecoys = false;
     bool subtractShadows = true;
-    bool turboMode = false;
 
     int ionsSharedToReject = 4;
 
@@ -234,7 +232,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
-        qDebug() << PythiaParameterReaderConstants::kTurboMode << turboMode;
 
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {

@@ -282,16 +282,15 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &turboXICMS1
             ); ree;
 
-    if (!m_pythiaParameters.turboMode) {
+    QVector<CandidateScores*> candidateScoresTrainings;
+    e = buildCalibration(
+            &msReaderPointerAcc,
+            &diaTargetFrames,
+            &scanNumberVsScanPointsMS1,
+            &candidateScoresTrainings
+            ); ree;
 
-        QVector<CandidateScores*> candidateScoresTrainings;
-        e = buildCalibration(
-                &msReaderPointerAcc,
-                &diaTargetFrames,
-                &scanNumberVsScanPointsMS1,
-                &candidateScoresTrainings
-                ); ree;
-
+    if (m_msCalibratomatic.isInit()) {
         e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
         ms1FramePtrs.clear();
         for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
@@ -306,12 +305,12 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &msReaderPointerAcc,
                 &diaTargetFrames,
                 &turboXICMS1
-                ); ree;
+        ); ree;
 
         e = optimizeParameters(
                 candidateScoresTrainings,
                 &msReaderPointerAcc
-                ); ree;
+        ); ree;
     }
 
     int targetCountBelowFDRThreshold;
@@ -384,7 +383,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
-#define CALC_ENTRAP
+//#define CALC_ENTRAP
 #ifdef CALC_ENTRAP
     int counter = 0;
     int decoys = 0;
