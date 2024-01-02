@@ -204,6 +204,22 @@ public:
         MzAccuracy10,
         MzAccuracy11,
         MzAccuracy12,
+        AltTargetKeyIdCosineSimSumCharge1_OG,
+        AltTargetKeyIdCosineSimSumCharge1_1,
+        AltTargetKeyIdCosineSimSumCharge1_2,
+        AltTargetKeyIdCosineSimSumCharge1_3,
+        AltTargetKeyIdCosineSimSumCharge2_OG,//190
+        AltTargetKeyIdCosineSimSumCharge2_1,
+        AltTargetKeyIdCosineSimSumCharge2_2,
+        AltTargetKeyIdCosineSimSumCharge2_3,
+        AltTargetKeyIdCosineSimSumCharge3_OG,
+        AltTargetKeyIdCosineSimSumCharge3_1,
+        AltTargetKeyIdCosineSimSumCharge3_2,
+        AltTargetKeyIdCosineSimSumCharge3_3,
+        AltTargetKeyIdCosineSimSumCharge4_OG,
+        AltTargetKeyIdCosineSimSumCharge4_1,
+        AltTargetKeyIdCosineSimSumCharge4_2,//200
+        AltTargetKeyIdCosineSimSumCharge4_3,
         FeaturesSize
     };
 
@@ -429,6 +445,23 @@ namespace CandidateScoresReaderRowNamespace {
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
     const QString DECOY_RATIO = QStringLiteral("DecoyRatio");
+
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_OG");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_1");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_2");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_3");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_OG");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_1");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_2");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_3");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_OG");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_1");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_2");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_3");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_OG");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_1");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_2");
+    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_3");
 }//namespace
 
 struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
@@ -630,6 +663,23 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     double qValue = 1.0;
     double decoyRatio = -1.0;
 
+    float altTargetKeyIdCosineSimSumCharge1_OG = -1.0;
+    float altTargetKeyIdCosineSimSumCharge1_1 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge1_2 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge1_3 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge2_OG = -1.0;
+    float altTargetKeyIdCosineSimSumCharge2_1 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge2_2 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge2_3 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge3_OG = -1.0;
+    float altTargetKeyIdCosineSimSumCharge3_1 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge3_2 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge3_3 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge4_OG = -1.0;
+    float altTargetKeyIdCosineSimSumCharge4_1 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge4_2 = -1.0;
+    float altTargetKeyIdCosineSimSumCharge4_3 = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace CandidateScoresReaderRowNamespace;
@@ -830,7 +880,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {CLASS_SCR, QVariant(classifierScore)},
                 {DISC_SCR, QVariant(discriminantScore)},
                 {Q_VAL, QVariant(qValue)},
-                {DECOY_RATIO, QVariant(decoyRatio)}
+                {DECOY_RATIO, QVariant(decoyRatio)},
+
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG, QVariant(altTargetKeyIdCosineSimSumCharge1_OG)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_1, QVariant(altTargetKeyIdCosineSimSumCharge1_1)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_2, QVariant(altTargetKeyIdCosineSimSumCharge1_2)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_3, QVariant(altTargetKeyIdCosineSimSumCharge1_3)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG, QVariant(altTargetKeyIdCosineSimSumCharge2_OG)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_1, QVariant(altTargetKeyIdCosineSimSumCharge2_1)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_2, QVariant(altTargetKeyIdCosineSimSumCharge2_2)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_3, QVariant(altTargetKeyIdCosineSimSumCharge2_3)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG, QVariant(altTargetKeyIdCosineSimSumCharge3_OG)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_1, QVariant(altTargetKeyIdCosineSimSumCharge3_1)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_2, QVariant(altTargetKeyIdCosineSimSumCharge3_2)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_3, QVariant(altTargetKeyIdCosineSimSumCharge3_3)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG, QVariant(altTargetKeyIdCosineSimSumCharge4_OG)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_1, QVariant(altTargetKeyIdCosineSimSumCharge4_1)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_2, QVariant(altTargetKeyIdCosineSimSumCharge4_2)},
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_3, QVariant(altTargetKeyIdCosineSimSumCharge4_3)}
         };
     }
 
@@ -1034,6 +1101,23 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.discriminantScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
         row.decoyRatio = candidateScores->decoyRatio;
+
+        row.altTargetKeyIdCosineSimSumCharge1_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG];
+        row.altTargetKeyIdCosineSimSumCharge1_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1];
+        row.altTargetKeyIdCosineSimSumCharge1_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2];
+        row.altTargetKeyIdCosineSimSumCharge1_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_3];
+        row.altTargetKeyIdCosineSimSumCharge2_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG];
+        row.altTargetKeyIdCosineSimSumCharge2_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_1];
+        row.altTargetKeyIdCosineSimSumCharge2_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2];
+        row.altTargetKeyIdCosineSimSumCharge2_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_3];
+        row.altTargetKeyIdCosineSimSumCharge3_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG];
+        row.altTargetKeyIdCosineSimSumCharge3_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1];
+        row.altTargetKeyIdCosineSimSumCharge3_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2];
+        row.altTargetKeyIdCosineSimSumCharge3_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3];
+        row.altTargetKeyIdCosineSimSumCharge4_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG];
+        row.altTargetKeyIdCosineSimSumCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_1];
+        row.altTargetKeyIdCosineSimSumCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2];
+        row.altTargetKeyIdCosineSimSumCharge4_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_3];
 
         return row;
     }

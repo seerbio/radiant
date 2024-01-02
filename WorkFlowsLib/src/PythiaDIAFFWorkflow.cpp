@@ -110,7 +110,141 @@ namespace {
         ERR_RETURN
     }
 
+    Err populateAltIdTargetKeys(QVector<CandidateScores*> *candidateScoresPntrs) {
 
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScoresPntrs->isEmpty()); ree;
+
+        struct CandidateScoresEntry {
+            int charge = -1;
+            float cosineSimSum100 = -1.0;
+            MzTargetKey mzTargetKey;
+            bool isDecoy = false;
+        };
+
+        QHash<PeptideStringWithMods, QVector<CandidateScoresEntry>> pepStrWModsVsCandScoresEntries;
+
+        for (CandidateScores *cs : *candidateScoresPntrs) {
+
+            CandidateScoresEntry cse;
+            cse.mzTargetKey = cs->targetKey;
+            cse.charge = cs->targetDecoyCandidatePair->charge();
+            cse.cosineSimSum100 = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
+            cse.isDecoy = cs->isDecoy;
+
+            pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cse);
+        }
+
+        for (QVector<CandidateScoresEntry> &cse : pepStrWModsVsCandScoresEntries) {
+            std::sort(cse.begin(), cse.end(), [](const CandidateScoresEntry &l, const CandidateScoresEntry &r){
+                if (l.charge == r.charge) {
+
+                    if (l.mzTargetKey == r.mzTargetKey) {
+                        return l.cosineSimSum100 > r.cosineSimSum100;
+                    }
+
+                    return l.mzTargetKey < r.mzTargetKey;
+                }
+                return l.charge< r.charge;
+            });
+        }
+
+        for (CandidateScores *cs : *candidateScoresPntrs) {
+
+            const QVector<CandidateScoresEntry> &csEntries
+                    = pepStrWModsVsCandScoresEntries.value(cs->targetDecoyCandidatePair->peptideStringWithMods());
+
+            for(const CandidateScoresEntry &cse : csEntries) {
+
+                if (cse.mzTargetKey == cs->targetKey) {
+
+                    switch (cs->targetDecoyCandidatePair->charge()) {
+                        case 1:
+                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
+                                && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] > 0.01) {
+                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1] = cse.cosineSimSum100;
+                                break;
+                            }
+
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
+                            break;
+
+                        case 2:
+                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
+                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG] > 0.01) {
+                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_1] = cse.cosineSimSum100;
+                                break;
+                            }
+
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
+                            break;
+                        case 3:
+                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
+                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG] > 0.01) {
+                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1] = cse.cosineSimSum100;
+                                break;
+                            }
+
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
+                            break;
+                        case 4:
+                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
+                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG] > 0.01) {
+                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_1] = cse.cosineSimSum100;
+                                break;
+                            }
+
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
+                            break;
+                        default:
+                            rrr(eValueError);
+                    }
+
+                    continue;
+                }
+
+                switch (cse.charge) {
+
+                    case 1:
+                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] > 0.01) {
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_3] = cse.cosineSimSum100;
+                            break;
+                        }
+
+                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] = cse.cosineSimSum100;
+                        break;
+                    case 2:
+                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2] > 0.01) {
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_3] = cse.cosineSimSum100;
+                            break;
+                        }
+
+                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2] = cse.cosineSimSum100;
+                        break;
+                    case 3:
+                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] > 0.01) {
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3] = cse.cosineSimSum100;
+                            break;
+                        }
+
+                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] = cse.cosineSimSum100;
+                        break;
+                    case 4:
+                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2] > 0.01) {
+                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_3] = cse.cosineSimSum100;
+                            break;
+                        }
+
+                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2] = cse.cosineSimSum100;
+                        break;
+                }
+
+            }
+        }
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
@@ -203,6 +337,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
 
+    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
     e = applyNeuralNetClassifier(
@@ -248,7 +384,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
-//#define CALC_ENTRAP
+#define CALC_ENTRAP
 #ifdef CALC_ENTRAP
     int counter = 0;
     int decoys = 0;
