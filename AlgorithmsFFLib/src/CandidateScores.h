@@ -8,7 +8,7 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 
-#include "CSVReader.h"
+#include "ParquetReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "TargetDecoyCandidatePair.h"
@@ -431,7 +431,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString DECOY_RATIO = QStringLiteral("DecoyRatio");
 }//namespace
 
-struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public CSVReaderInputBase {
+struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
 
     float cosineSimSum100 = -1.0;
     float allignedMaxIndexesCount = -1.0;

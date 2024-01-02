@@ -315,11 +315,15 @@ Err CandidateScorertron::extractXICs(
         }
 
         if (m_mzHashedVsXICPointsCached.contains(mzHashed)) {
+
             mzHashedVsXICPoints->insert(mzHashed, m_mzHashedVsXICPointsCached.value(mzHashed));
 
-            if (m_mzHashedVsCount.value(mzHashed) == 2) {
+            if (m_mzHashedVsCount.value(mzHashed) <= 2) {
                 m_mzHashedVsXICPointsCached.remove(mzHashed);
+                continue;
             }
+
+            m_mzHashedVsCount[mzHashed]--;
 
             continue;
         }

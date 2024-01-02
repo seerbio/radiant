@@ -248,6 +248,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
+//#define CALC_ENTRAP
+#ifdef CALC_ENTRAP
     int counter = 0;
     int decoys = 0;
     int entrap = 0;
@@ -267,7 +269,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     }
     qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap << "Entrap%" << entrap / (double)counter;
-
+#endif
 
     QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
     std::transform(
@@ -278,7 +280,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             );
 
     const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = CSVReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+    e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
 
     ERR_RETURN
 }
