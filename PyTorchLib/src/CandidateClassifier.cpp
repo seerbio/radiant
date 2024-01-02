@@ -24,11 +24,8 @@ struct Net : torch::nn::Module {
     torch::nn::Linear layer5{nullptr};
     torch::nn::Linear layer6{nullptr};
 
-//    torch::nn::BatchNorm1d batchNorm1{nullptr};
-//    torch::nn::BatchNorm1d batchNorm2{nullptr};
-//    torch::nn::BatchNorm1d batchNorm3{nullptr};
-
     Net(int input_size, int nodes, int num_classes) {
+
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(true)));
         layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
@@ -36,12 +33,17 @@ struct Net : torch::nn::Module {
         layer5 = register_module("layer5", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer6 = register_module("layer6", torch::nn::Linear(nodes, num_classes));
 
-        torch::nn::init::xavier_uniform_(layer1->weight);
-        torch::nn::init::xavier_uniform_(layer2->weight);
-        torch::nn::init::xavier_uniform_(layer3->weight);
-        torch::nn::init::xavier_uniform_(layer4->weight);
-        torch::nn::init::xavier_uniform_(layer5->weight);
-        torch::nn::init::xavier_uniform_(layer6->weight);
+        torch::nn::init::kaiming_uniform_(layer1->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer2->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer3->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer4->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer5->weight, 0, torch::kFanIn, torch::kTanh);
+        torch::nn::init::kaiming_uniform_(layer6->weight, 0, torch::kFanIn, torch::kSigmoid);
+        torch::nn::init::constant_(layer1->bias, 0.01);
+        torch::nn::init::constant_(layer2->bias, 0.01);
+        torch::nn::init::constant_(layer3->bias, 0.01);
+        torch::nn::init::constant_(layer4->bias, 0.01);
+        torch::nn::init::constant_(layer5->bias, 0.01);
         torch::nn::init::constant_(layer6->bias, 0.01);
     }
 
