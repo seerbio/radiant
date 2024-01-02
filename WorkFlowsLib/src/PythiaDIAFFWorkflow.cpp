@@ -681,7 +681,7 @@ namespace {
             return {e, vec};
         }
         else {
-            QVector<float> vec = candidateScores->featuresArray.mid(0, 5);
+            QVector<float> vec = candidateScores->featuresArray.mid(0, 11);
             return {e, vec};
         }
 
