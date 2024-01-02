@@ -231,30 +231,6 @@ namespace {
                | ((n & 0xff000000) >> 24);
     }
 
-    // pwiz
-    inline unsigned long long endianize(unsigned long long n) {
-        return ((n & 0x00000000000000ffll) << 56) |
-               ((n & 0x000000000000ff00ll) << 40) |
-               ((n & 0x0000000000ff0000ll) << 24) |
-               ((n & 0x00000000ff000000ll) << 8) |
-               ((n & 0x000000ff00000000ll) >> 8) |
-               ((n & 0x0000ff0000000000ll) >> 24) |
-               ((n & 0x00ff000000000000ll) >> 40) |
-               ((n & 0xff00000000000000ll) >> 56);
-    }
-
-    inline float endianize(float n) {
-        static_assert(sizeof(unsigned int) == sizeof(float), "Wrong unsigned int/float size");
-        unsigned int i = endianize(*reinterpret_cast<unsigned int *>(&n));
-        return *reinterpret_cast<float *>(&i);
-    }
-
-    inline double endianize(double n) {
-        static_assert(sizeof(unsigned long long) == sizeof(double), "Wrong unsigned long long/double size");
-        unsigned long long l = endianize(*reinterpret_cast<unsigned long long *>(&n));
-        return *reinterpret_cast<double *>(&l);
-    }
-
     bool decompress(const QByteArray &input, QByteArray *output) {
 
         Q_ASSERT(output);
@@ -316,7 +292,6 @@ namespace {
                         inflateEnd(&strm);
                         return false;
                 }
-
 
                 const int have = (gzipChunkSize - strm.avail_out);
 

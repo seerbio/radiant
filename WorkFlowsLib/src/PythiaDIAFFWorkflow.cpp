@@ -12,14 +12,12 @@
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
 #include "MsFrame.h"
-#include "MsReaderMzML.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "ProteinDigestomatic.h"
 #include "TurboXIC.h"
 
 #include <QElapsedTimer>
-
 
 
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow() : m_minTopNMs2Ions(6) {}
