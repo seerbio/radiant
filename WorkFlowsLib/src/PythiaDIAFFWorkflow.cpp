@@ -1447,7 +1447,7 @@ Err PythiaDIAFFWorkflow::removeInterferingCandidates(
             continue;
         }
 
-        const int cols = static_cast<int>(std::round(m_pythiaParameters.mzMaxDataStructure - m_pythiaParameters.mzMinDataStructure));
+        const int cols = static_cast<int>(std::round(m_pythiaParameters.mzMaxMS2 - m_pythiaParameters.mzMinMS2));
         const int rows = foundCandidatesCountInScan;
         Eigen::MatrixX<float> mat(rows, cols);
         mat.setZero();

@@ -5,13 +5,21 @@
 #include "PythiaParameterReader.h"
 #include "ErrorUtils.h"
 
+#include "toml.hpp"
+
 #include <QDebug>
 #include <QJsonValue>
 
-Modification::Modification(QChar residue,
-                           const QString &name,
-                           const ModificationType &type,
-                           const QString &formula)
+#include <iostream>
+#include <sstream>
+
+
+Modification::Modification(
+        QChar residue,
+        const QString &name,
+        const ModificationType &type,
+        const QString &formula
+        )
 : residue(residue)
 , name(name)
 , type(type)
@@ -94,8 +102,8 @@ namespace PythiaParameterReaderConstants {
     const QString kDynamic = QStringLiteral("dynamic");
     const QString kMaxModificationsPeptide = QStringLiteral("maxModificationsPeptide");
     const QString kModifications = QStringLiteral("modifications");
-    const QString kMzMinDataStructure  = QStringLiteral("mzMinDataStructure");
-    const QString kMzMaxDataStructure  = QStringLiteral("mzMaxDataStructure");
+    const QString kMzMinMS2  = QStringLiteral("mzMinMS2");
+    const QString kMzMaxMS2  = QStringLiteral("mzMaxMS2");
     const QString kPeptideLengthMin = QStringLiteral("peptideLengthMin");
     const QString kPeptideLengthMax = QStringLiteral("peptideLengthMax");
     const QString kNoRagged = QStringLiteral("NoRagged");
@@ -103,7 +111,6 @@ namespace PythiaParameterReaderConstants {
     const QString kNTermRagged = QStringLiteral("NTermRagged");
     const QString kBothRagged = QStringLiteral("BothRagged");
 
-    const QString kReturnPSMTopN = QStringLiteral("returnPSMTopN");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
     const QString kChargeStateMax = QStringLiteral("chargeStateMax");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
@@ -117,219 +124,18 @@ namespace PythiaParameterReaderConstants {
     const QString kSmoothCount = QStringLiteral("smoothCount");
     const QString kSigma = QStringLiteral("sigma");
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
-    const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
-    const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
     const QString  kSubtractShadows = QStringLiteral("subtractShadows");
+
+    const QString kDigestParams = QStringLiteral("DigestParams");
+    const QString kMS2Params = QStringLiteral("MS2Params");
+    const QString kPrecursorParams = QStringLiteral("PrecursorParams");
+    const QString kPeakIntegrationParams = QStringLiteral("PeakIntegrationParams");
+    const QString kFdrParams = QStringLiteral("FdrParams");
 }
-
-//TODO validate these better.
-Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParameters) {
-
-    using namespace PythiaParameterReaderConstants;
-
-     const QStringList expectedRaggeds = {
-             kNTermRagged,
-             kCTermRagged,
-             kNoRagged,
-             kBothRagged
-     };
-
-    ERR_INIT
-    e = ErrorUtils::isFalse(jsonContentsIsEmpty()); ree
-    e = validateJsonKeys(); ree
-
-    const QMap<QString, QVariant> json = jsonContents();
-    for(auto it = json.begin(); it != json.end(); it++){
-
-        const QString &jsonKey = it.key();
-        const QVariant &jsonValue = it.value();
-
-        if (jsonKey == kNTermCleavePoints){
-            pythiaParameters->nTermCleavePoints = jsonValue.toStringList();
-        }
-        else if (jsonKey == kCTermCleavePoints){
-            pythiaParameters->cTermCleavePoints = jsonValue.toStringList();
-        }
-        else if(jsonKey == kRaggedness){
-
-            const QString raggedness = jsonValue.toString();
-            e = ErrorUtils::isTrue(expectedRaggeds.contains(raggedness)); ree;
-
-            if (raggedness == kNoRagged){
-                pythiaParameters->raggedness = Raggedness::NoRagged;
-            }
-            else if (raggedness == kCTermRagged){
-                pythiaParameters->raggedness = Raggedness::CTermRagged;
-            }
-            else if (raggedness == kNTermRagged){
-                pythiaParameters->raggedness = Raggedness::NTermRagged;
-            }
-            else if (raggedness == kBothRagged){
-                pythiaParameters->raggedness = Raggedness::BothRagged;
-            }
-
-        }
-        else if (jsonKey == kAllowedMissedCleavages){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->allowedMissedCleavages = val;
-        }
-        else if (jsonKey == kMzMinDataStructure){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->mzMinDataStructure = val;
-        }
-        else if (jsonKey == kMzMaxDataStructure){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->mzMaxDataStructure = val;
-        }
-        else if (jsonKey == kPeptideLengthMin){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->peptideLengthMin = val;
-        }
-        else if (jsonKey == kPeptideLengthMax){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->peptideLengthMax = val;
-        }
-        else if (jsonKey == kMaxModificationsPeptide){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->maxModificationsPeptide = val;
-        }
-        else if (jsonKey == kModifications) {
-
-            const QVariantList modsList = jsonValue.toList();
-            for (const QVariant &v : modsList) {
-
-                const QMap<QString, QVariant> m =  v.toMap();
-
-                Modification mod;
-                for (const QString &key : Modification::modKeys()) {
-
-                    if (key == Modification::modKeys().at(0)) {
-
-                        const QString modResidueOrPositionalLocation = m.value(key).toString().remove(" ");
-
-                        if (modResidueOrPositionalLocation.size() == 1) {
-                            mod.residue = modResidueOrPositionalLocation[0];
-                        }
-                        else {
-                            mod.positionalLocation = modResidueOrPositionalLocation;
-                        }
-                    }
-                    if (key == Modification::modKeys().at(1)) {
-                        mod.name = m.value(key).toString();
-                    }
-                    if (key == Modification::modKeys().at(2)) {
-                        mod.type = m.value(key).toString() == kFixed
-                                   ? ModificationType::FIXED
-                                   : ModificationType::DYNAMIC;
-                    }
-                    if (key == Modification::modKeys().at(3)) {
-                        mod.formula = m.value(key).toString();
-                    }
-                }
-
-                pythiaParameters->modifications.push_back(mod);
-            }
-        }
-        else if (jsonKey == kPrecursorExtractionWindowThomsons){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->precursorExtractionWindowThomsons = val;
-        }
-        else if (jsonKey == kPercentFDR){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->percentFDR = val;
-        }
-        else if (jsonKey == kMS2ExtractionWidthPPM){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->ms2ExtractionWidthPPM = val;
-        }
-        else if (jsonKey == kChargeStateMin){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->chargeStateMin = val;
-        }
-        else if (jsonKey == kChargeStateMax){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->chargeStateMax = val;
-        }
-        else if (jsonKey == kTopNMs2Ions){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->topNMs2Ions = val;
-        }
-        else if (jsonKey == kSkipScanCount){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->skipScanCount = val;
-        }
-        else if (jsonKey == kReportDecoys){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->reportDecoys = static_cast<bool>(val);
-        }
-        else if (jsonKey == kSubtractShadows){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->subtractShadows = static_cast<bool>(val);
-        }
-        else if (jsonKey == kMinScanCount){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->minScanCount = val;
-        }
-        else if (jsonKey == kFilterLength){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->filterLength = val;
-        }
-        else if (jsonKey == kSmoothCount){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->smoothCount = val;
-        }
-        else if (jsonKey == kTrancheSizeMax){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->trancheSizeMax = val;
-        }
-        else if (jsonKey == kSigma){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->sigma = val;
-        }
-        else if (jsonKey == kSignalToNoiseRatio){
-            double val;
-            e = ErrorUtils::toDouble(jsonValue, &val); ree;
-            pythiaParameters->signalToNoiseRatio = val;
-        }
-        else if (jsonKey == kMinFoundMzPeaks){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->minFoundMzPeaks = val;
-        }
-    }
-
-    e = applyFixedModificationsToAminoAcids(
-            *pythiaParameters,
-            &pythiaParameters->aminoAcids
-            );ree
-
-    ERR_RETURN
-}
-
 
 Err PythiaParameterReader::validateJsonKeys() {
 
@@ -342,21 +148,19 @@ Err PythiaParameterReader::validateJsonKeys() {
             kCTermCleavePoints,
             kRaggedness,
             kAllowedMissedCleavages,
-            kMzMinDataStructure,
-            kMzMaxDataStructure,
+            kMzMinMS2,
+            kMzMaxMS2,
             kPeptideLengthMin,
             kPeptideLengthMax,
             kModifications,
             kMaxModificationsPeptide,
 
-            kReturnPSMTopN,
             kChargeStateMin,
             kChargeStateMax,
             kMS2ExtractionWidthPPM,
             kPrecursorExtractionWindowThomsons,
             kPercentFDR,
 
-            kTopNMs2Ions,
             kSkipScanCount,
             kMinScanCount,
             kUseMeanMz,
@@ -413,12 +217,10 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 12;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinDataStructure = 176.0;
-    pythiaParameters.mzMaxDataStructure = 1500.0;
-    pythiaParameters.pValThreshold = 0.05;
+    pythiaParameters.mzMinMS2 = 176.0;
+    pythiaParameters.mzMaxMS2 = 1500.0;
 
     Modification carboxyAmidoMethyl(
             'C',
@@ -439,15 +241,99 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
 Err PythiaParameterReader::buildPythiaParameters(
         const QString &pythiaParametersFilePath,
         PythiaParameters *pythiaParameters
-) {
+        ) {
 
     ERR_INIT
 
-    PythiaParameterReader pythiaParameterReader;
-    e = pythiaParameterReader.readFile(pythiaParametersFilePath); ree;
+    //TODO validate these better.
 
-    e = pythiaParameterReader.loadPythiaParameters(pythiaParameters); ree;
-    pythiaParameters->print();
+    using namespace PythiaParameterReaderConstants;
+
+    e = ErrorUtils::fileExists(pythiaParametersFilePath); ree;
+    auto parser = toml::parse_file(pythiaParametersFilePath.toStdString());
+
+    const auto digestNode =  parser[kDigestParams.toStdString()];
+
+    toml::array* cTermCleavePoints = digestNode[kCTermCleavePoints.toStdString()].as_array();
+    for(const auto& value : *cTermCleavePoints) {
+        pythiaParameters->cTermCleavePoints.push_back(value.value_or(""));
+    }
+
+    toml::array* nTermCleavePoints = digestNode[kNTermCleavePoints.toStdString()].as_array();
+    for(const auto& value : *nTermCleavePoints) {
+        pythiaParameters->nTermCleavePoints.push_back(value.value_or(""));
+    }
+
+    const QString raggedness = QString::fromStdString(std::string(digestNode[kRaggedness.toStdString()].value_or("")));
+    if (raggedness == kNoRagged){
+        pythiaParameters->raggedness = Raggedness::NoRagged;
+    }
+    else if (raggedness == kCTermRagged){
+        pythiaParameters->raggedness = Raggedness::CTermRagged;
+    }
+    else if (raggedness == kNTermRagged){
+        pythiaParameters->raggedness = Raggedness::NTermRagged;
+    }
+    else if (raggedness == kBothRagged){
+        pythiaParameters->raggedness = Raggedness::BothRagged;
+    }
+
+    pythiaParameters->allowedMissedCleavages = digestNode[kAllowedMissedCleavages.toStdString()].value_or(0);
+    pythiaParameters->peptideLengthMin = digestNode[kPeptideLengthMin.toStdString()].value_or(0);
+    pythiaParameters->peptideLengthMax = digestNode[kPeptideLengthMax.toStdString()].value_or(0);
+    pythiaParameters->maxModificationsPeptide = digestNode[kMaxModificationsPeptide.toStdString()].value_or(0);
+
+    const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
+    pythiaParameters->minFoundMzPeaks = ms2ParamsNode[kMinFoundMzPeaks.toStdString()].value_or(0);
+    pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(0.0);
+    pythiaParameters->mzMinMS2 = ms2ParamsNode[kMzMinMS2.toStdString()].value_or(0.0);
+    pythiaParameters->mzMaxMS2 = ms2ParamsNode[kMzMaxMS2.toStdString()].value_or(0.0);
+
+    const auto precursorParamsNode =  parser[kPrecursorParams.toStdString()];
+    pythiaParameters->chargeStateMin = precursorParamsNode[kChargeStateMin.toStdString()].value_or(0);
+    pythiaParameters->chargeStateMax = precursorParamsNode[kChargeStateMax.toStdString()].value_or(0);
+    pythiaParameters->precursorExtractionWindowThomsons = precursorParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(0.0);
+
+    const auto peakIntegrationParamsNode =  parser[kPeakIntegrationParams.toStdString()];
+    pythiaParameters->filterLength = peakIntegrationParamsNode[kFilterLength.toStdString()].value_or(0);
+    pythiaParameters->sigma = peakIntegrationParamsNode[kSigma.toStdString()].value_or(0.0);
+    pythiaParameters->signalToNoiseRatio = peakIntegrationParamsNode[kSignalToNoiseRatio.toStdString()].value_or(0.0);
+    pythiaParameters->smoothCount = peakIntegrationParamsNode[kSmoothCount.toStdString()].value_or(0);
+
+    const auto fdrParamsNode = parser[kFdrParams.toStdString()];
+    pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
+    pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
+
+    toml::array* modifications = parser["Modification"].as_array();
+    for(const auto& value : *modifications) {
+        const toml::table *table = value.as_table();
+
+        Modification mod;
+
+        const QString modResidueOrPositionalLocation = QString::fromStdString(std::string(table->at("residue").value_or("")));
+
+        if (modResidueOrPositionalLocation.size() == 1) {
+            mod.residue = modResidueOrPositionalLocation[0];
+        }
+        else {
+            mod.positionalLocation = modResidueOrPositionalLocation;
+        }
+
+        mod.name = QString::fromStdString(std::string(table->at("name").value_or("")));
+
+        const QString modType = QString::fromStdString(std::string(table->at("type").value_or("")));
+        mod.type = modType == kFixed ? ModificationType::FIXED : ModificationType::DYNAMIC;
+
+        mod.formula = QString::fromStdString(std::string(table->at("formula").value_or("")));
+
+        pythiaParameters->modifications.push_back(mod);
+    }
+
+    e = applyFixedModificationsToAminoAcids(
+            *pythiaParameters,
+            &pythiaParameters->aminoAcids
+    );ree
+
 
     ERR_RETURN
 }

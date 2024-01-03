@@ -3,8 +3,8 @@
     "cTermCleavePoints": ["D","E"],
     "raggedness": "BothRagged",
     "allowedMissedCleavages": "1",
-    "mzMinDataStructure": "300.0",
-    "mzMaxDataStructure": "1999.0",
+    "mzMinMS2": "300.0",
+    "mzMaxMS2": "1999.0",
     "peptideLengthMin": 2,
     "peptideLengthMax": 101,
     "decoyCount": 1

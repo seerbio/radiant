@@ -115,7 +115,7 @@ public:
     const QString PRQ_FILE_EXTENSION = QStringLiteral("prqFF");
     const QString PSM_FILE_EXTENSION = QStringLiteral("psm");
     const QString PSM_SCORED_FILE_EXTENSION = QStringLiteral("scored");
-    const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythia");
+    const QString PYTHIA_FILE_EXTENSION = QStringLiteral("pythiaConfig");
     const QString PYTHIA_CAL_FILE_EXTENSION = QStringLiteral("pythiaCAL");
     const QString PYTHIA_DIA_FILE_EXTENSION = QStringLiteral("pythiaDIA");
 

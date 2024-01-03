@@ -54,8 +54,8 @@ configure_file(${FASTA_FRAGLIB_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrap
 set(JSON_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest.dgst")
 configure_file(${JSON_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest.dgst COPYONLY)
 
-set(PYTHIA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest2.pythia")
-configure_file(${PYTHIA_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest2.pythia COPYONLY)
+set(PYTHIA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/test_params_wide_window.pythiaConfig")
+configure_file(${PYTHIA_PATH} ${CMAKE_BINARY_DIR}/bin/test_params_wide_window.pythiaConfig COPYONLY)
 
 set(MS_PARQUET "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF")
 configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF COPYONLY)

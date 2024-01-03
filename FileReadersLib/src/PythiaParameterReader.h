@@ -8,7 +8,6 @@
 #include "AminoAcids.h"
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
-#include "JsonParametersReader.h"
 
 
 using namespace Error;
@@ -22,8 +21,8 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kFixed;
     extern const QString FILEREADERSLIB_EXPORTS kMaxModificationsPeptide;
     extern const QString FILEREADERSLIB_EXPORTS kModifications;
-    extern const QString FILEREADERSLIB_EXPORTS kMzMinDataStructure;
-    extern const QString FILEREADERSLIB_EXPORTS kMzMaxDataStructure;
+    extern const QString FILEREADERSLIB_EXPORTS kMzMinMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kMzMaxMS2;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMin;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMax;
     extern const QString FILEREADERSLIB_EXPORTS kNoRagged;
@@ -44,15 +43,18 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCount;
     extern const QString FILEREADERSLIB_EXPORTS kSigma;
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
-    extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
-
-    extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
     extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
+
+    extern const QString FILEREADERSLIB_EXPORTS kDigestParams;
+    extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
+    extern const QString FILEREADERSLIB_EXPORTS kPrecursorParams;
+    extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
+    extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
 
 }
 
@@ -75,15 +77,19 @@ class FILEREADERSLIB_EXPORTS Modification {
 
 public:
 
-    Modification(QChar residue,
-                 const QString &name,
-                 const ModificationType &type,
-                 const QString &formula);
+    Modification(
+            QChar residue,
+            const QString &name,
+            const ModificationType &type,
+            const QString &formula
+            );
 
-    Modification(const QString &positionalLocation,
-                 const QString &name,
-                 const ModificationType &type,
-                 const QString &formula);
+    Modification(
+            const QString &positionalLocation,
+            const QString &name,
+            const ModificationType &type,
+            const QString &formula
+            );
 
     Modification() = default;
     ~Modification() = default;
@@ -109,9 +115,7 @@ public:
     void print() const;
 };
 
-
 struct PythiaParameters{
-
 
     QStringList nTermCleavePoints;
     QStringList cTermCleavePoints;
@@ -128,34 +132,31 @@ struct PythiaParameters{
 
     double precursorExtractionWindowThomsons = 0.0;
     double percentFDR = 1.0;
-    double mzMinDataStructure = 300.0;
-    double mzMaxDataStructure = 1999.0;
-
-    double pValThreshold = 0.05;
+    double mzMinMS2 = 300.0;
+    double mzMaxMS2 = 1999.0;
 
     int skipScanCount = 2;
     int minScanCount = 3;
+    double signalToNoiseRatio = 2.0;
+
     int filterLength = -1;
     int smoothCount = -1;
     double sigma = -1.0;
-    double signalToNoiseRatio = -1.0;
-    int topNMs2Ions = -1;
-    int minFoundMzPeaks = -1;
     float stopThresholdFraction = 0.2;
+    int minFoundMzPeaks = -1;
 
     double cosineSimToAnchorThreshold = 0.4;
 
-    int scanTimeWindowStDevs = 3;
     double ms2ExtractionWidthPPM = -1.0;
-    int trancheSizeMax = 1e4;
 
     int verbosity = 1;
     bool reportDecoys = false;
     bool subtractShadows = true;
 
+    int scanTimeWindowStDevs = 3;
+    int trancheSizeMax = 1e4;
     int ionsSharedToReject = 4;
-
-    int mzCalPolynomialOrder = 11;
+    int topNMs2Ions = 12;
 
     [[nodiscard]] bool isValid() const {
 
@@ -208,8 +209,8 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kCTermCleavePoints << cTermCleavePoints;
         qDebug() << PythiaParameterReaderConstants::kRaggedness << static_cast<std::underlying_type<Raggedness>::type>(raggedness);
         qDebug() << PythiaParameterReaderConstants::kAllowedMissedCleavages << allowedMissedCleavages;
-        qDebug() << PythiaParameterReaderConstants::kMzMinDataStructure << mzMinDataStructure;
-        qDebug() << PythiaParameterReaderConstants::kMzMaxDataStructure << mzMaxDataStructure;
+        qDebug() << PythiaParameterReaderConstants::kMzMinMS2 << mzMinMS2;
+        qDebug() << PythiaParameterReaderConstants::kMzMaxMS2 << mzMaxMS2;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
@@ -225,11 +226,9 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
         qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
-        qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
-        qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
 
@@ -244,14 +243,12 @@ struct PythiaParameters{
 };
 
 
-class FILEREADERSLIB_EXPORTS PythiaParameterReader : public JsonParametersReader {
+class FILEREADERSLIB_EXPORTS PythiaParameterReader {
 
 public:
 
     PythiaParameterReader() = default;
     ~PythiaParameterReader() = default;
-
-    Err loadPythiaParameters(PythiaParameters *pythiaParameters);
 
     static Err applyFixedModificationsToAminoAcids(
             const PythiaParameters &reader,
@@ -268,6 +265,8 @@ public:
 private:
 
     Err validateJsonKeys();
+
+    Err loadPythiaParameters(PythiaParameters *pythiaParameters);
 
 };
 

@@ -1,0 +1,52 @@
+# Text describing stuff
+
+[DigestParams]
+cTermCleavePoints = ["K", "R"]
+nTermCleavePoints = []
+raggedness = "NoRagged"
+allowedMissedCleavages = 1
+peptideLengthMin = 7
+peptideLengthMax = 35
+maxModificationsPeptide = 1
+
+[MS2Params]
+minFoundMzPeaks = 2
+ms2ExtractionWidthPPM = 20.5
+mzMinMS2 = 100.1
+mzMaxMS2 = 1500.2
+
+[PrecursorParams]
+chargeStateMin = 1
+chargeStateMax = 4
+precursorExtractionWindowThomsons = 0.5
+
+[PeakIntegrationParams]
+filterLength = 3
+sigma = 1.0
+signalToNoiseRatio = 2.0
+smoothCount = 1
+
+[FdrParams]
+percentFDR = 2.0
+reportDecoys = true
+
+[[Modification]]
+residue = "C"
+name = "Carbamidomethyl"
+type = "fixed"
+formula = "H3C2NO"
+
+[[Modification]]
+residue = "M"
+name = "Oxidation"
+type = "dynamic"
+formula = "O"
+
+[[Modification]]
+residue = "N-Term-Protein"
+name = "Acetyl"
+type = "dynamic"
+formula = "C2H3O"
+
+
+
