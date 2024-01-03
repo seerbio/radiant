@@ -57,11 +57,11 @@ configure_file(${JSON_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest.dgst COPYON
 set(PYTHIA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest2.pythia")
 configure_file(${PYTHIA_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest2.pythia COPYONLY)
 
-set(MS_PARQUET "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqDF")
-configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqDF COPYONLY)
+set(MS_PARQUET "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF")
+configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF COPYONLY)
 
-set(FRAG_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/FragLibReaderTests.fragLibDF")
-configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibReaderTests.fragLibDF COPYONLY)
+set(FRAG_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/FragLibReaderTests.fragLibFF")
+configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibReaderTests.fragLibFF COPYONLY)
 
 set(TEST_PARAMS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/WorkFlowTestsParams.pythia")
 configure_file(${TEST_PARAMS_PATH} ${CMAKE_BINARY_DIR}/bin/WorkFlowTestsParams.pythia COPYONLY)

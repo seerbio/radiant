@@ -61,7 +61,7 @@ void FragLibReaderTests::getSM2IonsTest() {
     ERR_INIT
 
     const QString &testFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     QVector<FragLibReaderRow> fragLibReaderRows;
 

@@ -30,7 +30,7 @@ void PythiaDIAFFWorkflowTests::initTest() {
     ERR_INIT
 
     const QString &testFragLibFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     const QString &testFastaFilePath
             = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
@@ -64,13 +64,13 @@ void PythiaDIAFFWorkflowTests::buildUniqueInfoScanKeyVsTargetDecoyCandidatePoint
     ERR_INIT
 
     const QString &testFragLibFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     const QString &testFastaFilePath
             = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
 
     const QString &testMsFilePath
-            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqDF");
+            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(testMsFilePath);
