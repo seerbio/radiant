@@ -28,7 +28,7 @@ void TargetDecoyCandidatePairManagerTests::initTest() {
     ERR_INIT
 
     const QString &testFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
@@ -60,7 +60,7 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
     ERR_INIT
 
     const QString &testFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
@@ -102,7 +102,7 @@ void TargetDecoyCandidatePairManagerTests::getTargetDecoyCandidatePairPointersTe
     ERR_INIT
 
     const QString &testFilePath
-            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibDF");
+            = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(

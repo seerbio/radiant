@@ -26,17 +26,6 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
 
 using XICPoints = std::vector<XICPoint>;
 
-//class ALGORITHMSFFLIB_EXPORTS XICPoints {
-//
-//public:
-//
-//    XICPoints() = default;
-//    ~XICPoints() = default;
-//
-//    std::vector<XICPoint> xicPoints;
-//
-//};
-
 
 class ALGORITHMSFFLIB_EXPORTS TurboXIC {
 

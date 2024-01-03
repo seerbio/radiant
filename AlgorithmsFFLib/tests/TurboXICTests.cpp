@@ -24,7 +24,6 @@ private Q_SLOTS:
     void initTest();
     void extractPointsTest();
     void turboXICUtility();
-    void mzMLMemoryTest();
 
 
 private:
@@ -85,16 +84,12 @@ void TurboXICTests::extractPointsTest() {
 
     //TODO fix test
 
-//    const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13, 2, 4);
-//    QCOMPARE(xicPoints.size(), 2);
-//    QCOMPARE(xicPoints.front().scanNumber, 2);
-//    QCOMPARE(MathUtils::pRound(xicPoints.scanNumbersVsIntensity.first(), 1), 100.2);
-//    QCOMPARE(xicPoints.scanNumbersVsIntensity.lastKey(), 3);
-//    QCOMPARE(MathUtils::pRound(xicPoints.scanNumbersVsIntensity.last(), 1), 100.3);
-//
-//    const XICPoints xicPointsSum = turboXIC.extractPointsXIC(100.0, 100.17, 2, 5);
-//    QCOMPARE(xicPointsSum.scanNumbersVsIntensity.size(), 4);
-//    QCOMPARE(xicPointsSum.scanNumbersVsIntensity.last(), 201.);
+    const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
+
+    QCOMPARE(xicPoints.size(), 3);
+    QCOMPARE(xicPoints.front().scanNumber, 1);
+    QVERIFY(MathUtils::tSame(xicPoints.front().intensity, 100.1f));
+    QVERIFY(MathUtils::tSame(xicPoints.back().intensity, 100.3f));
 
 }
 
@@ -154,68 +149,6 @@ void TurboXICTests::turboXICUtility() {
 //
 //    e = MsUtils::writePointsToCSV(vec, "xic.csv");
 //    QCOMPARE(e, eNoError);
-
-}
-
-void TurboXICTests::mzMLMemoryTest() {
-
-    ERR_INIT
-
-    const QString file = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX43_A.raw.mzML";
-
-//    QVector<int> test(2000);
-//    QVector<QVector<int>> fdsa;
-//    for (int i = 0; i < 200000; i++) {
-//
-//        if (i % 1000 == 0) {
-//            qDebug() << i;
-//        }
-//
-//        int testC[test.size()];
-//        test.reserve(2000);
-//
-//        for (int j = 0; j < 2000; j++) {
-//            testC[j] = j;
-//        }
-//
-//        Eigen::VectorXi vec = Eigen::Map<Eigen::VectorXi>(testC, test.size());
-////        std::vector<int> vec3(testC, testC + test.size());
-////        fdsa.push_back(test);
-//    }
-
-    MsReaderMzML readerMzMl;
-    e = readerMzMl.openFile(file);
-
-    QMap<MzTargetKey, QMap<int, ScanPoints*>> pss;
-    e = readerMzMl.collateMS2MzTargetFrames(&pss);
-
-    QElapsedTimer et;
-    et.start();
-
-    QMap<MzTargetKey, TurboXIC*> turbos;
-    for (auto it = pss.begin(); it != pss.end(); it++) {
-
-        QMap<int, ScanPoints*> &ps = it.value();
-
-        QElapsedTimer etLocal;
-        etLocal.start();
-        auto *turboXic = new TurboXIC();
-        e = turboXic->init(ps);
-        turbos.insert(it.key(), turboXic);
-        qDebug() << it.key() << etLocal.elapsed() << "mSec";
-
-        for (ScanPoints *p : ps) {
-            ScanPoints().swap(*p);
-        }
-        QMap<int, ScanPoints*>().swap(ps);
-    }
-
-    readerMzMl.reset();
-    qDebug() << et.elapsed();
-
-    for (TurboXIC* ti : turbos) {
-        delete ti;
-    }
 
 }
 

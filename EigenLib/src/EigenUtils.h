@@ -709,7 +709,7 @@ public:
             mat->col(col) = vec;
         }
 
-        EigenUtils::replaceNaN(0.0f, mat);
+        EigenUtils::replaceNaN(static_cast<T>(0.0), mat);
     }
 
     template<typename T>

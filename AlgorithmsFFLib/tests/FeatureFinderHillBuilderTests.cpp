@@ -73,14 +73,14 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-    QVector<QVector<QVector<double>>> groupedMzVals;
+    QVector<QVector<QVector<float>>> groupedMzVals;
     QVector<QVector<QVector<float>>> groupedIntensityVals;
-//    e = featureFinderHillBuilder.buildScanPointGroupsTest(
-//            scanPointsPtrs,
-//            &groupedMzVals,
-//            &groupedIntensityVals
-//    );
-//    QCOMPARE(e, eNoError);
+    e = featureFinderHillBuilder.buildScanPointGroupsTest(
+            scanPointsPtrs,
+            &groupedMzVals,
+            &groupedIntensityVals
+    );
+    QCOMPARE(e, eNoError);
 
     const QVector<int> expectedPointCountPerGroupedScan = {3, 3, 3, 2};
 
@@ -95,12 +95,12 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-//    e = featureFinderHillBuilder.buildScanPointGroupsTest(
-//            scanPointsPtrs,
-//            &groupedMzVals,
-//            &groupedIntensityVals
-//    );
-//    QCOMPARE(e, eNoError);
+    e = featureFinderHillBuilder.buildScanPointGroupsTest(
+            scanPointsPtrs,
+            &groupedMzVals,
+            &groupedIntensityVals
+    );
+    QCOMPARE(e, eNoError);
 
     const QVector<int> expectedPointCountPerGroupedScan2 = {4, 4, 3, 2};
 
@@ -115,12 +115,12 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
     e = featureFinderHillBuilder.init(params);
     QCOMPARE(e, eNoError);
 
-//    e = featureFinderHillBuilder.buildScanPointGroupsTest(
-//            scanPointsPtrs,
-//            &groupedMzVals,
-//            &groupedIntensityVals
-//    );
-//    QCOMPARE(e, eNoError);
+    e = featureFinderHillBuilder.buildScanPointGroupsTest(
+            scanPointsPtrs,
+            &groupedMzVals,
+            &groupedIntensityVals
+    );
+    QCOMPARE(e, eNoError);
 
     const QVector<int> expectedPointCountPerGroupedScan3 = {5, 4, 3, 2};
 
@@ -133,13 +133,13 @@ void FeatureFinderHillBuilderTests::buildScanPointGroupsTest() {
 
     scanPointsPtrs.append(scanPointsPtrs);
 
-//    e = featureFinderHillBuilder.buildScanPointGroupsTest(
-//            scanPointsPtrs,
-//            &groupedMzVals,
-//            &groupedIntensityVals
-//    );
-//    QCOMPARE(e, eNoError);
-//
+    e = featureFinderHillBuilder.buildScanPointGroupsTest(
+            scanPointsPtrs,
+            &groupedMzVals,
+            &groupedIntensityVals
+    );
+    QCOMPARE(e, eNoError);
+
 
 }
 
