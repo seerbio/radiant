@@ -41,7 +41,7 @@ cp bin/rnn_linear_charge_w_precursors_nce_4.hdf5.json "$pythia_bin/rnn_linear_ch
 cp bin/iRT_Model.json "$pythia_bin/iRT_Model.json"
 cp bin/MS2_Mono_Model.json "$pythia_bin/MS2_Mono_Model.json"
 cp bin/MS2_Charge_Model.json "$pythia_bin/MS2_Charge_Model.json"
-cp AlgorithmsLib/libAlgorithmsLib.so "$pythia_lib/libAlgorithmsLib.so"
+cp AlgorithmsLib/libAlgorithmsLib.so "$pythia_lib/libAlgorithmsFFLib.so"
 cp ChemLib/libChemLib.so "$pythia_lib/libChemLib.so"
 cp EigenLib/libEigenLib.so "$pythia_lib/libEigenLib.so"
 cp FileReadersLib/libFileReadersLib.so "$pythia_lib/libFileReadersLib.so"
