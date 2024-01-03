@@ -19,7 +19,6 @@ public:
 private Q_SLOTS:
 
     void readFileTest();
-    void readFileTOMLTest();
 
 };
 
@@ -27,55 +26,14 @@ void PythiaParameterReaderTests::readFileTest() {
 
     ERR_INIT
 
-    const QString &jsonFilePath
-            = QDir(qApp->applicationDirPath()).filePath("DigestParamsTest2.pythia");
-
-
-    PythiaParameterReader reader;
-
-    PythiaParameters pythiaParameters;
-    e = PythiaParameterReader::buildPythiaParameters(jsonFilePath, &pythiaParameters);
-    QCOMPARE(e, eNoError);
-
-    pythiaParameters.print();
-
-    QCOMPARE(pythiaParameters.nTermCleavePoints, QStringList({"S", "H", "I", "T"}));
-    QCOMPARE(pythiaParameters.cTermCleavePoints, QStringList({"C", "R", "A", "P"}));
-
-    QCOMPARE(pythiaParameters.raggedness, 3);
-    QCOMPARE(pythiaParameters.allowedMissedCleavages, 22);
-    QCOMPARE(pythiaParameters.mzMinMS2, 331);
-    QCOMPARE(pythiaParameters.mzMaxMS2, 1992);
-    QCOMPARE(pythiaParameters.peptideLengthMin, 8);
-    QCOMPARE(pythiaParameters.peptideLengthMax, 30);
-    QCOMPARE(pythiaParameters.chargeStateMin, 5);
-    QCOMPARE(pythiaParameters.chargeStateMax, 3);
-    QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 11);
-    QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 1);
-    QCOMPARE(pythiaParameters.percentFDR, 2);
-    QCOMPARE(pythiaParameters.maxModificationsPeptide, 5);
-
-    const Modification &mod = pythiaParameters.modifications.at(0);
-    QCOMPARE(mod.name, "Carbamidomethyl");
-    QCOMPARE(mod.type, ModificationType::FIXED);
-    QCOMPARE(mod.formula, "H3C2NO");
-    QCOMPARE(mod.residue, "C");
-    QCOMPARE(QString::number(pythiaParameters.aminoAcids.aminoAcid('C').monoisotopicMass()),
-             QString::number(160.031));
-
-}
-
-void PythiaParameterReaderTests::readFileTOMLTest() {
-
-    ERR_INIT
 
     const QString filePath
-        = QStringLiteral("/home/anichols/Repos/PythiaDIACpp/FileReadersLib/tests/TestFiles/test_params_wide_window.pythiaTOML");
+            = QDir(qApp->applicationDirPath()).filePath("test_params_wide_window.pythiaConfig");
 
     PythiaParameterReader reader;
 
     PythiaParameters pythiaParameters;
-    PythiaParameterReader::buildPythiaParametersTOML(filePath, &pythiaParameters);
+    PythiaParameterReader::buildPythiaParameters(filePath, &pythiaParameters);
     QCOMPARE(e, eNoError);
 
     const QStringList cTermExpected = {"K", "R"};

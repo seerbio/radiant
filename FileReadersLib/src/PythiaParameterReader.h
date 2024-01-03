@@ -8,7 +8,6 @@
 #include "AminoAcids.h"
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
-#include "JsonParametersReader.h"
 
 
 using namespace Error;
@@ -244,7 +243,7 @@ struct PythiaParameters{
 };
 
 
-class FILEREADERSLIB_EXPORTS PythiaParameterReader : public JsonParametersReader {
+class FILEREADERSLIB_EXPORTS PythiaParameterReader {
 
 public:
 
@@ -263,18 +262,11 @@ public:
             PythiaParameters *pythiaParameters
     );
 
-    static Err buildPythiaParametersTOML(
-            const QString &pythiaParametersFilePath,
-            PythiaParameters *pythiaParameters
-    );
-
 private:
 
     Err validateJsonKeys();
 
     Err loadPythiaParameters(PythiaParameters *pythiaParameters);
-
-    Err loadPythiaParametersTOML(PythiaParameters *pythiaParameters);
 
 };
 
