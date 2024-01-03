@@ -32,7 +32,7 @@ private Q_SLOTS:
 MsCalibratomaticTests::MsCalibratomaticTests() : QObject(){}
 
 void MsCalibratomaticTests::execTests() {
-//    QSKIP("TODO: reenable with internal test data");
+    QSKIP("TODO: reenable with internal test data");
 
     ERR_INIT
 
