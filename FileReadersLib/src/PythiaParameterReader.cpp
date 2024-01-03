@@ -103,7 +103,6 @@ namespace PythiaParameterReaderConstants {
     const QString kNTermRagged = QStringLiteral("NTermRagged");
     const QString kBothRagged = QStringLiteral("BothRagged");
 
-    const QString kReturnPSMTopN = QStringLiteral("returnPSMTopN");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
     const QString kChargeStateMax = QStringLiteral("chargeStateMax");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
@@ -117,9 +116,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSmoothCount = QStringLiteral("smoothCount");
     const QString kSigma = QStringLiteral("sigma");
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
-    const QString kTopNMs2Ions = QStringLiteral("topNMs2Ions");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
-    const QString kTrancheSizeMax = QStringLiteral("trancheSizeMax");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
@@ -265,11 +262,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->chargeStateMax = val;
         }
-        else if (jsonKey == kTopNMs2Ions){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->topNMs2Ions = val;
-        }
         else if (jsonKey == kSkipScanCount){
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
@@ -299,11 +291,6 @@ Err PythiaParameterReader::loadPythiaParameters(PythiaParameters *pythiaParamete
             int val;
             e = ErrorUtils::toInt(jsonValue, &val); ree;
             pythiaParameters->smoothCount = val;
-        }
-        else if (jsonKey == kTrancheSizeMax){
-            int val;
-            e = ErrorUtils::toInt(jsonValue, &val); ree;
-            pythiaParameters->trancheSizeMax = val;
         }
         else if (jsonKey == kSigma){
             double val;
@@ -349,14 +336,12 @@ Err PythiaParameterReader::validateJsonKeys() {
             kModifications,
             kMaxModificationsPeptide,
 
-            kReturnPSMTopN,
             kChargeStateMin,
             kChargeStateMax,
             kMS2ExtractionWidthPPM,
             kPrecursorExtractionWindowThomsons,
             kPercentFDR,
 
-            kTopNMs2Ions,
             kSkipScanCount,
             kMinScanCount,
             kUseMeanMz,
@@ -413,12 +398,10 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.topNMs2Ions = 12;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinDataStructure = 176.0;
     pythiaParameters.mzMaxDataStructure = 1500.0;
-    pythiaParameters.pValThreshold = 0.05;
 
     Modification carboxyAmidoMethyl(
             'C',

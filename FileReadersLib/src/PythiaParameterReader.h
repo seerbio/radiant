@@ -44,10 +44,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCount;
     extern const QString FILEREADERSLIB_EXPORTS kSigma;
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
-    extern const QString FILEREADERSLIB_EXPORTS kTopNMs2Ions;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
-
-    extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
     extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
@@ -109,9 +106,7 @@ public:
     void print() const;
 };
 
-
 struct PythiaParameters{
-
 
     QStringList nTermCleavePoints;
     QStringList cTermCleavePoints;
@@ -131,31 +126,28 @@ struct PythiaParameters{
     double mzMinDataStructure = 300.0;
     double mzMaxDataStructure = 1999.0;
 
-    double pValThreshold = 0.05;
-
     int skipScanCount = 2;
     int minScanCount = 3;
+    double signalToNoiseRatio = 2.0;
+
     int filterLength = -1;
     int smoothCount = -1;
     double sigma = -1.0;
-    double signalToNoiseRatio = -1.0;
-    int topNMs2Ions = -1;
-    int minFoundMzPeaks = -1;
     float stopThresholdFraction = 0.2;
+    int minFoundMzPeaks = -1;
 
     double cosineSimToAnchorThreshold = 0.4;
 
-    int scanTimeWindowStDevs = 3;
     double ms2ExtractionWidthPPM = -1.0;
-    int trancheSizeMax = 1e4;
 
     int verbosity = 1;
     bool reportDecoys = false;
     bool subtractShadows = true;
 
+    int scanTimeWindowStDevs = 3;
+    int trancheSizeMax = 1e4;
     int ionsSharedToReject = 4;
-
-    int mzCalPolynomialOrder = 11;
+    int topNMs2Ions = 12;
 
     [[nodiscard]] bool isValid() const {
 
@@ -225,11 +217,9 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
         qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
-        qDebug() << PythiaParameterReaderConstants::kTopNMs2Ions << topNMs2Ions;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
-        qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
 
