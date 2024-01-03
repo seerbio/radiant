@@ -22,8 +22,8 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kFixed;
     extern const QString FILEREADERSLIB_EXPORTS kMaxModificationsPeptide;
     extern const QString FILEREADERSLIB_EXPORTS kModifications;
-    extern const QString FILEREADERSLIB_EXPORTS kMzMinDataStructure;
-    extern const QString FILEREADERSLIB_EXPORTS kMzMaxDataStructure;
+    extern const QString FILEREADERSLIB_EXPORTS kMzMinMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kMzMaxMS2;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMin;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMax;
     extern const QString FILEREADERSLIB_EXPORTS kNoRagged;
@@ -51,6 +51,12 @@ namespace PythiaParameterReaderConstants {
 
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
 
+    extern const QString FILEREADERSLIB_EXPORTS kDigestParams;
+    extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
+    extern const QString FILEREADERSLIB_EXPORTS kPrecursorParams;
+    extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
+    extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
+
 }
 
 
@@ -72,15 +78,19 @@ class FILEREADERSLIB_EXPORTS Modification {
 
 public:
 
-    Modification(QChar residue,
-                 const QString &name,
-                 const ModificationType &type,
-                 const QString &formula);
+    Modification(
+            QChar residue,
+            const QString &name,
+            const ModificationType &type,
+            const QString &formula
+            );
 
-    Modification(const QString &positionalLocation,
-                 const QString &name,
-                 const ModificationType &type,
-                 const QString &formula);
+    Modification(
+            const QString &positionalLocation,
+            const QString &name,
+            const ModificationType &type,
+            const QString &formula
+            );
 
     Modification() = default;
     ~Modification() = default;
@@ -123,8 +133,8 @@ struct PythiaParameters{
 
     double precursorExtractionWindowThomsons = 0.0;
     double percentFDR = 1.0;
-    double mzMinDataStructure = 300.0;
-    double mzMaxDataStructure = 1999.0;
+    double mzMinMS2 = 300.0;
+    double mzMaxMS2 = 1999.0;
 
     int skipScanCount = 2;
     int minScanCount = 3;
@@ -200,8 +210,8 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kCTermCleavePoints << cTermCleavePoints;
         qDebug() << PythiaParameterReaderConstants::kRaggedness << static_cast<std::underlying_type<Raggedness>::type>(raggedness);
         qDebug() << PythiaParameterReaderConstants::kAllowedMissedCleavages << allowedMissedCleavages;
-        qDebug() << PythiaParameterReaderConstants::kMzMinDataStructure << mzMinDataStructure;
-        qDebug() << PythiaParameterReaderConstants::kMzMaxDataStructure << mzMaxDataStructure;
+        qDebug() << PythiaParameterReaderConstants::kMzMinMS2 << mzMinMS2;
+        qDebug() << PythiaParameterReaderConstants::kMzMaxMS2 << mzMaxMS2;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
         qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
@@ -241,8 +251,6 @@ public:
     PythiaParameterReader() = default;
     ~PythiaParameterReader() = default;
 
-    Err loadPythiaParameters(PythiaParameters *pythiaParameters);
-
     static Err applyFixedModificationsToAminoAcids(
             const PythiaParameters &reader,
             AminoAcids *aminoAcids
@@ -255,9 +263,18 @@ public:
             PythiaParameters *pythiaParameters
     );
 
+    static Err buildPythiaParametersTOML(
+            const QString &pythiaParametersFilePath,
+            PythiaParameters *pythiaParameters
+    );
+
 private:
 
     Err validateJsonKeys();
+
+    Err loadPythiaParameters(PythiaParameters *pythiaParameters);
+
+    Err loadPythiaParametersTOML(PythiaParameters *pythiaParameters);
 
 };
 

@@ -195,8 +195,8 @@ namespace {
         }
 
         MS2Ion::filterMS2IonsByMz(
-                pythiaParameters.mzMinDataStructure,
-                pythiaParameters.mzMaxDataStructure,
+                pythiaParameters.mzMinMS2,
+                pythiaParameters.mzMaxMS2,
                 &ms2IonsBuilder
         );
 
