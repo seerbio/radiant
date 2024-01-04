@@ -11,6 +11,7 @@
 //NOTE: QDebug and many QT classes that rely on it have to come after pytorch or a compile error occurs.
 #include <QCoreApplication>
 #include <QDebug>
+#include <QElapsedTimer>
 
 #include <iostream>
 #include <random>
@@ -137,9 +138,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
     torch::manual_seed(seed);
     if (torch::cuda::is_available()) {
+        qDebug() << "CUDA IS AVAILABLE";
         torch::cuda::manual_seed_all(seed);
     }
     torch::globalContext().setDeterministicCuDNN(true);
+    torch::set_num_threads(8);
+//    torch::set_num_interop_threads(4);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -172,6 +176,9 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     std::ostringstream oss;
     float bestEpochLoss = std::numeric_limits<float>::max();
     m_net->train();
+
+    QElapsedTimer et;
+    et.start();
 
     for (int epoch = 0; epoch < epochsMax; ++epoch) {
 
@@ -222,7 +229,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
             bestEpochLoss = meanBatchLoss;
         }
 
-        qDebug() << "****" << "Epoch" << epoch + 1 << "Best loss:" << bestEpochLoss << "Mean loss" << meanBatchLoss;
+        qDebug() << "****" << "Epoch" << epoch + 1 << "Best loss:" << bestEpochLoss << "Mean loss" << meanBatchLoss << et.restart() << "mSec";
 
 
     }
