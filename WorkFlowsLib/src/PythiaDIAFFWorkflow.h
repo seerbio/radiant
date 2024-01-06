@@ -74,9 +74,7 @@ private:
 
     Err recalibrateMzVals(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
-        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-        MsReaderPointerAcc *msReaderPointerAcc
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         );
 
     Err optimizeParameters(

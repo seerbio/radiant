@@ -253,6 +253,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
 
+    m_pythiaParameters.print();
+
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
@@ -377,13 +379,27 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     }
 
+    if (!m_pythiaParameters.reportDecoys) {
+
+        const auto terminatorLogicFDRFilter
+            = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
+
+        const auto terminator = std::remove_if(
+                candidateScoreClassifierPntrs.begin(),
+                candidateScoreClassifierPntrs.end(),
+                terminatorLogicFDRFilter
+                );
+
+        candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
+    }
+
     qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
     e = updateProteinGroupAnnotation(
             m_fastaUri,
             &candidateScoreClassifierPntrs
             ); ree;
 
-//#define CALC_ENTRAP
+#define CALC_ENTRAP
 #ifdef CALC_ENTRAP
     int counter = 0;
     int decoys = 0;
@@ -623,9 +639,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
                 e = recalibrateMzVals(
                         diaTargetFrames,
-                        scanNumberVsScanTimeMS1,
-                        &m_targetDecoyCandidatePairScoretron,
-                        msReaderPointerAcc
+                        scanNumberVsScanTimeMS1
                         ); ree;
             }
 
@@ -977,9 +991,7 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
-        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-        MsReaderPointerAcc *msReaderPointerAcc
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         ) {
 
     ERR_INIT
@@ -1031,7 +1043,7 @@ namespace {
 
             double classifierScore = -1.0;
             if (qValueScoreType == QValueScoreType::NNClassifierScore) {
-                classifierScore = cs->classifierScore;
+                classifierScore = 1.0 / cs->classifierScore;
             }
             else {
                 classifierScore = cs->discriminantScore;
@@ -1610,6 +1622,7 @@ namespace {
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             const QVector<float> &predictions,
             bool reportDecoys,
+            double fdrCutOff,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm,
             QVector<CandidateScores*> *candidateScoreClassifier
             ) {
@@ -1626,33 +1639,16 @@ namespace {
                 [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
         );
 
-        int counter = 0;
-        int falsePositives = 0;
-        const double fdrCutoff = 0.0075; //TODO make this settable
-        for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
-
-            CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
-            candidateScoresNew->classifierScore = rp.nnScore;
-            candidateScoreClassifier->push_back(candidateScoresNew);
-
-            ++counter;
-
-            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > fdrCutoff) {
-                if (!reportDecoys) {
-                    break;
+        std::transform(
+                karnnNNTargetsNorm->begin(),
+                karnnNNTargetsNorm->end(),
+                std::back_inserter(*candidateScoreClassifier),
+                [candidateScoresTargetsAndDecoys50PercentFDRFiltered](const KarnnNNTarget &kt){
+                    CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(kt.index);
+                    candidateScoresNew->classifierScore = kt.nnScore;
+                    return candidateScoresNew;
                 }
-                else {
-                    counter--;
-                    continue;
-                }
-            }
-
-            if (rp.isDecoy){
-                falsePositives++;
-            }
-        }
-
-        qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+                );
 
         ERR_RETURN
     }
@@ -1709,6 +1705,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
             m_pythiaParameters.reportDecoys,
+            m_pythiaParameters.percentFDR,
             &karnnNNTargetsNorm,
             candidateScoreClassifier
             ); ree;
