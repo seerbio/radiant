@@ -253,6 +253,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
 
+    m_pythiaParameters.print();
+
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
@@ -375,6 +377,20 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             candidateScoreClassifierPntrs = candidateScoresPntrs;
         }
 
+    }
+
+    if (!m_pythiaParameters.reportDecoys) {
+
+        const auto terminatorLogicFDRFilter
+            = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
+
+        const auto terminator = std::remove_if(
+                candidateScoreClassifierPntrs.begin(),
+                candidateScoreClassifierPntrs.end(),
+                terminatorLogicFDRFilter
+                );
+
+        candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
     }
 
     qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -1623,32 +1639,16 @@ namespace {
                 [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
         );
 
-        int counter = 0;
-        int falsePositives = 0;
-        for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
-
-            CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
-            candidateScoresNew->classifierScore = rp.nnScore;
-            candidateScoreClassifier->push_back(candidateScoresNew);
-
-            ++counter;
-
-            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > fdrCutOff) {
-                if (!reportDecoys) {
-                    break;
+        std::transform(
+                karnnNNTargetsNorm->begin(),
+                karnnNNTargetsNorm->end(),
+                std::back_inserter(*candidateScoreClassifier),
+                [candidateScoresTargetsAndDecoys50PercentFDRFiltered](const KarnnNNTarget &kt){
+                    CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(kt.index);
+                    candidateScoresNew->classifierScore = kt.nnScore;
+                    return candidateScoresNew;
                 }
-                else {
-                    counter--;
-                    continue;
-                }
-            }
-
-            if (rp.isDecoy){
-                falsePositives++;
-            }
-        }
-
-        qDebug() << "False Pos" << falsePositives << "Total" << counter << "FDR 0.5 nnScore cuttoff" << falsePositives / (counter + 0.0);
+                );
 
         ERR_RETURN
     }
