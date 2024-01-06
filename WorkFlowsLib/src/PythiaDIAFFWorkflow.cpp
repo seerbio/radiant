@@ -379,6 +379,19 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     }
 
+//#define TROUBLESHOOT_MISSING
+#ifdef TROUBLESHOOT_MISSING
+    for (CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
+        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "ASQHGSDVVIETDFGLR" && cs->targetDecoyCandidatePair->charge() == 3) {
+            qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
+            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->classifierScore << cs->qValue;
+            qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
+            qDebug() << "^^^^^^^^^^";
+            einfo;
+        }
+    }
+#endif
+
     if (!m_pythiaParameters.reportDecoys) {
 
         const auto terminatorLogicFDRFilter
