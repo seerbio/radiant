@@ -997,14 +997,11 @@ Err ScoreOverseer::buildScores(
             &intensityFoundMaxVec,
             &mzPeakLengthsVec,
             &alignmentMatrixLimits
-            );
+            ); ree;
 
     candidateScores->targetKey = m_mzTargetKey;
     candidateScores->scanNumber = m_msFrameTandem->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + peakIntegrationIndexes.first);
     candidateScores->scanTime = m_msFrameTandem->scanTimeFromScanNumber(candidateScores->scanNumber);
-
-    //Figure out if you want to use this as well.
-//    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
 
     const int arraySizeMax = 12;
 
@@ -1060,13 +1057,13 @@ Err ScoreOverseer::buildScores(
 
 //#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
 #ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "ASQHGSDVVIETDFGLR" && targetDecoyCandidatePair->charge() == 3) {
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && targetDecoyCandidatePair->charge() == 3) {
         std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
         std::cout << d_ptr->m_intensityMatrix100 << std::endl;
         for (float c : cosineSimToAnchorVec) {
             std::cout << c << std::endl;
         }
-        std::cout << "****" << std::endl;
+        std::cout << "**** " << bestAnchorColumnIndex << std::endl;
     }
 #endif
 
