@@ -620,6 +620,12 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
                 rowSize,
                 m_intensityMatrix100Shadow.cols()
         ).eval();
+
+//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+//                m_intensityMatrix100Shadow,
+//                m_pythiaParams,
+//                m_gaussKernel
+//        );
     }
 
     const int tightColsMax = 6;
@@ -1051,6 +1057,18 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn,
             &bestAnchorColumnIndex
     ); ree;
+
+//#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
+#ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "ASQHGSDVVIETDFGLR" && targetDecoyCandidatePair->charge() == 3) {
+        std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
+        std::cout << d_ptr->m_intensityMatrix100 << std::endl;
+        for (float c : cosineSimToAnchorVec) {
+            std::cout << c << std::endl;
+        }
+        std::cout << "****" << std::endl;
+    }
+#endif
 
     e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() <= arraySizeMax); ree;
 
