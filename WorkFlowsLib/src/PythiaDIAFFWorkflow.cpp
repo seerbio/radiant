@@ -383,7 +383,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoreClassifierPntrs
             ); ree;
 
-//#define CALC_ENTRAP
+#define CALC_ENTRAP
 #ifdef CALC_ENTRAP
     int counter = 0;
     int decoys = 0;
@@ -623,9 +623,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
                 e = recalibrateMzVals(
                         diaTargetFrames,
-                        scanNumberVsScanTimeMS1,
-                        &m_targetDecoyCandidatePairScoretron,
-                        msReaderPointerAcc
+                        scanNumberVsScanTimeMS1
                         ); ree;
             }
 
@@ -977,9 +975,7 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
 
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
-        TargetDecoyCandidatePairScoretron *targetDecoyCandidatePairScoretron,
-        MsReaderPointerAcc *msReaderPointerAcc
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         ) {
 
     ERR_INIT
@@ -1031,7 +1027,7 @@ namespace {
 
             double classifierScore = -1.0;
             if (qValueScoreType == QValueScoreType::NNClassifierScore) {
-                classifierScore = cs->classifierScore;
+                classifierScore = 1.0 / cs->classifierScore;
             }
             else {
                 classifierScore = cs->discriminantScore;
@@ -1610,6 +1606,7 @@ namespace {
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             const QVector<float> &predictions,
             bool reportDecoys,
+            double fdrCutOff,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm,
             QVector<CandidateScores*> *candidateScoreClassifier
             ) {
@@ -1628,7 +1625,6 @@ namespace {
 
         int counter = 0;
         int falsePositives = 0;
-        const double fdrCutoff = 0.0075; //TODO make this settable
         for (const KarnnNNTarget &rp : *karnnNNTargetsNorm) {
 
             CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(rp.index);
@@ -1637,7 +1633,7 @@ namespace {
 
             ++counter;
 
-            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > fdrCutoff) {
+            if (rp.nnScore > 0.5 || (falsePositives / static_cast<double>(counter)) > fdrCutOff) {
                 if (!reportDecoys) {
                     break;
                 }
@@ -1709,6 +1705,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
             m_pythiaParameters.reportDecoys,
+            m_pythiaParameters.percentFDR,
             &karnnNNTargetsNorm,
             candidateScoreClassifier
             ); ree;

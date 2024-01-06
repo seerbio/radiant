@@ -614,6 +614,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
         e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
 
         CandidateScores candidateScoresPII;
+        candidateScoresPII.scanTimePredicted = candidateScores->scanTimePredicted;
         e = d_ptr->m_scoreOverseer.buildScores(
                 targetDecoyCandidatePair,
                 m_scanTimeMinMax,

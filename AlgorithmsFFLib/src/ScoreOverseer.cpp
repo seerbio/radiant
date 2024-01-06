@@ -1124,6 +1124,7 @@ Err ScoreOverseer::buildScores(
     }
 
     const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
+
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
     candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = -2.0f + static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
