@@ -91,6 +91,7 @@ public:
     QPair<ScanTime , ScanTime > scanTimeMinMax();
 
     QMap<ScanNumber, ScanPoints> getScanPoints();
+    QMap<ScanNumber, ScanPoints*> getScanPointsPntrs();
 
     Err getScanPoints(
             int msLevel,

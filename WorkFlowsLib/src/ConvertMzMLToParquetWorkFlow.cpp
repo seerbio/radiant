@@ -18,7 +18,7 @@ Err ConvertMzMLToParquetWorkFlow::convertMzMLToParquet(
     MsReaderMzML msReaderMzMl;
     e = msReaderMzMl.openFile(mzmlFilePath); ree;
 
-    *outputFilePath = mzmlFilePath + S_GLOBAL_SETTINGS.DOT_PRQ_DF;
+    *outputFilePath = mzmlFilePath + S_GLOBAL_SETTINGS.DOT_PRQ_FF;
 
     e = MsReaderParquet::writeMsReaderToParquet(
             *outputFilePath,
