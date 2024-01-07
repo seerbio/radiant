@@ -140,6 +140,8 @@ Err MsReaderParquet::openFile(
             &m_scanPoints
     ); ree;
 
+    QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
+
     ERR_RETURN
 }
 
@@ -160,7 +162,7 @@ namespace {
 
     Err buildRowsToWrite(
             const QMap<ScanNumber, MsScanInfo> &msScanInfos,
-            const QMap<ScanNumber, ScanPoints> &scanPoints,
+            const QMap<ScanNumber, ScanPoints*> &scanPoints,
             QVector<QSharedPointer<ParquetReaderInputBase>> *ptrs
             ) {
 
@@ -174,12 +176,12 @@ namespace {
 
             e = ErrorUtils::isTrue(scanPoints.contains(scanNumber)); ree;
 
-            const ScanPoints &scanPointsVec = scanPoints.value(scanNumber);
+            const ScanPoints *scanPointsVec = scanPoints.value(scanNumber);
 
             QVector<float> mzVals;
             QVector<float> intensityVals;
             e = MsReaderBase::splitScanPoints(
-                    scanPointsVec,
+                    *scanPointsVec,
                     &mzVals,
                     &intensityVals
             ); ree;
@@ -217,7 +219,7 @@ Err MsReaderParquet::writeMsReaderToParquet(
     QVector<QSharedPointer<ParquetReaderInputBase>> ptrs;
     e = buildRowsToWrite(
             sharedMsReaderBase->getMsScanInfos(),
-            sharedMsReaderBase->getScanPoints(),
+            sharedMsReaderBase->getScanPointsPntrs(),
             &ptrs
             ); ree;
 

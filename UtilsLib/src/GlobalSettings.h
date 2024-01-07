@@ -91,6 +91,7 @@ public:
     const QString DOT_LIB = QStringLiteral(".lib");
     const QString DOT_MAT = QStringLiteral(".mat");
     const QString DOT_PRQ_DF = QStringLiteral(".prqDF");
+    const QString DOT_PRQ_FF = QStringLiteral(".prqFF");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
     const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");

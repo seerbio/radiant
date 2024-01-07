@@ -19,7 +19,7 @@ SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.0")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
 
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
-#ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
+ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 ADD_SUBDIRECTORY("Apps/PythiaDIA")
 ADD_SUBDIRECTORY("ChemLib")
 ADD_SUBDIRECTORY("EigenLib")

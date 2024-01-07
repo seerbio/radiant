@@ -475,3 +475,14 @@ bool MsReaderBase::isInit() {
 void MsReaderBase::reset() {
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
 }
+
+QMap<ScanNumber, ScanPoints *> MsReaderBase::getScanPointsPntrs() {
+
+    QMap<ScanNumber, ScanPoints *> scanNumberVsScanPointsPtrs;
+
+    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
+        scanNumberVsScanPointsPtrs.insert(it.key(), &it.value());
+    }
+
+    return scanNumberVsScanPointsPtrs;
+}

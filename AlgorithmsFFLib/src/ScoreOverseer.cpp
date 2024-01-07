@@ -130,8 +130,10 @@ namespace {
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
             const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
 
-            QVector<float> eigenVectorLoader(rowCount, 0.0f);
-            eigenVectorLoader.reserve(rowCount);
+            QVector<float> eigenVectorLoaderIntensity(rowCount, 0.0f);
+            eigenVectorLoaderIntensity.reserve(rowCount);
+
+            QVector<float> mzVals;
             for (int i = 0; i < xicPoints.size(); i++) {
 
                 if (xicPoints[i].scanNumber < peakIntegrationIndexes.first
@@ -145,21 +147,14 @@ namespace {
                     continue;
                 }
 
-                eigenVectorLoader[frameIndexAdjusted] = xicPoints[i].intensity;
+                eigenVectorLoaderIntensity[frameIndexAdjusted] = xicPoints[i].intensity;
+                mzVals.push_back(xicPoints[i].mz);
             }
 
-            QVector<float> mzVals;
-            std::transform(
-                    xicPoints.begin(),
-                    xicPoints.end(),
-                    std::back_inserter(mzVals),
-                    [](const XICPoint &xp){return xp.mz;}
-                    );
+            (*mzMeanValsFound)[col] = mzVals.isEmpty() ? -1.0f : static_cast<float>(MathUtils::mean(mzVals));
+            (*stdMeanValsFound)[col] = mzVals.isEmpty() ? -1.0f : static_cast<float>(MathUtils::stDev(mzVals));
 
-            (*mzMeanValsFound)[col] = static_cast<float>(MathUtils::mean(mzVals));
-            (*stdMeanValsFound)[col] = mzVals.isEmpty() ? 0 : static_cast<float>(MathUtils::stDev(mzVals));
-
-            mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoader);
+            mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoaderIntensity);
         }
 
         ERR_RETURN
@@ -620,6 +615,12 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
                 rowSize,
                 m_intensityMatrix100Shadow.cols()
         ).eval();
+
+//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+//                m_intensityMatrix100Shadow,
+//                m_pythiaParams,
+//                m_gaussKernel
+//        );
     }
 
     const int tightColsMax = 6;
@@ -991,14 +992,11 @@ Err ScoreOverseer::buildScores(
             &intensityFoundMaxVec,
             &mzPeakLengthsVec,
             &alignmentMatrixLimits
-            );
+            ); ree;
 
     candidateScores->targetKey = m_mzTargetKey;
     candidateScores->scanNumber = m_msFrameTandem->scanNumberFromFrameIndex(bestAlignmentMatrixRowIndex + peakIntegrationIndexes.first);
     candidateScores->scanTime = m_msFrameTandem->scanTimeFromScanNumber(candidateScores->scanNumber);
-
-    //Figure out if you want to use this as well.
-//    candidateScores->mzFoundStDevVec = d_ptr->m_stdMeanValsFound;
 
     const int arraySizeMax = 12;
 
@@ -1051,6 +1049,18 @@ Err ScoreOverseer::buildScores(
             &bestAnchorColumn,
             &bestAnchorColumnIndex
     ); ree;
+
+//#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
+#ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && targetDecoyCandidatePair->charge() == 3) {
+        std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
+        std::cout << d_ptr->m_intensityMatrix100 << std::endl;
+        for (float c : cosineSimToAnchorVec) {
+            std::cout << c << std::endl;
+        }
+        std::cout << "**** " << bestAnchorColumnIndex << std::endl;
+    }
+#endif
 
     e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() <= arraySizeMax); ree;
 

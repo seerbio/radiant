@@ -324,11 +324,36 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
 
+//#define TROUBLESHOOT_MISSING
+#ifdef TROUBLESHOOT_MISSING
+    for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
+        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && cs->targetDecoyCandidatePair->charge() == 3) {
+            qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
+            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->classifierScore << cs->qValue;
+            qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
+            qDebug() << "^^^^^^^^^^";
+            einfo;
+        }
+    }
+#endif
+
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
     e = filterScoredCandidatesTo50PercentFDR(
             &candidateScoresTargetsAndDecoys,
             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
     ); ree;
+
+#ifdef TROUBLESHOOT_MISSING
+    for (CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
+        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && cs->targetDecoyCandidatePair->charge() == 3) {
+            qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
+            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->classifierScore << cs->qValue;
+            qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
+            qDebug() << "^^^^^^^^^^";
+            einfo;
+        }
+    }
+#endif
 
     qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
