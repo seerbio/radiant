@@ -130,8 +130,10 @@ namespace {
             const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
             const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashed);
 
-            QVector<float> eigenVectorLoader(rowCount, 0.0f);
-            eigenVectorLoader.reserve(rowCount);
+            QVector<float> eigenVectorLoaderIntensity(rowCount, 0.0f);
+            eigenVectorLoaderIntensity.reserve(rowCount);
+
+            QVector<float> mzVals;
             for (int i = 0; i < xicPoints.size(); i++) {
 
                 if (xicPoints[i].scanNumber < peakIntegrationIndexes.first
@@ -145,21 +147,14 @@ namespace {
                     continue;
                 }
 
-                eigenVectorLoader[frameIndexAdjusted] = xicPoints[i].intensity;
+                eigenVectorLoaderIntensity[frameIndexAdjusted] = xicPoints[i].intensity;
+                mzVals.push_back(xicPoints[i].mz);
             }
 
-            QVector<float> mzVals;
-            std::transform(
-                    xicPoints.begin(),
-                    xicPoints.end(),
-                    std::back_inserter(mzVals),
-                    [](const XICPoint &xp){return xp.mz;}
-                    );
+            (*mzMeanValsFound)[col] = mzVals.isEmpty() ? -1.0f : static_cast<float>(MathUtils::mean(mzVals));
+            (*stdMeanValsFound)[col] = mzVals.isEmpty() ? -1.0f : static_cast<float>(MathUtils::stDev(mzVals));
 
-            (*mzMeanValsFound)[col] = static_cast<float>(MathUtils::mean(mzVals));
-            (*stdMeanValsFound)[col] = mzVals.isEmpty() ? 0 : static_cast<float>(MathUtils::stDev(mzVals));
-
-            mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoader);
+            mat->col(col) = EigenUtils::convertQVectorToEigenVector(eigenVectorLoaderIntensity);
         }
 
         ERR_RETURN
