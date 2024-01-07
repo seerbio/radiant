@@ -140,6 +140,8 @@ Err MsReaderParquet::openFile(
             &m_scanPoints
     ); ree;
 
+    QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
+
     ERR_RETURN
 }
 
