@@ -432,7 +432,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     for (CandidateScores *cs : candidateScoreClassifierPntrs) {
         counter++;
 
-        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN")) {
+        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
             entrap++;
         }
 
