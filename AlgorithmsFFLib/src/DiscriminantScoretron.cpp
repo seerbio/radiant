@@ -275,7 +275,5 @@ Err DiscriminantScoretron::setDiscriminantScoreForCandidates(
     }
 
     ERR_RETURN
-
-
-
+    
 }
