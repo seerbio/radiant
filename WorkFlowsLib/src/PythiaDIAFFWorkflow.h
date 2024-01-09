@@ -62,11 +62,6 @@ private:
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
             );
 
-    Err setDiscriminantScoreForCandidates(
-        bool useExtendedScores,
-        bool useNeuralNetworkScores
-        );
-
     Err recalibrateMzVals(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
