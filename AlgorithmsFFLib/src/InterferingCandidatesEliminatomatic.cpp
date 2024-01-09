@@ -12,7 +12,7 @@ Err InterferingCandidatesEliminatomatic::removeInterferingCandidates(
         int ionsSharedToReject,
         double mzMinMS2,
         double mzMaxMS2,
-        QVector<CandidateScores *> *candidates
+        QVector<CandidateScores*> *candidates
         ) {
 
     ERR_INIT

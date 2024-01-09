@@ -295,21 +295,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
 
     if (m_msCalibratomatic.isInit()) {
-        e = msReaderPointerAcc.ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
-        ms1FramePtrs.clear();
-        for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
-            ms1FramePtrs.insert(it.key(), &it.value());
-        }
-        e = msFrameMS1.init(ms1FramePtrs, msReaderPointerAcc.ptr->getScanNumberVsScanTime()); ree;
-        e = turboXICMS1.init(msFrameMS1.frameIndexVsScanPoints()); ree;
-
-        e = m_targetDecoyCandidatePairScoretron.init(
-                m_pythiaParameters,
-                scanNumberVsScanPointsMS1,
-                &msReaderPointerAcc,
-                &diaTargetFrames,
-                &turboXICMS1
-        ); ree;
 
         e = optimizeParameters(
                 candidateScoresTrainings,
@@ -1212,7 +1197,6 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
     for (CandidateScores *cs : candidateScoresTrainings) {
         mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
-//        qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->targetKey;
     }
 
     QVector<PythiaParameters> pythiaParametersExperiments;
