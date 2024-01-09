@@ -645,28 +645,28 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         e = m_msCalibratomatic.initRtOnly(msCalibrationReaderRows); ree;
         qDebug() << "scanTimeWindowStDev x" << numberOfStDevs <<":" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
-        if (minTrainingCount >= idealTrainingCountAtGivenFDR) {
+        const int minMzTrainingSize = 200;
+        const QString twoPercenFDRKey = "2";
+        if (fdrVsCount.value(twoPercenFDRKey) >= minMzTrainingSize) {
 
-            const int minMzTrainingSize = 200;
-            const QString twoPercenFDRKey = "2";
-            if (fdrVsCount.value(twoPercenFDRKey) >= minMzTrainingSize) {
-
-                msCalibrationReaderRows.resize(fdrVsCount.value(twoPercenFDRKey));
+            msCalibrationReaderRows.resize(fdrVsCount.value(twoPercenFDRKey));
 
 //#define TIGHT_IRT_CAL
 #ifdef TIGHT_IRT_CAL
 
-//TODO Test this en masse for stats
+            //TODO Test this en masse for stats
 
                 e = m_msCalibratomatic.initRtOnly(msCalibrationReaderRows); ree;
                 qDebug() << "scanTimeWindowStDev x" << numberOfStDevs <<":" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 #endif
-                e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
-                e = recalibrateMzVals(
-                        diaTargetFrames,
-                        scanNumberVsScanTimeMS1
-                        ); ree;
-            }
+            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
+            e = recalibrateMzVals(
+                    diaTargetFrames,
+                    scanNumberVsScanTimeMS1
+            ); ree;
+        }
+
+        if (minTrainingCount >= idealTrainingCountAtGivenFDR) {
 
             QVector<CandidateScores*> candidateScoresPntrsOpt;
             e = buildCandidateScoresPtrs(&candidateScoresPntrsOpt); ree;
@@ -1430,7 +1430,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             selectionFractionBypass,
             &mzTargetKeyVsTargetDecoyCandidatePointers
     ); ree;
-    qDebug() << "Targets fetched" << et.restart() << "mSec";
 
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
