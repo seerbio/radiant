@@ -945,7 +945,6 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         candidateScoresTargetsPtrs.push_back(tdcs.candidateScoresTarget);
         candidateScoresDecoysPtrs.push_back(tdcs.candidateScoresDecoy);
     }
-    qDebug() << "build separate" << et.restart() << "mSec";
 
     QVector<BuildClassiferParallelInput> inputs;
     e = buildParallelInput(
@@ -970,7 +969,6 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
                 &b
                 ); ree;
     }
-    qDebug() << "build classifier" << et.restart() << "mSec";
 
     QVector<float> weights;
     e = ClassifierWeightsManager::fitWeights(A, b, &weights); ree;
@@ -1009,7 +1007,6 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
         CandidateScores* csDecoy = candidateScoresDecoysPtrs.at(i);
         csDecoy->discriminantScore = discScoreDecoys.at(i);
     }
-    qDebug() << "Setting scores" << et.restart() << "mSec";
 
     ERR_RETURN
 }

@@ -263,9 +263,6 @@ namespace {
             const double ppmHi = ppmMean + ppmTol;
             const bool ppmOutOfRange = i.ppm < ppmLo || i.ppm > ppmHi;
 
-            const double stDevTol = stDevStDev * (S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
-            const double stDevLo = stDevMean - stDevTol;
-            const double stDevHi = stDevMean + stDevTol;
             const bool stDevOutOfRange = i.stDev > stDevMedian;
 
             return ppmOutOfRange || stDevOutOfRange;
