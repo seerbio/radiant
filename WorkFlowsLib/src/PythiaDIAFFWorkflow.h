@@ -89,8 +89,10 @@ private:
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
-    Err removeInterferingCandidates(
+    static Err removeInterferingCandidates(
             int ionsSharedToReject,
+            double mzMinMS2,
+            double mzMaxMS2,
             QVector<CandidateScores*> *candidates
             );
 

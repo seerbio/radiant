@@ -359,6 +359,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = removeInterferingCandidates(
             m_pythiaParameters.ionsSharedToReject,
+            m_pythiaParameters.mzMinMS2,
+            m_pythiaParameters.mzMaxMS2,
             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
             ); ree;
     qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
@@ -521,7 +523,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err PythiaDIAFFWorkflow::buildCalibration(
         MsReaderPointerAcc *msReaderPointerAcc,
@@ -631,7 +632,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         candidateScoresPntrs.resize(minTrainingCount);
 
-        e = removeInterferingCandidates(m_pythiaParameters.ionsSharedToReject, &candidateScoresPntrs); ree;
+        e = removeInterferingCandidates(
+                m_pythiaParameters.ionsSharedToReject,
+                m_pythiaParameters.mzMinMS2,
+                m_pythiaParameters.mzMaxMS2,
+                &candidateScoresPntrs
+                ); ree;
         qDebug() << candidateScoresPntrs.size() << "after filtering";
 
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
@@ -685,7 +691,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             const QString filename = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
             e = ParquetReader::write(msCalibrationReaderRows, filename); ree;
 #endif
-
             break;
         }
     }
@@ -1490,6 +1495,8 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *can
 
 Err PythiaDIAFFWorkflow::removeInterferingCandidates(
         int ionsSharedToReject,
+        double mzMinMS2,
+        double mzMaxMS2,
         QVector<CandidateScores*> *candidates
         ) {
 
@@ -1519,7 +1526,7 @@ Err PythiaDIAFFWorkflow::removeInterferingCandidates(
             continue;
         }
 
-        const int cols = static_cast<int>(std::round(m_pythiaParameters.mzMaxMS2 - m_pythiaParameters.mzMinMS2));
+        const int cols = static_cast<int>(std::round(mzMaxMS2 - mzMinMS2));
         const int rows = foundCandidatesCountInScan;
         Eigen::MatrixX<float> mat(rows, cols);
         mat.setZero();

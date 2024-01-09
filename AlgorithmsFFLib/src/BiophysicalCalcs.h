@@ -6,6 +6,7 @@
 #define PYTHIADIACPP_BIOPHYSICALCALCS_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "AminoAcids.h"
 #include "GlobalSettings.h"
 
 #include <QHash>
@@ -33,11 +34,14 @@ public:
             int monoOffset
             );
 
-    static double calculateThomsonFromMass(
-            double mass,
+    template<typename T>
+    static T calculateThomsonFromMass(
+            T mass,
             int charge,
             int monoOffset = 0
-            );
+            ) {
+            return static_cast<T>((mass + (charge * ChemConstants::PROTON) + (monoOffset * ChemConstants::NEUTRON) ) / charge) ;
+    }
 
     static QVector<double> buildTandemFragmentMasses(
             const QString &seq,

@@ -4,8 +4,6 @@
 
 #include "BiophysicalCalcs.h"
 
-#include "AminoAcids.h"
-
 #include <Eigen/Dense>
 
 #include <numeric>
@@ -54,14 +52,6 @@ QVector<QPair<PeptideString, double>> BiophysicalCalcs::calculatePeptideMasses(
     }
 
     return output;
-}
-
-double BiophysicalCalcs::calculateThomsonFromMass(
-        double mass,
-        int charge,
-        int monoOffset /* =0 */
-        ) {
-    return (mass + (charge * ChemConstants::PROTON) + (monoOffset * ChemConstants::NEUTRON) ) / charge ;
 }
 
 QVector<double>
