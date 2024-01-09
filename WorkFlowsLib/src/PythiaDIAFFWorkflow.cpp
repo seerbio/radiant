@@ -1014,6 +1014,24 @@ Err PythiaDIAFFWorkflow::setDiscriminantScoreForCandidates(
     ERR_RETURN
 }
 
+namespace {
+
+    Err recalibrationLogic(
+        MsCalibratomatic msCalibratomatic,
+        const QMap<ScanNumber, ScanPoints*> &scanPoints
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(msCalibratomatic.isInit()); ree;
+        e = ErrorUtils::isNotEmpty(scanPoints); ree;
+
+        e = msCalibratomatic.recalibrateScanPoints(scanPoints); ree;
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
@@ -1033,9 +1051,30 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
     const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
 
-    for (const MzTargetKey &k: diaTargetFrameKeys) {
-        e = m_msCalibratomatic.recalibrateScanPoints(diaTargetFrames->value(k)); ree;
+#define RECAL_PARALLEL
+#ifdef RECAL_PARALLEL
+    const auto reCalBinder = std::bind(
+            recalibrationLogic,
+            m_msCalibratomatic,
+            std::placeholders::_1
+            );
+
+    const QList<QMap<ScanNumber, ScanPoints*>> &tandemPointsVec = diaTargetFrames->values();
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+            tandemPointsVec,
+            reCalBinder
+            );
+    futures.waitForFinished();
+
+    for (const Err &err : futures) {
+        e = err; ree;
     }
+#else
+    for (const MzTargetKey &k: diaTargetFrameKeys) {
+        e = recalibrationLogic(m_msCalibratomatic, diaTargetFrames->value(k)); ree;
+    }
+#endif
 
     qDebug() << "Recalibrating MS1 mz vals frame";
     e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
