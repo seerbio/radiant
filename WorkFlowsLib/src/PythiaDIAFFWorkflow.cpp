@@ -11,10 +11,12 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
+#include "InterferingCandidatesEliminatomatic.h"
 #include "MsFrame.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "ProteinDigestomatic.h"
+#include "QValueSettertron.h"
 #include "TurboXIC.h"
 
 #include <QElapsedTimer>
@@ -357,7 +359,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
-    e = removeInterferingCandidates(
+    e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
             m_pythiaParameters.ionsSharedToReject,
             m_pythiaParameters.mzMinMS2,
             m_pythiaParameters.mzMaxMS2,
@@ -604,7 +606,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         QVector<CandidateScores*> candidateScoresPntrs;
         e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
+        e = QValueSettertron::setQValueForCandidates(
+                QValueSettertron::QValueScoreType::DiscriminantScore,
+                &candidateScoresPntrs
+                ); ree;
 
         std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
             return l->discriminantScore < r->discriminantScore;
@@ -632,7 +637,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         candidateScoresPntrs.resize(minTrainingCount);
 
-        e = removeInterferingCandidates(
+        e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
                 m_pythiaParameters.ionsSharedToReject,
                 m_pythiaParameters.mzMinMS2,
                 m_pythiaParameters.mzMaxMS2,
@@ -743,12 +748,6 @@ namespace {
         ScoresTargets *scoresTarget;
         ScoresDecoys  *scoresDecoy;
     };
-
-    QString buildCandidateKey(const CandidateScores &candidateScores) {
-        const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
-        return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
-                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
-    }
 
     struct BuildClassiferParallelInput {
         QVector<ScoresTargets*> scoresTargets;
@@ -1088,115 +1087,6 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
 namespace {
 
-    Err buildsetQValueForCandidateScoresInputs(
-            const QValueScoreType &qValueScoreType,
-            QVector<CandidateScores*> *candidateScores,
-            QHash<PeptideSequenceChargeKey, double> *identifierVsTargets,
-            QHash<PeptideSequenceChargeKey, double> *identifierVsDecoys
-
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
-        identifierVsTargets->clear();
-        identifierVsDecoys->clear();
-
-        for (const CandidateScores *cs : *candidateScores) {
-
-
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
-
-            double classifierScore = -1.0;
-            if (qValueScoreType == QValueScoreType::NNClassifierScore) {
-                classifierScore = 1.0 / cs->classifierScore;
-            }
-            else {
-                classifierScore = cs->discriminantScore;
-            }
-
-            if (cs->isDecoy) {
-                identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
-                continue;
-            }
-
-            identifierVsTargets->insert(peptideSequenceChargeKey, classifierScore);
-
-        }
-
-        ERR_RETURN
-    }
-
-    Err setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
-            const QHash<PeptideSequenceChargeKey, double> &identifierVsQValue,
-            const QHash<PeptideSequenceChargeKey, double> &identifierVsDecoyRatio,
-            QVector<CandidateScores*> *candidateScores
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
-
-        for (CandidateScores *cs : *candidateScores) {
-
-            if (cs->isDecoy) {
-                continue;
-            }
-
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
-
-            e = ErrorUtils::isTrue(identifierVsQValue.contains(peptideSequenceChargeKey)); ree;
-            e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
-
-            cs->qValue = identifierVsQValue.value(peptideSequenceChargeKey);
-            cs->decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::setQValueForCandidates(
-        const QValueScoreType &qValueScoreType,
-        QVector<CandidateScores*> *candidateScores
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
-
-    QElapsedTimer et;
-    et.start();
-
-    QHash<PeptideSequenceChargeKey, double> identifierVsTargets;
-    QHash<PeptideSequenceChargeKey, double> identifierVsDecoys;
-    e = buildsetQValueForCandidateScoresInputs(
-            qValueScoreType,
-            candidateScores,
-            &identifierVsTargets,
-            &identifierVsDecoys
-    ); ree;
-
-    QHash<PeptideSequenceChargeKey, double> identifierVsQValue;
-    QHash<PeptideSequenceChargeKey, double> identifierVsDecoyRatio;
-    e = MathUtils::calculateQValue(
-            identifierVsTargets,
-            identifierVsDecoys,
-            &identifierVsQValue,
-            &identifierVsDecoyRatio
-    ); ree;
-
-    e = setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
-            identifierVsQValue,
-            identifierVsDecoyRatio,
-            candidateScores
-    ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
     struct DOEResult {
         double ppm = -1.0;
         double scanTimeStDev = -1.0;
@@ -1362,7 +1252,10 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
 
         QVector<CandidateScores*> candidateScoresPntrs;
         e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-        e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
+        e = QValueSettertron::setQValueForCandidates(
+                QValueSettertron::QValueScoreType::DiscriminantScore,
+                &candidateScoresPntrs
+                ); ree;
 
         QMap<QString, int> fdrVsCount;
         e = FDRCLassifierNeuralNet::outputFDRResults(
@@ -1450,7 +1343,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QVector<CandidateScores*> candidateScoresPntrs;
     e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-    e = setQValueForCandidates(QValueScoreType::DiscriminantScore, &candidateScoresPntrs); ree;
+    e = QValueSettertron::setQValueForCandidates(
+            QValueSettertron::QValueScoreType::DiscriminantScore,
+            &candidateScoresPntrs
+            ); ree;
     qDebug() << "Targets qval'd" << et.restart() << "mSec";
 
     QMap<QString, int> fdrVsCount;
@@ -1489,98 +1385,6 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *can
             std::back_inserter(*candidateScoresPntrs),
             [](CandidateScores &cs){return &cs;}
     );
-
-    ERR_RETURN
-}
-
-Err PythiaDIAFFWorkflow::removeInterferingCandidates(
-        int ionsSharedToReject,
-        double mzMinMS2,
-        double mzMaxMS2,
-        QVector<CandidateScores*> *candidates
-        ) {
-
-    ERR_INIT
-
-    QMap<ScanNumber, QVector<CandidateScores*>> scanNumberVsCandidateScoresPtr;
-    for (int i = 0; i < candidates->size(); i++) {
-        CandidateScores *cs = candidates->at(i);
-        scanNumberVsCandidateScoresPtr[cs->scanNumber].push_back(cs);
-    }
-
-    QVector<CandidateScores*> filteredCandidates;
-    for (auto it = scanNumberVsCandidateScoresPtr.begin(); it != scanNumberVsCandidateScoresPtr.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        QVector<CandidateScores*> &scanNumberCandidates = it.value();
-        const int foundCandidatesCountInScan = scanNumberCandidates.size();
-
-        std::sort(
-                scanNumberCandidates.rbegin(),
-                scanNumberCandidates.rend(),
-                [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-                );
-
-        if (foundCandidatesCountInScan == 1) {
-            filteredCandidates.push_back(scanNumberCandidates.front());
-            continue;
-        }
-
-        const int cols = static_cast<int>(std::round(mzMaxMS2 - mzMinMS2));
-        const int rows = foundCandidatesCountInScan;
-        Eigen::MatrixX<float> mat(rows, cols);
-        mat.setZero();
-
-        int top6MzValsFound = 12;
-
-        for (int row = 0; row < rows; row++) {
-
-            const CandidateScores* cs = scanNumberCandidates.at(row);
-
-            const QVector<float> top6MzValsFoundArr = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6MzValsFound);
-            for (float mz : top6MzValsFoundArr) {
-                const int col = static_cast<int>(std::round(mz));
-
-                if (col < 0 || col >= cols) {
-                    continue;
-                }
-                mat.coeffRef(row, col) = 1.0f;
-            }
-        }
-
-        QSet<int> excludeIndexes;
-        for (int row = 0; row < rows - 1; row++) {
-
-            const Eigen::VectorX<float> &vecBase = mat.row(row);
-
-            int rowNext = row + 1;
-            const Eigen::MatrixX<float> &matNext = mat.block(rowNext, 0, rows - rowNext, cols);
-
-            const Eigen::VectorX<float> dotProds =  matNext * vecBase;
-
-            if (static_cast<int>(dotProds.maxCoeff()) < ionsSharedToReject) {
-                continue;
-            }
-
-            for (int i = 0; i < dotProds.size(); i++) {
-                const float sharedIons = dotProds.coeff(i);
-                if (static_cast<int>(sharedIons) >= ionsSharedToReject) {
-                    excludeIndexes.insert(row + i + 1);
-                }
-            }
-        }
-
-        for (int i = 0; i < scanNumberCandidates.size(); i++) {
-            CandidateScores *cs = scanNumberCandidates.at(i);
-            if (excludeIndexes.contains(i)) {
-                continue;
-            }
-            filteredCandidates.push_back(cs);
-        }
-    }
-
-    candidates->clear();
-    *candidates = filteredCandidates;
 
     ERR_RETURN
 }
@@ -1777,7 +1581,10 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             candidateScoreClassifier
             ); ree;
 
-    e = setQValueForCandidates(QValueScoreType::NNClassifierScore, candidateScoreClassifier); ree
+    e = QValueSettertron::setQValueForCandidates(
+            QValueSettertron::QValueScoreType::NNClassifierScore,
+            candidateScoreClassifier
+            ); ree
 
     ERR_RETURN
 }

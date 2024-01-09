@@ -21,11 +21,6 @@ class MsScanInfo;
 class MsReaderPointerAcc;
 class TargetDecoyCandidatePair;
 
-enum class QValueScoreType {
-    DiscriminantScore,
-    NNClassifierScore
-};
-
 struct KarnnNNTarget {
     QString seq;
     float nnScore = 0.0;
@@ -89,13 +84,6 @@ private:
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
 
-    static Err removeInterferingCandidates(
-            int ionsSharedToReject,
-            double mzMinMS2,
-            double mzMaxMS2,
-            QVector<CandidateScores*> *candidates
-            );
-
     Err applyNeuralNetClassifier(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             int seed,
@@ -106,13 +94,6 @@ private:
         const QString &fastaFilePath,
         QVector<CandidateScores*> *candidateScores
         );
-
-
-    static Err setQValueForCandidates(
-            const QValueScoreType &qValueScoreType,
-            QVector<CandidateScores*> *candidateScores
-            );
-
 
 private:
 
