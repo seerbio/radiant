@@ -439,7 +439,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         if (cs->isDecoy) {
             decoys++;
         }
-        if (decoys/(double)counter >= 0.01) {
+        if (decoys/static_cast<double>(counter) >= 0.01) {
             break;
         }
 
