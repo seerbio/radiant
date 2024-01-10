@@ -18,7 +18,7 @@ using namespace Error;
 
 namespace MsParquetReaderNamespace {
 
-    const QString PRQ_DF_SUFFIX = QStringLiteral("prqDF");
+    const QString PRQ_FF_SUFFIX = QStringLiteral("prqFF");
 
     const QString MS_LEVEL = QStringLiteral("msLevel");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
