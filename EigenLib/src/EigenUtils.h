@@ -43,22 +43,25 @@ public:
     /*!
     * @brief Returns the index of a vector nearest to a given value
     */
-    static QVector<int> returnIndexNearestToCutoff(const Eigen::RowVectorXd &vec,
-                                                   double value,
-                                                   int topX = 1) {
+    template<typename T>
+    static QVector<int> returnIndexNearestToCutoff(
+            const Eigen::RowVectorX<T> &vec,
+            T value,
+            int topX = 1
+                    ) {
 
         topX = std::min(topX, static_cast<int>(vec.size()));
-        const int sortLimit = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
+        const int sortLimit = std::min(topX, static_cast<int>(vec.size() - 1) );
 
-        Eigen::RowVectorXd diff = (vec.array() - value).cwiseAbs();
-        std::vector<double> diffVec(diff.data(), diff.data() + diff.size());
+        Eigen::RowVectorX<T> diff = (vec.array() - value).cwiseAbs();
+        std::vector<T> diffVec(diff.data(), diff.data() + diff.size());
 
-        QVector<QPair<int, double>> ogIndexPoints;
+        QVector<QPair<int, T>> ogIndexPoints;
         for (int i = 0; i < diffVec.size(); i++) {
             ogIndexPoints.push_back({i, diffVec.at(i)});
         }
 
-        const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
+        const auto sortLogic = [](const QPair<int, T> &l, const QPair<int, T> &r){return l.second < r.second;};
         std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + sortLimit, ogIndexPoints.end(), sortLogic);
 
         QVector<int> returnVec;
@@ -70,45 +73,32 @@ public:
     }
 
     /*!
-    * @brief Returns the index of a vector nearest to a given value
-    */
-    template <typename T>
-    static QVector<int> returnIndexNearestToCutoff(const QVector<T> &_container,
-                                                   T value,
-                                                   int topX = 1) {
-
-        topX = std::min(topX, static_cast<int>(_container.size()));
-        //TODO replace w/ EigenUtils::convertQvectorToEigenVector
-        QVector<T> container = _container;
-        Eigen::Map<Eigen::VectorX<T>> vec(container.data(), container.size());
-
-        return returnIndexNearestToCutoff(vec.template cast<double>(), static_cast<double>(value), topX);
-    }
-
-    /*!
     * @brief Calculates root mean squared error given two Eigen vectors
     */
-    static double calculateRMSE(const Eigen::RowVectorXd &vec1, const Eigen::RowVectorXd &vec2) {
-        Eigen::RowVectorXd vec = (vec1 - vec2);
-        return std::sqrt(vec.cwiseProduct(vec).sum() / vec.cols());
-    }
+    template <typename T>
+    static Err calculateRMSE(
+            const Eigen::VectorX<T> &vec1,
+            const Eigen::VectorX<T> &vec2,
+            double *rmseOutput
+            ) {
+        ERR_INIT
+        e = ErrorUtils::isEqual(vec1.size(), vec2.size()); ree;
 
-    /*!
-    * @brief Calculates the mean of an Eigen vector
-    */
-    template <typename EigenVector>
-    static double calculateMeanOfVector(const EigenVector &vec) {
-        return vec.sum() / vec.size();
+        const Eigen::VectorX<T> diff = vec1 - vec2;
+        T squaredNorm = diff.squaredNorm();
+        *rmseOutput = std::sqrt(squaredNorm / static_cast<double>(vec1.size()));
+
+        ERR_RETURN
     }
 
     /*!
     * @brief Calculates the Standard Deviation of an Eigen Vector
     */
-    template <typename EigenVector>
-    static double calculateStDevOfVector(const EigenVector &vec) {
-        double mean = calculateMeanOfVector(vec);
-        Eigen::RowVectorXd diff = vec.array() - mean;
-        return std::sqrt(diff.cwiseProduct(diff).sum() / vec.size());
+    template <typename T>
+    static double calculateStDevOfVector(const Eigen::VectorX<T> &vec) {
+        Eigen::VectorX<T> diff = vec.array() - vec.mean();
+        T variance = diff.squaredNorm() / static_cast<double>(vec.size());
+        return std::sqrt(variance);
     }
 
     /*!
@@ -320,7 +310,6 @@ public:
     template <typename T>
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
-//        topX = std::min(topX, static_cast<int>(vec.size()));
         topX = std::min( (topX), static_cast<int>(vec.size() - 1) );
 
         std::vector<T> stdVec(vec.data(), vec.data() + vec.size());
@@ -651,43 +640,6 @@ public:
             }
         }
         *mat = newMatrix;
-    }
-
-
-    template<typename T>
-    static Err writeMatrixToFile(
-            const Eigen::MatrixX<T> &mat,
-            const QString &outputFilePath
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(mat.rows() > 0); ree;
-
-        QFile file(outputFilePath);
-        if (file.open(QIODevice::ReadWrite)) {
-
-            QTextStream stream(&file);
-
-            for (int i = 0; i < mat.rows(); i++) {
-
-                const Eigen::VectorX<T> v = mat.row(i);
-
-                QStringList rtwQStringList;
-                for (int j = 0; j < v.size(); j++) {
-                    rtwQStringList.push_back(QString::number(v.coeff(j)));
-                }
-
-                stream << rtwQStringList.join(S_GLOBAL_SETTINGS.COMMA);
-                stream << S_GLOBAL_SETTINGS.NEWLINE;
-            }
-
-        }
-
-        file.close();
-        qDebug() << mat.rows() << "Rows written to" << outputFilePath;
-
-        ERR_RETURN
     }
 
     template<typename T>

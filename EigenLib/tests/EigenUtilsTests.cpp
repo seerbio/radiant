@@ -46,6 +46,14 @@ private Q_SLOTS:
     void replaceNaNTest();
     void trimVectorTest();
 
+    void returnIndexNearestToCutoffTest();
+    void calculateRMSETest();
+    void calculateStDevOfVectorTest();
+
+    void returnTopIndexAndValueTest();
+    void returnTopIndexAndValuesTest();
+    void apexIndexesOnlyTest();
+
 
 };
 
@@ -73,8 +81,7 @@ void EigenUtilsTests::initTestCase() {
 }
 
 
-void EigenUtilsTests::cleanupTestCase()
-{}
+void EigenUtilsTests::cleanupTestCase(){}
 
 void EigenUtilsTests::apexesTest() {
 
@@ -273,6 +280,104 @@ void EigenUtilsTests::trimVectorTest() {
 
     QCOMPARE(vecTrimmed.size(), 3);
     QCOMPARE(vecTrimmed.sum(), 4);
+}
+
+void EigenUtilsTests::returnIndexNearestToCutoffTest() {
+
+    Eigen::RowVectorX<double> vec(5);
+    vec << 3.4, 3.3, 3.2, 3.2, 3.7;
+
+    const QVector<int> indexes = EigenUtils::returnIndexNearestToCutoff(vec, 2.2, 1);
+    QCOMPARE(indexes.front(), 2);
+
+    QVector<int> indexes2 = EigenUtils::returnIndexNearestToCutoff(vec, 2.2, 2);
+    std::sort(indexes2.begin(), indexes2.end());
+    QCOMPARE(indexes2.size(), 2);
+    QCOMPARE(indexes2.front(), 2);
+    QCOMPARE(indexes2.back(), 3);
+
+}
+
+void EigenUtilsTests::calculateRMSETest() {
+
+    Eigen::VectorX<double> vec1(3);
+    vec1 << 1.1, 2.2, 3.3;
+
+    Eigen::VectorX<double> vec2(3);
+    vec2 << 2.1, 3.2, 4.3;
+
+    ERR_INIT
+    double rmse;
+    e = EigenUtils::calculateRMSE(vec1, vec2, &rmse);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(rmse, 1.0);
+}
+
+void EigenUtilsTests::calculateStDevOfVectorTest() {
+
+    Eigen::VectorX<double> vec1(3);
+    vec1 << 1.0, 2.0, 3.0;
+
+    const double stDev = EigenUtils::calculateStDevOfVector(vec1);
+    QCOMPARE(MathUtils::pRound(stDev, 3), 0.816);
+
+}
+
+void EigenUtilsTests::returnTopIndexAndValueTest() {
+
+    Eigen::VectorX<double> vec(5);
+    vec << 3.4, 3.3, 3.2, 3.2, 3.7;
+
+    const QPair<int, double> topIndexVsVal = EigenUtils::returnTopIndexAndValue(vec);
+    QCOMPARE(topIndexVsVal.first, 4);
+    QCOMPARE(topIndexVsVal.second, 3.7);
+
+}
+
+void EigenUtilsTests::returnTopIndexAndValuesTest() {
+
+    Eigen::VectorX<double> vec(5);
+    vec << 3.4, 3.3, 3.2, 3.2, 3.7;
+
+    const QVector<QPair<int, double>> topIndexVsVals = EigenUtils::returnTopXIndexAndValues(vec, 2);
+    QCOMPARE(topIndexVsVals.size(), 2);
+    QCOMPARE(topIndexVsVals.front().first, 4);
+    QCOMPARE(topIndexVsVals.front().second, 3.7);
+    QCOMPARE(topIndexVsVals.back().first, 0);
+    QCOMPARE(topIndexVsVals.back().second, 3.4);
+
+}
+
+void EigenUtilsTests::apexIndexesOnlyTest() {
+
+    Eigen::VectorX<double> vec(5);
+    vec << 3.4, 3.5, 3.6, 3.4, 3.1;
+
+    const QVector<int> apexes = EigenUtils::apexesIndexesOnly(vec);
+    QCOMPARE(apexes.size(), 1);
+    QCOMPARE(apexes.at(0), 2);
+
+    Eigen::VectorX<double> vecLeftEdge(5);
+    vecLeftEdge << 3.9, 3.5, 3.6, 3.4, 3.1;
+    const QVector<int> apexesLeft = EigenUtils::apexesIndexesOnly(vecLeftEdge);
+    QCOMPARE(apexesLeft.size(), 2);
+    QCOMPARE(apexesLeft.at(0), 0);
+    QCOMPARE(apexesLeft.at(1), 2);
+
+    Eigen::VectorX<double> vecRightEdge(5);
+    vecRightEdge << 3.1, 3.5, 3.6, 3.4, 3.9;
+    const QVector<int> apexesRight = EigenUtils::apexesIndexesOnly(vecRightEdge);
+    QCOMPARE(apexesRight.size(), 2);
+    QCOMPARE(apexesRight.at(0), 2);
+    QCOMPARE(apexesRight.at(1), 4);
+
+
+    Eigen::VectorX<double> vecConsecutive(5);
+    vecConsecutive << 3.1, 3.5, 3.6, 3.6, 3.0;
+    const QVector<int> apexesConsecutive = EigenUtils::apexesIndexesOnly(vecConsecutive);
+    QCOMPARE(apexesConsecutive.size(), 1);
+    QCOMPARE(apexesConsecutive.at(0), 2);
+
 }
 
 

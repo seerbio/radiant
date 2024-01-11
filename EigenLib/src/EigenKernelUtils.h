@@ -212,8 +212,8 @@ public:
         Eigen::VectorX<T> vecResized(vec.size() + paddingAmount);
 
         const int halfWindow = std::floor(paddingAmount / 2.0);
-        const T frontPadding = static_cast<T>(EigenUtils::calculateMeanOfVector(vec.head(halfWindow + 1)));
-        const T backPadding = static_cast<T>(EigenUtils::calculateMeanOfVector(vec.tail(halfWindow + 1)));
+        const T frontPadding = static_cast<T>((vec.head(halfWindow + 1).mean()));
+        const T backPadding = static_cast<T>((vec.tail(halfWindow + 1).mean()));
         for(int i = 0; i < halfWindow; i++){
             vecResized.coeffRef(i) = frontPadding;
             vecResized.coeffRef(vecResized.size() - 1 - i) = backPadding;
