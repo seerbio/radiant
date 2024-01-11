@@ -54,12 +54,15 @@ private Q_SLOTS:
     void returnTopIndexAndValuesTest();
     void apexIndexesOnlyTest();
 
+    void normalizeVectorTest();
+    void normalizeMatrixTest();
+    void thresholdMatrixTest();
+    void thresholdVectorTest();
 
 };
 
 
-EigenUtilsTests::EigenUtilsTests() : QObject()
-{}
+EigenUtilsTests::EigenUtilsTests() : QObject(){}
 
 void EigenUtilsTests::initTestCase() {
     m_testVecDouble.resize(100);
@@ -79,7 +82,6 @@ void EigenUtilsTests::initTestCase() {
 
     m_testMatIntRowMajor = m_testMatInt;
 }
-
 
 void EigenUtilsTests::cleanupTestCase(){}
 
@@ -378,6 +380,69 @@ void EigenUtilsTests::apexIndexesOnlyTest() {
     QCOMPARE(apexesConsecutive.size(), 1);
     QCOMPARE(apexesConsecutive.at(0), 2);
 
+}
+
+void EigenUtilsTests::normalizeVectorTest() {
+
+    Eigen::VectorX<double> vec(3);
+    vec << 10.0, 5.0, 2.5;
+
+    EigenUtils::normalizeVector(&vec);
+    QCOMPARE(vec.coeff(0), 1.0);
+    QCOMPARE(vec.coeff(1), 0.5);
+    QCOMPARE(vec.coeff(2), 0.25);
+
+}
+
+void EigenUtilsTests::normalizeMatrixTest() {
+
+    Eigen::MatrixX<double> mat(3,2);
+    mat << 10.0, 5.0, 5.0, 2.5, 2.5, 1.25;
+
+    EigenUtils::normalizeMatrix(&mat);
+    QCOMPARE(mat.coeff(0,0), 1.0);
+    QCOMPARE(mat.coeff(0,1), 0.5);
+    QCOMPARE(mat.coeff(1,0), 0.5);
+    QCOMPARE(mat.coeff(1,1), 0.25);
+    QCOMPARE(mat.coeff(2,0), 0.25);
+    QCOMPARE(mat.coeff(2,1), 0.125);
+
+}
+
+void EigenUtilsTests::thresholdMatrixTest() {
+    Eigen::MatrixXd mat(2,2);
+    mat << 1.0, 2.0,
+            3.0, 4.0;
+
+    EigenUtils::thresholdMatrix(3.0, 1.0, &mat);
+    QCOMPARE(mat(0,0), 1.0);
+    QCOMPARE(mat(0,1), 1.0);
+    QCOMPARE(mat(1,0), 3.0);
+    QCOMPARE(mat(1,1), 4.0);
+
+    EigenUtils::thresholdMatrix(3.0, &mat);
+    QCOMPARE(mat(0,0), 0.0);
+    QCOMPARE(mat(0,1), 0.0);
+    QCOMPARE(mat(1,0), 3.0);
+    QCOMPARE(mat(1,1), 4.0);
+}
+
+void EigenUtilsTests::thresholdVectorTest() {
+
+    Eigen::VectorXd vec(4);
+    vec << 1.0, 2.0, 3.0, 4.0;
+
+    EigenUtils::thresholdVector(3.0, 1.0, &vec);
+    QCOMPARE(vec(0), 1.0);
+    QCOMPARE(vec(1), 1.0);
+    QCOMPARE(vec(2), 3.0);
+    QCOMPARE(vec(3), 4.0);
+
+    EigenUtils::thresholdVector(3.0, &vec);
+    QCOMPARE(vec(0), 0.0);
+    QCOMPARE(vec(1), 0.0);
+    QCOMPARE(vec(2), 3.0);
+    QCOMPARE(vec(3), 4.0);
 }
 
 

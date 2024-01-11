@@ -22,12 +22,6 @@ class EIGENLIB_EXPORTS EigenKernelUtils
 public:
 
     template <typename T>
-    static void normalizeVector(Eigen::MatrixX<T> *vec) {
-        const double normalizerDemonator = std::max(std::numeric_limits<double>::min(), vec->maxCoeff());
-        *vec /= normalizerDemonator;
-    }
-
-    template <typename T>
     static Err buildSavitzkyGolayKernel(
             int windowSize,
             int order,

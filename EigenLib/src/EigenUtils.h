@@ -25,23 +25,46 @@ class EIGENLIB_EXPORTS EigenUtils {
 
 public:
 
+    /*!
+     * @brief  Replaces all NaN values in the vector with a provided value
+     * @tparam T: The datatype of the elements in the Eigen::Vector. Could be any numeric type such as int, float, double etc.
+     * @param replaceVal: The value which will replace all the NaNs in the vector
+     * @param vec: Pointer to an Eigen::Vector. This function modifies the vector in-place.
+    */
     template<typename T>
     static void replaceNaN(T replaceVal, Eigen::VectorX<T> *vec){
         *vec = vec->array().isNaN().select(replaceVal, vec->array());
     }
 
+    /*!
+     * @brief  Replaces all NaN values in the matrix with a provided value
+     * @tparam T: The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+     * @param replaceVal: The value which will replace all the NaNs in the matrix
+     * @param mat: Pointer to an Eigen::Matrix. This function modifies the matrix in-place.
+    */
     template<typename T>
     static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
         *mat = mat->array().isNaN().select(replaceVal, mat->array());
     }
 
+    /*!
+    * @brief  Replaces all Infinity (inf) values in the matrix with a provided value
+    * @tparam T: The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+    * @param replaceVal: The value which will replace all the infinity values in the matrix
+    * @param mat: Pointer to an Eigen::Matrix. This function modifies the matrix in-place.
+    */
     template<typename T>
     static void replaceInf(T replaceVal, Eigen::MatrixX<T> *mat){
         *mat = mat->unaryExpr([replaceVal](double v) { return std::isinf(v) ? replaceVal : v; });
     }
 
     /*!
-    * @brief Returns the index of a vector nearest to a given value
+    * @brief  Returns the indexes of 'topX' elements in 'vec' which are closest to 'value'
+    * @tparam T: The datatype of the elements in the Eigen::RowVectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: An Eigen::RowVectorX from which closest elements' indexes are returned
+    * @param value: The value with which closeness (absolute difference) is evaluated
+    * @param topX: Number of top elements' indexes to return which are closest to 'value'. Default value is 1
+    * @return QVector<int>: QVector containing indexes of 'topX' closest elements to 'value'
     */
     template<typename T>
     static QVector<int> returnIndexNearestToCutoff(
@@ -73,7 +96,13 @@ public:
     }
 
     /*!
-    * @brief Calculates root mean squared error given two Eigen vectors
+    * @brief  Calculates the Root Mean Squared Error (RMSE) between two vectors
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec1: First Eigen::VectorX
+    * @param vec2: Second Eigen::VectorX
+    * @param rmseOutput: Pointer to a double where the result (RMSE value) will be stored
+    * @return Err: Error status after attempt of operation. Error could occur if vectors' sizes do not match.
+    * This error status should follow your internally defined error schemas/codes
     */
     template <typename T>
     static Err calculateRMSE(
@@ -92,7 +121,10 @@ public:
     }
 
     /*!
-    * @brief Calculates the Standard Deviation of an Eigen Vector
+    * @brief  Calculates the standard deviation of the elements in an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Eigen::VectorX whose standard deviation needs to be calculated
+    * @return double: The calculated standard deviation of the elements in 'vec'
     */
     template <typename T>
     static double calculateStDevOfVector(const Eigen::VectorX<T> &vec) {
@@ -102,8 +134,11 @@ public:
     }
 
     /*!
-    * @brief Translates the points of an eigen vector given a rollDistance.  Mimics
-    * numpy's roll function.  Note: that this wraps translated values
+    * @brief  Rolls (rotates) the elements in an Eigen::RowVectorXd by a specified distance. Translated values at edges will be wrapped.
+    * @param vec: Eigen::RowVectorXd which needs to be rolled
+    * @param rollDistance: The distance by which vec needs to be rolled. If rollDistance is positive, it rolls the elements to the right.
+    *   If it's negative, elements are rolled to the left. If rollDistance is 0, the original vec is returned.
+    * @return Eigen::RowVectorXd: The rolled vector
     */
     static Eigen::RowVectorXd roll(const Eigen::RowVectorXd &vec, int rollDistance) {
 
@@ -128,13 +163,17 @@ public:
     }
 
     /*!
-    * @brief Fits a polynomial to an eigen vector given an order.
+    * @brief  Fits a polynomial to data points via QR Decomposition 
+    * @param points: Eigen::MatrixXd with each row representing a point (x value in column 0 and y value in column 1)
+    * @param order: The order of the polynomial to fit to the data points
+    * @param coeffs: Pointer to a QVector<double> where the coefficients of the fitted polynomial will be stored. coeffs[i] represents the coefficient of the power i term.
+    * The coefficients are in increasing order, which means that the first element is the zero order coefficient, the second element is the first order coefficient, and so on.
     */
     static void fitPolynomialQRDecomposition(
             const Eigen::MatrixXd &points,
             int order,
             QVector<double> *coeffs
-            ) {
+    ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
         Eigen::VectorXd yv_mapped = points.col(1);
@@ -158,13 +197,25 @@ public:
     }
 
     /*!
-    * @brief Normalizes vector by dividing all elements by max element
+    * @brief  Normalizes an Eigen::VectorX by dividing all elements by the maximum coefficient in the vector.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
     */
-    template <typename EigenMatrix, typename T>
-    static void normalizeVector(EigenMatrix *vec) {
-        const T normalizerDemonator
-            = MathUtils::tZero<T>(vec->maxCoeff()) ? std::numeric_limits<T>::min() : vec->maxCoeff();
+    template <typename T>
+    static void normalizeVector(Eigen::VectorX<T> *vec) {
+        const double normalizerDemonator = std::max(std::numeric_limits<double>::min(), vec->maxCoeff());
         *vec /= normalizerDemonator;
+    }
+
+    /*!
+    * @brief  Normalizes an Eigen::MatrixX by dividing all elements by the maximum coefficient in the Matrix.
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Pointer to an Eigen::MatrixX. This function modifies the Matrix in-place.
+    */
+    template <typename T>
+    static void normalizeMatrix(Eigen::MatrixX<T> *mat) {
+        const double normalizerDemonator = std::max(std::numeric_limits<double>::min(), mat->maxCoeff());
+        *mat /= normalizerDemonator;
     }
 
     /*!
@@ -199,21 +250,54 @@ public:
         return mat;
     }
 
+    /**
+     * @brief   Thresholds the given matrix by setting all elements that are less than the given threshold value to zero.
+     *
+     * This function applies a threshold operation on an Eigen matrix. If an element of the matrix is less than the
+     * specified threshold value, the function replaces that element with zero. Elements equal to or greater
+     * than the threshold are left unchanged.
+     *
+     * @tparam  T   The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+     *
+     * @param   thresholdValue  The threshold value. Any elements in the matrix that are less than this value will be set to zero.
+     * @param   mat             Pointer to an Eigen::Matrix object. The matrix to be thresholded.
+     *                          This function modifies the matrix in-place.
+     */
     template <typename T>
     static void thresholdMatrix(T thresholdValue, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::MatrixX. If an element is less than 'thresholdValue', that element is replaced by 'fillVal'.
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the matrix values are replaced by 'fillVal'
+    * @param fillVal: The value with which the matrix values (which are less than 'thresholdValue') are replaced
+    * @param mat: Pointer to an Eigen::MatrixX. This function modifies the matrix in-place.
+    */
     template <typename T>
     static void thresholdMatrix(T thresholdValue, T fillVal, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::VectorX. If an element is less than 'thresholdValue', that element is replaced by 0.0.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the vector values are replaced by 0.0
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
+    */
     template <typename T>
     static void thresholdVector(T thresholdValue, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::VectorX. If an element is less than 'thresholdValue', that element is replaced by 'fillVal'.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the vector values are replaced by 'fillVal'
+    * @param fillVal: The value with which the vector values (which are less than 'thresholdValue') are replaced
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
+    */
     template <typename T>
     static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
