@@ -557,10 +557,12 @@ Err MsUtils::monoIsotopeDeterminator(
         const Eigen::VectorX<double> isoDistributionPointsFilledVec
                 = EigenUtils::convertQVectorToEigenVector(isoDistributionPointsFilled);
 
-        const double cosineSim = EigenUtils::cosineSimilarity(
+        double cosineSim;
+        e = EigenUtils::cosineSimilarity(
                 extractedPointsFilledVec,
-                isoDistributionPointsFilledVec
-                );
+                isoDistributionPointsFilledVec,
+                &cosineSim
+                ); ree;
 
         if (cosineSim > *bestCosineSim) {
             *bestCosineSim = cosineSim;

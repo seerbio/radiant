@@ -157,13 +157,17 @@ void EigenUtilsTests::troughtsTest() {
 
 void EigenUtilsTests::rowWiseCosineSimilarOfMatricesTest() {
 
+    ERR_INIT
+
     Eigen::MatrixX<double> mat1(2,2);
     Eigen::MatrixX<double> mat2(2,2);
 
     mat1 << 1,2,3,4;
     mat2 << 2,4,6,8;
 
-    Eigen::VectorX<double> cosineSim = EigenUtils::rowWiseCosineSimilarOfMatrices(mat1, mat2);
+    Eigen::VectorX<double> cosineSim;
+    e = EigenUtils::rowWiseCosineSimilarOfMatrices(mat1, mat2, &cosineSim);
+    QCOMPARE(e, eNoError);
 
     QCOMPARE(cosineSim.coeff(0), 1.0);
     QCOMPARE(cosineSim.coeff(1), 1.0);
@@ -172,13 +176,20 @@ void EigenUtilsTests::rowWiseCosineSimilarOfMatricesTest() {
 
 void EigenUtilsTests::rowWiseKLDivergeneceTest() {
 
+    ERR_INIT
+
     Eigen::MatrixX<double> mat1(3,3);
     Eigen::MatrixX<double> mat2(3,3);
 
     mat1 << 1,2,3,4,5,6,7,8,9;
     mat2 << 1,2,3,4,2.5,3,0,0,0;
 
-    Eigen::VectorX<double> res = EigenUtils::rowWiseKLDivergence(mat1, mat2);
+    Eigen::VectorX<double> res;
+    e = EigenUtils::rowWiseKLDivergenceOfMatrices(
+            mat1,
+            mat2,
+            &res
+            );
 
     //TODO make these resluts into a test.
 //    for (int i = 0; i < 3; i++) {

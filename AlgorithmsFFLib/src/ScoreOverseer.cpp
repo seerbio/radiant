@@ -676,7 +676,12 @@ namespace {
                     continue;
                 }
 
-                const float cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
+                float cosineSimToAnchor;
+                e = EigenUtils::cosineSimilarity(
+                        anchorColumn,
+                        altColumn,
+                        &cosineSimToAnchor
+                        ); ree;
 
                 if (cosineSimToAnchor < cosineSimToAnchorThreshold) {
                     bestCosineSimsIndividualAnchor.push_back(0.0);
@@ -732,7 +737,13 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
             const Eigen::VectorX<float> &mzPeak = m_intensityMatrix100.col(col);
             const Eigen::VectorX<float> &mzPeakShadow = m_intensityMatrix100Shadow.col(col);
 
-            const float cosineSimToShadow = EigenUtils::cosineSimilarity(mzPeak, mzPeakShadow);
+            float cosineSimToShadow;
+            e = EigenUtils::cosineSimilarity(
+                    mzPeak,
+                    mzPeakShadow,
+                    &cosineSimToShadow
+                    ); ree;
+
             cosineSimsShadowIndividual->push_back(cosineSimToShadow);
 
             if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
@@ -813,8 +824,22 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     for (int col = 0; col < intensityMatrix45.cols(); col++) {
         const Eigen::VectorX<float> col45 = intensityMatrix45.col(col);
         const Eigen::VectorX<float> col20 = intensityMatrix20.col(col);
-        const float cosineSim45 = EigenUtils::cosineSimilarity(col45, anchorCol45);
-        const float cosineSim20 = EigenUtils::cosineSimilarity(col45, anchorCol20);
+
+        float cosineSim45;
+        e = EigenUtils::cosineSimilarity(
+                col45,
+                anchorCol45,
+                &cosineSim45
+                ); ree;
+
+
+        float cosineSim20;
+        e = EigenUtils::cosineSimilarity(
+                col20,
+                anchorCol20,
+                &cosineSim20
+                ); ree;
+
         *cosineSimSum45 += cosineSim45;
         *cosineSimSum20 += cosineSim20;
     }
@@ -877,8 +902,22 @@ namespace {
 
         const Eigen::VectorX<float> intensityValsTheo = EigenUtils::convertQVectorToEigenVector(intensityVals);
 
-        *cosineSimSpectrum = EigenUtils::cosineSimilarity(intensityApexVector, intensityValsTheo);
-        *klDivSpectrum = EigenUtils::klDivergence(intensityApexVector, intensityValsTheo);
+        float cosineSimSpectrumF;
+        e = EigenUtils::cosineSimilarity(
+                intensityApexVector,
+                intensityValsTheo,
+                &cosineSimSpectrumF
+                ); ree;
+
+        *cosineSimSpectrum = cosineSimSpectrumF;
+
+        float klDivSpectrumF;
+        e = EigenUtils::klDivergence(
+                intensityApexVector,
+                intensityValsTheo,
+                &klDivSpectrumF
+        ); ree;
+        *klDivSpectrum = klDivSpectrumF;
 
         ERR_RETURN
     }
@@ -942,7 +981,13 @@ namespace {
         ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
         EigenUtils::replaceNaN(std::numeric_limits<float>::min(), &ms1Vec);
 
-        float cosineSimMS1Local = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+        float cosineSimMS1Local;
+        e = EigenUtils::cosineSimilarity(
+                bestAnchorColumn,
+                ms1Vec,
+                &cosineSimMS1Local
+                ); ree;
+
         if(std::isnan(cosineSimMS1Local)) {
             cosineSimMS1Local = std::numeric_limits<float>::min();
         }
