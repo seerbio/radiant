@@ -27,6 +27,7 @@ private Q_SLOTS:
     void initTestCase();
     void medianTest();
     void meanTest();
+    void weightedMeanTest();
     void pRoundTest();
     void hashDecimalTest();
     void unHashDecimalTest();
@@ -202,6 +203,23 @@ void MathUtilsTests::generateRandomSelectionListTest() {
     //    QCOMPARE(it.key(), expectedResults.at(counter++).first);
     //}
 
+}
+
+void MathUtilsTests::weightedMeanTest() {
+
+    std::vector<double> values{1, 2, 3, 4, 5};
+    std::vector<double> weights{1, 1, 1, 1, 1};
+    double weightedAvg;
+    bool inverseWeights = false;
+    Err e = MathUtils::weightedMean(values, weights, inverseWeights, &weightedAvg);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(weightedAvg, 3.0);  // The weighted mean of values with equal weights is the arithmetic mean (3.0).
+
+    inverseWeights = true;
+    weights = {1, 2, 3, 4, 5};
+    e = MathUtils::weightedMean(values, weights, inverseWeights, &weightedAvg);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(MathUtils::pRound(weightedAvg, 3), 0.333);
 }
 
 QTEST_MAIN(MathUtilsTests)
