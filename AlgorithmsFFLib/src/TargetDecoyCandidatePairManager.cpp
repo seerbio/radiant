@@ -188,7 +188,6 @@ namespace {
             ms2Ion.mz = flrr.mzVals.at(i);
             ms2Ion.intensity = flrr.intensityVals.at(i);
             ms2Ion.ionLabel = ionLabelsSplit.at(i);
-            ms2Ion.iRT = static_cast<IRT>(flrr.iRT);
             ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
             ms2IonsBuilder.push_back(ms2Ion);
