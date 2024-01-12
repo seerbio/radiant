@@ -815,9 +815,7 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     intensityMatrix45 = intensityMatrix45.array() * peakMaskMat.array();
     intensityMatrix20 = intensityMatrix20.array() * peakMaskMat.array();
 
-//    intensityMatrix45 = applyGaussSmoothRowWiseToMatrix(intensityMatrix45, m_pythiaParams, m_gaussKernel);
-//    intensityMatrix20 = applyGaussSmoothRowWiseToMatrix(intensityMatrix20, m_pythiaParams, m_gaussKernel);
-
+    const Eigen::VectorX<float> anchorCol100 = intensityMat100TopCols.col(anchorColumnIndex);
     const Eigen::VectorX<float> anchorCol45 = intensityMatrix45.col(anchorColumnIndex);
     const Eigen::VectorX<float> anchorCol20 = intensityMatrix20.col(anchorColumnIndex);
 
@@ -832,12 +830,11 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
                 &cosineSim45
                 ); ree;
 
-
         float cosineSim20;
         e = EigenUtils::cosineSimilarity(
                 col20,
-                anchorCol20,
-                &cosineSim20
+                anchorCol45, //NOTE: for some reason using anchorCol45 her insted of anchorCol20 yields
+                &cosineSim20        //much better results. around 1.5K more PSMs for Astral data.
                 ); ree;
 
         *cosineSimSum45 += cosineSim45;
