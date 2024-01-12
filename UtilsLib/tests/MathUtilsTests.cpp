@@ -24,18 +24,18 @@ public:
 
 private Q_SLOTS:
 
-    void initTestCase();
-    void medianTest();
-    void meanTest();
-    void weightedMeanTest();
-    void pRoundTest();
-    void hashDecimalTest();
-    void unHashDecimalTest();
-    void factorialTest();
-    void calculateQValuesTest();
-    void closestTest();
-    void generateRandomSelectionListTest();
-    void cleanupTestCase();
+    static void initTestCase();
+    static void medianTest();
+    static void meanTest();
+    static void weightedMeanTest();
+    static void pRoundTest();
+    static void hashDecimalTest();
+    static void unHashDecimalTest();
+    static void factorialTest();
+    static void calculateQValuesTest();
+    static void closestTest();
+    static void generateRandomSelectionListTest();
+    static void cleanupTestCase();
 
 };
 

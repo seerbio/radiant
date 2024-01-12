@@ -15,20 +15,19 @@ public:
     ~ErrorUtilsTests() override = default;
 
 private Q_SLOTS:
-    void toDoubleTest();
-    void toIntTest();
-    void emptyCheckReturnTest();
-    void equalTest();
-    void notEqualTest();
-    void indexInRangeTest();
-    void withinRangeTest();
-    void aboveThresholdTest();
-    void belowThresholdTest();
-    void isTrueTest();
-    void isFalseTest();
-    void containsTest();
-    void doesNotContainTest();
-
+    static void toDoubleTest();
+    static void toIntTest();
+    static void emptyCheckReturnTest();
+    static void equalTest();
+    static void notEqualTest();
+    static void indexInRangeTest();
+    static void withinRangeTest();
+    static void aboveThresholdTest();
+    static void belowThresholdTest();
+    static void isTrueTest();
+    static void isFalseTest();
+    static void containsTest();
+    static void doesNotContainTest();
 };
 
 
