@@ -20,8 +20,6 @@ public:
 
     /*!
     * @brief   Principal method for setting up and training the candidate classifier using input data.
-    * @tparam  T: Data type of items in xData.
-    * @tparam  U: Data type of items in yData.
     * @param   xData: The input data for training the classifier, each item in the outer vector corresponds to a single data point in the high-dimension data space.
     * @param   yData: The actual outcomes (or labels) corresponding to the inputs in "xData". Usually 1 indicates the desired outcome (e.g. presence of a certain feature), while 0 indicates the opposite.
     * @param   epochsMax: The maximum number of iterations for training the classifier.
@@ -44,8 +42,6 @@ public:
 
     /*!
     * @brief   Principal method for using the trained classifier to predict outcomes for given inputs.
-    * @tparam  T: Data type of items in xData.
-    * @tparam  U: Data type of items in predictions.
     * @param   xData: The input data for making predictions, where each item in the outer vector corresponds to a single data point in the high-dimension data space.
     * @param   predictions: A pointer to the vector where the predicted outcomes will be stored.
     * @return  bool: Returns true if the prediction process is successful and false otherwise. An unsuccessful prediction could result from the classifier not being trained yet.
