@@ -166,8 +166,9 @@ public:
     * @brief  Fits a polynomial to data points via QR Decomposition 
     * @param points: Eigen::MatrixXd with each row representing a point (x value in column 0 and y value in column 1)
     * @param order: The order of the polynomial to fit to the data points
-    * @param coeffs: Pointer to a QVector<double> where the coefficients of the fitted polynomial will be stored. coeffs[i] represents the coefficient of the power i term.
-    * The coefficients are in increasing order, which means that the first element is the zero order coefficient, the second element is the first order coefficient, and so on.
+    * @param coeffs: Pointer to a QVector<double> where the coefficients of the fitted polynomial will be stored. coeffs[i]
+    *      represents the coefficient of the power i term. The coefficients are in increasing order, which means that the
+    *      first element is the zero order coefficient, the second element is the first order coefficient, and so on.
     */
     static void fitPolynomialQRDecomposition(
             const Eigen::MatrixXd &points,
