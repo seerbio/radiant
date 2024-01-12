@@ -11,18 +11,18 @@ class ParallelUtilsTests : public QObject
     Q_OBJECT
 
 public:
-    ParallelUtilsTests();
+    ParallelUtilsTests() = default;
     ~ParallelUtilsTests() override = default;
 
 private Q_SLOTS:
     void trancheVectorForParallelizationTest();
     void trancheVectorForParallelizationInOrderTest();
-    void trancheMapValueVectorsByKeyForParallelization();
-    void convertMapToVectorPairsTest();
-    void zipTest();
-    void unZipTest();
-    void convertVectorToMapTest();
-    void convertMapToPointsTest();
+    static void trancheMapValueVectorsByKeyForParallelization();
+    static void convertMapToVectorPairsTest();
+    static void zipTest();
+    static void unZipTest();
+    static void convertVectorToMapTest();
+    static void convertMapToPointsTest();
 
 private:
 
@@ -30,8 +30,6 @@ private:
     const QVector<int> m_testData2 = {1,2,3,4,5,6,7,8,9,10,11};
 
 };
-
-ParallelUtilsTests::ParallelUtilsTests(){}
 
 void ParallelUtilsTests::trancheVectorForParallelizationTest() {
     ERR_INIT
