@@ -24,7 +24,15 @@ class EIGENLIB_EXPORTS EigenSparseUtils {
 public:
 
     /*!
-    * @brief return maximum of sparse data structure
+    * @brief   Returns the maximum coefficient in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   mat: The Eigen::SparseMatrix<T> for which the maximum coefficient will be determined.
+    * @return  T: The maximum coefficient in the SparseMatrix. If the matrix is empty, it will return a default-constructed value of type T.
+    *
+    * Notes:
+    * 1. This function first evaluates if the input SparseMatrix is populated. If mat.size() == 0, it immediately returns a default-constructed value of type T.
+    * 2. If the input SparseMatrix is populated, the function will cast it to a DenseMatrix using Eigen's ternary matrix conversion mechanism. After the matrix is cast, it will proceed to find the maximum coefficient.
+    * 3. The performance will rely on the number of elements in the matrix, as the maxCoeff function from Eigen's library performs a full pass through the matrix coefficients.
     */
     template <typename T>
     static T max(const Eigen::SparseMatrix<T> &mat){
@@ -37,7 +45,14 @@ public:
         return castMat.maxCoeff();
     }
 
-
+    /*!
+    * @brief   Returns the maximum coefficient of the input SparseMatrix stored in RowMajor order.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   vec: The RowMajor Eigen::SparseMatrix<T> for which the maximum coefficient will be determined.
+    * @return  T: The maximum coefficient in the SparseMatrix. If the matrix is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix, which is the default storage order in Eigen. It then calls the max function on this reinterpretation to find the maximum coefficient. The performance will depend on the number of non-zero coefficients in the matrix.
+    */
     template <typename T>
     static T max(const Eigen::SparseMatrix<T, Eigen::RowMajor> &vec){
 
@@ -45,7 +60,14 @@ public:
         return max(matColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the maximum coefficient of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support comparison operations.
+    * @param   vec: The SparseVector from the Eigen linear algebra library, for which the maximum coefficient will be determined.
+    * @return  T: The maximum coefficient in the SparseVector. If the vector is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function converts the given SparseVector to a SparseMatrix (which is the default storage order in Eigen) before calling the max function to find the maximum coefficient. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static T max(const Eigen::SparseVector<T> &vec){
 
@@ -53,7 +75,14 @@ public:
         return max(matrixColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the maximum coefficient of the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> for which the maximum coefficient will be determined.
+    * @return  T: The maximum coefficient in the SparseVector. If the vector is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first transposes the given RowMajor SparseVector to form a SparseMatrix. It then calls the max function to find the maximum coefficient. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static T max(const Eigen::SparseVector<T, Eigen::RowMajor> &vec){
 
@@ -63,7 +92,12 @@ public:
 
 
     /*!
-    * @brief return minimum value of sparse data structure
+    * @brief   Returns the minimum coefficient in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   mat: The Eigen::SparseMatrix<T> for which the minimum coefficient will be determined.
+    * @return  T: The minimum coefficient in the SparseMatrix. If the matrix is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first checks if the input SparseMatrix is populated. If mat.size() == 0, it immediately returns a default-constructed value of type T. If the SparseMatrix is populated, the function will cast it to a DenseMatrix using Eigen's ternary matrix conversion mechanism. After the matrix is cast, it will proceed to find the minimum coefficient. The performance will depend on the matrix's number of elements as the minCoeff function performs a full pass through the matrix coefficients.
     */
     template <typename T>
     static T min(const Eigen::SparseMatrix<T> &mat){
@@ -76,21 +110,42 @@ public:
         return castMat.minCoeff();
     }
 
-
+    /*!
+    * @brief   Returns the minimum coefficient of the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   vec: The RowMajor Eigen::SparseMatrix<T> for which the minimum coefficient will be determined.
+    * @return  T: The minimum coefficient in the SparseMatrix. If the matrix is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix, which is the default storage order in Eigen. It then calls the min function on this reinterpretation to find the minimum coefficient. The performance will depend on the number of non-zero coefficients in the matrix.
+    */
     template <typename T>
     static T min(const Eigen::SparseMatrix<T, Eigen::RowMajor> &vec){
         const Eigen::SparseMatrix<T> &matColMajor = vec;
         return min(matColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the minimum coefficient of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support comparison operations.
+    * @param   vec: The Eigen::SparseVector<T> for which the minimum coefficient will be determined.
+    * @return  T: The minimum coefficient in the SparseVector. If the vector is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first converts the given SparseVector to a SparseMatrix (which is the default storage order in Eigen) before calling the min function to find the minimum coefficient. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static T min(const Eigen::SparseVector<T> &vec){
         const Eigen::SparseMatrix<T> &matrixColMajor = vec;
         return min(matrixColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the minimum coefficient of the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support comparison operations.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> for which the minimum coefficient will be determined.
+    * @return  T: The minimum coefficient in the SparseVector. If the vector is empty, it will return a default-constructed value of type T.
+    *
+    * Note: This function first transposes the given RowMajor SparseVector to form a SparseMatrix. It then calls the min function to find the minimum coefficient. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static T min(const Eigen::SparseVector<T, Eigen::RowMajor> &vec) {
         const Eigen::SparseMatrix<T, Eigen::RowMajor> &matRowMajor = vec.transpose();
@@ -99,7 +154,12 @@ public:
 
 
     /*!
-    * @brief Calculates mean.
+    * @brief   Returns the mean of the non-zero coefficients in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of addition and division.
+    * @param   mat: The Eigen::SparseMatrix<T> for which the mean will be computed.
+    * @return  double: The mean value of the non-zero coefficients in the SparseMatrix. If the matrix is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first checks if the input matrix has any non-zero coefficients. If it does, it compresses the input SparseMatrix to ensure that it is in compressed form (which allows the function to skip over zero entries during computation), then casts the sum of the non-zero coefficients to double, and divides it by the count of non-zero coefficients. The performance will depend on the number of non-zero coefficients in the matrix.
     */
     template<typename T>
     static double mean(const Eigen::SparseMatrix<T> &mat){
@@ -114,34 +174,59 @@ public:
             copy.makeCompressed();
         }
 
-        const double coeffsSum = static_cast<double>(copy.coeffs().sum());
+        const auto coeffsSum = static_cast<double>(copy.coeffs().sum());
         return coeffsSum / nonZeros;
     }
 
-
+    /*!
+    * @brief   Returns the mean of the non-zero coefficients of the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of addition and division.
+    * @param   vec: The RowMajor Eigen::SparseMatrix<T> for which the mean will be computed.
+    * @return  double: The mean value of the non-zero coefficients in the SparseMatrix. If the matrix is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix, which is the default storage order in Eigen. It then calls the mean function on this reinterpretation to compute the mean coefficient. The performance will depend on the number of non-zero coefficients in the matrix.
+    */
     template <typename T>
     static double mean(const Eigen::SparseMatrix<T, Eigen::RowMajor> &vec){
         const Eigen::SparseMatrix<T> &matColMajor = vec;
         return mean(matColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the mean of the non-zero coefficients of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition and division.
+    * @param   vec: The Eigen::SparseVector<T> for which the mean will be computed.
+    * @return  double: The mean value of the non-zero coefficients in the SparseVector. If the vector is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first converts the given SparseVector to a SparseMatrix (which is the default storage order in Eigen) before calling the mean function to compute the mean coefficient. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static double mean(const Eigen::SparseVector<T> &vec){
         const Eigen::SparseMatrix<T> &matrixColMajor = vec;
         return mean(matrixColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the mean of the non-zero coefficients of the input SparseVector represented in RowMajor format.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition and division.
+    * @param   vec: The SparseVector from the Eigen library, for which the mean will be computed.
+    * @return  double: The mean value of the non-zero coefficients in the SparseVector. If the vector is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first transposes the input RowMajor SparseVector to form a RowMajor SparseMatrix. It then calls the mean function to compute the mean of non-zero coefficients. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static double mean(const Eigen::SparseVector<T, Eigen::RowMajor> &vec){
         const Eigen::SparseMatrix<T, Eigen::RowMajor> &matRowMajor = vec.transpose();
         return mean(matRowMajor);
     }
 
-
     /*!
-    * @brief Calculates standard deviation.
+    * @brief   Returns the standard deviation of the non-zero coefficients in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of addition, subtraction, multiplication, and division.
+    * @param   mat: The Eigen::SparseMatrix<T> for which the standard deviation will be computed.
+    * @return  double: The standard deviation of the non-zero coefficients in the SparseMatrix. If the matrix is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first checks if the input matrix has any non-zero coefficients. If it does, it compresses the input SparseMatrix to ensure that it is in compressed form (which allows the function to skip over zero entries during computation), calculates the mean of the non-zero coefficients, computes the sum of the squared differences from the mean, and finally takes the square root of this quantity divided by the count of non-zero coefficients to compute the standard deviation. The performance will depend on the number of non-zero coefficients in the matrix.
     */
     template <typename T>
     static double stDev(const Eigen::SparseMatrix<T> &mat){
@@ -161,68 +246,132 @@ public:
         return std::sqrt(diffVec.cwiseProduct(diffVec).sum() / nonZeros);
     }
 
-
+    /*!
+    * @brief   Returns the standard deviation of the non-zero coefficients of the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of addition, subtraction, multiplication and division.
+    * @param   vec: The RowMajor Eigen::SparseMatrix<T> for which the standard deviation will be computed.
+    * @return  double: The standard deviation of the non-zero coefficients in the SparseMatrix. If the matrix is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix, which is the default storage order in Eigen. It then calls the stDev function on this reinterpretation to compute the standard deviation. The performance will depend on the number of non-zero coefficients in the matrix.
+    */
     template <typename T>
     static double stDev(const Eigen::SparseMatrix<T, Eigen::RowMajor> &vec){
         const Eigen::SparseMatrix<T> &matColMajor = vec;
         return stDev(matColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the standard deviation of the non-zero coefficients of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition, subtraction, multiplication, and division.
+    * @param   vec: The Eigen::SparseVector<T> for which the standard deviation will be computed.
+    * @return  double: The standard deviation of the non-zero coefficients in the SparseVector. If the vector is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first converts the given SparseVector to a SparseMatrix (which is the default storage order in Eigen) before calling the stDev function to compute the standard deviation. The performance will depend on the number of non-zero coefficients in the vector.
+    */
     template <typename T>
     static double stDev(const Eigen::SparseVector<T> &vec){
         const Eigen::SparseMatrix<T> &matrixColMajor = vec;
         return stDev(matrixColMajor);
     }
 
-
+    /*!
+    * @brief   Returns the standard deviation of the non-zero coefficients of the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition, subtraction, multiplication and division.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> for which the standard deviation will be computed.
+    * @return  double: The standard deviation of the non-zero coefficients in the SparseVector. If the vector is empty (i.e., has zero size, or all of its coefficients are zero), it will return a default-constructed value of double.
+    *
+    * Note: This function first transposes the input RowMajor SparseVector to form a RowMajor SparseMatrix. It then calls the stDev function to compute the standard deviation. The performance will depend on the number of non-zero coefficients in the SparseVector.
+    */
     template <typename T>
     static double stDev(const Eigen::SparseVector<T, Eigen::RowMajor> &vec){
         const Eigen::SparseMatrix<T, Eigen::RowMajor> &matRowMajor = vec.transpose();
         return stDev(matRowMajor);
     }
 
-
     /*!
-    * @brief Checks to see if an index is in range of sparse vector.
+    * @brief   Checks if given index is within the bounds of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector.
+    * @param   vec: The Eigen::SparseVector<T> whose bounds will be checked against the provided index.
+    * @param   index: The index that will be checked for its validity.
+    * @return  bool: Returns true if the index lies within the bounds of the SparseVector, false otherwise.
+    *
+    * Note: This function evaluates the validity of the index by checking if it's non-negative and is less than the size of the input SparseVector. The function returns the logical result of this comparison.
     */
     template <typename T>
-    static bool validIndex(const Eigen::SparseVector<T> &vec,
-                           int index){
+    static bool validIndex(
+            const Eigen::SparseVector<T> &vec,
+            int index
+            ){
         return 0 <= index && index < vec.size();
     }
 
-
+    /*!
+    * @brief   Checks if the given index is within the bounds of the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseVector.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> whose bounds will be checked against the provided index.
+    * @param   index: The index that will be checked for its validity.
+    * @return  bool: Returns true if the index lies within the bounds of the SparseVector, false otherwise.
+    *
+    * Note: This function first reinterprets the RowMajor SparseVector as a SparseVector (default is column major in Eigen). It then calls the validIndex function to check if the provided index lies within the bounds of the reinterpretation. The performance will depend on the size of the SparseVector.
+    */
     template <typename T>
-    static bool validIndex(const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
-                           int index){
+    static bool validIndex(
+            const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
+            int index
+            ){
         const Eigen::SparseVector<T> &vecRowMajor = vec;
         return validIndex(vecRowMajor, index);
     }
 
-
+    /*!
+    * @brief   Checks if given row and column indices are within the bounds of the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix.
+    * @param   mat: The Eigen::SparseMatrix<T> whose bounds will be checked against the provided row and column indices.
+    * @param   row: The row index that will be checked for its validity.
+    * @param   col: The column index that will be checked for its validity.
+    * @return  bool: Returns true if both indices lie within the bounds of the SparseMatrix, false otherwise.
+    *
+    * Note: This function first checks if the row index is non-negative and is less than the number of rows in the SparseMatrix. It also checks if the column index is non-negative and is less than the number of columns in the SparseMatrix. The function returns true if both these conditions are met, otherwise it returns false.
+    */
     template <typename T>
-    static bool validIndex(const Eigen::SparseMatrix<T> &mat,
-                           int row,
-                           int col){
+    static bool validIndex(
+            const Eigen::SparseMatrix<T> &mat,
+            int row,
+            int col
+            ){
         return (0 <= row && row < mat.rows())
             && (0 <= col && col < mat.cols());
     }
 
-
+    /*!
+    * @brief   Checks if given row and column indices are within the bounds of the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix.
+    * @param   mat: The RowMajor Eigen::SparseMatrix<T> whose bounds will be checked against the provided row and column indices.
+    * @param   row: The row index that will be checked for its validity.
+    * @param   col: The column index that will be checked for its validity.
+    * @return  bool: Returns true if both indices lie within the bounds of the SparseMatrix, false otherwise.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix (which is the default storage order in Eigen). It then calls the validIndex function to check if the provided row and column indices lie within the bounds of the reinterpretation.
+    */
     template <typename T>
-    static bool validIndex(const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat,
-                           int row,
-                           int col) {
+    static bool validIndex(
+            const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat,
+            int row,
+            int col
+            ) {
         const Eigen::SparseMatrix<T> &matRowMajor = mat;
         return validIndex(matRowMajor,
                           row,
                           col);
     }
 
-
     /*!
-    * @brief Calculates median of sparse data structures.
+    * @brief   Returns the median of the non-zero coefficients of the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition, subtraction, multiplication, and division.
+    * @param   vec: The Eigen::SparseVector<T> for which the median will be computed.
+    * @return  double: The median value of the non-zero coefficients in the SparseVector. For an even number of non-zero coefficients, the average of the two middle elements is returned. For an odd number, the middle element is returned.
+    *
+    * Note: This function first converts the SparseVector coefficients to an Eigen::VectorXd and cast them to double. It then moves the data of the VectorXd to a std::vector of double and computes the median using the MathUtils::median() function. The performance will depend on the number of non-zero coefficients in the SparseVector.
     */
     template <typename T>
     static double median(const Eigen::SparseVector<T> &vec){
@@ -231,14 +380,28 @@ public:
         return MathUtils::median(qvec);
     }
 
-
+    /*!
+    * @brief   Returns the median of the non-zero coefficients of the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of addition, subtraction, multiplication, and division.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> for which the median will be computed.
+    * @return  double: The median value of the non-zero coefficients in the SparseVector. For an even number of non-zero coefficients, the average of the two middle elements is returned. For an odd number, the middle element is returned.
+    *
+    * Note: This function first transposes the RowMajor SparseVector to form a SparseVector (default storage order in Eigen is column-major). It then calls the median function to compute the median coefficient. The performance will depend on the number of non-zero coefficients in the SparseVector.
+    */
     template <typename T>
     static double median(const Eigen::SparseVector<T, Eigen::RowMajor> &vec){
         const Eigen::SparseVector<T> &matRowMajor = vec.transpose();
         return median(matRowMajor);
     }
 
-
+    /*!
+    * @brief   Returns the median of the non-zero coefficients in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of addition, subtraction, multiplication, and division.
+    * @param   mat: The Eigen::SparseMatrix<T> for which the median will be computed.
+    * @return  double: The median value of the non-zero coefficients in the SparseMatrix. For an even number of non-zero coefficients, the average of the two middle elements is returned. For an odd number, the middle element is returned.
+    *
+    * Note: This function first checks if the SparseMatrix is in compressed form, if it's not, it compresses it. It then converts its coefficients to an Eigen::VectorXd, casts them to double, and transfers the data of the VectorXd to a std::vector. The median is then calculated and returned using the MathUtils::median() function. The performance will depend on the number of non-zero coefficients in the SparseMatrix.
+    */
     template <typename T>
     static double median(const Eigen::SparseMatrix<T> &mat){
         Eigen::SparseMatrix<T> copy = mat;
@@ -251,20 +414,34 @@ public:
         return MathUtils::median(qvec);
     }
 
-
+    /*!
+    * @brief   Returns the median of the non-zero coefficients of the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support  operations of addition, subtraction, multiplication, and division.
+    * @param   mat: The RowMajor Eigen::SparseMatrix<T> for which the median will be computed.
+    * @return  double: The median value of the non-zero coefficients in the SparseMatrix. For an even number of non-zero coefficients, the average of the two middle elements is returned. For an odd number, the middle element is returned.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix, which is the default storage order in Eigen. It then calls the median function on this reinterpretation to compute the median coefficient. The performance will depend on the number of non-zero coefficients in the SparseMatrix.
+    */
     template <typename T>
     static double median(const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat){
         const Eigen::SparseMatrix<T> &matColMajor = mat;
         return median(matColMajor);
     }
 
-
     /*!
-     * @brief Returns a sparse vector w/ all values below thresholdValue removed.
-     */
+    * @brief   Removes elements below a certain threshold value from the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of comparison (<).
+    * @param   thresholdValue: The value below which (exclusive) elements in the SparseVector will be removed.
+    * @param   vec: Pointer to Eigen::SparseVector<T>, where elements below a certain threshold value will be removed.
+    *
+    * Note: This function creates a new SparseVector of the same size as vec. It then iterates over each element in the original vector and only adds it to the new vector if its value is above the thresholdValue. Finally, it assigns the new SparseVector to the original. Performance will depend on the number of elements found above the thresholdValue.
+    */
     template <typename T>
-    static void removeElementsBelowThreshold(double thresholdValue,
-                                             Eigen::SparseVector<T> *vec){
+    static void removeElementsBelowThreshold(
+            double thresholdValue,
+            Eigen::SparseVector<T> *vec
+            ){
+
         Eigen::SparseVector<T> newVec(vec->size());
         for (typename Eigen::SparseVector<T>::InnerIterator it(*vec); it; ++it) {
 
@@ -278,10 +455,20 @@ public:
         *vec = newVec;
     }
 
-
+    /*!
+    * @brief   Removes elements below a certain threshold value from the input RowMajor SparseVector.
+    * @tparam  T: Numeric type used in SparseVector. It should support operations of comparison (<).
+    * @param   thresholdValue: The value below which (exclusive) elements in the SparseVector will be removed.
+    * @param   vec: Pointer to RowMajor Eigen::SparseVector<T>, where elements below a certain threshold value will be removed.
+    *
+    * Note: This function creates a new SparseVector (default column-major storage order in Eigen) of the same size as vec. It then iterates using InnerIterator over each element in the original vector (in the order of inner dimension) and only adds it to the new vector if its value is above the thresholdValue. Finally, it assigns the new vector to the original, converting it to the default storage order (column-major). Performance will depend on the number of elements found above the thresholdValue.
+    */
     template <typename T>
-    static void removeElementsBelowThreshold(double thresholdValue,
-                                             Eigen::SparseVector<T, Eigen::RowMajor> *vec){
+    static void removeElementsBelowThreshold(
+            double thresholdValue,
+            Eigen::SparseVector<T, Eigen::RowMajor> *vec
+            ){
+
         Eigen::SparseVector<T> newVec(vec->size());
         for (typename Eigen::SparseVector<T, Eigen::RowMajor>::InnerIterator it(*vec); it; ++it) {
 
@@ -295,13 +482,20 @@ public:
         *vec = newVec;
     }
 
-
     /*!
-    * @brief Returns a sparse matrix w/ all values below thresholdValue removed.
+    * @brief   Removes elements below a certain threshold value from the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of comparison (<).
+    * @param   thresholdValue: The value below which (exclusive) elements in the SparseMatrix will be removed.
+    * @param   mat: Pointer to Eigen::SparseMatrix<T>, where elements below a certain threshold value will be removed.
+    *
+    * Note: This function creates a new SparseMatrix of the same size as mat. It then iterates over each element in the original matrix and only adds it to the new matrix if its value is above the thresholdValue. Finally, it assigns the new SparseMatrix to the original. Performance will depend on the number of elements found above the thresholdValue.
     */
     template <typename T>
-    static void removeElementsBelowThreshold(double thresholdValue,
-                                             Eigen::SparseMatrix<T> *mat){
+    static void removeElementsBelowThreshold(
+            double thresholdValue,
+            Eigen::SparseMatrix<T> *mat
+            ){
+
         Eigen::SparseMatrix<T> newMat(mat->rows(), mat->cols());
 
         for (int i = 0; i < mat->outerSize(); ++i) {
@@ -319,10 +513,20 @@ public:
         *mat = newMat;
     }
 
-
+    /*!
+    * @brief   Removes elements below a certain threshold value from the RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix. It should support operations of comparison (<).
+    * @param   thresholdValue: The value less than which (exclusive) elements in the SparseMatrix will be removed.
+    * @param   mat: Pointer to Eigen::SparseMatrix<T, Eigen::RowMajor>, elements less than the threshold will be removed from this matrix.
+    *
+    * Note: This function creates a new SparseMatrix of the same size as mat. The function then iterates over each element in the original matrix using InnerIterator and adds it to the new matrix only if the value is greater than the thresholdValue. In the end, it replaces the original matrix with the new matrix having removed elements below the set threshold. Performance depends on the number of elements found above the thresholdValue.
+    */
     template <typename T>
-    static void removeElementsBelowThreshold(T thresholdValue,
-                                             Eigen::SparseMatrix<T, Eigen::RowMajor> *mat){
+    static void removeElementsBelowThreshold(
+            T thresholdValue,
+            Eigen::SparseMatrix<T, Eigen::RowMajor> *mat
+            ){
+
         Eigen::SparseMatrix<T, Eigen::RowMajor> newMat(mat->rows(), mat->cols());
 
         for (int i = 0; i < mat->outerSize(); ++i) {
@@ -340,15 +544,21 @@ public:
         *mat = newMat;
     }
 
-
     /*!
-     * @brief Translates all values of indexes by the roll distance.  This function does not wrap
-     * values over the size of the data structure if roll distance plus an index is greater.
-     *
-     */
+    * @brief   Rolls elements of the input SparseVector by the provided roll distance.
+    * @tparam  T: Numeric type used in SparseVector.
+    * @param   vec: The Eigen::SparseVector<T> where elements will be rolled.
+    * @param   rollDistance: Integer roll distance, positive values will roll elements to the right, negative values will roll them to the left.
+    * @return  Eigen::SparseVector<T>: New SparseVector where elements have been rotated by rollDistance.
+    *
+    * Note: This function first creates a new SparseVector of the same size as vec. It then iterates over every element in the input SparseVector. For each element, it calculates a "rolled" index which is the sum of the current index and the roll distance. It then verifies with the validIndex function if the rolled index lies within the bounds of SparseVector. If true, it assigns the value at the current index to the rolled index in the new SparseVector. This function returns the new rolled SparseVector.
+    */
     template <typename T>
-    static Eigen::SparseVector<T> roll(const Eigen::SparseVector<T> &vec,
-                                                                        int rollDistance){
+    static Eigen::SparseVector<T> roll(
+            const Eigen::SparseVector<T> &vec,
+            int rollDistance
+            ){
+
         Eigen::SparseVector<T> returnVec(vec.size());
 
         for (typename Eigen::SparseVector<T>::InnerIterator it(vec); it; ++it) {
@@ -364,10 +574,20 @@ public:
         return returnVec;
     }
 
-
+    /*!
+    * @brief   Rolls elements of the input RowMajor SparseVector by the provided roll distance.
+    * @tparam  T: Numeric type used in SparseVector.
+    * @param   vec: The RowMajor Eigen::SparseVector<T> where elements will be rolled.
+    * @param   rollDistance: Integer roll distance, positive values will roll elements to the right, negative values will roll them to the left.
+    * @return  Eigen::SparseVector<T>: New SparseVector (default is column-major in Eigen) where elements have been rotated by rollDistance.
+    *
+    * Note: This function first creates a new SparseVector (default is column-major in Eigen) of the same size as vec. It then iterates over every element in the input SparseVector. For each element, it calculates a "rolled" index which is the sum of the current index and the roll distance. It then verifies with the validIndex function if the rolled index lies within the bounds of the SparseVector. If true, it assigns the value at the current index to the rolled index in the new SparseVector. This function returns the new rolled SparseVector.
+    */
     template <typename T>
-    static Eigen::SparseVector<T> roll(const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
-                                       int rollDistance)  {
+    static Eigen::SparseVector<T> roll(
+            const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
+            int rollDistance
+            )  {
 
         Eigen::SparseVector<T> returnVec(vec.size());
 
@@ -384,64 +604,6 @@ public:
         return returnVec;
     }
 
-
-    template <typename T>
-    static Eigen::SparseVector<int> markVectorApexes(
-            const Eigen::SparseVector<T> &vec,
-            int precision = 1e4
-    ) {
-
-        const int vecSize = static_cast<int>(vec.size());
-
-        Eigen::SparseVector<int> resultVec(vecSize);
-        resultVec.setZero();
-
-        for (typename Eigen::SparseVector<T>::InnerIterator it(vec); it; ++it) {
-
-            const int index = it.index();
-
-            int centerPointValue = -1;
-            int leftPointValue = -1;
-            int rightPointValue = -1;
-
-            if (index < 1) {
-
-                leftPointValue = static_cast<int>(std::round(it.value() * precision));
-                rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
-
-                if (leftPointValue > rightPointValue) {
-                    resultVec.insert(index) = 1;
-                }
-
-                continue;
-            }
-
-            else if (index >= vecSize - 1) {
-
-                leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1)  * precision));
-                rightPointValue = static_cast<int>(std::round(it.value() * precision));
-
-                if (leftPointValue < rightPointValue) {
-                    resultVec.insert(index) = 1;
-                }
-
-                continue;
-            }
-
-            centerPointValue = static_cast<int>(std::round(it.value() * precision));
-            leftPointValue = static_cast<int>(std::round(vec.coeff(index - 1) * precision));
-            rightPointValue = static_cast<int>(std::round(vec.coeff(index + 1)  * precision));
-
-
-            if (centerPointValue > leftPointValue && centerPointValue >= rightPointValue) {
-                resultVec.insert(index) = 1;
-            }
-        }
-
-        return resultVec;
-    }
-
-
     class SparseMatrixPoint{
     public:
         int row = -1;
@@ -449,135 +611,21 @@ public:
         double value = 0;
     };
 
-
-    template<typename T>
-    static Eigen::SparseMatrix<int> markMatrixApexes(
-            const Eigen::SparseMatrix<T> &mat,
-            int precision = 1e4
-    ) {
-
-        //NOTE: This method is slower than the apexes() method below.  Figure out why.
-
-        Eigen::SparseMatrix<int> resultMat(mat.rows(), mat.cols());
-
-        QSet<int> visitedColumns;
-        for (int i = 0; i < mat.outerSize(); ++i) {
-            for (typename Eigen::SparseMatrix<T>::InnerIterator it(mat, i); it; ++it) {
-
-                const int column = it.col();
-
-                if(visitedColumns.contains(column)){
-                    continue;
-                }
-
-                visitedColumns.insert(column);
-
-                const Eigen::SparseVector<T> colVec = mat.col(column);
-                const Eigen::SparseVector<int> markedColVec = markVectorApexes(colVec);
-
-                for (Eigen::SparseVector<int>::InnerIterator itt(markedColVec); itt; ++itt) {
-                    resultMat.coeffRef(itt.index(), column) = itt.value();
-                }
-            }
-        }
-
-        const Eigen::SparseMatrix<T, Eigen::RowMajor> _mat = mat;
-
-        Eigen::SparseMatrix<int, Eigen::RowMajor> resultMatRows(mat.rows(), mat.cols());
-
-        QSet<int> visitedRows;
-        for (int i = 0; i < _mat.outerSize(); ++i) {
-            for (typename Eigen::SparseMatrix<T, Eigen::RowMajor>::InnerIterator it(_mat, i); it; ++it) {
-
-                const int row = it.row();
-
-                if(visitedRows.contains(row)){
-                    continue;
-                }
-
-                visitedRows.insert(row);
-
-                const Eigen::SparseVector<T> rowVec = _mat.row(row);
-                const Eigen::SparseVector<int> markedRowVec = markVectorApexes(rowVec);
-
-                for (Eigen::SparseVector<int>::InnerIterator itt(markedRowVec); itt; ++itt) {
-                    resultMatRows.coeffRef(row, itt.index()) = itt.value();
-                }
-            }
-        }
-
-        resultMat += Eigen::SparseMatrix<int>(resultMatRows);
-
-        return resultMat;
-    }
-
-
-    template<typename T>
-    static QVector<SparseMatrixPoint> findMatrixApexes(const Eigen::SparseMatrix<T> &mat) {
-
-        const Eigen::SparseMatrix<int> matMarkedApexes = markMatrixApexes<T>(mat);
-
-        QVector<SparseMatrixPoint> resultVec;
-
-        for (int i = 0; i < matMarkedApexes.outerSize(); ++i) {
-            for (typename Eigen::SparseMatrix<int>::InnerIterator it(matMarkedApexes, i); it; ++it) {
-
-                const int val = it.value();
-
-                if (val < 2) {
-                    continue;
-                }
-
-                SparseMatrixPoint smp;
-                smp.row = static_cast<int>(it.row());
-                smp.col = static_cast<int>(it.col());
-                smp.value = static_cast<double>(mat.coeff(smp.row, smp.col));
-
-                resultVec.push_back(smp);
-            }
-        }
-
-        return resultVec;
-    }
-
-//    template<typename T>
-//    static QVector<QPair<Index, T>> findSparseVectorApexes(const Eigen::SparseVector<T> &vec) {
-//
-//        QVector<QPair<Index, T>> apexPoints;
-//
-//        const int vecSize = static_cast<int>(vec.size());
-//
-//        for (typename Eigen::SparseVector<T>::InnerIterator it(vec); it; ++it) {
-//
-//            const int index = it.index();
-//            const T val = it.value();
-//
-//            if(index < 1 || index >= vecSize - 1){
-//                continue;
-//            }
-//
-//            const T leftPointVal = vec.coeff(index - 1);
-//            const T rightPointVal = vec.coeff(index + 1);
-//
-//            if(val > leftPointVal && val > rightPointVal){
-//                apexPoints.push_back({static_cast<int>(index), val});
-//            }
-//        }
-//
-//        return apexPoints;
-//    }
-
     /*!
-    * \brief Finds all apexes in a sparse vector.
-     *
-     *  Returns a QMap where the key is the index of the apex and the value is the value of
-     *  the apex.
+    * @brief   Obtains the apexes of values in the input SparseVector.
+    * @tparam  T: Numeric type used in SparseVector.
+    * @param   vec: The Eigen::SparseVector<T> from which the apex values will be obtained.
+    * @param   precision: The precision level for checking the equality of values, default value is 1e4.
+    * @return  QMap<int, T>: QMap containing indices where the apex values are located and their corresponding values.
+    *
+    * Note: This function first gets the size of SparseVector, then it iterates over each element in the input SparseVector. For each element, it checks if it is a local apex (greater than or equal to its surrounding values when multiplied by the precision value). The local apex indices and their respective values are collected in a QMap and returned.
     */
     template <typename T>
     static QMap<int, T> apexes(
             const Eigen::SparseVector<T> &vec,
             int precision = 1e4
                     ){
+
         QMap<int, T> apexIndicies;
 
         const int vecSize = static_cast<int>(vec.size());
@@ -600,18 +648,8 @@ public:
         return apexIndicies;
     }
 
-
-//    template <typename T>
-//    static QMap<int, T> apexes(const Eigen::SparseVector<T, Eigen::RowMajor> &vec,
-//                               int precision = 1e4){
-//        Eigen::SparseVector<double> convertTemplateVec = vec.template cast<double>();
-//        return apexes(convertTemplateVec, precision);
-//    }
-
-
     // helper method apexes(const Eigen::SparseMatrix<T> &mat)
     static void sortApexesHiLoValue(QVector<SparseMatrixPoint> *apxs);
-
 
     // helper method apexes(const Eigen::SparseMatrix<T> &mat)
     template <typename T>
@@ -638,10 +676,20 @@ public:
         return columnApexes;
     }
 
-
+    /*!
+    * @brief   Obtains the apexes of values in the input SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix.
+    * @param   mat: The Eigen::SparseMatrix<T> from which the apex values will be obtained.
+    * @param   precision: The precision level for checking the equality of values. The default value is 1e4.
+    * @return  QVector<SparseMatrixPoint>: Vector containing points where the apex values are located and their corresponding values.
+    *
+    * Note: This function first gets the apexes by column from the SparseMatrix. It then iterates over each column apex and every row coefficient in that column. For each coefficient, it checks if it is a local apex (greater than or equal to its surrounding values when multiplied by the precision value). The local apex points (row and column indices along with their respective values) are collected in a QVector and returned. The function also adjusts the edge buffer of the matrix and sorts the apexes in a high-to-low value order.
+    */
     template <typename T>
-    static QVector<SparseMatrixPoint> apexes(const Eigen::SparseMatrix<T> &mat,
-                                             int precision = 1e4){
+    static QVector<SparseMatrixPoint> apexes(
+            const Eigen::SparseMatrix<T> &mat,
+            int precision = 1e4
+                    ){
 
         const int matrixEdgeBuffer = 2;
 
@@ -690,7 +738,15 @@ public:
         return returnApexes;
     }
 
-
+    /*!
+    * @brief   Obtains the apexes of values in the input RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix.
+    * @param   mat: The RowMajor Eigen::SparseMatrix<T> from which the apex values will be obtained.
+    * @param   precision: The precision level for checking the equality of values. The default value is 1e4.
+    * @return  QVector<SparseMatrixPoint>: Vector containing points where the apex values are located and their corresponding values.
+    *
+    * Note: This function first re-interprets the RowMajor SparseMatrix as a ColumnMajor SparseMatrix (default storage order in Eigen). It then uses apexes() function to calculate apexes from the re-interpreted SparseMatrix. The performance will depend on the number of apexes found in the SparseMatrix.
+    */
     template <typename T>
     static QVector<SparseMatrixPoint> apexes(
             const Eigen::SparseMatrix<T, Eigen::RowMajor> &mat,
@@ -700,13 +756,25 @@ public:
         return apexes(matConverted, precision);
     }
 
-
+    /*!
+    * @brief   Builds a comb filter in the form of a RowMajor SparseMatrix.
+    * @tparam  T: Numeric type used in SparseMatrix and QVector. It should support operations of addition, subtraction, comparison, and casting to T2.
+    * @tparam  T2: Numeric type used in precision.
+    * @param   teethValues: QVector<T> that defines the value of teeth in comb filter.
+    * @param   tolerance: The tolerance level for creating a range around each tooth in comb filter.
+    * @param   maxValue: The maximum possible value after hashing. It sets the column size of output SparseMatrix.
+    * @param   precision: The precision level for hashing.
+    * @return  Eigen::SparseMatrix<T, Eigen::RowMajor>: RowMajor SparseMatrix representing the output comb filter.
+    *
+    * Note: This function first calculates hashed tolerance and max value using MathUtils::hashDecimal() method. It then creates a SparseMatrix of row size equal to teethValues.size() and column size equal to hashedMaxValue. Next, it iterates over teethValues and for each value, it calculates a range (hashedVal - hashedTolerance, hashedVal + hashedTolerance) and inserts `1.0` in output SparseMatrix for that row in range. Finally it returns the SparseMatrix.
+    */
     template <typename T, typename T2>
     static Eigen::SparseMatrix<T, Eigen::RowMajor> buildCombFilter(
             const QVector<T> &teethValues,
             T tolerance,
             T maxValue,
-            T2 precision) {
+            T2 precision
+            ) {
 
         const int hashedTolerance = MathUtils::hashDecimal(tolerance, precision);
         const int hashedMaxValue = MathUtils::hashDecimal(maxValue, precision);
@@ -731,87 +799,6 @@ public:
 
         return combFilter;
     }
-
-
-    template <typename T1, typename  T2, typename T3>
-    static Eigen::SparseVector<T2> vectorize(
-            const QVector<T1> x,
-            const QVector<T2> y,
-            T1 maxXVal,
-            T3 precision
-            ) {
-
-        if (x.size() != y.size()) {
-            return {};
-        }
-
-        const int buffer = 1;
-        const int hashedMaxXVal = MathUtils::hashDecimal(maxXVal + buffer, precision);
-
-        Eigen::SparseVector<T2> vec(hashedMaxXVal);
-        vec.setZero();
-
-        for (int i = 0; i < x.size(); i++) {
-
-            const T1 xVal = x.at(i);
-            const T2 yVal = y.at(i);
-            const int insertIndex = MathUtils::hashDecimal<T1>(xVal, precision);
-
-            if (insertIndex < 0 || insertIndex >= hashedMaxXVal) {
-                continue;
-            }
-
-            vec.coeffRef(insertIndex) = yVal;
-        }
-
-        return vec;
-    }
-
-
-    static Eigen::SparseVector<double> vectorizeFromScan(
-            const QVector<QPointF> &scan,
-            double maxXVal,
-            int precision
-            ) {
-
-        const int buffer = 10;
-        const int hashedMaxXVal = MathUtils::hashDecimal(maxXVal + buffer, precision);
-
-        Eigen::SparseVector<double> vec(hashedMaxXVal);
-        vec.setZero();
-
-        for (const QPointF &p : scan) {
-
-            const double xVal = p.x();
-            const double yVal = p.y();
-            const int insertIndex = MathUtils::hashDecimal(xVal, precision);
-
-            if (insertIndex < 0 || insertIndex >= hashedMaxXVal) {
-                continue;
-            }
-
-            vec.coeffRef(insertIndex) = yVal;
-        }
-
-        return vec;
-    }
-
-    static Eigen::SparseMatrix<double, Eigen::RowMajor> loadFrameToSparseMatrixRowMajor(
-            const QMap<int, QVector<QPointF>> &frame,
-            int precision,
-            double maxRowValue
-            );
-
-    static Eigen::SparseMatrix<double, Eigen::ColMajor> loadFrameToSparseMatrixColMajor(
-            const QMap<int, QVector<QPointF>> &frame,
-            int precision,
-            double maxRowValue
-    );
-
-    static QMap<int, QVector<QPointF>> loadSparseMatrixToFrame(
-            const Eigen::SparseMatrix<double> &mat,
-            int precision
-            );
 
 };
 
