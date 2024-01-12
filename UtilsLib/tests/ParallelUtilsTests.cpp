@@ -26,14 +26,9 @@ private:
 
 };
 
+ParallelUtilsTests::ParallelUtilsTests(){}
 
-ParallelUtilsTests::ParallelUtilsTests()
-{
-}
-
-
-void ParallelUtilsTests::trancheVectorForParallelizationTest()
-{
+void ParallelUtilsTests::trancheVectorForParallelizationTest() {
     ERR_INIT
 
     const QVector<QVector<int>> expectedResult = {{1, 4, 7, 11}, {2, 5, 9}, {3, 6, 10}};
@@ -57,7 +52,6 @@ void ParallelUtilsTests::trancheVectorForParallelizationTest()
 
 }
 
-
 void ParallelUtilsTests::trancheVectorForParallelizationInOrderTest() {
 
     ERR_INIT
@@ -71,7 +65,6 @@ void ParallelUtilsTests::trancheVectorForParallelizationInOrderTest() {
     QCOMPARE(e, eNoError);
 
     const QVector<QVector<int>> expectedResult = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11}};
-    qDebug() << "DSD" << output;
     QCOMPARE(output, expectedResult);
 
     e = ParallelUtils::trancheVectorForParallelizationInOrder(m_testData2, 3, 2, &output);
@@ -90,10 +83,38 @@ void ParallelUtilsTests::trancheVectorForParallelizationInOrderTest() {
     QVector<int> bigger(35);
     std::iota(bigger.begin(), bigger.end(), 0);
 
-//    e = ParallelUtils::trancheVectorForParallelizationInOrder(bigger, 8, 1, &output);
-//    QCOMPARE(e, eNoError);
-//    qDebug() << "SDFDS" << output;
-//    qDebug() << "output size" << output.size();
+    const QVector<QVector<int>> expectedResultBigger = {
+            QVector<int>({0, 1, 2, 3}),
+            QVector<int>({4, 5, 6, 7}),
+            QVector<int>({8, 9, 10, 11}),
+            QVector<int>({12, 13, 14, 15}),
+            QVector<int>({16, 17, 18, 19}),
+            QVector<int>({20, 21, 22, 23}),
+            QVector<int>({24, 25, 26, 27}),
+            QVector<int>({28, 29, 30, 31}),
+            QVector<int>({32, 33, 34})
+    };
+    e = ParallelUtils::trancheVectorForParallelizationInOrder(bigger, 8, 0, &output);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(output.size(), 9);
+    QCOMPARE(output, expectedResultBigger);
+
+    output.clear();
+    const QVector<QVector<int>> expectedResultBiggerBuffer = {
+            QVector({0, 1, 2, 3, 4}),
+            QVector({4, 5, 6, 7, 8}),
+            QVector({8, 9, 10, 11, 12}),
+            QVector({12, 13, 14, 15, 16}),
+            QVector({16, 17, 18, 19, 20}),
+            QVector({20, 21, 22, 23, 24}),
+            QVector({24, 25, 26, 27, 28}),
+            QVector({28, 29, 30, 31, 32}),
+            QVector({32, 33, 34})
+    };
+    e = ParallelUtils::trancheVectorForParallelizationInOrder(bigger, 8, 1, &output);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(output.size(), 9);
+    QCOMPARE(output, expectedResultBiggerBuffer);
 
 }
 

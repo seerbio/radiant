@@ -19,4 +19,3 @@ QPair<QVector<double>, QVector<double>> ParallelUtils::unZip(const QVector<QPoin
 
     return {v1, v2};
 }
-

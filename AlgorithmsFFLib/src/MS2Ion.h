@@ -10,8 +10,6 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "PointDF.h"
-
 
 using namespace Error;
 
