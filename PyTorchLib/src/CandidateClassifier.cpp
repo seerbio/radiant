@@ -121,10 +121,8 @@ namespace {
         const float* data = tensor.data_ptr<float>();
         std::vector<float> vec(data, data + numel);
 
-        return QVector<float>(vec.begin(), vec.end());
+        return {vec.begin(), vec.end()};
     }
-
-    
 
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
@@ -143,7 +141,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
     torch::globalContext().setDeterministicCuDNN(true);
     torch::set_num_threads(8);
-//    torch::set_num_interop_threads(4);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
