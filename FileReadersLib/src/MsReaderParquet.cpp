@@ -38,8 +38,8 @@ namespace {
                     &scanPoints
             ); ree;
 
-            e = ErrorUtils::isFalse(memberMsScanInfo->contains(msScanInfo.scanNumber)); ree;
-            e = ErrorUtils::isFalse(memberScanPoints->contains(msScanInfo.scanNumber)); ree;
+            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, *memberMsScanInfo); ree;
+            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, *memberScanPoints); ree;
 
             memberMsScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             memberScanPoints->insert(msScanInfo.scanNumber, scanPoints);
@@ -187,7 +187,7 @@ namespace {
             const ScanNumber &scanNumber = it.key();
             const MsScanInfo &msScanInfo = it.value();
 
-            e = ErrorUtils::isTrue(scanPoints.contains(scanNumber)); ree;
+            e = ErrorUtils::contains(scanNumber, scanPoints); ree;
 
             const ScanPoints *scanPointsVec = scanPoints.value(scanNumber);
 

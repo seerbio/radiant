@@ -37,7 +37,7 @@ Err MsReaderBase::getMsScanInfo(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
+    e = ErrorUtils::contains(scanNumber, m_msScanInfo); ree;
     *msScanInfo = m_msScanInfo.value(scanNumber);
 
     ERR_RETURN
@@ -294,7 +294,7 @@ Err MsReaderBase::getMsScanInfo(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); ree;
+    e = ErrorUtils::contains(scanNumber, m_msScanInfo); ree;
 
     *msScanInfo = m_msScanInfo.value(scanNumber);
 
@@ -305,8 +305,8 @@ QPair<Err, ScanPoints*> MsReaderBase::getScanPoints(int scanNumber) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msScanInfo.contains(scanNumber)); rree;
-    e = ErrorUtils::isTrue(m_scanPoints.contains(scanNumber)); rree;
+    e = ErrorUtils::contains(scanNumber, m_msScanInfo); rree;
+    e = ErrorUtils::contains(scanNumber, m_scanPoints); rree;
     return {e, &m_scanPoints[scanNumber]};
 }
 
@@ -327,7 +327,7 @@ Err MsReaderBase::updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUp
         const ScanNumber scanNumber = it.key();
         const ScanPoints &scanPoints = it.value();
 
-        e = ErrorUtils::isTrue(m_scanPoints.contains(scanNumber)); ree;
+        e = ErrorUtils::contains(scanNumber, m_scanPoints); ree;
 
         m_scanPoints[scanNumber] = scanPoints;
     }
