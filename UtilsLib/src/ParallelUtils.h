@@ -361,6 +361,17 @@ public:
     */
     static QPair<QVector<double>, QVector<double>> unZip(const QVector<QPointF> &points);
 
+    /*!
+    * @brief  Splits a vector of QPairs into two separate vectors.
+    * @tparam T: The datatype of the first elements in the pairs.
+    * @tparam U: The datatype of the second elements in the pairs.
+    * @param vecOfPairs: The QVector of QPairs to be split.
+    * @return QPair<QVector<T>, QVector<U>>: A pair of vectors. The first vector in the pair contains the first
+    *   elements from the pairs, and the second vector contains the second elements from the pairs.
+    *
+    * Note: This operation is the opposite of a zip operation where two vectors are combined into one as a
+    *   QVector of QPairs. Here, one vector of QPairs is split into two vectors. The QPair's first and second values are used to form two distinct vectors.
+    */
     template <typename T, typename U>
     static QPair<QVector<T>, QVector<U>> unZip(const QVector<QPair<T, U>> &vecOfPairs) {
 
