@@ -16,7 +16,6 @@ enum class UTILSLIB_EXPORTS ErrorUtilsParam {
 };
 
 
-
 class UTILSLIB_EXPORTS ErrorUtils {
 
 public:
@@ -311,7 +310,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the container does not contain the value and 'eNoError' if it does contain the value.
     */
-    template<typename T> //TODO make unit test
+    template<typename T>
     static Err contains(T value, const QVector<T> &container, Err e = eError) {
 
         if (!container.contains(value)) {
@@ -331,7 +330,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the QMap does not contain the key and 'eNoError' if it does contain the key.
     */
-    template<typename T, typename U> //TODO make unit test
+    template<typename T, typename U>
     static Err contains(T value, const QMap<T, U> &container, Err e = eError) {
 
         if (!container.contains(value)) {
@@ -351,7 +350,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the QHash does not contain the key and 'eNoError' if it does contain the key.
     */
-    template<typename T, typename U> //TODO make unit test
+    template<typename T, typename U>
     static Err contains(T value, const QHash<T, U> &container, Err e = eError) {
 
         if (!container.contains(value)) {
@@ -370,7 +369,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the container does contain the value and 'eNoError' if it does not contain the value.
     */
-    template<typename T> //TODO make unit test
+    template<typename T>
     static Err doesNotContain(T value, const QVector<T> &container, Err e = eError) {
 
         if (container.contains(value)) {
@@ -390,7 +389,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the QMap does contain the key and 'eNoError' if it does not contain the key.
     */
-    template<typename T, typename U> //TODO make unit test
+    template<typename T, typename U>
     static Err doesNotContain(T value, const QMap<T, U> &container, Err e = eError) {
 
         if (container.contains(value)) {
@@ -410,7 +409,7 @@ public:
     * @param e: Initial error status, eError by default.
     * @return Err: Error status after the check. Error status will be 'eError' if the QHash does contain the key and 'eNoError' if it does not contain the key.
     */
-    template<typename T, typename U> //TODO make unit test
+    template<typename T, typename U>
     static Err doesNotContain(T value, const QHash<T, U> &container, Err e = eError) {
 
         if (container.contains(value)) {
