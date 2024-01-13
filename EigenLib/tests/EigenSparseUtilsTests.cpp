@@ -346,7 +346,7 @@ void EigenSparseUtilsTests::buildCombFilterTest() {
     for (int i = 0; i < expectedResult.size(); i++) {
         QCOMPARE( static_cast<int>(result.coeff(i)), expectedResult.at(i));
     }
-    
+
 }
 
 void EigenSparseUtilsTests::cleanupTestCase()

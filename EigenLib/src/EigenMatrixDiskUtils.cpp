@@ -21,8 +21,6 @@ namespace {
 
     QDataStream::Version DATASTREAM_VERSION = QDataStream::Qt_5_12;
 
-    const QLatin1String CACHE_SUFFIX(".eigen.cache");
-
     /// De-serialize the Eigen::SparseMatrix to data stream
     QDataStream &operator<<(
             QDataStream &stream,
@@ -93,49 +91,6 @@ namespace {
         return stream;
     }
 
-
-//    QDataStream &operator<<(QDataStream &stream, const Eigen::VectorXd &data) {
-
-//        using VectorScalar = Eigen::VectorXd::Scalar;
-//        const Eigen::Index timeIndexSize = data.size();
-//        stream << timeIndexSize;
-
-//        const char *timeIndexBytes = reinterpret_cast<const char*>(data.data());
-//        int timeIndexBytesSize = static_cast<int>(timeIndexSize * sizeof(VectorScalar));
-//        stream.writeRawData(timeIndexBytes, timeIndexBytesSize);
-
-//        return stream;
-//    }
-
-//    QDataStream &operator>>(QDataStream &stream, Eigen::VectorXd &matrix)
-//    {
-//        using VectorScalar = Eigen::VectorXd::Scalar;
-//        Eigen::Index timeIndexSize;
-//        stream >> timeIndexSize;
-
-//        matrix.resize(timeIndexSize);
-//        char *timeIndexBytes = reinterpret_cast<char *>(matrix.data());
-//        int timeIndexBytesSize = static_cast<int>(timeIndexSize * sizeof(VectorScalar));
-//        stream.readRawData(timeIndexBytes, timeIndexBytesSize);
-
-
-//        return stream;
-//    }
-
-    const QString DATETIME_FORMAT = QStringLiteral("yyyy-MM-dd HH:mm:ss");
-
-    const quint32 HEADER_MAGIC_NUMBER = 0x70012B00; // TURBOO in https://en.wikipedia.org/wiki/Hexspeak
-
-    const QByteArray HEADER_MARK = QByteArrayLiteral("__com.eigen.cache");
-    const QByteArray VERSION_MARK = QByteArrayLiteral("eigen::Version");
-    const QByteArray DATETIME_MARK = QByteArrayLiteral("eigen::DateTime");
-    const QByteArray OPTIONS_MARK = QByteArrayLiteral("eigen::Options");
-    const QByteArray FILE_PATH_MARK = QByteArrayLiteral("eigen::FilePath");
-    const QByteArray TIME_INDEX_MARK = QByteArrayLiteral("eigen::TimeIndex");
-    const QByteArray BLOB_MARK = QByteArrayLiteral("eigen::Blob");
-
-    const QString INVALID_FILE_FORMAT = QStringLiteral("Invalid file format");
-
 } // namespace
 
 
@@ -152,21 +107,11 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(
     QDataStream ds(&inBuffer);
     ds.setVersion(DATASTREAM_VERSION);
 
-    // header + meta info
-    ds << HEADER_MAGIC_NUMBER;
-    ds << HEADER_MARK;
-
-    ds << DATETIME_MARK;
-    ds << QDateTime::currentDateTime().toString(DATETIME_FORMAT).toLatin1();
-
-    // data block
-    ds << BLOB_MARK;
     ds << matrix;
 
     QFile file(filePath);
     const bool isFileOpened = file.open(QIODevice::WriteOnly);
     e = ErrorUtils::isTrue(isFileOpened); ree;
-
 
     long long size = file.write(blob);
     e = ErrorUtils::isNotEqual(size, static_cast<long long>(-1)); ree;
@@ -179,7 +124,11 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(
 }
 
 
-Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::SparseMatrix<double, Eigen::ColMajor> *matrix) {
+Err EigenMatrixDiskUtils::loadEigenMatrix(
+        const QString &filePath,
+        Eigen::SparseMatrix<double, Eigen::ColMajor> *matrix
+        ) {
+
     ERR_INIT;
 
     QFile file(filePath);
@@ -193,40 +142,17 @@ Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::Sparse
     QDataStream ds(&inBuffer);
     ds.setVersion(DATASTREAM_VERSION);
 
-    FileHeader header;
-
-    ds >> header.magicNumber;
-    e = ErrorUtils::isEqual(static_cast<double>(header.magicNumber),
-                            static_cast<double>(HEADER_MAGIC_NUMBER)); ree;
-
-    QByteArray headerMark;
-    ds >> headerMark;
-    if (headerMark != HEADER_MARK) {
-        rrr(eError);
-    }
-
-    QByteArray dateTimeMark;
-    ds >> dateTimeMark;
-    if (dateTimeMark != DATETIME_MARK) {
-        rrr(eError);
-    }
-
-    QByteArray datetime;
-    ds >> datetime;
-    QString dateTimeStr = QString::fromLatin1(datetime);
-    header.dateTime = QDateTime::fromString(dateTimeStr, DATETIME_FORMAT);
-
-
-    QByteArray blobMark;
-    ds >> blobMark;
-
     ds >> *matrix;
 
     ERR_RETURN;
 }
 
 
-Err EigenMatrixDiskUtils::saveEigenMatrix(const Eigen::MatrixXd &matrix, const QString &filePath) {
+Err EigenMatrixDiskUtils::saveEigenMatrix(
+        const Eigen::MatrixXd &matrix,
+        const QString &filePath
+        ) {
+
     ERR_INIT;
 
     const Eigen::SparseMatrix<double, Eigen::ColMajor> m = matrix.sparseView();
@@ -236,7 +162,10 @@ Err EigenMatrixDiskUtils::saveEigenMatrix(const Eigen::MatrixXd &matrix, const Q
 }
 
 
-Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::MatrixXd *matrix) {
+Err EigenMatrixDiskUtils::loadEigenMatrix(
+        const QString &filePath,
+        Eigen::MatrixXd *matrix
+        ) {
 
     ERR_INIT;
 
@@ -247,5 +176,3 @@ Err EigenMatrixDiskUtils::loadEigenMatrix(const QString &filePath, Eigen::Matrix
 
     ERR_RETURN;
 }
-
-
