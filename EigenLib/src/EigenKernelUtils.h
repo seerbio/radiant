@@ -283,35 +283,6 @@ public:
     }
 
     /*!
-    * @brief   Convolves a given sparse vector with a given kernel.
-    * @tparam  T: Numeric type used in Eigen SparseVector. It should support mathematical operations such as multiplication, division, addition, subtraction, and power.
-    * @param   vec: The input sparse vector to be convolved.
-    * @param   kernel: The kernel to convolve the vector with.
-    * @return  Eigen::SparseVector<T>: Eigen SparseVector representing the convolved output.
-    *
-    * Note: This function constructs a sparse matrix, where each column is a segment of the original sparse vector, offset by the index. This constructs overlapping "windows" of the original vector, matching the size of the kernel. These windows are then each convolved with the kernel by taking the product of the sparse matrix with the kernel, resulting in the convolved sparse vector.
-    */
-    template <typename T>
-    static Eigen::SparseVector<T> convolveVectorWithKernel(
-            const Eigen::SparseVector<T> &vec,
-            const Eigen::VectorX<T> &kernel
-            ) {
-
-        const int kernelSize = static_cast<int>(kernel.size());
-        const int filterCorrection = kernelSize % 2 == 1 ? 1 : 0;
-        const int ogVectorSize = static_cast<int>(vec.size()) - kernelSize + filterCorrection;
-
-        Eigen::SparseMatrix<T> mat(ogVectorSize, kernelSize);
-        for (int i = 0; i < kernelSize; ++i) {
-            const Eigen::SparseVector<T> v = vec.segment(i, ogVectorSize);
-            mat.col(i) = v;
-        }
-
-        Eigen::VectorX<T> dotProd = mat * kernel;
-        return dotProd.sparseView();
-    }
-
-    /*!
     * @brief   Adds padding to a given Sparse Vector which will be used for convolution operation.
     * @tparam  T: Numeric type used in Eigen SparseVector. It should support mathematical operations such as multiplication, division, addition, subtraction, and power.
     * @param   vec: The Sparse Vector to which padding needs to be added.
@@ -326,7 +297,7 @@ public:
     static Eigen::SparseVector<T> addPaddingToSparseVector(
             const Eigen::SparseVector<T> &vec,
             int filterLength
-            ) {
+    ) {
 
         const int filterLengthHalved = std::floor(filterLength/2.0);
         const int rows = static_cast<int>(vec.size());
@@ -343,6 +314,33 @@ public:
         }
 
         return paddedVec;
+    }
+
+    /*!
+    * @brief   Convolves a given sparse vector with a given kernel.
+    * @tparam  T: Numeric type used in Eigen SparseVector. It should support mathematical operations such as multiplication, division, addition, subtraction, and power.
+    * @param   vec: The input sparse vector to be convolved.
+    * @param   kernel: The kernel to convolve the vector with.
+    * @return  Eigen::SparseVector<T>: Eigen SparseVector representing the convolved output.
+    *
+    * Note: This function constructs a sparse matrix, where each column is a segment of the original sparse vector, offset by the index. This constructs overlapping "windows" of the original vector, matching the size of the kernel. These windows are then each convolved with the kernel by taking the product of the sparse matrix with the kernel, resulting in the convolved sparse vector.
+    */
+    template <typename T>
+    static Eigen::SparseVector<T> convolveVectorWithKernel(
+            const Eigen::SparseVector<T> &vec,
+            const Eigen::VectorX<T> &kernel
+            ) {
+
+        Eigen::SparseVector<double> vecPadded = addPaddingToSparseVector(vec, kernel.size());
+
+        Eigen::SparseMatrix<T> mat(vec.size(), kernel.size());
+        for (int i = 0; i < kernel.size(); ++i) {
+            const Eigen::SparseVector<T> v = vecPadded.segment(i, vec.size());
+            mat.col(i) = v;
+        }
+
+        Eigen::VectorX<T> dotProd = mat * kernel;
+        return dotProd.sparseView();
     }
 
     /*!
@@ -436,7 +434,7 @@ public:
     }
 
     /*!
-    * @brief   Applies a given kernel to a Sparse Matrix column-wise.
+    * @brief   Applies a given kernel to a Sparse Matrix to each row, i.e. left->right.
     * @tparam  T: Numeric type used in Eigen SparseMatrix. It should support mathematical operations such as multiplication, division, addition, subtraction, and power.
     * @param   _mat: The SparseMatrix to which the kernel needs to be applied.
     * @param   kernel: The kernel that will be applied.
@@ -446,10 +444,10 @@ public:
     * Note: This function creates a new SparseMatrix from the input SparseMatrix by padding it column-wise. The kernel, which is a Vector, is then applied to each column. If 'matchOriginalMaximum' is true, the resulting values are scaled such that the maximum value of the result matrix matches the maximum value of the original matrix.
     */
     template <typename T>
-    static Eigen::SparseMatrix<T> applyKernelColumnWiseToMatrix(
+    static Eigen::SparseMatrix<T> applyKernelToEachRowInMatrix(
             const Eigen::SparseMatrix<T> &_mat,
             const Eigen::VectorX<T> &kernel,
-            bool matchOriginalMaximum
+            bool matchOriginalMaximum = false
             ) {
 
         const int filterLength = static_cast<int>(kernel.size());
