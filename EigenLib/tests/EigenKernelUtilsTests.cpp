@@ -22,13 +22,14 @@ public:
 //TODO write tests for the rest of the methods.
 private Q_SLOTS:
 
-    void buildSavitzkyGolayKernelTest();
+    static void buildSavitzkyGolayKernelTest();
+    static void lineSpaceTest();
+    static void buildGaussianFilter1DTest();
+    static void buildMexicanHatFilter1DTest();
+    static void calculateNumberOfStridesTest();
+    static void addPaddingToMatrixRowWiseTest();
 
-    void buildGaussianFilterTest();
-
-    void addPaddingToMatrixRowWiseTest();
-
-    void applyKernelToEachColumnInMatrix();
+    static void applyKernelToEachColumnInMatrix();
 
 };
 
@@ -64,7 +65,37 @@ void EigenKernelUtilsTests::buildSavitzkyGolayKernelTest() {
 
 }
 
-void EigenKernelUtilsTests::buildGaussianFilterTest() {
+void EigenKernelUtilsTests::lineSpaceTest() {
+
+    const Eigen::VectorX<double> lineSpaceVec = EigenKernelUtils::lineSpace<double>(
+            -1.0,
+            1.0,
+            11,
+            true
+            );
+
+    const QVector<double> expected = {
+            -1,
+            -0.8,
+            -0.6,
+            -0.4,
+            -0.2,
+            0,
+            0.2,
+            0.4,
+            0.6,
+            0.8,
+            1
+    };
+
+    QCOMPARE(lineSpaceVec.size(), expected.size());
+    for (int i = 0; i < expected.size(); i++) {
+        QCOMPARE(lineSpaceVec.coeff(i), expected.at(i));
+    }
+
+}
+
+void EigenKernelUtilsTests::buildGaussianFilter1DTest() {
 
     const int filterLen = 3;
     const double sigma = 2.0;
@@ -73,8 +104,51 @@ void EigenKernelUtilsTests::buildGaussianFilterTest() {
             sigma
     );
 
-    std::cout << gaussianFilter << std::endl;
+    QVector<double> expected = {
+            0.02154,
+            0.15915,
+            0.02154
+    };
 
+    QCOMPARE(gaussianFilter.size(), expected.size());
+    for (int i = 0; i < expected.size(); i++) {
+        QCOMPARE(MathUtils::pRound(gaussianFilter.coeff(i), 5), expected.at(i));
+    }
+
+}
+
+void EigenKernelUtilsTests::buildMexicanHatFilter1DTest() {
+
+    const Eigen::VectorX<double> mexHatVec = EigenKernelUtils::buildMexicanHatFilter1D<double>(
+            11,
+            2.0
+            );
+
+    const QVector<double> expected = {
+            -0.141,
+            -0.249,
+            -0.249,
+            0.0,
+            0.406,
+            0.613,
+            0.406,
+            0.0,
+            -0.249,
+            -0.249,
+            -0.141
+    };
+
+    QCOMPARE(mexHatVec.size(), expected.size());
+
+    for (int i = 0; i < expected.size(); i++) {
+        QCOMPARE(MathUtils::pRound(mexHatVec.coeff(i), 3), expected.at(i));
+    }
+
+}
+
+void EigenKernelUtilsTests::calculateNumberOfStridesTest() {
+    const int numberOfStrides = EigenKernelUtils::calculateNumberOfStrides(11, 3, 1);
+    QCOMPARE(numberOfStrides, 9);
 }
 
 void EigenKernelUtilsTests::addPaddingToMatrixRowWiseTest() {
@@ -121,7 +195,7 @@ void EigenKernelUtilsTests::applyKernelToEachColumnInMatrix() {
     QCOMPARE(matSmoothed.coeff(4,0), 9.0);
     QCOMPARE(matSmoothed.coeff(0,1), 0.0);
     QCOMPARE(matSmoothed.coeff(1,1), 0.0);
-    QCOMPARE(matSmoothed.coeff(4,2), 0.0);
+    QCOMPARE(matSmoothed.coeff(4,1), 0.0);
 
 }
 
