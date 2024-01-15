@@ -220,6 +220,18 @@ public:
         AltTargetKeyIdCosineSimSumCharge4_1,
         AltTargetKeyIdCosineSimSumCharge4_2,//200
         AltTargetKeyIdCosineSimSumCharge4_3,
+        AltTargetKeyIdTimeDeltaCharge1_1,
+        AltTargetKeyIdTimeDeltaCharge1_2,
+        AltTargetKeyIdTimeDeltaCharge1_3,
+        AltTargetKeyIdTimeDeltaCharge2_1,
+        AltTargetKeyIdTimeDeltaCharge2_2,
+        AltTargetKeyIdTimeDeltaCharge2_3,
+        AltTargetKeyIdTimeDeltaCharge3_1,
+        AltTargetKeyIdTimeDeltaCharge3_2,
+        AltTargetKeyIdTimeDeltaCharge3_3,//210
+        AltTargetKeyIdTimeDeltaCharge4_1,
+        AltTargetKeyIdTimeDeltaCharge4_2,
+        AltTargetKeyIdTimeDeltaCharge4_3,
         FeaturesSize
     };
 
@@ -680,6 +692,23 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float altTargetKeyIdCosineSimSumCharge4_2 = -1.0;
     float altTargetKeyIdCosineSimSumCharge4_3 = -1.0;
 
+    float altTargetKeyIdTimeDeltaCharge1_OG = -1.0;
+    float altTargetKeyIdTimeDeltaCharge1_1 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge1_2 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge1_3 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge2_OG = -1.0;
+    float altTargetKeyIdTimeDeltaCharge2_1 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge2_2 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge2_3 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge3_OG = -1.0;
+    float altTargetKeyIdTimeDeltaCharge3_1 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge3_2 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge3_3 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge4_OG = -1.0;
+    float altTargetKeyIdTimeDeltaCharge4_1 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge4_2 = -1.0;
+    float altTargetKeyIdTimeDeltaCharge4_3 = -1.0;
+
     QMap<QString, QVariant> map() override {
 
         using namespace CandidateScoresReaderRowNamespace;
@@ -1118,6 +1147,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.altTargetKeyIdCosineSimSumCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_1];
         row.altTargetKeyIdCosineSimSumCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2];
         row.altTargetKeyIdCosineSimSumCharge4_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_3];
+
+        row.altTargetKeyIdTimeDeltaCharge1_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1];
+        row.altTargetKeyIdTimeDeltaCharge1_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_2];
+        row.altTargetKeyIdTimeDeltaCharge1_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_3];
+        row.altTargetKeyIdTimeDeltaCharge2_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_1];
+        row.altTargetKeyIdTimeDeltaCharge2_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_2];
+        row.altTargetKeyIdTimeDeltaCharge2_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_3];
+        row.altTargetKeyIdTimeDeltaCharge3_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_1];
+        row.altTargetKeyIdTimeDeltaCharge3_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_2];
+        row.altTargetKeyIdTimeDeltaCharge3_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_3];
+        row.altTargetKeyIdTimeDeltaCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_1];
+        row.altTargetKeyIdTimeDeltaCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_2];
+        row.altTargetKeyIdTimeDeltaCharge4_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3];
 
         return row;
     }
