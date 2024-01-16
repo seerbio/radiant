@@ -24,6 +24,19 @@ public:
 
     Err openFile(const QString &filePath);
 
+    Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy,
+            const QPair<double, double> &filterRange
+    );
+
+    Err openFile(
+            const QString &filePath,
+            const QString &columnToFilterBy
+    );
+
+    bool isInit();
+
     QSharedPointer<MsReaderBase> ptr;
 
 

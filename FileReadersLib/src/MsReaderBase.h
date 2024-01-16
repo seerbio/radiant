@@ -253,11 +253,6 @@ public:
 
     QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
 
-    Err getMsScanInfo(
-            ScanNumber scanNumber,
-            MsScanInfo *msScanInfo
-            ) const;
-
     Err collateMS2MzTargetFrames(
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
     );
@@ -265,8 +260,6 @@ public:
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();
 
     int getFrameCount();
-
-    Err updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate);
 
     QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
     QMap<ScanNumber, MsScanInfo> getMsScanInfos();
@@ -280,20 +273,7 @@ public:
             ScanPoints *scanPoints
                     );
 
-    int getNearestScanNumberFromScanTime(ScanTime scanTime);
-
-    static Err getNearestScanNumberFromScanTime(
-            ScanTime scanTime,
-            const QVector<ScanNumber> &scanNumbers,
-            const QVector<ScanTime> &scanTimes,
-            ScanNumber *scanNumber
-            );
-
-    static Err getNearestScanNumberFromScanNumber(
-            ScanNumber scanNumber,
-            const QVector<ScanNumber> &scanNumbers,
-            ScanNumber *closestScanNumber
-            );
+    ScanNumber getNearestScanNumberFromScanTime(ScanTime scanTime);
 
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
@@ -326,7 +306,6 @@ protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
-
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
     QString m_filePath;

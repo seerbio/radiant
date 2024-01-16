@@ -14,7 +14,6 @@
 
 MsReaderBase::MsReaderBase() : m_fileIsCalibrated(false) {}
 
-
 void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
     m_msScanInfo = msScanInfos;
 }
@@ -33,8 +32,8 @@ Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) 
 
 void MsReaderBase::reset() {
     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
+    QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
 }
-
 
 Err MsReaderBase::openFile(const QString &filePath) {
     return Error::eFunctionNotImplemented;
@@ -51,7 +50,7 @@ Err MsReaderBase::openFile(
 Err MsReaderBase::openFile(
         const QString &filePath,
         const QString &columnToFilterBy
-) {
+        ) {
     return Error::eFunctionNotImplemented;
 }
 
@@ -180,19 +179,6 @@ QPair<Err, ScanPoints*> MsReaderBase::getScanPoints(int scanNumber) {
     return {e, &m_scanPoints[scanNumber]};
 }
 
-Err MsReaderBase::getMsScanInfo(
-        ScanNumber scanNumber,
-        MsScanInfo *msScanInfo
-        ) const {
-
-    ERR_INIT
-
-    e = ErrorUtils::contains(scanNumber, m_msScanInfo); ree;
-    *msScanInfo = m_msScanInfo.value(scanNumber);
-
-    ERR_RETURN
-}
-
 Err MsReaderBase::collateMS2MzTargetFrames(
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame
         ) {
@@ -236,25 +222,6 @@ QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
 
 int MsReaderBase::getFrameCount() {
     return getUniqueTandemMsScanInfos().size();
-}
-
-Err MsReaderBase::updateScanPoints(const QMap<ScanNumber, ScanPoints> &scansToUpdate) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scansToUpdate); ree;
-
-    for (auto it = scansToUpdate.begin(); it != scansToUpdate.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPoints = it.value();
-
-        e = ErrorUtils::contains(scanNumber, m_scanPoints); ree;
-
-        m_scanPoints[scanNumber] = scanPoints;
-    }
-
-    ERR_RETURN
 }
 
 QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
@@ -318,7 +285,7 @@ void MsReaderBase::sortScanPoints(
 
 }
 
-int MsReaderBase::getNearestScanNumberFromScanTime(ScanTime scanTime) {
+ScanNumber MsReaderBase::getNearestScanNumberFromScanTime(ScanTime scanTime) {
 
     if (m_scanNumberVsScanTime.isEmpty()) {
         for (const MsScanInfo &msScanInfo : m_msScanInfo) {
@@ -329,45 +296,11 @@ int MsReaderBase::getNearestScanNumberFromScanTime(ScanTime scanTime) {
     const QVector<ScanTime> scanTimes = m_scanNumberVsScanTime.values().toVector();
     const QVector<ScanNumber> scanNumbers = m_scanNumberVsScanTime.keys().toVector();
 
-    const int nearestIndex = MathUtils::closest(scanTimes, scanTime);
+    const ScanNumber nearestIndex = MathUtils::closest(scanTimes, scanTime);
 
     return scanNumbers.at(nearestIndex);
 }
 
-Err MsReaderBase::getNearestScanNumberFromScanTime(
-        ScanTime scanTime,
-        const QVector<ScanNumber> &scanNumbers,
-        const QVector<ScanTime> &scanTimes,
-        ScanNumber *scanNumber
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scanNumbers); ree;
-    e = ErrorUtils::isEqual(scanNumbers.size(), scanTimes.size()); ree;
-
-    const int nearestIndex = MathUtils::closest(scanTimes, scanTime);
-    *scanNumber = scanNumbers.at(nearestIndex);
-
-    ERR_RETURN
-}
-
-Err MsReaderBase::getNearestScanNumberFromScanNumber(
-        ScanNumber scanNumber,
-        const QVector<ScanNumber> &scanNumbers,
-        ScanNumber *closestScanNumber
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(scanNumbers); ree;
-
-    const int nearestIndex = MathUtils::closest(scanNumbers, scanNumber);
-
-    *closestScanNumber = scanNumbers.at(nearestIndex);
-
-    ERR_RETURN
-}
 
 QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 
@@ -390,6 +323,9 @@ Err MsReaderBase::splitScanPoints(
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
+    mzVals->clear();
+    intensityVals->clear();
+
     for (const ScanPoint &sp : scanPoints) {
         mzVals->push_back(sp.x());
         intensityVals->push_back(sp.y());
@@ -408,6 +344,9 @@ Err MsReaderBase::splitScanPoints(
 
     e = ErrorUtils::isFalse(scanPoints->isEmpty()); ree;
 
+    mzVals->clear();
+    intensityVals->clear();
+
     for (const ScanPoint &sp : *scanPoints) {
         mzVals->push_back(sp.x());
         intensityVals->push_back(sp.y());
@@ -425,6 +364,7 @@ Err MsReaderBase::zipScanPoints(
     ERR_INIT
 
     e = ErrorUtils::isEqual(mzVals.size(), intensityVals.size()); ree;
+    scanPoints->clear();
 
     for (int i = 0; i < mzVals.size(); i++) {
         scanPoints->push_back({mzVals.at(i), intensityVals.at(i)});
