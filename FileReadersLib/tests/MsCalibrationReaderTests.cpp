@@ -51,7 +51,7 @@ void MsCalibrationReaderTests::readWriteTest() {
     QCOMPARE(rowsRead.size(), rows.size());
 
     const MsCalibarationReaderRow &readRow = rowsRead.front();
-    
+
     QCOMPARE(readRow.peptideStringWithMods, row.peptideStringWithMods);
     QCOMPARE(readRow.iRTPredicted, row.iRTPredicted);
     QCOMPARE(readRow.scanTime, row.scanTime);
