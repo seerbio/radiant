@@ -22,56 +22,40 @@ private Q_SLOTS:
     void openPrqTest();
     void isDIATest();
 
-
-private:
-    //TODO use proper path procedures.
-    const QString m_mzMLFilePath
-            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
-
-    //TODO use proper path procedures.
-    const QString m_prqFilePath
-            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq");
-
 };
 
 void MsReaderBaseTests::openMzMlTest() {
-    QSKIP("TODO: enable with internal test data");
-
-    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
+    const QString &mzMLFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
     MsReaderPointerAcc msReaderPointerAcc;
-    e = msReaderPointerAcc.openFile(m_mzMLFilePath);
+    e = msReaderPointerAcc.openFile(mzMLFilePath);
     QCOMPARE(e, eNoError);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 372);
 
 }
 
 void MsReaderBaseTests::openPrqTest() {
-    QSKIP("TODO: enable with internal test data");
-
-    QSKIP("activate when proper pathing is used");
-
-    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
+    const QString &prqFFFilePath = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
     MsReaderPointerAcc msReaderPointerAcc;
-    e = msReaderPointerAcc.openFile(m_prqFilePath);
+    e = msReaderPointerAcc.openFile(prqFFFilePath);
     QCOMPARE(e, eNoError);
+    QCOMPARE(msReaderPointerAcc.ptr->getMsScanInfos().size(), 5000);
 }
 
 void MsReaderBaseTests::isDIATest() {
-    QSKIP("TODO: enable with internal test data");
 
-    QSKIP("activate when proper pathing is used");
-
-    QSKIP("activate when proper pathing is used");
 
     ERR_INIT
 
+    const QString &prqFFFilePath = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
+    
     MsReaderPointerAcc msReaderPointerAcc;
-    e = msReaderPointerAcc.openFile(m_prqFilePath);
+    e = msReaderPointerAcc.openFile(prqFFFilePath);
     QCOMPARE(e, eNoError);
 
     const bool msFileIsDIA = msReaderPointerAcc.ptr->isDIA();

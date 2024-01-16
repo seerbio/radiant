@@ -66,39 +66,7 @@ QString MsReaderBase::filePath() {
     return m_filePath;
 }
 
-namespace {
 
-    bool doUniqueKeysCycle(
-            const QVector<MzTargetKey> &uniqueInfoKeys,
-            const QList<MsScanInfo> &msScanInfos
-    ) {
-
-        int cycleCounter = 0;
-
-        int uniqueInfoKeysIndex = 0;
-        for (const MsScanInfo &msScanInfo : msScanInfos) {
-
-            if (uniqueInfoKeysIndex == uniqueInfoKeys.size()) {
-                cycleCounter++;
-                uniqueInfoKeysIndex = 0;
-            }
-
-            if (uniqueInfoKeys.at(uniqueInfoKeysIndex++) != msScanInfo.targetKey()) {
-                return false;
-            }
-
-        }
-
-        if (cycleCounter < 5) {
-            return false;
-        }
-
-        const int expectedCycleSize = msScanInfos.size() / uniqueInfoKeys.size();
-
-        return abs(cycleCounter - expectedCycleSize) <= 1;
-    }
-
-}//namespace
 bool MsReaderBase::isDIA() {
 
     const int msLevel = 2;
@@ -111,12 +79,21 @@ bool MsReaderBase::isDIA() {
         uniqueKeyCounter[msScanInfo.targetKey()]++;
     }
 
-    const bool uniqueKeysCycle = doUniqueKeysCycle(
-            uniqueKeyCounter.keys().toVector(),
-            tandemScanInfos.values()
-    );
+    const double targetKeyCountMean = MathUtils::mean(uniqueKeyCounter.values());
+    const double allowableDistance = 2.0;
 
-    return uniqueKeysCycle;
+    QVector<bool> withinCountDistance;
+    std::transform(
+            uniqueKeyCounter.begin(),
+            uniqueKeyCounter.end(),
+            std::back_inserter(withinCountDistance),
+            [targetKeyCountMean, allowableDistance](int targetKeyCount){
+                return std::abs(targetKeyCount - targetKeyCountMean) <= allowableDistance
+                            && targetKeyCount > allowableDistance;
+            }
+            );
+
+    return std::all_of(withinCountDistance.begin(), withinCountDistance.end(), [](bool b){return b;});
 }
 
 bool MsReaderBase::isInit() {
@@ -483,12 +460,6 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << "MS1 Scan Count" << ms1ScanSize;
     qDebug() << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << "File is DIA" << isDIA();
-
-//#define WRITE_TARGET_CE_FILE
-#ifdef WRITE_TARGET_CE_FILE
-    qDebug() << "ACHTUNG, ACHTUNG, ACHTUNG!!!! WRITING CF FILE IN:"; einfo;
-    writeTargetCollisionEnergyFile();
-#endif
 
     ERR_RETURN
 }
