@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(
 
 #Add classes to test here.
 SET(TEST_CLASSES
+        CommandLineParserUtilsTests
         CSVReaderTests
         FastaReaderTests
         FeatureFinderHillReaderTests

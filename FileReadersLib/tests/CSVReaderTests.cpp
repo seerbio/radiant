@@ -16,16 +16,13 @@ public:
     ~CSVReaderTests() override = default;
 
 private Q_SLOTS:
-    void readTest();
-    void writeTest();
+    void readWriteTest();
+
 };
 
-void CSVReaderTests::readTest() {
-    //TODO Implement
-}
+void CSVReaderTests::readWriteTest() {
 
-void CSVReaderTests::writeTest() {
-    //TODO Implement
+
 }
 
 QTEST_MAIN(CSVReaderTests)

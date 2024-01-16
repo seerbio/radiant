@@ -17,16 +17,7 @@ bool CommandLineParserUtils::checkFileNameExtension(
 
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
-
-    if (fi.isFile()) {
-        return StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false);
-    }
-
-    else if (fi.isDir()) {
-        return true;
-    }
-
-    return false;
+    return StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false);
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(
