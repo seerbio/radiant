@@ -301,7 +301,6 @@ ScanNumber MsReaderBase::getNearestScanNumberFromScanTime(ScanTime scanTime) {
     return scanNumbers.at(nearestIndex);
 }
 
-
 QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
 
     QMap<ScanNumber, ScanTime > scanNumberVsScanTime;

@@ -251,44 +251,214 @@ public:
             QMap<ScanNumber, ScanPoints*> *scanPoints
     );
 
+    /**
+    * @brief Retrieves scan points of a specific ScanNumber.
+    *
+    * This method first checks to see that the scanPoints and msScanInfo are present for the given scanNumber.
+    * If they are both present, the method will retrieve the scanPoints from the m_scanPoints.
+    *
+    * @param scanNumber The ScanNumber for which to fetch the scan points.
+    *
+    * @return Returns a QPair<Err, ScanPoints> object. If successful, the function returns an Err object initialized with a
+    * success state as well as the ScanPoints. If any error occurs during the fetching of the scan points, it returns an Err object initialized with a failure state.
+    */
     QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
 
+    /**
+    * @brief Collates MS2 MzTarget frames for Data-Independent Acquisition (DIA).
+    *
+    * This function takes a QMap of MzTargetKey to QMap of ScanNumber to ScanPoints,
+    * and populates it with MS2 MzTarget frames by iterating over tandemScanInfos.
+    * It checks for the existence and non-empty nature of necessary data structures,
+    * retrieves MS scan information for MS level 2, and associates the corresponding
+    * ScanPoints with the MzTargetKey and ScanNumber. Finally, it logs the count of
+    * DIA Target Frames and returns any encountered errors.
+    *
+    * @param diaTargetFrame A pointer to a QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>>,
+    *                      representing the target frame structure to be populated.
+    * @return Err The error code indicating success or failure of the operation.
+    */
     Err collateMS2MzTargetFrames(
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
     );
 
+    /**
+    * @brief Retrieves unique tandem MS scan information for MS level 2.
+    *
+    * This function obtains tandem MS scan information for MS level 2 using the
+    * `getMsScanInfos` method. It then iterates over the obtained scan infos,
+    * keeping track of unique entries based on MzTargetKey. The unique scan infos
+    * are stored in a QMap and the corresponding values are converted to a QVector,
+    * which is then returned.
+    *
+    * @return QVector<MsScanInfo> A vector containing unique tandem MS scan information
+    *                             for MS level 2.
+    */
     QVector<MsScanInfo> getUniqueTandemMsScanInfos();
 
+    /**
+    * @brief Retrieves the frame count for tandem MS scans at MS level 2.
+    *
+    * This function calculates and returns the frame count by obtaining
+    * unique tandem MS scan information for MS level 2 using the
+    * `getUniqueTandemMsScanInfos` method and retrieving the size of the resulting vector.
+    *
+    * @return int The count of frames for tandem MS scans at MS level 2.
+    */
     int getFrameCount();
 
+    /**
+    * @brief Retrieves MS scan information for a specific MS level.
+    *
+    * This function takes an MS level as a parameter and returns a QMap
+    * containing MS scan information (keyed by ScanNumber) corresponding to
+    * the specified MS level. It iterates over the existing MsScanInfo entries
+    * in the class, filtering out entries that do not match the given MS level,
+    * and populates the resulting QMap with the valid entries.
+    *
+    * @param msLevel The MS level for which scan information is to be retrieved.
+    * @return QMap<ScanNumber, MsScanInfo> A map of MS scan information for the specified MS level.
+    *
+    */
     QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
+
+    /**
+    * @brief Retrieves all available MS scan information for a particular msLevel.
+    *
+    * This function returns a QMap containing all available MS scan information
+    * keyed by ScanNumber. It provides access to the complete set of stored
+    * MsScanInfo entries within the class for a particular msLevel.
+    *
+    * @return QMap<ScanNumber, MsScanInfo> A map of all available MS scan information.
+    *
+    */
     QMap<ScanNumber, MsScanInfo> getMsScanInfos();
+
+    /**
+    * @brief Retrieves MS scan information for a specific ScanNumber.
+    *
+    * This function takes a ScanNumber as a parameter and retrieves the
+    * corresponding MsScanInfo from the internal storage. It checks whether
+    * the provided ScanNumber is present in the stored MS scan information,
+    * and if so, it sets the output parameter `msScanInfo` with the retrieved
+    * MsScanInfo. Any errors encountered during the process are indicated by
+    * the returned Err code.
+    *
+    * @param scanNumber The ScanNumber for which MS scan information is to be retrieved.
+    * @param msScanInfo A pointer to a MsScanInfo object that will be populated with
+    *                   the retrieved MS scan information.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     Err getMsScanInfo(
             ScanNumber scanNumber,
             MsScanInfo *msScanInfo
             );
 
+    /**
+    * @brief Sorts ScanPoints based on the specified sorting criteria.
+    *
+    * This function takes a `ScanPointsSort` enum representing the desired sorting order,
+    * and a pointer to a `ScanPoints` object that needs to be sorted. It uses standard
+    * C++ algorithms to perform the sorting based on the chosen criteria. The supported
+    * sorting options include ascending and descending order for both m/z and intensity.
+    *
+    * @param sort The sorting order specified by the `ScanPointsSort` enum.
+    * @param scanPoints A pointer to the `ScanPoints` object that will be sorted in-place.
+    *
+    */
     static void sortScanPoints(
             const ScanPointsSort &sort,
             ScanPoints *scanPoints
                     );
 
+    /**
+    * @brief Retrieves the nearest ScanNumber based on a given ScanTime.
+    *
+    * This function calculates the nearest ScanNumber to the provided ScanTime
+    * by utilizing a mapping between ScanNumber and ScanTime. If the internal
+    * mapping is not initialized, it populates it using the available MsScanInfo
+    * entries. It then retrieves the ScanTime values and ScanNumber keys from
+    * the mapping, finds the closest ScanTime index, and returns the corresponding
+    * ScanNumber. The MathUtils::closest function is used for index calculation.
+    *
+    * @param scanTime The ScanTime for which the nearest ScanNumber is to be retrieved.
+    * @return ScanNumber The nearest ScanNumber to the provided ScanTime.
+    *
+    */
     ScanNumber getNearestScanNumberFromScanTime(ScanTime scanTime);
 
+    /**
+    * @brief Retrieves a mapping of ScanNumber to ScanTime for available MS scan information.
+    *
+    * This function iterates over the stored MsScanInfo entries and creates a QMap
+    * containing a mapping between ScanNumber and ScanTime. Each entry in the map
+    * corresponds to a ScanNumber with its associated ScanTime value. The resulting
+    * map is then returned.
+    *
+    * @return QMap<ScanNumber, ScanTime> A mapping of ScanNumber to ScanTime for available
+    *                                  MS scan information
+    */
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
+    /**
+    * @brief Splits ScanPoints into separate vectors for m/z and intensity values.
+    *
+    * This function takes a ScanPoints object and two QVector<float> pointers
+    * for m/z values (`mzVals`) and intensity values (`intensityVals`). It checks
+    * whether the input ScanPoints is not empty, clears the output vectors, and then
+    * iterates over the ScanPoints, populating the m/z and intensity vectors.
+    * Any encountered errors during the process are indicated by the returned Err code.
+    *
+    * @param scanPoints The input ScanPoints to be split.
+    * @param mzVals A pointer to a QVector<float> that will be populated with m/z values.
+    * @param intensityVals A pointer to a QVector<float> that will be populated with intensity values.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     static Err splitScanPoints(
             const ScanPoints &scanPoints,
             QVector<float> *mzVals,
             QVector<float> *intensityVals
             );
 
+    /**
+    * @brief Splits ScanPoints into separate vectors for m/z and intensity values.
+    *
+    * This function takes a pointer to a ScanPoints object (`scanPoints`) and two
+    * QVector<float> pointers for m/z values (`mzVals`) and intensity values (`intensityVals`).
+    * It checks whether the input ScanPoints is not empty, clears the output vectors, and then
+    * iterates over the ScanPoints, populating the m/z and intensity vectors.
+    * Any encountered errors during the process are indicated by the returned Err code.
+    *
+    * @param scanPoints A pointer to the input ScanPoints to be split.
+    * @param mzVals A pointer to a QVector<float> that will be populated with m/z values.
+    * @param intensityVals A pointer to a QVector<float> that will be populated with intensity values.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     static Err splitScanPoints(
             ScanPoints *scanPoints,
             QVector<float> *mzVals,
             QVector<float> *intensityVals
     );
 
+    /**
+    * @brief Zips two vectors of m/z and intensity values into ScanPoints.
+    *
+    * This function takes two QVector<float> objects (`mzVals` and `intensityVals`)
+    * representing m/z and intensity values, and a pointer to a ScanPoints object (`scanPoints`).
+    * It checks whether the sizes of `mzVals` and `intensityVals` are equal, clears the output
+    * ScanPoints, and then iterates over the vectors to create ScanPoints with corresponding
+    * m/z and intensity values. Any encountered errors during the process are indicated
+    * by the returned Err code.
+    *
+    * @param mzVals The vector of m/z values to be zipped.
+    * @param intensityVals The vector of intensity values to be zipped.
+    * @param scanPoints A pointer to the output ScanPoints to store the zipped data.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     static Err zipScanPoints(
             const QVector<float> &mzVals,
             const QVector<float> &intensityVals,
