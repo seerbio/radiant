@@ -19,6 +19,7 @@ SET(TEST_CLASSES
         FastaReaderTests
         FeatureFinderHillReaderTests
         FragLibReaderTests
+        MsCalibrationReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
         MsReaderParquetTests

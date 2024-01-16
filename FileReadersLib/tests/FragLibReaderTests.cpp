@@ -18,12 +18,12 @@ public:
 
 private Q_SLOTS:
 
-    void writeTandemPredictionsAndReadTandemPredictionsCombinedTest();
+    void readWrteTestCombined();
     void getSM2IonsTest();
 
 };
 
-void FragLibReaderTests::writeTandemPredictionsAndReadTandemPredictionsCombinedTest() {
+void FragLibReaderTests::readWrteTestCombined() {
 
     FragLibReaderRow tpr;
     tpr.peptideSequenceChargeKey = "CHAUNCYANDFLOPS|666";
