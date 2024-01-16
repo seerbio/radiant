@@ -39,6 +39,9 @@ namespace FragLibReaderNamespace {
     };
 }
 
+/**
+ * See ParquetReaderInputBase for documentation
+ */
 struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
 
     PeptideSequenceChargeKey peptideSequenceChargeKey;

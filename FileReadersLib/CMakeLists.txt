@@ -25,7 +25,6 @@ SET(SOURCE_FILES
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
-        src/JsonParametersReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
@@ -41,7 +40,6 @@ SET(HEADER_FILES
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
-        src/JsonParametersReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h

@@ -19,7 +19,6 @@ SET(TEST_CLASSES
         FastaReaderTests
         FeatureFinderHillReaderTests
         FragLibReaderTests
-        JsonParameterReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
         MsReaderParquetTests
