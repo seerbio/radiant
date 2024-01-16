@@ -27,7 +27,9 @@ namespace FeatureFinderHillReaderNamespace {
     };
 }
 
-
+/**
+ * See ParquetReaderInputBase for documentation
+ */
 struct FILEREADERSLIB_EXPORTS FeatureFinderHillReaderRow  : public ParquetReaderInputBase {
 
     QVector<double> mzVals;
@@ -71,11 +73,6 @@ struct FILEREADERSLIB_EXPORTS FeatureFinderHillReaderRow  : public ParquetReader
 
 };
 
-class FeatureFinderHillReader {
-
-
-
-};
 
 
 #endif //PYTHIADIACPP_FEATUREFINDERHILLREADER_H
