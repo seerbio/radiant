@@ -64,21 +64,5 @@ configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.ra
 set(FRAG_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/FragLibReaderTests.fragLibFF")
 configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibReaderTests.fragLibFF COPYONLY)
 
-set(TEST_PARAMS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/WorkFlowTestsParams.pythia")
-configure_file(${TEST_PARAMS_PATH} ${CMAKE_BINARY_DIR}/bin/WorkFlowTestsParams.pythia COPYONLY)
-
 set(PEPTIDES_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/peptides.csv")
 configure_file(${PEPTIDES_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/peptides.csv COPYONLY)
-
-set(TARGETS_MZ_CE_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/target_mz_ce.csv")
-configure_file(${TARGETS_MZ_CE_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/target_mz_ce.csv COPYONLY)
-
-set(FRAME_SCANS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans")
-configure_file(${FRAME_SCANS_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans COPYONLY)
-
-set(FRAME_SCORES_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores")
-configure_file(${FRAME_SCORES_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores COPYONLY)
-
-set(PEP_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib")
-configure_file(${PEP_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib COPYONLY)
-
