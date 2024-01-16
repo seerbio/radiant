@@ -22,54 +22,48 @@ public:
 private Q_SLOTS:
 
     void openFileTest();
-
     void openFileTest2();
 
-private:
 
-    const QString m_filepath
-            = QStringLiteral("/home/anichols/Desktop/RawData/EXP21155_2021ms0609X7_A.raw.mzML");
 
 };
 
 void MsReaderPointerAccTests::openFileTest() {
-    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
-    MsReaderPointerAcc reader;
-    e = reader.openFile(m_filepath);
+    const QString &mzMLFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(mzMLFilePath);
     QCOMPARE(e, eNoError);
 
-    QMap<ScanNumber, MsScanInfo> msScanInfos = reader.ptr->getMsScanInfos();
+    QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
     QCOMPARE(e, eNoError);
-    QCOMPARE(msScanInfos.size(), 33429);
+    QCOMPARE(msScanInfos.size(), 372);
 
-    const MsScanInfo &testInfo = msScanInfos.value(30815);
+    const MsScanInfo &testInfo = msScanInfos.value(372);
+    qDebug() << testInfo.msLevel;
 
-    QCOMPARE(testInfo.scanNumber, 30815);
-    QCOMPARE(testInfo.collisionEnergy, 30);
+    QCOMPARE(testInfo.scanNumber, 372);
+    QCOMPARE(testInfo.msLevel, 1);
 }
 
 
 void MsReaderPointerAccTests::openFileTest2() {
-    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
-    const QString prqFile
-        = QStringLiteral("/home/anichols/Desktop/PythiaDIAData/EXP22092_2022ms0742X32_A.raw.mzML.prq");
-
-    MsReaderPointerAcc reader;
-    e = reader.openFile(prqFile);
+    const QString &prqFFFilePath = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(prqFFFilePath);
     QCOMPARE(e, eNoError);
 
-    QMap<ScanNumber, MsScanInfo> msScanInfos = reader.ptr->getMsScanInfos();
+    QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
     QCOMPARE(e, eNoError);
-    QCOMPARE(msScanInfos.size(), 26010);
+    QCOMPARE(msScanInfos.size(), 5000);
 
-    const MsScanInfo &testInfo = msScanInfos.value(10101);
-    qDebug() << testInfo.scanNumber << testInfo.collisionEnergy;
-
-    QCOMPARE(testInfo.scanNumber, 10101);
+    const MsScanInfo &testInfo = msScanInfos.value(5000);
+    QCOMPARE(testInfo.scanNumber, 5000);
     QCOMPARE(testInfo.collisionEnergy, 28);
 
 }
