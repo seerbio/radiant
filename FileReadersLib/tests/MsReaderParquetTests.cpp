@@ -27,7 +27,7 @@ private Q_SLOTS:
 void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
 
     const QString &msParquetFilePath
-            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
+            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prqFF");
 
     MsScanInfo msScanInfo;
     msScanInfo.msLevel = 2;
@@ -92,43 +92,41 @@ void MsReaderParquetTests::saveMsReaderToParquetOpenFileCombinedTests() {
 }
 
 void MsReaderParquetTests::readFilteredTest() {
-    QSKIP("TODO: enable with internal test data");
 
     ERR_INIT
 
-    QSKIP("activate when proper pathing is used");
-    //TODO add this to test files.
-    const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+    const QString &msParquetFilePath
+            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
 
-    QVERIFY2(QFileInfo::exists(testFilePath), qPrintable(QString("File not found: %1").arg(testFilePath)));
+    QVERIFY2(QFileInfo::exists(msParquetFilePath), qPrintable(QString("File not found: %1").arg(msParquetFilePath)));
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(
-            testFilePath,
+            msParquetFilePath,
             "targetKey",
             {404934, 404934}
             );
 
     QMap<ScanNumber, MsScanInfo> scanInfos = msReaderParquet.getMsScanInfos();
     qDebug() << "ScanInfos size filtered" << scanInfos.size();
-    QCOMPARE(scanInfos.size(), 413);
-
+    QCOMPARE(scanInfos.size(), 80);
 }
 
 void MsReaderParquetTests::readUniqueTest() {
-    QSKIP("activate when proper pathing is used");
+
     ERR_INIT
 
-    //TODO add this to test files.
-    const QString testFilePath = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML.prq";
+    const QString &msParquetFilePath
+            = QDir(qApp->applicationDirPath()).filePath("EXP22092_2022ms0742X32_A.raw.mzML.trunc.prqFF");
 
-    QVERIFY2(QFileInfo::exists(testFilePath), qPrintable(QString("File not found: %1").arg(testFilePath)));
+    QVERIFY2(QFileInfo::exists(msParquetFilePath), qPrintable(QString("File not found: %1").arg(msParquetFilePath)));
 
     MsReaderParquet msReaderParquet;
     e = msReaderParquet.openFile(
-            testFilePath,
+            msParquetFilePath,
             "targetKey"
     );
+    QCOMPARE(e, eNoError);
 
     QMap<ScanNumber, MsScanInfo> scanInfos = msReaderParquet.getMsScanInfos();
     qDebug() << "ScanInfos unique size filtered" << scanInfos.size();
