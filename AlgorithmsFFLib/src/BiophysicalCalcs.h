@@ -55,7 +55,7 @@ public:
     *
     */
     static QVector<QPair<PeptideString, double>> calculatePeptideMasses(
-            const QVector<QPair<PeptideString,QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
+            const QVector<QPair<PeptideString, QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
             const AminoAcids &aminoAcids
     );
 
