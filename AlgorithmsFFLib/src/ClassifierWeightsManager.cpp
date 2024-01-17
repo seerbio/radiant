@@ -146,24 +146,27 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     ERR_RETURN
 }
 
-Err ClassifierWeightsManager::buildDataClassifier1(
-        const QVector<QPair<ScoresTargets, ScoresDecoys>> &targetsScoresVsDecoyScores,
+Err ClassifierWeightsManager::buildDataClassifier2(
+        const QVector<QVector<float>*> &targets,
+        const QVector<QVector<float>*> &decoys,
         QVector<QVector<float>> *A,
         QVector<float> *b
 ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(targetsScoresVsDecoyScores); ree;
+    e = ErrorUtils::isNotEmpty(targets); ree;
+    e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
+    e = ErrorUtils::isEqual(targets.front()->size(), decoys.front()->size()); ree;
 
-    const QPair<QVector<ScoresTargets>, QVector<ScoresDecoys>> scoresTargetVsScoresDecoy
-                                                = ParallelUtils::unZip(targetsScoresVsDecoyScores);
+    const Eigen::MatrixX<float> matTargets = EigenUtils::convertQVectorsToEigenMatrix(targets);
+    const Eigen::MatrixX<float> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(decoys);
 
-    const QVector<ScoresTargets> scoresTarget = scoresTargetVsScoresDecoy.first;
-    const QVector<ScoresTargets> scoresDecoy = scoresTargetVsScoresDecoy.second;
+    const Eigen::VectorX<float> matTargetsSum = matTargets.colwise().sum();
+    const Eigen::VectorX<float> matDecoysSum = matDecoys.colwise().sum();
 
-    const Eigen::MatrixX<float> matTargets = EigenUtils::convertQVectorsToEigenMatrix(scoresTarget);
-    const Eigen::MatrixX<float> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(scoresDecoy);
+    const Eigen::VectorX<float> matTargetsSumMean = matTargetsSum / matTargets.rows();
+    const Eigen::VectorX<float> matDecoysSumMean = matDecoysSum / matTargets.rows();
 
     const Eigen::MatrixX<float> subtractionMat = matTargets - matDecoys;
     const Eigen::VectorX<float> subtractionMatSum = subtractionMat.colwise().sum();
@@ -171,8 +174,8 @@ Err ClassifierWeightsManager::buildDataClassifier1(
 
     *b = EigenUtils::convertEigenVectorToQVector(meanMat);
 
-    const int rows = scoresTarget.size();
-    const int cols = scoresTarget.front().size();
+    const int rows = targets.size();
+    const int cols = targets.front()->size();
 
     Eigen::MatrixX<float> matA(cols, cols);
     matA.setZero();
@@ -180,7 +183,9 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             for (int k = j; k < cols; k++) {
-                matA.coeffRef(j, k) += (scoresTarget[i][j] - scoresDecoy[i][j] - b->at(j)) * (scoresTarget[i][k] - scoresDecoy[i][k] - b->at(k));
+                matA.coeffRef(j, k) += 0.5 *
+                                       ((decoys[i]->at(j) - matDecoysSumMean[j]) * (decoys[i]->at(k) - matDecoysSumMean[k]) +
+                                        (targets[i]->at(j) - matTargetsSumMean[j]) * (targets[i]->at(k) - matTargetsSumMean[k]));
                 matA.coeffRef(k, j) = matA.coeffRef(j, k);
             }
         }
@@ -189,61 +194,6 @@ Err ClassifierWeightsManager::buildDataClassifier1(
     matA /= rows - 1;
     for (int i = 0; i < cols; i++) {
         matA.coeffRef(i, i) += std::numeric_limits<float>::min();
-    }
-
-    *A = EigenUtils::convertEigenMatrixToQVectors(matA);
-
-    ERR_RETURN
-}
-
-Err ClassifierWeightsManager::buildDataClassifier2(
-        const QVector<QVector<double>> &targets,
-        const QVector<QVector<double>> &decoys,
-        QVector<QVector<double>> *A,
-        QVector<double> *b
-) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(targets); ree;
-    e = ErrorUtils::isEqual(targets.size(), decoys.size()); ree;
-    e = ErrorUtils::isEqual(targets.front().size(), decoys.front().size()); ree;
-
-    const Eigen::MatrixX<double> matTargets = EigenUtils::convertQVectorsToEigenMatrix(targets);
-    const Eigen::MatrixX<double> matDecoys = EigenUtils::convertQVectorsToEigenMatrix(decoys);
-
-    const Eigen::VectorX<double> matTargetsSum = matTargets.colwise().sum();
-    const Eigen::VectorX<double> matDecoysSum = matDecoys.colwise().sum();
-
-    const Eigen::VectorX<double> matTargetsSumMean = matTargetsSum / matTargets.rows();
-    const Eigen::VectorX<double> matDecoysSumMean = matDecoysSum / matTargets.rows();
-
-    const Eigen::MatrixX<double> subtractionMat = matTargets - matDecoys;
-    const Eigen::VectorX<double> subtractionMatSum = subtractionMat.colwise().sum();
-    const Eigen::VectorX<double> meanMat = subtractionMatSum / matTargets.rows();
-
-    *b = EigenUtils::convertEigenVectorToQVector(meanMat);
-
-    const int rows = targets.size();
-    const int cols = targets.front().size();
-
-    Eigen::MatrixX<double> matA(cols, cols);
-    matA.setZero();
-
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            for (int k = j; k < cols; k++) {
-                matA.coeffRef(j, k) += 0.5 *
-                                       ((decoys[i][j] - matDecoysSumMean[j]) * (decoys[i][k] - matDecoysSumMean[k]) +
-                                        (targets[i][j] - matTargetsSumMean[j]) * (targets[i][k] - matTargetsSumMean[k]));
-                matA.coeffRef(k, j) = matA.coeffRef(j, k);
-            }
-        }
-    }
-
-    matA /= rows - 1;
-    for (int i = 0; i < cols; i++) {
-        matA.coeffRef(i, i) += std::numeric_limits<double>::min();
     }
 
     *A = EigenUtils::convertEigenMatrixToQVectors(matA);

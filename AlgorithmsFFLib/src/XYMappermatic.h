@@ -26,7 +26,11 @@ namespace XYMappermaticRowNamespace {
             X,
             Y
     };
-}
+}//namespace
+
+/**
+ * See CSVReaderInputBase for documentation
+ */
 struct XYMappermaticRow: public CSVReaderInputBase {
 
     double x = -1.0;

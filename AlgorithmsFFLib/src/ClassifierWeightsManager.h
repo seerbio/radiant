@@ -53,17 +53,11 @@ public:
             QVector<float> *b
             );
 
-    static Err buildDataClassifier1(
-            const QVector<QPair<ScoresTargets, ScoresDecoys>> &targetsScoresVsDecoyScores,
+    static Err buildDataClassifier2(
+            const QVector<QVector<float>*> &targets,
+            const QVector<QVector<float>*> &decoys,
             QVector<QVector<float>> *A,
             QVector<float> *b
-    );
-
-    static Err buildDataClassifier2(
-            const QVector<QVector<double>> &targets,
-            const QVector<QVector<double>> &decoys,
-            QVector<QVector<double>> *A,
-            QVector<double> *b
     );
 
     static Err fitWeights(

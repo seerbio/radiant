@@ -26,14 +26,6 @@ double BiophysicalCalcs::calculatePeptideMass(
     return mass + modMassesSum;
 }
 
-double BiophysicalCalcs::calculateMassFromThomson(
-        double mz,
-        int charge,
-        int monoOffset
-        ) {
-    return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON);
-}
-
 QVector<QPair<PeptideString, double>> BiophysicalCalcs::calculatePeptideMasses(
         const QVector<QPair<PeptideString, QHash<ResidueIndex, ModificationMass>>> &sequenceAndMods,
         const AminoAcids &aminoAcids
@@ -54,8 +46,15 @@ QVector<QPair<PeptideString, double>> BiophysicalCalcs::calculatePeptideMasses(
     return output;
 }
 
-QVector<double>
-BiophysicalCalcs::buildTandemFragmentMasses(
+double BiophysicalCalcs::calculateMassFromThomson(
+        double mz,
+        int charge,
+        int monoOffset
+) {
+    return (mz * charge) - (charge * ChemConstants::PROTON) - (monoOffset * ChemConstants::NEUTRON);
+}
+
+QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
         const QString &seq,
         int charge,
         double startMass,

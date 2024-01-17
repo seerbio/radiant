@@ -13,6 +13,13 @@
 #include "GlobalSettings.h"
 #include "TargetDecoyCandidatePair.h"
 
+/**
+ * @brief Class representing scores for a candidate.
+ *
+ * This class defines a set of features and provides storage for scores related to a candidate.
+ * It includes various features such as cosine similarity, peak intensities, charge, mass, scan time, etc.
+ *
+ */
 class ALGORITHMSFFLIB_EXPORTS CandidateScores {
 
 public:
@@ -252,8 +259,15 @@ public:
 
     QVector<float> featuresArray;
 
+    /**
+    * @brief Returns a reference to the features array.
+    * @return QVector<float>* A pointer to the features array.
+    */
     [[nodiscard]] QVector<float>* featuresArrayRef();
 
+    /**
+    * @brief Initializes the features array with default values.
+    */
     void initFeaturesArray();
 
 };
