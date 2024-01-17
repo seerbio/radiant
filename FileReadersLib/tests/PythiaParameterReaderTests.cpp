@@ -26,7 +26,6 @@ void PythiaParameterReaderTests::readFileTest() {
 
     ERR_INIT
 
-
     const QString filePath
             = QDir(qApp->applicationDirPath()).filePath("test_params_wide_window.pythiaConfig");
 
