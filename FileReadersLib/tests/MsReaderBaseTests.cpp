@@ -40,7 +40,6 @@ private Q_SLOTS:
     static void splitScanPointsTest();
     static void zipScanPointsTest();
 
-
 private:
 
     const QString m_prqFFFilePath
@@ -469,10 +468,3 @@ void MsReaderBaseTests::zipScanPointsTest() {
 
 QTEST_MAIN(MsReaderBaseTests)
 #include "MsReaderBaseTests.moc"
-
-
-
-
-
-
-
