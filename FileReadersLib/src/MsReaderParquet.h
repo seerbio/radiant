@@ -126,21 +126,90 @@ public:
     MsReaderParquet() = default;
     ~MsReaderParquet() = default;
 
+    /**
+    * @brief Opens a Parquet file using MsReaderParquet.
+    *
+    * This function opens a Parquet file specified by the `filePath` parameter with the
+    * MsReaderParquet instance. It checks if the file exists, validates the file extension,
+    * reads the data from the Parquet file into MsParquetReaderRow objects, converts the
+    * data for member variables, and prints file information. Any encountered errors during
+    * the process are indicated by the returned Err code.
+    *
+    * @param filePath The file path of the Parquet file to be opened.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     Err openFile(const QString &filePath) override;
 
+    /**
+    * @brief Opens a Parquet file using MsReaderParquet with optional column filtering.
+    *
+    * This function opens a Parquet file specified by the `filePath` parameter with the
+    * MsReaderParquet instance. It checks if the file exists, validates the file extension,
+    * reads the data from the Parquet file into MsParquetReaderRow objects, filters the data
+    * based on the specified `columnToFilterBy` and `filterRange`, converts the data for
+    * member variables, and prints file information. Any encountered errors during the process
+    * are indicated by the returned Err code.
+    *
+    * @param filePath The file path of the Parquet file to be opened.
+    * @param columnToFilterBy The name of the column to filter data by (optional).
+    * @param filterRange The numeric range within which data is filtered (optional).
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     Err openFile(
             const QString &filePath,
             const QString &columnToFilterBy,
             const QPair<double, double> &filterRange
             ) override;
 
+    /**
+    * @brief Opens a Parquet file using MsReaderParquet with optional column filtering.
+    *
+    * This function opens a Parquet file specified by the `filePath` parameter with the
+    * MsReaderParquet instance. It checks if the file exists, validates the file extension,
+    * reads the data from the Parquet file into MsParquetReaderRow objects, filters the data
+    * based on the specified `columnToFilterBy`, converts the data for member variables, and
+    * prints file information. Any encountered errors during the process are indicated by
+    * the returned Err code.
+    *
+    * @param filePath The file path of the Parquet file to be opened.
+    * @param columnToFilterBy The name of the column to filter data by (optional).
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     Err openFile(
             const QString &filePath,
             const QString &columnToFilterBy
     ) override;
 
+    /**
+    * @brief Closes the Parquet file associated with MsReaderParquet.
+    *
+    * This function clears the member variables `m_msScanInfo` and `m_scanPoints`,
+    * ensuring that they are empty after the file is closed. It then checks if both
+    * member variables are empty to confirm a successful closure. Any encountered errors
+    * during the process are indicated by the returned Err code.
+    *
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     Err closeFile() override;
 
+    /**
+    * @brief Writes MsReader data to a Parquet file.
+    *
+    * This function writes data from a specified MsReader instance (`sharedMsReaderBase`)
+    * to a Parquet file specified by the `outputFilePath`. It builds the rows to be written
+    * using the MsReader data, checks if the rows are not empty, and then writes the data
+    * to the Parquet file using ParquetReader. Any encountered errors during the process
+    * are indicated by the returned Err code.
+    *
+    * @param outputFilePath The file path where the Parquet file will be written.
+    * @param sharedMsReaderBase A shared pointer to the MsReader instance containing the data to be written.
+    * @return Err The error code indicating success or failure of the operation.
+    *
+    */
     static Err writeMsReaderToParquet(
             const QString &outputFilePath,
             const QSharedPointer<MsReaderBase> &sharedMsReaderBase

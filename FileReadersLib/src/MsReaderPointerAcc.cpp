@@ -95,7 +95,6 @@ Err MsReaderPointerAcc::openFile(
     const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
     qDebug() << "MsReader Derived Type" << msReaderType << isMsReaderBase;
 
-
     ERR_RETURN
 }
 
