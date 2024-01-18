@@ -34,18 +34,22 @@ namespace {
     ) {
         ERR_INIT
 
+        e = ErrorUtils::isEqual(scoresTargets.size(), scoresDecoys.size()); ree;
+
         QVector<QVector<ScoresTargets*>> scoresTargetsTranched;
         QVector<QVector<ScoresDecoys*>> scoresDecoysTranched;
 
+        const int tranches = std::min(ParallelUtils::numberOfAvailableSystemProcessors(), scoresTargets.size());
+
         e = ParallelUtils::trancheVectorForParallelization(
                 scoresTargets,
-                ParallelUtils::numberOfAvailableSystemProcessors(),
+                tranches,
                 &scoresTargetsTranched
         ); ree;
 
         e = ParallelUtils::trancheVectorForParallelization(
                 scoresDecoys,
-                ParallelUtils::numberOfAvailableSystemProcessors(),
+                tranches,
                 &scoresDecoysTranched
         ); ree;
 
@@ -119,7 +123,6 @@ namespace {
 
         ERR_INIT
 
-
         if (useNeuralNetworkScores) {
             QVector<float> &vec = candidateScores->featuresArray;
             return {e, vec};
@@ -129,7 +132,7 @@ namespace {
             return {e, vec};
         }
 
-        QVector<float> vec = candidateScores->featuresArray.mid(0, 11);
+        const QVector<float> vec = candidateScores->featuresArray.mid(0, 11);
         return {e, vec};
 
     }

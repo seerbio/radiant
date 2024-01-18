@@ -15,6 +15,7 @@ SET(TEST_CLASSES
         BiophysicalCalcsTests
         CandidateScorertronTests
         ClassifierWeightsManagerTests
+        DiscriminantScoretronTest
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
         MS2IonTests

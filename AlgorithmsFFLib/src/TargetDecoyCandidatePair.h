@@ -19,6 +19,8 @@ class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 
 public:
 
+    friend class DiscriminantScoretronTest;
+
     TargetDecoyCandidatePair();
 
     TargetDecoyCandidatePair(
@@ -41,6 +43,11 @@ public:
     [[nodiscard]] float mass() const;
     [[nodiscard]] float iRt() const;
     [[nodiscard]] int totalFragmentCount() const;
+
+private:
+
+    void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
+    void setCharge(int charge);
 
 private:
 
