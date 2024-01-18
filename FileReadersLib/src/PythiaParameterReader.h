@@ -44,6 +44,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSigma;
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
     extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
+    extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFraction;
     extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
     extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
@@ -222,11 +223,13 @@ struct PythiaParameters{
 
         qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
         qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
+
         qDebug() << PythiaParameterReaderConstants::kFilterLength << filterLength;
         qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
         qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
+        qDebug() << PythiaParameterReaderConstants::kStopThresholdFraction << stopThresholdFraction;
         qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;

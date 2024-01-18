@@ -125,6 +125,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSigma = QStringLiteral("sigma");
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
+    const QString kStopThresholdFraction = QStringLiteral("stopThresholdFraction");
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
