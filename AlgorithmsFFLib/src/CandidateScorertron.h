@@ -100,11 +100,6 @@ private:
             QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
     );
 
-    Err simpleIntegrator(
-            const QVector<float> &vec,
-            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
-    );
-
     Err processPeakIntegrationIndexes(
             const QVector<QPair<PeakIntegrationIndexes, float>> &peakIntegrationIndexesVsIntensity,
             const QVector<MS2Ion> &ms2IonsTheoretical,

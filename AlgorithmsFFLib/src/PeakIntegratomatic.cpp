@@ -26,8 +26,6 @@ public:
             QVector<float> *intensityVecSmoothed
     );
 
-private:
-
     PeakIntegratomaticParameters m_params;
     Eigen::VectorX<float> m_gaussFilter;
     Eigen::VectorX<float> m_mexicanHatFilter;
@@ -50,6 +48,9 @@ Err PeakIntegratomatic::Private::init(const PeakIntegratomaticParameters &params
             m_params.filterLength,
             m_params.sigma
     );
+
+    e = ErrorUtils::isFalse(MathUtils::tZero(m_gaussFilter.maxCoeff())); ree;
+    m_gaussFilter /= m_gaussFilter.maxCoeff();
 
     m_mexicanHatFilter = EigenKernelUtils::buildMexicanHatFilter1D<float>(
             m_params.filterLength,
@@ -215,91 +216,20 @@ Err PeakIntegratomatic::init(const PeakIntegratomaticParameters &params) {
     ERR_RETURN
 }
 
-
-Err PeakIntegratomatic::findAllPeaksLimitsInXIC(
-        const QVector<float> &intensityVec,
-        QVector<PeakIntegrationIndexes> *peakLimits,
-        QVector<float> *intensityVecSmoothed
-){
-
-    ERR_INIT
-
-    e = d_ptr->findAllPeaksLimitsInXIC(
-            intensityVec,
-            peakLimits,
-            intensityVecSmoothed
-    ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    Err smoothVector(
-            int filterLength,
-            int smoothCount,
-            Eigen::VectorX<float> *vec
-            ) {
-
-        ERR_INIT
-
-        const int filterLengthMin = 5;
-        filterLength = std::max(filterLength, filterLengthMin);
-
-        const int order = 2;
-        const int derivative = 0;
-        const int rate = 1;
-
-        for (int i = 0; i < smoothCount; i++) {
-            e = EigenKernelUtils::savitskyGolaySmooth(
-                    filterLength,
-                    order,
-                    derivative,
-                    rate,
-                    vec
-                    ); ree;
-        }
-
-        ERR_RETURN
-    }
-
-
-}//namespace
 Err PeakIntegratomatic::simpleIntegrator(
         const QVector<float> &vec,
-        float stopThresholdFraction,
-        int filterLength,
-        int smoothCount,
-        QVector<PeakIntegrationIndexes> *peakIntegrationIndexes,
-        QVector<float> *smoothedVec
+        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
 ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(vec); ree;
 
-    const int minFilterLength = 3;
-    e = ErrorUtils::isAboveThreshold(
-            filterLength,
-            minFilterLength,
-            ErrorUtilsParam::IncludeThreshold
-    ); ree;
-
-    const float minStopThresholdFraction = 0.005;
-    e = ErrorUtils::isAboveThreshold(
-            stopThresholdFraction,
-            minStopThresholdFraction,
-            ErrorUtilsParam::IncludeThreshold
-    ); ree;
-
     Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
-    e = smoothVector(
-            filterLength,
-            smoothCount,
-            &eVec
-    ); ree;
-
     EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
+    for (int smoothCount = 0; smoothCount < d_ptr->m_params.smoothCount; smoothCount++) {
+        eVec = EigenKernelUtils::convolveVectorWithKernel(eVec, d_ptr->m_gaussFilter);
+    }
 
     const int topNApexes = 10;
     const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
@@ -309,23 +239,20 @@ Err PeakIntegratomatic::simpleIntegrator(
     }
 
     Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
-    QVector<QPair<int, float>> apexPaairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
+    QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
 
-    if (eVec.maxCoeff() < 5) {
-        ERR_RETURN
-    }
+    const int maxPeakIntegrations = 5;
+    apexPairs.resize(std::min(maxPeakIntegrations, apexPairs.size()));
+    for (const QPair<int, float> &pr : apexPairs) {
 
-    for (auto it : apexPaairs) {
-        qDebug() << it.first << it.second;
-    }
-    qDebug() << vec;
-    qDebug() << EigenUtils::convertEigenVectorToQVector(eVec);
-    qDebug() << "**********" << vecApexs.size();
+        const int apexIndex = pr.first;
+        const float apexValue = pr.second;
 
-    for (auto it = vecApexs.begin(); it != vecApexs.end(); it++) {
-        const int apexIndex = it.key();
-        const float apexValue = it.value();
-        const float stopThreshold = apexValue * stopThresholdFraction;
+        if (MathUtils::tZero(apexValue)) {
+            continue;
+        }
+
+        const float stopThreshold = apexValue * d_ptr->m_params.stopThresholdFraction;
 
         float rightStopVal = apexValue;
         int rightStopIndex = apexIndex;
@@ -371,10 +298,15 @@ Err PeakIntegratomatic::simpleIntegrator(
             break;
         }
 
-        peakIntegrationIndexes->push_back({leftStopIndex, rightStopIndex});
-    }
+        peakIntegrationIndexesVsIntensity->push_back({
+             {std::max(leftStopIndex, 0), std::min(rightStopIndex, vec.size() -1)},
+             apexValue}
+        );
 
-    *smoothedVec = EigenUtils::convertEigenVectorToQVector(eVec);
+        for (int i = leftStopIndex; i <= rightStopIndex; i++) {
+            eVec.coeffRef(i) = 0.0;
+        }
+    }
 
     ERR_RETURN
 }
