@@ -11,93 +11,6 @@
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 
-#include <iostream>
-
-
-const QVector<double> &ClassifierWeightsManager::getWeights() const {
-    return m_weights;
-}
-
-void ClassifierWeightsManager::setWeights(const QVector<double> &weights) {
-    m_weights = weights;
-}
-
-const QVector<double> &ClassifierWeightsManager::getWeightsBest() const {
-    return m_weightsBest;
-}
-
-void ClassifierWeightsManager::setWeightsBest(const QVector<double> &weightsBest) {
-    m_weightsBest = weightsBest;
-}
-
-const QVector<double> &ClassifierWeightsManager::getGuideWeights() const {
-    return m_guideWeights;
-}
-
-void ClassifierWeightsManager::setGuideWeights(const QVector<double> &guideWeights) {
-    m_guideWeights = guideWeights;
-}
-
-const QVector<double> &ClassifierWeightsManager::getGuideWeightsBest() const {
-    return m_guideWeightsBest;
-}
-
-void ClassifierWeightsManager::setGuideWeightsBest(const QVector<double> &guideWeightsBest) {
-    m_guideWeightsBest = guideWeightsBest;
-}
-
-const QVector<double> &ClassifierWeightsManager::getSelectionWeights() const {
-    return m_selectionWeights;
-}
-
-void ClassifierWeightsManager::setSelectionWeights(const QVector<double> &selectionWeights) {
-    m_selectionWeights = selectionWeights;
-}
-
-const QVector<double> &ClassifierWeightsManager::getSelectionWeightsBest() const {
-    return m_selectionWeightsBest;
-}
-
-void ClassifierWeightsManager::setSelectionWeightsBest(const QVector<double> &selectionWeightsBest) {
-    m_selectionWeightsBest = selectionWeightsBest;
-}
-
-namespace {
-
-    bool allMatAInputsAreSameSize(const QVector<QVector<float>> &matA) {
-
-        const int matSize = matA.front().size();
-        const auto allOfLogic = [matSize](const QVector<float> &v){return v.size() == matSize;};
-
-        return std::all_of(matA.begin(), matA.end(), allOfLogic);
-    }
-
-
-}//namespace
-Err ClassifierWeightsManager::fitWeights(
-        const QVector<QVector<float>> &matA,
-        const QVector<float> &vecB,
-        QVector<float> *weights
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(matA); ree;
-    e = ErrorUtils::isNotEmpty(vecB); ree;
-    e = ErrorUtils::isTrue(allMatAInputsAreSameSize(matA)); ree;
-    e = ErrorUtils::isEqual(matA.front().size(), vecB.size()); ree;
-
-    const Eigen::MatrixX<float> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
-    const Eigen::VectorX<float> b = EigenUtils::convertQVectorToEigenVector(vecB);
-
-    double lambda = 0.001; //TODO auto set this
-    Eigen::MatrixX<float> Areg = A + lambda * Eigen::MatrixX<float>::Identity(A.rows(), A.cols());
-
-    Eigen::VectorX<float> x = Areg.fullPivHouseholderQr().solve(b);
-    *weights = EigenUtils::convertEigenVectorToQVector(x);
-
-    ERR_RETURN
-}
 
 Err ClassifierWeightsManager::buildDataClassifier1(
         const QVector<QVector<float>*> &targets,
@@ -197,6 +110,43 @@ Err ClassifierWeightsManager::buildDataClassifier2(
     }
 
     *A = EigenUtils::convertEigenMatrixToQVectors(matA);
+
+    ERR_RETURN
+}
+
+namespace {
+
+    bool allMatAInputsAreSameSize(const QVector<QVector<float>> &matA) {
+
+        const int matSize = matA.front().size();
+        const auto allOfLogic = [matSize](const QVector<float> &v){return v.size() == matSize;};
+
+        return std::all_of(matA.begin(), matA.end(), allOfLogic);
+    }
+
+
+}//namespace
+Err ClassifierWeightsManager::fitWeights(
+        const QVector<QVector<float>> &matA,
+        const QVector<float> &vecB,
+        QVector<float> *weights
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(matA); ree;
+    e = ErrorUtils::isNotEmpty(vecB); ree;
+    e = ErrorUtils::isTrue(allMatAInputsAreSameSize(matA)); ree;
+    e = ErrorUtils::isEqual(matA.front().size(), vecB.size()); ree;
+
+    const Eigen::MatrixX<float> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
+    const Eigen::VectorX<float> b = EigenUtils::convertQVectorToEigenVector(vecB);
+
+    double lambda = 0.001; //TODO auto set this
+    Eigen::MatrixX<float> Areg = A + lambda * Eigen::MatrixX<float>::Identity(A.rows(), A.cols());
+
+    Eigen::VectorX<float> x = Areg.fullPivHouseholderQr().solve(b);
+    *weights = EigenUtils::convertEigenVectorToQVector(x);
 
     ERR_RETURN
 }
