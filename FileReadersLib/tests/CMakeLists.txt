@@ -54,3 +54,6 @@ configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibReaderTests.fragL
 
 set(MZML_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/1min.mzML")
 configure_file(${MZML_PATH} ${CMAKE_BINARY_DIR}/bin/1min.mzML COPYONLY)
+
+set(FRAME_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/framePoints.frame")
+configure_file(${FRAME_PATH} ${CMAKE_BINARY_DIR}/bin/framePoints.frame COPYONLY)

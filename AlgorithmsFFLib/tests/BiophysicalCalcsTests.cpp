@@ -26,7 +26,6 @@ private slots:
 
 };
 
-
 void BiophysicalCalcsTests::calculatePeptideMassTest() {
 
     const QString seq = QStringLiteral("TT");

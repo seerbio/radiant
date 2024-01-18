@@ -14,8 +14,6 @@
 
 using namespace Error;
 
-using TargetDecoyCandidatePairIndex = int;
-
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 

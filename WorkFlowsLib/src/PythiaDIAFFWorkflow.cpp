@@ -276,7 +276,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames);
+    e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
 
     const int msLevel = 1;
     QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;

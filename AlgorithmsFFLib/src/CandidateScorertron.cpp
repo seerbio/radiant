@@ -107,7 +107,10 @@ Err CandidateScorertron::init(
 
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isNotEmpty(targetKey); ree;
+    e = ErrorUtils::isTrue(scanTimeMinMax.first > 0 && scanTimeMinMax.second > 0); ree;
     e = ErrorUtils::isTrue(topNMS2Ions > 0); ree;
+    e = ErrorUtils::isTrue(turboXICMS1->isInit()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;

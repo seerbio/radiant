@@ -206,6 +206,19 @@ Err MsFrame::writeFrameScans(
     ERR_RETURN
 }
 
+Err MsFrame::writeFrameScans(const QMap<FrameIndex, ScanPoints *> &framesVsScanPoints, const QString &outputFilePath) {
+    ERR_INIT
+
+    QMap<FrameIndex, ScanPoints> framesVsScanPointsNew;
+    for (auto it = framesVsScanPoints.begin(); it != framesVsScanPoints.end(); it++) {
+        framesVsScanPointsNew.insert(it.key(), *it.value());
+    }
+
+    e = writeFrameScans(framesVsScanPointsNew, outputFilePath); ree;
+
+    ERR_RETURN
+}
+
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
     return m_frameIndexVsScanNumber.value(frameIndex);
 }

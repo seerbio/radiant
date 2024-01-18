@@ -30,6 +30,8 @@ class ALGORITHMSFFLIB_EXPORTS CandidateScorertron {
 
 public:
 
+    friend class CandidateScorertronTests;
+
     CandidateScorertron();
     ~CandidateScorertron();
 

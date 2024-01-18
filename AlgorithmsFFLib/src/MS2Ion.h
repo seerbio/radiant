@@ -26,7 +26,7 @@ public:
     ~MS2Ion() = default;
 
     friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
-        dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ") ";
+        dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ", " << obj.ionLabel << ") ";
         return dbg;
     }
 

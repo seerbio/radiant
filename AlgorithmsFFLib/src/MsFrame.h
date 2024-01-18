@@ -88,6 +88,11 @@ public:
             const QString &outputFilePath
             );
 
+    static Err writeFrameScans(
+            const QMap<FrameIndex, ScanPoints*> &framesVsScanPoints,
+            const QString &outputFilePath
+    );
+
     [[nodiscard]] int scanCount() const;
 
     [[nodiscard]] QMap<FrameIndex, ScanPoints*> frameIndexVsScanPoints() const;
