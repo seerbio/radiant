@@ -20,7 +20,7 @@ public:
 
 private slots:
     static void initTest();
-    static void calculateScoresTest();
+    static void calculateScoresAndOtherStuffTooTest();
 
 private:
 
@@ -238,7 +238,7 @@ void CandidateScorertronTests::initTest() {
 
 }
 
-void CandidateScorertronTests::calculateScoresTest() {
+void CandidateScorertronTests::calculateScoresAndOtherStuffTooTest() {
 
     ERR_INIT
 
@@ -281,7 +281,7 @@ void CandidateScorertronTests::calculateScoresTest() {
         scanPointsPtrs.insert(it.key(), &it.value());
         scanNumberVsScanTime.insert(it.key(), it.key() / 100.0);
     }
-    
+
     CandidateScorertron candidateScorertron;
     e = candidateScorertron.init(
             scanPointsPtrs,
@@ -310,6 +310,13 @@ void CandidateScorertronTests::calculateScoresTest() {
             MathUtils::pRound(static_cast<double>(candidateScores.featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]), 3),
             MathUtils::pRound(0.0767656341195, 3)
             );
+
+    QHash<MzHashed , XICPoints> mzHashedVsXICPoints;
+    e = candidateScorertron.extractXICs(targetDecoyCandidatePair.ms2IonsTarget(), &mzHashedVsXICPoints);
+    QCOMPARE(mzHashedVsXICPoints.size(), 3);
+    QCOMPARE(mzHashedVsXICPoints.value(506335).size(), 6);
+    QCOMPARE(mzHashedVsXICPoints.value(407266).size(), 22);
+    QCOMPARE(mzHashedVsXICPoints.value(272125).size(), 31);
 
 }
 
