@@ -29,6 +29,9 @@ namespace NeuralNetDataNamespace {
     const QString TARGET_KEY = QStringLiteral("targetKey");
 }
 
+/**
+ * See ParquetReaderInputBase for documentation
+ */
 struct NeuralNetData : public ParquetReaderInputBase {
 
 public:
@@ -96,6 +99,17 @@ public:
     FDRCLassifierNeuralNet();
     ~FDRCLassifierNeuralNet();
 
+    /**
+    * @brief Initializes the FDR classifier with neural networks.
+    *
+    * This function initializes the FDR classifier with neural networks by setting various parameters.
+    *
+    * @param epochs An integer representing the number of training epochs.
+    * @param baggingSize An integer representing the size of the bagging ensemble.
+    * @param batchSize An integer representing the batch size for training.
+    * @param learningRate A double representing the learning rate for training.
+    * @return An Err enum indicating the success or failure of the operation.
+    */
     Err init(
             int epochs,
             int baggingSize,
@@ -103,6 +117,18 @@ public:
             double learningRate
             );
 
+    /**
+    * @brief Executes the FDR classifier using neural networks.
+    *
+    * This function performs the execution of the FDR classifier using neural networks. It includes
+    * training the classifier with input data (xData, yData) and generating mean predictions.
+    *
+    * @param xData A QVector of QVector<float> representing the input data for training and prediction.
+    * @param yData A QVector<float> representing the target values for training.
+    * @param seed An integer representing the seed for random number generation.
+    * @param meanPredictions Output parameter, a QVector<float>* representing the mean predictions.
+    * @return An Err enum indicating the success or failure of the operation.
+    */
     Err exec(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
@@ -110,12 +136,33 @@ public:
             QVector<float> *meanPredictions
     );
 
+    /**
+    * @brief Counts the number of target candidates below a specified q-value threshold.
+    *
+    * This function takes a QVector of CandidateScores and counts the number of target candidates
+    * with a q-value below the specified threshold.
+    *
+    * @param candidateScores A QVector of CandidateScores representing the candidate scores.
+    * @param qValueThreshold A double representing the q-value threshold.
+    * @param targetCountBelowFDRThreshold Output parameter, an integer pointer storing the count of target candidates below the threshold.
+    * @return An Err enum indicating the success or failure of the operation.
+    */
     static Err countScoreCandidatesByFDR(
             const QVector<CandidateScores> &targetDecoyCandidatePair,
             double qValueThreshold,
             int *targetCountBelowFDRThreshold
-    );
+);
 
+    /**
+    * @brief Outputs FDR results based on specified FDR thresholds.
+    *
+    * This function outputs FDR results for different FDR thresholds using the given candidate scores.
+    *
+    * @param candidateScores A QVector of CandidateScores representing the candidate scores.
+    * @param verbose A boolean indicating whether to display verbose output.
+    * @param fdrVsCount Output parameter, a QMap<QString, int>* mapping FDR percentages to counts of candidates below each threshold.
+    * @return An Err enum indicating the success or failure of the operation.
+    */
     static Err outputFDRResults(
             const QVector<CandidateScores> &candidateScores,
             bool verbose,
