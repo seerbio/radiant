@@ -289,7 +289,7 @@ void MsFrameTests::getScanPointsByScanNumberTest() {
     const ScanPoints* scanPointsPtrsReturn = msFrame.getScanPointsByScanNumber(20);
     QCOMPARE(scanPointsPtrsReturn->at(0).x(), 101.0);
     QCOMPARE(scanPointsPtrsReturn->at(0).y(), 1001.0);
-    
+
 }
 
 
