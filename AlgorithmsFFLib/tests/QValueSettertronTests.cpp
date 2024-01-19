@@ -88,8 +88,11 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
             );
     QCOMPARE(e, eNoError);
 
-    for (CandidateScores *cs : candidateScores) {
-        qDebug() << cs->qValue;
+    const QVector<float> expectedQValues = {0, 0, 0, 1, 0.25};
+    QCOMPARE(candidateScores.size(), expectedQValues.size());
+
+    for (int i = 0; i < expectedQValues.size(); i++) {
+        QCOMPARE(candidateScores.at(i)->qValue, expectedQValues.at(i));
     }
 
 }

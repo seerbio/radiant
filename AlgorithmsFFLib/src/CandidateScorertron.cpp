@@ -260,8 +260,6 @@ Err CandidateScorertron::calculateScores(
 
     const double filterDeltaScoreValue = 2.0; //TODO consider making this settable
 
-    qDebug() << integrationVector;
-
     QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
     e = findCandidateIntegrations(
             integrationVector,

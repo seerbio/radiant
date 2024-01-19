@@ -23,6 +23,16 @@ public:
         NNClassifierScore
     };
 
+    /**
+    * @brief Sets q-values for candidate scores based on specified q-value score type.
+    *
+    * This function calculates and sets q-values for candidate scores based on the specified q-value score type.
+    * It takes a QVector of CandidateScores and updates their q-values accordingly.
+    *
+    * @param qValueScoreType The q-value score type to use for calculation.
+    * @param candidateScores A pointer to the QVector of CandidateScores to set q-values for.
+    * @return An error code indicating the success or failure of the q-value setting process.
+    */
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
             QVector<CandidateScores*> *candidateScores

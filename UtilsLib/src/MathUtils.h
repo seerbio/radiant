@@ -409,12 +409,14 @@ public:
             const long targetCount = std::distance(targetIndexLowest, targetScores.end());
             const long decoyCount = std::distance(decoyIndexLowest, decoyScores.end());
 
-            const T qvalue
-                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount)));
+            const T qvalue = std::min(
+                    1.0,
+                    (static_cast<double>(std::max(static_cast<long>(0), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount))
+                    );
             identifierVsQValue->insert(identifier, qvalue);
 
             const T decoyRatio
-                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(1), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
+                = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(0), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
             identifierVsDecoyRatio->insert(identifier, decoyRatio);
 
         }
