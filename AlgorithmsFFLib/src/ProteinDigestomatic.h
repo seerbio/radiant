@@ -44,7 +44,9 @@ namespace PeptideSequenceNamespace {
     };
 }
 
-
+/**
+ * See ParquetReaderInputBase for documentation
+ */
 class ALGORITHMSFFLIB_EXPORTS PeptideSequence : public ParquetReaderInputBase {
 
 public:
@@ -114,6 +116,16 @@ public:
 
     explicit ProteinDigestomatic(const PythiaParameters &params);
 
+    /**
+    * @brief Digests a protein sequence into peptide sequences based on cleavage points.
+    *
+    * This function digests a protein sequence into peptide sequences based on the specified cleavage points.
+    * It populates the provided QVector with the resulting peptide sequences.
+    *
+    * @param _proteinSequence The input protein sequence to digest.
+    * @param peptideSequences A pointer to the QVector to store the resulting peptide sequences.
+    * @return An error code indicating the success or failure of the digestion process.
+    */
     Err digestProtein(
             const ProteinSequence &proteinSequence,
             QVector<PeptideSequence> *peptideSequences

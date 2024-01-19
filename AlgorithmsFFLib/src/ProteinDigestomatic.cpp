@@ -92,11 +92,6 @@ Err ProteinDigestomatic::digestProtein(
 
     ProteinSequence proteinSequence = _proteinSequence;
 
-//    if (m_pythiaParams.replaceLeucinesWithX) {
-//        proteinSequence = proteinSequence.replace('L', 'X');
-//        proteinSequence = proteinSequence.replace('I', 'X');
-//    }
-
     PeptideSequence peptideSequence;
 
     int startIndex = 0;

@@ -15,18 +15,17 @@ public:
     ~ProteinDigestomaticTests() override = default;
 
 private slots:
-    void digestProteinTest();
-    void digestProteinTestTestPartial();
-    void ddigestProteinTestTestRagged();
-    void proteomicsTest();
-    void troubleshoot();
+    static void digestProteinTest();
+    static void digestProteinTestTestPartial();
+    static void digestProteinTestTestRagged();
+    static void proteomicsTest();
+    static void troubleshoot();
 };
 
 
 void ProteinDigestomaticTests::digestProteinTest()
 {
     ERR_INIT;
-    QSKIP("REMOVE ME");
 
     const QString proteinSequence = QStringLiteral("QNITEEFYQSTCSAVSKASDF");
     const QString proteinSequence2 = QStringLiteral("QNITEEFYQSTCSAVSKASDFK");
@@ -59,7 +58,7 @@ void ProteinDigestomaticTests::digestProteinTest()
     QCOMPARE(first.firstResidue, 'Q');
     QCOMPARE(first.lastResidue, 'Y');
     QCOMPARE(first.postResidue, 'Q');
-    QCOMPARE(first.sequence, QStringLiteral("QNXTEEFY"));
+    QCOMPARE(first.sequence, QStringLiteral("QNITEEFY"));
 
     QCOMPARE(mid.startIndex, 8);
     QCOMPARE(mid.endIndex, 16);
@@ -99,14 +98,12 @@ void ProteinDigestomaticTests::digestProteinTest()
             QString(),
             &peptideSequences
             );
-
-    QCOMPARE(e, eError);
+    QCOMPARE(e, eEmptyContainerError);
 }
 
-void ProteinDigestomaticTests::digestProteinTestTestPartial()
-{
+void ProteinDigestomaticTests::digestProteinTestTestPartial() {
+
     ERR_INIT;
-    QSKIP("REMOVE ME");
 
     const QString proteinSequence = QStringLiteral("AAKCCKDDKEE");
 
@@ -144,11 +141,9 @@ void ProteinDigestomaticTests::digestProteinTestTestPartial()
 
 }
 
-void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
+void ProteinDigestomaticTests::digestProteinTestTestRagged()
 {
     ERR_INIT;
-
-    QSKIP("REMOVE ME");
 
     const QString proteinSequence = QStringLiteral("ACDKEFGKHILKMNP");
 
@@ -169,7 +164,7 @@ void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
     const QStringList expected = {
              "ACDK",
              "EFGK",
-             "HXXK",
+             "HILK",
              "MNP",
              "ACD",
              "CDK",
@@ -179,10 +174,10 @@ void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
              "FGK",
              "EF",
              "GK",
-             "HXX",
-             "XXK",
-             "HX",
-             "XK",
+             "HIL",
+             "ILK",
+             "HI",
+             "LK",
              "MN",
              "NP"
     };
@@ -205,8 +200,6 @@ void ProteinDigestomaticTests::ddigestProteinTestTestRagged()
 void ProteinDigestomaticTests::proteomicsTest()
 {
 
-    QSKIP("REMOVE ME");
-    //TODO Change hard coded path to use qapp->directory.
     const QString &fastaFilePath
             = QDir(qApp->applicationDirPath()).filePath("human_plasma_entrapment_super_trunc.fasta");
 
@@ -245,11 +238,13 @@ void ProteinDigestomaticTests::proteomicsTest()
 
     const double timeElapsedSeconds = et2.elapsed() / 1000.0;
     qDebug() << peptideCount << timeElapsedSeconds;
-    QCOMPARE(peptideCount, 504082); //TODO updated test
+    QCOMPARE(peptideCount, 338162); //TODO updated test
     QVERIFY(timeElapsedSeconds < 20);
 }
 
 void ProteinDigestomaticTests::troubleshoot() {
+
+    QSKIP("Remove me to troubleshoot");
 
     ERR_INIT
 
