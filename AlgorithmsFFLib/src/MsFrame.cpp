@@ -131,7 +131,6 @@ Err MsFrame::init(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
-    e = ErrorUtils::isEqual(scanPoints.size(), scanNumberVsScanTime.size()); ree;
 
     m_framePntrs = scanPoints;
 
