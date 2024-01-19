@@ -9,12 +9,9 @@
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FeatureFinderHill.h"
-#include "FeatureFinderHillBuilder.h"
 #include "MS2Ion.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
-
 
 
 class Q_DECL_HIDDEN ScoreOverseer::Private
@@ -502,28 +499,6 @@ namespace {
         return newMatrix;
     }
 
-    QPair<FrameIndex, FrameIndex> getMinMaxFrameIndexofMzHashVsXICs(const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints) {
-
-        QPair<FrameIndex, FrameIndex> minMaxFrameIndexLocal = {std::numeric_limits<int>::max(), 0};
-        for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
-            const XICPoints &xicPoints = it.value();
-
-            if (xicPoints.empty()) {
-                continue;
-            }
-
-            const auto minMaxMzXIC = std::minmax_element(
-                    xicPoints.begin(),
-                    xicPoints.end(),
-                    [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-            );
-            minMaxFrameIndexLocal.first = std::min(minMaxFrameIndexLocal.first, minMaxMzXIC.first->scanNumber);
-            minMaxFrameIndexLocal.second = std::max(minMaxFrameIndexLocal.second, minMaxMzXIC.second->scanNumber);
-        }
-
-        return minMaxFrameIndexLocal;
-    }
-
 }// namespace
 Err ScoreOverseer::Private::buildAlignmentMatricies(
         const PeakIntegrationIndexes &peakIntegrationIndexes,
@@ -634,8 +609,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             *alignmentMatrixLimits,
             &m_intensityMatrix45,
             &m_intensityMatrix20
-    );
-    ree;
+    ); ree;
 
     ERR_RETURN
 }
