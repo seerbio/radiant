@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         DiscriminantScoretronTest
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
+        IsotopicDistributionBuilderTests
         MS2IonTests
         MsCalibratomaticTests
         MsFrameTests

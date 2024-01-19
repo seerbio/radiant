@@ -69,6 +69,18 @@ namespace MolecularFormulas
             return *this;
         }
 
+        friend QDebug operator<<(QDebug dbg, const MolecularFormula& obj) {
+            dbg.nospace() << "MolecularFormula("
+                          <<  "C" << obj.carbonCount
+                          <<  "H" << obj.hydrogenCount
+                        <<  "N" << obj.nitrogenCount
+                        <<  "O" << obj.oxygenCount
+                        <<  "S" << obj.sulfurCount
+                        <<  "P" << obj.phosphorusCount
+                          << ") ";
+            return dbg;
+        }
+
     };
 
     Err CHEMLIB_EXPORTS parseMolecularFormulaString(const QString &formulaString, MolecularFormula *mf);
