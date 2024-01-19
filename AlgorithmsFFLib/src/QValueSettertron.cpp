@@ -16,7 +16,7 @@ namespace {
                + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
     }
 
-    Err buildsetQValueForCandidateScoresInputs(
+    Err buildSetQValueForCandidateScoresInputs(
             const QValueSettertron::QValueScoreType &qValueScoreType,
             QVector<CandidateScores*> *candidateScores,
             QHash<PeptideSequenceChargeKey, double> *identifierVsTargets,
@@ -98,7 +98,7 @@ Err QValueSettertron::setQValueForCandidates(
 
     QHash<PeptideSequenceChargeKey, double> identifierVsTargets;
     QHash<PeptideSequenceChargeKey, double> identifierVsDecoys;
-    e = buildsetQValueForCandidateScoresInputs(
+    e = buildSetQValueForCandidateScoresInputs(
             qValueScoreType,
             candidateScores,
             &identifierVsTargets,

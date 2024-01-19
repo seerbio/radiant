@@ -238,7 +238,7 @@ void ProteinDigestomaticTests::proteomicsTest()
 
     const double timeElapsedSeconds = et2.elapsed() / 1000.0;
     qDebug() << peptideCount << timeElapsedSeconds;
-    QCOMPARE(peptideCount, 338162); //TODO updated test
+    QCOMPARE(peptideCount, 338162);
     QVERIFY(timeElapsedSeconds < 20);
 }
 

@@ -25,6 +25,7 @@ SET(TEST_CLASSES
         MsUtilsTests
         PeakIntegratomaticTests
         ProteinDigestomaticTests
+        QValueSettertronTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
