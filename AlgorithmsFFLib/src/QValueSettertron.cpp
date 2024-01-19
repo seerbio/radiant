@@ -86,8 +86,8 @@ namespace {
 }//namespace
 Err QValueSettertron::setQValueForCandidates(
         const QValueSettertron::QValueScoreType &qValueScoreType,
-        QVector<CandidateScores *> *candidateScores)
-{
+        QVector<CandidateScores *> *candidateScores
+        ){
 
     ERR_INIT
 
