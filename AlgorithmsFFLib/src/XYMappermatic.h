@@ -82,10 +82,35 @@ public:
     XYMappermatic();
     ~XYMappermatic() = default;
 
+    /**
+    * @brief Initializes the XYMappermatic with iRT recalibration data.
+    *
+    * This method initializes the XYMappermatic by reading iRT recalibration data from the specified file.
+    *
+    * @param iRTRecalibrationFilePath The file path of the iRT recalibration data.
+    * @return An error code indicating the success or failure of the initialization.
+    */
     Err init(const QString &iRTRecalibrationFilePath);
 
+    /**
+    * @brief Initializes the XYMappermatic with data.
+    *
+    * This method initializes the XYMappermatic with the given data, sorting it by X values and mapping X to Y values.
+    *
+    * @param _data The data containing X and Y values.
+    * @return An error code indicating the success or failure of the initialization.
+    */
     Err init(const QVector<QPair<XVal, YVal>> &data);
 
+    /**
+    * @brief Predicts Y value for a given X using the initialized spline.
+    *
+    * This method predicts the Y value for a given X using the initialized spline coefficients and control points.
+    *
+    * @param x The X value for prediction.
+    * @param y Pointer to store the predicted Y value.
+    * @return An error code indicating the success or failure of the prediction.
+    */
     Err predictY(double x, double *y) const;
 
 
