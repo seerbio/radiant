@@ -7,20 +7,17 @@ Molecule::Molecule(const MolecularFormula &molecularFormula)
 }
 
 
-double Molecule::averageMass() const
-{
+double Molecule::averageMass() const {
     return m_averageMass;
 }
 
 
-double Molecule::monoisotopicMass() const
-{
+double Molecule::monoisotopicMass() const {
     return m_monoisotopicMass;
 }
 
 
-MolecularFormula Molecule::molecularFormula() const
-{
+MolecularFormula Molecule::molecularFormula() const {
     return m_molecularFormula;
 }
 
