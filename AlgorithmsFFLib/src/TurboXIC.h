@@ -35,19 +35,65 @@ public:
     TurboXIC();
     ~TurboXIC();
 
+    /**
+    * @brief Initializes the TurboXIC private implementation.
+    *
+    * This method initializes the TurboXIC private implementation by populating the scan number vs. intensity pointers,
+    * creating an R-tree for spatial indexing, and performing necessary checks.
+    *
+    * @param scanNumberVsScanPoints A map of scan numbers to scan points.
+    * @return An error code indicating success or failure.
+    */
     Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+
+    /**
+    * @brief Initializes the TurboXIC private implementation.
+    *
+    * This method initializes the TurboXIC private implementation by populating the scan number vs. intensity pointers,
+    * creating an R-tree for spatial indexing, and performing necessary checks.
+    *
+    * @param scanNumberVsScanPoints A pointer to a map of scan numbers to scan points.
+    * @return An error code indicating success or failure.
+    */
     Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
 
+    /**
+    * @brief Extracts XIC points within the specified m/z range.
+    *
+    * This method extracts XIC (Extracted Ion Chromatogram) points from the TurboXIC private implementation
+    * within the specified m/z range.
+    *
+    * @param mzMin The minimum m/z value for the extraction.
+    * @param mzMax The maximum m/z value for the extraction.
+    * @return XICPoints containing the extracted XIC points.
+    */
     XICPoints extractPointsXIC(
             float mzMin,
             float mzMax
     );
 
+    /**
+    * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.
+    *
+    * This method retrieves the minimum and maximum m/z values of the RTree used in the TurboXIC private implementation.
+    *
+    * @param mzMin Pointer to store the minimum m/z value.
+    * @param mzMax Pointer to store the maximum m/z value.
+    * @return Error code indicating the success or failure of the operation.
+    */
     Err getRTreeLimits(
             float *mzMin,
             float *mzMax
             ) const;
 
+    /**
+    * @brief Checks if the TurboXIC private implementation is initialized.
+    *
+    * This method checks whether the TurboXIC private implementation is initialized by verifying the presence
+    * of the RTree and ensuring it is not empty.
+    *
+    * @return True if the TurboXIC private implementation is initialized, otherwise false.
+    */
     bool isInit();
 
 

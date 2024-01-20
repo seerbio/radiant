@@ -256,6 +256,5 @@ Err TurboXIC::getRTreeLimits(
 }
 
 bool TurboXIC::isInit() {
-
     return d_ptr->isInit();
 }
