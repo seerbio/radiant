@@ -141,5 +141,3 @@ QVector<double> BiophysicalCalcs::calculateIsotopesFromMz(
 
     return isotopes;
 }
-
-

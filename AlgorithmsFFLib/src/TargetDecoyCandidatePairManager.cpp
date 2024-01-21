@@ -331,14 +331,14 @@ namespace {
 
             if (ionLableInfo.second.contains('b')) {
                 const QString bSeq = peptideStringWithModsMiddelReversed.left(ionLableInfo.first);
-                ms2IonDecoy.mz = BiophysicalCalcs::calculateThomson(bSeq, aminoAcids, ms2IonDecoy.charge);
+                ms2IonDecoy.mz = static_cast<float>(BiophysicalCalcs::calculateThomson(bSeq, aminoAcids, ms2IonDecoy.charge));
             }
 
             else if (ionLableInfo.second.contains('y')) {
 
                 const QString ySeq = peptideStringWithModsMiddelReversed.right(ionLableInfo.first);
                 ms2IonDecoy.mz
-                    = BiophysicalCalcs::calculateThomson(ySeq, aminoAcids, ms2IonDecoy.charge) +  (CommonMolecules::H2O.monoisotopicMass() / ms2Ion.charge);
+                    = static_cast<float>(BiophysicalCalcs::calculateThomson(ySeq, aminoAcids, ms2IonDecoy.charge) +  (CommonMolecules::H2O.monoisotopicMass() / ms2Ion.charge));
             }
 
             else {
