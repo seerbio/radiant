@@ -79,6 +79,7 @@ private:
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
                 QStringLiteral("DGVVLFK"),
+                QStringLiteral("DGVVLFK"),
                 {i1, i2, i3},
                 {i1, i2, i3},
                 2,
