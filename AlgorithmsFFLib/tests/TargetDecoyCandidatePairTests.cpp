@@ -36,6 +36,7 @@ void TargetDecoyCandidatePairTests::gettersTest() {
 
     TargetDecoyCandidatePair targetDecoyCandidatePair(
             peptideStringWithMods,
+            peptideStringWithMods,
             ms2IonsTarget,
             ms2IonsDecoy,
             charge,
