@@ -119,29 +119,6 @@ TargetDecoyCandidatePairManager::TargetDecoyCandidatePairManager()
 
 TargetDecoyCandidatePairManager::~TargetDecoyCandidatePairManager() {}
 
-namespace {
-
-    void removeNonSequencesWithNonCanonicalAminoAcids(QVector<FragLibReaderRow> *fragLibReaderRows) {
-
-        const QString verbodenAminoAcids = QStringLiteral("BJOUXZ");
-        const auto terminatorLogic = [verbodenAminoAcids](const FragLibReaderRow &flrr){
-            return std::any_of(
-                    verbodenAminoAcids.begin(),
-                    verbodenAminoAcids.end(),
-                    [flrr](const QChar &aa){return flrr.peptideSequenceChargeKey.contains(aa);}
-                    ) ;
-        };
-
-        const auto terminator = std::remove_if(
-                fragLibReaderRows->begin(),
-                fragLibReaderRows->end(),
-                terminatorLogic
-                );
-
-        fragLibReaderRows->erase(terminator, fragLibReaderRows->end());
-    }
-
-}
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
         QVector<FragLibReaderRow> *fragLibReaderRows
@@ -153,8 +130,6 @@ Err TargetDecoyCandidatePairManager::init(
     e = ErrorUtils::isFalse(fragLibReaderRows->isEmpty()); ree;
 
     m_pythiaParameters = pythiaParameters;
-
-    removeNonSequencesWithNonCanonicalAminoAcids(fragLibReaderRows);
 
     e = buildTargetDecoyCandidatePairs(*fragLibReaderRows); ree;
 
