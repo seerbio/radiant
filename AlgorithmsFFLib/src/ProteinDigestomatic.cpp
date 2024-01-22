@@ -170,8 +170,9 @@ Err ProteinDigestomatic::digestProtein(
                          m_pythiaParams.peptideLengthMax,
                          peptideSequences);
 
-    filterInvalidSequences(peptideSequences);
-    calculateMasses(peptideSequences);
+    //TODO figure out how you want to handle this for chars BJOUXZ since they are now included.
+//    filterInvalidSequences(peptideSequences);
+//    calculateMasses(peptideSequences);
 
     ERR_RETURN;
 }
