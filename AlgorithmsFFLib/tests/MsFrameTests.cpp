@@ -65,7 +65,7 @@ void MsFrameTests::initTest() {
             scanPointsPtrs,
             {}
     );
-    QCOMPARE(e, eError);
+    QCOMPARE(e, eEmptyContainerError);
 
     e = msFrame.init(
             {},
