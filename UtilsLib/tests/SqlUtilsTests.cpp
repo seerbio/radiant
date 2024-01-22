@@ -19,8 +19,8 @@ public:
 
 private Q_SLOTS:
 
-    void encodeBLOBTest();
-    void decodeBLOBTest();
+    static void encodeBLOBTest();
+    static void decodeBLOBTest();
 
 };
 

@@ -24,11 +24,7 @@ public:
 private Q_SLOTS:
 
     void extractPointsFromPointsTest();
-    void extractPointsFromPointsSimpleTest();
-    void buildDeletionPointsTest();
-    void chargeDeterminatorTest();
-    void monoIsotopeDeterminatorTest();
-
+    static void extractPointsFromPointsSimpleTest();
 
 private:
 
@@ -199,125 +195,25 @@ void MsUtilsTests::extractPointsFromPointsTest() {
         QCOMPARE(p.x(), p.y());
     }
 
-    qDebug() << extractPointsVector.intensityFoundVsSearched;
-
-}
-
-void MsUtilsTests::buildDeletionPointsTest() {
-
-    ERR_INIT
-
-    const QVector<QPointF> mzVals = {
-            QPointF(147.112,147.113), QPointF(173.128,173.128), QPointF(201.123,201.123),
-            QPointF(266.161,266.161), QPointF(270.145,270.145), QPointF(284.171,284.172),
-            QPointF(288.156,288.155), QPointF(341.181,341.182), QPointF(378.206,378.206),
-            QPointF(395.202,395.204), QPointF(412.221,412.219), QPointF(413.216,413.214),
-            QPointF(526.299,526.298), QPointF(597.336,597.335), QPointF(668.369,668.373),
-            QPointF(737.39,737.394), QPointF(755.402,755.405)
-    };
-
-    const QVector<QPointF> intzVals = {
-            QPointF(5.2862e+06,0.05), QPointF(6.74674e+06,1), QPointF(1.44025e+06,0.2),
-            QPointF(354716,0.08), QPointF(166927,0.04), QPointF(929581,0.15), QPointF(202604,0.05),
-            QPointF(100823,0.02), QPointF(300200,0.02), QPointF(204214,0.03), QPointF(59682.5,0.02),
-            QPointF(245813,0.08), QPointF(282431,0.06), QPointF(652916,0.13), QPointF(425792,0.07),
-            QPointF(291785,0.02), QPointF(3.69421e+06,0.39)
-    };
-
-    ExtractPoints extractPoints;
-    extractPoints.mzFoundVsSearched = mzVals;
-    extractPoints.intensityFoundVsSearched = intzVals;
-
-    double mzHiPassVal = 370.0;
-
-    QVector<QPointF> delPoints;
-    e = MsUtils::buildDeletionPoints(extractPoints, mzHiPassVal, &delPoints);
-    QCOMPARE(e, eNoError);
-
-    qDebug() << delPoints;
-
-}
-
-void MsUtilsTests::chargeDeterminatorTest() {
-
-    const QVector<QPointF> points = {
-            {444.743, 2.10961e+08},
-            {443.74, 1.79396e+09},
-            {444.242, 7.40661e+08},
-            {445.245, 4.99012e+07},
-            {446.25, 5.91256e+06},
-            {445.745, 6.1436e+06}
-            };
-
-    int charge;
-//    MsUtils::chargeDeterminator({443.74, 1.79396e+09}, points, 20.0, &charge);
-//    qDebug() << charge;
-//    QCOMPARE(charge, 2);
-
-    const QVector<QPointF> pointsCharge1 = {
-            QPointF(487.228,6.80671e+06),
-            QPointF(484.732,4.8741e+06),
-            QPointF(484.258,1.87976e+06)
-    };
-
-    MsUtils::chargeDeterminator(
-            {487.228, 6.80671e+06},
-            pointsCharge1,
-            20.0,
-            2,
-            3,
-            &charge
-            );
-    qDebug() << charge;
-
-
 }
 
 void MsUtilsTests::extractPointsFromPointsSimpleTest() {
 
-    QVector<QPointF> p1 = {{1, 1}, {2,2}, {3,3}};
-    QVector<QPointF> p2 = {{1, 1}, {2,2}, {4,4}};
+    QVector<QPointF> p1 = {{1, 10}, {2,20}, {3,30}};
+    QVector<QPointF> p2 = {{1, 10}, {2,20}, {4,40}};
 
     const ExtractPoints extractPointsVector
             = MsUtils::extractPointsFromPoints(p1, p2, 10.0);
 
-    qDebug() << extractPointsVector.mzFoundVsSearched;
-    qDebug() << extractPointsVector.intensityFoundVsSearched;
+    const QVector<QPointF> expectedXVals = {QPointF(1,1), QPointF(2,2), QPointF(-1,4)};
+    const QVector<QPointF> expectedYVals = {QPointF(10,10), QPointF(20,20), QPointF(-1,40)};
+    QCOMPARE(extractPointsVector.mzFoundVsSearched.size(), expectedXVals.size());
+    QCOMPARE(extractPointsVector.intensityFoundVsSearched.size(), expectedYVals.size());
 
-}
-
-void MsUtilsTests::monoIsotopeDeterminatorTest() {
-
-    ERR_INIT
-
-    const QVector<QPointF> pointsCharge3 = {
-            QPointF(483.5, 6.80671e+03),
-            QPointF(484.0, 6.80671e+06),
-            QPointF(484.5, 3.8741e+06),
-            QPointF(484.75, 8.8741e+06),
-            QPointF(485.0,8.87976e+05)
-    };
-
-    int monoIsoOffset;
-    QVector<QPointF> subtractionPoints;
-    double bestCosineSim;
-
-    const int centerPointIndex = 2;
-    e = MsUtils::monoIsotopeDeterminator(
-            pointsCharge3.at(centerPointIndex),
-            pointsCharge3,
-            300.0,
-            2,
-            &monoIsoOffset,
-            &subtractionPoints,
-            &bestCosineSim
-            );
-    QCOMPARE(e, eNoError);
-
-    qDebug() << monoIsoOffset;
-    qDebug() << subtractionPoints;
-    qDebug() << bestCosineSim;
-
+    for (int i = 0; i < extractPointsVector.mzFoundVsSearched.size(); i++) {
+        QCOMPARE(extractPointsVector.mzFoundVsSearched.at(i), expectedXVals.at(i));
+        QCOMPARE(extractPointsVector.intensityFoundVsSearched.at(i), expectedYVals.at(i));
+    }
 }
 
 

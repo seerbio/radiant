@@ -22,48 +22,36 @@ public:
 //TODO Add more test coverage.
 private Q_SLOTS:
 
-    void openFileTest();
-    void realWorldTest();
-
-private:
-
-    //TODO use proper path procedures after finding small file.
-    const QString m_filepath
-            = QStringLiteral("/home/anichols/Downloads/EXP22092_2022ms0742X32_A.raw.mzML");
+    static void openFileTest();
 
 };
 
 
 void MsReaderMZMLTests::openFileTest() {
-    QSKIP("TODO: enable with internal test data");
 
-    QSKIP("activate when proper pathing is used");
 
-    QSKIP("activate when proper pathing is used");
-
-//    const QString &msParquetFilePath
-//            = QDir(qApp->applicationDirPath()).filePath("SoLetItBeWritten.prq");
+    const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     ERR_INIT
 
-    QVERIFY2(QFileInfo::exists(m_filepath), qPrintable(QString("File not found: %1").arg(m_filepath)));
+    QVERIFY2(QFileInfo::exists(msParquetFilePath), qPrintable(QString("File not found: %1").arg(msParquetFilePath)));
 
     MsReaderMzML reader;
-    e = reader.openFile(m_filepath);
+    e = reader.openFile(msParquetFilePath);
     QCOMPARE(e, Error::eNoError);
-    QCOMPARE(reader.m_msScanInfo.size(), 26010);
-    QCOMPARE(reader.m_scanPoints.size(), 26010);
+    QCOMPARE(reader.m_msScanInfo.size(), 372);
+    QCOMPARE(reader.m_scanPoints.size(), 372);
 
     MsScanInfo msScanInfo;
-    e = reader.getMsScanInfo(666, &msScanInfo);
+    e = reader.getMsScanInfo(372, &msScanInfo);
     QCOMPARE(e, eNoError);
-    QCOMPARE(msScanInfo.scanNumber, 666);
-    QCOMPARE(msScanInfo.msLevel, 2);
-    QCOMPARE(msScanInfo.collisionEnergy, 28);
-    QCOMPARE(QString::number(msScanInfo.scanTime), "0.826693");
-    QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "725.079");
-    QCOMPARE(msScanInfo.isoWindowLower, 5.5);
-    QCOMPARE(msScanInfo.isoWindowUpper, 5.5);
+    QCOMPARE(msScanInfo.scanNumber, 372);
+    QCOMPARE(msScanInfo.msLevel, 1);
+    QCOMPARE(msScanInfo.collisionEnergy, -1);
+    QCOMPARE(QString::number(msScanInfo.scanTime), "10.0411");
+    QCOMPARE(QString::number(msScanInfo.precursorTargetMz), "-1");
+    QCOMPARE(msScanInfo.isoWindowLower, -1);
+    QCOMPARE(msScanInfo.isoWindowUpper, -1);
 
     QPair<Err, ScanPoints*> scanPointsResult = reader.getScanPoints(msScanInfo.scanNumber);
     e = scanPointsResult.first;
@@ -71,33 +59,14 @@ void MsReaderMZMLTests::openFileTest() {
 
     const ScanPoints scanPoints = *scanPointsResult.second;
 
-    QCOMPARE(int(149.045), int(scanPoints.first().x()));
-    QCOMPARE(int(3574.26), int(scanPoints.first().y()));
-    QCOMPARE(int(1166.42), int(scanPoints.last().x()));
-    QCOMPARE(int(1360.38), int(scanPoints.last().y()));
-    qDebug() << scanPoints.last();
-    QCOMPARE(scanPoints.size(), 35);
+    QCOMPARE(int(scanPoints.first().x()), 150);
+    QCOMPARE(int(scanPoints.first().y()), 814);
+    QCOMPARE(int(scanPoints.last().x()), 1250);
+    QCOMPARE(int(scanPoints.last().y()), 2646);
+    QCOMPARE(scanPoints.size(), 2092);
 
 }
 
-void MsReaderMZMLTests::realWorldTest() {
-
-    QSKIP("Turned off for production");
-
-    ERR_INIT
-
-    const QString filePath = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX43_A.raw.mzML";
-
-    QElapsedTimer et;
-    et.start();
-
-    MsReaderMzML msReaderMzMl;
-    e = msReaderMzMl.openFile(filePath);
-    QCOMPARE(e, eNoError);
-
-    qDebug() << "Opened in" << et.elapsed() << "mSec";
-
-}
 
 QTEST_MAIN(MsReaderMZMLTests)
 #include "MsReaderMZMLTests.moc"

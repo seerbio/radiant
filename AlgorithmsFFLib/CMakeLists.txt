@@ -24,9 +24,11 @@ SET(SOURCE_FILES
         src/CandidateScores.cpp
         src/CandidateScorertron.cpp
         src/ClassifierWeightsManager.cpp
+        src/DiscriminantScoretron.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
+        src/InterferingCandidatesEliminatomatic.cpp
         src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
         src/MsCalibratomatic.cpp
@@ -34,6 +36,7 @@ SET(SOURCE_FILES
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
+        src/QValueSettertron.cpp
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
@@ -47,9 +50,11 @@ SET(HEADER_FILES
         src/CandidateScores.h
         src/CandidateScorertron.h
         src/ClassifierWeightsManager.h
+        src/DiscriminantScoretron.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
         src/FeatureFinderHillBuilder.h
+        src/InterferingCandidatesEliminatomatic.h
         src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
         src/MsCalibratomatic.h
@@ -57,6 +62,7 @@ SET(HEADER_FILES
         src/MsUtils.h
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
+        src/QValueSettertron.h
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
@@ -68,6 +74,12 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
+        src/InterferingCandidatesEliminatomatic.cpp
+        src/InterferingCandidatesEliminatomatic.h
+        src/QValueSettertron.cpp
+        src/QValueSettertron.h
+        src/DiscriminantScoretron.cpp
+        src/DiscriminantScoretron.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS

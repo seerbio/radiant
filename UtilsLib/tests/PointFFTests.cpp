@@ -21,12 +21,12 @@ public:
 
 private Q_SLOTS:
 
-    void xTest();
-    void yTest();
-    void rxTest();
-    void ryTest();
-    void equalOperatorTest();
-    void notEqualOperatorTest();
+    static void xTest();
+    static void yTest();
+    static void rxTest();
+    static void ryTest();
+    static void equalOperatorTest();
+    static void notEqualOperatorTest();
 
 };
 

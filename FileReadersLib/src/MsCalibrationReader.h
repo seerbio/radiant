@@ -37,6 +37,10 @@ namespace MsCalibarationReaderNamespace {
     };
 }
 
+
+/**
+ * See ParquetReaderInputBase for documentation
+ */
 struct MsCalibarationReaderRow: public ParquetReaderInputBase {
 
     PeptideStringWithMods peptideStringWithMods;

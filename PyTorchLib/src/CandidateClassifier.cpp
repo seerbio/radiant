@@ -16,6 +16,31 @@
 #include <iostream>
 #include <random>
 
+struct TransformerModel : torch::nn::Module {
+
+    TransformerModel(
+            int64_t input_dim,
+            int64_t output_dim,
+            int64_t nhead,
+            int64_t dim_feedforward,
+            int64_t num_encoder_layers
+            )
+            : transformer_encoder(torch::nn::TransformerEncoderOptions(torch::nn::TransformerEncoderLayerOptions(input_dim, nhead).dim_feedforward(dim_feedforward), num_encoder_layers))
+            , fc(input_dim, output_dim) {
+
+        register_module("transformer_encoder", transformer_encoder);
+        register_module("fc", fc);
+    }
+
+    torch::Tensor forward(torch::Tensor src) {
+        src = transformer_encoder->forward(src);
+        return fc->forward(src);
+    }
+
+    torch::nn::TransformerEncoder transformer_encoder{nullptr};
+    torch::nn::Linear fc{nullptr};
+};
+
 struct Net : torch::nn::Module {
 
     torch::nn::Linear layer1{nullptr};
@@ -121,10 +146,8 @@ namespace {
         const float* data = tensor.data_ptr<float>();
         std::vector<float> vec(data, data + numel);
 
-        return QVector<float>(vec.begin(), vec.end());
+        return {vec.begin(), vec.end()};
     }
-
-    
 
 } //namespace
 bool CandidateClassifier::Private::trainCandidateClassifier(
@@ -143,7 +166,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
     torch::globalContext().setDeterministicCuDNN(true);
     torch::set_num_threads(8);
-//    torch::set_num_interop_threads(4);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,

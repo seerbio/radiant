@@ -77,20 +77,7 @@ CandidateScorertron::CandidateScorertron()
 
 CandidateScorertron::~CandidateScorertron() {}
 
-namespace{
 
-    PeakIntegratomaticParameters buildPeakIntegratomaticParams(const PythiaParameters  &pythiaParameters) {
-
-        PeakIntegratomaticParameters params;
-        params.smoothCount = pythiaParameters.smoothCount;
-        params.filterLength = pythiaParameters.filterLength;
-        params.sigma = pythiaParameters.sigma;
-        params.signalToNoiseRatio = pythiaParameters.signalToNoiseRatio;
-
-        return params;
-    }
-
-}//namespace
 Err CandidateScorertron::init(
         const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
@@ -107,14 +94,18 @@ Err CandidateScorertron::init(
 
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isNotEmpty(targetKey); ree;
+    e = ErrorUtils::isTrue(scanTimeMinMax.first >= 0 && scanTimeMinMax.second > 0); ree;
     e = ErrorUtils::isTrue(topNMS2Ions > 0); ree;
+    e = ErrorUtils::isTrue(turboXICMS1->isInit()); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
     m_scanTimeMinMax = scanTimeMinMax;
     m_mzHashedVsCount = mzHashedVsCount;
 
-    const PeakIntegratomaticParameters ffParams = buildPeakIntegratomaticParams(m_pythiaParameters);
+    const PeakIntegratomaticParameters ffParams
+        = PeakIntegratomaticParameters::buildPeakIntegratomaticParams(m_pythiaParameters);
     e = m_peakIntegratomatic.init(ffParams); ree;
 
     m_msCalibratomatic = msCalibratomatic;
@@ -466,7 +457,7 @@ Err CandidateScorertron::findCandidateIntegrations(
 
     ERR_INIT
 
-    e = simpleIntegrator(
+    e = m_peakIntegratomatic.simpleIntegrator(
             integrationVector,
             peakIntegrationIndexesVsIntensity
             ); ree;
@@ -491,101 +482,6 @@ Err CandidateScorertron::findCandidateIntegrations(
             );
 
     e = filterByDeltaScore(filterDeltaScoreValue, peakIntegrationIndexesVsIntensity); ree;
-
-    ERR_RETURN
-}
-
-Err CandidateScorertron::simpleIntegrator(
-        const QVector<float> &vec,
-        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
-) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(vec); ree;
-
-    Eigen::VectorX<float> eVec = EigenUtils::convertQVectorToEigenVector(vec);
-    EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
-    for (int smoothCount = 0; smoothCount < m_pythiaParameters.smoothCount; smoothCount++) {
-        eVec = EigenKernelUtils::convolveVectorWithKernel(eVec, d_ptr->m_gaussKernel);
-    }
-
-    const int topNApexes = 10;
-    const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
-
-    if (vecApexs.isEmpty()) {
-        ERR_RETURN
-    }
-
-    Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
-    QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
-
-    const int maxPeakIntegrations = 5;
-    apexPairs.resize(std::min(maxPeakIntegrations, apexPairs.size()));
-    for (const QPair<int, float> &pr : apexPairs) {
-
-        const int apexIndex = pr.first;
-        const float apexValue = pr.second;
-
-        if (MathUtils::tZero(apexValue)) {
-            continue;
-        }
-
-        const float stopThreshold = apexValue * m_pythiaParameters.stopThresholdFraction;
-
-        float rightStopVal = apexValue;
-        int rightStopIndex = apexIndex;
-
-        int rightCurrentIndex = apexIndex;
-        while (rightCurrentIndex < eVec.size()) {
-
-            const float currentValue = eVec(rightCurrentIndex);
-            if (currentValue < stopThreshold) {
-                rightStopIndex = rightCurrentIndex;
-                break;
-            }
-
-            if (currentValue <= rightStopVal) {
-                rightStopVal = currentValue;
-                rightStopIndex = rightCurrentIndex;
-                rightCurrentIndex++;
-                continue;
-            }
-
-            break;
-        }
-
-        float leftStopVal = apexValue;
-        int leftStopIndex = apexIndex;
-
-        int leftCurrentIndex = apexIndex;
-        while (leftCurrentIndex < eVec.size()) {
-
-            const float currentValue = eVec(leftCurrentIndex);
-            if (currentValue < stopThreshold) {
-                leftStopIndex = leftCurrentIndex;
-                break;
-            }
-
-            if (currentValue <= leftStopVal) {
-                leftStopVal = currentValue;
-                leftStopIndex = leftCurrentIndex;
-                leftCurrentIndex--;
-                continue;
-            }
-
-            break;
-        }
-
-        peakIntegrationIndexesVsIntensity->push_back({
-            {std::max(leftStopIndex, 0), std::min(rightStopIndex, vec.size() -1)},
-            apexValue}
-            );
-
-        for (int i = leftStopIndex; i <= rightStopIndex; i++) {
-            eVec.coeffRef(i) = 0.0;
-        }
-    }
 
     ERR_RETURN
 }

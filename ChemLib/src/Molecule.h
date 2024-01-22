@@ -18,8 +18,34 @@ public:
     Molecule() = default;
     ~Molecule() = default;
 
+    /**
+    * @brief Returns the average mass of the molecule.
+    *
+    * This function returns the average mass of the molecule, which is precalculated and stored
+    * during the initialization of the Molecule object.
+    *
+    * @return The average mass of the molecule.
+    */
     [[nodiscard]] double averageMass() const;
+
+    /**
+    * @brief Returns the monoisotopic mass of the molecule.
+    *
+    * This function returns the monoisotopic mass of the molecule, which is precalculated and stored
+    * during the initialization of the Molecule object.
+    *
+    * @return The monoisotopic mass of the molecule.
+    */
     [[nodiscard]] double monoisotopicMass() const;
+
+    /**
+    * @brief Returns the molecular formula of the molecule.
+    *
+    * This function returns the molecular formula of the molecule, which is precalculated and stored
+    * during the initialization of the Molecule object.
+    *
+    * @return The molecular formula of the molecule.
+    */
     [[nodiscard]] MolecularFormula molecularFormula() const;
 
 

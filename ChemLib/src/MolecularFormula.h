@@ -69,8 +69,31 @@ namespace MolecularFormulas
             return *this;
         }
 
+        friend QDebug operator<<(QDebug dbg, const MolecularFormula& obj) {
+            dbg.nospace() << "MolecularFormula("
+                          <<  "C" << obj.carbonCount
+                          <<  "H" << obj.hydrogenCount
+                        <<  "N" << obj.nitrogenCount
+                        <<  "O" << obj.oxygenCount
+                        <<  "S" << obj.sulfurCount
+                        <<  "P" << obj.phosphorusCount
+                          << ") ";
+            return dbg;
+        }
+
     };
 
+    /**
+    * @brief Parses a molecular formula string and initializes a MolecularFormula object.
+    *
+    * This function parses a molecular formula string, removes unnecessary characters, and extracts
+    * the count of each atom (C, H, N, O, S, P). It then initializes a MolecularFormula object with
+    * the extracted atom counts.
+    *
+    * @param _formulaString The input molecular formula string.
+    * @param mf Pointer to a MolecularFormula object to be initialized with the parsed formula.
+    * @return An error code indicating the success or failure of the operation.
+    */
     Err CHEMLIB_EXPORTS parseMolecularFormulaString(const QString &formulaString, MolecularFormula *mf);
 
     //Amino Acids

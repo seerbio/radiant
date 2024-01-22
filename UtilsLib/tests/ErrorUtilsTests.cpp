@@ -15,18 +15,19 @@ public:
     ~ErrorUtilsTests() override = default;
 
 private Q_SLOTS:
-    void toDoubleTest();
-    void toIntTest();
-    void emptyCheckReturnTest();
-    void equalTest();
-    void notEqualTest();
-    void indexInRangeTest();
-    void withinRangeTest();
-    void aboveThresholdTest();
-    void belowThresholdTest();
-    void isTrueTest();
-    void isFalseTest();
-
+    static void toDoubleTest();
+    static void toIntTest();
+    static void emptyCheckReturnTest();
+    static void equalTest();
+    static void notEqualTest();
+    static void indexInRangeTest();
+    static void withinRangeTest();
+    static void aboveThresholdTest();
+    static void belowThresholdTest();
+    static void isTrueTest();
+    static void isFalseTest();
+    static void containsTest();
+    static void doesNotContainTest();
 };
 
 
@@ -207,6 +208,66 @@ void ErrorUtilsTests::belowThresholdTest()
     eee_absorb;
     e = ErrorUtils::isBelowThreshold(666.6, 666.6, ErrorUtilsParam::ExcludeThreshold, eValueError);
     QVERIFY(e == eValueError);
+}
+
+void ErrorUtilsTests::containsTest() {
+
+    ERR_INIT
+
+    QVector<int> testVector{1, 2, 3, 4, 5};
+
+    e = ErrorUtils::contains(3, testVector);
+    QCOMPARE(e, eNoError);
+
+    e = ErrorUtils::contains(666, testVector);
+    QCOMPARE(e, eError);
+
+    QMap<int, double> testMap{{1, 1.0}, {2, 1.0}, {3,1.0}};
+
+    e = ErrorUtils::contains(3, testMap);
+    QCOMPARE(e, eNoError);
+
+    e = ErrorUtils::contains(666, testMap);
+    QCOMPARE(e, eError);
+
+    QHash<int, double> testHash{{1, 1.0}, {2, 1.0}, {3,1.0}};
+
+    e = ErrorUtils::contains(3, testHash);
+    QCOMPARE(e, eNoError);
+
+    e = ErrorUtils::contains(666, testHash);
+    QCOMPARE(e, eError);
+
+}
+
+void ErrorUtilsTests::doesNotContainTest() {
+
+    ERR_INIT
+
+    QVector<int> testVector{1, 2, 3, 4, 5};
+
+    e = ErrorUtils::doesNotContain(3, testVector);
+    QCOMPARE(e, eError);
+
+    e = ErrorUtils::doesNotContain(666, testVector);
+    QCOMPARE(e, eNoError);
+
+    QMap<int, double> testMap{{1, 1.0}, {2, 1.0}, {3,1.0}};
+
+    e = ErrorUtils::doesNotContain(3, testMap);
+    QCOMPARE(e, eError);
+
+    e = ErrorUtils::doesNotContain(666, testMap);
+    QCOMPARE(e, eNoError);
+
+    QHash<int, double> testHash{{1, 1.0}, {2, 1.0}, {3,1.0}};
+
+    e = ErrorUtils::doesNotContain(3, testHash);
+    QCOMPARE(e, eError);
+
+    e = ErrorUtils::doesNotContain(666, testHash);
+    QCOMPARE(e, eNoError);
+
 }
 
 

@@ -11,6 +11,7 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 
+//NOTE that these have to go after parquet arrow import or there will be a compile error.
 #include "ParquetReader.h"
 
 
@@ -715,6 +716,9 @@ arrow::Status ParquetReader::Private::readDataFromParquet(
             parquetFilePath,
             &readerBuilder
             );
+    if (!st.ok()) {
+        return st;
+    }
 
     std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
     ARROW_ASSIGN_OR_RAISE(arrow_reader, readerBuilder.Build());
@@ -814,6 +818,9 @@ arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
             parquetFilePath,
             &readerBuilder
     );
+    if (!st.ok()) {
+        return st;
+    }
 
     std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
     ARROW_ASSIGN_OR_RAISE(arrow_reader, readerBuilder.Build());

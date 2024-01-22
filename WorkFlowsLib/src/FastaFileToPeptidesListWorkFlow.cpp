@@ -149,7 +149,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
         }
     }
 
-    qDebug() << "Targets size" << peptideSequences->size();
+    qDebug() << "FASTA Targets Size" << peptideSequences->size();
     ERR_RETURN
 }
 

@@ -31,9 +31,10 @@ namespace{
     }
 
 
-    QVector<double> calculateIsotopicDistribution(const MolecularFormula &molecularFormulaOfSequence,
-                                                  double stopThreshold = 0.001)
-    {
+    QVector<double> calculateIsotopicDistribution(
+            const MolecularFormula &molecularFormulaOfSequence,
+            double stopThreshold = 0.001
+                    ) {
         const double rootCarbon = -C12_ABUNDANCE / C13_ABUNDANCE;
         const double rootHydrogen = -H1_ABUNDANCE / H2_ABUNDANCE;
         const double rootNitrogen = -N14_ABUNDANCE / N15_ABUNDANCE;
@@ -85,8 +86,7 @@ namespace{
     }
 
 }//NAMESPACE
-QVector<double> IsotopicDistributionBuilder::getIsotopicDistribution(const QStringList &sequence)
-{
+QVector<double> IsotopicDistributionBuilder::getIsotopicDistribution(const QStringList &sequence) {
 
     MolecularFormula molecularFormulaOfSequence
             = getMolecularFormulaOfBioPolymer(sequence);
@@ -99,8 +99,7 @@ QVector<double> IsotopicDistributionBuilder::getIsotopicDistribution(const QStri
 
 
 MolecularFormula
-IsotopicDistributionBuilder::getMolecularFormulaOfBioPolymer(const QStringList &sequence)
-{
+IsotopicDistributionBuilder::getMolecularFormulaOfBioPolymer(const QStringList &sequence) {
 
     const QMap<QChar, Molecule> aminoAcids = AminoAcids::aminoAcids();
 

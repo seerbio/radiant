@@ -62,10 +62,6 @@ Err MsCalibratomatic::initRtOnly(const QVector<MsCalibarationReaderRow> &msCalib
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
     m_msCalibarationReaderRows = msCalibarationReaderRows;
 
-//    for (const MsCalibarationReaderRow &r : m_msCalibarationReaderRows) {
-//        qDebug() << r.peptideStringWithMods << r.mzSearchedVec << r.mzFoundMeanVec << r.mzFoundStDevVec << r.scanTime << r.iRTPredicted << "SDLKFSL";
-//    }
-
     e = buildIRTCalibrator(); ree
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
@@ -247,6 +243,7 @@ namespace {
         const auto ppmsMinMax = std::minmax_element(ppms.begin(), ppms.end());
 
         const double stDevMean = MathUtils::mean(stDevs);
+        const double stDevMedian = MathUtils::median(stDevs);
         const double stDevStDev = MathUtils::stDev(stDevs);
         const auto stDevsMinMax = std::minmax_element(stDevs.begin(), stDevs.end());
 
@@ -257,15 +254,12 @@ namespace {
 
         const auto terminatorLogic = [&](const Inp &i){
 
-            const double ppmTol = ppmStDev * S_GLOBAL_SETTINGS.STDEV_MULTIPLIER;
+            const double ppmTol = ppmStDev * (S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
             const double ppmLo = ppmMean - ppmTol;
             const double ppmHi = ppmMean + ppmTol;
             const bool ppmOutOfRange = i.ppm < ppmLo || i.ppm > ppmHi;
 
-            const double stDevTol = stDevStDev * (S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
-            const double stDevLo = stDevMean - stDevTol;
-            const double stDevHi = stDevMean + stDevTol;
-            const bool stDevOutOfRange = i.stDev < stDevLo || i.stDev > stDevHi;
+            const bool stDevOutOfRange = i.stDev > stDevMedian;
 
             return ppmOutOfRange || stDevOutOfRange;
         };

@@ -14,11 +14,12 @@ INCLUDE_DIRECTORIES(
 
 #Add classes to test here.
 SET(TEST_CLASSES
+        CommandLineParserUtilsTests
         CSVReaderTests
         FastaReaderTests
         FeatureFinderHillReaderTests
         FragLibReaderTests
-        JsonParameterReaderTests
+        MsCalibrationReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
         MsReaderParquetTests
@@ -42,18 +43,6 @@ endforeach()
 set(FASTA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta")
 configure_file(${FASTA_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta COPYONLY)
 
-set(FASTA_PEPTIDES_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.csv")
-configure_file(${FASTA_PEPTIDES_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.csv COPYONLY)
-
-set(FASTA_PEPLIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.pepLib")
-configure_file(${FASTA_PEPLIB_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.pepLib COPYONLY)
-
-set(FASTA_FRAGLIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/human_plasma_entrapment_super_trunc.fasta.csv.fragLib")
-configure_file(${FASTA_FRAGLIB_PATH} ${CMAKE_BINARY_DIR}/bin/human_plasma_entrapment_super_trunc.fasta.csv.fragLib COPYONLY)
-
-set(JSON_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/DigestParamsTest.dgst")
-configure_file(${JSON_PATH} ${CMAKE_BINARY_DIR}/bin/DigestParamsTest.dgst COPYONLY)
-
 set(PYTHIA_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/test_params_wide_window.pythiaConfig")
 configure_file(${PYTHIA_PATH} ${CMAKE_BINARY_DIR}/bin/test_params_wide_window.pythiaConfig COPYONLY)
 
@@ -63,21 +52,8 @@ configure_file(${MS_PARQUET} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.ra
 set(FRAG_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/FragLibReaderTests.fragLibFF")
 configure_file(${FRAG_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/FragLibReaderTests.fragLibFF COPYONLY)
 
-set(TEST_PARAMS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/WorkFlowTestsParams.pythia")
-configure_file(${TEST_PARAMS_PATH} ${CMAKE_BINARY_DIR}/bin/WorkFlowTestsParams.pythia COPYONLY)
+set(MZML_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/1min.mzML")
+configure_file(${MZML_PATH} ${CMAKE_BINARY_DIR}/bin/1min.mzML COPYONLY)
 
-set(PEPTIDES_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/peptides.csv")
-configure_file(${PEPTIDES_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/peptides.csv COPYONLY)
-
-set(TARGETS_MZ_CE_CSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/target_mz_ce.csv")
-configure_file(${TARGETS_MZ_CE_CSV_PATH} ${CMAKE_BINARY_DIR}/bin/target_mz_ce.csv COPYONLY)
-
-set(FRAME_SCANS_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans")
-configure_file(${FRAME_SCANS_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScans COPYONLY)
-
-set(FRAME_SCORES_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores")
-configure_file(${FRAME_SCORES_PATH} ${CMAKE_BINARY_DIR}/bin/EXP22092_2022ms0742X32_A.raw.mzML.prq.474966.frameScores COPYONLY)
-
-set(PEP_LIB_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib")
-configure_file(${PEP_LIB_PATH} ${CMAKE_BINARY_DIR}/bin/2022_02_22_Homo_sapiens_UP000005640.fasta.pepLib COPYONLY)
-
+set(FRAME_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/framePoints.frame")
+configure_file(${FRAME_PATH} ${CMAKE_BINARY_DIR}/bin/framePoints.frame COPYONLY)

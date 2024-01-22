@@ -179,7 +179,7 @@ XICPoints TurboXIC::Private::extractPointsXIC(
         xicPointsLoader[i] = xp;
     }
 
-    return std::vector<XICPoint>(xicPointsLoader, xicPointsLoader + loaderSize);
+    return {xicPointsLoader, xicPointsLoader + loaderSize};
 }
 
 Err TurboXIC::Private::getRTreeLimits(
@@ -198,6 +198,11 @@ Err TurboXIC::Private::getRTreeLimits(
 }
 
 bool TurboXIC::Private::isInit() {
+
+    if (!m_rTree) {
+        return false;
+    }
+
     return !m_rTree->empty();
 }
 

@@ -25,40 +25,66 @@ class EIGENLIB_EXPORTS EigenUtils {
 
 public:
 
+    /*!
+     * @brief  Replaces all NaN values in the vector with a provided value
+     * @tparam T: The datatype of the elements in the Eigen::Vector. Could be any numeric type such as int, float, double etc.
+     * @param replaceVal: The value which will replace all the NaNs in the vector
+     * @param vec: Pointer to an Eigen::Vector. This function modifies the vector in-place.
+    */
     template<typename T>
     static void replaceNaN(T replaceVal, Eigen::VectorX<T> *vec){
         *vec = vec->array().isNaN().select(replaceVal, vec->array());
     }
 
+    /*!
+     * @brief  Replaces all NaN values in the matrix with a provided value
+     * @tparam T: The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+     * @param replaceVal: The value which will replace all the NaNs in the matrix
+     * @param mat: Pointer to an Eigen::Matrix. This function modifies the matrix in-place.
+    */
     template<typename T>
     static void replaceNaN(T replaceVal, Eigen::MatrixX<T> *mat){
         *mat = mat->array().isNaN().select(replaceVal, mat->array());
     }
 
+    /*!
+    * @brief  Replaces all Infinity (inf) values in the matrix with a provided value
+    * @tparam T: The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+    * @param replaceVal: The value which will replace all the infinity values in the matrix
+    * @param mat: Pointer to an Eigen::Matrix. This function modifies the matrix in-place.
+    */
     template<typename T>
     static void replaceInf(T replaceVal, Eigen::MatrixX<T> *mat){
         *mat = mat->unaryExpr([replaceVal](double v) { return std::isinf(v) ? replaceVal : v; });
     }
 
     /*!
-    * @brief Returns the index of a vector nearest to a given value
+    * @brief  Returns the indexes of 'topX' elements in 'vec' which are closest to 'value'
+    * @tparam T: The datatype of the elements in the Eigen::RowVectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: An Eigen::RowVectorX from which closest elements' indexes are returned
+    * @param value: The value with which closeness (absolute difference) is evaluated
+    * @param topX: Number of top elements' indexes to return which are closest to 'value'. Default value is 1
+    * @return QVector<int>: QVector containing indexes of 'topX' closest elements to 'value'
     */
-    static QVector<int> returnIndexNearestToCutoff(const Eigen::RowVectorXd &vec,
-                                                   double value,
-                                                   int topX = 1) {
+    template<typename T>
+    static QVector<int> returnIndexNearestToCutoff(
+            const Eigen::RowVectorX<T> &vec,
+            T value,
+            int topX = 1
+                    ) {
 
         topX = std::min(topX, static_cast<int>(vec.size()));
-        const int sortLimit = std::min( (topX + 1), static_cast<int>(vec.size() - 1) );
+        const int sortLimit = std::min(topX, static_cast<int>(vec.size() - 1) );
 
-        Eigen::RowVectorXd diff = (vec.array() - value).cwiseAbs();
-        std::vector<double> diffVec(diff.data(), diff.data() + diff.size());
+        Eigen::RowVectorX<T> diff = (vec.array() - value).cwiseAbs();
+        std::vector<T> diffVec(diff.data(), diff.data() + diff.size());
 
-        QVector<QPair<int, double>> ogIndexPoints;
+        QVector<QPair<int, T>> ogIndexPoints;
         for (int i = 0; i < diffVec.size(); i++) {
             ogIndexPoints.push_back({i, diffVec.at(i)});
         }
 
-        const auto sortLogic = [](const QPair<int, double> &l, const QPair<int, double> &r){return l.second < r.second;};
+        const auto sortLogic = [](const QPair<int, T> &l, const QPair<int, T> &r){return l.second < r.second;};
         std::partial_sort(ogIndexPoints.begin(), ogIndexPoints.begin() + sortLimit, ogIndexPoints.end(), sortLogic);
 
         QVector<int> returnVec;
@@ -70,50 +96,49 @@ public:
     }
 
     /*!
-    * @brief Returns the index of a vector nearest to a given value
+    * @brief  Calculates the Root Mean Squared Error (RMSE) between two vectors
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec1: First Eigen::VectorX
+    * @param vec2: Second Eigen::VectorX
+    * @param rmseOutput: Pointer to a double where the result (RMSE value) will be stored
+    * @return Err: Error status after attempt of operation. Error could occur if vectors' sizes do not match.
+    * This error status should follow your internally defined error schemas/codes
     */
     template <typename T>
-    static QVector<int> returnIndexNearestToCutoff(const QVector<T> &_container,
-                                                   T value,
-                                                   int topX = 1) {
+    static Err calculateRMSE(
+            const Eigen::VectorX<T> &vec1,
+            const Eigen::VectorX<T> &vec2,
+            double *rmseOutput
+            ) {
+        ERR_INIT
+        e = ErrorUtils::isEqual(vec1.size(), vec2.size()); ree;
 
-        topX = std::min(topX, static_cast<int>(_container.size()));
-        //TODO replace w/ EigenUtils::convertQvectorToEigenVector
-        QVector<T> container = _container;
-        Eigen::Map<Eigen::VectorX<T>> vec(container.data(), container.size());
+        const Eigen::VectorX<T> diff = vec1 - vec2;
+        T squaredNorm = diff.squaredNorm();
+        *rmseOutput = std::sqrt(squaredNorm / static_cast<double>(vec1.size()));
 
-        return returnIndexNearestToCutoff(vec.template cast<double>(), static_cast<double>(value), topX);
+        ERR_RETURN
     }
 
     /*!
-    * @brief Calculates root mean squared error given two Eigen vectors
+    * @brief  Calculates the standard deviation of the elements in an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Eigen::VectorX whose standard deviation needs to be calculated
+    * @return double: The calculated standard deviation of the elements in 'vec'
     */
-    static double calculateRMSE(const Eigen::RowVectorXd &vec1, const Eigen::RowVectorXd &vec2) {
-        Eigen::RowVectorXd vec = (vec1 - vec2);
-        return std::sqrt(vec.cwiseProduct(vec).sum() / vec.cols());
+    template <typename T>
+    static double calculateStDevOfVector(const Eigen::VectorX<T> &vec) {
+        Eigen::VectorX<T> diff = vec.array() - vec.mean();
+        T variance = diff.squaredNorm() / static_cast<double>(vec.size());
+        return std::sqrt(variance);
     }
 
     /*!
-    * @brief Calculates the mean of an Eigen vector
-    */
-    template <typename EigenVector>
-    static double calculateMeanOfVector(const EigenVector &vec) {
-        return vec.sum() / vec.size();
-    }
-
-    /*!
-    * @brief Calculates the Standard Deviation of an Eigen Vector
-    */
-    template <typename EigenVector>
-    static double calculateStDevOfVector(const EigenVector &vec) {
-        double mean = calculateMeanOfVector(vec);
-        Eigen::RowVectorXd diff = vec.array() - mean;
-        return std::sqrt(diff.cwiseProduct(diff).sum() / vec.size());
-    }
-
-    /*!
-    * @brief Translates the points of an eigen vector given a rollDistance.  Mimics
-    * numpy's roll function.  Note: that this wraps translated values
+    * @brief  Rolls (rotates) the elements in an Eigen::RowVectorXd by a specified distance. Translated values at edges will be wrapped.
+    * @param vec: Eigen::RowVectorXd which needs to be rolled
+    * @param rollDistance: The distance by which vec needs to be rolled. If rollDistance is positive, it rolls the elements to the right.
+    *   If it's negative, elements are rolled to the left. If rollDistance is 0, the original vec is returned.
+    * @return Eigen::RowVectorXd: The rolled vector
     */
     static Eigen::RowVectorXd roll(const Eigen::RowVectorXd &vec, int rollDistance) {
 
@@ -138,13 +163,18 @@ public:
     }
 
     /*!
-    * @brief Fits a polynomial to an eigen vector given an order.
+    * @brief  Fits a polynomial to data points via QR Decomposition 
+    * @param points: Eigen::MatrixXd with each row representing a point (x value in column 0 and y value in column 1)
+    * @param order: The order of the polynomial to fit to the data points
+    * @param coeffs: Pointer to a QVector<double> where the coefficients of the fitted polynomial will be stored. coeffs[i]
+    *      represents the coefficient of the power i term. The coefficients are in increasing order, which means that the
+    *      first element is the zero order coefficient, the second element is the first order coefficient, and so on.
     */
     static void fitPolynomialQRDecomposition(
             const Eigen::MatrixXd &points,
             int order,
             QVector<double> *coeffs
-            ) {
+    ) {
 
         Eigen::MatrixXd A(points.rows(), order + 1);
         Eigen::VectorXd yv_mapped = points.col(1);
@@ -168,17 +198,32 @@ public:
     }
 
     /*!
-    * @brief Normalizes vector by dividing all elements by max element
+    * @brief  Normalizes an Eigen::VectorX by dividing all elements by the maximum coefficient in the vector.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
     */
-    template <typename EigenMatrix, typename T>
-    static void normalizeVector(EigenMatrix *vec) {
-        const T normalizerDemonator
-            = MathUtils::tZero<T>(vec->maxCoeff()) ? std::numeric_limits<T>::min() : vec->maxCoeff();
+    template <typename T>
+    static void normalizeVector(Eigen::VectorX<T> *vec) {
+        const double normalizerDemonator = std::max(std::numeric_limits<double>::min(), vec->maxCoeff());
         *vec /= normalizerDemonator;
     }
 
     /*!
-    * @brief Adds noise to vector using eigen's randomizing methods.
+    * @brief  Normalizes an Eigen::MatrixX by dividing all elements by the maximum coefficient in the Matrix.
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Pointer to an Eigen::MatrixX. This function modifies the Matrix in-place.
+    */
+    template <typename T>
+    static void normalizeMatrix(Eigen::MatrixX<T> *mat) {
+        const double normalizerDemonator = std::max(std::numeric_limits<double>::min(), mat->maxCoeff());
+        *mat /= normalizerDemonator;
+    }
+
+    /*!
+    * @brief  Adds random noise to an Eigen::VectorX or Eigen::MatrixXd object. The object could be a vector or a matrix.
+    * @tparam EigenMatrix: Type of Eigen object (could be Eigen::VectorX<T> or Eigen::MatrixXd)
+    * @param scaleFactor: Factor by which the random noise is scaled before being added to the object
+    * @param vec: Pointer to an Eigen object (vector or matrix). This function modifies the object in-place by adding noise.
     */
     template <typename EigenMatrix>
     static void addNoiseToVector(double scaleFactor, EigenMatrix *vec) {
@@ -209,39 +254,107 @@ public:
         return mat;
     }
 
+    /**
+     * @brief   Thresholds the given matrix by setting all elements that are less than the given threshold value to zero.
+     *
+     * This function applies a threshold operation on an Eigen matrix. If an element of the matrix is less than the
+     * specified threshold value, the function replaces that element with zero. Elements equal to or greater
+     * than the threshold are left unchanged.
+     *
+     * @tparam  T   The datatype of the elements in the Eigen::Matrix. Could be any numeric type such as int, float, double etc.
+     *
+     * @param   thresholdValue  The threshold value. Any elements in the matrix that are less than this value will be set to zero.
+     * @param   mat             Pointer to an Eigen::Matrix object. The matrix to be thresholded.
+     *                          This function modifies the matrix in-place.
+     */
     template <typename T>
     static void thresholdMatrix(T thresholdValue, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(0.0, *mat);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::MatrixX. If an element is less than 'thresholdValue', that element is replaced by 'fillVal'.
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the matrix values are replaced by 'fillVal'
+    * @param fillVal: The value with which the matrix values (which are less than 'thresholdValue') are replaced
+    * @param mat: Pointer to an Eigen::MatrixX. This function modifies the matrix in-place.
+    */
     template <typename T>
     static void thresholdMatrix(T thresholdValue, T fillVal, Eigen::MatrixX<T> *mat) {
         *mat = (mat->array() < thresholdValue).select(fillVal, *mat);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::VectorX. If an element is less than 'thresholdValue', that element is replaced by 0.0.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the vector values are replaced by 0.0
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
+    */
     template <typename T>
     static void thresholdVector(T thresholdValue, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(0.0, *vec);
     }
 
+    /*!
+    * @brief  Applies a threshold function on an Eigen::VectorX. If an element is less than 'thresholdValue', that element is replaced by 'fillVal'.
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param thresholdValue: The value below which the vector values are replaced by 'fillVal'
+    * @param fillVal: The value with which the vector values (which are less than 'thresholdValue') are replaced
+    * @param vec: Pointer to an Eigen::VectorX. This function modifies the vector in-place.
+    */
     template <typename T>
     static void thresholdVector(T thresholdValue, T fillVal, Eigen::VectorX<T> *vec) {
         *vec = (vec->array() < thresholdValue).select(fillVal, *vec);
     }
 
+    /*!
+    * @brief  Calculates the cosine similarity between two Eigen::VectorX and stores the result in the passed pointer
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param v1: First Eigen::VectorX
+    * @param v2: Second Eigen::VectorX
+    * @param cosineSimilarity: Pointer to a variable of type T where the result (cosine similarity) will be stored. The cosine similarity is rounded to 4 decimal places.
+    * @return Err: Error status after attempt of operation. Error could occur if vectors' sizes do not match.
+    * This error status should follow your internally defined error schemas/codes
+    */
     template <typename T>
-    static T cosineSimilarity(const Eigen::VectorX<T> &v1, const Eigen::VectorX<T> &v2) {
+    static Err cosineSimilarity(
+            const Eigen::VectorX<T> &v1,
+            const Eigen::VectorX<T> &v2,
+            T *cosineSimilarity
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isEqual(v1.size(), v2.size()); ree;
 
         const T nearZero = 1e-5;
         const T dotProduct = v1.dot(v2);
         const T v1Magnitude = std::max(std::sqrt(v1.array().square().sum()), nearZero);
         const T v2Magnitude = std::max(std::sqrt(v2.array().square().sum()), nearZero);
 
-        return MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
+        *cosineSimilarity = MathUtils::pRound(dotProduct / (v1Magnitude * v2Magnitude), 4);
+
+        ERR_RETURN
     }
 
+    /*!
+    * @brief  Calculates the Kullback-Leibler (KL) Divergence between two Eigen::VectorX and stores the result in the passed pointer
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param v1: First Eigen::VectorX
+    * @param v2: Second Eigen::VectorX
+    * @param klDiv: Pointer to a variable of type T where the result (KL Divergence) will be stored.
+    * @return Err: Error status after attempt of operation. Error could occur if vectors' sizes do not match.
+    * This error status should follow your internally defined error schemas/codes
+    * Before calculating the KL Divergence, any values less than zero in both vectors are replaced by a small arbitrary value (nearZero), and then both vectors are normalized.
+    */
     template <typename T>
-    static T klDivergence(Eigen::VectorX<T> v1, Eigen::VectorX<T> v2) {
+    static Err klDivergence(
+            Eigen::VectorX<T> v1,
+            Eigen::VectorX<T> v2,
+            T *klDiv
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isEqual(v1.size(), v2.size()); ree;
 
         const T nearZero = 1e-5;
         const T threshold = 0.0;
@@ -255,36 +368,106 @@ public:
         v2 = v2.array() / v2.sum();
 
         Eigen::VectorX<T> log_ratio = v1.array().log() - v2.array().log();
-        return v1.dot(log_ratio);
+        *klDiv = v1.dot(log_ratio);
+
+        ERR_RETURN
     }
 
+    /*!
+    * @brief  Calculates the row-wise cosine similarity between two Eigen::MatrixX and stores the result in the passed pointer
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param mat1: The first Eigen::MatrixX
+    * @param mat2: The second Eigen::MatrixX
+    * @param cosineSimilarities: Pointer to a Eigen::VectorX where the result (cosine similarities for each row) will be stored.
+    * @return Err: Error status after attempt of operation. Error could occur if matrices' dimensions do not match.
+    * This error status should follow your internally defined error schemas/codes
+    * During the calculation, original matrices are not modified. If the norm of any row in either matrix is below a small threshold, it is replaced by the threshold to prevent division by zero.
+    */
     template<typename T>
-    static Eigen::VectorX<T> rowWiseKLDivergenceOfMatrices(
+    static  Err rowWiseCosineSimilarOfMatrices(
             const Eigen::MatrixX<T> &mat1,
-            const Eigen::MatrixX<T> &mat2
+            const Eigen::MatrixX<T> &mat2,
+            Eigen::VectorX<T> *cosineSimilarities
     ) {
 
-        const double nearZero = 1e-5;
+        ERR_INIT
 
-        Eigen::MatrixX<double> mat1Sum = mat1.array().rowwise().sum();
-        thresholdMatrix(0.0, nearZero, &mat1Sum);
+        e = ErrorUtils::isEqual(mat1.rows(), mat2.rows()); ree;
+        e = ErrorUtils::isEqual(mat1.cols(), mat2.cols()); ree;
 
-        Eigen::MatrixX<double> mat2Sum = mat2.array().rowwise().sum();
-        thresholdMatrix(0.0, nearZero, &mat2Sum);
+        const Eigen::MatrixX<T> matElementWiseProd = mat1.cwiseProduct(mat2);
+        const Eigen::MatrixX<T> matElementWiseProdSum = matElementWiseProd.rowwise().sum();
 
-        mat1 /= mat1Sum;
-        mat2 /= mat2Sum;
+        const Eigen::MatrixX<T> mat1Norm = mat1.array().rowwise().norm();
+        const Eigen::MatrixX<T> mat2Norm = mat2.array().rowwise().norm();
 
-        mat1 = (mat1.array() < nearZero).select(nearZero, mat1);
-        mat2 = (mat2.array() < nearZero).select(nearZero, mat2);
+        Eigen::MatrixX<T> mat1NormMat2NormProd = mat1Norm.array() * mat2Norm.array();
 
-        const Eigen::MatrixX<double> mat1mat2Quotient = mat1.array() / mat2.array();
-        const Eigen::MatrixX<double> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
-        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
+        const double nearZero = 0.000001;
+        EigenUtils::thresholdMatrix(nearZero, nearZero, &mat1NormMat2NormProd);
 
-        return mat1.array() * mat1mat2QuotientLog2Sum;
+        const Eigen::MatrixX<T> rowWiseCosineSimilarity = matElementWiseProdSum.array() / mat1NormMat2NormProd.array();
+
+        *cosineSimilarities = rowWiseCosineSimilarity;
+
+        ERR_RETURN
     }
 
+    /*!
+    * @brief  Calculates the row-wise Kullback-Leibler (KL) Divergence between two Eigen::MatrixX and stores the result in the passed pointer
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param mat1: The first Eigen::MatrixX
+    * @param mat2: The second Eigen::MatrixX
+    * @param klDivs: Pointer to an Eigen::VectorX where the result (KL Divergences for each row) will be stored.
+    * @return Err: Error status after attempt of operation. Error could occur if matrices' dimensions do not match.
+    * This error status should follow your internally defined error schemas/codes
+    * During the calculation, each row in the matrices are normalized, small values are replaced by a small arbitrary value (nearZero), and then KL Divergence for each row is calculated.
+    * The calculated KL Divergences for each row are stored in the 'klDivs' vector.
+    */
+    template<typename T>
+    static Err rowWiseKLDivergenceOfMatrices(
+            const Eigen::MatrixX<T> &mat1,
+            const Eigen::MatrixX<T> &mat2,
+            Eigen::VectorX<T> *klDivs
+    ) {
+        //TODO fix this if you ever need it.
+//
+//        ERR_INIT
+//
+//        e = ErrorUtils::isEqual(mat1.rows(), mat2.rows()); ree;
+//        e = ErrorUtils::isEqual(mat1.cols(), mat2.cols()); ree;
+//
+//        const T nearZero = 1e-5;
+//
+//        Eigen::VectorX<T> mat1Sum = mat1.array().rowwise().sum();
+//        thresholdVector(0.0, nearZero, &mat1Sum);
+//
+//        Eigen::VectorX<T> mat2Sum = mat2.array().rowwise().sum();
+//        thresholdVector(0.0, nearZero, &mat2Sum);
+//
+//        mat1 = mat1.array() / mat1Sum.array();
+//        mat2 = mat2.array() / mat2Sum.array();
+//
+//        mat1 = (mat1.array() < nearZero).select(nearZero, mat1);
+//        mat2 = (mat2.array() < nearZero).select(nearZero, mat2);
+//
+//        const Eigen::MatrixX<T> mat1mat2Quotient = mat1.array() / mat2.array();
+//        const Eigen::MatrixX<T> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
+//        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
+//
+//        *klDivs = mat1.array() * mat1mat2QuotientLog2Sum;
+//
+//        ERR_RETURN
+
+        return eFunctionNotImplemented;
+    }
+
+    /*!
+    * @brief  Calculates the count of non-zero elements in an Eigen object (could be Eigen::MatrixX or Eigen::VectorX)
+    * @tparam EigenMatrix: Type of the Eigen object (could be Eigen::MatrixX<T>, Eigen::VectorX<T> etc.)
+    * @param v1: Eigen object
+    * @return int: The count of non-zero elements in 'v1'
+    */
     template <typename EigenMatrix>
     static int nonZeros(EigenMatrix v1) {
 
@@ -300,6 +483,12 @@ public:
         return nonZeros;
     }
 
+    /*!
+    * @brief  Returns the index and maximum value in an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Eigen::VectorX from which the maximum value and its index are to be determined
+    * @return QPair<int, T>: A QPair in which the first element is the index of the maximum value in the vector, and the second element is the maximum value itself
+    */
     template <typename T>
     static QPair<int, T> returnTopIndexAndValue(const Eigen::VectorX<T> &vec) {
 
@@ -317,10 +506,16 @@ public:
         return maxIndex;
     }
 
+    /*!
+    * @brief  Returns the indices and values of the top 'topX' elements in an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Eigen::VectorX from which the top 'topX' values and their indices are to be determined
+    * @param topX: The number of top elements to return. If 'topX' is larger than the size of vec, then all elements are returned.
+    * @return QVector<QPair<int, T>>: A QVector of QPairs, each QPair's first element is an index of a top element and the second element is the corresponding value from the input vector.
+    */
     template <typename T>
     static QVector<QPair<int, T>> returnTopXIndexAndValues(const Eigen::VectorX<T> &vec, int topX) {
 
-//        topX = std::min(topX, static_cast<int>(vec.size()));
         topX = std::min( (topX), static_cast<int>(vec.size() - 1) );
 
         std::vector<T> stdVec(vec.data(), vec.data() + vec.size());
@@ -338,6 +533,12 @@ public:
         return ogIndexPoints;
     }
 
+    /*!
+    * @brief  Converts a QVector to an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the QVector and the created Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param _vec: QVector that is to be converted to Eigen::VectorX
+    * @return Eigen::VectorX<T>: Resulting Eigen::VectorX which is created from the input QVector
+    */
     template <typename T>
     static Eigen::VectorX<T> convertQVectorToEigenVector(const QVector<T> &_vec) {
 
@@ -348,12 +549,25 @@ public:
         return ev;
     }
 
+    /*!
+    * @brief  Converts an Eigen::VectorX to a QVector
+    * @tparam T: The datatype of the elements in the Eigen::VectorX and the created QVector. Could be any numeric type such as int, float, double etc.
+    * @param vec: Eigen::VectorX that is to be converted to QVector
+    * @return QVector<T>: Resulting QVector which is created from the input Eigen::VectorX
+    */
     template <typename T>
     static QVector<T> convertEigenVectorToQVector(const Eigen::VectorX<T> &vec) {
         std::vector<T> vecReturn(vec.data(), vec.data() + vec.size());
         return QVector<T>(vecReturn.begin(), vecReturn.end());
     }
 
+    /*!
+    * @brief  Converts a QMap to an Eigen::VectorX
+    * @tparam T: The datatype of the elements in the QMap and the created Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param m: QMap that is to be converted to Eigen::VectorX. The keys in the QMap represent the indices in the vector, and the values represent the corresponding values in the vector.
+    * @param pointCount: The size of the created Eigen::VectorX. Any key in the QMap that is outside of the range [0, pointCount-1] is ignored.
+    * @return Eigen::VectorX<T>: Resulting Eigen::VectorX which is created from the input QMap. The vector is initialized to size 'pointCount' with all elements set to zero, and then values are filled from the QMap.
+    */
     template <typename T>
     static Eigen::VectorX<T> convertQMapToEigenVector(
             const QMap<int, T> &m,
@@ -379,10 +593,12 @@ public:
     }
 
     /*!
-    * \brief Finds all apexes in a eigen vector.
-     *
-     *  Returns a QMap where the key is the index of the apex and the value is the value of
-     *  the apex.
+    * @brief  Identifies and returns the apexes in an Eigen::VectorX as a QMap
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param _vec: Eigen::VectorX in which the apexes are to be identified
+    * @param precision: The desired level of precision when comparing values from 'vec'. The default value is 1e4.
+    * @return QMap<int, T>: QMap where the keys represent the indices of the apexes in the vector, and the corresponding values are the values of the apexes in the vector.
+    * An apex is defined as a point which is greater than or equal to the points around it (on either side) in the vector.
     */
     template <typename T>
     static QMap<int, T> apexes(
@@ -438,9 +654,12 @@ public:
     }
 
     /*!
-    * \brief Finds all apexes in a eigen vector and returns the apexes only w/ no regard to order.
-     *
-     *  Returns a QVector of all found apexes
+    * @brief  Identifies and returns the indices of the apexes in an Eigen::VectorX as a QVector
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param _vec: Eigen::VectorX in which the apexes are to be identified
+    * @param precision: The desired level of precision when comparing values from 'vec'. The default value is 1e4.
+    * @return QVector<int>: QVector containing the indices of the apexes in the vector.
+    * An apex is defined as a point which is greater than or equal to the points around it (on either side) in the vector.
     */
     template <typename T>
     static QVector<int> apexesIndexesOnly(
@@ -496,10 +715,12 @@ public:
     }
 
     /*!
-    * \brief Finds all troughs in a eigen vector.
-     *
-     *  Returns a QMap where the key is the index of the apex and the value is the value of
-     *  the apex.
+    * @brief  Identifies and returns the troughs in an Eigen::VectorX as a QMap
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param _vec: Eigen::VectorX in which the troughs (local minima) are to be identified
+    * @param precision: The desired level of precision when comparing values from 'vec'. The default value is 1e4.
+    * @return QMap<int, T>: QMap where the keys represent the indices of the troughs in the vector, and the corresponding values are the values of the troughs in the vector.
+    * A trough is defined as a point which is less than or equal to the points around it (on either side) in the vector.
     */
     template <typename T>
     static QMap<int, T> troughs(
@@ -554,68 +775,19 @@ public:
         return troughtIndicies;
     }
 
-    template<typename T>
-    static Eigen::VectorX<T> rowWiseCosineSimilarOfMatrices(
-            const Eigen::MatrixX<T> &mat1,
-            const Eigen::MatrixX<T> &mat2
-            ) {
-
-        const Eigen::MatrixX<double> matElementWiseProd = mat1.cwiseProduct(mat2);
-        const Eigen::MatrixX<double> matElementWiseProdSum = matElementWiseProd.rowwise().sum();
-
-        const Eigen::MatrixX<double> mat1Norm = mat1.array().rowwise().norm();
-        const Eigen::MatrixX<double> mat2Norm = mat2.array().rowwise().norm();
-
-        Eigen::MatrixX<double> mat1NormMat2NormProd = mat1Norm.array() * mat2Norm.array();
-
-        const double nearZero = 0.000001;
-        EigenUtils::thresholdMatrix(nearZero, nearZero, &mat1NormMat2NormProd);
-
-        const Eigen::MatrixX<double> rowWiseCosineSimilarity = matElementWiseProdSum.array() / mat1NormMat2NormProd.array();
-
-        return rowWiseCosineSimilarity;
-    }
-
-    template <typename T>
-    static Eigen::VectorX<T> rowWiseKLDivergence(
-            const Eigen::MatrixX<T> &mat1,
-            const Eigen::MatrixX<T> &mat2
-            ) {
-
-        Eigen::VectorX<T> mat1Sum = mat1.rowwise().sum();
-        Eigen::VectorX<T> mat2Sum = mat2.rowwise().sum();
-
-        const double nearZero = 0.000001;
-        thresholdVector(nearZero, nearZero, &mat1Sum);
-        thresholdVector(nearZero, nearZero, &mat2Sum);
-
-        Eigen::MatrixX<T> m1 = mat1.array().colwise() / mat1Sum.array();
-        Eigen::MatrixX<T> m2 = mat2.array().colwise() / mat2Sum.array();
-
-        thresholdMatrix(nearZero, nearZero, &m1);
-        thresholdMatrix(nearZero, nearZero, &m1);
-
-        Eigen::MatrixX<double> klDivMat
-                = (m1.array() * Eigen::log2(m1.array() / m2.array())).rowwise().sum();
-
-        double infReplaceVal = 10000.0;
-        replaceNaN(nearZero, &klDivMat);
-        replaceInf(infReplaceVal, &klDivMat);
-
-        return klDivMat;
-    }
-
-    static Eigen::VectorX<double> convertQPointFVecToEigen(
-            const QVector<QPointF> &points,
-            int precision,
-            double valMax
-            );
-
     enum class ThresholderDirection {
         Above = 0
         , Below
     };
 
+    /*!
+    * @brief  Removes rows from an Eigen::MatrixX that are above or below a specified threshold in a specified column
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param threshold: The value to be used as a threshold for filtering rows
+    * @param columnIdxToFilter: The index of column based on which rows should be filtered
+    * @param thresholderDirection: A ThresholderDirection enum value indicating whether to filter rows that are above or below the threshold
+    * @param mat: Pointer to an Eigen::MatrixX from which rows are to be filtered. The matrix will be updated in place to exclude filtered out rows.
+    */
     template<typename T>
     static void removeRowsAboveOrBelowThreshold(
             T threshold,
@@ -653,43 +825,13 @@ public:
         *mat = newMatrix;
     }
 
-
-    template<typename T>
-    static Err writeMatrixToFile(
-            const Eigen::MatrixX<T> &mat,
-            const QString &outputFilePath
-    ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(mat.rows() > 0); ree;
-
-        QFile file(outputFilePath);
-        if (file.open(QIODevice::ReadWrite)) {
-
-            QTextStream stream(&file);
-
-            for (int i = 0; i < mat.rows(); i++) {
-
-                const Eigen::VectorX<T> v = mat.row(i);
-
-                QStringList rtwQStringList;
-                for (int j = 0; j < v.size(); j++) {
-                    rtwQStringList.push_back(QString::number(v.coeff(j)));
-                }
-
-                stream << rtwQStringList.join(S_GLOBAL_SETTINGS.COMMA);
-                stream << S_GLOBAL_SETTINGS.NEWLINE;
-            }
-
-        }
-
-        file.close();
-        qDebug() << mat.rows() << "Rows written to" << outputFilePath;
-
-        ERR_RETURN
-    }
-
+    /*!
+    * @brief  Scales an Eigen::VectorX to the range [0, 1] using Min-Max scaling
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. Could be any numeric type such as int, float, double etc.
+    * @param vec: Pointer to an Eigen::VectorX which is to be scaled. The vector will be updated in place.
+    * The scaling is done using the formula x_sc = (x - x_min) / (x_max - x_min), where x_max and x_min are the maximum and minimum values of the elements in the vector.
+    * If the vector has the same value for all elements (i.e., max = min), then all elements of the scaled vector will be zero due to the equation becoming 0/0. If so, they are set as zero to avoid division by zero.
+    */
     template<typename T>
     static void minMaxScaleVector(Eigen::VectorX<T> *vec) {
 
@@ -700,6 +842,13 @@ public:
         *vec = (vec->array() - minVal) / minMaxDiff;
     }
 
+    /*!
+    * @brief  Scales each column of an Eigen::MatrixX to the range [0, 1] using Min-Max scaling
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param mat: Pointer to an Eigen::MatrixX which is to be scaled. The matrix will be updated in place.
+    * Each column in the matrix is treated and scaled individually,
+    * After the scaling operation, replaceNaN() is called to replace any NaN values in the matrix with 0.
+    */
     template<typename T>
     static void minMaxScaleMatrix(Eigen::MatrixX<T> *mat) {
         for (int col = 0; col < mat->cols(); col++) {
@@ -712,6 +861,12 @@ public:
         EigenUtils::replaceNaN(static_cast<T>(0.0), mat);
     }
 
+    /*!
+    * @brief  Converts a QVector of QVectors to an Eigen::MatrixX
+    * @tparam T: The datatype of the elements in the QVectors and the created Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param matA: QVector of QVectors that is to be converted to Eigen::MatrixX
+    * @return Eigen::MatrixX<T>: Resulting Eigen::MatrixX which is created from the input QVector of QVectors
+    */
     template<typename T>
     static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>> &matA) {
 
@@ -729,6 +884,13 @@ public:
         return mat;
     }
 
+    /*!
+    * @brief  Converts a QVector of pointers to QVectors to an Eigen::MatrixX
+    * @tparam T: The datatype of the elements in the QVector and the created Eigen::MatrixX. Could be any numeric type such as int, float, double etc.
+    * @param matA: QVector of pointers to QVectors that is to be converted to Eigen::MatrixX
+    * @return Eigen::MatrixX<T>: Resulting Eigen::MatrixX which is created from the input QVector of QVectors
+    * Note: This function assumes the QVector contains non-null pointers. Best practice would include validating the pointers before calling this function.
+    */
     template<typename T>
     static Eigen::MatrixX<T> convertQVectorsToEigenMatrix(const QVector<QVector<T>*> &matA) {
 
@@ -746,6 +908,12 @@ public:
         return mat;
     }
 
+    /*!
+    * @brief  Converts an Eigen::MatrixX to a QVector of QVectors
+    * @tparam T: The datatype of the elements in the Eigen::MatrixX and the created QVector. Could be any numeric type such as int, float, double etc.
+    * @param mat: The Eigen::MatrixX that is to be converted to QVectors
+    * @return QVector<QVector<T>>: Resulting QVector of QVectors which is created from the input Eigen::MatrixX
+    */
     template<typename T>
     static QVector<QVector<T>> convertEigenMatrixToQVectors(const Eigen::MatrixX<T> &mat) {
 
@@ -759,6 +927,14 @@ public:
         return vecs;
     }
 
+    /*!
+    * @brief  Trims an Eigen::VectorX to remove zero-value elements from start and end
+    * @tparam T: The datatype of the elements in the Eigen::VectorX. The datatype should be suitable for comparison operations.
+    * @param vec: Eigen::VectorX that is to be trimmed
+    * @return Eigen::VectorX<T>: Resulting Eigen::VectorX which is a segment of the input vector, with initial and trailing zero-value elements removed.
+    * The function works by first finding the 'center' position which is the top (maximum) value in the vector. It then moves towards both ends from the center,
+    * stopping when it encounters a zero-value element or reaches the end of the vector. The segment between the two end positions (excluding zero-value elements) is returned.
+    */
     template<typename T>
     static Eigen::VectorX<T> trimVector(const Eigen::VectorX<T> &vec) {
 

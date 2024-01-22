@@ -65,3 +65,11 @@ float TargetDecoyCandidatePair::iRt() const {
 int TargetDecoyCandidatePair::totalFragmentCount() const {
     return m_totalFragmentCount;
 }
+
+void TargetDecoyCandidatePair::setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods) {
+    m_peptideStringWithMods = peptideStringWithMods;
+}
+
+void TargetDecoyCandidatePair::setCharge(int charge) {
+    m_charge = charge;
+}

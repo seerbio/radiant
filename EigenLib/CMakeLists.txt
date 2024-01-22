@@ -21,14 +21,12 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/EigenKernelUtils.cpp
-        src/EigenMatrixDiskUtils.cpp
         src/EigenSparseUtils.cpp
         src/EigenUtils.cpp
         )
 
 SET(HEADER_FILES
         src/EigenKernelUtils.h
-        src/EigenMatrixDiskUtils.h
         src/EigenSparseUtils.h
         src/EigenUtils.h
         )

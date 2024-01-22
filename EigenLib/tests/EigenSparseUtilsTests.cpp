@@ -35,18 +35,15 @@ private Q_SLOTS:
     void maxTest();
     void minTest();
     void meanTest();
-    void meanNonEmptyAllZerosTest();
+    static void meanNonEmptyAllZerosTest();
     void stDevTest();
-    void stDevNonEmptyAllZerosTest();
+    static void stDevNonEmptyAllZerosTest();
     void isValidTest();
     void medianTest();
     void removeElementBelowThresholdTest();
     void rollTest();
-    void apexesTest();
-    void buildCombFilterTest();
-    void markVectorApexesTest();
-    void markMatrixApexesTest();
-    void solverTest();
+    static void apexesTest();
+    static void buildCombFilterTest();
     void cleanupTestCase();
 
 };
@@ -238,9 +235,11 @@ void EigenSparseUtilsTests::rollTest() {
     QCOMPARE(rolledVec.coeff(25), m_testVecDouble.coeff(5));
     QCOMPARE(rolledVec.coeff(42), m_testVecDouble.coeff(22));
 
+    const Eigen::SparseVector<double, Eigen::RowMajor> rolledVecRowMajor = EigenSparseUtils::roll(
+            m_testVecDoubleRowMajor,
+            rollDistance
+            );
 
-    const Eigen::SparseVector<double, Eigen::RowMajor> rolledVecRowMajor = EigenSparseUtils::roll(m_testVecDoubleRowMajor,
-                                                                                                  rollDistance);
     QCOMPARE(rolledVecRowMajor.coeffs().size(), 3);
     QCOMPARE(rolledVecRowMajor.coeff(22), m_testVecDoubleRowMajor.coeff(2));
     QCOMPARE(rolledVecRowMajor.coeff(25), m_testVecDoubleRowMajor.coeff(5));
@@ -250,7 +249,7 @@ void EigenSparseUtilsTests::rollTest() {
 
 void EigenSparseUtilsTests::apexesTest() {
 
-    Eigen::SparseVector<double, Eigen::RowMajor> vec(10000);
+    Eigen::SparseVector<double> vec(10000);
     vec.coeffRef(999) = 0.999;
     vec.coeffRef(1000) = 1.000;
     vec.coeffRef(1001) = 1.000;
@@ -260,13 +259,13 @@ void EigenSparseUtilsTests::apexesTest() {
     vec.coeffRef(1005) = 1.000;
     vec.coeffRef(1006) = 0.999;
 
-//    QMap<int, double> apexResult = EigenSparseUtils::apexes(vec);
-//
-//    QCOMPARE(apexResult.size(), 2);
-//    QCOMPARE(apexResult.firstKey(), 1000);
-//    QCOMPARE(apexResult.lastKey(), 1004);
-//    QCOMPARE(static_cast<int>(apexResult.first()), 1);
-//    QCOMPARE(static_cast<int>(apexResult.last()), 1);
+    QMap<int, double> apexResult = EigenSparseUtils::apexes(vec);
+
+    QCOMPARE(apexResult.size(), 2);
+    QCOMPARE(apexResult.firstKey(), 1000);
+    QCOMPARE(apexResult.lastKey(), 1004);
+    QCOMPARE(static_cast<int>(apexResult.first()), 1);
+    QCOMPARE(static_cast<int>(apexResult.last()), 1);
 
     Eigen::SparseMatrix<double, Eigen::RowMajor> mat(10000, 10000);
 
@@ -348,150 +347,10 @@ void EigenSparseUtilsTests::buildCombFilterTest() {
         QCOMPARE( static_cast<int>(result.coeff(i)), expectedResult.at(i));
     }
 
-//TODO figure out why you commented this out and left it in.
-
-//    std::uniform_real_distribution<double> unif(100.0, 1800.0);
-//    std::mt19937 re(std::random_device{}());
-//    auto generator = bind(unif, std::ref(re));
-//
-////    std::srand(i);
-//    const int n = 50; //rand() % 100 + 10;
-//    QVector<double> v(n);
-//    std::generate(v.begin(), v.end(), std::ref(generator) );
-//
-//
-//    for (int i = 0; i < 10 * 100; i++) {
-//
-//        if (i % 10 == 0) {
-//            qDebug() << i / 10;
-//        }
-//
-//        EigenSparseUtils::buildCombFilter<double>(v, 0.01, 2000.0, 3);
-////        break;
-//    }
-
 }
-
-
-void EigenSparseUtilsTests::markVectorApexesTest() {
-
-    Eigen::SparseVector<int> vecNormal(1000);
-    vecNormal.insert(500) = 1;
-    vecNormal.insert(501) = 2;
-    vecNormal.insert(502) = 3;
-    vecNormal.insert(503) = 1;
-    vecNormal.insert(504) = 2;
-    vecNormal.insert(505) = 1;
-
-    const Eigen::SparseVector<int> resultNormal
-            = EigenSparseUtils::markVectorApexes(vecNormal);
-
-    QCOMPARE(resultNormal.coeff(502), 1);
-    QCOMPARE(resultNormal.coeff(504), 1);
-
-
-    Eigen::SparseVector<int> vecTriple(1000);
-    vecTriple.insert(500) = 1;
-    vecTriple.insert(501) = 3;
-    vecTriple.insert(502) = 3;
-    vecTriple.insert(503) = 3;
-    vecTriple.insert(504) = 2;
-    vecTriple.insert(505) = 1;
-
-    const Eigen::SparseVector<int> resultTriple
-            = EigenSparseUtils::markVectorApexes(vecTriple);
-
-    QCOMPARE(resultTriple.coeff(501), 1);
-
-    Eigen::SparseVector<int> vecLeftEdge(1000);
-    vecLeftEdge.insert(0) = 11;
-    vecLeftEdge.insert(1) = 3;
-
-    const Eigen::SparseVector<int> resultLeftEdge
-            = EigenSparseUtils::markVectorApexes(vecLeftEdge);
-
-    QCOMPARE(resultLeftEdge.coeff(0), 1);
-
-
-    Eigen::SparseVector<int> vecRightEdge(1000);
-    vecRightEdge.insert(999) = 11;
-    vecRightEdge.insert(998) = 3;
-
-    const Eigen::SparseVector<int> resultRightEdge
-            = EigenSparseUtils::markVectorApexes(vecRightEdge);
-
-    QCOMPARE(resultRightEdge.coeff(999), 1);
-
-}
-
-
-void EigenSparseUtilsTests::markMatrixApexesTest() {
-
-    Eigen::SparseMatrix<int> mat(1000, 1000);
-
-    mat.insert(500, 499) = 9;
-    mat.insert(500, 500) = 10;
-    mat.insert(500, 501) = 9;
-
-    mat.insert(499, 499) = 8;
-    mat.insert(499, 500) = 9;
-    mat.insert(499, 501) = 8;
-
-    mat.insert(501, 499) = 8;
-    mat.insert(501, 500) = 9;
-    mat.insert(501, 501) = 8;
-
-    Eigen::SparseMatrix<int> resultMat = EigenSparseUtils::markMatrixApexes(mat);
-//    std::cout << resultMat.block(495, 495, 11, 11) << std::endl;
-    QCOMPARE(resultMat.coeff(500, 500), 2);
-
-    QVector<EigenSparseUtils::SparseMatrixPoint> smp = EigenSparseUtils::findMatrixApexes(mat);
-
-    const EigenSparseUtils::SparseMatrixPoint p = smp.front();
-    QCOMPARE(p.row, 500);
-    QCOMPARE(p.col, 500);
-    QCOMPARE(p.value, 10);
-
-}
-
 
 void EigenSparseUtilsTests::cleanupTestCase()
 {}
-
-void EigenSparseUtilsTests::solverTest() {
-
-    int m=10000, n = 3;
-    Eigen::SparseVector<double> x(n), b(m);
-    Eigen::SparseMatrix<double> A(m,n);
-
-    b.coeffRef(100) = 3.0;
-    b.coeffRef(200) = 2.0;
-    b.coeffRef(300) = 1.0;
-    b.coeffRef(400) = 2.0;
-    b.coeffRef(500) = 1.0;
-
-    A.coeffRef(100, 0) = 1.0;
-    A.coeffRef(200, 0) = 1.0;
-    A.coeffRef(300, 0) = 1.0;
-    A.coeffRef(100, 1) = 1.0;
-    A.coeffRef(400, 1) = 1.0;
-    A.coeffRef(400, 2) = 1.0;
-    A.coeffRef(500, 2) = 1.0;
-
-    Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double, Eigen::RowMajor> > lscg;
-    lscg.setMaxIterations(10);
-    lscg.setTolerance(1e-10);
-
-    lscg.compute(A);
-    x = lscg.solve(b);
-    std::cout << "#iterations:     " << lscg.iterations() << std::endl;
-    std::cout << "estimated error: " << lscg.error()      << std::endl;
-    std::cout << x << std::endl;
-// update b, and solve again
-    x = lscg.solve(b);
-    std::cout << x << std::endl;
-
-}
 
 
 QTEST_MAIN(EigenSparseUtilsTests)

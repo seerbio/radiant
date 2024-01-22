@@ -38,8 +38,8 @@ namespace {
                     &scanPoints
             ); ree;
 
-            e = ErrorUtils::isFalse(memberMsScanInfo->contains(msScanInfo.scanNumber)); ree;
-            e = ErrorUtils::isFalse(memberScanPoints->contains(msScanInfo.scanNumber)); ree;
+            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, *memberMsScanInfo); ree;
+            e = ErrorUtils::doesNotContain(msScanInfo.scanNumber, *memberScanPoints); ree;
 
             memberMsScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             memberScanPoints->insert(msScanInfo.scanNumber, scanPoints);
@@ -48,13 +48,22 @@ namespace {
         ERR_RETURN
     }
 
-}
+}//namespace
+
 Err MsReaderParquet::openFile(const QString &filePath) {
 
     ERR_INIT
 
     e = ErrorUtils::fileExists(filePath); ree;
     m_filePath = filePath;
+
+    QFileInfo fi(filePath);
+    const QString fileSuffix = fi.suffix();
+
+    e = ErrorUtils::isTrue(
+            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
+            eFileIncorrectTypeError
+    ); ree;
 
     QVector<MsParquetReaderRow> msParquetReaderRows;
     e = ParquetReader::read(
@@ -69,6 +78,8 @@ Err MsReaderParquet::openFile(const QString &filePath) {
             ); ree;
 
     e = printFileInfo(); ree;
+
+    QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
 
     ERR_RETURN
 }
@@ -88,7 +99,7 @@ Err MsReaderParquet::openFile(
     const QString fileSuffix = fi.suffix();
 
     e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_DF_SUFFIX == fileSuffix,
+            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
             eFileIncorrectTypeError
     ); ree;
 
@@ -105,6 +116,8 @@ Err MsReaderParquet::openFile(
             &m_msScanInfo,
             &m_scanPoints
     ); ree;
+
+    QVector<MsParquetReaderRow>().swap(msParquetReaderRows);
 
     ERR_RETURN
 }
@@ -123,7 +136,7 @@ Err MsReaderParquet::openFile(
     const QString fileSuffix = fi.suffix();
 
     e = ErrorUtils::isTrue(
-            MsParquetReaderNamespace::PRQ_DF_SUFFIX == fileSuffix,
+            MsParquetReaderNamespace::PRQ_FF_SUFFIX == fileSuffix,
             eFileIncorrectTypeError
     ); ree;
 
@@ -174,7 +187,7 @@ namespace {
             const ScanNumber &scanNumber = it.key();
             const MsScanInfo &msScanInfo = it.value();
 
-            e = ErrorUtils::isTrue(scanPoints.contains(scanNumber)); ree;
+            e = ErrorUtils::contains(scanNumber, scanPoints); ree;
 
             const ScanPoints *scanPointsVec = scanPoints.value(scanNumber);
 

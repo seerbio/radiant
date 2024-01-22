@@ -24,17 +24,18 @@ public:
 
 private Q_SLOTS:
 
-    void initTestCase();
-    void medianTest();
-    void meanTest();
-    void pRoundTest();
-    void hashDecimalTest();
-    void unHashDecimalTest();
-    void factorialTest();
-    void calculateQValuesTest();
-    void closestTest();
-    void generateRandomSelectionListTest();
-    void cleanupTestCase();
+    static void initTestCase();
+    static void medianTest();
+    static void meanTest();
+    static void weightedMeanTest();
+    static void pRoundTest();
+    static void hashDecimalTest();
+    static void unHashDecimalTest();
+    static void factorialTest();
+    static void calculateQValuesTest();
+    static void closestTest();
+    static void generateRandomSelectionListTest();
+    static void cleanupTestCase();
 
 };
 
@@ -172,36 +173,24 @@ void MathUtilsTests::calculateQValuesTest() {
 }
 
 void MathUtilsTests::generateRandomSelectionListTest() {
+    QSKIP("Test not implemented due to differences in random number generator between architectures");
+}
 
-    const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
-            100,
-            20
-            );
+void MathUtilsTests::weightedMeanTest() {
 
-    // There should be exactly 20 selections
-    int counter = 0;
-//    for (auto it = selectionList.begin(); it != selectionList.end(); it++) {
-//        QCOMPARE(it.value(), expectedResults.at(counter).second);
-//        QCOMPARE(it.key(), expectedResults.at(counter++).first);
-//    }
+    std::vector<double> values{1, 2, 3, 4, 5};
+    std::vector<double> weights{1, 1, 1, 1, 1};
+    double weightedAvg;
+    bool inverseWeights = false;
+    Err e = MathUtils::weightedMean(values, weights, inverseWeights, &weightedAvg);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(weightedAvg, 3.0);  // The weighted mean of values with equal weights is the arithmetic mean (3.0).
 
-    //const QVector<QPair<int, int>> expectedResults = {
-    //        {0,0}, {1,1}, {2,0}, {3,0}, {4,1}, {5,0}, {6,0}, {7,0}, {8,0}, {9,0}, {10,1}, {11,0}, {12,0}, {13,1}, {14,0},
-    //        {15,0}, {16,0}, {17,0}, {18,0}, {19,0}, {20,1}, {21,1}, {22,0}, {23,1}, {24,1}, {25,0}, {26,1}, {27,0},
-    //        {28,1}, {29,0}, {30,0}, {31,0}, {32,0}, {33,1}, {34,0}, {35,0}, {36,0}, {37,0}, {38,0}, {39,0},
-    //        {40,0}, {41,1}, {42,0}, {43,0}, {44,0}, {45,0}, {46,1}, {47,0}, {48,0}, {49,0}, {50,0}, {51,1},
-    //        {52,0}, {53,0}, {54,0}, {55,0}, {56,0}, {57,0}, {58,0}, {59,0}, {60,0}, {61,0}, {62,0}, {63,0},
-    //        {64,0}, {65,0}, {66,0}, {67,0}, {68,1}, {69,0}, {70,1}, {71,0}, {72,0}, {73,1}, {74,0}, {75,1},
-    //        {76,0}, {77,0}, {78,0}, {79,0}, {80,0}, {81,0}, {82,0}, {83,0}, {84,0}, {85,1}, {86,0}, {87,0},
-    //        {88,0}, {89,0}, {90,0}, {91,0}, {92,0}, {93,0}, {94,0}, {95,0}, {96,1}, {97,0}, {98,0}, {99,0}
-    //        };
-    //
-    //int counter = 0;
-    //for (auto it = selectionList.begin(); it != selectionList.end(); it++) {
-    //    QCOMPARE(it.value(), expectedResults.at(counter).second);
-    //    QCOMPARE(it.key(), expectedResults.at(counter++).first);
-    //}
-
+    inverseWeights = true;
+    weights = {1, 2, 3, 4, 5};
+    e = MathUtils::weightedMean(values, weights, inverseWeights, &weightedAvg);
+    QCOMPARE(e, eNoError);
+    QCOMPARE(MathUtils::pRound(weightedAvg, 3), 0.333);
 }
 
 QTEST_MAIN(MathUtilsTests)

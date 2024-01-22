@@ -64,7 +64,6 @@ void MS2IonTests::getIonLabelInfoTest() {
     MS2Ion ms2Ion;
     ms2Ion.mz = 666.6;
     ms2Ion.intensity = 1.0;
-    ms2Ion.iRT = -1.0;
     ms2Ion.charge = 2;
 
     QPair<IonIndex, IonType> ionInfo;

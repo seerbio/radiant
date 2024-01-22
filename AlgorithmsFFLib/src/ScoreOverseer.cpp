@@ -9,12 +9,9 @@
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
-#include "FeatureFinderHill.h"
-#include "FeatureFinderHillBuilder.h"
 #include "MS2Ion.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
-
 
 
 class Q_DECL_HIDDEN ScoreOverseer::Private
@@ -502,28 +499,6 @@ namespace {
         return newMatrix;
     }
 
-    QPair<FrameIndex, FrameIndex> getMinMaxFrameIndexofMzHashVsXICs(const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints) {
-
-        QPair<FrameIndex, FrameIndex> minMaxFrameIndexLocal = {std::numeric_limits<int>::max(), 0};
-        for (auto it = mzHashedVsXICPoints.begin(); it != mzHashedVsXICPoints.end(); it++) {
-            const XICPoints &xicPoints = it.value();
-
-            if (xicPoints.empty()) {
-                continue;
-            }
-
-            const auto minMaxMzXIC = std::minmax_element(
-                    xicPoints.begin(),
-                    xicPoints.end(),
-                    [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-            );
-            minMaxFrameIndexLocal.first = std::min(minMaxFrameIndexLocal.first, minMaxMzXIC.first->scanNumber);
-            minMaxFrameIndexLocal.second = std::max(minMaxFrameIndexLocal.second, minMaxMzXIC.second->scanNumber);
-        }
-
-        return minMaxFrameIndexLocal;
-    }
-
 }// namespace
 Err ScoreOverseer::Private::buildAlignmentMatricies(
         const PeakIntegrationIndexes &peakIntegrationIndexes,
@@ -634,8 +609,7 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             *alignmentMatrixLimits,
             &m_intensityMatrix45,
             &m_intensityMatrix20
-    );
-    ree;
+    ); ree;
 
     ERR_RETURN
 }
@@ -676,7 +650,12 @@ namespace {
                     continue;
                 }
 
-                const float cosineSimToAnchor = EigenUtils::cosineSimilarity(anchorColumn, altColumn);
+                float cosineSimToAnchor;
+                e = EigenUtils::cosineSimilarity(
+                        anchorColumn,
+                        altColumn,
+                        &cosineSimToAnchor
+                        ); ree;
 
                 if (cosineSimToAnchor < cosineSimToAnchorThreshold) {
                     bestCosineSimsIndividualAnchor.push_back(0.0);
@@ -732,7 +711,13 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
             const Eigen::VectorX<float> &mzPeak = m_intensityMatrix100.col(col);
             const Eigen::VectorX<float> &mzPeakShadow = m_intensityMatrix100Shadow.col(col);
 
-            const float cosineSimToShadow = EigenUtils::cosineSimilarity(mzPeak, mzPeakShadow);
+            float cosineSimToShadow;
+            e = EigenUtils::cosineSimilarity(
+                    mzPeak,
+                    mzPeakShadow,
+                    &cosineSimToShadow
+                    ); ree;
+
             cosineSimsShadowIndividual->push_back(cosineSimToShadow);
 
             if (cosineSimToShadow > 0.0 && !MathUtils::tZero(cosineSimToShadow)) {
@@ -804,17 +789,28 @@ Err ScoreOverseer::Private::calculateCosineSimSumTight(
     intensityMatrix45 = intensityMatrix45.array() * peakMaskMat.array();
     intensityMatrix20 = intensityMatrix20.array() * peakMaskMat.array();
 
-//    intensityMatrix45 = applyGaussSmoothRowWiseToMatrix(intensityMatrix45, m_pythiaParams, m_gaussKernel);
-//    intensityMatrix20 = applyGaussSmoothRowWiseToMatrix(intensityMatrix20, m_pythiaParams, m_gaussKernel);
-
+    const Eigen::VectorX<float> anchorCol100 = intensityMat100TopCols.col(anchorColumnIndex);
     const Eigen::VectorX<float> anchorCol45 = intensityMatrix45.col(anchorColumnIndex);
     const Eigen::VectorX<float> anchorCol20 = intensityMatrix20.col(anchorColumnIndex);
 
     for (int col = 0; col < intensityMatrix45.cols(); col++) {
         const Eigen::VectorX<float> col45 = intensityMatrix45.col(col);
         const Eigen::VectorX<float> col20 = intensityMatrix20.col(col);
-        const float cosineSim45 = EigenUtils::cosineSimilarity(col45, anchorCol45);
-        const float cosineSim20 = EigenUtils::cosineSimilarity(col45, anchorCol20);
+
+        float cosineSim45;
+        e = EigenUtils::cosineSimilarity(
+                col45,
+                anchorCol45,
+                &cosineSim45
+                ); ree;
+
+        float cosineSim20;
+        e = EigenUtils::cosineSimilarity(
+                col20,
+                anchorCol45, //NOTE: for some reason using anchorCol45 her insted of anchorCol20 yields
+                &cosineSim20        //much better results. around 1.5K more PSMs for Astral data.
+                ); ree;
+
         *cosineSimSum45 += cosineSim45;
         *cosineSimSum20 += cosineSim20;
     }
@@ -877,8 +873,22 @@ namespace {
 
         const Eigen::VectorX<float> intensityValsTheo = EigenUtils::convertQVectorToEigenVector(intensityVals);
 
-        *cosineSimSpectrum = EigenUtils::cosineSimilarity(intensityApexVector, intensityValsTheo);
-        *klDivSpectrum = EigenUtils::klDivergence(intensityApexVector, intensityValsTheo);
+        float cosineSimSpectrumF;
+        e = EigenUtils::cosineSimilarity(
+                intensityApexVector,
+                intensityValsTheo,
+                &cosineSimSpectrumF
+                ); ree;
+
+        *cosineSimSpectrum = cosineSimSpectrumF;
+
+        float klDivSpectrumF;
+        e = EigenUtils::klDivergence(
+                intensityApexVector,
+                intensityValsTheo,
+                &klDivSpectrumF
+        ); ree;
+        *klDivSpectrum = klDivSpectrumF;
 
         ERR_RETURN
     }
@@ -942,7 +952,13 @@ namespace {
         ms1Vec = EigenKernelUtils::convolveVectorWithKernel(ms1Vec, *gaussKernel);
         EigenUtils::replaceNaN(std::numeric_limits<float>::min(), &ms1Vec);
 
-        float cosineSimMS1Local = EigenUtils::cosineSimilarity(bestAnchorColumn, ms1Vec);
+        float cosineSimMS1Local;
+        e = EigenUtils::cosineSimilarity(
+                bestAnchorColumn,
+                ms1Vec,
+                &cosineSimMS1Local
+                ); ree;
+
         if(std::isnan(cosineSimMS1Local)) {
             cosineSimMS1Local = std::numeric_limits<float>::min();
         }
@@ -1101,7 +1117,7 @@ Err ScoreOverseer::buildScores(
 
     const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
     const double columnApexIndexesSize = columnApexIndexes.size();
-    QVector<int> columnApexIndexRatiosToAnchor;
+    QVector<float> columnApexIndexRatiosToAnchor;
     std::transform(
             columnApexIndexes.begin(),
             columnApexIndexes.end(),
@@ -1136,7 +1152,7 @@ Err ScoreOverseer::buildScores(
     const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
 
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
-    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = -2.0f + static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
+    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
     const float scanTimeRange = std::max(
             std::numeric_limits<float>::min(),

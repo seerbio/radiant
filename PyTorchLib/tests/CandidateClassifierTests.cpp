@@ -18,11 +18,11 @@ public:
 
 private Q_SLOTS:
 
-    void readLibrary();
+    static void trainCandidateClassifierAndPredictTest();
 
 };
 
-void CandidateClassifierTests::readLibrary() {
+void CandidateClassifierTests::trainCandidateClassifierAndPredictTest() {
 
     const QVector<QVector<float>> xVec = {
             {1.0, 0.0, 0.0},
@@ -52,8 +52,16 @@ void CandidateClassifierTests::readLibrary() {
     const QVector<float> yVec = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0};
 
     CandidateClassifier classifier;
-//    classifier.trainCandidateClassifier(xVec, yVec, 1000, 0.2, 1e-2);
+    const bool classifierTrainedNoErrors = classifier.trainCandidateClassifier(xVec, yVec, 10, 2, 1e-2, 666);
+    QCOMPARE(classifierTrainedNoErrors, true);
 
+    QVector<float> predictions;
+    const bool predictedNoErrors = classifier.predict(xVec, &predictions);
+    QCOMPARE(predictions.size(), yVec.size());
+    QCOMPARE(predictedNoErrors, true);
+    for (int i = 0; i < predictions.size(); i++) {
+        QCOMPARE(static_cast<int>(std::round(predictions.at(i))), static_cast<int>(yVec.at(i)));
+    }
 
 }
 
