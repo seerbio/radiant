@@ -110,7 +110,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         ChemLib
         EigenLib
         FileReadersLib
-        MachineLrnLib
         PyTorchLib
         UtilsLib
         )
