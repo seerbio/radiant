@@ -1162,17 +1162,17 @@ Err ScoreOverseer::buildScores(
 
     candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
 
-    candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] = std::accumulate(
+    candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] = static_cast<float>(std::accumulate(
             cosineSimShadowsToAnchorVec.begin(),
             cosineSimShadowsToAnchorVec.end(),
             0.0
-            );
+            ));
 
     const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), scanTimeRange) / scanTimeRange);
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = pdScanTime;
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = static_cast<float>(pdScanTime);
 
-    const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideStringWithMods().size()) / 10.0;
-    candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = pepLength;
+    const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
+    candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = static_cast<float>(pepLength);
 
     candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount]
                                             = static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
@@ -1383,13 +1383,22 @@ Err ScoreOverseer::buildScores(
             {'T', 0},
             {'V', 0},
             {'W', 0},
-            {'Y', 0}
+            {'Y', 0},
+            {'B', 0},
+            {'J', 0},
+            {'O', 0},
+            {'U', 0},
+            {'X', 0},
+            {'Z', 0}
     };
 
-    for (const QChar aminoAcid : candidateScores->targetDecoyCandidatePair->peptideStringWithMods()) {
+    QString peptideString = candidateScores->targetDecoyCandidatePair->peptideString();
+
+    for (const QChar aminoAcid : peptideString) {
 
         if (!aminoAcidCounts.contains(aminoAcid)) {
-            qDebug() << candidateScores->targetDecoyCandidatePair->peptideStringWithMods() << "missing amino acid";
+            qDebug() << peptideString << "missing amino acid" << aminoAcid;
+            continue;
         }
 
         e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
@@ -1416,6 +1425,13 @@ Err ScoreOverseer::buildScores(
     candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = static_cast<float>(aminoAcidCounts['V']);
     candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = static_cast<float>(aminoAcidCounts['W']);
     candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = static_cast<float>(aminoAcidCounts['Y']);
+
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB] = static_cast<float>(aminoAcidCounts['B']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ] = static_cast<float>(aminoAcidCounts['J']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO] = static_cast<float>(aminoAcidCounts['O']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU] = static_cast<float>(aminoAcidCounts['U']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX] = static_cast<float>(aminoAcidCounts['X']);
+    candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ] = static_cast<float>(aminoAcidCounts['Z']);
 
     const auto mz = static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(
             candidateScores->targetDecoyCandidatePair->mass(),

@@ -187,55 +187,61 @@ public:
         AminoAcidCountV,
         AminoAcidCountW,//160
         AminoAcidCountY,
+        AminoAcidCountB,
+        AminoAcidCountJ,
+        AminoAcidCountO,
+        AminoAcidCountU,
+        AminoAcidCountX,
+        AminoAcidCountZ,
         MzFoundStDev1,
         MzFoundStDev2,
-        MzFoundStDev3,
+        MzFoundStDev3,//170
         MzFoundStDev4,
         MzFoundStDev5,
         MzFoundStDev6,
         MzFoundStDev7,
         MzFoundStDev8,
-        MzFoundStDev9,//170
+        MzFoundStDev9,
         MzFoundStDev10,
         MzFoundStDev11,
         MzFoundStDev12,
-        MzAccuracy1,
+        MzAccuracy1,//180
         MzAccuracy2,
         MzAccuracy3,
         MzAccuracy4,
         MzAccuracy5,
         MzAccuracy6,
-        MzAccuracy7,//180
+        MzAccuracy7,
         MzAccuracy8,
         MzAccuracy9,
         MzAccuracy10,
-        MzAccuracy11,
+        MzAccuracy11,//190
         MzAccuracy12,
         AltTargetKeyIdCosineSimSumCharge1_OG,
         AltTargetKeyIdCosineSimSumCharge1_1,
         AltTargetKeyIdCosineSimSumCharge1_2,
         AltTargetKeyIdCosineSimSumCharge1_3,
-        AltTargetKeyIdCosineSimSumCharge2_OG,//190
+        AltTargetKeyIdCosineSimSumCharge2_OG,
         AltTargetKeyIdCosineSimSumCharge2_1,
         AltTargetKeyIdCosineSimSumCharge2_2,
         AltTargetKeyIdCosineSimSumCharge2_3,
-        AltTargetKeyIdCosineSimSumCharge3_OG,
+        AltTargetKeyIdCosineSimSumCharge3_OG,//200
         AltTargetKeyIdCosineSimSumCharge3_1,
         AltTargetKeyIdCosineSimSumCharge3_2,
         AltTargetKeyIdCosineSimSumCharge3_3,
         AltTargetKeyIdCosineSimSumCharge4_OG,
         AltTargetKeyIdCosineSimSumCharge4_1,
-        AltTargetKeyIdCosineSimSumCharge4_2,//200
+        AltTargetKeyIdCosineSimSumCharge4_2,
         AltTargetKeyIdCosineSimSumCharge4_3,
         AltTargetKeyIdTimeDeltaCharge1_1,
         AltTargetKeyIdTimeDeltaCharge1_2,
-        AltTargetKeyIdTimeDeltaCharge1_3,
+        AltTargetKeyIdTimeDeltaCharge1_3,//210
         AltTargetKeyIdTimeDeltaCharge2_1,
         AltTargetKeyIdTimeDeltaCharge2_2,
         AltTargetKeyIdTimeDeltaCharge2_3,
         AltTargetKeyIdTimeDeltaCharge3_1,
         AltTargetKeyIdTimeDeltaCharge3_2,
-        AltTargetKeyIdTimeDeltaCharge3_3,//210
+        AltTargetKeyIdTimeDeltaCharge3_3,
         AltTargetKeyIdTimeDeltaCharge4_1,
         AltTargetKeyIdTimeDeltaCharge4_2,
         AltTargetKeyIdTimeDeltaCharge4_3,
@@ -437,6 +443,12 @@ namespace CandidateScoresReaderRowNamespace {
     const QString AA_V = QStringLiteral("AminoAcidCountV");
     const QString AA_W = QStringLiteral("AminoAcidCountW");
     const QString AA_Y = QStringLiteral("AminoAcidCountY");
+    const QString AA_B = QStringLiteral("AminoAcidCountB");
+    const QString AA_J = QStringLiteral("AminoAcidCountJ");
+    const QString AA_O = QStringLiteral("AminoAcidCountO");
+    const QString AA_U = QStringLiteral("AminoAcidCountU");
+    const QString AA_X = QStringLiteral("AminoAcidCountX");
+    const QString AA_Z = QStringLiteral("AminoAcidCountZ");
     const QString MZ_FND_STDEV_1 = QStringLiteral("MzFoundStDev1");
     const QString MZ_FND_STDEV_2 = QStringLiteral("MzFoundStDev2");
     const QString MZ_FND_STDEV_3 = QStringLiteral("MzFoundStDev3");
@@ -654,6 +666,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float aminoAcidCountV = -1.0;
     float aminoAcidCountW = -1.0;
     float aminoAcidCountY = -1.0;
+    float aminoAcidCountB = -1.0;
+    float aminoAcidCountJ = -1.0;
+    float aminoAcidCountO = -1.0;
+    float aminoAcidCountU = -1.0;
+    float aminoAcidCountX = -1.0;
+    float aminoAcidCountZ = -1.0;
     float mzFoundStDev1 = -1.0;
     float mzFoundStDev2 = -1.0;
     float mzFoundStDev3 = -1.0;
@@ -890,6 +908,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {AA_V, QVariant(aminoAcidCountV)},
                 {AA_W, QVariant(aminoAcidCountW)},
                 {AA_Y, QVariant(aminoAcidCountY)},
+                {AA_B, QVariant(aminoAcidCountB)},
+                {AA_J, QVariant(aminoAcidCountJ)},
+                {AA_O, QVariant(aminoAcidCountO)},
+                {AA_U, QVariant(aminoAcidCountU)},
+                {AA_X, QVariant(aminoAcidCountX)},
+                {AA_Z, QVariant(aminoAcidCountZ)},
                 {MZ_FND_STDEV_1, QVariant(mzFoundStDev1)},
                 {MZ_FND_STDEV_2, QVariant(mzFoundStDev2)},
                 {MZ_FND_STDEV_3, QVariant(mzFoundStDev3)},
@@ -1110,6 +1134,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.aminoAcidCountV = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV],
         row.aminoAcidCountW = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW],
         row.aminoAcidCountY = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY],
+        row.aminoAcidCountB = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB],
+        row.aminoAcidCountJ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ],
+        row.aminoAcidCountO = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO],
+        row.aminoAcidCountU = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU],
+        row.aminoAcidCountX = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX],
+        row.aminoAcidCountZ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ],
         row.mzFoundStDev1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1],
         row.mzFoundStDev2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev2],
         row.mzFoundStDev3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev3],

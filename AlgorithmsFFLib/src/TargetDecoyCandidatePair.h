@@ -25,6 +25,7 @@ public:
     TargetDecoyCandidatePair();
 
     TargetDecoyCandidatePair(
+            const PeptideString &peptideString,
             const PeptideStringWithMods &peptideStringWithMods,
             const QVector<MS2Ion> &ms2IonsTarget,
             const QVector<MS2Ion> &ms2IonsDecoy,
@@ -35,6 +36,13 @@ public:
             );
 
     ~TargetDecoyCandidatePair() = default;
+
+    /**
+    * @brief Gets the peptide string without modifications for the target-decoy candidate pair.
+    *
+    * @return PeptideString representing the peptide string without modifications.
+    */
+    [[nodiscard]] PeptideString peptideString() const;
 
     /**
     * @brief Gets the peptide string with modifications for the target-decoy candidate pair.
@@ -100,6 +108,7 @@ private:
 
 private:
 
+    PeptideString m_peptideString;
     PeptideStringWithMods m_peptideStringWithMods;
     QVector<MS2Ion> m_ms2IonsTarget;
     QVector<MS2Ion> m_ms2IonsDecoy;

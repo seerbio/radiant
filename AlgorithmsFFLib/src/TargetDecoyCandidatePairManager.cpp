@@ -326,6 +326,33 @@ namespace {
         ERR_RETURN
     }
 
+    namespace {
+
+        PeptideString removeUniModChars(const PeptideStringWithMods &peptideStringWithMods) {
+
+            PeptideString peptideString;
+
+            bool unimodOn = false;
+            for (const QChar &c : peptideStringWithMods) {
+                if (c == "(") {
+                    unimodOn = true;
+                    continue;
+                }
+                else if (c == ")") {
+                    unimodOn = false;
+                    continue;
+                }
+                else if (unimodOn) {
+                    continue;
+                }
+
+                peptideString += c;
+            }
+
+            return peptideString;
+        }
+
+    }//namespace
     QPair<Err, TargetDecoyCandidatePair> targetDecoyCandidatePairsLoadLogic(
             const FragLibReaderRow &flrr,
             const PythiaParameters &pythiaParameters
@@ -341,9 +368,9 @@ namespace {
                 &charge
         ); rree;
 
-        //TODO once incorporating PTMs in the sequence, make algo to remove them
-        // and then calculate the peptide length MODS
-        const int peptideLength = peptideStringWithMods.size();
+        const PeptideString peptideString = removeUniModChars(peptideStringWithMods);
+
+        const int peptideLength = peptideString.size();
         if (peptideLength < pythiaParameters.peptideLengthMin
             || peptideLength > pythiaParameters.peptideLengthMax
             || charge < pythiaParameters.chargeStateMin
@@ -371,19 +398,20 @@ namespace {
         ); rree;
 #else
         e= mutateCandidatePeptideTarget(
-                peptideStringWithMods,
+                peptideString,
                 ms2IonsTarget,
                 &ms2IonsDecoy
         ); rree;
 #endif
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
+                peptideString,
                 peptideStringWithMods,
                 ms2IonsTarget,
                 ms2IonsDecoy,
                 flrr.precursorCharge,
-                flrr.mass,
-                flrr.iRT,
+                static_cast<float>(flrr.mass),
+                static_cast<float>(flrr.iRT),
                 flrr.mzVals.size()
         );
 
