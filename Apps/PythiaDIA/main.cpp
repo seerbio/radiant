@@ -11,7 +11,8 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
-
+#include <QtConcurrent>
+#include <QThreadPool>
 
 using namespace Error;
 
@@ -19,6 +20,8 @@ using namespace Error;
 int main(int argc, char *argv[]) {
 
     ERR_INIT
+
+//    QThreadPool::globalInstance()->setMaxThreadCount(8); //TODO make this settable.
 
     QElapsedTimer et;
     et.start();
