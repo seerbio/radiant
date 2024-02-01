@@ -12,7 +12,7 @@ Pythia DIA is usable as a Docker container or Linux binary.
 
 ## Running
 
-Docker images are available for both Intel (`x86`) and ARM / Apple Silicon (`aarch64):
+Docker images are available for both Intel (`x86`) and ARM / Apple Silicon (`aarch64`):
 
 ```
 docker run --rm 718843040700.dkr.ecr.us-west-2.amazonaws.com/seer/pythia-dia:latest 
@@ -26,7 +26,7 @@ On Intel (`x86`):
 aws s3 cp s3://seer-buildfiles/pythiadia_1.1.5+amd64.deb .
 apt-get install -y pythiadia_1.1.5+amd64.deb
 /usr/local/bin/PythiaDIACpp/PythiaDIA --help
-    ```
+```
 
 On ARM / Apple Silicon (`aarch64`):
 
