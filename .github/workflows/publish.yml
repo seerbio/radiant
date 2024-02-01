@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  publish_x86:
+  publish_x86_docker:
     runs-on: [self-hosted, aws-master, X64]
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
@@ -21,12 +21,7 @@ jobs:
           tag_suffix: -x86_64
           addl_tags: latest-x86_64
 
-      - name: Upload x86 deb
-        env:
-          CONTAINER: seer/pythia-dia
-        run: ./deploy_deb.sh
-
-  publish_arm:
+  publish_arm_docker:
     runs-on: [self-hosted, aws-master, ARM64]
     steps:
       # Necessary to set up the token required to push the commit tag to GitHub
@@ -42,6 +37,36 @@ jobs:
           tag_suffix: -aarch64
           addl_tags: latest-aarch64
 
+  publish_docker_manifest:
+    runs-on: [self-hosted, aws-master]
+    needs: [publish_x86_docker, publish_arm_docker]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Publish Docker Manifest
+        env:
+          CONTAINER: seer/pythia-dia
+          REPOSITORY: 718843040700.dkr.ecr.us-west-2.amazonaws.com
+          ADDL_TAGS: latest
+        run: ./deploy_docker_manifest.sh "${ADDL_TAGS}"
+
+  publish_x86_deb:
+    runs-on: [self-hosted, aws-master, X64]
+    needs: publish_x86_docker
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Upload x86 deb
+        env:
+          CONTAINER: seer/pythia-dia
+        run: ./deploy_deb.sh
+
+  publish_arm_deb:
+    runs-on: [self-hosted, aws-master, ARM64]
+    needs: publish_arm_docker
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - name: Upload ARM deb
         env:
           CONTAINER: seer/pythia-dia
