@@ -690,8 +690,6 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_intensityMatrix100.nonZeros() > 1); ree;
-
     if (m_intensityMatrix100Shadow.cols() > 0) {
 
         e = ErrorUtils::isEqual(m_intensityMatrix100.cols(), m_intensityMatrix100Shadow.cols()); ree;
