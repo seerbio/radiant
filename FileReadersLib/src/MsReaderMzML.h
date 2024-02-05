@@ -55,6 +55,17 @@ public:
     */
     Err closeFile() override;
 
+    /**
+    * @brief This function sets scan information and scan points of an MsReaderBase instance from an MsReaderMzML instance.
+    *
+    * First, it initializes an MsReaderBase instance. Then, it retrieves the scan information and scan points from
+    * the current MsReaderMzML instance and sets them to the newly created MsReaderBase instance. The function
+    * highlights the fact that setMsScanInfo should be called before setScanPoints to avoid runtime errors.
+    * Lastly, the function returns the newly created MsReaderBase instance.
+    *
+    * @return MsReaderBase - an instance of MsReaderBase with scan information and scan points set from the current
+    * MsReaderMzML instance.
+    */
     MsReaderBase msReaderBase();
 
 private:
