@@ -4,13 +4,13 @@
 #include "CandidateScores.h"
 #include "DiscriminantScoretron.h"
 
-class DiscriminantScoretronTest : public QObject {
+class DiscriminantScoretronTests : public QObject {
 Q_OBJECT
 
 public:
-    DiscriminantScoretronTest() = default;
+    DiscriminantScoretronTests() = default;
 
-    ~DiscriminantScoretronTest() override = default;
+    ~DiscriminantScoretronTests() override = default;
 
 private slots:
 
@@ -20,7 +20,7 @@ private slots:
 
 };
 
-void DiscriminantScoretronTest::setDisciminantScoreForCandidatesTest() {
+void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
 
     ERR_INIT
 
@@ -101,6 +101,6 @@ void DiscriminantScoretronTest::setDisciminantScoreForCandidatesTest() {
 }
 
 
-QTEST_MAIN(DiscriminantScoretronTest)
+QTEST_MAIN(DiscriminantScoretronTests)
 
-#include "DiscriminantScoretronTest.moc"
+#include "DiscriminantScoretronTests.moc"
