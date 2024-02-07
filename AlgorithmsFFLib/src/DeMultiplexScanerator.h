@@ -1,0 +1,54 @@
+//
+// Created by anichols on 2/5/24.
+//
+
+#ifndef PYTHIADIACPP_DEMULTIPLEXSCANERATOR_H
+#define PYTHIADIACPP_DEMULTIPLEXSCANERATOR_H
+
+#include "AlgorithmsFFLib_Exports.h"
+#include "Error.h"
+#include "GlobalSettings.h"
+#include "MsReaderBase.h"
+
+
+using namespace Error;
+
+class MsScanInfo;
+
+class ALGORITHMSFFLIB_EXPORTS DeMultiplexScanerator {
+
+public:
+
+    friend class DeMultiplexScaneratorTests;
+
+    DeMultiplexScanerator(
+            double ppmTol,
+            double intensityFractionThreshold
+            );
+
+    ~DeMultiplexScanerator();
+
+    Err deMultiplexScans(
+            const QVector<ScanPoints*> &scans,
+            const QVector<MsScanInfo> &msScanInfos
+            );
+
+
+private:
+
+    Err _buildScanMaskMatrixTestAccess(const QVector<MsScanInfo> &msScanInfos);
+
+    Err _buildTransitionMatrixTestAccess(const QVector<ScanPoints*> &scans);
+
+
+private:
+
+    Q_DISABLE_COPY(DeMultiplexScanerator) class Private;
+    const QScopedPointer<Private> d_ptr;
+
+
+
+};
+
+
+#endif //PYTHIADIACPP_DEMULTIPLEXSCANERATOR_H
