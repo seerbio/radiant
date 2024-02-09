@@ -8,7 +8,6 @@
 #include "AlgorithmsFFLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
-#include "MsReaderBase.h"
 
 
 using namespace Error;
@@ -36,13 +35,17 @@ public:
             double *windowSize
             );
 
-
 private:
 
-    Err _buildScanMaskMatrixTestAccess(const QVector<MsScanInfo> &msScanInfos);
+    Err _buildScanMaskMatrixTestAccess(
+            const QVector<MsScanInfo> &msScanInfos,
+            QVector<QVector<float>> *scanMaskMatrixVecs
+            );
 
-    Err _buildTransitionMatrixTestAccess(const QVector<ScanPoints*> &scans);
-
+    Err _buildTransitionMatrixTestAccess(
+            const QVector<ScanPoints*> &scans,
+            QVector<QVector<float>> *transitionMatrixVecs
+            );
 
 private:
 

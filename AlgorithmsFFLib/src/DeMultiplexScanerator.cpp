@@ -4,8 +4,10 @@
 
 #include "DeMultiplexScanerator.h"
 
+#include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MathUtils.h"
+#include "MsReaderBase.h"
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NNLS>
@@ -347,6 +349,20 @@ Err DeMultiplexScanerator::Private::deMultiplexScans(
             demultiplexedScans
             ); ree;
 
+    const int distance = static_cast<int>(totalScanRange.second - totalScanRange.first);
+
+    QVector<float> demuxWindows;
+    for (int i = 0; i < distance; i++) {
+        const double window = totalScanRange.first + (*windowSize * i) + (*windowSize / 2.0);
+        demuxWindows.push_back(window);
+    }
+
+    std::transform(
+            demuxWindows.begin(),
+            demuxWindows.end(),
+            std::back_inserter(*mzTargetKeys),
+            [](float f){return QString::number(MathUtils::hashDecimal(f, S_GLOBAL_SETTINGS.HASHING_PRECISION));}
+            );
 
     ERR_RETURN
 }
@@ -383,7 +399,10 @@ Err DeMultiplexScanerator::deMultiplexScans(
     ERR_RETURN
 }
 
-Err DeMultiplexScanerator::_buildTransitionMatrixTestAccess(const QVector<ScanPoints*> &scans) {
+Err DeMultiplexScanerator::_buildTransitionMatrixTestAccess(
+        const QVector<ScanPoints*> &scans,
+        QVector<QVector<float>> *transitionMatrixVecs
+        ) {
     ERR_INIT
 
     Eigen::MatrixX<float> transitionsMatrix;
@@ -395,21 +414,29 @@ Err DeMultiplexScanerator::_buildTransitionMatrixTestAccess(const QVector<ScanPo
             &mzTransitions
             ); ree;
 
+    transitionsMatrix.conservativeResize(4, 4);
+    *transitionMatrixVecs = EigenUtils::convertEigenMatrixToQVectors(transitionsMatrix);
+
     ERR_RETURN
 }
 
-Err DeMultiplexScanerator::_buildScanMaskMatrixTestAccess(const QVector<MsScanInfo> &msScanInfos) {
+Err DeMultiplexScanerator::_buildScanMaskMatrixTestAccess(
+        const QVector<MsScanInfo> &msScanInfos,
+        QVector<QVector<float>> *scanMaskMatrixVecs
+        ) {
     ERR_INIT
 
     Eigen::MatrixX<float> scanMaskMatrix;
     QPair<float, float> totalScanRange;
-    double amuStagger;
+    double windowSize;
     e = d_ptr->buildScanMaskMatrix(
             msScanInfos,
             &scanMaskMatrix,
             &totalScanRange,
-            &amuStagger
+            &windowSize
             ); ree;
+
+    *scanMaskMatrixVecs = EigenUtils::convertEigenMatrixToQVectors(scanMaskMatrix);
 
     ERR_RETURN
 }

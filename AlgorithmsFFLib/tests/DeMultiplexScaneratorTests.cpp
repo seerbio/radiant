@@ -31,10 +31,9 @@ private slots:
 
 void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
 
-    QSKIP("SLKJFDSL");
-
     ERR_INIT
 
+//  TODO make this into a truncated file starting at scan 21796 to 21810
     const QString prqFFFile = "/home/anichols/Downloads/TESTING_20240130RC6_30min_iso-4-500-510-slide-7test-15k.mzML.prqFF";
 
     MsReaderParquet msReaderParquet;
@@ -64,19 +63,34 @@ void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
     DeMultiplexScanerator deMultiplexScanerator(10.0, 0.9);
 
     QElapsedTimer et;
-    et.start();
-    e =  deMultiplexScanerator._buildTransitionMatrixTestAccess(scans);
-    qDebug() << et.elapsed();
+
+    QVector<QVector<float>> transitionMatrixVecs;
+    e =  deMultiplexScanerator._buildTransitionMatrixTestAccess(scans, &transitionMatrixVecs);
     QCOMPARE(e, eNoError);
+
+    const QVector<QVector<int>> expectedResults = {
+            {10590, 120762, 656679, 0},
+            {7947, 28843, 584602, 0},
+            {0, 86665, 612637, 9280},
+            {0, 1225137, 405833, 0}
+    };
+
+    QVector<QVector<int>> transitionMatrixVecsInts(4);
+    for(int i = 0; i < transitionMatrixVecs.size(); i++) {
+        for(int j = 0; j < transitionMatrixVecs.front().size(); j++) {
+            transitionMatrixVecsInts[i].push_back(static_cast<int>(transitionMatrixVecs.at(i).at(j)));
+        }
+    }
+
+    QCOMPARE(transitionMatrixVecsInts, expectedResults);
 
 }
 
 void DeMultiplexScaneratorTests::buildScanMaskMatrixTest() {
 
-    QSKIP("SDLFJSDL");
-
     ERR_INIT
 
+    //  TODO make this into a truncated file starting at scan 21796 to 21810
     const QString prqFFFile = "/home/anichols/Downloads/TESTING_20240130RC6_30min_iso-4-500-510-slide-7test-15k.mzML.prqFF";
 
     MsReaderParquet msReaderParquet;
@@ -102,15 +116,26 @@ void DeMultiplexScaneratorTests::buildScanMaskMatrixTest() {
     QCOMPARE(e, eNoError);
 
     const QVector<MsScanInfo> msScanInfos = {
+            msScanInfo3,
             msScanInfo1,
             msScanInfo2,
-            msScanInfo3,
             msScanInfo4
     };
 
+    QVector<QVector<float>> scanMaskMatrixVecs;
+
     DeMultiplexScanerator deMultiplexScanerator(10.0, 0.9);
-    e = deMultiplexScanerator._buildScanMaskMatrixTestAccess(msScanInfos);
+    e = deMultiplexScanerator._buildScanMaskMatrixTestAccess(msScanInfos, &scanMaskMatrixVecs);
     QCOMPARE(e, eNoError);
+
+    const QVector<QVector<float>> expectedResults = {
+            {0, 0, 1, 1, 1, 1, 0},
+            {1, 1, 1, 1, 0, 0, 0},
+            {0, 1, 1, 1, 1, 0, 0},
+            {0, 0, 0, 1, 1, 1, 1}
+    };
+    QCOMPARE(scanMaskMatrixVecs, expectedResults);
+
 
 }
 
@@ -118,6 +143,7 @@ void DeMultiplexScaneratorTests::deMultiplexScansTest() {
 
     ERR_INIT
 
+//  TODO make this into a truncated file starting at scan 21796 to 21810
     const QString prqFFFile = "/home/anichols/Downloads/TESTING_20240130RC6_30min_iso-4-500-510-slide-7test-15k.mzML.prqFF";
 
     MsReaderParquet msReaderParquet;
@@ -171,7 +197,6 @@ void DeMultiplexScaneratorTests::deMultiplexScansTest() {
     QVector<MzTargetKey> mzTargetKeys;
     double windwoSize;
 
-
     DeMultiplexScanerator deMultiplexScanerator(10.0, 0.9);
     e = deMultiplexScanerator.deMultiplexScans(
             scans,
@@ -182,7 +207,19 @@ void DeMultiplexScaneratorTests::deMultiplexScansTest() {
             );
     QCOMPARE(e, eNoError);
 
-    qDebug() << demultiplexedScans.at(1);
+    const QVector<MzTargetKey> mzTargetKeysExpected = {
+            "501500",
+            "502500",
+            "503500",
+            "504500",
+            "505500",
+            "506500",
+            "507500"
+    };
+
+    QCOMPARE(demultiplexedScans.at(1).at(0), PointFF(145.052, 7947.07));
+    QCOMPARE(mzTargetKeys, mzTargetKeysExpected);
+    QCOMPARE(windwoSize, 1.0);
 
 }
 
