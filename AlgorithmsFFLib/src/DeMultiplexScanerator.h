@@ -30,7 +30,10 @@ public:
 
     Err deMultiplexScans(
             const QVector<ScanPoints*> &scans,
-            const QVector<MsScanInfo> &msScanInfos
+            const QVector<MsScanInfo> &msScanInfos,
+            QVector<ScanPoints> *demultiplexedScans,
+            QVector<MzTargetKey> *mzTargetKeys,
+            double *windowSize
             );
 
 

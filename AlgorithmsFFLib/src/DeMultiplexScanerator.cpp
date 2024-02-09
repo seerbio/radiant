@@ -26,17 +26,23 @@ public:
 
     Err buildScanMaskMatrix(
             const QVector<MsScanInfo> &msScanInfos,
-            Eigen::MatrixX<double> *scanMaskMatrix
+            Eigen::MatrixX<float> *scanMaskMatrix,
+            QPair<float, float> *totalScanRange,
+            double *amuStagger
             );
 
     Err buildTransitionsMatrix(
             const QVector<ScanPoints*> &scans,
-            Eigen::MatrixX<double> *transitionsMatrix
+            Eigen::MatrixX<float> *transitionsMatrix,
+            QVector<float> *mzTransitions
             );
 
     Err deMultiplexScans(
             const QVector<ScanPoints*> &scanPoints,
-            const QVector<MsScanInfo> &msScanInfos
+            const QVector<MsScanInfo> &msScanInfos,
+            QVector<ScanPoints> *demultiplexedScans,
+            QVector<MzTargetKey> *mzTargetKeys,
+            double *windowSize
             );
 
 private:
@@ -66,7 +72,8 @@ namespace {
 }//namespace
 Err DeMultiplexScanerator::Private::buildTransitionsMatrix(
         const QVector<ScanPoints*> &scans,
-        Eigen::MatrixX<double> *transitionsMatrix
+        Eigen::MatrixX<float> *transitionsMatrix,
+        QVector<float> *mzTransitions
         ) {
 
     ERR_INIT
@@ -97,7 +104,7 @@ Err DeMultiplexScanerator::Private::buildTransitionsMatrix(
     for (int i = 1; i < scanPointsSorters.size() - 1; i++) {
 
         const ScanPointsSorter &spsL = currentScanPointsSorter.back();
-        const ScanPointsSorter &spsR = scanPointsSorters.at(i + 1);
+        const ScanPointsSorter &spsR = scanPointsSorters.at(i);
 
         const double ppmDiff
             = 1e6 * std::abs(spsL.scanPoint->x() - spsR.scanPoint->x()) / spsL.scanPoint->x();
@@ -117,8 +124,6 @@ Err DeMultiplexScanerator::Private::buildTransitionsMatrix(
         currentScanPointsSorter.push_back(spsR);
     }
 
-    transitions.resize(100);
-
     transitionsMatrix->resize(scans.size(), transitions.size());
     transitionsMatrix->setZero();
 
@@ -126,13 +131,14 @@ Err DeMultiplexScanerator::Private::buildTransitionsMatrix(
 
         const QVector<ScanPointsSorter> &sps = transitions.at(col);
 
-//        const double transitionMean = std::accumulate(
-//                sps.begin(),
-//                sps.end(),
-//                0.0,
-//                [](double sum, const ScanPointsSorter &sps){return sum + sps.scanPoint->x();}
-//                ) / sps.size();
-//        qDebug() << transitionMean;
+        const double transitionMean = std::accumulate(
+                sps.begin(),
+                sps.end(),
+                0.0,
+                [](double sum, const ScanPointsSorter &sps){return sum + sps.scanPoint->x();}
+                ) / sps.size();
+
+        mzTransitions->push_back(transitionMean);
 
         for (const ScanPointsSorter &sp : sps) {
             transitionsMatrix->coeffRef(sp.scansIndex, col) = sp.scanPoint->y();
@@ -146,27 +152,27 @@ namespace {
 
     Err getTotalScanRange(
             const QVector<MsScanInfo> &msScanInfos,
-            QPair<double, double> *totalScanRange
+            QPair<float, float> *totalScanRange
             ) {
 
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(msScanInfos); ree;
 
-        *totalScanRange = {std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest()};
+        *totalScanRange = {std::numeric_limits<float>::max(), std::numeric_limits<float>::lowest()};
 
         for (const MsScanInfo &msScanInfo : msScanInfos) {
-            const double mzLo = msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower;
+            const float mzLo = msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower;
             totalScanRange->first = std::min(totalScanRange->first, mzLo);
 
-            const double mzHi = msScanInfo.precursorTargetMz + msScanInfo.isoWindowLower;
+            const float mzHi = msScanInfo.precursorTargetMz + msScanInfo.isoWindowLower;
             totalScanRange->second = std::max(totalScanRange->second, mzHi);
         }
 
         ERR_RETURN
     }
 
-    Err calculateWindowStaggering(const QVector<MsScanInfo> &msScanInfos, double *amuStagger) {
+    Err calculateWindowSize(const QVector<MsScanInfo> &msScanInfos, double *windowSize) {
 
         ERR_INIT
 
@@ -197,7 +203,7 @@ namespace {
 
         e = ErrorUtils::isTrue(allDistancesAreEqual); ree;
 
-        *amuStagger = meanDistance;
+        *windowSize = meanDistance;
 
         ERR_RETURN
     }
@@ -205,41 +211,38 @@ namespace {
 }//namespace
 Err DeMultiplexScanerator::Private::buildScanMaskMatrix(
         const QVector<MsScanInfo> &msScanInfos,
-        Eigen::MatrixX<double> *scanMaskMatrix
+        Eigen::MatrixX<float> *scanMaskMatrix,
+        QPair<float, float> *totalScanRange,
+        double *windowSize
         ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
 
-    QPair<double, double> totalScanRange;
-    e = getTotalScanRange(msScanInfos, &totalScanRange); ree;
+    e = getTotalScanRange(msScanInfos, totalScanRange); ree;
     e = ErrorUtils::isBelowThreshold(
-            totalScanRange.first,
-            totalScanRange.second,
+            totalScanRange->first,
+            totalScanRange->second,
             ErrorUtilsParam::ExcludeThreshold
             ); ree;
 
-    double amuStagger;
-    e = calculateWindowStaggering(msScanInfos, &amuStagger); ree;
-
-    qDebug() << totalScanRange << amuStagger;
+    e = calculateWindowSize(msScanInfos, windowSize); ree;
 
     const int rows = msScanInfos.size();
-    const int cols = static_cast<int>(totalScanRange.second - totalScanRange.first);
+    const int cols = static_cast<int>((totalScanRange->second - totalScanRange->first) / *windowSize);
     scanMaskMatrix->resize(rows, cols);
     scanMaskMatrix->setZero();
-
 
     for (int i = 0; i < msScanInfos.size(); i++) {
 
         const MsScanInfo &msi = msScanInfos.at(i);
 
         const int mzStart
-            = static_cast<int>((msi.precursorTargetMz - msi.isoWindowLower) - totalScanRange.first);
+            = static_cast<int>((msi.precursorTargetMz - msi.isoWindowLower) - totalScanRange->first);
 
         const int mzEnd
-            = static_cast<int>((msi.precursorTargetMz + msi.isoWindowUpper) - totalScanRange.first);
+            = static_cast<int>((msi.precursorTargetMz + msi.isoWindowUpper) - totalScanRange->first);
 
         for (int j = mzStart; j < mzEnd; j++) {
             scanMaskMatrix->coeffRef(i, j) = 1.0;
@@ -249,9 +252,54 @@ Err DeMultiplexScanerator::Private::buildScanMaskMatrix(
     ERR_RETURN
 }
 
+namespace{
+
+    Err buildDemultiplexedScans(
+            const Eigen::MatrixX<float> &xMat,
+            const QVector<float> &mzTransitions,
+            QVector<ScanPoints> *demultiplexedScans
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzTransitions); ree;
+        e = ErrorUtils::isEqual(
+                static_cast<int>(xMat.cols()),
+                mzTransitions.size()
+        ); ree;
+
+        demultiplexedScans->clear();
+
+        const int xMatRows = static_cast<int>(xMat.rows());
+
+        demultiplexedScans->resize(xMatRows);
+        demultiplexedScans->reserve(xMatRows);
+
+        for (int row = 0; row < xMatRows; row++) {
+
+            const Eigen::VectorX<float> &mzRow = xMat.row(row);
+            for (int col = 0; col < xMat.cols(); col++) {
+
+                const float intensity = mzRow.coeffRef(col);
+
+                if (MathUtils::tZero(intensity)) {
+                    continue;
+                }
+
+                (*demultiplexedScans)[row].push_back({mzTransitions.at(col), intensity});
+            }
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err DeMultiplexScanerator::Private::deMultiplexScans(
         const QVector<ScanPoints*> &scanPoints,
-        const QVector<MsScanInfo> &msScanInfos
+        const QVector<MsScanInfo> &msScanInfos,
+        QVector<ScanPoints> *demultiplexedScans,
+        QVector<MzTargetKey> *mzTargetKeys,
+        double *windowSize
         ) {
 
     ERR_INIT
@@ -259,40 +307,46 @@ Err DeMultiplexScanerator::Private::deMultiplexScans(
     e = ErrorUtils::isNotEmpty(scanPoints); ree;
     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
 
-    Eigen::MatrixX<double> scanMaskMatrix;
-    e = buildScanMaskMatrix(msScanInfos, &scanMaskMatrix); ree;
+    Eigen::MatrixX<float> scanMaskMatrix;
+    QPair<float, float> totalScanRange;
 
-    Eigen::MatrixX<double> transitionsMatrix;
-    e = buildTransitionsMatrix(scanPoints, &transitionsMatrix); ree;
+    e = buildScanMaskMatrix(
+            msScanInfos,
+            &scanMaskMatrix,
+            &totalScanRange,
+            windowSize
+            ); ree;
 
-    transitionsMatrix.coeffRef(1, 0) = 5295.0;
+    Eigen::MatrixX<float> transitionsMatrix;
+    QVector<float> mzTransitions;
+    e = buildTransitionsMatrix(scanPoints, &transitionsMatrix, &mzTransitions); ree;
 
-    std::cout << transitionsMatrix << std::endl;
-    std::cout << " " << std::endl;
-    std::cout << scanMaskMatrix << std::endl;
-
-    Eigen::MatrixX<double> X(scanMaskMatrix.cols(), transitionsMatrix.cols());
+    Eigen::MatrixX<float> X(scanMaskMatrix.cols(), transitionsMatrix.cols());
     X.setZero();
 
-    Eigen::NNLS<Eigen::MatrixX<double>> nnls(scanMaskMatrix, 10, 10.0);
+    const int maxIters = 10;
+    const float tolerance = 10.0;
+    Eigen::NNLS<Eigen::MatrixX<float>> nnls(
+            scanMaskMatrix,
+            maxIters,
+            tolerance
+            );
 
     for(int i = 0; i < transitionsMatrix.cols(); i++) {
 
-        Eigen::VectorX<double> b = transitionsMatrix.col(i);
-        Eigen::VectorX<double> x = nnls.solve(b);
+        Eigen::VectorX<float> b = transitionsMatrix.col(i);
+        Eigen::VectorX<float> x = nnls.solve(b);
 
         e = ErrorUtils::isTrue(nnls.info() == Eigen::Success); ree;
         X.col(i) = x;
     }
 
+    e = buildDemultiplexedScans(
+            X,
+            mzTransitions,
+            demultiplexedScans
+            ); ree;
 
-    std::cout << scanMaskMatrix << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << X << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << transitionsMatrix << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << scanMaskMatrix * X << std::endl;
 
     ERR_RETURN
 }
@@ -313,25 +367,49 @@ DeMultiplexScanerator::~DeMultiplexScanerator() {}
 
 Err DeMultiplexScanerator::deMultiplexScans(
         const QVector<ScanPoints*> &scans,
-        const QVector<MsScanInfo> &msScanInfos
+        const QVector<MsScanInfo> &msScanInfos,
+        QVector<ScanPoints> *demultiplexedScans,
+        QVector<MzTargetKey> *mzTargetKeys,
+        double *windowSize
         ) {
     ERR_INIT
-    e = d_ptr->deMultiplexScans(scans, msScanInfos);
+    e = d_ptr->deMultiplexScans(
+            scans,
+            msScanInfos,
+            demultiplexedScans,
+            mzTargetKeys,
+            windowSize
+            ); ree;
     ERR_RETURN
 }
 
-Err DeMultiplexScanerator::_buildTransitionMatrixTestAccess(
-        const QVector<ScanPoints*> &scans
-        ) {
+Err DeMultiplexScanerator::_buildTransitionMatrixTestAccess(const QVector<ScanPoints*> &scans) {
     ERR_INIT
-    Eigen::MatrixX<double> transitionsMatrix;
-    e = d_ptr->buildTransitionsMatrix(scans, &transitionsMatrix); ree;
+
+    Eigen::MatrixX<float> transitionsMatrix;
+    QVector<float> mzTransitions;
+
+    e = d_ptr->buildTransitionsMatrix(
+            scans,
+            &transitionsMatrix,
+            &mzTransitions
+            ); ree;
+
     ERR_RETURN
 }
 
 Err DeMultiplexScanerator::_buildScanMaskMatrixTestAccess(const QVector<MsScanInfo> &msScanInfos) {
     ERR_INIT
-    Eigen::MatrixX<double> scanMaskMatrix;
-    e = d_ptr->buildScanMaskMatrix(msScanInfos, &scanMaskMatrix); ree;
+
+    Eigen::MatrixX<float> scanMaskMatrix;
+    QPair<float, float> totalScanRange;
+    double amuStagger;
+    e = d_ptr->buildScanMaskMatrix(
+            msScanInfos,
+            &scanMaskMatrix,
+            &totalScanRange,
+            &amuStagger
+            ); ree;
+
     ERR_RETURN
 }

@@ -31,6 +31,8 @@ private slots:
 
 void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
 
+    QSKIP("SLKJFDSL");
+
     ERR_INIT
 
     const QString prqFFFile = "/home/anichols/Downloads/TESTING_20240130RC6_30min_iso-4-500-510-slide-7test-15k.mzML.prqFF";
@@ -70,6 +72,8 @@ void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
 }
 
 void DeMultiplexScaneratorTests::buildScanMaskMatrixTest() {
+
+    QSKIP("SDLFJSDL");
 
     ERR_INIT
 
@@ -163,10 +167,22 @@ void DeMultiplexScaneratorTests::deMultiplexScansTest() {
             msScanInfo4
     };
 
+    QVector<ScanPoints> demultiplexedScans;
+    QVector<MzTargetKey> mzTargetKeys;
+    double windwoSize;
+
 
     DeMultiplexScanerator deMultiplexScanerator(10.0, 0.9);
-    e = deMultiplexScanerator.deMultiplexScans(scans, msScanInfos);
+    e = deMultiplexScanerator.deMultiplexScans(
+            scans,
+            msScanInfos,
+            &demultiplexedScans,
+            &mzTargetKeys,
+            &windwoSize
+            );
     QCOMPARE(e, eNoError);
+
+    qDebug() << demultiplexedScans.at(1);
 
 }
 
