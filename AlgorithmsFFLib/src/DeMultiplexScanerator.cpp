@@ -327,7 +327,7 @@ Err DeMultiplexScanerator::Private::deMultiplexScans(
     X.setZero();
 
     const int maxIters = 10;
-    const float tolerance = 10.0;
+    const float tolerance = 100.0;
     Eigen::NNLS<Eigen::MatrixX<float>> nnls(
             scanMaskMatrix,
             maxIters,
@@ -353,7 +353,7 @@ Err DeMultiplexScanerator::Private::deMultiplexScans(
 
     QVector<float> demuxWindows;
     for (int i = 0; i < distance; i++) {
-        const double window = totalScanRange.first + (*windowSize * i) + (*windowSize / 2.0);
+        const float window = totalScanRange.first + (*windowSize * i) + (*windowSize / 2.0);
         demuxWindows.push_back(window);
     }
 

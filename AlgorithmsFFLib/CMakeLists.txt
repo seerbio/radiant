@@ -26,6 +26,7 @@ SET(SOURCE_FILES
         src/ClassifierWeightsManager.cpp
         src/DiscriminantScoretron.cpp
         src/DeMultiplexScanerator.cpp
+        src/DeMultiplexScaneratorManager.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
@@ -52,6 +53,7 @@ SET(HEADER_FILES
         src/CandidateScorertron.h
         src/ClassifierWeightsManager.h
         src/DeMultiplexScanerator.h
+        src/DeMultiplexScaneratorManager.h
         src/DiscriminantScoretron.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
