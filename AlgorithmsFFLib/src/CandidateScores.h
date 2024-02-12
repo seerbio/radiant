@@ -36,7 +36,7 @@ public:
         CosineSimSumBottom6,
         TopBottomRatio,
         TopBottomRatioNorm,//10
-        ChargeNorm,
+        Charge,
         Mass,
         ScanTimeDelta,
         ScanTimeRange,
@@ -292,7 +292,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_SUM_BOTTOM_6 = QStringLiteral("CosineSimSumBottom6");
     const QString TOP_BOTTOM_RATIO = QStringLiteral("TopBottomRatio");
     const QString TOP_BOTTOME_RATIO_NORM = QStringLiteral("TopBottomRatioNorm");
-    const QString CHARGE_NORM = QStringLiteral("ChargeNorm");
+    const QString CHARGE = QStringLiteral("Charge");
     const QString MASS = QStringLiteral("Mass");
     const QString SCAN_TIME_DELTA = QStringLiteral("ScanTimeDelta");
     const QString SCAN_TIME_RANGE = QStringLiteral("ScanTimeRange");
@@ -515,7 +515,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float cosineSimSumBottom6 = -1.0;
     float topBottomRatio = -1.0;
     float topBottomRatioNorm = -1.0;
-    float chargeNorm = -1.0;
+    float charge = -1.0;
     float mass = -1.0;
     float scanTimeDelta = -1.0;
     float scanTimeRange = -1.0;
@@ -757,7 +757,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
                 {TOP_BOTTOM_RATIO, QVariant(topBottomRatio)},
                 {TOP_BOTTOME_RATIO_NORM, QVariant(topBottomRatioNorm)},
-                {CHARGE_NORM, QVariant(chargeNorm)},
+                {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
                 {SCAN_TIME_DELTA, QVariant(scanTimeDelta)},
                 {SCAN_TIME_RANGE, QVariant(scanTimeRange)},
@@ -983,7 +983,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.cosineSimSumBottom6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6],
         row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio],
         row.topBottomRatioNorm = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm],
-        row.chargeNorm = candidateScores->featuresArray[CandidateScores::Features::ChargeNorm],
+        row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge],
         row.mass = candidateScores->featuresArray[CandidateScores::Features::Mass],
         row.scanTimeDelta = candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta],
         row.scanTimeRange = candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange],
