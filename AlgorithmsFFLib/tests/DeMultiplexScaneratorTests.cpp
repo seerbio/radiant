@@ -34,6 +34,8 @@ private slots:
 
 void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
 
+    QSKIP("reenable after bulding a smaller file and proper pathing");
+
     ERR_INIT
 
 //  TODO make this into a truncated file starting at scan 21796 to 21810
@@ -91,6 +93,9 @@ void DeMultiplexScaneratorTests::buildTransitionsMatrixTest() {
 
 void DeMultiplexScaneratorTests::buildScanMaskMatrixTest() {
 
+    QSKIP("reenable after bulding a smaller file and proper pathing");
+
+
     ERR_INIT
 
     //  TODO make this into a truncated file starting at scan 21796 to 21810
@@ -143,6 +148,8 @@ void DeMultiplexScaneratorTests::buildScanMaskMatrixTest() {
 }
 
 void DeMultiplexScaneratorTests::deMultiplexScansTest() {
+
+    QSKIP("reenable after bulding a smaller file and proper pathing");
 
     ERR_INIT
 
