@@ -690,8 +690,6 @@ Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_intensityMatrix100.nonZeros() > 1); ree;
-
     if (m_intensityMatrix100Shadow.cols() > 0) {
 
         e = ErrorUtils::isEqual(m_intensityMatrix100.cols(), m_intensityMatrix100Shadow.cols()); ree;
@@ -1152,7 +1150,7 @@ Err ScoreOverseer::buildScores(
     const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
 
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
-    candidateScores->featuresArray[CandidateScores::Features::ChargeNorm] = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
+    candidateScores->featuresArray[CandidateScores::Features::Charge] = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
     const float scanTimeRange = std::max(
             std::numeric_limits<float>::min(),

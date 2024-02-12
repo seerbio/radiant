@@ -19,7 +19,7 @@ class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePair {
 
 public:
 
-    friend class DiscriminantScoretronTest;
+    friend class DiscriminantScoretronTests;
     friend class QValueSettertronTests;
 
     TargetDecoyCandidatePair();

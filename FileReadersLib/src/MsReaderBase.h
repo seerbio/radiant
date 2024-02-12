@@ -24,7 +24,9 @@ enum class ScanPointsSort {
     DescIntensity
 };
 
-struct FILEREADERSLIB_EXPORTS MsScanInfo {
+class FILEREADERSLIB_EXPORTS MsScanInfo {
+
+public:
 
     int msLevel = -1;
     ScanNumber scanNumber = 1;

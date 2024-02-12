@@ -41,6 +41,26 @@ public:
     }
 
     /*!
+    * @brief  Converts an object of type T to a float.
+    * @tparam T: The datatype of the object. The object should support toDouble() conversion method.
+    * @param object: The object that is to be converted to double.
+    * @param out: Pointer to a double where the result of conversion will be stored.
+    * @param e: Initial error status, eError by default.
+    * @return Err: Error status after attempt of operation. Error could occur if conversion is not possible.
+    * This error status should follow your internally defined error schemas/codes
+    */
+    template<typename T>
+    static Err toFloat(const T &object, float *out, Err e = eError) {
+        bool ok;
+        *out = object.toFloat(&ok);
+        if (!ok) {
+            qDebug() << object;
+            rrr(e);
+        }
+        return eNoError;
+    }
+
+    /*!
     * @brief  Converts an object of type T to an integer.
     * @tparam T: The datatype of the object. The object should support toInt() conversion method.
     * @param object: The object that is to be converted to an integer.

@@ -36,7 +36,7 @@ public:
         CosineSimSumBottom6,
         TopBottomRatio,
         TopBottomRatioNorm,//10
-        ChargeNorm,
+        Charge,
         Mass,
         ScanTimeDelta,
         ScanTimeRange,
@@ -292,7 +292,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_SUM_BOTTOM_6 = QStringLiteral("CosineSimSumBottom6");
     const QString TOP_BOTTOM_RATIO = QStringLiteral("TopBottomRatio");
     const QString TOP_BOTTOME_RATIO_NORM = QStringLiteral("TopBottomRatioNorm");
-    const QString CHARGE_NORM = QStringLiteral("ChargeNorm");
+    const QString CHARGE = QStringLiteral("Charge");
     const QString MASS = QStringLiteral("Mass");
     const QString SCAN_TIME_DELTA = QStringLiteral("ScanTimeDelta");
     const QString SCAN_TIME_RANGE = QStringLiteral("ScanTimeRange");
@@ -500,6 +500,21 @@ namespace CandidateScoresReaderRowNamespace {
     const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_1");
     const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_2");
     const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_3");
+
+
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG1_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_1");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG1_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_2");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG1_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_3");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG2_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_1");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG2_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_2");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG2_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_3");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG3_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_1");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG3_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_2");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG3_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_3");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG4_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_1");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG4_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_2");
+    const QString ALT_TARG_ID_TIME_DELTA_CHRG4_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_3");
+
 }//namespace
 
 struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
@@ -515,7 +530,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float cosineSimSumBottom6 = -1.0;
     float topBottomRatio = -1.0;
     float topBottomRatioNorm = -1.0;
-    float chargeNorm = -1.0;
+    float charge = -1.0;
     float mass = -1.0;
     float scanTimeDelta = -1.0;
     float scanTimeRange = -1.0;
@@ -724,19 +739,15 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float altTargetKeyIdCosineSimSumCharge4_2 = -1.0;
     float altTargetKeyIdCosineSimSumCharge4_3 = -1.0;
 
-    float altTargetKeyIdTimeDeltaCharge1_OG = -1.0;
     float altTargetKeyIdTimeDeltaCharge1_1 = -1.0;
     float altTargetKeyIdTimeDeltaCharge1_2 = -1.0;
     float altTargetKeyIdTimeDeltaCharge1_3 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge2_OG = -1.0;
     float altTargetKeyIdTimeDeltaCharge2_1 = -1.0;
     float altTargetKeyIdTimeDeltaCharge2_2 = -1.0;
     float altTargetKeyIdTimeDeltaCharge2_3 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge3_OG = -1.0;
     float altTargetKeyIdTimeDeltaCharge3_1 = -1.0;
     float altTargetKeyIdTimeDeltaCharge3_2 = -1.0;
     float altTargetKeyIdTimeDeltaCharge3_3 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge4_OG = -1.0;
     float altTargetKeyIdTimeDeltaCharge4_1 = -1.0;
     float altTargetKeyIdTimeDeltaCharge4_2 = -1.0;
     float altTargetKeyIdTimeDeltaCharge4_3 = -1.0;
@@ -757,7 +768,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
                 {TOP_BOTTOM_RATIO, QVariant(topBottomRatio)},
                 {TOP_BOTTOME_RATIO_NORM, QVariant(topBottomRatioNorm)},
-                {CHARGE_NORM, QVariant(chargeNorm)},
+                {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
                 {SCAN_TIME_DELTA, QVariant(scanTimeDelta)},
                 {SCAN_TIME_RANGE, QVariant(scanTimeRange)},
@@ -964,7 +975,20 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG, QVariant(altTargetKeyIdCosineSimSumCharge4_OG)},
                 {ALT_TARG_ID_COS_SIM_SUM_CHRG4_1, QVariant(altTargetKeyIdCosineSimSumCharge4_1)},
                 {ALT_TARG_ID_COS_SIM_SUM_CHRG4_2, QVariant(altTargetKeyIdCosineSimSumCharge4_2)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_3, QVariant(altTargetKeyIdCosineSimSumCharge4_3)}
+                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_3, QVariant(altTargetKeyIdCosineSimSumCharge4_3)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG1_1 , QVariant(altTargetKeyIdTimeDeltaCharge1_1)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG1_2 , QVariant(altTargetKeyIdTimeDeltaCharge1_2)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG1_3 , QVariant(altTargetKeyIdTimeDeltaCharge1_3)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG2_1 , QVariant(altTargetKeyIdTimeDeltaCharge2_1)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG2_2 , QVariant(altTargetKeyIdTimeDeltaCharge2_2)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG2_3 , QVariant(altTargetKeyIdTimeDeltaCharge2_3)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG3_1 , QVariant(altTargetKeyIdTimeDeltaCharge3_1)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG3_2 , QVariant(altTargetKeyIdTimeDeltaCharge3_2)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG3_3 , QVariant(altTargetKeyIdTimeDeltaCharge3_3)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG4_1 , QVariant(altTargetKeyIdTimeDeltaCharge4_1)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG4_2 , QVariant(altTargetKeyIdTimeDeltaCharge4_2)},
+                {ALT_TARG_ID_TIME_DELTA_CHRG4_3 , QVariant(altTargetKeyIdTimeDeltaCharge4_3)}
+
         };
     }
 
@@ -983,7 +1007,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.cosineSimSumBottom6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6],
         row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio],
         row.topBottomRatioNorm = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm],
-        row.chargeNorm = candidateScores->featuresArray[CandidateScores::Features::ChargeNorm],
+        row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge],
         row.mass = candidateScores->featuresArray[CandidateScores::Features::Mass],
         row.scanTimeDelta = candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta],
         row.scanTimeRange = candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange],

@@ -25,6 +25,8 @@ SET(SOURCE_FILES
         src/CandidateScorertron.cpp
         src/ClassifierWeightsManager.cpp
         src/DiscriminantScoretron.cpp
+        src/DeMultiplexScanerator.cpp
+        src/DeMultiplexScaneratorManager.cpp
         src/FDRCLassifierNeuralNet.cpp
         src/FeatureFinderHill.cpp
         src/FeatureFinderHillBuilder.cpp
@@ -50,6 +52,8 @@ SET(HEADER_FILES
         src/CandidateScores.h
         src/CandidateScorertron.h
         src/ClassifierWeightsManager.h
+        src/DeMultiplexScanerator.h
+        src/DeMultiplexScaneratorManager.h
         src/DiscriminantScoretron.h
         src/FDRCLassifierNeuralNet.h
         src/FeatureFinderHill.h
@@ -74,12 +78,6 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        src/InterferingCandidatesEliminatomatic.cpp
-        src/InterferingCandidatesEliminatomatic.h
-        src/QValueSettertron.cpp
-        src/QValueSettertron.h
-        src/DiscriminantScoretron.cpp
-        src/DiscriminantScoretron.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
