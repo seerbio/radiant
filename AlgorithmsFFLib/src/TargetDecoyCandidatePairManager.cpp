@@ -223,21 +223,21 @@ namespace {
                 if (ionLableInfo.second.contains("^2")) {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(nTermDeltaMassCharge2);
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(cTermDeltaMassCharge2);
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
                     }
                 }
                 else {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(nTermDeltaMass);
+                        ms2IonDecoy.mz += nTermDeltaMass;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(cTermDeltaMass);
+                        ms2IonDecoy.mz += cTermDeltaMass;
                     }
                 }
             }
@@ -247,21 +247,21 @@ namespace {
                 if (ionLableInfo.second.contains("^2")) {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(cTermDeltaMassCharge2);
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(nTermDeltaMassCharge2);
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
                     }
                 }
                 else {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(cTermDeltaMass);
+                        ms2IonDecoy.mz += cTermDeltaMass;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += static_cast<float>(nTermDeltaMass);
+                        ms2IonDecoy.mz += nTermDeltaMass;
                     }
                 }
             }
