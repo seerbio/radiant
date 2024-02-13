@@ -733,6 +733,7 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
                 ); ree;
 
         if (targetDecoyPointers.isEmpty()) {
+            qWarning() << msScanInfo.targetKey() << "contains no target entries";
             continue;
         }
 
