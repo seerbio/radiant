@@ -732,6 +732,10 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
                 &targetDecoyPointers
                 ); ree;
 
+        if (targetDecoyPointers.isEmpty()) {
+            continue;
+        }
+
         mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyPointers);
 
         if (m_pythiaParameters.verbosity > 1) {
