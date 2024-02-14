@@ -370,42 +370,48 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
-    e = applyNeuralNetClassifier(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            seedFirstTry,
-            &candidateScoreClassifierPntrs
-            ); ree;
+    if (!m_pythiaParameters.bypassNeuralNet) {
 
-    if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold) {
-
-        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-        std::shuffle(
-                candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-                candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
-                rng
-        );
-
-        const int seedSecondTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + 111;
-        candidateScoreClassifierPntrs.clear();
+        const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
         e = applyNeuralNetClassifier(
                 candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-                seedSecondTry,
+                seedFirstTry,
                 &candidateScoreClassifierPntrs
-                ); ree;
+        ); ree;
 
-        if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold){
-            QVector<CandidateScores*> candidateScoresPntrs;
-            buildCandidateScoresPtrs(&candidateScoresPntrs);
+        if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold) {
 
-            std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-                return l->discriminantScore < r->discriminantScore;
-            });
+            std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+            std::shuffle(
+                    candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
+                    candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+                    rng
+            );
 
-            candidateScoresPntrs.resize(targetCountBelowFDRThreshold);
-            candidateScoreClassifierPntrs = candidateScoresPntrs;
+            const int seedSecondTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + 111;
+            candidateScoreClassifierPntrs.clear();
+            e = applyNeuralNetClassifier(
+                    candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+                    seedSecondTry,
+                    &candidateScoreClassifierPntrs
+            ); ree;
+
+            if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold){
+                QVector<CandidateScores*> candidateScoresPntrs;
+                buildCandidateScoresPtrs(&candidateScoresPntrs);
+
+                std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
+                    return l->discriminantScore < r->discriminantScore;
+                });
+
+                candidateScoresPntrs.resize(targetCountBelowFDRThreshold);
+                candidateScoreClassifierPntrs = candidateScoresPntrs;
+            }
+
         }
-
+    }
+    else {
+        candidateScoreClassifierPntrs = candidateScoresTargetsAndDecoys50PercentFDRFiltered;
     }
 
     if (!m_pythiaParameters.reportDecoys) {

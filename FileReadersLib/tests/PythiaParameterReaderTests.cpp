@@ -60,6 +60,7 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.0);
     QCOMPARE(pythiaParameters.smoothCount, 1);
 
+    QCOMPARE(pythiaParameters.bypassNeuralNet, true);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
 

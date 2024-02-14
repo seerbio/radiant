@@ -57,6 +57,8 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
     extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
 
+    extern const QString FILEREADERSLIB_EXPORTS kBypassNeuralNet;
+
 }
 
 
@@ -159,6 +161,8 @@ struct PythiaParameters{
     int ionsSharedToReject = 4;
     int topNMs2Ions = 12;
 
+    bool bypassNeuralNet = false;
+
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin > chargeStateMax) {
@@ -235,6 +239,8 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
 
+        qDebug() << PythiaParameterReaderConstants::kBypassNeuralNet << bypassNeuralNet;
+
         qDebug() << PythiaParameterReaderConstants::kModifications;
         for (const Modification &mod : modifications) {
             mod.print();
@@ -267,9 +273,7 @@ public:
 
 private:
 
-    Err validateJsonKeys();
-
-    Err loadPythiaParameters(PythiaParameters *pythiaParameters);
+    Err validateJsonKeys(); //TODO update this for toml
 
 };
 
