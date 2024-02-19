@@ -245,6 +245,18 @@ public:
         AltTargetKeyIdTimeDeltaCharge4_1,
         AltTargetKeyIdTimeDeltaCharge4_2,
         AltTargetKeyIdTimeDeltaCharge4_3,
+        Ms1MzMeanFound100,//220
+        Ms1MzMeanFound45,
+        Ms1MzMeanFound20,
+        Ms1MzMeanFoundPreMono,
+        Ms1MzMeanFoundIso1,
+        Ms1MzMeanFoundIso2,
+        Ms1MzMeanFound100PPM,
+        Ms1MzMeanFound45PPM,
+        Ms1MzMeanFound20PPM,
+        Ms1MzMeanFoundPreMonoPPM,
+        Ms1MzMeanFoundIso1PPM,//230
+        Ms1MzMeanFoundIso2PPM,
         FeaturesSize
     };
 

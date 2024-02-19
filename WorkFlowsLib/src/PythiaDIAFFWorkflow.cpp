@@ -693,6 +693,27 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 return l->discriminantScore < r->discriminantScore;
             });
 
+            int counter = 0;
+            for (const CandidateScores* cs : candidateScoresPntrsOpt) {
+
+                if (cs->featuresArray[CandidateScores::Features::CosineSim100MS1] < 0.8) {
+                    continue;
+                }
+
+                const float cosineSim100MS1 = cs->featuresArray[CandidateScores::Features::CosineSim100MS1];
+                const float ms1MzActual = cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100];
+                const float ms1MzTheo = cs->targetDecoyCandidatePair->mz();
+                const float ppmAccAbsolute = 1e6 * (std::abs(ms1MzActual - ms1MzTheo) / ms1MzTheo);
+
+                if (ppmAccAbsolute > 15) {
+                    continue;
+                }
+
+                qDebug() << ++counter << cosineSim100MS1
+                         << "SDLFKSDL" << ms1MzTheo
+                        << ms1MzActual << ppmAccAbsolute;
+            }
+
             candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
 
             *candidateScoresForTrainings = candidateScoresPntrsOpt;
