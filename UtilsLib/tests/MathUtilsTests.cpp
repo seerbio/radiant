@@ -36,6 +36,7 @@ private Q_SLOTS:
     static void closestTest();
     static void generateRandomSelectionListTest();
     static void cleanupTestCase();
+    static void calculateMassAccuracyPPMTest();
 
 };
 
@@ -191,6 +192,16 @@ void MathUtilsTests::weightedMeanTest() {
     e = MathUtils::weightedMean(values, weights, inverseWeights, &weightedAvg);
     QCOMPARE(e, eNoError);
     QCOMPARE(MathUtils::pRound(weightedAvg, 3), 0.333);
+}
+
+void MathUtilsTests::calculateMassAccuracyPPMTest() {
+
+    const double mzTheo = 1000.0;
+    const double mzObs = 1000.01;
+
+    const double ppmAcc = MathUtils::calculateMassAccuracyPPM(mzTheo, mzObs);
+    QCOMPARE(ppmAcc, 10.0);
+
 }
 
 QTEST_MAIN(MathUtilsTests)

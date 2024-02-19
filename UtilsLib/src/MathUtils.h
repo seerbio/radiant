@@ -492,6 +492,19 @@ public:
         ERR_RETURN
     }
 
+    /**
+    * @brief Calculate mass accuracy parts per million (PPM)
+    *
+    * @tparam T Template type
+    * @param massTheo Theoretical mass
+    * @param massObserved Observed mass
+    * @return Mass accuracy PPM calculated as 1e6 * (massObserved - massTheo) / massTheo
+    */
+    template<typename T>
+    static T calculateMassAccuracyPPM(T massTheo, T massObserved) {
+        return 1e6 * (massObserved - massTheo) / massTheo;
+    }
+
 };
 
 
