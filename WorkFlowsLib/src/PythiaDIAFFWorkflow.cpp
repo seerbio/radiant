@@ -491,6 +491,7 @@ namespace {
     }
 
     Err buildMsCalibrationReaderRows(
+            const MSLevel &msLevel,
             const QVector<CandidateScores*> &_candidateScores,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
             ) {
@@ -498,6 +499,7 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(_candidateScores); ree;
+        e = ErrorUtils::isFalse(msLevel == MSLevel::MS1MS2); ree;
 
         qDebug() << _candidateScores.size() << "Found for recalibartion";
 
@@ -506,17 +508,26 @@ namespace {
         qDebug() << candidateScoresFiltered.size() << "Found for recalibartion filtered";
 
         const int top6 = 6;
-        const auto msCalibrationReaderRowsInsertLogic = [](CandidateScores *cs){
+        const auto msCalibrationReaderRowsInsertLogic = [msLevel](CandidateScores *cs){
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
             row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
-            row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
-            row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
-            row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
-            row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
+
+            if (msLevel == MSLevel::MS2) {
+                row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
+                row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
+                row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
+                row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
+            }
+            else {
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz()};
+                row.mzFoundMeanVec = {cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100]};
+                row.mzFoundStDevVec = {};
+                row.intensityFoundMaxVec = {};
+            }
 
             return row;
         };
@@ -654,7 +665,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         qDebug() << candidateScoresPntrs.size() << "after filtering";
 
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-        e = buildMsCalibrationReaderRows(candidateScoresPntrs, &msCalibrationReaderRows); ree;
+        e = buildMsCalibrationReaderRows(
+                MSLevel::MS2,
+                candidateScoresPntrs,
+                &msCalibrationReaderRows
+                ); ree;
+
         topScoresOfTranches.clear();
         for (CandidateScores* p : candidateScoresPntrs) {
             topScoresOfTranches[p->targetKey].push_back(p->targetDecoyCandidatePair);
@@ -680,6 +696,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 #endif
             e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
             e = recalibrateMzVals(
+                    MSLevel::MS2,
                     diaTargetFrames,
                     scanNumberVsScanTimeMS1
             ); ree;
@@ -793,16 +810,20 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
+        const MSLevel &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit());
+    ree;
 
-    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty());
+    ree;
+    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty());
+    ree;
 
     qDebug() << "Recalibrating mz vals";
 
@@ -811,33 +832,39 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
     const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
 
+    if (msLevel == MSLevel::MS2 || msLevel == MSLevel::MS1MS2) {
+
+
 #define RECAL_PARALLEL
 #ifdef RECAL_PARALLEL
-    const auto reCalBinder = std::bind(
-            recalibrationLogic,
-            m_msCalibratomatic,
-            std::placeholders::_1
-            );
+        const auto reCalBinder = std::bind(
+                recalibrationLogic,
+                m_msCalibratomatic,
+                std::placeholders::_1
+        );
 
-    const QList<QMap<ScanNumber, ScanPoints*>> &tandemPointsVec = diaTargetFrames->values();
+        const QList<QMap<ScanNumber, ScanPoints *>> &tandemPointsVec = diaTargetFrames->values();
 
-    QFuture<Err> futures = QtConcurrent::mapped(
-            tandemPointsVec,
-            reCalBinder
-            );
-    futures.waitForFinished();
+        QFuture<Err> futures = QtConcurrent::mapped(
+                tandemPointsVec,
+                reCalBinder
+        );
+        futures.waitForFinished();
 
-    for (const Err &err : futures) {
-        e = err; ree;
-    }
+        for (const Err &err: futures) {
+            e = err; ree;
+        }
 #else
-    for (const MzTargetKey &k: diaTargetFrameKeys) {
-        e = recalibrationLogic(m_msCalibratomatic, diaTargetFrames->value(k)); ree;
-    }
+        for (const MzTargetKey &k: diaTargetFrameKeys) {
+            e = recalibrationLogic(m_msCalibratomatic, diaTargetFrames->value(k)); ree;
+        }
 #endif
+    }
 
-    qDebug() << "Recalibrating MS1 mz vals frame";
-    e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
+    if (msLevel == MSLevel::MS1 || msLevel == MSLevel::MS1MS2) {
+        qDebug() << "Recalibrating MS1 mz vals frame";
+        e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
+    }
 
     qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
 

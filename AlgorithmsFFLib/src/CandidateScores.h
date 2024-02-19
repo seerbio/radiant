@@ -257,6 +257,18 @@ public:
         Ms1MzMeanFoundPreMonoPPM,
         Ms1MzMeanFoundIso1PPM,//230
         Ms1MzMeanFoundIso2PPM,
+        Ms1MzStDevFound100,
+        Ms1MzStDevFound45,
+        Ms1MzStDevFound20,
+        Ms1MzStDevFoundPreMono,
+        Ms1MzStDevFoundIso1,
+        Ms1MzStDevFoundIso2,
+        Ms1IntensityFound100,
+        Ms1IntensityFound45,
+        Ms1IntensityFound20,//240
+        Ms1IntensityFoundPreMono,
+        Ms1IntensityFoundIso1,
+        Ms1IntensityFoundIso2,
         FeaturesSize
     };
 
