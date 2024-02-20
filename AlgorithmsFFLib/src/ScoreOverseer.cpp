@@ -927,8 +927,13 @@ namespace {
         std::vector<float> ms1IntensityLoadingVec(ms1VecSize, 0.0f);
         ms1IntensityLoadingVec.reserve(ms1VecSize);
 
-        std::vector<float> ms1MzValsLoadingVec(ms1VecSize, 0.0f);
-        ms1MzValsLoadingVec.reserve(ms1VecSize);
+        std::vector<float> ms1MzValsLoadingVec;
+        std::transform(
+                xicPoints.begin(),
+                xicPoints.end(),
+                std::back_inserter(ms1MzValsLoadingVec),
+                [](const XICPoint &xp){return xp.mz;}
+                );
 
         for (int i = 0; i < xicPoints.size(); i++) {
 
@@ -941,7 +946,7 @@ namespace {
             }
 
             ms1IntensityLoadingVec[frameIndex] = xp.intensity;
-            ms1MzValsLoadingVec[frameIndex] = xp.mz;
+
         }
 
         Eigen::VectorX<float> ms1Vec(ms1VecSize);
@@ -1221,6 +1226,7 @@ Err ScoreOverseer::buildScores(
             &ms1StDevMzFound100,
             &ms1IntensityFound100
             ); ree;
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = std::max(ms1MzMeanFound100, std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM]

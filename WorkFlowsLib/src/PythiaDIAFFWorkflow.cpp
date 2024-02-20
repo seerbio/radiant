@@ -525,8 +525,8 @@ namespace {
             else {
                 row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz()};
                 row.mzFoundMeanVec = {cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100]};
-                row.mzFoundStDevVec = {};
-                row.intensityFoundMaxVec = {};
+                row.mzFoundStDevVec = {cs->featuresArray[CandidateScores::Features::Ms1MzStDevFound100]};
+                row.intensityFoundMaxVec = {cs->featuresArray[CandidateScores::Features::Ms1IntensityFound100]};
             }
 
             return row;
@@ -684,7 +684,8 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         const QString twoPercenFDRKey = "2";
         if (fdrVsCount.value(twoPercenFDRKey) >= minMzTrainingSize) {
 
-            msCalibrationReaderRows.resize(fdrVsCount.value(twoPercenFDRKey));
+            const int massResize = std::min(fdrVsCount.value(twoPercenFDRKey), msCalibrationReaderRows.size());
+            msCalibrationReaderRows.resize(massResize);
 
 //#define TIGHT_IRT_CAL
 #ifdef TIGHT_IRT_CAL
@@ -710,26 +711,25 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 return l->discriminantScore < r->discriminantScore;
             });
 
-            int counter = 0;
-            for (const CandidateScores* cs : candidateScoresPntrsOpt) {
+            QVector<CandidateScores*> candidateScoresPntrsOptNew = candidateScoresPntrsOpt;
 
-                if (cs->featuresArray[CandidateScores::Features::CosineSim100MS1] < 0.8) {
-                    continue;
-                }
+            const auto terminatorLogic = [](CandidateScores *cs){return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] < 0.8;};
+            const auto terminator = std::remove_if(candidateScoresPntrsOptNew.begin(), candidateScoresPntrsOptNew.end(), terminatorLogic);
+            candidateScoresPntrsOptNew.erase(terminator, candidateScoresPntrsOptNew.end());
 
-                const float cosineSim100MS1 = cs->featuresArray[CandidateScores::Features::CosineSim100MS1];
-                const float ms1MzActual = cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100];
-                const float ms1MzTheo = cs->targetDecoyCandidatePair->mz();
-                const float ppmAccAbsolute = 1e6 * (std::abs(ms1MzActual - ms1MzTheo) / ms1MzTheo);
+            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+            e = buildMsCalibrationReaderRows(
+                    MSLevel::MS1,
+                    candidateScoresPntrsOptNew,
+                    &msCalibrationReaderRowsMS1
+            ); ree;
 
-                if (ppmAccAbsolute > 15) {
-                    continue;
-                }
-
-                qDebug() << ++counter << cosineSim100MS1
-                         << "SDLFKSDL" << ms1MzTheo
-                        << ms1MzActual << ppmAccAbsolute;
-            }
+            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRowsMS1); ree;
+            e = recalibrateMzVals(
+                    MSLevel::MS1,
+                    diaTargetFrames,
+                    scanNumberVsScanTimeMS1
+            ); ree;
 
             candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
 
@@ -817,23 +817,16 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit());
-    ree;
-
-    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty());
-    ree;
-    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty());
-    ree;
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInit()); ree;
+    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
+    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
     qDebug() << "Recalibrating mz vals";
 
     QElapsedTimer et;
     et.start();
 
-    const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
-
     if (msLevel == MSLevel::MS2 || msLevel == MSLevel::MS1MS2) {
-
 
 #define RECAL_PARALLEL
 #ifdef RECAL_PARALLEL
@@ -855,6 +848,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
             e = err; ree;
         }
 #else
+        const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
         for (const MzTargetKey &k: diaTargetFrameKeys) {
             e = recalibrationLogic(m_msCalibratomatic, diaTargetFrames->value(k)); ree;
         }
@@ -991,7 +985,6 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
 
     const int topNMS2IonsOptimization = 6;
     qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
-
 
     qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
 
