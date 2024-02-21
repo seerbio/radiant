@@ -717,19 +717,19 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             const auto terminator = std::remove_if(candidateScoresPntrsOptNew.begin(), candidateScoresPntrsOptNew.end(), terminatorLogic);
             candidateScoresPntrsOptNew.erase(terminator, candidateScoresPntrsOptNew.end());
 
-            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-            e = buildMsCalibrationReaderRows(
-                    MSLevel::MS1,
-                    candidateScoresPntrsOptNew,
-                    &msCalibrationReaderRowsMS1
-            ); ree;
-
-            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRowsMS1); ree;
-            e = recalibrateMzVals(
-                    MSLevel::MS1,
-                    diaTargetFrames,
-                    scanNumberVsScanTimeMS1
-            ); ree;
+//            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+//            e = buildMsCalibrationReaderRows(
+//                    MSLevel::MS1,
+//                    candidateScoresPntrsOptNew,
+//                    &msCalibrationReaderRowsMS1
+//            ); ree;
+//
+//            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRowsMS1); ree;
+//            e = recalibrateMzVals(
+//                    MSLevel::MS1,
+//                    diaTargetFrames,
+//                    scanNumberVsScanTimeMS1
+//            ); ree;
 
             candidateScoresPntrsOpt.resize(idealTrainingCountAtGivenFDR * 2);
 
