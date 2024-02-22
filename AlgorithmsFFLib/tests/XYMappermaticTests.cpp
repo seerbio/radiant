@@ -38,6 +38,7 @@ void XYMappermaticTests::loadModelTest() {
     QVector<XYMappermaticRow> xyMappermaticRows;
     e  = CSVReader::read(
             iRTReCalFilePath,
+            S_GLOBAL_SETTINGS.COMMA,
             &xyMappermaticRows
     );
     QCOMPARE(e, eNoError);
@@ -202,6 +203,7 @@ void XYMappermaticTests::splineTest() {
     QVector<XYMappermaticRow> xyMappermaticRows;
     e  = CSVReader::read(
             iRTReCalFilePath,
+            S_GLOBAL_SETTINGS.COMMA,
             &xyMappermaticRows
     );
     QCOMPARE(e, eNoError);
