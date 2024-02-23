@@ -24,7 +24,7 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
     ERR_INIT
 
     TargetDecoyCandidatePair targetDecoyCandidatePair0;
-    targetDecoyCandidatePair0.setPeptideStringWithMods("PEPTIDEMURT");
+    targetDecoyCandidatePair0.setPeptideStringWithMods(PeptideStringWithMods("PEPTIDEMURT"));
     targetDecoyCandidatePair0.setCharge(2);
 
     CandidateScores c0;
@@ -34,7 +34,7 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
     c0.targetDecoyCandidatePair = &targetDecoyCandidatePair0;
 
     TargetDecoyCandidatePair targetDecoyCandidatePair1;
-    targetDecoyCandidatePair1.setPeptideStringWithMods("PEPTIDE");
+    targetDecoyCandidatePair1.setPeptideStringWithMods(PeptideStringWithMods("PEPTIDE"));
     targetDecoyCandidatePair1.setCharge(2);
 
     CandidateScores c1;
@@ -44,7 +44,7 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
     c1.targetDecoyCandidatePair = &targetDecoyCandidatePair1;
 
     TargetDecoyCandidatePair targetDecoyCandidatePair2;
-    targetDecoyCandidatePair2.setPeptideStringWithMods("PEPTIDER");
+    targetDecoyCandidatePair2.setPeptideStringWithMods(PeptideStringWithMods("PEPTIDER"));
     targetDecoyCandidatePair2.setCharge(2);
 
     CandidateScores c2;
@@ -55,7 +55,7 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
     
 
     TargetDecoyCandidatePair targetDecoyCandidatePairDecoy;
-    targetDecoyCandidatePair1.setPeptideStringWithMods("PEPTIDECOY");
+    targetDecoyCandidatePair1.setPeptideStringWithMods(PeptideStringWithMods("PEPTIDECOY"));
     targetDecoyCandidatePair1.setCharge(2);
 
     CandidateScores cDecoy;
@@ -65,7 +65,7 @@ void QValueSettertronTests::setQValueForCandidatesTest() {
     cDecoy.targetDecoyCandidatePair = &targetDecoyCandidatePairDecoy;
 
     TargetDecoyCandidatePair targetDecoyCandidatePair3;
-    targetDecoyCandidatePair3.setPeptideStringWithMods("PEPTIDEBUM");
+    targetDecoyCandidatePair3.setPeptideStringWithMods(PeptideStringWithMods("PEPTIDEBUM"));
     targetDecoyCandidatePair3.setCharge(2);
 
     CandidateScores c3;

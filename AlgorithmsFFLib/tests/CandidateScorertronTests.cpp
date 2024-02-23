@@ -78,8 +78,7 @@ private:
         QVector<MS2Ion> targetIons;
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
-                QStringLiteral("DGVVLFK"),
-                QStringLiteral("DGVVLFK"),
+                PeptideStringWithMods("DGVVLFK"),
                 {i1, i2, i3},
                 {i1, i2, i3},
                 2,

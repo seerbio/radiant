@@ -57,7 +57,7 @@ void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
 
 void BiophysicalCalcsTests::calculatePeptideMassesTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
     const QHash<ResidueIndex, ModificationMass> mods = {{'M', 16.0}};
 
     QVector<QPair<PeptideString, QHash<ResidueIndex, ModificationMass>>> vec = {
@@ -86,7 +86,7 @@ void BiophysicalCalcsTests::calculateMassFromThomson() {
 
 void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
 
     const QVector<double> frags = BiophysicalCalcs::buildTandemFragmentMasses(
             peptideStringWithMods,
@@ -108,14 +108,14 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
 void BiophysicalCalcsTests::calculateThomsonTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
     const double thomson = BiophysicalCalcs::calculateThomson(peptideStringWithMods, AminoAcids(), 2);
     QCOMPARE(thomson, 175.09883997);
 }
 
 void BiophysicalCalcsTests::calculateChargeFromSequenceTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
 
     const int charge = BiophysicalCalcs::calculateChargeFromSequence(
             peptideStringWithMods,

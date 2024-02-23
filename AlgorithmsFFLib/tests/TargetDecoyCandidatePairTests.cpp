@@ -26,7 +26,7 @@ void TargetDecoyCandidatePairTests::gettersTest() {
     MS2Ion ms2Ion2;
     ms2Ion2.mz = 777.7;
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("CHAUNCYANDFLOPS");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("CHAUNCYANDFLOPS");
     const QVector<MS2Ion> ms2IonsTarget = {ms2Ion1};
     const QVector<MS2Ion> ms2IonsDecoy = {ms2Ion2};
     const int charge = 2;
@@ -35,7 +35,6 @@ void TargetDecoyCandidatePairTests::gettersTest() {
     const int totalFramentCount = 12;
 
     TargetDecoyCandidatePair targetDecoyCandidatePair(
-            peptideStringWithMods,
             peptideStringWithMods,
             ms2IonsTarget,
             ms2IonsDecoy,

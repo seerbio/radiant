@@ -63,7 +63,7 @@ void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
         cs.isDecoy = false;
         cs.targetDecoyCandidatePair = &targetDecoyPairsTargets[i];
         cs.targetDecoyCandidatePair->setCharge(2);
-        cs.targetDecoyCandidatePair->setPeptideStringWithMods(seqs.at(i));
+        cs.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
         cs.targetKey = "1234";
 
         CandidateScores csDecoy;
@@ -71,7 +71,7 @@ void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
         csDecoy.isDecoy = true;
         csDecoy.targetDecoyCandidatePair = &targetDecoyPairsDecoys[i];
         csDecoy.targetDecoyCandidatePair->setCharge(2);
-        csDecoy.targetDecoyCandidatePair->setPeptideStringWithMods(seqs.at(i));
+        csDecoy.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
         csDecoy.targetKey = "1234";
 
         candidateScoresVec.push_back(cs);
