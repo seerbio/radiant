@@ -201,13 +201,13 @@ namespace {
 
         const QMap<QChar, double> diannMutateAminoAcidTo = AminoAcids::diannMutateAminoAcidTo();
 
-        const QString &seq = peptideStringWithMods;
+        const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
 
         const int firstIndexToMutate = 1;
-        const int secondIndexToMutate = seq.size() - 2;
+        const int secondIndexToMutate = peptideString.size() - 2;
 
-        const double nTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(firstIndexToMutate));
-        const double cTermDeltaMass = diannMutateAminoAcidTo.value(seq.at(secondIndexToMutate));
+        const double nTermDeltaMass = diannMutateAminoAcidTo.value(peptideString.at(firstIndexToMutate));
+        const double cTermDeltaMass = diannMutateAminoAcidTo.value(peptideString.at(secondIndexToMutate));
         const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
         const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
 
@@ -223,21 +223,21 @@ namespace {
                 if (ionLableInfo.second.contains("^2")) {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
                 }
                 else {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass;
+                        ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass;
+                        ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
                     }
                 }
             }
@@ -247,21 +247,21 @@ namespace {
                 if (ionLableInfo.second.contains("^2")) {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
                 }
                 else {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass;
+                        ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass;
+                        ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
                     }
                 }
             }
@@ -326,33 +326,7 @@ namespace {
         ERR_RETURN
     }
 
-    namespace {
 
-        PeptideString removeUniModChars(const PeptideStringWithMods &peptideStringWithMods) {
-
-            PeptideString peptideString;
-
-            bool unimodOn = false;
-            for (const QChar &c : peptideStringWithMods) {
-                if (c == "(") {
-                    unimodOn = true;
-                    continue;
-                }
-                else if (c == ")") {
-                    unimodOn = false;
-                    continue;
-                }
-                else if (unimodOn) {
-                    continue;
-                }
-
-                peptideString += c;
-            }
-
-            return peptideString;
-        }
-
-    }//namespace
     QPair<Err, TargetDecoyCandidatePair> targetDecoyCandidatePairsLoadLogic(
             const FragLibReaderRow &flrr,
             const PythiaParameters &pythiaParameters
@@ -368,9 +342,7 @@ namespace {
                 &charge
         ); rree;
 
-        const PeptideString peptideString = removeUniModChars(peptideStringWithMods);
-
-        const int peptideLength = peptideString.size();
+        const int peptideLength = peptideStringWithMods.sizeNoMods();
         if (peptideLength < pythiaParameters.peptideLengthMin
             || peptideLength > pythiaParameters.peptideLengthMax
             || charge < pythiaParameters.chargeStateMin
@@ -398,14 +370,13 @@ namespace {
         ); rree;
 #else
         e= mutateCandidatePeptideTarget(
-                peptideString,
+                peptideStringWithMods,
                 ms2IonsTarget,
                 &ms2IonsDecoy
         ); rree;
 #endif
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
-                peptideString,
                 peptideStringWithMods,
                 ms2IonsTarget,
                 ms2IonsDecoy,
@@ -559,7 +530,7 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
             expectedSplitSize
             ); ree;
 
-    *peptideStringWithMods = peptideSequenceChargeKeySplit.front();
+    *peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
 
     e = ErrorUtils::toInt(
             peptideSequenceChargeKeySplit.back(),

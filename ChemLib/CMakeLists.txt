@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/ChemConstants.cpp
         src/MolecularFormula.cpp
         src/Molecule.cpp
+        src/PeptideStringWithMods.cpp
     )
 
 SET(HEADER_FILES
@@ -32,6 +33,7 @@ SET(HEADER_FILES
         src/ChemConstants.h
         src/MolecularFormula.h
         src/Molecule.h
+        src/PeptideStringWithMods.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

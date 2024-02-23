@@ -28,7 +28,7 @@ void MsCalibrationReaderTests::readWriteTest() {
     ERR_INIT
 
     MsCalibarationReaderRow row;
-    row.peptideStringWithMods = QStringLiteral("KalliopeAndBellatrix");
+    row.peptideStringWithMods = PeptideStringWithMods("KalliopeAndBellatrix");
     row.iRTPredicted = 66.6;
     row.scanTime = 66.7;
     row.scanNumber = 667;

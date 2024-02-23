@@ -50,7 +50,6 @@ using PeakIntegrationIndexes = QPair<int, int>;
 using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
 using PeptideString = QString;
-using PeptideStringWithMods = QString;
 using DiffPPM = double;
 using ProteinId = int;
 using ProteinSequence = QString;
@@ -71,6 +70,11 @@ using UniqueHashedMzAndTarget = QString;
 using Value = double;
 using XVal = double;
 using YVal = double;
+
+namespace UniModNamespace {
+
+    const extern QMap<QString, double> uniModNameVsModificationMass;
+}
 
 
 class UTILSLIB_EXPORTS GlobalSettings {

@@ -108,8 +108,6 @@ public:
             QVector<FragLibReaderRow> *fragLibReaderRows
     );
 
-    QMap<QString, double> uniModMap();
-
 private:
 
     Err convertFragLibTsvReaderRowsToFragLibReaderRow(

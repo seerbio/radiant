@@ -1,6 +1,7 @@
 #include "BiophysicalCalcs.h"
 
 #include "AminoAcids.h"
+#include "PeptideStringWithMods.h"
 
 #include <QHash>
 #include <QtTest>
