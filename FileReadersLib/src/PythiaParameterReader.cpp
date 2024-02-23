@@ -136,6 +136,8 @@ namespace PythiaParameterReaderConstants {
     const QString kPrecursorParams = QStringLiteral("PrecursorParams");
     const QString kPeakIntegrationParams = QStringLiteral("PeakIntegrationParams");
     const QString kFdrParams = QStringLiteral("FdrParams");
+
+    const QString kBypassNeuralNet = QStringLiteral("bypassNeuralNet");
 }
 
 Err PythiaParameterReader::validateJsonKeys() {
@@ -304,6 +306,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
     pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
+    pythiaParameters->bypassNeuralNet = fdrParamsNode[kBypassNeuralNet.toStdString()].value_or(false);
 
     toml::array* modifications = parser["Modification"].as_array();
     for(const auto& value : *modifications) {

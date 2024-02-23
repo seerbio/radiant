@@ -898,7 +898,10 @@ namespace {
             float ppmTol,
             TurboXIC *turboXicMS1,
             Eigen::VectorX<float> *gaussKernel,
-            float *cosineSimMS1
+            float *cosineSimMS1,
+            float *ms1MeanMzFound,
+            float *ms1StDevMzFound,
+            float *ms1IntensityFound
     ) {
 
         ERR_INIT
@@ -921,8 +924,16 @@ namespace {
 
         const int ms1VecSize = static_cast<int>(bestAnchorColumn.size());
 
-        std::vector<float> ms1VecLoadingVec(ms1VecSize, 0.0f);
-        ms1VecLoadingVec.reserve(ms1VecSize);
+        std::vector<float> ms1IntensityLoadingVec(ms1VecSize, 0.0f);
+        ms1IntensityLoadingVec.reserve(ms1VecSize);
+
+        std::vector<float> ms1MzValsLoadingVec;
+        std::transform(
+                xicPoints.begin(),
+                xicPoints.end(),
+                std::back_inserter(ms1MzValsLoadingVec),
+                [](const XICPoint &xp){return xp.mz;}
+                );
 
         for (int i = 0; i < xicPoints.size(); i++) {
 
@@ -934,13 +945,14 @@ namespace {
                 continue;
             }
 
-            ms1VecLoadingVec[frameIndex] = xp.intensity;
+            ms1IntensityLoadingVec[frameIndex] = xp.intensity;
+
         }
 
         Eigen::VectorX<float> ms1Vec(ms1VecSize);
         ms1Vec.setZero();
         ms1Vec
-            = EigenUtils::convertQVectorToEigenVector(QVector<float>(ms1VecLoadingVec.begin(), ms1VecLoadingVec.end()));
+            = EigenUtils::convertQVectorToEigenVector(QVector<float>(ms1IntensityLoadingVec.begin(), ms1IntensityLoadingVec.end()));
 
         if (MathUtils::tZero(ms1Vec.maxCoeff())) {
             *cosineSimMS1 = std::numeric_limits<float>::min();
@@ -962,6 +974,9 @@ namespace {
         }
 
         *cosineSimMS1 = cosineSimMS1Local;
+        *ms1MeanMzFound = static_cast<float>(MathUtils::mean(ms1MzValsLoadingVec));
+        *ms1StDevMzFound = static_cast<float>(MathUtils::stDev(ms1MzValsLoadingVec));
+        *ms1IntensityFound = std::accumulate(ms1IntensityLoadingVec.begin(), ms1IntensityLoadingVec.end(), 0.0f);
 
         ERR_RETURN
     }
@@ -1196,6 +1211,9 @@ Err ScoreOverseer::buildScores(
     e = ErrorUtils::isTrue(m_turboXICMS1->isInit()); ree;
 
     float cosineSimMS1;
+    float ms1MzMeanFound100;
+    float ms1StDevMzFound100;
+    float ms1IntensityFound100;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1203,11 +1221,23 @@ Err ScoreOverseer::buildScores(
             static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM),
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &cosineSimMS1
+            &cosineSimMS1,
+            &ms1MzMeanFound100,
+            &ms1StDevMzFound100,
+            &ms1IntensityFound100
             ); ree;
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = std::max(ms1MzMeanFound100, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM]
+            = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound100);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100] = std::max(ms1StDevMzFound100, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100] = std::max(ms1IntensityFound100, std::numeric_limits<float>::min());
     
     float cosineSim45MS1;
+    float ms1MzMeanFound45;
+    float ms1StDevMzFound45;
+    float ms1IntensityFound45;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1215,11 +1245,22 @@ Err ScoreOverseer::buildScores(
             static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM) * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &cosineSim45MS1
+            &cosineSim45MS1,
+            &ms1MzMeanFound45,
+            &ms1StDevMzFound45,
+            &ms1IntensityFound45
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1] = std::max(static_cast<float>(cosineSim45MS1), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45] = std::max(ms1MzMeanFound45, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM]
+            = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound45);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45] = std::max(ms1StDevMzFound45, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45] = std::max(ms1IntensityFound45, std::numeric_limits<float>::min());
 
     float cosineSim20MS1;
+    float ms1MzMeanFound20;
+    float ms1StDevMzFound20;
+    float ms1IntensityFound20;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1227,9 +1268,17 @@ Err ScoreOverseer::buildScores(
             static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM) * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &cosineSim20MS1
+            &cosineSim20MS1,
+            &ms1MzMeanFound20,
+            &ms1StDevMzFound20,
+            &ms1IntensityFound20
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1] = std::max(static_cast<float>(cosineSim20MS1), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20] = std::max(ms1MzMeanFound20, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM]
+            = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound20);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20] = std::max(ms1StDevMzFound20, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20] = std::max(ms1IntensityFound20, std::numeric_limits<float>::min());
 
     const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1237,6 +1286,9 @@ Err ScoreOverseer::buildScores(
             -1
     );
     float mzPreMonoCosineSimMS1;
+    float ms1MzMeanFoundPreMono;
+    float ms1StDevMzFoundPreMono;
+    float ms1IntensityFoundPreMono;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1244,10 +1296,19 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &mzPreMonoCosineSimMS1
+            &mzPreMonoCosineSimMS1,
+            &ms1MzMeanFoundPreMono,
+            &ms1StDevMzFoundPreMono,
+            &ms1IntensityFoundPreMono
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
                     = std::max(static_cast<float>(mzPreMonoCosineSimMS1), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono]
+                    = std::max(ms1MzMeanFoundPreMono, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM]
+            = MathUtils::calculateMassAccuracyPPM(mzPreMono, ms1MzMeanFoundPreMono);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono] = std::max(ms1StDevMzFoundPreMono, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono] = std::max(ms1IntensityFoundPreMono, std::numeric_limits<float>::min());
 
     const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1255,6 +1316,9 @@ Err ScoreOverseer::buildScores(
             1
     );
     float cosineSimMzIso1;
+    float ms1MzMeanFoundIso1;
+    float ms1StDevMzFoundIso1;
+    float ms1IntensityFoundIso1;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1262,10 +1326,19 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &cosineSimMzIso1
+            &cosineSimMzIso1,
+            &ms1MzMeanFoundIso1,
+            &ms1StDevMzFoundIso1,
+            &ms1IntensityFoundIso1
     ); ree;
-    cosineSimMzIso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
                 = std::max(static_cast<float>(cosineSimMzIso1), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1]
+                = std::max(ms1MzMeanFoundIso1, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM]
+            = MathUtils::calculateMassAccuracyPPM(mzIso1, ms1MzMeanFoundIso1);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1] = std::max(ms1StDevMzFoundIso1, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1] = std::max(ms1IntensityFoundIso1, std::numeric_limits<float>::min());
 
     const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1273,6 +1346,9 @@ Err ScoreOverseer::buildScores(
             2
     );
     float cosineSimMzIso2;
+    float ms1MzMeanFoundIso2;
+    float ms1StDevMzFoundIso2;
+    float ms1IntensityFoundIso2;
     e = calculateMS1Corr(
             bestAnchorColumn,
             peakIntegrationIndexes,
@@ -1280,10 +1356,19 @@ Err ScoreOverseer::buildScores(
             d_ptr->m_pythiaParams.ms2ExtractionWidthPPM,
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
-            &cosineSimMzIso2
+            &cosineSimMzIso2,
+            &ms1MzMeanFoundIso2,
+            &ms1StDevMzFoundIso2,
+            &ms1IntensityFoundIso2
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
                     = std::max(static_cast<float>(cosineSimMzIso2), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2]
+            = std::max(ms1MzMeanFoundIso2, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM]
+            = MathUtils::calculateMassAccuracyPPM(mzIso2, ms1MzMeanFoundIso2);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = std::max(ms1StDevMzFoundIso2, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = std::max(ms1IntensityFoundIso2, std::numeric_limits<float>::min());
 
     float cosineSimSum45;
     float cosineSimSum20;

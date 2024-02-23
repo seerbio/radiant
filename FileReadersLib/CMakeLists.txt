@@ -25,6 +25,7 @@ SET(SOURCE_FILES
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
+        src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
         src/MsReaderMzML.cpp
@@ -40,6 +41,7 @@ SET(HEADER_FILES
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
+        src/FragLibTsvReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
         src/MsReaderMzML.h
@@ -52,7 +54,7 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        )
+)
 
 SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_BINARY_DIR}

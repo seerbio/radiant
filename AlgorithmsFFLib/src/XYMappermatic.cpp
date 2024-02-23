@@ -27,6 +27,7 @@ Err XYMappermatic::init(const QString &iRTRecalibrationFilePath) {
     QVector<XYMappermaticRow> xyMappermaticRows;
     e  = CSVReader::read(
             iRTRecalibrationFilePath,
+            S_GLOBAL_SETTINGS.COMMA,
             &xyMappermaticRows
     ); ree;
 

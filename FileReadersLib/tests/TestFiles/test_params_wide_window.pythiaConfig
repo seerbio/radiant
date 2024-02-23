@@ -27,6 +27,7 @@ signalToNoiseRatio = 2.0
 smoothCount = 1
 
 [FdrParams]
+bypassNeuralNet = true
 percentFDR = 2.0
 reportDecoys = true
 

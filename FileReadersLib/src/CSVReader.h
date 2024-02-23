@@ -127,6 +127,35 @@ public:
     }
 
     /**
+    * @brief Converts an instance of CSVReaderInputBase type into a derived structure type.
+    *
+    * This is a static template method that facilitates converting an instance of CSVReaderInputBase type
+    * into a derived structure type by initializing each derived structure from the corresponding
+    * CSVReaderInputBase type in the input QVector.
+    *
+    * @param csvReaderInputBase A const reference to an instance containing CSVReaderInputBase object.
+    * @param outputStruct A pointer to an instance of the converted object will be stored.
+    *
+    * @return Returns an Err object that indicates whether the conversion operation was performed
+    * successfully. An Err object initialized with a success state means the operation is successful.
+    * If any error occurs during the conversion process, the function will return an Err object initialized with a failure state.
+    */
+    template<typename T>
+    static Err convertSharedPointersToInputStruct(
+            const CSVReaderInputBase &csvReaderInputBase,
+            T *outputStruct
+    ) {
+
+        ERR_INIT
+
+        T strct;
+        e = strct.initFromRead(csvReaderInputBase); ree;
+        *outputStruct = strct;
+
+        ERR_RETURN
+    }
+
+    /**
     * @brief Checks if expected keys are present in the data map.
     *
     * This is a static method that compares the keys in the data map against a list of
@@ -217,6 +246,7 @@ public:
     template<typename T>
     static Err read(
             const QString &fileURI,
+            const QString &deliniator,
             QVector<T> *readerRows
     ) {
 
@@ -232,6 +262,7 @@ public:
         QVector<CSVReaderInputBase> ptrsRead;
         e = reader.readDataFromCSV(
                 fileURI,
+                deliniator,
                 &ptrsRead
         ); ree;
 
@@ -275,6 +306,7 @@ public:
     * the map is stored in a CSVReaderInputBase instance.
     *
     * @param csvFilePath A QString representing the path to the CSV file to be read.
+    * @param delineator A QString representing the character used to split the row.
     * @param readRows A pointer to a QVector of CSVReaderInputBase where the read data should be stored,
     * with each row data being encapsulated in a separate CSVReaderInputBase instance in the vector.
     *
@@ -283,6 +315,7 @@ public:
     */
     Err readDataFromCSV(
             const QString &csvFilePath,
+            const QString &delineator,
             QVector<CSVReaderInputBase> *readRows
             );
 

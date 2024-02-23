@@ -2,8 +2,9 @@
 // Created by anichols on 11/07/2021.
 //
 
-#include "ErrorUtils.h"
 #include "CSVReader.h"
+#include "ErrorUtils.h"
+#include "GlobalSettings.h"
 
 #include <QtTest/QtTest>
 
@@ -91,7 +92,11 @@ void CSVReaderTests::readWriteTest() {
     QCOMPARE(e, eNoError);
 
     testCSVs.clear();
-    e = CSVReader::read(csvFilePath, &testCSVs);
+    e = CSVReader::read(
+            csvFilePath,
+            S_GLOBAL_SETTINGS.COMMA,
+            &testCSVs
+            );
     QCOMPARE(e, eNoError);
 
     QCOMPARE(testCSVs.size(), 2);

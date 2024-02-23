@@ -107,8 +107,6 @@ class FILEREADERSLIB_EXPORTS FragLibReader {
 
 public:
 
-    FragLibReader() = default;
-    ~FragLibReader() = default;
 
     static Err getFragLibReaderRows(
             const QString &fragLibFilePath,

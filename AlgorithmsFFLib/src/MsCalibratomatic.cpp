@@ -80,9 +80,9 @@ Err MsCalibratomatic::initMzOnly(const QVector<MsCalibarationReaderRow> &msCalib
 
     e = buildMzCalibrator(); ree
 
+    qDebug() << "mzStDev" << m_mzStDev;
     e = ErrorUtils::isTrue(m_mzStDev > 0.0); ree;
 
-    qDebug() << "mzStDev" << m_mzStDev;
     m_isInit = true;
 
     ERR_RETURN

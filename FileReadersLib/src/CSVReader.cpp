@@ -5,11 +5,8 @@
 #include "CSVReader.h"
 
 #include "GlobalSettings.h"
-#include "QFile"
 
-#include<QFile>
-#include <QString>
-#include <QTextStream>
+#include <QFile>
 
 
 Err CSVReader::writeDataToCSV(
@@ -60,6 +57,7 @@ Err CSVReader::writeDataToCSV(
 
 Err CSVReader::readDataFromCSV(
         const QString &csvFilePath,
+        const QString &delineator,
         QVector<CSVReaderInputBase> *readRows
         ) {
 
@@ -75,7 +73,7 @@ Err CSVReader::readDataFromCSV(
     while(!in.atEnd()) {
 
         const QString line = in.readLine().trimmed();
-        const QStringList lineSplit = line.split(S_GLOBAL_SETTINGS.COMMA, Qt::SkipEmptyParts);
+        const QStringList lineSplit = line.split(delineator, Qt::KeepEmptyParts);
 
         if (headerSplit.isEmpty()) {
             headerSplit = lineSplit;
@@ -85,7 +83,7 @@ Err CSVReader::readDataFromCSV(
         if(line.isEmpty()){
             continue;
         }
-        
+
         e = ErrorUtils::isEqual(
                 headerSplit.size(),
                 lineSplit.size()
@@ -111,3 +109,4 @@ Err CSVReader::readDataFromCSV(
 
     ERR_RETURN
 }
+
