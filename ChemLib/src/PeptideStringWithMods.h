@@ -17,7 +17,7 @@ public:
 
     PeptideStringWithMods();
 
-    int sizeNoMods();
+    [[nodiscard]] int sizeNoMods() const;
 
     explicit PeptideStringWithMods(const QString &seq);
 
@@ -25,13 +25,14 @@ public:
 
     [[nodiscard]] PeptideString removeUniModChars() const;
 
-    QMap<Index, Mass> modificationsMap();
+    QMap<Index, Mass> modificationsMap() const;
+
+
 
 
 
 private:
 
-    int m_sizeNoMods;
 
 };
 

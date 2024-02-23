@@ -4,8 +4,11 @@
 
 #include "BiophysicalCalcs.h"
 
+#include "PeptideStringWithMods.h"
+
 #include <Eigen/Dense>
 
+#include <iostream>
 #include <numeric>
 
 
@@ -55,44 +58,53 @@ double BiophysicalCalcs::calculateMassFromThomson(
 }
 
 QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
-        const QString &seq,
+        const PeptideStringWithMods &peptideStringWithMods,
         int charge,
         double startMass,
-        int maxLength,
         const AminoAcids &aa
         ) {
 
     const double NULL_VALUE = -1.0;
 
-    Eigen::VectorXd aminoAcidsMassValues(maxLength);
+    const PeptideString peptideString = peptideStringWithMods.removeUniModChars();
+    const QMap<Index, Mass> modsMap = peptideStringWithMods.modificationsMap();
+
+    const int pepLength = peptideString.size();
+
+    Eigen::VectorXd aminoAcidsMassValues(pepLength);
     aminoAcidsMassValues.setZero();
 
-    for(int i = 0; i < seq.size(); i++){
+    for(int i = 0; i < pepLength; i++){
 
         if (i >= aminoAcidsMassValues.size()){
             break;
         }
 
-        const QChar aminoAcid = seq.at(i);
-        aminoAcidsMassValues.coeffRef(i) = aa.aminoAcid(aminoAcid).monoisotopicMass();
+        const QChar aminoAcid = peptideString.at(i);
+        
+        aminoAcidsMassValues.coeffRef(i) = modsMap.contains(i)
+                ? aa.aminoAcid(aminoAcid).monoisotopicMass() + modsMap.value(i)
+                : aa.aminoAcid(aminoAcid).monoisotopicMass();
     }
 
-    Eigen::VectorXd cumSumAminoAcidsMassValues(maxLength);
+    Eigen::VectorXd cumSumAminoAcidsMassValues(pepLength);
 
-    std::partial_sum(aminoAcidsMassValues.begin(),
-                     aminoAcidsMassValues.begin() + maxLength,
-                     cumSumAminoAcidsMassValues.begin(),
-                     std::plus<double>());
+    std::partial_sum(
+            aminoAcidsMassValues.begin(),
+            aminoAcidsMassValues.begin() + pepLength,
+            cumSumAminoAcidsMassValues.begin(),
+            std::plus<double>()
+                    );
 
     cumSumAminoAcidsMassValues = cumSumAminoAcidsMassValues.array() + startMass;
     cumSumAminoAcidsMassValues /= charge;
 
-    for(int i = seq.length(); i < cumSumAminoAcidsMassValues.size(); i++){
+    for(int i = pepLength; i < cumSumAminoAcidsMassValues.size(); i++){
         cumSumAminoAcidsMassValues.coeffRef(i) = NULL_VALUE;
     }
 
-    std::vector<double> vec(cumSumAminoAcidsMassValues.data(), cumSumAminoAcidsMassValues.data() + maxLength);
-    return QVector<double>(vec.begin(), vec.end());
+    std::vector<double> vec(cumSumAminoAcidsMassValues.data(), cumSumAminoAcidsMassValues.data() + pepLength);
+    return {vec.begin(), vec.end()};
 }
 
 double BiophysicalCalcs::calculateThomson(

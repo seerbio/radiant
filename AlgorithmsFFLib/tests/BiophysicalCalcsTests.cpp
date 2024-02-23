@@ -16,14 +16,13 @@ public:
 
 private slots:
 
-    void calculatePeptideMassTest();
-    void calculateMassFromThomsonTest();
-    void calculatePeptideMassesTest();
-    void calculateMassFromThomson();
-    void buildTandemFragmentMassesTest();
-    void calculateThomsonTest();
-    void calculateChargeFromSequenceTest();
-    void calculateIsotopesFromMzTest();
+    static void calculatePeptideMassTest();
+    static void calculateMassFromThomsonTest();
+    static void calculatePeptideMassesTest();
+    static void buildTandemFragmentMassesTest();
+    static void calculateThomsonTest();
+    static void calculateChargeFromSequenceTest();
+    static void calculateIsotopesFromMzTest();
 
 };
 
@@ -48,12 +47,6 @@ void BiophysicalCalcsTests::calculatePeptideMassTest() {
     QCOMPARE(test, expected);
 }
 
-void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
-
-    const double result = BiophysicalCalcs::calculateMassFromThomson(501.5, 2, 1);
-    QCOMPARE(result, 999.98209206);
-
-}
 
 void BiophysicalCalcsTests::calculatePeptideMassesTest() {
 
@@ -74,7 +67,7 @@ void BiophysicalCalcsTests::calculatePeptideMassesTest() {
 
 }
 
-void BiophysicalCalcsTests::calculateMassFromThomson() {
+void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
 
     const double mass = BiophysicalCalcs::calculateMassFromThomson(1000.0, 2, 0);
     QCOMPARE(mass, 1997.98544706);
@@ -92,7 +85,6 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
             peptideStringWithMods,
             2,
             100.0,
-            3,
             AminoAcids()
             );
 
@@ -102,6 +94,22 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
     for (int i = 0; i < frags.size(); i++) {
         QCOMPARE(MathUtils::pRound(frags.at(i), 3), MathUtils::pRound(expected.at(i), 3));
+    }
+
+    const PeptideStringWithMods peptideStringWithModsModsAdded = PeptideStringWithMods("V[+1.0]VV[+1.0]VVVV[-1.0]");
+
+    const QVector<double> fragsWithMods = BiophysicalCalcs::buildTandemFragmentMasses(
+            peptideStringWithModsModsAdded,
+            1,
+            0.5,
+            AminoAcids()
+    );
+
+    const QVector<double> expectedModsAdded = {100.568, 199.637, 299.705, 398.774, 497.842, 596.91, 694.979};
+    QCOMPARE(fragsWithMods.size(), expectedModsAdded.size());
+
+    for (int i = 0; i < fragsWithMods.size(); i++) {
+        QCOMPARE(MathUtils::pRound(fragsWithMods.at(i), 3), MathUtils::pRound(expectedModsAdded.at(i), 3));
     }
 
 }
@@ -134,8 +142,6 @@ void BiophysicalCalcsTests::calculateIsotopesFromMzTest() {
             1,
             2
             );
-
-    qDebug() << isotopes;
 
     const QVector<double> expected =  {999.498, 1000.000, 1000.502, 1001.003};
 

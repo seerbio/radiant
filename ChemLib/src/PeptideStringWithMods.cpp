@@ -4,23 +4,16 @@
 
 #include "PeptideStringWithMods.h"
 
+#include "BiophysicalCalcs.h"
+
 PeptideStringWithMods::PeptideStringWithMods(const QString &seq)
-: QString(seq)
-, m_sizeNoMods(-1) {}
+: QString(seq) {}
 
+PeptideStringWithMods::PeptideStringWithMods() {}
 
-PeptideStringWithMods::PeptideStringWithMods()
-: m_sizeNoMods(-1) {}
-
-
-int PeptideStringWithMods::sizeNoMods() {
-
-    if (m_sizeNoMods < 0) {
-        const PeptideString peptideString = this->removeUniModChars();
-        m_sizeNoMods = peptideString.size();
-    }
-
-    return m_sizeNoMods;
+int PeptideStringWithMods::sizeNoMods() const {
+    const PeptideString peptideString = this->removeUniModChars();
+    return peptideString.size();
 }
 
 PeptideString PeptideStringWithMods::removeUniModChars() const {
@@ -48,7 +41,7 @@ PeptideString PeptideStringWithMods::removeUniModChars() const {
 }
 
 
-QMap<Index, Mass> PeptideStringWithMods::modificationsMap() {
+QMap<Index, Mass> PeptideStringWithMods::modificationsMap() const {
 
     QMap<Index, Mass> modMap;
 

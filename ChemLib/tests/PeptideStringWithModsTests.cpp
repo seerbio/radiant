@@ -17,6 +17,7 @@ private slots:
     static void setTest();
     static void removeUniModCharsTest();
     static void modificationsMapTest();
+    static void sizeNoModsTest();
 
 };
 
@@ -33,14 +34,14 @@ void PeptideStringWithModsTests::removeUniModCharsTest() {
 
 void PeptideStringWithModsTests::modificationsMapTest() {
 
-    PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("B[66.6]ELL[6666.6]ATRIX[666.6]");
+    PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("B[66.6]ELL[+6666.6]ATRIX[-666.6]");
     const QMap<Index, Mass> modsMap = peptideStringWithMods.modificationsMap();
 
     QCOMPARE(modsMap.size(), 3);
     QCOMPARE(modsMap.firstKey(), 0);
     QCOMPARE(modsMap.first(), 66.6);
     QCOMPARE(modsMap.lastKey(), 8);
-    QCOMPARE(modsMap.last(), 666.6);
+    QCOMPARE(modsMap.last(), -666.6);
     QCOMPARE(modsMap.keys().at(1), 3);
     QCOMPARE(modsMap.values().at(1), 6666.6);
 
@@ -56,6 +57,11 @@ void PeptideStringWithModsTests::modificationsMapTest() {
     QCOMPARE(static_cast<int>(modsMapUniMod.values().at(1)), 57);
 
 
+}
+
+void PeptideStringWithModsTests::sizeNoModsTest() {
+    PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("CHAUNCY[666]FLOPS");
+    QCOMPARE(peptideStringWithMods.sizeNoMods(), 12);
 }
 
 

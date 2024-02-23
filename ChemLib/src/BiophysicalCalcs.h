@@ -5,15 +5,16 @@
 #ifndef PYTHIADIACPP_BIOPHYSICALCALCS_H
 #define PYTHIADIACPP_BIOPHYSICALCALCS_H
 
-#include "AlgorithmsFFLib_Exports.h"
+#include "ChemLib_Exports.h"
 #include "AminoAcids.h"
 #include "GlobalSettings.h"
 
 #include <QHash>
 
 class AminoAcids;
+class PeptideStringWithMods;
 
-class ALGORITHMSFFLIB_EXPORTS BiophysicalCalcs {
+class CHEMLIB_EXPORTS BiophysicalCalcs {
 
 public:
 
@@ -121,10 +122,9 @@ public:
     *
     */
     static QVector<double> buildTandemFragmentMasses(
-            const QString &seq,
+            const PeptideStringWithMods &peptideStringWithMods,
             int charge,
             double startMass,
-            int maxLength,
             const AminoAcids &aa
             );
 
