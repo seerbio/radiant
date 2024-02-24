@@ -104,6 +104,12 @@ public:
         return static_cast<T>((mass + (charge * ChemConstants::PROTON) + (monoOffset * ChemConstants::NEUTRON) ) / charge) ;
     }
 
+    enum class FragmentSeriesType {
+            bSeries,
+            ySeries,
+            aSeries
+        };
+
     /**
     * @brief Builds tandem fragment masses for a given peptide sequence, charge, and start mass.
     *
@@ -123,9 +129,8 @@ public:
     */
     static QVector<double> buildTandemFragmentMasses(
             const PeptideStringWithMods &peptideStringWithMods,
+            const FragmentSeriesType &fragmentSeriesType,
             int charge,
-            double firstResidueMass,
-            double lastResidueMass,
             const AminoAcids &aa
             );
 

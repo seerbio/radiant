@@ -83,14 +83,12 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
     const QVector<double> frags = BiophysicalCalcs::buildTandemFragmentMasses(
             peptideStringWithMods,
+            BiophysicalCalcs::FragmentSeriesType::bSeries,
             2,
-            100.0,
-            CommonMolecules::H2O.monoisotopicMass(),
             AminoAcids()
             );
 
-
-    const QVector<double> expected =  {86.5258, 152.046, 225.099};
+    const QVector<double> expected =  {36.5258, 102.046, 175.099};
 
     QCOMPARE(frags.size(), expected.size());
 
@@ -102,18 +100,32 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
     const QVector<double> fragsWithMods = BiophysicalCalcs::buildTandemFragmentMasses(
             peptideStringWithModsModsAdded,
+            BiophysicalCalcs::FragmentSeriesType::bSeries,
             1,
-            0.5,
-            -0.5,
             AminoAcids()
     );
-    
-    const QVector<double> expectedModsAdded = {101.576, 201.623, 301.692, 400.76, 499.829, 598.897, 696.465};
+
+    const QVector<double> expectedModsAdded = {101.076, 201.123, 301.192, 400.26, 499.329, 598.397, 714.476};
     QCOMPARE(fragsWithMods.size(), expectedModsAdded.size());
 
     for (int i = 0; i < fragsWithMods.size(); i++) {
         QCOMPARE(MathUtils::pRound(fragsWithMods.at(i), 3), MathUtils::pRound(expectedModsAdded.at(i), 3));
     }
+
+    const QVector<double> fragsWithModsY = BiophysicalCalcs::buildTandemFragmentMasses(
+            peptideStringWithModsModsAdded,
+            BiophysicalCalcs::FragmentSeriesType::ySeries,
+            1,
+            AminoAcids()
+    );
+
+    const QVector<double> expectedModsAddedY = {117.086, 216.155, 315.223, 414.291, 514.36, 614.408, 714.476};
+    QCOMPARE(fragsWithModsY.size(), expectedModsAddedY.size());
+
+    for (int i = 0; i < fragsWithModsY.size(); i++) {
+        QCOMPARE(MathUtils::pRound(fragsWithModsY.at(i), 3), MathUtils::pRound(expectedModsAddedY.at(i), 3));
+    }
+
 
 }
 

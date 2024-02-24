@@ -59,9 +59,8 @@ double BiophysicalCalcs::calculateMassFromThomson(
 
 QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
         const PeptideStringWithMods &peptideStringWithMods,
+        const FragmentSeriesType &fragmentSeriesType,
         int charge,
-        double firstResidueMass,
-        double lastResidueMass,
         const AminoAcids &aa
         ) {
 
@@ -74,8 +73,13 @@ QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
 
     Eigen::VectorXd aminoAcidsMassValues(pepLength);
     aminoAcidsMassValues.setZero();
-    aminoAcidsMassValues.coeffRef(0) += firstResidueMass + (charge * ChemConstants::PROTON);
-    aminoAcidsMassValues.coeffRef(pepLength - 1) += lastResidueMass;
+    aminoAcidsMassValues.coeffRef(0) = fragmentSeriesType == FragmentSeriesType::bSeries
+            ? (charge * ChemConstants::PROTON)
+            : 0.0;
+
+    aminoAcidsMassValues.coeffRef(pepLength - 1) = fragmentSeriesType == FragmentSeriesType::bSeries
+            ? CommonMolecules::H2O.monoisotopicMass()
+            : CommonMolecules::H2O.monoisotopicMass() + ChemConstants::PROTON;
 
     for(int i = 0; i < pepLength; i++){
 
@@ -91,6 +95,10 @@ QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
     }
 
     Eigen::VectorXd cumSumAminoAcidsMassValues(pepLength);
+
+    if (fragmentSeriesType == FragmentSeriesType::ySeries) {
+        std::reverse(aminoAcidsMassValues.begin(), aminoAcidsMassValues.end());
+    }
 
     std::partial_sum(
             aminoAcidsMassValues.begin(),
