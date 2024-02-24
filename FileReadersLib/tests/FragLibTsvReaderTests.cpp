@@ -56,7 +56,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
     QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 600);
     QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), -38);
     QCOMPARE(fragLibReaderRow.ionLabels.size(), 0);
-    
+
     QCOMPARE(e, eNoError);
 
 }
