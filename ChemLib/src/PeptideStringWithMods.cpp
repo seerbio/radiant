@@ -5,6 +5,7 @@
 #include "PeptideStringWithMods.h"
 
 #include "BiophysicalCalcs.h"
+#include "MolecularFormula.h"
 
 PeptideStringWithMods::PeptideStringWithMods(const QString &seq)
 : QString(seq) {}
@@ -90,4 +91,41 @@ QMap<Index, Mass> PeptideStringWithMods::modificationsMap() const {
 
     return modMap;
 
+}
+
+QVector<double> PeptideStringWithMods::bSeries(int charge) const {
+    return BiophysicalCalcs::buildTandemFragmentMasses(
+            *this,
+            BiophysicalCalcs::FragmentSeriesType::bSeries,
+            charge,
+            AminoAcids()
+            );
+}
+
+QVector<double> PeptideStringWithMods::ySeries(int charge) const {
+
+    return BiophysicalCalcs::buildTandemFragmentMasses(
+            *this,
+            BiophysicalCalcs::FragmentSeriesType::ySeries,
+            charge,
+            AminoAcids()
+            );
+}
+
+QStringList PeptideStringWithMods::bSeriesIonLabels(const QString &modifier) const {
+    QStringList bLabels;
+    for (int i = 0; i < this->sizeNoMods(); ++i) {
+        const QString ionLabel = 'b' + QString::number(i + 1) + modifier;
+        bLabels.push_back(ionLabel);
+    }
+    return bLabels;
+}
+
+QStringList PeptideStringWithMods::ySeriesIonLabels(const QString &modifier) const {
+    QStringList yLabels;
+    for (int i = 0; i < this->sizeNoMods(); ++i) {
+        const QString ionLabel = 'y' + QString::number(i + 1) + modifier;
+        yLabels.push_back(ionLabel);
+    }
+    return yLabels;
 }

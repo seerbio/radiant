@@ -79,7 +79,7 @@ QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
 
     aminoAcidsMassValues.coeffRef(pepLength - 1) = fragmentSeriesType == FragmentSeriesType::bSeries
             ? CommonMolecules::H2O.monoisotopicMass()
-            : CommonMolecules::H2O.monoisotopicMass() + ChemConstants::PROTON;
+            : CommonMolecules::H2O.monoisotopicMass() + (charge * ChemConstants::PROTON);
 
     for(int i = 0; i < pepLength; i++){
 
