@@ -124,7 +124,8 @@ public:
     static QVector<double> buildTandemFragmentMasses(
             const PeptideStringWithMods &peptideStringWithMods,
             int charge,
-            double startMass,
+            double firstResidueMass,
+            double lastResidueMass,
             const AminoAcids &aa
             );
 
