@@ -26,8 +26,7 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
 
     ERR_INIT
 
-    //TODO make toy example and use proper pathing.
-    const QString testFile = "/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv";
+    const QString &testFile = QDir(qApp->applicationDirPath()).filePath("tsv_library_trunc.tsv");
 
     FragLibTsvReader fragLibTsvReader;
 
@@ -39,6 +38,25 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
             &fragLibReaderRows
             );
 
+    QCOMPARE(fragLibReaderRows.size(), 57);
+
+    const FragLibReaderRow &fragLibReaderRow = fragLibReaderRows.at(47);
+    qDebug() << fragLibReaderRow.precursorCharge
+             << fragLibReaderRow.mzVals
+             << fragLibReaderRow.isDecoy
+             << fragLibReaderRow.intensityVals
+             << fragLibReaderRow.mass
+             << fragLibReaderRow.iRT
+             << fragLibReaderRow.ionLabels;
+
+    QCOMPARE(fragLibReaderRow.precursorCharge, 1);
+    QCOMPARE(fragLibReaderRow.mzVals.size(), 7);
+    QCOMPARE(fragLibReaderRow.intensityVals.size(), 7);
+    QCOMPARE(fragLibReaderRow.isDecoy, 0);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.mass), 600);
+    QCOMPARE(static_cast<int>(fragLibReaderRow.iRT), -38);
+    QCOMPARE(fragLibReaderRow.ionLabels.size(), 0);
+    
     QCOMPARE(e, eNoError);
 
 }

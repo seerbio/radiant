@@ -36,7 +36,6 @@ public:
     QStringList ySeriesIonLabels(const QString &modifier) const;
 
 
-
 private:
 
 
