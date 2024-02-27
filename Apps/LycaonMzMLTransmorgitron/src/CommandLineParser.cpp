@@ -31,9 +31,9 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.mzMLFilePath = args[1];
 
-    const bool mzMLPathIsValid = CommandLineParserUtils::checkFileNameExtension(
+    const bool mzMLPathIsValid = CommandLineParserUtils::checkFileNameExtensions(
             m_cliParams.mzMLFilePath,
-            S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION
+            {S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION}
     );
 
     if (!mzMLPathIsValid) {
