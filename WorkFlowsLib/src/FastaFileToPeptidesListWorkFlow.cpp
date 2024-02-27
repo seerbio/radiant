@@ -138,7 +138,7 @@ Err FastaFileToPeptidesListWorkFlow::digestFastaEntries(
 
         for (const PeptideSequence &ps : result.second.peptideSequences) {
 
-            (*peptideStringWithModsVsFastaEntries)[ps.sequence].push_back(result.second.fastaEntry);
+            (*peptideStringWithModsVsFastaEntries)[PeptideStringWithMods(ps.sequence)].push_back(result.second.fastaEntry);
 
             if (entered.value(ps.sequence)) {
                 continue;

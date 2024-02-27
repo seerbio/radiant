@@ -35,7 +35,7 @@ namespace MolecularFormulas
                          , sulfurCount(sulfurCount)
                          , phosphorusCount(phosphorusCount){}
 
-        MolecularFormula operator+(const MolecularFormula &a) {
+        MolecularFormula operator+(const MolecularFormula &a) const {
             MolecularFormula c;
             c.carbonCount = this->carbonCount + a.carbonCount;
             c.hydrogenCount = this->hydrogenCount + a.hydrogenCount;
@@ -117,6 +117,7 @@ namespace MolecularFormulas
     extern const MolecularFormula CHEMLIB_EXPORTS valineFormula;
     extern const MolecularFormula CHEMLIB_EXPORTS tryptophanFormula;
     extern const MolecularFormula CHEMLIB_EXPORTS tyrosineFormula;
+    extern const MolecularFormula CHEMLIB_EXPORTS cysteicAcidFormula;
 
     //Small Groups CHEMLIB_EXPORTS
     extern const MolecularFormula CHEMLIB_EXPORTS ammoniaFormula;

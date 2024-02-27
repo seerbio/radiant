@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MS2Ion.h"
+#include "PeptideStringWithMods.h"
 
 
 using namespace Error;
@@ -25,7 +26,6 @@ public:
     TargetDecoyCandidatePair();
 
     TargetDecoyCandidatePair(
-            const PeptideString &peptideString,
             const PeptideStringWithMods &peptideStringWithMods,
             const QVector<MS2Ion> &ms2IonsTarget,
             const QVector<MS2Ion> &ms2IonsDecoy,

@@ -11,6 +11,7 @@
 #include "ParquetReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "PeptideStringWithMods.h"
 #include "TargetDecoyCandidatePair.h"
 
 /**
@@ -736,7 +737,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzAccuracy11 = -1.0;
     float mzAccuracy12 = -1.0;
     QString targetKey;
-    QString peptideStringWithMods;
+    PeptideStringWithMods peptideStringWithMods;
     QString proteinGroup;
     bool isDecoy = false;
     ScanNumber scanNumber = -1;

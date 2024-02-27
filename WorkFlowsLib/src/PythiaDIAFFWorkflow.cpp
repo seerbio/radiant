@@ -16,6 +16,7 @@
 #include "MsFrame.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
+#include "PeptideStringWithMods.h"
 #include "ProteinDigestomatic.h"
 #include "QValueSettertron.h"
 #include "TurboXIC.h"
@@ -1391,8 +1392,8 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
     QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
     for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
-        QString peptideSeqReplacedLeucines = it.key();
-        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+        PeptideStringWithMods peptideSeqReplacedLeucines = it.key();
+        peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
         peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
     }
 
@@ -1400,8 +1401,8 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
         CandidateScores *cs = (*candidateScores)[i];
 
-        QString peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods();
-        peptideSeqReplacedLeucines = peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J');
+        PeptideStringWithMods peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods();
+        peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
 
         const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
 

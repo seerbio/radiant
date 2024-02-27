@@ -87,7 +87,7 @@ struct FragLibTsvReaderRow {
     double libraryIntensity = -1.0;
     int decoy = -1;
     QString modifiedPeptide;
-    int precursorCharge;
+    int precursorCharge = -1;
     QString fragmentType;
     int fragmentCharge = -1;
     int fragmentSeriesNumber = -1;
@@ -107,8 +107,6 @@ public:
             double massEnd,
             QVector<FragLibReaderRow> *fragLibReaderRows
     );
-
-    QMap<QString, double> uniModMap();
 
 private:
 

@@ -17,7 +17,6 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair()
 {}
 
 TargetDecoyCandidatePair::TargetDecoyCandidatePair(
-        const PeptideString &peptideString,
         const PeptideStringWithMods &peptideStringWithMods,
         const QVector<MS2Ion> &ms2IonsTarget,
         const QVector<MS2Ion> &ms2IonsDecoy,
@@ -26,7 +25,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         float iRt,
         int totalFramentCount
 )
-: m_peptideString(peptideString)
+: m_peptideString(peptideStringWithMods.removeUniModChars())
 , m_peptideStringWithMods(peptideStringWithMods)
 , m_ms2IonsTarget(ms2IonsTarget)
 , m_ms2IonsDecoy(ms2IonsDecoy)
@@ -37,7 +36,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 {}
 
 
-PeptideStringWithMods TargetDecoyCandidatePair::peptideString() const {
+PeptideString TargetDecoyCandidatePair::peptideString() const {
     return m_peptideString;
 }
 

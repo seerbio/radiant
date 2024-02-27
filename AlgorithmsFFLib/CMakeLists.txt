@@ -20,7 +20,6 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/BiophysicalCalcs.cpp
         src/CandidateScores.cpp
         src/CandidateScorertron.cpp
         src/ClassifierWeightsManager.cpp
@@ -48,7 +47,6 @@ SET(SOURCE_FILES
 )
 
 SET(HEADER_FILES
-        src/BiophysicalCalcs.h
         src/CandidateScores.h
         src/CandidateScorertron.h
         src/ClassifierWeightsManager.h

@@ -21,17 +21,21 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
 
         src/AminoAcids.cpp
+        src/BiophysicalCalcs.cpp
         src/ChemConstants.cpp
         src/MolecularFormula.cpp
         src/Molecule.cpp
+        src/PeptideStringWithMods.cpp
     )
 
 SET(HEADER_FILES
 
         src/AminoAcids.h
+        src/BiophysicalCalcs.h
         src/ChemConstants.h
         src/MolecularFormula.h
         src/Molecule.h
+        src/PeptideStringWithMods.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -48,6 +52,7 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        ${EIGEN_DIRECTORY}
 )
 
 FIND_PACKAGE(Qt5 COMPONENTS

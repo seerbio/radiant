@@ -58,3 +58,6 @@ configure_file(${MZML_PATH} ${CMAKE_BINARY_DIR}/bin/1min.mzML COPYONLY)
 
 set(FRAME_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/framePoints.frame")
 configure_file(${FRAME_PATH} ${CMAKE_BINARY_DIR}/bin/framePoints.frame COPYONLY)
+
+set(FRAG_LIB_TSV_PATH "${PROJECT_SOURCE_DIR}/tests/TestFiles/tsv_library_trunc.tsv")
+configure_file(${FRAG_LIB_TSV_PATH} ${CMAKE_BINARY_DIR}/bin/tsv_library_trunc.tsv COPYONLY)

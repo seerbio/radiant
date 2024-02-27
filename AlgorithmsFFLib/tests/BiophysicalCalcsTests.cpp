@@ -1,6 +1,7 @@
 #include "BiophysicalCalcs.h"
 
 #include "AminoAcids.h"
+#include "PeptideStringWithMods.h"
 
 #include <QHash>
 #include <QtTest>
@@ -15,14 +16,13 @@ public:
 
 private slots:
 
-    void calculatePeptideMassTest();
-    void calculateMassFromThomsonTest();
-    void calculatePeptideMassesTest();
-    void calculateMassFromThomson();
-    void buildTandemFragmentMassesTest();
-    void calculateThomsonTest();
-    void calculateChargeFromSequenceTest();
-    void calculateIsotopesFromMzTest();
+    static void calculatePeptideMassTest();
+    static void calculateMassFromThomsonTest();
+    static void calculatePeptideMassesTest();
+    static void buildTandemFragmentMassesTest();
+    static void calculateThomsonTest();
+    static void calculateChargeFromSequenceTest();
+    static void calculateIsotopesFromMzTest();
 
 };
 
@@ -47,16 +47,10 @@ void BiophysicalCalcsTests::calculatePeptideMassTest() {
     QCOMPARE(test, expected);
 }
 
-void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
-
-    const double result = BiophysicalCalcs::calculateMassFromThomson(501.5, 2, 1);
-    QCOMPARE(result, 999.98209206);
-
-}
 
 void BiophysicalCalcsTests::calculatePeptideMassesTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
     const QHash<ResidueIndex, ModificationMass> mods = {{'M', 16.0}};
 
     QVector<QPair<PeptideString, QHash<ResidueIndex, ModificationMass>>> vec = {
@@ -73,7 +67,7 @@ void BiophysicalCalcsTests::calculatePeptideMassesTest() {
 
 }
 
-void BiophysicalCalcsTests::calculateMassFromThomson() {
+void BiophysicalCalcsTests::calculateMassFromThomsonTest() {
 
     const double mass = BiophysicalCalcs::calculateMassFromThomson(1000.0, 2, 0);
     QCOMPARE(mass, 1997.98544706);
@@ -85,17 +79,16 @@ void BiophysicalCalcsTests::calculateMassFromThomson() {
 
 void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
 
     const QVector<double> frags = BiophysicalCalcs::buildTandemFragmentMasses(
             peptideStringWithMods,
+            BiophysicalCalcs::FragmentSeriesType::bSeries,
             2,
-            100.0,
-            3,
             AminoAcids()
             );
 
-    const QVector<double> expected =  {85.5186, 151.039, 215.086};
+    const QVector<double> expected =  {36.5258, 102.046, 175.099};
 
     QCOMPARE(frags.size(), expected.size());
 
@@ -103,18 +96,49 @@ void BiophysicalCalcsTests::buildTandemFragmentMassesTest() {
         QCOMPARE(MathUtils::pRound(frags.at(i), 3), MathUtils::pRound(expected.at(i), 3));
     }
 
+    const PeptideStringWithMods peptideStringWithModsModsAdded = PeptideStringWithMods("V[+1.0]T[-1.0]V[+1.0]VVVV[-1.0]");
+
+    const QVector<double> fragsWithMods = BiophysicalCalcs::buildTandemFragmentMasses(
+            peptideStringWithModsModsAdded,
+            BiophysicalCalcs::FragmentSeriesType::bSeries,
+            1,
+            AminoAcids()
+    );
+
+    const QVector<double> expectedModsAdded = {101.076, 201.123, 301.192, 400.26, 499.329, 598.397, 714.476};
+    QCOMPARE(fragsWithMods.size(), expectedModsAdded.size());
+
+    for (int i = 0; i < fragsWithMods.size(); i++) {
+        QCOMPARE(MathUtils::pRound(fragsWithMods.at(i), 3), MathUtils::pRound(expectedModsAdded.at(i), 3));
+    }
+
+    const QVector<double> fragsWithModsY = BiophysicalCalcs::buildTandemFragmentMasses(
+            peptideStringWithModsModsAdded,
+            BiophysicalCalcs::FragmentSeriesType::ySeries,
+            1,
+            AminoAcids()
+    );
+
+    const QVector<double> expectedModsAddedY = {117.086, 216.155, 315.223, 414.291, 514.36, 614.408, 714.476};
+    QCOMPARE(fragsWithModsY.size(), expectedModsAddedY.size());
+
+    for (int i = 0; i < fragsWithModsY.size(); i++) {
+        QCOMPARE(MathUtils::pRound(fragsWithModsY.at(i), 3), MathUtils::pRound(expectedModsAddedY.at(i), 3));
+    }
+
+
 }
 
 void BiophysicalCalcsTests::calculateThomsonTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
     const double thomson = BiophysicalCalcs::calculateThomson(peptideStringWithMods, AminoAcids(), 2);
     QCOMPARE(thomson, 175.09883997);
 }
 
 void BiophysicalCalcsTests::calculateChargeFromSequenceTest() {
 
-    const PeptideStringWithMods peptideStringWithMods = QStringLiteral("AMK");
+    const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("AMK");
 
     const int charge = BiophysicalCalcs::calculateChargeFromSequence(
             peptideStringWithMods,
@@ -133,8 +157,6 @@ void BiophysicalCalcsTests::calculateIsotopesFromMzTest() {
             1,
             2
             );
-
-    qDebug() << isotopes;
 
     const QVector<double> expected =  {999.498, 1000.000, 1000.502, 1001.003};
 

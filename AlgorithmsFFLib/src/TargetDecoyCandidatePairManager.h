@@ -9,7 +9,7 @@
 
 #include "Error.h"
 #include "GlobalSettings.h"
-
+#include "PeptideStringWithMods.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePair.h"
 

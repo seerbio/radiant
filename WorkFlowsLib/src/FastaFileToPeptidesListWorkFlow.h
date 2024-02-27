@@ -9,6 +9,7 @@
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
 #include "WorkFlowsLib_Exports.h"
+#include "PeptideStringWithMods.h"
 
 #include "Error.h"
 

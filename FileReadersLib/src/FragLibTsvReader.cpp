@@ -6,6 +6,12 @@
 
 #include "ChemConstants.h"
 #include "FragLibReader.h"
+#include "PeptideStringWithMods.h"
+
+#include <nanoflann.hpp>
+#include <Eigen/Dense>
+
+#include <QtConcurrent/QtConcurrent>
 
 #include <iostream>
 #include <fstream>
@@ -14,100 +20,20 @@
 #include <vector>
 
 
-QMap<QString, double> FragLibTsvReader::uniModMap() {
-
-    const QMap<QString, double> uniModNameVsModificationMass = {
-            {QStringLiteral("UniMod:4"), static_cast<double>(57.021464)},
-            {QStringLiteral("Carbamidomethyl (C)"), static_cast<double>(57.021464)},
-            {QStringLiteral("Carbamidomethyl"), static_cast<double>(57.021464)},
-            {QStringLiteral("CAM"), static_cast<double>(57.021464)},
-            {QStringLiteral("+57"), static_cast<double>(57.021464)},
-            {QStringLiteral("+57.0"), static_cast<double>(57.021464)},
-            {QStringLiteral("UniMod:26"), static_cast<double>(39.994915)},
-            {QStringLiteral("PCm"), static_cast<double>(39.994915)},
-            {QStringLiteral("UniMod:5"), static_cast<double>(43.005814)},
-            {QStringLiteral("Carbamylation (KR)"), static_cast<double>(43.005814)},
-            {QStringLiteral("+43"), static_cast<double>(43.005814)},
-            {QStringLiteral("+43.0"), static_cast<double>(43.005814)},
-            {QStringLiteral("CRM"), static_cast<double>(43.005814)},
-            {QStringLiteral("UniMod:7"), static_cast<double>(0.984016)},
-            {QStringLiteral("Deamidation (NQ)"), static_cast<double>(0.984016)},
-            {QStringLiteral("Deamidation"), static_cast<double>(0.984016)},
-            {QStringLiteral("Dea"), static_cast<double>(0.984016)},
-            {QStringLiteral("+1"), static_cast<double>(0.984016)},
-            {QStringLiteral("+1.0"), static_cast<double>(0.984016)},
-            {QStringLiteral("UniMod:35"), static_cast<double>(15.994915)},
-            {QStringLiteral("Oxidation (M)"), static_cast<double>(15.994915)},
-            {QStringLiteral("Oxidation"), static_cast<double>(15.994915)},
-            {QStringLiteral("Oxi"), static_cast<double>(15.994915)},
-            {QStringLiteral("+16"), static_cast<double>(15.994915)},
-            {QStringLiteral("+16.0"), static_cast<double>(15.994915)},
-            {QStringLiteral("Oxi"), static_cast<double>(15.994915)},
-            {QStringLiteral("UniMod:1"), static_cast<double>(42.010565)},
-            {QStringLiteral("Acetyl (Protein N-term)"), static_cast<double>(42.010565)},
-            {QStringLiteral("+42"), static_cast<double>(42.010565)},
-            {QStringLiteral("+42.0"), static_cast<double>(42.010565)},
-            {QStringLiteral("UniMod:255"), static_cast<double>(28.0313)},
-            {QStringLiteral("AAR"), static_cast<double>(28.0313)},
-            {QStringLiteral("UniMod:254"), static_cast<double>(26.01565)},
-            {QStringLiteral("AAS"), static_cast<double>(26.01565)},
-            {QStringLiteral("UniMod:122"), static_cast<double>(27.994915)},
-            {QStringLiteral("Frm"), static_cast<double>(27.994915)},
-            {QStringLiteral("UniMod:1301"), static_cast<double>(128.094963)},
-            {QStringLiteral("+1K"), static_cast<double>(128.094963)},
-            {QStringLiteral("UniMod:1288"), static_cast<double>(156.101111)},
-            {QStringLiteral("+1R"), static_cast<double>(156.101111)},
-            {QStringLiteral("UniMod:27"), static_cast<double>(-18.010565)},
-            {QStringLiteral("PGE"), static_cast<double>(-18.010565)},
-            {QStringLiteral("UniMod:28"), static_cast<double>(-17.026549)},
-            {QStringLiteral("PGQ"), static_cast<double>(-17.026549)},
-            {QStringLiteral("UniMod:526"), static_cast<double>(-48.003371)},
-            {QStringLiteral("DTM"), static_cast<double>(-48.003371)},
-            {QStringLiteral("UniMod:325"), static_cast<double>(31.989829)},
-            {QStringLiteral("2Ox"), static_cast<double>(31.989829)},
-            {QStringLiteral("UniMod:342"), static_cast<double>(15.010899)},
-            {QStringLiteral("Amn"), static_cast<double>(15.010899)},
-            {QStringLiteral("UniMod:1290"), static_cast<double>(114.042927)},
-            {QStringLiteral("2CM"), static_cast<double>(114.042927)},
-            {QStringLiteral("UniMod:359"), static_cast<double>(13.979265)},
-            {QStringLiteral("PGP"), static_cast<double>(13.979265)},
-            {QStringLiteral("UniMod:30"), static_cast<double>(21.981943)},
-            {QStringLiteral("NaX"), static_cast<double>(21.981943)},
-            {QStringLiteral("UniMod:401"), static_cast<double>(-2.015650)},
-            {QStringLiteral("-2H"), static_cast<double>(-2.015650)},
-            {QStringLiteral("UniMod:528"), static_cast<double>(14.999666)},
-            {QStringLiteral("MDe"), static_cast<double>(14.999666)},
-            {QStringLiteral("UniMod:385"), static_cast<double>(-17.026549)},
-            {QStringLiteral("dAm"), static_cast<double>(-17.026549)},
-            {QStringLiteral("UniMod:23"), static_cast<double>(-18.010565)},
-            {QStringLiteral("Dhy"), static_cast<double>(-18.010565)},
-            {QStringLiteral("UniMod:129"), static_cast<double>(125.896648)},
-            {QStringLiteral("Iod"), static_cast<double>(125.896648)},
-            {QStringLiteral("Phosphorylation (ST)"), static_cast<double>(79.966331)},
-            {QStringLiteral("UniMod:21"), static_cast<double>(79.966331)},
-            {QStringLiteral("+80"), static_cast<double>(79.966331)},
-            {QStringLiteral("+80.0"), static_cast<double>(79.966331)},
-            {QStringLiteral("UniMod:259"), static_cast<double>(8.014199)},
-            {QStringLiteral("Lys8"),static_cast<double>(8.014199)},
-            {QStringLiteral("UniMod:267"), static_cast<double>(10.008269)},
-            {QStringLiteral("Arg10"), static_cast<double>(10.008269)},
-            {QStringLiteral("UniMod:268"), static_cast<double>(6.013809)},
-            {QStringLiteral("UniMod:269"), static_cast<double>(10.027228)}
-    };
-
-    return uniModNameVsModificationMass;
-}
-
 namespace {
 
-    std::vector<std::string> splitOnTab(const std::string &line) {
+    std::vector<std::string> splitOnTab(
+            const std::string &line,
+            int expectedSize
+            ) {
 
-        std::vector<std::string> result;
+        std::vector<std::string> result(expectedSize);
         std::istringstream ss(line);
         std::string field;
 
+        int i = 0;
         while (std::getline(ss, field, '\t')) {
-            result.push_back(field);
+            result[i++] = field;
         }
 
         return result;
@@ -128,6 +54,158 @@ namespace {
         }
 
         return hashTable;
+    }
+
+    Err splitPeptideSequenceChargeKey(
+            const FragLibReaderRow &fragLibReaderRow,
+            PeptideStringWithMods *peptideStringWithMods,
+            int *charge
+    ) {
+
+        ERR_INIT
+
+        PeptideSequenceChargeKey peptideSequenceChargeKey = fragLibReaderRow.peptideSequenceChargeKey;
+
+        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                Qt::SkipEmptyParts
+        );
+
+        e = ErrorUtils::isEqual(peptideSequenceChargeKeySplit.size(), 2); ree;
+        e = ErrorUtils::toInt(peptideSequenceChargeKeySplit.back(), charge); ree;
+        *peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
+
+        ERR_RETURN
+    }
+
+    using KDTree = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd>;
+
+    Err loadKDTree(
+            const QVector<float> &mzValsToPair,
+            const PeptideStringWithMods &peptideStringWithMods,
+            int charge,
+            QString *ionLabels
+    ) {
+
+        ERR_INIT
+
+        QVector<double> mzValsTree;
+        QStringList ionLabelsList;
+
+        mzValsTree.append(peptideStringWithMods.bSeries(1));
+        ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels({}));
+
+        mzValsTree.append(peptideStringWithMods.ySeries(1));
+        ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels({}));
+
+        if (charge > 1) {
+
+            for (int i = 1; i < charge; i++) {
+
+                const QString chargeChar = QString::number(i+1);
+
+                mzValsTree.append(peptideStringWithMods.bSeries(i+1));
+                ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
+
+                mzValsTree.append(peptideStringWithMods.ySeries(i+1));
+                ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
+            }
+
+        }
+
+        e = ErrorUtils::isEqual(mzValsTree.size(), ionLabelsList.size()); ree;
+
+        Eigen::MatrixX<double> mat(mzValsTree.size() ,2);
+        mat.setZero();
+        for (int i = 0; i < mzValsTree.size(); i++) {
+            mat.coeffRef(i, 0) = mzValsTree.at(i);
+            mat.coeffRef(i, 1) = 0.0;
+        }
+
+        const int treeLeafSize = 5;
+        KDTree kdTree(static_cast<int>(mat.cols()), mat, treeLeafSize);
+
+        QStringList ionLabelsFoundList;
+        for (float mzVal : mzValsToPair) {
+
+            const size_t numResults = 1;
+            std::vector<double> queryPt = {mzVal, 0.0};
+            std::vector<long> mzIndex(numResults);
+            std::vector<double> outDistSqr(numResults);
+
+            std::vector<std::pair<Eigen::Index, double>> matches;
+
+            const size_t resultsSize = kdTree.index->knnSearch(
+                    queryPt.data(),
+                    numResults,
+                    mzIndex.data(),
+                    outDistSqr.data()
+            );
+
+            if (outDistSqr.front() > 1.0) {
+                rrr(eValueError);
+            }
+
+            ionLabelsFoundList.push_back(ionLabelsList.value(static_cast<int>(mzIndex.front())));
+        }
+
+        *ionLabels = ionLabelsFoundList.join(S_GLOBAL_SETTINGS.SEPARATOR);
+
+        ERR_RETURN
+    }
+
+    Err buildIonLabels(
+            const FragLibReaderRow &fragLibReaderRow,
+            QString *ionLabels
+    ) {
+
+        ERR_INIT
+
+        PeptideStringWithMods peptideStringWithMods;
+        int charge;
+        e = splitPeptideSequenceChargeKey(
+                fragLibReaderRow,
+                &peptideStringWithMods,
+                &charge
+        ); ree;
+
+        e = loadKDTree(
+                fragLibReaderRow.mzVals,
+                peptideStringWithMods,
+                charge,
+                ionLabels
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    void parallelLogic(FragLibReaderRow &fragLibReaderRow) {
+
+        ERR_INIT
+
+        e = buildIonLabels(fragLibReaderRow, &fragLibReaderRow.ionLabels);
+
+        if (e != eNoError) {
+            throw std::runtime_error("Building Ion Labels didn't work out"); einfo;
+        }
+
+    }
+
+    Err addIonLabelInformation(QVector<FragLibReaderRow> *fragLibReaderRows) {
+
+        ERR_INIT
+
+#define PARALLEL_LABELS
+#ifdef PARALLEL_LABELS
+    QFuture<void> futures = QtConcurrent::map(*fragLibReaderRows, parallelLogic);
+    futures.waitForFinished();
+#else
+        for (FragLibReaderRow &flrr : *fragLibReaderRows) {
+            parallelLogic(flrr);
+        }
+#endif
+
+        ERR_RETURN
     }
 
 }//namespace
@@ -162,19 +240,26 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
     std::vector<std::string> header;
     QHash<int, std::string> headerIndexVsColumnNames;
-    const QList<int> &headerIndexes = headerIndexVsColumnNames.keys();
+    QList<int> headerIndexes;
 
     std::ifstream file(fragLibFilePath.toStdString());
     std::string line;
 
+    int columnCount = -1;
+
     if (file) {
         while(std::getline(file, line)){
 
-            const std::vector<std::string> lineSplit = splitOnTab(line);
+            if (columnCount < 0) {
+                columnCount = static_cast<int>(std::count(line.begin(), line.end(), '\t')) + 1;
+            }
+
+            const std::vector<std::string> lineSplit = splitOnTab(line, columnCount);
 
             if (header.empty()) {
                 header = lineSplit;
                 headerIndexVsColumnNames = buildHeaderIndexVsColumnNames(lineSplit);
+                headerIndexes = headerIndexVsColumnNames.keys();
                 e = ErrorUtils::isNotEmpty(headerIndexVsColumnNames); ree;
                 continue;
             }
@@ -188,40 +273,52 @@ Err FragLibTsvReader::getFragLibReaderRows(
                     continue;
                 }
 
-                const QString valString = QString::fromStdString(lineSplit.at(headerIndex));
+                const std::string &valString = lineSplit.at(headerIndex);
+                if (valString.empty()) {
+                    continue;
+                }
 
                 if (colName == PRECURSOR_MZ) {
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); ree;
+                    fragLibTsvReaderRow.precursorMz = std::stod(valString);
+//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); ree;
                 }
                 else if (colName == PRODUCT_MZ){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); ree;
+                    fragLibTsvReaderRow.productMz = std::stod(valString);
+//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); ree;
                 }
                 else if (colName == TR_RECALIB){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); ree;
+                    fragLibTsvReaderRow.trRecalibrated = std::stod(valString);
+//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); ree;
                 }
                 else if (colName == ION_MOBILITY){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); ree;
+                    fragLibTsvReaderRow.ionMobility = std::stod(valString);
+//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); ree;
                 }
                 else if (colName == MOD_PEP){
-                    fragLibTsvReaderRow.modifiedPeptide = valString;
+                    fragLibTsvReaderRow.modifiedPeptide = QString::fromStdString(valString);
                 }
                 else if (colName == PRECURSOR_CHARGE){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); ree;
+                    fragLibTsvReaderRow.precursorCharge = std::stoi(valString);
+//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); ree;
                 }
                 else if (colName == LIB_INTENSITY){
-                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); ree;
+                    fragLibTsvReaderRow.libraryIntensity = std::stod(valString);
+//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); ree;
                 }
                 else if (colName == DECOY) {
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.decoy); ree;
+                    fragLibTsvReaderRow.decoy = std::stoi(valString);
+//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.decoy); ree;
                 }
                 else if (colName == FRAG_TYPE){
-                    fragLibTsvReaderRow.fragmentType = valString;
+                    fragLibTsvReaderRow.fragmentType = QString::fromStdString(valString);
                 }
                 else if (colName == FRAG_CHARGE){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); ree;
+                    fragLibTsvReaderRow.fragmentCharge = std::stoi(valString);
+//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); ree;
                 }
                 else if (colName == FRAG_SERIES_NUMB){
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); ree;
+                    fragLibTsvReaderRow.fragmentSeriesNumber = std::stoi(valString);
+//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); ree;
                 }
                 else {
                     rrr(eValueError);
@@ -236,8 +333,11 @@ Err FragLibTsvReader::getFragLibReaderRows(
         }
     }
 
+    m_fragLibReaderRows.swap(*fragLibReaderRows);
+
     if (!m_mzValsCurrent.isEmpty()) {
         FragLibReaderRow fragLibReaderRow;
+        fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
         fragLibReaderRow.intensityVals = m_intensityCurrent;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
@@ -248,17 +348,18 @@ Err FragLibTsvReader::getFragLibReaderRows(
                                 - (ChemConstants::PROTON * m_precursorChargeCurrent);
 
         if (massStart <= fragLibReaderRow.mass && fragLibReaderRow.mass <= massEnd) {
-            m_fragLibReaderRows.push_back(fragLibReaderRow);
+            fragLibReaderRows->push_back(fragLibReaderRow);
         }
+
     }
 
-    qDebug() << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
+    if (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty()) {
+        e = addIonLabelInformation(fragLibReaderRows); ree;
+    }
+
     ERR_RETURN
-
-
 }
 
-static int counterr = 0;
 Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
         const FragLibTsvReaderRow &tsvRow,
         double massStart,
@@ -274,9 +375,8 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
 
     if (m_currentPeptide != peptideSequenceChargeKey) {
 
-        std::cout << ++counterr << std::endl;
-
         FragLibReaderRow fragLibReaderRow;
+        fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
         fragLibReaderRow.intensityVals = m_intensityCurrent;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
@@ -298,12 +398,15 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
 
     QString ionLabel = tsvRow.fragmentType + QString::number(tsvRow.fragmentSeriesNumber);
     ionLabel += tsvRow.fragmentCharge == 1 ? "" : "^" + QString::number(tsvRow.fragmentCharge);
-    m_labelsCurrent.push_back(ionLabel);
+    if (tsvRow.fragmentCharge > 0) {
+        m_labelsCurrent.push_back(ionLabel);
+    }
     m_mzValsCurrent.push_back(static_cast<float>(tsvRow.productMz));
     m_intensityCurrent.push_back(static_cast<float>(tsvRow.libraryIntensity));
     m_irtCurrent = static_cast<float>(tsvRow.trRecalibrated);
     m_precursorChargeCurrent = tsvRow.precursorCharge;
     m_precursorMzCurrent = static_cast<float>(tsvRow.precursorMz);
+    m_decoyCurrent = tsvRow.decoy;
 
     ERR_RETURN
 }

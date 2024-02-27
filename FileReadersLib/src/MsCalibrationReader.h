@@ -11,6 +11,7 @@
 #include "ErrorUtils.h"
 #include "FileReadersLib_Exports.h"
 #include "GlobalSettings.h"
+#include "PeptideStringWithMods.h"
 
 using namespace Error;
 
@@ -87,7 +88,7 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
 
         e = ErrorUtils::isTrue(allKeysPresent); ree;
 
-        peptideStringWithMods = dataMap.value(PEP_STR_MODS).toString();
+        peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_MODS).toString());
         iRTPredicted = dataMap.value(IRT_PRED).toFloat();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
         scanNumber = dataMap.value(SCAN_NUMBER).toInt();

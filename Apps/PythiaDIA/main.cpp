@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    e = pythiaDiaFFWorkflow.processFile(cliParameters.msDataFile);
+    e = pythiaDiaFFWorkflow.processFile(msDataFile);
     if (e != eNoError) {
-        qDebug() << cliParameters.msDataFile << "Did not run completely";
+        qDebug() << msDataFile << "Did not run completely";
         return 1;
     }
 

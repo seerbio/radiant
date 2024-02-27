@@ -12,6 +12,7 @@
 #include "GlobalSettings.h"
 #include "MsReaderParquet.h"
 #include "ParquetReader.h"
+#include "PeptideStringWithMods.h"
 
 
 using namespace Error;
@@ -82,7 +83,7 @@ public:
 
         scores = bytesArrayToQVector<double>(dataMap.value(SCORES).toByteArray());
         isDecoy = dataMap.value(IS_DECOY).toBool();
-        peptideStringWithMods = dataMap.value(PEP_STR).toString();
+        peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR).toString());
         charge = dataMap.value(CHARGE).toInt();
         targetKey = dataMap.value(TARGET_KEY).toString();
         discScore = dataMap.value(DISC_SCORE).toDouble();
