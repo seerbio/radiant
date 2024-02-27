@@ -25,15 +25,15 @@ void CommandLineParserUtilsTests::checkFileNameExtensionTest() {
 
     const QString fileName = QStringLiteral("bellatrixAndKallipe.cat");
 
-    const bool trueTest = CommandLineParserUtils::checkFileNameExtension(
+    const bool trueTest = CommandLineParserUtils::checkFileNameExtensions(
             fileName,
-            "cat"
+            {"cat"}
             );
     QCOMPARE(trueTest, true);
 
-    const bool falseTest = CommandLineParserUtils::checkFileNameExtension(
+    const bool falseTest = CommandLineParserUtils::checkFileNameExtensions(
             fileName,
-            "catt"
+            {"catt"}
     );
     QCOMPARE(falseTest, false);
 
