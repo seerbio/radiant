@@ -18,6 +18,8 @@ using namespace Error;
 namespace FragLibReaderNamespace {
 
     const QString FRAG_LIB_FF_SUFFIX = QStringLiteral("fragLibFF");
+    const QString FRAG_LIB_TSV_FF_SUFFIX = QStringLiteral("tsv");
+    const QString FRAG_LIB_CSV_FF_SUFFIX = QStringLiteral("csv");
 
     const QString PEP_SEQ_CHRG_KEY = QStringLiteral("peptideSequenceChargeKey");
     const QString MZ_VALS = QStringLiteral("mzVals");

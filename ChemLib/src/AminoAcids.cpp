@@ -29,22 +29,21 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
 //       {'X', Molecule(leucineFormula)},
-       {'Y', Molecule(tyrosineFormula)}
+       {'Y', Molecule(tyrosineFormula)},
+       {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
+       {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN
     };
 
     return aa;
 }
 
-
 AminoAcids::AminoAcids() {
     m_aminoAcids = aminoAcids();
 }
 
-
 Molecule AminoAcids::aminoAcid(QChar aminoAcid) const {
     return m_aminoAcids.value(aminoAcid);
 }
-
 
 Err AminoAcids::addFixedModification(
         QChar aminoAcid,
@@ -87,7 +86,7 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
             {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
             {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
             {'L', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
-//            {'X', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula).monoisotopicMass()},
+            {'X', Molecule(valineFormula).monoisotopicMass() - Molecule(leucineFormula + prolineFormula).monoisotopicMass()},
             {'I', Molecule(valineFormula).monoisotopicMass() - Molecule(isoleucineFormula).monoisotopicMass()},
             {'F', Molecule(leucineFormula).monoisotopicMass() - Molecule(phenylalanineFormula).monoisotopicMass()},
             {'M', Molecule(leucineFormula).monoisotopicMass() - Molecule(methionineFormula).monoisotopicMass()},
@@ -95,6 +94,7 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
             {'W', Molecule(leucineFormula).monoisotopicMass() - Molecule(tryptophanFormula).monoisotopicMass()},
             {'S', Molecule(threonineFormula).monoisotopicMass() - Molecule(serineFormula).monoisotopicMass()},
             {'C', Molecule(serineFormula).monoisotopicMass() - Molecule(cysteineFormula).monoisotopicMass()},
+            {'U', Molecule(serineFormula).monoisotopicMass() - Molecule(cysteineFormula + cysteicAcidFormula).monoisotopicMass()},
             {'T', Molecule(serineFormula).monoisotopicMass() - Molecule(threonineFormula).monoisotopicMass()},
             {'Y', Molecule(serineFormula).monoisotopicMass() - Molecule(tyrosineFormula).monoisotopicMass()},
             {'H', Molecule(serineFormula).monoisotopicMass() - Molecule(histidineFormula).monoisotopicMass()},

@@ -28,9 +28,9 @@ public:
     *
     * @return Returns true if the file has the expected extension, false otherwise.
     */
-    static bool checkFileNameExtension(
+    static bool checkFileNameExtensions(
             const QString &filePath,
-            const QString &expectedFileExtension
+            const QStringList &expectedFileExtensions
     );
 
     /**

@@ -8,6 +8,11 @@
 #include "FragLibReader.h"
 #include "PeptideStringWithMods.h"
 
+#include <nanoflann.hpp>
+#include <Eigen/Dense>
+
+#include <QtConcurrent/QtConcurrent>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -51,39 +56,157 @@ namespace {
         return hashTable;
     }
 
-//    Err addIonLabelLogic(FragLibReaderRow *fragLibReaderRow) {
-//
-//        ERR_INIT
-//
-//        PeptideSequenceChargeKey peptideSequenceChargeKey = fragLibReaderRow->peptideSequenceChargeKey;
-//
-//        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
-//                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
-//                Qt::SkipEmptyParts
-//                );
-//
-//        e = ErrorUtils::isEqual(peptideSequenceChargeKeySplit.size(), 2); ree;
-//
-//        int charge;
-//        e = ErrorUtils::toInt(peptideSequenceChargeKeySplit.back(), &charge); ree;
-//        const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
-//
-//
-//
-//        ERR_RETURN
-//    }
-//
-//    Err addIonLabelInformation(QVector<FragLibReaderRow> *fragLibReaderRows) {
-//
-//        ERR_INIT
-//
-//        for (FragLibReaderRow &flrr : *fragLibReaderRows) {
-//            e = addIonLabelLogic(&flrr); ree;
-//        }
-//
-//
-//        ERR_RETURN
-//    }
+    Err splitPeptideSequenceChargeKey(
+            const FragLibReaderRow &fragLibReaderRow,
+            PeptideStringWithMods *peptideStringWithMods,
+            int *charge
+    ) {
+
+        ERR_INIT
+
+        PeptideSequenceChargeKey peptideSequenceChargeKey = fragLibReaderRow.peptideSequenceChargeKey;
+
+        const QStringList peptideSequenceChargeKeySplit = peptideSequenceChargeKey.split(
+                S_GLOBAL_SETTINGS.MODIFICATION_INTERNAL_SEP,
+                Qt::SkipEmptyParts
+        );
+
+        e = ErrorUtils::isEqual(peptideSequenceChargeKeySplit.size(), 2); ree;
+        e = ErrorUtils::toInt(peptideSequenceChargeKeySplit.back(), charge); ree;
+        *peptideStringWithMods = PeptideStringWithMods(peptideSequenceChargeKeySplit.front());
+
+        ERR_RETURN
+    }
+
+    using KDTree = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd>;
+
+    Err loadKDTree(
+            const QVector<float> &mzValsToPair,
+            const PeptideStringWithMods &peptideStringWithMods,
+            int charge,
+            QString *ionLabels
+    ) {
+
+        ERR_INIT
+
+        QVector<double> mzValsTree;
+        QStringList ionLabelsList;
+
+        mzValsTree.append(peptideStringWithMods.bSeries(1));
+        ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels({}));
+
+        mzValsTree.append(peptideStringWithMods.ySeries(1));
+        ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels({}));
+
+        if (charge > 1) {
+
+            for (int i = 1; i < charge; i++) {
+
+                const QString chargeChar = QString::number(i+1);
+
+                mzValsTree.append(peptideStringWithMods.bSeries(i+1));
+                ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
+
+                mzValsTree.append(peptideStringWithMods.ySeries(i+1));
+                ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
+            }
+
+        }
+
+        e = ErrorUtils::isEqual(mzValsTree.size(), ionLabelsList.size()); ree;
+
+        Eigen::MatrixX<double> mat(mzValsTree.size() ,2);
+        mat.setZero();
+        for (int i = 0; i < mzValsTree.size(); i++) {
+            mat.coeffRef(i, 0) = mzValsTree.at(i);
+            mat.coeffRef(i, 1) = 0.0;
+        }
+
+        const int treeLeafSize = 5;
+        KDTree kdTree(static_cast<int>(mat.cols()), mat, treeLeafSize);
+
+        QStringList ionLabelsFoundList;
+        for (float mzVal : mzValsToPair) {
+
+            const size_t numResults = 1;
+            std::vector<double> queryPt = {mzVal, 0.0};
+            std::vector<long> mzIndex(numResults);
+            std::vector<double> outDistSqr(numResults);
+
+            std::vector<std::pair<Eigen::Index, double>> matches;
+
+            const size_t resultsSize = kdTree.index->knnSearch(
+                    queryPt.data(),
+                    numResults,
+                    mzIndex.data(),
+                    outDistSqr.data()
+            );
+
+            if (outDistSqr.front() > 1.0) {
+                rrr(eValueError);
+            }
+
+            ionLabelsFoundList.push_back(ionLabelsList.value(static_cast<int>(mzIndex.front())));
+        }
+
+        *ionLabels = ionLabelsFoundList.join(S_GLOBAL_SETTINGS.SEPARATOR);
+
+        ERR_RETURN
+    }
+
+    Err buildIonLabels(
+            const FragLibReaderRow &fragLibReaderRow,
+            QString *ionLabels
+    ) {
+
+        ERR_INIT
+
+        PeptideStringWithMods peptideStringWithMods;
+        int charge;
+        e = splitPeptideSequenceChargeKey(
+                fragLibReaderRow,
+                &peptideStringWithMods,
+                &charge
+        ); ree;
+
+        e = loadKDTree(
+                fragLibReaderRow.mzVals,
+                peptideStringWithMods,
+                charge,
+                ionLabels
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    void parallelLogic(FragLibReaderRow &fragLibReaderRow) {
+
+        ERR_INIT
+
+        e = buildIonLabels(fragLibReaderRow, &fragLibReaderRow.ionLabels);
+
+        if (e != eNoError) {
+            throw std::runtime_error("Building Ion Labels didn't work out"); einfo;
+        }
+
+    }
+
+    Err addIonLabelInformation(QVector<FragLibReaderRow> *fragLibReaderRows) {
+
+        ERR_INIT
+
+#define PARALLEL_LABELS
+#ifdef PARALLEL_LABELS
+    QFuture<void> futures = QtConcurrent::map(*fragLibReaderRows, parallelLogic);
+    futures.waitForFinished();
+#else
+        for (FragLibReaderRow &flrr : *fragLibReaderRows) {
+            parallelLogic(flrr);
+        }
+#endif
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err FragLibTsvReader::getFragLibReaderRows(
@@ -230,14 +353,11 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
     }
 
-//    if (fragLibReaderRows->front().ionLabels.contains("-1^")) {
-//        addIonLabelInformation(fragLibReaderRows);
-//    }
+    if (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty()) {
+        e = addIonLabelInformation(fragLibReaderRows); ree;
+    }
 
-    qDebug() << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
     ERR_RETURN
-
-
 }
 
 Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(

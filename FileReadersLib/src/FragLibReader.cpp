@@ -3,6 +3,7 @@
 //
 
 #include "FragLibReader.h"
+#include "FragLibTsvReader.h"
 
 #include <QElapsedTimer>
 #include <QFileInfo>
@@ -22,8 +23,14 @@ Err FragLibReader::getFragLibReaderRows(
     QFileInfo fi(fragLibFilePath);
     const QString fileSuffix = fi.suffix();
 
+    const QStringList viableFileExtensions = {
+            FragLibReaderNamespace::FRAG_LIB_FF_SUFFIX.toLower(),
+            FragLibReaderNamespace::FRAG_LIB_CSV_FF_SUFFIX.toLower(),
+            FragLibReaderNamespace::FRAG_LIB_TSV_FF_SUFFIX.toLower()
+    };
+
     e = ErrorUtils::isTrue(
-            FragLibReaderNamespace::FRAG_LIB_FF_SUFFIX == fileSuffix,
+            viableFileExtensions.contains(fileSuffix.toLower()),
             eFileIncorrectTypeError
             ); ree;
 
@@ -32,10 +39,22 @@ Err FragLibReader::getFragLibReaderRows(
     QElapsedTimer et;
     et.start();
 
-    e = ParquetReader::read(
+    if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF)) {
+        e = ParquetReader::read(
+                fragLibFilePath,
+                FragLibReaderNamespace::MASS,
+                {massStart, massEnd},
+                fragLibReaderRows
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    FragLibTsvReader fragLibTsvReader;
+    e = fragLibTsvReader.getFragLibReaderRows(
             fragLibFilePath,
-            FragLibReaderNamespace::MASS,
-            {massStart, massEnd},
+            massStart,
+            massEnd,
             fragLibReaderRows
             ); ree;
 

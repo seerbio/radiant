@@ -10,14 +10,14 @@
 #include <QDirIterator>
 
 
-bool CommandLineParserUtils::checkFileNameExtension(
+bool CommandLineParserUtils::checkFileNameExtensions(
         const QString &filePath,
-        const QString &expectedFileExtension
+        const QStringList &expectedFileExtensions
 ) {
 
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
-    return StringUtils::stringsMatch(fileSuffix, expectedFileExtension, false);
+    return expectedFileExtensions.contains(fileSuffix);
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(

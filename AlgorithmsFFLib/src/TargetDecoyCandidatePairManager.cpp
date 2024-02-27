@@ -13,6 +13,8 @@
 #include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 
+
+#include <vector>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -150,9 +152,11 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(flrr.mzVals); ree;
         e = ErrorUtils::isEqual(flrr.mzVals.size(), flrr.intensityVals.size());ree;
-        e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree
+        e = ErrorUtils::isNotEmpty(flrr.ionLabels); ree;
 
-        const QStringList ionLabelsSplit = flrr.ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
+        QString ionLabels = flrr.ionLabels;
+
+        const QStringList ionLabelsSplit = ionLabels.split(S_GLOBAL_SETTINGS.SEPARATOR, Qt::SkipEmptyParts);
         e = ErrorUtils::isEqual(flrr.mzVals.size(), ionLabelsSplit.size());ree;
 
         QVector<MS2Ion> ms2IonsBuilder;
