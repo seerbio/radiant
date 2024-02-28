@@ -1390,9 +1390,9 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             &peptideStringWithModsVsFastaEntries
             ); ree;
 
-    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
+    QMap<PeptideString, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
     for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
-        PeptideStringWithMods peptideSeqReplacedLeucines = it.key();
+        PeptideString peptideSeqReplacedLeucines = it.key().removeUniModChars();
         peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
         peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
     }
@@ -1401,7 +1401,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
         CandidateScores *cs = (*candidateScores)[i];
 
-        PeptideStringWithMods peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods();
+        PeptideString peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods().removeUniModChars();
         peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
 
         const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
