@@ -6,6 +6,7 @@
 #include "Error.h"
 #include "Molecule.h"
 #include "MolecularFormula.h"
+#include "PeptideStringWithMods.h"
 
 #include <QMap>
 
@@ -86,7 +87,19 @@ public:
     *
     * @return The map of DIANN mutations (amino acid -> mass difference).
     */
-    static QMap<QChar, double> diannMutateAminoAcidTo();
+    static QMap<QChar, double> diannMutateAminoAcidToMass();
+
+    /**
+    * @brief Returns the map of residues for DIANN amino acid mutations.
+    *
+    * This method provides a map of mass differences for DIANN mutations from one amino acid to another.
+    * The map is represented as amino acid -> mass difference.
+    *
+    * @return The map of DIANN mutations (amino acid -> mass difference).
+    */
+    static QMap<QChar, QChar> diannMutateAminoAcidToResidue();
+
+    static PeptideStringWithMods mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideString);
 
 private:
 

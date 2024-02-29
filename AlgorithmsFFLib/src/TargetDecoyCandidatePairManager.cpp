@@ -203,15 +203,15 @@ namespace {
         ms2IonDecoys->clear();
         ms2IonDecoys->reserve(ms2IonTarget.size());
 
-        const QMap<QChar, double> diannMutateAminoAcidTo = AminoAcids::diannMutateAminoAcidTo();
+        const QMap<QChar, double> diannMutateAminoAcidToMass = AminoAcids::diannMutateAminoAcidToMass();
 
         const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
 
         const int firstIndexToMutate = 1;
         const int secondIndexToMutate = peptideString.size() - 2;
 
-        const double nTermDeltaMass = diannMutateAminoAcidTo.value(peptideString.at(firstIndexToMutate));
-        const double cTermDeltaMass = diannMutateAminoAcidTo.value(peptideString.at(secondIndexToMutate));
+        const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
+        const double cTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(secondIndexToMutate));
         const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
         const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
 

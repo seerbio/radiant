@@ -14,6 +14,7 @@ public:
 
 private slots:
     void checkMassesTest();
+    void mutatePenultimatePeptideResiduesTest();
 
 };
 
@@ -90,6 +91,14 @@ void AminoAcidsTests::checkMassesTest()
 //    qDebug() << AMINO_ACIDS.value('W').monoisotopicMass() - AA['W'];
 //    qDebug() << AMINO_ACIDS.value('Y').monoisotopicMass() - AA['Y'];
 
+}
+
+void AminoAcidsTests::mutatePenultimatePeptideResiduesTest() {
+    PeptideStringWithMods pep("SD(123)BC(Mod)D");
+
+    PeptideStringWithMods modded = AminoAcids::mutatePenultimatePeptideResidues(pep);
+    QCOMPARE(modded.at(1), "E");
+    QCOMPARE(modded.at(8), "S");
 }
 
 QTEST_MAIN(AminoAcidsTests)
