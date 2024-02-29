@@ -128,6 +128,10 @@ namespace {
         QStringList ionLabelsFoundList;
         for (float mzVal : mzValsToPair) {
 
+            if (mzVal < 1) {
+                continue;
+            }
+
             const size_t numResults = 1;
             std::vector<double> queryPt = {mzVal, 0.0};
             std::vector<long> mzIndex(numResults);

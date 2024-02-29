@@ -7,7 +7,7 @@
 
 
 #include "AlgorithmsFFLib_Exports.h"
-
+#include "AminoAcids.h"
 #include "ParquetReader.h"
 #include "Error.h"
 #include "GlobalSettings.h"
@@ -1017,6 +1017,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         };
     }
 
+
     static CandidateScoresReaderRow buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
 
         CandidateScoresReaderRow row;
@@ -1214,7 +1215,9 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.mzAccuracy11 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy11],
         row.mzAccuracy12 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy12],
         row.targetKey = candidateScores->targetKey;
-        row.peptideStringWithMods = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+        row.peptideStringWithMods = candidateScores->isDecoy
+                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
         row.proteinGroup = candidateScores->proteinGroup;
         row.isDecoy = candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;

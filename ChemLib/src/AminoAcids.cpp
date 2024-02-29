@@ -79,9 +79,9 @@ const QMap<QChar, MolecularFormula> &AminoAcids::fixedModifications() const {
     return m_fixedModifications;
 }
 
-QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
+QMap<QChar, double> AminoAcids::diannMutateAminoAcidToMass() {
 
-    QMap<QChar, double> diannMutateAminoAcidTo = {
+    QMap<QChar, double> diannMutateAminoAcidToMass = {
             {'G', Molecule(leucineFormula).monoisotopicMass() - Molecule(glycineFormula).monoisotopicMass()},
             {'A', Molecule(leucineFormula).monoisotopicMass() - Molecule(alanineFormula).monoisotopicMass()},
             {'V', Molecule(leucineFormula).monoisotopicMass() - Molecule(valineFormula).monoisotopicMass()},
@@ -106,5 +106,78 @@ QMap<QChar, double> AminoAcids::diannMutateAminoAcidTo() {
             {'D', Molecule(glutamicAcidFormula).monoisotopicMass() - Molecule(asparticAcidFormula).monoisotopicMass()}
     };
 
-    return diannMutateAminoAcidTo;
+    return diannMutateAminoAcidToMass;
+}
+
+QMap<QChar, QChar> AminoAcids::diannMutateAminoAcidToResidue() {
+
+    QMap<QChar, QChar> diannMutateAminoAcidToMass = {
+            {'G', 'L'},
+            {'A', 'L'},
+            {'V', 'L'},
+            {'L', 'V'},
+            {'X', 'V'},
+            {'I', 'V'},
+            {'F', 'L'},
+            {'M', 'L'},
+            {'P', 'L'},
+            {'W', 'L'},
+            {'S', 'T'},
+            {'C', 'S'},
+            {'U', 'S'},
+            {'T', 'S'},
+            {'Y', 'S'},
+            {'H', 'S'},
+            {'K', 'L'},
+            {'R', 'L'},
+            {'Q', 'N'},
+            {'E', 'D'},
+            {'N', 'Q'},
+            {'D', 'E'}
+    };
+
+    return diannMutateAminoAcidToMass;
+}
+
+PeptideStringWithMods AminoAcids::mutatePenultimatePeptideResidues(const PeptideStringWithMods &peptideStringWithMods) {
+
+    const QMap<QChar, QChar> diannMutateAminoAcidToResidues = AminoAcids::diannMutateAminoAcidToResidue();
+
+    const int peptideLength = peptideStringWithMods.sizeNoMods();
+
+    QString moddedPeptide;
+
+    bool unimodOn = false;
+
+    int residueCounter = 0;
+    for (const QChar &c : peptideStringWithMods) {
+
+        qDebug() << residueCounter << unimodOn;
+
+        if (c == '[' || c == '(') {
+            unimodOn = true;
+        }
+
+        else if (c == ']' || c == ')') {
+            moddedPeptide += c;
+            unimodOn = false;
+            continue;
+        }
+
+        if (unimodOn) {
+            moddedPeptide += c;
+            continue;
+        }
+
+        if (residueCounter == 1 || residueCounter == peptideLength - 2) {
+            moddedPeptide += diannMutateAminoAcidToResidues.value(c);
+            residueCounter++;
+            continue;
+        }
+
+        moddedPeptide += c;
+        residueCounter++;
+    }
+
+    return PeptideStringWithMods(moddedPeptide);
 }
