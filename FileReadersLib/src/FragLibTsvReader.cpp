@@ -400,6 +400,10 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
         m_currentPeptide = peptideSequenceChargeKey;
     }
 
+    if (tsvRow.productMz < 1.0) {
+        ERR_RETURN
+    }
+
     QString ionLabel = tsvRow.fragmentType + QString::number(tsvRow.fragmentSeriesNumber);
     ionLabel += tsvRow.fragmentCharge == 1 ? "" : "^" + QString::number(tsvRow.fragmentCharge);
     if (tsvRow.fragmentCharge > 0) {
