@@ -15,3 +15,5 @@ ThirdPartyLibs/arrow_src
 .idea
 
 cmake-build-release/
+
+CMakeUserPresets.json
