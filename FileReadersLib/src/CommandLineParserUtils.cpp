@@ -17,7 +17,8 @@ bool CommandLineParserUtils::checkFileNameExtensions(
 
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
-    return expectedFileExtensions.contains(fileSuffix);
+
+    return expectedFileExtensions.contains(fileSuffix.toLower());
 }
 
 Err CommandLineParserUtils::getDataFilesFromDirectory(
