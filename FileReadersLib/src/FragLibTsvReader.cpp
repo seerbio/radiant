@@ -94,8 +94,6 @@ namespace {
         QStringList ionLabelsList;
 
         AminoAcids aminoAcids;
-        aminoAcids.addFixedModification('C', MolecularFormulas::carbamidomethylFormula); //Make this configureable by command line.
-
 
         mzValsTree.append(peptideStringWithMods.bSeries(1, aminoAcids));
         ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels({}));
@@ -152,8 +150,8 @@ namespace {
             );
             if (outDistSqr.front() > 1.0) {
                 qDebug() << peptideStringWithMods << mzVal << outDistSqr.front();
-                qDebug() << mzValsTree;
-                qDebug() << mzValsToPair;
+                qDebug() << "Theo Frag" << mzValsTree;
+                qDebug() << "Emp Frag" << mzValsToPair;
                 rrr(eValueError);
             }
 
