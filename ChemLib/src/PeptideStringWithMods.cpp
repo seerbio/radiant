@@ -4,6 +4,7 @@
 
 #include "PeptideStringWithMods.h"
 
+#include "AminoAcids.h"
 #include "BiophysicalCalcs.h"
 #include "MolecularFormula.h"
 
@@ -93,22 +94,28 @@ QMap<Index, Mass> PeptideStringWithMods::modificationsMap() const {
 
 }
 
-QVector<double> PeptideStringWithMods::bSeries(int charge) const {
+QVector<double> PeptideStringWithMods::bSeries(
+        int charge,
+        const AminoAcids &aminoAcids
+        ) const {
     return BiophysicalCalcs::buildTandemFragmentMasses(
             *this,
             BiophysicalCalcs::FragmentSeriesType::bSeries,
             charge,
-            AminoAcids()
+            aminoAcids
             );
 }
 
-QVector<double> PeptideStringWithMods::ySeries(int charge) const {
+QVector<double> PeptideStringWithMods::ySeries(
+        int charge,
+        const AminoAcids &aminoAcids
+        ) const {
 
     return BiophysicalCalcs::buildTandemFragmentMasses(
             *this,
             BiophysicalCalcs::FragmentSeriesType::ySeries,
             charge,
-            AminoAcids()
+            aminoAcids
             );
 }
 

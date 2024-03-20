@@ -4,6 +4,7 @@
 
 #include "FragLibTsvReader.h"
 
+#include "AminoAcids.h"
 #include "ChemConstants.h"
 #include "FragLibReader.h"
 #include "PeptideStringWithMods.h"
@@ -92,10 +93,12 @@ namespace {
         QVector<double> mzValsTree;
         QStringList ionLabelsList;
 
-        mzValsTree.append(peptideStringWithMods.bSeries(1));
+        AminoAcids aminoAcids;
+
+        mzValsTree.append(peptideStringWithMods.bSeries(1, aminoAcids));
         ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels({}));
 
-        mzValsTree.append(peptideStringWithMods.ySeries(1));
+        mzValsTree.append(peptideStringWithMods.ySeries(1, aminoAcids));
         ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels({}));
 
         if (charge > 1) {
@@ -104,10 +107,10 @@ namespace {
 
                 const QString chargeChar = QString::number(i+1);
 
-                mzValsTree.append(peptideStringWithMods.bSeries(i+1));
+                mzValsTree.append(peptideStringWithMods.bSeries(i+1, aminoAcids));
                 ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
 
-                mzValsTree.append(peptideStringWithMods.ySeries(i+1));
+                mzValsTree.append(peptideStringWithMods.ySeries(i+1, aminoAcids));
                 ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
             }
 
@@ -145,8 +148,10 @@ namespace {
                     mzIndex.data(),
                     outDistSqr.data()
             );
-
             if (outDistSqr.front() > 1.0) {
+                qDebug() << peptideStringWithMods << mzVal << outDistSqr.front();
+                qDebug() << "Theo Frag" << mzValsTree;
+                qDebug() << "Emp Frag" << mzValsToPair;
                 rrr(eValueError);
             }
 

@@ -10,6 +10,7 @@
 
 #include <QString>
 
+class AminoAcids;
 
 class  CHEMLIB_EXPORTS PeptideStringWithMods : public QString {
 
@@ -27,9 +28,15 @@ public:
 
     [[nodiscard]] QMap<Index, Mass> modificationsMap() const;
 
-    [[nodiscard]] QVector<double> bSeries(int charge) const;
+    [[nodiscard]] QVector<double> bSeries(
+            int charge,
+            const AminoAcids &aminoAcids
+            ) const;
 
-    [[nodiscard]] QVector<double> ySeries(int charge) const;
+    [[nodiscard]] QVector<double> ySeries(
+            int charge,
+            const AminoAcids &aminoAcids
+            ) const;
 
     [[nodiscard]] QStringList bSeriesIonLabels(const QString &modifier) const;
 
