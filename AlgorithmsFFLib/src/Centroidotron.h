@@ -44,6 +44,11 @@ public:
             int filterLength
             );
 
+    Err centroidScan(
+            const ScanPoints &scanPoints,
+            ScanPoints *centroidedScanPoints
+            );
+
 private:
 
     ScanPoints runningAverage(const ScanPoints &scanPoints);
@@ -56,6 +61,13 @@ private:
     Err smoothIntensities(
             const ScanPoints &scanPoints,
             ScanPoints *scanPointsSmoothed
+            );
+
+    Err performCWT(
+            const ScanPoints &scanPoints,
+            int minScale,
+            int maxScale,
+            ScanPoints *processedScanPoints
             );
 
     static void proteoWizDetect(

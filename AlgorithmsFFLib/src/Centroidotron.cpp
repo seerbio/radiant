@@ -9,6 +9,9 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "MathUtils.h"
+#include "MsUtils.h"
+#include "ParallelUtils.h"
+#include "PeakIntegratomatic.h"
 
 #include <boost/range/iterator_range.hpp>
 
@@ -106,7 +109,6 @@ Err Centroidotron::smoothIntensities(
                 gaussKernel
         );
     }
-
 
     e = EigenSparseUtils::sparseVectorToPoints(
             vecSmoothed,
@@ -716,3 +718,210 @@ void Centroidotron::proteoWizDetect(
 //    refinePeaks( x, y, allLines, widths, xPeakValues, yPeakValues, snrs);
 
 }
+
+namespace {
+
+
+    Err addZeroPoints(
+            const ScanPoints &scanPoints,
+            ScanPoints *scanPointsWithZerosOnPeakEdges
+            ) {
+
+        ERR_INIT
+
+        QPair<QVector<double>, QVector<double>> mzVsIntensity = ParallelUtils::unZip(scanPoints);
+        const QVector<double> mzValsQ = mzVsIntensity.first;
+
+        const Eigen::VectorX<double> mzVals = EigenUtils::convertQVectorToEigenVector(mzValsQ);
+        const Eigen::VectorX<double> mzValsDiffs = mzVals.segment(1, mzVals.size() - 1) - mzVals.segment(0, mzVals.size() - 1);
+
+        const double mzValsDiffsMedianThreshold = MathUtils::median(EigenUtils::convertEigenVectorToQVector(mzValsDiffs));
+        const double mzValsDiffMin = mzValsDiffs.minCoeff();
+
+        scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(mzValsQ.first() - mzValsDiffMin), 0.0f});
+        for (int i = 0; i < mzValsDiffs.size(); i++) {
+
+            const double diff = mzValsDiffs.coeff(i);
+            if (diff < mzValsDiffsMedianThreshold) {
+
+            }
+
+        }
+        scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(mzValsQ.back() + mzValsDiffMin), 0.0f});
+
+        ERR_RETURN
+    }
+
+    double mzWeightedAverageFromScanPoints(const ScanPoints &scanPoints) {
+
+        double runningSum = 0.0;
+        double numerator = 0.0;
+        for (const ScanPoint &sp : scanPoints) {
+            runningSum += sp.y();
+            numerator += sp.x() * sp.y();
+        }
+
+        return numerator / runningSum;
+    }
+
+
+
+}//namespace
+Err Centroidotron::centroidScan(
+        const ScanPoints &_scanPoints,
+        ScanPoints *centroidedScanPoints
+        ) {
+
+    ERR_INIT
+
+    ScanPoints scanPoints;
+    e = addZeroPoints(_scanPoints, &scanPoints); ree;
+
+    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    centroidedScanPoints->clear();
+
+//    ScanPoints scanPointsInProcess;
+//    e = smoothIntensities(
+//            scanPoints,
+//            &scanPointsInProcess
+//            ); ree;
+
+    QPair<QVector<double>, QVector<double>> mzVsIntensityVecs = ParallelUtils::unZip(scanPoints);
+    const QVector<double> &mzVals = mzVsIntensityVecs.first;
+    const QVector<double> &intensityVals = mzVsIntensityVecs.second;
+    const QVector<float> intensityValsFloat(intensityVals.begin(), intensityVals.end());
+
+    PeakIntegratomaticParameters params;
+    params.filterLength = m_filterLength;
+    params.stopThresholdFraction = 0.5; //TODO make this settable
+    params.signalToNoiseRatio = 1.0; //TODO make this settable
+    params.smoothCount = 0; //NOTE: set to zero because we're smoothing above.
+    params.sigma = 1.0;
+
+    PeakIntegratomatic peakIntegratomatic;
+    e = peakIntegratomatic.init(params);
+
+    QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+    const int intMaxVal = std::numeric_limits<int>::max();
+    e = peakIntegratomatic.simpleIntegrator(
+            intensityValsFloat,
+            intMaxVal,
+            intMaxVal,
+            &peakIntegrationIndexesVsIntensity
+            ); ree;
+
+    ScanPoints scanPointsLimits;
+    ScanPoints apexes;
+    for (const QPair<PeakIntegrationIndexes, float> &res : peakIntegrationIndexesVsIntensity) {
+        const PeakIntegrationIndexes &pii = res.first;
+        scanPointsLimits.push_back({static_cast<float>(mzVals.at(pii.first)), static_cast<float>(mzVals.at(pii.second))});
+
+        const ScanPoints scanPointsLimitss = scanPoints.mid(pii.first, (pii.second - pii.first) + 1);
+//        qDebug() << pii;
+//        qDebug() << scanPointsLimitss;
+        const float centroid = static_cast<float>(mzWeightedAverageFromScanPoints(scanPointsLimitss));
+        apexes.push_back({centroid, centroid});
+
+    }
+
+    const QString ogScanFileName = "/home/anichols/Downloads/ogScanMzLimits.csv";
+    e = MsUtils::writePointsToCSV(scanPointsLimits, ogScanFileName);
+
+    const QString ogScanFileNameApexes = "/home/anichols/Downloads/ogScanMzLimitsApex.csv";
+    e = MsUtils::writePointsToCSV(apexes, ogScanFileNameApexes);
+
+    ERR_RETURN
+
+}
+
+namespace {
+
+    double mexicanHatWavelet(double u) {
+        double coeff = 2 / std::sqrt(3 * std::sqrt(std::acos(-1)));
+        double u2 = u * u;
+        return coeff * (1 - u2) * std::exp(-u2 / 2);
+    }
+
+}//namespace
+Err Centroidotron::performCWT(
+        const ScanPoints &scanPoints,
+        int minScale,
+        int maxScale,
+        ScanPoints *processedScanPoints) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::isTrue(minScale < maxScale); ree;
+    e = ErrorUtils::isAboveThreshold(
+            minScale,
+            0,
+            ErrorUtilsParam::ExcludeThreshold
+            ); ree;
+
+    processedScanPoints->clear();
+
+    QPair<QVector<double>, QVector<double>> mzVsIntensity = ParallelUtils::unZip(scanPoints);
+    const QVector<double> &mzVals = mzVsIntensity.first;
+    const QVector<double> &intensityVals = mzVsIntensity.second;
+    Eigen::VectorX<double> intensityValsVec = EigenUtils::convertQVectorToEigenVector(intensityVals);
+
+    int length = intensityVals.size();
+    Eigen::MatrixX<double> cwtResult(maxScale - minScale + 1, length);
+
+    for (int scale = minScale; scale <= maxScale; ++scale) {
+        const double delta = scale / (double)length;
+        Eigen::VectorX<double> wavelet(length);
+
+        for (int i = 0; i < length; ++i) {
+            double u = (i - length / 2.0) * delta;
+            wavelet(i) = mexicanHatWavelet(u) / std::sqrt(delta);
+        }
+
+        Eigen::VectorX<double> convolved(length);
+        convolved.setZero();
+
+        for (int i = 0; i < length; ++i) {
+            for (int j = 0; j < length; ++j)
+            {
+                int k = (i - j + length) % length;
+                convolved(i) += wavelet(k) * intensityValsVec.coeff(j);
+            }
+        }
+
+        cwtResult.row(scale - minScale) = convolved;
+    }
+
+    for (int row = 0; row < cwtResult.rows(); row++) {
+        const Eigen::VectorX<double> v = cwtResult.row(row);
+        const QVector<double> qV = EigenUtils::convertEigenVectorToQVector(v);
+
+        QVector<QPointF> rowScanPoints;
+        e = ParallelUtils::zip(
+                mzVals,
+                qV,
+                &rowScanPoints
+                ); ree;
+
+        const QString ogScanFileName = QString("/home/anichols/Downloads/ogScan_%1.csv").arg(row);
+        e = MsUtils::writePointsToCSV(rowScanPoints, ogScanFileName); ree;
+
+    }
+
+
+    ERR_RETURN
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

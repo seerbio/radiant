@@ -99,6 +99,8 @@ public:
     */
     Err simpleIntegrator(
             const QVector<float> &vec,
+            int topNApexes,
+            int maxPeakIntegrations,
             QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
     );
 

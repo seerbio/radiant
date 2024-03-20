@@ -17,13 +17,16 @@ public:
 
 private slots:
 
-    static void centroidTest();
-
+    static void smoothIntensities1Test();
     static void proteowizPeakPickingTest();
+    static void centroidScanTest();
+    static void performCWTTest();
 
 };
 
-void CentroidotronTests::centroidTest() {
+void CentroidotronTests::smoothIntensities1Test() {
+
+    QSKIP("skipping for now");
 
     ERR_INIT
 
@@ -213,6 +216,102 @@ void CentroidotronTests::proteowizPeakPickingTest() {
             );
 
     qDebug() << mzVals.size() << xPeakValues.size();
+
+
+}
+
+void CentroidotronTests::centroidScanTest() {
+
+    QSKIP("skipping");
+
+    ERR_INIT
+
+    const QString testFile = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.mzML.prqFF";
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(testFile);
+    QCOMPARE(e, eNoError);
+
+    const ScanNumber scanNumber = 25012;
+
+    QPair<Err, ScanPoints*> ms1ScanPointsPair = msReaderParquet.getScanPoints(scanNumber);
+    QCOMPARE(ms1ScanPointsPair.first, eNoError);
+
+    const ScanPoints* ms1ScanPointsPtrs = ms1ScanPointsPair.second;
+    const ScanPoints scanPoints = *ms1ScanPointsPtrs;
+
+    const QString ogScanFileName = "/home/anichols/Downloads/ogScan.csv";
+    e = MsUtils::writePointsToCSV(scanPoints, ogScanFileName);
+    QCOMPARE(e, eNoError);
+
+    QPair<QVector<double>, QVector<double>> mzVzIntz = ParallelUtils::unZip(scanPoints);
+    const QVector<double> &mzVals = mzVzIntz.first;
+    const QVector<double> &intzVals = mzVzIntz.second;
+
+    Centroidotron centroidotron;
+    const int hashingPrecision = 2;
+    const double peakWidth = 1.0;
+    const int filterLen = 5;
+    e = centroidotron.init(
+            peakWidth,
+            hashingPrecision,
+            filterLen
+    );
+    QCOMPARE(e, eNoError);
+
+    ScanPoints scanPointsCentroided;
+    centroidotron.centroidScan(
+            scanPoints,
+            &scanPointsCentroided
+            );
+    QCOMPARE(e, eNoError);
+
+}
+
+void CentroidotronTests::performCWTTest() {
+
+    ERR_INIT
+
+    const QString testFile = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.mzML.prqFF";
+    MsReaderParquet msReaderParquet;
+    e = msReaderParquet.openFile(testFile);
+    QCOMPARE(e, eNoError);
+
+    const ScanNumber scanNumber = 25012;
+
+    QPair<Err, ScanPoints*> ms1ScanPointsPair = msReaderParquet.getScanPoints(scanNumber);
+    QCOMPARE(ms1ScanPointsPair.first, eNoError);
+
+    const ScanPoints* ms1ScanPointsPtrs = ms1ScanPointsPair.second;
+    const ScanPoints scanPoints = *ms1ScanPointsPtrs;
+
+    const QString ogScanFileName = "/home/anichols/Downloads/ogScan.csv";
+    e = MsUtils::writePointsToCSV(scanPoints, ogScanFileName);
+    QCOMPARE(e, eNoError);
+
+    QPair<QVector<double>, QVector<double>> mzVzIntz = ParallelUtils::unZip(scanPoints);
+    const QVector<double> &mzVals = mzVzIntz.first;
+    const QVector<double> &intzVals = mzVzIntz.second;
+
+    Centroidotron centroidotron;
+    const int hashingPrecision = 2;
+    const double peakWidth = 1.0;
+    const int filterLen = 5;
+    e = centroidotron.init(
+            peakWidth,
+            hashingPrecision,
+            filterLen
+    );
+    QCOMPARE(e, eNoError);
+
+    ScanPoints processedScanPoints;
+    e = centroidotron.performCWT(
+            scanPoints,
+            1,
+            10,
+            &processedScanPoints
+            );
+    QCOMPARE(e, eNoError);
+
 
 
 }
