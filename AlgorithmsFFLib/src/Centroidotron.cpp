@@ -721,6 +721,20 @@ void Centroidotron::proteoWizDetect(
 
 namespace {
 
+    Err buildFirstDerivativeMzVec(
+            const ScanPoints &scanPoints,
+            QVector<double> *firstDirMzVec
+            ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(scanPoints); ree;
+
+        for (int i = 0; i < scanPoints.size() - 1; i++) {
+            firstDirMzVec->push_back(scanPoints.at(i+1).x() - scanPoints.at(i).x());
+        }
+
+        ERR_RETURN
+    }
 
     Err addZeroPoints(
             const ScanPoints &scanPoints,
@@ -729,25 +743,38 @@ namespace {
 
         ERR_INIT
 
-        QPair<QVector<double>, QVector<double>> mzVsIntensity = ParallelUtils::unZip(scanPoints);
-        const QVector<double> mzValsQ = mzVsIntensity.first;
+        e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
-        const Eigen::VectorX<double> mzVals = EigenUtils::convertQVectorToEigenVector(mzValsQ);
-        const Eigen::VectorX<double> mzValsDiffs = mzVals.segment(1, mzVals.size() - 1) - mzVals.segment(0, mzVals.size() - 1);
+        QVector<double> mzValsFirstDeriv;
+        e = buildFirstDerivativeMzVec(
+                scanPoints,
+                &mzValsFirstDeriv
+                ); ree;
 
-        const double mzValsDiffsMedianThreshold = MathUtils::median(EigenUtils::convertEigenVectorToQVector(mzValsDiffs));
-        const double mzValsDiffMin = mzValsDiffs.minCoeff();
+        const double medianDiffFirst20 = MathUtils::median(mzValsFirstDeriv.mid(0, 20));
 
-        scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(mzValsQ.first() - mzValsDiffMin), 0.0f});
-        for (int i = 0; i < mzValsDiffs.size(); i++) {
+        const double rejectFactor = 1.5;
+        double currentDelta = medianDiffFirst20;
 
-            const double diff = mzValsDiffs.coeff(i);
-            if (diff < mzValsDiffsMedianThreshold) {
+        for (int i = 0; i < mzValsFirstDeriv.size(); i++) {
 
+            if (mzValsFirstDeriv.at(i) < currentDelta * rejectFactor) {
+                scanPointsWithZerosOnPeakEdges->push_back(scanPoints.at(i));
+                currentDelta = mzValsFirstDeriv.at(i);
+                continue;
+            }
+
+            scanPointsWithZerosOnPeakEdges->push_back(scanPoints.at(i));
+
+            scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(scanPoints.at(i).x() + currentDelta), 0.0f});
+
+            if (i + 1 < scanPoints.size()) {
+                scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(scanPoints.at(i+1).x() - currentDelta), 0.0f});
             }
 
         }
-        scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(mzValsQ.back() + mzValsDiffMin), 0.0f});
+
+        scanPointsWithZerosOnPeakEdges->push_back({static_cast<float>(scanPoints.back().x() + currentDelta), 0.0f});
 
         ERR_RETURN
     }
@@ -764,8 +791,6 @@ namespace {
         return numerator / runningSum;
     }
 
-
-
 }//namespace
 Err Centroidotron::centroidScan(
         const ScanPoints &_scanPoints,
@@ -774,17 +799,11 @@ Err Centroidotron::centroidScan(
 
     ERR_INIT
 
-    ScanPoints scanPoints;
-    e = addZeroPoints(_scanPoints, &scanPoints); ree;
-
-    e = ErrorUtils::isNotEmpty(scanPoints); ree;
+    e = ErrorUtils::isNotEmpty(_scanPoints); ree;
     centroidedScanPoints->clear();
 
-//    ScanPoints scanPointsInProcess;
-//    e = smoothIntensities(
-//            scanPoints,
-//            &scanPointsInProcess
-//            ); ree;
+    ScanPoints scanPoints;
+    e = addZeroPoints(_scanPoints, &scanPoints); ree;
 
     QPair<QVector<double>, QVector<double>> mzVsIntensityVecs = ParallelUtils::unZip(scanPoints);
     const QVector<double> &mzVals = mzVsIntensityVecs.first;
@@ -817,18 +836,10 @@ Err Centroidotron::centroidScan(
         scanPointsLimits.push_back({static_cast<float>(mzVals.at(pii.first)), static_cast<float>(mzVals.at(pii.second))});
 
         const ScanPoints scanPointsLimitss = scanPoints.mid(pii.first, (pii.second - pii.first) + 1);
-//        qDebug() << pii;
-//        qDebug() << scanPointsLimitss;
-        const float centroid = static_cast<float>(mzWeightedAverageFromScanPoints(scanPointsLimitss));
+        const auto centroid = static_cast<float>(mzWeightedAverageFromScanPoints(scanPointsLimitss));
         apexes.push_back({centroid, centroid});
 
     }
-
-    const QString ogScanFileName = "/home/anichols/Downloads/ogScanMzLimits.csv";
-    e = MsUtils::writePointsToCSV(scanPointsLimits, ogScanFileName);
-
-    const QString ogScanFileNameApexes = "/home/anichols/Downloads/ogScanMzLimitsApex.csv";
-    e = MsUtils::writePointsToCSV(apexes, ogScanFileNameApexes);
 
     ERR_RETURN
 

@@ -222,7 +222,7 @@ void CentroidotronTests::proteowizPeakPickingTest() {
 
 void CentroidotronTests::centroidScanTest() {
 
-    QSKIP("skipping");
+//    QSKIP("skipping");
 
     ERR_INIT
 
@@ -258,18 +258,29 @@ void CentroidotronTests::centroidScanTest() {
     );
     QCOMPARE(e, eNoError);
 
-    ScanPoints scanPointsCentroided;
-    centroidotron.centroidScan(
-            scanPoints,
-            &scanPointsCentroided
-            );
-    QCOMPARE(e, eNoError);
+//    qDebug() << scanPoints;
+
+    QElapsedTimer et;
+    et.start();
+    for (int i = 0; i < 100000; i++) {
+
+        ScanPoints scanPointsCentroided;
+        centroidotron.centroidScan(
+                scanPoints,
+                &scanPointsCentroided
+        );
+        QCOMPARE(e, eNoError);
+        qDebug() << et.nsecsElapsed() << et.restart();
+    }
+
 
 }
 
 void CentroidotronTests::performCWTTest() {
 
     ERR_INIT
+
+    QSKIP("skipping");
 
     const QString testFile = "/home/anichols/Downloads/EXP22092_2022ms0742X32_A.mzML.prqFF";
     MsReaderParquet msReaderParquet;
