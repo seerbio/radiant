@@ -1,4 +1,6 @@
 #include "PeptideStringWithMods.h"
+
+#include "AminoAcids.h"
 #include "Molecule.h"
 
 #include <QtTest>
@@ -72,13 +74,13 @@ void PeptideStringWithModsTests::bSeriesTest() {
 
     const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("V[1.0]T[-1.0]V[1.0]T[-1.0]");
 
-    const QVector<double> bSeriesCharge1 = peptideStringWithMods.bSeries(1);
+    const QVector<double> bSeriesCharge1 = peptideStringWithMods.bSeries(1, AminoAcids());
     const QVector<double> expectedCharge1 = {101.076, 201.123, 301.192, 419.25};
     for (int i = 0; i < bSeriesCharge1.size(); i++) {
         QCOMPARE(MathUtils::pRound(bSeriesCharge1.at(i), 3), MathUtils::pRound(expectedCharge1.at(i), 3));
     }
 
-    const QVector<double> bSeriesCharge2 = peptideStringWithMods.bSeries(2);
+    const QVector<double> bSeriesCharge2 = peptideStringWithMods.bSeries(2, AminoAcids());
     const QVector<double> expectedCharge2 = {51.041, 101.065, 151.1, 210.129};
     for (int i = 0; i < bSeriesCharge2.size(); i++) {
         QCOMPARE(MathUtils::pRound(bSeriesCharge2.at(i), 3), MathUtils::pRound(expectedCharge2.at(i), 3));
@@ -90,13 +92,13 @@ void PeptideStringWithModsTests::ySeriesTest() {
 
     const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("V[1.0]T[-1.0]V[1.0]T[-1.0]");
 
-    const QVector<double> ySeriesCharge1 = peptideStringWithMods.ySeries(1);
+    const QVector<double> ySeriesCharge1 = peptideStringWithMods.ySeries(1, AminoAcids());
     const QVector<double> expectedCharge1 = {119.066, 219.134, 319.182, 419.25};
     for (int i = 0; i < ySeriesCharge1.size(); i++) {
         QCOMPARE(MathUtils::pRound(ySeriesCharge1.at(i), 3), MathUtils::pRound(expectedCharge1.at(i), 3));
     }
 
-    const QVector<double> ySeriesCharge2 = peptideStringWithMods.ySeries(2);
+    const QVector<double> ySeriesCharge2 = peptideStringWithMods.ySeries(2, AminoAcids());
     const QVector<double> expectedCharge2 = {60.0364, 110.071, 160.094, 210.129};
     for (int i = 0; i < ySeriesCharge2.size(); i++) {
         QCOMPARE(MathUtils::pRound(ySeriesCharge2.at(i), 3), MathUtils::pRound(expectedCharge2.at(i), 3));
