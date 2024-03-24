@@ -152,8 +152,6 @@ PeptideStringWithMods AminoAcids::mutatePenultimatePeptideResidues(const Peptide
     int residueCounter = 0;
     for (const QChar &c : peptideStringWithMods) {
 
-        qDebug() << residueCounter << unimodOn;
-
         if (c == '[' || c == '(') {
             unimodOn = true;
         }

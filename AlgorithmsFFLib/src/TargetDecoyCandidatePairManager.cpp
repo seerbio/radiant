@@ -362,6 +362,10 @@ namespace {
                 &ms2IonsTarget
         ); rree;
 
+        if (ms2IonsTarget.isEmpty()) {
+            return{eValueError, {}};
+        }
+
         QVector<MS2Ion> ms2IonsDecoy;
 
 //#define REVERSE_MIDDLE_DECOY
@@ -423,6 +427,9 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     futures.waitForFinished();
 
     for (const QPair<Err, TargetDecoyCandidatePair> &result : futures) {
+        if (result.first == eValueError) {
+            continue;
+        }
         e = result.first; ree;
         const TargetDecoyCandidatePair &tdcp = result.second;
         m_targetDecoyCandidatePairs.push_back(tdcp);
@@ -434,6 +441,10 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
                 flrr,
                 m_pythiaParameters
                 );
+
+        if (result.first == eValueError) {
+            continue;
+        }
 
         e = result.first; ree;
 
