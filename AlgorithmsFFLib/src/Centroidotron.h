@@ -51,35 +51,6 @@ public:
 
 private:
 
-    ScanPoints runningAverage(const ScanPoints &scanPoints);
-
-    Err smoothIntensities(
-            const QVector<double> &intzVals,
-            QVector<double> *intzValsSmoothed
-            );
-
-    Err smoothIntensities(
-            const ScanPoints &scanPoints,
-            ScanPoints *scanPointsSmoothed
-            );
-
-    Err performCWT(
-            const ScanPoints &scanPoints,
-            int minScale,
-            int maxScale,
-            ScanPoints *processedScanPoints
-            );
-
-    static void proteoWizDetect(
-            const std::vector<double>& x_,
-            const std::vector<double>& y_,
-            std::vector<double>& xPeakValues,
-            std::vector<double>& yPeakValues,
-            std::vector<Peak> *peaks
-            );
-
-private:
-
     double m_peakWidth;
     int m_hashingPrecision;
     int m_filterLength;

@@ -137,3 +137,22 @@ Err Centroidotron::centroidScan(
 
     ERR_RETURN
 }
+
+Err Centroidotron::init(
+        double peakWidth,
+        int hashingPrecision,
+        int filterLength
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isAboveThreshold(peakWidth, 0.0, ErrorUtilsParam::ExcludeThreshold); ree;
+    e = ErrorUtils::isAboveThreshold(hashingPrecision, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+    e = ErrorUtils::isAboveThreshold(filterLength, 2, ErrorUtilsParam::ExcludeThreshold); ree;
+
+    m_peakWidth = peakWidth;
+    m_hashingPrecision = hashingPrecision;
+    m_filterLength = filterLength;
+    
+    ERR_RETURN
+}
