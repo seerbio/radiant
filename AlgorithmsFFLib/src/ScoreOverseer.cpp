@@ -564,11 +564,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     std::cout << "****" << std::endl;
 #endif
 
-//    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-//            m_intensityMatrix100,
-//            m_pythiaParams,
-//            m_gaussKernel
-//            );
+    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+            m_intensityMatrix100,
+            m_pythiaParams,
+            m_gaussKernel
+            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<float> unused1;
@@ -591,11 +591,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
                 m_intensityMatrix100Shadow.cols()
         ).eval();
 
-//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
-//                m_intensityMatrix100Shadow,
-//                m_pythiaParams,
-//                m_gaussKernel
-//        );
+        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+                m_intensityMatrix100Shadow,
+                m_pythiaParams,
+                m_gaussKernel
+        );
     }
 
     const int tightColsMax = 6;
