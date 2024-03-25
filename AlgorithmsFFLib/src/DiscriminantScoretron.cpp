@@ -132,7 +132,7 @@ namespace {
             return {e, vec};
         }
 
-        const QVector<float> vec = candidateScores->featuresArray.mid(0, 11);
+        const QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::ScanIonCount);
         return {e, vec};
 
     }

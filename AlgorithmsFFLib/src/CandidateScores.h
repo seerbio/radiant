@@ -27,6 +27,7 @@ public:
 
     enum Features {
         CosineSimSum100 = 0,
+        CosineSimSum100GreaterThan80,
         AllignedMaxIndexesCount,
         CosineSim100MS1,
         CosineSimSpectrumCubed,
@@ -38,12 +39,12 @@ public:
         TopBottomRatio,
         TopBottomRatioNorm,//10
         Charge,
-        Mass,
         ScanTimeDelta,
         ScanTimeRange,
         ScanTimePd,
         ScanIonCount,
         MzNorm,
+        Mass,
         KlDivSpectrum,
         CosineSimSpectrum,
         CosineSim45MS1,//20

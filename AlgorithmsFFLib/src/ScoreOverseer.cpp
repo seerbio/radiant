@@ -1422,6 +1422,14 @@ Err ScoreOverseer::buildScores(
             std::numeric_limits<float>::min()
             );
 
+    const float cosineSimilarityMin = 0.8;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80] = std::accumulate(
+            cosineSimToAnchorVec.begin(),
+            cosineSimToAnchorVec.begin() + top6,
+            std::numeric_limits<float>::min(),
+            [cosineSimilarityMin](float sum, float f){return f >= cosineSimilarityMin ? sum + f : sum;}
+    );
+
     const float cosineSimSumTop6 = std::accumulate(
             cosineSimToAnchorVec.begin(),
             cosineSimToAnchorVec.begin() + top6,
