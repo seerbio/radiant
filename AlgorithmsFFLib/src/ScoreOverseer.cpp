@@ -564,11 +564,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
     std::cout << "****" << std::endl;
 #endif
 
-//    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-//            m_intensityMatrix100,
-//            m_pythiaParams,
-//            m_gaussKernel
-//            );
+    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+            m_intensityMatrix100,
+            m_pythiaParams,
+            m_gaussKernel
+            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<float> unused1;
@@ -591,11 +591,11 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
                 m_intensityMatrix100Shadow.cols()
         ).eval();
 
-//        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
-//                m_intensityMatrix100Shadow,
-//                m_pythiaParams,
-//                m_gaussKernel
-//        );
+        m_intensityMatrix100Shadow = applyGaussSmoothRowWiseToMatrix(
+                m_intensityMatrix100Shadow,
+                m_pythiaParams,
+                m_gaussKernel
+        );
     }
 
     const int tightColsMax = 6;
@@ -1421,6 +1421,14 @@ Err ScoreOverseer::buildScores(
             cosineSimToAnchorVec.begin() + top6,
             std::numeric_limits<float>::min()
             );
+
+    const float cosineSimilarityMin = 0.8;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80] = std::accumulate(
+            cosineSimToAnchorVec.begin(),
+            cosineSimToAnchorVec.begin() + top6,
+            std::numeric_limits<float>::min(),
+            [cosineSimilarityMin](float sum, float f){return f >= cosineSimilarityMin ? sum + f : sum;}
+    );
 
     const float cosineSimSumTop6 = std::accumulate(
             cosineSimToAnchorVec.begin(),

@@ -203,7 +203,6 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
         reader.readNext();
 
         if (reader.isStartElement()) {
-
             if (isCurrentTag(reader, spectrumElementName)) {
                 e = parseScan(reader); ree;
                 continue;
@@ -218,7 +217,7 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
         }
     }
 
-    e = ErrorUtils::isEqual(scanCount, m_msScanInfo->size()); ree;
+    e = ErrorUtils::isEqual(scanCount, m_msScanInfo->size()); eee_absorb;
 
     ERR_RETURN
 }
@@ -317,9 +316,8 @@ namespace {
         bool ok = true;
         const QString id = attributesSpectrumTag.value("id").toString();
 
+        *scanNumber = id.split("=", Qt::SkipEmptyParts).back().toInt(&ok);
         e = ErrorUtils::isTrue(ok); ree;
-
-        *scanNumber = id.split(SCAN+"=").back().toInt(&ok);
 
         ERR_RETURN
     }

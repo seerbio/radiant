@@ -27,6 +27,7 @@ public:
 
     enum Features {
         CosineSimSum100 = 0,
+        CosineSimSum100GreaterThan80,
         AllignedMaxIndexesCount,
         CosineSim100MS1,
         CosineSimSpectrumCubed,
@@ -38,12 +39,12 @@ public:
         TopBottomRatio,
         TopBottomRatioNorm,//10
         Charge,
-        Mass,
         ScanTimeDelta,
         ScanTimeRange,
         ScanTimePd,
         ScanIonCount,
         MzNorm,
+        Mass,
         KlDivSpectrum,
         CosineSimSpectrum,
         CosineSim45MS1,//20
@@ -307,6 +308,7 @@ public:
 namespace CandidateScoresReaderRowNamespace {
 
     const QString COS_SIM_SUM_100 = QStringLiteral("CosineSimSum100");
+    const QString COS_SIM_SUM_100_GREATER_80 = QStringLiteral("CosineSimSum100Greater80");
     const QString ALL_MAX_IND_CNT = QStringLiteral("AllignedMaxIndexesCount");
     const QString COS_SIM_SUM_MS1_100 = QStringLiteral("CosineSim100MS1");
     const QString COS_SIM_SPEC_CUBED = QStringLiteral("CosineSimSpectrumCubed");
@@ -545,6 +547,7 @@ namespace CandidateScoresReaderRowNamespace {
 struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
 
     float cosineSimSum100 = -1.0;
+    float CosineSimSum100Greater80 = -1.0;
     float allignedMaxIndexesCount = -1.0;
     float cosineSim100MS1 = -1.0;
     float cosineSimSpectrumCubed = -1.0;
@@ -783,6 +786,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         return {
                 {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
+                {COS_SIM_SUM_100_GREATER_80, QVariant(CosineSimSum100Greater80)},
                 {ALL_MAX_IND_CNT, QVariant(allignedMaxIndexesCount)},
                 {COS_SIM_SUM_MS1_100, QVariant(cosineSim100MS1)},
                 {COS_SIM_SPEC_CUBED, QVariant(cosineSimSpectrumCubed)},
@@ -1023,6 +1027,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         CandidateScoresReaderRow row;
 
         row.cosineSimSum100 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100],
+        row.CosineSimSum100Greater80 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80],
         row.allignedMaxIndexesCount = candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount],
         row.cosineSim100MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
         row.cosineSimSpectrumCubed = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed],

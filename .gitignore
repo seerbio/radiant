@@ -16,5 +16,4 @@ ThirdPartyLibs/arrow_src
 
 cmake-build-release/
 
-cmake-build-relwithdebinfo/.cmake/api/v1/query/
-/cmake-build-relwithdebinfo/
+CMakeUserPresets.json
