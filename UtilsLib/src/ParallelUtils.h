@@ -224,7 +224,7 @@ public:
         tranchedMaps->reserve(numberOfTranches);
 
         for (auto it = map.begin(); it != map.end(); it++) {
-            const T key = it.key();
+            const T &key = it.key();
             const QVector<U> &val = it.value();
 
             QVector<QVector<U>> valTranched;
@@ -235,7 +235,7 @@ public:
             ); ree;
 
             for (int i = 0; i < valTranched.size(); i++) {
-                e = ErrorUtils::isTrue(i < tranchedMaps->size());
+                e = ErrorUtils::isTrue(i < tranchedMaps->size()); ree;
                 (*tranchedMaps)[i][key] = valTranched[i];
             }
         }

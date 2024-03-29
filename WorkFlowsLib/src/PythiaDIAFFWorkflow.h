@@ -91,7 +91,7 @@ private:
     Err buildCalibration(
             MsReaderPointerAcc *msReaderPointerAcc,
             QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanPointsMS1,
             QVector<CandidateScores*> *candidateScoresForTrainings
             );
 
@@ -118,6 +118,11 @@ private:
             );
 
     Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
+
+    static Err buildCandidateScoresPtrs(
+            QVector<CandidateScores> &candidateScores,
+            QVector<CandidateScores*> *candidateScoresPntrs
+            );
 
     Err applyNeuralNetClassifier(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,

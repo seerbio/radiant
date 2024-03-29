@@ -152,7 +152,13 @@ public:
             const QVector<CandidateScores> &targetDecoyCandidatePair,
             double qValueThreshold,
             int *targetCountBelowFDRThreshold
-);
+    );
+
+    static Err countScoreCandidatesByFDR(
+            QVector<CandidateScores*> &targetDecoyCandidatePair,
+            double qValueThreshold,
+            int *targetCountBelowFDRThreshold
+    );
 
     /**
     * @brief Outputs FDR results based on specified FDR thresholds.
@@ -166,6 +172,12 @@ public:
     */
     static Err outputFDRResults(
             const QVector<CandidateScores> &candidateScores,
+            bool verbose,
+            QMap<QString, int> *fdrVsCount
+    );
+
+    static Err outputFDRResults(
+            QVector<CandidateScores*> &candidateScores,
             bool verbose,
             QMap<QString, int> *fdrVsCount
     );
