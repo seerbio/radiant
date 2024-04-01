@@ -359,7 +359,22 @@ public:
     *
     * Note: This operation is the opposite of zipping operation where two vectors are combined into one. Here, one vector is split into two vectors. The QPointF's x and y values are used to form two distinct vectors.
     */
-    static QPair<QVector<double>, QVector<double>> unZip(const QVector<QPointF> &points);
+    template <typename PointXY>
+    static QPair<QVector<double>, QVector<double>> unZip(const QVector<PointXY> &points) {
+
+        QVector<double> v1;
+        v1.reserve(points.size());
+
+        QVector<double> v2;
+        v1.reserve(points.size());
+
+        for (const PointXY &p : points) {
+            v1.push_back(p.x());
+            v2.push_back(p.y());
+        }
+
+        return {v1, v2};
+    }
 
     /*!
     * @brief  Splits a vector of QPairs into two separate vectors.

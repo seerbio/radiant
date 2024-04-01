@@ -457,8 +457,12 @@ Err CandidateScorertron::findCandidateIntegrations(
 
     ERR_INIT
 
+    const int maxApexes = 10;
+    const int maxPeakIntegrationsReturned = 5;
     e = m_peakIntegratomatic.simpleIntegrator(
             integrationVector,
+            maxApexes,
+            maxPeakIntegrationsReturned,
             peakIntegrationIndexesVsIntensity
             ); ree;
 

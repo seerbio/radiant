@@ -23,12 +23,14 @@ public:
 private Q_SLOTS:
 
     static void openFileTest();
+    static void troubleShoot();
 
 };
 
 
 void MsReaderMZMLTests::openFileTest() {
 
+//    QSKIP("This is temporary remove before commit");
 
     const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
@@ -64,6 +66,20 @@ void MsReaderMZMLTests::openFileTest() {
     QCOMPARE(int(scanPoints.last().x()), 1250);
     QCOMPARE(int(scanPoints.last().y()), 2646);
     QCOMPARE(scanPoints.size(), 2092);
+
+}
+
+void MsReaderMZMLTests::troubleShoot() {
+
+    QSKIP("This should be skipped in production");
+
+    ERR_INIT
+
+    const QString brukerMzMlFilePath = QStringLiteral("/home/anichols/Desktop/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML");
+    MsReaderMzML msReaderMzMl;
+    e = msReaderMzMl.openFile(brukerMzMlFilePath);
+    QCOMPARE(e, eNoError);
+
 
 }
 
