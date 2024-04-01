@@ -218,6 +218,8 @@ Err PeakIntegratomatic::init(const PeakIntegratomaticParameters &params) {
 
 Err PeakIntegratomatic::simpleIntegrator(
         const QVector<float> &vec,
+        int topNApexes,
+        int maxPeakIntegrations,
         QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
 ) {
 
@@ -231,7 +233,6 @@ Err PeakIntegratomatic::simpleIntegrator(
         eVec = EigenKernelUtils::convolveVectorWithKernel(eVec, d_ptr->m_gaussFilter);
     }
 
-    const int topNApexes = 10;
     const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
 
     if (vecApexs.isEmpty()) {
@@ -241,7 +242,6 @@ Err PeakIntegratomatic::simpleIntegrator(
     Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
     QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, topNApexes);
 
-    const int maxPeakIntegrations = 5;
     apexPairs.resize(std::min(maxPeakIntegrations, apexPairs.size()));
     for (const QPair<int, float> &pr : apexPairs) {
 

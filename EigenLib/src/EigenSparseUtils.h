@@ -800,6 +800,72 @@ public:
         return combFilter;
     }
 
+    template <typename Point, typename T2>
+    static Err pointsToSparseVector(
+            const QVector<Point> &points,
+            T2 maxValue,
+            int precision,
+            Eigen::SparseVector<T2> *vec
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(points); ree;
+        e = ErrorUtils::isAboveThreshold(
+                maxValue,
+                static_cast<T2>(0.0),
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree
+
+        e = ErrorUtils::isAboveThreshold(
+                precision,
+                0,
+                ErrorUtilsParam::ExcludeThreshold
+                ); ree
+
+        const int vecSize = MathUtils::hashDecimal(maxValue, precision);
+        vec->resize(vecSize);
+        vec->setZero();
+
+        for (const Point &p : points) {
+
+            const int xHashed = MathUtils::hashDecimal(p.x(), precision);
+            if (xHashed < 0 || xHashed >= vecSize) {
+                continue;
+            }
+
+            vec->coeffRef(xHashed) += p.y();
+        }
+
+        ERR_RETURN
+    }
+
+    template <typename Point, typename T>
+    static Err sparseVectorToPoints(
+            const Eigen::SparseVector<T> &vec,
+            int precision,
+            QVector<Point> *points
+
+    ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(vec.size() > 0); ree;
+        e = ErrorUtils::isAboveThreshold(
+                precision,
+                0,
+                ErrorUtilsParam::ExcludeThreshold
+        ); ree
+
+        for (typename Eigen::SparseVector<T>::InnerIterator it(vec); it; ++it) {
+            const T xUnHashed = MathUtils::unHashDecimal<T>(it.index(), precision);
+            points->push_back({xUnHashed, it.value()});
+        }
+
+        ERR_RETURN
+    }
+
+
 };
 
 
