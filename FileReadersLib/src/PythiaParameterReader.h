@@ -185,7 +185,7 @@ struct PythiaParameters{
             qDebug() << ms2ExtractionWidthPPM << "ms2ExtractPPM";
             return false;
         }
-        if (precursorExtractionWindowThomsons < 0) {
+        if (precursorExtractionWindowThomsons < -1) {
             print();
             qDebug() << precursorExtractionWindowThomsons << "precursorExtractWindowThompsons";
             return false;
