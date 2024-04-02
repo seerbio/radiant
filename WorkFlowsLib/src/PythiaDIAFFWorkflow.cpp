@@ -564,16 +564,8 @@ namespace {
 
     void sortCandidatePointers(QVector<CandidateScores*> *candidateScoresPntrs) {
 
-        std::sort(candidateScoresPntrs->begin(), candidateScoresPntrs->end(), [](CandidateScores *l, CandidateScores *r){
-
-            if (MathUtils::tSame(
-                    l->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80],
-                    r->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80])
-                    ) {
-                return l->featuresArray[CandidateScores::Features::CosineSim100MS1] > r->featuresArray[CandidateScores::Features::CosineSim100MS1];
-            }
-
-            return l->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80] > r->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80];
+        std::sort(candidateScoresPntrs->rbegin(), candidateScoresPntrs->rend(), [](CandidateScores *l, CandidateScores *r){
+            return l->discriminantScore < r->discriminantScore;
         });
 
     }
@@ -932,7 +924,10 @@ namespace {
                 {2.5,  2.0},
                 {3.5,  2.0},
                 {4.5, 2.0},
-                {5.5, 2.0}
+                {5.5, 2.0},
+                {6.5, 2.0},
+                {7.5, 2.0},
+                {8.5, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
