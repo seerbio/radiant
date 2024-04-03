@@ -370,6 +370,22 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
+#define WRITE_CANDIDATE_SCORES
+#ifdef WRITE_CANDIDATE_SCORES
+    QVector<CandidateScoresReaderRow> candidateScoresToWrite;
+    std::transform(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+            std::back_inserter(candidateScoresToWrite),
+            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+    );
+
+    e = ParquetReader::write(
+            candidateScoresToWrite,
+            msReaderPointerAcc.ptr->filePath() + ".candidateScores"
+            ); ree;
+#endif
+
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     if (!m_pythiaParameters.bypassNeuralNet) {
 
@@ -1336,6 +1352,8 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+
+    candidateScoreClassifier->clear();
 
     const int totalCount = candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
     const int decoyCount = static_cast<int>(std::count_if(
