@@ -333,8 +333,9 @@ Err CandidateScorertron::extractXICs(
 
         mzHashedVsXICPoints->insert(mzHashed, xicPoints);
 
-        const int cacheSizeMax = 2e4;
+        const int cacheSizeMax = 2e5;
         if (m_mzHashedVsXICPointsCached.size() > cacheSizeMax) {
+            qDebug() << "Cache cleared at" << cacheSizeMax;
             m_mzHashedVsXICPointsCached.clear();
         }
 
