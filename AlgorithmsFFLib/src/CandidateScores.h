@@ -568,6 +568,264 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MS1_INTZ_FND_ISO_1 = QStringLiteral("Ms1IntensityFoundIso1");
     const QString MS1_INTZ_FND_ISO_2 = QStringLiteral("Ms1IntensityFoundIso2");
 
+    const QStringList keysToCheck = {
+            COS_SIM_SUM_100,
+            COS_SIM_SUM_100_GREATER_80,
+            ALL_MAX_IND_CNT,
+            COS_SIM_SUM_MS1_100,
+            COS_SIM_SPEC_CUBED,
+            KL_DIV_SPEC_CUBE_RT,
+            COS_SIM_SUM_45,
+            COS_SIM_SUM_20,
+            COS_SIM_SUM_TOP_6,
+            COS_SIM_SUM_BOTTOM_6,
+            TOP_BOTTOM_RATIO,
+            TOP_BOTTOME_RATIO_NORM,
+            CHARGE,
+            MASS,
+            SCAN_TIME_DELTA,
+            SCAN_TIME_RANGE,
+            SCAN_TIME_PD,
+            SCAN_ION_CNT,
+            MZ_NORM,
+            KL_DIV_SPEC,
+            COSINE_SIM_SPEC,
+            COSINE_SIM_SUM_MS1_45,
+            COSINE_SIM_SUM_MS1_20,
+            COSINE_SIM_SUM_MS1_PRE_MONO,
+            COSINE_SIM_SUM_MS1_ISO_1,
+            COSINE_SIM_SUM_MS1_ISO_2,
+            PEP_LEN_NORM,
+            SCAN_TIME_PRED,
+            THEO_FRAG_CNT,
+            TOT_INT_LOG,
+            PEAK_RATIO_1,
+            PEAK_RATIO_2,
+            PEAK_RATIO_3,
+            SHADOW_COSINE_SIM_SUM,
+            IRT_PRED,
+            COS_SIM_ANCH_1,
+            COS_SIM_ANCH_2,
+            COS_SIM_ANCH_3,
+            COS_SIM_ANCH_4,
+            COS_SIM_ANCH_5,
+            COS_SIM_ANCH_6,
+            COS_SIM_ANCH_7,
+            COS_SIM_ANCH_8,
+            COS_SIM_ANCH_9,
+            COS_SIM_ANCH_10,
+            COS_SIM_ANCH_11,
+            COS_SIM_ANCH_12,
+            COS_SIM_ANCH_SHADOW_1,
+            COS_SIM_ANCH_SHADOW_2,
+            COS_SIM_ANCH_SHADOW_3,
+            COS_SIM_ANCH_SHADOW_4,
+            COS_SIM_ANCH_SHADOW_5,
+            COS_SIM_ANCH_SHADOW_6,
+            COS_SIM_ANCH_SHADOW_7,
+            COS_SIM_ANCH_SHADOW_8,
+            COS_SIM_ANCH_SHADOW_9,
+            COS_SIM_ANCH_SHADOW_10,
+            COS_SIM_ANCH_SHADOW_11,
+            COS_SIM_ANCH_SHADOW_12,
+            SHAD_INTS_RATIO_1,
+            SHAD_INTS_RATIO_2,
+            SHAD_INTS_RATIO_3,
+            SHAD_INTS_RATIO_4,
+            SHAD_INTS_RATIO_5,
+            SHAD_INTS_RATIO_6,
+            SHAD_INTS_RATIO_7,
+            SHAD_INTS_RATIO_8,
+            SHAD_INTS_RATIO_9,
+            SHAD_INTS_RATIO_10,
+            SHAD_INTS_RATIO_11,
+            SHAD_INTS_RATIO_12,
+            MZ_SEARCHED_1,
+            MZ_SEARCHED_2,
+            MZ_SEARCHED_3,
+            MZ_SEARCHED_4,
+            MZ_SEARCHED_5,
+            MZ_SEARCHED_6,
+            MZ_SEARCHED_7,
+            MZ_SEARCHED_8,
+            MZ_SEARCHED_9,
+            MZ_SEARCHED_10,
+            MZ_SEARCHED_11,
+            MZ_SEARCHED_12,
+            THEO_INTS_1,
+            THEO_INTS_2,
+            THEO_INTS_3,
+            THEO_INTS_4,
+            THEO_INTS_5,
+            THEO_INTS_6,
+            THEO_INTS_7,
+            THEO_INTS_8,
+            THEO_INTS_9,
+            THEO_INTS_10,
+            THEO_INTS_11,
+            THEO_INTS_12,
+            MZ_FND_MEAN_1,
+            MZ_FND_MEAN_2,
+            MZ_FND_MEAN_3,
+            MZ_FND_MEAN_4,
+            MZ_FND_MEAN_5,
+            MZ_FND_MEAN_6,
+            MZ_FND_MEAN_7,
+            MZ_FND_MEAN_8,
+            MZ_FND_MEAN_9,
+            MZ_FND_MEAN_10,
+            MZ_FND_MEAN_11,
+            MZ_FND_MEAN_12,
+            INTS_FND_MAX_1,
+            INTS_FND_MAX_2,
+            INTS_FND_MAX_3,
+            INTS_FND_MAX_4,
+            INTS_FND_MAX_5,
+            INTS_FND_MAX_6,
+            INTS_FND_MAX_7,
+            INTS_FND_MAX_8,
+            INTS_FND_MAX_9,
+            INTS_FND_MAX_10,
+            INTS_FND_MAX_11,
+            INTS_FND_MAX_12,
+            MZ_PK_LEN_NORM_1,
+            MZ_PK_LEN_NORM_2,
+            MZ_PK_LEN_NORM_3,
+            MZ_PK_LEN_NORM_4,
+            MZ_PK_LEN_NORM_5,
+            MZ_PK_LEN_NORM_6,
+            MZ_PK_LEN_NORM_7,
+            MZ_PK_LEN_NORM_8,
+            MZ_PK_LEN_NORM_9,
+            MZ_PK_LEN_NORM_10,
+            MZ_PK_LEN_NORM_11,
+            MZ_PK_LEN_NORM_12,
+            COL_APX_IND_RATIO_TO_ANCH_1,
+            COL_APX_IND_RATIO_TO_ANCH_2,
+            COL_APX_IND_RATIO_TO_ANCH_3,
+            COL_APX_IND_RATIO_TO_ANCH_4,
+            COL_APX_IND_RATIO_TO_ANCH_5,
+            COL_APX_IND_RATIO_TO_ANCH_6,
+            COL_APX_IND_RATIO_TO_ANCH_7,
+            COL_APX_IND_RATIO_TO_ANCH_8,
+            COL_APX_IND_RATIO_TO_ANCH_9,
+            COL_APX_IND_RATIO_TO_ANCH_10,
+            COL_APX_IND_RATIO_TO_ANCH_11,
+            COL_APX_IND_RATIO_TO_ANCH_12,
+            AA_A,
+            AA_C,
+            AA_D,
+            AA_E,
+            AA_F,
+            AA_G,
+            AA_H,
+            AA_I,
+            AA_K,
+            AA_L,
+            AA_M,
+            AA_N,
+            AA_P,
+            AA_Q,
+            AA_R,
+            AA_S,
+            AA_T,
+            AA_V,
+            AA_W,
+            AA_Y,
+            AA_B,
+            AA_J,
+            AA_O,
+            AA_U,
+            AA_X,
+            AA_Z,
+            MZ_FND_STDEV_1,
+            MZ_FND_STDEV_2,
+            MZ_FND_STDEV_3,
+            MZ_FND_STDEV_4,
+            MZ_FND_STDEV_5,
+            MZ_FND_STDEV_6,
+            MZ_FND_STDEV_7,
+            MZ_FND_STDEV_8,
+            MZ_FND_STDEV_9,
+            MZ_FND_STDEV_10,
+            MZ_FND_STDEV_11,
+            MZ_FND_STDEV_12,
+            MZ_ACC_1,
+            MZ_ACC_2,
+            MZ_ACC_3,
+            MZ_ACC_4,
+            MZ_ACC_5,
+            MZ_ACC_6,
+            MZ_ACC_7,
+            MZ_ACC_8,
+            MZ_ACC_9,
+            MZ_ACC_10,
+            MZ_ACC_11,
+            MZ_ACC_12,
+            TARG_KEY,
+            PEP_STR_W_MODS,
+            PROT_GRP,
+            IS_DECOY,
+            SCAN_NUM,
+            SCAN_TIME,
+            CLASS_SCR,
+            DISC_SCR,
+            Q_VAL,
+            DECOY_RATIO,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG1_1,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG1_2,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG1_3,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG2_1,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG2_2,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG2_3,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG3_1,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG3_2,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG3_3,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG4_1,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG4_2,
+            ALT_TARG_ID_COS_SIM_SUM_CHRG4_3,
+            ALT_TARG_ID_TIME_DELTA_CHRG1_1,
+            ALT_TARG_ID_TIME_DELTA_CHRG1_2,
+            ALT_TARG_ID_TIME_DELTA_CHRG1_3,
+            ALT_TARG_ID_TIME_DELTA_CHRG2_1,
+            ALT_TARG_ID_TIME_DELTA_CHRG2_2,
+            ALT_TARG_ID_TIME_DELTA_CHRG2_3,
+            ALT_TARG_ID_TIME_DELTA_CHRG3_1,
+            ALT_TARG_ID_TIME_DELTA_CHRG3_2,
+            ALT_TARG_ID_TIME_DELTA_CHRG3_3,
+            ALT_TARG_ID_TIME_DELTA_CHRG4_1,
+            ALT_TARG_ID_TIME_DELTA_CHRG4_2,
+            ALT_TARG_ID_TIME_DELTA_CHRG4_3,
+            MS1_MZ_MEAN_FND_100,
+            MS1_MZ_MEAN_FND_45,
+            MS1_MZ_MEAN_FND_20,
+            MS1_MZ_MEAN_FND_PRE_MONO,
+            MS1_MZ_MEAN_FND_ISO1,
+            MS1_MZ_MEAN_FND_ISO2,
+            MS1_MZ_MEAN_FND_100_PPM,
+            MS1_MZ_MEAN_FND_45_PPM,
+            MS1_MZ_MEAN_FND_20_PPM,
+            MS1_MZ_MEAN_FND_PRE_MONO_PPM,
+            MS1_MZ_MEAN_FND_ISO_1_PPM,
+            MS1_MZ_MEAN_FND_ISO_2_PPM,
+            MS1_MZ_MEAN_FND_100_STD,
+            MS1_MZ_MEAN_FND_45_STD,
+            MS1_MZ_MEAN_FND_20_STD,
+            MS1_MZ_MEAN_FND_PRE_MONO_STD,
+            MS1_MZ_MEAN_FND_ISO_1_STD,
+            MS1_MZ_MEAN_FND_ISO_2_STD,
+            MS1_INTZ_FND_100,
+            MS1_INTZ_FND_45,
+            MS1_INTZ_FND_20,
+            MS1_INTZ_FND_PRE_MONO,
+            MS1_INTZ_FND_ISO_1,
+            MS1_INTZ_FND_ISO_2
+    };
+
 }//namespace
 
 struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderInputBase {
@@ -765,6 +1023,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzAccuracy10 = -1.0;
     float mzAccuracy11 = -1.0;
     float mzAccuracy12 = -1.0;
+
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
     QString proteinGroup;
@@ -830,6 +1089,281 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float ms1IntensityFoundPreMono = -1.0;
     float ms1IntensityFoundIso1 = -1.0;
     float ms1IntensityFoundIso2 = -1.0;
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        using namespace CandidateScoresReaderRowNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        cosineSimSum100 = dataMap.value(COS_SIM_SUM_100).toFloat();
+        cosineSimSum100Greater80 = dataMap.value(COS_SIM_SUM_100_GREATER_80).toFloat();
+        allignedMaxIndexesCount = dataMap.value(ALL_MAX_IND_CNT).toFloat();
+        cosineSim100MS1 = dataMap.value(COS_SIM_SUM_MS1_100).toFloat();
+        cosineSimSpectrumCubed = dataMap.value(COS_SIM_SPEC_CUBED).toFloat();
+        klDivSpectrumCubeRoot = dataMap.value(KL_DIV_SPEC_CUBE_RT).toFloat();
+        cosineSimSum45 = dataMap.value(COS_SIM_SUM_45).toFloat();
+        cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toFloat();
+        cosineSimSumTop6 = dataMap.value(COS_SIM_SUM_TOP_6).toFloat();
+        cosineSimSumBottom6 = dataMap.value(COS_SIM_SUM_BOTTOM_6).toFloat();
+        topBottomRatio = dataMap.value(TOP_BOTTOM_RATIO).toFloat();
+        topBottomRatioNorm = dataMap.value(TOP_BOTTOME_RATIO_NORM).toFloat();
+        charge = dataMap.value(CHARGE).toFloat();
+        mass = dataMap.value(MASS).toFloat();
+        scanTimeDelta = dataMap.value(SCAN_TIME_DELTA).toFloat();
+        scanTimeRange = dataMap.value(SCAN_TIME_RANGE).toFloat();
+        scanTimePd = dataMap.value(SCAN_TIME_PD).toFloat();
+        scanIonCount = dataMap.value(SCAN_ION_CNT).toFloat();
+        mzNorm = dataMap.value(MZ_NORM).toFloat();
+        klDivSpectrum = dataMap.value(KL_DIV_SPEC).toFloat();
+        cosineSimSpectrum = dataMap.value(COSINE_SIM_SPEC).toFloat();
+        cosineSim45MS1 = dataMap.value(COSINE_SIM_SUM_MS1_45).toFloat();
+        cosineSim20MS1 = dataMap.value(COSINE_SIM_SUM_MS1_20).toFloat();
+        cosineSim100MS1PreMono = dataMap.value(COSINE_SIM_SUM_MS1_PRE_MONO).toFloat();
+        cosineSim100MS1Iso1 = dataMap.value(COSINE_SIM_SUM_MS1_ISO_1).toFloat();
+        cosineSim100MS1Iso2 = dataMap.value(COSINE_SIM_SUM_MS1_ISO_2).toFloat();
+        peptideLengthNorm = dataMap.value(PEP_LEN_NORM).toFloat();
+        scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toFloat();
+        theoFragmentCount = dataMap.value(THEO_FRAG_CNT).toFloat();
+        totalIntensityLog = dataMap.value(TOT_INT_LOG).toFloat();
+        peakShapeRatio1 = dataMap.value(PEAK_RATIO_1).toFloat();
+        peakShapeRatio2 = dataMap.value(PEAK_RATIO_2).toFloat();
+        peakShapeRatio3 = dataMap.value(PEAK_RATIO_3).toFloat();
+        shadowsCosineSimSum = dataMap.value(SHADOW_COSINE_SIM_SUM).toFloat();
+        iRtPredicted = dataMap.value(IRT_PRED).toFloat();
+        cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
+        cosineSimToAnchor2 = dataMap.value(COS_SIM_ANCH_2).toFloat();
+        cosineSimToAnchor3 = dataMap.value(COS_SIM_ANCH_3).toFloat();
+        cosineSimToAnchor4 = dataMap.value(COS_SIM_ANCH_4).toFloat();
+        cosineSimToAnchor5 = dataMap.value(COS_SIM_ANCH_5).toFloat();
+        cosineSimToAnchor6 = dataMap.value(COS_SIM_ANCH_6).toFloat();
+        cosineSimToAnchor7 = dataMap.value(COS_SIM_ANCH_7).toFloat();
+        cosineSimToAnchor8 = dataMap.value(COS_SIM_ANCH_8).toFloat();
+        cosineSimToAnchor9 = dataMap.value(COS_SIM_ANCH_9).toFloat();
+        cosineSimToAnchor10 = dataMap.value(COS_SIM_ANCH_10).toFloat();
+        cosineSimToAnchor11 = dataMap.value(COS_SIM_ANCH_11).toFloat();
+        cosineSimToAnchor12 = dataMap.value(COS_SIM_ANCH_12).toFloat();
+        cosineSimShadowsToAnchor1 = dataMap.value(COS_SIM_ANCH_SHADOW_1).toFloat();
+        cosineSimShadowsToAnchor2 = dataMap.value(COS_SIM_ANCH_SHADOW_2).toFloat();
+        cosineSimShadowsToAnchor3 = dataMap.value(COS_SIM_ANCH_SHADOW_3).toFloat();
+        cosineSimShadowsToAnchor4 = dataMap.value(COS_SIM_ANCH_SHADOW_4).toFloat();
+        cosineSimShadowsToAnchor5 = dataMap.value(COS_SIM_ANCH_SHADOW_5).toFloat();
+        cosineSimShadowsToAnchor6 = dataMap.value(COS_SIM_ANCH_SHADOW_6).toFloat();
+        cosineSimShadowsToAnchor7 = dataMap.value(COS_SIM_ANCH_SHADOW_7).toFloat();
+        cosineSimShadowsToAnchor8 = dataMap.value(COS_SIM_ANCH_SHADOW_8).toFloat();
+        cosineSimShadowsToAnchor9 = dataMap.value(COS_SIM_ANCH_SHADOW_9).toFloat();
+        cosineSimShadowsToAnchor10 = dataMap.value(COS_SIM_ANCH_SHADOW_10).toFloat();
+        cosineSimShadowsToAnchor11 = dataMap.value(COS_SIM_ANCH_SHADOW_11).toFloat();
+        cosineSimShadowsToAnchor12 = dataMap.value(COS_SIM_ANCH_SHADOW_12).toFloat();
+        shadowsIntensityRatio1 = dataMap.value(SHAD_INTS_RATIO_1).toFloat();
+        shadowsIntensityRatio2 = dataMap.value(SHAD_INTS_RATIO_2).toFloat();
+        shadowsIntensityRatio3 = dataMap.value(SHAD_INTS_RATIO_3).toFloat();
+        shadowsIntensityRatio4 = dataMap.value(SHAD_INTS_RATIO_4).toFloat();
+        shadowsIntensityRatio5 = dataMap.value(SHAD_INTS_RATIO_5).toFloat();
+        shadowsIntensityRatio6 = dataMap.value(SHAD_INTS_RATIO_6).toFloat();
+        shadowsIntensityRatio7 = dataMap.value(SHAD_INTS_RATIO_7).toFloat();
+        shadowsIntensityRatio8 = dataMap.value(SHAD_INTS_RATIO_8).toFloat();
+        shadowsIntensityRatio9 = dataMap.value(SHAD_INTS_RATIO_9).toFloat();
+        shadowsIntensityRatio10 = dataMap.value(SHAD_INTS_RATIO_10).toFloat();
+        shadowsIntensityRatio11 = dataMap.value(SHAD_INTS_RATIO_11).toFloat();
+        shadowsIntensityRatio12 = dataMap.value(SHAD_INTS_RATIO_12).toFloat();
+        mzSearched1 = dataMap.value(MZ_SEARCHED_1).toFloat();
+        mzSearched2 = dataMap.value(MZ_SEARCHED_2).toFloat();
+        mzSearched3 = dataMap.value(MZ_SEARCHED_3).toFloat();
+        mzSearched4 = dataMap.value(MZ_SEARCHED_4).toFloat();
+        mzSearched5 = dataMap.value(MZ_SEARCHED_5).toFloat();
+        mzSearched6 = dataMap.value(MZ_SEARCHED_6).toFloat();
+        mzSearched7 = dataMap.value(MZ_SEARCHED_7).toFloat();
+        mzSearched8 = dataMap.value(MZ_SEARCHED_8).toFloat();
+        mzSearched9 = dataMap.value(MZ_SEARCHED_9).toFloat();
+        mzSearched10 = dataMap.value(MZ_SEARCHED_10).toFloat();
+        mzSearched11 = dataMap.value(MZ_SEARCHED_11).toFloat();
+        mzSearched12 = dataMap.value(MZ_SEARCHED_12).toFloat();
+        theoIntensity1 = dataMap.value(THEO_INTS_1).toFloat();
+        theoIntensity2 = dataMap.value(THEO_INTS_2).toFloat();
+        theoIntensity3 = dataMap.value(THEO_INTS_3).toFloat();
+        theoIntensity4 = dataMap.value(THEO_INTS_4).toFloat();
+        theoIntensity5 = dataMap.value(THEO_INTS_5).toFloat();
+        theoIntensity6 = dataMap.value(THEO_INTS_6).toFloat();
+        theoIntensity7 = dataMap.value(THEO_INTS_7).toFloat();
+        theoIntensity8 = dataMap.value(THEO_INTS_8).toFloat();
+        theoIntensity9 = dataMap.value(THEO_INTS_9).toFloat();
+        theoIntensity10 = dataMap.value(THEO_INTS_10).toFloat();
+        theoIntensity11 = dataMap.value(THEO_INTS_11).toFloat();
+        theoIntensity12 = dataMap.value(THEO_INTS_12).toFloat();
+        mzFoundMean1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
+        mzFoundMean2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
+        mzFoundMean3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
+        mzFoundMean4 = dataMap.value(MZ_FND_MEAN_4).toFloat();
+        mzFoundMean5 = dataMap.value(MZ_FND_MEAN_5).toFloat();
+        mzFoundMean6 = dataMap.value(MZ_FND_MEAN_6).toFloat();
+        mzFoundMean7 = dataMap.value(MZ_FND_MEAN_7).toFloat();
+        mzFoundMean8 = dataMap.value(MZ_FND_MEAN_8).toFloat();
+        mzFoundMean9 = dataMap.value(MZ_FND_MEAN_9).toFloat();
+        mzFoundMean10 = dataMap.value(MZ_FND_MEAN_10).toFloat();
+        mzFoundMean11 = dataMap.value(MZ_FND_MEAN_11).toFloat();
+        mzFoundMean12 = dataMap.value(MZ_FND_MEAN_12).toFloat();
+        intensityFoundMax1 = dataMap.value(INTS_FND_MAX_1).toFloat();
+        intensityFoundMax2 = dataMap.value(INTS_FND_MAX_2).toFloat();
+        intensityFoundMax3 = dataMap.value(INTS_FND_MAX_3).toFloat();
+        intensityFoundMax4 = dataMap.value(INTS_FND_MAX_4).toFloat();
+        intensityFoundMax5 = dataMap.value(INTS_FND_MAX_5).toFloat();
+        intensityFoundMax6 = dataMap.value(INTS_FND_MAX_6).toFloat();
+        intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
+        intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
+        intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
+        intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
+        intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
+        intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
+        mzPeakLengthsNorm1 = dataMap.value(MZ_PK_LEN_NORM_1).toFloat();
+        mzPeakLengthsNorm2 = dataMap.value(MZ_PK_LEN_NORM_2).toFloat();
+        mzPeakLengthsNorm3 = dataMap.value(MZ_PK_LEN_NORM_3).toFloat();
+        mzPeakLengthsNorm4 = dataMap.value(MZ_PK_LEN_NORM_4).toFloat();
+        mzPeakLengthsNorm5 = dataMap.value(MZ_PK_LEN_NORM_5).toFloat();
+        mzPeakLengthsNorm6 = dataMap.value(MZ_PK_LEN_NORM_6).toFloat();
+        mzPeakLengthsNorm7 = dataMap.value(MZ_PK_LEN_NORM_7).toFloat();
+        mzPeakLengthsNorm8 = dataMap.value(MZ_PK_LEN_NORM_8).toFloat();
+        mzPeakLengthsNorm9 = dataMap.value(MZ_PK_LEN_NORM_9).toFloat();
+        mzPeakLengthsNorm10 = dataMap.value(MZ_PK_LEN_NORM_10).toFloat();
+        mzPeakLengthsNorm11 = dataMap.value(MZ_PK_LEN_NORM_11).toFloat();
+        mzPeakLengthsNorm12 = dataMap.value(MZ_PK_LEN_NORM_12).toFloat();
+        columnApexIndexRatiosToAnchor1 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_1).toFloat();
+        columnApexIndexRatiosToAnchor2 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_2).toFloat();
+        columnApexIndexRatiosToAnchor3 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_3).toFloat();
+        columnApexIndexRatiosToAnchor4 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_4).toFloat();
+        columnApexIndexRatiosToAnchor5 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_5).toFloat();
+        columnApexIndexRatiosToAnchor6 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_6).toFloat();
+        columnApexIndexRatiosToAnchor7 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_7).toFloat();
+        columnApexIndexRatiosToAnchor8 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_8).toFloat();
+        columnApexIndexRatiosToAnchor9 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_9).toFloat();
+        columnApexIndexRatiosToAnchor10 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_10).toFloat();
+        columnApexIndexRatiosToAnchor11 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_11).toFloat();
+        columnApexIndexRatiosToAnchor12 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_12).toFloat();
+        aminoAcidCountA = dataMap.value(AA_A).toFloat();
+        aminoAcidCountC = dataMap.value(AA_C).toFloat();
+        aminoAcidCountD = dataMap.value(AA_D).toFloat();
+        aminoAcidCountE = dataMap.value(AA_E).toFloat();
+        aminoAcidCountF = dataMap.value(AA_F).toFloat();
+        aminoAcidCountG = dataMap.value(AA_G).toFloat();
+        aminoAcidCountH = dataMap.value(AA_H).toFloat();
+        aminoAcidCountI = dataMap.value(AA_I).toFloat();
+        aminoAcidCountK = dataMap.value(AA_K).toFloat();
+        aminoAcidCountL = dataMap.value(AA_L).toFloat();
+        aminoAcidCountM = dataMap.value(AA_M).toFloat();
+        aminoAcidCountN = dataMap.value(AA_N).toFloat();
+        aminoAcidCountP = dataMap.value(AA_P).toFloat();
+        aminoAcidCountQ = dataMap.value(AA_Q).toFloat();
+        aminoAcidCountR = dataMap.value(AA_R).toFloat();
+        aminoAcidCountS = dataMap.value(AA_S).toFloat();
+        aminoAcidCountT = dataMap.value(AA_T).toFloat();
+        aminoAcidCountV = dataMap.value(AA_V).toFloat();
+        aminoAcidCountW = dataMap.value(AA_W).toFloat();
+        aminoAcidCountY = dataMap.value(AA_Y).toFloat();
+        aminoAcidCountB = dataMap.value(AA_B).toFloat();
+        aminoAcidCountJ = dataMap.value(AA_J).toFloat();
+        aminoAcidCountO = dataMap.value(AA_O).toFloat();
+        aminoAcidCountU = dataMap.value(AA_U).toFloat();
+        aminoAcidCountX = dataMap.value(AA_X).toFloat();
+        aminoAcidCountZ = dataMap.value(AA_Z).toFloat();
+        mzFoundStDev1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
+        mzFoundStDev2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
+        mzFoundStDev3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
+        mzFoundStDev4 = dataMap.value(MZ_FND_MEAN_4).toFloat();
+        mzFoundStDev5 = dataMap.value(MZ_FND_MEAN_5).toFloat();
+        mzFoundStDev6 = dataMap.value(MZ_FND_MEAN_6).toFloat();
+        mzFoundStDev7 = dataMap.value(MZ_FND_MEAN_8).toFloat();
+        mzFoundStDev8 = dataMap.value(MZ_FND_MEAN_8).toFloat();
+        mzFoundStDev9 = dataMap.value(MZ_FND_MEAN_9).toFloat();
+        mzFoundStDev10 = dataMap.value(MZ_FND_MEAN_10).toFloat();
+        mzFoundStDev11 = dataMap.value(MZ_FND_MEAN_11).toFloat();
+        mzFoundStDev12 = dataMap.value(MZ_FND_MEAN_12).toFloat();
+        mzAccuracy1 = dataMap.value(MZ_ACC_1).toFloat();
+        mzAccuracy2 = dataMap.value(MZ_ACC_2).toFloat();
+        mzAccuracy3 = dataMap.value(MZ_ACC_3).toFloat();
+        mzAccuracy4 = dataMap.value(MZ_ACC_4).toFloat();
+        mzAccuracy5 = dataMap.value(MZ_ACC_5).toFloat();
+        mzAccuracy6 = dataMap.value(MZ_ACC_6).toFloat();
+        mzAccuracy7 = dataMap.value(MZ_ACC_7).toFloat();
+        mzAccuracy8 = dataMap.value(MZ_ACC_8).toFloat();
+        mzAccuracy9 = dataMap.value(MZ_ACC_9).toFloat();
+        mzAccuracy10 = dataMap.value(MZ_ACC_10).toFloat();
+        mzAccuracy11 = dataMap.value(MZ_ACC_11).toFloat();
+        mzAccuracy12 = dataMap.value(MZ_ACC_12).toFloat();
+
+        targetKey = dataMap.value(TARG_KEY).toString();
+        peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS).toString());
+        proteinGroup = dataMap.value(PROT_GRP).toString();
+        isDecoy = dataMap.value(IS_DECOY).toBool();
+        scanNumber = dataMap.value(SCAN_NUM).toInt();
+        scanTime = dataMap.value(SCAN_TIME).toFloat();
+        classifierScore = dataMap.value(CLASS_SCR).toDouble();
+        discriminantScore = dataMap.value(DISC_SCR).toDouble();
+        qValue = dataMap.value(Q_VAL).toDouble();
+        decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
+
+        altTargetKeyIdCosineSimSumCharge1_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG).toFloat();
+        altTargetKeyIdCosineSimSumCharge1_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_1).toFloat();
+        altTargetKeyIdCosineSimSumCharge1_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_2).toFloat();
+        altTargetKeyIdCosineSimSumCharge1_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_3).toFloat();
+        altTargetKeyIdCosineSimSumCharge2_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG).toFloat();
+        altTargetKeyIdCosineSimSumCharge2_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_1).toFloat();
+        altTargetKeyIdCosineSimSumCharge2_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_2).toFloat();
+        altTargetKeyIdCosineSimSumCharge2_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_3).toFloat();
+        altTargetKeyIdCosineSimSumCharge3_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG).toFloat();
+        altTargetKeyIdCosineSimSumCharge3_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_1).toFloat();
+        altTargetKeyIdCosineSimSumCharge3_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_2).toFloat();
+        altTargetKeyIdCosineSimSumCharge3_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_3).toFloat();
+        altTargetKeyIdCosineSimSumCharge4_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG).toFloat();
+        altTargetKeyIdCosineSimSumCharge4_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_1).toFloat();
+        altTargetKeyIdCosineSimSumCharge4_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_2).toFloat();
+        altTargetKeyIdCosineSimSumCharge4_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_3).toFloat();
+        altTargetKeyIdTimeDeltaCharge1_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_1).toFloat();
+        altTargetKeyIdTimeDeltaCharge1_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_2).toFloat();
+        altTargetKeyIdTimeDeltaCharge1_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_3).toFloat();
+        altTargetKeyIdTimeDeltaCharge2_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_1).toFloat();
+        altTargetKeyIdTimeDeltaCharge2_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_2).toFloat();
+        altTargetKeyIdTimeDeltaCharge2_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_3).toFloat();
+        altTargetKeyIdTimeDeltaCharge3_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_1).toFloat();
+        altTargetKeyIdTimeDeltaCharge3_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_2).toFloat();
+        altTargetKeyIdTimeDeltaCharge3_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_3).toFloat();
+        altTargetKeyIdTimeDeltaCharge4_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_1).toFloat();
+        altTargetKeyIdTimeDeltaCharge4_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_2).toFloat();
+        altTargetKeyIdTimeDeltaCharge4_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_3).toFloat();
+        ms1MzMeanFound100 = dataMap.value(MS1_MZ_MEAN_FND_100).toFloat();
+        ms1MzMeanFound45 = dataMap.value(MS1_MZ_MEAN_FND_45).toFloat();
+        ms1MzMeanFound20 = dataMap.value(MS1_MZ_MEAN_FND_20).toFloat();
+        ms1MzMeanFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO).toFloat();
+        ms1MzMeanFoundIso1 = dataMap.value(MS1_MZ_MEAN_FND_ISO1).toFloat();
+        ms1MzMeanFoundIso2 = dataMap.value(MS1_MZ_MEAN_FND_ISO2).toFloat();
+        ms1MzMeanFound100PPM = dataMap.value(MS1_MZ_MEAN_FND_100_PPM).toFloat();
+        ms1MzMeanFound45PPM = dataMap.value(MS1_MZ_MEAN_FND_45_PPM).toFloat();
+        ms1MzMeanFound20PPM = dataMap.value(MS1_MZ_MEAN_FND_20_PPM).toFloat();
+        ms1MzMeanFoundPreMonoPPM = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_PPM).toFloat();
+        ms1MzMeanFoundIso1PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO1).toFloat();
+        ms1MzMeanFoundIso2PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO2).toFloat();
+        ms1MzStDevFound100 = dataMap.value(MS1_MZ_MEAN_FND_100_STD).toFloat();
+        ms1MzStDevFound45 = dataMap.value(MS1_MZ_MEAN_FND_45_STD).toFloat();
+        ms1MzStDevFound20 = dataMap.value(MS1_MZ_MEAN_FND_20_STD).toFloat();
+        ms1MzStDevFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_STD).toFloat();
+        ms1MzStDevFoundIso1 = dataMap.value(MS1_MZ_MEAN_FND_ISO_1_STD).toFloat();
+        ms1MzStDevFoundIso2 = dataMap.value(MS1_MZ_MEAN_FND_ISO_2_STD).toFloat();
+        ms1IntensityFound100 = dataMap.value(MS1_INTZ_FND_100).toFloat();
+        ms1IntensityFound45 = dataMap.value(MS1_INTZ_FND_45).toFloat();
+        ms1IntensityFound20 = dataMap.value(MS1_INTZ_FND_20).toFloat();
+        ms1IntensityFoundPreMono = dataMap.value(MS1_INTZ_FND_PRE_MONO).toFloat();
+        ms1IntensityFoundIso1 = dataMap.value(MS1_INTZ_FND_ISO_1).toFloat();
+        ms1IntensityFoundIso2 = dataMap.value(MS1_INTZ_FND_ISO_2).toFloat();
+
+        ERR_RETURN
+    }
 
     QMap<QString, QVariant> map() override {
 
@@ -1296,6 +1830,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.peptideStringWithMods = candidateScores->isDecoy
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+
         row.proteinGroup = candidateScores->proteinGroup;
         row.isDecoy = candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
@@ -1363,7 +1898,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         return row;
     }
 
-    QVector<float> featuresArrayFromCandidateScoresReaderRow(const CandidateScoresReaderRow &candidateScoresReaderRow) {
+    static QVector<float> featuresArrayFromCandidateScoresReaderRow(const CandidateScoresReaderRow &candidateScoresReaderRow) {
 
         QVector<float> featuresArray(CandidateScores::Features::FeaturesSize);
 

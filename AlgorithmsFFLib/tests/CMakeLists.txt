@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         ClassifierWeightsManagerTests
         DeMultiplexScaneratorTests
         DiscriminantScoretronTests
+        FDRCLassifierNeuralNetTests
         FeatureFinderHillBuilderTests
         FeatureFinderHillTests
         IsotopicDistributionBuilderTests

@@ -372,6 +372,12 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 #define WRITE_CANDIDATE_SCORES
 #ifdef WRITE_CANDIDATE_SCORES
+
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+    ); ree;
+
     QVector<CandidateScoresReaderRow> candidateScoresToWrite;
     std::transform(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
