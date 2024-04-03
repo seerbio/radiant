@@ -15,3 +15,14 @@ void CandidateScores::initFeaturesArray() {
 QVector<float>* CandidateScores::featuresArrayRef() {
     return &featuresArray;
 }
+
+QVector<float> CandidateScores::selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures) {
+
+    QVector<float> selectedFeatures(enumFeatures.size());
+
+    for (int i = 0; i < enumFeatures.size(); i++) {
+        selectedFeatures[i] = featuresArray[enumFeatures.at(i)];
+    }
+
+    return selectedFeatures;
+}
