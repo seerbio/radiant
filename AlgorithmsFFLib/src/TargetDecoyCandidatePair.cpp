@@ -79,3 +79,11 @@ void TargetDecoyCandidatePair::setPeptideStringWithMods(const PeptideStringWithM
 void TargetDecoyCandidatePair::setCharge(int charge) {
     m_charge = charge;
 }
+
+void TargetDecoyCandidatePair::mangleMs2IonsDecoy() {
+
+    for (MS2Ion &ms2Ion : m_ms2IonsDecoy) {
+        ms2Ion.mz += 0.1;
+    }
+
+}

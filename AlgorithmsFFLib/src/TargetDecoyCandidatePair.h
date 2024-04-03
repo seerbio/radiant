@@ -101,6 +101,8 @@ public:
     */
     [[nodiscard]] int totalFragmentCount() const;
 
+    void mangleMs2IonsDecoy();
+
 private:
 
     void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);

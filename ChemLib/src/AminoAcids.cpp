@@ -28,7 +28,6 @@ QMap<QChar, Molecule> AminoAcids::aminoAcids()
        {'T', Molecule(threonineFormula)},
        {'V', Molecule(valineFormula)},
        {'W', Molecule(tryptophanFormula)},
-//       {'X', Molecule(leucineFormula)},
        {'Y', Molecule(tyrosineFormula)},
        {'U', Molecule(cysteicAcidFormula + cysteineFormula)}, //FROM DIANN
        {'X', Molecule(methionineFormula + cysteineFormula)} //FROM DIANN

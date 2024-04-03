@@ -453,10 +453,45 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     }
 #endif
 
+    e = filterDecoySequencesThatAreAlsoTargetSequences();
+
+
     qDebug() << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
+
+
+Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequences() {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+
+    QElapsedTimer et;
+    et.start();
+
+    QHash<PeptideString, bool> peptideStringIsoleucineReplaceVsIsAlsoDecoy;
+    for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
+        peptideStringIsoleucineReplaceVsIsAlsoDecoy.insert(tdcp.peptideStringWithMods().replace('I', 'L'), false);
+    }
+
+    int modified = 0;
+    for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
+
+        const PeptideString peptideStringWithModsMutated
+                = AminoAcids::mutatePenultimatePeptideResidues(tdcp.peptideStringWithMods()).replace('I', 'L');
+
+        if (peptideStringIsoleucineReplaceVsIsAlsoDecoy.contains(peptideStringWithModsMutated)) {
+            tdcp.mangleMs2IonsDecoy();
+            modified++;
+        }
+    }
+
+    qDebug() << modified << "Sequences were found to have decoys that were also targets and were modified!!!!" << et.elapsed() << "mSec";
+
+    ERR_RETURN
+}
+
 
 Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
         double mzMin,

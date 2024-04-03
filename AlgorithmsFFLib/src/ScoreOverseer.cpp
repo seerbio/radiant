@@ -849,18 +849,6 @@ Err ScoreOverseer::init(
 
 namespace {
 
-    void removeZeroFrags(QVector<MS2Ion> *ms2IonsCandidate) {
-
-        const auto terminatorLogic = [](const MS2Ion &ms2Ion){return MathUtils::tZero(ms2Ion.mz);};
-        const auto terminator = std::remove_if(
-                ms2IonsCandidate->begin(),
-                ms2IonsCandidate->end(),
-                terminatorLogic
-                );
-
-        ms2IonsCandidate->erase(terminator, ms2IonsCandidate->end());
-    }
-
     Err calculateSpectrumMetrics(
             const Eigen::VectorX<float> &intensityApexVector,
             const QVector<MS2Ion> &_ms2IonsCandidate,
@@ -874,7 +862,6 @@ namespace {
         e = ErrorUtils::isTrue(intensityApexVector.rows() > 0); ree;
 
         QVector<MS2Ion> ms2IonsCandidate = _ms2IonsCandidate;
-        removeZeroFrags(&ms2IonsCandidate);
 
         QVector<float> intensityVals;
         std::transform(
