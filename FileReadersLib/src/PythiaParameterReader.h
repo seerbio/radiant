@@ -162,6 +162,7 @@ struct PythiaParameters{
     int topNMs2Ions = 12;
 
     bool bypassNeuralNet = false;
+    int xicCacheSizeMax = 2e5; //TODO make this settable
 
     [[nodiscard]] bool isValid() const {
 
