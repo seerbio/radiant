@@ -1292,9 +1292,9 @@ namespace {
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
-        const int baggingSize = 12;
+        const int baggingSize = 8;
         const float learningRate = 0.003;
-        const int epochs = 1;
+        const int epochs = 3;
         FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
         e = fdrcLassifierNeuralNet.init(
                 epochs,
@@ -1316,8 +1316,6 @@ namespace {
     Err processPredictions(
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             const QVector<float> &predictions,
-            bool reportDecoys,
-            double fdrCutOff,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm,
             QVector<CandidateScores*> *candidateScoreClassifier
             ) {
@@ -1401,8 +1399,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     e = processPredictions(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
-            m_pythiaParameters.reportDecoys,
-            m_pythiaParameters.percentFDR,
             &karnnNNTargetsNorm,
             candidateScoreClassifier
             ); ree;

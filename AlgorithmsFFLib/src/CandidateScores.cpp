@@ -26,3 +26,17 @@ QVector<float> CandidateScores::selectFeaturesArrayFeatures(const QVector<Featur
 
     return selectedFeatures;
 }
+
+QVector<float> CandidateScores::selectFeaturesArrayFeatures(
+        const QVector<float> &featureArray,
+        const QVector<Features> &enumFeatures
+        ) {
+    QVector<float> selectedFeatures(enumFeatures.size());
+
+    for (int i = 0; i < enumFeatures.size(); i++) {
+        selectedFeatures[i] = featureArray[enumFeatures.at(i)];
+    }
+
+    return selectedFeatures;
+
+}

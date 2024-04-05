@@ -271,6 +271,8 @@ public:
         Ms1IntensityFoundPreMono,
         Ms1IntensityFoundIso1,
         Ms1IntensityFoundIso2,
+        CosineSimSpectrumOverTime,
+        CosineSimSpectrumOverTimeCubed,
         FeaturesSize
     };
 
@@ -303,6 +305,11 @@ public:
     void initFeaturesArray();
 
     QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures);
+
+    static QVector<float> selectFeaturesArrayFeatures(
+            const QVector<float> &featureArray,
+            const QVector<Features> &enumFeatures
+            );
 
 };
 

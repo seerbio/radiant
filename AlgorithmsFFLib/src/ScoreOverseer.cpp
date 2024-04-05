@@ -558,17 +558,17 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             alignmentMatrixLimits
             );
 
+    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+            m_intensityMatrix100,
+            m_pythiaParams,
+            m_gaussKernel
+    );
+
 //#define CHECK_ALIGNMENT_MATRIX
 #ifdef CHECK_ALIGNMENT_MATRIX
     std::cout << m_intensityMatrix100 << std::endl;
     std::cout << "****" << std::endl;
 #endif
-
-    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-            m_intensityMatrix100,
-            m_pythiaParams,
-            m_gaussKernel
-            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<float> unused1;
@@ -851,17 +851,15 @@ namespace {
 
     Err calculateSpectrumMetrics(
             const Eigen::VectorX<float> &intensityApexVector,
-            const QVector<MS2Ion> &_ms2IonsCandidate,
+            const QVector<MS2Ion> &ms2IonsCandidate,
             double *cosineSimSpectrum,
             double *klDivSpectrum
             ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(_ms2IonsCandidate); ree;
+        e = ErrorUtils::isNotEmpty(ms2IonsCandidate); ree;
         e = ErrorUtils::isTrue(intensityApexVector.rows() > 0); ree;
-
-        QVector<MS2Ion> ms2IonsCandidate = _ms2IonsCandidate;
 
         QVector<float> intensityVals;
         std::transform(
@@ -892,6 +890,55 @@ namespace {
                 &klDivSpectrumF
         ); ree;
         *klDivSpectrum = klDivSpectrumF;
+
+        ERR_RETURN
+    }
+
+    Err calculateSpectrumMetricsOverPeak(
+            const Eigen::MatrixX<float> &intensityMatrix,
+            const QVector<MS2Ion> &ms2IonsCandidate,
+            int apexColumnIndex,
+            float *cosineSimOverPeak
+            ) {
+
+        ERR_INIT
+
+        const int columnSizeMax = 6;
+        const int columnsSize = std::min(
+                columnSizeMax,
+                static_cast<int>(intensityMatrix.cols())
+                );
+
+        const Eigen::MatrixX<float> intensityMatrixTrunc = intensityMatrix.leftCols(columnsSize);
+
+        QVector<float> ms2IonIntensities;
+        std::transform(
+                ms2IonsCandidate.begin(),
+                ms2IonsCandidate.end(),
+                std::back_inserter(ms2IonIntensities),
+                [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+                );
+
+        const Eigen::VectorX<float> ms2IonsVec
+            = EigenUtils::convertQVectorToEigenVector(ms2IonIntensities.mid(0, columnsSize));
+
+        Eigen::MatrixX<float> ms2IonMat(intensityMatrix.rows(), columnsSize);
+        for (int row = 0; row < ms2IonMat.rows(); row++) {
+            ms2IonMat.row(row) = ms2IonsVec;
+        }
+
+        Eigen::VectorX<float> cosineSimByRow;
+        e = EigenUtils::rowWiseCosineSimilarOfMatrices(
+                intensityMatrixTrunc,
+                ms2IonMat,
+                &cosineSimByRow
+                ); ree;
+
+        const Eigen::VectorX<float> &apexColumnVec = intensityMatrixTrunc.col(apexColumnIndex);
+        const float apexColumnVecSum = apexColumnVec.sum();
+
+        e = ErrorUtils::isFalse(MathUtils::tZero(apexColumnVecSum)); ree;
+        *cosineSimOverPeak = cosineSimByRow.dot(apexColumnVec) / apexColumnVecSum;
 
         ERR_RETURN
     }
@@ -1208,9 +1255,19 @@ Err ScoreOverseer::buildScores(
             &klDivSpectrum
     ); ree;
 
+    float cosineSimOverPeak;
+    e = calculateSpectrumMetricsOverPeak(
+            d_ptr->m_intensityMatrix100,
+            ms2IonsTheoretical,
+            bestAnchorColumnIndex,
+            &cosineSimOverPeak
+            ); ree;
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = static_cast<float>(cosineSimSpectrum);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = static_cast<float>(cosineSimOverPeak);
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = static_cast<float>(klDivSpectrum);
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = static_cast<float>(std::pow(std::max(0.0f, cosineSimOverPeak), 3));
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
     e = ErrorUtils::isTrue(m_turboXICMS1->isInit()); ree;
