@@ -372,7 +372,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 #define WRITE_CANDIDATE_SCORES
 #ifdef WRITE_CANDIDATE_SCORES
-
     e = updateProteinGroupAnnotation(
             m_fastaUri,
             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
@@ -757,7 +756,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             break;
         }
 
-        if (i == mzTargetKeyVsTargetDecoyCandidatePointersTranched.size() - 1) {
+        if (i >= mzTargetKeyVsTargetDecoyCandidatePointersTranched.size() / 2) {
 
             if (m_msCalibratomatic.mzStDev() < 0) {
                 e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
@@ -770,6 +769,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
             candidateScoresVecBatchPntrs.resize(std::min(idealTrainingCountAtGivenFDR * 2, candidateScoresVecBatchPntrs.size()));
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
+            ERR_RETURN
         }
 
     }
@@ -942,7 +942,7 @@ namespace {
 
         const QVector<QVector<double>> experiments = {
 //                {1.5, 2.0},
-                {2.0, 2.0},
+//                {2.0, 2.0},
                 {2.5,  2.0},
                 {3.5,  2.0},
                 {4.5, 2.0},
@@ -1013,8 +1013,9 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
+    e = ErrorUtils::isNotEmpty(candidateScoresTrainings); ree;
 
-    const int topNMS2IonsOptimization = 6;
+    const int topNMS2IonsOptimization = 12;
     qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
 
     qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
@@ -1032,7 +1033,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
             &pythiaParametersExperiments
             ); ree;
 
-    const bool useExtendedScores = false;
+    const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
 
     QVector<DOEResult> results;
@@ -1113,7 +1114,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_candidateScores.clear();
 
-    const bool useExtendedScores = false;
+    const bool useExtendedScores = true;
     const bool useNeuralNetworkScores = false;
 
     const int topNMs2IonsMainAnalysis = std::max(
