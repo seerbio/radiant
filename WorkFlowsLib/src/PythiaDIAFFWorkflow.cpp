@@ -753,6 +753,35 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
             qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(numberOfStDevs);
 
+//            const float cosineSimSumMS1Min = 0.8;
+//            QVector<CandidateScores*> candidateScoresMS1Cal = candidateScoresVecBatchPntrsResized;
+//            const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
+//                return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] >= cosineSimSumMS1Min;
+//            };
+//            const auto terminator
+//                    = std::remove_if(candidateScoresMS1Cal.begin(), candidateScoresMS1Cal.end(), terminatorLogic);
+//            candidateScoresMS1Cal.erase(terminator, terminator);
+//            qDebug() << candidateScoresMS1Cal.size() << "Precursors for MS1 calibration!";
+//
+//            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+//            e = buildMsCalibrationReaderRows(
+//                    MSLevel::MS1,
+//                    candidateScoresVecBatchPntrsResized,
+//                    &msCalibrationReaderRowsMS1
+//            ); ree;
+//
+//            for (const MsCalibarationReaderRow &r : msCalibrationReaderRowsMS1) {
+//                qDebug() << r.scanNumber << r.scanTime << r.iRTPredicted
+//                        << r.mzSearchedVec.front() << r.mzFoundMeanVec.front() << r.mzFoundStDevVec.front() << r.intensityFoundMaxVec.front() <<"DLSKFSDJLJF";
+//            }
+//
+//            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRowsMS1); ree;
+//            e = recalibrateMzVals(
+//                    MSLevel::MS1,
+//                    diaTargetFrames,
+//                    scanNumberVsScanPointsMS1
+//            ); ree;
+
             break;
         }
 
@@ -943,13 +972,14 @@ namespace {
         const QVector<QVector<double>> experiments = {
 //                {1.5, 2.0},
 //                {2.0, 2.0},
-                {2.5,  2.0},
+//                {2.5,  2.0},
                 {3.5,  2.0},
                 {4.5, 2.0},
                 {5.5, 2.0},
                 {6.5, 2.0},
                 {7.5, 2.0},
-                {8.5, 2.0}
+                {8.5, 2.0},
+                {10.0, 2.0}
         };
 
         for (const QVector<double> &exp : experiments) {
