@@ -871,12 +871,15 @@ namespace {
 
         const Eigen::VectorX<float> intensityValsTheo = EigenUtils::convertQVectorToEigenVector(intensityVals);
 
-        Eigen::VectorX<float> intensityApexVectorAppended = Eigen::VectorX<float>::Zero(intensityVals.size());
-        intensityApexVectorAppended.head(intensityApexVector.size()) = intensityApexVector;
+//        Eigen::VectorX<float> intensityApexVectorAppended = Eigen::VectorX<float>::Zero(intensityValsTheo.size());
+//        intensityApexVectorAppended.head(intensityApexVector.size()) = intensityApexVector;
+
+//        intensityApexVectorAppended = intensityApexVectorAppended.head(6);
+//        intensityValsTheo = intensityValsTheo.head(6);
         
         float cosineSimSpectrumF;
         e = EigenUtils::cosineSimilarity(
-                intensityApexVectorAppended,
+                intensityApexVector,
                 intensityValsTheo,
                 &cosineSimSpectrumF
                 ); ree;
@@ -1133,11 +1136,16 @@ Err ScoreOverseer::buildScores(
 
 //#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
 #ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && targetDecoyCandidatePair->charge() == 3) {
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "YYHYLYSHYLPASLK"
+        && targetDecoyCandidatePair->charge() == 3
+        ) {
         std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
         std::cout << d_ptr->m_intensityMatrix100 << std::endl;
         for (float c : cosineSimToAnchorVec) {
             std::cout << c << std::endl;
+        }
+        for (const MS2Ion &m : targetDecoyCandidatePair->ms2IonsTarget()) {
+            std::cout << m.mz << " " << m.intensity << " " << m.ionLabel.toStdString() << std::endl;
         }
         std::cout << "**** " << bestAnchorColumnIndex << std::endl;
     }

@@ -330,9 +330,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 //#define TROUBLESHOOT_MISSING
 #ifdef TROUBLESHOOT_MISSING
     for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
-        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && cs->targetDecoyCandidatePair->charge() == 3) {
+        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "YYHYLYSHYLPASLK" && cs->targetDecoyCandidatePair->charge() == 3) {
             qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
-            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->classifierScore << cs->qValue;
+            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->scanTime << cs->qValue;
             qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
             qDebug() << "^^^^^^^^^^";
             einfo;
@@ -345,19 +345,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &candidateScoresTargetsAndDecoys,
             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
     ); ree;
-
-#ifdef TROUBLESHOOT_MISSING
-    for (CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
-        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && cs->targetDecoyCandidatePair->charge() == 3) {
-            qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
-            qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->classifierScore << cs->qValue;
-            qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
-            qDebug() << "^^^^^^^^^^";
-            einfo;
-        }
-    }
-#endif
-
     qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
     e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(

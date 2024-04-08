@@ -70,7 +70,7 @@ namespace {
 
         BuildClassifierParallelOutput output;
 
-        e = ClassifierWeightsManager::buildDataClassifier1(
+        e = ClassifierWeightsManager::buildDataClassifier2(
                 input.scoresTargets,
                 input.scoresDecoys,
                 &output.A,
