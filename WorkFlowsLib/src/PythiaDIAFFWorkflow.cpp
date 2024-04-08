@@ -1143,6 +1143,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
             &m_pythiaParameters.ms2ExtractionWidthPPM
             ); ree;
 
+    m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+
     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
     qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
