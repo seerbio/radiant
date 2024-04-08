@@ -150,7 +150,8 @@ struct PythiaParameters{
 
     double cosineSimToAnchorThreshold = 0.4;
 
-    double ms2ExtractionWidthPPM = -1.0;
+    double ms1ExtractionWidthPPM = 20.0;
+    double ms2ExtractionWidthPPM = 20.0;
 
     int verbosity = 1;
     bool reportDecoys = false;

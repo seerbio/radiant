@@ -438,9 +438,17 @@ Err MsCalibratomatic::recalibrateScanPoints(
         ScanPoints &scanPoints = it.value();
 
         for (ScanPoint &sp : scanPoints) {
-            double mzRecal;
+            double mzRecal = 0.0;
+
+#ifdef USE_SPLINES
             e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-            sp.rx() = mzRecal;
+#else
+            for (int i = 0; i < m_mzToRecalCalCurveCoeffs.size(); i++) {
+                mzRecal += m_mzToRecalCalCurveCoeffs.at(i) * std::pow(sp.x(), i);
+            }
+#endif
+            sp.rx() = static_cast<float>(mzRecal);
+
         }
     }
 

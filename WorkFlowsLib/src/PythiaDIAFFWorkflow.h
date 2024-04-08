@@ -107,6 +107,12 @@ private:
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         );
 
+    Err recalibrateMs1Points(
+            const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized,
+            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
+            );
+
     Err optimizeParameters(
             const QVector<CandidateScores*> &candidateScoresTrainings,
             MsReaderPointerAcc *msReaderPointerAcc

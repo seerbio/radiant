@@ -1288,7 +1288,7 @@ Err ScoreOverseer::buildScores(
             bestAnchorColumn,
             peakIntegrationIndexes,
             targetDecoyCandidatePair->mz(),
-            static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM),
+            static_cast<float>(d_ptr->m_pythiaParams.ms1ExtractionWidthPPM),
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
             &cosineSimMS1,
