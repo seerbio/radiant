@@ -9,6 +9,7 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
+#include "IsotopicDistributionBuilder.h"
 #include "ScoreOverseer.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
@@ -16,6 +17,9 @@
 class Q_DECL_HIDDEN CandidateScorertron::Private {
 
 public:
+
+    using NominalMass = int;
+    using AveragineVec = QVector<float>;
 
     Private();
     ~Private();
@@ -28,8 +32,12 @@ public:
             TurboXIC *turboXICMS1
             );
 
+    Err buildAveragineVecs();
+
     Eigen::VectorX<float> m_gaussKernel;
     ScoreOverseer m_scoreOverseer;
+
+    QHash<NominalMass, AveragineVec> m_averagineVecs;
 
 };
 
@@ -61,6 +69,26 @@ Err CandidateScorertron::Private::init(
             msFrameTandem,
             turboXICMS1
             ); ree;
+
+    e = buildAveragineVecs(); ree;
+
+    ERR_RETURN
+}
+
+Err CandidateScorertron::Private::buildAveragineVecs() {
+
+    ERR_INIT
+
+    const int topMass = 7000;
+    for (int mass = 500; mass < topMass; mass += 10) {
+        const QVector<double> isoDist = IsotopicDistributionBuilder::getIsotopicDistribution(static_cast<double>(mass));
+        QVector<float> isoDistFloat(isoDist.begin(), isoDist.end());
+        isoDistFloat = isoDistFloat.mid(0, 3);
+        isoDistFloat.push_back(0.0f); //NOTE: tacking on a 0 at the end so that premono isotope can be considered later on.
+        m_averagineVecs.insert(mass, isoDistFloat);
+    }
+
+    e = ErrorUtils::isNotEmpty(m_averagineVecs); ree;
 
     ERR_RETURN
 }
@@ -513,6 +541,10 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
 
         e = ErrorUtils::isTrue(pii.first.second > pii.first.first); ree;
 
+        const int nominalMassRoundedBy10 = static_cast<int>(std::round(targetDecoyCandidatePair->mass() / 10) * 10);
+        const QVector<float> ms1AveragineVec = d_ptr->m_averagineVecs.value(nominalMassRoundedBy10);
+        e = ErrorUtils::isNotEmpty(ms1AveragineVec); ree;
+
         CandidateScores candidateScoresPII;
         candidateScoresPII.scanTimePredicted = candidateScores->scanTimePredicted;
         e = d_ptr->m_scoreOverseer.buildScores(
@@ -523,6 +555,7 @@ Err CandidateScorertron::processPeakIntegrationIndexes(
                 mzHashedVsXICPoints,
                 ms2IonsTheoreticalIsotopeShadows,
                 mzHashedVsXICPointsShadows,
+                ms1AveragineVec,
                 &candidateScoresPII
                 ); ree;
 

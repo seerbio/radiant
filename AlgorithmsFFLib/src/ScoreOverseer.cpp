@@ -1045,6 +1045,7 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
+        const QVector<float> &averagineMs1,
         CandidateScores *candidateScores
         ) {
 
@@ -1439,6 +1440,30 @@ Err ScoreOverseer::buildScores(
             = MathUtils::calculateMassAccuracyPPM(mzIso2, ms1MzMeanFoundIso2);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = std::max(ms1StDevMzFoundIso2, std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = std::max(ms1IntensityFoundIso2, std::numeric_limits<float>::min());
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1] = 0.0f
+            - candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2];
+
+    const Eigen::VectorX<float> averagineVec = EigenUtils::convertQVectorToEigenVector(averagineMs1);
+
+    const QVector<float> ms1IsoDisActualVec = {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+    };
+    const Eigen::VectorX<float> ms1IsoDistActual = EigenUtils::convertQVectorToEigenVector(ms1IsoDisActualVec);
+
+    float cosineSimAveragine;
+    e = EigenUtils::cosineSimilarity(
+        averagineVec,
+        ms1IsoDistActual,
+        &cosineSimAveragine
+        ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
 
     float cosineSimSum45;
     float cosineSimSum20;

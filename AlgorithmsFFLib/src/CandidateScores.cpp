@@ -40,3 +40,12 @@ QVector<float> CandidateScores::selectFeaturesArrayFeatures(
     return selectedFeatures;
 
 }
+
+void CandidateScores::printFeatures(const QVector<Features> &featuresToPrint) {
+
+    QVector<float> vec;
+    for (const CandidateScores::Features &f : featuresToPrint) {
+        vec.push_back(featuresArray[f]);
+    }
+    qDebug() << vec;
+}

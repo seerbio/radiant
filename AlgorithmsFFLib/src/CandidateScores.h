@@ -273,6 +273,8 @@ public:
         Ms1IntensityFoundIso2,
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
+        CosineSimSum100MS1,
+        MS1Averagine,
         FeaturesSize
     };
 
@@ -310,6 +312,8 @@ public:
             const QVector<float> &featureArray,
             const QVector<Features> &enumFeatures
             );
+
+    void printFeatures(const QVector<Features> &featuresToPrint);
 
 };
 
