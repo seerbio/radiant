@@ -24,6 +24,8 @@ private slots:
 
 void FDRCLassifierNeuralNetTests::playGround() {
 
+    QSKIP("Skipping as this is for debugging");
+
     ERR_INIT
 
     const QString filePath = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML.prqFF.candidateScores";

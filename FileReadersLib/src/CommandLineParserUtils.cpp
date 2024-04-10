@@ -21,7 +21,7 @@ bool CommandLineParserUtils::checkFileNameExtensions(
     return std::any_of(
             expectedFileExtensions.begin(),
             expectedFileExtensions.end(),
-            [fileSuffix](const QString &s){return s.toLower().contains(fileSuffix);}
+            [fileSuffix](const QString &s){return s.toLower() == fileSuffix;}
             );
 }
 

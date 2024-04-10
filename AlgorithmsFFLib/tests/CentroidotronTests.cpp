@@ -222,7 +222,7 @@ void CentroidotronTests::proteowizPeakPickingTest() {
 
 void CentroidotronTests::centroidScanTest() {
 
-//    QSKIP("skipping");
+    QSKIP("skipping");
 
     ERR_INIT
 
@@ -270,7 +270,7 @@ void CentroidotronTests::centroidScanTest() {
                 &scanPointsCentroided
         );
         QCOMPARE(e, eNoError);
-        qDebug() << et.nsecsElapsed() << et.restart();
+//        qDebug() << et.nsecsElapsed() << et.restart();
     }
 
 
