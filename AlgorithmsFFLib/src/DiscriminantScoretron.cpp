@@ -149,7 +149,7 @@ namespace {
         else if (useExtendedScores) {
             QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
             vec.append(candidateScores->selectFeaturesArrayFeatures({
-                            CandidateScores::Features::CosineSimSum100Frequencies,
+//                            CandidateScores::Features::CosineSimSum100Frequencies,
                             CandidateScores::Features::CosineSimSum100MS1,
                             CandidateScores::Features::CosineSim100MS1PreMono,
                             CandidateScores::Features::CosineSim100MS1Iso1,
