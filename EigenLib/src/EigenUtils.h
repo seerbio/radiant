@@ -404,7 +404,7 @@ public:
         Eigen::MatrixX<T> mat1NormMat2NormProd = mat1Norm.array() * mat2Norm.array();
 
         const double nearZero = 0.000001;
-        EigenUtils::thresholdMatrix(nearZero, nearZero, &mat1NormMat2NormProd);
+        EigenUtils::thresholdMatrix<T>(nearZero, nearZero, &mat1NormMat2NormProd);
 
         const Eigen::MatrixX<T> rowWiseCosineSimilarity = matElementWiseProdSum.array() / mat1NormMat2NormProd.array();
 

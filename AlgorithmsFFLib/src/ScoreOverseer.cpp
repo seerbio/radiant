@@ -37,7 +37,7 @@ public:
             QPair<int, int> *alignmentMatrixLimits
     );
 
-    Err calculateCandidateAllignementMetrics(
+    Err calculateCandidateAllignmentMetrics(
             QVector<float> *cosineSimsIndividual,
             QVector<float> *cosineSimsShadowIndividual,
             QVector<float> *shadowsIntensityRatioVec,
@@ -558,17 +558,17 @@ Err ScoreOverseer::Private::buildAlignmentMatricies(
             alignmentMatrixLimits
             );
 
+    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
+            m_intensityMatrix100,
+            m_pythiaParams,
+            m_gaussKernel
+    );
+
 //#define CHECK_ALIGNMENT_MATRIX
 #ifdef CHECK_ALIGNMENT_MATRIX
     std::cout << m_intensityMatrix100 << std::endl;
     std::cout << "****" << std::endl;
 #endif
-
-    m_intensityMatrix100 = applyGaussSmoothRowWiseToMatrix(
-            m_intensityMatrix100,
-            m_pythiaParams,
-            m_gaussKernel
-            );
 
     m_intensityMatrix100Shadow.resize(rows, cols);
     QVector<float> unused1;
@@ -680,7 +680,7 @@ namespace {
     }
 
 }//namespace
-Err ScoreOverseer::Private::calculateCandidateAllignementMetrics(
+Err ScoreOverseer::Private::calculateCandidateAllignmentMetrics(
         QVector<float> *cosineSimsIndividual,
         QVector<float> *cosineSimsShadowIndividual,
         QVector<float> *shadowsIntensityRatioVec,
@@ -871,6 +871,12 @@ namespace {
 
         const Eigen::VectorX<float> intensityValsTheo = EigenUtils::convertQVectorToEigenVector(intensityVals);
 
+//        Eigen::VectorX<float> intensityApexVectorAppended = Eigen::VectorX<float>::Zero(intensityValsTheo.size());
+//        intensityApexVectorAppended.head(intensityApexVector.size()) = intensityApexVector;
+
+//        intensityApexVectorAppended = intensityApexVectorAppended.head(6);
+//        intensityValsTheo = intensityValsTheo.head(6);
+        
         float cosineSimSpectrumF;
         e = EigenUtils::cosineSimilarity(
                 intensityApexVector,
@@ -887,6 +893,55 @@ namespace {
                 &klDivSpectrumF
         ); ree;
         *klDivSpectrum = klDivSpectrumF;
+
+        ERR_RETURN
+    }
+
+    Err calculateSpectrumMetricsOverPeak(
+            const Eigen::MatrixX<float> &intensityMatrix,
+            const QVector<MS2Ion> &ms2IonsCandidate,
+            int apexColumnIndex,
+            float *cosineSimOverPeak
+            ) {
+
+        ERR_INIT
+
+        const int columnSizeMax = 6;
+        const int columnsSize = std::min(
+                columnSizeMax,
+                static_cast<int>(intensityMatrix.cols())
+                );
+
+        const Eigen::MatrixX<float> intensityMatrixTrunc = intensityMatrix.leftCols(columnsSize);
+
+        QVector<float> ms2IonIntensities;
+        std::transform(
+                ms2IonsCandidate.begin(),
+                ms2IonsCandidate.end(),
+                std::back_inserter(ms2IonIntensities),
+                [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
+                );
+
+        const Eigen::VectorX<float> ms2IonsVec
+            = EigenUtils::convertQVectorToEigenVector(ms2IonIntensities.mid(0, columnsSize));
+
+        Eigen::MatrixX<float> ms2IonMat(intensityMatrix.rows(), columnsSize);
+        for (int row = 0; row < ms2IonMat.rows(); row++) {
+            ms2IonMat.row(row) = ms2IonsVec;
+        }
+
+        Eigen::VectorX<float> cosineSimByRow;
+        e = EigenUtils::rowWiseCosineSimilarOfMatrices(
+                intensityMatrixTrunc,
+                ms2IonMat,
+                &cosineSimByRow
+                ); ree;
+
+        const Eigen::VectorX<float> &apexColumnVec = intensityMatrixTrunc.col(apexColumnIndex);
+        const float apexColumnVecSum = apexColumnVec.sum();
+
+        e = ErrorUtils::isFalse(MathUtils::tZero(apexColumnVecSum)); ree;
+        *cosineSimOverPeak = cosineSimByRow.dot(apexColumnVec) / apexColumnVecSum;
 
         ERR_RETURN
     }
@@ -990,6 +1045,7 @@ Err ScoreOverseer::buildScores(
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
         const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
         const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
+        const QVector<float> &averagineMs1,
         CandidateScores *candidateScores
         ) {
 
@@ -1071,7 +1127,7 @@ Err ScoreOverseer::buildScores(
     QVector<float> cosineSimToAnchorVec;
     QVector<float> cosineSimShadowsToAnchorVec;
     QVector<float> shadowsIntensityRatioVec;
-    e = d_ptr->calculateCandidateAllignementMetrics(
+    e = d_ptr->calculateCandidateAllignmentMetrics(
             &cosineSimToAnchorVec,
             &cosineSimShadowsToAnchorVec,
             &shadowsIntensityRatioVec,
@@ -1081,11 +1137,16 @@ Err ScoreOverseer::buildScores(
 
 //#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
 #ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "EAQGNSSAGVEAAEQRPVEDGER" && targetDecoyCandidatePair->charge() == 3) {
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "YYASEIAGQTTSK"
+        && targetDecoyCandidatePair->charge() == 2
+        ) {
         std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
         std::cout << d_ptr->m_intensityMatrix100 << std::endl;
         for (float c : cosineSimToAnchorVec) {
             std::cout << c << std::endl;
+        }
+        for (const MS2Ion &m : targetDecoyCandidatePair->ms2IonsTarget()) {
+            std::cout << m.mz << " " << m.intensity << " " << m.ionLabel.toStdString() << std::endl;
         }
         std::cout << "**** " << bestAnchorColumnIndex << std::endl;
     }
@@ -1093,14 +1154,30 @@ Err ScoreOverseer::buildScores(
 
     e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() <= arraySizeMax); ree;
 
+    const QVector<MS2Ion> &ms2IonsTarget = targetDecoyCandidatePair->ms2IonsTarget();
+
+    for (int i = 0; i < ms2IonsTarget.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+    }
+
     for (int i = 0; i < cosineSimToAnchorVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = cosineSimToAnchorVec.at(i);
     }
 
+    const int topSix = 6;
     e = ErrorUtils::isTrue(cosineSimShadowsToAnchorVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < cosineSimShadowsToAnchorVec.size(); i++) {
+
         candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
+
+        if (i < topSix) {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+                    += cosineSimShadowsToAnchorVec.at(i) * ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+        }
+
     }
+
+//    qDebug() << "DSFLKJDS" << candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies];
 
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2IonSearched = ms2IonsTheoretical.at(i);
@@ -1203,9 +1280,19 @@ Err ScoreOverseer::buildScores(
             &klDivSpectrum
     ); ree;
 
+    float cosineSimOverPeak;
+    e = calculateSpectrumMetricsOverPeak(
+            d_ptr->m_intensityMatrix100,
+            ms2IonsTheoretical,
+            bestAnchorColumnIndex,
+            &cosineSimOverPeak
+            ); ree;
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = static_cast<float>(cosineSimSpectrum);
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = static_cast<float>(cosineSimOverPeak);
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = static_cast<float>(klDivSpectrum);
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = static_cast<float>(std::pow(std::max(0.0, cosineSimSpectrum), 3));
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = static_cast<float>(std::pow(std::max(0.0f, cosineSimOverPeak), 3));
     candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = static_cast<float>(std::pow(std::max(0.0, klDivSpectrum), 1 / 3.0));
 
     e = ErrorUtils::isTrue(m_turboXICMS1->isInit()); ree;
@@ -1218,7 +1305,7 @@ Err ScoreOverseer::buildScores(
             bestAnchorColumn,
             peakIntegrationIndexes,
             targetDecoyCandidatePair->mz(),
-            static_cast<float>(d_ptr->m_pythiaParams.ms2ExtractionWidthPPM),
+            static_cast<float>(d_ptr->m_pythiaParams.ms1ExtractionWidthPPM),
             m_turboXICMS1,
             &d_ptr->m_gaussKernel,
             &cosineSimMS1,
@@ -1369,6 +1456,30 @@ Err ScoreOverseer::buildScores(
             = MathUtils::calculateMassAccuracyPPM(mzIso2, ms1MzMeanFoundIso2);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = std::max(ms1StDevMzFoundIso2, std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = std::max(ms1IntensityFoundIso2, std::numeric_limits<float>::min());
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1] = 0.0f
+            - candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+            + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2];
+
+    const Eigen::VectorX<float> averagineVec = EigenUtils::convertQVectorToEigenVector(averagineMs1);
+
+    const QVector<float> ms1IsoDisActualVec = {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+    };
+    const Eigen::VectorX<float> ms1IsoDistActual = EigenUtils::convertQVectorToEigenVector(ms1IsoDisActualVec);
+
+    float cosineSimAveragine;
+    e = EigenUtils::cosineSimilarity(
+        averagineVec,
+        ms1IsoDistActual,
+        &cosineSimAveragine
+        ); ree;
+    candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
 
     float cosineSimSum45;
     float cosineSimSum20;

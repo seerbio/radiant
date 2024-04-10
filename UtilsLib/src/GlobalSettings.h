@@ -81,8 +81,8 @@ class UTILSLIB_EXPORTS GlobalSettings {
 
 public:
 
-    const QString AAs = "GAVLIFMPWSCTYHKRQEND";
-    const QString MutateAAto = "LLLVVLLLLTSSSSLLNDQE";
+    const QString AAs = "GAVLIFMPWSCTYHKRQENDXBUJOZ";
+    const QString MutateAAto = "LLLVVLLLLTSSSSLLNDQEBXXXXX";
 
     const QChar COMMA = ',';
     const QString DOT_CACHE = QStringLiteral(".cache");

@@ -72,6 +72,7 @@ public:
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPoints,
             const QVector<MS2Ion> &ms2IonsTheoreticalIsotopeShadows,
             const QHash<MzHashed , XICPoints> &mzHashedVsXICPointsShadows,
+            const QVector<float> &averagineMs1,
             CandidateScores *candidateScores
     );
 

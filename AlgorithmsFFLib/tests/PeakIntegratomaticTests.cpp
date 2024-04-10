@@ -86,7 +86,12 @@ void PeakIntegratomaticTests::simpleIntegratorTest() {
 
 
     QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexes;
-    e = peakIntegratomatic.simpleIntegrator(testVec, &peakIntegrationIndexes);
+    e = peakIntegratomatic.simpleIntegrator(
+            testVec,
+            10,
+            5,
+            &peakIntegrationIndexes
+            );
     QCOMPARE(e, eNoError);
 
     using PII = QPair<PeakIntegrationIndexes, float>;

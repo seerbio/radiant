@@ -66,7 +66,7 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
             {S_GLOBAL_SETTINGS.PYTHIA_FILE_EXTENSION}
             );
     if (!pythiaPathIsValid) {
-        qCritical() << QStringLiteral("Third command line argument *.pythia argument invalid");
+        qCritical() << QStringLiteral("Third command line argument *.pythiaConfig argument invalid");
         argumentsLocal.append("-h");
         process(argumentsLocal);
         return false;

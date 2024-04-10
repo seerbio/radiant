@@ -10,6 +10,7 @@
 #include "SqlUtils.h"
 #include "XYMappermatic.h"
 
+//#define USE_SPLINES
 
 MsCalibratomatic::MsCalibratomatic()
 : m_mzStDev(-1.0)
@@ -252,9 +253,10 @@ namespace {
         qDebug() << "stDevMean" << stDevMean << "stDevMean" << stDevStDev
                 << "stDevMin" << *stDevsMinMax.first << "stDevMax" << *stDevsMinMax.second;
 
+        const int ppmStDevMultiplier = 1;
         const auto terminatorLogic = [&](const Inp &i){
 
-            const double ppmTol = ppmStDev * (S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+            const double ppmTol = ppmStDev * ppmStDevMultiplier;
             const double ppmLo = ppmMean - ppmTol;
             const double ppmHi = ppmMean + ppmTol;
             const bool ppmOutOfRange = i.ppm < ppmLo || i.ppm > ppmHi;
@@ -300,8 +302,21 @@ namespace {
                 &testData
         ); ree;
 
+        QVector<double> mzToRecalCalCurveCoeffs;
         XYMappermatic mapperMetrics;
+
+#ifdef USE_SPLINESS
         e = mapperMetrics.init(trainingData); ree;
+#else
+        Eigen::MatrixX<double> mat(trainingData.size(), 2);
+        for (int i = 0; i < trainingData.size(); i++) {
+            const QPair<XVal, YVal> &pr = trainingData.at(i);
+            mat.coeffRef(i, 0) = pr.first;
+            mat.coeffRef(i, 1) = pr.second;
+        }
+        const int polynomialOrder = 5;
+        EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, &mzToRecalCalCurveCoeffs);
+#endif
 
         QVector<QPair<double, double>> actualVsPredicted;
 
@@ -309,8 +324,16 @@ namespace {
         QVector<double> ppmReCals;
         for (const QPair<XVal, YVal> &pr : testData) {
 
-            double yPredicted;
-            e = mapperMetrics.predictY(pr.first, &yPredicted);
+            double yPredicted = 0.0;
+
+#ifdef USE_SPLINES
+            e = mapperMetrics.predictY(pr.first, &yPredicted); ree;
+#else
+            for (int i = 0; i < mzToRecalCalCurveCoeffs.size(); i++) {
+                yPredicted += mzToRecalCalCurveCoeffs.at(i) * std::pow(pr.first, i);
+            }
+#endif
+
             actualVsPredicted.push_back({pr.second, yPredicted});
 
             const double ppmOriginal = 1e6 * (pr.first - pr.second) / pr.second;
@@ -341,7 +364,6 @@ Err MsCalibratomatic::buildMzCalibrator() {
 
     ERR_INIT
 
-
     e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
 
     //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
@@ -354,6 +376,7 @@ Err MsCalibratomatic::buildMzCalibrator() {
     e = generateMetricsMzReCal(inputs, &stDevMz); ree;
     m_mzStDev = stDevMz;
 
+#ifdef USE_SPLINES
     QVector<QPair<double, double>> data;
     std::transform(
             inputs.begin(),
@@ -361,8 +384,17 @@ Err MsCalibratomatic::buildMzCalibrator() {
             std::back_inserter(data),
             [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
     );
-
     e = m_mzToRecalMz.init(data); ree;
+#else
+    Eigen::MatrixX<double> mat(inputs.size(), 2);
+    for (int i = 0; i < inputs.size(); i++) {
+        const Inp &inp = inputs.at(i);
+        mat.coeffRef(i, 0) = inp.mzFound;
+        mat.coeffRef(i, 1) = inp.mzSearched;
+    }
+    const int polynomialOrder = 5;
+    EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, &m_mzToRecalCalCurveCoeffs);
+#endif
 
     ERR_RETURN
 }
@@ -378,9 +410,16 @@ Err MsCalibratomatic::recalibrateScanPoints(
         ScanPoints *scanPoints = it.value();
 
         for (ScanPoint &sp : *scanPoints) {
-            double mzRecal;
+            double mzRecal = 0.0;
+
+#ifdef USE_SPLINES
             e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-            sp.rx() = mzRecal;
+#else
+            for (int i = 0; i < m_mzToRecalCalCurveCoeffs.size(); i++) {
+                mzRecal += m_mzToRecalCalCurveCoeffs.at(i) * std::pow(sp.x(), i);
+            }
+#endif
+            sp.rx() = static_cast<float>(mzRecal);
         }
     }
 
@@ -399,9 +438,17 @@ Err MsCalibratomatic::recalibrateScanPoints(
         ScanPoints &scanPoints = it.value();
 
         for (ScanPoint &sp : scanPoints) {
-            double mzRecal;
+            double mzRecal = 0.0;
+
+#ifdef USE_SPLINES
             e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-            sp.rx() = mzRecal;
+#else
+            for (int i = 0; i < m_mzToRecalCalCurveCoeffs.size(); i++) {
+                mzRecal += m_mzToRecalCalCurveCoeffs.at(i) * std::pow(sp.x(), i);
+            }
+#endif
+            sp.rx() = static_cast<float>(mzRecal);
+
         }
     }
 

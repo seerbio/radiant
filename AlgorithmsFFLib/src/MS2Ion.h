@@ -21,6 +21,7 @@ public:
     float intensity = -1.0;
     QString ionLabel;
     int charge = -1;
+    float targetDecoyFrequencyRatio = -1.0;
 
     MS2Ion() = default;
     ~MS2Ion() = default;

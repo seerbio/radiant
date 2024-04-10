@@ -48,6 +48,11 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
     return m_ms2IonsTarget;
 }
 
+
+QVector<MS2Ion> *TargetDecoyCandidatePair::ms2IonsTargetRef() {
+    return &m_ms2IonsTarget;
+}
+
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
     return m_ms2IonsDecoy;
 }
@@ -78,4 +83,12 @@ void TargetDecoyCandidatePair::setPeptideStringWithMods(const PeptideStringWithM
 
 void TargetDecoyCandidatePair::setCharge(int charge) {
     m_charge = charge;
+}
+
+void TargetDecoyCandidatePair::mangleMs2IonsDecoy() {
+
+    for (MS2Ion &ms2Ion : m_ms2IonsDecoy) {
+        ms2Ion.mz += 0.1;
+    }
+
 }

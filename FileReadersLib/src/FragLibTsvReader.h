@@ -101,6 +101,8 @@ class FILEREADERSLIB_EXPORTS FragLibTsvReader {
 
 public:
 
+    Err writeToFragLibFormat();
+
     Err getFragLibReaderRows(
             const QString &fragLibFilePath,
             double massStart,
@@ -119,6 +121,7 @@ private:
 private:
 
     QVector<FragLibReaderRow> m_fragLibReaderRows;
+    QString m_tsvFilePath;
 
     QStringList m_labelsCurrent;
     QVector<float> m_mzValsCurrent;

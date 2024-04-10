@@ -219,7 +219,7 @@ namespace {
 
 }//namespace
 Err FragLibTsvReader::getFragLibReaderRows(
-        const QString &fragLibFilePath,
+        const QString &tsvFilePath,
         double massStart,
         double massEnd,
         QVector<FragLibReaderRow> *fragLibReaderRows
@@ -229,8 +229,10 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
     using namespace FragLibTsvReaderRowNamespace;
 
-    e = ErrorUtils::fileExists(fragLibFilePath); ree;
+    e = ErrorUtils::fileExists(tsvFilePath); ree;
     e = ErrorUtils::isTrue(massEnd > massStart); ree;
+
+    m_tsvFilePath = tsvFilePath;
 
     m_fragLibReaderRows.clear();
 
@@ -251,7 +253,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
     QHash<int, std::string> headerIndexVsColumnNames;
     QList<int> headerIndexes;
 
-    std::ifstream file(fragLibFilePath.toStdString());
+    std::ifstream file(tsvFilePath.toStdString());
     std::string line;
 
     int columnCount = -1;

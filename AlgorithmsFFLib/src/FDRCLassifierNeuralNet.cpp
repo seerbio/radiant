@@ -232,11 +232,62 @@ Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
     ERR_RETURN
 }
 
+Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+        QVector<CandidateScores*> &candidateScores,
+        double qValueThreshold,
+        int *targetCountBelowFDRThreshold
+) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
+
+    const auto countLogic = [qValueThreshold](const CandidateScores *cs){
+        return cs->qValue < qValueThreshold;
+    };
+
+    *targetCountBelowFDRThreshold
+            = static_cast<int>(std::count_if(candidateScores.begin(), candidateScores.end(), countLogic));
+
+    ERR_RETURN
+}
+
 Err FDRCLassifierNeuralNet::outputFDRResults(
         const QVector<CandidateScores> &candidateScores,
         bool verbose,
         QMap<QString, int> *fdrVsCount
         ) {
+
+    ERR_INIT
+
+    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005};
+    for (double fdrThresh : fdrFractions) {
+        int foundAtThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                candidateScores,
+                fdrThresh,
+                &foundAtThreshold
+        ); ree;
+        const double fdrPercent = fdrThresh * 100;
+        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+
+        if (!verbose) {
+            continue;
+        }
+
+        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
+    }
+
+    ERR_RETURN
+}
+
+
+Err FDRCLassifierNeuralNet::outputFDRResults(
+        QVector<CandidateScores*> &candidateScores,
+        bool verbose,
+        QMap<QString, int> *fdrVsCount
+) {
 
     ERR_INIT
 

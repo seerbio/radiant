@@ -15,3 +15,37 @@ void CandidateScores::initFeaturesArray() {
 QVector<float>* CandidateScores::featuresArrayRef() {
     return &featuresArray;
 }
+
+QVector<float> CandidateScores::selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures) {
+
+    QVector<float> selectedFeatures(enumFeatures.size());
+
+    for (int i = 0; i < enumFeatures.size(); i++) {
+        selectedFeatures[i] = featuresArray[enumFeatures.at(i)];
+    }
+
+    return selectedFeatures;
+}
+
+QVector<float> CandidateScores::selectFeaturesArrayFeatures(
+        const QVector<float> &featureArray,
+        const QVector<Features> &enumFeatures
+        ) {
+    QVector<float> selectedFeatures(enumFeatures.size());
+
+    for (int i = 0; i < enumFeatures.size(); i++) {
+        selectedFeatures[i] = featureArray[enumFeatures.at(i)];
+    }
+
+    return selectedFeatures;
+
+}
+
+void CandidateScores::printFeatures(const QVector<Features> &featuresToPrint) {
+
+    QVector<float> vec;
+    for (const CandidateScores::Features &f : featuresToPrint) {
+        vec.push_back(featuresArray[f]);
+    }
+    qDebug() << vec;
+}

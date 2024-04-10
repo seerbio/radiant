@@ -58,6 +58,8 @@ public:
     */
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
 
+    [[nodiscard]] QVector<MS2Ion>* ms2IonsTargetRef();
+
     /**
     * @brief Gets the MS2 ions for the decoy of the target-decoy candidate pair.
     *
@@ -101,6 +103,9 @@ public:
     */
     [[nodiscard]] int totalFragmentCount() const;
 
+    void mangleMs2IonsDecoy(); //TODO document
+
+
 private:
 
     void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
@@ -112,6 +117,7 @@ private:
     PeptideStringWithMods m_peptideStringWithMods;
     QVector<MS2Ion> m_ms2IonsTarget;
     QVector<MS2Ion> m_ms2IonsDecoy;
+    QVector<float> m_targetDecoyFrequencyRatios;
     int m_charge;
     float m_mass;
     float m_iRt;

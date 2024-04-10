@@ -331,7 +331,7 @@ public:
             const Eigen::VectorX<T> &kernel
             ) {
 
-        Eigen::SparseVector<double> vecPadded = addPaddingToSparseVector(vec, kernel.size());
+        Eigen::SparseVector<T> vecPadded = addPaddingToSparseVector(vec, kernel.size());
 
         Eigen::SparseMatrix<T> mat(vec.size(), kernel.size());
         for (int i = 0; i < kernel.size(); ++i) {

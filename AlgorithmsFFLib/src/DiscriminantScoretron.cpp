@@ -70,7 +70,7 @@ namespace {
 
         BuildClassifierParallelOutput output;
 
-        e = ClassifierWeightsManager::buildDataClassifier1(
+        e = ClassifierWeightsManager::buildDataClassifier2(
                 input.scoresTargets,
                 input.scoresDecoys,
                 &output.A,
@@ -123,16 +123,63 @@ namespace {
 
         ERR_INIT
 
+        const QVector<CandidateScores::Features> baseFeatures = {
+                CandidateScores::Features::CosineSimSum100,
+                CandidateScores::Features::CosineSimSum100GreaterThan80,
+                CandidateScores::Features::AllignedMaxIndexesCount,
+                CandidateScores::Features::CosineSim100MS1,
+                CandidateScores::Features::CosineSimSpectrumCubed,
+                CandidateScores::Features::KlDivSpectrumCubeRoot,
+                CandidateScores::Features::CosineSimSum45,
+                CandidateScores::Features::CosineSimSum20,
+                CandidateScores::Features::CosineSimSumTop6,
+                CandidateScores::Features::CosineSimSumBottom6,
+                CandidateScores::Features::TopBottomRatio,
+                CandidateScores::Features::TopBottomRatioNorm,
+                CandidateScores::Features::Charge,
+                CandidateScores::Features::ScanTimeDelta,
+                CandidateScores::Features::ScanTimeRange,
+                CandidateScores::Features::ScanTimePd
+        };
+
         if (useNeuralNetworkScores) {
             QVector<float> &vec = candidateScores->featuresArray;
             return {e, vec};
         }
         else if (useExtendedScores) {
-            QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::CosineSimToAnchor1);
+            QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
+            vec.append(candidateScores->selectFeaturesArrayFeatures({
+//                            CandidateScores::Features::CosineSimSum100Frequencies,
+                            CandidateScores::Features::CosineSimSum100MS1,
+                            CandidateScores::Features::CosineSim100MS1PreMono,
+                            CandidateScores::Features::CosineSim100MS1Iso1,
+                            CandidateScores::Features::CosineSim100MS1Iso2,
+                            CandidateScores::Features::PeakShapeRatio1,
+                            CandidateScores::Features::PeakShapeRatio2,
+                            CandidateScores::Features::PeakShapeRatio3,
+                            CandidateScores::Features::ShadowsCosineSimSum,
+                            CandidateScores::Features::CosineSimToAnchor1,
+                            CandidateScores::Features::CosineSimToAnchor2,
+                            CandidateScores::Features::CosineSimToAnchor3,
+                            CandidateScores::Features::CosineSimToAnchor4,
+                            CandidateScores::Features::MzAccuracy1,
+                            CandidateScores::Features::MzAccuracy2,
+                            CandidateScores::Features::MzAccuracy3,
+                            CandidateScores::Features::MzAccuracy4,
+                            CandidateScores::Features::CosineSimShadowsToAnchor1,
+                            CandidateScores::Features::CosineSimShadowsToAnchor2,
+                            CandidateScores::Features::CosineSimShadowsToAnchor3,
+                            CandidateScores::Features::CosineSimShadowsToAnchor4,
+                            CandidateScores::Features::CosineSimSpectrumOverTime,
+                            CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
+                            CandidateScores::Features::TheoFragmentCount,
+                            CandidateScores::Features::TotalIntensityLog
+                    }));
             return {e, vec};
         }
 
-        const QVector<float> vec = candidateScores->featuresArray.mid(0, CandidateScores::Features::ScanIonCount);
+        const QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
+
         return {e, vec};
 
     }

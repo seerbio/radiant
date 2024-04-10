@@ -154,6 +154,8 @@ private:
     XYMappermatic m_iRTtoScanTimeMapper;
     XYMappermatic m_mzToRecalMz;
 
+    QVector<double> m_mzToRecalCalCurveCoeffs;
+
     bool m_isInit;
 
 };
