@@ -48,6 +48,11 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsTarget() const {
     return m_ms2IonsTarget;
 }
 
+
+QVector<MS2Ion> *TargetDecoyCandidatePair::ms2IonsTargetRef() {
+    return &m_ms2IonsTarget;
+}
+
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
     return m_ms2IonsDecoy;
 }

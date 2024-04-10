@@ -38,7 +38,11 @@ public:
 
     Err init(QVector<TargetDecoyCandidatePair>* targetDecoyCandidatePairPntrs);
 
-    Err getPoints(
+    Err buildMs2IonFrequencyTables(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs);
+
+    Err updateTargetDecoyPairsWithFrequencyInformation(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs);
+
+    Err getTargetDecoyPairsByMz(
             double mzMin,
             double mzMax,
             QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
@@ -47,17 +51,20 @@ public:
 private:
 
     bool m_isInit;
-    RTree *m_rTree;
+    RTree *m_rTreeMzToTargetDecoyPair;
+    QHash<MzHashed, float> m_mzHashedVsFrequencyTarget;
+    QHash<MzHashed, float> m_mzHashedVsFrequencyDecoy;
+    QHash<MzHashed, float> m_mzHashedVsTargetDecoyFrequencyRatio;
 
 };
 
 TargetDecoyCandidatePairManager::Private::Private()
-        : m_rTree(Q_NULLPTR)
+        : m_rTreeMzToTargetDecoyPair(Q_NULLPTR)
         , m_isInit(false)
 {}
 
 TargetDecoyCandidatePairManager::Private::~Private() {
-    delete m_rTree;
+    delete m_rTreeMzToTargetDecoyPair;
 }
 
 Err TargetDecoyCandidatePairManager::Private::init(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs) {
@@ -79,12 +86,107 @@ Err TargetDecoyCandidatePairManager::Private::init(QVector<TargetDecoyCandidateP
     );
 
     const int maxElements = 16;
-    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    m_rTreeMzToTargetDecoyPair = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+
+    e = buildMs2IonFrequencyTables(targetDecoyCandidatePairPntrs); ree;
+    e = updateTargetDecoyPairsWithFrequencyInformation(targetDecoyCandidatePairPntrs); ree;
+
     m_isInit = true;
     ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairManager::Private::getPoints(
+
+Err TargetDecoyCandidatePairManager::Private::buildMs2IonFrequencyTables(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs) {
+
+    ERR_INIT
+
+    QElapsedTimer et;
+    et.start();
+
+    int ionCountTarget = 0;
+    int ionCountDecoy = 0;
+
+    QHash<MzHashed, int> mzHashedVsCountTarget;
+    QHash<MzHashed, int> mzHashedVsCountDecoy;
+
+    for(const TargetDecoyCandidatePair &tdcp : *targetDecoyCandidatePairPntrs) {
+
+        for (const MS2Ion &ms2Ion : tdcp.ms2IonsTarget()) {
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            mzHashedVsCountTarget[mzHashed]++;
+            ionCountTarget++;
+        }
+
+        for (const MS2Ion &ms2Ion : tdcp.ms2IonsDecoy()) {
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            mzHashedVsCountDecoy[mzHashed]++;
+            ionCountDecoy++;
+        }
+    }
+
+    e = ErrorUtils::isTrue(ionCountTarget > 0); ree;
+
+    for (auto it = mzHashedVsCountTarget.begin(); it !=  mzHashedVsCountTarget.end(); it++) {
+
+        const MzHashed mzHashed = it.key();
+        const int mzCount = it.value();
+        const float frequency = 1.0f / (static_cast<float>(mzCount / static_cast<double>(ionCountTarget)) * (ionCountTarget / 10.0f));
+
+        m_mzHashedVsFrequencyTarget.insert(mzHashed, frequency);
+    }
+
+    for (auto it = mzHashedVsCountDecoy.begin(); it !=  mzHashedVsCountDecoy.end(); it++) {
+
+        const MzHashed mzHashed = it.key();
+        const int mzCount = it.value();
+        const float frequency = 1.0f / (static_cast<float>(mzCount / static_cast<double>(ionCountDecoy)) * (ionCountDecoy / 10.0f));
+
+        m_mzHashedVsFrequencyDecoy.insert(mzHashed, frequency);
+    }
+
+    QVector<MzHashed> mzHashedAllKeys;
+    mzHashedAllKeys.append(m_mzHashedVsFrequencyTarget.keys().toVector());
+    mzHashedAllKeys.append(m_mzHashedVsFrequencyDecoy.keys().toVector());
+
+    const float missingFillValue = 0.01;
+
+    const QSet<MzHashed> mzHashedAllKeysUnique(mzHashedAllKeys.begin(), mzHashedAllKeys.end());
+    for (MzHashed mzHashed : mzHashedAllKeysUnique) {
+        const float frequencyTarget = m_mzHashedVsFrequencyTarget.value(mzHashed);
+        const float frequencyDecoy = std::max(m_mzHashedVsFrequencyDecoy.value(mzHashed), missingFillValue);
+
+        m_mzHashedVsTargetDecoyFrequencyRatio.insert(mzHashed, frequencyTarget / frequencyDecoy);
+    }
+
+    qDebug() << et.elapsed() << "to build ms2 ion frequency tables";
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairManager::Private::updateTargetDecoyPairsWithFrequencyInformation(
+        QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs
+        ) {
+
+    ERR_INIT
+
+    for (int i = 0; i < targetDecoyCandidatePairPntrs->size(); i++) {
+
+        TargetDecoyCandidatePair &targetDecoyCandidatePair = (*targetDecoyCandidatePairPntrs)[i];
+
+        QVector<MS2Ion> *ms2IonsRef = targetDecoyCandidatePair.ms2IonsTargetRef();
+
+        for (int j = 0; j < ms2IonsRef->size(); j++) {
+
+            MS2Ion &ms2IonTarget = (*ms2IonsRef)[j];
+            const MzHashed mzHashed = MathUtils::hashDecimal(ms2IonTarget.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            ms2IonTarget.targetDecoyFrequencyRatio = m_mzHashedVsTargetDecoyFrequencyRatio.value(mzHashed);
+        }
+    }
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairManager::Private::getTargetDecoyPairsByMz(
         double mzMin,
         double mzMax,
         QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
@@ -101,7 +203,7 @@ Err TargetDecoyCandidatePairManager::Private::getPoints(
     );
 
     std::vector<RTreePoint> result;
-    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+    m_rTreeMzToTargetDecoyPair->query(bgi::intersects(queryBox), std::back_inserter(result));
 
     for (const RTreePoint &rtp : result) {
         targetDecoyCandidatePairs->push_back(rtp.second);
@@ -504,7 +606,7 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
     e = ErrorUtils::isTrue(mzMax >= mzMin); ree;
 
-    e = d_ptr->getPoints(
+    e = d_ptr->getTargetDecoyPairsByMz(
             mzMin,
             mzMax,
             targetDecoyPointers

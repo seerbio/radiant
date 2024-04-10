@@ -329,8 +329,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 //#define TROUBLESHOOT_MISSING
 #ifdef TROUBLESHOOT_MISSING
+
+    //try shuffling library so it's not in alphabetical order.  Check first to see if it is in alpha order.
+
     for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
-        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "YYHYLYSHYLPASLK" && cs->targetDecoyCandidatePair->charge() == 3) {
+        if (cs->targetDecoyCandidatePair->peptideStringWithMods() == "YSQAVPAVTEGPIPEVLK" && cs->targetDecoyCandidatePair->charge() == 2) {
             qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->isDecoy;
             qDebug() << cs->featuresArray[CandidateScores::Features::CosineSimSum100] << cs->discriminantScore << cs->scanTime << cs->qValue;
             qDebug() << cs->featuresArray.mid(CandidateScores::Features::CosineSimToAnchor1, 12);
@@ -357,7 +360,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
-#define WRITE_CANDIDATE_SCORES
+//#define WRITE_CANDIDATE_SCORES
 #ifdef WRITE_CANDIDATE_SCORES
     e = updateProteinGroupAnnotation(
             m_fastaUri,

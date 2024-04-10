@@ -273,8 +273,23 @@ public:
         Ms1IntensityFoundIso2,
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
+
         CosineSimSum100MS1,
         MS1Averagine,
+        CosineSimSum100Frequencies,
+        MzTargetDecoyFrequency1,
+        MzTargetDecoyFrequency2,
+        MzTargetDecoyFrequency3,
+        MzTargetDecoyFrequency4,
+        MzTargetDecoyFrequency5,
+        MzTargetDecoyFrequency6,
+        MzTargetDecoyFrequency7,
+        MzTargetDecoyFrequency8,
+        MzTargetDecoyFrequency9,
+        MzTargetDecoyFrequency10,
+        MzTargetDecoyFrequency11,
+        MzTargetDecoyFrequency12,
+
         FeaturesSize
     };
 

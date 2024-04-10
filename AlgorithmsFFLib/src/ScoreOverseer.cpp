@@ -1137,8 +1137,8 @@ Err ScoreOverseer::buildScores(
 
 //#define CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
 #ifdef CHECK_ALIGNMENT_MATRIX_BY_SEQUENCE
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "YYHYLYSHYLPASLK"
-        && targetDecoyCandidatePair->charge() == 3
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "YYASEIAGQTTSK"
+        && targetDecoyCandidatePair->charge() == 2
         ) {
         std::cout << peakIntegrationIndexes.first << " " << peakIntegrationIndexes.second;
         std::cout << d_ptr->m_intensityMatrix100 << std::endl;
@@ -1154,14 +1154,30 @@ Err ScoreOverseer::buildScores(
 
     e = ErrorUtils::isTrue(cosineSimToAnchorVec.size() <= arraySizeMax); ree;
 
+    const QVector<MS2Ion> &ms2IonsTarget = targetDecoyCandidatePair->ms2IonsTarget();
+
+    for (int i = 0; i < ms2IonsTarget.size(); i++) {
+        candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+    }
+
     for (int i = 0; i < cosineSimToAnchorVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = cosineSimToAnchorVec.at(i);
     }
 
+    const int topSix = 6;
     e = ErrorUtils::isTrue(cosineSimShadowsToAnchorVec.size() <= arraySizeMax); ree;
     for (int i = 0; i < cosineSimShadowsToAnchorVec.size(); i++) {
+
         candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
+
+        if (i < topSix) {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+                    += cosineSimShadowsToAnchorVec.at(i) * ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+        }
+
     }
+
+//    qDebug() << "DSFLKJDS" << candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies];
 
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2IonSearched = ms2IonsTheoretical.at(i);
