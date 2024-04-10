@@ -25,8 +25,8 @@ Err MS2Ion::getIonLabelInfo(QPair<IonIndex, IonType> *ionInfo) const {
             e = ErrorUtils::isEqual(ionLabelSplit.size(), expectedSplitSize); ree;
 
             const QString labelFront = ionLabelSplit.front().replace("y", "");
-
             const QString labelBack = ionLabelSplit.back();
+
             e = ErrorUtils::toInt(labelFront, &ionIndex); ree
 
             *ionInfo = {ionIndex, "y-" + labelBack};

@@ -23,30 +23,32 @@
 
 namespace {
 
-    std::vector<std::string> splitOnTab(
+    QVector<QString> splitOnTab(
             const std::string &line,
             int expectedSize
             ) {
 
-        std::vector<std::string> result(expectedSize);
-        std::istringstream ss(line);
-        std::string field;
+        QVector<QString> result;
+        result.reserve(expectedSize);
 
-        int i = 0;
-        while (std::getline(ss, field, '\t')) {
-            result[i++] = field;
+        QString lineQ = QString::fromStdString(line);
+        lineQ = lineQ.replace("\r", "").replace("\r\n", "");
+
+        QStringList fields = lineQ.split('\t');
+
+        for(const QString &field : fields) {
+            result.push_back(field);
         }
 
         return result;
     }
 
-    QHash<int, std::string> buildHeaderIndexVsColumnNames(const std::vector<std::string> &headerLine) {
+    QHash<int, QString> buildHeaderIndexVsColumnNames(const QVector<QString> &headerLine) {
 
-        QHash<int, std::string> hashTable;
+        QHash<int, QString> hashTable;
 
         int counter = 0;
-        for (const std::string &ss : headerLine) {
-
+        for (const QString &ss : headerLine) {
             if (FragLibTsvReaderRowNamespace::keysToCheck.contains(ss)) {
                 hashTable.insert(counter, ss);
             }
@@ -249,8 +251,8 @@ Err FragLibTsvReader::getFragLibReaderRows(
     QElapsedTimer et;
     et.start();
 
-    std::vector<std::string> header;
-    QHash<int, std::string> headerIndexVsColumnNames;
+    QVector<QString> header;
+    QHash<int, QString> headerIndexVsColumnNames;
     QList<int> headerIndexes;
 
     std::ifstream file(tsvFilePath.toStdString());
@@ -265,7 +267,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 columnCount = static_cast<int>(std::count(line.begin(), line.end(), '\t')) + 1;
             }
 
-            const std::vector<std::string> lineSplit = splitOnTab(line, columnCount);
+            const QVector<QString> lineSplit = splitOnTab(line, columnCount);
 
             if (header.empty()) {
                 header = lineSplit;
@@ -279,57 +281,49 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
             for (int headerIndex : headerIndexes) {
 
-                const std::string &colName = headerIndexVsColumnNames.value(headerIndex);
-                if (colName.empty()) {
+                const QString &colName = headerIndexVsColumnNames.value(headerIndex);
+
+                if (colName.isEmpty()) {
                     continue;
                 }
 
-                const std::string &valString = lineSplit.at(headerIndex);
-                if (valString.empty()) {
+                const QString &valString = lineSplit.at(headerIndex);
+                if (valString.isEmpty()) {
                     continue;
                 }
 
                 if (colName == PRECURSOR_MZ) {
-                    fragLibTsvReaderRow.precursorMz = std::stod(valString);
-//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); ree;
+                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.precursorMz); eee_absorb;
                 }
                 else if (colName == PRODUCT_MZ){
-                    fragLibTsvReaderRow.productMz = std::stod(valString);
-//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); ree;
+                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.productMz); eee_absorb;
                 }
                 else if (colName == TR_RECALIB){
-                    fragLibTsvReaderRow.trRecalibrated = std::stod(valString);
-//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); ree;
+                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.trRecalibrated); eee_absorb;
                 }
                 else if (colName == ION_MOBILITY){
-                    fragLibTsvReaderRow.ionMobility = std::stod(valString);
-//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); ree;
+                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.ionMobility); eee_absorb;
                 }
                 else if (colName == MOD_PEP){
-                    fragLibTsvReaderRow.modifiedPeptide = QString::fromStdString(valString);
+                    fragLibTsvReaderRow.modifiedPeptide = valString;
                 }
                 else if (colName == PRECURSOR_CHARGE){
-                    fragLibTsvReaderRow.precursorCharge = std::stoi(valString);
-//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); ree;
+                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.precursorCharge); eee_absorb;
                 }
                 else if (colName == LIB_INTENSITY){
-                    fragLibTsvReaderRow.libraryIntensity = std::stod(valString);
-//                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); ree;
+                    e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); eee_absorb;
                 }
                 else if (colName == DECOY) {
-                    fragLibTsvReaderRow.decoy = std::stoi(valString);
-//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.decoy); ree;
+                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.decoy); eee_absorb;
                 }
                 else if (colName == FRAG_TYPE){
-                    fragLibTsvReaderRow.fragmentType = QString::fromStdString(valString);
+                    fragLibTsvReaderRow.fragmentType = valString;
                 }
                 else if (colName == FRAG_CHARGE){
-                    fragLibTsvReaderRow.fragmentCharge = std::stoi(valString);
-//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); ree;
+                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentCharge); eee_absorb;
                 }
                 else if (colName == FRAG_SERIES_NUMB){
-                    fragLibTsvReaderRow.fragmentSeriesNumber = std::stoi(valString);
-//                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); ree;
+                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.fragmentSeriesNumber); eee_absorb;
                 }
                 else {
                     rrr(eValueError);
@@ -413,6 +407,7 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
 
     QString ionLabel = tsvRow.fragmentType + QString::number(tsvRow.fragmentSeriesNumber);
     ionLabel += tsvRow.fragmentCharge == 1 ? "" : "^" + QString::number(tsvRow.fragmentCharge);
+
     if (tsvRow.fragmentCharge > 0) {
         m_labelsCurrent.push_back(ionLabel);
     }

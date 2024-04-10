@@ -47,19 +47,19 @@ namespace FragLibTsvReaderRowNamespace {
 
     const QString FRAG_LIB_TSV_SUFFIX = QStringLiteral("tsv");
 
-    const std::string PRECURSOR_MZ = "PrecursorMz";
-    const std::string PRODUCT_MZ = "ProductMz";
-    const std::string TR_RECALIB = "Tr_recalibrated";
-    const std::string ION_MOBILITY = "IonMobility";
-    const std::string LIB_INTENSITY = "LibraryIntensity";
-    const std::string DECOY = "decoy";
-    const std::string MOD_PEP = "ModifiedPeptide";
-    const std::string PRECURSOR_CHARGE = "PrecursorCharge";
-    const std::string FRAG_TYPE = "FragmentType";
-    const std::string FRAG_CHARGE = "FragmentCharge";
-    const std::string FRAG_SERIES_NUMB = "FragmentSeriesNumber";
+    const QString PRECURSOR_MZ = "PrecursorMz";
+    const QString PRODUCT_MZ = "ProductMz";
+    const QString TR_RECALIB = "Tr_recalibrated";
+    const QString ION_MOBILITY = "IonMobility";
+    const QString LIB_INTENSITY = "LibraryIntensity";
+    const QString DECOY = "decoy";
+    const QString MOD_PEP = "ModifiedPeptide";
+    const QString PRECURSOR_CHARGE = "PrecursorCharge";
+    const QString FRAG_TYPE = "FragmentType";
+    const QString FRAG_CHARGE = "FragmentCharge";
+    const QString FRAG_SERIES_NUMB = "FragmentSeriesNumber";
 
-    const QVector<std::string> keysToCheck = {
+    const QVector<QString> keysToCheck = {
             PRECURSOR_MZ,
             PRODUCT_MZ,
             TR_RECALIB,

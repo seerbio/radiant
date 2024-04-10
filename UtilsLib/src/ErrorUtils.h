@@ -34,7 +34,7 @@ public:
         bool ok;
         *out = object.toDouble(&ok);
         if (!ok) {
-            qDebug() << object;
+            qDebug() << "input to convert" << object;
             rrr(e);
         }
         return eNoError;
@@ -54,7 +54,7 @@ public:
         bool ok;
         *out = object.toFloat(&ok);
         if (!ok) {
-            qDebug() << object;
+            qDebug() << "input to convert" << object;
             rrr(e);
         }
         return eNoError;
@@ -74,6 +74,7 @@ public:
         bool ok;
         *out = object.toInt(&ok);
         if (!ok) {
+            qDebug() << "input to convert" << object;
             rrr(e);
         }
         return eNoError;
