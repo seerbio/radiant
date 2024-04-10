@@ -236,7 +236,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
 
     m_fragLibReaderRows.clear();
 
-    QFileInfo fi(fragLibFilePath);
+    QFileInfo fi(tsvFilePath);
     const QString fileSuffix = fi.suffix();
 
     e = ErrorUtils::isTrue(
