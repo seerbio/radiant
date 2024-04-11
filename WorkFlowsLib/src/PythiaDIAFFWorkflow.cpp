@@ -847,6 +847,11 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(
     qDebug() << candidateScoresMS1Cal.size() << "Precursors for MS1 calibration!";
 
     filterMs1CandidateRowsByCorr(&candidateScoresMS1Cal);
+    
+    const int recalibrationPointCountMin = 30;
+    if (candidateScoresMS1Cal.size() < recalibrationPointCountMin) {
+        ERR_RETURN
+    }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
     e = buildMsCalibrationReaderRows(
@@ -855,7 +860,6 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(
             &msCalibrationReaderRowsMS1
     ); ree;
 
-    const int recalibrationPointCountMin = 30;
     if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
         ERR_RETURN
     }
