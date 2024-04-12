@@ -1495,7 +1495,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
         PeptideString peptideSeqReplacedLeucines = it.key().removeUniModChars();
         peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
-        peptideStringWithModsVsFastaEntriesLeucinesReplaced.insert(peptideSeqReplacedLeucines, it.value());
+        peptideStringWithModsVsFastaEntriesLeucinesReplaced[peptideSeqReplacedLeucines].append(it.value());
     }
 
     for (int i = 0; i < candidateScores->size(); i++) {
