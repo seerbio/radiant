@@ -124,16 +124,20 @@ Err Centroidotron::centroidScan(
             ); ree;
 
     ScanPoints scanPointsLimits;
-    ScanPoints apexes;
     for (const QPair<PeakIntegrationIndexes, float> &res : peakIntegrationIndexesVsIntensity) {
         const PeakIntegrationIndexes &pii = res.first;
         scanPointsLimits.push_back({static_cast<float>(mzVals.at(pii.first)), static_cast<float>(mzVals.at(pii.second))});
 
         const ScanPoints scanPointsLimitss = scanPoints.mid(pii.first, (pii.second - pii.first) + 1);
         const auto centroid = static_cast<float>(mzWeightedAverageFromScanPoints(scanPointsLimitss));
-        apexes.push_back({centroid, centroid});
-
+        centroidedScanPoints->push_back({centroid, res.second});
     }
+
+    std::sort(
+            centroidedScanPoints->begin(),
+            centroidedScanPoints->end(),
+            [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();}
+    );
 
     ERR_RETURN
 }
