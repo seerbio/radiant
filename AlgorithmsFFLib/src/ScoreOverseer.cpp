@@ -1314,13 +1314,15 @@ Err ScoreOverseer::buildScores(
             &ms1IntensityFound100
             ); ree;
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = std::max(ms1MzMeanFound100, std::numeric_limits<float>::min());
+    const float notFoundValueDefault = 0.01;
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1] = std::max(static_cast<float>(cosineSimMS1), notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = std::max(ms1MzMeanFound100, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM]
             = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound100);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100] = std::max(ms1StDevMzFound100, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100] = std::max(ms1IntensityFound100, std::numeric_limits<float>::min());
-    
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100] = std::max(ms1StDevMzFound100, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100] = std::max(ms1IntensityFound100, notFoundValueDefault);
+
     float cosineSim45MS1;
     float ms1MzMeanFound45;
     float ms1StDevMzFound45;
@@ -1337,12 +1339,12 @@ Err ScoreOverseer::buildScores(
             &ms1StDevMzFound45,
             &ms1IntensityFound45
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1] = std::max(static_cast<float>(cosineSim45MS1), std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45] = std::max(ms1MzMeanFound45, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1] = std::max(static_cast<float>(cosineSim45MS1), notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45] = std::max(ms1MzMeanFound45, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM]
             = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound45);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45] = std::max(ms1StDevMzFound45, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45] = std::max(ms1IntensityFound45, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45] = std::max(ms1StDevMzFound45, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45] = std::max(ms1IntensityFound45, notFoundValueDefault);
 
     float cosineSim20MS1;
     float ms1MzMeanFound20;
@@ -1360,12 +1362,12 @@ Err ScoreOverseer::buildScores(
             &ms1StDevMzFound20,
             &ms1IntensityFound20
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1] = std::max(static_cast<float>(cosineSim20MS1), std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20] = std::max(ms1MzMeanFound20, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1] = std::max(static_cast<float>(cosineSim20MS1), notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20] = std::max(ms1MzMeanFound20, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM]
             = MathUtils::calculateMassAccuracyPPM(targetDecoyCandidatePair->mz(), ms1MzMeanFound20);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20] = std::max(ms1StDevMzFound20, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20] = std::max(ms1IntensityFound20, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20] = std::max(ms1StDevMzFound20, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20] = std::max(ms1IntensityFound20, notFoundValueDefault);
 
     const float mzPreMono = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1389,13 +1391,13 @@ Err ScoreOverseer::buildScores(
             &ms1IntensityFoundPreMono
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
-                    = std::max(static_cast<float>(mzPreMonoCosineSimMS1), std::numeric_limits<float>::min());
+                    = std::max(static_cast<float>(mzPreMonoCosineSimMS1), notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono]
-                    = std::max(ms1MzMeanFoundPreMono, std::numeric_limits<float>::min());
+                    = std::max(ms1MzMeanFoundPreMono, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM]
             = MathUtils::calculateMassAccuracyPPM(mzPreMono, ms1MzMeanFoundPreMono);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono] = std::max(ms1StDevMzFoundPreMono, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono] = std::max(ms1IntensityFoundPreMono, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono] = std::max(ms1StDevMzFoundPreMono, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono] = std::max(ms1IntensityFoundPreMono, notFoundValueDefault);
 
     const float mzIso1 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1418,14 +1420,12 @@ Err ScoreOverseer::buildScores(
             &ms1StDevMzFoundIso1,
             &ms1IntensityFoundIso1
     ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
-                = std::max(static_cast<float>(cosineSimMzIso1), std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1]
-                = std::max(ms1MzMeanFoundIso1, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = std::max(static_cast<float>(cosineSimMzIso1), notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1] = std::max(ms1MzMeanFoundIso1, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM]
             = MathUtils::calculateMassAccuracyPPM(mzIso1, ms1MzMeanFoundIso1);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1] = std::max(ms1StDevMzFoundIso1, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1] = std::max(ms1IntensityFoundIso1, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1] = std::max(ms1StDevMzFoundIso1, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1] = std::max(ms1IntensityFoundIso1, notFoundValueDefault);
 
     const float mzIso2 = BiophysicalCalcs::calculateThomsonFromMass(
             targetDecoyCandidatePair->mass(),
@@ -1449,13 +1449,13 @@ Err ScoreOverseer::buildScores(
             &ms1IntensityFoundIso2
     ); ree;
     candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
-                    = std::max(static_cast<float>(cosineSimMzIso2), std::numeric_limits<float>::min());
+                    = std::max(static_cast<float>(cosineSimMzIso2), notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2]
-            = std::max(ms1MzMeanFoundIso2, std::numeric_limits<float>::min());
+            = std::max(ms1MzMeanFoundIso2, notFoundValueDefault);
     candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM]
             = MathUtils::calculateMassAccuracyPPM(mzIso2, ms1MzMeanFoundIso2);
-    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = std::max(ms1StDevMzFoundIso2, std::numeric_limits<float>::min());
-    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = std::max(ms1IntensityFoundIso2, std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = std::max(ms1StDevMzFoundIso2, notFoundValueDefault);
+    candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = std::max(ms1IntensityFoundIso2, notFoundValueDefault);
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1] = 0.0f
             - candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
