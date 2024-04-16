@@ -963,6 +963,11 @@ namespace {
 
         e = ErrorUtils::isTrue(bestAnchorColumn.size() > 0); ree;
 
+        *cosineSimMS1 = 0.01;
+        *ms1MeanMzFound = 0.01;
+        *ms1StDevMzFound = 10.0;
+        *ms1IntensityFound = 0.01;
+
         const float massTol = MathUtils::calculatePPM(mzTarget, ppmTol);
         const float mzStart = mzTarget - massTol;
         const float mzEnd = mzTarget + massTol;
@@ -973,7 +978,6 @@ namespace {
                 );
 
         if (xicPoints.empty()) {
-            *cosineSimMS1 = std::numeric_limits<float>::min();
             ERR_RETURN
         }
 
