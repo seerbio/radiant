@@ -522,7 +522,7 @@ namespace {
     }
 
     Err buildMsCalibrationReaderRows(
-            const MSLevel &msLevel,
+            const MSLevelClassEnum &msLevel,
             const QVector<CandidateScores*> &_candidateScores,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
             ) {
@@ -530,7 +530,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(_candidateScores); ree;
-        e = ErrorUtils::isFalse(msLevel == MSLevel::MS1MS2); ree;
 
         qDebug() << _candidateScores.size() << "Found for recalibartion";
 
@@ -547,7 +546,7 @@ namespace {
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
 
-            if (msLevel == MSLevel::MS2) {
+            if (msLevel == MSLevelClassEnum::MS2) {
                 row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
                 row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
                 row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
@@ -725,7 +724,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
         e = buildMsCalibrationReaderRows(
-                MSLevel::MS2,
+                MSLevelClassEnum::MS2,
                 candidateScoresVecBatchPntrsResized,
                 &msCalibrationReaderRows
         ); ree;
@@ -752,9 +751,13 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             const int massResize = std::min(fdrVsCount.value(twoPercenFDRKey), msCalibrationReaderRows.size());
             msCalibrationReaderRows.resize(massResize);
 
-            e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
+            e = m_msCalibratomatic.initMzOnly(
+                msCalibrationReaderRows,
+                MSLevelClassEnum::MS2
+                ); ree;
+
             e = recalibrateMzVals(
-                    MSLevel::MS2,
+                    MSLevelClassEnum::MS2,
                     diaTargetFrames,
                     scanNumberVsScanPointsMS1
             ); ree;
@@ -771,10 +774,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         if (i >= mzTargetKeyVsTargetDecoyCandidatePointersTranched.size() / 2) {
 
-            if (m_msCalibratomatic.mzStDev() < 0) {
-                e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRows); ree;
+            if (m_msCalibratomatic.mzStDevMS2() < 0) {
+                e = m_msCalibratomatic.initMzOnly(
+                    msCalibrationReaderRows,
+                    MSLevelClassEnum::MS2
+                    ); ree;
+
                 e = recalibrateMzVals(
-                        MSLevel::MS2,
+                        MSLevelClassEnum::MS2,
                         diaTargetFrames,
                         scanNumberVsScanPointsMS1
                 ); ree;
@@ -855,7 +862,7 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
     e = buildMsCalibrationReaderRows(
-            MSLevel::MS1,
+            MSLevelClassEnum::MS1,
             candidateScoresMS1Cal,
             &msCalibrationReaderRowsMS1
     ); ree;
@@ -864,9 +871,13 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(
         ERR_RETURN
     }
 
-    e = m_msCalibratomatic.initMzOnly(msCalibrationReaderRowsMS1); ree;
+    e = m_msCalibratomatic.initMzOnly(
+        msCalibrationReaderRowsMS1,
+        MSLevelClassEnum::MS1)
+    ; ree;
+
     e = recalibrateMzVals(
-            MSLevel::MS1,
+            MSLevelClassEnum::MS1,
             diaTargetFrames,
             scanNumberVsScanTimeMS1
     ); ree;
@@ -893,7 +904,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::recalibrateMzVals(
-        const MSLevel &msLevel,
+        const MSLevelClassEnum &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         ) {
@@ -909,7 +920,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
     QElapsedTimer et;
     et.start();
 
-    if (msLevel == MSLevel::MS2 || msLevel == MSLevel::MS1MS2) {
+    if (msLevel == MSLevelClassEnum::MS2) {
 
 #define RECAL_PARALLEL
 #ifdef RECAL_PARALLEL
@@ -938,7 +949,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 #endif
     }
 
-    if (msLevel == MSLevel::MS1 || msLevel == MSLevel::MS1MS2) {
+    if (msLevel == MSLevelClassEnum::MS1) {
         qDebug() << "Recalibrating MS1 mz vals frame";
         e = m_msCalibratomatic.recalibrateScanPoints(scanNumberVsScanTimeMS1); ree;
     }
@@ -1084,7 +1095,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     QVector<PythiaParameters> pythiaParametersExperiments;
     e = buildDOE(
             m_pythiaParameters,
-            m_msCalibratomatic.mzStDev(),
+            m_msCalibratomatic.mzStDevMS2(),
             m_msCalibratomatic.scanTimeStDev(),
             &pythiaParametersExperiments
             ); ree;

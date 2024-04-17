@@ -46,7 +46,7 @@ void MsCalibratomaticTests::execTests() {
     e = ParquetReader::read(reCalFile, &msCalibrationReaderRows);
     QCOMPARE(e, eNoError);
 
-    e = calibratomatic.initMzOnly(msCalibrationReaderRows);
+    e = calibratomatic.initMzOnly(msCalibrationReaderRows, MSLevelClassEnum::MS2);
     QCOMPARE(e, eNoError);
 
 

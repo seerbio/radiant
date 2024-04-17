@@ -16,6 +16,11 @@ using namespace Error;
 
 class PeptideSequence;
 
+enum class MSLevelClassEnum {
+    MS1,
+    MS2,
+};
+
 class ALGORITHMSFFLIB_EXPORTS MsCalibratomatic {
 
 public:
@@ -35,19 +40,6 @@ public:
     Err init(const QString &msCalibrationFilePath);
 
     /**
-    * @brief Initializes MsCalibratomatic with the provided MS calibration data.
-    *
-    * This function initializes MsCalibratomatic using a QVector of MsCalibarationReaderRow, which represents the
-    * calibration data read from a source. It ensures that the input data is not empty, sets the internal data
-    * member m_msCalibarationReaderRows, builds the internal IRT and mz calibrators, and checks that the computed
-    * standard deviations for mz and scan time are greater than 0.0. Finally, it sets the isInit flag to true.
-    *
-    * @param msCalibarationReaderRows A QVector of MsCalibarationReaderRow containing MS calibration data.
-    * @return Err indicating the success or failure of the initialization process.
-    */
-    Err init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
-
-    /**
     * @brief Initialize the calibration using the provided calibration reader rows.
     *
     * @param msCalibarationReaderRows The calibration reader rows to initialize the calibration.
@@ -61,7 +53,10 @@ public:
     * @param msCalibarationReaderRows The Mz calibration reader rows to initialize the calibration.
     * @return An error code indicating the success or failure of the initialization.
     */
-    Err initMzOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
+    Err initMzOnly(
+        const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+        const MSLevelClassEnum &msLevelClassEnum
+        );
 
     /**
     * @brief Recalibrate the given scan points using the calibration model.
@@ -92,7 +87,8 @@ public:
     *
     * @return The standard deviation of Mz values.
     */
-    [[nodiscard]] float mzStDev();
+    [[nodiscard]] float mzStDevMS1();
+    [[nodiscard]] float mzStDevMS2();
 
     /**
     * @brief Get the standard deviation of scan time values used in the calibration.
@@ -138,14 +134,15 @@ public:
 
 private:
 
-    Err buildMzCalibrator();
+    Err buildMzCalibrator(const MSLevelClassEnum &msLevelClassEnum);
     Err buildIRTCalibrator();
 
 private:
 
     //Never cleared
     PythiaParameters m_params;
-    double m_mzStDev;
+    double m_mzStDevMS1;
+    double m_mzStDevMS2;
     double m_scanTimeStd;
     QString m_msCalibrationFilePath;
 

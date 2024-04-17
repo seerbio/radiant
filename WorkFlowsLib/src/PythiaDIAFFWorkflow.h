@@ -16,12 +16,6 @@
 
 using namespace Error;
 
-enum class MSLevel {
-    MS1,
-    MS2,
-    MS1MS2
-};
-
 class CandidateScores;
 class MsScanInfo;
 class MsReaderPointerAcc;
@@ -102,7 +96,7 @@ private:
             );
 
     Err recalibrateMzVals(
-        const MSLevel &msLevel,
+        const MSLevelClassEnum &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         );

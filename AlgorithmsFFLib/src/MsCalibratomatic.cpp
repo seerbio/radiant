@@ -13,49 +13,11 @@
 //#define USE_SPLINES
 
 MsCalibratomatic::MsCalibratomatic()
-: m_mzStDev(-1.0)
+: m_mzStDevMS1(-1.0)
+, m_mzStDevMS2(-1.0)
 , m_scanTimeStd(-1.0)
 , m_isInit(false)
 {}
-
-Err MsCalibratomatic::init(const QString &msCalibrationFilePath) {
-
-    ERR_INIT
-
-    e = ErrorUtils::fileExists(msCalibrationFilePath); ree
-    m_msCalibrationFilePath = msCalibrationFilePath;
-
-    e = ParquetReader::read(
-            m_msCalibrationFilePath,
-            &m_msCalibarationReaderRows
-    ); ree;
-
-    e = init(m_msCalibarationReaderRows); ree;
-
-    ERR_RETURN
-}
-
-
-Err MsCalibratomatic::init(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
-    m_msCalibarationReaderRows = msCalibarationReaderRows;
-
-    e = buildIRTCalibrator(); ree
-    e = buildMzCalibrator(); ree
-
-    e = ErrorUtils::isTrue(m_mzStDev > 0.0); ree;
-    e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
-
-    qDebug() << "mzStDev" << m_mzStDev;
-    qDebug() << "scanTimeStDev" << m_scanTimeStd;
-
-    m_isInit = true;
-
-    ERR_RETURN
-}
 
 Err MsCalibratomatic::initRtOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
     ERR_INIT
@@ -72,17 +34,29 @@ Err MsCalibratomatic::initRtOnly(const QVector<MsCalibarationReaderRow> &msCalib
     ERR_RETURN
 }
 
-Err MsCalibratomatic::initMzOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
+Err MsCalibratomatic::initMzOnly(
+    const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+    const MSLevelClassEnum &msLevelClassEnum
+    ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
     m_msCalibarationReaderRows = msCalibarationReaderRows;
 
-    e = buildMzCalibrator(); ree
+    e = buildMzCalibrator(msLevelClassEnum); ree
 
-    qDebug() << "mzStDev" << m_mzStDev;
-    e = ErrorUtils::isTrue(m_mzStDev > 0.0); ree;
+    if (msLevelClassEnum == MSLevelClassEnum::MS1) {
+        qDebug() << "mzStDevMS1" << m_mzStDevMS1;
+        e = ErrorUtils::isTrue(m_mzStDevMS1 > 0.0); eee_absorb;
+    }
+    else if (msLevelClassEnum == MSLevelClassEnum::MS2) {
+        qDebug() << "mzStDevMS2" << m_mzStDevMS2;
+        e = ErrorUtils::isTrue(m_mzStDevMS2 > 0.0); eee_absorb;
+    }
+    else {
+        rrr(eValueError);
+    }
 
     m_isInit = true;
 
@@ -360,7 +334,7 @@ namespace {
     }
 
 }//namespace
-Err MsCalibratomatic::buildMzCalibrator() {
+Err MsCalibratomatic::buildMzCalibrator(const MSLevelClassEnum &msLevelClassEnum) {
 
     ERR_INIT
 
@@ -372,9 +346,23 @@ Err MsCalibratomatic::buildMzCalibrator() {
     e = buildMzCalData(m_msCalibarationReaderRows, &inputs); ree;
     e = removeMassOutliers(&inputs); ree;
 
+    const int inputsSizeMin = 4;
+    if (inputs.size() < inputsSizeMin) {
+        ERR_RETURN
+    }
+
     double stDevMz;
     e = generateMetricsMzReCal(inputs, &stDevMz); ree;
-    m_mzStDev = stDevMz;
+
+    if (msLevelClassEnum == MSLevelClassEnum::MS1) {
+        m_mzStDevMS1 = stDevMz;
+    }
+    else if (msLevelClassEnum == MSLevelClassEnum::MS2) {
+        m_mzStDevMS2 = stDevMz;
+    }
+    else {
+        rrr(eValueError);
+    }
 
 #ifdef USE_SPLINES
     QVector<QPair<double, double>> data;
@@ -426,7 +414,6 @@ Err MsCalibratomatic::recalibrateScanPoints(
     ERR_RETURN
 }
 
-
 Err MsCalibratomatic::recalibrateScanPoints(
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
 ) {
@@ -455,8 +442,12 @@ Err MsCalibratomatic::recalibrateScanPoints(
     ERR_RETURN
 }
 
-float MsCalibratomatic::mzStDev() {
-    return m_mzStDev;
+float MsCalibratomatic::mzStDevMS1() {
+    return m_mzStDevMS1;
+}
+
+float MsCalibratomatic::mzStDevMS2() {
+    return m_mzStDevMS2;
 }
 
 float MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) {
