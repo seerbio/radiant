@@ -132,8 +132,11 @@ Err CandidateScorertron::init(
     m_scanTimeMinMax = scanTimeMinMax;
     m_mzHashedVsCount = mzHashedVsCount;
 
-    const PeakIntegratomaticParameters ffParams
+    PeakIntegratomaticParameters ffParams
         = PeakIntegratomaticParameters::buildPeakIntegratomaticParams(m_pythiaParameters);
+    ffParams.signalToNoiseRatio = 1.0;
+    ffParams.stopThresholdFraction = 0.5;
+
     e = m_peakIntegratomatic.init(ffParams); ree;
 
     m_msCalibratomatic = msCalibratomatic;
