@@ -44,6 +44,7 @@ SET(SOURCE_FILES
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
+        src/XICPeakManager.cpp
         src/XYMappermatic.cpp
 )
 
@@ -72,12 +73,15 @@ SET(HEADER_FILES
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
+        src/XICPeakManager.h
         src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
+        src/XICPeakManager.cpp
+        src/XICPeakManager.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
