@@ -8,6 +8,8 @@
 #include "ClassifierWeightsManager.h"
 #include "ParallelUtils.h"
 
+#include "EigenUtils.h"
+
 namespace {
 
     struct TargetDecoyCandidateScores {
@@ -124,6 +126,7 @@ namespace {
         ERR_INIT
 
         const QVector<CandidateScores::Features> baseFeatures = {
+                // CandidateScores::Features::TestMe,
                 CandidateScores::Features::CosineSimSum100,
                 CandidateScores::Features::CosineSimSum100GreaterThan80,
                 CandidateScores::Features::AllignedMaxIndexesCount,
@@ -184,6 +187,22 @@ namespace {
 
     }
 
+    Err minMaxScaleScores(
+            const QVector<QVector<float>> &scoreVectors,
+            QVector<QVector<float>> *scoreVectorsNorm
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scoreVectors); ree;
+
+        Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(scoreVectors);
+        EigenUtils::minMaxScaleMatrix(&mat);
+        *scoreVectorsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err DiscriminantScoretron::setDiscriminantScoreForCandidates(
         bool useExtendedScores,
@@ -211,11 +230,14 @@ Err DiscriminantScoretron::setDiscriminantScoreForCandidates(
     );
     futuresScoreBuilder.waitForFinished();
 
-    QVector<QVector<float>> scoreVectors;
+    QVector<QVector<float>> _scoreVectors;
     for (const QPair<Err, QVector<float>> &res : futuresScoreBuilder) {
         e = res.first; ree;
-        scoreVectors.push_back(res.second);
+        _scoreVectors.push_back(res.second);
     }
+
+    QVector<QVector<float>> scoreVectors;
+    e = minMaxScaleScores(_scoreVectors, &scoreVectors); ree;
 
     e = ErrorUtils::isEqual(candidateScoresPntrs->size(), scoreVectors.size()); ree;
 
