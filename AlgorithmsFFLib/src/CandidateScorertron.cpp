@@ -134,8 +134,11 @@ Err CandidateScorertron::init(
 
     PeakIntegratomaticParameters ffParams
         = PeakIntegratomaticParameters::buildPeakIntegratomaticParams(m_pythiaParameters);
+
+    //TODO update params file instead of hard coding these.
     ffParams.signalToNoiseRatio = 1.0;
     ffParams.stopThresholdFraction = 0.5;
+    ffParams.sigma = 0.75;
 
     e = m_peakIntegratomatic.init(ffParams); ree;
 
