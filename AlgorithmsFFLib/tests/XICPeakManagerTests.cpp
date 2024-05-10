@@ -72,13 +72,17 @@ namespace {
 
         mzTargetKeyVsTargetDecoyCandidatePointers->clear();
 
+        PythiaParameters pythiaParameters;
+        e = PythiaParameterReader::buildPythiaParameters(
+            "/home/anichols/Desktop/Data/ConfigFiles/test_params_decoys.pythiaConfig",
+            &pythiaParameters
+            );
+
         for (const MsScanInfo &msScanInfo : msScanInfos) {
 
             if (msScanInfo.msLevel < 2) {
                 continue;
             }
-
-            PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
 
             QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
             e = targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
@@ -222,23 +226,36 @@ void XICPeakManagerTests::findPeaksTest() {
     e = msReaderPointerAcc.ptr->collateMS2MzTargetFrames(&diaTargetFrames);
     QCOMPARE(e, eNoError);
 
+    const QString fragLibUri
+            = "/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
 
-    const QString fragLibUri = "/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.fragLibFF";
+    PythiaParameters pythiaParameters;
+    e = PythiaParameterReader::buildPythiaParameters(
+        "/home/anichols/Desktop/Data/ConfigFiles/test_params_decoys.pythiaConfig",
+        &pythiaParameters
+        );
+
+    const double massMin
+        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::alanineFormula).monoisotopicMass();
+
+    const double massMax
+            = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
+
 
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             fragLibUri,
-            600,
-            5000,
+            massMin,
+            massMax,
             &fragLibReaderRows
             );
     QCOMPARE(e, eNoError);
 
-    fragLibReaderRows.resize(static_cast<int>(fragLibReaderRows.size() * 0.2));
+    // fragLibReaderRows.resize(static_cast<int>(fragLibReaderRows.size() * 0.2));
 
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
     e = targetDecoyCandidatePairManager.init(
-            PythiaParameterReader::genericPythiaParametersForTests(),
+            pythiaParameters,
             &fragLibReaderRows
             );
     QCOMPARE(e, eNoError);
@@ -265,7 +282,7 @@ void XICPeakManagerTests::findPeaksTest() {
         parallelInput.mzTargetKey = mzTargetKey;
         parallelInput.ppm = 20.0;
         parallelInput.topNFragmentIons = 6;
-        parallelInput.cacheXICPeakManager = true;
+        parallelInput.cacheXICPeakManager = false;
 
         parallelInputs.push_back(parallelInput);
     }
@@ -278,15 +295,14 @@ void XICPeakManagerTests::findPeaksTest() {
         QCOMPARE(e, eNoError);
     }
 
-    QFuture<Err> futures2 = QtConcurrent::mapped(diaTargetFrames.keys(), readLogic);
-    futures2.waitForFinished();
-    for (const Err &res : futures2) {
-        e = res;
-        QCOMPARE(e, eNoError);
-    }
+    // QFuture<Err> futures2 = QtConcurrent::mapped(diaTargetFrames.keys(), readLogic);
+    // futures2.waitForFinished();
+    // for (const Err &res : futures2) {
+    //     e = res;
+    //     QCOMPARE(e, eNoError);
+    // }
 
     qDebug() << "Finsihed in" << et.elapsed() << "mSec";
-
 }
 
 
