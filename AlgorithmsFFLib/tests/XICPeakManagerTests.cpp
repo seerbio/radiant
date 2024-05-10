@@ -102,6 +102,7 @@ namespace {
 
     Err buildMzHashedVsCount(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+        int topNFragIons,
         QHash<MzHashed, int> *mzHashedVsCount
         ) {
 
@@ -110,11 +111,25 @@ namespace {
         e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
 
         for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
+
+            int counter = 0;
             for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
                 const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
                 (*mzHashedVsCount)[mzHashed]++;
             }
+
+            counter = 0;
             for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
                 const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
                 (*mzHashedVsCount)[mzHashed]++;
             }
@@ -129,6 +144,8 @@ namespace {
         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
         MzTargetKey mzTargetKey;
         float ppm = -1.0;
+        int topNFragmentIons = -1;
+        bool cacheXICPeakManager = false;
     };
 
     Err parallelLogic (const ParallelInput &parallelInput) {
@@ -139,7 +156,11 @@ namespace {
         et.start();
 
         QHash<MzHashed, int> mzHashedVsCount;
-        e = buildMzHashedVsCount(parallelInput.targetDecoyCandidatePairs, &mzHashedVsCount); ree;
+        e = buildMzHashedVsCount(
+            parallelInput.targetDecoyCandidatePairs,
+            parallelInput.topNFragmentIons,
+            &mzHashedVsCount
+            ); ree;
 
         XICPeakManager xicPeakManager;
         e = xicPeakManager.init(7, 2, 1, 0.5); ree;
@@ -158,7 +179,28 @@ namespace {
 
         e = xicPeakManager.findPeaks(msFrame, mzValsToExtract, parallelInput.ppm); ree;
 
+        if (parallelInput.cacheXICPeakManager) {
+            const QString cacheFilePath = parallelInput.mzTargetKey + ".xicCache";
+            e = xicPeakManager.cacheXICPeakManager(cacheFilePath); ree;
+        }
+
         qDebug() << parallelInput.mzTargetKey << et.elapsed();
+
+        ERR_RETURN
+    }
+
+    Err readLogic(const MzTargetKey &mzTargetKey) {
+
+        ERR_INIT
+
+        QElapsedTimer et;
+        et.start();
+
+        const QString cacheFilePath = mzTargetKey + ".xicCache";
+        XICPeakManager xicPeakManager;
+        e = xicPeakManager.loadXICPeakManagerCache(cacheFilePath);
+
+        qDebug() << et.elapsed() << mzTargetKey;
 
         ERR_RETURN
     }
@@ -168,7 +210,9 @@ void XICPeakManagerTests::findPeaksTest() {
 
     ERR_INIT
 
-    const QString msDataFilePath = QStringLiteral("/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML.prqFF");
+    const QString msDataFilePath
+            = QStringLiteral("/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML.prqFF");
+            // = QStringLiteral("/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML.prqFF");
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath);
@@ -184,11 +228,13 @@ void XICPeakManagerTests::findPeaksTest() {
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             fragLibUri,
-            500,
+            600,
             5000,
             &fragLibReaderRows
             );
     QCOMPARE(e, eNoError);
+
+    fragLibReaderRows.resize(static_cast<int>(fragLibReaderRows.size() * 0.2));
 
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
     e = targetDecoyCandidatePairManager.init(
@@ -218,6 +264,8 @@ void XICPeakManagerTests::findPeaksTest() {
         parallelInput.scanNumberVsScanTime = msReaderPointerAcc.ptr->getScanNumberVsScanTime();
         parallelInput.mzTargetKey = mzTargetKey;
         parallelInput.ppm = 20.0;
+        parallelInput.topNFragmentIons = 6;
+        parallelInput.cacheXICPeakManager = true;
 
         parallelInputs.push_back(parallelInput);
     }
@@ -225,8 +273,15 @@ void XICPeakManagerTests::findPeaksTest() {
     QFuture<Err> futures = QtConcurrent::mapped(parallelInputs, parallelLogic);
     futures.waitForFinished();
 
-    for (const Err err : futures) {
-        e = err;
+    for (const Err &res : futures) {
+        e = res;
+        QCOMPARE(e, eNoError);
+    }
+
+    QFuture<Err> futures2 = QtConcurrent::mapped(diaTargetFrames.keys(), readLogic);
+    futures2.waitForFinished();
+    for (const Err &res : futures2) {
+        e = res;
         QCOMPARE(e, eNoError);
     }
 

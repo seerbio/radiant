@@ -22,6 +22,22 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
         dbg.nospace() << "XICPoint(" << obj.scanNumber << " " << obj.mz << ", " << obj.intensity << ") ";
         return dbg;
     }
+
+    friend QDataStream &operator <<(QDataStream &stream, const XICPoint &obj) {
+        stream << obj.scanNumber;
+        stream << obj.mz;
+        stream << obj.intensity;
+
+        return stream;
+    }
+
+    friend QDataStream &operator >>(QDataStream &stream, XICPoint &obj) {
+        stream >> obj.scanNumber;
+        stream >> obj.mz;
+        stream >> obj.intensity;
+
+        return stream;
+    }
 };
 
 using XICPoints = std::vector<XICPoint>;

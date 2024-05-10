@@ -8,7 +8,7 @@
 #include "AlgorithmsFFLib_Exports.h"
 #include "Error.h"
 #include "GlobalSettings.h"
-
+#include "TurboXIC.h"
 
 using namespace Error;
 
@@ -27,7 +27,7 @@ public:
         int filterLength,
         int polynomialOrder,
         int smoothCount,
-        double stopThresholdFraction
+        float stopThresholdFraction
         );
 
     Err findPeaks(
@@ -36,11 +36,13 @@ public:
         float ppmTolerance
         );
 
+    Err cacheXICPeakManager(const QString &outputFilePath);
+    Err loadXICPeakManagerCache(const QString &outputFilePath);
+
 private:
 
-    Err extractPeaks(
+    Err extractXICs(
         const QVector<float> &mzValsToExtract,
-        const PeakIntegratomatic &peakIntegratomatic,
         float ppmTolerance,
         TurboXIC *turboXic
         );
@@ -49,8 +51,9 @@ private:
     int m_filterLength;
     int m_polynomialOrder;
     int m_smoothCount;
-    double m_stopThresholdValue;
+    float m_stopThresholdValue;
 
+    QHash<MzHashed , XICPoints> m_mzHashedVsXicPoints;
 
 };
 

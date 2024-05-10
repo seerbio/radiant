@@ -222,7 +222,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinMS2 = 176.0;
+    pythiaParameters.mzMinMS2 = 200.0;
     pythiaParameters.mzMaxMS2 = 1500.0;
 
     Modification carboxyAmidoMethyl(
