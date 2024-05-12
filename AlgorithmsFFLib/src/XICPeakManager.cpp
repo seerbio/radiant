@@ -65,7 +65,23 @@ Err XICPeakManager::findPeaks(
     ERR_RETURN
 }
 
-Err XICPeakManager::cacheXICPeakManager(const QString &outputFilePath) {
+Err XICPeakManager:: getXIC(
+    float mzVal,
+    XICPoints *xicPoints
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_mzHashedVsXicPoints); ree;
+    e = ErrorUtils::isAboveThreshold(mzVal, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
+
+    const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+
+    *xicPoints = m_mzHashedVsXicPoints.value(mzHashed);
+    ERR_RETURN
+}
+
+ Err XICPeakManager::cacheXICPeakManager(const QString &outputFilePath) {
 
     ERR_INIT
 

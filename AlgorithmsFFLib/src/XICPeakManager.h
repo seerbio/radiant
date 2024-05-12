@@ -36,6 +36,11 @@ public:
         float ppmTolerance
         );
 
+    Err getXIC(
+        float mzVal,
+        XICPoints *xicPoints
+        );
+
     Err cacheXICPeakManager(const QString &outputFilePath);
     Err loadXICPeakManagerCache(const QString &outputFilePath);
 
