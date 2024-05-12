@@ -7,7 +7,6 @@
 #include "EigenKernelUtils.h"
 #include "ErrorUtils.h"
 #include "MsFrame.h"
-#include "PeakIntegratomatic.h"
 
 
 XICPeakManager::XICPeakManager()
@@ -18,30 +17,6 @@ XICPeakManager::XICPeakManager()
 {}
 
 Err XICPeakManager::init(
-    int filterLength,
-    int polynomialOrder,
-    int smoothCount,
-    float stopThresholdFraction
-    ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isAboveThreshold(filterLength, 3, ErrorUtilsParam::IncludeThreshold); ree
-    e = ErrorUtils::isAboveThreshold(polynomialOrder, 1, ErrorUtilsParam::IncludeThreshold); ree
-    e = ErrorUtils::isAboveThreshold(smoothCount, 1, ErrorUtilsParam::IncludeThreshold); ree
-    e = ErrorUtils::isAboveThreshold(stopThresholdFraction, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree
-
-    m_filterLength = filterLength;
-    m_polynomialOrder = polynomialOrder;
-    m_smoothCount = smoothCount;
-    m_stopThresholdValue = stopThresholdFraction;
-
-    m_mzHashedVsXicPoints.clear();
-
-    ERR_RETURN
-}
-
-Err XICPeakManager::findPeaks(
     const MsFrame &msFrame,
     const QVector<float> &mzValsToExtract,
     float ppmTolerance
@@ -159,141 +134,6 @@ Err XICPeakManager::loadXICPeakManagerCache(const QString& outputFilePath) {
     ERR_RETURN
 }
 
-namespace {
-
-    Err buildSavGolayFilter(
-        int filterLength,
-        int polynomialOrder,
-        Eigen::VectorX<float> *savitskyGolayKernel
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isAboveThreshold(filterLength, 3, ErrorUtilsParam::IncludeThreshold); ree
-        e = ErrorUtils::isAboveThreshold(polynomialOrder, 1, ErrorUtilsParam::IncludeThreshold); ree
-
-        Eigen::MatrixX<float> savitskyGolayKernelMat;
-        e = EigenKernelUtils::buildSavitzkyGolayKernel(
-            filterLength,
-            polynomialOrder,
-            0,
-            1,
-            &savitskyGolayKernelMat
-            ); ree;
-
-        *savitskyGolayKernel = savitskyGolayKernelMat;
-
-        ERR_RETURN
-    }
-
-    Eigen::VectorX<float> loadXicPointsToVectorX(const XICPoints &xicPoints) {
-
-        const FrameIndex frameIndexMax = std::max_element(
-            xicPoints.begin(),
-            xicPoints.end(),
-            [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-            )->scanNumber + 1;
-
-        Eigen::VectorX<float> vec(frameIndexMax);
-        vec.setZero();
-
-        for (const XICPoint &xicPoint : xicPoints) {
-            vec.coeffRef(xicPoint.scanNumber) = xicPoint.intensity;
-        }
-
-        return vec;
-    }
-
-    Err simpleIntegrator(
-        const Eigen::VectorX<float> &vec,
-        float stopThresholdFraction,
-        QVector<QPair<PeakIntegrationIndexes, Intensity>> *peakIntegrationIndexesVsIntensity
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(vec.size() > 0); ree;
-
-    Eigen::VectorX<float> eVec = vec;
-    EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
-
-    const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
-    if (vecApexs.isEmpty()) {
-        ERR_RETURN
-    }
-
-    Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
-    QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, vecApexs.size());
-
-    for (const QPair<int, float> &pr : apexPairs) {
-
-        const int apexIndex = pr.first;
-        const float apexValue = pr.second;
-
-        if (MathUtils::tZero(apexValue)) {
-            continue;
-        }
-
-        const float stopThreshold = apexValue * stopThresholdFraction;
-
-        float rightStopVal = apexValue;
-        int rightStopIndex = apexIndex;
-
-        int rightCurrentIndex = apexIndex;
-        while (rightCurrentIndex < eVec.size()) {
-
-            const float currentValue = eVec(rightCurrentIndex);
-            if (currentValue < stopThreshold) {
-                rightStopIndex = rightCurrentIndex;
-                break;
-            }
-
-            if (currentValue <= rightStopVal) {
-                rightStopVal = currentValue;
-                rightStopIndex = rightCurrentIndex;
-                rightCurrentIndex++;
-                continue;
-            }
-
-            break;
-        }
-
-        float leftStopVal = apexValue;
-        int leftStopIndex = apexIndex;
-
-        int leftCurrentIndex = apexIndex;
-        while (leftCurrentIndex < eVec.size()) {
-
-            const float currentValue = eVec(leftCurrentIndex);
-            if (currentValue < stopThreshold) {
-                leftStopIndex = leftCurrentIndex;
-                break;
-            }
-
-            if (currentValue <= leftStopVal) {
-                leftStopVal = currentValue;
-                leftStopIndex = leftCurrentIndex;
-                leftCurrentIndex--;
-                continue;
-            }
-
-            break;
-        }
-
-        peakIntegrationIndexesVsIntensity->push_back({
-             {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size() - 1))},
-             apexValue}
-        );
-
-        for (int i = leftStopIndex; i <= rightStopIndex; i++) {
-            eVec.coeffRef(i) = 0.0;
-        }
-    }
-
-    ERR_RETURN
-}
-
-}//namespace
 Err XICPeakManager::extractXICs(
     const QVector<float> &mzValsToExtract,
     float ppmTolerance,
@@ -301,13 +141,6 @@ Err XICPeakManager::extractXICs(
 ) {
 
     ERR_INIT
-
-    Eigen::VectorX<float> savitskyGolayKernel;
-    e = buildSavGolayFilter(
-        m_filterLength,
-        m_polynomialOrder,
-        &savitskyGolayKernel
-        ); ree;
 
     for (float mzVal : mzValsToExtract) {
 
@@ -320,18 +153,6 @@ Err XICPeakManager::extractXICs(
         if (xicPoints.empty()) {
             continue;
         }
-
-        // Eigen::VectorX<float> xicPointsVec = loadXicPointsToVectorX(xicPoints);
-        // for (int smoothIter = 0; smoothIter < m_smoothCount; smoothIter++) {
-        //     xicPointsVec = EigenKernelUtils::convolveVectorWithKernel(xicPointsVec, savitskyGolayKernel);
-        // }
-
-        // QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationIndexesVsIntensity;
-        // e = simpleIntegrator(
-        //     xicPointsVec,
-        //     m_stopThresholdValue,
-        //     &peakIntegrationIndexesVsIntensity
-        //     ); ree;
 
         const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
         m_mzHashedVsXicPoints.insert(mzHashed , xicPoints);

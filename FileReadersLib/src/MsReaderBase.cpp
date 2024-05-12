@@ -312,6 +312,29 @@ QMap<ScanNumber, ScanTime> MsReaderBase::getScanNumberVsScanTime() const {
     return scanNumberVsScanTime;
 }
 
+Err MsReaderBase::getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+
+    const QVector<MsScanInfo> uniqueMsScanInfos = getUniqueTandemMsScanInfos();
+    const auto minMaxMsScanInfo = std::minmax_element(
+        uniqueMsScanInfos.begin(),
+        uniqueMsScanInfos.end(),
+        [](const MsScanInfo &l, const MsScanInfo &r) {
+            return l.precursorTargetMz < r.precursorTargetMz;
+        }
+        );
+
+    *precursorMzLoVsMzHi = {
+        minMaxMsScanInfo.first->precursorTargetMz - minMaxMsScanInfo.first->isoWindowLower,
+        minMaxMsScanInfo.second->precursorTargetMz + minMaxMsScanInfo.second->isoWindowLower
+    };
+
+    ERR_RETURN
+}
+
 Err MsReaderBase::splitScanPoints(
         const ScanPoints &scanPoints,
         QVector<float> *mzVals,

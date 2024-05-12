@@ -1,0 +1,383 @@
+//
+// Created by anichols on 10/18/23.
+//
+
+#include "TargetDecoyCandidatePairScoretron2.h"
+
+#include "CandidateScores.h"
+#include "CandidateScorertron.h"
+#include "FeatureFinderHillBuilder.h"
+#include "MsCalibratomatic.h"
+#include "ParallelUtils.h"
+#include "XICPeakManager.h"
+
+#include <QtConcurrent/QtConcurrent>
+
+
+TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
+: m_msReaderPointerAcc(nullptr)
+, m_turboXICMS1(nullptr)
+{}
+
+TargetDecoyCandidatePairScoretron2::~TargetDecoyCandidatePairScoretron2() {
+    delete m_turboXICMS1;
+    for (MsFrame *msFrame : m_mzTargetKeyVsMsFrame) {
+        delete msFrame;
+    }
+}
+
+class TargetDecoyPairParallelInput {
+
+public:
+    MzTargetKey targetKey;
+    MsCalibratomatic msCalibratomatic;
+    QMap<ScanNumber, ScanPoints*> diaTargetFrame;
+    MsFrame *msFrameDiaTargets;
+    QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
+    int topNMs2Ions = -1.0;
+    PythiaParameters pythiaParameters;
+    QPair<double, double> scanTimeMinMax;
+};
+
+Err TargetDecoyCandidatePairScoretron2::init(
+        const PythiaParameters &pythiaParameters,
+        MsReaderPointerAcc *msReaderPointerAcc
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(msReaderPointerAcc->ptr->isInit()); ree;
+
+    m_msReaderPointerAcc = msReaderPointerAcc;
+    m_pythiaParameters = pythiaParameters;
+
+    m_scanNumberVsScanTime = m_msReaderPointerAcc->ptr->getScanNumberVsScanTime();
+    m_scanTimeMinMax = m_msReaderPointerAcc->ptr->scanTimeMinMax();
+    m_uniqueTandemMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
+
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+    e = m_msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
+
+    constexpr int msLevel = 1;
+    QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
+    e = m_msReaderPointerAcc->ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
+
+    QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
+    for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
+        ms1FramePtrs.insert(it.key(), &it.value());
+    }
+
+    MsFrame msFrameMS1;
+    e = msFrameMS1.init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+
+    m_turboXICMS1 = new TurboXIC();
+    e = m_turboXICMS1->init(msFrameMS1.frameIndexVsScanPoints()); ree;
+
+    if (!diaTargetFrames.isEmpty()) {
+        e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
+        m_diaTargetFrames = diaTargetFrames;
+        m_ms1ScanNumberVsScanPoints = scanNumberVsScanPointsMS1;
+        e = buildMzTargetKeyVsMsFrames(); ree;
+    }
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
+    e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
+
+    for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
+        auto *msFrame = new MsFrame();
+        e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
+        m_mzTargetKeyVsMsFrame.insert(it.key(), msFrame);
+    }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err buildMzHashedVsCount(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+            int topNFragIons,
+            QHash<MzHashed, int> *mzHashedVsCount
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
+
+        constexpr int topNFragIonsShadows = 6;
+
+        for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
+
+            int counter = 0;
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                (*mzHashedVsCount)[mzHashed]++;
+
+                if (counter < topNFragIonsShadows) {
+
+                    const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                    const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                        ms2Ion.mz - chargeDistanceTomsons,
+                        S_GLOBAL_SETTINGS.HASHING_PRECISION
+                        );
+
+                    (*mzHashedVsCount)[mzHashedShadow]++;
+                }
+            }
+
+            counter = 0;
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                (*mzHashedVsCount)[mzHashed]++;
+
+                if (counter < topNFragIonsShadows) {
+
+                    const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                    const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                        ms2Ion.mz - chargeDistanceTomsons,
+                        S_GLOBAL_SETTINGS.HASHING_PRECISION
+                        );
+
+                    (*mzHashedVsCount)[mzHashedShadow]++;
+                }
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
+            const QVector<TargetDecoyPairParallelInput> &inputs,
+            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+            TurboXIC *turboXICMS1
+            ) {
+
+        ERR_INIT
+
+        QElapsedTimer et;
+        et.start();
+
+        e = ErrorUtils::isNotEmpty(inputs); rree;
+        e = ErrorUtils::isTrue(turboXICMS1->isInit()); rree;
+
+        QVector<QPair<Err, QVector<CandidateScores>>> outputs;
+
+        for (const TargetDecoyPairParallelInput &pi : inputs) {
+
+            QVector<CandidateScores> allCandidateScores;
+
+            MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
+
+            QHash<MzHashed, int> mzHashedVsCount;
+            e = buildMzHashedVsCount(
+                pi.targetDecoyPointers,
+                pi.topNMs2Ions,
+                &mzHashedVsCount
+                ); rree;
+
+            const QList<int> &mzHashedVsCountKeys = mzHashedVsCount.keys();
+            QVector<float> mzValsToExtract;
+            std::transform(
+                mzHashedVsCountKeys.begin(),
+                mzHashedVsCountKeys.end(),
+                std::back_inserter(mzValsToExtract),
+                [](int mzHashed){return MathUtils::unHashDecimal<float>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);}
+                );
+
+            XICPeakManager xicPeakManager;
+            e = xicPeakManager.init(
+                *pi.msFrameDiaTargets,
+                mzValsToExtract,
+                static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
+                ); rree;
+
+
+            // CandidateScorertron candidateScorertron;
+            // e = candidateScorertron.init(
+            //         pi.diaTargetFrame,
+            //         scanNumberVsScanTime,
+            //         pi.pythiaParameters,
+            //         pi.targetKey,
+            //         pi.scanTimeMinMax,
+            //         pi.topNMs2Ions,
+            //         mzHashedVsCount,
+            //         &msCalibratomatic,
+            //         turboXICMS1
+            // ); rree;
+            //
+            // for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
+            //
+            //     CandidateScores candidateScoresTarget;
+            //     e = candidateScorertron.calculateScores(
+            //             tdcp->ms2IonsTarget(),
+            //             tdcp,
+            //             &candidateScoresTarget
+            //             ); rree;
+            //     candidateScoresTarget.isDecoy = false;
+            //     allCandidateScores.push_back(candidateScoresTarget);
+            //
+            //     CandidateScores candidateScoresDecoy;
+            //     e = candidateScorertron.calculateScores(
+            //             tdcp->ms2IonsDecoy(),
+            //             tdcp,
+            //             &candidateScoresDecoy
+            //     ); rree;
+            //     candidateScoresDecoy.isDecoy = true;
+            //     allCandidateScores.push_back(candidateScoresDecoy);
+            // }
+            //
+            // if (pi.pythiaParameters.verbosity > 1) {
+            //     qDebug() << "Target key processed in" << pi.targetKey << et.restart() << "mSec";
+            // }
+            //
+            // outputs.push_back({e, allCandidateScores});
+        }
+
+        return outputs;
+    }
+
+}//namespace
+Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
+        int topNMS2Ions,
+        const MsCalibratomatic &msCalibratomatic,
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
+        QVector<CandidateScores> *candidateScoresVec
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isFalse(m_diaTargetFrames.isEmpty()); ree;
+    e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
+
+    candidateScoresVec->clear();
+
+    QVector<TargetDecoyPairParallelInput> parallelInputs;
+    e = buildParallelInput(
+            topNMS2Ions,
+            m_scanTimeMinMax,
+            msCalibratomatic,
+            mzTargetKeyVsTargetDecoyCandidatePointers,
+            &parallelInputs
+            ); ree;
+
+    QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+            parallelInputs,
+            ParallelUtils::numberOfAvailableSystemProcessors(),
+            &parallelInputsTranched
+            ); ree;
+
+#define PARALLEL_SCORE
+#ifdef PARALLEL_SCORE
+    const auto batchScoreProcessLogicBinder = std::bind(
+            parallelScoreLogic,
+            std::placeholders::_1,
+            m_scanNumberVsScanTime,
+            m_turboXICMS1
+            );
+
+    QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
+            parallelInputsTranched,
+            batchScoreProcessLogicBinder
+    );
+    futures.waitForFinished();
+
+    for (const QVector<QPair<Err, QVector<CandidateScores>>> &results : futures) {
+
+        const QVector<QPair<Err, QVector<CandidateScores>>> &result = results;
+        for (const QPair<Err, QVector<CandidateScores>> &r : result) {
+            e = r.first; ree;
+            const QVector<CandidateScores> &candidateScoresTargetMz = r.second;
+            candidateScoresVec->append(candidateScoresTargetMz);
+        }
+    }
+#else
+    for(const QVector<TargetDecoyPairParallelInput> &tdppis : parallelInputsTranched) {
+
+        const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
+                tdppis,
+                m_msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
+                m_turboXICMS1
+                ); ree;
+
+        for (const QPair<Err, QVector<CandidateScores>> &res : results) {
+            e = res.first; ree;
+            candidateScoresVec->append(res.second);
+        }
+    }
+#endif
+
+    ERR_RETURN
+}
+
+bool TargetDecoyCandidatePairScoretron2::isInit() {
+
+    return m_pythiaParameters.isValid()
+       && !m_diaTargetFrames.isEmpty()
+       && !m_ms1ScanNumberVsScanPoints.isEmpty();
+}
+
+Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
+        int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
+        const MsCalibratomatic &msCalibratomatic,
+        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
+        QVector<TargetDecoyPairParallelInput> *input
+        ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(mzTargetKeyVsTargetDecoyCandidatePointers->isEmpty()); ree;
+    e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
+    e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_uniqueTandemMsScanInfos); ree;
+    e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFrame); ree;
+
+    input->reserve(m_uniqueTandemMsScanInfos.size());
+
+    for (const MsScanInfo &msScanInfo : m_uniqueTandemMsScanInfos) {
+
+        TargetDecoyPairParallelInput tdppi;
+        tdppi.topNMs2Ions = topNMS2Ions;
+        tdppi.targetKey = msScanInfo.targetKey();
+        tdppi.msCalibratomatic = msCalibratomatic;
+        tdppi.pythiaParameters = m_pythiaParameters;
+        tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
+        tdppi.scanTimeMinMax = scanTimeMinMax;
+        tdppi.diaTargetFrame = m_diaTargetFrames.value(msScanInfo.targetKey());
+        tdppi.msFrameDiaTargets = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
+
+        input->push_back(tdppi);
+    }
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretron2::setPythiaParameters(const PythiaParameters &pythiaParameters) {
+    ERR_INIT
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
+    m_pythiaParameters = pythiaParameters;
+    ERR_RETURN
+}

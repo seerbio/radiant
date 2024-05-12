@@ -12,7 +12,7 @@
 #include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
-#include "TargetDecoyCandidatePairScoretron.h"
+#include "TargetDecoyCandidatePairScoretron2.h"
 
 using namespace Error;
 
@@ -84,14 +84,12 @@ private:
 
     Err buildCalibration(
             MsReaderPointerAcc *msReaderPointerAcc,
-            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanPointsMS1,
             QVector<CandidateScores*> *candidateScoresForTrainings
             );
 
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
             const QVector<MsScanInfo> &msScanInfos,
-            double selectionFraction,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
             );
 
@@ -138,7 +136,7 @@ private:
 private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
-    TargetDecoyCandidatePairScoretron m_targetDecoyCandidatePairScoretron;
+    TargetDecoyCandidatePairScoretron2 m_targetDecoyCandidatePairScoretron;
     MsCalibratomatic m_msCalibratomatic;
 
     PythiaParameters m_pythiaParameters;

@@ -24,13 +24,6 @@ public:
     ~XICPeakManager() = default;
 
     Err init(
-        int filterLength,
-        int polynomialOrder,
-        int smoothCount,
-        float stopThresholdFraction
-        );
-
-    Err findPeaks(
         const MsFrame &msFrame,
         const QVector<float> &mzValsToExtract,
         float ppmTolerance

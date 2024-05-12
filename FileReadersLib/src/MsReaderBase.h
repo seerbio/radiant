@@ -403,6 +403,8 @@ public:
     */
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
+    Err getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi);
+
     /**
     * @brief Splits ScanPoints into separate vectors for m/z and intensity values.
     *

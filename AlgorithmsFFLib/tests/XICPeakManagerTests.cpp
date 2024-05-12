@@ -439,8 +439,6 @@ namespace {
                 &mzHashedVsCount
                 ); ree;
 
-            XICPeakManager xicPeakManager;
-            e = xicPeakManager.init(7, 2, 1, 0.5); ree;
 
             MsFrame msFrame;
             e = msFrame.init(parallelInput.targetFrame, parallelInput.scanNumberVsScanTime); ree;
@@ -454,7 +452,8 @@ namespace {
                 [](int mzHashed){return MathUtils::unHashDecimal<float>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);}
                 );
 
-            e = xicPeakManager.findPeaks(msFrame, mzValsToExtract, parallelInput.ppm); ree;
+            XICPeakManager xicPeakManager;
+            e = xicPeakManager.init(msFrame, mzValsToExtract, parallelInput.ppm); ree;
 
             if (parallelInput.cacheXICPeakManager) {
                 const QString cacheFilePath = parallelInput.mzTargetKey + ".xicCache";

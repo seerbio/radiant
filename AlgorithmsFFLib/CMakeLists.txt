@@ -42,7 +42,8 @@ SET(SOURCE_FILES
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
-        src/TargetDecoyCandidatePairScoretron.cpp
+#        src/TargetDecoyCandidatePairScoretron.cpp
+        src/TargetDecoyCandidatePairScoretron2.cpp
         src/TurboXIC.cpp
         src/XICPeakManager.cpp
         src/XYMappermatic.cpp
@@ -71,7 +72,8 @@ SET(HEADER_FILES
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
-        src/TargetDecoyCandidatePairScoretron.h
+#        src/TargetDecoyCandidatePairScoretron.h
+        src/TargetDecoyCandidatePairScoretron2.h
         src/TurboXIC.h
         src/XICPeakManager.h
         src/XYMappermatic.h
@@ -80,8 +82,6 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        src/XICPeakManager.cpp
-        src/XICPeakManager.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
