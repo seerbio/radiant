@@ -5,7 +5,7 @@
 #include "TargetDecoyCandidatePairScoretron2.h"
 
 #include "CandidateScores.h"
-#include "CandidateScorertron.h"
+#include "CandidateScorertron2.h"
 #include "FeatureFinderHillBuilder.h"
 #include "MsCalibratomatic.h"
 #include "ParallelUtils.h"
@@ -32,7 +32,7 @@ public:
     MzTargetKey targetKey;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> diaTargetFrame;
-    MsFrame *msFrameDiaTargets;
+    MsFrame *msFrameMzTarget = nullptr;
     QVector<TargetDecoyCandidatePair*> targetDecoyPointers;
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
@@ -111,9 +111,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
-
-        constexpr int topNFragIonsShadows = 6;
-
         for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
 
             int counter = 0;
@@ -123,19 +120,18 @@ namespace {
                     break;
                 }
 
-                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                const MzHashed mzHashed = MathUtils::hashDecimal(
+                    ms2Ion.mz,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
                 (*mzHashedVsCount)[mzHashed]++;
 
-                if (counter < topNFragIonsShadows) {
-
-                    const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
-                    const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                        ms2Ion.mz - chargeDistanceTomsons,
-                        S_GLOBAL_SETTINGS.HASHING_PRECISION
-                        );
-
-                    (*mzHashedVsCount)[mzHashedShadow]++;
-                }
+                const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                    ms2Ion.mz - chargeDistanceTomsons,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
+                (*mzHashedVsCount)[mzHashedShadow]++;
             }
 
             counter = 0;
@@ -148,16 +144,14 @@ namespace {
                 const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
                 (*mzHashedVsCount)[mzHashed]++;
 
-                if (counter < topNFragIonsShadows) {
+                const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                    ms2Ion.mz - chargeDistanceTomsons,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
 
-                    const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
-                    const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                        ms2Ion.mz - chargeDistanceTomsons,
-                        S_GLOBAL_SETTINGS.HASHING_PRECISION
-                        );
+                (*mzHashedVsCount)[mzHashedShadow]++;
 
-                    (*mzHashedVsCount)[mzHashedShadow]++;
-                }
             }
         }
 
@@ -204,51 +198,45 @@ namespace {
 
             XICPeakManager xicPeakManager;
             e = xicPeakManager.init(
-                *pi.msFrameDiaTargets,
+                *pi.msFrameMzTarget,
                 mzValsToExtract,
                 static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
                 ); rree;
 
+            CandidateScorertron candidateScorertron;
+            e = candidateScorertron.init(
+                pi.pythiaParameters,
+                pi.topNMs2Ions,
+                &xicPeakManager,
+                pi.msFrameMzTarget
+                ); rree;
 
-            // CandidateScorertron candidateScorertron;
-            // e = candidateScorertron.init(
-            //         pi.diaTargetFrame,
-            //         scanNumberVsScanTime,
-            //         pi.pythiaParameters,
-            //         pi.targetKey,
-            //         pi.scanTimeMinMax,
-            //         pi.topNMs2Ions,
-            //         mzHashedVsCount,
-            //         &msCalibratomatic,
-            //         turboXICMS1
-            // ); rree;
-            //
-            // for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
-            //
-            //     CandidateScores candidateScoresTarget;
-            //     e = candidateScorertron.calculateScores(
-            //             tdcp->ms2IonsTarget(),
-            //             tdcp,
-            //             &candidateScoresTarget
-            //             ); rree;
-            //     candidateScoresTarget.isDecoy = false;
-            //     allCandidateScores.push_back(candidateScoresTarget);
-            //
-            //     CandidateScores candidateScoresDecoy;
-            //     e = candidateScorertron.calculateScores(
-            //             tdcp->ms2IonsDecoy(),
-            //             tdcp,
-            //             &candidateScoresDecoy
-            //     ); rree;
-            //     candidateScoresDecoy.isDecoy = true;
-            //     allCandidateScores.push_back(candidateScoresDecoy);
-            // }
-            //
-            // if (pi.pythiaParameters.verbosity > 1) {
-            //     qDebug() << "Target key processed in" << pi.targetKey << et.restart() << "mSec";
-            // }
-            //
-            // outputs.push_back({e, allCandidateScores});
+            for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
+
+                CandidateScores candidateScoresTarget;
+                e = candidateScorertron.calculateScores(
+                        tdcp->ms2IonsTarget(),
+                        tdcp,
+                        &candidateScoresTarget
+                        ); rree;
+                candidateScoresTarget.isDecoy = false;
+                allCandidateScores.push_back(candidateScoresTarget);
+
+                CandidateScores candidateScoresDecoy;
+                e = candidateScorertron.calculateScores(
+                        tdcp->ms2IonsDecoy(),
+                        tdcp,
+                        &candidateScoresDecoy
+                ); rree;
+                candidateScoresDecoy.isDecoy = true;
+                allCandidateScores.push_back(candidateScoresDecoy);
+            }
+
+            if (pi.pythiaParameters.verbosity > 1) {
+                qDebug() << "Target key processed in" << pi.targetKey << et.restart() << "mSec";
+            }
+
+            outputs.push_back({e, allCandidateScores});
         }
 
         return outputs;
@@ -367,7 +355,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
         tdppi.diaTargetFrame = m_diaTargetFrames.value(msScanInfo.targetKey());
-        tdppi.msFrameDiaTargets = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
+        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
 
         input->push_back(tdppi);
     }

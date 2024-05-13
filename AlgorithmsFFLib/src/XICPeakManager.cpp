@@ -40,6 +40,11 @@ Err XICPeakManager::init(
     ERR_RETURN
 }
 
+bool XICPeakManager::isValid() const {
+    const QList<MzHashed> &keys = m_mzHashedVsXicPoints.keys();
+    return !m_mzHashedVsXicPoints.isEmpty() && !m_mzHashedVsXicPoints.value(keys.first()).empty();
+}
+
 Err XICPeakManager:: getXIC(
     float mzVal,
     XICPoints *xicPoints

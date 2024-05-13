@@ -28,7 +28,6 @@ public:
 
 private Q_SLOTS:
 
-    static void initTest();
     static void findPeaksTest();
 
 
@@ -37,30 +36,6 @@ private:
 
 
 };
-
-
-void XICPeakManagerTests::initTest() {
-
-    ERR_INIT
-
-    XICPeakManager xicPeakManager;
-
-    e = xicPeakManager.init(3, 1, 1, 0.01);
-    QCOMPARE(e, eNoError);
-
-    e = xicPeakManager.init(2, 1, 1, 0.01);
-    QCOMPARE(e, eError);
-
-    e = xicPeakManager.init(3, 0, 1, 0.01);
-    QCOMPARE(e, eError);
-
-    e = xicPeakManager.init(3, 1, 0, 0.01);
-    QCOMPARE(e, eError);
-
-    e = xicPeakManager.init(3, 1, 1, 0.0);
-    QCOMPARE(e, eError);
-
-}
 
 namespace {
 

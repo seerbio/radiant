@@ -49,7 +49,6 @@ public:
         ERR_INIT
 
         e = ErrorUtils::isNotEqual(windowSize % 2 != 1, true, eValueError); ree;
-
         e = ErrorUtils::isNotEqual(windowSize < order + 2, true, eValueError); ree;
 
         const int halfWindow = std::floor((windowSize - 1) / 2);

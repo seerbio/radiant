@@ -29,6 +29,8 @@ public:
         float ppmTolerance
         );
 
+    bool isValid() const;
+
     Err getXIC(
         float mzVal,
         XICPoints *xicPoints
