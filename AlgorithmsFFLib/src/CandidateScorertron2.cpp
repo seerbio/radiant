@@ -226,6 +226,7 @@ namespace {
 
     Err buildEigenMatrix(
         const QVector<XICPoints> &xicPointsVec,
+        const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
         Eigen::MatrixX<float> *matIntensity,
         Eigen::MatrixX<float> *matMz
@@ -251,11 +252,15 @@ namespace {
             }
         }
 
+        *matIntensity = EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+
         ERR_RETURN
     }
 
     Err initMatricesdAndVecs(
         const QVector<MS2Ion> &ms2Ions,
+        const Eigen::VectorX<float> &kernelMs2,
+        const Eigen::VectorX<float> &kernelIntegration,
         int topNMS2Ions,
         float ppmTol,
         XICPeakManager *xicPeakManager,
@@ -284,10 +289,11 @@ namespace {
             &xicPointsVec20
             ); ree;
 
-        FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+        const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
         e = buildEigenMatrix(
             xicPointsVec100,
+            kernelMs2,
             frameIndexMax,
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
@@ -295,6 +301,7 @@ namespace {
 
         e = buildEigenMatrix(
             xicPointsVec45,
+            kernelMs2,
             frameIndexMax,
             &matriciesAndVecs->intensityMatrix45,
             &matriciesAndVecs->mzMatrix45
@@ -302,6 +309,7 @@ namespace {
 
         e = buildEigenMatrix(
             xicPointsVec20,
+            kernelMs2,
             frameIndexMax,
             &matriciesAndVecs->intensityMatrix20,
             &matriciesAndVecs->mzMatrix20
@@ -309,6 +317,7 @@ namespace {
 
         e = buildEigenMatrix(
             xicPointsVec100Shadow,
+            kernelMs2,
             frameIndexMax,
             &matriciesAndVecs->intensityMatrix100Shadow,
             &matriciesAndVecs->mzMatrix100Shadow
@@ -331,8 +340,10 @@ Err CandidateScorertron::calculateScores(
     MatriciesAndVecs matriciesAndVecs;
     e = initMatricesdAndVecs(
         ms2Ions,
+        d_ptr->m_kernelMs2,
+        d_ptr->m_kernelIntegration,
         m_topNMS2Ions,
-        m_pythiaParameters.ms2ExtractionWidthPPM,
+        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
         m_xicPeakManager,
         &matriciesAndVecs
         ); ree;
