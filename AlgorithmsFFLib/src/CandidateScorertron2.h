@@ -10,13 +10,12 @@
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsFrame.h"
-#include "PeakIntegratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
 class CandidateScores;
-class FeatureFinderHill;
+class MatriciesAndVecs;
 class MS2Ion;
 class MsFrame;
 class TargetDecoyCandidatePair;
@@ -38,6 +37,7 @@ public:
 
     Err init(
         const PythiaParameters &pythiaParameters,
+        const MsCalibratomatic &msCalibratomatic,
         int topNMS2Ions,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget
@@ -52,6 +52,10 @@ public:
 
 private:
 
+    Err processIntegrationVectorPeakIntegrations(
+        const MatriciesAndVecs &matriciesAndVecs,
+        const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity
+        );
 
 
 
@@ -61,6 +65,7 @@ private:
     int m_topNMS2Ions;
     XICPeakManager *m_xicPeakManager;
     MsFrame *m_msFrameMzTarget;
+    MsCalibratomatic m_msCalibratomatic;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

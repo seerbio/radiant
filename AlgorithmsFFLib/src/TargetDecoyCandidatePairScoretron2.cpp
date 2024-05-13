@@ -206,6 +206,7 @@ namespace {
             CandidateScorertron candidateScorertron;
             e = candidateScorertron.init(
                 pi.pythiaParameters,
+                pi.msCalibratomatic,
                 pi.topNMs2Ions,
                 &xicPeakManager,
                 pi.msFrameMzTarget

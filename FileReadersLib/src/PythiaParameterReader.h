@@ -145,7 +145,7 @@ struct PythiaParameters{
     int filterLength = -1;
     int smoothCount = -1;
     double sigma = -1.0;
-    float stopThresholdFraction = 0.2;
+    float stopThresholdFraction = 0.5;
     int minFoundMzPeaks = -1;
 
     double cosineSimToAnchorThreshold = 0.4;

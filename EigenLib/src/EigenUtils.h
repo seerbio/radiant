@@ -965,6 +965,105 @@ public:
         return vec.segment(leftStart, rightStart - leftStart + 1);
     }
 
+    // TODO add test
+    template<typename T>
+    static Err simpleIntegrator(
+        const Eigen::VectorX<T> &vec,
+        T stopThresholdFraction,
+        QVector<QPair<PeakIntegrationIndexes, T>> *peakIntegrationIndexesVsIntensity
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(vec.size() > 0); ree;
+
+        Eigen::VectorX<T> eVec = vec;
+        EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
+
+        const QMap<int, T> vecApexs = EigenUtils::apexes(eVec);
+        if (vecApexs.isEmpty()) {
+            ERR_RETURN
+        }
+
+        Eigen::VectorX<T> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
+        QVector<QPair<int, T>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, vecApexs.size());
+
+        for (const QPair<int, T> &pr : apexPairs) {
+
+            const int apexIndex = pr.first;
+            const T apexValue = pr.second;
+
+            if (MathUtils::tZero(apexValue)) {
+                continue;
+            }
+
+            const T stopThreshold = apexValue * stopThresholdFraction;
+
+            T rightStopVal = apexValue;
+            int rightStopIndex = apexIndex;
+
+            int rightCurrentIndex = apexIndex;
+            while (rightCurrentIndex < eVec.size()) {
+
+                const T currentValue = eVec(rightCurrentIndex);
+                if (currentValue < stopThreshold) {
+                    rightStopIndex = rightCurrentIndex;
+                    break;
+                }
+
+                if (currentValue <= rightStopVal) {
+                    rightStopVal = currentValue;
+                    rightStopIndex = rightCurrentIndex;
+                    rightCurrentIndex++;
+                    continue;
+                }
+
+                break;
+            }
+
+            T leftStopVal = apexValue;
+            int leftStopIndex = apexIndex;
+
+            int leftCurrentIndex = apexIndex;
+            while (leftCurrentIndex < eVec.size()) {
+
+                const T currentValue = eVec(leftCurrentIndex);
+                if (currentValue < stopThreshold) {
+                    leftStopIndex = leftCurrentIndex;
+                    break;
+                }
+
+                if (currentValue <= leftStopVal) {
+                    leftStopVal = currentValue;
+                    leftStopIndex = leftCurrentIndex;
+                    leftCurrentIndex--;
+                    continue;
+                }
+
+                break;
+            }
+
+            peakIntegrationIndexesVsIntensity->push_back({
+                 {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size() - 1))},
+                 apexValue}
+            );
+
+            for (int i = leftStopIndex; i <= rightStopIndex; i++) {
+                eVec.coeffRef(i) = 0.0;
+            }
+        }
+
+        std::sort(
+            peakIntegrationIndexesVsIntensity->rbegin(),
+            peakIntegrationIndexesVsIntensity->rend(),
+            [](const QPair<PeakIntegrationIndexes, T> &l, const QPair<PeakIntegrationIndexes, T> &r) {
+                return l.second < r.second;
+            }
+            );
+
+        ERR_RETURN
+    }
+
 };
 
 #endif //EIGENUTILS_H

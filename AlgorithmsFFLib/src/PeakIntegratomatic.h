@@ -102,7 +102,7 @@ public:
             int topNApexes,
             int maxPeakIntegrations,
             QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
-    );
+            );
 
 private:
 

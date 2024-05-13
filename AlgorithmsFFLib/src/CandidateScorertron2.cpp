@@ -85,6 +85,7 @@ CandidateScorertron::~CandidateScorertron() {}
 
 Err CandidateScorertron::init(
     const PythiaParameters &pythiaParameters,
+    const MsCalibratomatic &msCalibratomatic,
     int topNMS2Ions,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget
@@ -106,27 +107,41 @@ Err CandidateScorertron::init(
     m_xicPeakManager = xicPeakManager;
     m_msFrameMzTarget = msFrameMzTarget;
 
+    if (msCalibratomatic.isInit()) {
+        m_msCalibratomatic = msCalibratomatic;
+    }
+
     e = d_ptr->init(); ree;
 
     ERR_RETURN
 }
 
+class MatriciesAndVecs {
+
+public:
+
+    Eigen::MatrixX<float> intensityMatrix100;
+    Eigen::MatrixX<float> intensityMatrix100Shadow;
+    Eigen::MatrixX<float> intensityMatrix45;
+    Eigen::MatrixX<float> intensityMatrix20;
+
+    Eigen::MatrixX<float> mzMatrix100;
+    Eigen::MatrixX<float> mzMatrix100Shadow;
+    Eigen::MatrixX<float> mzMatrix45;
+    Eigen::MatrixX<float> mzMatrix20;
+
+    Eigen::VectorX<float> integrationVec;
+
+    [[nodiscard]] bool intensityMatriciesAreValid() const {
+        return intensityMatrix100.size() > 0;
+    }
+
+    [[nodiscard]] bool integrationVecIsValid() const {
+        return integrationVec.size() > 0;
+    }
+};
+
 namespace {
-
-    struct MatriciesAndVecs {
-
-        Eigen::MatrixX<float> intensityMatrix100;
-        Eigen::MatrixX<float> intensityMatrix100Shadow;
-        Eigen::MatrixX<float> intensityMatrix45;
-        Eigen::MatrixX<float> intensityMatrix20;
-
-        Eigen::MatrixX<float> mzMatrix100;
-        Eigen::MatrixX<float> mzMatrix100Shadow;
-        Eigen::MatrixX<float> mzMatrix45;
-        Eigen::MatrixX<float> mzMatrix20;
-
-        Eigen::VectorX<float> integrationVec;
-    };
 
     void filterXICPointsByAccuracyPPM(
         float mzVal,
@@ -257,6 +272,35 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildIntegrationVector(
+        const MatriciesAndVecs &matriciesAndVecs,
+        const Eigen::VectorX<float> &kernelIntegration,
+        Eigen::VectorX<float> *integrationVec
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
+
+        constexpr float intensityThresholdVal = 0.1;
+        constexpr float countValue = 1.0;
+        constexpr float minPeakCount = 3.9;
+
+        Eigen::MatrixX<float> matCount = matriciesAndVecs.intensityMatrix100;
+        matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
+        EigenUtils::thresholdMatrix(0.0f, &matCount);
+
+        Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
+        EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
+
+        *integrationVec = EigenKernelUtils::convolveVectorWithKernel(
+            integrationVecLocal,
+            kernelIntegration
+            );
+
+        ERR_RETURN
+    }
+
     Err initMatricesdAndVecs(
         const QVector<MS2Ion> &ms2Ions,
         const Eigen::VectorX<float> &kernelMs2,
@@ -323,6 +367,12 @@ namespace {
             &matriciesAndVecs->mzMatrix100Shadow
             ); ree;
 
+        e = buildIntegrationVector(
+            *matriciesAndVecs,
+            kernelIntegration,
+            &matriciesAndVecs->integrationVec
+            ); ree;
+
         ERR_RETURN
     }
 
@@ -347,6 +397,81 @@ Err CandidateScorertron::calculateScores(
         m_xicPeakManager,
         &matriciesAndVecs
         ); ree;
+
+    if (m_msCalibratomatic.isInit()) {
+        //TODO write code to truncate vector based on predicted scan time/frame index
+    }
+
+    QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
+    e = EigenUtils::simpleIntegrator(
+        matriciesAndVecs.integrationVec,
+        m_pythiaParameters.stopThresholdFraction,
+        &peakIntegrationsVsIntensities
+        ); ree;
+
+    e = processIntegrationVectorPeakIntegrations(
+        matriciesAndVecs,
+        peakIntegrationsVsIntensities
+        ); ree;
+
+    ERR_RETURN
+}
+
+namespace {
+
+    QPair<PeakIntegrationIndexes, Intensity> correctPeakIntegrationForSingleRow(
+        const QPair<PeakIntegrationIndexes, Intensity> &pii,
+        const Eigen::VectorX<float> &integrationVec
+        ) {
+        QPair<PeakIntegrationIndexes, Intensity> piiWorking = pii;
+        if (piiWorking.first.first == piiWorking.first.second) {
+            piiWorking.first.first = std::max(0, piiWorking.first.first - 1);
+            piiWorking.first.second = std::min(
+                static_cast<int>(integrationVec.size()) - 1,
+                piiWorking.first.second + 1
+                );
+        }
+        return piiWorking;
+    }
+
+}//namespace
+Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
+    const MatriciesAndVecs &matriciesAndVecs,
+    const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
+    e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
+
+    QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
+
+    constexpr int topNIntegrations = 10; //TODO make this settable
+    peakIntegrationsVsIntensityResized.resize(topNIntegrations);
+
+    for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensity) {
+
+        const QPair<PeakIntegrationIndexes, Intensity> piiWorking = correctPeakIntegrationForSingleRow(
+            pii,
+            matriciesAndVecs.integrationVec
+            );
+
+        Eigen::MatrixX<float> mat = m_pythiaParameters.subtractShadows
+                                  ? matriciesAndVecs.intensityMatrix100 - matriciesAndVecs.intensityMatrix100Shadow
+                                  : matriciesAndVecs.intensityMatrix100;
+        EigenUtils::thresholdMatrix(0.0f, &mat);
+
+        Eigen::MatrixX<float> matBlock = mat.block(
+              piiWorking.first.first,
+              0,
+              piiWorking.first.second - piiWorking.first.first + 1,
+              mat.cols()
+              ).eval();
+
+
+    }
+
 
 
 
