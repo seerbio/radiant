@@ -126,9 +126,9 @@ namespace {
                     );
                 (*mzHashedVsCount)[mzHashed]++;
 
-                const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
                 const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                    ms2Ion.mz - chargeDistanceTomsons,
+                    ms2Ion.mz - isotopeDistanceThomsons,
                     S_GLOBAL_SETTINGS.HASHING_PRECISION
                     );
                 (*mzHashedVsCount)[mzHashedShadow]++;
@@ -144,9 +144,9 @@ namespace {
                 const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
                 (*mzHashedVsCount)[mzHashed]++;
 
-                const float chargeDistanceTomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
                 const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                    ms2Ion.mz - chargeDistanceTomsons,
+                    ms2Ion.mz - isotopeDistanceThomsons,
                     S_GLOBAL_SETTINGS.HASHING_PRECISION
                     );
 

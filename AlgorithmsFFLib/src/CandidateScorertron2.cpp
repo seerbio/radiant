@@ -120,6 +120,10 @@ namespace {
         Eigen::MatrixX<float> intensityMatrix45;
         Eigen::MatrixX<float> intensityMatrix20;
 
+        Eigen::MatrixX<float> mzMatrix100;
+        Eigen::MatrixX<float> mzMatrix100Shadow;
+        Eigen::MatrixX<float> mzMatrix45;
+        Eigen::MatrixX<float> mzMatrix20;
 
         Eigen::VectorX<float> integrationVec;
     };
@@ -149,7 +153,8 @@ namespace {
         const QVector<MS2Ion> &ms2Ions,
         float ppmTol,
         XICPeakManager *xicPeakManager,
-        QVector<XICPoints> *xicPointsVec,
+        QVector<XICPoints> *xicPointsVec100,
+        QVector<XICPoints> *xicPointsVec100Shadows,
         QVector<XICPoints> *xicPointsVec45,
         QVector<XICPoints> *xicPointsVec20
         ) {
@@ -159,7 +164,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(ms2Ions); ree;
         e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
 
-        xicPointsVec->resize(ms2Ions.size());
+        xicPointsVec100->resize(ms2Ions.size());
 
         for (int i = 0; i < ms2Ions.size(); i++) {
 
@@ -169,11 +174,11 @@ namespace {
             e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
 
             if (xicPoints.empty()) {
-                xicPointsVec->push_back({});
+                xicPointsVec100->push_back({});
                 continue;
             }
 
-            xicPointsVec->push_back(xicPoints);
+            xicPointsVec100->push_back(xicPoints);
 
             filterXICPointsByAccuracyPPM(
                 ms2Ion.mz,
@@ -188,6 +193,62 @@ namespace {
                 &xicPoints
                 );
             xicPointsVec20->push_back(xicPoints);
+
+            XICPoints xicPointsShadows;
+            const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
+            xicPointsVec100Shadows->push_back(xicPointsShadows);
+        }
+
+        ERR_RETURN
+    }
+
+    FrameIndex findFrameIndexMaxXICPointsVec (const QVector<XICPoints> &xicPointsVec100) {
+
+        FrameIndex frameIndexMax = -1;
+
+        for (const XICPoints &xicPoints : xicPointsVec100) {
+
+            if (xicPoints.empty()) {
+                continue;
+            }
+
+            const FrameIndex frameIndexMaxXICPoints = std::max_element(
+                xicPoints.begin(),
+                xicPoints.end(),
+                [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
+                )->scanNumber;
+            frameIndexMax = std::max(frameIndexMax, frameIndexMaxXICPoints);
+        }
+
+        return frameIndexMax;
+    }
+
+    Err buildEigenMatrix(
+        const QVector<XICPoints> &xicPointsVec,
+        FrameIndex frameIndexMax,
+        Eigen::MatrixX<float> *matIntensity,
+        Eigen::MatrixX<float> *matMz
+        ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(xicPointsVec); ree;
+
+        const FrameIndex frameIndexBuffer = 2;
+
+        matIntensity->resize(frameIndexMax, xicPointsVec.size() + frameIndexBuffer);
+        matIntensity->setZero();
+
+        matMz->resize(frameIndexMax, xicPointsVec.size() + frameIndexBuffer);
+        matMz->setZero();
+
+        for (int col = 0; col < xicPointsVec.size(); col++) {
+
+            const XICPoints &xicPointsCol = xicPointsVec.at(col);
+            for (const XICPoint &p : xicPointsCol) {
+                matIntensity->coeffRef(p.scanNumber, col) = p.intensity;
+                matMz->coeffRef(p.scanNumber, col) = p.mz;
+            }
         }
 
         ERR_RETURN
@@ -209,22 +270,49 @@ namespace {
         QVector<MS2Ion> ms2IonsResized = ms2Ions;
         ms2IonsResized.resize(topNMS2Ions);
 
-        QVector<XICPoints> xicPointsVec;
+        QVector<XICPoints> xicPointsVec100;
+        QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
         QVector<XICPoints> xicPointsVec20;
         e = getXICs(
             ms2Ions,
             ppmTol,
             xicPeakManager,
-            &xicPointsVec,
+            &xicPointsVec100,
+            &xicPointsVec100Shadow,
             &xicPointsVec45,
             &xicPointsVec20
             ); ree;
 
+        FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
+        e = buildEigenMatrix(
+            xicPointsVec100,
+            frameIndexMax,
+            &matriciesAndVecs->intensityMatrix100,
+            &matriciesAndVecs->mzMatrix100
+            ); ree;
 
+        e = buildEigenMatrix(
+            xicPointsVec45,
+            frameIndexMax,
+            &matriciesAndVecs->intensityMatrix45,
+            &matriciesAndVecs->mzMatrix45
+            ); ree;
 
+        e = buildEigenMatrix(
+            xicPointsVec20,
+            frameIndexMax,
+            &matriciesAndVecs->intensityMatrix20,
+            &matriciesAndVecs->mzMatrix20
+            ); ree;
 
+        e = buildEigenMatrix(
+            xicPointsVec100Shadow,
+            frameIndexMax,
+            &matriciesAndVecs->intensityMatrix100Shadow,
+            &matriciesAndVecs->mzMatrix100Shadow
+            ); ree;
 
         ERR_RETURN
     }
