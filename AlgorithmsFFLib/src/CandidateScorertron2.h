@@ -59,6 +59,12 @@ private:
         BestCorrelationResult *bestCorrelationResult
         ) const;
 
+    Err setCandidateScores(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) const;
+
 
 
 private:

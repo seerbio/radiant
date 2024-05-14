@@ -145,6 +145,7 @@ public:
     float peakCorrelationsSum = -1.0;
     Eigen::MatrixX<float> matBlockTrimmed;
     int bestAnchorColumnIndex = -1;
+    QVector<int> apexStarts;
 };
 
 namespace {
@@ -471,10 +472,11 @@ Err CandidateScorertron::calculateScores(
         &bestCorrelationResult
         ); ree;
 
-    // qDebug() << bestCorrelationResult.peakCorrelations
-    //          << bestCorrelationResult.peakCorrelationsSum
-    //          << candidateScores->isDecoy
-    //          << "SDLFJSDLJL";
+    e = setCandidateScores(
+        tdcp,
+        bestCorrelationResult,
+        candidateScores
+        ); ree;
 
     ERR_RETURN
 }
@@ -833,6 +835,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             bestCorrelationResult->peakCorrelationsSum = peakCorrelationsSum;
             bestCorrelationResult->matBlockTrimmed = matBlockTrimmed;
             bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
+            bestCorrelationResult->apexStarts = apexStarts;
         }
 
 // #define OUTPUT_MATS
@@ -847,6 +850,126 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 #endif
 
     }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    float calculatedCosineSimSumGreaterThan80(const QVector<float> & peakCorrelations) {
+
+        constexpr float cosineSimToAnchorThreshold = 0.8;
+        const float scoreGreater = std::accumulate(
+            peakCorrelations.begin(),
+            peakCorrelations.end(),
+            0.0f,
+            [cosineSimToAnchorThreshold](float sum, float f){return f > cosineSimToAnchorThreshold ? f + sum : 0.0f + sum;}
+            );
+
+        return scoreGreater;
+    }
+
+    Err setCosineSimilarityMetrics(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const BestCorrelationResult& bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
+
+        QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
+                                    ? targetDecoyCandidatePair->ms2IonsDecoy()
+                                    : targetDecoyCandidatePair->ms2IonsTarget();
+        ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmed.cols()));
+
+        QVector<float> intensitiesTheo;
+        std::transform(
+            ms2IonsTheo.begin(),
+            ms2IonsTheo.end(),
+            std::back_inserter(intensitiesTheo),
+            [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
+            );
+
+        const Eigen::VectorX<float> intensitiesTheoVec = EigenUtils::convertQVectorToEigenVector(intensitiesTheo);
+
+        Eigen::MatrixX<float> intensitiesTheoMat(
+            bestCorrelationResult.matBlockTrimmed.rows(),
+            bestCorrelationResult.matBlockTrimmed.cols()
+        );
+
+        for (int row = 0; row < intensitiesTheoMat.rows(); row++) {
+            intensitiesTheoMat.row(row) = intensitiesTheoVec;
+        }
+
+        Eigen::VectorX<float> cosineSimsByRow;
+         e = EigenUtils::rowWiseCosineSimilarOfMatrices(
+             bestCorrelationResult.matBlockTrimmed,
+             intensitiesTheoMat,
+             &cosineSimsByRow
+             ); ree;
+
+        const float cosineSimMax = cosineSimsByRow.maxCoeff();
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimMax;
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum]
+                                                    = static_cast<float>(std::pow(cosineSimMax, 3));
+
+        const float cosineSimRowsSummed = cosineSimsByRow.sum();
+        if (MathUtils::tZero(cosineSimRowsSummed)) {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = 0.0f;
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = 0.0f;
+            ERR_RETURN
+        }
+
+        const int nonZeroRows = EigenUtils::nonZeros(cosineSimsByRow);
+        const float cosineSimSpectrumOverTime = cosineSimRowsSummed / static_cast<float>(nonZeroRows);
+
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = cosineSimSpectrumOverTime;
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]
+                                                                = static_cast<float>(std::pow(cosineSimSpectrumOverTime, 3));
+
+        QVector<float> cosineSimsByRowSansZeros;
+        cosineSimsByRowSansZeros.reserve(nonZeroRows);
+        for (int i = 0; i < cosineSimsByRow.size(); i++) {
+            const float f = cosineSimsByRow.coeff(i);
+            if (MathUtils::tZero(f)) {
+                continue;
+            }
+            cosineSimsByRowSansZeros.push_back(f);
+        }
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumStDev]
+                                                        = static_cast<float>(MathUtils::stDev(cosineSimsByRowSansZeros));
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err CandidateScorertron::setCandidateScores(
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    const BestCorrelationResult& bestCorrelationResult,
+    CandidateScores *candidateScores
+    ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(bestCorrelationResult.peakCorrelations); ree;
+    e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
+
+    candidateScores->initFeaturesArray();
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = bestCorrelationResult.peakCorrelationsSum;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
+                                            = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
+
+    e = setCosineSimilarityMetrics(
+        targetDecoyCandidatePair,
+        bestCorrelationResult,
+        candidateScores
+        );ree
+
+
+
 
     ERR_RETURN
 }

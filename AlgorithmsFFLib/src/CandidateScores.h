@@ -274,6 +274,8 @@ public:
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
 
+        CosineSimSpectrumStDev,
+
         CosineSimSum100MS1,
         MS1Averagine,
         CosineSimSum100Frequencies,
