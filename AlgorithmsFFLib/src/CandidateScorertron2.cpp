@@ -448,6 +448,10 @@ Err CandidateScorertron::calculateScores(
         &peakIntegrationsVsIntensities
         ); ree;
 
+    if (peakIntegrationsVsIntensities.isEmpty()) {
+        ERR_RETURN
+    }
+
     BestCorrelationResult bestCorrelationResult;
     e = processIntegrationVectorPeakIntegrations(
         matriciesAndVecs,

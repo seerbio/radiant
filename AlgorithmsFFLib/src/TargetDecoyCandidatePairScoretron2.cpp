@@ -220,21 +220,21 @@ namespace {
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
                 CandidateScores candidateScoresTarget;
+                candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsTarget(),
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
-                candidateScoresTarget.isDecoy = false;
                 allCandidateScores.push_back(candidateScoresTarget);
 
                 CandidateScores candidateScoresDecoy;
+                candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsDecoy(),
                         tdcp,
                         &candidateScoresDecoy
                 ); rree;
-                candidateScoresDecoy.isDecoy = true;
                 allCandidateScores.push_back(candidateScoresDecoy);
             }
 
@@ -281,7 +281,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputsTranched
             ); ree;
 
-#define PARALLEL_SCORE
+// #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     const auto batchScoreProcessLogicBinder = std::bind(
             parallelScoreLogic,
