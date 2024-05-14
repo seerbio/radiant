@@ -66,8 +66,6 @@ private:
         CandidateScores *candidateScores
         ) const;
 
-
-
 private:
 
     PythiaParameters m_pythiaParameters;
@@ -75,6 +73,7 @@ private:
     XICPeakManager *m_xicPeakManager;
     MsFrame *m_msFrameMzTarget;
     MsCalibratomatic m_msCalibratomatic;
+    TurboXIC *m_turboXicMS1;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

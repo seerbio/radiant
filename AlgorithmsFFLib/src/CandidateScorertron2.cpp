@@ -97,6 +97,7 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
     e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
+    e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
     e = ErrorUtils::isAboveThreshold(
         topNMS2Ions,
         S_GLOBAL_SETTINGS.MIN_MS2_IONS,
@@ -107,6 +108,7 @@ Err CandidateScorertron::init(
     m_topNMS2Ions = topNMS2Ions;
     m_xicPeakManager = xicPeakManager;
     m_msFrameMzTarget = msFrameMzTarget;
+    m_turboXicMS1 = turboXicMS1;
 
     if (msCalibratomatic.isInit()) {
         m_msCalibratomatic = msCalibratomatic;
