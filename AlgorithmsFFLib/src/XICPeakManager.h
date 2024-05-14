@@ -34,7 +34,7 @@ public:
     Err getXIC(
         float mzVal,
         XICPoints *xicPoints
-        );
+        ) const;
 
     Err cacheXICPeakManager(const QString &outputFilePath);
     Err loadXICPeakManagerCache(const QString &outputFilePath);
@@ -54,6 +54,7 @@ private:
     float m_stopThresholdValue;
 
     QHash<MzHashed , XICPoints> m_mzHashedVsXicPoints;
+    bool m_isInit;
 
 };
 

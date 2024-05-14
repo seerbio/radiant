@@ -14,6 +14,7 @@ XICPeakManager::XICPeakManager()
 , m_polynomialOrder(-1)
 , m_smoothCount(-1)
 , m_stopThresholdValue(-1.0)
+, m_isInit(false)
 {}
 
 Err XICPeakManager::init(
@@ -37,22 +38,23 @@ Err XICPeakManager::init(
         &turboXic
         ); ree;
 
+    m_isInit = true;
+
     ERR_RETURN
 }
 
 bool XICPeakManager::isValid() const {
-    const QList<MzHashed> &keys = m_mzHashedVsXicPoints.keys();
-    return !m_mzHashedVsXicPoints.isEmpty() && !m_mzHashedVsXicPoints.value(keys.first()).empty();
+    return m_isInit;
 }
 
 Err XICPeakManager:: getXIC(
     float mzVal,
     XICPoints *xicPoints
-    ) {
+    ) const {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_mzHashedVsXicPoints); ree;
+    e = ErrorUtils::isTrue(m_isInit); ree;
     e = ErrorUtils::isAboveThreshold(mzVal, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
     const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);

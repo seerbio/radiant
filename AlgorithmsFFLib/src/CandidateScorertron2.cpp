@@ -184,7 +184,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-        e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
 
         xicPointsVec100->reserve(ms2Ions.size());
         xicPointsVec100Shadows->reserve(ms2Ions.size());
@@ -262,6 +261,7 @@ namespace {
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
         bool buildMzMatrix,
+        bool applySmooth,
         Eigen::MatrixX<float> *matIntensity,
         Eigen::MatrixX<float> *matMz
         ) {
@@ -295,7 +295,10 @@ namespace {
             }
         }
 
-        *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+        if (applySmooth) {
+            *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+
+        }
 
         ERR_RETURN
     }
@@ -343,7 +346,6 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-        e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
         e = ErrorUtils::isAboveThreshold(topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
 
         QVector<MS2Ion> ms2IonsResized = ms2Ions;
@@ -381,6 +383,7 @@ namespace {
             kernelMs2,
             frameIndexMax,
             true,
+            true,
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
@@ -391,6 +394,7 @@ namespace {
             kernelMs2,
             frameIndexMax,
             false,
+            true,
             &matriciesAndVecs->intensityMatrix100Shadow,
             &unused
             ); ree;
@@ -411,6 +415,7 @@ namespace {
             kernelMs2,
             frameIndexMax,
             false,
+            false,
             &matriciesAndVecs->intensityMatrix45,
             &unused
             ); ree;
@@ -419,6 +424,7 @@ namespace {
             xicPointsVec20,
             kernelMs2,
             frameIndexMax,
+            false,
             false,
             &matriciesAndVecs->intensityMatrix20,
             &unused
