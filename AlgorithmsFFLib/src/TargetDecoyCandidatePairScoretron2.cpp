@@ -281,7 +281,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputsTranched
             ); ree;
 
-// #define PARALLEL_SCORE
+#define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     const auto batchScoreProcessLogicBinder = std::bind(
             parallelScoreLogic,

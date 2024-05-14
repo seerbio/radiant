@@ -126,9 +126,6 @@ public:
     Eigen::MatrixX<float> intensityMatrix20;
 
     Eigen::MatrixX<float> mzMatrix100;
-    Eigen::MatrixX<float> mzMatrix100Shadow;
-    Eigen::MatrixX<float> mzMatrix45;
-    Eigen::MatrixX<float> mzMatrix20;
 
     Eigen::VectorX<float> integrationVec;
 
@@ -263,6 +260,7 @@ namespace {
         const QVector<XICPoints> &xicPointsVec,
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
+        bool buildMzMatrix,
         Eigen::MatrixX<float> *matIntensity,
         Eigen::MatrixX<float> *matMz
         ) {
@@ -290,7 +288,9 @@ namespace {
                 }
 
                 matIntensity->coeffRef(p.scanNumber, col) = p.intensity;
-                matMz->coeffRef(p.scanNumber, col) = p.mz;
+                if (buildMzMatrix) {
+                    matMz->coeffRef(p.scanNumber, col) = p.mz;
+                }
             }
         }
 
@@ -379,16 +379,19 @@ namespace {
             xicPointsVec100,
             kernelMs2,
             frameIndexMax,
+            true,
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
 
+        Eigen::MatrixX<float> unused;
         e = buildEigenMatrix(
             xicPointsVec100Shadow,
             kernelMs2,
             frameIndexMax,
+            false,
             &matriciesAndVecs->intensityMatrix100Shadow,
-            &matriciesAndVecs->mzMatrix100Shadow
+            &unused
             ); ree;
 
         matriciesAndVecs->intensityMatrix100 = subtractShadows
@@ -406,16 +409,18 @@ namespace {
             xicPointsVec45,
             kernelMs2,
             frameIndexMax,
+            false,
             &matriciesAndVecs->intensityMatrix45,
-            &matriciesAndVecs->mzMatrix45
+            &unused
             ); ree;
 
         e = buildEigenMatrix(
             xicPointsVec20,
             kernelMs2,
             frameIndexMax,
+            false,
             &matriciesAndVecs->intensityMatrix20,
-            &matriciesAndVecs->mzMatrix20
+            &unused
             ); ree;
 
         ERR_RETURN
