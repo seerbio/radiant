@@ -88,7 +88,8 @@ Err CandidateScorertron::init(
     const MsCalibratomatic &msCalibratomatic,
     int topNMS2Ions,
     XICPeakManager *xicPeakManager,
-    MsFrame *msFrameMzTarget
+    MsFrame *msFrameMzTarget,
+    TurboXIC *turboXicMS1
     ) {
 
     ERR_INIT

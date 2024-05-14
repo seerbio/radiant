@@ -37,6 +37,7 @@ public:
     int topNMs2Ions = -1.0;
     PythiaParameters pythiaParameters;
     QPair<double, double> scanTimeMinMax;
+    TurboXIC *turboXicMS1 = nullptr;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -214,7 +215,8 @@ namespace {
                 pi.msCalibratomatic,
                 pi.topNMs2Ions,
                 &xicPeakManager,
-                pi.msFrameMzTarget
+                pi.msFrameMzTarget,
+                pi.turboXicMS1
                 ); rree;
 
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
@@ -362,6 +364,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.scanTimeMinMax = scanTimeMinMax;
         tdppi.diaTargetFrame = m_diaTargetFrames.value(msScanInfo.targetKey());
         tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
+        tdppi.turboXicMS1 = m_turboXICMS1;
 
         input->push_back(tdppi);
     }
