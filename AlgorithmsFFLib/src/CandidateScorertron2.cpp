@@ -141,6 +141,15 @@ public:
     }
 };
 
+class BestCorrelationResult {
+
+public:
+    QVector<float> peakCorrelations;
+    float peakCorrelationsSum = -1.0;
+    Eigen::MatrixX<float> matBlockTrimmed;
+    int bestAnchorColumnIndex = -1;
+};
+
 namespace {
 
     void filterXICPointsByAccuracyPPM(
@@ -179,7 +188,10 @@ namespace {
         e = ErrorUtils::isNotEmpty(ms2Ions); ree;
         e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
 
-        xicPointsVec100->resize(ms2Ions.size());
+        xicPointsVec100->reserve(ms2Ions.size());
+        xicPointsVec100Shadows->reserve(ms2Ions.size());
+        xicPointsVec45->reserve(ms2Ions.size());
+        xicPointsVec20->reserve(ms2Ions.size());
 
         for (int i = 0; i < ms2Ions.size(); i++) {
 
@@ -190,7 +202,20 @@ namespace {
 
             if (xicPoints.empty()) {
                 xicPointsVec100->push_back({});
+                xicPointsVec45->push_back({});
+                xicPointsVec20->push_back({});
+                xicPointsVec100Shadows->push_back({});
                 continue;
+            }
+
+            XICPoints xicPointsShadows;
+            const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
+            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
+            if (xicPointsShadows.empty()) {
+                xicPointsVec100Shadows->push_back({});
+            }
+            else {
+                xicPointsVec100Shadows->push_back(xicPointsShadows);
             }
 
             xicPointsVec100->push_back(xicPoints);
@@ -208,11 +233,6 @@ namespace {
                 &xicPoints
                 );
             xicPointsVec20->push_back(xicPoints);
-
-            XICPoints xicPointsShadows;
-            const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
-            e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
-            xicPointsVec100Shadows->push_back(xicPointsShadows);
         }
 
         ERR_RETURN
@@ -252,22 +272,29 @@ namespace {
 
         const FrameIndex frameIndexBuffer = 2;
 
-        matIntensity->resize(frameIndexMax, xicPointsVec.size() + frameIndexBuffer);
+        const int rows = frameIndexMax + frameIndexBuffer;
+
+        matIntensity->resize(rows, xicPointsVec.size());
         matIntensity->setZero();
 
-        matMz->resize(frameIndexMax, xicPointsVec.size() + frameIndexBuffer);
+        matMz->resize(rows, xicPointsVec.size());
         matMz->setZero();
 
         for (int col = 0; col < xicPointsVec.size(); col++) {
 
             const XICPoints &xicPointsCol = xicPointsVec.at(col);
             for (const XICPoint &p : xicPointsCol) {
+
+                if (p.scanNumber >= rows) {
+                    break;
+                }
+
                 matIntensity->coeffRef(p.scanNumber, col) = p.intensity;
                 matMz->coeffRef(p.scanNumber, col) = p.mz;
             }
         }
 
-        *matIntensity = EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+        *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
 
         ERR_RETURN
     }
@@ -315,16 +342,24 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(ms2Ions); ree;
         e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
+        e = ErrorUtils::isAboveThreshold(topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
 
         QVector<MS2Ion> ms2IonsResized = ms2Ions;
-        ms2IonsResized.resize(topNMS2Ions);
+        ms2IonsResized.resize(std::min(topNMS2Ions, ms2Ions.size()));
+
+        const bool ms2IonsAreSorted = std::is_sorted(
+            ms2IonsResized.rbegin(),
+            ms2IonsResized.rend(),
+            [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
+            );
+        e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
 
         QVector<XICPoints> xicPointsVec100;
         QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
         QVector<XICPoints> xicPointsVec20;
         e = getXICs(
-            ms2Ions,
+            ms2IonsResized,
             ppmTol,
             xicPeakManager,
             &xicPointsVec100,
@@ -332,6 +367,10 @@ namespace {
             &xicPointsVec45,
             &xicPointsVec20
             ); ree;
+
+        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
+        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec20.size()); ree;
+        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
@@ -381,7 +420,7 @@ Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
     TargetDecoyCandidatePair* tdcp,
     CandidateScores *candidateScores
-    ) {
+    ) const {
 
     ERR_INIT
 
@@ -409,10 +448,14 @@ Err CandidateScorertron::calculateScores(
         &peakIntegrationsVsIntensities
         ); ree;
 
+    BestCorrelationResult bestCorrelationResult;
     e = processIntegrationVectorPeakIntegrations(
         matriciesAndVecs,
-        peakIntegrationsVsIntensities
+        peakIntegrationsVsIntensities,
+        &bestCorrelationResult
         ); ree;
+
+    qDebug() << bestCorrelationResult.peakCorrelations << bestCorrelationResult.peakCorrelationsSum << "SDLFJSDLJL";
 
     ERR_RETURN
 }
@@ -434,11 +477,273 @@ namespace {
         return piiWorking;
     }
 
+    QVector<QVector<int>> getMatrxColumnApexes(const Eigen::MatrixX<float> &matBlock) {
+
+        QVector<QVector<int>> apexIndexesByColumn;
+        apexIndexesByColumn.reserve(matBlock.cols());
+        for (int col = 0; col < matBlock.cols(); col++) {
+            const Eigen::VectorX<float> &column = matBlock.col(col);
+            apexIndexesByColumn.push_back(EigenUtils::apexesIndexesOnly(column));
+        }
+
+        return apexIndexesByColumn;
+    }
+
+    Eigen::MatrixX<float> buildMatBlockApexes(
+        const Eigen::MatrixX<float> &matBlock,
+        const QVector<QVector<int>> &apexIndexesByColumn
+        ) {
+
+        Eigen::MatrixX<float> matBlockApexes(matBlock.rows(), matBlock.cols());
+        matBlockApexes.setZero();
+        for (int col = 0; col < apexIndexesByColumn.size(); col++) {
+            const QVector<int> &columnApexes = apexIndexesByColumn.at(col);
+            for (int row : columnApexes) {
+                matBlockApexes.coeffRef(row, col) = matBlock.coeff(row, col);
+            }
+        }
+        return matBlockApexes;
+    }
+
+    QVector<int> findStartApexes(
+            const Eigen::MatrixX<float> &matBlockApexes,
+            int apexIndex
+            ) {
+
+            QVector<int> apexesStartsToUse;
+            apexesStartsToUse.reserve(static_cast<int>(matBlockApexes.cols()));
+            for (int col = 0; col < matBlockApexes.cols(); col++) {
+
+                const Eigen::VectorX<float> &apexColumn = matBlockApexes.col(col);
+
+                if (apexColumn.coeff(apexIndex) > 0) {
+                    apexesStartsToUse.push_back(apexIndex);
+                    continue;
+                }
+
+                for (int rowFromCenter = 1; rowFromCenter < apexColumn.size(); rowFromCenter++) {
+
+                    const int rowLeftIndex = apexIndex - rowFromCenter;
+                    const int rowRightIndex = apexIndex + rowFromCenter;
+
+                    int rowLeftIndexValue = -1;
+                    int rowRightIndexValue = -1;
+
+                    if (rowLeftIndex >= 0) {
+                        rowLeftIndexValue = static_cast<int>(apexColumn.coeff(rowLeftIndex));
+                    }
+
+                    if (rowRightIndex < apexColumn.size()) {
+                        rowRightIndexValue = static_cast<int>(apexColumn.coeff(rowRightIndex));
+                    }
+
+                    if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
+                        const int higherIndex = rowLeftIndexValue >= rowRightIndexValue ? rowLeftIndex : rowRightIndex;
+                        apexesStartsToUse.push_back(higherIndex);
+                        break;
+                    }
+                    else if (rowLeftIndexValue > 0) {
+                        apexesStartsToUse.push_back(rowLeftIndex);
+                        break;
+                    }
+                    else if (rowRightIndexValue > 0) {
+                        apexesStartsToUse.push_back(rowRightIndex);
+                        break;
+                    }
+
+                    if (rowLeftIndex <= 0 && rowRightIndex >= apexColumn.size() - 1) {
+                        apexesStartsToUse.push_back(-1);
+                        break;
+                    }
+                }
+            }
+
+            return apexesStartsToUse;
+        }
+
+    QPair<int, int> simpleIntegratorTrimmer(
+        const Eigen::VectorX<float> &vec,
+        int apexRowIndex,
+        float stopThresholdFraction
+        ) {
+
+        const float nearZero = 0.001;
+        const float apexIndexValue = vec.coeff(apexRowIndex);
+        const float stopThresholdValue = apexIndexValue * stopThresholdFraction;
+
+        int rightStopIndex = apexRowIndex;
+        int rightCurrentIndex = apexRowIndex;
+        while (rightCurrentIndex < vec.size()) {
+
+            const float currentValue = vec.coeff(rightCurrentIndex);
+            if (currentValue < nearZero || currentValue <= stopThresholdValue) {
+                rightStopIndex = rightCurrentIndex;
+                break;
+            }
+
+            if (currentValue > nearZero) {
+                rightStopIndex = rightCurrentIndex;
+                rightCurrentIndex++;
+                continue;
+            }
+
+            break;
+        }
+
+        int leftStopIndex = apexRowIndex;
+        int leftCurrentIndex = apexRowIndex;
+        while (leftCurrentIndex >= 0) {
+
+            const float currentValue = vec(leftCurrentIndex);
+            if (currentValue < nearZero || currentValue <= stopThresholdValue) {
+                leftStopIndex = leftCurrentIndex;
+                break;
+            }
+
+            if (currentValue > nearZero) {
+                leftStopIndex = leftCurrentIndex;
+                leftCurrentIndex--;
+                continue;
+            }
+
+            break;
+        }
+
+        return {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size()) - 1)};
+    }
+
+    Eigen::MatrixX<float> trimMatrixBlock(
+        const Eigen::MatrixX<float> &matBlock,
+        const QVector<int> &apexStarts,
+        float stopThresholdFraction
+        ) {
+
+        Eigen::MatrixX<float> matBlockTrimmedColumns(matBlock.rows(), matBlock.cols());
+        matBlockTrimmedColumns.setZero();
+
+        for (int col = 0; col < matBlock.cols(); col++) {
+
+            const Eigen::VectorX<float> &colVec = matBlock.col(col);
+            const QPair<int, int> peakLimits = simpleIntegratorTrimmer(
+                colVec,
+                apexStarts.at(col),
+                stopThresholdFraction
+                );
+
+            for(int row = peakLimits.first; row <= peakLimits.second; row++) {
+                matBlockTrimmedColumns.coeffRef(row, col) = colVec.coeff(row);
+            }
+        }
+        return matBlockTrimmedColumns;
+    }
+
+    Err findBestAnchorColumn(
+        const Eigen::MatrixX<float> &matBlockTrimmed,
+        const QVector<int> &apexStarts,
+        int *bestAnchorColumnIndex
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(matBlockTrimmed.size() > 0); ree;
+        e = ErrorUtils::isNotEmpty(apexStarts); ree;
+        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockTrimmed.cols())); ree;
+
+        Eigen::MatrixX<float> matCount = matBlockTrimmed;
+        matCount = (matBlockTrimmed.array() > 0.0f).select(1.0, matCount);
+        const Eigen::VectorX<float> colSizes = matCount.colwise().sum();
+
+        struct Temp {
+            int fragIonIndex = -1;
+            int apexIndex = -1;
+            int peakLength = -1;
+            float intensity = -1.0;
+        };
+
+        QVector<Temp> temps;
+        for (int i = 0; i < apexStarts.size(); i++) {
+            Temp t;
+            t.fragIonIndex = i;
+            t.apexIndex = apexStarts.at(i);
+            t.peakLength = colSizes.coeff(i);
+            t.intensity = matBlockTrimmed.coeff(t.apexIndex, i);
+            temps.push_back(t);
+        }
+
+        const auto sortLogic = [](const Temp &l, const Temp &r) {
+            if (l.apexIndex == r.apexIndex) {
+                if (l.peakLength == r.peakLength) {
+                    return l.intensity > r.intensity;
+                }
+                return l.peakLength > r.peakLength;
+            }
+            return l.apexIndex < r.apexIndex;
+        };
+        std::sort(temps.begin(), temps.end(), sortLogic);
+
+        QHash<int, int> apexIndexVsCount;
+        for (const Temp &t : temps) {
+            apexIndexVsCount[t.apexIndex]++;
+        }
+
+        int bestApexIndex = -1;
+        int bestApexIndexCnt = -1;
+        for (auto it = apexIndexVsCount.begin(); it != apexIndexVsCount.end(); ++it) {
+            if (it.value() > bestApexIndexCnt) {
+                bestApexIndex = it.key();
+                bestApexIndexCnt = it.value();
+            }
+        }
+
+        for (const Temp &t : temps) {
+            if (t.apexIndex == bestApexIndex) {
+                *bestAnchorColumnIndex = t.fragIonIndex;
+                break;
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    Err calculatePeakCorrelations(
+        const Eigen::MatrixX<float> &matBlockTrimmed,
+        int bestAnchorColumnIndex,
+        QVector<float> *peakCorrelations
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(matBlockTrimmed.size() > 0); ree;
+        e = ErrorUtils::isAboveThreshold(bestAnchorColumnIndex, 0, ErrorUtilsParam::IncludeThreshold); ree;
+
+        peakCorrelations->clear();
+
+        const Eigen::VectorX<float> &anchorColumn = matBlockTrimmed.col(bestAnchorColumnIndex);
+
+        peakCorrelations->reserve(static_cast<int>(matBlockTrimmed.cols()));
+        for (int col = 0; col < matBlockTrimmed.cols(); col++) {
+
+            if (col == bestAnchorColumnIndex) {
+                peakCorrelations->push_back(1.0);
+                continue;
+            }
+
+            const Eigen::VectorX<float> &matCol = matBlockTrimmed.col(col);
+
+            float cosineSim;
+            e = EigenUtils::cosineSimilarity(matCol, anchorColumn, &cosineSim); ree;
+            peakCorrelations->push_back(cosineSim);
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
-    const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity
-    ) {
+    const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
+    BestCorrelationResult *bestCorrelationResult
+    ) const {
 
     ERR_INIT
 
@@ -469,15 +774,64 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
               mat.cols()
               ).eval();
 
+        const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
+        const Eigen::MatrixX<float> matBlockApexes = buildMatBlockApexes(
+            matBlock,
+            apexIndexesByColumn
+            );
+
+        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.integrationVec.segment(
+            piiWorking.first.first,
+            piiWorking.first.second - piiWorking.first.first + 1
+            );
+
+        const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
+
+        const QVector<int> apexStarts = findStartApexes(matBlockApexes, apexIndex.first);
+        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols()));
+
+        const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
+            matBlock,
+            apexStarts,
+            m_pythiaParameters.stopThresholdFraction
+            );
+
+        int bestAnchorColumnIndex = -1;
+        e = findBestAnchorColumn(
+            matBlockTrimmed,
+            apexStarts,
+            &bestAnchorColumnIndex
+            ); ree;
+
+        QVector<float> peakCorrelations;
+        e = calculatePeakCorrelations(
+            matBlockTrimmed,
+            bestAnchorColumnIndex,
+            &peakCorrelations
+            ); ree;
+
+        const float peakCorrelationsSum
+                = std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f);
+
+        if (peakCorrelationsSum > bestCorrelationResult->peakCorrelationsSum) {
+            bestCorrelationResult->peakCorrelations = peakCorrelations;
+            bestCorrelationResult->peakCorrelationsSum = peakCorrelationsSum;
+            bestCorrelationResult->matBlockTrimmed = matBlockTrimmed;
+            bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
+        }
+
+// #define OUTPUT_MATS
+#ifdef OUTPUT_MATS
+        qDebug() << peakCorrelations << std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f) << "SLDFJSDLFLJ";
+        for (int as : apexStarts) {
+            std::cout << as << " " << apexIndex.first << std::endl;
+        }
+        std::cout << piiWorking.first.first << " " << piiWorking.first.second << std::endl;
+        std::cout << matBlock << std::endl;
+        std::cout << bestAnchorColumnIndex << " **********" << std::endl;
+#endif
 
     }
 
-
-
-
-
     ERR_RETURN
 }
-
-
-

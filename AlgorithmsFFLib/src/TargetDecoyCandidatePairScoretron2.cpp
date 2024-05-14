@@ -176,6 +176,11 @@ namespace {
 
         for (const TargetDecoyPairParallelInput &pi : inputs) {
 
+            if (pi.targetDecoyPointers.isEmpty()) {
+                qDebug() << pi.targetKey << "Target key is empty";
+                continue;
+            }
+
             QVector<CandidateScores> allCandidateScores;
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;

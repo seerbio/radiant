@@ -14,6 +14,7 @@
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
+class BestCorrelationResult;
 class CandidateScores;
 class MatriciesAndVecs;
 class MS2Ion;
@@ -47,15 +48,16 @@ public:
         const QVector<MS2Ion> &ms2Ions,
         TargetDecoyCandidatePair* tdcp,
         CandidateScores *candidateScores
-        );
+        ) const;
 
 
 private:
 
     Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
-        const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity
-        );
+        const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
+        BestCorrelationResult *bestCorrelationResult
+        ) const;
 
 
 
