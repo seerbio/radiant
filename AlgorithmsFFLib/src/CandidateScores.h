@@ -299,12 +299,19 @@ public:
     ~CandidateScores() = default;
 
     TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-    QString targetKey;
+
+    MzTargetKey targetKey;
     QString proteinGroup;
+
     bool isDecoy = false;
     ScanNumber scanNumber = -1;
+    ScanNumber scanNumberStart = -1;
+    ScanNumber scanNumberEnd = -1;
     ScanTime scanTime = -1.0;
+    ScanTime scanTimeStart = -1.0;
+    ScanTime scanTimeEnd = -1.0;
     ScanTime scanTimePredicted = -1.0;
+
     double classifierScore = -1.0;
     double discriminantScore = -1.0;
     double qValue = 1.0;

@@ -86,6 +86,7 @@ CandidateScorertron::~CandidateScorertron() {}
 Err CandidateScorertron::init(
     const PythiaParameters &pythiaParameters,
     const MsCalibratomatic &msCalibratomatic,
+    const MzTargetKey &mzTargetKey,
     int topNMS2Ions,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
@@ -98,6 +99,7 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
     e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
     e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(mzTargetKey); ree;
     e = ErrorUtils::isAboveThreshold(
         topNMS2Ions,
         S_GLOBAL_SETTINGS.MIN_MS2_IONS,
@@ -106,6 +108,7 @@ Err CandidateScorertron::init(
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
+    m_mzTargetKey = mzTargetKey;
     m_xicPeakManager = xicPeakManager;
     m_msFrameMzTarget = msFrameMzTarget;
     m_turboXicMS1 = turboXicMS1;
@@ -149,6 +152,7 @@ public:
     Eigen::MatrixX<float> matBlockTrimmed;
     int bestAnchorColumnIndex = -1;
     QVector<int> apexStarts;
+    PeakIntegrationIndexes peakIntegrationIndexes;
 };
 
 namespace {
@@ -845,6 +849,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             bestCorrelationResult->matBlockTrimmed = matBlockTrimmed;
             bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
             bestCorrelationResult->apexStarts = apexStarts;
+            bestCorrelationResult->peakIntegrationIndexes = pii.first;
         }
 
 // #define OUTPUT_MATS
@@ -857,7 +862,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         std::cout << matBlock << std::endl;
         std::cout << bestAnchorColumnIndex << " **********" << std::endl;
 #endif
-
     }
 
     ERR_RETURN
@@ -966,6 +970,18 @@ Err CandidateScorertron::setCandidateScores(
     e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
 
     candidateScores->initFeaturesArray();
+
+    candidateScores->targetKey = m_mzTargetKey;
+    candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(
+        bestCorrelationResult.peakIntegrationIndexes.first
+        + bestCorrelationResult.apexStarts.at(bestCorrelationResult.bestAnchorColumnIndex)
+        );
+    candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(bestCorrelationResult.peakIntegrationIndexes.first);
+    candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(bestCorrelationResult.peakIntegrationIndexes.second);
+
+    candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
+    candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
+    candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = bestCorrelationResult.peakCorrelationsSum;
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]

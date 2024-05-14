@@ -39,6 +39,7 @@ public:
     Err init(
         const PythiaParameters &pythiaParameters,
         const MsCalibratomatic &msCalibratomatic,
+        const MzTargetKey &mzTargetKey,
         int topNMS2Ions,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
@@ -74,6 +75,7 @@ private:
     MsFrame *m_msFrameMzTarget;
     MsCalibratomatic m_msCalibratomatic;
     TurboXIC *m_turboXicMS1;
+    MzTargetKey m_mzTargetKey;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;
