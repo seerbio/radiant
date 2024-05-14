@@ -334,6 +334,7 @@ namespace {
         const Eigen::VectorX<float> &kernelIntegration,
         int topNMS2Ions,
         float ppmTol,
+        bool subtractShadows,
         XICPeakManager *xicPeakManager,
         MatriciesAndVecs *matriciesAndVecs
         ) {
@@ -383,6 +384,25 @@ namespace {
             ); ree;
 
         e = buildEigenMatrix(
+            xicPointsVec100Shadow,
+            kernelMs2,
+            frameIndexMax,
+            &matriciesAndVecs->intensityMatrix100Shadow,
+            &matriciesAndVecs->mzMatrix100Shadow
+            ); ree;
+
+        matriciesAndVecs->intensityMatrix100 = subtractShadows
+                          ? matriciesAndVecs->intensityMatrix100 - matriciesAndVecs->intensityMatrix100Shadow
+                          : matriciesAndVecs->intensityMatrix100;
+        EigenUtils::thresholdMatrix(0.0f, &matriciesAndVecs->intensityMatrix100);
+
+        e = buildIntegrationVector(
+            *matriciesAndVecs,
+            kernelIntegration,
+            &matriciesAndVecs->integrationVec
+            ); ree;
+
+        e = buildEigenMatrix(
             xicPointsVec45,
             kernelMs2,
             frameIndexMax,
@@ -396,20 +416,6 @@ namespace {
             frameIndexMax,
             &matriciesAndVecs->intensityMatrix20,
             &matriciesAndVecs->mzMatrix20
-            ); ree;
-
-        e = buildEigenMatrix(
-            xicPointsVec100Shadow,
-            kernelMs2,
-            frameIndexMax,
-            &matriciesAndVecs->intensityMatrix100Shadow,
-            &matriciesAndVecs->mzMatrix100Shadow
-            ); ree;
-
-        e = buildIntegrationVector(
-            *matriciesAndVecs,
-            kernelIntegration,
-            &matriciesAndVecs->integrationVec
             ); ree;
 
         ERR_RETURN
@@ -433,6 +439,7 @@ Err CandidateScorertron::calculateScores(
         d_ptr->m_kernelIntegration,
         m_topNMS2Ions,
         static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
+        m_pythiaParameters.subtractShadows,
         m_xicPeakManager,
         &matriciesAndVecs
         ); ree;
@@ -459,7 +466,10 @@ Err CandidateScorertron::calculateScores(
         &bestCorrelationResult
         ); ree;
 
-    qDebug() << bestCorrelationResult.peakCorrelations << bestCorrelationResult.peakCorrelationsSum << "SDLFJSDLJL";
+    // qDebug() << bestCorrelationResult.peakCorrelations
+    //          << bestCorrelationResult.peakCorrelationsSum
+    //          << candidateScores->isDecoy
+    //          << "SDLFJSDLJL";
 
     ERR_RETURN
 }
@@ -766,16 +776,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             matriciesAndVecs.integrationVec
             );
 
-        Eigen::MatrixX<float> mat = m_pythiaParameters.subtractShadows
-                                  ? matriciesAndVecs.intensityMatrix100 - matriciesAndVecs.intensityMatrix100Shadow
-                                  : matriciesAndVecs.intensityMatrix100;
-        EigenUtils::thresholdMatrix(0.0f, &mat);
 
-        Eigen::MatrixX<float> matBlock = mat.block(
+        Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
               piiWorking.first.first,
               0,
               piiWorking.first.second - piiWorking.first.first + 1,
-              mat.cols()
+              matriciesAndVecs.intensityMatrix100.cols()
               ).eval();
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);

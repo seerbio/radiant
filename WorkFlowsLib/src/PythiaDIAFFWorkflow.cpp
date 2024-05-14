@@ -1098,90 +1098,90 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
     e = ErrorUtils::isNotEmpty(candidateScoresTrainings); ree;
 
-    const int topNMS2IonsOptimization = 12;
-    qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
-
-    qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
-
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    for (CandidateScores *cs : candidateScoresTrainings) {
-        mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
-    }
-
-    QVector<PythiaParameters> pythiaParametersExperiments;
-    e = buildDOE(
-            m_pythiaParameters,
-            m_msCalibratomatic.mzStDevMS2(),
-            m_msCalibratomatic.scanTimeStDev(),
-            &pythiaParametersExperiments
-            ); ree;
-
-    const bool useExtendedScores = true;
-    const bool useNeuralNetworkScores = false;
-
-    QVector<DOEResult> results;
-    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
-
-        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
-
-        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
-        qDebug() << "STarting opt";
-
-        m_candidateScores.clear();
-
-        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-                topNMS2IonsOptimization,
-                m_msCalibratomatic,
-                &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScores
-        ); ree;
-
-        QVector<CandidateScores*> candidateScoresPntrs;
-        e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-        e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-                useExtendedScores,
-                useNeuralNetworkScores,
-                &candidateScoresPntrs
-        ); ree;
-
-        e = QValueSettertron::setQValueForCandidates(
-                QValueSettertron::QValueScoreType::DiscriminantScore,
-                &candidateScoresPntrs
-                ); ree;
-
-        QMap<QString, int> fdrVsCount;
-        e = FDRCLassifierNeuralNet::outputFDRResults(
-                m_candidateScores,
-                true,
-                &fdrVsCount
-        ); ree;
-        qDebug() << "Ending opt";
-
-        const double fdrThreshold = 0.1;
-        int targetCountAboveFDRQValueThreshold;
-        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                m_candidateScores,
-                fdrThreshold,
-                &targetCountAboveFDRQValueThreshold
-                ); ree;
-
-        DOEResult res;
-        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-        res.fdrCount = targetCountAboveFDRQValueThreshold;
-        results.push_back(res);
-    }
-
-    e = getTopFrequencyParameters(
-            &results,
-            &m_pythiaParameters.ms2ExtractionWidthPPM
-            ); ree;
-
-    m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-
-    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
-
-    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-    qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+    // const int topNMS2IonsOptimization = 12;
+    // qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
+    //
+    // qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
+    //
+    // QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    // for (CandidateScores *cs : candidateScoresTrainings) {
+    //     mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
+    // }
+    //
+    // QVector<PythiaParameters> pythiaParametersExperiments;
+    // e = buildDOE(
+    //         m_pythiaParameters,
+    //         m_msCalibratomatic.mzStDevMS2(),
+    //         m_msCalibratomatic.scanTimeStDev(),
+    //         &pythiaParametersExperiments
+    //         ); ree;
+    //
+    // const bool useExtendedScores = true;
+    // const bool useNeuralNetworkScores = false;
+    //
+    // QVector<DOEResult> results;
+    // for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+    //
+    //     qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
+    //
+    //     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
+    //     qDebug() << "STarting opt";
+    //
+    //     m_candidateScores.clear();
+    //
+    //     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+    //             topNMS2IonsOptimization,
+    //             m_msCalibratomatic,
+    //             &mzTargetKeyVsTargetDecoyCandidatePointers,
+    //             &m_candidateScores
+    //     ); ree;
+    //
+    //     QVector<CandidateScores*> candidateScoresPntrs;
+    //     e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+    //     e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
+    //             useExtendedScores,
+    //             useNeuralNetworkScores,
+    //             &candidateScoresPntrs
+    //     ); ree;
+    //
+    //     e = QValueSettertron::setQValueForCandidates(
+    //             QValueSettertron::QValueScoreType::DiscriminantScore,
+    //             &candidateScoresPntrs
+    //             ); ree;
+    //
+    //     QMap<QString, int> fdrVsCount;
+    //     e = FDRCLassifierNeuralNet::outputFDRResults(
+    //             m_candidateScores,
+    //             true,
+    //             &fdrVsCount
+    //     ); ree;
+    //     qDebug() << "Ending opt";
+    //
+    //     const double fdrThreshold = 0.1;
+    //     int targetCountAboveFDRQValueThreshold;
+    //     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+    //             m_candidateScores,
+    //             fdrThreshold,
+    //             &targetCountAboveFDRQValueThreshold
+    //             ); ree;
+    //
+    //     DOEResult res;
+    //     res.ppm = pythiaParams.ms2ExtractionWidthPPM;
+    //     res.fdrCount = targetCountAboveFDRQValueThreshold;
+    //     results.push_back(res);
+    // }
+    //
+    // e = getTopFrequencyParameters(
+    //         &results,
+    //         &m_pythiaParameters.ms2ExtractionWidthPPM
+    //         ); ree;
+    //
+    // m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+    //
+    // e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+    //
+    // qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
+    // qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
 
 
     ERR_RETURN

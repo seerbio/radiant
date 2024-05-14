@@ -504,7 +504,7 @@ public:
 
         const int filterLength = static_cast<int>(kernel.size());
 
-        const int minimumAllowableFilterLength = 2;
+        constexpr int minimumAllowableFilterLength = 2;
         if(filterLength < minimumAllowableFilterLength){
             return _mat;
         }
