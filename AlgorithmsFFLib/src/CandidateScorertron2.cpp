@@ -1086,7 +1086,6 @@ Err CandidateScorertron::setCandidateScores(
         candidateScores
         ); ree;
 
-
     ERR_RETURN
 }
 
