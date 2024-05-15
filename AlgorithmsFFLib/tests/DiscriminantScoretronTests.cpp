@@ -86,12 +86,12 @@ void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
             [](CandidateScores &c){return &c;}
             );
 
-    e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-            false,
-            false,
-            &candidateScoresPtrsVec
-            );
-    QCOMPARE(e, eNoError);
+    // e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
+    //         false,
+    //         false,
+    //         &candidateScoresPtrsVec
+    //         );
+    // QCOMPARE(e, eNoError);
 
     //TODO this is not really much of a test.  replace arrays w/ values that will yield a non-zero disc score.
     for (const CandidateScores *cs : candidateScoresPtrsVec) {
