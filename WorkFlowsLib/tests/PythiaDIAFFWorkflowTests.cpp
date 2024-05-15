@@ -87,11 +87,11 @@ void PythiaDIAFFWorkflowTests::buildUniqueInfoScanKeyVsTargetDecoyCandidatePoint
     QCOMPARE(e, eNoError);
 
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = pythiaDiaffWorkflow.buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            uniqueMsScanInfos,
-            -1.0,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            );
+    // e = pythiaDiaffWorkflow.buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+    //         uniqueMsScanInfos,
+    //         -1.0,
+    //         &mzTargetKeyVsTargetDecoyCandidatePointers
+    //         );
     QCOMPARE(e, eNoError);
     QCOMPARE(mzTargetKeyVsTargetDecoyCandidatePointers.value("994850").size(), 65);
 

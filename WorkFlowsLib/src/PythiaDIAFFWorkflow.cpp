@@ -640,7 +640,45 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 &m_candidateScores
                 ); ree
 
+        QVector<CandidateScores*> candidateScoresVecBatchPntrs;
+        e = buildCandidateScoresPtrs(
+            m_candidateScores,
+            &candidateScoresVecBatchPntrs
+        ); ree;
+
+        // std::sort(
+        //     candidateScoresVecBatchPntrs.rbegin(),
+        //     candidateScoresVecBatchPntrs.rend(),
+        //     [](CandidateScores *l, CandidateScores*r) {
+        //
+        //         if (MathUtils::tSame(l->featuresArray[CandidateScores::Features::CosineSimSum100],
+        //             r->featuresArray[CandidateScores::Features::CosineSimSum100], 0.1)) {
+        //             return l->featuresArray[CandidateScores::Features::CosineSim100MS1]
+        //         < r->featuresArray[CandidateScores::Features::CosineSim100MS1];
+        //         }
+        //
+        //         return l->featuresArray[CandidateScores::Features::CosineSimSum100]
+        //         < r->featuresArray[CandidateScores::Features::CosineSimSum100];
+        //     });
+        // int counter = 0;
+        // for (auto &c : candidateScoresVecBatchPntrs) {
+        //     if (counter >= 6000) {
+        //         break;
+        //     }
+        //     qDebug() << ++counter << c->targetDecoyCandidatePair->peptideStringWithMods()
+        //             << c->isDecoy
+        //             << c->featuresArray[CandidateScores::Features::CosineSimSum100]
+        //             << c->featuresArray[CandidateScores::Features::CosineSimSpectrum]
+        //             << c->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime]
+        //             << c->featuresArray[CandidateScores::Features::CosineSimSpectrumStDev]
+        //             << c->featuresArray[CandidateScores::Features::CosineSim100MS1]
+        //             << c->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+        //             << c->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+        //             << c->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono];
+        // }
+
         qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
+        break; einfo;
     }
 
     // QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> topScoresOfTranches;

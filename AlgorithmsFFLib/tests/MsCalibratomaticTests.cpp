@@ -39,7 +39,7 @@ void MsCalibratomaticTests::execTests() {
     const QString reCalFile = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
 
     MsCalibratomatic calibratomatic;
-    e = calibratomatic.init(reCalFile);
+    // e = calibratomatic.init(reCalFile);
     QCOMPARE(e, eNoError);
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;

@@ -492,6 +492,8 @@ Err CandidateScorertron::calculateScores(
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
+    candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
+
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
@@ -976,6 +978,8 @@ namespace {
 
         ERR_INIT
 
+        //TODO add kldiv and pearsons corr.
+
         e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
 
         QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
@@ -1011,7 +1015,7 @@ namespace {
 
         const float cosineSimMax = cosineSimsByRow.maxCoeff();
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimMax;
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum]
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
         const float cosineSimRowsSummed = cosineSimsByRow.sum();
