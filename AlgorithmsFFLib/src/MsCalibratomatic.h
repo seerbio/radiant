@@ -29,17 +29,6 @@ public:
     ~MsCalibratomatic() = default;
 
     /**
-    * @brief Initializes MsCalibratomatic with the provided MS calibration file path.
-    *
-    * This function initializes MsCalibratomatic by checking the existence of the specified MS calibration file,
-    * reading its content using ParquetReader, and performing further initialization based on the read data.
-    *
-    * @param msCalibrationFilePath A QString representing the file path of the MS calibration file.
-    * @return Err indicating the success or failure of the initialization process.
-    */
-    Err init(const QString &msCalibrationFilePath);
-
-    /**
     * @brief Initialize the calibration using the provided calibration reader rows.
     *
     * @param msCalibarationReaderRows The calibration reader rows to initialize the calibration.
@@ -98,7 +87,7 @@ public:
     * @param nStdDevs Number of standard deviations to multiply with the calculated standard deviation.
     * @return The calculated standard deviation of scan time values.
     */
-    [[nodiscard]] float scanTimeStDev(int nStdDevs = 1);
+    [[nodiscard]] float scanTimeStDev(int nStdDevs = 1) const;
 
     /**
     * @brief Set the standard deviation of scan time values used in the calibration.

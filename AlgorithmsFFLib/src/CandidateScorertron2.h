@@ -48,12 +48,19 @@ public:
 
     Err calculateScores(
         const QVector<MS2Ion> &ms2Ions,
-        TargetDecoyCandidatePair* tdcp,
+        TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
         ) const;
 
 
 private:
+
+    Err setPredictedFrameIndexes(
+        float iRT,
+        CandidateScores *candidateScores,
+        FrameIndex *frameIndexPredictedMin,
+        FrameIndex *frameIndexPredictedMax
+        ) const;
 
     Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
@@ -64,6 +71,13 @@ private:
     Err setCandidateScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) const;
+
+    Err setMs1RelatedScores(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        const BestCorrelationResult &bestCorrelationResult,
+        float ppmTol,
         CandidateScores *candidateScores
         ) const;
 

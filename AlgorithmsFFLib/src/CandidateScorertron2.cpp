@@ -78,6 +78,7 @@ CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_xicPeakManager(nullptr)
 , m_msFrameMzTarget(nullptr)
+, m_turboXicMS1(nullptr)
 , d_ptr(new Private())
 {}
 
@@ -178,9 +179,30 @@ namespace {
         xicPoints->erase(terminator, xicPoints->end());
     }
 
+    void filterXICPointsByFrameIndex(
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
+        XICPoints *xicPoints
+        ) {
+
+        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const XICPoint &p) {
+            return !(frameIndexPredictedMin < p.scanNumber && p.scanNumber < frameIndexPredictedMax);
+        };
+
+        const auto terminator = std::remove_if(
+            xicPoints->begin(),
+            xicPoints->end(),
+            terminatorLogic
+            );
+
+        xicPoints->erase(terminator, xicPoints->end());
+    }
+
     Err getXICs(
         const QVector<MS2Ion> &ms2Ions,
         float ppmTol,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
         XICPeakManager *xicPeakManager,
         QVector<XICPoints> *xicPointsVec100,
         QVector<XICPoints> *xicPointsVec100Shadows,
@@ -204,6 +226,14 @@ namespace {
             XICPoints xicPoints;
             e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
 
+            if (frameIndexPredictedMax > 0) {
+                filterXICPointsByFrameIndex(
+                frameIndexPredictedMin,
+                frameIndexPredictedMax,
+                &xicPoints
+                );
+            }
+
             if (xicPoints.empty()) {
                 xicPointsVec100->push_back({});
                 xicPointsVec45->push_back({});
@@ -219,6 +249,13 @@ namespace {
                 xicPointsVec100Shadows->push_back({});
             }
             else {
+                if (frameIndexPredictedMax > 0) {
+                    filterXICPointsByFrameIndex(
+                        frameIndexPredictedMin,
+                        frameIndexPredictedMax,
+                        &xicPointsShadows
+                        );
+                }
                 xicPointsVec100Shadows->push_back(xicPointsShadows);
             }
 
@@ -343,6 +380,8 @@ namespace {
         const QVector<MS2Ion> &ms2Ions,
         const Eigen::VectorX<float> &kernelMs2,
         const Eigen::VectorX<float> &kernelIntegration,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
         int topNMS2Ions,
         float ppmTol,
         bool subtractShadows,
@@ -372,6 +411,8 @@ namespace {
         e = getXICs(
             ms2IonsResized,
             ppmTol,
+            frameIndexPredictedMin,
+            frameIndexPredictedMax,
             xicPeakManager,
             &xicPointsVec100,
             &xicPointsVec100Shadow,
@@ -443,7 +484,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
-    TargetDecoyCandidatePair* tdcp,
+    TargetDecoyCandidatePair* targetDecoyCandidatePair,
     CandidateScores *candidateScores
     ) const {
 
@@ -451,21 +492,28 @@ Err CandidateScorertron::calculateScores(
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
+    FrameIndex frameIndexPredictedMin;
+    FrameIndex frameIndexPredictedMax;
+    e = setPredictedFrameIndexes(
+        targetDecoyCandidatePair->iRt(),
+        candidateScores,
+        &frameIndexPredictedMin,
+        &frameIndexPredictedMax
+        );
+
     MatriciesAndVecs matriciesAndVecs;
     e = initMatricesdAndVecs(
         ms2Ions,
         d_ptr->m_kernelMs2,
         d_ptr->m_kernelIntegration,
+        frameIndexPredictedMin,
+        frameIndexPredictedMax,
         m_topNMS2Ions,
         static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
         m_pythiaParameters.subtractShadows,
         m_xicPeakManager,
         &matriciesAndVecs
         ); ree;
-
-    if (m_msCalibratomatic.isInit()) {
-        //TODO write code to truncate vector based on predicted scan time/frame index
-    }
 
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
@@ -486,10 +534,48 @@ Err CandidateScorertron::calculateScores(
         ); ree;
 
     e = setCandidateScores(
-        tdcp,
+        targetDecoyCandidatePair,
         bestCorrelationResult,
         candidateScores
         ); ree;
+
+    ERR_RETURN
+}
+
+Err CandidateScorertron::setPredictedFrameIndexes(
+    float iRT,
+    CandidateScores *candidateScores,
+    FrameIndex *frameIndexPredictedMin,
+    FrameIndex *frameIndexPredictedMax
+    ) const {
+
+    ERR_INIT
+
+    if (m_msCalibratomatic.isInit()) {
+
+        const float scanTimeWindow
+            = m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+
+        e = m_msCalibratomatic.predictScanTime(
+                iRT,
+                &candidateScores->scanTimePredicted
+        ); ree;
+
+        e = m_msFrameMzTarget->frameIndexFromScanTime(
+                candidateScores->scanTimePredicted - scanTimeWindow,
+                frameIndexPredictedMin
+        ); ree;
+
+        e = m_msFrameMzTarget->frameIndexFromScanTime(
+                candidateScores->scanTimePredicted + scanTimeWindow,
+                frameIndexPredictedMax
+        ); ree;
+
+        ERR_RETURN
+    }
+
+    *frameIndexPredictedMin = 0;
+    *frameIndexPredictedMax = 0;
 
     ERR_RETURN
 }
@@ -849,7 +935,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             bestCorrelationResult->matBlockTrimmed = matBlockTrimmed;
             bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
             bestCorrelationResult->apexStarts = apexStarts;
-            bestCorrelationResult->peakIntegrationIndexes = pii.first;
+            bestCorrelationResult->peakIntegrationIndexes = piiWorking.first;
         }
 
 // #define OUTPUT_MATS
@@ -993,8 +1079,134 @@ Err CandidateScorertron::setCandidateScores(
         candidateScores
         );ree
 
+    e = setMs1RelatedScores(
+        targetDecoyCandidatePair,
+        bestCorrelationResult,
+        static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
+        candidateScores
+        ); ree;
 
 
+    ERR_RETURN
+}
+
+namespace {
+
+    Eigen::VectorX<float> buildXicPointsVector(
+        const XICPoints &xicPoints,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax
+        ) {
+
+        Eigen::VectorX<float> vec(frameIndexMax + 1);
+        vec.setZero();
+
+        for (const auto &[mz, intensity, scanNumber] : xicPoints) {
+
+            if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
+                continue;
+            }
+            vec.coeffRef(scanNumber) = intensity;
+        }
+
+        return vec;
+    }
+
+}//namespace
+Err CandidateScorertron::setMs1RelatedScores(
+    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    const BestCorrelationResult &bestCorrelationResult,
+    float ppmTol,
+    CandidateScores *candidateScores
+    ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_turboXicMS1->isInit()); ree;
+    const FrameIndex frameIndexMin = bestCorrelationResult.peakIntegrationIndexes.first;
+    const FrameIndex frameIndexMax = bestCorrelationResult.peakIntegrationIndexes.second;
+
+    const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
+
+    const float monoIsotopeMz = targetDecoyCandidatePair->mz();
+    const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
+    const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
+    const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);
+
+    const float massTol = MathUtils::calculatePPM(monoIsotopeMz, ppmTol);
+
+    const XICPoints monoIsotopeXICPoints = m_turboXicMS1->extractPointsXIC(
+        monoIsotopeMz - massTol,
+        monoIsotopeMz + massTol
+        );
+    const Eigen::VectorX<float> monoIsotopeVec = buildXicPointsVector(
+        monoIsotopeXICPoints,
+        frameIndexMin,
+        frameIndexMax
+        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
+
+    const XICPoints monoIsotopeShadowXICPoints = m_turboXicMS1->extractPointsXIC(
+        monoIsotopeShadowMz - massTol,
+        monoIsotopeShadowMz + massTol
+        );
+    const Eigen::VectorX<float> monoIsotopeShadowVec = buildXicPointsVector(
+        monoIsotopeShadowXICPoints,
+        frameIndexMin,
+        frameIndexMax
+        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
+
+    const XICPoints c13IsotopeMz1XicPoints1 = m_turboXicMS1->extractPointsXIC(
+        c13isotopeMz1 - massTol,
+        c13isotopeMz1 + massTol
+        );
+    const Eigen::VectorX<float> c13IsotopeMz1XicPointsVec = buildXicPointsVector(
+        c13IsotopeMz1XicPoints1,
+        frameIndexMin,
+        frameIndexMax
+        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
+
+    const XICPoints c13IsotopeMz1XicPoints2 = m_turboXicMS1->extractPointsXIC(
+        c13isotopeMz2 - massTol,
+        c13isotopeMz2 + massTol
+        );
+    const Eigen::VectorX<float> c13IsotopeMz2XicPointsVec = buildXicPointsVector(
+        c13IsotopeMz1XicPoints2,
+        frameIndexMin,
+        frameIndexMax
+        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
+
+    const Eigen::VectorX<float> anchorColumn
+        = bestCorrelationResult.matBlockTrimmed.col(bestCorrelationResult.bestAnchorColumnIndex);
+
+    e = EigenUtils::cosineSimilarity(
+        anchorColumn,
+        monoIsotopeVec,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
+        );
+
+    e = EigenUtils::cosineSimilarity(
+        anchorColumn,
+        monoIsotopeShadowVec,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
+        );
+
+    e = EigenUtils::cosineSimilarity(
+        anchorColumn,
+        c13IsotopeMz1XicPointsVec,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+        );
+
+    e = EigenUtils::cosineSimilarity(
+        anchorColumn,
+        c13IsotopeMz2XicPointsVec,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+        );
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1]
+        = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
+        + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
+        + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+        - candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono];
 
     ERR_RETURN
 }

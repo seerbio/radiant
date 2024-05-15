@@ -450,7 +450,7 @@ float MsCalibratomatic::mzStDevMS2() {
     return m_mzStDevMS2;
 }
 
-float MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) {
+float MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) const {
     return m_scanTimeStd * nStdDevs;
 }
 
