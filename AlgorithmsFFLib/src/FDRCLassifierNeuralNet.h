@@ -173,13 +173,13 @@ public:
     static Err outputFDRResults(
             const QVector<CandidateScores> &candidateScores,
             bool verbose,
-            QMap<QString, int> *fdrVsCount
+            QMap<int, int> *fdrVsCount
     );
 
     static Err outputFDRResults(
             QVector<CandidateScores*> &candidateScores,
             bool verbose,
-            QMap<QString, int> *fdrVsCount
+            QMap<int, int> *fdrVsCount
     );
 
 private:
