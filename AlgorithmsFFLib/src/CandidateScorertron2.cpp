@@ -114,7 +114,7 @@ Err CandidateScorertron::init(
     m_msFrameMzTarget = msFrameMzTarget;
     m_turboXicMS1 = turboXicMS1;
 
-    if (msCalibratomatic.isInit()) {
+    if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
     }
 
@@ -493,6 +493,9 @@ Err CandidateScorertron::calculateScores(
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
     candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
+    candidateScores->initFeaturesArray();
+    candidateScores->targetKey = m_mzTargetKey;
+
 
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
@@ -553,7 +556,7 @@ Err CandidateScorertron::setPredictedFrameIndexes(
 
     ERR_INIT
 
-    if (m_msCalibratomatic.isInit()) {
+    if (m_msCalibratomatic.isInitRT()) {
 
         const float scanTimeWindow
             = m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
@@ -1061,7 +1064,6 @@ Err CandidateScorertron::setCandidateScores(
 
     candidateScores->initFeaturesArray();
 
-    candidateScores->targetKey = m_mzTargetKey;
     candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(
         bestCorrelationResult.peakIntegrationIndexes.first
         + bestCorrelationResult.apexStarts.at(bestCorrelationResult.bestAnchorColumnIndex)

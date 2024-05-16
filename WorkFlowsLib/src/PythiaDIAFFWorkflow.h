@@ -21,6 +21,9 @@ class MsScanInfo;
 class MsReaderPointerAcc;
 class TargetDecoyCandidatePair;
 
+using CandidateScoresTarget = CandidateScores;
+using CandidateScoresDecoy = CandidateScores;
+
 struct KarnnNNTarget {
     QString seq;
     float nnScore = 0.0;
@@ -94,7 +97,7 @@ private:
             );
 
     Err recalibrateMzVals(
-        const MSLevelClassEnum &msLevel,
+        const MSLevelEnum &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
         );
@@ -133,19 +136,30 @@ private:
         QVector<CandidateScores*> *candidateScores
         );
 
+    Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const QVector<CandidateScores*> &candidateScores);
+
+    Err honeIRTCalibration(
+        QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
+        int topNCandidates
+    );
+
+
 private:
 
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
     TargetDecoyCandidatePairScoretron2 m_targetDecoyCandidatePairScoretron;
     MsCalibratomatic m_msCalibratomatic;
 
+    QVector<CandidateScores> m_candidateScores;
+    QHash<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
+    QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
+
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_fastaUri;
 
     int m_minTopNMs2Ions;
-
-    QVector<CandidateScores> m_candidateScores;
+    int m_minTrainingCountTranche;
 
 };
 

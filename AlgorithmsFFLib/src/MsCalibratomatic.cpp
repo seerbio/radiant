@@ -16,52 +16,11 @@ MsCalibratomatic::MsCalibratomatic()
 : m_mzStDevMS1(-1.0)
 , m_mzStDevMS2(-1.0)
 , m_scanTimeStd(-1.0)
-, m_isInit(false)
+, m_isInitRT(false)
+, m_isInitMS1(false)
+, m_isInitMS2(false)
+, m_polynomialOrderMassCal(5)
 {}
-
-Err MsCalibratomatic::initRtOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
-    m_msCalibarationReaderRows = msCalibarationReaderRows;
-
-    e = buildIRTCalibrator(); ree
-    e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
-
-    qDebug() << "scanTimeStDev" << m_scanTimeStd;
-    m_isInit = true;
-
-    ERR_RETURN
-}
-
-Err MsCalibratomatic::initMzOnly(
-    const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
-    const MSLevelClassEnum &msLevelClassEnum
-    ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
-    m_msCalibarationReaderRows = msCalibarationReaderRows;
-
-    e = buildMzCalibrator(msLevelClassEnum); ree
-
-    if (msLevelClassEnum == MSLevelClassEnum::MS1) {
-        qDebug() << "mzStDevMS1" << m_mzStDevMS1;
-        e = ErrorUtils::isTrue(m_mzStDevMS1 > 0.0); eee_absorb;
-    }
-    else if (msLevelClassEnum == MSLevelClassEnum::MS2) {
-        qDebug() << "mzStDevMS2" << m_mzStDevMS2;
-        e = ErrorUtils::isTrue(m_mzStDevMS2 > 0.0); eee_absorb;
-    }
-    else {
-        rrr(eValueError);
-    }
-
-    m_isInit = true;
-
-    ERR_RETURN
-}
 
 namespace {
 
@@ -111,11 +70,13 @@ namespace {
     }
 
 } //namespace
-Err MsCalibratomatic::buildIRTCalibrator() {
+Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
+
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
     qDebug() << "Calibarating iRT->ScanTime";
 
     const auto insertLogic = [](const MsCalibarationReaderRow &r){
@@ -123,10 +84,10 @@ Err MsCalibratomatic::buildIRTCalibrator() {
     };
 
     QVector<QPair<XVal, YVal>> data;
-    data.reserve(m_msCalibarationReaderRows.size());
+    data.reserve(msCalibarationReaderRows.size());
     std::transform(
-            m_msCalibarationReaderRows.begin(),
-            m_msCalibarationReaderRows.end(),
+            msCalibarationReaderRows.begin(),
+            msCalibarationReaderRows.end(),
             std::back_inserter(data),
             insertLogic
             );
@@ -136,6 +97,10 @@ Err MsCalibratomatic::buildIRTCalibrator() {
     m_scanTimeStd = stDevScanTimeDiff;
 
     e = m_iRTtoScanTimeMapper.init(data); ree;
+    e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
+
+    qDebug() << "scanTimeStDev" << m_scanTimeStd;
+    m_isInitRT = true;
 
     ERR_RETURN
 }
@@ -279,9 +244,6 @@ namespace {
         QVector<double> mzToRecalCalCurveCoeffs;
         XYMappermatic mapperMetrics;
 
-#ifdef USE_SPLINESS
-        e = mapperMetrics.init(trainingData); ree;
-#else
         Eigen::MatrixX<double> mat(trainingData.size(), 2);
         for (int i = 0; i < trainingData.size(); i++) {
             const QPair<XVal, YVal> &pr = trainingData.at(i);
@@ -290,7 +252,6 @@ namespace {
         }
         const int polynomialOrder = 5;
         EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, &mzToRecalCalCurveCoeffs);
-#endif
 
         QVector<QPair<double, double>> actualVsPredicted;
 
@@ -300,13 +261,9 @@ namespace {
 
             double yPredicted = 0.0;
 
-#ifdef USE_SPLINES
-            e = mapperMetrics.predictY(pr.first, &yPredicted); ree;
-#else
             for (int i = 0; i < mzToRecalCalCurveCoeffs.size(); i++) {
                 yPredicted += mzToRecalCalCurveCoeffs.at(i) * std::pow(pr.first, i);
             }
-#endif
 
             actualVsPredicted.push_back({pr.second, yPredicted});
 
@@ -333,81 +290,97 @@ namespace {
         ERR_RETURN
     }
 
-}//namespace
-Err MsCalibratomatic::buildMzCalibrator(const MSLevelClassEnum &msLevelClassEnum) {
+    Err buildMzCalibrationCurve(
+        const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+        const int polynomialOrder,
+        double *mzStDev,
+        QVector<double> *calibrationCurveCoEffs
+    ) {
 
-    ERR_INIT
+        ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_msCalibarationReaderRows); ree;
+        e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
 
-    //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
+        //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
 
-    QVector<Inp> inputs;
-    e = buildMzCalData(m_msCalibarationReaderRows, &inputs); ree;
-    e = removeMassOutliers(&inputs); ree;
+        QVector<Inp> inputs;
+        e = buildMzCalData(msCalibarationReaderRows, &inputs); ree;
+        e = removeMassOutliers(&inputs); ree;
 
-    const int inputsSizeMin = 4;
-    if (inputs.size() < inputsSizeMin) {
+        e = generateMetricsMzReCal(inputs, mzStDev); ree;
+
+        Eigen::MatrixX<double> mat(inputs.size(), 2);
+        for (int i = 0; i < inputs.size(); i++) {
+            const Inp &inp = inputs.at(i);
+            mat.coeffRef(i, 0) = inp.mzFound;
+            mat.coeffRef(i, 1) = inp.mzSearched;
+        }
+        EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, calibrationCurveCoEffs);
+
         ERR_RETURN
     }
 
-    double stDevMz;
-    e = generateMetricsMzReCal(inputs, &stDevMz); ree;
+}//namespace
+Err MsCalibratomatic::setMassCalibrationCoeffs(
+    const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+    const MSLevelEnum msLevelEnum
+    ) {
 
-    if (msLevelClassEnum == MSLevelClassEnum::MS1) {
-        m_mzStDevMS1 = stDevMz;
-    }
-    else if (msLevelClassEnum == MSLevelClassEnum::MS2) {
-        m_mzStDevMS2 = stDevMz;
-    }
-    else {
-        rrr(eValueError);
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
+
+    if (msLevelEnum == MSLevelEnum::MS1) {
+
+        e = buildMzCalibrationCurve(
+            msCalibarationReaderRows,
+            m_polynomialOrderMassCal,
+            &m_mzStDevMS1,
+            &m_calibrationCurveCoeffsMS1
+        ); ree;
+
+        qDebug() << "mzStDevMS1" << m_mzStDevMS1;
+        e = ErrorUtils::isTrue(m_mzStDevMS1 > 0.0); ree;
+
+        m_isInitMS1 = true;
+
+        ERR_RETURN
     }
 
-#ifdef USE_SPLINES
-    QVector<QPair<double, double>> data;
-    std::transform(
-            inputs.begin(),
-            inputs.end(),
-            std::back_inserter(data),
-            [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
-    );
-    e = m_mzToRecalMz.init(data); ree;
-#else
-    Eigen::MatrixX<double> mat(inputs.size(), 2);
-    for (int i = 0; i < inputs.size(); i++) {
-        const Inp &inp = inputs.at(i);
-        mat.coeffRef(i, 0) = inp.mzFound;
-        mat.coeffRef(i, 1) = inp.mzSearched;
-    }
-    const int polynomialOrder = 5;
-    EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, &m_mzToRecalCalCurveCoeffs);
-#endif
+    e = buildMzCalibrationCurve(
+        msCalibarationReaderRows,
+        m_polynomialOrderMassCal,
+        &m_mzStDevMS2,
+        &m_calibrationCurveCoeffsMS2
+    ); ree;
+
+    qDebug() << "mzStDevMS2" << m_mzStDevMS2;
+    e = ErrorUtils::isTrue(m_mzStDevMS2 > 0.0); ree;
+
+    m_isInitMS2 = true;
 
     ERR_RETURN
 }
 
 Err MsCalibratomatic::recalibrateScanPoints(
+        const MSLevelEnum &msLevel,
         const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
         ) {
 
     ERR_INIT
+
+    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
         ScanPoints *scanPoints = it.value();
 
         for (ScanPoint &sp : *scanPoints) {
-            double mzRecal = 0.0;
 
-#ifdef USE_SPLINES
-            e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-#else
-            for (int i = 0; i < m_mzToRecalCalCurveCoeffs.size(); i++) {
-                mzRecal += m_mzToRecalCalCurveCoeffs.at(i) * std::pow(sp.x(), i);
+            double mzRecal = 0.0;
+            for (int i = 0; i < calibrationCoeffs.size(); i++) {
+                mzRecal += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
             }
-#endif
-            sp.rx() = static_cast<float>(mzRecal);
         }
     }
 
@@ -415,10 +388,13 @@ Err MsCalibratomatic::recalibrateScanPoints(
 }
 
 Err MsCalibratomatic::recalibrateScanPoints(
+        const MSLevelEnum &msLevel,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
-) {
+){
 
     ERR_INIT
+
+    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
@@ -427,13 +403,10 @@ Err MsCalibratomatic::recalibrateScanPoints(
         for (ScanPoint &sp : scanPoints) {
             double mzRecal = 0.0;
 
-#ifdef USE_SPLINES
-            e = m_mzToRecalMz.predictY(sp.x(), &mzRecal); ree;
-#else
-            for (int i = 0; i < m_mzToRecalCalCurveCoeffs.size(); i++) {
-                mzRecal += m_mzToRecalCalCurveCoeffs.at(i) * std::pow(sp.x(), i);
+            for (int i = 0; i < calibrationCoeffs.size(); i++) {
+                mzRecal += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
             }
-#endif
+
             sp.rx() = static_cast<float>(mzRecal);
 
         }
@@ -442,16 +415,16 @@ Err MsCalibratomatic::recalibrateScanPoints(
     ERR_RETURN
 }
 
-float MsCalibratomatic::mzStDevMS1() {
+float MsCalibratomatic::mzStDevMS1() const {
     return m_mzStDevMS1;
 }
 
-float MsCalibratomatic::mzStDevMS2() {
+float MsCalibratomatic::mzStDevMS2() const {
     return m_mzStDevMS2;
 }
 
-float MsCalibratomatic::scanTimeStDev(int nStdDevs /* = 1 */) const {
-    return m_scanTimeStd * nStdDevs;
+float MsCalibratomatic::scanTimeStDev(float nStdDevs /* = 1.0 */) const {
+    return static_cast<float>(m_scanTimeStd) * nStdDevs;
 }
 
 Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const {
@@ -460,11 +433,20 @@ Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const
     double predictedScanTimeDouble;
     e = m_iRTtoScanTimeMapper.predictY(static_cast<double>(iRT), &predictedScanTimeDouble); ree;
     *predictedScanTime = static_cast<float>(predictedScanTimeDouble);
+
     ERR_RETURN
 }
 
-bool MsCalibratomatic::isInit() const {
-    return m_isInit;
+bool MsCalibratomatic::isInitRT() const {
+    return m_isInitRT;
+}
+
+bool MsCalibratomatic::isInitCalMS1() const {
+    return m_isInitMS1;
+}
+
+bool MsCalibratomatic::isInitCalMS2() const {
+    return m_isInitMS2;
 }
 
 void MsCalibratomatic::setScanTimeStDev(double val) {

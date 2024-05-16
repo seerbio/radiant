@@ -662,6 +662,18 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
     ERR_RETURN
 }
 
+Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsPntrs) {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
+
+    for (TargetDecoyCandidatePair &t : m_targetDecoyCandidatePairs) {
+        targetDecoyCandidatePairsPntrs->push_back(&t);
+    }
+
+    ERR_RETURN
+}
+
 Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
         PeptideStringWithMods *peptideStringWithMods,

@@ -49,6 +49,7 @@ using Occurrence = int;
 using PeakIntegrationIndexes = QPair<int, int>;
 using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
+using PeptideSequenceWithModsChargeAndTargetKey = QString;
 using PeptideString = QString;
 using DiffPPM = double;
 using ProteinId = int;
