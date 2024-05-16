@@ -526,7 +526,7 @@ namespace {
 
         QVector<CandidateScores*> candidateScoresFiltered = _candidateScores;
         filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
-        qDebug() << candidateScoresFiltered.size() << "Found for recalibartion filtered";
+        qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
 
         const int top6 = 6;
         const auto msCalibrationReaderRowsInsertLogic = [msLevel](CandidateScores *cs){
@@ -621,13 +621,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
     int batchCounter = 0;
 
-    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsTopScores;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
         QElapsedTimer etBatch;
         etBatch.start();
 
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsBatch = targetDecoyCandidatePairsTopScores;
+        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsBatch = m_targetDecoyCandidatePairsTopScores;
         targetDecoyCandidatePairsBatch.append(tdcp);
 
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
@@ -683,21 +682,23 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             fdrVsCounts.value(fdrKey)
             ); ree;
 
-        const int fdrCutoffCount = fdrVsCounts.value(fdrKey);
-        if (fdrCutoffCount >= minTrainingCountTranche) {
-            // candidateScoresVecScoredPntrs.resize(std::min(idealTrainingCountAtGivenFDR * 2, candidateScoresVecScoredPntrs.size()));
-            // *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
-            qDebug() << "mzStDevMS1:" << m_msCalibratomatic.mzStDevMS1();
-            qDebug() << "mzStDevMS2:" << m_msCalibratomatic.mzStDevMS2();
-            qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+        // const int fdrCutoffCount = fdrVsCounts.value(fdrKey);
+        // if (fdrCutoffCount >= minTrainingCountTranche) {
+        //     // candidateScoresVecScoredPntrs.resize(std::min(idealTrainingCountAtGivenFDR * 2, candidateScoresVecScoredPntrs.size()));
+        //     // *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
+        //     qDebug() << "mzStDevMS1:" << m_msCalibratomatic.mzStDevMS1();
+        //     qDebug() << "mzStDevMS2:" << m_msCalibratomatic.mzStDevMS2();
+        //     qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+        //
+        //     break;
+        // }
 
+        qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
+
+        if (m_targetDecoyCandidatePairsTopScores.size() > 1000) {
             break;
         }
 
-
-
-        qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
-        break; einfo;
     }
 
 
@@ -1540,6 +1541,11 @@ Err PythiaDIAFFWorkflow::honeIRTCalibration(
             candidateScoresVecBatchPntrsResized,
             &msCalibrationReaderRows
     ); ree;
+
+    m_targetDecoyCandidatePairsTopScores.clear();
+    for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
+        m_targetDecoyCandidatePairsTopScores.push_back(cs->targetDecoyCandidatePair);
+    }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
     qDebug() << "scanTimeWindowStDev x" << S_GLOBAL_SETTINGS.STDEV_MULTIPLIER

@@ -313,10 +313,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         ERR_INIT
 
         const QVector<CandidateScores::Features> baseFeatures = {
-                CandidateScores::Features::CosineSimSum100,
+                // CandidateScores::Features::CosineSimSum100,
                 CandidateScores::Features::CosineSimSum100GreaterThan80,
                 // CandidateScores::Features::AllignedMaxIndexesCount,
-                CandidateScores::Features::CosineSimSpectrum,
+                // CandidateScores::Features::CosineSimSpectrum,
                 CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
                 CandidateScores::Features::CosineSimSpectrumStDev,
                 CandidateScores::Features::CosineSim100MS1,

@@ -150,9 +150,11 @@ private:
     TargetDecoyCandidatePairScoretron2 m_targetDecoyCandidatePairScoretron;
     MsCalibratomatic m_msCalibratomatic;
 
+    QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
+    QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
+
     QVector<CandidateScores> m_candidateScores;
     QHash<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
-    QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
