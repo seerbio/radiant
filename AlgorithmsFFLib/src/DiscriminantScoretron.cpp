@@ -316,8 +316,13 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSum100,
                 CandidateScores::Features::CosineSimSum100GreaterThan80,
                 // CandidateScores::Features::AllignedMaxIndexesCount,
+                CandidateScores::Features::CosineSimSpectrum,
                 CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
-                CandidateScores::Features::CosineSim100MS1
+                CandidateScores::Features::CosineSimSpectrumStDev,
+                CandidateScores::Features::CosineSim100MS1,
+                CandidateScores::Features::CosineSim100MS1Iso1,
+                CandidateScores::Features::CosineSim100MS1Iso2,
+                CandidateScores::Features::CosineSim100MS1PreMono
 
                 // CandidateScores::Features::CosineSim45MS1,
                 // CandidateScores::Features::CosineSim20MS1,
