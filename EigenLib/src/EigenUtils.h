@@ -1045,7 +1045,8 @@ public:
 
             peakIntegrationIndexesVsIntensity->push_back({
                  {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size() - 1))},
-                 apexValue}
+                 apexValue
+            }
             );
 
             for (int i = leftStopIndex; i <= rightStopIndex; i++) {

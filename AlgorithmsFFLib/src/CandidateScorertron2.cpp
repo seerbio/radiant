@@ -341,7 +341,6 @@ namespace {
 
         if (applySmooth) {
             *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
-
         }
 
         ERR_RETURN
@@ -877,10 +876,10 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
-    constexpr int topNIntegrations = 10; //TODO make this settable
-    peakIntegrationsVsIntensityResized.resize(topNIntegrations);
+    constexpr int topNIntegrations = 15; //TODO make this settable
+    peakIntegrationsVsIntensityResized.resize(std::min(topNIntegrations, peakIntegrationsVsIntensityResized.size()));
 
-    for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensity) {
+    for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
 
         const QPair<PeakIntegrationIndexes, Intensity> piiWorking = correctPeakIntegrationForSingleRow(
             pii,

@@ -24,12 +24,6 @@ class Q_DECL_HIDDEN TurboXIC::Private
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
     using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>*> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
-    
-    struct Ms2Point {
-        float mz = -1.0;
-        float intensity = -1.0;
-        FrameIndex frameIndex = -1;
-    };
 
 public:
 
@@ -220,8 +214,8 @@ bool TurboXIC::Private::isInit() {
 
 TurboXIC::TurboXIC() : d_ptr(new Private()) {}
 
-
-TurboXIC::~TurboXIC() {}
+TurboXIC::~TurboXIC() {
+}
 
 
 Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
@@ -236,7 +230,6 @@ Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) {
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
-
 
 XICPoints TurboXIC::extractPointsXIC(
         float mzMin,
