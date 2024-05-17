@@ -80,6 +80,7 @@ CandidateScorertron::CandidateScorertron()
 , m_msFrameMzTarget(nullptr)
 , m_turboXicMS1(nullptr)
 , d_ptr(new Private())
+, m_minPeakCount(3.9)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
@@ -89,6 +90,7 @@ Err CandidateScorertron::init(
     const MsCalibratomatic &msCalibratomatic,
     const MzTargetKey &mzTargetKey,
     int topNMS2Ions,
+    float minPeakCount,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1
@@ -105,6 +107,12 @@ Err CandidateScorertron::init(
         topNMS2Ions,
         S_GLOBAL_SETTINGS.MIN_MS2_IONS,
         ErrorUtilsParam::IncludeThreshold)
+    ; ree;
+
+    e = ErrorUtils::isAboveThreshold(
+        minPeakCount,
+        1.0f,
+        ErrorUtilsParam::ExcludeThreshold)
     ; ree;
 
     m_pythiaParameters = pythiaParameters;
@@ -135,6 +143,8 @@ public:
     Eigen::MatrixX<float> mzMatrix100;
 
     Eigen::VectorX<float> integrationVec;
+    Eigen::VectorX<float> integrationVecCosineSim;
+    Eigen::VectorX<float> productVec;
 
     [[nodiscard]] bool intensityMatriciesAreValid() const {
         return intensityMatrix100.size() > 0;
@@ -349,6 +359,7 @@ namespace {
     Err buildIntegrationVector(
         const MatriciesAndVecs &matriciesAndVecs,
         const Eigen::VectorX<float> &kernelIntegration,
+        float minPeakCount,
         Eigen::VectorX<float> *integrationVec
         ) {
 
@@ -358,7 +369,6 @@ namespace {
 
         constexpr float intensityThresholdVal = 0.1;
         constexpr float countValue = 1.0;
-        constexpr float minPeakCount = 3.9;
 
         Eigen::MatrixX<float> matCount = matriciesAndVecs.intensityMatrix100;
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
@@ -375,6 +385,50 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildIntegrationVectorCosineSim(
+        const MatriciesAndVecs &matriciesAndVecs,
+        const QVector<MS2Ion> &ms2IonsTheo,
+        const Eigen::VectorX<float> &kernelIntegration,
+        Eigen::VectorX<float> *integrationVecCosineSim
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
+        e = ErrorUtils::isNotEmpty(ms2IonsTheo); ree;
+        e = ErrorUtils::isEqual(ms2IonsTheo.size(), static_cast<int>(matriciesAndVecs.intensityMatrix100.cols())); ree;
+
+        Eigen::MatrixX<float> matIntensityVals = matriciesAndVecs.intensityMatrix100;
+
+        const int matRows = static_cast<int>(matIntensityVals.rows());
+        Eigen::MatrixX<Intensity> matMs2IonsIntensityVals(matRows, matIntensityVals.cols());
+
+
+        for (int i = 0; i < ms2IonsTheo.size(); i++) {
+            const MS2Ion &ms2Ion = ms2IonsTheo.at(i);
+            const QVector<Intensity> ms2IonIntensityCol(matRows, ms2Ion.intensity);
+
+            const Eigen::VectorX<Intensity> v = EigenUtils::convertQVectorToEigenVector(ms2IonIntensityCol);
+            matMs2IonsIntensityVals.col(i) = v;
+        }
+
+        Eigen::VectorX<float> integrationVecCosineSimLocal;
+        e = EigenUtils::rowWiseCosineSimilarOfMatrices(
+            matIntensityVals,
+            matMs2IonsIntensityVals,
+            &integrationVecCosineSimLocal
+            ); ree;
+
+        integrationVecCosineSimLocal = integrationVecCosineSimLocal.array().pow(1.0f/3.0f);
+        *integrationVecCosineSim = EigenKernelUtils::convolveVectorWithKernel(
+            integrationVecCosineSimLocal,
+            kernelIntegration
+            );
+
+        ERR_RETURN
+
+    }
+
     Err initMatricesdAndVecs(
         const QVector<MS2Ion> &ms2Ions,
         const Eigen::VectorX<float> &kernelMs2,
@@ -383,6 +437,7 @@ namespace {
         FrameIndex frameIndexPredictedMax,
         int topNMS2Ions,
         float ppmTol,
+        float minPeakCount,
         bool subtractShadows,
         XICPeakManager *xicPeakManager,
         MatriciesAndVecs *matriciesAndVecs
@@ -454,8 +509,32 @@ namespace {
         e = buildIntegrationVector(
             *matriciesAndVecs,
             kernelIntegration,
+            minPeakCount,
             &matriciesAndVecs->integrationVec
             ); ree;
+
+        e = buildIntegrationVectorCosineSim(
+            *matriciesAndVecs,
+            ms2IonsResized,
+            kernelIntegration,
+            &matriciesAndVecs->integrationVecCosineSim
+            ); ree;
+
+        matriciesAndVecs->productVec = matriciesAndVecs->integrationVec.array() * matriciesAndVecs->integrationVecCosineSim.array();
+
+        // for (int i = 0; i < matriciesAndVecs->integrationVecCosineSim.size(); i++) {
+        //     std::cout << matriciesAndVecs->integrationVecCosineSim.coeff(i) << ", ";
+        // }
+        // std::cout << std::endl;
+        //
+        // for (int i = 0; i < matriciesAndVecs->integrationVec.size(); i++) {
+        //     std::cout << matriciesAndVecs->integrationVec.coeff(i) << ", ";
+        // }
+        // for (int i = 0; i < matriciesAndVecs->productVec.size(); i++) {
+        //     std::cout << matriciesAndVecs->productVec.coeff(i) << ", ";
+        // }
+        // std::cout << std::endl;
+        // std::cout << "************" << std::endl;
 
         e = buildEigenMatrix(
             xicPointsVec45,
@@ -495,7 +574,6 @@ Err CandidateScorertron::calculateScores(
     candidateScores->initFeaturesArray();
     candidateScores->targetKey = m_mzTargetKey;
 
-
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
@@ -514,6 +592,7 @@ Err CandidateScorertron::calculateScores(
         frameIndexPredictedMax,
         m_topNMS2Ions,
         static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
+        m_minPeakCount,
         m_pythiaParameters.subtractShadows,
         m_xicPeakManager,
         &matriciesAndVecs
@@ -521,7 +600,7 @@ Err CandidateScorertron::calculateScores(
 
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
-        matriciesAndVecs.integrationVec,
+        matriciesAndVecs.productVec,
         m_pythiaParameters.stopThresholdFraction,
         &peakIntegrationsVsIntensities
         ); ree;

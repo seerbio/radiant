@@ -38,6 +38,7 @@ public:
     PythiaParameters pythiaParameters;
     QPair<double, double> scanTimeMinMax;
     TurboXIC *turboXicMS1 = nullptr;
+    float minPeakCount = -1.0;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -215,6 +216,7 @@ namespace {
                 pi.msCalibratomatic,
                 pi.targetKey,
                 pi.topNMs2Ions,
+                pi.minPeakCount,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1
@@ -255,6 +257,7 @@ namespace {
 Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) {
@@ -273,6 +276,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             topNMS2Ions,
             m_scanTimeMinMax,
             msCalibratomatic,
+            minPeakCount,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
             ); ree;
@@ -338,6 +342,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         int topNMS2Ions,
         const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) {
@@ -351,6 +356,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
     e = ErrorUtils::isNotEmpty(m_uniqueTandemMsScanInfos); ree;
     e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFrame); ree;
+    e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
     input->reserve(m_uniqueTandemMsScanInfos.size());
 
@@ -366,6 +372,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.diaTargetFrame = m_diaTargetFrames.value(msScanInfo.targetKey());
         tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
         tdppi.turboXicMS1 = m_turboXICMS1;
+        tdppi.minPeakCount = minPeakCount;
 
         input->push_back(tdppi);
     }

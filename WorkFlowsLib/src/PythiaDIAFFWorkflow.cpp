@@ -636,10 +636,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
+        constexpr float minPeakCountCalibration = 4.9;
         m_candidateScores.clear();
         e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
+                minPeakCountCalibration,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree

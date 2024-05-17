@@ -63,6 +63,7 @@ public:
     Err scoreTargetDecoyPairs(
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
+            float minPeakCount,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             );
@@ -93,6 +94,7 @@ private:
             int topNMS2Ions,
             const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
+            float minPeakCount,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             );
