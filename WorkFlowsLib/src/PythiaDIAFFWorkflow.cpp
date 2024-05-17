@@ -668,14 +668,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(
              &candidateScoresVecBatchPntrs
          ); ree;
 
-        QMap<QString, int> fdrVsCounts;
+        QMap<int, int> fdrVsCounts;
         e = FDRCLassifierNeuralNet::outputFDRResults(
             candidateScoresVecBatchPntrs,
             true,
             &fdrVsCounts
         ); ree;
 
-        const QString fdrKey = "10";
+        constexpr int fdrKey = 10;  
 
         e = honeIRTCalibration(
             &candidateScoresVecBatchPntrs,
