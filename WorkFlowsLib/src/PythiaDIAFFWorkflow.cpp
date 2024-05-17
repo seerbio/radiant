@@ -563,12 +563,10 @@ namespace {
         ERR_RETURN
     }
 
-    void sortCandidatePointers(QVector<CandidateScores*> *candidateScoresPntrs) {
-
-        std::sort(candidateScoresPntrs->rbegin(), candidateScoresPntrs->rend(), [](CandidateScores *l, CandidateScores *r){
+    void sortCandidatePointersDiscScoreDesc(QVector<CandidateScores*> *candidateScoresPntrs) {
+        std::sort(candidateScoresPntrs->rbegin(), candidateScoresPntrs->rend(), [](const CandidateScores *l, const CandidateScores *r){
             return l->discriminantScore < r->discriminantScore;
         });
-
     }
 
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
@@ -598,11 +596,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
-    constexpr bool useExtendedScores = false;
-    constexpr bool useNeuralNetworkScores = false;
-    constexpr int minTrainingCountTranche = 50;
-    constexpr int topNMS2IonsCalibration = 6;
-
     QPair<MzMin, MzMax> precursorMzMinMax;
     e = msReaderPointerAcc->ptr->getHiLoMzPrecursors(&precursorMzMinMax); ree;
 
@@ -622,6 +615,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
     int batchCounter = 0;
 
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
+
+        constexpr bool useExtendedScores = false;
+        constexpr bool useNeuralNetworkScores = false;
+        constexpr int topNMS2IonsCalibration = 6;
 
         QElapsedTimer etBatch;
         etBatch.start();
@@ -677,27 +674,23 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             &fdrVsCounts
         ); ree;
 
-        constexpr int fdrKey = 10;  
-
+        constexpr int fdrKey = 10;
         e = honeIRTCalibration(
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey)
             ); ree;
 
-        // const int fdrCutoffCount = fdrVsCounts.value(fdrKey);
-        // if (fdrCutoffCount >= minTrainingCountTranche) {
-        //     // candidateScoresVecScoredPntrs.resize(std::min(idealTrainingCountAtGivenFDR * 2, candidateScoresVecScoredPntrs.size()));
-        //     // *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
-        //     qDebug() << "mzStDevMS1:" << m_msCalibratomatic.mzStDevMS1();
-        //     qDebug() << "mzStDevMS2:" << m_msCalibratomatic.mzStDevMS2();
-        //     qDebug() << "scanTimeWindowStDev x 3:" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
-        //
-        //     break;
-        // }
+        constexpr int massCorrectionMinCount = 500;
+        if (fdrVsCounts.value(fdrKey) > massCorrectionMinCount) {
+
+            e = m_msCalibratomatic.setMassCalibrationCoeffs(); ree;
+
+        }
 
         qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
 
-        if (m_targetDecoyCandidatePairsTopScores.size() > 1000) {
+        constexpr int targetTrainingCountCalibration = 1000;
+        if (m_targetDecoyCandidatePairsTopScores.size() > targetTrainingCountCalibration) {
             break;
         }
 
@@ -1509,7 +1502,7 @@ Err PythiaDIAFFWorkflow::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const 
 }
 
 
-Err PythiaDIAFFWorkflow::honeIRTCalibration(
+Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
     int topNCandidates
     ) {
@@ -1518,11 +1511,7 @@ Err PythiaDIAFFWorkflow::honeIRTCalibration(
 
     e = ErrorUtils::isFalse(candidateScoresVecScoredPntrs->isEmpty()); ree;
 
-    std::sort(
-        candidateScoresVecScoredPntrs->rbegin(),
-        candidateScoresVecScoredPntrs->rend(),
-        [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-        );
+    sortCandidatePointersDiscScoreDesc(candidateScoresVecScoredPntrs);
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrsResized = *candidateScoresVecScoredPntrs;
     candidateScoresVecBatchPntrsResized.resize(std::max(m_minTrainingCountTranche, topNCandidates));

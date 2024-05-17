@@ -138,7 +138,7 @@ private:
 
     Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const QVector<CandidateScores*> &candidateScores);
 
-    Err honeIRTCalibration(
+    Err honeIRTAndMassCalibration(
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
         int topNCandidates
     );
