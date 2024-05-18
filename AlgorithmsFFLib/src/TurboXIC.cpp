@@ -79,7 +79,11 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
     m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
     int pointCounter = 0;
 
+    QElapsedTimer et;
+    et.start();
+
     std::vector<rTreePoint> cloudLoader;
+    cloudLoader.reserve(scanPointsCount);
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
         const ScanNumber scanNumber = it.key();
@@ -89,7 +93,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
             m_scanNumberVsIntensityPtrs[pointCounter] = pr;
-            cloudLoader.push_back(std::make_pair(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]));
+            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]);
         }
     }
 
@@ -121,6 +125,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
     int pointCounter = 0;
 
     std::vector<rTreePoint> cloudLoader;
+    cloudLoader.reserve(scanPointsCount);
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
         const ScanNumber scanNumber = it.key();
@@ -130,7 +135,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
             m_scanNumberVsIntensityPtrs[pointCounter] = pr;
-            cloudLoader.push_back(std::make_pair(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]));
+            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]);
         }
     }
 

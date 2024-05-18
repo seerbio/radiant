@@ -877,7 +877,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
                 std::placeholders::_1
         );
 
-        const QList<QMap<ScanNumber, ScanPoints *>> &tandemPointsVec = diaTargetFrames->values();
+        const QList<QMap<ScanNumber, ScanPoints*>> &tandemPointsVec = diaTargetFrames->values();
 
         QFuture<Err> futures = QtConcurrent::mapped(
                 tandemPointsVec,
