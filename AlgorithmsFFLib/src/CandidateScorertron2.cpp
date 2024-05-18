@@ -147,7 +147,7 @@ public:
     Eigen::VectorX<float> productVec;
 
     [[nodiscard]] bool intensityMatriciesAreValid() const {
-        return intensityMatrix100.size() > 0;
+        return intensityMatrix100.size() > 0 && mzMatrix100.size() > 0;
     }
 
     [[nodiscard]] bool integrationVecIsValid() const {
@@ -160,7 +160,8 @@ class BestCorrelationResult {
 public:
     QVector<float> peakCorrelations;
     float peakCorrelationsSum = -1.0;
-    Eigen::MatrixX<float> matBlockTrimmed;
+    Eigen::MatrixX<float> matBlockTrimmedIntensity;
+    Eigen::MatrixX<float> matBlockTrimmedMz;
     int bestAnchorColumnIndex = -1;
     QVector<int> apexStarts;
     PeakIntegrationIndexes peakIntegrationIndexes;
@@ -1015,10 +1016,19 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         if (peakCorrelationsSum > bestCorrelationResult->peakCorrelationsSum) {
             bestCorrelationResult->peakCorrelations = peakCorrelations;
             bestCorrelationResult->peakCorrelationsSum = peakCorrelationsSum;
-            bestCorrelationResult->matBlockTrimmed = matBlockTrimmed;
+            bestCorrelationResult->matBlockTrimmedIntensity = matBlockTrimmed;
             bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
             bestCorrelationResult->apexStarts = apexStarts;
             bestCorrelationResult->peakIntegrationIndexes = piiWorking.first;
+
+            const PeakIntegrationIndexes &p = piiWorking.first;
+            const int pSize = p.second - p.first + 1;
+            bestCorrelationResult->matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
+                p.first,
+                0,
+                pSize,
+                matBlockTrimmed.cols()
+                );
         }
 
 // #define OUTPUT_MATS
@@ -1061,12 +1071,12 @@ namespace {
 
         //TODO add kldiv and pearsons corr.
 
-        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
 
         QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
                                     ? targetDecoyCandidatePair->ms2IonsDecoy()
                                     : targetDecoyCandidatePair->ms2IonsTarget();
-        ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmed.cols()));
+        ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
         QVector<float> intensitiesTheo;
         std::transform(
@@ -1079,8 +1089,8 @@ namespace {
         const Eigen::VectorX<float> intensitiesTheoVec = EigenUtils::convertQVectorToEigenVector(intensitiesTheo);
 
         Eigen::MatrixX<float> intensitiesTheoMat(
-            bestCorrelationResult.matBlockTrimmed.rows(),
-            bestCorrelationResult.matBlockTrimmed.cols()
+            bestCorrelationResult.matBlockTrimmedIntensity.rows(),
+            bestCorrelationResult.matBlockTrimmedIntensity.cols()
         );
 
         for (int row = 0; row < intensitiesTheoMat.rows(); row++) {
@@ -1089,10 +1099,14 @@ namespace {
 
         Eigen::VectorX<float> cosineSimsByRow;
          e = EigenUtils::rowWiseCosineSimilarOfMatrices(
-             bestCorrelationResult.matBlockTrimmed,
+             bestCorrelationResult.matBlockTrimmedIntensity,
              intensitiesTheoMat,
              &cosineSimsByRow
              ); ree;
+
+        for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
+        }
 
         const float cosineSimMax = cosineSimsByRow.maxCoeff();
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimMax;
@@ -1128,6 +1142,76 @@ namespace {
         ERR_RETURN
     }
 
+    constexpr int arraySizeMax = 12;
+
+    Err setTheoreticalMs2Ions(
+        const QVector<MS2Ion> &ms2IonsTheoretical,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(ms2IonsTheoretical.size() <= arraySizeMax); ree;
+        for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
+            const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
+            candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = static_cast<float>(ms2Ion.mz);
+            candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
+        }
+
+        ERR_RETURN
+    }
+
+    Err setFoundMs2Ions(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedMz.size() > 0); ree;
+
+        const Eigen::MatrixX<float> &matMz = bestCorrelationResult.matBlockTrimmedMz;
+
+        QVector<float> mzMeanValsFound;
+        mzMeanValsFound.reserve(static_cast<int>(matMz.cols()));
+        QVector<float> stdMeanValsFound;
+        stdMeanValsFound.reserve(static_cast<int>(matMz.cols()));
+
+        for (int col = 0; col < matMz.cols(); col++) {
+
+            const Eigen::VectorX<float> &colMz = matMz.col(col);
+
+            if(MathUtils::tZero(colMz.maxCoeff())) {
+                mzMeanValsFound.push_back(0.0f);
+                stdMeanValsFound.push_back(0.0f);
+                continue;
+            }
+
+            const Eigen::VectorX<float> &colMzNonZero = EigenUtils::removeZeroElements(colMz);
+
+            mzMeanValsFound.push_back(colMzNonZero.mean());
+            stdMeanValsFound.push_back(static_cast<float>(EigenUtils::calculateStDevOfVector(colMzNonZero)));
+        }
+
+        e = ErrorUtils::isTrue(mzMeanValsFound.size() <= arraySizeMax); ree;
+        for (int i = 0; i < mzMeanValsFound.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i] = mzMeanValsFound.at(i);
+        }
+
+        e = ErrorUtils::isTrue(stdMeanValsFound.size() <= arraySizeMax); ree;
+        for (int i = 0; i < stdMeanValsFound.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
+        }
+
+        const Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+        e = ErrorUtils::isTrue(intensitySums.size() <= arraySizeMax); ree;
+        for (int i = 0; i < intensitySums.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
@@ -1138,7 +1222,7 @@ Err CandidateScorertron::setCandidateScores(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(bestCorrelationResult.peakCorrelations); ree;
-    e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmed.size() > 0); ree;
+    e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
 
     candidateScores->initFeaturesArray();
 
@@ -1167,6 +1251,20 @@ Err CandidateScorertron::setCandidateScores(
         targetDecoyCandidatePair,
         bestCorrelationResult,
         static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
+        candidateScores
+        ); ree;
+
+    const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
+                                             ? targetDecoyCandidatePair->ms2IonsDecoy()
+                                             : targetDecoyCandidatePair->ms2IonsTarget();
+
+    e = setTheoreticalMs2Ions(
+        ms2IonsTheoritical,
+        candidateScores
+        ); ree;
+
+    e = setFoundMs2Ions(
+        bestCorrelationResult,
         candidateScores
         ); ree;
 
@@ -1259,7 +1357,7 @@ Err CandidateScorertron::setMs1RelatedScores(
         ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
 
     const Eigen::VectorX<float> anchorColumn
-        = bestCorrelationResult.matBlockTrimmed.col(bestCorrelationResult.bestAnchorColumnIndex);
+        = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
 
     e = EigenUtils::cosineSimilarity(
         anchorColumn,

@@ -689,13 +689,38 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         constexpr int targetTrainingCountCalibration = 1000;
         if (m_targetDecoyCandidatePairsTopScores.size() > targetTrainingCountCalibration) {
+
+            constexpr int fdrKey50PercentFDR = 50;
+            candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
+
+            if (!m_msCalibratomatic.isInitCalMS2()) {
+
+                QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+                e = buildMsCalibrationReaderRows(
+                        MSLevelEnum::MS2,
+                        candidateScoresVecBatchPntrs,
+                        &msCalibrationReaderRows
+                ); ree;
+
+                e = m_msCalibratomatic.setMassCalibrationCoeffs(
+                    msCalibrationReaderRows,
+                    MSLevelEnum::MS2
+                    ); ree;
+
+                e = recalibrateMzVals(
+                        MSLevelEnum::MS2,
+                        m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                        m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+                ); ree;
+            }
+
+            *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
+
             break;
         }
 
     }
-
-
-
+    
     ERR_RETURN
 }
 
@@ -808,7 +833,7 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(msCalibratomatic.isInitCalMS2() && msCalibratomatic.isInitCalMS1()); ree;
+        e = ErrorUtils::isTrue(msCalibratomatic.isInitCalMS2()); ree;
         e = ErrorUtils::isNotEmpty(scanPoints); ree;
 
         e = msCalibratomatic.recalibrateScanPoints(
@@ -816,10 +841,10 @@ namespace {
             scanPoints
             ); ree;
 
-        e = msCalibratomatic.recalibrateScanPoints(
-            MSLevelEnum::MS1,
-            scanPoints
-            ); ree;
+        // e = msCalibratomatic.recalibrateScanPoints(
+        //     MSLevelEnum::MS1,
+        //     scanPoints
+        //     ); ree;
 
         ERR_RETURN
     }
@@ -1547,7 +1572,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     constexpr int ms2MassRecalCountMin = 500;
     if (msCalibrationReaderRows.size() > ms2MassRecalCountMin) {
 
-        e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
+        // e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
 
         e = m_msCalibratomatic.setMassCalibrationCoeffs(
             msCalibrationReaderRows,

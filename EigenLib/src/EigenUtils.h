@@ -470,17 +470,7 @@ public:
     */
     template <typename EigenMatrix>
     static int nonZeros(EigenMatrix v1) {
-
-        int nonZeros = 0;
-        for (int i = 0; i < v1.size(); i++) {
-
-            if (!MathUtils::tZero(v1.coeff(i))) {
-                nonZeros++;
-            }
-
-        }
-
-        return nonZeros;
+        return (v1.array() != 0).count();;
     }
 
     /*!
@@ -1063,6 +1053,26 @@ public:
             );
 
         ERR_RETURN
+    }
+
+    template<typename T>
+    static Eigen::VectorXf removeZeroElements(const Eigen::VectorX<T> &vec){
+
+        const int count = (vec.array() != 0).count();
+        Eigen::VectorX<T> result(count);
+
+        int index = 0;
+        for (int i = 0; i < vec.size(); i++) {
+
+            const T v = vec.coeff(i);
+            if (MathUtils::tZero(v)) {
+                continue;
+            }
+
+            result[index++] = v;
+        }
+
+        return result;
     }
 
 };

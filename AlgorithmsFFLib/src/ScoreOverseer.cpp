@@ -1181,8 +1181,6 @@ Err ScoreOverseer::buildScores(
 
     }
 
-//    qDebug() << "DSFLKJDS" << candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies];
-
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2IonSearched = ms2IonsTheoretical.at(i);
 
