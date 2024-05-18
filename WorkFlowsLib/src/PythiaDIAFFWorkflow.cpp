@@ -301,23 +301,23 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              &candidateScoresTrainings
              ); ree;
 
-//     if (m_msCalibratomatic.isInit()) {
-//
-//         e = optimizeParameters(
-//                 candidateScoresTrainings,
-//                 &msReaderPointerAcc
-//         ); ree;
-//     }
-//
-//     int targetCountBelowFDRThreshold;
-//     e = mainAnalysis(
-//             &msReaderPointerAcc,
-//             &targetCountBelowFDRThreshold
-//             ); ree;
-//
-//     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
-//     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
-//
+     if (m_msCalibratomatic.isInitRT()) {
+
+         e = optimizeParameters(
+                 candidateScoresTrainings,
+                 &msReaderPointerAcc
+         ); ree;
+     }
+
+     int targetCountBelowFDRThreshold;
+     e = mainAnalysis(
+             &msReaderPointerAcc,
+             &targetCountBelowFDRThreshold
+             ); ree;
+
+     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
+     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+
 // //#define TROUBLESHOOT_MISSING
 // #ifdef TROUBLESHOOT_MISSING
 //
@@ -720,7 +720,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         }
 
     }
-    
+
     ERR_RETURN
 }
 
@@ -1032,90 +1032,104 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
     e = ErrorUtils::isNotEmpty(candidateScoresTrainings); ree;
 
-    // const int topNMS2IonsOptimization = 12;
-    // qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
-    //
-    // qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
-    //
-    // QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    // for (CandidateScores *cs : candidateScoresTrainings) {
-    //     mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
-    // }
-    //
-    // QVector<PythiaParameters> pythiaParametersExperiments;
-    // e = buildDOE(
-    //         m_pythiaParameters,
-    //         m_msCalibratomatic.mzStDevMS2(),
-    //         m_msCalibratomatic.scanTimeStDev(),
-    //         &pythiaParametersExperiments
-    //         ); ree;
-    //
-    // const bool useExtendedScores = true;
-    // const bool useNeuralNetworkScores = false;
-    //
-    // QVector<DOEResult> results;
-    // for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
-    //
-    //     qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
-    //
-    //     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
-    //     qDebug() << "STarting opt";
-    //
-    //     m_candidateScores.clear();
-    //
-    //     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-    //             topNMS2IonsOptimization,
-    //             m_msCalibratomatic,
-    //             &mzTargetKeyVsTargetDecoyCandidatePointers,
-    //             &m_candidateScores
-    //     ); ree;
-    //
-    //     QVector<CandidateScores*> candidateScoresPntrs;
-    //     e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-    //     e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-    //             useExtendedScores,
-    //             useNeuralNetworkScores,
-    //             &candidateScoresPntrs
-    //     ); ree;
-    //
-    //     e = QValueSettertron::setQValueForCandidates(
-    //             QValueSettertron::QValueScoreType::DiscriminantScore,
-    //             &candidateScoresPntrs
-    //             ); ree;
-    //
-    //     QMap<QString, int> fdrVsCount;
-    //     e = FDRCLassifierNeuralNet::outputFDRResults(
-    //             m_candidateScores,
-    //             true,
-    //             &fdrVsCount
-    //     ); ree;
-    //     qDebug() << "Ending opt";
-    //
-    //     const double fdrThreshold = 0.1;
-    //     int targetCountAboveFDRQValueThreshold;
-    //     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-    //             m_candidateScores,
-    //             fdrThreshold,
-    //             &targetCountAboveFDRQValueThreshold
-    //             ); ree;
-    //
-    //     DOEResult res;
-    //     res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-    //     res.fdrCount = targetCountAboveFDRQValueThreshold;
-    //     results.push_back(res);
-    // }
-    //
-    // e = getTopFrequencyParameters(
-    //         &results,
-    //         &m_pythiaParameters.ms2ExtractionWidthPPM
-    //         ); ree;
-    //
-    // m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-    //
-    // e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
-    //
-    // qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-    // qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+    const int topNMS2IonsOptimization = 12;
+    qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
+
+    qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
+
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    for (CandidateScores *cs : candidateScoresTrainings) {
+        mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
+    }
+
+    QVector<PythiaParameters> pythiaParametersExperiments;
+    e = buildDOE(
+            m_pythiaParameters,
+            m_msCalibratomatic.mzStDevMS2(),
+            m_msCalibratomatic.scanTimeStDev(),
+            &pythiaParametersExperiments
+            ); ree;
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+
+    QVector<DOEResult> results;
+    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+
+        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
+
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
+        qDebug() << "STarting opt";
+
+        constexpr float minPeakCountOptimization = 2.9;
+        constexpr int topNMS2Ions = 12;
+        m_candidateScores.clear();
+        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+                topNMS2Ions,
+                m_msCalibratomatic,
+                minPeakCountOptimization,
+                &mzTargetKeyVsTargetDecoyCandidatePointers,
+                &m_candidateScores
+                ); ree
+
+        QVector<CandidateScores*> candidateScoresVecBatchPntrs;
+        e = buildCandidateScoresPtrs(&candidateScoresVecBatchPntrs); ree;
+        e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(candidateScoresVecBatchPntrs); ree;
+
+        QVector<float> weights;
+        e = DiscriminantScoretron::trainLDAClassifier(
+                m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values(),
+                useExtendedScores,
+                useNeuralNetworkScores,
+                &weights
+                ); ree;
+
+        e = DiscriminantScoretron::applyWeights(
+            weights,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            &candidateScoresVecBatchPntrs
+            ); ree;
+
+        e = QValueSettertron::setQValueForCandidates(
+             QValueSettertron::QValueScoreType::DiscriminantScore,
+             &candidateScoresVecBatchPntrs
+         ); ree;
+
+        QMap<int, int> fdrVsCounts;
+        e = FDRCLassifierNeuralNet::outputFDRResults(
+            candidateScoresVecBatchPntrs,
+            true,
+            &fdrVsCounts
+        ); ree;
+
+        qDebug() << "Ending opt";
+
+        const double fdrThreshold = 0.1;
+        int targetCountAboveFDRQValueThreshold;
+        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+                m_candidateScores,
+                fdrThreshold,
+                &targetCountAboveFDRQValueThreshold
+                ); ree;
+
+        DOEResult res;
+        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
+        res.fdrCount = targetCountAboveFDRQValueThreshold;
+        results.push_back(res);
+    }
+
+    e = getTopFrequencyParameters(
+            &results,
+            &m_pythiaParameters.ms2ExtractionWidthPPM
+            ); ree;
+
+    m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+
+    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+
+    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
+    qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
 
 
     ERR_RETURN
@@ -1130,74 +1144,87 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
 
-    // m_candidateScores.clear();
-    //
-    // const bool useExtendedScores = true;
-    // const bool useNeuralNetworkScores = false;
-    //
-    // const int topNMs2IonsMainAnalysis = std::max(
-    //         m_minTopNMs2Ions,
-    //         static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-    //         );
-    //
-    // qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
-    //
-    // const double selectionFractionBypass = -1.0;
-    //
-    // QElapsedTimer et;
-    // et.start();
-    //
-    // QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    // e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-    //         msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
-    //         selectionFractionBypass,
-    //         &mzTargetKeyVsTargetDecoyCandidatePointers
-    // ); ree;
-    //
-    // e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-    //         topNMs2IonsMainAnalysis,
-    //         msReaderPointerAcc->ptr->scanTimeMinMax(),
-    //         m_msCalibratomatic,
-    //         &mzTargetKeyVsTargetDecoyCandidatePointers,
-    //         &m_candidateScores
-    // ); ree;
-    // qDebug() << "Targets scored" << et.restart() << "mSec";
-    //
-    // QVector<CandidateScores*> candidateScoresPntrs;
-    // e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-    // e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-    //         useExtendedScores,
-    //         useNeuralNetworkScores,
-    //         &candidateScoresPntrs
-    // ); ree;
-    // qDebug() << "Targets discriminated" << et.restart() << "mSec";
-    //
-    // e = QValueSettertron::setQValueForCandidates(
-    //         QValueSettertron::QValueScoreType::DiscriminantScore,
-    //         &candidateScoresPntrs
-    //         ); ree;
-    // qDebug() << "Targets qval'd" << et.restart() << "mSec";
-    //
-    // QMap<QString, int> fdrVsCount;
-    // e = FDRCLassifierNeuralNet::outputFDRResults(
-    //         m_candidateScores,
-    //         true,
-    //         &fdrVsCount
-    // ); ree;
-    // qDebug() << "Targets resulted" << et.restart() << "mSec";
-    //
-    // const double fdrThresholdOnePercent = 0.01;
-    // e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-    //         m_candidateScores,
-    //         fdrThresholdOnePercent,
-    //         targetCountBelowFDRThresholdOnePercent
-    // ); ree;
-    // qDebug() << "Targets counted" << et.restart() << "mSec";
-    //
-    // std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-    //     return l->discriminantScore < r->discriminantScore;
-    // });
-    // qDebug() << "Targets sorted" << et.restart() << "mSec";
+    m_candidateScores.clear();
+
+    const bool useExtendedScores = true;
+    const bool useNeuralNetworkScores = false;
+
+    const int topNMs2IonsMainAnalysis = std::max(
+            m_minTopNMs2Ions,
+            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
+            );
+
+    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+
+    const double selectionFractionBypass = -1.0;
+
+    QElapsedTimer et;
+    et.start();
+
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            m_targetDecoyPairPntrs,
+            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
+
+    constexpr float minPeakCountCalibration = 4.9;
+    m_candidateScores.clear();
+    e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            topNMs2IonsMainAnalysis,
+            m_msCalibratomatic,
+            minPeakCountCalibration,
+            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &m_candidateScores
+            ); ree
+    qDebug() << "Targets scored" << et.restart() << "mSec";
+
+    QVector<CandidateScores*> candidateScoresPntrs;
+    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
+
+    QVector<CandidateScores*> candidateScoresVecBatchPntrs;
+    e = buildCandidateScoresPtrs(&candidateScoresVecBatchPntrs); ree;
+    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(candidateScoresVecBatchPntrs); ree;
+
+    QVector<float> weights;
+    e = DiscriminantScoretron::trainLDAClassifier(
+            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values(),
+            useExtendedScores,
+            useNeuralNetworkScores,
+            &weights
+            ); ree;
+
+    e = DiscriminantScoretron::applyWeights(
+        weights,
+        useExtendedScores,
+        useNeuralNetworkScores,
+        &candidateScoresVecBatchPntrs
+        ); ree;
+
+    e = QValueSettertron::setQValueForCandidates(
+         QValueSettertron::QValueScoreType::DiscriminantScore,
+         &candidateScoresVecBatchPntrs
+     ); ree;
+
+    QMap<int, int> fdrVsCounts;
+    e = FDRCLassifierNeuralNet::outputFDRResults(
+        candidateScoresVecBatchPntrs,
+        true,
+        &fdrVsCounts
+    ); ree;
+
+    qDebug() << "Targets resulted" << et.restart() << "mSec";
+
+    constexpr double fdrThresholdOnePercent = 0.01;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+            m_candidateScores,
+            fdrThresholdOnePercent,
+            targetCountBelowFDRThresholdOnePercent
+    ); ree;
+    qDebug() << "Targets counted" << et.restart() << "mSec";
+
+    sortCandidatePointersDiscScoreDesc(&candidateScoresPntrs);
+    qDebug() << "Targets sorted" << et.restart() << "mSec";
 
     ERR_RETURN
 }
