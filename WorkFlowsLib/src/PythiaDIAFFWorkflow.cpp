@@ -479,6 +479,11 @@ namespace {
     void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores*> *candidateScores) {
 
         QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
+
+        // for (auto *cs : *candidateScores) {
+        //     qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->targetDecoyCandidatePair->charge() << cs->isDecoy << cs->targetKey << "SDLFKJSL";
+        // }
+
         for (CandidateScores *cs : *candidateScores) {
 
             const QString key
@@ -675,17 +680,10 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         ); ree;
 
         constexpr int fdrKey = 10;
-        e = honeIRTCalibration(
+        e = honeIRTAndMassCalibration(
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey)
             ); ree;
-
-        constexpr int massCorrectionMinCount = 500;
-        if (fdrVsCounts.value(fdrKey) > massCorrectionMinCount) {
-
-            e = m_msCalibratomatic.setMassCalibrationCoeffs(); ree;
-
-        }
 
         qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
 
@@ -759,16 +757,12 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::recalibrateMs1Points(
-        const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized,
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
-        ) {
+Err PythiaDIAFFWorkflow::recalibrateMs1Points(const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized) {
 
     ERR_INIT
 
-    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.diaTargetFrames()->isEmpty()); ree;
+    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()->isEmpty()); ree;
 
     QVector<CandidateScores*> candidateScoresMS1Cal = candidateScoresVecBatchPntrsResized;
     qDebug() << candidateScoresMS1Cal.size() << "Precursors for MS1 calibration!";
@@ -798,8 +792,8 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(
 
     e = recalibrateMzVals(
             MSLevelEnum::MS1,
-            diaTargetFrames,
-            scanNumberVsScanTimeMS1
+            m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+            m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
     ); ree;
 
     ERR_RETURN
@@ -1534,13 +1528,38 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     ); ree;
 
     m_targetDecoyCandidatePairsTopScores.clear();
+
+    QHash<TargetDecoyCandidatePair*, bool> entered;
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
+
+        if (entered.value(cs->targetDecoyCandidatePair)) {
+            continue;
+        }
+
         m_targetDecoyCandidatePairsTopScores.push_back(cs->targetDecoyCandidatePair);
+        entered.insert(cs->targetDecoyCandidatePair, true);
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
     qDebug() << "scanTimeWindowStDev x" << S_GLOBAL_SETTINGS.STDEV_MULTIPLIER
              <<":" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+
+    constexpr int ms2MassRecalCountMin = 500;
+    if (msCalibrationReaderRows.size() > ms2MassRecalCountMin) {
+
+        e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
+
+        e = m_msCalibratomatic.setMassCalibrationCoeffs(
+            msCalibrationReaderRows,
+            MSLevelEnum::MS2
+            ); ree;
+
+        e = recalibrateMzVals(
+                MSLevelEnum::MS2,
+                m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+        ); ree;
+    }
 
     ERR_RETURN
 }

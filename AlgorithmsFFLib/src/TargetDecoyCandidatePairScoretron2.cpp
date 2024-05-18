@@ -102,6 +102,14 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
     ERR_RETURN
 }
 
+QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>>* TargetDecoyCandidatePairScoretron2::diaTargetFrames() {
+    return &m_diaTargetFrames;
+}
+
+QMap<ScanNumber, ScanPoints>* TargetDecoyCandidatePairScoretron2::ms1ScanNumberVsScanPoints() {
+    return &m_ms1ScanNumberVsScanPoints;
+}
+
 namespace {
 
     Err buildMzHashedVsCount(

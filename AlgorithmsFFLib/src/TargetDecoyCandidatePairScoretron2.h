@@ -88,6 +88,10 @@ public:
     */
     Err setPythiaParameters(const PythiaParameters &pythiaParameters);
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>>* diaTargetFrames();
+
+    QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
+
 private:
 
     Err buildParallelInput(
