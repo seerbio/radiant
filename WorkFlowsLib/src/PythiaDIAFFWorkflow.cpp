@@ -1050,8 +1050,8 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
             &pythiaParametersExperiments
             ); ree;
 
-    const bool useExtendedScores = true;
-    const bool useNeuralNetworkScores = false;
+    constexpr bool useExtendedScores = true;
+    constexpr bool useNeuralNetworkScores = false;
 
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -1146,8 +1146,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_candidateScores.clear();
 
-    const bool useExtendedScores = true;
-    const bool useNeuralNetworkScores = false;
+    constexpr bool useExtendedScores = true;
+    constexpr bool useNeuralNetworkScores = false;
 
     const int topNMs2IonsMainAnalysis = std::max(
             m_minTopNMs2Ions,

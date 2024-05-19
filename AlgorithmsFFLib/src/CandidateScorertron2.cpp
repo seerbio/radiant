@@ -163,6 +163,8 @@ public:
     QVector<float> peakCorrelations;
     float peakCorrelationsSum = -1.0;
     Eigen::MatrixX<float> matBlockTrimmedIntensity;
+    Eigen::MatrixX<float> matBlockTrimmedIntensity45;
+    Eigen::MatrixX<float> matBlockTrimmedIntensity20;
     Eigen::MatrixX<float> matBlockTrimmedIntensityShadows;
     Eigen::MatrixX<float> matBlockTrimmedMz;
     int bestAnchorColumnIndex = -1;
@@ -1034,6 +1036,20 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 );
 
             bestCorrelationResult->matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
+                p.first,
+                0,
+                pSize,
+                matBlockTrimmed.cols()
+                );
+
+            bestCorrelationResult->matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
+                p.first,
+                0,
+                pSize,
+                matBlockTrimmed.cols()
+                );
+
+            bestCorrelationResult->matBlockTrimmedIntensity20 = matriciesAndVecs.intensityMatrix20.block(
                 p.first,
                 0,
                 pSize,

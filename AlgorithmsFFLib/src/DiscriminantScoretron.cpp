@@ -328,15 +328,15 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 // CandidateScores::Features::CosineSim20MS1,
                 CandidateScores::Features::CosineSimSpectrumCubed,
                 // CandidateScores::Features::KlDivSpectrumCubeRoot,
-                // CandidateScores::Features::CosineSimSum45,
-                // CandidateScores::Features::CosineSimSum20,
+                CandidateScores::Features::CosineSimSum45,
+                CandidateScores::Features::CosineSimSum20,
                 CandidateScores::Features::CosineSimSumTop,
                 CandidateScores::Features::CosineSimSumBottom,
                 CandidateScores::Features::TopBottomRatio,
                 CandidateScores::Features::TopBottomRatioNorm,
                 CandidateScores::Features::Charge,
                 CandidateScores::Features::ScanTimeDelta,
-                // CandidateScores::Features::ScanTimePd
+                CandidateScores::Features::ScanTimePd
         };
 
         if (useNeuralNetworkScores) {
@@ -347,29 +347,29 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
             vec.append(candidateScores->selectFeaturesArrayFeatures({
 //                            CandidateScores::Features::CosineSimSum100Frequencies,
-                            CandidateScores::Features::CosineSimSum100MS1,
-                            CandidateScores::Features::CosineSim100MS1PreMono,
-                            CandidateScores::Features::CosineSim100MS1Iso1,
-                            CandidateScores::Features::CosineSim100MS1Iso2,
-                            CandidateScores::Features::PeakShapeRatio1,
-                            CandidateScores::Features::PeakShapeRatio2,
-                            CandidateScores::Features::PeakShapeRatio3,
-                            CandidateScores::Features::ShadowsCosineSimSum,
-                            CandidateScores::Features::CosineSimToAnchor1,
-                            CandidateScores::Features::CosineSimToAnchor2,
-                            CandidateScores::Features::CosineSimToAnchor3,
-                            CandidateScores::Features::CosineSimToAnchor4,
-                            CandidateScores::Features::MzAccuracy1,
-                            CandidateScores::Features::MzAccuracy2,
-                            CandidateScores::Features::MzAccuracy3,
-                            CandidateScores::Features::MzAccuracy4,
-                            CandidateScores::Features::CosineSimShadowsToAnchor1,
-                            CandidateScores::Features::CosineSimShadowsToAnchor2,
-                            CandidateScores::Features::CosineSimShadowsToAnchor3,
-                            CandidateScores::Features::CosineSimShadowsToAnchor4,
+                            // CandidateScores::Features::CosineSimSum100MS1,
+                            // CandidateScores::Features::CosineSim100MS1PreMono,
+                            // CandidateScores::Features::CosineSim100MS1Iso1,
+                            // CandidateScores::Features::CosineSim100MS1Iso2,
+                            // CandidateScores::Features::PeakShapeRatio1,
+                            // CandidateScores::Features::PeakShapeRatio2,
+                            // CandidateScores::Features::PeakShapeRatio3,
+                            // CandidateScores::Features::ShadowsCosineSimSum,
+                            // CandidateScores::Features::CosineSimToAnchor1,
+                            // CandidateScores::Features::CosineSimToAnchor2,
+                            // CandidateScores::Features::CosineSimToAnchor3,
+                            // CandidateScores::Features::CosineSimToAnchor4,
+                            // CandidateScores::Features::MzAccuracy1,
+                            // CandidateScores::Features::MzAccuracy2,
+                            // CandidateScores::Features::MzAccuracy3,
+                            // CandidateScores::Features::MzAccuracy4,
+                            // CandidateScores::Features::CosineSimShadowsToAnchor1,
+                            // CandidateScores::Features::CosineSimShadowsToAnchor2,
+                            // CandidateScores::Features::CosineSimShadowsToAnchor3,
+                            // CandidateScores::Features::CosineSimShadowsToAnchor4,
                             // CandidateScores::Features::CosineSimSpectrumOverTime,
-                            CandidateScores::Features::TheoFragmentCount,
-                            CandidateScores::Features::TotalIntensityLog
+                            // CandidateScores::Features::TheoFragmentCount,
+                            // CandidateScores::Features::TotalIntensityLog
                     }));
             return vec;
         }
