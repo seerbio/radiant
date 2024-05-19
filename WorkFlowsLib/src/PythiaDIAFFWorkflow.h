@@ -148,6 +148,7 @@ private:
 
     QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
+    QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
     QVector<CandidateScores> m_candidateScores;
     QHash<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;

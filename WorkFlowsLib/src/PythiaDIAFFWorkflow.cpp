@@ -688,7 +688,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         qDebug() << "Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec";
 
         constexpr int targetTrainingCountCalibration = 1000;
-        if (m_targetDecoyCandidatePairsTopScores.size() > targetTrainingCountCalibration) {
+        if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration) {
 
             constexpr int fdrKey50PercentFDR = 50;
             candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
@@ -1579,24 +1579,23 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             &msCalibrationReaderRows
     ); ree;
 
-    m_targetDecoyCandidatePairsTopScores.clear();
+    // m_targetDecoyCandidatePairsTopScores.clear();
 
-    QHash<TargetDecoyCandidatePair*, bool> entered;
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
-        if (entered.value(cs->targetDecoyCandidatePair)) {
+        if (m_entered.value(cs->targetDecoyCandidatePair)) {
             continue;
         }
 
         m_targetDecoyCandidatePairsTopScores.push_back(cs->targetDecoyCandidatePair);
-        entered.insert(cs->targetDecoyCandidatePair, true);
+        m_entered.insert(cs->targetDecoyCandidatePair, true);
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
     qDebug() << "scanTimeWindowStDev x" << S_GLOBAL_SETTINGS.STDEV_MULTIPLIER
              <<":" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
 
-    constexpr int ms2MassRecalCountMin = 200;
+    constexpr int ms2MassRecalCountMin = 2000;
     if (msCalibrationReaderRows.size() > ms2MassRecalCountMin) {
 
         // e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
