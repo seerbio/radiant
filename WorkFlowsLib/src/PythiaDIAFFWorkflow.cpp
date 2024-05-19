@@ -368,7 +368,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ParquetReader::write(
             candidateScoresToWrite,
-            msReaderPointerAcc.ptr->filePath() + ".candidateScores"
+            msReaderPointerAcc.ptr->filePath() + ".candidateScoresNew"
             ); ree;
 #endif
 
@@ -618,7 +618,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
     ); ree;
 
     int batchCounter = 0;
-
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
         constexpr bool useExtendedScores = false;
@@ -680,6 +679,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         ); ree;
 
         constexpr int fdrKey = 10;
+
         e = honeIRTAndMassCalibration(
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey)

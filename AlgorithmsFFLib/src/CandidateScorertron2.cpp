@@ -1097,10 +1097,11 @@ namespace {
 
     float calculatedCosineSimSumGreaterThan80(const QVector<float> & peakCorrelations) {
 
+        constexpr int top6 = 6;
         constexpr float cosineSimToAnchorThreshold = 0.8;
         const float scoreGreater = std::accumulate(
             peakCorrelations.begin(),
-            peakCorrelations.end(),
+            peakCorrelations.begin() + top6,
             0.0f,
             [cosineSimToAnchorThreshold](float sum, float f){return f > cosineSimToAnchorThreshold ? f + sum : 0.0f + sum;}
             );
@@ -1269,8 +1270,8 @@ namespace {
             const Eigen::VectorX<float> &colMz = matMz.col(col);
 
             if(MathUtils::tZero(colMz.maxCoeff())) {
-                mzMeanValsFound.push_back(0.0f);
-                stdMeanValsFound.push_back(0.0f);
+                mzMeanValsFound.push_back(-1.0f);
+                stdMeanValsFound.push_back(-1.0f);
                 continue;
             }
 
@@ -1290,7 +1291,9 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
-        const Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+        Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+        intensitySums /= intensitySums.sum();
+
         e = ErrorUtils::isTrue(intensitySums.size() <= arraySizeMax); ree;
         for (int i = 0; i < intensitySums.size(); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
@@ -1316,7 +1319,7 @@ namespace {
 
             const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
 
-            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = std::min(absAccuracy, 100.0f);
+            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = std::min(absAccuracy, 0.0f);
 
         }
 
@@ -1471,7 +1474,7 @@ namespace {
             float cosineSim;
             e = EigenUtils::cosineSimilarity(v1, v2, &cosineSim); ree;
 
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = cosineSim;
+            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = std::max(cosineSim, 0.0f);
         }
 
         ERR_RETURN
@@ -1502,7 +1505,13 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = bestCorrelationResult.peakCorrelationsSum;
+    const int top6 = std::min(6, bestCorrelationResult.peakCorrelations.size());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = std::accumulate(
+            bestCorrelationResult.peakCorrelations.begin(),
+            bestCorrelationResult.peakCorrelations.begin() + top6,
+            std::numeric_limits<float>::min()
+            );
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
@@ -1531,9 +1540,9 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
-        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.end(), 0.0f), std::numeric_limits<float>::min());
+        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20]
-        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations20.begin(), bestCorrelationResult.peakCorrelations20.end(), 0.0f), std::numeric_limits<float>::min());
+        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations20.begin(), bestCorrelationResult.peakCorrelations20.begin() + top6, 0.0f), std::numeric_limits<float>::min());
 
     int bestAlignmentMatrixRowIndex = bestCorrelationResult.bestAnchorRowIndex;
     candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
