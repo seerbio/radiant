@@ -426,40 +426,40 @@ public:
     */
     template<typename T>
     static Err rowWiseKLDivergenceOfMatrices(
-            const Eigen::MatrixX<T> &mat1,
-            const Eigen::MatrixX<T> &mat2,
+            const Eigen::MatrixX<T> &_mat1,
+            const Eigen::MatrixX<T> &_mat2,
             Eigen::VectorX<T> *klDivs
     ) {
-        //TODO fix this if you ever need it.
-//
-//        ERR_INIT
-//
-//        e = ErrorUtils::isEqual(mat1.rows(), mat2.rows()); ree;
-//        e = ErrorUtils::isEqual(mat1.cols(), mat2.cols()); ree;
-//
-//        const T nearZero = 1e-5;
-//
-//        Eigen::VectorX<T> mat1Sum = mat1.array().rowwise().sum();
-//        thresholdVector(0.0, nearZero, &mat1Sum);
-//
-//        Eigen::VectorX<T> mat2Sum = mat2.array().rowwise().sum();
-//        thresholdVector(0.0, nearZero, &mat2Sum);
-//
-//        mat1 = mat1.array() / mat1Sum.array();
-//        mat2 = mat2.array() / mat2Sum.array();
-//
-//        mat1 = (mat1.array() < nearZero).select(nearZero, mat1);
-//        mat2 = (mat2.array() < nearZero).select(nearZero, mat2);
-//
-//        const Eigen::MatrixX<T> mat1mat2Quotient = mat1.array() / mat2.array();
-//        const Eigen::MatrixX<T> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
-//        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
-//
-//        *klDivs = mat1.array() * mat1mat2QuotientLog2Sum;
-//
-//        ERR_RETURN
 
-        return eFunctionNotImplemented;
+        ERR_INIT
+
+        Eigen::MatrixX<T> mat1 = _mat1;
+        Eigen::MatrixX<T> mat2 = _mat2;
+
+        e = ErrorUtils::isEqual(mat1.rows(), mat2.rows()); ree;
+        e = ErrorUtils::isEqual(mat1.cols(), mat2.cols()); ree;
+
+        const T nearZero = 1e-5;
+
+        Eigen::VectorX<T> mat1Sum = mat1.array().rowwise().sum();
+        thresholdVector(static_cast<T>(0.0), nearZero, &mat1Sum);
+
+        Eigen::VectorX<T> mat2Sum = mat2.array().rowwise().sum();
+        thresholdVector(static_cast<T>(0.0), nearZero, &mat2Sum);
+
+        mat1 = mat1.array() / mat1Sum.array();
+        mat2 = mat2.array() / mat2Sum.array();
+
+        mat1 = (mat1.array() < nearZero).select(nearZero, mat1);
+        mat2 = (mat2.array() < nearZero).select(nearZero, mat2);
+
+        const Eigen::MatrixX<T> mat1mat2Quotient = mat1.array() / mat2.array();
+        const Eigen::MatrixX<T> mat1mat2QuotientLog2 = mat1mat2Quotient.array().log2();
+        const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
+
+        *klDivs = mat1.array() * mat1mat2QuotientLog2Sum;
+
+        ERR_RETURN
     }
 
     /*!

@@ -1181,6 +1181,8 @@ Err ScoreOverseer::buildScores(
 
     }
 
+//    qDebug() << "DSFLKJDS" << candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies];
+
     for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
         const MS2Ion &ms2IonSearched = ms2IonsTheoretical.at(i);
 
@@ -1543,29 +1545,29 @@ Err ScoreOverseer::buildScores(
             [cosineSimilarityMin](float sum, float f){return f >= cosineSimilarityMin ? sum + f : sum;}
     );
 
-    const float cosineSimSumTop = std::accumulate(
+    const float cosineSimSumTop6 = std::accumulate(
             cosineSimToAnchorVec.begin(),
             cosineSimToAnchorVec.begin() + top6,
             0.0
     );
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop6;
 
-    float cosineSimSumBottom = 0.1;
+    float cosineSimSumBottom6 = 0.1;
     if (cosineSimToAnchorVec.size() > top6) {
-        cosineSimSumBottom = std::accumulate(
+        cosineSimSumBottom6 = std::accumulate(
                 cosineSimToAnchorVec.begin() + top6 + 1,
                 cosineSimToAnchorVec.end(),
                 std::numeric_limits<float>::min()
         );
     }
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom6;
 
     candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
-            = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
+            = std::log(std::max(1.0f, cosineSimSumTop6) / (cosineSimSumTop6 + cosineSimSumBottom6 + 1.0f));
 
     candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
-            = cosineSimSumBottom / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
+            = cosineSimSumBottom6 / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
     QMap<QChar, int> aminoAcidCounts = {
             {'A', 0},

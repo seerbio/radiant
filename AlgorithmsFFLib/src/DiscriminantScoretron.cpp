@@ -313,30 +313,21 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         ERR_INIT
 
         const QVector<CandidateScores::Features> baseFeatures = {
-                // CandidateScores::Features::CosineSimSum100,
-                CandidateScores::Features::CosineSimSum100GreaterThan80,
-                // CandidateScores::Features::AllignedMaxIndexesCount,
-                // CandidateScores::Features::CosineSimSpectrum,
-                CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
-                CandidateScores::Features::CosineSimSpectrumStDev,
-                CandidateScores::Features::CosineSim100MS1,
-                CandidateScores::Features::CosineSim100MS1Iso1,
-                CandidateScores::Features::CosineSim100MS1Iso2,
-                CandidateScores::Features::CosineSim100MS1PreMono,
-
-                // CandidateScores::Features::CosineSim45MS1,
-                // CandidateScores::Features::CosineSim20MS1,
-                CandidateScores::Features::CosineSimSpectrumCubed,
-                // CandidateScores::Features::KlDivSpectrumCubeRoot,
-                CandidateScores::Features::CosineSimSum45,
-                CandidateScores::Features::CosineSimSum20,
-                CandidateScores::Features::CosineSimSumTop,
-                CandidateScores::Features::CosineSimSumBottom,
-                CandidateScores::Features::TopBottomRatio,
-                CandidateScores::Features::TopBottomRatioNorm,
-                CandidateScores::Features::Charge,
-                CandidateScores::Features::ScanTimeDelta,
-                CandidateScores::Features::ScanTimePd
+            CandidateScores::Features::CosineSimSum100,
+            CandidateScores::Features::CosineSimSum100GreaterThan80,
+            CandidateScores::Features::AllignedMaxIndexesCount,
+            CandidateScores::Features::CosineSim100MS1,
+            CandidateScores::Features::CosineSimSpectrumCubed,
+            CandidateScores::Features::KlDivSpectrumCubeRoot,
+            CandidateScores::Features::CosineSimSum45,
+            CandidateScores::Features::CosineSimSum20,
+            CandidateScores::Features::CosineSimSumTop,
+            CandidateScores::Features::CosineSimSumBottom,
+            CandidateScores::Features::TopBottomRatio,
+            CandidateScores::Features::TopBottomRatioNorm,
+            CandidateScores::Features::Charge,
+            CandidateScores::Features::ScanTimeDelta,
+            CandidateScores::Features::ScanTimePd
         };
 
         if (useNeuralNetworkScores) {

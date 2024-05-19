@@ -161,6 +161,8 @@ class BestCorrelationResult {
 
 public:
     QVector<float> peakCorrelations;
+    QVector<float> peakCorrelations45;
+    QVector<float> peakCorrelations20;
     float peakCorrelationsSum = -1.0;
     Eigen::MatrixX<float> matBlockTrimmedIntensity;
     Eigen::MatrixX<float> matBlockTrimmedIntensity45;
@@ -168,6 +170,7 @@ public:
     Eigen::MatrixX<float> matBlockTrimmedIntensityShadows;
     Eigen::MatrixX<float> matBlockTrimmedMz;
     int bestAnchorColumnIndex = -1;
+    int bestAnchorRowIndex = -1;
     QVector<int> apexStarts;
     PeakIntegrationIndexes peakIntegrationIndexes;
 };
@@ -849,7 +852,8 @@ namespace {
     Err findBestAnchorColumn(
         const Eigen::MatrixX<float> &matBlockTrimmed,
         const QVector<int> &apexStarts,
-        int *bestAnchorColumnIndex
+        int *bestAnchorColumnIndex,
+        int *bestAnchorRowIndex
         ) {
 
         ERR_INIT
@@ -906,6 +910,7 @@ namespace {
 
         for (const Temp &t : temps) {
             if (t.apexIndex == bestApexIndex) {
+                *bestAnchorRowIndex = bestApexIndex;
                 *bestAnchorColumnIndex = t.fragIonIndex;
                 break;
             }
@@ -1002,10 +1007,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             );
 
         int bestAnchorColumnIndex = -1;
+        int bestAnchorRowIndex = -1;
         e = findBestAnchorColumn(
             matBlockTrimmed,
             apexStarts,
-            &bestAnchorColumnIndex
+            &bestAnchorColumnIndex,
+            &bestAnchorRowIndex
             ); ree;
 
         QVector<float> peakCorrelations;
@@ -1019,10 +1026,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 = std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f);
 
         if (peakCorrelationsSum > bestCorrelationResult->peakCorrelationsSum) {
+
             bestCorrelationResult->peakCorrelations = peakCorrelations;
             bestCorrelationResult->peakCorrelationsSum = peakCorrelationsSum;
             bestCorrelationResult->matBlockTrimmedIntensity = matBlockTrimmed;
             bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
+            bestCorrelationResult->bestAnchorRowIndex = bestAnchorRowIndex;
             bestCorrelationResult->apexStarts = apexStarts;
             bestCorrelationResult->peakIntegrationIndexes = piiWorking.first;
 
@@ -1055,8 +1064,20 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 pSize,
                 matBlockTrimmed.cols()
                 );
-        }
 
+            e = calculatePeakCorrelations(
+                bestCorrelationResult->matBlockTrimmedIntensity45,
+                bestAnchorColumnIndex,
+                &bestCorrelationResult->peakCorrelations45
+                ); ree;
+
+            e = calculatePeakCorrelations(
+                bestCorrelationResult->matBlockTrimmedIntensity20,
+                bestAnchorColumnIndex,
+                &bestCorrelationResult->peakCorrelations20
+                ); ree;
+
+        }
 // #define OUTPUT_MATS
 #ifdef OUTPUT_MATS
         qDebug() << peakCorrelations << std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f) << "SLDFJSDLFLJ";
@@ -1130,6 +1151,13 @@ namespace {
              &cosineSimsByRow
              ); ree;
 
+        Eigen::VectorX<float> klDivByRow;
+        e = EigenUtils::rowWiseKLDivergenceOfMatrices(
+            bestCorrelationResult.matBlockTrimmedIntensity,
+            intensitiesTheoMat,
+            &klDivByRow
+            ); ree;
+
         for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
         }
@@ -1139,10 +1167,16 @@ namespace {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
+        const float klDivMax = klDivByRow.maxCoeff();
+        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
+        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
+                                                    = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
+
         const float cosineSimRowsSummed = cosineSimsByRow.sum();
         if (MathUtils::tZero(cosineSimRowsSummed)) {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = 0.0f;
             candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = 0.0f;
+
             ERR_RETURN
         }
 
@@ -1167,31 +1201,30 @@ namespace {
 
         const QVector<float> &cosineSimToAnchorVec = bestCorrelationResult.peakCorrelations;
 
-        const int topSize = static_cast<int>(std::round(cosineSimToAnchorVec.size() / 2.0));
-
+        const int top6 = std::min(6, cosineSimToAnchorVec.size());
         const float cosineSimSumTop = std::accumulate(
-                cosineSimToAnchorVec.begin(),
-                cosineSimToAnchorVec.begin() + topSize,
-                0.0f
-                );
+            cosineSimToAnchorVec.begin(),
+            cosineSimToAnchorVec.begin() + top6,
+            0.0f
+    );
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop;
 
         float cosineSimSumBottom = 0.1;
-        if (cosineSimToAnchorVec.size() > topSize) {
+        if (cosineSimToAnchorVec.size() > top6) {
             cosineSimSumBottom = std::accumulate(
-                    cosineSimToAnchorVec.begin() + topSize + 1,
+                    cosineSimToAnchorVec.begin() + top6 + 1,
                     cosineSimToAnchorVec.end(),
                     std::numeric_limits<float>::min()
             );
         }
+
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom;
 
         candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
                 = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
 
         candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
-                = (cosineSimSumTop / (cosineSimSumTop + cosineSimSumBottom))
-                * candidateScores->targetDecoyCandidatePair->totalFragmentCount();
+                = cosineSimSumBottom / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
         ERR_RETURN
     }
@@ -1486,6 +1519,8 @@ Err CandidateScorertron::setCandidateScores(
     const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
 
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
+
     const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), m_scanTimeRange) / m_scanTimeRange);
     candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = static_cast<float>(pdScanTime);
 
@@ -1494,6 +1529,18 @@ Err CandidateScorertron::setCandidateScores(
 
     const auto mz = candidateScores->targetDecoyCandidatePair->mz();
     candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
+        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.end(), 0.0f), std::numeric_limits<float>::min());
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20]
+        = std::max(std::accumulate(bestCorrelationResult.peakCorrelations20.begin(), bestCorrelationResult.peakCorrelations20.end(), 0.0f), std::numeric_limits<float>::min());
+
+    int bestAlignmentMatrixRowIndex = bestCorrelationResult.bestAnchorRowIndex;
+    candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
+        bestCorrelationResult.apexStarts.begin(),
+        bestCorrelationResult.apexStarts.end(),
+        [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
+        ));
 
     e = setAminoAcidFrequencies(candidateScores); ree;
 
