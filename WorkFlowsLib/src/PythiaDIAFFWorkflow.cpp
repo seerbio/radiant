@@ -1032,7 +1032,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
     e = ErrorUtils::isNotEmpty(candidateScoresTrainings); ree;
 
-    const int topNMS2IonsOptimization = 12;
+    constexpr int topNMS2IonsOptimization = 12;
     qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
 
     qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
@@ -1050,11 +1050,11 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
             &pythiaParametersExperiments
             ); ree;
 
-    constexpr bool useExtendedScores = true;
-    constexpr bool useNeuralNetworkScores = false;
-
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
+
+        constexpr bool useExtendedScores = false;
+        constexpr bool useNeuralNetworkScores = false;
 
         qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
 
@@ -1146,7 +1146,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_candidateScores.clear();
 
-    constexpr bool useExtendedScores = true;
+    constexpr bool useExtendedScores = false;
     constexpr bool useNeuralNetworkScores = false;
 
     const int topNMs2IonsMainAnalysis = std::max(
