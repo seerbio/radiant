@@ -1543,29 +1543,29 @@ Err ScoreOverseer::buildScores(
             [cosineSimilarityMin](float sum, float f){return f >= cosineSimilarityMin ? sum + f : sum;}
     );
 
-    const float cosineSimSumTop6 = std::accumulate(
+    const float cosineSimSumTop = std::accumulate(
             cosineSimToAnchorVec.begin(),
             cosineSimToAnchorVec.begin() + top6,
             0.0
     );
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop6] = cosineSimSumTop6;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop;
 
-    float cosineSimSumBottom6 = 0.1;
+    float cosineSimSumBottom = 0.1;
     if (cosineSimToAnchorVec.size() > top6) {
-        cosineSimSumBottom6 = std::accumulate(
+        cosineSimSumBottom = std::accumulate(
                 cosineSimToAnchorVec.begin() + top6 + 1,
                 cosineSimToAnchorVec.end(),
                 std::numeric_limits<float>::min()
         );
     }
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6] = cosineSimSumBottom6;
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom;
 
     candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
-            = std::log(std::max(1.0f, cosineSimSumTop6) / (cosineSimSumTop6 + cosineSimSumBottom6 + 1.0f));
+            = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
 
     candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
-            = cosineSimSumBottom6 / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
+            = cosineSimSumBottom / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
     QMap<QChar, int> aminoAcidCounts = {
             {'A', 0},

@@ -81,6 +81,7 @@ CandidateScorertron::CandidateScorertron()
 , m_turboXicMS1(nullptr)
 , d_ptr(new Private())
 , m_minPeakCount(3.9)
+, m_scanTimeRange(0)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
@@ -91,6 +92,7 @@ Err CandidateScorertron::init(
     const MzTargetKey &mzTargetKey,
     int topNMS2Ions,
     float minPeakCount,
+    float scanTimeRange,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1
@@ -103,17 +105,16 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
     e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
     e = ErrorUtils::isNotEmpty(mzTargetKey); ree;
+    e = ErrorUtils::isFalse(MathUtils::tZero(scanTimeRange)); ree;
     e = ErrorUtils::isAboveThreshold(
         topNMS2Ions,
         S_GLOBAL_SETTINGS.MIN_MS2_IONS,
-        ErrorUtilsParam::IncludeThreshold)
-    ; ree;
+        ErrorUtilsParam::IncludeThreshold); ree;
 
     e = ErrorUtils::isAboveThreshold(
         minPeakCount,
         1.0f,
-        ErrorUtilsParam::ExcludeThreshold)
-    ; ree;
+        ErrorUtilsParam::ExcludeThreshold); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
@@ -121,6 +122,7 @@ Err CandidateScorertron::init(
     m_xicPeakManager = xicPeakManager;
     m_msFrameMzTarget = msFrameMzTarget;
     m_turboXicMS1 = turboXicMS1;
+    m_scanTimeRange = scanTimeRange;
 
     if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
@@ -161,6 +163,7 @@ public:
     QVector<float> peakCorrelations;
     float peakCorrelationsSum = -1.0;
     Eigen::MatrixX<float> matBlockTrimmedIntensity;
+    Eigen::MatrixX<float> matBlockTrimmedIntensityShadows;
     Eigen::MatrixX<float> matBlockTrimmedMz;
     int bestAnchorColumnIndex = -1;
     QVector<int> apexStarts;
@@ -1029,6 +1032,13 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 pSize,
                 matBlockTrimmed.cols()
                 );
+
+            bestCorrelationResult->matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
+                p.first,
+                0,
+                pSize,
+                matBlockTrimmed.cols()
+                );
         }
 
 // #define OUTPUT_MATS
@@ -1139,6 +1149,34 @@ namespace {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumStDev]
                                                         = static_cast<float>(MathUtils::stDev(cosineSimsByRowSansZeros));
 
+        const QVector<float> &cosineSimToAnchorVec = bestCorrelationResult.peakCorrelations;
+
+        const int topSize = static_cast<int>(std::round(cosineSimToAnchorVec.size() / 2.0));
+
+        const float cosineSimSumTop = std::accumulate(
+                cosineSimToAnchorVec.begin(),
+                cosineSimToAnchorVec.begin() + topSize,
+                0.0f
+                );
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop;
+
+        float cosineSimSumBottom = 0.1;
+        if (cosineSimToAnchorVec.size() > topSize) {
+            cosineSimSumBottom = std::accumulate(
+                    cosineSimToAnchorVec.begin() + topSize + 1,
+                    cosineSimToAnchorVec.end(),
+                    std::numeric_limits<float>::min()
+            );
+        }
+        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom;
+
+        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
+                = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
+
+        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
+                = (cosineSimSumTop / (cosineSimSumTop + cosineSimSumBottom))
+                * candidateScores->targetDecoyCandidatePair->totalFragmentCount();
+
         ERR_RETURN
     }
 
@@ -1212,6 +1250,184 @@ namespace {
         ERR_RETURN
     }
 
+    Err setMassAccuracies(CandidateScores *candidateScores) {
+
+        ERR_INIT
+
+        constexpr int top12 = 12;
+
+        for (int i = 0; i < top12; i++) {
+
+            const float mzSearched = candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i];
+            const float mzFound = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i];
+
+            if (MathUtils::tZero(mzSearched)) {
+                continue;
+            }
+
+            const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
+
+            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = std::min(absAccuracy, 100.0f);
+
+        }
+
+        ERR_RETURN
+    }
+
+    Err setPeakShapeRatios(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0);
+
+        constexpr double chunkDivision = 3.0;
+
+        const int bestColumnIndex = bestCorrelationResult.bestAnchorColumnIndex;
+        const Eigen::VectorX<float> &bestAnchorColumn
+                                        = bestCorrelationResult.matBlockTrimmedIntensity.col(bestColumnIndex);
+
+        QVector<float> bestAnchorColumnVec = EigenUtils::convertEigenVectorToQVector(bestAnchorColumn);
+
+        const auto terminatorLogic = [](double d){return d < 1.0;};
+        const auto terminator = std::remove_if(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), terminatorLogic);
+        bestAnchorColumnVec.erase(terminator, bestAnchorColumnVec.end());
+
+        const int chunkSize = std::max(1, static_cast<int>(std::round(bestAnchorColumnVec.size() / chunkDivision)));
+        const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
+
+        if (bestAnchorColumnVec.size() < chunkDivision) {
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::numeric_limits<float>::min();
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = 1.0;
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::numeric_limits<float>::min();
+        }
+        else {
+
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::accumulate(
+                    bestAnchorColumnVec.begin(),
+                    bestAnchorColumnVec.begin() + chunkSize,
+                    std::numeric_limits<float>::min()
+            ) / bestAnchorColumnVecSum;
+
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = std::accumulate(
+                    bestAnchorColumnVec.begin() + chunkSize,
+                    bestAnchorColumnVec.begin() + (chunkSize * 2),
+                    std::numeric_limits<float>::min()
+            ) / bestAnchorColumnVecSum;
+
+            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::accumulate(
+                    bestAnchorColumnVec.begin() + (chunkSize * 2),
+                    bestAnchorColumnVec.end(),
+                    std::numeric_limits<float>::min()
+            ) / bestAnchorColumnVecSum;
+
+        }
+
+        ERR_RETURN
+    }
+
+    Err setAminoAcidFrequencies(CandidateScores *candidateScores) {
+
+        ERR_INIT
+
+        QMap<QChar, int> aminoAcidCounts = {
+            {'A', 0},
+            {'C', 0},
+            {'D', 0},
+            {'E', 0},
+            {'F', 0},
+            {'G', 0},
+            {'H', 0},
+            {'I', 0},
+            {'K', 0},
+            {'L', 0},
+            {'M', 0},
+            {'N', 0},
+            {'P', 0},
+            {'Q', 0},
+            {'R', 0},
+            {'S', 0},
+            {'T', 0},
+            {'V', 0},
+            {'W', 0},
+            {'Y', 0},
+            {'B', 0},
+            {'J', 0},
+            {'O', 0},
+            {'U', 0},
+            {'X', 0},
+            {'Z', 0}
+        };
+
+        const QString peptideString = candidateScores->targetDecoyCandidatePair->peptideString();
+
+        for (const QChar aminoAcid : peptideString) {
+
+            if (!aminoAcidCounts.contains(aminoAcid)) {
+                qDebug() << peptideString << "missing amino acid" << aminoAcid;
+                continue;
+            }
+
+            e = ErrorUtils::isTrue(aminoAcidCounts.contains(aminoAcid)); ree;
+            aminoAcidCounts[aminoAcid]++;
+        }
+
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA] = static_cast<float>(aminoAcidCounts['A']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC] = static_cast<float>(aminoAcidCounts['C']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD] = static_cast<float>(aminoAcidCounts['D']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE] = static_cast<float>(aminoAcidCounts['E']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF] = static_cast<float>(aminoAcidCounts['F']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG] = static_cast<float>(aminoAcidCounts['G']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH] = static_cast<float>(aminoAcidCounts['H']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI] = static_cast<float>(aminoAcidCounts['I']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK] = static_cast<float>(aminoAcidCounts['K']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL] = static_cast<float>(aminoAcidCounts['L']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM] = static_cast<float>(aminoAcidCounts['M']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN] = static_cast<float>(aminoAcidCounts['N']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP] = static_cast<float>(aminoAcidCounts['P']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ] = static_cast<float>(aminoAcidCounts['Q']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR] = static_cast<float>(aminoAcidCounts['R']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS] = static_cast<float>(aminoAcidCounts['S']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT] = static_cast<float>(aminoAcidCounts['T']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = static_cast<float>(aminoAcidCounts['V']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = static_cast<float>(aminoAcidCounts['W']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = static_cast<float>(aminoAcidCounts['Y']);
+
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB] = static_cast<float>(aminoAcidCounts['B']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ] = static_cast<float>(aminoAcidCounts['J']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO] = static_cast<float>(aminoAcidCounts['O']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU] = static_cast<float>(aminoAcidCounts['U']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX] = static_cast<float>(aminoAcidCounts['X']);
+        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ] = static_cast<float>(aminoAcidCounts['Z']);
+
+        ERR_RETURN
+    }
+
+    Err setShadowCorrelations(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.sum() > 0); ree;
+
+        for (int col = 0; col < bestCorrelationResult.matBlockTrimmedIntensity.cols(); col++) {
+
+            const Eigen::VectorX<float> &v1 = bestCorrelationResult.matBlockTrimmedIntensity.col(col);
+            const Eigen::VectorX<float> &v2 = bestCorrelationResult.matBlockTrimmedIntensityShadows.col(col);
+
+            float cosineSim;
+            e = EigenUtils::cosineSimilarity(v1, v2, &cosineSim); ree;
+
+            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = cosineSim;
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
@@ -1241,6 +1457,30 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
+    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount]
+                                                            = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
+
+    candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog]
+                                        = std::log(std::max(bestCorrelationResult.matBlockTrimmedIntensity.sum(),
+                                                    std::numeric_limits<float>::min()));
+
+    candidateScores->featuresArray[CandidateScores::Features::Charge]
+                                                        = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
+
+    const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
+
+    const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), m_scanTimeRange) / m_scanTimeRange);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = static_cast<float>(pdScanTime);
+
+    const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
+    candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = static_cast<float>(pepLength);
+
+    const auto mz = candidateScores->targetDecoyCandidatePair->mz();
+    candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
+
+    e = setAminoAcidFrequencies(candidateScores); ree;
+
     e = setCosineSimilarityMetrics(
         targetDecoyCandidatePair,
         bestCorrelationResult,
@@ -1264,6 +1504,18 @@ Err CandidateScorertron::setCandidateScores(
         ); ree;
 
     e = setFoundMs2Ions(
+        bestCorrelationResult,
+        candidateScores
+        ); ree;
+
+    e = setPeakShapeRatios(
+        bestCorrelationResult,
+        candidateScores
+        ); ree;
+
+    e = setMassAccuracies(candidateScores); ree;
+
+    e = setShadowCorrelations(
         bestCorrelationResult,
         candidateScores
         ); ree;

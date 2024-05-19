@@ -322,20 +322,20 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSim100MS1,
                 CandidateScores::Features::CosineSim100MS1Iso1,
                 CandidateScores::Features::CosineSim100MS1Iso2,
-                CandidateScores::Features::CosineSim100MS1PreMono
+                CandidateScores::Features::CosineSim100MS1PreMono,
 
                 // CandidateScores::Features::CosineSim45MS1,
                 // CandidateScores::Features::CosineSim20MS1,
-                // CandidateScores::Features::CosineSimSpectrumCubed,
+                CandidateScores::Features::CosineSimSpectrumCubed,
                 // CandidateScores::Features::KlDivSpectrumCubeRoot,
                 // CandidateScores::Features::CosineSimSum45,
                 // CandidateScores::Features::CosineSimSum20,
-                // CandidateScores::Features::CosineSimSumTop6,
-                // CandidateScores::Features::CosineSimSumBottom6,
-                // CandidateScores::Features::TopBottomRatio,
-                // CandidateScores::Features::TopBottomRatioNorm,
-                // CandidateScores::Features::Charge,
-                // CandidateScores::Features::ScanTimeDelta,
+                CandidateScores::Features::CosineSimSumTop,
+                CandidateScores::Features::CosineSimSumBottom,
+                CandidateScores::Features::TopBottomRatio,
+                CandidateScores::Features::TopBottomRatioNorm,
+                CandidateScores::Features::Charge,
+                CandidateScores::Features::ScanTimeDelta,
                 // CandidateScores::Features::ScanTimePd
         };
 
@@ -367,8 +367,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::CosineSimShadowsToAnchor2,
                             CandidateScores::Features::CosineSimShadowsToAnchor3,
                             CandidateScores::Features::CosineSimShadowsToAnchor4,
-                            CandidateScores::Features::CosineSimSpectrumOverTime,
-                            CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
+                            // CandidateScores::Features::CosineSimSpectrumOverTime,
                             CandidateScores::Features::TheoFragmentCount,
                             CandidateScores::Features::TotalIntensityLog
                     }));

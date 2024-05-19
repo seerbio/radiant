@@ -218,6 +218,7 @@ namespace {
                 static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
                 ); rree;
 
+            const float scanTimeRange = pi.scanTimeMinMax.second - pi.scanTimeMinMax.first;
             CandidateScorertron candidateScorertron;
             e = candidateScorertron.init(
                 pi.pythiaParameters,
@@ -225,6 +226,7 @@ namespace {
                 pi.targetKey,
                 pi.topNMs2Ions,
                 pi.minPeakCount,
+                scanTimeRange,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1

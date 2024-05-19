@@ -34,8 +34,8 @@ public:
         KlDivSpectrumCubeRoot,
         CosineSimSum45,
         CosineSimSum20,
-        CosineSimSumTop6,
-        CosineSimSumBottom6,
+        CosineSimSumTop,
+        CosineSimSumBottom,
         TopBottomRatio,
         TopBottomRatioNorm,//10
         Charge,
@@ -352,8 +352,8 @@ namespace CandidateScoresReaderRowNamespace {
     const QString KL_DIV_SPEC_CUBE_RT = QStringLiteral("KlDivSpectrumCubeRoot");
     const QString COS_SIM_SUM_45 = QStringLiteral("CosineSimSum45");
     const QString COS_SIM_SUM_20 = QStringLiteral("CosineSimSum20");
-    const QString COS_SIM_SUM_TOP_6 = QStringLiteral("CosineSimSumTop6");
-    const QString COS_SIM_SUM_BOTTOM_6 = QStringLiteral("CosineSimSumBottom6");
+    const QString COS_SIM_SUM_TOP_6 = QStringLiteral("CosineSimSumTop");
+    const QString COS_SIM_SUM_BOTTOM_6 = QStringLiteral("CosineSimSumBottom");
     const QString TOP_BOTTOM_RATIO = QStringLiteral("TopBottomRatio");
     const QString TOP_BOTTOME_RATIO_NORM = QStringLiteral("TopBottomRatioNorm");
     const QString CHARGE = QStringLiteral("Charge");
@@ -873,8 +873,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float klDivSpectrumCubeRoot = -1.0;
     float cosineSimSum45 = -1.0;
     float cosineSimSum20 = -1.0;
-    float cosineSimSumTop6 = -1.0;
-    float cosineSimSumBottom6 = -1.0;
+    float cosineSimSumTop = -1.0;
+    float cosineSimSumBottom = -1.0;
     float topBottomRatio = -1.0;
     float topBottomRatioNorm = -1.0;
     float charge = -1.0;
@@ -1147,8 +1147,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         klDivSpectrumCubeRoot = dataMap.value(KL_DIV_SPEC_CUBE_RT).toFloat();
         cosineSimSum45 = dataMap.value(COS_SIM_SUM_45).toFloat();
         cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toFloat();
-        cosineSimSumTop6 = dataMap.value(COS_SIM_SUM_TOP_6).toFloat();
-        cosineSimSumBottom6 = dataMap.value(COS_SIM_SUM_BOTTOM_6).toFloat();
+        cosineSimSumTop = dataMap.value(COS_SIM_SUM_TOP_6).toFloat();
+        cosineSimSumBottom = dataMap.value(COS_SIM_SUM_BOTTOM_6).toFloat();
         topBottomRatio = dataMap.value(TOP_BOTTOM_RATIO).toFloat();
         topBottomRatioNorm = dataMap.value(TOP_BOTTOME_RATIO_NORM).toFloat();
         charge = dataMap.value(CHARGE).toFloat();
@@ -1413,8 +1413,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {KL_DIV_SPEC_CUBE_RT, QVariant(klDivSpectrumCubeRoot)},
                 {COS_SIM_SUM_45, QVariant(cosineSimSum45)},
                 {COS_SIM_SUM_20, QVariant(cosineSimSum20)},
-                {COS_SIM_SUM_TOP_6, QVariant(cosineSimSumTop6)},
-                {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom6)},
+                {COS_SIM_SUM_TOP_6, QVariant(cosineSimSumTop)},
+                {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom)},
                 {TOP_BOTTOM_RATIO, QVariant(topBottomRatio)},
                 {TOP_BOTTOME_RATIO_NORM, QVariant(topBottomRatioNorm)},
                 {CHARGE, QVariant(charge)},
@@ -1676,8 +1676,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.klDivSpectrumCubeRoot = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot],
         row.cosineSimSum45 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45],
         row.cosineSimSum20 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20],
-        row.cosineSimSumTop6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop6],
-        row.cosineSimSumBottom6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom6],
+        row.cosineSimSumTop = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop],
+        row.cosineSimSumBottom = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom],
         row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio],
         row.topBottomRatioNorm = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm],
         row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge],
@@ -1945,8 +1945,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = candidateScoresReaderRow.klDivSpectrumCubeRoot;
         featuresArray[CandidateScores::Features::CosineSim45MS1] = candidateScoresReaderRow.cosineSimSum45;
         featuresArray[CandidateScores::Features::CosineSim20MS1] = candidateScoresReaderRow.cosineSimSum20;
-        featuresArray[CandidateScores::Features::CosineSimSumTop6] = candidateScoresReaderRow.cosineSimSumTop6;
-        featuresArray[CandidateScores::Features::CosineSimSumBottom6] = candidateScoresReaderRow.cosineSimSumBottom6;
+        featuresArray[CandidateScores::Features::CosineSimSumTop] = candidateScoresReaderRow.cosineSimSumTop;
+        featuresArray[CandidateScores::Features::CosineSimSumBottom] = candidateScoresReaderRow.cosineSimSumBottom;
         featuresArray[CandidateScores::Features::TopBottomRatio] = candidateScoresReaderRow.topBottomRatio;
         featuresArray[CandidateScores::Features::TopBottomRatioNorm] = candidateScoresReaderRow.topBottomRatioNorm;
         featuresArray[CandidateScores::Features::Charge] = candidateScoresReaderRow.charge;

@@ -42,6 +42,7 @@ public:
         const MzTargetKey &mzTargetKey,
         int topNMS2Ions,
         float minPeakCount,
+        float scanTimeRange,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
         TurboXIC *turboXicMS1
@@ -93,6 +94,7 @@ private:
     MzTargetKey m_mzTargetKey;
 
     float m_minPeakCount;
+    float m_scanTimeRange;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;
