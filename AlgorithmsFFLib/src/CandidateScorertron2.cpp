@@ -1162,12 +1162,12 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
         }
 
-        const float cosineSimMax = cosineSimsByRow.maxCoeff();
+        const float cosineSimMax = cosineSimsByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimMax;
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
-        const float klDivMax = klDivByRow.maxCoeff();
+        const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
         candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
         candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
                                                     = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));

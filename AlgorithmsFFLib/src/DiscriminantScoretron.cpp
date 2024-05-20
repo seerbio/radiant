@@ -328,8 +328,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             // CandidateScores::Features::CosineSimSum100GreaterThan80,
             // CandidateScores::Features::AllignedMaxIndexesCount,
             // CandidateScores::Features::CosineSim100MS1,
-            // CandidateScores::Features::CosineSimSpectrumCubed,
-            // CandidateScores::Features::KlDivSpectrumCubeRoot,
+            CandidateScores::Features::CosineSimSpectrumCubed,
+            CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
             CandidateScores::Features::CosineSimSum20,
             CandidateScores::Features::CosineSimSumTop,
@@ -372,8 +372,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             // CandidateScores::Features::CosineSimShadowsToAnchor3,
                             // CandidateScores::Features::CosineSimShadowsToAnchor4,
                             // CandidateScores::Features::CosineSimSpectrumOverTime,
-                            // CandidateScores::Features::TheoFragmentCount,
-                            // CandidateScores::Features::TotalIntensityLog
+                            CandidateScores::Features::TheoFragmentCount,
+                            CandidateScores::Features::TotalIntensityLog
                     }));
             return vec;
         }

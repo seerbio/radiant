@@ -681,7 +681,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             &fdrVsCounts
         ); ree;
 
-        constexpr int fdrKey = 2;
+        constexpr int fdrKey = 5;
         constexpr int fdrKey2Percent = 2;
 
         e = honeIRTAndMassCalibration(
