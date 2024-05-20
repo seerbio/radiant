@@ -976,7 +976,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             matriciesAndVecs.integrationVec
             );
 
-
         Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
               piiWorking.first.first,
               0,
@@ -993,7 +992,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.integrationVec.segment(
             piiWorking.first.first,
             piiWorking.first.second - piiWorking.first.first + 1
-            );
+            ).eval();
 
         const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
 
@@ -1042,28 +1041,28 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 0,
                 pSize,
                 matBlockTrimmed.cols()
-                );
+                ).eval();
 
             bestCorrelationResult->matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
                 p.first,
                 0,
                 pSize,
                 matBlockTrimmed.cols()
-                );
+                ).eval();
 
             bestCorrelationResult->matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
                 p.first,
                 0,
                 pSize,
                 matBlockTrimmed.cols()
-                );
+                ).eval();
 
             bestCorrelationResult->matBlockTrimmedIntensity20 = matriciesAndVecs.intensityMatrix20.block(
                 p.first,
                 0,
                 pSize,
                 matBlockTrimmed.cols()
-                );
+                ).eval();
 
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensity45,

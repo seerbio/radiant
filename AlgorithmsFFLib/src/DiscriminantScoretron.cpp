@@ -337,8 +337,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::TopBottomRatio,
             CandidateScores::Features::TopBottomRatioNorm,
             CandidateScores::Features::Charge,
-            CandidateScores::Features::ScanTimeDelta,
-            CandidateScores::Features::ScanTimePd
+            // CandidateScores::Features::ScanTimeDelta,
+            // CandidateScores::Features::ScanTimePd
         };
 
         if (useNeuralNetworkScores) {
@@ -353,6 +353,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             // CandidateScores::Features::CosineSim100MS1PreMono,
                             // CandidateScores::Features::CosineSim100MS1Iso1,
                             // CandidateScores::Features::CosineSim100MS1Iso2,
+                            CandidateScores::Features::ScanTimeDelta,
+                            CandidateScores::Features::ScanTimePd,
                             // CandidateScores::Features::PeakShapeRatio1,
                             // CandidateScores::Features::PeakShapeRatio2,
                             // CandidateScores::Features::PeakShapeRatio3,

@@ -136,7 +136,8 @@ private:
 
     Err honeIRTAndMassCalibration(
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
-        int topNCandidates
+        int topNCandidates,
+        int topCandidatesMass
     );
 
 
