@@ -354,7 +354,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 //     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
-#define WRITE_CANDIDATE_SCORES
+// #define WRITE_CANDIDATE_SCORES
 #ifdef WRITE_CANDIDATE_SCORES
     // e = updateProteinGroupAnnotation(
     //         m_fastaUri,
