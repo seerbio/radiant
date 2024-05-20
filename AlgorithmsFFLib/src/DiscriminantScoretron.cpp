@@ -372,8 +372,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             // CandidateScores::Features::CosineSimShadowsToAnchor3,
                             // CandidateScores::Features::CosineSimShadowsToAnchor4,
                             // CandidateScores::Features::CosineSimSpectrumOverTime,
-                            CandidateScores::Features::TheoFragmentCount,
-                            CandidateScores::Features::TotalIntensityLog
+                            // CandidateScores::Features::TheoFragmentCount,
+                            // CandidateScores::Features::TotalIntensityLog
                     }));
             return vec;
         }
