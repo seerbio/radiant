@@ -142,7 +142,7 @@ namespace {
             bool isDecoy = false;
         };
 
-        QHash<PeptideStringWithMods, QVector<CandidateScoresEntry>> pepStrWModsVsCandScoresEntries;
+        QMap<PeptideStringWithMods, QVector<CandidateScoresEntry>> pepStrWModsVsCandScoresEntries;
 
         for (CandidateScores *cs : *candidateScoresPntrs) {
 

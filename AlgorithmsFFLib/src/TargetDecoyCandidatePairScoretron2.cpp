@@ -115,7 +115,7 @@ namespace {
     Err buildMzHashedVsCount(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
             int topNFragIons,
-            QHash<MzHashed, int> *mzHashedVsCount
+            QMap<MzHashed, int> *mzHashedVsCount
             ) {
 
         ERR_INIT
@@ -195,7 +195,7 @@ namespace {
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
-            QHash<MzHashed, int> mzHashedVsCount;
+            QMap<MzHashed, int> mzHashedVsCount;
             e = buildMzHashedVsCount(
                 pi.targetDecoyPointers,
                 pi.topNMs2Ions,

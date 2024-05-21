@@ -40,7 +40,7 @@ Err CandidateScorertron::Private::init() {
     ERR_INIT
 
     constexpr int filterLengthMs2 = 5;
-    constexpr int filterLengthIntegration = 5;
+    constexpr int filterLengthIntegration = 7;
     constexpr int order = 2;
     constexpr int derivative = 0;
     constexpr int rate = 1;
@@ -852,6 +852,7 @@ namespace {
     Err findBestAnchorColumn(
         const Eigen::MatrixX<float> &matBlockTrimmed,
         const QVector<int> &apexStarts,
+        QVector<float> *peakCorrelations,
         int *bestAnchorColumnIndex,
         int *bestAnchorRowIndex
         ) {
@@ -862,68 +863,45 @@ namespace {
         e = ErrorUtils::isNotEmpty(apexStarts); ree;
         e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockTrimmed.cols())); ree;
 
-        Eigen::MatrixX<float> matCount = matBlockTrimmed;
-        matCount = (matBlockTrimmed.array() > 0.0f).select(1.0, matCount);
-        const Eigen::VectorX<float> colSizes = matCount.colwise().sum();
+        const int colCount = static_cast<int>(matBlockTrimmed.cols());
 
-        struct Temp {
-            int fragIonIndex = -1;
-            int apexIndex = -1;
-            int peakLength = -1;
-            float intensity = -1.0;
-        };
+        float bestCosineSimSum = 0.0;
+        for (int anchorCol = 0; anchorCol < colCount; anchorCol++) {
 
-        QVector<Temp> temps;
-        for (int i = 0; i < apexStarts.size(); i++) {
-            Temp t;
-            t.fragIonIndex = i;
-            t.apexIndex = apexStarts.at(i);
-            t.peakLength = colSizes.coeff(i);
-            t.intensity = matBlockTrimmed.coeff(t.apexIndex, i);
-            temps.push_back(t);
-        }
+            const Eigen::VectorX<float> &anchor = matBlockTrimmed.col(anchorCol);
 
-        const auto sortLogic = [](const Temp &l, const Temp &r) {
-            if (l.apexIndex == r.apexIndex) {
-                if (l.peakLength == r.peakLength) {
-                    return l.intensity > r.intensity;
-                }
-                return l.peakLength > r.peakLength;
+            QVector<float> corrs;
+            corrs.reserve(colCount);
+            float cosineSimSum = 0.0;
+            for (int col = 0; col < colCount; col++) {
+                const Eigen::VectorX<float> &c = matBlockTrimmed.col(col);
+
+                float cosineSim;
+                e = EigenUtils::cosineSimilarity(anchor, c, &cosineSim); ree;
+                cosineSimSum += cosineSim;
+                corrs.push_back(cosineSim);
             }
-            return l.apexIndex < r.apexIndex;
-        };
-        std::sort(temps.begin(), temps.end(), sortLogic);
 
-        QHash<int, int> apexIndexVsCount;
-        for (const Temp &t : temps) {
-            apexIndexVsCount[t.apexIndex]++;
-        }
-
-        int bestApexIndex = -1;
-        int bestApexIndexCnt = -1;
-        for (auto it = apexIndexVsCount.begin(); it != apexIndexVsCount.end(); ++it) {
-            if (it.value() > bestApexIndexCnt) {
-                bestApexIndex = it.key();
-                bestApexIndexCnt = it.value();
+            if (cosineSimSum > bestCosineSimSum) {
+                *bestAnchorColumnIndex = anchorCol;
+                *peakCorrelations = corrs;
+                bestCosineSimSum = cosineSimSum;
             }
         }
 
-        for (const Temp &t : temps) {
-            if (t.apexIndex == bestApexIndex) {
-                *bestAnchorRowIndex = bestApexIndex;
-                *bestAnchorColumnIndex = t.fragIonIndex;
-                break;
-            }
-        }
+        const Eigen::VectorX<float> &anchor = matBlockTrimmed.col(*bestAnchorColumnIndex);
+        const QVector<float> anchorVec = EigenUtils::convertEigenVectorToQVector(anchor);
+
+        *bestAnchorRowIndex = MathUtils::closest(anchorVec, anchor.maxCoeff());
 
         ERR_RETURN
     }
 
     Err calculatePeakCorrelations(
-        const Eigen::MatrixX<float> &matBlockTrimmed,
-        int bestAnchorColumnIndex,
-        QVector<float> *peakCorrelations
-        ) {
+    const Eigen::MatrixX<float> &matBlockTrimmed,
+    int bestAnchorColumnIndex,
+    QVector<float> *peakCorrelations
+    ) {
 
         ERR_INIT
 
@@ -951,6 +929,7 @@ namespace {
 
         ERR_RETURN
     }
+
 
 }//namespace
 Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
@@ -1005,20 +984,15 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             m_pythiaParameters.stopThresholdFraction
             );
 
+        QVector<float> peakCorrelations;
         int bestAnchorColumnIndex = -1;
         int bestAnchorRowIndex = -1;
         e = findBestAnchorColumn(
             matBlockTrimmed,
             apexStarts,
+            &peakCorrelations,
             &bestAnchorColumnIndex,
             &bestAnchorRowIndex
-            ); ree;
-
-        QVector<float> peakCorrelations;
-        e = calculatePeakCorrelations(
-            matBlockTrimmed,
-            bestAnchorColumnIndex,
-            &peakCorrelations
             ); ree;
 
         const float peakCorrelationsSum
@@ -1094,9 +1068,9 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
 namespace {
 
-    float calculatedCosineSimSumGreaterThan80(const QVector<float> & peakCorrelations) {
+    float calculatedCosineSimSumGreaterThan80(const QVector<float> &peakCorrelations) {
 
-        constexpr int top6 = 6;
+        const int top6 = std::min(6, peakCorrelations.size());
         constexpr float cosineSimToAnchorThreshold = 0.8;
         const float scoreGreater = std::accumulate(
             peakCorrelations.begin(),

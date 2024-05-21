@@ -152,7 +152,7 @@ private:
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
     QVector<CandidateScores> m_candidateScores;
-    QHash<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
+    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
