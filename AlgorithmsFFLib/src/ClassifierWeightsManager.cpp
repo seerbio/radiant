@@ -142,10 +142,10 @@ Err ClassifierWeightsManager::fitWeights(
     const Eigen::MatrixX<float> A = EigenUtils::convertQVectorsToEigenMatrix(matA);
     const Eigen::VectorX<float> b = EigenUtils::convertQVectorToEigenVector(vecB);
 
-    double lambda = 0.001; //TODO auto set this
-    Eigen::MatrixX<float> Areg = A + lambda * Eigen::MatrixX<float>::Identity(A.rows(), A.cols());
+    // double lambda = 0.001; //TODO auto set this
+    // Eigen::MatrixX<float> Areg = A + lambda * Eigen::MatrixX<float>::Identity(A.rows(), A.cols());
 
-    Eigen::VectorX<float> x = Areg.fullPivHouseholderQr().solve(b);
+    Eigen::VectorX<float> x = A.fullPivHouseholderQr().solve(b);
     *weights = EigenUtils::convertEigenVectorToQVector(x);
 
     ERR_RETURN

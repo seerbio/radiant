@@ -40,7 +40,6 @@ public:
         TopBottomRatioNorm,//10
         Charge,
         ScanTimeDelta,
-        ScanTimeRange,
         ScanTimePd,
         ScanIonCount,
         MzNorm,
@@ -359,7 +358,6 @@ namespace CandidateScoresReaderRowNamespace {
     const QString CHARGE = QStringLiteral("Charge");
     const QString MASS = QStringLiteral("Mass");
     const QString SCAN_TIME_DELTA = QStringLiteral("ScanTimeDelta");
-    const QString SCAN_TIME_RANGE = QStringLiteral("ScanTimeRange");
     const QString SCAN_TIME_PD = QStringLiteral("ScanTimePd");
     const QString SCAN_ION_CNT = QStringLiteral("ScanIonCount");
     const QString MZ_NORM = QStringLiteral("MzNorm");
@@ -619,7 +617,6 @@ namespace CandidateScoresReaderRowNamespace {
             CHARGE,
             MASS,
             SCAN_TIME_DELTA,
-            SCAN_TIME_RANGE,
             SCAN_TIME_PD,
             SCAN_ION_CNT,
             MZ_NORM,
@@ -880,7 +877,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float charge = -1.0;
     float mass = -1.0;
     float scanTimeDelta = -1.0;
-    float scanTimeRange = -1.0;
     float scanTimePd = -1.0;
     float scanIonCount = -1.0;
     float mzNorm = -1.0;
@@ -1154,7 +1150,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         charge = dataMap.value(CHARGE).toFloat();
         mass = dataMap.value(MASS).toFloat();
         scanTimeDelta = dataMap.value(SCAN_TIME_DELTA).toFloat();
-        scanTimeRange = dataMap.value(SCAN_TIME_RANGE).toFloat();
         scanTimePd = dataMap.value(SCAN_TIME_PD).toFloat();
         scanIonCount = dataMap.value(SCAN_ION_CNT).toFloat();
         mzNorm = dataMap.value(MZ_NORM).toFloat();
@@ -1420,7 +1415,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {CHARGE, QVariant(charge)},
                 {MASS, QVariant(mass)},
                 {SCAN_TIME_DELTA, QVariant(scanTimeDelta)},
-                {SCAN_TIME_RANGE, QVariant(scanTimeRange)},
                 {SCAN_TIME_PD, QVariant(scanTimePd)},
                 {SCAN_ION_CNT, QVariant(scanIonCount)},
                 {MZ_NORM, QVariant(mzNorm)},
@@ -1683,7 +1677,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge],
         row.mass = candidateScores->featuresArray[CandidateScores::Features::Mass],
         row.scanTimeDelta = candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta],
-        row.scanTimeRange = candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange],
         row.scanTimePd = candidateScores->featuresArray[CandidateScores::Features::ScanTimePd],
         row.scanIonCount = candidateScores->featuresArray[CandidateScores::Features::ScanIonCount],
         row.mzNorm = candidateScores->featuresArray[CandidateScores::Features::MzNorm],
@@ -1952,7 +1945,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::Charge] = candidateScoresReaderRow.charge;
         featuresArray[CandidateScores::Features::Mass] = candidateScoresReaderRow.mass;
         featuresArray[CandidateScores::Features::ScanTimeDelta] = candidateScoresReaderRow.scanTimeDelta;
-        featuresArray[CandidateScores::Features::ScanTimeRange] = candidateScoresReaderRow.scanTimeRange;
         featuresArray[CandidateScores::Features::ScanTimePd] = candidateScoresReaderRow.scanTimePd;
         featuresArray[CandidateScores::Features::ScanIonCount] = candidateScoresReaderRow.scanIonCount;
         featuresArray[CandidateScores::Features::MzNorm] = candidateScoresReaderRow.mzNorm;

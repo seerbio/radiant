@@ -173,6 +173,18 @@ public:
     int bestAnchorRowIndex = -1;
     QVector<int> apexStarts;
     PeakIntegrationIndexes peakIntegrationIndexes;
+
+    [[nodiscard]] QVector<int> columnNonZeroPeakLengths() const {
+
+        const int cols = static_cast<int>(matBlockTrimmedIntensity.cols());
+        QVector<int> peakLengths(cols);
+
+        for (int col = 0; col < cols; col++) {
+            peakLengths[col] = EigenUtils::nonZeros(matBlockTrimmedIntensity.col(col));
+        }
+
+        return peakLengths;
+    }
 };
 
 namespace {
@@ -1443,11 +1455,68 @@ namespace {
 
             const Eigen::VectorX<float> &v1 = bestCorrelationResult.matBlockTrimmedIntensity.col(col);
             const Eigen::VectorX<float> &v2 = bestCorrelationResult.matBlockTrimmedIntensityShadows.col(col);
+            const float v1Max = v1.maxCoeff();
+            const float v2Max = v2.maxCoeff();
 
             float cosineSim;
             e = EigenUtils::cosineSimilarity(v1, v2, &cosineSim); ree;
 
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = std::max(cosineSim, 0.0f);
+            candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] += cosineSim;
+            candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
+
+            float intensityRatio = MathUtils::tZero(v1Max) ? 1.0f : v2Max / v1Max;
+            intensityRatio = MathUtils::tZero(v2Max) ? 0.0f : intensityRatio;
+            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = intensityRatio;
+        }
+
+        ERR_RETURN
+    }
+
+    Err setMzPeakLengthRelatedScores(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.sum() > 0); ree;
+
+        const QVector<int> mzPeakLengthsVec = bestCorrelationResult.columnNonZeroPeakLengths();
+
+        const int mzPeakLengthsSum = std::accumulate(
+            mzPeakLengthsVec.begin(),
+            mzPeakLengthsVec.end(),
+            0
+            );
+
+        QVector<float> mzPeakLengthsNormalized;
+        if (mzPeakLengthsSum != 0) {
+            std::transform(
+                    mzPeakLengthsVec.begin(),
+                    mzPeakLengthsVec.end(),
+                    std::back_inserter(mzPeakLengthsNormalized),
+                    [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
+            );
+        }
+        e = ErrorUtils::isTrue(mzPeakLengthsNormalized.size() <= arraySizeMax); ree;
+        for (int i = 0; i < mzPeakLengthsNormalized.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
+        }
+
+        const QVector<int> &columnApexIndexes = bestCorrelationResult.apexStarts;
+        const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
+        const double columnApexIndexesSize = columnApexIndexes.size();
+        QVector<float> columnApexIndexRatiosToAnchor;
+        std::transform(
+                columnApexIndexes.begin(),
+                columnApexIndexes.end(),
+                std::back_inserter(columnApexIndexRatiosToAnchor),
+                [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
+                );
+
+        e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
+        for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
         }
 
         ERR_RETURN
@@ -1485,6 +1554,8 @@ Err CandidateScorertron::setCandidateScores(
             std::numeric_limits<float>::min()
             );
 
+    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
@@ -1511,6 +1582,8 @@ Err CandidateScorertron::setCandidateScores(
 
     const auto mz = candidateScores->targetDecoyCandidatePair->mz();
     candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
+    candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
+    candidateScores->featuresArray[CandidateScores::Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
         = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());

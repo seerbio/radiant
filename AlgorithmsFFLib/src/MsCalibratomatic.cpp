@@ -19,7 +19,7 @@ MsCalibratomatic::MsCalibratomatic()
 , m_isInitRT(false)
 , m_isInitMS1(false)
 , m_isInitMS2(false)
-, m_polynomialOrderMassCal(5)
+, m_polynomialOrderMassCal(3)
 {}
 
 namespace {

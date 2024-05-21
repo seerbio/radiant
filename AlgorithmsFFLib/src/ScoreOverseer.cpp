@@ -1252,7 +1252,6 @@ Err ScoreOverseer::buildScores(
             std::numeric_limits<float>::min(),
             scanTimeMinMax.second - scanTimeMinMax.first
     );
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimeRange] = scanTimeRange;
 
     candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
 

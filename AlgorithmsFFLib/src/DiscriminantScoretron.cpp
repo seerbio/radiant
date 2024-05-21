@@ -10,6 +10,8 @@
 
 #include <QtConcurrent/QtConcurrent>
 
+#include "EigenUtils.h"
+
 namespace {
 
     struct BuildClassiferParallelInput {
@@ -314,7 +316,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
         const QVector<CandidateScores::Features> baseFeatures = {
 
-            // CandidateScores::Features::CosineSimSum100,
             CandidateScores::Features::CosineSimSum100GreaterThan80,
             CandidateScores::Features::AllignedMaxIndexesCount,
             CandidateScores::Features::CosineSimSpectrumOverTimeCubed,
@@ -323,11 +324,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::CosineSim100MS1Iso1,
             CandidateScores::Features::CosineSim100MS1Iso2,
             CandidateScores::Features::CosineSim100MS1PreMono,
-
-            // CandidateScores::Features::CosineSimSum100,
-            // CandidateScores::Features::CosineSimSum100GreaterThan80,
-            // CandidateScores::Features::AllignedMaxIndexesCount,
-            // CandidateScores::Features::CosineSim100MS1,
             CandidateScores::Features::CosineSimSpectrumCubed,
             CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
@@ -349,10 +345,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
             vec.append(candidateScores->selectFeaturesArrayFeatures({
 //                            CandidateScores::Features::CosineSimSum100Frequencies,
-                            // CandidateScores::Features::CosineSimSum100MS1,
-                            // CandidateScores::Features::CosineSim100MS1PreMono,
-                            // CandidateScores::Features::CosineSim100MS1Iso1,
-                            // CandidateScores::Features::CosineSim100MS1Iso2,
+                            CandidateScores::Features::CosineSimSum100,
                             CandidateScores::Features::ScanTimeDelta,
                             CandidateScores::Features::ScanTimePd,
                             CandidateScores::Features::PeakShapeRatio1,
