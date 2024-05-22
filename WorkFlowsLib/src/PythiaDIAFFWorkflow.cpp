@@ -1339,9 +1339,9 @@ namespace {
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 8;
+        constexpr int baggingSize = 12;
         constexpr float learningRate = 0.003;
-        constexpr int epochs = 3; //TODO make this settable
+        constexpr int epochs = 2; //TODO make this settable
         FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
         e = fdrcLassifierNeuralNet.init(
                 epochs,
@@ -1349,6 +1349,9 @@ namespace {
                 batchSize,
                 learningRate
         ); ree;
+
+        // explore the overfitting w/ the frequencies, RBF kernel for LDA, training on all candidates instead of top integration
+        // msreader using turboxic as the point storage
 
         e = fdrcLassifierNeuralNet.exec(
                 xData,

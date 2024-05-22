@@ -583,6 +583,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
+    const QVector<float> &ms1Averagine,
     TargetDecoyCandidatePair* targetDecoyCandidatePair,
     CandidateScores *candidateScores
     ) const {
@@ -640,6 +641,7 @@ Err CandidateScorertron::calculateScores(
     e = setCandidateScores(
         targetDecoyCandidatePair,
         bestCorrelationResult,
+        ms1Averagine,
         candidateScores
         ); ree;
 
@@ -1112,13 +1114,13 @@ namespace {
         ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
         const int correlationSize = bestCorrelationResult.peakCorrelations.size();
-        for (int i = 0; i < ms2IonsTheo.size(); i++) {
+        for (int i = 0; i < std::min(ms2IonsTheo.size(), 6); i++) {
             // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
-            //
-            // if (i < correlationSize) {
-            //     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
-            //                         += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
-            // }
+
+            if (i < correlationSize) {
+                candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+                                    += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
+            }
         }
 
         QVector<float> intensitiesTheo;
@@ -1532,10 +1534,40 @@ namespace {
         ERR_RETURN
     }
 
+    Err setMs1Averagein(
+        const QVector<float> &ms1Averagine,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        const Eigen::VectorX<float> averagineVec = EigenUtils::convertQVectorToEigenVector(ms1Averagine);
+
+        const QVector<float> ms1IsoDisActualVec = {
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
+            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+            };
+        const Eigen::VectorX<float> ms1IsoDistActual = EigenUtils::convertQVectorToEigenVector(ms1IsoDisActualVec);
+
+        float cosineSimAveragine;
+        e = EigenUtils::cosineSimilarity(
+            averagineVec,
+            ms1IsoDistActual,
+            &cosineSimAveragine
+            ); ree;
+
+        candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
     const BestCorrelationResult& bestCorrelationResult,
+    const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
     ) const {
 
@@ -1626,27 +1658,17 @@ Err CandidateScorertron::setCandidateScores(
                                              ? targetDecoyCandidatePair->ms2IonsDecoy()
                                              : targetDecoyCandidatePair->ms2IonsTarget();
 
-    e = setTheoreticalMs2Ions(
-        ms2IonsTheoritical,
-        candidateScores
-        ); ree;
+    e = setTheoreticalMs2Ions(ms2IonsTheoritical, candidateScores); ree;
 
-    e = setFoundMs2Ions(
-        bestCorrelationResult,
-        candidateScores
-        ); ree;
+    e = setFoundMs2Ions(bestCorrelationResult, candidateScores); ree;
 
-    e = setPeakShapeRatios(
-        bestCorrelationResult,
-        candidateScores
-        ); ree;
+    e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
 
     e = setMassAccuracies(candidateScores); ree;
 
-    e = setShadowCorrelations(
-        bestCorrelationResult,
-        candidateScores
-        ); ree;
+    e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
+
+    e = setMs1Averagein(ms1Averagine, candidateScores); ree;
 
     ERR_RETURN
 }

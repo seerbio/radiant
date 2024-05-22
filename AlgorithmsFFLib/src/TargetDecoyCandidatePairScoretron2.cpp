@@ -6,7 +6,7 @@
 
 #include "CandidateScores.h"
 #include "CandidateScorertron2.h"
-#include "FeatureFinderHillBuilder.h"
+#include "IsotopicDistributionBuilder.h"
 #include "MsCalibratomatic.h"
 #include "ParallelUtils.h"
 #include "XICPeakManager.h"
@@ -39,6 +39,7 @@ public:
     QPair<double, double> scanTimeMinMax;
     TurboXIC *turboXicMS1 = nullptr;
     float minPeakCount = -1.0;
+    QMap<int, QVector<float>> averagineTable;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -83,6 +84,8 @@ Err TargetDecoyCandidatePairScoretron2::init(
         e = buildMzTargetKeyVsMsFrames(); ree;
     }
 
+    e = buildAveragineTable(); ree;
+
     ERR_RETURN
 }
 
@@ -98,6 +101,23 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
         e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
         m_mzTargetKeyVsMsFrame.insert(it.key(), msFrame);
     }
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretron2::buildAveragineTable() {
+
+    ERR_INIT
+
+    for (int nominalMass = 300; nominalMass < 10000; nominalMass += 10) {
+        QVector<float> preMonoIncluded = {0.0f};
+        const QVector<double> isoDis = IsotopicDistributionBuilder::getIsotopicDistribution(static_cast<double>(nominalMass));
+        constexpr int maxAveragineVecLength = 3;
+        preMonoIncluded.append({isoDis.begin(), isoDis.begin() + maxAveragineVecLength});
+        m_averagineTable.insert(nominalMass, preMonoIncluded);
+    }
+
+    e = ErrorUtils::isNotEmpty(m_averagineTable); ree;
 
     ERR_RETURN
 }
@@ -234,10 +254,15 @@ namespace {
 
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
+                const int nominalMass = static_cast<int>((std::round(tdcp->mass() / 10) * 10));
+                e = ErrorUtils::isTrue(pi.averagineTable.contains(nominalMass)); rree;
+                const QVector<float> ms1Averagine = pi.averagineTable.value(nominalMass);
+
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsTarget(),
+                        ms1Averagine,
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
@@ -247,6 +272,7 @@ namespace {
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsDecoy(),
+                        ms1Averagine,
                         tdcp,
                         &candidateScoresDecoy
                 ); rree;
@@ -383,6 +409,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
         tdppi.turboXicMS1 = m_turboXICMS1;
         tdppi.minPeakCount = minPeakCount;
+        tdppi.averagineTable = m_averagineTable;
 
         input->push_back(tdppi);
     }

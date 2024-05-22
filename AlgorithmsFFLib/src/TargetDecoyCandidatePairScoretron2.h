@@ -105,6 +105,8 @@ private:
 
     Err buildMzTargetKeyVsMsFrames();
 
+    Err buildAveragineTable();
+
 
 private:
 
@@ -118,6 +120,7 @@ private:
     QPair<ScanTime, ScanTime> m_scanTimeMinMax;
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFrame;
+    QMap<NominalMzMass, QVector<float>> m_averagineTable;
 
 
 };
