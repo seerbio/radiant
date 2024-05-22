@@ -36,8 +36,8 @@ public:
         CosineSimSum20,
         CosineSimSumTop,
         CosineSimSumBottom,
-        TopBottomRatio,
-        TopBottomRatioNorm,//10
+        TopBottomRatio,//10
+        TopBottomRatioNorm,
         Charge,
         ScanTimeDelta,
         ScanTimePd,
@@ -272,24 +272,22 @@ public:
         Ms1IntensityFoundIso2,
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
-
         CosineSimSpectrumStDev,
-
         CosineSimSum100MS1,
-        MS1Averagine,
-        CosineSimSum100Frequencies,
-        MzTargetDecoyFrequency1,
-        MzTargetDecoyFrequency2,
-        MzTargetDecoyFrequency3,
-        MzTargetDecoyFrequency4,
-        MzTargetDecoyFrequency5,
-        MzTargetDecoyFrequency6,
-        MzTargetDecoyFrequency7,
-        MzTargetDecoyFrequency8,
-        MzTargetDecoyFrequency9,
-        MzTargetDecoyFrequency10,
-        MzTargetDecoyFrequency11,
-        MzTargetDecoyFrequency12,
+        // MS1Averagine,
+        // CosineSimSum100Frequencies,
+        // MzTargetDecoyFrequency1,//250
+        // MzTargetDecoyFrequency2,
+        // MzTargetDecoyFrequency3,
+        // MzTargetDecoyFrequency4,
+        // MzTargetDecoyFrequency5,
+        // MzTargetDecoyFrequency6,
+        // MzTargetDecoyFrequency7,
+        // MzTargetDecoyFrequency8,
+        // MzTargetDecoyFrequency9,
+        // MzTargetDecoyFrequency10,
+        // MzTargetDecoyFrequency11,//260
+        // MzTargetDecoyFrequency12,
 
         FeaturesSize
     };

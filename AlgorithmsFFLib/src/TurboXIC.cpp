@@ -263,3 +263,18 @@ Err TurboXIC::getRTreeLimits(
 bool TurboXIC::isInit() {
     return d_ptr->isInit();
 }
+
+void TurboXIC::filterXICPointsByScanNumber(
+    ScanNumber scanNumberMin,
+    ScanNumber scanNumberMax,
+    XICPoints* xicPoints
+    ) {
+
+    const auto terminatorLogic = [scanNumberMin, scanNumberMax](const XICPoint &p) {
+        return !(scanNumberMin <= p.scanNumber && p.scanNumber <= scanNumberMax);
+    };
+
+    const auto terminator = std::remove_if(xicPoints->begin(), xicPoints->end(), terminatorLogic);
+
+    xicPoints->erase(terminator, xicPoints->end());
+}

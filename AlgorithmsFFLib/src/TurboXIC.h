@@ -112,6 +112,12 @@ public:
     */
     bool isInit();
 
+    static void filterXICPointsByScanNumber(
+        ScanNumber scanNumberMin,
+        ScanNumber scanNumberMzx,
+        XICPoints *xicPoints
+        );
+
 
 private:
 

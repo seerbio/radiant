@@ -1111,12 +1111,22 @@ namespace {
                                     : targetDecoyCandidatePair->ms2IonsTarget();
         ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
+        const int correlationSize = bestCorrelationResult.peakCorrelations.size();
+        for (int i = 0; i < ms2IonsTheo.size(); i++) {
+            // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
+            //
+            // if (i < correlationSize) {
+            //     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+            //                         += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
+            // }
+        }
+
         QVector<float> intensitiesTheo;
         std::transform(
             ms2IonsTheo.begin(),
             ms2IonsTheo.end(),
             std::back_inserter(intensitiesTheo),
-            [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
+            [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
             );
 
         const Eigen::VectorX<float> intensitiesTheoVec = EigenUtils::convertQVectorToEigenVector(intensitiesTheo);
@@ -1137,12 +1147,12 @@ namespace {
              &cosineSimsByRow
              ); ree;
 
-        Eigen::VectorX<float> klDivByRow;
-        e = EigenUtils::rowWiseKLDivergenceOfMatrices(
-            bestCorrelationResult.matBlockTrimmedIntensity,
-            intensitiesTheoMat,
-            &klDivByRow
-            ); ree;
+        // Eigen::VectorX<float> klDivByRow;
+        // e = EigenUtils::rowWiseKLDivergenceOfMatrices(
+        //     bestCorrelationResult.matBlockTrimmedIntensity,
+        //     intensitiesTheoMat,
+        //     &klDivByRow
+        //     ); ree;
 
         for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
@@ -1153,10 +1163,10 @@ namespace {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
-        const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
-        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
-        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
-                                                    = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
+        // const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
+        // candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
+        // candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
+        //                                             = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
 
         const float cosineSimRowsSummed = cosineSimsByRow.sum();
         if (MathUtils::tZero(cosineSimRowsSummed)) {
@@ -1686,11 +1696,14 @@ namespace {
         *mzMS1Mean = 0.01;
         *mzMS1StDev = 10.0;
         *ppmDiff = 100.0;
+        *ms1IntensitySum = 0.0;
 
-        const XICPoints xicPoints = turboXicMS1->extractPointsXIC(
+        XICPoints xicPoints = turboXicMS1->extractPointsXIC(
             mzToExtract - massTol,
             mzToExtract + massTol
             );
+
+        TurboXIC::filterXICPointsByScanNumber(frameIndexMin, frameIndexMax, &xicPoints);
 
         if (xicPoints.empty()) {
             ERR_RETURN
@@ -1709,10 +1722,12 @@ namespace {
             ); ree;
 
         const int nonZeros = EigenUtils::nonZeros(xicVec);
+        if (nonZeros < 1) {
+            ERR_RETURN
+        }
 
-        const auto meanLogic = [](float sum, const XICPoint &p){return sum +p.mz;};
-        *mzMS1Mean = std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, meanLogic)
-                           / static_cast<float>(nonZeros);
+        const auto meanLogic = [](float sum, const XICPoint &p){return sum + p.mz;};
+        *mzMS1Mean = std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, meanLogic) / static_cast<float>(nonZeros);
 
         const auto stDevLogic = [mzMS1Mean](float sum, const XICPoint &p){return sum + std::pow((p.mz - *mzMS1Mean) , 2);};
         *mzMS1StDev = std::sqrt(std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, stDevLogic)

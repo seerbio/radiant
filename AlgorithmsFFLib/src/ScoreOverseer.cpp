@@ -1160,9 +1160,9 @@ Err ScoreOverseer::buildScores(
 
     const QVector<MS2Ion> &ms2IonsTarget = targetDecoyCandidatePair->ms2IonsTarget();
 
-    for (int i = 0; i < ms2IonsTarget.size(); i++) {
-        candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
-    }
+    // for (int i = 0; i < ms2IonsTarget.size(); i++) {
+    //     candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+    // }
 
     for (int i = 0; i < cosineSimToAnchorVec.size(); i++) {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = cosineSimToAnchorVec.at(i);
@@ -1174,10 +1174,10 @@ Err ScoreOverseer::buildScores(
 
         candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + i] = cosineSimShadowsToAnchorVec.at(i);
 
-        if (i < topSix) {
-            candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
-                    += cosineSimShadowsToAnchorVec.at(i) * ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
-        }
+        // if (i < topSix) {
+        //     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+        //             += cosineSimShadowsToAnchorVec.at(i) * ms2IonsTarget.at(i).targetDecoyFrequencyRatio;
+        // }
 
     }
 
@@ -1482,7 +1482,7 @@ Err ScoreOverseer::buildScores(
         ms1IsoDistActual,
         &cosineSimAveragine
         ); ree;
-    candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
+    // candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
 
     float cosineSimSum45;
     float cosineSimSum20;

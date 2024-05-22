@@ -458,6 +458,10 @@ public:
         const double mat1mat2QuotientLog2Sum = mat1mat2QuotientLog2.array().sum();
 
         *klDivs = mat1.array() * mat1mat2QuotientLog2Sum;
+        // std::cout << Eigen::RowVectorX<float>(_mat1) << std::endl;
+        // std::cout << Eigen::RowVectorX<float>(_mat2) << std::endl;
+        // std::cout << Eigen::RowVectorX<float>(*klDivs) << std::endl;
+        // std::cout << "***********" << std::endl;
 
         ERR_RETURN
     }
