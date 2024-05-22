@@ -678,13 +678,13 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             &fdrVsCounts
         ); ree;
 
-        constexpr int fdrKey = 5;
-        constexpr int fdrKey1Percent = 1;
+        constexpr int fdrKey = 10;
+        constexpr int fdrKeyMassCal = 2;
 
         e = honeIRTAndMassCalibration(
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey),
-            fdrVsCounts.value(fdrKey1Percent)
+            fdrVsCounts.value(fdrKeyMassCal)
             ); ree;
 
         qDebug() << "********* Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec ********";
@@ -697,7 +697,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
             if (!m_msCalibratomatic.isInitCalMS2()) {
 
-                candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey1Percent)));
+                candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKeyMassCal)));
 
                 QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
                 e = buildMsCalibrationReaderRows(

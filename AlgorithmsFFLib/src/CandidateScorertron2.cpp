@@ -1663,6 +1663,67 @@ namespace {
         return vec;
     }
 
+    Err calculateMs1Scores(
+        const Eigen::VectorX<float> &anchorColumn,
+        float mzToExtract,
+        float massTol,
+        FrameIndex frameIndexMin,
+        FrameIndex frameIndexMax,
+        TurboXIC *turboXicMS1,
+        float *cosineSimMS1,
+        float *mzMS1Mean,
+        float *mzMS1StDev,
+        float *ppmDiff,
+        float *ms1IntensitySum
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
+        e = ErrorUtils::isTrue(anchorColumn.size() > 0); ree;
+
+        *cosineSimMS1 = 0.01;
+        *mzMS1Mean = 0.01;
+        *mzMS1StDev = 10.0;
+        *ppmDiff = 100.0;
+
+        const XICPoints xicPoints = turboXicMS1->extractPointsXIC(
+            mzToExtract - massTol,
+            mzToExtract + massTol
+            );
+
+        if (xicPoints.empty()) {
+            ERR_RETURN
+        }
+
+        const Eigen::VectorX<float> xicVec = buildXicPointsVector(
+            xicPoints,
+            frameIndexMin,
+            frameIndexMax
+            ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
+
+        e = EigenUtils::cosineSimilarity(
+            anchorColumn,
+            xicVec,
+            cosineSimMS1
+            ); ree;
+
+        const int nonZeros = EigenUtils::nonZeros(xicVec);
+
+        const auto meanLogic = [](float sum, const XICPoint &p){return sum +p.mz;};
+        *mzMS1Mean = std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, meanLogic)
+                           / static_cast<float>(nonZeros);
+
+        const auto stDevLogic = [mzMS1Mean](float sum, const XICPoint &p){return sum + std::pow((p.mz - *mzMS1Mean) , 2);};
+        *mzMS1StDev = std::sqrt(std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, stDevLogic)
+                    / static_cast<float>(nonZeros));
+
+        *ppmDiff = MathUtils::calculateMassAccuracyPPM(mzToExtract, *mzMS1Mean);
+        *ms1IntensitySum = xicVec.sum();
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err CandidateScorertron::setMs1RelatedScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
@@ -1686,72 +1747,93 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     const float massTol = MathUtils::calculatePPM(monoIsotopeMz, ppmTol);
 
-    const XICPoints monoIsotopeXICPoints = m_turboXicMS1->extractPointsXIC(
-        monoIsotopeMz - massTol,
-        monoIsotopeMz + massTol
-        );
-    const Eigen::VectorX<float> monoIsotopeVec = buildXicPointsVector(
-        monoIsotopeXICPoints,
-        frameIndexMin,
-        frameIndexMax
-        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
-
-    const XICPoints monoIsotopeShadowXICPoints = m_turboXicMS1->extractPointsXIC(
-        monoIsotopeShadowMz - massTol,
-        monoIsotopeShadowMz + massTol
-        );
-    const Eigen::VectorX<float> monoIsotopeShadowVec = buildXicPointsVector(
-        monoIsotopeShadowXICPoints,
-        frameIndexMin,
-        frameIndexMax
-        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
-
-    const XICPoints c13IsotopeMz1XicPoints1 = m_turboXicMS1->extractPointsXIC(
-        c13isotopeMz1 - massTol,
-        c13isotopeMz1 + massTol
-        );
-    const Eigen::VectorX<float> c13IsotopeMz1XicPointsVec = buildXicPointsVector(
-        c13IsotopeMz1XicPoints1,
-        frameIndexMin,
-        frameIndexMax
-        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
-
-    const XICPoints c13IsotopeMz1XicPoints2 = m_turboXicMS1->extractPointsXIC(
-        c13isotopeMz2 - massTol,
-        c13isotopeMz2 + massTol
-        );
-    const Eigen::VectorX<float> c13IsotopeMz2XicPointsVec = buildXicPointsVector(
-        c13IsotopeMz1XicPoints2,
-        frameIndexMin,
-        frameIndexMax
-        ).segment(frameIndexMin, frameIndexMax - frameIndexMin + 1);
-
     const Eigen::VectorX<float> anchorColumn
-        = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
+            = bestCorrelationResult.matBlockTrimmedIntensity.col(bestCorrelationResult.bestAnchorColumnIndex);
 
-    e = EigenUtils::cosineSimilarity(
+    e = calculateMs1Scores(
         anchorColumn,
-        monoIsotopeVec,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
-        );
+        monoIsotopeMz,
+        massTol,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100]
+        ); ree;
 
-    e = EigenUtils::cosineSimilarity(
+    e = calculateMs1Scores(
         anchorColumn,
-        monoIsotopeShadowVec,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono]
-        );
+        monoIsotopeMz,
+        massTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45]
+        ); ree;
 
-    e = EigenUtils::cosineSimilarity(
+    e = calculateMs1Scores(
         anchorColumn,
-        c13IsotopeMz1XicPointsVec,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
-        );
+        monoIsotopeMz,
+        massTol * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20]
+        ); ree;
 
-    e = EigenUtils::cosineSimilarity(
+    e = calculateMs1Scores(
         anchorColumn,
-        c13IsotopeMz2XicPointsVec,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
-        );
+        monoIsotopeShadowMz,
+        massTol,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono]
+        ); ree;
+
+    e = calculateMs1Scores(
+        anchorColumn,
+        c13isotopeMz1,
+        massTol,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1]
+        ); ree;
+
+
+    e = calculateMs1Scores(
+        anchorColumn,
+        c13isotopeMz2,
+        massTol,
+        frameIndexMin,
+        frameIndexMax,
+        m_turboXicMS1,
+        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM],
+        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2]
+        ); ree;
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1]
         = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
@@ -1761,3 +1843,4 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     ERR_RETURN
 }
+
