@@ -93,6 +93,7 @@ Err CandidateScorertron::init(
     int topNMS2Ions,
     float minPeakCount,
     float scanTimeRange,
+    const QMap<NominalMzMass, QVector<float>> &averagineTable,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1
@@ -105,6 +106,7 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
     e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
     e = ErrorUtils::isNotEmpty(mzTargetKey); ree;
+    e = ErrorUtils::isNotEmpty(averagineTable); ree;
     e = ErrorUtils::isFalse(MathUtils::tZero(scanTimeRange)); ree;
     e = ErrorUtils::isAboveThreshold(
         topNMS2Ions,
@@ -123,6 +125,7 @@ Err CandidateScorertron::init(
     m_msFrameMzTarget = msFrameMzTarget;
     m_turboXicMS1 = turboXicMS1;
     m_scanTimeRange = scanTimeRange;
+    m_averagineTable = averagineTable;
 
     if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
@@ -583,7 +586,6 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
-    const QVector<float> &ms1Averagine,
     TargetDecoyCandidatePair* targetDecoyCandidatePair,
     CandidateScores *candidateScores
     ) const {
@@ -637,6 +639,11 @@ Err CandidateScorertron::calculateScores(
         peakIntegrationsVsIntensities,
         &bestCorrelationResult
         ); ree;
+
+
+    const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
+    e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
+    const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
 
     e = setCandidateScores(
         targetDecoyCandidatePair,

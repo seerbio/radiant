@@ -247,6 +247,7 @@ namespace {
                 pi.topNMs2Ions,
                 pi.minPeakCount,
                 scanTimeRange,
+                pi.averagineTable,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1
@@ -254,15 +255,10 @@ namespace {
 
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
 
-                const int nominalMass = static_cast<int>((std::round(tdcp->mass() / 10) * 10));
-                e = ErrorUtils::isTrue(pi.averagineTable.contains(nominalMass)); rree;
-                const QVector<float> ms1Averagine = pi.averagineTable.value(nominalMass);
-
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsTarget(),
-                        ms1Averagine,
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
@@ -272,7 +268,6 @@ namespace {
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsDecoy(),
-                        ms1Averagine,
                         tdcp,
                         &candidateScoresDecoy
                 ); rree;
