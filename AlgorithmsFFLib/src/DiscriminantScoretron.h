@@ -6,16 +6,12 @@
 #define PYTHIADIACPP_DISCRIMINANTSCORETRON_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "CandidateScores.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 
 
 using namespace Error;
-
-class CandidateScores;
-
-using CandidateScoresTarget = CandidateScores;
-using CandidateScoresDecoy = CandidateScores;
 
 class ALGORITHMSFFLIB_EXPORTS DiscriminantScoretron {
 

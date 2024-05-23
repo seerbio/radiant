@@ -14,6 +14,7 @@
 #include "PeptideStringWithMods.h"
 #include "TargetDecoyCandidatePair.h"
 
+
 /**
  * @brief Class representing scores for a candidate.
  *
@@ -2177,5 +2178,9 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     }
 
 };
+
+using CandidateScoresTarget = CandidateScores;
+using CandidateScoresDecoy = CandidateScores;
+
 
 #endif //PYTHIADIACPP_CANDIDATESCORES_H

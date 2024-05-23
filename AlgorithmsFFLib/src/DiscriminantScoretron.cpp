@@ -4,7 +4,6 @@
 
 #include "DiscriminantScoretron.h"
 
-#include "CandidateScores.h"
 #include "ClassifierWeightsManager.h"
 #include "ParallelUtils.h"
 
