@@ -5,7 +5,6 @@
 #ifndef EIGENUTILS_H
 #define EIGENUTILS_H
 
-#include "CSVReader.h"
 #include "EigenLib_Exports.h"
 #include "ErrorUtils.h"
 #include "GlobalSettings.h"
