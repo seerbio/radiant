@@ -1542,7 +1542,7 @@ namespace {
         ERR_RETURN
     }
 
-    Err setMs1Averagein(
+    Err setMs1Averagine(
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
         ) {
@@ -1676,7 +1676,9 @@ Err CandidateScorertron::setCandidateScores(
 
     e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
 
-    e = setMs1Averagein(ms1Averagine, candidateScores); ree;
+    e = setMzPeakLengthRelatedScores(bestCorrelationResult, candidateScores); ree;
+
+    e = setMs1Averagine(ms1Averagine, candidateScores); ree;
 
     ERR_RETURN
 }

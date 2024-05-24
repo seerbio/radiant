@@ -1339,9 +1339,9 @@ namespace {
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 12;
+        constexpr int baggingSize = 1;
         constexpr float learningRate = 0.003;
-        constexpr int epochs = 2; //TODO make this settable
+        constexpr int epochs = 3; //TODO make this settable
         FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
         e = fdrcLassifierNeuralNet.init(
                 epochs,
