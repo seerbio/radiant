@@ -1122,7 +1122,8 @@ namespace {
 
         const int correlationSize = bestCorrelationResult.peakCorrelations.size();
         for (int i = 0; i < std::min(ms2IonsTheo.size(), 6); i++) {
-            // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i] = ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
+            // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i]
+            //                             = ms2IonsTheo.at(i).targetDecoyFrequencyRatio * bestCorrelationResult.peakCorrelations.at(i);
 
             if (i < correlationSize) {
                 candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
