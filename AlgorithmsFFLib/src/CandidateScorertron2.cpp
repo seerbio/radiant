@@ -1169,22 +1169,21 @@ namespace {
         //TODO add kldiv and pearsons corr.
 
         e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
-
         QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
                                     ? targetDecoyCandidatePair->ms2IonsDecoy()
                                     : targetDecoyCandidatePair->ms2IonsTarget();
         ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
         const int correlationSize = bestCorrelationResult.peakCorrelations.size();
-        for (int i = 0; i < std::min(ms2IonsTheo.size(), 6); i++) {
-            // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i]
-            //                             = ms2IonsTheo.at(i).targetDecoyFrequencyRatio * bestCorrelationResult.peakCorrelations.at(i);
-
-            if (i < correlationSize) {
-                candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
-                                    += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
-            }
-        }
+        // for (int i = 0; i < std::min(ms2IonsTheo.size(), 6); i++) {
+        //     // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i]
+        //     //                             = ms2IonsTheo.at(i).targetDecoyFrequencyRatio * bestCorrelationResult.peakCorrelations.at(i);
+        //
+        //     if (i < correlationSize) {
+        //         candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
+        //                             += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
+        //     }
+        // }
 
         QVector<float> intensitiesTheo;
         std::transform(
@@ -1212,12 +1211,35 @@ namespace {
              &cosineSimsByRow
              ); ree;
 
+        Eigen::MatrixX<float> matSummed = bestCorrelationResult.matBlockTrimmedIntensity;
+        for (int row = 0; row < matSummed.rows(); row++) {
+            Eigen::VectorX<float> r = matSummed.row(row).array() / std::max(matSummed.row(row).sum(), 0.001f);
+            matSummed.row(row) = r;
+        }
+
+        for (int row = 0; row < intensitiesTheoMat.rows(); row++) {
+            Eigen::VectorX<float> r = intensitiesTheoMat.row(row).array() / std::max(intensitiesTheoMat.row(row).sum(), 0.001f);
+            intensitiesTheoMat.row(row) = r;
+        }
+
+        Eigen::VectorX<float> klDivByRow(intensitiesTheoMat.rows());
+        klDivByRow.setZero();
+        for (int row = 0; row < intensitiesTheoMat.rows(); row++) {
+            float klDiv;
+            e = EigenUtils::klDivergence(
+                Eigen::VectorX<float>(matSummed.row(row)),
+                Eigen::VectorX<float>(intensitiesTheoMat.row(row)),
+                &klDiv);
+            klDivByRow.coeffRef(row) = klDiv;
+        }
+
         // Eigen::VectorX<float> klDivByRow;
         // e = EigenUtils::rowWiseKLDivergenceOfMatrices(
-        //     bestCorrelationResult.matBlockTrimmedIntensity,
+        //     matSummed,
         //     intensitiesTheoMat,
         //     &klDivByRow
         //     ); ree;
+
 
         for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
@@ -1228,10 +1250,10 @@ namespace {
         candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
-        // const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
-        // candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
-        // candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
-        //                                             = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
+        const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
+        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
+        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
+                                                    = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
 
         const float cosineSimRowsSummed = cosineSimsByRow.sum();
         if (MathUtils::tZero(cosineSimRowsSummed)) {
@@ -1379,7 +1401,7 @@ namespace {
 
             const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
 
-            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = std::min(absAccuracy, 0.0f);
+            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = 1.0f / std::min(std::max(absAccuracy, 0.001f), 200.0f);
 
         }
 
