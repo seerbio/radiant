@@ -289,7 +289,6 @@ public:
         // MzTargetDecoyFrequency10,
         // MzTargetDecoyFrequency11,//260
         // MzTargetDecoyFrequency12,
-
         FeaturesSize
     };
 
