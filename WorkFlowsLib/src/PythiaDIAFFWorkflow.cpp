@@ -678,7 +678,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             &fdrVsCounts
         ); ree;
 
-        constexpr int fdrKey = 10;
+        constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCal = 2;
 
         e = honeIRTAndMassCalibration(
@@ -1057,7 +1057,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
-        constexpr bool useExtendedScores = false;
+        constexpr bool useExtendedScores = true;
         constexpr bool useNeuralNetworkScores = false;
 
         qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
@@ -1339,7 +1339,7 @@ namespace {
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 1;
+        constexpr int baggingSize = 8;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
         FDRCLassifierNeuralNet fdrcLassifierNeuralNet;

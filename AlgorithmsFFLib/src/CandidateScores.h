@@ -277,6 +277,9 @@ public:
         CosineSimSum100MS1,
         MS1Averagine,
         CosineSimSum100Frequencies,
+        CosineSimSum100Window1p5X,//250
+        CosineSimSum100Window2X,
+
         // MzTargetDecoyFrequency1,//250
         // MzTargetDecoyFrequency2,
         // MzTargetDecoyFrequency3,

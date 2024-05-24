@@ -166,8 +166,12 @@ public:
     QVector<float> peakCorrelations;
     QVector<float> peakCorrelations45;
     QVector<float> peakCorrelations20;
+    QVector<float> peakCorrelationsWindow1p5X;
+    QVector<float> peakCorrelationsWindow2X;
     float peakCorrelationsSum = -1.0;
     Eigen::MatrixX<float> matBlockTrimmedIntensity;
+    Eigen::MatrixX<float> matBlockTrimmedIntensityWindow1p5X;
+    Eigen::MatrixX<float> matBlockTrimmedIntensityWindow2X;
     Eigen::MatrixX<float> matBlockTrimmedIntensity45;
     Eigen::MatrixX<float> matBlockTrimmedIntensity20;
     Eigen::MatrixX<float> matBlockTrimmedIntensityShadows;
@@ -951,7 +955,6 @@ namespace {
         ERR_RETURN
     }
 
-
 }//namespace
 Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
@@ -964,6 +967,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
     e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
 
+    const int maxRows = matriciesAndVecs.intensityMatrix100.rows();
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
     constexpr int topNIntegrations = 15; //TODO make this settable
@@ -976,10 +980,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             matriciesAndVecs.integrationVec
             );
 
+        const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
+
         Eigen::MatrixX<float> matBlock = matriciesAndVecs.intensityMatrix100.block(
               piiWorking.first.first,
               0,
-              piiWorking.first.second - piiWorking.first.first + 1,
+              ogPeakLength,
               matriciesAndVecs.intensityMatrix100.cols()
               ).eval();
 
@@ -1028,6 +1034,55 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             bestCorrelationResult->bestAnchorRowIndex = bestAnchorRowIndex;
             bestCorrelationResult->apexStarts = apexStarts;
             bestCorrelationResult->peakIntegrationIndexes = piiWorking.first;
+
+            constexpr float windowMultiplier1p5X = 1.5;
+            const auto frameIndex1p5XMin
+                = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier1p5X * ogPeakLength))), 0);
+            const auto frameIndex1p5XMax
+                = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
+            const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin + 1;
+            Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
+                  frameIndex1p5XMin,
+                  0,
+                  peakLength1p5X,
+                  matriciesAndVecs.intensityMatrix100.cols()
+                  ).eval();
+
+            constexpr float windowMultiplier2X = 2.0;
+            const auto frameIndex2XMin
+                = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier2X * ogPeakLength))), 0);
+            const auto frameIndex2XMax
+                = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
+            const int peakLength2X = frameIndex2XMax - frameIndex2XMin + 1;
+            Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
+                          frameIndex2XMin,
+                          0,
+                          peakLength2X,
+                          matriciesAndVecs.intensityMatrix100.cols()
+                          ).eval();
+
+            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
+                matBlock1p5X,
+                apexStarts,
+                m_pythiaParameters.stopThresholdFraction
+                );
+            e = calculatePeakCorrelations(
+                bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X,
+                bestAnchorColumnIndex,
+                &bestCorrelationResult->peakCorrelationsWindow1p5X
+                ); ree;
+
+            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
+                        matBlock2X,
+                        apexStarts,
+                        m_pythiaParameters.stopThresholdFraction
+                        );
+
+            e = calculatePeakCorrelations(
+                bestCorrelationResult->matBlockTrimmedIntensityWindow2X,
+                bestAnchorColumnIndex,
+                &bestCorrelationResult->peakCorrelationsWindow2X
+                ); ree;
 
             const PeakIntegrationIndexes &p = piiWorking.first;
             const int pSize = p.second - p.first + 1;
@@ -1603,6 +1658,18 @@ Err CandidateScorertron::setCandidateScores(
             bestCorrelationResult.peakCorrelations.begin() + top6,
             std::numeric_limits<float>::min()
             );
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window1p5X] = std::accumulate(
+        bestCorrelationResult.peakCorrelationsWindow1p5X.begin(),
+        bestCorrelationResult.peakCorrelationsWindow1p5X.begin() + top6,
+        std::numeric_limits<float>::min()
+        );
+
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window2X] = std::accumulate(
+        bestCorrelationResult.peakCorrelationsWindow2X.begin(),
+        bestCorrelationResult.peakCorrelationsWindow2X.begin() + top6,
+        std::numeric_limits<float>::min()
+        );
 
     candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
 
