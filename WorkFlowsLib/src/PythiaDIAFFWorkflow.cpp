@@ -373,7 +373,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    if (m_pythiaParameters.bypassNeuralNet) {
+    if (!m_pythiaParameters.bypassNeuralNet) {
 
         const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
         e = applyNeuralNetClassifier(
