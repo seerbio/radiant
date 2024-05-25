@@ -373,7 +373,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    if (!m_pythiaParameters.bypassNeuralNet) {
+    if (m_pythiaParameters.bypassNeuralNet) {
 
         const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
         e = applyNeuralNetClassifier(
@@ -442,6 +442,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     int counter = 0;
     int decoys = 0;
     int entrap = 0;
+
+    std::sort(
+        candidateScoreClassifierPntrs.rbegin(),
+        candidateScoreClassifierPntrs.rend(),
+        [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+        );
+
     for (CandidateScores *cs : candidateScoreClassifierPntrs) {
         counter++;
 
@@ -1169,7 +1176,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
-    constexpr float minPeakCountCalibration = 3.9;
+    constexpr float minPeakCountCalibration = 2.9;
     m_candidateScores.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
@@ -1406,6 +1413,25 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+
+// #define WRITENN
+#ifdef WRITENN
+    QFile file("/home/anichols/Desktop/scores.csv");
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+
+    }
+
+    QTextStream out(&file);
+
+    for (const CandidateScores &cs : m_candidateScores) {
+        for (float value : cs.featuresArray) {
+            out << value << ",";
+        }
+        out << "\n";
+    }
+    file.close();
+#endif
+
 
     candidateScoreClassifier->clear();
 

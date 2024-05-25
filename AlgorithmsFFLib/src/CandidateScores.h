@@ -28,6 +28,7 @@ public:
 
     enum Features {
         CosineSimSum100 = 0,
+        CosineSimSum100Top12,
         CosineSimSum100GreaterThan80,
         AllignedMaxIndexesCount,
         CosineSim100MS1,

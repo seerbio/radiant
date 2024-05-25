@@ -1681,6 +1681,12 @@ Err CandidateScorertron::setCandidateScores(
             std::numeric_limits<float>::min()
             );
 
+    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Top12] = std::accumulate(
+            bestCorrelationResult.peakCorrelations.begin(),
+            bestCorrelationResult.peakCorrelations.end(),
+            std::numeric_limits<float>::min()
+            );
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window1p5X] = std::accumulate(
         bestCorrelationResult.peakCorrelationsWindow1p5X.begin(),
         bestCorrelationResult.peakCorrelationsWindow1p5X.begin() + top6,
