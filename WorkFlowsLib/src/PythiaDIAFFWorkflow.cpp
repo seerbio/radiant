@@ -713,6 +713,52 @@ Err PythiaDIAFFWorkflow::buildCalibration(
     ERR_RETURN
 }
 
+namespace {
+
+    Err buildProcessBatchPointers(
+        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
+        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
+        QVector<CandidateScores*> *candidateScoresesPntrs,
+        QVector<FeaturesArray*> *featuresArrayPntrs,
+        QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(featuresArrayTargetVsDecoy->isEmpty()); ree;
+
+        for (int i = 0; i < featuresArrayTargetVsDecoy->size(); i++) {
+
+            const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
+            QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = (*featuresArrayTargetVsDecoy)[i];
+            featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
+
+            candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
+            featuresArrayPntrs->append({&featuresArrayPair.first, &featuresArrayPair.second});
+        }
+
+        ERR_RETURN
+    }
+
+    Err setCandidateScoresDiscriminantScore(
+        const QVector<float> &discriminantScores,
+        QVector<CandidateScores*> *candidateScoresesPntrs
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(discriminantScores); ree;
+        e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs->size()); ree;
+
+        for (int i = 0; i < discriminantScores.size(); i++) {
+            CandidateScores* cs = (*candidateScoresesPntrs)[i];
+            cs->discriminantScore = discriminantScores.at(i);
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
 Err PythiaDIAFFWorkflow::processBatch(
     bool useExtendedScores,
     bool useNeuralNetworkScores,
@@ -744,15 +790,13 @@ Err PythiaDIAFFWorkflow::processBatch(
     QVector<CandidateScores*> candidateScoresesPntrs;
     QVector<FeaturesArray*> featuresArrayPntrs;
     QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-    for (int i = 0; i < featuresArrayTargetVsDecoy.size(); i++) {
-
-        const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-        QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = featuresArrayTargetVsDecoy[i];
-        featuresArrayTargetVsDecoyPntrs.push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-
-        candidateScoresesPntrs.append({candidatePair.first, candidatePair.second});
-        featuresArrayPntrs.append({&featuresArrayPair.first, &featuresArrayPair.second});
-    }
+    e = buildProcessBatchPointers(
+        candidateScorePairs,
+        &featuresArrayTargetVsDecoy,
+        &candidateScoresesPntrs,
+        &featuresArrayPntrs,
+        &featuresArrayTargetVsDecoyPntrs
+        ); ree;
 
     QVector<float> weights;
     e = DiscriminantScoretron::trainLDAClassifier(
@@ -767,22 +811,21 @@ Err PythiaDIAFFWorkflow::processBatch(
         &discriminantScores
         ); ree;
 
-    e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs.size()); ree;
-    for (int i = 0; i < discriminantScores.size(); i++) {
-        CandidateScores* cs = candidateScoresesPntrs.at(i);
-        cs->discriminantScore = discriminantScores.at(i);
-    }
+    e = setCandidateScoresDiscriminantScore(
+        discriminantScores,
+        &candidateScoresesPntrs
+        ); ree;
 
     e = QValueSettertron::setQValueForCandidates(
-         QValueSettertron::QValueScoreType::DiscriminantScore,
-         candidateScoresVecBatchPntrs
-     ); ree;
+        QValueSettertron::QValueScoreType::DiscriminantScore,
+        candidateScoresVecBatchPntrs
+        ); ree;
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
         *candidateScoresVecBatchPntrs,
         true,
         fdrVsCounts
-    ); ree;
+        ); ree;
 
     ERR_RETURN
 }
