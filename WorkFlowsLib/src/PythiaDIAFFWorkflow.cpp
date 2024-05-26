@@ -373,7 +373,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    if (!m_pythiaParameters.bypassNeuralNet) {
+    if (m_pythiaParameters.bypassNeuralNet) {
 
         const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
         e = applyNeuralNetClassifier(
@@ -655,68 +655,13 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-        e = buildCandidateScoresPtrs(&candidateScoresVecBatchPntrs); ree;
-        e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(candidateScoresVecBatchPntrs); ree;
-
-        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
-        e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+        QMap<int, int> fdrVsCounts;
+        e = processBatch(
             useExtendedScores,
             useNeuralNetworkScores,
-            &featuresArrayTargetVsDecoy
-            ); ree;
-
-        e = ErrorUtils::isEqual(
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
-            featuresArrayTargetVsDecoy.size()
-            ); ree;
-
-        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                            = m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
-
-        QVector<CandidateScores*> candidateScoresesPntrs;
-        QVector<FeaturesArray*> featuresArrayPntrs;
-        QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-        for (int i = 0; i < featuresArrayTargetVsDecoy.size(); i++) {
-
-            const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-            QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = featuresArrayTargetVsDecoy[i];
-            featuresArrayTargetVsDecoyPntrs.push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-
-            candidateScoresesPntrs.append({candidatePair.first, candidatePair.second});
-            featuresArrayPntrs.append({&featuresArrayPair.first, &featuresArrayPair.second});
-        }
-
-        QVector<float> weights;
-        e = DiscriminantScoretron::trainLDAClassifier(
-                featuresArrayTargetVsDecoyPntrs,
-                &weights
-                ); ree;
-
-        QVector<float> discriminantScores;
-        e = DiscriminantScoretron::applyWeights(
-            weights,
-            featuresArrayPntrs,
-            &discriminantScores
-            ); ree;
-
-        e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs.size()); ree;
-        for (int i = 0; i < discriminantScores.size(); i++) {
-            CandidateScores* cs = candidateScoresesPntrs.at(i);
-            cs->discriminantScore = discriminantScores.at(i);
-        }
-
-        e = QValueSettertron::setQValueForCandidates(
-             QValueSettertron::QValueScoreType::DiscriminantScore,
-             &candidateScoresVecBatchPntrs
-         ); ree;
-
-        QMap<int, int> fdrVsCounts;
-        e = FDRCLassifierNeuralNet::outputFDRResults(
-            candidateScoresVecBatchPntrs,
-            true,
+            &candidateScoresVecBatchPntrs,
             &fdrVsCounts
-        ); ree;
+            ); ree;
 
         constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCal = 2;
@@ -764,6 +709,80 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         }
 
     }
+
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::processBatch(
+    bool useExtendedScores,
+    bool useNeuralNetworkScores,
+    QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
+    QMap<int, int> *fdrVsCounts
+    ) {
+
+    ERR_INIT
+
+    e = buildCandidateScoresPtrs(candidateScoresVecBatchPntrs); ree;
+    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(*candidateScoresVecBatchPntrs); ree;
+
+    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
+    e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
+        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+        useExtendedScores,
+        useNeuralNetworkScores,
+        &featuresArrayTargetVsDecoy
+        ); ree;
+
+    e = ErrorUtils::isEqual(
+        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
+        featuresArrayTargetVsDecoy.size()
+        ); ree;
+
+    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
+                                                        = m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
+
+    QVector<CandidateScores*> candidateScoresesPntrs;
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
+    for (int i = 0; i < featuresArrayTargetVsDecoy.size(); i++) {
+
+        const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
+        QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = featuresArrayTargetVsDecoy[i];
+        featuresArrayTargetVsDecoyPntrs.push_back({&featuresArrayPair.first, &featuresArrayPair.second});
+
+        candidateScoresesPntrs.append({candidatePair.first, candidatePair.second});
+        featuresArrayPntrs.append({&featuresArrayPair.first, &featuresArrayPair.second});
+    }
+
+    QVector<float> weights;
+    e = DiscriminantScoretron::trainLDAClassifier(
+            featuresArrayTargetVsDecoyPntrs,
+            &weights
+            ); ree;
+
+    QVector<float> discriminantScores;
+    e = DiscriminantScoretron::applyWeights(
+        weights,
+        featuresArrayPntrs,
+        &discriminantScores
+        ); ree;
+
+    e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs.size()); ree;
+    for (int i = 0; i < discriminantScores.size(); i++) {
+        CandidateScores* cs = candidateScoresesPntrs.at(i);
+        cs->discriminantScore = discriminantScores.at(i);
+    }
+
+    e = QValueSettertron::setQValueForCandidates(
+         QValueSettertron::QValueScoreType::DiscriminantScore,
+         candidateScoresVecBatchPntrs
+     ); ree;
+
+    e = FDRCLassifierNeuralNet::outputFDRResults(
+        *candidateScoresVecBatchPntrs,
+        true,
+        fdrVsCounts
+    ); ree;
 
     ERR_RETURN
 }
@@ -1117,68 +1136,13 @@ Err PythiaDIAFFWorkflow::optimizeParameters(
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-        e = buildCandidateScoresPtrs(&candidateScoresVecBatchPntrs); ree;
-        e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(candidateScoresVecBatchPntrs); ree;
-
-        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
-        e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+        QMap<int, int> fdrVsCounts;
+        e = processBatch(
             useExtendedScores,
             useNeuralNetworkScores,
-            &featuresArrayTargetVsDecoy
-            ); ree;
-
-        e = ErrorUtils::isEqual(
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
-            featuresArrayTargetVsDecoy.size()
-            ); ree;
-
-        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                            = m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
-
-        QVector<CandidateScores*> candidateScoresesPntrs;
-        QVector<FeaturesArray*> featuresArrayPntrs;
-        QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-        for (int i = 0; i < featuresArrayTargetVsDecoy.size(); i++) {
-
-            const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-            QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = featuresArrayTargetVsDecoy[i];
-            featuresArrayTargetVsDecoyPntrs.push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-
-            candidateScoresesPntrs.append({candidatePair.first, candidatePair.second});
-            featuresArrayPntrs.append({&featuresArrayPair.first, &featuresArrayPair.second});
-        }
-
-        QVector<float> weights;
-        e = DiscriminantScoretron::trainLDAClassifier(
-                featuresArrayTargetVsDecoyPntrs,
-                &weights
-                ); ree;
-
-        QVector<float> discriminantScores;
-        e = DiscriminantScoretron::applyWeights(
-            weights,
-            featuresArrayPntrs,
-            &discriminantScores
-            ); ree;
-
-        e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs.size()); ree;
-        for (int i = 0; i < discriminantScores.size(); i++) {
-            CandidateScores* cs = candidateScoresesPntrs.at(i);
-            cs->discriminantScore = discriminantScores.at(i);
-        }
-
-        e = QValueSettertron::setQValueForCandidates(
-             QValueSettertron::QValueScoreType::DiscriminantScore,
-             &candidateScoresVecBatchPntrs
-         ); ree;
-
-        QMap<int, int> fdrVsCounts;
-        e = FDRCLassifierNeuralNet::outputFDRResults(
-            candidateScoresVecBatchPntrs,
-            true,
+            &candidateScoresVecBatchPntrs,
             &fdrVsCounts
-        ); ree;
+            ); ree;
 
         qDebug() << "Ending opt";
 
@@ -1253,72 +1217,14 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             ); ree
     qDebug() << "Targets scored" << et.restart() << "mSec";
 
-    QVector<CandidateScores*> candidateScoresPntrs;
-    e = buildCandidateScoresPtrs(&candidateScoresPntrs); ree;
-
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-    e = buildCandidateScoresPtrs(&candidateScoresVecBatchPntrs); ree;
-    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(candidateScoresVecBatchPntrs); ree;
-
-    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
-    e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+    QMap<int, int> fdrVsCounts;
+    e = processBatch(
         useExtendedScores,
         useNeuralNetworkScores,
-        &featuresArrayTargetVsDecoy
-        ); ree;
-
-    e = ErrorUtils::isEqual(
-        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
-        featuresArrayTargetVsDecoy.size()
-        ); ree;
-
-    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                        = m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
-
-    QVector<CandidateScores*> candidateScoresesPntrs;
-    QVector<FeaturesArray*> featuresArrayPntrs;
-    QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-    for (int i = 0; i < featuresArrayTargetVsDecoy.size(); i++) {
-
-        const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-        QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = featuresArrayTargetVsDecoy[i];
-        featuresArrayTargetVsDecoyPntrs.push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-
-        candidateScoresesPntrs.append({candidatePair.first, candidatePair.second});
-        featuresArrayPntrs.append({&featuresArrayPair.first, &featuresArrayPair.second});
-    }
-
-    QVector<float> weights;
-    e = DiscriminantScoretron::trainLDAClassifier(
-            featuresArrayTargetVsDecoyPntrs,
-            &weights
-            ); ree;
-
-    QVector<float> discriminantScores;
-    e = DiscriminantScoretron::applyWeights(
-        weights,
-        featuresArrayPntrs,
-        &discriminantScores
-        ); ree;
-
-    e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs.size()); ree;
-    for (int i = 0; i < discriminantScores.size(); i++) {
-        CandidateScores* cs = candidateScoresesPntrs.at(i);
-        cs->discriminantScore = discriminantScores.at(i);
-    }
-
-    e = QValueSettertron::setQValueForCandidates(
-         QValueSettertron::QValueScoreType::DiscriminantScore,
-         &candidateScoresVecBatchPntrs
-     ); ree;
-
-    QMap<int, int> fdrVsCounts;
-    e = FDRCLassifierNeuralNet::outputFDRResults(
-        candidateScoresVecBatchPntrs,
-        true,
+        &candidateScoresVecBatchPntrs,
         &fdrVsCounts
-    ); ree;
+        ); ree;
 
     qDebug() << "Targets resulted" << et.restart() << "mSec";
 
@@ -1330,7 +1236,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     ); ree;
     qDebug() << "Targets counted" << et.restart() << "mSec";
 
-    sortCandidatePointersDiscScoreDesc(&candidateScoresPntrs);
+    sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
     qDebug() << "Targets sorted" << et.restart() << "mSec";
 
     ERR_RETURN

@@ -90,6 +90,13 @@ private:
             QVector<CandidateScores*> *candidateScoresForTrainings
             );
 
+    Err processBatch(
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
+        QMap<int, int> *fdrVsCounts
+    );
+
     Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
             const QVector<MsScanInfo> &msScanInfos,
