@@ -61,54 +61,53 @@ namespace {
     }
 
     QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel2(
-            const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &pairs,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores
+            const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &pairs
             ) {
 
         ERR_INIT
 
         BuildClassifierParallelOutput output;
 
-        QVector<QVector<float>> scoresTargets;
-        scoresTargets.reserve(pairs.size());
-        QVector<QVector<float>> scoresDecoys;
-        scoresDecoys.reserve(pairs.size());
 
-        for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : pairs) {
-            const QVector<float> candScoresTarget = DiscriminantScoretron::scoreVectorLogic(
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    pr.first
-                    );
+        const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped = ParallelUtils::unZip(pairs);
 
-            const QVector<float> candScoresDecoy = DiscriminantScoretron::scoreVectorLogic(
-                    useExtendedScores,
-                    useNeuralNetworkScores,
-                    pr.second
-            );
+        const QVector<QVector<float>*> &scoresTargetsPntrs = unzipped.first;
+        const QVector<QVector<float>*> &scoresDecoysPntrs = unzipped.second;
 
-            scoresTargets.push_back(candScoresTarget);
-            scoresDecoys.push_back(candScoresDecoy);
-        }
+        // for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : pairs) {
+        //     const QVector<float> candScoresTarget = DiscriminantScoretron::scoreVectorLogic(
+        //             useExtendedScores,
+        //             useNeuralNetworkScores,
+        //             pr.first
+        //             );
+        //
+        //     const QVector<float> candScoresDecoy = DiscriminantScoretron::scoreVectorLogic(
+        //             useExtendedScores,
+        //             useNeuralNetworkScores,
+        //             pr.second
+        //     );
+        //
+        //     scoresTargets.push_back(candScoresTarget);
+        //     scoresDecoys.push_back(candScoresDecoy);
+        // }
 
-        QVector<QVector<float>*> scoresTargetsPntrs;
-        scoresTargetsPntrs.reserve(pairs.size());
-        std::transform(
-                scoresTargets.begin(),
-                scoresTargets.end(),
-                std::back_inserter(scoresTargetsPntrs),
-                [](QVector<float> &v){return &v;}
-                );
-
-        QVector<QVector<float>*> scoresDecoysPntrs;
-        scoresDecoysPntrs.reserve(pairs.size());
-        std::transform(
-                scoresDecoys.begin(),
-                scoresDecoys.end(),
-                std::back_inserter(scoresDecoysPntrs),
-                [](QVector<float> &v){return &v;}
-        );
+        // QVector<QVector<float>*> scoresTargetsPntrs;
+        // scoresTargetsPntrs.reserve(pairs.size());
+        // std::transform(
+        //         scoresTargets.begin(),
+        //         scoresTargets.end(),
+        //         std::back_inserter(scoresTargetsPntrs),
+        //         [](QVector<float> &v){return &v;}
+        //         );
+        //
+        // QVector<QVector<float>*> scoresDecoysPntrs;
+        // scoresDecoysPntrs.reserve(pairs.size());
+        // std::transform(
+        //         scoresDecoys.begin(),
+        //         scoresDecoys.end(),
+        //         std::back_inserter(scoresDecoysPntrs),
+        //         [](QVector<float> &v){return &v;}
+        // );
 
         e = ClassifierWeightsManager::buildDataClassifier2(
                 scoresTargetsPntrs,
@@ -159,9 +158,7 @@ namespace {
 
 
 Err DiscriminantScoretron::trainLDAClassifier(
-        const QList<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &targetDecoyCandidateScoresPair,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
+        const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
         QVector<float> *weights
         ) {
 
@@ -174,23 +171,18 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     weights->clear();
 
-    QVector<QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>> targetDecoyCandidateScoresPairTranched;
+    QVector<QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>>> targetDecoyCandidateScoresPairTranched;
     e = ParallelUtils::trancheVectorForParallelization(
-            targetDecoyCandidateScoresPair.toVector(),
+            targetDecoyCandidateScoresPair,
             ParallelUtils::numberOfAvailableSystemProcessors(),
             &targetDecoyCandidateScoresPairTranched
             ); ree;
 
-    const auto classifierBuilder = std::bind(
-            buildClassifierDataParallel2,
-            std::placeholders::_1,
-            useExtendedScores,
-            useNeuralNetworkScores
-    );
+
 
     QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
             targetDecoyCandidateScoresPairTranched,
-            classifierBuilder
+            buildClassifierDataParallel2
     );
     futures.waitForFinished();
 
@@ -216,90 +208,66 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
 namespace {
 
-    Err applyWeightsLogic(
-        const QVector<float>& weights,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
-        const QVector<CandidateScores*> &candidateScoresPntrs
+    QPair<Err, QVector<float>> applyWeightsLogic(
+        const QVector<float> &weights,
+        const QVector<FeaturesArray*> &featuresArray
         ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(weights); ree;
-        e = ErrorUtils::isNotEmpty(candidateScoresPntrs); ree;
-
-        QVector<QVector<float>> candidateScoresMatrixVec;
-        for (CandidateScores *cs : candidateScoresPntrs) {
-
-            const QVector<float> vec = DiscriminantScoretron::scoreVectorLogic(
-                useExtendedScores,
-                useNeuralNetworkScores,
-                cs
-            );
-            candidateScoresMatrixVec.push_back(vec);
-        }
-
-        QVector<QVector<float>*> candidateScoresMatrixVecPntrs;
-        for (QVector<float> &f : candidateScoresMatrixVec) {
-            candidateScoresMatrixVecPntrs.push_back(&f);
-        }
+        e = ErrorUtils::isNotEmpty(weights); rree;
+        e = ErrorUtils::isNotEmpty(featuresArray); rree;
 
         QVector<float> discriminantScores;
         e = ClassifierWeightsManager::applyWeights(
-            candidateScoresMatrixVecPntrs,
+            featuresArray,
             weights,
             &discriminantScores
-        ); ree;
+        ); rree;
 
         e = ErrorUtils::isEqual(
             discriminantScores.size(),
-            candidateScoresPntrs.size()
-            ); ree;
+            featuresArray.size()
+            ); rree;
 
-        for (int i = 0; i < discriminantScores.size(); i++) {
-            CandidateScores *cs = candidateScoresPntrs.at(i);
-            cs->discriminantScore = discriminantScores.at(i);
-        }
-
-        ERR_RETURN
+        return {e, discriminantScores};
     }
 
 }//namespace
 Err DiscriminantScoretron::applyWeights(
     const QVector<float>& weights,
-    bool useExtendedScores,
-    bool useNeuralNetworkScores,
-    QVector<CandidateScores*> *candidateScoresPntrs
+    const QVector<FeaturesArray*> &featuresArray,
+    QVector<float> *discriminantScores
     ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(weights); ree;
-    e = ErrorUtils::isFalse(candidateScoresPntrs->isEmpty()); ree;
+    e = ErrorUtils::isNotEmpty(featuresArray); ree;
 
-    QVector<QVector<CandidateScores*>> candidateScoresPntrsTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-        *candidateScoresPntrs,
+    QVector<QVector<FeaturesArray*>> featuresArrayPntrsTranched;
+    e = ParallelUtils::trancheVectorForParallelizationInOrder(
+        featuresArray,
         ParallelUtils::numberOfAvailableSystemProcessors(),
-        &candidateScoresPntrsTranched
+        0,
+        &featuresArrayPntrsTranched
     ); ree;
 
     const auto applyWeightsBinder = std::bind(
         applyWeightsLogic,
         weights,
-        useExtendedScores,
-        useNeuralNetworkScores,
         std::placeholders::_1
         );
 
-    QFuture<Err> result = QtConcurrent::mapped(
-        candidateScoresPntrsTranched,
+    QFuture<QPair<Err, QVector<float>>> result = QtConcurrent::mapped(
+        featuresArrayPntrsTranched,
         applyWeightsBinder
         );
     result.waitForFinished();
 
-    for (Err res : result) {
-        e = res; ree;
+    for (const QPair<Err, QVector<float>> &res : result) {
+        e = res.first; ree;
+        discriminantScores->append(res.second);
     }
 
     ERR_RETURN
@@ -633,3 +601,34 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
         return vec;
     }
+
+Err DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
+    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>& candidateScoresTargetVsDecoy,
+    bool useExtendedScores,
+    bool useNeuralNetworkScores,
+    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(candidateScoresTargetVsDecoy); ree;
+    featuresArrayTargetVsDecoy->clear();
+
+    for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : candidateScoresTargetVsDecoy) {
+        const FeaturesArray featuresArrayTarget = scoreVectorLogic(
+            useExtendedScores,
+            useNeuralNetworkScores,
+            pr.first
+            );
+
+        const FeaturesArray featuresArrayDecoy = scoreVectorLogic(
+            useExtendedScores,
+            useNeuralNetworkScores,
+            pr.second
+            );
+
+        featuresArrayTargetVsDecoy->push_back({featuresArrayTarget, featuresArrayDecoy});
+    }
+
+    ERR_RETURN
+}

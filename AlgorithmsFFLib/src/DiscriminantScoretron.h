@@ -18,17 +18,14 @@ class ALGORITHMSFFLIB_EXPORTS DiscriminantScoretron {
 public:
 
     static Err trainLDAClassifier(
-            const QList<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &targetDecoyCandidateScoresPair,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
+            const QVector<QPair<FeaturesArrayDecoys*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
             QVector<float> *weights
             );
 
     static Err applyWeights(
         const QVector<float> &weights,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
-        QVector<CandidateScores*> *candidateScoresPntrs
+        const QVector<FeaturesArray*> &candidateScoresPntrs,
+        QVector<float> *discriminantScores
     );
 
     static QVector<float> scoreVectorLogic(
@@ -37,6 +34,12 @@ public:
             CandidateScores* candidateScores
             );
 
+    static Err convertScoreCandidatesToFeaturesArrays(
+        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScoresTargetVsDecoy,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy
+        );
 
 };
 
