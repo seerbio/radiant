@@ -607,10 +607,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
-
-    QPair<MzMin, MzMax> precursorMzMinMax;
-    e = msReaderPointerAcc->ptr->getHiLoMzPrecursors(&precursorMzMinMax); ree;
-
+    
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
     qDebug() << "Number of tranches for calibration:" << numberOfTranches
@@ -622,7 +619,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             m_targetDecoyPairPntrs,
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
-    ); ree;
+            ); ree;
 
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
