@@ -86,7 +86,7 @@ public:
 private:
 
     Err buildCalibration(
-            MsReaderPointerAcc *msReaderPointerAcc,
+            const MsReaderPointerAcc *msReaderPointerAcc,
             QVector<CandidateScores*> *candidateScoresForTrainings
             );
 

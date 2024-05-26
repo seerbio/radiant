@@ -600,7 +600,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::buildCalibration(
-        MsReaderPointerAcc *msReaderPointerAcc,
+        const MsReaderPointerAcc *msReaderPointerAcc,
         QVector<CandidateScores*> *candidateScoresForTrainings
         ) {
 
@@ -620,6 +620,14 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
             ); ree;
+
+    const QVector<MzTargetKey> &mzTargetKeys = m_targetDecoyCandidatePairScoretron.diaTargetFrames()->keys().toVector();
+    QVector<QVector<MzTargetKey>> mzTargetKeysTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+        mzTargetKeys,
+        ParallelUtils::numberOfAvailableSystemProcessors(),
+        &mzTargetKeysTranched
+        ); ree;
 
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
@@ -961,7 +969,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
 
     ERR_INIT
 
-    e = ErrorUtils::isTrue(m_msCalibratomatic.isInitCalMS2()); ree;
+    e = ErrorUtils::isTrue(m_msCalibratomatic.isInitCalMS2() || m_msCalibratomatic.isInitCalMS1()); ree;
     e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
     e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
@@ -1604,7 +1612,7 @@ Err PythiaDIAFFWorkflow::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const 
         }
         m_peptideKeyVsTargetDecoyCandidateScoresPntrs[peptideSequenceWithModsChargeAndTargetKey].first = cs;
     }
-    
+
     const bool allTargetsMatchedWithDecoy = std::all_of(
             m_peptideKeyVsTargetDecoyCandidateScoresPntrs.begin(),
             m_peptideKeyVsTargetDecoyCandidateScoresPntrs.end(),
@@ -1640,7 +1648,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             m_pythiaParameters.mzMinMS2,
             m_pythiaParameters.mzMaxMS2,
             &candidateScoresVecBatchPntrsResized
-    ); ree;
+            ); ree;
     qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
@@ -1648,7 +1656,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             MSLevelEnum::MS2,
             candidateScoresVecBatchPntrsResized,
             &msCalibrationReaderRows
-    ); ree;
+            ); ree;
 
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
@@ -1669,7 +1677,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
 
         msCalibrationReaderRows.resize(topCandidatesMass);
 
-        // e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
+        e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
 
         e = m_msCalibratomatic.setMassCalibrationCoeffs(
             msCalibrationReaderRows,

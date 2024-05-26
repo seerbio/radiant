@@ -190,7 +190,6 @@ namespace {
 
     QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs,
-            const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
             TurboXIC *turboXICMS1
             ) {
 
@@ -324,14 +323,13 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     const auto batchScoreProcessLogicBinder = std::bind(
             parallelScoreLogic,
             std::placeholders::_1,
-            m_scanNumberVsScanTime,
             m_turboXICMS1
             );
 
     QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
             parallelInputsTranched,
             batchScoreProcessLogicBinder
-    );
+            );
     futures.waitForFinished();
 
     for (const QVector<QPair<Err, QVector<CandidateScores>>> &results : futures) {
@@ -348,7 +346,6 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
         const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
                 tdppis,
-                m_msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
                 m_turboXICMS1
                 ); ree;
 
