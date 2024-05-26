@@ -1604,12 +1604,7 @@ Err PythiaDIAFFWorkflow::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const 
         }
         m_peptideKeyVsTargetDecoyCandidateScoresPntrs[peptideSequenceWithModsChargeAndTargetKey].first = cs;
     }
-
-    // for (auto &dd : m_peptideKeyVsTargetDecoyCandidateScoresPntrs) {
-    //     qDebug() << dd.first << dd.second << "SDLFDKSJL";
-    // }
-
-
+    
     const bool allTargetsMatchedWithDecoy = std::all_of(
             m_peptideKeyVsTargetDecoyCandidateScoresPntrs.begin(),
             m_peptideKeyVsTargetDecoyCandidateScoresPntrs.end(),
