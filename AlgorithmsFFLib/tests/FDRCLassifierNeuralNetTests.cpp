@@ -314,7 +314,8 @@ void FDRCLassifierNeuralNetTests::playGround() {
             epochs,
             baggingSize,
             batchSize,
-            learningRate
+            learningRate,
+            8
     );
     QCOMPARE(e, eNoError);
 

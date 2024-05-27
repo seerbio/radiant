@@ -115,7 +115,8 @@ public:
             int epochs,
             int baggingSize,
             int batchSize,
-            double learningRate
+            double learningRate,
+            int threadCount
             );
 
     /**
@@ -207,6 +208,7 @@ private:
     int m_baggingSize;
     int m_batchSize;
     double m_learningRate;
+    int m_threadCount;
 
     bool m_isInit;
 

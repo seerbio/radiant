@@ -353,7 +353,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 #endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    if (m_pythiaParameters.bypassNeuralNet) {
+    if (!m_pythiaParameters.bypassNeuralNet) {
 
         const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
         e = applyNeuralNetClassifier(
@@ -395,6 +395,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     }
     else {
         candidateScoreClassifierPntrs = candidateScoresTargetsAndDecoys50PercentFDRFiltered;
+        std::sort(
+            candidateScoreClassifierPntrs.rbegin(),
+            candidateScoreClassifierPntrs.rend(),
+            [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+            );
     }
 
     if (!m_pythiaParameters.reportDecoys) {
@@ -422,12 +427,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     int counter = 0;
     int decoys = 0;
     int entrap = 0;
-
-    std::sort(
-        candidateScoreClassifierPntrs.rbegin(),
-        candidateScoreClassifierPntrs.rend(),
-        [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-        );
 
     for (CandidateScores *cs : candidateScoreClassifierPntrs) {
         counter++;
@@ -1391,6 +1390,7 @@ namespace {
     Err predictNNScores(
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
             int seed,
+            int threadCount,
             QVector<float> *predictions
             ) {
 
@@ -1415,7 +1415,8 @@ namespace {
                 epochs,
                 baggingSize,
                 batchSize,
-                learningRate
+                learningRate,
+                threadCount
         ); ree;
 
         // explore the overfitting w/ the frequencies, RBF kernel for LDA, training on all candidates instead of top integration
@@ -1530,6 +1531,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     e = predictNNScores(
             karnnNNTargetsNorm,
             seed,
+            m_pythiaParameters.threadCount,
             &predictions
             ); ree;
 
