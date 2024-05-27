@@ -607,7 +607,11 @@ Err PythiaDIAFFWorkflow::buildCalibration(
              << "sizePerTranche:" << static_cast<int>(sizePerTranche);
 
     QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
-    const int resizeCount = std::min(m_pythiaParameters.threadCount, uniqueMsScanInfos.size());
+
+    constexpr int maxTrainingCount = 20;
+    const int mzTargetKeysHalf = static_cast<int>(std::round(uniqueMsScanInfos.size() / 2.0));
+
+    const int resizeCount = std::min(maxTrainingCount, mzTargetKeysHalf);
     uniqueMsScanInfos = uniqueMsScanInfos.mid(uniqueMsScanInfos.size() - resizeCount);
 
     QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;

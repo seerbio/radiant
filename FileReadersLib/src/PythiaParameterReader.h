@@ -125,7 +125,7 @@ struct PythiaParameters{
 
     Raggedness raggedness = Raggedness::NoRagged;
 
-    int threadCount = 16;
+    int threadCount = 8;
 
     int allowedMissedCleavages = 0;
     int peptideLengthMin = 7;
