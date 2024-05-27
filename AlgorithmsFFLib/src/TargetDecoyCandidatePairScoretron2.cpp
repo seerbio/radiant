@@ -38,6 +38,7 @@ public:
     PythiaParameters pythiaParameters;
     QPair<double, double> scanTimeMinMax;
     TurboXIC *turboXicMS1 = nullptr;
+    TurboXIC *turboXicMS2 = nullptr;
     float minPeakCount = -1.0;
     QMap<int, QVector<float>> averagineTable;
 };
@@ -189,8 +190,7 @@ namespace {
     }
 
     QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
-            const QVector<TargetDecoyPairParallelInput> &inputs,
-            TurboXIC *turboXICMS1
+            const QVector<TargetDecoyPairParallelInput> &inputs
             ) {
 
         ERR_INIT
@@ -199,11 +199,12 @@ namespace {
         et.start();
 
         e = ErrorUtils::isNotEmpty(inputs); rree;
-        e = ErrorUtils::isTrue(turboXICMS1->isInit()); rree;
 
         QVector<QPair<Err, QVector<CandidateScores>>> outputs;
 
         for (const TargetDecoyPairParallelInput &pi : inputs) {
+
+            e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
 
             if (pi.targetDecoyPointers.isEmpty()) {
                 qDebug() << pi.targetKey << "Target key is empty";
@@ -231,11 +232,20 @@ namespace {
                 );
 
             XICPeakManager xicPeakManager;
-            e = xicPeakManager.init(
-                *pi.msFrameMzTarget,
-                mzValsToExtract,
-                static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
-                ); rree;
+            if (pi.turboXicMS2 != nullptr) {
+                e = xicPeakManager.init(
+                    mzValsToExtract,
+                    static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM),
+                    pi.turboXicMS2
+                    ); rree;
+            }
+            else {
+                e = xicPeakManager.init(
+                    *pi.msFrameMzTarget,
+                    mzValsToExtract,
+                    static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
+                    ); rree;
+            }
 
             const float scanTimeRange = pi.scanTimeMinMax.second - pi.scanTimeMinMax.first;
             CandidateScorertron candidateScorertron;
@@ -288,6 +298,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
+        const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) {
@@ -307,6 +318,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             m_scanTimeMinMax,
             msCalibratomatic,
             minPeakCount,
+            mzTargetKeyVsTurboXicPntrs,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
             ); ree;
@@ -314,21 +326,16 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
-            ParallelUtils::numberOfAvailableSystemProcessors(),
+            m_pythiaParameters.threadCount,
             &parallelInputsTranched
             ); ree;
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-    const auto batchScoreProcessLogicBinder = std::bind(
-            parallelScoreLogic,
-            std::placeholders::_1,
-            m_turboXICMS1
-            );
 
     QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
             parallelInputsTranched,
-            batchScoreProcessLogicBinder
+            parallelScoreLogic
             );
     futures.waitForFinished();
 
@@ -346,7 +353,6 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
         const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
                 tdppis,
-                m_turboXICMS1
                 ); ree;
 
         for (const QPair<Err, QVector<CandidateScores>> &res : results) {
@@ -371,7 +377,8 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
+        const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+        const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) {
 
@@ -382,26 +389,30 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
-    e = ErrorUtils::isNotEmpty(m_uniqueTandemMsScanInfos); ree;
     e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFrame); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    input->reserve(m_uniqueTandemMsScanInfos.size());
+    input->reserve(mzTargetKeyVsTargetDecoyCandidatePointers->size());
 
-    for (const MsScanInfo &msScanInfo : m_uniqueTandemMsScanInfos) {
+    for (const MzTargetKey &mzTargetKey : mzTargetKeyVsTargetDecoyCandidatePointers->keys()) {
 
         TargetDecoyPairParallelInput tdppi;
         tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.targetKey = msScanInfo.targetKey();
+        tdppi.targetKey = mzTargetKey;
         tdppi.msCalibratomatic = msCalibratomatic;
         tdppi.pythiaParameters = m_pythiaParameters;
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
-        tdppi.diaTargetFrame = m_diaTargetFrames.value(msScanInfo.targetKey());
-        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(msScanInfo.targetKey());
+        tdppi.diaTargetFrame = m_diaTargetFrames.value(tdppi.targetKey);
+        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(tdppi.targetKey);
         tdppi.turboXicMS1 = m_turboXICMS1;
         tdppi.minPeakCount = minPeakCount;
         tdppi.averagineTable = m_averagineTable;
+
+        if (!mzTargetKeyVsTurboXicPntrs.isEmpty()) {
+            e = ErrorUtils::contains(tdppi.targetKey, mzTargetKeyVsTurboXicPntrs); ree;
+            tdppi.turboXicMS2 = mzTargetKeyVsTurboXicPntrs.value(tdppi.targetKey);
+        }
 
         input->push_back(tdppi);
     }

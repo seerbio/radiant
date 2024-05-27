@@ -19,11 +19,13 @@ public:
 
     static Err trainLDAClassifier(
             const QVector<QPair<FeaturesArrayDecoys*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
+            int threadCount,
             QVector<float> *weights
             );
 
     static Err applyWeights(
         const QVector<float> &weights,
+        int threadCount,
         const QVector<FeaturesArray*> &candidateScoresPntrs,
         QVector<float> *discriminantScores
     );

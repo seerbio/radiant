@@ -29,6 +29,12 @@ public:
         float ppmTolerance
         );
 
+    Err init(
+        const QVector<float> &mzValsToExtract,
+        float ppmTolerance,
+        TurboXIC *turboXic
+        );
+
     bool isValid() const;
 
     Err getXIC(

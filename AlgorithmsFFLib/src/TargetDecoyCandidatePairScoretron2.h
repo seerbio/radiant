@@ -64,6 +64,7 @@ public:
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
+            const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             );
@@ -99,7 +100,8 @@ private:
             const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
+            const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             );
 

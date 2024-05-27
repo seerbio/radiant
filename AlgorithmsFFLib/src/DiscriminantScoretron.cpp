@@ -23,43 +23,6 @@ namespace {
         QVector<float> b;
     };
 
-    Err buildParallelInput(
-            const QVector<ScoresTargets*> &scoresTargets,
-            const QVector<ScoresDecoys*> &scoresDecoys,
-            QVector<BuildClassiferParallelInput> *inputs
-    ) {
-        ERR_INIT
-
-        e = ErrorUtils::isEqual(scoresTargets.size(), scoresDecoys.size()); ree;
-
-        QVector<QVector<ScoresTargets*>> scoresTargetsTranched;
-        QVector<QVector<ScoresDecoys*>> scoresDecoysTranched;
-
-        const int tranches = std::min(ParallelUtils::numberOfAvailableSystemProcessors(), scoresTargets.size());
-
-        e = ParallelUtils::trancheVectorForParallelization(
-                scoresTargets,
-                tranches,
-                &scoresTargetsTranched
-        ); ree;
-
-        e = ParallelUtils::trancheVectorForParallelization(
-                scoresDecoys,
-                tranches,
-                &scoresDecoysTranched
-        ); ree;
-
-        e = ErrorUtils::isEqual(scoresTargetsTranched.size(), scoresDecoysTranched.size()); ree;
-        for (int i = 0; i < scoresDecoysTranched.size(); i++) {
-            BuildClassiferParallelInput input;
-            input.scoresTargets = scoresTargetsTranched.at(i);
-            input.scoresDecoys = scoresDecoysTranched.at(i);
-            inputs->push_back(input);
-        }
-
-        ERR_RETURN
-    }
-
     QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel2(
             const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &pairs
             ) {
@@ -123,6 +86,7 @@ namespace {
 
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
+        int threadCount,
         QVector<float> *weights
         ) {
 
@@ -138,7 +102,7 @@ Err DiscriminantScoretron::trainLDAClassifier(
     QVector<QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>>> targetDecoyCandidateScoresPairTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             targetDecoyCandidateScoresPair,
-            ParallelUtils::numberOfAvailableSystemProcessors(),
+            threadCount,
             &targetDecoyCandidateScoresPairTranched
             ); ree;
 
@@ -198,6 +162,7 @@ namespace {
 }//namespace
 Err DiscriminantScoretron::applyWeights(
     const QVector<float>& weights,
+    int threadCount,
     const QVector<FeaturesArray*> &featuresArray,
     QVector<float> *discriminantScores
     ) {
@@ -210,7 +175,7 @@ Err DiscriminantScoretron::applyWeights(
     QVector<QVector<FeaturesArray*>> featuresArrayPntrsTranched;
     e = ParallelUtils::trancheVectorForParallelizationInOrder(
         featuresArray,
-        ParallelUtils::numberOfAvailableSystemProcessors(),
+        threadCount,
         0,
         &featuresArrayPntrsTranched
     ); ree;

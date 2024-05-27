@@ -43,6 +43,30 @@ Err XICPeakManager::init(
     ERR_RETURN
 }
 
+Err XICPeakManager::init(
+    const QVector<float>& mzValsToExtract,
+    float ppmTolerance,
+    TurboXIC* turboXic
+    ) {
+
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(turboXic->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(mzValsToExtract); ree;
+    e = ErrorUtils::isAboveThreshold(ppmTolerance, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
+
+    e = extractXICs(
+        mzValsToExtract,
+        ppmTolerance,
+        turboXic
+        ); ree;
+
+    m_isInit = true;
+
+    ERR_RETURN
+}
+
 bool XICPeakManager::isValid() const {
     return m_isInit;
 }

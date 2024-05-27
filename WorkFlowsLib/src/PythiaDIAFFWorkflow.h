@@ -111,10 +111,7 @@ private:
 
     Err recalibrateMs1Points(const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized);
 
-    Err optimizeParameters(
-            const QVector<CandidateScores*> &candidateScoresTrainings,
-            MsReaderPointerAcc *msReaderPointerAcc
-            );
+    Err optimizeParameters(const QVector<CandidateScores*> &candidateScoresTrainings);
 
     Err mainAnalysis(
             MsReaderPointerAcc *msReaderPointerAcc,
@@ -142,6 +139,7 @@ private:
     Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const QVector<CandidateScores*> &candidateScores);
 
     Err honeIRTAndMassCalibration(
+        const QVector<MzTargetKey> &mzTargetKeysToRecal,
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
         int topNCandidates,
         int topCandidatesMass

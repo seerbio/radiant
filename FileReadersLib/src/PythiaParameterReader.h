@@ -125,6 +125,8 @@ struct PythiaParameters{
 
     Raggedness raggedness = Raggedness::NoRagged;
 
+    int threadCount = 16;
+
     int allowedMissedCleavages = 0;
     int peptideLengthMin = 7;
     int peptideLengthMax = 35;
@@ -158,12 +160,11 @@ struct PythiaParameters{
     bool subtractShadows = true;
 
     int scanTimeWindowStDevs = 3;
-    int trancheSizeMax = 1e4;
+    int trancheSizeMax = 2e4;
     int ionsSharedToReject = 4;
     int topNMs2Ions = 12;
 
     bool bypassNeuralNet = false;
-    int xicCacheSizeMax = 2e5; //TODO make this settable
 
     [[nodiscard]] bool isValid() const {
 
