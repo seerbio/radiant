@@ -405,7 +405,7 @@ namespace {
 
         Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
-        
+
         *integrationVec = EigenKernelUtils::convolveVectorWithKernel(
         integrationVecLocal,
         kernelIntegration
