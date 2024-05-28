@@ -39,6 +39,7 @@ Err CandidateScorertron::Private::init() {
 
     ERR_INIT
 
+    //TODO consider writing algo to optimizing filter length parameters as well as smoothCount later in the code.
     constexpr int filterLengthMs2 = 3;
     constexpr int filterLengthIntegration = 5;
     constexpr int order = 1;
@@ -508,7 +509,7 @@ namespace {
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
-        constexpr int smoothCount = 2;
+        constexpr int smoothCount = 3;
         e = buildEigenMatrix(
             xicPointsVec100,
             kernelMs2,
