@@ -10,6 +10,7 @@
 #include "CandidateScores.h"
 #include "Error.h"
 #include "GlobalSettings.h"
+#include "MsFrame.h"
 #include "MsReaderBase.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
@@ -22,33 +23,26 @@ class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
 class TurboXIC;
 
-class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron {
+class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron2 {
 
 public:
 
-    TargetDecoyCandidatePairScoretron();
-    ~TargetDecoyCandidatePairScoretron() = default;
+    TargetDecoyCandidatePairScoretron2();
+    ~TargetDecoyCandidatePairScoretron2();
 
     /**
-    * @brief Initializes the TargetDecoyCandidatePairScoretron.
+    * @brief Initializes the TargetDecoyCandidatePairScoretron2.
     *
-    * This method initializes the TargetDecoyCandidatePairScoretron with the provided parameters,
-    * including Pythia parameters, MS1 scan information, MS reader accessor, DIA target frames,
-    * and TurboXIC for MS1.
+    * This method initializes the TargetDecoyCandidatePairScoretron2 with the provided parameters,
+    * including Pythia parameters, MS reader accessor
     *
     * @param pythiaParameters The Pythia parameters used for scoring.
-    * @param scanNumberVsScanTimeMS1 Map of scan numbers to MS1 scan points for the scoring reference.
     * @param msReaderPointerAcc Pointer to the MS reader accessor for accessing MS data.
-    * @param diaTargetFrames Map of DIA target frames for additional scoring context.
-    * @param turboXICMS1 Pointer to TurboXIC for MS1, required for scoring calculations.
     * @return Error code indicating success or failure during initialization.
     */
     Err init(
             const PythiaParameters &pythiaParameters,
-            const QMap<ScanNumber, ScanPoints> &scanNumberVsScanTimeMS1,
-            MsReaderPointerAcc *msReaderPointerAcc,
-            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-            TurboXIC *turboXICMS1
+            MsReaderPointerAcc *msReaderPointerAcc
             );
 
     /**
@@ -68,14 +62,15 @@ public:
     */
     Err scoreTargetDecoyPairs(
             int topNMS2Ions,
-            const QPair<ScanTime, ScanTime> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
+            float minPeakCount,
+            const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             );
 
     /**
-    * @brief Checks if the TargetDecoyCandidatePairScoretron is initialized.
+    * @brief Checks if the TargetDecoyCandidatePairScoretron2 is initialized.
     *
     * This method checks whether the necessary components for scoring, including Pythia parameters,
     * DIA target frames, and MS1 frame, are initialized.
@@ -85,7 +80,7 @@ public:
     bool isInit();
 
     /**
-    * @brief Sets the Pythia parameters for TargetDecoyCandidatePairScoretron.
+    * @brief Sets the Pythia parameters for TargetDecoyCandidatePairScoretron2.
     *
     * This method sets the Pythia parameters and checks if they are valid.
     *
@@ -94,15 +89,26 @@ public:
     */
     Err setPythiaParameters(const PythiaParameters &pythiaParameters);
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>>* diaTargetFrames();
+
+    QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
+
 private:
 
     Err buildParallelInput(
             int topNMS2Ions,
             const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
+            float minPeakCount,
+            const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             );
+
+    Err buildMzTargetKeyVsMsFrames();
+
+    Err buildAveragineTable();
+
 
 private:
 
@@ -110,8 +116,14 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TurboXIC *m_turboXICMS1;
 
-    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *m_diaTargetFrames;
-    QMap<ScanNumber, ScanPoints> m_ms1Frame;
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFrames;
+    QMap<ScanNumber, ScanPoints> m_ms1ScanNumberVsScanPoints;
+    QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
+    QPair<ScanTime, ScanTime> m_scanTimeMinMax;
+    QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
+    QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFrame;
+    QMap<NominalMzMass, QVector<float>> m_averagineTable;
+
 
 };
 

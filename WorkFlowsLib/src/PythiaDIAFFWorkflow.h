@@ -12,7 +12,7 @@
 #include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
-#include "TargetDecoyCandidatePairScoretron2.h"
+#include "TargetDecoyCandidatePairScoretron.h"
 
 using namespace Error;
 

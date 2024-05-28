@@ -21,8 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/CandidateScores.cpp
-#        src/CandidateScorertron.cpp
-        src/CandidateScorertron2.cpp
+        src/CandidateScorertron.cpp
         src/Centroidotron.cpp
         src/ClassifierWeightsManager.cpp
         src/DiscriminantScoretron.cpp
@@ -43,8 +42,7 @@ SET(SOURCE_FILES
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
-#        src/TargetDecoyCandidatePairScoretron.cpp
-        src/TargetDecoyCandidatePairScoretron2.cpp
+        src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
         src/XICPeakManager.cpp
         src/XYMappermatic.cpp
@@ -52,8 +50,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/CandidateScores.h
-#        src/CandidateScorertron.h
-        src/CandidateScorertron2.h
+        src/CandidateScorertron.h
         src/Centroidotron.h
         src/ClassifierWeightsManager.h
         src/DeMultiplexScanerator.h
@@ -74,8 +71,7 @@ SET(HEADER_FILES
         src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
-#        src/TargetDecoyCandidatePairScoretron.h
-        src/TargetDecoyCandidatePairScoretron2.h
+        src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
         src/XICPeakManager.h
         src/XYMappermatic.h

@@ -2,7 +2,7 @@
 // Created by anichols on 10/19/23.
 //
 
-#include "CandidateScorertron2.h"
+#include "CandidateScorertron.h"
 
 #include "CandidateScores.h"
 #include "EigenKernelUtils.h"
