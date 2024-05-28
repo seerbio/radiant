@@ -20,10 +20,10 @@ public:
 
 private Q_SLOTS:
 
-    void openFileTest();
-    void openFileTest2();
-    void openFileTest3();
-    void openFileTest4();
+    static void openFileTest();
+    static void openFileTest2();
+    static void openFileTest3();
+    static void openFileTest4();
 
 
 
@@ -95,8 +95,6 @@ void MsReaderPointerAccTests::openFileTest3() {
 }
 
 void MsReaderPointerAccTests::openFileTest4() {
-
-    QSKIP("Figure out what is wrong w/ this test");
 
     ERR_INIT
 

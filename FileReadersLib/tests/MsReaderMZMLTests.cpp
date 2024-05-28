@@ -30,8 +30,6 @@ private Q_SLOTS:
 
 void MsReaderMZMLTests::openFileTest() {
 
-//    QSKIP("This is temporary remove before commit");
-
     const QString &msParquetFilePath = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     ERR_INIT

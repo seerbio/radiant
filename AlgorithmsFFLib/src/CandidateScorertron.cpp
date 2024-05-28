@@ -39,9 +39,9 @@ Err CandidateScorertron::Private::init() {
 
     ERR_INIT
 
-    constexpr int filterLengthMs2 = 5;
-    constexpr int filterLengthIntegration = 7;
-    constexpr int order = 2;
+    constexpr int filterLengthMs2 = 3;
+    constexpr int filterLengthIntegration = 5;
+    constexpr int order = 1;
     constexpr int derivative = 0;
     constexpr int rate = 1;
 
@@ -343,7 +343,7 @@ namespace {
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
         bool buildMzMatrix,
-        bool applySmooth,
+        int smoothCount,
         Eigen::MatrixX<float> *matIntensity,
         Eigen::MatrixX<float> *matMz
         ) {
@@ -377,7 +377,7 @@ namespace {
             }
         }
 
-        if (applySmooth) {
+        for (int smooth = 0; smooth < smoothCount; smooth++) {
             *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
         }
 
@@ -508,12 +508,13 @@ namespace {
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
+        constexpr int smoothCount = 2;
         e = buildEigenMatrix(
             xicPointsVec100,
             kernelMs2,
             frameIndexMax,
             true,
-            true,
+            smoothCount,
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
@@ -524,7 +525,7 @@ namespace {
             kernelMs2,
             frameIndexMax,
             false,
-            true,
+            smoothCount,
             &matriciesAndVecs->intensityMatrix100Shadow,
             &unused
             ); ree;
@@ -564,12 +565,13 @@ namespace {
         // std::cout << std::endl;
         // std::cout << "************" << std::endl;
 
+        constexpr int noSmooths = 0;
         e = buildEigenMatrix(
             xicPointsVec45,
             kernelMs2,
             frameIndexMax,
             false,
-            false,
+            noSmooths,
             &matriciesAndVecs->intensityMatrix45,
             &unused
             ); ree;
@@ -579,7 +581,7 @@ namespace {
             kernelMs2,
             frameIndexMax,
             false,
-            false,
+            noSmooths,
             &matriciesAndVecs->intensityMatrix20,
             &unused
             ); ree;
@@ -1232,14 +1234,6 @@ namespace {
                 &klDiv);
             klDivByRow.coeffRef(row) = klDiv;
         }
-
-        // Eigen::VectorX<float> klDivByRow;
-        // e = EigenUtils::rowWiseKLDivergenceOfMatrices(
-        //     matSummed,
-        //     intensitiesTheoMat,
-        //     &klDivByRow
-        //     ); ree;
-
 
         for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
             candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
