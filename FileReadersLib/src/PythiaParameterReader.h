@@ -50,12 +50,14 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
+    extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
 
     extern const QString FILEREADERSLIB_EXPORTS kDigestParams;
     extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorParams;
     extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
     extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
+    extern const QString FILEREADERSLIB_EXPORTS kGeneral;
 
     extern const QString FILEREADERSLIB_EXPORTS kBypassNeuralNet;
 
@@ -241,6 +243,7 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
+        qDebug() << PythiaParameterReaderConstants::kThreadCount << threadCount;
 
         qDebug() << PythiaParameterReaderConstants::kBypassNeuralNet << bypassNeuralNet;
 

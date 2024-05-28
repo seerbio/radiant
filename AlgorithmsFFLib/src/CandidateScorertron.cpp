@@ -405,11 +405,11 @@ namespace {
 
         Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
-
+        
         *integrationVec = EigenKernelUtils::convolveVectorWithKernel(
-            integrationVecLocal,
-            kernelIntegration
-            );
+        integrationVecLocal,
+        kernelIntegration
+        );
 
         ERR_RETURN
     }
@@ -509,7 +509,7 @@ namespace {
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
-        constexpr int smoothCount = 3;
+        constexpr int smoothCount = 2;
         e = buildEigenMatrix(
             xicPointsVec100,
             kernelMs2,

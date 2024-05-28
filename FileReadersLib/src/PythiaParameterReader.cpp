@@ -129,13 +129,15 @@ namespace PythiaParameterReaderConstants {
     const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
-    const QString  kSubtractShadows = QStringLiteral("subtractShadows");
+    const QString kSubtractShadows = QStringLiteral("subtractShadows");
+    const QString kThreadCount = QStringLiteral("threadCount");
 
     const QString kDigestParams = QStringLiteral("DigestParams");
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kPrecursorParams = QStringLiteral("PrecursorParams");
     const QString kPeakIntegrationParams = QStringLiteral("PeakIntegrationParams");
     const QString kFdrParams = QStringLiteral("FdrParams");
+    const QString kGeneral = QStringLiteral("General");
 
     const QString kBypassNeuralNet = QStringLiteral("bypassNeuralNet");
 }
@@ -307,6 +309,11 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
     pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
     pythiaParameters->bypassNeuralNet = fdrParamsNode[kBypassNeuralNet.toStdString()].value_or(false);
+
+    constexpr int defaultThreadCount = 8;
+    const auto generalNode = parser[kGeneral.toStdString()];
+    pythiaParameters->threadCount = generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
+
 
     toml::array* modifications = parser["Modification"].as_array();
     for(const auto& value : *modifications) {
