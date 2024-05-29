@@ -1114,9 +1114,16 @@ namespace {
         e = ErrorUtils::isNotEmpty(*results); ree;
 
         std::sort(
-                results->rbegin(),
-                results->rend(),
-                [](const DOEResult &l, const DOEResult &r){return l.fdrCount < r.fdrCount;}
+                results->begin(),
+                results->end(),
+                [](const DOEResult &l, const DOEResult &r) {
+
+                    if (l.fdrCount == r.fdrCount) {
+                        return l.ppm > r.ppm;
+                    }
+
+                    return l.fdrCount > r.fdrCount;
+                }
                 );
 
         for (const DOEResult &r : *results) {
