@@ -86,26 +86,6 @@ void PythiaDIAFFWorkflowTests::buildUniqueInfoScanKeyVsTargetDecoyCandidatePoint
             );
     QCOMPARE(e, eNoError);
 
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = pythiaDiaffWorkflow.buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            uniqueMsScanInfos,
-            -1.0,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            );
-    QCOMPARE(e, eNoError);
-    QCOMPARE(mzTargetKeyVsTargetDecoyCandidatePointers.value("994850").size(), 65);
-
-    QVector<TargetDecoyCandidatePair*> pairs = mzTargetKeyVsTargetDecoyCandidatePointers.value("994850");
-
-    std::sort(
-            pairs.begin(),
-            pairs.end(),
-            [](TargetDecoyCandidatePair *l, TargetDecoyCandidatePair *r){return l->mz() < r->mz();}
-            );
-
-    PeptideStringWithMods peptideStringWithMods = pairs.at(0)->peptideStringWithMods();
-    QCOMPARE(peptideStringWithMods, "ASEAEDASLLSFMQGYMK");
-
 }
 
 

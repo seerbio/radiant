@@ -4,6 +4,7 @@
 
 #include "PythiaParameterReader.h"
 #include "ErrorUtils.h"
+#include "ParallelUtils.h"
 
 #include "toml.hpp"
 
@@ -126,16 +127,17 @@ namespace PythiaParameterReaderConstants {
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
     const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
     const QString kStopThresholdFraction = QStringLiteral("stopThresholdFraction");
-    const QString kCosineSimToAnchorThreshold = QStringLiteral("cosineSimToAnchorThreshold");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
-    const QString  kSubtractShadows = QStringLiteral("subtractShadows");
+    const QString kSubtractShadows = QStringLiteral("subtractShadows");
+    const QString kThreadCount = QStringLiteral("threadCount");
 
     const QString kDigestParams = QStringLiteral("DigestParams");
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kPrecursorParams = QStringLiteral("PrecursorParams");
     const QString kPeakIntegrationParams = QStringLiteral("PeakIntegrationParams");
     const QString kFdrParams = QStringLiteral("FdrParams");
+    const QString kGeneral = QStringLiteral("General");
 
     const QString kBypassNeuralNet = QStringLiteral("bypassNeuralNet");
 }
@@ -222,7 +224,7 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.signalToNoiseRatio = 2;
     pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
-    pythiaParameters.mzMinMS2 = 176.0;
+    pythiaParameters.mzMinMS2 = 200.0;
     pythiaParameters.mzMaxMS2 = 1500.0;
 
     Modification carboxyAmidoMethyl(
@@ -307,6 +309,13 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
     pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
     pythiaParameters->bypassNeuralNet = fdrParamsNode[kBypassNeuralNet.toStdString()].value_or(false);
+
+    constexpr int defaultThreadCount = 8;
+    const auto generalNode = parser[kGeneral.toStdString()];
+    pythiaParameters->threadCount = pythiaParameters->threadCount == 0
+                                  ? ParallelUtils::numberOfAvailableSystemProcessors()
+                                  : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
+
 
     toml::array* modifications = parser["Modification"].as_array();
     for(const auto& value : *modifications) {

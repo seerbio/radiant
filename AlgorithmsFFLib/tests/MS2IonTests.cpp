@@ -15,19 +15,19 @@ public:
 
 private slots:
 
-    void getIonLabelInfoTest();
+    static void getIonLabelInfoTest();
 
-    void sortMS2IonsMzAscTest();
+    static void sortMS2IonsMzAscTest();
 
-    void sortMS2IonsIntensityDescTest();
+    static void sortMS2IonsIntensityDescTest();
 
-    void filterMS2IonsByMzTest();
+    static void filterMS2IonsByMzTest();
 
-    void ms2IonsToScanPointsTests();
+    static void ms2IonsToScanPointsTests();
 
 private:
 
-    QVector<MS2Ion> buildMS2Ions();
+    static QVector<MS2Ion> buildMS2Ions();
 
 };
 

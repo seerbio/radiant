@@ -14,12 +14,12 @@
 
 using namespace Error;
 
-class PeptideSequence;
-
-enum class MSLevelClassEnum {
+enum class MSLevelEnum {
     MS1,
-    MS2,
+    MS2
 };
+
+class PeptideSequence;
 
 class ALGORITHMSFFLIB_EXPORTS MsCalibratomatic {
 
@@ -28,132 +28,59 @@ public:
     MsCalibratomatic();
     ~MsCalibratomatic() = default;
 
-    /**
-    * @brief Initializes MsCalibratomatic with the provided MS calibration file path.
-    *
-    * This function initializes MsCalibratomatic by checking the existence of the specified MS calibration file,
-    * reading its content using ParquetReader, and performing further initialization based on the read data.
-    *
-    * @param msCalibrationFilePath A QString representing the file path of the MS calibration file.
-    * @return Err indicating the success or failure of the initialization process.
-    */
-    Err init(const QString &msCalibrationFilePath);
+    Err buildRTMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
-    /**
-    * @brief Initialize the calibration using the provided calibration reader rows.
-    *
-    * @param msCalibarationReaderRows The calibration reader rows to initialize the calibration.
-    * @return An error code indicating the success or failure of the initialization.
-    */
-    Err initRtOnly(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
-
-    /**
-    * @brief Initialize the calibration using only the provided Mz calibration reader rows.
-    *
-    * @param msCalibarationReaderRows The Mz calibration reader rows to initialize the calibration.
-    * @return An error code indicating the success or failure of the initialization.
-    */
-    Err initMzOnly(
+    Err setMassCalibrationCoeffs(
         const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
-        const MSLevelClassEnum &msLevelClassEnum
+        const MSLevelEnum msLevelEnum
         );
 
-    /**
-    * @brief Recalibrate the given scan points using the calibration model.
-    *
-    * This function recalibrates the provided scan points using the calibration model for Mz values.
-    *
-    * @param scanNumberVsScanPoints A QMap containing scan numbers as keys and corresponding scan points as values.
-    * @return An error code indicating the success or failure of the recalibration process.
-    */
     Err recalibrateScanPoints(
-            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
-            );
+        const MSLevelEnum &msLevel,
+        const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
+        );
 
-    /**
-    * @brief Recalibrate the given scan points using the calibration model.
-    *
-    * This function recalibrates the provided scan points using the calibration model for Mz values.
-    *
-    * @param scanNumberVsScanPoints A QMap containing scan numbers as keys and corresponding scan points as values.
-    * @return An error code indicating the success or failure of the recalibration process.
-    */
-    Err recalibrateScanPoints(QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints);
+    Err recalibrateScanPoints(
+        const MSLevelEnum &msLevel,
+        QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        );
 
-    /**
-    * @brief Get the standard deviation of Mz values used in the calibration.
-    *
-    * This function returns the standard deviation of Mz values used during the calibration process.
-    *
-    * @return The standard deviation of Mz values.
-    */
-    [[nodiscard]] float mzStDevMS1();
-    [[nodiscard]] float mzStDevMS2();
+    [[nodiscard]] float mzStDevMS1() const;
 
-    /**
-    * @brief Get the standard deviation of scan time values used in the calibration.
-    *
-    * This function calculates and returns the standard deviation of scan time values used during the calibration process.
-    *
-    * @param nStdDevs Number of standard deviations to multiply with the calculated standard deviation.
-    * @return The calculated standard deviation of scan time values.
-    */
-    [[nodiscard]] float scanTimeStDev(int nStdDevs = 1);
+    [[nodiscard]] float mzStDevMS2() const;
 
-    /**
-    * @brief Set the standard deviation of scan time values used in the calibration.
-    *
-    * This function sets the standard deviation of scan time values used during the calibration process and prints the updated values to the console.
-    *
-    * @param val The new value for the standard deviation of scan time.
-    */
+    [[nodiscard]] float scanTimeStDev(float nStdDevs = 1.0f) const;
+
     void setScanTimeStDev(double val);
+    void setMzStDevMS2(double val);
 
-    /**
-    * @brief Predict scan time for a given iRT value.
-    *
-    * This function predicts the scan time for a given iRT (indexed retention time) value using the calibrated mapping and returns the result.
-    *
-    * @param iRT The input iRT value for which to predict the scan time.
-    * @param predictedScanTime A pointer to store the predicted scan time result.
-    * @return Error code indicating the success or failure of the prediction process.
-    */
     Err predictScanTime(
         float iRT,
         float *predictedScanTime
         ) const;
 
-    /**
-    * @brief Check if the calibration has been initialized.
-    *
-    * This function checks whether the calibration has been successfully initialized.
-    *
-    * @return True if the calibration is initialized, false otherwise.
-    */
-    [[nodiscard]] bool isInit() const;
+    [[nodiscard]] bool isInitRT() const;
+
+    [[nodiscard]] bool isInitCalMS1() const;
+
+    [[nodiscard]] bool isInitCalMS2() const;
 
 private:
 
-    Err buildMzCalibrator(const MSLevelClassEnum &msLevelClassEnum);
-    Err buildIRTCalibrator();
-
-private:
-
-    //Never cleared
     PythiaParameters m_params;
     double m_mzStDevMS1;
     double m_mzStDevMS2;
     double m_scanTimeStd;
-    QString m_msCalibrationFilePath;
-
-    QVector<MsCalibarationReaderRow> m_msCalibarationReaderRows;
 
     XYMappermatic m_iRTtoScanTimeMapper;
-    XYMappermatic m_mzToRecalMz;
+    QVector<double> m_calibrationCurveCoeffsMS1;
+    QVector<double> m_calibrationCurveCoeffsMS2;
 
-    QVector<double> m_mzToRecalCalCurveCoeffs;
+    bool m_isInitRT;
+    bool m_isInitMS1;
+    bool m_isInitMS2;
 
-    bool m_isInit;
+    int m_polynomialOrderMassCal;
 
 };
 

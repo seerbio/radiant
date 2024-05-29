@@ -100,6 +100,8 @@ public:
             QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
     );
 
+    Err getTargetDecoyCandidatePairPointers(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsPntrs);
+
     /**
     * @brief Extracts peptide string with modifications and charge from a peptide sequence charge key.
     *

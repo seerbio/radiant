@@ -21,13 +21,16 @@ using Coors = QVector<double>;
 using CosineSimSum = double;
 using DecoyRatio = double;
 using DiscScore = double;
+using FeaturesArray = QVector<float>;
+using FeaturesArrayDecoys = QVector<float>;
+using FeaturesArrayTargets = QVector<float>;
 using FilePath = QString;
 using FragLibIonPeptideId = int;
 using FrameIndex = int;
 using FrequencyPercent = double;
 using Id = int;
 using Index = int;
-using Intensity = double;
+using Intensity = float;
 using IonIndex = int;
 using IonLabel = QString;
 using IonLabels = QStringList;
@@ -41,14 +44,15 @@ using MonoOffset = int;
 using MsLevel = int;
 using MzHashed = int;
 using MZION = double;
-using MzMin = double;
-using MzMax = double;
+using MzMin = float;
+using MzMax = float;
 using MzTargetKey = QString;
 using NominalMzMass = int;
 using Occurrence = int;
 using PeakIntegrationIndexes = QPair<int, int>;
 using PeptideId = int;
 using PeptideSequenceChargeKey = QString;
+using PeptideSequenceWithModsChargeAndTargetKey = QString;
 using PeptideString = QString;
 using DiffPPM = double;
 using ProteinId = int;
@@ -151,6 +155,9 @@ public:
     const float TIGHT_2_FRACTION = 0.2;
 
     const int NUMBER_OF_THE_BEAST = 666;
+
+    const int MIN_MS2_IONS = 6;
+
 
     const QString MS1Key = QStringLiteral("MS1Key");
 

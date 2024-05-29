@@ -115,7 +115,8 @@ public:
             int epochs,
             int baggingSize,
             int batchSize,
-            double learningRate
+            double learningRate,
+            int threadCount
             );
 
     /**
@@ -173,13 +174,13 @@ public:
     static Err outputFDRResults(
             const QVector<CandidateScores> &candidateScores,
             bool verbose,
-            QMap<QString, int> *fdrVsCount
+            QMap<int, int> *fdrVsCount
     );
 
     static Err outputFDRResults(
             QVector<CandidateScores*> &candidateScores,
             bool verbose,
-            QMap<QString, int> *fdrVsCount
+            QMap<int, int> *fdrVsCount
     );
 
 private:
@@ -207,6 +208,7 @@ private:
     int m_baggingSize;
     int m_batchSize;
     double m_learningRate;
+    int m_threadCount;
 
     bool m_isInit;
 

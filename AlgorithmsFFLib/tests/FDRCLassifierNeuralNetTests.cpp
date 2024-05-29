@@ -39,13 +39,12 @@ void FDRCLassifierNeuralNetTests::playGround() {
             CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
             CandidateScores::Features::CosineSimSum20,
-            CandidateScores::Features::CosineSimSumTop6,
-            CandidateScores::Features::CosineSimSumBottom6,
+            CandidateScores::Features::CosineSimSumTop,
+            CandidateScores::Features::CosineSimSumBottom,
             CandidateScores::Features::TopBottomRatio,
             CandidateScores::Features::TopBottomRatioNorm,
             CandidateScores::Features::Charge,
             CandidateScores::Features::ScanTimeDelta,
-            CandidateScores::Features::ScanTimeRange,
             CandidateScores::Features::ScanTimePd,
             CandidateScores::Features::ScanIonCount,
             CandidateScores::Features::MzNorm,
@@ -306,16 +305,17 @@ void FDRCLassifierNeuralNetTests::playGround() {
 
     const QVector<QVector<float>> xVecsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
 
-    const int baggingSize = 8;
+    constexpr int baggingSize = 8;
     const int batchSize = std::min(200, std::max(1, static_cast<int>(candidateScoresReaderRows.size() / 100.0)));
-    const float learningRate = 0.003;
-    const int epochs = 3;
+    constexpr float learningRate = 0.003;
+    constexpr int epochs = 3; //TODO make this settable
     FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
     e = fdrcLassifierNeuralNet.init(
             epochs,
             baggingSize,
             batchSize,
-            learningRate
+            learningRate,
+            8
     );
     QCOMPARE(e, eNoError);
 

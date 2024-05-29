@@ -33,6 +33,7 @@ SET(TEST_CLASSES
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
         TurboXICTests
+        XICPeakManagerTests
         XYMappermaticTests
 )
 

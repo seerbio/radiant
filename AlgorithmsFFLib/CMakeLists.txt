@@ -39,11 +39,11 @@ SET(SOURCE_FILES
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
         src/QValueSettertron.cpp
-        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
+        src/XICPeakManager.cpp
         src/XYMappermatic.cpp
 )
 
@@ -67,11 +67,11 @@ SET(HEADER_FILES
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
         src/QValueSettertron.h
-        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
+        src/XICPeakManager.h
         src/XYMappermatic.h
 )
 

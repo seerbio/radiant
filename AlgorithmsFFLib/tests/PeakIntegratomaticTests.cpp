@@ -31,7 +31,7 @@ void PeakIntegratomaticTests::buildPeakIntegratomaticParamsTest() {
     QCOMPARE(params.smoothCount, 2);
     QCOMPARE(params.sigma, 1.0);
     QCOMPARE(params.signalToNoiseRatio, 2.0);
-    QCOMPARE(MathUtils::pRound(static_cast<double>(params.stopThresholdFraction), 1), static_cast<double>(0.2));
+    QCOMPARE(MathUtils::pRound(static_cast<double>(params.stopThresholdFraction), 1), static_cast<double>(0.5));
 
 }
 

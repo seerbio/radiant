@@ -18,6 +18,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 , m_batchSize(-1)
 , m_learningRate(-1.0)
 , m_isInit(false)
+, m_threadCount(8)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
@@ -30,7 +31,8 @@ Err FDRCLassifierNeuralNet::init(
         int epochs,
         int baggingSize,
         int batchSize,
-        double learningRate
+        double learningRate,
+        int threadCount
         ) {
 
     ERR_INIT
@@ -38,12 +40,14 @@ Err FDRCLassifierNeuralNet::init(
     e = ErrorUtils::isTrue(epochs > 0); ree;
     e = ErrorUtils::isTrue(baggingSize >= 1); ree;
     e = ErrorUtils::isTrue(batchSize > 0); ree;
+    e = ErrorUtils::isTrue(threadCount > 0); ree;
     e = ErrorUtils::isTrue(learningRate > 0 & learningRate < 1 & !MathUtils::tZero(learningRate)); ree;
 
     m_epochs = epochs;
     m_baggingSize = baggingSize;
     m_batchSize = batchSize;
     m_learningRate = learningRate;
+    m_threadCount = threadCount;
 
     m_isInit = true;
 
@@ -96,7 +100,7 @@ Err FDRCLassifierNeuralNet::trainClassifier(
 namespace {
 
     struct CandidateClassifierParallelInput {
-        CandidateClassifier *candidateClassifier;
+        CandidateClassifier *candidateClassifier = nullptr;
         QVector<QVector<float>> xData;
         QVector<float> yData;
         int epochs = -1;
@@ -144,6 +148,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     for (int bag = 0; bag < m_baggingSize; bag++) {
 
         auto *candidateClassifier = new CandidateClassifier();
+        candidateClassifier->setThreadCount(m_threadCount);
         m_candidateClassifiers.push_back(candidateClassifier);
 
         CandidateClassifierParallelInput ccpi;
@@ -256,12 +261,12 @@ Err FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
 Err FDRCLassifierNeuralNet::outputFDRResults(
         const QVector<CandidateScores> &candidateScores,
         bool verbose,
-        QMap<QString, int> *fdrVsCount
+        QMap<int, int> *fdrVsCount
         ) {
 
     ERR_INIT
 
-    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005};
+    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01};
     for (double fdrThresh : fdrFractions) {
         int foundAtThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -269,29 +274,34 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
                 fdrThresh,
                 &foundAtThreshold
         ); ree;
-        const double fdrPercent = fdrThresh * 100;
-        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+        const int fdrPercent = static_cast<int>(fdrThresh * 100);
+        fdrVsCount->insert(fdrPercent, foundAtThreshold);
 
         if (!verbose) {
             continue;
         }
 
-        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
+        QString builder;
+        for (auto it = fdrVsCount->begin(); it != fdrVsCount->end(); ++it) {
+            const QString &k = QString::number(it.key());
+            builder += k + "%: " + QString::number(it.value()) + " | ";
+        }
+
+        qDebug() << "PSMs found:" << builder;
     }
 
     ERR_RETURN
 }
 
-
 Err FDRCLassifierNeuralNet::outputFDRResults(
         QVector<CandidateScores*> &candidateScores,
         bool verbose,
-        QMap<QString, int> *fdrVsCount
+        QMap<int, int> *fdrVsCount
 ) {
 
     ERR_INIT
 
-    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005};
+    const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01};
     for (double fdrThresh : fdrFractions) {
         int foundAtThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -299,15 +309,21 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
                 fdrThresh,
                 &foundAtThreshold
         ); ree;
-        const double fdrPercent = fdrThresh * 100;
-        fdrVsCount->insert(QString::number(fdrPercent), foundAtThreshold);
+        const int fdrPercent = static_cast<int>(fdrThresh * 100);
+        fdrVsCount->insert(fdrPercent, foundAtThreshold);
 
         if (!verbose) {
             continue;
         }
-
-        qDebug() << foundAtThreshold << "PSMs found at" << fdrPercent  << "% FDR";
     }
+
+    QString builder;
+    for (auto it = fdrVsCount->begin(); it != fdrVsCount->end(); ++it) {
+        const QString &k = QString::number(it.key());
+        builder += k + "%: " + QString::number(it.value())  + " | ";
+    }
+
+    qDebug() << "PSMs found:" << builder;
 
     ERR_RETURN
 }

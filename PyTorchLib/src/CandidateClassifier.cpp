@@ -107,16 +107,22 @@ public:
 
     bool isTrained();
 
+    void setThreadCount(int threadCount) {
+        m_threadCount = threadCount;
+    }
+
 private:
 
     Net *m_net;
     bool m_isTrained;
+    int m_threadCount;
 
 };
 
 CandidateClassifier::Private::Private()
 : m_net(nullptr)
 , m_isTrained(false)
+, m_threadCount(8)
 {}
 
 CandidateClassifier::Private::~Private() { delete m_net;}
@@ -165,7 +171,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         torch::cuda::manual_seed_all(seed);
     }
     torch::globalContext().setDeterministicCuDNN(true);
-    torch::set_num_threads(8);
+    torch::set_num_threads(m_threadCount);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -342,4 +348,8 @@ bool CandidateClassifier::predict(
         QVector<float> *predictions
         ) {
     return d_ptr->predict(xData, predictions);
+}
+
+void CandidateClassifier::setThreadCount(int threadCount) {
+    d_ptr->setThreadCount(threadCount);
 }
