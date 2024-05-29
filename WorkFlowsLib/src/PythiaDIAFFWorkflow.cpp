@@ -917,8 +917,8 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             continue;
         }
 
-        const float precursorMzMin = msScanInfo.precursorTargetMz - msScanInfo.isoWindowLower;
-        const float precursorMzMax = msScanInfo.precursorTargetMz + msScanInfo.isoWindowUpper;
+        const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons);
+        const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons);
 
         QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
         filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
