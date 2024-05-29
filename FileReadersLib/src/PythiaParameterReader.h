@@ -110,7 +110,7 @@ public:
     static QString cTermPeptide();
     static QString cTermProtein();
 
-    int positionalLocationIndexes(
+    static int positionalLocationIndexes(
             const QString &positionalLocation,
             const QString &peptideSequence
             );

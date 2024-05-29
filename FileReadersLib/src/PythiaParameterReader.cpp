@@ -4,6 +4,7 @@
 
 #include "PythiaParameterReader.h"
 #include "ErrorUtils.h"
+#include "ParallelUtils.h"
 
 #include "toml.hpp"
 
@@ -311,7 +312,9 @@ Err PythiaParameterReader::buildPythiaParameters(
 
     constexpr int defaultThreadCount = 8;
     const auto generalNode = parser[kGeneral.toStdString()];
-    pythiaParameters->threadCount = generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
+    pythiaParameters->threadCount = pythiaParameters->threadCount == 0
+                                  ? ParallelUtils::numberOfAvailableSystemProcessors()
+                                  : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
 
 
     toml::array* modifications = parser["Modification"].as_array();
