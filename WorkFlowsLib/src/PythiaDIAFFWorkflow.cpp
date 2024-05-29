@@ -687,7 +687,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         qDebug() << "********* Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec ********";
 
         constexpr int targetTrainingCountCalibration = 1000;
-        if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1) {
+        if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration
+            || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
+            ) {
 
             constexpr int fdrKey50PercentFDR = 50;
             candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
