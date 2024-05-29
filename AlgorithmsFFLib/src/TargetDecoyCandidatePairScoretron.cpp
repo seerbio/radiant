@@ -352,7 +352,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     for(const QVector<TargetDecoyPairParallelInput> &tdppis : parallelInputsTranched) {
 
         const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
-                tdppis,
+                tdppis
                 ); ree;
 
         for (const QPair<Err, QVector<CandidateScores>> &res : results) {

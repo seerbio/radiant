@@ -152,8 +152,6 @@ struct PythiaParameters{
     float stopThresholdFraction = 0.5;
     int minFoundMzPeaks = -1;
 
-    double cosineSimToAnchorThreshold = 0.4;
-
     double ms1ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPM = 20.0;
 
@@ -239,7 +237,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
         qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
         qDebug() << PythiaParameterReaderConstants::kStopThresholdFraction << stopThresholdFraction;
-        qDebug() << PythiaParameterReaderConstants::kCosineSimToAnchorThreshold << cosineSimToAnchorThreshold;
         qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;

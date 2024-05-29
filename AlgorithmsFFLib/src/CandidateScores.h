@@ -272,27 +272,17 @@ public:
         Ms1IntensityFoundPreMono,
         Ms1IntensityFoundIso1,
         Ms1IntensityFoundIso2,
+
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
         CosineSimSpectrumStDev,
         CosineSimSum100MS1,
         MS1Averagine,
-        CosineSimSum100Frequencies,
         CosineSimSum100Window1p5X,//250
         CosineSimSum100Window2X,
+        TotalIntensityPeakHeights,
+        TotalIntensityRaw,
 
-        // MzTargetDecoyFrequency1,//250
-        // MzTargetDecoyFrequency2,
-        // MzTargetDecoyFrequency3,
-        // MzTargetDecoyFrequency4,
-        // MzTargetDecoyFrequency5,
-        // MzTargetDecoyFrequency6,
-        // MzTargetDecoyFrequency7,
-        // MzTargetDecoyFrequency8,
-        // MzTargetDecoyFrequency9,
-        // MzTargetDecoyFrequency10,
-        // MzTargetDecoyFrequency11,//260
-        // MzTargetDecoyFrequency12,
         FeaturesSize
     };
 
@@ -603,6 +593,16 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MS1_INTZ_FND_ISO_1 = QStringLiteral("Ms1IntensityFoundIso1");
     const QString MS1_INTZ_FND_ISO_2 = QStringLiteral("Ms1IntensityFoundIso2");
 
+    const QString COS_SIM_SPEC_TIME = QStringLiteral("CosineSimSpectrumOverTime");
+    const QString COS_SIM_SPEC_TIME_CUBED = QStringLiteral("CosineSimSpectrumOverTimeCubed");
+    const QString COS_SIM_SPEC_STDEV = QStringLiteral("CosineSimSpectrumStDev");
+    const QString COS_SIM_SUM100_MS1 = QStringLiteral("CosineSimSum100MS1");
+    const QString MS1_AVERAGINE = QStringLiteral("MS1Averagine");
+    const QString COS_SIM_SUM100_WIN_1p5X = QStringLiteral("CosineSimSum100Window1p5X");
+    const QString COS_SIM_SUM100_WIN_2X = QStringLiteral("CosineSimSum100Window2X");
+    const QString TOT_INTENSITY_PEAK_HEIGHTS = QStringLiteral("TotalIntensityPeakHeights");
+    const QString TOT_INTENSITY_RAW = QStringLiteral("TotalIntensityRaw");
+
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
             COS_SIM_SUM_100_GREATER_80,
@@ -857,7 +857,16 @@ namespace CandidateScoresReaderRowNamespace {
             MS1_INTZ_FND_20,
             MS1_INTZ_FND_PRE_MONO,
             MS1_INTZ_FND_ISO_1,
-            MS1_INTZ_FND_ISO_2
+            MS1_INTZ_FND_ISO_2,
+            COS_SIM_SPEC_TIME,
+            COS_SIM_SPEC_TIME_CUBED,
+            COS_SIM_SPEC_STDEV,
+            COS_SIM_SUM100_MS1,
+            MS1_AVERAGINE,
+            COS_SIM_SUM100_WIN_1p5X,
+            COS_SIM_SUM100_WIN_2X,
+            TOT_INTENSITY_PEAK_HEIGHTS,
+            TOT_INTENSITY_RAW
     };
 
 }//namespace
@@ -1122,6 +1131,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float ms1IntensityFoundPreMono = -1.0;
     float ms1IntensityFoundIso1 = -1.0;
     float ms1IntensityFoundIso2 = -1.0;
+
+    float cosineSimSpectrumOverTime = -1.0;
+    float cosineSimSpectrumOverTimeCubed = -1.0;
+    float cosineSimSpectrumStDev = -1.0;
+    float cosineSimSum100MS1 = -1.0;
+    float ms1Averagine = -1.0;
+    float cosineSimSum100Window1p5X = -1.0;
+    float cosineSimSum100Window2X = -1.0;
+    float totalIntensityPeakHeights = -1.0;
+    float totalIntensityRaw = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1393,6 +1412,15 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         ms1IntensityFoundPreMono = dataMap.value(MS1_INTZ_FND_PRE_MONO).toFloat();
         ms1IntensityFoundIso1 = dataMap.value(MS1_INTZ_FND_ISO_1).toFloat();
         ms1IntensityFoundIso2 = dataMap.value(MS1_INTZ_FND_ISO_2).toFloat();
+        cosineSimSpectrumOverTime = dataMap.value(COS_SIM_SPEC_TIME).toFloat();
+        cosineSimSpectrumOverTimeCubed = dataMap.value(COS_SIM_SPEC_TIME_CUBED).toFloat();
+        cosineSimSpectrumStDev = dataMap.value(COS_SIM_SPEC_STDEV).toFloat();
+        cosineSimSum100MS1 = dataMap.value(COS_SIM_SUM100_MS1).toFloat();
+        ms1Averagine = dataMap.value(MS1_AVERAGINE).toFloat();
+        cosineSimSum100Window1p5X = dataMap.value(COS_SIM_SUM100_WIN_1p5X).toFloat();
+        cosineSimSum100Window2X = dataMap.value(COS_SIM_SUM100_WIN_2X).toFloat();
+        totalIntensityPeakHeights = dataMap.value(TOT_INTENSITY_PEAK_HEIGHTS).toFloat();
+        totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
 
         ERR_RETURN
     }
@@ -1656,7 +1684,17 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MS1_INTZ_FND_20, QVariant(ms1IntensityFound20)},
                 {MS1_INTZ_FND_PRE_MONO, QVariant(ms1IntensityFoundPreMono)},
                 {MS1_INTZ_FND_ISO_1, QVariant(ms1IntensityFoundIso1)},
-                {MS1_INTZ_FND_ISO_2, QVariant(ms1IntensityFoundIso2)}
+                {MS1_INTZ_FND_ISO_2, QVariant(ms1IntensityFoundIso2)},
+
+                {COS_SIM_SPEC_TIME, QVariant(cosineSimSpectrumOverTime)},
+                {COS_SIM_SPEC_TIME_CUBED, QVariant(cosineSimSpectrumOverTimeCubed)},
+                {COS_SIM_SPEC_STDEV, QVariant(cosineSimSpectrumStDev)},
+                {COS_SIM_SUM100_MS1, QVariant(cosineSimSum100MS1)},
+                {MS1_AVERAGINE, QVariant(ms1Averagine)},
+                {COS_SIM_SUM100_WIN_1p5X, QVariant(cosineSimSum100Window1p5X)},
+                {COS_SIM_SUM100_WIN_2X, QVariant(cosineSimSum100Window2X)},
+                {TOT_INTENSITY_PEAK_HEIGHTS, QVariant(totalIntensityPeakHeights)},
+                {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)}
         };
     }
 
@@ -1925,6 +1963,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.ms1IntensityFoundIso1 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1];
         row.ms1IntensityFoundIso2 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2];
 
+        row.cosineSimSpectrumOverTime = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime];
+        row.cosineSimSpectrumOverTimeCubed = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed];
+        row.cosineSimSpectrumStDev = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumStDev];
+        row.cosineSimSum100MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1];
+        row.ms1Averagine = candidateScores->featuresArray[CandidateScores::Features::MS1Averagine];
+        row.cosineSimSum100Window1p5X = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window1p5X];
+        row.cosineSimSum100Window2X = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window2X];
+        row.totalIntensityPeakHeights = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityPeakHeights];
+        row.totalIntensityRaw = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityRaw];
+
         return row;
     }
 
@@ -2176,6 +2224,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono] = candidateScoresReaderRow.ms1IntensityFoundPreMono;
         featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1] = candidateScoresReaderRow.ms1IntensityFoundIso1;
         featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = candidateScoresReaderRow.ms1IntensityFoundIso2;
+
+        featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = candidateScoresReaderRow.cosineSimSpectrumOverTime;
+        featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = candidateScoresReaderRow.cosineSimSpectrumOverTimeCubed;
+        featuresArray[CandidateScores::Features::CosineSimSpectrumStDev] = candidateScoresReaderRow.cosineSimSpectrumStDev;
+        featuresArray[CandidateScores::Features::CosineSimSum100MS1] = candidateScoresReaderRow.cosineSimSum100MS1;
+        featuresArray[CandidateScores::Features::MS1Averagine] = candidateScoresReaderRow.ms1Averagine;
+        featuresArray[CandidateScores::Features::CosineSimSum100Window1p5X] = candidateScoresReaderRow.cosineSimSum100Window1p5X;
+        featuresArray[CandidateScores::Features::CosineSimSum100Window2X] = candidateScoresReaderRow.cosineSimSum100Window2X;
+        featuresArray[CandidateScores::Features::TotalIntensityPeakHeights] = candidateScoresReaderRow.totalIntensityPeakHeights;
+        featuresArray[CandidateScores::Features::TotalIntensityRaw] = candidateScoresReaderRow.totalIntensityRaw;
 
         return featuresArray;
     }

@@ -1180,17 +1180,6 @@ namespace {
                                     : targetDecoyCandidatePair->ms2IonsTarget();
         ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
-        const int correlationSize = bestCorrelationResult.peakCorrelations.size();
-        // for (int i = 0; i < std::min(ms2IonsTheo.size(), 6); i++) {
-        //     // candidateScores->featuresArray[CandidateScores::Features::MzTargetDecoyFrequency1 + i]
-        //     //                             = ms2IonsTheo.at(i).targetDecoyFrequencyRatio * bestCorrelationResult.peakCorrelations.at(i);
-        //
-        //     if (i < correlationSize) {
-        //         candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Frequencies]
-        //                             += bestCorrelationResult.peakCorrelations.at(i) * ms2IonsTheo.at(i).targetDecoyFrequencyRatio;
-        //     }
-        // }
-
         QVector<float> intensitiesTheo;
         std::transform(
             ms2IonsTheo.begin(),
@@ -1708,6 +1697,12 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog]
                                         = std::log(std::max(bestCorrelationResult.matBlockTrimmedIntensity.sum(),
                                                     std::numeric_limits<float>::min()));
+
+     candidateScores->featuresArray[CandidateScores::Features::TotalIntensityPeakHeights]
+                                = bestCorrelationResult.matBlockTrimmedIntensity.colwise().maxCoeff().sum();
+
+    candidateScores->featuresArray[CandidateScores::Features::TotalIntensityRaw]
+                                            = std::exp(candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog]);
 
     candidateScores->featuresArray[CandidateScores::Features::Charge]
                                                         = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
