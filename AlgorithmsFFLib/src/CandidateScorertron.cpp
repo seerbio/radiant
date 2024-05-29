@@ -57,6 +57,8 @@ Err CandidateScorertron::Private::init() {
     const Eigen::VectorX<float> kernelVec(kernel);
     m_kernelMs2 = kernelVec;
 
+    // m_kernelMs2 = EigenKernelUtils::buildGaussianFilter1D<float>(filterLengthMs2, 0.75);
+
     Eigen::MatrixX<float> kernelIntegration;
     e = EigenKernelUtils::buildSavitzkyGolayKernel(
         filterLengthIntegration,
@@ -67,6 +69,8 @@ Err CandidateScorertron::Private::init() {
         ); ree;
     const Eigen::VectorX<float> kernelIntegrationVec(kernelIntegration);
     m_kernelIntegration = kernelIntegrationVec;
+
+    // m_kernelIntegration = EigenKernelUtils::buildGaussianFilter1D<float>(filterLengthIntegration, 0.75);
 
     ERR_RETURN
 }

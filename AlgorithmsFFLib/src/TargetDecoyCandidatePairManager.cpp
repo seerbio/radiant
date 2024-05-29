@@ -668,6 +668,12 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(QVector
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
 
     for (TargetDecoyCandidatePair &t : m_targetDecoyCandidatePairs) {
+
+        const int peptideStringsize = t.peptideString().size();
+        if (!(m_pythiaParameters.peptideLengthMin <= peptideStringsize && peptideStringsize <= m_pythiaParameters.peptideLengthMax)) {
+            continue;
+        }
+
         targetDecoyCandidatePairsPntrs->push_back(&t);
     }
 

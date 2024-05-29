@@ -50,7 +50,7 @@ Err PythiaDIAFFWorkflow::init(
     m_fragLibUri = fragLibUri;
 
     const double massMin
-        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::alanineFormula).monoisotopicMass();
+        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::glycineFormula).monoisotopicMass();
 
     const double massMax
             = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
