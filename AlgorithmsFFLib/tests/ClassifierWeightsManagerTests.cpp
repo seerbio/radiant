@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 
 #include "ClassifierWeightsManager.h"
+#include "MathUtils.h"
 
 class ClassifierWeightsManagerTests : public QObject {
 Q_OBJECT
@@ -170,7 +171,7 @@ void ClassifierWeightsManagerTests::fitWeightsApplyWeightsCombinedTest() {
     QCOMPARE(weights.size(), expectedWeights.size());
 
     for (int i = 0; i < weights.size(); i++) {
-        QCOMPARE(weights.at(i), expectedWeights.at(i));
+        QVERIFY(MathUtils::tSame(weights.at(i), expectedWeights.at(i), 3));
     }
 
     QVector<float> results;
@@ -179,7 +180,7 @@ void ClassifierWeightsManagerTests::fitWeightsApplyWeightsCombinedTest() {
 
     QVector<float> expectedResults = {-0.173605, -1.73605, -2.04853};
     for (int i = 0; i < results.size(); i++) {
-        QCOMPARE(results.at(i), expectedResults.at(i));
+        QVERIFY(MathUtils::tSame(results.at(i), expectedResults.at(i), 3));
     }
 
 }

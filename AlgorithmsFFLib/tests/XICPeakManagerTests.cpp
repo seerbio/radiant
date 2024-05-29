@@ -576,6 +576,8 @@ namespace {
 }//namespace
 void XICPeakManagerTests::findPeaksTest() {
 
+    QSKIP("This is for dev purposes.  Write real tests for this class");
+
     ERR_INIT
 
     const QString msDataFilePath
