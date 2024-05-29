@@ -1119,7 +1119,7 @@ namespace {
                 [](const DOEResult &l, const DOEResult &r) {
 
                     if (l.fdrCount == r.fdrCount) {
-                        return l.ppm > r.ppm;
+                        return l.ppm < r.ppm;
                     }
 
                     return l.fdrCount > r.fdrCount;

@@ -39,7 +39,6 @@ SET(SOURCE_FILES
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
         src/QValueSettertron.cpp
-        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
@@ -68,7 +67,6 @@ SET(HEADER_FILES
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
         src/QValueSettertron.h
-        src/ScoreOverseer.cpp
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h

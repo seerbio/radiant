@@ -10,7 +10,6 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "IsotopicDistributionBuilder.h"
-#include "ScoreOverseer.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
