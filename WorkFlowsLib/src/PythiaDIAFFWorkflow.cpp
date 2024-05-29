@@ -607,7 +607,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
     QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    constexpr int maxTrainingCount = 20;
+    constexpr int maxTrainingCount = 24;
     const int mzTargetKeysHalf = static_cast<int>(std::round(uniqueMsScanInfos.size() / 2.0));
 
     const int resizeCount = std::min(maxTrainingCount, mzTargetKeysHalf);
@@ -627,6 +627,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             numberOfTranches,
             &targetDecoyCandidatePointersTranched
             ); ree;
+
+    QVector<float> scanTimeStDevs;
+    QVector<float> ms2PPMStDevs;
 
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
@@ -678,6 +681,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             fdrVsCounts.value(fdrKeyMassCal)
             ); ree;
 
+        scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+        ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
+
         qDebug() << "********* Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec ********";
 
         constexpr int targetTrainingCountCalibration = 1000;
@@ -700,6 +706,34 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 msCalibrationReaderRows,
                 MSLevelEnum::MS2
                 ); ree;
+
+            scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+            ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
+
+            constexpr int minVecSize = 3;
+            std::sort(scanTimeStDevs.begin(), scanTimeStDevs.end());
+            if (scanTimeStDevs.size() >= minVecSize) {
+                scanTimeStDevs.pop_front();
+                scanTimeStDevs.pop_back();
+
+            }
+
+            std::sort(ms2PPMStDevs.begin(), ms2PPMStDevs.end());
+            if (ms2PPMStDevs.size() >= minVecSize) {
+                ms2PPMStDevs.pop_front();
+                ms2PPMStDevs.pop_back();
+            }
+
+            qDebug() << scanTimeStDevs;
+            qDebug() << "ScanTimeWindow Mean|Median|Min"
+                     << MathUtils::mean(scanTimeStDevs)
+                     << MathUtils::median(scanTimeStDevs)
+                     << *std::min({scanTimeStDevs.begin(), scanTimeStDevs.end()});
+
+            qDebug() << "Ms2 ppm Mean|Median" << MathUtils::mean(ms2PPMStDevs) << MathUtils::median(ms2PPMStDevs);
+
+            m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
+            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
 
             e = recalibrateMzVals(
                     MSLevelEnum::MS2,
@@ -956,10 +990,10 @@ namespace {
             scanPoints
             ); ree;
 
-        // e = msCalibratomatic.recalibrateScanPoints(
-        //     MSLevelEnum::MS1,
-        //     scanPoints
-        //     ); ree;
+        e = msCalibratomatic.recalibrateScanPoints(
+            MSLevelEnum::MS1,
+            scanPoints
+            ); ree;
 
         ERR_RETURN
     }
@@ -1029,7 +1063,6 @@ namespace {
     struct DOEResult {
         double ppm = -1.0;
         double scanTimeStDev = -1.0;
-//        double cosineSimAnchor = -1.0;
         int fdrCount = -1;
     };
 
@@ -1042,67 +1075,24 @@ namespace {
 
         ERR_INIT
 
-        // e = ErrorUtils::isTrue(mzPPMStDev > 0.0); ree;
+        e = ErrorUtils::isTrue(mzPPMStDev > 0.0); ree;
         e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
-//        const QVector<QVector<double>> experiments = {
-//                {1.5, 1.0,  2.0},
-//                {3.5, 1.0,  2.0},
-//                {1.5,  3.0,  2.0},
-//                {3.5,  3.0,  2.0},
-//                {1.5,  2.0, 1.0},
-//                {3.5,  2.0, 1.0},
-//                {1.5,  2.0,  3.0},
-//                {3.5,  2.0,  3.0},
-//                {2.5, 1.0, 1.0},
-//                {2.5,  3.0, 1.0},
-//                {2.5, 1.0,  3.0},
-//                {2.5,  3.0,  3.0},
-//                {2.5,  2.0,  2.0}
-//        };
+        constexpr int numberOfExperiments = 9;
+        double runningPPM = mzPPMStDev;
 
-        const QVector<QVector<double>> experiments = {
-                {1.5, 1.0},
-                {2.0, 1.0},
-                {2.5,  3.0},
-                {3.0,  3.0},
-                {4.0,  2.0},
-                {5.0,  2.0}
-        };
+        PythiaParameters paramsInitial = pythiaParameters;
+        paramsInitial.ms2ExtractionWidthPPM = runningPPM;
+        pythiaParametersExperiments->push_back(paramsInitial);
 
-//         const QVector<QVector<double>> experiments = {
-// //                {1.5, 2.0},
-// //                {2.0, 2.0},
-// //                {2.5,  2.0},
-// //                {3.5,  2.0},
-//                 {4.5, 2.0},
-//                 {5.5, 2.0},
-//                 {6.5, 2.0},
-//                 {7.5, 2.0},
-//                 {8.5, 2.0},
-//                 {10.0, 2.0}
-//         };
+        for (int exp = 0; exp < numberOfExperiments; exp++) {
 
-        for (const QVector<double> &exp : experiments) {
+            constexpr double alpha = 1.2;
 
             PythiaParameters params = pythiaParameters;
-            params.ms2ExtractionWidthPPM = mzPPMStDev * exp.at(0);
-
-//            switch (static_cast<int>(exp.at(2))) {
-//                case 1:
-//                    params.cosineSimToAnchorThreshold = 0.9;
-//                    break;
-//                case 2:
-//                    params.cosineSimToAnchorThreshold = 0.935;
-//                    break;
-//                case 3:
-//                    params.cosineSimToAnchorThreshold = 0.97;
-//                    break;
-//                default:
-//                    params.cosineSimToAnchorThreshold = pythiaParameters.cosineSimToAnchorThreshold;
-//            }
-
+            runningPPM *= alpha;
+            params.ms2ExtractionWidthPPM = runningPPM;
             pythiaParametersExperiments->push_back(params);
         }
 

@@ -454,3 +454,8 @@ void MsCalibratomatic::setScanTimeStDev(double val) {
     qDebug() << "scanTimeStDev has been set to:" << scanTimeStDev() << "seconds";
     qDebug() << "scanTimeStDev x 3:" << scanTimeStDev(3) << "seconds";
 }
+
+void MsCalibratomatic::setMzStDevMS2(double val) {
+    m_mzStDevMS2 = val;
+    qDebug() << "MzStdDevMS2 has been set to:" << m_mzStDevMS2;
+}

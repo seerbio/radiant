@@ -52,6 +52,7 @@ public:
     [[nodiscard]] float scanTimeStDev(float nStdDevs = 1.0f) const;
 
     void setScanTimeStDev(double val);
+    void setMzStDevMS2(double val);
 
     Err predictScanTime(
         float iRT,
