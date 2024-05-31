@@ -625,8 +625,6 @@ namespace {
             }
         }
 
-        e = ErrorUtils::contains(scanKey, result); ree;
-
         *scanNumber = result.value(scanKey);
         ERR_RETURN
     }
@@ -640,10 +638,25 @@ namespace {
 
         const QMap<QString, QString> m = parseAttributes(str.trimmed());
 
-        e = parseStringForScanNumber(
-            m.value("id"),
-            scanNumber
-            ); ree;
+        try {
+            e = parseStringForScanNumber(
+                m.value("id"),
+                scanNumber
+                );
+
+            try {
+                e = ErrorUtils::toInt(m.value("index"), scanNumber);
+                *scanNumber += 1;
+            }
+            catch (std::exception &ex) {
+                qCritical() << QString::fromStdString(ex.what());
+                rrr(eValueError);
+            }
+        }
+        catch (std::exception &ex) {
+            qWarning() << QString::fromStdString(ex.what());
+            rrr(eValueError);
+        }
 
         ERR_RETURN
     }
@@ -671,51 +684,57 @@ namespace {
 
             if (chunk.data[i] == '\n') {
 
+                str = str.trimmed();
+                if (str.isEmpty() || str.front() != '<') {
+                    str.clear();
+                    continue;
+                }
+
                 if (str.contains(spectrumElementName)) {
-                    e = processSpectrumKey(str.trimmed(), &msScanInfoLocal.scanNumber); rree;
+                    e = processSpectrumKey(str, &msScanInfoLocal.scanNumber); rree;
                 }
                 else if (str.contains(MS_LEVEL)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
                     e = ErrorUtils::toInt(
                         attributes.value("value"),
                         &msScanInfoLocal.msLevel
                     ); rree;
                 }
                 else if (str.contains(SCAN_START_TIME)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
 
                     e = ErrorUtils::toFloat(
                         attributes.value("value"),
                         &msScanInfoLocal.scanTime
-                    ); rree;
+                    ); rree
 
                     msScanInfoLocal.scanTime = attributes.value("unitName").contains("minute")
                                              ? msScanInfoLocal.scanTime
                                              : msScanInfoLocal.scanTime / 60.0f;
                 }
                 else if (str.contains(PRECURSOR_TARGET_MZ)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
                     e = ErrorUtils::toFloat(
                         attributes.value("value"),
                         &msScanInfoLocal.precursorTargetMz
                     ); rree;
                 }
                 else if (str.contains(PRECURSOR_LOWER_WINDOW_OFFSET)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
                     e = ErrorUtils::toFloat(
                         attributes.value("value"),
                         &msScanInfoLocal.isoWindowLower
                     ); rree;
                 }
                 else if (str.contains(PRECURSOR_UPPER_WINDOW_OFFSET)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
                     e = ErrorUtils::toFloat(
                         attributes.value("value"),
                         &msScanInfoLocal.isoWindowUpper
                     ); rree;
                 }
                 else if (str.contains(COLLISION_ENERGY)) {
-                    QMap<QString, QString> attributes = parseAttributes(str.trimmed());
+                    QMap<QString, QString> attributes = parseAttributes(str);
                     e = ErrorUtils::toFloat(
                         attributes.value("value"),
                         &msScanInfoLocal.collisionEnergy
@@ -741,7 +760,6 @@ namespace {
                 }
                 else if (str.contains(binaryElementName)) {
 
-                    str = str.trimmed();
                     str = str.replace(binaryElementName, "");
                     str = str.replace(binaryElementEndName, "");
                     const std::string elementText = str.toStdString();
@@ -829,6 +847,8 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
 
     const QVector<FileChunk> chunks = buildFileChunks(fileSize, ucharData);
 
+#define RUN_PARALLEL
+#ifdef RUN_PARALLEL
     QFuture<QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>>> future = QtConcurrent::mapped(chunks, processChunk);
     future.waitForFinished();
 
@@ -844,8 +864,15 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
     }
-
     qDebug() << "Scan Count" << m_msScanInfo->size();
+#else
+
+    for (const FileChunk &fc : chunks) {
+        QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> result = processChunk(fc);
+        e = result.first; ree;
+    }
+
+#endif
 
     file.unmap(ucharData);
 

@@ -75,7 +75,10 @@ void MsReaderMZMLMappedTests::troubleShoot() {
     ERR_INIT
 
     // const QString filename  = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
-    const QString filename = "/home/anichols/Repos/PythiaDIACpp/FileReadersLib/tests/TestFiles/1min.mzML";
+    // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";
+    // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
+
+    const QString &filename = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     MsReaderMzMLMapped msReaderMzMlMapped;
     e = msReaderMzMlMapped.openFile(filename);
