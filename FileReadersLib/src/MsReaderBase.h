@@ -29,7 +29,7 @@ class FILEREADERSLIB_EXPORTS MsScanInfo {
 public:
 
     int msLevel = -1;
-    ScanNumber scanNumber = 1;
+    ScanNumber scanNumber = -1;
     float scanTime = -1.0;
     float collisionEnergy = -1.0;
     float precursorTargetMz = -1.0;

@@ -25,7 +25,6 @@ const QString peaksElementName = QStringLiteral("peaks");
 const QString spectrumElementName = QStringLiteral("spectrum");
 const QString spectrumListElementName = QStringLiteral("spectrumList");
 
-
 const QString BASEPEAK_INTENSITY = QStringLiteral("MS:1000505");
 const QString BINARY_DATA_ARRAY = QStringLiteral("binaryDataArray");
 const QString BINARY_DATA_ARRAY_LIST = QStringLiteral("binaryDataArrayList");
@@ -223,12 +222,6 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
 }
 
 namespace {
-
-    // pwiz
-    inline unsigned int endianize(unsigned int n) {
-        return ((n & 0xff) << 24) | ((n & 0xff00) << 8) | ((n & 0xff0000) >> 8)
-               | ((n & 0xff000000) >> 24);
-    }
 
     bool decompress(const QByteArray &input, QByteArray *output) {
 
@@ -600,6 +593,10 @@ Err MsReaderMzML::PrivateData::parseScan(QXmlStreamReader &reader) {
 
     ERR_RETURN
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//END PRIVATE
+///////////////////////////////////////////////////////////////////////////////////////////
 
 MsReaderMzML::MsReaderMzML() {
     m_d.reset(new PrivateData(
