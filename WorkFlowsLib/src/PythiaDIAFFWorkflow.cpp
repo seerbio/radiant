@@ -289,6 +289,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
+    msReaderPointerAcc.ptr->printSize();
 
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
