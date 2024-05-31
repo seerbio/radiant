@@ -860,6 +860,7 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
             if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
                 continue;
             }
+
             m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
@@ -870,11 +871,21 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
     for (const FileChunk &fc : chunks) {
         QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> result = processChunk(fc);
         e = result.first; ree;
+        for (const QPair<MsScanInfo, ScanPoints> &pr : result.second) {
+            const MsScanInfo &msScanInfo = pr.first;
+            const ScanPoints &scanPoints = pr.second;
+            if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
+                continue;
+            }
+            m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
+            m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
+        }
     }
 
 #endif
 
     file.unmap(ucharData);
+    file.close();
 
     ERR_RETURN
 }
