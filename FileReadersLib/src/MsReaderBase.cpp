@@ -399,6 +399,14 @@ void MsReaderBase::printSize() {
     qDebug() << "MsScanInfo size" << m_msScanInfo.size();
     qDebug() << "ScanPoints size" << m_scanPoints.size();
 
+    const auto countLogic = [](int sum, const ScanPoints &sp){return sum + sp.size();};
+    qDebug() << "ScanPoints individual size" << std::accumulate(m_scanPoints.begin(), m_scanPoints.end(), 0, countLogic);
+    // for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); ++it) {
+    //     ScanPoints sp = it.value();
+    //     sp.resize(10);
+    //     qDebug() << it.key() << it.value().size() << sp;
+    // }
+
 }
 
 Err MsReaderBase::printFileInfo() {

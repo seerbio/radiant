@@ -23,10 +23,13 @@ SET(TEST_CLASSES
         MsCalibrationReaderTests
         MsReaderBaseTests
         MsReaderMZMLTests
+        MsReaderMZMLMappedTests
         MsReaderParquetTests
         MsReaderPointerAccTests
         ParquetReaderTests
         PythiaParameterReaderTests
+
+        PlayGroundTests
 )
 
 foreach(class ${TEST_CLASSES})

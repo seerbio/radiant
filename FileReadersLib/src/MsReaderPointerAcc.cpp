@@ -6,7 +6,7 @@
 
 #include "GlobalSettings.h"
 #include "MsReaderParquet.h"
-#include "MsReaderMzML.h"
+#include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
 
 #include <QByteArray>
@@ -30,7 +30,7 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     const QString fileSuffix = fi.suffix();
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
-        QSharedPointer<MsReaderBase> msReader(new MsReaderMzML);
+        QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
         ptr = msReader;
         e = ptr->openFile(filePath); ree;
     }
@@ -70,7 +70,7 @@ Err MsReaderPointerAcc::openFile(
     const QString fileSuffix = fi.suffix();
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
-        QSharedPointer<MsReaderBase> msReader(new MsReaderMzML);
+        QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
     }
