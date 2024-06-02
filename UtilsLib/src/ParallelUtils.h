@@ -169,6 +169,27 @@ public:
         return vec;
     }
 
+    template <typename T>
+    static QVector<T> convertHashToVector(const QHash<int, T> &m, int vecSize){
+
+        QVector<T> vec(vecSize, 0.0);
+        vec.reserve(vecSize);
+
+        for (auto it = m.begin(); it != m.end(); it++) {
+
+            const int key = it.key();
+            const T val = it.value();
+
+            if (key >= vecSize) {
+                continue;
+            }
+
+            vec[key] = val;
+        }
+
+        return vec;
+    }
+
     /*!
     * @brief  Divides a QMap into multiple segments ("tranches") and stores them in a QVector for easier parallel processing.
     * @tparam T: The datatype of the map keys.
@@ -254,6 +275,20 @@ public:
     */
     template <typename T, typename U>
     static QVector<QPair<T, U>> convertMapToVectorPairs(const QMap<T, U> &map) {
+
+        QVector<QPair<T, U>> output;
+        for (auto it = map.begin(); it != map.end(); it++) {
+            const T &t = it.key();
+            const U &u = it.value();
+
+            output.push_back({t, u});
+        }
+
+        return output;
+    }
+
+    template <typename T, typename U>
+    static QVector<QPair<T, U>> convertHashToVectorPairs(const QHash<T, U> &map) {
 
         QVector<QPair<T, U>> output;
         for (auto it = map.begin(); it != map.end(); it++) {

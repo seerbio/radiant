@@ -414,7 +414,7 @@ Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequen
     for (int result : futures) {
         modified += result;
     }
-    
+
     qDebug() << modified << "Sequences were found to have decoys that were also targets and were modified!!!!" << et.elapsed() << "mSec";
 
     ERR_RETURN
