@@ -9,118 +9,11 @@
 #include "FragLibReader.h"
 #include "MolecularFormula.h"
 #include "Molecule.h"
+#include "ParallelUtils.h"
 
 #include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 
-
-#include <vector>
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
-
-class Q_DECL_HIDDEN TargetDecoyCandidatePairManager::Private
-{
-    using RTreeCoor = bg::model::point<double, 2, bg::cs::cartesian>;
-    using RTreeBox = bg::model::box<RTreeCoor>;
-    using RTreePoint = std::pair<RTreeCoor, TargetDecoyCandidatePair*> ;
-    using RTree = bgi::rtree<RTreePoint, bgi::dynamic_quadratic>;
-
-public:
-
-    Private();
-    ~Private();
-
-    Err init(QVector<TargetDecoyCandidatePair>* targetDecoyCandidatePairPntrs);
-
-    Err getTargetDecoyPairsByMz(
-            double mzMin,
-            double mzMax,
-            QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
-    );
-
-private:
-
-    bool m_isInit;
-    RTree *m_rTreeMzToTargetDecoyPair;
-
-};
-
-TargetDecoyCandidatePairManager::Private::Private()
-        : m_rTreeMzToTargetDecoyPair(Q_NULLPTR)
-        , m_isInit(false)
-{}
-
-TargetDecoyCandidatePairManager::Private::~Private() {
-    delete m_rTreeMzToTargetDecoyPair;
-}
-
-Err TargetDecoyCandidatePairManager::Private::init(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairPntrs) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(targetDecoyCandidatePairPntrs->isEmpty()); ree;
-
-    std::vector<RTreePoint> cloudLoader;
-    cloudLoader.reserve(targetDecoyCandidatePairPntrs->size());
-    std::transform(
-            targetDecoyCandidatePairPntrs->begin(),
-            targetDecoyCandidatePairPntrs->end(),
-            std::back_inserter(cloudLoader),
-            [](TargetDecoyCandidatePair &tdcp){
-                const RTreeCoor coor(tdcp.mz(), 0.0);
-                return RTreePoint(coor, &tdcp);
-            }
-    );
-
-    const int maxElements = 16;
-    m_rTreeMzToTargetDecoyPair = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-
-    m_isInit = true;
-    ERR_RETURN
-}
-
-Err TargetDecoyCandidatePairManager::Private::getTargetDecoyPairsByMz(
-        double mzMin,
-        double mzMax,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
-) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(mzMin <= mzMax); ree;
-    e = ErrorUtils::isTrue(m_isInit); ree;
-
-    const RTreeBox queryBox(
-            RTreeCoor(mzMin, 0.0),
-            RTreeCoor(mzMax, 0.0)
-    );
-
-    std::vector<RTreePoint> result;
-    m_rTreeMzToTargetDecoyPair->query(bgi::intersects(queryBox), std::back_inserter(result));
-
-    for (const RTreePoint &rtp : result) {
-        targetDecoyCandidatePairs->push_back(rtp.second);
-    }
-
-    ERR_RETURN
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
-//END PRIVATE
-///////////////////////////////////////////////////////////////////////////////////////////
-
-
-TargetDecoyCandidatePairManager::TargetDecoyCandidatePairManager()
-: d_ptr(new Private())
-{}
-
-TargetDecoyCandidatePairManager::~TargetDecoyCandidatePairManager() {}
 
 Err TargetDecoyCandidatePairManager::init(
         const PythiaParameters &pythiaParameters,
@@ -135,8 +28,6 @@ Err TargetDecoyCandidatePairManager::init(
     m_pythiaParameters = pythiaParameters;
 
     e = buildTargetDecoyCandidatePairs(*fragLibReaderRows); ree;
-
-    e = d_ptr->init(&m_targetDecoyCandidatePairs); ree;
 
     ERR_RETURN
 }
@@ -456,13 +347,34 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
 
     e = filterDecoySequencesThatAreAlsoTargetSequences();
 
-
     qDebug() << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
 
+namespace {
 
+    int mangleLogic(
+        const QHash<PeptideString, bool> &peptideStringIsoleucineReplaceVsIsAlsoDecoy,
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs
+        ) {
+
+        int modified = 0;
+        for (TargetDecoyCandidatePair *tdcp : targetDecoyCandidatePairsPntrs) {
+
+            const PeptideString peptideStringWithModsMutated
+                = AminoAcids::mutatePenultimatePeptideResidues(tdcp->peptideStringWithMods()).replace('I', 'L');
+
+            if (peptideStringIsoleucineReplaceVsIsAlsoDecoy.contains(peptideStringWithModsMutated)) {
+                tdcp->mangleMs2IonsDecoy();
+                modified++;
+            }
+        }
+
+        return modified;
+    }
+
+}
 Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequences() {
 
     ERR_INIT
@@ -476,87 +388,34 @@ Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequen
         peptideStringIsoleucineReplaceVsIsAlsoDecoy.insert(tdcp.peptideStringWithMods().replace('I', 'L'), false);
     }
 
+    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsPntrs;
+    e = getTargetDecoyCandidatePairPointers(&targetDecoyCandidatePairsPntrs); ree;
+
+    QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+        targetDecoyCandidatePairsPntrs,
+        m_pythiaParameters.threadCount,
+        &targetDecoyCandidatePairsPntrsTranched
+        ); ree;
+
+    const auto manglerLogicBinder = std::bind(
+        mangleLogic,
+        peptideStringIsoleucineReplaceVsIsAlsoDecoy,
+        std::placeholders::_1
+        );
+
+    QFuture<int> futures = QtConcurrent::mapped(
+        targetDecoyCandidatePairsPntrsTranched,
+        manglerLogicBinder
+        );
+    futures.waitForFinished();
+
     int modified = 0;
-    for (TargetDecoyCandidatePair &tdcp : m_targetDecoyCandidatePairs) {
-
-        const PeptideString peptideStringWithModsMutated
-                = AminoAcids::mutatePenultimatePeptideResidues(tdcp.peptideStringWithMods()).replace('I', 'L');
-
-        if (peptideStringIsoleucineReplaceVsIsAlsoDecoy.contains(peptideStringWithModsMutated)) {
-            tdcp.mangleMs2IonsDecoy();
-            modified++;
-        }
+    for (int result : futures) {
+        modified += result;
     }
-
+    
     qDebug() << modified << "Sequences were found to have decoys that were also targets and were modified!!!!" << et.elapsed() << "mSec";
-
-    ERR_RETURN
-}
-
-
-Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
-        double mzMin,
-        double mzMax,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
-    e = ErrorUtils::isTrue(mzMax >= mzMin); ree;
-
-    e = d_ptr->getTargetDecoyPairsByMz(
-            mzMin,
-            mzMax,
-            targetDecoyPointers
-            ); ree;
-
-    std::mt19937 gen(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-    std::shuffle(targetDecoyPointers->begin(), targetDecoyPointers->end(), gen);
-
-    ERR_RETURN
-}
-
-Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(
-        double mzMin,
-        double mzMax,
-        double randomSelectionFraction,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(randomSelectionFraction <= 1.0); ree;
-
-    QVector<TargetDecoyCandidatePair*> targetDecoyPointersAll;
-    e = getTargetDecoyCandidatePairPointers(
-            mzMin,
-            mzMax,
-            &targetDecoyPointersAll
-            ); ree;
-
-    if (randomSelectionFraction < 0) {
-        *targetDecoyPointers = targetDecoyPointersAll;
-        ERR_RETURN
-    }
-
-    const int testDataSize = static_cast<int>(targetDecoyPointersAll.size() * randomSelectionFraction);
-    const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
-
-    const QMap<int, bool> selectionList = MathUtils::generateRandomSelectionList(
-            targetDecoyPointersAll.size(),
-            testDataSize,
-            seed
-            );
-
-    for (int i = 0; i < targetDecoyPointersAll.size(); i++) {
-
-        if (!selectionList.value(i)) {
-            continue;
-        }
-
-        targetDecoyPointers->push_back(targetDecoyPointersAll[i]);
-    }
 
     ERR_RETURN
 }
@@ -583,7 +442,7 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
         PeptideStringWithMods *peptideStringWithMods,
         Charge *charge
-){
+        ){
 
     ERR_INIT
 
@@ -609,10 +468,10 @@ Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceCha
     ERR_RETURN
 }
 
-bool TargetDecoyCandidatePairManager::isInit() {
+bool TargetDecoyCandidatePairManager::isInit() const {
     return !m_targetDecoyCandidatePairs.empty();
 }
 
-int TargetDecoyCandidatePairManager::targetsCount() {
+int TargetDecoyCandidatePairManager::targetsCount() const {
     return m_targetDecoyCandidatePairs.size();
 }
