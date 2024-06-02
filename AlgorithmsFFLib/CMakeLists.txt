@@ -39,6 +39,7 @@ SET(SOURCE_FILES
         src/PeakIntegratomatic.cpp
         src/ProteinDigestomatic.cpp
         src/QValueSettertron.cpp
+        src/SequenceSubstringSearchomatic.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
@@ -67,6 +68,7 @@ SET(HEADER_FILES
         src/PeakIntegratomatic.h
         src/ProteinDigestomatic.h
         src/QValueSettertron.h
+        src/SequenceSubstringSearchomatic.h
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
@@ -78,6 +80,8 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
+        src/SequenceSubstringSearchomatic.cpp
+        src/SequenceSubstringSearchomatic.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
@@ -85,12 +89,7 @@ SET(DLL_LIB_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
-INCLUDE_DIRECTORIES(
-        DLL_LIB_INCLUDE_DIRS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        ${EIGEN_DIRECTORY}
-        ${NANOFLANN_DIRECTORY}
-        )
+FIND_PACKAGE (SeqAn REQUIRED)
 
 FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
@@ -99,6 +98,16 @@ FIND_PACKAGE(Qt5 COMPONENTS
         REQUIRED
 )
 
+INCLUDE_DIRECTORIES(
+        DLL_LIB_INCLUDE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        ${EIGEN_DIRECTORY}
+        ${NANOFLANN_DIRECTORY}
+        ${SEQAN_INCLUDE_DIRS}
+        )
+
+ADD_DEFINITIONS (${SEQAN_DEFINITIONS})
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
@@ -110,6 +119,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         FileReadersLib
         PyTorchLib
         UtilsLib
+        ${SEQAN_LIBRARIES}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

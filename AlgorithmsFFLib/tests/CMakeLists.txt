@@ -29,6 +29,7 @@ SET(TEST_CLASSES
         PeakIntegratomaticTests
         ProteinDigestomaticTests
         QValueSettertronTests
+        SequenceSubstringSearchomaticTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests

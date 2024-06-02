@@ -19,6 +19,7 @@
 #include "PeptideStringWithMods.h"
 #include "ProteinDigestomatic.h"
 #include "QValueSettertron.h"
+#include "SequenceSubstringSearchomatic.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
@@ -1559,45 +1560,26 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
     e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
 
+    SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
+
     FastaReader fastaReader;
     e = fastaReader.parseFastaFile(fastaFilePath); ree;
+    e = sequenceSubstringSearchomatic.init(fastaReader.fastaEntries()); ree;
 
-    QVector<PeptideSequence> peptideSequences;
-    QMap<PeptideStringWithMods, QVector<FastaEntry>> peptideStringWithModsVsFastaEntries;
-    e = FastaFileToPeptidesListWorkFlow::digestFastaEntries(
-            m_pythiaParameters,
-            fastaReader.fastaEntries(),
-            &peptideSequences,
-            &peptideStringWithModsVsFastaEntries
-            ); ree;
+    QStringList searchSequences;
+    std::transform(
+        candidateScores->begin(),
+        candidateScores->end(),
+        std::back_inserter(searchSequences),
+        [](CandidateScores *cs){return cs->targetDecoyCandidatePair->peptideString();}
+        );
 
-    QMap<PeptideString, QVector<FastaEntry>> peptideStringWithModsVsFastaEntriesLeucinesReplaced;
-    for (auto it = peptideStringWithModsVsFastaEntries.begin(); it != peptideStringWithModsVsFastaEntries.end(); it++) {
-        PeptideString peptideSeqReplacedLeucines = it.key().removeUniModChars();
-        peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
-        peptideStringWithModsVsFastaEntriesLeucinesReplaced[peptideSeqReplacedLeucines].append(it.value());
-    }
+    QVector<QString> proteinGroupsAll;
+    e = sequenceSubstringSearchomatic.findProteinGroups(searchSequences, &proteinGroupsAll);
+    e = ErrorUtils::isEqual(proteinGroupsAll.size(), candidateScores->size()); ree;
 
-    for (int i = 0; i < candidateScores->size(); i++) {
-
-        CandidateScores *cs = (*candidateScores)[i];
-
-        PeptideString peptideSeqReplacedLeucines = cs->targetDecoyCandidatePair->peptideStringWithMods().removeUniModChars();
-        peptideSeqReplacedLeucines = PeptideStringWithMods(peptideSeqReplacedLeucines.replace('L', 'J').replace('I', 'J'));
-
-        const QVector<FastaEntry> &fastaEntries = peptideStringWithModsVsFastaEntriesLeucinesReplaced.value(peptideSeqReplacedLeucines);
-
-        QStringList fastaDescriptions;
-        std::transform(
-                fastaEntries.begin(),
-                fastaEntries.end(),
-                std::back_inserter(fastaDescriptions),
-                [](const FastaEntry &fe){return fe.fastaDescription;}
-                );
-
-        cs->proteinGroup = fastaDescriptions.join(';');
-        cs->proteinGroup.replace(",", " ");
-
+    for (int i = 0; i < proteinGroupsAll.size(); i++) {
+        (*candidateScores)[i]->proteinGroup = proteinGroupsAll.at(i);
     }
 
     ERR_RETURN
