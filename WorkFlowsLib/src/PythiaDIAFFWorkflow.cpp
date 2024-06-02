@@ -1420,9 +1420,6 @@ namespace {
                 threadCount
         ); ree;
 
-        // explore the overfitting w/ the frequencies, RBF kernel for LDA, training on all candidates instead of top integration
-        // msreader using turboxic as the point storage
-
         e = fdrcLassifierNeuralNet.exec(
                 xData,
                 yData,
@@ -1471,7 +1468,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
-        ) {
+        ) const {
 
     ERR_INIT
 

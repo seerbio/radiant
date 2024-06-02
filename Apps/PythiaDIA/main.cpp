@@ -61,11 +61,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    e = pythiaDiaFFWorkflow.processFile(msDataFile);
-    if (e != eNoError) {
-        qDebug() << msDataFile << "Did not run completely";
-        return 1;
-    }
+    // e = pythiaDiaFFWorkflow.processFile(msDataFile);
+    // if (e != eNoError) {
+    //     qDebug() << msDataFile << "Did not run completely";
+    //     return 1;
+    // }
 
     qDebug() << "PSMing done in" << et.elapsed() << "mSec";
 

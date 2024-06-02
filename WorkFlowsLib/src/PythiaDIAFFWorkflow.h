@@ -129,9 +129,9 @@ private:
             const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             int seed,
             QVector<CandidateScores*> *candidateScoreClassifier
-            );
+            ) const;
 
-    Err updateProteinGroupAnnotation(
+    static Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         QVector<CandidateScores*> *candidateScores
         );
