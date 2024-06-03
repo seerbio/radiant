@@ -499,7 +499,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         else if (useExtendedScores) {
             QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
             vec.append(candidateScores->selectFeaturesArrayFeatures({
-//                            CandidateScores::Features::CosineSimSum100Frequencies,
                             CandidateScores::Features::CosineSimSum100,
                             CandidateScores::Features::ScanTimeDelta,
                             CandidateScores::Features::ScanTimePd,
@@ -511,21 +510,15 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::CosineSimToAnchor2,
                             CandidateScores::Features::CosineSimToAnchor3,
                             CandidateScores::Features::CosineSimToAnchor4,
-                            // CandidateScores::Features::MzAccuracy1,
-                            // CandidateScores::Features::MzAccuracy2,
-                            // CandidateScores::Features::MzAccuracy3,
-                            // CandidateScores::Features::MzAccuracy4,
                             CandidateScores::Features::CosineSimShadowsToAnchor1,
                             CandidateScores::Features::CosineSimShadowsToAnchor2,
                             CandidateScores::Features::CosineSimShadowsToAnchor3,
                             CandidateScores::Features::CosineSimShadowsToAnchor4,
                             CandidateScores::Features::CosineSimSpectrumOverTime,
-                            // CandidateScores::Features::TheoFragmentCount,
                             CandidateScores::Features::TotalIntensityLog,
                             CandidateScores::CosineSimSum100Window1p5X,
-                            CandidateScores::CosineSimSum100Window2X,
-
-                    }));
+                            CandidateScores::CosineSimSum100Window2X
+                            }));
             return vec;
         }
 

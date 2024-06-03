@@ -124,7 +124,7 @@ Err QValueSettertron::setQValueForCandidates(
             candidateScores,
             &identifierVsTargets,
             &identifierVsDecoys
-    ); ree;
+            ); ree;
 
     const QVector<QPair<PeptideSequenceChargeKey, double>> identifierVsTargetsScores
                                             = ParallelUtils::convertHashToVectorPairs(identifierVsTargets);

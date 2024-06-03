@@ -1322,7 +1322,7 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(
             candidateScores.end(),
             std::back_inserter(*candidateScoresPntrs),
             [](CandidateScores &cs){return &cs;}
-    );
+            );
 
     ERR_RETURN
 
