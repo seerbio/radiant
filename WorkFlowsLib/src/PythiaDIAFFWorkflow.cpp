@@ -676,8 +676,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCal = 2;
 
+        const QVector<MzTargetKey> targetKeysToRecalibrateWhileBuildingCalibration = mzTargetKeyVsTurboXicPntrs.keys().toVector();
         e = honeIRTAndMassCalibration(
-            mzTargetKeyVsTurboXicPntrs.keys().toVector(),
+            targetKeysToRecalibrateWhileBuildingCalibration,
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey),
             fdrVsCounts.value(fdrKeyMassCal)
@@ -744,7 +745,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                     m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
                     m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
             ); ree;
-
 
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
