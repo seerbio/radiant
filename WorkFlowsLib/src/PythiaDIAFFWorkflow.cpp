@@ -323,13 +323,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
      ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
-     e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-             m_pythiaParameters.ionsSharedToReject,
-             m_pythiaParameters.mzMinMS2,
-             m_pythiaParameters.mzMaxMS2,
-             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-             ); ree;
-     qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
+     // e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
+     //         m_pythiaParameters.ionsSharedToReject,
+     //         m_pythiaParameters.mzMinMS2,
+     //         m_pythiaParameters.mzMaxMS2,
+     //         &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+     //         ); ree;
+     // qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
 
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
