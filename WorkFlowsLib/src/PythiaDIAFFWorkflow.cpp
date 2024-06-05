@@ -322,37 +322,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              &candidateScoresTargetsAndDecoys50PercentFDRFiltered
      ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
-
-     // e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-     //         m_pythiaParameters.ionsSharedToReject,
-     //         m_pythiaParameters.mzMinMS2,
-     //         m_pythiaParameters.mzMaxMS2,
-     //         &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-     //         ); ree;
-     // qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
-
+    
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
-
-// #define WRITE_CANDIDATE_SCORES
-#ifdef WRITE_CANDIDATE_SCORES
-    // e = updateProteinGroupAnnotation(
-    //         m_fastaUri,
-    //         &candidateScoresTargetsAndDecoys
-    // ); ree;
-
-    QVector<CandidateScoresReaderRow> candidateScoresToWrite;
-    std::transform(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
-            std::back_inserter(candidateScoresToWrite),
-            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
-    );
-
-    e = ParquetReader::write(
-            candidateScoresToWrite,
-            msReaderPointerAcc.ptr->filePath() + ".candidateScoresNew"
-            ); ree;
-#endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     if (!m_pythiaParameters.bypassNeuralNet) {
