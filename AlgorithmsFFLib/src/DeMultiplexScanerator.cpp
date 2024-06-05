@@ -30,14 +30,14 @@ public:
             const QVector<MsScanInfo> &msScanInfos,
             Eigen::MatrixX<float> *scanMaskMatrix,
             QPair<float, float> *totalScanRange,
-            double *amuStagger
+            double *windowSize
             );
 
     Err buildTransitionsMatrix(
             const QVector<ScanPoints*> &scans,
             Eigen::MatrixX<float> *transitionsMatrix,
             QVector<float> *mzTransitions
-            );
+            ) const;
 
     Err deMultiplexScans(
             const QVector<ScanPoints*> &scanPoints,
@@ -76,7 +76,7 @@ Err DeMultiplexScanerator::Private::buildTransitionsMatrix(
         const QVector<ScanPoints*> &scans,
         Eigen::MatrixX<float> *transitionsMatrix,
         QVector<float> *mzTransitions
-        ) {
+        ) const {
 
     ERR_INIT
 

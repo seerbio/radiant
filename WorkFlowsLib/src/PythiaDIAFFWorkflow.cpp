@@ -20,6 +20,7 @@
 #include "ProteinDigestomatic.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
+#include "SpectrumCentricMzTargetFrameSearch.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
@@ -297,32 +298,37 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &msReaderPointerAcc
             ); ree;
 
-     QVector<CandidateScores*> candidateScoresTrainings;
-     e = buildCalibration(
-             &msReaderPointerAcc,
-             &candidateScoresTrainings
-             ); ree;
+    QVector<CandidateScores*> candidateScoresTrainings;
+    e = buildCalibration(
+         &msReaderPointerAcc,
+         &candidateScoresTrainings
+         ); ree;
 
-     if (m_msCalibratomatic.isInitRT()) {
-         e = optimizeParameters(candidateScoresTrainings); ree;
-     }
+    if (m_msCalibratomatic.isInitRT()) {
+        e = optimizeParameters(candidateScoresTrainings); ree;
+    }
 
-     int targetCountBelowFDRThreshold;
-     e = mainAnalysis(
-             &msReaderPointerAcc,
-             &targetCountBelowFDRThreshold
-             ); ree;
+    int targetCountBelowFDRThreshold;
+    e = mainAnalysis(
+        &msReaderPointerAcc,
+        &targetCountBelowFDRThreshold
+        ); ree;
 
-     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
-     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
+    e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+
+    e = spectrumCentricSearch(
+        m_msCalibratomatic,
+        &msReaderPointerAcc
+        ); ree;
 
      QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
      e = filterScoredCandidatesTo50PercentFDR(
              &candidateScoresTargetsAndDecoys,
              &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-     ); ree;
+             ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
-    
+
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
@@ -1663,6 +1669,107 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
                 m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
         ); ree;
     }
+
+    ERR_RETURN
+}
+
+namespace {
+
+    struct SpectrumCentricParallelInput {
+        MzTargetKey mzTargetKey;
+        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairs;
+        QMap<ScanNumber, ScanPoints*> diaTargetFrame;
+        PythiaParameters pythiaParameters;
+        MsCalibratomatic msCalibratomatic;
+        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+    };
+
+    Err buildSpectrumCentricParallelInput(
+        const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePointers,
+        const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
+        const MsCalibratomatic &msCalibratomatic,
+        const PythiaParameters &pythiaParameters,
+        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+        QVector<SpectrumCentricParallelInput> *spectrumCentricParallelInputs
+        ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(mzTargetKeyVsTargetDecoyCandidatePointers); ree;
+        e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
+
+        for(auto it = mzTargetKeyVsTargetDecoyCandidatePointers.begin(); it != mzTargetKeyVsTargetDecoyCandidatePointers.end(); ++it) {
+            SpectrumCentricParallelInput spectrumCentricParallelInput;
+            spectrumCentricParallelInput.mzTargetKey = it.key();
+            spectrumCentricParallelInput.targetDecoyCandidatePairs = it.value();
+            spectrumCentricParallelInput.msCalibratomatic = msCalibratomatic;
+            spectrumCentricParallelInput.pythiaParameters = pythiaParameters;
+            spectrumCentricParallelInput.scanNumberVsScanTime = scanNumberVsScanTime;
+
+            e = ErrorUtils::contains(spectrumCentricParallelInput.mzTargetKey, diaTargetFrames); ree;
+            spectrumCentricParallelInput.diaTargetFrame = diaTargetFrames.value(spectrumCentricParallelInput.mzTargetKey);
+            spectrumCentricParallelInputs->push_back(spectrumCentricParallelInput);
+        }
+
+        ERR_RETURN
+    }
+
+    Err spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(scpi.targetDecoyCandidatePairs); ree;
+        e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); ree;
+        e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); ree;
+
+        qDebug() << scpi.mzTargetKey;
+
+        SpectrumCentricMzTargetFrameSearch spectrumCentricMzTargetFrameSearch;
+        e = spectrumCentricMzTargetFrameSearch.init(
+            scpi.pythiaParameters,
+            scpi.msCalibratomatic,
+            scpi.diaTargetFrame,
+            scpi.targetDecoyCandidatePairs,
+            scpi.scanNumberVsScanTime
+            ); ree;
+
+        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(); ree;
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflow::spectrumCentricSearch(
+    const MsCalibratomatic &msCalibratomatic,
+    const MsReaderPointerAcc *msReaderPointerAcc
+    ) {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;
+
+    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            m_targetDecoyPairPntrs,
+            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
+
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+    e = msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
+
+    QVector<SpectrumCentricParallelInput> spectrumCentricParallelInputs;
+    e = buildSpectrumCentricParallelInput(
+        mzTargetKeyVsTargetDecoyCandidatePointers,
+        diaTargetFrames,
+        msCalibratomatic,
+        m_pythiaParameters,
+        msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
+        &spectrumCentricParallelInputs
+        ); ree;
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+        spectrumCentricParallelInputs,
+        spectrumCentricParallelLogic
+        ); ree;
+    futures.waitForFinished();
 
     ERR_RETURN
 }

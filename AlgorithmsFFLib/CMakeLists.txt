@@ -24,6 +24,7 @@ SET(SOURCE_FILES
         src/CandidateScorertron.cpp
         src/Centroidotron.cpp
         src/ClassifierWeightsManager.cpp
+        src/Deconvolvotron.cpp
         src/DiscriminantScoretron.cpp
         src/DeMultiplexScanerator.cpp
         src/DeMultiplexScaneratorManager.cpp
@@ -40,6 +41,7 @@ SET(SOURCE_FILES
         src/ProteinDigestomatic.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
+        src/SpectrumCentricMzTargetFrameSearch.cpp
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
@@ -53,6 +55,7 @@ SET(HEADER_FILES
         src/CandidateScorertron.h
         src/Centroidotron.h
         src/ClassifierWeightsManager.h
+        src/Deconvolvotron.h
         src/DeMultiplexScanerator.h
         src/DeMultiplexScaneratorManager.h
         src/DiscriminantScoretron.h
@@ -69,6 +72,7 @@ SET(HEADER_FILES
         src/ProteinDigestomatic.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h
+        src/SpectrumCentricMzTargetFrameSearch.h
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
@@ -80,8 +84,6 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        src/SequenceSubstringSearchomatic.cpp
-        src/SequenceSubstringSearchomatic.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
