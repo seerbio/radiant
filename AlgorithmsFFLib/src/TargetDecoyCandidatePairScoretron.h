@@ -124,7 +124,6 @@ private:
     QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFrame;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
 
-
 };
 
 

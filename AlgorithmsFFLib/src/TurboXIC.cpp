@@ -101,7 +101,7 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
         return l.first.get<0>() < r.first.get<0>();
     });
 
-    const int maxElements = 16;
+    constexpr int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
     ERR_RETURN
