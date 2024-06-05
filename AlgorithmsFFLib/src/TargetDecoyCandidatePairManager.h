@@ -25,8 +25,8 @@ public:
 
     friend class TargetDecoyCandidatePairManagerTests;
 
-    TargetDecoyCandidatePairManager();
-    ~TargetDecoyCandidatePairManager();
+    TargetDecoyCandidatePairManager() = default;
+    ~TargetDecoyCandidatePairManager() = default;
 
     /**
     * @brief Initializes the TargetDecoyCandidatePairManager.
@@ -55,50 +55,14 @@ public:
     *
     * @return True if the manager is initialized; false otherwise.
     */
-    bool isInit();
+    bool isInit() const;
 
     /**
     * @brief Gets the total count of target-decoy candidate pairs managed by the TargetDecoyCandidatePairManager.
     *
     * @return The total count of target-decoy candidate pairs.
     */
-    int targetsCount();
-
-    /**
-    * @brief Retrieves pointers to TargetDecoyCandidatePair instances within a specified mz range.
-    *
-    * This method performs the following steps:
-    * 1. Checks if the list of target-decoy candidate pairs is not empty.
-    * 2. Ensures that mzMax is greater than or equal to mzMin.
-    * 3. Calls the private implementation to get pointers to candidate pairs within the specified mz range.
-    * 4. Shuffles the obtained pointers using a random number generator.
-    *
-    * @param mzMin The minimum mz value for filtering candidate pairs.
-    * @param mzMax The maximum mz value for filtering candidate pairs.
-    * @param targetDecoyPointers A pointer to a QVector<TargetDecoyCandidatePair*> to store the obtained pointers.
-    * @return An error code indicating the success or failure of the operation.
-    */
-    Err getTargetDecoyCandidatePairPointers(
-            double mzMin,
-            double mzMax,
-            QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-            );
-
-    /**
-    * @brief Gets pointers to target-decoy candidate pairs within the specified mz range, with optional random selection.
-    *
-    * @param mzMin The minimum mz value.
-    * @param mzMax The maximum mz value.
-    * @param randomSelectionFraction The fraction of randomly selected pairs (use -1 for no random selection).
-    * @param targetDecoyPointers Pointer to a QVector to store the selected target-decoy candidate pair pointers.
-    * @return Error code indicating success or failure.
-    */
-    Err getTargetDecoyCandidatePairPointers(
-            double mzMin,
-            double mzMax,
-            double randomSelectionFraction,
-            QVector<TargetDecoyCandidatePair*> *targetDecoyPointers
-    );
+    int targetsCount() const;
 
     Err getTargetDecoyCandidatePairPointers(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsPntrs);
 
@@ -125,9 +89,6 @@ private:
 
     QVector<TargetDecoyCandidatePair> m_targetDecoyCandidatePairs;
     PythiaParameters m_pythiaParameters;
-
-    Q_DISABLE_COPY(TargetDecoyCandidatePairManager) class Private;
-    const QScopedPointer<Private> d_ptr;
 
 };
 

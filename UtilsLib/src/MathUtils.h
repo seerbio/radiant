@@ -368,10 +368,9 @@ public:
     */
     template<typename Identifier, typename T>
     static Err calculateQValue(
-            const QHash<Identifier, T> &identifierVsTarget,
+            const QVector<QPair<Identifier, T>> &identifierVsTarget,
             const QHash<Identifier, T> &identifierVsDecoys,
-            QHash<Identifier, T> *identifierVsQValue,
-            QHash<Identifier, T> *identifierVsDecoyRatio
+            QHash<Identifier, QPair<T, T>> *identifierVsQValueVsDecoyRatio
             ) {
 
         ERR_INIT
@@ -380,22 +379,27 @@ public:
             rrr(eValueError);
         }
 
-        identifierVsQValue->clear();
-        identifierVsDecoyRatio->clear();
+        identifierVsQValueVsDecoyRatio->clear();
 
         QElapsedTimer et;
         et.start();
 
-        QVector<T> targetScores = identifierVsTarget.values().toVector();
+        QVector<T> targetScores;
+        std::transform(
+            identifierVsTarget.begin(),
+            identifierVsTarget.end(),
+            std::back_inserter(targetScores),
+            [](const QPair<Identifier, T> &pr){return pr.second;}
+            );
         std::sort(targetScores.begin(), targetScores.end());
 
         QVector<T> decoyScores = identifierVsDecoys.values().toVector();
         std::sort(decoyScores.begin(), decoyScores.end());
 
-        for (auto it = identifierVsTarget.begin(); it != identifierVsTarget.end(); it++) {
+        for (const QPair<Identifier, T> &pr : identifierVsTarget) {
 
-            const Identifier &identifier = it.key();
-            T score = it.value();
+            const Identifier &identifier = pr.first;
+            T score = pr.second;
 
             auto decoyIndexLowest = std::lower_bound(decoyScores.begin(), decoyScores.end(), score);
             if (decoyIndexLowest > decoyScores.begin()) {
@@ -413,11 +417,10 @@ public:
                     1.0,
                     (static_cast<double>(std::max(static_cast<long>(0), decoyCount))) / static_cast<double>(std::max(static_cast<long>(1), targetCount))
                     );
-            identifierVsQValue->insert(identifier, qvalue);
 
             const T decoyRatio
                 = std::min(1.0, (static_cast<double>(std::max(static_cast<long>(0), decoyCount)) / static_cast<double>(std::max(1, identifierVsTarget.size()))));
-            identifierVsDecoyRatio->insert(identifier, decoyRatio);
+            identifierVsQValueVsDecoyRatio->insert(identifier, {qvalue, decoyRatio});
 
         }
 

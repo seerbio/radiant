@@ -322,37 +322,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              &candidateScoresTargetsAndDecoys50PercentFDRFiltered
      ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
-
-     e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-             m_pythiaParameters.ionsSharedToReject,
-             m_pythiaParameters.mzMinMS2,
-             m_pythiaParameters.mzMaxMS2,
-             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-             ); ree;
-     qDebug() << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "after filtering";
-
+    
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
-
-// #define WRITE_CANDIDATE_SCORES
-#ifdef WRITE_CANDIDATE_SCORES
-    // e = updateProteinGroupAnnotation(
-    //         m_fastaUri,
-    //         &candidateScoresTargetsAndDecoys
-    // ); ree;
-
-    QVector<CandidateScoresReaderRow> candidateScoresToWrite;
-    std::transform(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
-            std::back_inserter(candidateScoresToWrite),
-            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
-    );
-
-    e = ParquetReader::write(
-            candidateScoresToWrite,
-            msReaderPointerAcc.ptr->filePath() + ".candidateScoresNew"
-            ); ree;
-#endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     if (!m_pythiaParameters.bypassNeuralNet) {
@@ -676,8 +647,9 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCal = 2;
 
+        const QVector<MzTargetKey> targetKeysToRecalibrateWhileBuildingCalibration = mzTargetKeyVsTurboXicPntrs.keys().toVector();
         e = honeIRTAndMassCalibration(
-            mzTargetKeyVsTurboXicPntrs.keys().toVector(),
+            targetKeysToRecalibrateWhileBuildingCalibration,
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey),
             fdrVsCounts.value(fdrKeyMassCal)
@@ -744,7 +716,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                     m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
                     m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
             ); ree;
-
 
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
@@ -1322,7 +1293,7 @@ Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(
             candidateScores.end(),
             std::back_inserter(*candidateScoresPntrs),
             [](CandidateScores &cs){return &cs;}
-    );
+            );
 
     ERR_RETURN
 
@@ -1420,9 +1391,6 @@ namespace {
                 threadCount
         ); ree;
 
-        // explore the overfitting w/ the frequencies, RBF kernel for LDA, training on all candidates instead of top integration
-        // msreader using turboxic as the point storage
-
         e = fdrcLassifierNeuralNet.exec(
                 xData,
                 yData,
@@ -1471,7 +1439,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
-        ) {
+        ) const {
 
     ERR_INIT
 

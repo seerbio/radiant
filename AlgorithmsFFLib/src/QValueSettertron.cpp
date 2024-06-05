@@ -7,6 +7,7 @@
 #include "CandidateScores.h"
 #include "GlobalSettings.h"
 #include "ErrorUtils.h"
+#include "ParallelUtils.h"
 
 namespace {
 
@@ -55,29 +56,49 @@ namespace {
         ERR_RETURN
     }
 
+    Err setQValueAndDecoyRatioToTargetDecoyCandidatePairsParallelLogic(
+            const QHash<PeptideSequenceChargeKey, QPair<double, double>> &identifierVsQValueVsDecoyRatio,
+            CandidateScores* cs
+            ) {
+
+        ERR_INIT
+
+        if (cs->isDecoy) {
+            ERR_RETURN
+        }
+
+        const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
+
+        e = ErrorUtils::isTrue(identifierVsQValueVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
+
+        const QPair<double, double> qValVsDecoyRatio = identifierVsQValueVsDecoyRatio.value(peptideSequenceChargeKey);
+
+        cs->qValue = qValVsDecoyRatio.first;
+        cs->decoyRatio = qValVsDecoyRatio.second;
+
+        ERR_RETURN
+    }
+
     Err setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
-            const QHash<PeptideSequenceChargeKey, double> &identifierVsQValue,
-            const QHash<PeptideSequenceChargeKey, double> &identifierVsDecoyRatio,
+            const QHash<PeptideSequenceChargeKey, QPair<double, double>> &identifierVsQValueVsDecoyRatio,
             QVector<CandidateScores*> *candidateScores
-    ) {
+            ) {
 
         ERR_INIT
 
         e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
 
-        for (CandidateScores *cs : *candidateScores) {
+        const auto binderLogic = std::bind(
+            setQValueAndDecoyRatioToTargetDecoyCandidatePairsParallelLogic,
+            identifierVsQValueVsDecoyRatio,
+            std::placeholders::_1
+            );
 
-            if (cs->isDecoy) {
-                continue;
-            }
+        QFuture<Err> futures = QtConcurrent::mapped(*candidateScores, binderLogic);
+        futures.waitForFinished();
 
-            const PeptideSequenceChargeKey peptideSequenceChargeKey = buildCandidateKey(*cs);
-
-            e = ErrorUtils::isTrue(identifierVsQValue.contains(peptideSequenceChargeKey)); ree;
-            e = ErrorUtils::isTrue(identifierVsDecoyRatio.contains(peptideSequenceChargeKey)); ree;
-
-            cs->qValue = identifierVsQValue.value(peptideSequenceChargeKey);
-            cs->decoyRatio = identifierVsDecoyRatio.value(peptideSequenceChargeKey);
+        for (Err result : futures) {
+            e = result; ree;
         }
 
         ERR_RETURN
@@ -103,20 +124,20 @@ Err QValueSettertron::setQValueForCandidates(
             candidateScores,
             &identifierVsTargets,
             &identifierVsDecoys
-    ); ree;
+            ); ree;
 
-    QHash<PeptideSequenceChargeKey, double> identifierVsQValue;
-    QHash<PeptideSequenceChargeKey, double> identifierVsDecoyRatio;
+    const QVector<QPair<PeptideSequenceChargeKey, double>> identifierVsTargetsScores
+                                            = ParallelUtils::convertHashToVectorPairs(identifierVsTargets);
+
+    QHash<PeptideSequenceChargeKey, QPair<double, double>> identifierVsQValueVsDecoyRatio;
     e = MathUtils::calculateQValue(
-            identifierVsTargets,
+            identifierVsTargetsScores,
             identifierVsDecoys,
-            &identifierVsQValue,
-            &identifierVsDecoyRatio
+            &identifierVsQValueVsDecoyRatio
     ); ree;
 
     e = setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
-            identifierVsQValue,
-            identifierVsDecoyRatio,
+            identifierVsQValueVsDecoyRatio,
             candidateScores
     ); ree;
 
