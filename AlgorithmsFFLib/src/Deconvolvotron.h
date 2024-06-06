@@ -11,6 +11,12 @@
 
 using namespace Error;
 
+struct DeconvolvotronResult {
+    DiscScore discScore = -1.0;
+    double pVal = -1.0;
+    double pValFrameFtest = -1.0;
+};
+
 class ALGORITHMSFFLIB_EXPORTS Deconvolvotron {
 
 public:
@@ -23,8 +29,8 @@ public:
     Err deconvolve(
         const QMap<IdStr, QVector<QPointF>> &aMatrixPoints,
         const QVector<QPointF> &bVecPoints,
-        QVector<QPair<IdStr, Score>> *idStrVsScore
-        );
+        QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore
+        ) const;
 
 private:
 
@@ -39,7 +45,5 @@ private:
     int m_precision;
 
 };
-
-
 
 #endif //DECONVOLVOTRON_H

@@ -4,10 +4,13 @@
 
 #include "Deconvolvotron.h"
 
-#include "Eigen/Dense"
 #include <unsupported/Eigen/NNLS>
 
-#include <iostream>
+#include <boost/math/distributions/fisher_f.hpp>
+#include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/students_t.hpp>
+
+#include "EigenUtils.h"
 
 Deconvolvotron::Deconvolvotron() : m_precision(-1) {}
 
@@ -75,14 +78,53 @@ namespace {
         ERR_RETURN
     }
 
+    void deconvolveStats(
+            const Eigen::MatrixX<double> &A,
+            const Eigen::VectorX<double> &x,
+            const Eigen::VectorX<double> &b,
+            double *pValFTest,
+            QVector<double> *coeffsPVals
+            ) {
 
+        const int n = static_cast<int>(b.size());
+        const int p = static_cast<int>(A.cols());
+        const int df1 = p - 1;
+        const int df2 = n - p;
+
+        const Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        const Eigen::VectorXd beta = svd.solve(b);
+
+        const Eigen::VectorXd residuals = b - A * beta;
+
+        const double variance = residuals.squaredNorm() / (static_cast<double>(A.rows()) - static_cast<double>(A.cols()));
+        const Eigen::VectorXd se = variance * (A.transpose() * A).inverse().diagonal().cwiseSqrt();
+
+        // Calculate mean square of residuals (MSE):
+        const double mse = residuals.array().square().sum() / (static_cast<double>(A.rows()) - static_cast<double>(A.cols()));
+        const double tss = (b.array() - b.array().mean()).square().sum();
+        const double rss = tss - mse * (A.rows() - 1.0);
+
+        const double fStatistic = (rss / A.cols()) / mse;
+        const boost::math::fisher_f distF(df1, df2);
+        *pValFTest = 1.0 - boost::math::cdf(distF, fStatistic);
+
+        const Eigen::VectorXd t = beta.cwiseQuotient(se);
+
+        const boost::math::students_t dist(static_cast<double>(A.rows()) - static_cast<double>(A.cols()));
+        Eigen::VectorXd pVal(A.cols());
+        for (int i = 0; i < A.cols(); ++i){
+            pVal[i] = static_cast<double>(2.0 * static_cast<double>(1.0 - boost::math::cdf(dist, fabs(t[i]))));
+        }
+
+        *coeffsPVals = EigenUtils::convertEigenVectorToQVector(pVal);
+    }
 
 }//namespace
 Err Deconvolvotron::deconvolve(
     const QMap<IdStr, QVector<QPointF>>& aMatrixPoints,
     const QVector<QPointF>& bVecPoints,
-    QVector<QPair<IdStr, Score>>* idStrVsScore
-    ) {
+    QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore
+    ) const  {
 
     ERR_INIT
 
@@ -91,6 +133,8 @@ Err Deconvolvotron::deconvolve(
     e = ErrorUtils::isNotEmpty(bVecPoints); ree;
 
     idStrVsScore->clear();
+
+    const QVector<IdStr> idStrs = aMatrixPoints.keys().toVector();
 
     QVector<int> hashedXVals;
     e = buildXValsSet(
@@ -114,12 +158,27 @@ Err Deconvolvotron::deconvolve(
     Eigen::VectorXd x = nnls.solve(bVec);
     x /= x.sum();
 
-    std::cout << aMat << std::endl;
-    std::cout << "---" << std::endl;
-    std::cout << bVec << std::endl;
-    std::cout << "***" << std::endl;
-    std::cout << x << std::endl;
+    double pValFTest;
+    QVector<double> coeffsPVals;
+    deconvolveStats(
+        aMat,
+        x,
+        bVec,
+        &pValFTest,
+        &coeffsPVals
+        );
 
+    e = ErrorUtils::isEqual(aMatrixPoints.size(), static_cast<int>(x.size())); ree;
+    e = ErrorUtils::isEqual(aMatrixPoints.size(), coeffsPVals.size()); ree;
+    idStrVsScore->resize(aMatrixPoints.size());
+
+    for (int i = 0; i < idStrVsScore->size(); i++) {
+        DeconvolvotronResult deconvolvotronResult;
+        deconvolvotronResult.discScore = x.coeff(i);
+        deconvolvotronResult.pVal = coeffsPVals.at(i);
+        deconvolvotronResult.pValFrameFtest = pValFTest;
+        (*idStrVsScore)[i] = {idStrs.at(i), deconvolvotronResult};
+    }
 
     ERR_RETURN
 }

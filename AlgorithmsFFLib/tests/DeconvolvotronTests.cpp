@@ -58,17 +58,25 @@ void DeconvolvotronTests::deconvoleTest() {
     e = deconvolvotron.init(1);
     QCOMPARE(e, eNoError);
 
-    QVector<QPair<IdStr, Score>> idStrVsScore;
+    QVector<QPair<IdStr, DeconvolvotronResult>> deconvolvotronResult;
     e = deconvolvotron.deconvolve(
         pepStrVsPoints,
         scanPoints,
-        &idStrVsScore
+        &deconvolvotronResult
         );
     QCOMPARE(e, eNoError);
 
+    QCOMPARE(deconvolvotronResult.size(), pepStrVsPoints.size());
 
+    QCOMPARE(deconvolvotronResult.at(0).first, "Pep1");
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(0).second.discScore, 0.5));
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(0).second.pVal, 2.06302e-05));
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(0).second.pValFrameFtest, 0.000492698));
 
-
+    QCOMPARE(deconvolvotronResult.at(1).first, "Pep2");
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(1).second.discScore, 0.5));
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(1).second.pVal, 3.78698e-05));
+    QVERIFY(MathUtils::tSame(deconvolvotronResult.at(1).second.pValFrameFtest, 0.000492698));
 
 }
 
