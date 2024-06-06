@@ -6,6 +6,7 @@
 
 #include "CandidateScores.h"
 #include "ClassifierWeightsManager.h"
+#include "Deconvolvotron.h"
 #include "DiscriminantScoretron.h"
 #include "EigenUtils.h"
 #include "FastaFileToPeptidesListWorkFlow.h"
@@ -317,17 +318,18 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
 
-    e = spectrumCentricSearch(
-        m_msCalibratomatic,
-        &msReaderPointerAcc
-        ); ree;
-
      QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
      e = filterScoredCandidatesTo50PercentFDR(
              &candidateScoresTargetsAndDecoys,
              &candidateScoresTargetsAndDecoys50PercentFDRFiltered
              ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
+
+    e = spectrumCentricSearch(
+        candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+        m_msCalibratomatic,
+        &msReaderPointerAcc
+        ); ree;
 
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
@@ -1713,14 +1715,16 @@ namespace {
         ERR_RETURN
     }
 
-    Err spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
+    QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(scpi.targetDecoyCandidatePairs); ree;
-        e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); ree;
-        e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); ree;
 
-        qDebug() << scpi.mzTargetKey;
+        e = ErrorUtils::isNotEmpty(scpi.targetDecoyCandidatePairs); rree;
+        e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); rree;
+        e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); rree;
+
+        QElapsedTimer et;
+        et.start();
 
         SpectrumCentricMzTargetFrameSearch spectrumCentricMzTargetFrameSearch;
         e = spectrumCentricMzTargetFrameSearch.init(
@@ -1729,15 +1733,19 @@ namespace {
             scpi.diaTargetFrame,
             scpi.targetDecoyCandidatePairs,
             scpi.scanNumberVsScanTime
-            ); ree;
+            ); rree;
 
-        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(); ree;
+        QVector<QPair<IdStr, DeconvolvotronResult>> idStrVsScore;
+        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(&idStrVsScore); rree;
 
-        ERR_RETURN
+        qDebug() << "Processed MzTargetKey" << scpi.mzTargetKey << et.elapsed() << "mSec";
+
+        return {e, idStrVsScore};
     }
 
 }//namespace
 Err PythiaDIAFFWorkflow::spectrumCentricSearch(
+    const QVector<CandidateScores*> &candidateScores,
     const MsCalibratomatic &msCalibratomatic,
     const MsReaderPointerAcc *msReaderPointerAcc
     ) {
@@ -1745,9 +1753,17 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
     ERR_INIT
     e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;
 
+    QVector<TargetDecoyCandidatePair*> targetDecoyPairPntrs;
+    for (const CandidateScores *cs : candidateScores) {
+        if (cs->isDecoy) {
+            continue;
+        }
+        targetDecoyPairPntrs.push_back(cs->targetDecoyCandidatePair);
+    }
+
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
     e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            m_targetDecoyPairPntrs,
+            targetDecoyPairPntrs,
             msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
@@ -1765,11 +1781,26 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
         &spectrumCentricParallelInputs
         ); ree;
 
-    QFuture<Err> futures = QtConcurrent::mapped(
+#define PARALLEL_DCON
+#ifdef PARALLEL_DCON
+    QFuture<QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>>> futures = QtConcurrent::mapped(
         spectrumCentricParallelInputs,
         spectrumCentricParallelLogic
         ); ree;
     futures.waitForFinished();
+
+    for (const QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> &res : futures) {
+        e = res.first; ree;
+        const QVector<QPair<IdStr, DeconvolvotronResult>> &prs = res.second;
+    }
+#else
+    for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
+        QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
+        e = res.first; ree;
+    }
+
+#endif
+
 
     ERR_RETURN
 }

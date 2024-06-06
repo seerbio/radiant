@@ -146,6 +146,7 @@ private:
         );
 
     Err spectrumCentricSearch(
+        const QVector<CandidateScores*> &candidateScores,
         const MsCalibratomatic &msCalibratomatic,
         const MsReaderPointerAcc *msReaderPointerAcc
         );

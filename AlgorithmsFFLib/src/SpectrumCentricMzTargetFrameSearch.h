@@ -13,6 +13,8 @@
 
 using namespace Error;
 
+class DeconvolvotronResult;
+
 class ALGORITHMSFFLIB_EXPORTS SpectrumCentricMzTargetFrameSearch {
 
 public:
@@ -28,7 +30,7 @@ public:
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         );
 
-    Err assignIdsToScans();
+    Err assignIdsToScans(QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore);
 
 private:
         PythiaParameters m_pythiaParameters;

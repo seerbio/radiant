@@ -4,6 +4,7 @@
 
 #include "SpectrumCentricMzTargetFrameSearch.h"
 
+#include "Deconvolvotron.h"
 #include "MsUtils.h"
 
 #include <boost/geometry.hpp>
@@ -83,7 +84,7 @@ namespace {
     }
 
 }
-Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans() {
+Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore) {
 
     ERR_INIT
 
@@ -97,8 +98,15 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans() {
     constexpr int maxElements = 16;
     RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
-    const float scanTimeWindow = m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+    const float scanTimeWindow
+        = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
 
+    constexpr int precision = 1;
+
+    Deconvolvotron deconvolvotron;
+    e = deconvolvotron.init(precision); ree;
+
+    FrameIndex frameIndex = 0;
     for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
 
         const ScanNumber scanNumber = it.key();
@@ -124,23 +132,29 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans() {
         std::vector<rTreePoint> result;
         rTree.query(bgi::intersects(queryBox), std::back_inserter(result));
 
+        if (result.empty()) {
+            continue;
+        }
+
+        QVector<QPair<IdStr, QVector<QPointF>>> aMatrixPoints;
+        aMatrixPoints.reserve(result.size() * 2);
         for (const rTreePoint &p : result) {
+            const PeptideString peptideStringTarget = p.second->peptideString();
+            const PeptideString peptideStringDecoy = "Decoy" + peptideStringTarget;
             const QVector<MS2Ion> &targetIons = p.second->ms2IonsTarget();
             const QVector<QPointF> &targetIonsPoints = ms2IonsToQPoint(targetIons);
             const QVector<MS2Ion> &decoyIons = p.second->ms2IonsDecoy();
             const QVector<QPointF> &decoyIonsPoints = ms2IonsToQPoint(decoyIons);
-
-            const ExtractPoints epTarget = MsUtils::extractPointsFromPoints(
-                scanPointsDouble,
-                targetIonsPoints,
-                m_pythiaParameters.ms2ExtractionWidthPPM
-                );
-            const ExtractPoints epDecoy = MsUtils::extractPointsFromPoints(
-                scanPointsDouble,
-                decoyIonsPoints,
-                m_pythiaParameters.ms2ExtractionWidthPPM
-                );
+            aMatrixPoints.push_back({peptideStringTarget, targetIonsPoints});
+            aMatrixPoints.push_back({peptideStringDecoy, decoyIonsPoints});
         }
+
+
+        e = deconvolvotron.deconvolve(
+            aMatrixPoints,
+            scanPointsDouble,
+            idStrVsScore
+            ); ree;
 
     }
 

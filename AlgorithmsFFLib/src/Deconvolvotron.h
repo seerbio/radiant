@@ -27,7 +27,7 @@ public:
     Err init(int precision);
 
     Err deconvolve(
-        const QMap<IdStr, QVector<QPointF>> &aMatrixPoints,
+        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF> &bVecPoints,
         QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore
         ) const;
@@ -35,9 +35,9 @@ public:
 private:
 
     Err buildXValsSet(
-        const QMap<IdStr, QVector<QPointF>>& aMatrixPoints,
+        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF>& bVecPoints,
-        QVector<int> *xVals
+        QVector<double> *xValsReturn
         ) const;
 
 private:

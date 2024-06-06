@@ -46,16 +46,22 @@ void DeconvolvotronTests::deconvoleTest() {
 
     const QVector<QPointF> peptide2 = {
         {300.01, 10},
-        {400.01, 10}
+        {400.01, 10},
     };
 
-    QMap<PeptideString, QVector<QPointF>> pepStrVsPoints = {
+    const QVector<QPointF> peptide3 = {
+        {310.01, 10},
+        {410.01, 10},
+    };
+
+    QVector<QPair<PeptideString, QVector<QPointF>>> pepStrVsPoints = {
         {"Pep1", peptide1},
-        {"Pep2", peptide2}
+        {"Pep2", peptide2},
+        {"Pep3", peptide3}
     };
 
     Deconvolvotron deconvolvotron;
-    e = deconvolvotron.init(1);
+    e = deconvolvotron.init(4);
     QCOMPARE(e, eNoError);
 
     QVector<QPair<IdStr, DeconvolvotronResult>> deconvolvotronResult;
