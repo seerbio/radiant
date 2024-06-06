@@ -220,6 +220,12 @@ Err MsFrame::writeFrameScans(const QMap<FrameIndex, ScanPoints *> &framesVsScanP
 }
 
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
+    if (frameIndex > m_frameIndexVsScanNumber.lastKey()) {
+        return m_frameIndexVsScanNumber.last();
+    }
+    if (frameIndex < 1) {
+        return m_frameIndexVsScanNumber.first();
+    }
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
 
