@@ -30,7 +30,9 @@ public:
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         );
 
-    Err assignIdsToScans(QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore);
+    Err assignIdsToScans(
+        QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candidateScoresPntrVsScore
+        );
 
 private:
         PythiaParameters m_pythiaParameters;

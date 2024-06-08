@@ -1715,7 +1715,7 @@ namespace {
         ERR_RETURN
     }
 
-    QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
+    QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
 
         ERR_INIT
 
@@ -1735,12 +1735,12 @@ namespace {
             scpi.scanNumberVsScanTime
             ); rree;
 
-        QVector<QPair<IdStr, DeconvolvotronResult>> idStrVsScore;
-        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(&idStrVsScore); rree;
+        QVector<QPair<CandidateScores*, DeconvolvotronResult>> candidateScoresPntrsVsScore;
+        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(&candidateScoresPntrsVsScore); rree;
 
         qDebug() << "Processed MzTargetKey" << scpi.mzTargetKey << et.elapsed() << "mSec";
 
-        return {e, idStrVsScore};
+        return {e, candidateScoresPntrsVsScore};
     }
 
 }//namespace
@@ -1773,22 +1773,21 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
 
 #define PARALLEL_DCON
 #ifdef PARALLEL_DCON
-    QFuture<QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>>> futures = QtConcurrent::mapped(
+    QFuture<QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>>> futures = QtConcurrent::mapped(
         spectrumCentricParallelInputs,
         spectrumCentricParallelLogic
         ); ree;
     futures.waitForFinished();
 
-    for (const QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> &res : futures) {
+    for (const QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> &res : futures) {
         e = res.first; ree;
-        const QVector<QPair<IdStr, DeconvolvotronResult>> &prs = res.second;
+        const QVector<QPair<CandidateScores*, DeconvolvotronResult>> &prs = res.second;
     }
 #else
     for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
         QPair<Err, QVector<QPair<IdStr, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
         e = res.first; ree;
     }
-
 #endif
 
 

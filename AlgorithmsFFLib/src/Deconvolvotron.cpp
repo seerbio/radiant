@@ -4,6 +4,7 @@
 
 #include "Deconvolvotron.h"
 
+#include "CandidateScores.h"
 #include "MsUtils.h"
 
 #include <unsupported/Eigen/NNLS>
@@ -29,7 +30,7 @@ Err Deconvolvotron::init(int precision) {
 namespace {
 
     Err buildAMatrixAndBVec(
-        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
+        const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF>& bVecPoints,
         const QVector<double> &xVals,
         double ppmExtractTol,
@@ -47,7 +48,7 @@ namespace {
             aMatrixPoints.begin(),
             aMatrixPoints.end(),
             std::back_inserter(points),
-            [](const QPair<IdStr, QVector<QPointF>> &pr){return pr.second;}
+            [](const QPair<CandidateScores*, QVector<QPointF>> &pr){return pr.second;}
             );
 
         QVector<double> xValsSorted = xVals;
@@ -127,9 +128,9 @@ namespace {
 
 }//namespace
 Err Deconvolvotron::deconvolve(
-    const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
+    const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
     const QVector<QPointF>& bVecPoints,
-    QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore
+    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *idStrVsScore
     ) const  {
 
     ERR_INIT
@@ -140,12 +141,12 @@ Err Deconvolvotron::deconvolve(
 
     idStrVsScore->clear();
 
-    QVector<IdStr> idStrs;
+    QVector<CandidateScores*> candidateScoreses;
     std::transform(
         aMatrixPoints.begin(),
         aMatrixPoints.end(),
-        std::back_inserter(idStrs),
-        [](const QPair<IdStr, QVector<QPointF>> &pr){return pr.first;}
+        std::back_inserter(candidateScoreses),
+        [](const QPair<CandidateScores*, QVector<QPointF>> &pr){return pr.first;}
         );
 
     QVector<double> xVals;
@@ -198,14 +199,14 @@ Err Deconvolvotron::deconvolve(
         // deconvolvotronResult.pVal = coeffsPVals.at(i);
         // deconvolvotronResult.pValFrameFtest = pValFTest;
 
-        idStrVsScore->push_back({idStrs.at(i), deconvolvotronResult});
+        idStrVsScore->push_back({candidateScoreses.at(i), deconvolvotronResult});
     }
 
     ERR_RETURN
 }
 
 Err Deconvolvotron::buildXValsSet(
-        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
+        const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF>& bVecPoints,
         QVector<double> *xValsReturn
         ) const {
@@ -216,7 +217,7 @@ Err Deconvolvotron::buildXValsSet(
     e = ErrorUtils::isNotEmpty(bVecPoints); ree;
 
     QVector<int> hashedXVals;
-    for (const QPair<IdStr, QVector<QPointF>> &aMatPointsPr : aMatrixPoints) {
+    for (const QPair<CandidateScores*, QVector<QPointF>> &aMatPointsPr : aMatrixPoints) {
         for (const QPointF &pnt : aMatPointsPr.second) {
             const int hashedXVal = MathUtils::hashDecimal(pnt.x(), m_precision);
             hashedXVals.push_back(hashedXVal);

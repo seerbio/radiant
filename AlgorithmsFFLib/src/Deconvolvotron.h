@@ -9,6 +9,8 @@
 #include "Error.h"
 #include "GlobalSettings.h"
 
+class CandidateScores;
+
 using namespace Error;
 
 struct DeconvolvotronResult {
@@ -27,15 +29,15 @@ public:
     Err init(int precision);
 
     Err deconvolve(
-        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
+        const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF> &bVecPoints,
-        QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore
+        QVector<QPair<CandidateScores*, DeconvolvotronResult>> *idStrVsScore
         ) const;
 
 private:
 
     Err buildXValsSet(
-        const QVector<QPair<IdStr, QVector<QPointF>>> &aMatrixPoints,
+        const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF>& bVecPoints,
         QVector<double> *xValsReturn
         ) const;

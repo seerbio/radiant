@@ -5,23 +5,9 @@
 #include "SpectrumCentricMzTargetFrameSearch.h"
 
 #include "Deconvolvotron.h"
+#include "Ms2IonFraggertronManager.h"
 #include "MsUtils.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
-
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
-using rTreeTargetDecoyPtr = TargetDecoyCandidatePair*;
-using rTreeCoor = bg::model::point<float, 1, bg::cs::cartesian>;
-using rTreeSearchBox = bg::model::box<rTreeCoor>;
-using rTreePoint = std::pair<rTreeCoor, rTreeTargetDecoyPtr>;
-using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 Err SpectrumCentricMzTargetFrameSearch::init(
     const PythiaParameters& pythiaParameters,
@@ -50,114 +36,137 @@ Err SpectrumCentricMzTargetFrameSearch::init(
 
 namespace {
 
-    Err buildRTreeInput(
-        const MsCalibratomatic &msCalibratomatic,
-        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-        QVector<rTreePoint> *cloudLoader
-        ) {
+    void filterFoundCandidates(QHash<CandidateScores*, QVector<MS2Ion>> *candidateVsMs2IonsFound) {
 
-        ERR_INIT
-        e = ErrorUtils::isTrue(msCalibratomatic.isInitRT()); ree;
-        e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairs); ree;
+        QHash<CandidateScores*, QVector<MS2Ion>> candidateVsMs2IonsFoundFiltered;
+        for (auto it = candidateVsMs2IonsFound->begin(); it != candidateVsMs2IonsFound->end(); ++it) {
 
-        for (TargetDecoyCandidatePair* tdcp : targetDecoyCandidatePairs) {
-            float predictedScanTime;
-            e = msCalibratomatic.predictScanTime(tdcp->iRt(), &predictedScanTime); ree;
+            CandidateScores *cs = it.key();
+            const QVector<MS2Ion> &ms2Ions = it.value();
 
-            rTreeCoor coor(predictedScanTime);
-            rTreePoint point(coor, tdcp);
-            cloudLoader->push_back(point);
+            constexpr int minFoundPointsSize = 3;
+            if (ms2Ions.size() < minFoundPointsSize) {
+                continue;
+            }
+
+            constexpr ushort rankCountMin = 3;
+            const long top3Ms2IonsCount = std::count_if(
+                ms2Ions.begin(),
+                ms2Ions.end(),
+                [rankCountMin](const MS2Ion &ms2Ion){return ms2Ion.rank <= rankCountMin;}
+                );
+
+            constexpr int rankCountFoundMin = 2;
+            if (top3Ms2IonsCount < rankCountFoundMin) {
+                continue;
+            }
+
+            candidateVsMs2IonsFoundFiltered.insert(cs, ms2Ions);
         }
 
-        ERR_RETURN
+        *candidateVsMs2IonsFound = candidateVsMs2IonsFoundFiltered;
     }
 
-    QVector<QPointF> ms2IonsToQPoint(const QVector<MS2Ion> &ms2Ions) {
-
-        QVector<QPointF> qpoints;clo
-        std::transform(
-            ms2Ions.begin(),
-            ms2Ions.end(),
-            std::back_inserter(qpoints),
-            [](const MS2Ion &ms2Ion){return QPointF(ms2Ion.mz, ms2Ion.intensity);}
-            );
-
-        return qpoints;
-    }
-
-}
-Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(QVector<QPair<IdStr, DeconvolvotronResult>> *idStrVsScore) {
+}//namespace
+Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(
+    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candidateScoresPntrVsScore
+    ) {
 
     ERR_INIT
 
-    // QVector<rTreePoint> cloudLoader;
-    // e = buildRTreeInput(
-    //     m_msCalibratomatic,
-    //     m_targetDecoyCandidatePairs,
-    //     &cloudLoader
-    //     ); ree;
-    //
-    // constexpr int maxElements = 16;
-    // RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    //
-    // const float scanTimeWindow
-    //     = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
-    //
-    // constexpr int precision = 1;
-    //
-    // Deconvolvotron deconvolvotron;
-    // e = deconvolvotron.init(precision); ree;
-    //
-    // FrameIndex frameIndex = 0;
-    // for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
-    //
-    //     const ScanNumber scanNumber = it.key();
-    //     const ScanTime scanTime = m_scanNumberVsScanTime.value(scanNumber);
-    //     const ScanPoints* scanPoints = it.value();
-    //
-    //     QVector<QPointF> scanPointsDouble;
-    //     std::transform(
-    //         scanPoints->begin(),
-    //         scanPoints->end(),
-    //         std::back_inserter(scanPointsDouble),
-    //         [](const ScanPoint &sp){return QPointF(sp.x(), sp.y());}
-    //         );
-    //
-    //     const ScanTime scanTimeMin = scanTime - scanTimeWindow;
-    //     const ScanTime scanTimeMax = scanTime + scanTimeWindow;
-    //
-    //     const rTreeSearchBox queryBox(
-    //         (rTreeCoor(scanTimeMin)),
-    //         rTreeCoor(scanTimeMax)
-    //         );
-    //
-    //     std::vector<rTreePoint> result;
-    //     rTree.query(bgi::intersects(queryBox), std::back_inserter(result));
-    //
-    //     if (result.empty()) {
-    //         continue;
-    //     }
-    //
-    //     QVector<QPair<IdStr, QVector<QPointF>>> aMatrixPoints;
-    //     aMatrixPoints.reserve(result.size() * 2);
-    //     for (const rTreePoint &p : result) {
-    //         const PeptideString peptideStringTarget = p.second->peptideString();
-    //         const PeptideString peptideStringDecoy = "Decoy" + peptideStringTarget;
-    //         const QVector<MS2Ion> &targetIons = p.second->ms2IonsTarget();
-    //         const QVector<QPointF> &targetIonsPoints = ms2IonsToQPoint(targetIons);
-    //         const QVector<MS2Ion> &decoyIons = p.second->ms2IonsDecoy();
-    //         const QVector<QPointF> &decoyIonsPoints = ms2IonsToQPoint(decoyIons);
-    //         aMatrixPoints.push_back({peptideStringTarget, targetIonsPoints});
-    //         aMatrixPoints.push_back({peptideStringDecoy, decoyIonsPoints});
-    //     }
-    //
-    //     e = deconvolvotron.deconvolve(
-    //         aMatrixPoints,
-    //         scanPointsDouble,
-    //         idStrVsScore
-    //         ); ree;
-    //
-    // }
+    const float scanTimeWindow
+        = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
+
+    constexpr int precision = 1;
+    Deconvolvotron deconvolvotron;
+    e = deconvolvotron.init(precision); ree;
+
+    Ms2IonFraggertronManager ms2IonFraggertronManager;
+    e = ms2IonFraggertronManager.init(
+        m_msCalibratomatic,
+        m_candidateScoresPntrs
+        ); ree;
+
+    FrameIndex frameIndex = 0;
+    for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
+
+        const ScanNumber scanNumber = it.key();
+        const ScanTime scanTime = m_scanNumberVsScanTime.value(scanNumber);
+        const ScanPoints *scanPoints = it.value();
+
+
+        const ScanTime scanTimeMin = scanTime - scanTimeWindow;
+        const ScanTime scanTimeMax = scanTime + scanTimeWindow;
+
+        QHash<CandidateScores*, QVector<MS2Ion>> candidateVsMs2IonsFound;
+
+        for (const ScanPoint &scanPoint : *scanPoints) {
+
+            const float massTol = MathUtils::calculatePPM(
+                scanPoint.x(),
+                static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+                );
+
+            const float mzMin = scanPoint.x() - massTol;
+            const float mzMax = scanPoint.x() + massTol;
+
+            QVector<QPair<MS2Ion, CandidateScores*>> ms2IonsVsCandidateScoresPntrses;
+            e = ms2IonFraggertronManager.extractMs2Points(
+                mzMin,
+                mzMax,
+                scanTimeMin,
+                scanTimeMax,
+                &ms2IonsVsCandidateScoresPntrses
+                ); ree;
+
+            for (const QPair<MS2Ion, CandidateScores*> &pr : ms2IonsVsCandidateScoresPntrses) {
+                candidateVsMs2IonsFound[pr.second].push_back(pr.first);
+            }
+
+        }
+
+        if (candidateVsMs2IonsFound.isEmpty()) {
+            continue;
+        }
+
+        filterFoundCandidates(&candidateVsMs2IonsFound);
+
+        if (candidateVsMs2IonsFound.isEmpty()) {
+            continue;
+        }
+
+        QVector<QPair<CandidateScores*, QVector<QPointF>>> aMatrixPoints;
+        aMatrixPoints.reserve(candidateVsMs2IonsFound.size() * 2);
+        for (auto it = candidateVsMs2IonsFound.begin(); it != candidateVsMs2IonsFound.end(); ++it) {
+            CandidateScores *cs = it.key();
+            const QVector<MS2Ion> &ms2Ions = it.value();
+
+            QVector<QPointF> points;
+            std::transform(
+                ms2Ions.begin(),
+                ms2Ions.end(),
+                std::back_inserter(points),
+                [](const MS2Ion &ms2Ion){return QPointF(ms2Ion.mz, ms2Ion.intensity);}
+                );
+
+            aMatrixPoints.push_back({cs, points});
+        }
+
+        QVector<QPointF> scanPointsDouble;
+        std::transform(
+            scanPoints->begin(),
+            scanPoints->end(),
+            std::back_inserter(scanPointsDouble),
+            [](const ScanPoint &scanPoint){return QPointF(scanPoint.x(), scanPoint.y());}
+            );
+
+        e = deconvolvotron.deconvolve(
+            aMatrixPoints,
+            scanPointsDouble,
+            candidateScoresPntrVsScore
+            ); ree;
+
+    }
 
     ERR_RETURN
 }
