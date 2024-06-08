@@ -861,7 +861,7 @@ arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
 // END PRIVATE //////////////////////////////////////
 /////////////////////////////////////////////////////
 
-ParquetReader::ParquetReader() : d_ptr(new Private()) {}
+ParquetReader::ParquetReader() : d_ptr(QScopedPointer<Private>(new Private())) {}
 
 ParquetReader::~ParquetReader() {}
 

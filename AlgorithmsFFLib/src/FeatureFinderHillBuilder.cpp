@@ -903,7 +903,7 @@ Err FeatureFinderHillBuilder::Private::featureFinderHills(QVector<FeatureFinderH
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-FeatureFinderHillBuilder::FeatureFinderHillBuilder() : d_ptr(new Private()) {}
+FeatureFinderHillBuilder::FeatureFinderHillBuilder() : d_ptr(QScopedPointer<Private>(new Private)) {}
 
 FeatureFinderHillBuilder::~FeatureFinderHillBuilder(){}
 

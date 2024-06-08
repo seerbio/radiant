@@ -321,7 +321,10 @@ bool CandidateClassifier::Private::predict(
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-CandidateClassifier::CandidateClassifier() : d_ptr(new Private()) {}
+CandidateClassifier::CandidateClassifier()
+: d_ptr(QScopedPointer<Private>(new Private))
+, m_threadCount(-1)
+{}
 
 CandidateClassifier::~CandidateClassifier() {}
 

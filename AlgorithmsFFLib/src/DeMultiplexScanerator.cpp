@@ -376,7 +376,7 @@ DeMultiplexScanerator::DeMultiplexScanerator(
         double ppmTol,
         double intensityFractionThreshold
         )
-        : d_ptr(new Private(ppmTol, intensityFractionThreshold))
+        : d_ptr(QScopedPointer<Private>(new Private(ppmTol, intensityFractionThreshold)))
         {}
 
 DeMultiplexScanerator::~DeMultiplexScanerator() {}

@@ -83,7 +83,7 @@ CandidateScorertron::CandidateScorertron()
 , m_xicPeakManager(nullptr)
 , m_msFrameMzTarget(nullptr)
 , m_turboXicMS1(nullptr)
-, d_ptr(new Private())
+, d_ptr(QScopedPointer<Private>(new Private))
 , m_minPeakCount(3.9)
 , m_scanTimeRange(0)
 {}
