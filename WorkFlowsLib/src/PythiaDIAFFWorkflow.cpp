@@ -1679,7 +1679,7 @@ namespace {
 
     struct SpectrumCentricParallelInput {
         MzTargetKey mzTargetKey;
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairs;
+        QVector<CandidateScores*> candidateScoresPntrs;
         QMap<ScanNumber, ScanPoints*> diaTargetFrame;
         PythiaParameters pythiaParameters;
         MsCalibratomatic msCalibratomatic;
@@ -1687,7 +1687,7 @@ namespace {
     };
 
     Err buildSpectrumCentricParallelInput(
-        const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePointers,
+        const QMap<MzTargetKey, QVector<CandidateScores*>> &mzTargetKeyVsCandidateScoresPointers,
         const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
         const MsCalibratomatic &msCalibratomatic,
         const PythiaParameters &pythiaParameters,
@@ -1696,13 +1696,13 @@ namespace {
         ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(mzTargetKeyVsTargetDecoyCandidatePointers); ree;
+        e = ErrorUtils::isNotEmpty(mzTargetKeyVsCandidateScoresPointers); ree;
         e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
 
-        for(auto it = mzTargetKeyVsTargetDecoyCandidatePointers.begin(); it != mzTargetKeyVsTargetDecoyCandidatePointers.end(); ++it) {
+        for(auto it = mzTargetKeyVsCandidateScoresPointers.begin(); it != mzTargetKeyVsCandidateScoresPointers.end(); ++it) {
             SpectrumCentricParallelInput spectrumCentricParallelInput;
             spectrumCentricParallelInput.mzTargetKey = it.key();
-            spectrumCentricParallelInput.targetDecoyCandidatePairs = it.value();
+            spectrumCentricParallelInput.candidateScoresPntrs = it.value();
             spectrumCentricParallelInput.msCalibratomatic = msCalibratomatic;
             spectrumCentricParallelInput.pythiaParameters = pythiaParameters;
             spectrumCentricParallelInput.scanNumberVsScanTime = scanNumberVsScanTime;
@@ -1719,7 +1719,7 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(scpi.targetDecoyCandidatePairs); rree;
+        e = ErrorUtils::isNotEmpty(scpi.candidateScoresPntrs); rree;
         e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); rree;
         e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); rree;
 
@@ -1731,7 +1731,7 @@ namespace {
             scpi.pythiaParameters,
             scpi.msCalibratomatic,
             scpi.diaTargetFrame,
-            scpi.targetDecoyCandidatePairs,
+            scpi.candidateScoresPntrs,
             scpi.scanNumberVsScanTime
             ); rree;
 
@@ -1745,7 +1745,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::spectrumCentricSearch(
-    const QVector<CandidateScores*> &candidateScores,
+    const QVector<CandidateScores*> &candidateScoresPntrs,
     const MsCalibratomatic &msCalibratomatic,
     const MsReaderPointerAcc *msReaderPointerAcc
     ) {
@@ -1753,27 +1753,17 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
     ERR_INIT
     e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;
 
-    QVector<TargetDecoyCandidatePair*> targetDecoyPairPntrs;
-    for (const CandidateScores *cs : candidateScores) {
-        if (cs->isDecoy) {
-            continue;
-        }
-        targetDecoyPairPntrs.push_back(cs->targetDecoyCandidatePair);
+    QMap<MzTargetKey, QVector<CandidateScores*>> mzTargetKeyVsCandidateScoresPntrs;
+    for (CandidateScores *cs : candidateScoresPntrs) {
+        mzTargetKeyVsCandidateScoresPntrs[cs->targetKey].push_back(cs);
     }
-
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            targetDecoyPairPntrs,
-            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            ); ree;
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
     e = msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
 
     QVector<SpectrumCentricParallelInput> spectrumCentricParallelInputs;
     e = buildSpectrumCentricParallelInput(
-        mzTargetKeyVsTargetDecoyCandidatePointers,
+        mzTargetKeyVsCandidateScoresPntrs,
         diaTargetFrames,
         msCalibratomatic,
         m_pythiaParameters,

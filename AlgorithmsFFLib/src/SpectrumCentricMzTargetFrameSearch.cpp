@@ -12,6 +12,8 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -25,7 +27,7 @@ Err SpectrumCentricMzTargetFrameSearch::init(
     const PythiaParameters& pythiaParameters,
     const MsCalibratomatic& msCalibratomatic,
     const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
-    const QVector<TargetDecoyCandidatePair*>& targetDecoyCandidatePairs,
+    const QVector<CandidateScores*> &candidateScoresPntrs,
     const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
     ) {
 
@@ -33,14 +35,14 @@ Err SpectrumCentricMzTargetFrameSearch::init(
 
     e = ErrorUtils::isNotEmpty(diaTargetFrame); ree;
     e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
-    e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairs); ree;
+    e = ErrorUtils::isNotEmpty(candidateScoresPntrs); ree;
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(msCalibratomatic.isInitRT()); ree;
 
     m_msCalibratomatic = msCalibratomatic;
     m_pythiaParameters = pythiaParameters;
     m_diaTargetFrame = diaTargetFrame;
-    m_targetDecoyCandidatePairs = targetDecoyCandidatePairs;
+    m_candidateScoresPntrs = candidateScoresPntrs;
     m_scanNumberVsScanTime = scanNumberVsScanTime;
 
     ERR_RETURN
@@ -72,7 +74,7 @@ namespace {
 
     QVector<QPointF> ms2IonsToQPoint(const QVector<MS2Ion> &ms2Ions) {
 
-        QVector<QPointF> qpoints;
+        QVector<QPointF> qpoints;clo
         std::transform(
             ms2Ions.begin(),
             ms2Ions.end(),
@@ -88,75 +90,74 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(QVector<QPair<IdStr, De
 
     ERR_INIT
 
-    QVector<rTreePoint> cloudLoader;
-    e = buildRTreeInput(
-        m_msCalibratomatic,
-        m_targetDecoyCandidatePairs,
-        &cloudLoader
-        ); ree;
-
-    constexpr int maxElements = 16;
-    RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-
-    const float scanTimeWindow
-        = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
-
-    constexpr int precision = 1;
-
-    Deconvolvotron deconvolvotron;
-    e = deconvolvotron.init(precision); ree;
-
-    FrameIndex frameIndex = 0;
-    for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
-
-        const ScanNumber scanNumber = it.key();
-        const ScanTime scanTime = m_scanNumberVsScanTime.value(scanNumber);
-        const ScanPoints* scanPoints = it.value();
-
-        QVector<QPointF> scanPointsDouble;
-        std::transform(
-            scanPoints->begin(),
-            scanPoints->end(),
-            std::back_inserter(scanPointsDouble),
-            [](const ScanPoint &sp){return QPointF(sp.x(), sp.y());}
-            );
-
-        const ScanTime scanTimeMin = scanTime - scanTimeWindow;
-        const ScanTime scanTimeMax = scanTime + scanTimeWindow;
-
-        const rTreeSearchBox queryBox(
-            (rTreeCoor(scanTimeMin)),
-            rTreeCoor(scanTimeMax)
-            );
-
-        std::vector<rTreePoint> result;
-        rTree.query(bgi::intersects(queryBox), std::back_inserter(result));
-
-        if (result.empty()) {
-            continue;
-        }
-
-        QVector<QPair<IdStr, QVector<QPointF>>> aMatrixPoints;
-        aMatrixPoints.reserve(result.size() * 2);
-        for (const rTreePoint &p : result) {
-            const PeptideString peptideStringTarget = p.second->peptideString();
-            const PeptideString peptideStringDecoy = "Decoy" + peptideStringTarget;
-            const QVector<MS2Ion> &targetIons = p.second->ms2IonsTarget();
-            const QVector<QPointF> &targetIonsPoints = ms2IonsToQPoint(targetIons);
-            const QVector<MS2Ion> &decoyIons = p.second->ms2IonsDecoy();
-            const QVector<QPointF> &decoyIonsPoints = ms2IonsToQPoint(decoyIons);
-            aMatrixPoints.push_back({peptideStringTarget, targetIonsPoints});
-            aMatrixPoints.push_back({peptideStringDecoy, decoyIonsPoints});
-        }
-
-
-        e = deconvolvotron.deconvolve(
-            aMatrixPoints,
-            scanPointsDouble,
-            idStrVsScore
-            ); ree;
-
-    }
+    // QVector<rTreePoint> cloudLoader;
+    // e = buildRTreeInput(
+    //     m_msCalibratomatic,
+    //     m_targetDecoyCandidatePairs,
+    //     &cloudLoader
+    //     ); ree;
+    //
+    // constexpr int maxElements = 16;
+    // RTree rTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    //
+    // const float scanTimeWindow
+    //     = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
+    //
+    // constexpr int precision = 1;
+    //
+    // Deconvolvotron deconvolvotron;
+    // e = deconvolvotron.init(precision); ree;
+    //
+    // FrameIndex frameIndex = 0;
+    // for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
+    //
+    //     const ScanNumber scanNumber = it.key();
+    //     const ScanTime scanTime = m_scanNumberVsScanTime.value(scanNumber);
+    //     const ScanPoints* scanPoints = it.value();
+    //
+    //     QVector<QPointF> scanPointsDouble;
+    //     std::transform(
+    //         scanPoints->begin(),
+    //         scanPoints->end(),
+    //         std::back_inserter(scanPointsDouble),
+    //         [](const ScanPoint &sp){return QPointF(sp.x(), sp.y());}
+    //         );
+    //
+    //     const ScanTime scanTimeMin = scanTime - scanTimeWindow;
+    //     const ScanTime scanTimeMax = scanTime + scanTimeWindow;
+    //
+    //     const rTreeSearchBox queryBox(
+    //         (rTreeCoor(scanTimeMin)),
+    //         rTreeCoor(scanTimeMax)
+    //         );
+    //
+    //     std::vector<rTreePoint> result;
+    //     rTree.query(bgi::intersects(queryBox), std::back_inserter(result));
+    //
+    //     if (result.empty()) {
+    //         continue;
+    //     }
+    //
+    //     QVector<QPair<IdStr, QVector<QPointF>>> aMatrixPoints;
+    //     aMatrixPoints.reserve(result.size() * 2);
+    //     for (const rTreePoint &p : result) {
+    //         const PeptideString peptideStringTarget = p.second->peptideString();
+    //         const PeptideString peptideStringDecoy = "Decoy" + peptideStringTarget;
+    //         const QVector<MS2Ion> &targetIons = p.second->ms2IonsTarget();
+    //         const QVector<QPointF> &targetIonsPoints = ms2IonsToQPoint(targetIons);
+    //         const QVector<MS2Ion> &decoyIons = p.second->ms2IonsDecoy();
+    //         const QVector<QPointF> &decoyIonsPoints = ms2IonsToQPoint(decoyIons);
+    //         aMatrixPoints.push_back({peptideStringTarget, targetIonsPoints});
+    //         aMatrixPoints.push_back({peptideStringDecoy, decoyIonsPoints});
+    //     }
+    //
+    //     e = deconvolvotron.deconvolve(
+    //         aMatrixPoints,
+    //         scanPointsDouble,
+    //         idStrVsScore
+    //         ); ree;
+    //
+    // }
 
     ERR_RETURN
 }

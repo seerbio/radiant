@@ -6,10 +6,10 @@
 #define SPECTRUMCENTRICMZTARGETFRAMESEARCH_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "CandidateScores.h"
 #include "Error.h"
 #include "PythiaParameterReader.h"
 #include "MsCalibratomatic.h"
-#include "TargetDecoyCandidatePair.h"
 
 using namespace Error;
 
@@ -26,7 +26,7 @@ public:
         const PythiaParameters &pythiaParameters,
         const MsCalibratomatic &msCalibratomatic,
         const QMap<ScanNumber, ScanPoints*> &diaTargetFrame,
-        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const QVector<CandidateScores*> &candidateScoresPntrs,
         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime
         );
 
@@ -36,7 +36,7 @@ private:
         PythiaParameters m_pythiaParameters;
         MsCalibratomatic m_msCalibratomatic;
         QMap<ScanNumber, ScanPoints*> m_diaTargetFrame;
-        QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairs;
+        QVector<CandidateScores*> m_candidateScoresPntrs;
         QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
 };

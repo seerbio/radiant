@@ -60,6 +60,7 @@ namespace {
             ms2Ion.intensity = flrr.intensityVals.at(i);
             ms2Ion.ionLabel = ionLabelsSplit.at(i);
             ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
+            ms2Ion.rank = i;
 
             ms2IonsBuilder.push_back(ms2Ion);
         }
