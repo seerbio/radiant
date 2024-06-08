@@ -226,7 +226,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::Charge,
             CandidateScores::Features::CosineSimSumBottom,
             CandidateScores::Features::TopBottomRatio,
-            CandidateScores::Features::TopBottomRatioNorm,
+            CandidateScores::Features::TopBottomRatioNorm
         };
 
         if (useNeuralNetworkScores) {

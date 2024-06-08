@@ -1723,6 +1723,9 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
     candidateScores->featuresArray[CandidateScores::Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
 
+    const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
+    candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocation] = mzTargetKey - mz;
+
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
         = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20]
