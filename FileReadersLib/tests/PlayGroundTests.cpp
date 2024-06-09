@@ -35,6 +35,9 @@ void testme();
 
 void PlayGroundTests::testme() {
 
+    const ScanNumber scanNumber = 11114;
+    const QString targetKey = "625034";
+
 
 
 }

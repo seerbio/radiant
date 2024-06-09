@@ -325,11 +325,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
-    e = spectrumCentricSearch(
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-        m_msCalibratomatic,
-        &msReaderPointerAcc
-        ); ree;
+    // e = spectrumCentricSearch(
+    //     candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+    //     m_msCalibratomatic,
+    //     &msReaderPointerAcc
+    //     ); ree;
 
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
@@ -1748,7 +1748,7 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
     const QVector<CandidateScores*> &candidateScoresPntrs,
     const MsCalibratomatic &msCalibratomatic,
     const MsReaderPointerAcc *msReaderPointerAcc
-    ) {
+    ) const {
 
     ERR_INIT
     e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;

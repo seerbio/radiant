@@ -200,6 +200,8 @@ public:
 
 namespace {
 
+    constexpr int maxAnchorColumnIndex = 12;
+
     void filterXICPointsByAccuracyPPM(
         float mzVal,
         float ppmTol,
@@ -402,7 +404,11 @@ namespace {
         constexpr float intensityThresholdVal = 0.1;
         constexpr float countValue = 1.0;
 
-        Eigen::MatrixX<float> matCount = matriciesAndVecs.intensityMatrix100;
+        Eigen::MatrixX<float> matCount = matriciesAndVecs.intensityMatrix100.leftCols(
+                std::min(maxAnchorColumnIndex,
+                static_cast<int>(matriciesAndVecs.intensityMatrix100.cols())
+                ));
+
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
         EigenUtils::thresholdMatrix(0.0f, &matCount);
 
@@ -430,13 +436,14 @@ namespace {
         e = ErrorUtils::isNotEmpty(ms2IonsTheo); ree;
         e = ErrorUtils::isEqual(ms2IonsTheo.size(), static_cast<int>(matriciesAndVecs.intensityMatrix100.cols())); ree;
 
-        Eigen::MatrixX<float> matIntensityVals = matriciesAndVecs.intensityMatrix100;
+        const int columnCount = std::min(maxAnchorColumnIndex, static_cast<int>(matriciesAndVecs.intensityMatrix100.cols()));
+
+        Eigen::MatrixX<float> matIntensityVals = matriciesAndVecs.intensityMatrix100.leftCols(columnCount);
 
         const int matRows = static_cast<int>(matIntensityVals.rows());
         Eigen::MatrixX<Intensity> matMs2IonsIntensityVals(matRows, matIntensityVals.cols());
 
-
-        for (int i = 0; i < ms2IonsTheo.size(); i++) {
+        for (int i = 0; i < columnCount; i++) {
             const MS2Ion &ms2Ion = ms2IonsTheo.at(i);
             const QVector<Intensity> ms2IonIntensityCol(matRows, ms2Ion.intensity);
 
@@ -649,7 +656,6 @@ Err CandidateScorertron::calculateScores(
         peakIntegrationsVsIntensities,
         &bestCorrelationResult
         ); ree;
-
 
     const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
@@ -894,7 +900,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(apexStarts); ree;
         e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockTrimmed.cols())); ree;
 
-        const int colCount = static_cast<int>(matBlockTrimmed.cols());
+        const int colCount = std::min(static_cast<int>(matBlockTrimmed.cols()), maxAnchorColumnIndex);
 
         float bestCosineSimSum = 0.0;
         for (int anchorCol = 0; anchorCol < colCount; anchorCol++) {
@@ -929,10 +935,10 @@ namespace {
     }
 
     Err calculatePeakCorrelations(
-    const Eigen::MatrixX<float> &matBlockTrimmed,
-    int bestAnchorColumnIndex,
-    QVector<float> *peakCorrelations
-    ) {
+        const Eigen::MatrixX<float> &matBlockTrimmed,
+        int bestAnchorColumnIndex,
+        QVector<float> *peakCorrelations
+        ) {
 
         ERR_INIT
 
@@ -973,7 +979,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
     e = ErrorUtils::isTrue(matriciesAndVecs.integrationVecIsValid()); ree;
 
-    const int maxRows = matriciesAndVecs.intensityMatrix100.rows();
+    const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
     constexpr int topNIntegrations = 15; //TODO make this settable

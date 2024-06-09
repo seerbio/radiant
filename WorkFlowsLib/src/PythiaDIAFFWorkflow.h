@@ -149,7 +149,7 @@ private:
         const QVector<CandidateScores*> &candidateScoresPntrs,
         const MsCalibratomatic &msCalibratomatic,
         const MsReaderPointerAcc *msReaderPointerAcc
-        );
+        ) const;
 
 
 private:
