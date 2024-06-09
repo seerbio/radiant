@@ -175,6 +175,25 @@ Err Deconvolvotron::deconvolve(
     Eigen::VectorXd x = nnls.solve(bVec);
     x /= x.sum();
 
+// #define PRINT_MATS
+#ifdef PRINT_MATS
+std::cout << "aMat = [" << std::endl;
+for (int row = 0; row < aMat.rows(); row++) {
+    for (int col = 0; col < aMat.cols(); col++) {
+        std::cout << aMat.coeff(row, col) << ",";
+    }
+    std::cout << std::endl;
+}
+std::cout << "]" << std::endl;
+
+std::cout << "bVec = [" << std::endl;
+for (int i = 0; i < bVec.size(); i++) {
+    std::cout << bVec.coeff(i) << ",";
+}
+std::cout << std::endl;
+std::cout << "]" << std::endl;
+#endif
+
     // double pValFTest;
     // QVector<double> coeffsPVals;
     // deconvolveStats(
@@ -185,7 +204,7 @@ Err Deconvolvotron::deconvolve(
     //     &coeffsPVals
     //     );
 
-    // e = ErrorUtils::isEqual(aMatrixPoints.size(), static_cast<int>(x.size())); ree;
+    e = ErrorUtils::isEqual(aMatrixPoints.size(), static_cast<int>(x.size())); ree;
     // e = ErrorUtils::isEqual(aMatrixPoints.size(), coeffsPVals.size()); ree;
 
     for (int i = 0; i < x.size(); i++) {

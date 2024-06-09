@@ -1308,8 +1308,7 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(ms2IonsTheoretical.size() <= arraySizeMax); ree;
-        for (int i = 0; i < ms2IonsTheoretical.size(); i++) {
+        for (int i = 0; i < std::min(ms2IonsTheoretical.size(), arraySizeMax); i++) {
             const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
             candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = static_cast<float>(ms2Ion.mz);
             candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
@@ -1350,21 +1349,18 @@ namespace {
             stdMeanValsFound.push_back(static_cast<float>(EigenUtils::calculateStDevOfVector(colMzNonZero)));
         }
 
-        e = ErrorUtils::isTrue(mzMeanValsFound.size() <= arraySizeMax); ree;
-        for (int i = 0; i < mzMeanValsFound.size(); i++) {
+        for (int i = 0; i < std::min(mzMeanValsFound.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i] = mzMeanValsFound.at(i);
         }
 
-        e = ErrorUtils::isTrue(stdMeanValsFound.size() <= arraySizeMax); ree;
-        for (int i = 0; i < stdMeanValsFound.size(); i++) {
+        for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
         Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
         intensitySums /= intensitySums.sum();
 
-        e = ErrorUtils::isTrue(intensitySums.size() <= arraySizeMax); ree;
-        for (int i = 0; i < intensitySums.size(); i++) {
+        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
 
@@ -1582,8 +1578,7 @@ namespace {
                     [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
             );
         }
-        e = ErrorUtils::isTrue(mzPeakLengthsNormalized.size() <= arraySizeMax); ree;
-        for (int i = 0; i < mzPeakLengthsNormalized.size(); i++) {
+        for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
         }
 
@@ -1598,8 +1593,7 @@ namespace {
                 [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
                 );
 
-        e = ErrorUtils::isTrue(columnApexIndexRatiosToAnchor.size() <= arraySizeMax); ree;
-        for (int i = 0; i < columnApexIndexRatiosToAnchor.size(); i++) {
+        for (int i = 0; i < std::min(columnApexIndexRatiosToAnchor.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
         }
 

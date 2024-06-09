@@ -67,7 +67,7 @@ public:
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
-            );
+            ) const;
 
     /**
     * @brief Checks if the TargetDecoyCandidatePairScoretron2 is initialized.
@@ -77,7 +77,7 @@ public:
     *
     * @return True if initialized, false otherwise.
     */
-    bool isInit();
+    bool isInit() const;
 
     /**
     * @brief Sets the Pythia parameters for TargetDecoyCandidatePairScoretron2.
@@ -103,7 +103,7 @@ private:
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
-            );
+            ) const;
 
     Err buildMzTargetKeyVsMsFrames();
 
