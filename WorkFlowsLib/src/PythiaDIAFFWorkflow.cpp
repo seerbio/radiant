@@ -325,11 +325,15 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
              ); ree;
      qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
+    // qDebug() << "Starting spectrum centric search";
+    // QElapsedTimer et;
+    // et.start();
     // e = spectrumCentricSearch(
     //     candidateScoresTargetsAndDecoys50PercentFDRFiltered,
     //     m_msCalibratomatic,
     //     &msReaderPointerAcc
     //     ); ree;
+    // qDebug() << "Spectrum centric searched finsihed in" << et.elapsed() << "mSec";
 
      e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
