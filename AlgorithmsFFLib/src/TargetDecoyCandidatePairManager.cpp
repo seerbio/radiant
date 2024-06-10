@@ -59,7 +59,6 @@ namespace {
             ms2Ion.intensity = flrr.intensityVals.at(i);
             ms2Ion.ionLabel = ionLabelsSplit.at(i);
             ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
-            ms2Ion.rank = i;
 
             ms2IonsBuilder.push_back(ms2Ion);
         }
@@ -68,9 +67,13 @@ namespace {
                 pythiaParameters.mzMinMS2,
                 pythiaParameters.mzMaxMS2,
                 &ms2IonsBuilder
-        );
+                );
 
         MS2Ion::sortMS2IonsIntensityDesc(&ms2IonsBuilder);
+        for (int i = 0; i < ms2IonsBuilder.size(); i++) {
+            MS2Ion &ms2Ion = ms2IonsBuilder[i];
+            ms2Ion.rank = i;
+        }
 
         const int ms2IonsSize = ms2IonsBuilder.size();
         ms2Ions->reserve(ms2IonsSize);

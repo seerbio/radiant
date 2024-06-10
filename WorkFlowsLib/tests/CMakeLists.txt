@@ -18,6 +18,8 @@ SET(TEST_CLASSES
         ConvertMzMLToParquetWorkFlowTests
         FastaFileToPeptidesListWorkFlowTests
         PythiaDIAFFWorkflowTests
+
+        PlayGroundTests
         )
 
 foreach(class ${TEST_CLASSES})

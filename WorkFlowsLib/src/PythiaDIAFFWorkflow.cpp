@@ -570,6 +570,49 @@ namespace {
         candidateScoresMS1Cal->erase(terminator, candidateScoresMS1Cal->end());
     }
 
+    Err buildUniqueMsScanInfosForCalibaration(
+        const QVector<MsScanInfo> &uniqueMsScanInfos,
+        int numberOfUniqueScanInfosForCalibration,
+        QVector<MsScanInfo> *uniqueMsScanInfosCalibration
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
+        e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForCalibration, 8, ErrorUtilsParam::IncludeThreshold); ree;
+
+        const double halfSizeScanInfos = uniqueMsScanInfos.size() / 2.0;
+        const int incrementSize = std::max(1, static_cast<int>(halfSizeScanInfos / numberOfUniqueScanInfosForCalibration));
+
+        for (int i = 0; i < uniqueMsScanInfos.size(); i += incrementSize) {
+
+            const int distanceFromCenterRight
+                    = std::min(static_cast<int>(halfSizeScanInfos) + i, uniqueMsScanInfos.size() - 1);
+
+            const int distanceFromCenterLeft = std::max(static_cast<int>(halfSizeScanInfos) - i, 0);
+
+            if (i == 0) {
+                uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterRight));
+                continue;
+            }
+
+            uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterRight));
+            uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterLeft));
+
+            if (uniqueMsScanInfosCalibration->size() >= numberOfUniqueScanInfosForCalibration) {
+                break;
+            }
+
+        }
+
+        uniqueMsScanInfosCalibration->resize(std::min(
+            numberOfUniqueScanInfosForCalibration,
+            uniqueMsScanInfosCalibration->size()
+            ));
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflow::buildCalibration(
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -586,17 +629,19 @@ Err PythiaDIAFFWorkflow::buildCalibration(
              << "target count:" << m_targetDecoyPairPntrs.size()
              << "sizePerTranche:" << static_cast<int>(sizePerTranche);
 
-    QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
+    const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    constexpr int maxTrainingCount = 24;
-    const int mzTargetKeysHalf = static_cast<int>(std::round(uniqueMsScanInfos.size() / 2.0));
-
-    const int resizeCount = std::min(maxTrainingCount, mzTargetKeysHalf);
-    uniqueMsScanInfos = uniqueMsScanInfos.mid(uniqueMsScanInfos.size() - resizeCount);
+    constexpr int maxTrainingCount = 16;
+    QVector<MsScanInfo> uniqueMsScanInfosCalibration;
+    e = buildUniqueMsScanInfosForCalibaration(
+        uniqueMsScanInfos,
+        maxTrainingCount,
+        &uniqueMsScanInfosCalibration
+        ); ree;
 
     QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
     e = buildMzTargetKeyVsTurboXicPntrs(
-        uniqueMsScanInfos,
+        uniqueMsScanInfosCalibration,
         *m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
         msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
         &mzTargetKeyVsTurboXicPntrs
@@ -628,7 +673,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
         e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
                 targetDecoyCandidatePairsBatch,
-                uniqueMsScanInfos,
+                uniqueMsScanInfosCalibration,
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
@@ -1178,11 +1223,11 @@ Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &can
 
         qDebug() << "Ending opt";
 
-        const double fdrThreshold = 0.1;
+        constexpr double fdrThresholdCalibration = 0.5;
         int targetCountAboveFDRQValueThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
                 m_candidateScores,
-                fdrThreshold,
+                fdrThresholdCalibration,
                 &targetCountAboveFDRQValueThreshold
                 ); ree;
 
@@ -1787,9 +1832,9 @@ Err PythiaDIAFFWorkflow::spectrumCentricSearch(
     for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
         QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
         e = res.first; ree;
+        qDebug() << res.second.size() << "SDLFKDJSL";
     }
 #endif
-
 
     ERR_RETURN
 }

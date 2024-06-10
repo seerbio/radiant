@@ -49,17 +49,17 @@ namespace {
                 continue;
             }
 
-            constexpr ushort rankCountMin = 3;
-            const long top3Ms2IonsCount = std::count_if(
-                ms2Ions.begin(),
-                ms2Ions.end(),
-                [rankCountMin](const MS2Ion &ms2Ion){return ms2Ion.rank <= rankCountMin;}
-                );
-
-            constexpr int rankCountFoundMin = 2;
-            if (top3Ms2IonsCount < rankCountFoundMin) {
-                continue;
-            }
+            // constexpr ushort rankCountMin = 3;
+            // const long top3Ms2IonsCount = std::count_if(
+            //     ms2Ions.begin(),
+            //     ms2Ions.end(),
+            //     [rankCountMin](const MS2Ion &ms2Ion){return ms2Ion.rank <= rankCountMin;}
+            //     );
+            //
+            // constexpr int rankCountFoundMin = 2;
+            // if (top3Ms2IonsCount < rankCountFoundMin) {
+            //     continue;
+            // }
 
             candidateVsMs2IonsFoundFiltered.insert(cs, ms2Ions);
         }
@@ -69,7 +69,7 @@ namespace {
 
 }//namespace
 Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(
-    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candidateScoresPntrVsScore
+    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candidateScoresPntrVsScoreses
     ) {
 
     ERR_INIT
@@ -77,9 +77,12 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(
     const float scanTimeWindow
         = m_msCalibratomatic.scanTimeStDev(static_cast<float>(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER));
 
-    constexpr int precision = 1;
+    constexpr int mzGroupingPrecisioin = 1;
     Deconvolvotron deconvolvotron;
-    e = deconvolvotron.init(precision); ree;
+    e = deconvolvotron.init(
+        mzGroupingPrecisioin,
+        m_pythiaParameters.ms2ExtractionWidthPPM
+        ); ree;
 
     Ms2IonFraggertronManager ms2IonFraggertronManager;
     e = ms2IonFraggertronManager.init(
@@ -90,10 +93,11 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(
     FrameIndex frameIndex = 0;
     for (auto it = m_diaTargetFrame.begin(); it != m_diaTargetFrame.end(); ++it) {
 
+        frameIndex++;
+
         const ScanNumber scanNumber = it.key();
         const ScanTime scanTime = m_scanNumberVsScanTime.value(scanNumber);
         const ScanPoints *scanPoints = it.value();
-
 
         const ScanTime scanTimeMin = scanTime - scanTimeWindow;
         const ScanTime scanTimeMax = scanTime + scanTimeWindow;
@@ -160,12 +164,13 @@ Err SpectrumCentricMzTargetFrameSearch::assignIdsToScans(
             [](const ScanPoint &scanPoint){return QPointF(scanPoint.x(), scanPoint.y());}
             );
 
+        QVector<QPair<CandidateScores*, DeconvolvotronResult>> candidateScoresPntrVsScores;
         e = deconvolvotron.deconvolve(
             aMatrixPoints,
             scanPointsDouble,
-            candidateScoresPntrVsScore
+            &candidateScoresPntrVsScores
             ); ree;
-
+        candidateScoresPntrVsScoreses->append(candidateScoresPntrVsScores);
     }
 
     ERR_RETURN

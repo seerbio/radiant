@@ -17,6 +17,8 @@ class MsCalibratomatic;
 
 class ALGORITHMSFFLIB_EXPORTS Ms2IonFraggertronManager {
 
+    friend class PlayGroundTests;
+
 public:
 
     Ms2IonFraggertronManager();
@@ -27,6 +29,7 @@ public:
         const QVector<CandidateScores*> &candidateScoresPntrs
         ) const;
 
+
     Err extractMs2Points(
         float mzMin,
         float mzMax,
@@ -34,6 +37,10 @@ public:
         float scanTimeMax,
         QVector<QPair<MS2Ion, CandidateScores*>> *ms2IonsVsCandidateScoresPntrses
         );
+
+private:
+
+    [[nodiscard]] Err initTesting(const QVector<CandidateScores*> &candidateScoresPntrs) const;
 
 private:
 
