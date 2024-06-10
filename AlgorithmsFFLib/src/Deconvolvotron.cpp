@@ -15,14 +15,20 @@
 
 #include "EigenUtils.h"
 
-Deconvolvotron::Deconvolvotron() : m_precision(-1) {}
+Deconvolvotron::Deconvolvotron()
+: m_mzGroupingPrecision(-1)
+, m_ppmExtractionTolerance(-1.0)
+{}
 
-Err Deconvolvotron::init(int precision) {
+Err Deconvolvotron::init(
+    int mzGroupingPrecision,
+    double ppmExtractionTolerance
+    ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isAboveThreshold(precision, 0, ErrorUtilsParam::ExcludeThreshold); ree;
-    m_precision = precision;
+    e = ErrorUtils::isAboveThreshold(mzGroupingPrecision, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+    m_mzGroupingPrecision = mzGroupingPrecision;
 
     ERR_RETURN
 }
@@ -32,7 +38,7 @@ namespace {
     Err buildAMatrixAndBVec(
         const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF>& bVecPoints,
-        const QVector<double> &xVals,
+        const QMap<int, QVector<double>> &hashedXValsVsMzValsGrouped,
         double ppmExtractTol,
         Eigen::MatrixX<double> *aMat,
         Eigen::VectorX<double> *bVec
@@ -41,7 +47,7 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(aMatrixPoints); ree;
-        e = ErrorUtils::isNotEmpty(xVals); ree;
+        e = ErrorUtils::isNotEmpty(hashedXValsVsMzValsGrouped); ree;
 
         QVector<QVector<QPointF>> points;
         std::transform(
@@ -51,21 +57,28 @@ namespace {
             [](const QPair<CandidateScores*, QVector<QPointF>> &pr){return pr.second;}
             );
 
-        QVector<double> xValsSorted = xVals;
-        std::sort(xValsSorted.begin(), xValsSorted.end());
+        QVector<double> xValMeans;
+        std::transform(
+            hashedXValsVsMzValsGrouped.begin(),
+            hashedXValsVsMzValsGrouped.end(),
+            std::back_inserter(xValMeans),
+            [](const QVector<double> &xVals){return MathUtils::mean(xVals);}
+            );
+        std::sort(xValMeans.begin(), xValMeans.end());
 
         QVector<QPointF> bVecExtractPoints = MsUtils::extractPointsFromPoints(
             bVecPoints,
-            xValsSorted,
+            xValMeans,
             ppmExtractTol
             );
 
         aMat->resize(bVecExtractPoints.size(), aMatrixPoints.size());
         aMat->setZero();
+
         for (int col = 0; col < aMatrixPoints.size(); col++) {
             const QVector<QPointF> &pnts = points.at(col);
             for (const QPointF &pnt : pnts) {
-                const int row = MathUtils::closest(xValsSorted, pnt.x());
+                const int row = MathUtils::closest(xValMeans, pnt.x());
 
                 if (row < 0 || row >= bVecExtractPoints.size()) {
                     continue;
@@ -95,8 +108,8 @@ namespace {
 
         const int n = static_cast<int>(b.size());
         const int p = static_cast<int>(A.cols());
-        const int df1 = p - 1;
-        const int df2 = n - p;
+        const int df1 = std::max(p - 1, 1);
+        const int df2 = std::max(n - p, 1);
 
         const Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
         const Eigen::VectorXd beta = svd.solve(b);
@@ -130,16 +143,16 @@ namespace {
 Err Deconvolvotron::deconvolve(
     const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
     const QVector<QPointF>& bVecPoints,
-    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *idStrVsScore
+    QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candScoresVsScore
     ) const  {
 
     ERR_INIT
 
-    e = ErrorUtils::isAboveThreshold(m_precision, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+    e = ErrorUtils::isAboveThreshold(m_mzGroupingPrecision, 0, ErrorUtilsParam::ExcludeThreshold); ree;
     e = ErrorUtils::isNotEmpty(aMatrixPoints); ree;
     e = ErrorUtils::isNotEmpty(bVecPoints); ree;
 
-    idStrVsScore->clear();
+    candScoresVsScore->clear();
 
     QVector<CandidateScores*> candidateScoreses;
     std::transform(
@@ -149,11 +162,10 @@ Err Deconvolvotron::deconvolve(
         [](const QPair<CandidateScores*, QVector<QPointF>> &pr){return pr.first;}
         );
 
-    QVector<double> xVals;
+    QMap<int, QVector<double>> hashedXValsVsMzValsGrouped;
     e = buildXValsSet(
         aMatrixPoints,
-        bVecPoints,
-        &xVals
+        &hashedXValsVsMzValsGrouped
         ); ree;
 
     Eigen::MatrixX<double> aMat;
@@ -161,8 +173,8 @@ Err Deconvolvotron::deconvolve(
     e = buildAMatrixAndBVec(
         aMatrixPoints,
         bVecPoints,
-        xVals,
-        m_precision,
+        hashedXValsVsMzValsGrouped,
+        20,
         &aMat,
         &bVec
         ); ree;
@@ -194,8 +206,8 @@ std::cout << std::endl;
 std::cout << "]" << std::endl;
 #endif
 
-    // double pValFTest;
-    // QVector<double> coeffsPVals;
+    double pValFTest;
+    QVector<double> coeffsPVals;
     // deconvolveStats(
     //     aMat,
     //     x,
@@ -218,7 +230,7 @@ std::cout << "]" << std::endl;
         // deconvolvotronResult.pVal = coeffsPVals.at(i);
         // deconvolvotronResult.pValFrameFtest = pValFTest;
 
-        idStrVsScore->push_back({candidateScoreses.at(i), deconvolvotronResult});
+        candScoresVsScore->push_back({candidateScoreses.at(i), deconvolvotronResult});
     }
 
     ERR_RETURN
@@ -226,34 +238,56 @@ std::cout << "]" << std::endl;
 
 Err Deconvolvotron::buildXValsSet(
         const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
-        const QVector<QPointF>& bVecPoints,
-        QVector<double> *xValsReturn
+        QMap<int, QVector<double>> *hashedXValsVsMzValsGrouped
         ) const {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(aMatrixPoints); ree;
-    e = ErrorUtils::isNotEmpty(bVecPoints); ree;
 
-    QVector<int> hashedXVals;
     for (const QPair<CandidateScores*, QVector<QPointF>> &aMatPointsPr : aMatrixPoints) {
         for (const QPointF &pnt : aMatPointsPr.second) {
-            const int hashedXVal = MathUtils::hashDecimal(pnt.x(), m_precision);
-            hashedXVals.push_back(hashedXVal);
+            const int hashedXVal = MathUtils::hashDecimal(pnt.x(), m_mzGroupingPrecision);
+            (*hashedXValsVsMzValsGrouped)[hashedXVal].push_back(pnt.x());
         }
     }
 
-    QSet<int> hashedXValsSet = {hashedXVals.begin(), hashedXVals.end()};
+    ERR_RETURN
+}
 
-    QVector<double> xValsSet;
-    std::transform(
-        hashedXValsSet.begin(),
-        hashedXValsSet.end(),
-        std::back_inserter(xValsSet),
-        [&](int i){return MathUtils::unHashDecimal<double>(i, m_precision);}
-        );
+Err Deconvolvotron::buildAMatrixAndBVecTestAccess(
+    const QVector<QPair<CandidateScores*, QVector<QPointF>>>& aMatrixPoints,
+    const QVector<QPointF>& bVecPoints,
+    const QMap<int, QVector<double>>& hashedXValsVsMzValsGrouped,
+    double ppmExtractTol,
+    QVector<QVector<double>> *aMat,
+    QVector<double> *bVec
+    ) {
 
-    *xValsReturn = xValsSet;
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(aMatrixPoints); ree;
+    e = ErrorUtils::isNotEmpty(bVecPoints); ree;
+    e = ErrorUtils::isNotEmpty(hashedXValsVsMzValsGrouped); ree;
+    e = ErrorUtils::isTrue(ppmExtractTol > 0);
+
+    Eigen::MatrixX<double> aMatEigen;
+    Eigen::VectorX<double> bVecEigen;
+    e = buildAMatrixAndBVec(
+        aMatrixPoints,
+        bVecPoints,
+        hashedXValsVsMzValsGrouped,
+        ppmExtractTol,
+        &aMatEigen,
+        &bVecEigen
+        ); ree;
+
+    std::cout << aMatEigen << std::endl;
+    std::cout << "****" << std::endl;
+    std::cout << bVecEigen << std::endl;
+
+    *aMat = EigenUtils::convertEigenMatrixToQVectors(aMatEigen);
+    *bVec = EigenUtils::convertEigenVectorToQVector(bVecEigen);
 
     ERR_RETURN
 }

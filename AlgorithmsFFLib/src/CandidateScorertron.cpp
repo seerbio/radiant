@@ -519,7 +519,7 @@ namespace {
 
         const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
-        constexpr int smoothCount = 2;
+        constexpr int smoothCount = 1;
         e = buildEigenMatrix(
             xicPointsVec100,
             kernelMs2,

@@ -21,30 +21,44 @@ struct DeconvolvotronResult {
 
 class ALGORITHMSFFLIB_EXPORTS Deconvolvotron {
 
+    friend class PlayGroundTests;
+
 public:
 
     Deconvolvotron();
     ~Deconvolvotron() = default;
 
-    Err init(int precision);
+    Err init(
+        int mzGroupingPrecision,
+        double ppmExtractionTolerance
+        );
 
     Err deconvolve(
         const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
         const QVector<QPointF> &bVecPoints,
-        QVector<QPair<CandidateScores*, DeconvolvotronResult>> *idStrVsScore
+        QVector<QPair<CandidateScores*, DeconvolvotronResult>> *candScoresVsScore
         ) const;
 
 private:
 
     Err buildXValsSet(
         const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
-        const QVector<QPointF>& bVecPoints,
-        QVector<double> *xValsReturn
+        QMap<int, QVector<double>> *hashedXValsVsMzValsGrouped
         ) const;
+
+    static Err buildAMatrixAndBVecTestAccess(
+        const QVector<QPair<CandidateScores*, QVector<QPointF>>> &aMatrixPoints,
+        const QVector<QPointF>& bVecPoints,
+        const QMap<int, QVector<double>> &hashedXValsVsMzValsGrouped,
+        double ppmExtractTol,
+        QVector<QVector<double>> *aMat,
+        QVector<double> *bVec
+        );
 
 private:
 
-    int m_precision;
+    int m_mzGroupingPrecision;
+    double m_ppmExtractionTolerance;
 
 };
 
