@@ -29,6 +29,7 @@ using FragLibIonPeptideId = int;
 using FrameIndex = int;
 using FrequencyPercent = double;
 using Id = int;
+using IdStr = QString;
 using Index = int;
 using Intensity = float;
 using IonIndex = int;

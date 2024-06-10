@@ -217,7 +217,7 @@ bool TurboXIC::Private::isInit() {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-TurboXIC::TurboXIC() : d_ptr(new Private()) {}
+TurboXIC::TurboXIC() : d_ptr(QScopedPointer<Private>(new Private)) {}
 
 TurboXIC::~TurboXIC() {
 }

@@ -20,7 +20,8 @@ public:
     float mz = -1.0;
     float intensity = -1.0;
     QString ionLabel;
-    int charge = -1;
+    ushort charge = -1;
+    ushort rank = -1;
 
     MS2Ion() = default;
     ~MS2Ion() = default;

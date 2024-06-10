@@ -86,7 +86,7 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
         const QVector<double> &extractionPoints,
         double extractionPPM,
         bool removeZeroPoints
-) {
+        ) {
 
     QVector<QPointF> extractQPoints;
     std::transform(
@@ -104,14 +104,9 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
 
     QVector<QPointF> extractedPoints;
     for (int i = 0; i < ep.mzFoundVsSearched.size(); i++) {
-        const double mzFound = ep.mzFoundVsSearched.at(i).x();
+        const double mzSearched = ep.mzFoundVsSearched.at(i).y();
         const double intensityFound = ep.intensityFoundVsSearched.at(i).x();
-
-        if (mzFound < 0 && removeZeroPoints) {
-            continue;
-        }
-
-        extractedPoints.push_back({mzFound, intensityFound});
+        extractedPoints.push_back({mzSearched, std::max(intensityFound, 0.0)});
     }
 
     return extractedPoints;

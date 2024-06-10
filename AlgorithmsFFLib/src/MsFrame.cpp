@@ -119,7 +119,7 @@ Err MsFrame::Private::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *fram
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-MsFrame::MsFrame() : d_ptr(new Private()) {}
+MsFrame::MsFrame() : d_ptr(QScopedPointer<Private>(new Private)) {}
 
 MsFrame::~MsFrame() {}
 
