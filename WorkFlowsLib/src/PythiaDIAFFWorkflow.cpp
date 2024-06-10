@@ -713,7 +713,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         qDebug() << "********* Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec ********";
 
-        constexpr int targetTrainingCountCalibration = 1000;
+        constexpr int targetTrainingCountCalibration = 750;
         if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration
             || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
             ) {
@@ -1152,11 +1152,17 @@ namespace {
                 }
                 );
 
+        const int bestFDRCount = results->front().fdrCount;
+        QVector<double> bestPPMs;
         for (const DOEResult &r : *results) {
             qDebug() << r.ppm << r.scanTimeStDev << r.fdrCount;
+            if (r.fdrCount == bestFDRCount) {
+                bestPPMs.push_back(r.ppm);
+            }
+
         }
 
-        *ppmSetting = results->front().ppm;
+        *ppmSetting = MathUtils::mean(bestPPMs);
 
         ERR_RETURN
     }
