@@ -38,6 +38,8 @@ void testme();
 
 void PlayGroundTests::testme() {
 
+    QSKIP("For dev purposes only");
+
     ERR_INIT
 
     const ScanNumber scanNumber = 11114;
