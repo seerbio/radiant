@@ -192,7 +192,7 @@ namespace {
         qDebug() << "stDevMean" << stDevMean << "stDevMean" << stDevStDev
                 << "stDevMin" << *stDevsMinMax.first << "stDevMax" << *stDevsMinMax.second;
 
-        const int ppmStDevMultiplier = 1;
+        constexpr int ppmStDevMultiplier = 3;
         const auto terminatorLogic = [&](const Inp &i){
 
             const double ppmTol = ppmStDev * ppmStDevMultiplier;

@@ -204,7 +204,7 @@ Err PeakIntegratomatic::Private::findAllPeaksLimitsInXIC(
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-PeakIntegratomatic::PeakIntegratomatic() : d_ptr(new Private()) {}
+PeakIntegratomatic::PeakIntegratomatic() : d_ptr(QScopedPointer<Private>(new Private)) {}
 
 PeakIntegratomatic::~PeakIntegratomatic(){}
 

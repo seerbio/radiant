@@ -16,6 +16,7 @@ SET(TEST_CLASSES
         CandidateScorertronTests
         CentroidotronTests
         ClassifierWeightsManagerTests
+        DeconvolvotronTests
         DeMultiplexScaneratorTests
         DiscriminantScoretronTests
         FDRCLassifierNeuralNetTests

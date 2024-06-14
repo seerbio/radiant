@@ -283,6 +283,8 @@ public:
         TotalIntensityPeakHeights,
         TotalIntensityRaw,
 
+        TargetWindowLocation,
+
         FeaturesSize
     };
 
@@ -602,6 +604,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_SUM100_WIN_2X = QStringLiteral("CosineSimSum100Window2X");
     const QString TOT_INTENSITY_PEAK_HEIGHTS = QStringLiteral("TotalIntensityPeakHeights");
     const QString TOT_INTENSITY_RAW = QStringLiteral("TotalIntensityRaw");
+    const QString TARGET_WINDOW_LOCATION = QStringLiteral("TargetWindowLocation");
 
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
@@ -866,7 +869,8 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SUM100_WIN_1p5X,
             COS_SIM_SUM100_WIN_2X,
             TOT_INTENSITY_PEAK_HEIGHTS,
-            TOT_INTENSITY_RAW
+            TOT_INTENSITY_RAW,
+            TARGET_WINDOW_LOCATION
     };
 
 }//namespace
@@ -1141,6 +1145,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float cosineSimSum100Window2X = -1.0;
     float totalIntensityPeakHeights = -1.0;
     float totalIntensityRaw = -1.0;
+    float targetWindowLocation = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1421,6 +1426,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         cosineSimSum100Window2X = dataMap.value(COS_SIM_SUM100_WIN_2X).toFloat();
         totalIntensityPeakHeights = dataMap.value(TOT_INTENSITY_PEAK_HEIGHTS).toFloat();
         totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
+        targetWindowLocation = dataMap.value(TARGET_WINDOW_LOCATION).toFloat();
 
         ERR_RETURN
     }
@@ -1694,7 +1700,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_SUM100_WIN_1p5X, QVariant(cosineSimSum100Window1p5X)},
                 {COS_SIM_SUM100_WIN_2X, QVariant(cosineSimSum100Window2X)},
                 {TOT_INTENSITY_PEAK_HEIGHTS, QVariant(totalIntensityPeakHeights)},
-                {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)}
+                {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
+                {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)}
         };
     }
 
@@ -1972,6 +1979,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.cosineSimSum100Window2X = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window2X];
         row.totalIntensityPeakHeights = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityPeakHeights];
         row.totalIntensityRaw = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityRaw];
+        row.targetWindowLocation = candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocation];
 
         return row;
     }
@@ -2234,6 +2242,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::CosineSimSum100Window2X] = candidateScoresReaderRow.cosineSimSum100Window2X;
         featuresArray[CandidateScores::Features::TotalIntensityPeakHeights] = candidateScoresReaderRow.totalIntensityPeakHeights;
         featuresArray[CandidateScores::Features::TotalIntensityRaw] = candidateScoresReaderRow.totalIntensityRaw;
+        featuresArray[CandidateScores::Features::TargetWindowLocation] = candidateScoresReaderRow.targetWindowLocation;
 
         return featuresArray;
     }

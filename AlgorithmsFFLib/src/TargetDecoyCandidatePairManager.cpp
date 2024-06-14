@@ -53,7 +53,6 @@ namespace {
 
         QVector<MS2Ion> ms2IonsBuilder;
         ms2IonsBuilder.reserve(flrr.mzVals.size());
-
         for (int i = 0; i < flrr.mzVals.size(); i++) {
             MS2Ion ms2Ion;
             ms2Ion.mz = flrr.mzVals.at(i);
@@ -68,11 +67,15 @@ namespace {
                 pythiaParameters.mzMinMS2,
                 pythiaParameters.mzMaxMS2,
                 &ms2IonsBuilder
-        );
+                );
 
         MS2Ion::sortMS2IonsIntensityDesc(&ms2IonsBuilder);
+        for (int i = 0; i < ms2IonsBuilder.size(); i++) {
+            MS2Ion &ms2Ion = ms2IonsBuilder[i];
+            ms2Ion.rank = i;
+        }
 
-        const int ms2IonsSize = std::min(pythiaParameters.topNMs2Ions, ms2IonsBuilder.size());
+        const int ms2IonsSize = ms2IonsBuilder.size();
         ms2Ions->reserve(ms2IonsSize);
         ms2IonsBuilder.resize(ms2IonsSize);
 

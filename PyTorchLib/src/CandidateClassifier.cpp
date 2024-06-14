@@ -184,7 +184,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = std::max(static_cast<int>(xData.front().size() / 10.0), 1);
+    const int nodes = std::max(static_cast<int>(xData.front().size() / 5.0), 1);
     const int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);
@@ -321,7 +321,10 @@ bool CandidateClassifier::Private::predict(
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-CandidateClassifier::CandidateClassifier() : d_ptr(new Private()) {}
+CandidateClassifier::CandidateClassifier()
+: d_ptr(QScopedPointer<Private>(new Private))
+, m_threadCount(-1)
+{}
 
 CandidateClassifier::~CandidateClassifier() {}
 

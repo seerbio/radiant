@@ -143,7 +143,13 @@ private:
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
         int topNCandidates,
         int topCandidatesMass
-    );
+        );
+
+    Err spectrumCentricSearch(
+        const QVector<CandidateScores*> &candidateScoresPntrs,
+        const MsCalibratomatic &msCalibratomatic,
+        const MsReaderPointerAcc *msReaderPointerAcc
+        ) const;
 
 
 private:

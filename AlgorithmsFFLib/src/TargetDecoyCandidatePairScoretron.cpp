@@ -301,7 +301,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -365,7 +365,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     ERR_RETURN
 }
 
-bool TargetDecoyCandidatePairScoretron2::isInit() {
+bool TargetDecoyCandidatePairScoretron2::isInit() const {
 
     return m_pythiaParameters.isValid()
        && !m_diaTargetFrames.isEmpty()
@@ -380,7 +380,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
-        ) {
+        ) const {
 
     ERR_INIT
 

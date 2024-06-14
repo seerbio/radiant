@@ -119,7 +119,7 @@ Err MsFrame::Private::frameIndexFromScanTime(ScanTime scanTime, FrameIndex *fram
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-MsFrame::MsFrame() : d_ptr(new Private()) {}
+MsFrame::MsFrame() : d_ptr(QScopedPointer<Private>(new Private)) {}
 
 MsFrame::~MsFrame() {}
 
@@ -220,6 +220,12 @@ Err MsFrame::writeFrameScans(const QMap<FrameIndex, ScanPoints *> &framesVsScanP
 }
 
 ScanNumber MsFrame::scanNumberFromFrameIndex(FrameIndex frameIndex) const {
+    if (frameIndex > m_frameIndexVsScanNumber.lastKey()) {
+        return m_frameIndexVsScanNumber.last();
+    }
+    if (frameIndex < 1) {
+        return m_frameIndexVsScanNumber.first();
+    }
     return m_frameIndexVsScanNumber.value(frameIndex);
 }
 
