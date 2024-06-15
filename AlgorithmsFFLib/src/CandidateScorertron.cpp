@@ -915,7 +915,7 @@ namespace {
 
                 float cosineSim;
                 e = EigenUtils::cosineSimilarity(anchor, c, &cosineSim); ree;
-                cosineSimSum += cosineSim / col + 1.0;
+                cosineSimSum += cosineSim / (col + 1.0);
                 corrs.push_back(cosineSim);
             }
 
