@@ -401,13 +401,13 @@ namespace {
 
         e = ErrorUtils::isTrue(matriciesAndVecs.intensityMatriciesAreValid()); ree;
 
-        constexpr float intensityThresholdVal = 0.1;
-        constexpr float countValue = 1.0;
-
         Eigen::MatrixX<float> matCount = matriciesAndVecs.intensityMatrix100.leftCols(
                 std::min(maxAnchorColumnIndex,
                 static_cast<int>(matriciesAndVecs.intensityMatrix100.cols())
                 ));
+
+        constexpr float intensityThresholdVal = 0.1;
+        constexpr float countValue = 1.0;
 
         matCount = (matCount.array() > intensityThresholdVal).select(countValue, matCount);
         EigenUtils::thresholdMatrix(0.0f, &matCount);
@@ -915,7 +915,7 @@ namespace {
 
                 float cosineSim;
                 e = EigenUtils::cosineSimilarity(anchor, c, &cosineSim); ree;
-                cosineSimSum += cosineSim;
+                cosineSimSum += cosineSim / col + 1.0;
                 corrs.push_back(cosineSim);
             }
 
@@ -1364,7 +1364,7 @@ namespace {
         }
 
         Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
-        intensitySums /= intensitySums.sum();
+        // intensitySums /= intensitySums.sum();
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);

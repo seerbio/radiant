@@ -164,6 +164,8 @@ struct PythiaParameters{
     int ionsSharedToReject = 4;
     int topNMs2Ions = 12;
 
+    int minMs2FragCount = 2;
+
     bool bypassNeuralNet = false;
 
     [[nodiscard]] bool isValid() const {

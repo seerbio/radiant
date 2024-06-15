@@ -535,6 +535,8 @@ namespace CandidateScoresReaderRowNamespace {
     const QString IS_DECOY = QStringLiteral("IsDecoy");
     const QString SCAN_NUM = QStringLiteral("ScanNumber");
     const QString SCAN_TIME = QStringLiteral("ScanTime");
+    const QString SCAN_TIME_START = QStringLiteral("ScanTimeStart");
+    const QString SCAN_TIME_END = QStringLiteral("ScanTimeEnd");
     const QString CLASS_SCR = QStringLiteral("ClassifierScore");
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
@@ -805,6 +807,8 @@ namespace CandidateScoresReaderRowNamespace {
             IS_DECOY,
             SCAN_NUM,
             SCAN_TIME,
+            SCAN_TIME_START,
+            SCAN_TIME_END,
             CLASS_SCR,
             DISC_SCR,
             Q_VAL,
@@ -1076,6 +1080,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     bool isDecoy = false;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
+    ScanTime scanTimeStart = -1.0;
+    ScanTime scanTimeEnd = -1.0;
     double classifierScore = -1.0;
     double discriminantScore = -1.0;
     double qValue = 1.0;
@@ -1360,6 +1366,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
+        scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
+        scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
         classifierScore = dataMap.value(CLASS_SCR).toDouble();
         discriminantScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
@@ -1634,6 +1642,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUM, QVariant(scanNumber)},
                 {SCAN_TIME, QVariant(scanTime)},
+                {SCAN_TIME_START, QVariant(scanTimeStart)},
+                {SCAN_TIME_END, QVariant(scanTimeEnd)},
                 {CLASS_SCR, QVariant(classifierScore)},
                 {DISC_SCR, QVariant(discriminantScore)},
                 {Q_VAL, QVariant(qValue)},
@@ -1910,6 +1920,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.isDecoy = candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
+        row.scanTimeStart = candidateScores->scanTimeStart;
+        row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
         row.discriminantScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
