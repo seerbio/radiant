@@ -45,6 +45,12 @@ public:
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
         );
 
+    Err recalibrateScanPoint(
+        const MSLevelEnum &msLevel,
+        float mzVal,
+        float *mzValRecal
+        );
+
     [[nodiscard]] float mzStDevMS1() const;
 
     [[nodiscard]] float mzStDevMS2() const;

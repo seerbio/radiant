@@ -369,6 +369,13 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
     ERR_INIT
 
+    if (msLevel == MSLevelEnum::MS2) {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS2); ree;
+    }
+    else {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
+    }
+
     const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
@@ -394,6 +401,13 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
     ERR_INIT
 
+    if (msLevel == MSLevelEnum::MS2) {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS2); ree;
+    }
+    else {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
+    }
+
     const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
@@ -411,6 +425,32 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
         }
     }
+
+    ERR_RETURN
+}
+
+Err MsCalibratomatic::recalibrateScanPoint(
+    const MSLevelEnum& msLevel,
+    float mzVal,
+    float* mzValRecal
+    ) {
+
+    ERR_INIT
+
+    if (msLevel == MSLevelEnum::MS2) {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS2); ree;
+    }
+    else {
+        e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
+    }
+
+    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
+
+    double mzRecal = 0.0f;
+    for (int i = 0; i < calibrationCoeffs.size(); i++) {
+        mzRecal += calibrationCoeffs.at(i) * std::pow(mzVal, i);
+    }
+    *mzValRecal = static_cast<float>(mzRecal);
 
     ERR_RETURN
 }
