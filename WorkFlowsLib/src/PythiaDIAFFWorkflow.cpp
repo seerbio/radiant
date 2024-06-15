@@ -87,6 +87,7 @@ namespace {
     }
 
     Err filterScoredCandidatesTo50PercentFDR(
+            int minMs2FragCount,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
     ) {
@@ -94,6 +95,12 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
+
+        const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
+            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < minMs2FragCount;
+        };
+        const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
+        candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
 
         std::sort(
                 candidateScoresTargetsAndDecoys->rbegin(),
@@ -115,7 +122,7 @@ namespace {
         }
 
         *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(static_cast<int>(counter));
+        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(counter);
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
@@ -307,6 +314,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(candidateScoresTrainings); ree;
+        // m_pythiaParameters.ms2ExtractionWidthPPM = 8.6;
+        // m_pythiaParameters.ms1ExtractionWidthPPM = 8.6;
+        // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
     int targetCountBelowFDRThreshold;
@@ -768,11 +778,11 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
 
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS2,
-                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-            ); ree;
+            // e = recalibrateMzVals(
+            //         MSLevelEnum::MS2,
+            //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+            //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+            // ); ree;
 
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
@@ -840,6 +850,12 @@ Err PythiaDIAFFWorkflow::processBatch(
     ) {
 
     ERR_INIT
+
+    const auto terminatorLogic = [&](CandidateScores *cs) {
+        return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < m_pythiaParameters.minMs2FragCount;
+    };
+    const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
+    candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
 
     e = buildCandidateScoresPtrs(candidateScoresVecBatchPntrs); ree;
     e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(*candidateScoresVecBatchPntrs); ree;
@@ -996,11 +1012,11 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(const QVector<CandidateScores*> &c
         MSLevelEnum::MS1
         ); ree;
 
-    e = recalibrateMzVals(
-            MSLevelEnum::MS1,
-            m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-            m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-    ); ree;
+    // e = recalibrateMzVals(
+    //         MSLevelEnum::MS1,
+    //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+    //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+    // ); ree;
 
     ERR_RETURN
 }
@@ -1720,11 +1736,11 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             selectDIATargetFrames.insert(mzTargetKey, spp);
         }
 
-        e = recalibrateMzVals(
-                MSLevelEnum::MS2,
-                &selectDIATargetFrames,
-                m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-        ); ree;
+        // e = recalibrateMzVals(
+        //         MSLevelEnum::MS2,
+        //         &selectDIATargetFrames,
+        //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+        // ); ree;
     }
 
     ERR_RETURN
