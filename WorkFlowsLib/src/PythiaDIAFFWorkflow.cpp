@@ -1128,12 +1128,8 @@ namespace {
         e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
-        constexpr int numberOfExperiments = 9;
+        constexpr int numberOfExperiments = 11;
         double runningPPM = mzPPMStDev;
-
-        PythiaParameters paramsInitial = pythiaParameters;
-        paramsInitial.ms2ExtractionWidthPPM = runningPPM;
-        pythiaParametersExperiments->push_back(paramsInitial);
 
         for (int exp = 0; exp < numberOfExperiments; exp++) {
 

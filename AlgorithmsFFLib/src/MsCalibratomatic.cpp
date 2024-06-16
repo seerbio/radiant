@@ -112,6 +112,7 @@ namespace {
         double mzFound = -1.0;
         double stDev = -1.0;
         double ppm = -1.0;
+        double intensity = -1.0;
     };
 
     Err buildMzCalData(
@@ -129,17 +130,20 @@ namespace {
             const QVector<float> &mzSearchedVec = row.mzSearchedVec;
             const QVector<float> &mzFoundMeanVec = row.mzFoundMeanVec;
             const QVector<float> &mzFoundStDevVec = row.mzFoundStDevVec;
+            const QVector<float> &intensityFoundMaxVec = row.intensityFoundMaxVec;
 
             e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundMeanVec.size()); ree;
             e = ErrorUtils::isEqual(mzSearchedVec.size(), mzFoundStDevVec.size()); ree;
+            e = ErrorUtils::isEqual(mzSearchedVec.size(), intensityFoundMaxVec.size()); ree;
 
             for (int i = 0; i < mzFoundMeanVec.size(); i++) {
                 Inp inp;
                 inp.mzFound = mzFoundMeanVec.at(i);
                 inp.mzSearched = mzSearchedVec.at(i);
                 inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<float>::min());
+                inp.intensity = intensityFoundMaxVec.at(i);
 
-                if (MathUtils::tZero(inp.mzSearched) || MathUtils::tZero(inp.mzFound)) {
+                if (inp.mzFound < 1 || inp.intensity < 1) {
                     continue;
                 }
 
@@ -187,10 +191,10 @@ namespace {
         const double stDevStDev = MathUtils::stDev(stDevs);
         const auto stDevsMinMax = std::minmax_element(stDevs.begin(), stDevs.end());
 
-        qDebug() << "ppmMean" << ppmMean << "ppmStDev"
-                << ppmStDev << "ppmMin" << *ppmsMinMax.first << "ppmMax" << *ppmsMinMax.second;
-        qDebug() << "stDevMean" << stDevMean << "stDevMean" << stDevStDev
-                << "stDevMin" << *stDevsMinMax.first << "stDevMax" << *stDevsMinMax.second;
+        qDebug() << "ppmMeanAll" << ppmMean << "ppmStDevAll"
+                << ppmStDev << "ppmMinAll" << *ppmsMinMax.first << "ppmMaxAll" << *ppmsMinMax.second;
+        qDebug() << "stDevMeanAll" << stDevMean << "stDevMeanAll" << stDevStDev
+                << "stDevMinAll" << *stDevsMinMax.first << "stDevMaxAll" << *stDevsMinMax.second;
 
         constexpr int ppmStDevMultiplier = 3;
         const auto terminatorLogic = [&](const Inp &i){
@@ -212,9 +216,23 @@ namespace {
         ERR_RETURN
     }
 
+    void filterTop70PercentByIntensity(QVector<Inp> *inp) {
+
+        std::sort(
+            inp->rbegin(),
+            inp->rend(),
+            [](const Inp &l, const Inp &r){return l.intensity < r.intensity;}
+            );
+
+        const int cutoff70Percent = static_cast<int>(std::round(inp->size() * 0.7));
+        inp->resize(cutoff70Percent);
+    }
+
     Err generateMetricsMzReCal(
             const QVector<Inp> &inputs,
-            double *stDevMz
+            const int polynomialOrder,
+            double *stDevMz,
+            QVector<double> *calibrationCurveCoEffs
     ) {
 
         ERR_INIT
@@ -223,56 +241,47 @@ namespace {
         const double testFraction = 0.2;
         const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
-        QVector<QPair<double, double>> data;
-        std::transform(
-                inputs.begin(),
-                inputs.end(),
-                std::back_inserter(data),
-                [](const Inp inp){return QPair<double, double>(inp.mzFound, inp.mzSearched);}
-        );
-
-        QVector<QPair<XVal, YVal>> trainingData;
-        QVector<QPair<XVal, YVal>> testData;
+        QVector<Inp> trainingData;
+        QVector<Inp> testData;
         e = MathUtils::trainTestSplit(
-                data,
+                inputs,
                 testFraction,
                 seed,
                 &trainingData,
                 &testData
         ); ree;
 
-        QVector<double> mzToRecalCalCurveCoeffs;
-        XYMappermatic mapperMetrics;
-
         Eigen::MatrixX<double> mat(trainingData.size(), 2);
         for (int i = 0; i < trainingData.size(); i++) {
-            const QPair<XVal, YVal> &pr = trainingData.at(i);
-            mat.coeffRef(i, 0) = pr.first;
-            mat.coeffRef(i, 1) = pr.second;
+            const Inp &inp = trainingData.at(i);
+            mat.coeffRef(i, 0) = inp.mzSearched;
+            mat.coeffRef(i, 1) = inp.ppm;
         }
-        const int polynomialOrder = 5;
-        EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, &mzToRecalCalCurveCoeffs);
+        EigenUtils::fitPolynomialQRDecomposition(
+            mat,
+            polynomialOrder,
+            calibrationCurveCoEffs
+            );
 
         QVector<QPair<double, double>> actualVsPredicted;
 
         QVector<double> ppmOriginals;
         QVector<double> ppmReCals;
-        for (const QPair<XVal, YVal> &pr : testData) {
+        for (const Inp &inp : testData) {
 
-            double yPredicted = 0.0;
-
-            for (int i = 0; i < mzToRecalCalCurveCoeffs.size(); i++) {
-                yPredicted += mzToRecalCalCurveCoeffs.at(i) * std::pow(pr.first, i);
+            double ppmPredicted = 0.0;
+            for (int i = 0; i < calibrationCurveCoEffs->size(); i++) {
+                ppmPredicted += calibrationCurveCoEffs->at(i) * std::pow(inp.mzSearched, i);
             }
 
-            actualVsPredicted.push_back({pr.second, yPredicted});
+            const double massCorrection = MathUtils::calculatePPM(inp.mzSearched, ppmPredicted);
+            const double mzSearchCorrected = inp.mzSearched + massCorrection;
 
-            const double ppmOriginal = 1e6 * (pr.first - pr.second) / pr.second;
-            const double ppmReCal = 1e6 * (yPredicted - pr.second) / pr.second;
+            actualVsPredicted.push_back({inp.mzFound, mzSearchCorrected});
+            const double ppmRecal = 1e6 * (mzSearchCorrected - inp.mzFound) / inp.mzFound;
 
-            ppmOriginals.push_back(ppmOriginal);
-            ppmReCals.push_back(ppmReCal);
-
+            ppmOriginals.push_back(inp.ppm);
+            ppmReCals.push_back(ppmRecal);
         }
 
         const double rmse = MathUtils::rmse(actualVsPredicted);
@@ -295,7 +304,7 @@ namespace {
         const int polynomialOrder,
         double *mzStDev,
         QVector<double> *calibrationCurveCoEffs
-    ) {
+        ) {
 
         ERR_INIT
 
@@ -305,17 +314,15 @@ namespace {
 
         QVector<Inp> inputs;
         e = buildMzCalData(msCalibarationReaderRows, &inputs); ree;
+        filterTop70PercentByIntensity(&inputs);
         e = removeMassOutliers(&inputs); ree;
 
-        e = generateMetricsMzReCal(inputs, mzStDev); ree;
-
-        Eigen::MatrixX<double> mat(inputs.size(), 2);
-        for (int i = 0; i < inputs.size(); i++) {
-            const Inp &inp = inputs.at(i);
-            mat.coeffRef(i, 0) = inp.mzFound;
-            mat.coeffRef(i, 1) = inp.mzSearched;
-        }
-        EigenUtils::fitPolynomialQRDecomposition(mat, polynomialOrder, calibrationCurveCoEffs);
+        e = generateMetricsMzReCal(
+            inputs,
+            polynomialOrder,
+            mzStDev,
+            calibrationCurveCoEffs
+            ); ree;
 
         ERR_RETURN
     }
@@ -365,7 +372,7 @@ Err MsCalibratomatic::setMassCalibrationCoeffs(
 Err MsCalibratomatic::recalibrateScanPoints(
         const MSLevelEnum &msLevel,
         const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -384,12 +391,13 @@ Err MsCalibratomatic::recalibrateScanPoints(
 
         for (ScanPoint &sp : *scanPoints) {
 
-            double mzRecal = 0.0;
+            double ppmAdjustment = 0.0;
             for (int i = 0; i < calibrationCoeffs.size(); i++) {
-                mzRecal += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
+                ppmAdjustment += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
             }
 
-            sp.rx() = static_cast<float>(mzRecal);
+            const double massCorrection = MathUtils::calculatePPM(static_cast<double>(sp.x()), ppmAdjustment);
+            sp.rx() += static_cast<float>(massCorrection) * -1;
         }
     }
 

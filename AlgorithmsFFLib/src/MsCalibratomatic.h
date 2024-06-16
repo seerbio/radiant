@@ -38,7 +38,7 @@ public:
     Err recalibrateScanPoints(
         const MSLevelEnum &msLevel,
         const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
-        );
+        ) const;
 
     Err recalibrateScanPoints(
         const MSLevelEnum &msLevel,
