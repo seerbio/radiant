@@ -1138,10 +1138,11 @@ namespace {
         for (int exp = 0; exp < numberOfExperiments; exp++) {
 
             constexpr double alpha = 1.2;
+            constexpr double minPPM = 4.0;
 
             PythiaParameters params = pythiaParameters;
             runningPPM *= alpha;
-            params.ms2ExtractionWidthPPM = runningPPM;
+            params.ms2ExtractionWidthPPM = runningPPM + minPPM;
             pythiaParametersExperiments->push_back(params);
         }
 
@@ -1250,7 +1251,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &can
 
         qDebug() << "Ending opt";
 
-        constexpr double fdrThresholdCalibration = 0.5;
+        constexpr double fdrThresholdCalibration = 0.1;
         int targetCountAboveFDRQValueThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
                 m_candidateScores,
@@ -1741,7 +1742,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
         //         MSLevelEnum::MS2,
         //         &selectDIATargetFrames,
         //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-        // ); ree;
+        //         ); ree;
     }
 
     ERR_RETURN
