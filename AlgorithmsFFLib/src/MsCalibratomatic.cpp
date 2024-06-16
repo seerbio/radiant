@@ -388,6 +388,8 @@ Err MsCalibratomatic::recalibrateScanPoints(
             for (int i = 0; i < calibrationCoeffs.size(); i++) {
                 mzRecal += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
             }
+
+            sp.rx() = static_cast<float>(mzRecal);
         }
     }
 

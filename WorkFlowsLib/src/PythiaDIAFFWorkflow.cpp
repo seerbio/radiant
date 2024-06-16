@@ -330,6 +330,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
      QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
      e = filterScoredCandidatesTo50PercentFDR(
+             m_pythiaParameters.minMs2FragCount,
              &candidateScoresTargetsAndDecoys,
              &candidateScoresTargetsAndDecoys50PercentFDRFiltered
              ); ree;
@@ -736,7 +737,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
 
             QVector<CandidateScores*> candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKeyMassCal)));
+            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCal)));
 
             QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
             e = buildMsCalibrationReaderRows(
@@ -782,7 +783,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             //         MSLevelEnum::MS2,
             //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
             //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-            // ); ree;
+            //         ); ree;
 
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
