@@ -779,11 +779,39 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
 
-            // e = recalibrateMzVals(
-            //         MSLevelEnum::MS2,
-            //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-            //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-            //         ); ree;
+            e = recalibrateMzVals(
+                    MSLevelEnum::MS2,
+                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+                    ); ree;
+
+            filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
+            constexpr int recalibrationPointCountMin = 30;
+            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+                ERR_RETURN
+            }
+
+            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+            e = buildMsCalibrationReaderRows(
+                    MSLevelEnum::MS1,
+                    candidateScoresVecBatchPntrsRecal,
+                    &msCalibrationReaderRowsMS1
+            ); ree;
+
+            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+                ERR_RETURN
+            }
+
+            e = m_msCalibratomatic.setMassCalibrationCoeffs(
+                msCalibrationReaderRowsMS1,
+                MSLevelEnum::MS1
+                ); ree;
+
+            e = recalibrateMzVals(
+                    MSLevelEnum::MS1,
+                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+                    ); ree;
 
             *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
@@ -992,7 +1020,7 @@ Err PythiaDIAFFWorkflow::recalibrateMs1Points(const QVector<CandidateScores*> &c
 
     filterMs1CandidateRowsByCorr(&candidateScoresMS1Cal);
     
-    const int recalibrationPointCountMin = 30;
+    constexpr int recalibrationPointCountMin = 30;
     if (candidateScoresMS1Cal.size() < recalibrationPointCountMin) {
         ERR_RETURN
     }
@@ -1036,11 +1064,6 @@ namespace {
 
         e = msCalibratomatic.recalibrateScanPoints(
             MSLevelEnum::MS2,
-            scanPoints
-            ); ree;
-
-        e = msCalibratomatic.recalibrateScanPoints(
-            MSLevelEnum::MS1,
             scanPoints
             ); ree;
 
@@ -1128,7 +1151,7 @@ namespace {
         e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
-        constexpr int numberOfExperiments = 11;
+        constexpr int numberOfExperiments = 13;
         double runningPPM = mzPPMStDev;
 
         for (int exp = 0; exp < numberOfExperiments; exp++) {

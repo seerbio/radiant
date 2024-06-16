@@ -32,7 +32,6 @@ private Q_SLOTS:
 MsCalibratomaticTests::MsCalibratomaticTests() : QObject(){}
 
 void MsCalibratomaticTests::execTests() {
-
     ERR_INIT
 
     const QString reCalFile = QDir(qApp->applicationDirPath()).filePath("cal2.prq");
@@ -45,8 +44,6 @@ void MsCalibratomaticTests::execTests() {
 
     e = calibratomatic.setMassCalibrationCoeffs(msCalibrationReaderRows, MSLevelEnum::MS2);
     QCOMPARE(e, eNoError);
-
-
 }
 
 

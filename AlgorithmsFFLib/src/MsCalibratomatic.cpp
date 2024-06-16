@@ -19,7 +19,7 @@ MsCalibratomatic::MsCalibratomatic()
 , m_isInitRT(false)
 , m_isInitMS1(false)
 , m_isInitMS2(false)
-, m_polynomialOrderMassCal(3)
+, m_polynomialOrderMassCal(2)
 {}
 
 namespace {
@@ -330,7 +330,7 @@ namespace {
 }//namespace
 Err MsCalibratomatic::setMassCalibrationCoeffs(
     const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
-    const MSLevelEnum msLevelEnum
+    const MSLevelEnum &msLevelEnum
     ) {
 
     ERR_INIT
@@ -407,7 +407,7 @@ Err MsCalibratomatic::recalibrateScanPoints(
 Err MsCalibratomatic::recalibrateScanPoints(
         const MSLevelEnum &msLevel,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
-){
+        ) const {
 
     ERR_INIT
 
@@ -425,14 +425,14 @@ Err MsCalibratomatic::recalibrateScanPoints(
         ScanPoints &scanPoints = it.value();
 
         for (ScanPoint &sp : scanPoints) {
-            double mzRecal = 0.0;
 
+            double ppmAdjustment = 0.0;
             for (int i = 0; i < calibrationCoeffs.size(); i++) {
-                mzRecal += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
+                ppmAdjustment += calibrationCoeffs.at(i) * std::pow(sp.x(), i);
             }
 
-            sp.rx() = static_cast<float>(mzRecal);
-
+            const double massCorrection = MathUtils::calculatePPM(static_cast<double>(sp.x()), ppmAdjustment);
+            sp.rx() += static_cast<float>(massCorrection) * -1;
         }
     }
 
