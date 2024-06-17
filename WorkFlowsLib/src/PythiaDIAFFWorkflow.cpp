@@ -311,7 +311,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
          &msReaderPointerAcc,
          &candidateScoresTrainings
          ); ree;
-
+    
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(candidateScoresTrainings); ree;
         // m_pythiaParameters.ms2ExtractionWidthPPM = 8.6;
@@ -570,8 +570,7 @@ namespace {
 
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
-        const double cosineSimSumMS1Min = 0.8;
-
+        constexpr double cosineSimSumMS1Min = 0.7;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
             return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] <= cosineSimSumMS1Min;
         };
@@ -713,14 +712,15 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             ); ree;
 
         constexpr int fdrKey = 5;
-        constexpr int fdrKeyMassCal = 2;
+        constexpr int fdrKeyMassCalMS2 = 2;
+        constexpr int fdrKeyMassCalMS1 = 5;
 
         const QVector<MzTargetKey> targetKeysToRecalibrateWhileBuildingCalibration = mzTargetKeyVsTurboXicPntrs.keys().toVector();
         e = honeIRTAndMassCalibration(
             targetKeysToRecalibrateWhileBuildingCalibration,
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey),
-            fdrVsCounts.value(fdrKeyMassCal)
+            fdrVsCounts.value(fdrKeyMassCalMS2)
             ); ree;
 
         scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
@@ -735,16 +735,17 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
             constexpr int fdrKey50PercentFDR = 50;
             candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
+            *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
 
             QVector<CandidateScores*> candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCal)));
+            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS2)));
 
             QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
             e = buildMsCalibrationReaderRows(
                     MSLevelEnum::MS2,
                     candidateScoresVecBatchPntrsRecal,
                     &msCalibrationReaderRows
-            ); ree;
+                    ); ree;
 
             e = m_msCalibratomatic.setMassCalibrationCoeffs(
                 msCalibrationReaderRows,
@@ -785,35 +786,36 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                     m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
                     ); ree;
 
-            filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            constexpr int recalibrationPointCountMin = 30;
-            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
-                ERR_RETURN
-            }
-
-            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-            e = buildMsCalibrationReaderRows(
-                    MSLevelEnum::MS1,
-                    candidateScoresVecBatchPntrsRecal,
-                    &msCalibrationReaderRowsMS1
-            ); ree;
-
-            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
-                ERR_RETURN
-            }
-
-            e = m_msCalibratomatic.setMassCalibrationCoeffs(
-                msCalibrationReaderRowsMS1,
-                MSLevelEnum::MS1
-                ); ree;
-
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS1,
-                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-                    ); ree;
-
-            *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
+            // candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
+            // candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
+            // filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
+            // constexpr int recalibrationPointCountMin = 30;
+            // qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
+            // if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+            //     ERR_RETURN
+            // }
+            //
+            // QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+            // e = buildMsCalibrationReaderRows(
+            //         MSLevelEnum::MS1,
+            //         candidateScoresVecBatchPntrsRecal,
+            //         &msCalibrationReaderRowsMS1
+            //         ); ree;
+            //
+            // if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+            //     ERR_RETURN
+            // }
+            //
+            // e = m_msCalibratomatic.setMassCalibrationCoeffs(
+            //     msCalibrationReaderRowsMS1,
+            //     MSLevelEnum::MS1
+            //     ); ree;
+            //
+            // e = recalibrateMzVals(
+            //         MSLevelEnum::MS1,
+            //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+            //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+            //         ); ree;
 
             break;
         }
