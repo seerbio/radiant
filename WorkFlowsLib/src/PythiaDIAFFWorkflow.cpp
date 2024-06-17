@@ -314,9 +314,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(candidateScoresTrainings); ree;
-        m_pythiaParameters.ms2ExtractionWidthPPM = 8.6;
-        m_pythiaParameters.ms1ExtractionWidthPPM = 8.6;
-        m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
+        // m_pythiaParameters.ms2ExtractionWidthPPM = 8.6;
+        // m_pythiaParameters.ms1ExtractionWidthPPM = 8.6;
+        // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
     int targetCountBelowFDRThreshold;
