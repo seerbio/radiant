@@ -982,7 +982,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
-    constexpr int topNIntegrations = 15; //TODO make this settable
+    constexpr int topNIntegrations = 15;
     peakIntegrationsVsIntensityResized.resize(std::min(topNIntegrations, peakIntegrationsVsIntensityResized.size()));
 
     for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
