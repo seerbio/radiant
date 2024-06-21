@@ -1334,12 +1334,12 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
-    constexpr float minPeakCountCalibration = 2.9;
+    constexpr float minPeakCount = 2.9;
     m_candidateScores.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
-            minPeakCountCalibration,
+            minPeakCount,
             nullToBuildTurboXICInParallelLoop,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
@@ -1731,8 +1731,8 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-    qDebug() << "----- scanTimeWindowStDev x" << S_GLOBAL_SETTINGS.STDEV_MULTIPLIER
-             <<":" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+    qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters.scanTimeWindowStDevs
+             <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
 
     constexpr int ms2MassRecalCountMin = 200;
     if (topCandidatesMass > ms2MassRecalCountMin) {
