@@ -107,10 +107,9 @@ namespace {
                 candidateScoresTargetsAndDecoys->rend(),
                 [](const CandidateScores *l, const CandidateScores *r){
                     return l->discriminantScore < r->discriminantScore;
-                }
-        );
+                });
 
-        constexpr double fdrThreshold = 0.55;
+        constexpr double fdrThreshold = 0.6;
         int counter = 0;
         for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
