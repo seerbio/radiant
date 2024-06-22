@@ -1389,7 +1389,6 @@ namespace {
             }
 
             const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
-
             candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = 1.0f / std::min(std::max(absAccuracy, 0.001f), 200.0f);
 
         }
@@ -1707,13 +1706,17 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[CandidateScores::Features::Charge]
                                                         = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
-    const float scanTimeDelta = std::abs(candidateScores->scanTime - candidateScores->scanTimePredicted);
+    const float scanTimeDelta = candidateScores->scanTime - candidateScores->scanTimePredicted;
     candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimeDeltaAbs] = std::abs(scanTimeDelta);
 
     candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
 
     const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), m_scanTimeRange) / m_scanTimeRange);
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = static_cast<float>(pdScanTime);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePdAbs] = static_cast<float>(pdScanTime);
+    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = scanTimeDelta < 0
+                                                                             ? -static_cast<float>(std::abs(pdScanTime))
+                                                                             : static_cast<float>(std::abs(pdScanTime));
 
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = static_cast<float>(pepLength);
