@@ -110,7 +110,7 @@ namespace {
                 }
         );
 
-        const double fdrThreshold = 0.6;
+        constexpr double fdrThreshold = 0.55;
         int counter = 0;
         for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
