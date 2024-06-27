@@ -125,7 +125,6 @@ namespace PythiaParameterReaderConstants {
     const QString kSmoothCount = QStringLiteral("smoothCount");
     const QString kSigma = QStringLiteral("sigma");
     const QString kSignalToNoiseRatio = QStringLiteral("signalToNoiseRatio");
-    const QString kMinFoundMzPeaks = QStringLiteral("minFoundMzPeaks");
     const QString kStopThresholdFraction = QStringLiteral("stopThresholdFraction");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
@@ -139,7 +138,6 @@ namespace PythiaParameterReaderConstants {
     const QString kFdrParams = QStringLiteral("FdrParams");
     const QString kGeneral = QStringLiteral("General");
 
-    const QString kBypassNeuralNet = QStringLiteral("bypassNeuralNet");
 }
 
 Err PythiaParameterReader::validateJsonKeys() {
@@ -168,12 +166,10 @@ Err PythiaParameterReader::validateJsonKeys() {
 
             kSkipScanCount,
             kMinScanCount,
-            kUseMeanMz,
             kFilterLength,
             kSmoothCount,
             kSigma,
             kSignalToNoiseRatio,
-            kMinFoundMzPeaks
     };
 
     //TODO FIX THIS
@@ -222,7 +218,6 @@ PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
     pythiaParameters.smoothCount = 2;
     pythiaParameters.sigma = 1;
     pythiaParameters.signalToNoiseRatio = 2;
-    pythiaParameters.minFoundMzPeaks = 3;
     pythiaParameters.allowedMissedCleavages = 1;
     pythiaParameters.mzMinMS2 = 200.0;
     pythiaParameters.mzMaxMS2 = 1500.0;
@@ -289,7 +284,6 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->maxModificationsPeptide = digestNode[kMaxModificationsPeptide.toStdString()].value_or(0);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
-    pythiaParameters->minFoundMzPeaks = ms2ParamsNode[kMinFoundMzPeaks.toStdString()].value_or(0);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(0.0);
     pythiaParameters->mzMinMS2 = ms2ParamsNode[kMzMinMS2.toStdString()].value_or(0.0);
     pythiaParameters->mzMaxMS2 = ms2ParamsNode[kMzMaxMS2.toStdString()].value_or(0.0);
@@ -308,7 +302,6 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
     pythiaParameters->reportDecoys = fdrParamsNode[kReportDecoys.toStdString()].value_or(false);
-    pythiaParameters->bypassNeuralNet = fdrParamsNode[kBypassNeuralNet.toStdString()].value_or(false);
 
     constexpr int defaultThreadCount = 8;
     const auto generalNode = parser[kGeneral.toStdString()];

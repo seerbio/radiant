@@ -1194,7 +1194,7 @@ namespace {
             xyMat.coeffRef(row, 0) = doeResult.ppm;
             xyMat.coeffRef(row, 1) = static_cast<double>(doeResult.fdrCount);
             if (verbosity > 0) {
-                qDebug() << doeResult.ppm << doeResult.fdrCount;
+                qDebug() << doeResult.ppm << doeResult.fdrCount << xyMat.coeff(row, 1);
 
             }
         }

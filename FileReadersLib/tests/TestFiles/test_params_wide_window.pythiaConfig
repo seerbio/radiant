@@ -1,5 +1,8 @@
 # Text describing stuff
 
+[General]
+threadCount = 16
+
 [DigestParams]
 cTermCleavePoints = ["K", "R"]
 nTermCleavePoints = []
@@ -9,16 +12,17 @@ peptideLengthMin = 7
 peptideLengthMax = 35
 maxModificationsPeptide = 1
 
+[PrecursorParams]
+chargeStateMin = 1
+chargeStateMax = 4
+precursorExtractionWindowThomsons = 0.5
+ms1ExtractionWidthPPM = 20.0
+
 [MS2Params]
 minFoundMzPeaks = 2
 ms2ExtractionWidthPPM = 20.5
 mzMinMS2 = 100.1
 mzMaxMS2 = 1500.2
-
-[PrecursorParams]
-chargeStateMin = 1
-chargeStateMax = 4
-precursorExtractionWindowThomsons = 0.5
 
 [PeakIntegrationParams]
 filterLength = 3
@@ -27,7 +31,6 @@ signalToNoiseRatio = 2.0
 smoothCount = 1
 
 [FdrParams]
-bypassNeuralNet = true
 percentFDR = 2.0
 reportDecoys = true
 

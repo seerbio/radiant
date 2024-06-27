@@ -46,7 +46,6 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.peptideLengthMax, 35);
     QCOMPARE(pythiaParameters.maxModificationsPeptide, 1);
 
-    QCOMPARE(pythiaParameters.minFoundMzPeaks, 2);
     QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 20.5);
     QCOMPARE(pythiaParameters.mzMinMS2, 100.1);
     QCOMPARE(pythiaParameters.mzMaxMS2, 1500.2);
@@ -60,7 +59,6 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.0);
     QCOMPARE(pythiaParameters.smoothCount, 1);
 
-    QCOMPARE(pythiaParameters.bypassNeuralNet, true);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
 

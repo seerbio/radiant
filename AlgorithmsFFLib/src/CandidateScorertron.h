@@ -58,6 +58,13 @@ public:
 
 private:
 
+    Err initMatricesdAndVecs(
+        const QVector<MS2Ion> &ms2Ions,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
+        MatriciesAndVecs *matriciesAndVecs
+        ) const;
+
     Err setPredictedFrameIndexes(
         float iRT,
         CandidateScores *candidateScores,
