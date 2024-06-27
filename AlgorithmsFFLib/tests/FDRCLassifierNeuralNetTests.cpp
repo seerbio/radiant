@@ -324,6 +324,7 @@ void FDRCLassifierNeuralNetTests::playGround() {
             xVecsNorm,
             yVec,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
+            0,
             &predictions
     );
     QCOMPARE(e, eNoError);
