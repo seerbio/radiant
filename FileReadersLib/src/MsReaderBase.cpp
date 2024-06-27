@@ -202,7 +202,7 @@ Err MsReaderBase::collateMS2MzTargetFrames(
         (*diaTargetFrame)[msScanInfo.targetKey()].insert(scanNumber, scanPointsResult.second);
     }
 
-    qDebug() << "DIA Target Frames Count:" << diaTargetFrame->size();
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "DIA Target Frames Count:" << diaTargetFrame->size();
     ERR_RETURN
 }
 
@@ -396,17 +396,8 @@ Err MsReaderBase::zipScanPoints(
 }
 
 void MsReaderBase::printSize() {
-    qDebug() << "MsScanInfo size" << m_msScanInfo.size();
-    qDebug() << "ScanPoints size" << m_scanPoints.size();
-
-    const auto countLogic = [](int sum, const ScanPoints &sp){return sum + sp.size();};
-    qDebug() << "ScanPoints individual size" << std::accumulate(m_scanPoints.begin(), m_scanPoints.end(), 0, countLogic);
-    // for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); ++it) {
-    //     ScanPoints sp = it.value();
-    //     sp.resize(10);
-    //     qDebug() << it.key() << it.value().size() << sp;
-    // }
-
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsScanInfo size" << m_msScanInfo.size();
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanPoints size" << m_scanPoints.size();
 }
 
 Err MsReaderBase::printFileInfo() {
@@ -426,10 +417,10 @@ Err MsReaderBase::printFileInfo() {
 
     const QVector<MsScanInfo> uniqueTandemScanInfos = getUniqueTandemMsScanInfos();
 
-    qDebug() << "MsData FilePath" << m_filePath;
-    qDebug() << "MS1 Scan Count" << ms1ScanSize;
-    qDebug() << "MS2 Scan Count" << ms2ScanSize;
-    qDebug() << "File is DIA" << isDIA();
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsData FilePath" << m_filePath;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Count" << ms1ScanSize;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Count" << ms2ScanSize;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "File is DIA" << isDIA();
 
     ERR_RETURN
 }

@@ -180,9 +180,14 @@ public:
 
     static Err outputFDRResults(
             QVector<CandidateScores*> &candidateScores,
-            bool verbose,
+            int verbose,
             QMap<int, int> *fdrVsCount
     );
+
+    static Err outPutFDRCounts(
+        const QMap<int, int> &fdrVsCount,
+        QString *outputString
+        );
 
 private:
 

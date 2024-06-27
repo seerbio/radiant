@@ -306,7 +306,7 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
 
 Err FDRCLassifierNeuralNet::outputFDRResults(
         QVector<CandidateScores*> &candidateScores,
-        bool verbose,
+        int verbose,
         QMap<int, int> *fdrVsCount
         ) {
 
@@ -324,16 +324,31 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
         fdrVsCount->insert(fdrPercent, foundAtThreshold);
     }
 
-    QString builder;
-    for (auto it = fdrVsCount->begin(); it != fdrVsCount->end(); ++it) {
-        const QString &k = QString::number(it.key());
-        builder += k + "%: " + QString::number(it.value())  + " | ";
-    }
+    QString outputString;
+    e = outPutFDRCounts(*fdrVsCount, &outputString); ree;
 
     if (verbose > 0) {
-        qDebug() << "PSMs found:" << builder;
-
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs found:" << qPrintable(outputString);
     }
+
+    ERR_RETURN
+}
+
+Err FDRCLassifierNeuralNet::outPutFDRCounts(
+    const QMap<int, int> &fdrVsCount,
+    QString *outputString
+    ) {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(fdrVsCount); ree;
+
+    QStringList builder;
+    for (auto it = fdrVsCount.begin(); it != fdrVsCount.end(); ++it) {
+        const QString &k = QString::number(it.key());
+        builder.push_back(k + "%: " + QString::number(it.value()));
+    }
+
+    *outputString = builder.join(" | ");
 
     ERR_RETURN
 }

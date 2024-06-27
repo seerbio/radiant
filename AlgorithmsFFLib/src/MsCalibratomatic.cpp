@@ -525,11 +525,11 @@ bool MsCalibratomatic::isInitCalMS2() const {
 
 void MsCalibratomatic::setScanTimeStDev(double val) {
     m_scanTimeStd = val;
-    qDebug() << "scanTimeStDev has been set to:" << scanTimeStDev() << "seconds";
-    qDebug() << "scanTimeStDev x 3:" << scanTimeStDev(3) << "seconds";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimeStDev has been set to:" << scanTimeStDev() << "seconds";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimeStDev x 3:" << scanTimeStDev(3) << "seconds";
 }
 
 void MsCalibratomatic::setMzStDevMS2(double val) {
     m_mzStDevMS2 = val;
-    qDebug() << "MzStdDevMS2 has been set to:" << m_mzStDevMS2;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MzStdDevMS2 has been set to:" << m_mzStDevMS2;
 }

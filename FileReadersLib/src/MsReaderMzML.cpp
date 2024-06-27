@@ -195,7 +195,7 @@ Err MsReaderMzML::PrivateData::parseMsRun(QXmlStreamReader &reader) {
     const int scanCount = attributes.value(SCAN_COUNT_ATTRIBUTE_NAME).toInt(&ok);
     e = ErrorUtils::isTrue(ok); ree;
 
-    qDebug() << "Scan Count:" << scanCount;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Scan Count:" << scanCount;
 
     while (!reader.atEnd() && !reader.hasError()) {
 

@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    qDebug() << "PSMing done in" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMing done in" << et.elapsed() << "mSec";
 
     return 0;
 }

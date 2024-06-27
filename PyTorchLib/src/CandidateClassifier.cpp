@@ -253,8 +253,9 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);
 
         if (meanBatchLoss < bestEpochLoss) {
-
-            qDebug() << "Updating weights";
+            if (verbosity > 0) {
+                qDebug() << "Updating weights";
+            }
 
             bestEpochLoss = meanBatchLoss;
         }

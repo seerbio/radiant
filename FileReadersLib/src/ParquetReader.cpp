@@ -22,7 +22,7 @@ public:
     Private();
     ~Private();
 
-    Err writeDataToParquet(
+    static Err writeDataToParquet(
             const QString &outputFilePath,
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
     );
@@ -30,7 +30,7 @@ public:
     //TODO add streaming version of write parquet
     // multiple tables iteratively, see parquet::arrow::FileWriter. In WriteTable() write.h parquet
 
-    Err readDataFromParquet(
+    static Err readDataFromParquet(
             const QString &parquetFilePath,
             QVector<ParquetReaderInputBase> *rowsRead
     );
@@ -348,7 +348,7 @@ Err ParquetReader::Private::writeDataToParquet(
     );
 
     e = ErrorUtils::isTrue(st.ok()); ree;
-    qDebug() << "File written to:" << outputFilePath;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "File written to:" << outputFilePath;
 
     ERR_RETURN
 }
@@ -876,8 +876,6 @@ Err ParquetReader::writeDataToParquet(
             outputFilePath,
             rowsToWrite
             ); ree;
-
-    qDebug() << "PQR file saved to" << outputFilePath;
 
     ERR_RETURN
 }

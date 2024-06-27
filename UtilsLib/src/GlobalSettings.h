@@ -163,39 +163,35 @@ public:
     const QString MS1Key = QStringLiteral("MS1Key");
 
     static QString VERSION();
+};
+
+class GlobalTimer {
+
+public:
+    GlobalTimer() {
+        m_timer.start();
+    }
+
+    [[nodiscard]] QString elapsed() const {
+        const int minutesElapsed = static_cast<int>(std::floor(m_timer.elapsed() / (1000 * 60.0)));
+        const int secondsElapsed = static_cast<int>(std::floor(m_timer.elapsed() / 1000.0) - (minutesElapsed * 60.0));
+        const QString timerGoneBy = secondsElapsed < 10 ? QStringLiteral("[%1:0%2]") : QStringLiteral("[%1:%2]");
+        return timerGoneBy.arg(minutesElapsed).arg(secondsElapsed);
+    }
+
+    QElapsedTimer* timer() {
+        return &m_timer;
+    }
+
+private:
+    QElapsedTimer m_timer;
 
 };
 
 
 const extern UTILSLIB_EXPORTS GlobalSettings S_GLOBAL_SETTINGS;
 
-
-class SingletonTimer {
-
-public:
-
-    static SingletonTimer &getInstance() {
-        static SingletonTimer instance;
-        return instance;
-    }
-
-    SingletonTimer(SingletonTimer const&) = delete;
-    SingletonTimer(SingletonTimer&&) = delete;
-    SingletonTimer& operator=(SingletonTimer const&) = delete;
-    SingletonTimer& operator=(SingletonTimer &&) = delete;
-
-    QElapsedTimer &getTimer() {
-        return m_timer;
-    }
-
-private:
-
-    SingletonTimer() {
-        m_timer.start();
-    }
-
-    QElapsedTimer m_timer;
-};
+const extern UTILSLIB_EXPORTS GlobalTimer S_GLOBAL_TIMER;
 
 
 #endif //GLOBALSETTINGS_H
