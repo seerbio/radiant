@@ -3,15 +3,6 @@
 [General]
 threadCount = 16
 
-[DigestParams]
-cTermCleavePoints = ["K", "R"]
-nTermCleavePoints = []
-raggedness = "NoRagged"
-allowedMissedCleavages = 1
-peptideLengthMin = 7
-peptideLengthMax = 35
-maxModificationsPeptide = 1
-
 [PrecursorParams]
 chargeStateMin = 1
 chargeStateMax = 4

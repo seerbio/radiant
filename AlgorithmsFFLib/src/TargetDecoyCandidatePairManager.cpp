@@ -263,21 +263,11 @@ namespace {
 
         QVector<MS2Ion> ms2IonsDecoy;
 
-//#define REVERSE_MIDDLE_DECOY
-#ifdef REVERSE_MIDDLE_DECOY
-        e= reverseCandidatePeptideTarget(
-                peptideStringWithMods,
-                pythiaParameters.aminoAcids,
-                ms2IonsTarget,
-                &ms2IonsDecoy
-        ); rree;
-#else
         e= mutateCandidatePeptideTarget(
                 peptideStringWithMods,
                 ms2IonsTarget,
                 &ms2IonsDecoy
         ); rree;
-#endif
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
                 peptideStringWithMods,

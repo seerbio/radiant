@@ -13,22 +13,10 @@
 using namespace Error;
 
 namespace PythiaParameterReaderConstants {
-    extern const QString FILEREADERSLIB_EXPORTS kNTermCleavePoints;
-    extern const QString FILEREADERSLIB_EXPORTS kCTermCleavePoints;
-    extern const QString FILEREADERSLIB_EXPORTS kRaggedness;
-    extern const QString FILEREADERSLIB_EXPORTS kAllowedMissedCleavages;
-    extern const QString FILEREADERSLIB_EXPORTS kDynamic;
-    extern const QString FILEREADERSLIB_EXPORTS kFixed;
-    extern const QString FILEREADERSLIB_EXPORTS kMaxModificationsPeptide;
-    extern const QString FILEREADERSLIB_EXPORTS kModifications;
+
     extern const QString FILEREADERSLIB_EXPORTS kMzMinMS2;
     extern const QString FILEREADERSLIB_EXPORTS kMzMaxMS2;
-    extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMin;
-    extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMax;
-    extern const QString FILEREADERSLIB_EXPORTS kNoRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kCTermRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kNTermRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kBothRagged;
+
 
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMax;
@@ -58,81 +46,13 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
     extern const QString FILEREADERSLIB_EXPORTS kGeneral;
 
-    extern const QString FILEREADERSLIB_EXPORTS kBypassNeuralNet;
-
 }
-
-
-enum Raggedness {
-    NoRagged = 0
-    , CTermRagged
-    , NTermRagged
-    , BothRagged
-};
-
-
-enum class ModificationType {
-    DYNAMIC,
-    FIXED
-};
-
-
-class FILEREADERSLIB_EXPORTS Modification {
-
-public:
-
-    Modification(
-            QChar residue,
-            const QString &name,
-            const ModificationType &type,
-            const QString &formula
-            );
-
-    Modification(
-            const QString &positionalLocation,
-            const QString &name,
-            const ModificationType &type,
-            const QString &formula
-            );
-
-    Modification() = default;
-    ~Modification() = default;
-
-    QChar residue;
-    QString positionalLocation;
-    QString name;
-    ModificationType type = ModificationType::DYNAMIC;
-    QString formula;
-
-    static QString nTermPeptide();
-    static QString nTermProtein();
-    static QString cTermPeptide();
-    static QString cTermProtein();
-
-    static int positionalLocationIndexes(
-            const QString &positionalLocation,
-            const QString &peptideSequence
-            );
-
-    static QStringList modKeys();
-
-    void print() const;
-};
 
 struct PythiaParameters{
 
     //[General]
     int threadCount = 8;
     int verbosity = 0;
-
-    //[DigestParams]
-    QStringList nTermCleavePoints;
-    QStringList cTermCleavePoints;
-    Raggedness raggedness = Raggedness::NoRagged;
-    int allowedMissedCleavages = 0;
-    int peptideLengthMin = 7;
-    int peptideLengthMax = 35;
-    int maxModificationsPeptide = 1;
 
     //[PrecursorParams]
     int chargeStateMin = -1;
@@ -149,6 +69,13 @@ struct PythiaParameters{
     int filterLengthMS2 = 3;
     int filterlengthIntegration = 5;
     float stopThresholdFractionMS2 = 0.65;
+    int topNMs2Ions = 12;
+    int scanTimeWindowStDevs = 3;
+    int trancheSizeMax = 2e4;
+    int ionsSharedToReject = 4;
+    int minMs2FragCount = 2;
+    int peptideLengthMin = 7;
+    int peptideLengthMax = 30;
 
 
     //[PeakIntegrationParams]
@@ -156,24 +83,15 @@ struct PythiaParameters{
     int smoothCount = -1;
     double sigma = -1.0;
     float stopThresholdFraction = 0.65;
+    double signalToNoiseRatio = 2.0;
 
     //[FdrParams]
     double percentFDR = 1.0;
-
-
-    int skipScanCount = 2;
-    int minScanCount = 3;
-    double signalToNoiseRatio = 2.0;
-
-
     bool reportDecoys = false;
 
-    int scanTimeWindowStDevs = 3;
-    int trancheSizeMax = 2e4;
-    int ionsSharedToReject = 4;
-    int topNMs2Ions = 12;
-
-    int minMs2FragCount = 2;
+    //[FeatureFinder]
+    int skipScanCount = 2;
+    int minScanCount = 3;
 
     [[nodiscard]] bool isValid() const {
 
@@ -211,26 +129,15 @@ struct PythiaParameters{
         return true;
     }
 
-    QVector<Modification> modifications;
-
-    AminoAcids aminoAcids;
-
     void print() const {
         qDebug() << QStringLiteral("** Digest Parameters **************************");
-        qDebug() << PythiaParameterReaderConstants::kNTermCleavePoints << nTermCleavePoints;
-        qDebug() << PythiaParameterReaderConstants::kCTermCleavePoints << cTermCleavePoints;
-        qDebug() << PythiaParameterReaderConstants::kRaggedness << static_cast<std::underlying_type<Raggedness>::type>(raggedness);
-        qDebug() << PythiaParameterReaderConstants::kAllowedMissedCleavages << allowedMissedCleavages;
         qDebug() << PythiaParameterReaderConstants::kMzMinMS2 << mzMinMS2;
         qDebug() << PythiaParameterReaderConstants::kMzMaxMS2 << mzMaxMS2;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
         qDebug() << PythiaParameterReaderConstants::kChargeStateMax << chargeStateMax;
         qDebug() << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM << ms2ExtractionWidthPPM;
         qDebug() << PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons << precursorExtractionWindowThomsons;
         qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
-        qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
 
         qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
         qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
@@ -244,12 +151,6 @@ struct PythiaParameters{
         qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
         qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
         qDebug() << PythiaParameterReaderConstants::kThreadCount << threadCount;
-
-
-        qDebug() << PythiaParameterReaderConstants::kModifications;
-        for (const Modification &mod : modifications) {
-            mod.print();
-        }
 
         qDebug() << QStringLiteral("**********************************************");
     }
@@ -276,9 +177,7 @@ public:
             PythiaParameters *pythiaParameters
     );
 
-private:
 
-    Err validateJsonKeys(); //TODO update this for toml
 
 };
 
