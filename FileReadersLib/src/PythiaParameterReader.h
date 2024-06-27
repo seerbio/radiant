@@ -149,7 +149,7 @@ struct PythiaParameters{
     int filterLength = -1;
     int smoothCount = -1;
     double sigma = -1.0;
-    float stopThresholdFraction = 0.5;
+    float stopThresholdFraction = 0.65;
     int minFoundMzPeaks = -1;
 
     double ms1ExtractionWidthPPM = 20.0;

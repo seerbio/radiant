@@ -562,20 +562,6 @@ namespace {
 
         matriciesAndVecs->productVec = matriciesAndVecs->integrationVec.array() * matriciesAndVecs->integrationVecCosineSim.array();
 
-        // for (int i = 0; i < matriciesAndVecs->integrationVecCosineSim.size(); i++) {
-        //     std::cout << matriciesAndVecs->integrationVecCosineSim.coeff(i) << ", ";
-        // }
-        // std::cout << std::endl;
-        //
-        // for (int i = 0; i < matriciesAndVecs->integrationVec.size(); i++) {
-        //     std::cout << matriciesAndVecs->integrationVec.coeff(i) << ", ";
-        // }
-        // for (int i = 0; i < matriciesAndVecs->productVec.size(); i++) {
-        //     std::cout << matriciesAndVecs->productVec.coeff(i) << ", ";
-        // }
-        // std::cout << std::endl;
-        // std::cout << "************" << std::endl;
-
         constexpr int noSmooths = 0;
         e = buildEigenMatrix(
             xicPointsVec45,
@@ -972,7 +958,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
     const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
     BestCorrelationResult *bestCorrelationResult
-    ) const {
+    ) {
 
     ERR_INIT
 
@@ -1731,6 +1717,7 @@ Err CandidateScorertron::setCandidateScores(
 
     const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
     candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocation] = mzTargetKey - mz;
+    candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocationAbs] = std::abs(mzTargetKey - mz);
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
         = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());

@@ -545,11 +545,12 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::MzPeakLengthsNorm10,
                             CandidateScores::Features::MzPeakLengthsNorm11,
                             CandidateScores::Features::MzPeakLengthsNorm12,
-
                             CandidateScores::Features::CosineSimSpectrumOverTime,
                             CandidateScores::Features::TotalIntensityLog,
                             CandidateScores::CosineSimSum100Window1p5X,
-                            CandidateScores::CosineSimSum100Window2X
+                            CandidateScores::CosineSimSum100Window2X,
+                
+                            CandidateScores::TargetWindowLocationAbs
                             }));
             return vec;
         }

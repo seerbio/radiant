@@ -338,7 +338,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-
+    // ERR_RETURN
     const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
@@ -402,7 +402,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
-    if (m_pythiaParameters.verbosity > 0) {
+    if (m_pythiaParameters.verbosity > -1) {
         int counter = 0;
         int decoys = 0;
         int entrap = 0;
@@ -1426,6 +1426,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
         &fdrVsCounts
         ); ree;
 
+    QString fdrString;
+    e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << qPrintable(fdrString);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets resulted" << et.restart() << "mSec";
 
     constexpr double fdrThresholdOnePercent = 0.01;

@@ -286,6 +286,7 @@ public:
         TotalIntensityRaw,
 
         TargetWindowLocation,
+        TargetWindowLocationAbs,
 
         FeaturesSize
     };
