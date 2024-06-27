@@ -26,6 +26,7 @@ namespace {
 
     Err generateMetricsIRTtoScanTime(
             const QVector<QPair<XVal, YVal>> &data,
+            int verbosity,
             double *stDevScanTimeDiff
             ) {
 
@@ -62,7 +63,9 @@ namespace {
         const double mean = MathUtils::mean(diffs);
         const double stDev = MathUtils::stDev(diffs);
 
-        qDebug() << "iRT Cal Metrics: rmse" << rmse << "mean" << mean << "stDev" << stDev;
+        if (verbosity > 0) {
+            qDebug() << "iRT Cal Metrics: rmse" << rmse << "mean" << mean << "stDev" << stDev;
+        }
 
         *stDevScanTimeDiff = stDev;
 
@@ -77,7 +80,6 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
 
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
-    qDebug() << "Calibarating iRT->ScanTime";
 
     const auto insertLogic = [](const MsCalibarationReaderRow &r){
         return QPair(r.iRTPredicted, r.scanTime);
@@ -93,13 +95,16 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
             );
 
     double stDevScanTimeDiff;
-    e = generateMetricsIRTtoScanTime(data, &stDevScanTimeDiff); ree;
+    e = generateMetricsIRTtoScanTime(data, m_params.verbosity, &stDevScanTimeDiff); ree;
     m_scanTimeStd = stDevScanTimeDiff;
 
     e = m_iRTtoScanTimeMapper.init(data); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
-    qDebug() << "scanTimeStDev" << m_scanTimeStd;
+    if (m_params.verbosity > 0) {
+        qDebug() << "scanTimeStDev" << m_scanTimeStd;
+
+    }
     m_isInitRT = true;
 
     ERR_RETURN
@@ -117,6 +122,7 @@ namespace {
 
     Err buildMzCalData(
             const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
+            int verbosity,
             QVector<Inp> *inputs
             ) {
 
@@ -152,15 +158,19 @@ namespace {
             }
         }
 
-        qDebug() << inputs->size() << "points for mz recalibration";
+        if (verbosity > 0) {
+            qDebug() << inputs->size() << "points for mz recalibration";
+
+        }
         ERR_RETURN
     }
 
-    Err removeMassOutliers(QVector<Inp> *inp) {
+    Err removeMassOutliers(
+        int verbosity,
+        QVector<Inp> *inp
+        ) {
 
         ERR_INIT
-
-        qDebug() << "Removing mz outliers for calibration";
 
         e = ErrorUtils::isNotEmpty(*inp); ree;
 
@@ -191,10 +201,12 @@ namespace {
         const double stDevStDev = MathUtils::stDev(stDevs);
         const auto stDevsMinMax = std::minmax_element(stDevs.begin(), stDevs.end());
 
-        qDebug() << "ppmMeanAll" << ppmMean << "ppmStDevAll"
-                << ppmStDev << "ppmMinAll" << *ppmsMinMax.first << "ppmMaxAll" << *ppmsMinMax.second;
-        qDebug() << "stDevMeanAll" << stDevMean << "stDevMeanAll" << stDevStDev
-                << "stDevMinAll" << *stDevsMinMax.first << "stDevMaxAll" << *stDevsMinMax.second;
+        if (verbosity > 0) {
+            qDebug() << "ppmMeanAll" << ppmMean << "ppmStDevAll"
+                    << ppmStDev << "ppmMinAll" << *ppmsMinMax.first << "ppmMaxAll" << *ppmsMinMax.second;
+            qDebug() << "stDevMeanAll" << stDevMean << "stDevMeanAll" << stDevStDev
+                    << "stDevMinAll" << *stDevsMinMax.first << "stDevMaxAll" << *stDevsMinMax.second;
+        }
 
         constexpr int ppmStDevMultiplier = 3;
         const auto terminatorLogic = [&](const Inp &i){
@@ -230,7 +242,8 @@ namespace {
 
     Err generateMetricsMzReCal(
             const QVector<Inp> &inputs,
-            const int polynomialOrder,
+            int polynomialOrder,
+            int verbosity,
             double *stDevMz,
             QVector<double> *calibrationCurveCoEffs
     ) {
@@ -290,9 +303,11 @@ namespace {
         const double meanReCal = MathUtils::mean(ppmReCals);
         const double stDevReCal = MathUtils::stDev(ppmReCals);
 
-        qDebug() << "Mz Cal Metrics: rmse" << rmse;
-        qDebug() << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
-        qDebug() << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
+        if (verbosity > 0) {
+            qDebug() << "Mz Cal Metrics: rmse" << rmse;
+            qDebug() << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
+            qDebug() << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
+        }
 
         *stDevMz = stDevReCal;
 
@@ -301,7 +316,8 @@ namespace {
 
     Err buildMzCalibrationCurve(
         const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
-        const int polynomialOrder,
+        int polynomialOrder,
+        int verbosity,
         double *mzStDev,
         QVector<double> *calibrationCurveCoEffs
         ) {
@@ -313,13 +329,14 @@ namespace {
         //TODO figure out how to tighten this up.  StDev doesn't change implying that this algo is simply shifting everything.
 
         QVector<Inp> inputs;
-        e = buildMzCalData(msCalibarationReaderRows, &inputs); ree;
+        e = buildMzCalData(msCalibarationReaderRows, verbosity, &inputs); ree;
         filterTop70PercentByIntensity(&inputs);
-        e = removeMassOutliers(&inputs); ree;
+        e = removeMassOutliers(verbosity, &inputs); ree;
 
         e = generateMetricsMzReCal(
             inputs,
             polynomialOrder,
+            verbosity,
             mzStDev,
             calibrationCurveCoEffs
             ); ree;
@@ -342,11 +359,15 @@ Err MsCalibratomatic::setMassCalibrationCoeffs(
         e = buildMzCalibrationCurve(
             msCalibarationReaderRows,
             m_polynomialOrderMassCal,
+            m_params.verbosity,
             &m_mzStDevMS1,
             &m_calibrationCurveCoeffsMS1
         ); ree;
 
-        qDebug() << "mzStDevMS1" << m_mzStDevMS1;
+        if (m_params.verbosity > 0) {
+            qDebug() << "mzStDevMS1" << m_mzStDevMS1;
+        }
+
         e = ErrorUtils::isTrue(m_mzStDevMS1 > 0.0); ree;
 
         m_isInitMS1 = true;
@@ -357,11 +378,14 @@ Err MsCalibratomatic::setMassCalibrationCoeffs(
     e = buildMzCalibrationCurve(
         msCalibarationReaderRows,
         m_polynomialOrderMassCal,
+        m_params.verbosity,
         &m_mzStDevMS2,
         &m_calibrationCurveCoeffsMS2
     ); ree;
 
-    qDebug() << "mzStDevMS2" << m_mzStDevMS2;
+    if (m_params.verbosity > 0) {
+        qDebug() << "mzStDevMS2" << m_mzStDevMS2;
+    }
     e = ErrorUtils::isTrue(m_mzStDevMS2 > 0.0); ree;
 
     m_isInitMS2 = true;

@@ -87,6 +87,7 @@ namespace {
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
         int threadCount,
+        int verbosity,
         QVector<float> *weights
         ) {
 
@@ -125,9 +126,11 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
 
-    qDebug() << "fit weights" << et.restart() << "mSec";
-    qDebug() << "Weights:" << *weights;
-    qDebug() << "b:" << b;
+    if (verbosity > 0) {
+        qDebug() << "fit weights" << et.restart() << "mSec";
+        qDebug() << "Weights:" << *weights;
+        qDebug() << "b:" << b;
+    }
 
     ERR_RETURN
 }

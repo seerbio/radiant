@@ -10,6 +10,7 @@
 #include "ErrorUtils.h"
 #include "PointFF.h"
 
+#include <QElapsedTimer>
 #include <QPointF>
 #include <QString>
 #include <QVector>
@@ -159,14 +160,42 @@ public:
 
     const int MIN_MS2_IONS = 6;
 
-
     const QString MS1Key = QStringLiteral("MS1Key");
 
     static QString VERSION();
+
 };
 
 
 const extern UTILSLIB_EXPORTS GlobalSettings S_GLOBAL_SETTINGS;
+
+
+class SingletonTimer {
+
+public:
+
+    static SingletonTimer &getInstance() {
+        static SingletonTimer instance;
+        return instance;
+    }
+
+    SingletonTimer(SingletonTimer const&) = delete;
+    SingletonTimer(SingletonTimer&&) = delete;
+    SingletonTimer& operator=(SingletonTimer const&) = delete;
+    SingletonTimer& operator=(SingletonTimer &&) = delete;
+
+    QElapsedTimer &getTimer() {
+        return m_timer;
+    }
+
+private:
+
+    SingletonTimer() {
+        m_timer.start();
+    }
+
+    QElapsedTimer m_timer;
+};
 
 
 #endif //GLOBALSETTINGS_H

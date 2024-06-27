@@ -37,7 +37,8 @@ public:
             int epochsMax,
             int batchSize,
             double learningRate,
-            int seed
+            int seed,
+            int verbosity
             );
 
     /*!

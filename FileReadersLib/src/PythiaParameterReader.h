@@ -155,7 +155,7 @@ struct PythiaParameters{
     double ms1ExtractionWidthPPM = 20.0;
     double ms2ExtractionWidthPPM = 20.0;
 
-    int verbosity = 1;
+    int verbosity = 0;
     bool reportDecoys = false;
     bool subtractShadows = true;
 

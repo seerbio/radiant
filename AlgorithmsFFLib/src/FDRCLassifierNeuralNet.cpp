@@ -58,6 +58,7 @@ Err FDRCLassifierNeuralNet::exec(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
         int seed,
+        int verbosity,
         QVector<float> *meanPredictions
         ) {
 
@@ -69,7 +70,8 @@ Err FDRCLassifierNeuralNet::exec(
     e = trainClassifier(
             xData,
             yData,
-            seed
+            seed,
+            verbosity
             ); ree;
 
     e = predictBaggedClassifiers(xData, meanPredictions); ree;
@@ -80,7 +82,8 @@ Err FDRCLassifierNeuralNet::exec(
 Err FDRCLassifierNeuralNet::trainClassifier(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
-        int seed
+        int seed,
+        int verbosity
         ) {
 
     ERR_INIT
@@ -91,7 +94,8 @@ Err FDRCLassifierNeuralNet::trainClassifier(
     e = trainBaggedNeuralNets(
             xData,
             yData,
-            seed
+            seed,
+            verbosity
             ); ree;
 
     ERR_RETURN
@@ -109,7 +113,10 @@ namespace {
         int bag = -1;
     };
 
-    Err trainingLogic(const CandidateClassifierParallelInput &input) {
+    Err trainingLogic(
+        const CandidateClassifierParallelInput &input,
+        int verbosity
+        ) {
 
         ERR_INIT
 
@@ -122,7 +129,8 @@ namespace {
                 input.epochs,
                 input.batchSize,
                 input.learningRate,
-                input.bag
+                input.bag,
+                verbosity
         );
         e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
 
@@ -133,7 +141,8 @@ namespace {
 Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         const QVector<QVector<float>> &xData,
         const QVector<float> &yData,
-        int seed
+        int seed,
+        int verbosity
         ) {
 
     ERR_INIT
@@ -176,7 +185,7 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     }
 #else
     for (const CandidateClassifierParallelInput &ccpi : parallelInputs) {
-        e = trainingLogic(ccpi); ree;
+        e = trainingLogic(ccpi, verbosity); ree;
     }
 #endif
 
@@ -287,7 +296,9 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
             builder += k + "%: " + QString::number(it.value()) + " | ";
         }
 
-        qDebug() << "PSMs found:" << builder;
+        if (verbose > 0) {
+            qDebug() << "PSMs found:" << builder;
+        }
     }
 
     ERR_RETURN
@@ -297,7 +308,7 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
         QVector<CandidateScores*> &candidateScores,
         bool verbose,
         QMap<int, int> *fdrVsCount
-) {
+        ) {
 
     ERR_INIT
 
@@ -311,10 +322,6 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
         ); ree;
         const int fdrPercent = static_cast<int>(fdrThresh * 100);
         fdrVsCount->insert(fdrPercent, foundAtThreshold);
-
-        if (!verbose) {
-            continue;
-        }
     }
 
     QString builder;
@@ -323,7 +330,10 @@ Err FDRCLassifierNeuralNet::outputFDRResults(
         builder += k + "%: " + QString::number(it.value())  + " | ";
     }
 
-    qDebug() << "PSMs found:" << builder;
+    if (verbose > 0) {
+        qDebug() << "PSMs found:" << builder;
+
+    }
 
     ERR_RETURN
 }

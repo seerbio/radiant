@@ -135,6 +135,7 @@ public:
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
             int seed,
+            int verbosity,
             QVector<float> *meanPredictions
     );
 
@@ -188,13 +189,15 @@ private:
     Err trainClassifier(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
-            int seed
+            int seed,
+            int verbosity
             );
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
-            int seed
+            int seed,
+            int verbosity
             );
 
     Err predictBaggedClassifiers(

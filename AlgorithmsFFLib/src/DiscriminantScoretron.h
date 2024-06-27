@@ -20,6 +20,7 @@ public:
     static Err trainLDAClassifier(
             const QVector<QPair<FeaturesArrayDecoys*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
             int threadCount,
+            int verbosity,
             QVector<float> *weights
             );
 

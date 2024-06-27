@@ -283,7 +283,7 @@ namespace {
                 allCandidateScores.push_back(candidateScoresDecoy);
             }
 
-            if (pi.pythiaParameters.verbosity > 1) {
+            if (pi.pythiaParameters.verbosity > 0) {
                 qDebug() << "Target key processed in" << pi.targetKey << et.restart() << "mSec";
             }
 

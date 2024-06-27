@@ -85,10 +85,7 @@ public:
 
 private:
 
-    Err buildCalibration(
-            const MsReaderPointerAcc *msReaderPointerAcc,
-            QVector<CandidateScores*> *candidateScoresForTrainings
-            );
+    Err buildCalibration(const MsReaderPointerAcc *msReaderPointerAcc);
 
     Err processBatch(
         bool useExtendedScores,
@@ -111,7 +108,7 @@ private:
 
     Err recalibrateMs1Points(const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized);
 
-    Err optimizeParameters(const QVector<CandidateScores*> &candidateScoresTrainings);
+    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err mainAnalysis(
             MsReaderPointerAcc *msReaderPointerAcc,
