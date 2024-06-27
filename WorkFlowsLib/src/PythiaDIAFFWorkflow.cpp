@@ -354,7 +354,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &targetCountBelowFDRThresholdOnePercent
         ); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Pre Neural Net Count" << targetCountBelowFDRThreshold << "| Post Neural Net Count" << targetCountBelowFDRThresholdOnePercent;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
     const bool candidateScoresSortedHiLo = std::is_sorted(
         candidateScoreClassifierPntrs.begin(),
