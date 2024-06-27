@@ -290,7 +290,6 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
-
     ERR_INIT
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
@@ -318,13 +317,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
 
-     QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
-     e = filterScoredCandidatesTo60PercentFDR(
-             m_pythiaParameters.minMs2FragCount,
-             &candidateScoresTargetsAndDecoys,
-             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-             ); ree;
-     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
+    e = filterScoredCandidatesTo60PercentFDR(
+        m_pythiaParameters.minMs2FragCount,
+        &candidateScoresTargetsAndDecoys,
+        &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+        ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
     // qDebug() << "Starting spectrum centric search";
     // QElapsedTimer et;
@@ -336,7 +335,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     //     ); ree;
     // qDebug() << "Spectrum centric searched finsihed in" << et.elapsed() << "mSec";
 
-     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
 
@@ -345,7 +344,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             seedFirstTry,
             &candidateScoreClassifierPntrs
-    ); ree;
+            ); ree;
 
     int targetCountBelowFDRThresholdOnePercent;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
