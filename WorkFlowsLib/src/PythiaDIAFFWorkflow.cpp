@@ -336,11 +336,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    // ERR_RETURN
-    const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
+
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-            seedFirstTry,
+            S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs
             ); ree;
 
@@ -351,7 +350,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &targetCountBelowFDRThresholdOnePercent
         ); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
+            << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
     const bool candidateScoresSortedHiLo = std::is_sorted(
         candidateScoreClassifierPntrs.begin(),
@@ -420,7 +421,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             }
 
         }
-        qDebug() << "Alt:" << targetCountBelowFDRThresholdOnePercent << "| Counter:" << counter << " | Decoys:" <<  decoys << "| Entrap:" << entrap << "| Entrap%" << entrap / (double)counter;
+        qDebug() << "Alt:" << targetCountBelowFDRThresholdOnePercent
+                << "| Counter:" << counter
+                << "| Decoys:" <<  decoys
+                << "| Entrap:" << entrap
+                << "| Entrap%" << entrap / (double)counter;
     }
 
     QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
