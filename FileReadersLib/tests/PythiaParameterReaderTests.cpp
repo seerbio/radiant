@@ -35,24 +35,34 @@ void PythiaParameterReaderTests::readFileTest() {
     PythiaParameterReader::buildPythiaParameters(filePath, &pythiaParameters);
     QCOMPARE(e, eNoError);
 
-    const QStringList cTermExpected = {"K", "R"};
-    const QStringList nTermExpected = {};
-
-    QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 20.5);
-    QCOMPARE(pythiaParameters.mzMinMS2, 100.1);
-    QCOMPARE(pythiaParameters.mzMaxMS2, 1500.2);
-
+    QCOMPARE(pythiaParameters.threadCount, 16);
+    QCOMPARE(pythiaParameters.verbosity, 1);
     QCOMPARE(pythiaParameters.chargeStateMin, 1);
     QCOMPARE(pythiaParameters.chargeStateMax, 4);
+    QCOMPARE(pythiaParameters.mzMinMS2, 200.0);
+    QCOMPARE(pythiaParameters.mzMaxMS2, 1500.0);
+    QCOMPARE(pythiaParameters.peptideLengthMin, 8);
+    QCOMPARE(pythiaParameters.peptideLengthMax, 31);
+    QCOMPARE(pythiaParameters.trancheSizeMax, 1e4);
     QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 0.5);
-
-    QCOMPARE(pythiaParameters.filterLength, 3);
-    QCOMPARE(pythiaParameters.sigma, 1.0);
-    QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.0);
-    QCOMPARE(pythiaParameters.smoothCount, 1);
-
+    QCOMPARE(pythiaParameters.ms1ExtractionWidthPPM, 20.0);
+    QCOMPARE(pythiaParameters.filterLengthIntegration, 6);
+    QCOMPARE(pythiaParameters.filterLengthMS2, 4);
+    QCOMPARE(pythiaParameters.ionsSharedToReject, 2);
+    QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 21.0);
+    QCOMPARE(pythiaParameters.minMs2FragCount, 3);
+    QCOMPARE(pythiaParameters.scanTimeWindowStDevs, 4);
+    QCOMPARE(pythiaParameters.subtractShadows, false);
+    QCOMPARE(pythiaParameters.smoothCountMS2, 2);
+    QCOMPARE(pythiaParameters.stopThresholdFractionMS2, 0.666f);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
+    QCOMPARE(pythiaParameters.filterLength, 4);
+    QCOMPARE(pythiaParameters.sigma, 1.1);
+    QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.1);
+    QCOMPARE(pythiaParameters.smoothCount, 3);
+    QCOMPARE(pythiaParameters.minScanCount, 4);
+    QCOMPARE(pythiaParameters.skipScanCount, 4);
 
 }
 

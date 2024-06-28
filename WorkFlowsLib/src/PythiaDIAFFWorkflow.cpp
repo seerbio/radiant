@@ -1383,13 +1383,11 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     constexpr bool useExtendedScores = true;
     constexpr bool useNeuralNetworkScores = false;
-
-    const int topNMs2IonsMainAnalysis = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-            );
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+    constexpr int topNMs2IonsMainAnalysis = 12;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Using top:"
+            << topNMs2IonsMainAnalysis
+            << "fragments for main analysis";
 
     QElapsedTimer et;
     et.start();

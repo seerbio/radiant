@@ -2,46 +2,42 @@
 
 [General]
 threadCount = 16
+verbosity = 1
 
-[PrecursorParams]
+[LibraryParams]
 chargeStateMin = 1
 chargeStateMax = 4
+mzMinMS2 = 200.0
+mzMaxMS2 = 1500.0
+peptideLengthMin = 8
+peptideLengthMax = 31
+trancheSizeMax = 1e4
+
+[MS1Params]
 precursorExtractionWindowThomsons = 0.5
 ms1ExtractionWidthPPM = 20.0
 
 [MS2Params]
-minFoundMzPeaks = 2
-ms2ExtractionWidthPPM = 20.5
-mzMinMS2 = 100.1
-mzMaxMS2 = 1500.2
-
-[PeakIntegrationParams]
-filterLength = 3
-sigma = 1.0
-signalToNoiseRatio = 2.0
-smoothCount = 1
+filterLengthIntegration = 6
+filterLengthMS2 = 4
+ionsSharedToReject = 2
+ms2ExtractionWidthPPM = 21.0
+minMs2FragCount = 3
+scanTimeWindowStDevs = 4
+subtractShadows = false
+smoothCountMS2 = 2
+stopThresholdFractionMS2 = 0.666
 
 [FdrParams]
 percentFDR = 2.0
 reportDecoys = true
 
-[[Modification]]
-residue = "C"
-name = "Carbamidomethyl"
-type = "fixed"
-formula = "H3C2NO"
+[PeakIntegrationParams]
+filterLength = 4
+sigma = 1.1
+signalToNoiseRatio = 2.1
+smoothCount = 3
 
-[[Modification]]
-residue = "M"
-name = "Oxidation"
-type = "dynamic"
-formula = "O"
-
-[[Modification]]
-residue = "N-Term-Protein"
-name = "Acetyl"
-type = "dynamic"
-formula = "C2H3O"
-
-
-
+[FeatureFinderParams]
+minScanCount = 4
+skipScanCount = 4

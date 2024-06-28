@@ -63,7 +63,7 @@ Err CandidateScorertron::Private::init(const PythiaParameters &pythiaParameters)
 
     Eigen::MatrixX<float> kernelIntegration;
     e = EigenKernelUtils::buildSavitzkyGolayKernel(
-        m_pythiaParameters.filterlengthIntegration,
+        m_pythiaParameters.filterLengthIntegration,
         order,
         derivative,
         rate,
