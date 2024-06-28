@@ -355,10 +355,10 @@ bool CandidateClassifier::trainCandidateClassifier(
 bool CandidateClassifier::predict(
         const QVector<QVector<float>> &xData,
         QVector<float> *predictions
-        ) {
+        ) const {
     return d_ptr->predict(xData, predictions);
 }
 
-void CandidateClassifier::setThreadCount(int threadCount) {
+void CandidateClassifier::setThreadCount(int threadCount) const {
     d_ptr->setThreadCount(threadCount);
 }
