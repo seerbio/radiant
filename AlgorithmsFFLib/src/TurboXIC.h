@@ -60,7 +60,7 @@ public:
     * @param scanNumberVsScanPoints A map of scan numbers to scan points.
     * @return An error code indicating success or failure.
     */
-    Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+    Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const;
 
     /**
     * @brief Initializes the TurboXIC private implementation.
@@ -71,7 +71,7 @@ public:
     * @param scanNumberVsScanPoints A pointer to a map of scan numbers to scan points.
     * @return An error code indicating success or failure.
     */
-    Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints);
+    Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const;
 
     /**
     * @brief Extracts XIC points within the specified m/z range.
