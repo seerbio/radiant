@@ -133,48 +133,48 @@ struct PythiaParameters{
     void print() const {
         qDebug() << QStringLiteral("** Digest Parameters **************************");
 
-        qDebug() << PythiaParameterReaderConstants::kGeneral;
-        qDebug() << PythiaParameterReaderConstants::kThreadCount << threadCount;
-        qDebug() << PythiaParameterReaderConstants:: kVerbosity << verbosity;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kGeneral << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
 
-        qDebug() << PythiaParameterReaderConstants::kLibraryParams;
-        qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
-        qDebug() << PythiaParameterReaderConstants::kChargeStateMax << chargeStateMax;
-        qDebug() << PythiaParameterReaderConstants::kMzMinMS2 << mzMinMS2;
-        qDebug() << PythiaParameterReaderConstants::kMzMaxMS2 << mzMaxMS2;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
-        qDebug() << PythiaParameterReaderConstants::kTrancheSizeMax << trancheSizeMax;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMax) << chargeStateMax;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMzMinMS2) << mzMinMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMzMaxMS2) << mzMaxMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMin) << peptideLengthMin;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMax) << peptideLengthMax;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kTrancheSizeMax) << trancheSizeMax;
 
-        qDebug() << PythiaParameterReaderConstants::kMS1Params;
-        qDebug() << PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons << precursorExtractionWindowThomsons;
-        qDebug() << PythiaParameterReaderConstants::kMS1ExtractionWidthPPM << ms1ExtractionWidthPPM;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS1Params << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons) << precursorExtractionWindowThomsons;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
 
-        qDebug() << PythiaParameterReaderConstants::kMS2Params;
-        qDebug() << PythiaParameterReaderConstants::kFilterLengthIntegration << filterLengthIntegration;
-        qDebug() << PythiaParameterReaderConstants::kFilterLengthMS2 << filterLengthMS2;
-        qDebug() << PythiaParameterReaderConstants::kIonsSharedToReject << ionsSharedToReject;
-        qDebug() << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM << ms2ExtractionWidthPPM;
-        qDebug() << PythiaParameterReaderConstants::kMinMs2FragCount << minMs2FragCount;
-        qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
-        qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
-        qDebug() << PythiaParameterReaderConstants::kSmoothCountMS2 << smoothCountMS2;
-        qDebug() << PythiaParameterReaderConstants::kStopThresholdFractionMS2 << stopThresholdFractionMS2;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthIntegration) << filterLengthIntegration;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
 
-        qDebug() << PythiaParameterReaderConstants::kFdrParams;
-        qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
-        qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kReportDecoys) << reportDecoys;
 
-        qDebug() << PythiaParameterReaderConstants::kPeakIntegrationParams;
-        qDebug() << PythiaParameterReaderConstants::kFilterLength << filterLength;
-        qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
-        qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
-        qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
-        qDebug() << PythiaParameterReaderConstants::kStopThresholdFraction << stopThresholdFraction;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kPeakIntegrationParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLength) << filterLength;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCount) << smoothCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSigma) << sigma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSignalToNoiseRatio) << signalToNoiseRatio;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFraction) << stopThresholdFraction;
 
-        qDebug() << PythiaParameterReaderConstants::kFeatureFinderParams;
-        qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
-        qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFeatureFinderParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMinScanCount) << minScanCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSkipScanCount) << skipScanCount;
 
         qDebug() << QStringLiteral("**********************************************");
     }

@@ -64,6 +64,8 @@ void PythiaParameterReaderTests::readFileTest() {
     QCOMPARE(pythiaParameters.minScanCount, 4);
     QCOMPARE(pythiaParameters.skipScanCount, 4);
 
+    pythiaParameters.print();
+
 }
 
 
