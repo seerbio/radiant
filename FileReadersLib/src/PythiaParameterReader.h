@@ -131,7 +131,7 @@ struct PythiaParameters{
     }
 
     void print() const {
-        qDebug() << QStringLiteral("** Digest Parameters **************************");
+        qDebug() << QStringLiteral("** Pythia Parameters **************************");
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kGeneral << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;

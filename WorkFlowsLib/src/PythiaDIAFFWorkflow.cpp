@@ -1157,7 +1157,7 @@ namespace {
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
         const QVector<double> ppmList = {
-            5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 23, 26, 30, 35, 40, 50
+            5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
         };
 
         for (double ppm : ppmList ) {
@@ -1197,10 +1197,12 @@ namespace {
             }
         }
 
-        const int polynomialOrder = std::min(results.size() - 2, 4);
+        constexpr int polynomialOrder = 3;
 
         QVector<double> coeffs;
         EigenUtils::fitPolynomialQRDecomposition(xyMat, polynomialOrder, &coeffs);
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << coeffs;
 
         QVector<double> xPoints = {results.first().ppm};
         while (xPoints.back() < results.back().ppm) {
@@ -1222,7 +1224,6 @@ namespace {
         }
 
         *ppmSetting = xPoints.at(std::max_element(yPoints.begin(), yPoints.end()) - yPoints.begin());
-
 
         ERR_RETURN
     }
@@ -1347,7 +1348,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
             continue;
         }
 
-        constexpr int maxCountsSinceLastHigh = 4;
+        constexpr int maxCountsSinceLastHigh = 3;
         if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
             break;
         }
