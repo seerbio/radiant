@@ -1202,7 +1202,7 @@ namespace {
             }
         }
 
-        constexpr int polynomialOrder = 3;
+        constexpr int polynomialOrder = 2;
 
         QVector<double> coeffs;
         EigenUtils::fitPolynomialQRDecomposition(xyMat, polynomialOrder, &coeffs);
