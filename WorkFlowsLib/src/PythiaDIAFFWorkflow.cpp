@@ -421,7 +421,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             }
 
         }
-        qDebug() << "Alt:" << targetCountBelowFDRThresholdOnePercent
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "Alt:" << targetCountBelowFDRThresholdOnePercent
                 << "| Counter:" << counter
                 << "| Decoys:" <<  decoys
                 << "| Entrap:" << entrap
