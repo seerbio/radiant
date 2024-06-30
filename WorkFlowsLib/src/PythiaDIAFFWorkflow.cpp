@@ -1192,11 +1192,12 @@ namespace {
         ERR_INIT
         e = ErrorUtils::isNotEmpty(results); ree;
 
-        Eigen::MatrixX<double> xyMat(results.size(), 2);
+        Eigen::MatrixX<double> xyMat(results.size() + 1, 2);
+        xyMat.setZero();
         for (int row = 0; row < results.size(); row++) {
             const DOEResult &doeResult = results.at(row);
-            xyMat.coeffRef(row, 0) = doeResult.ppm;
-            xyMat.coeffRef(row, 1) = static_cast<double>(doeResult.fdrCount);
+            xyMat.coeffRef(row + 1, 0) = doeResult.ppm;
+            xyMat.coeffRef(row + 1, 1) = static_cast<double>(doeResult.fdrCount);
             if (verbosity > 0) {
                 qDebug() << doeResult.ppm << doeResult.fdrCount << xyMat.coeff(row, 1);
 
@@ -1548,7 +1549,8 @@ namespace {
 
         ERR_INIT
 
-        const int batchSize = std::min(200, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+        constexpr int batchSizeMin = 500;
+        const int batchSize = std::min(batchSizeMin, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Batch Size:" << batchSize;
 
