@@ -18,6 +18,7 @@
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
     ERR_INIT
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading MsFile";
     e = setMsReaderPointer(filePath); ree;
     ERR_RETURN
 }

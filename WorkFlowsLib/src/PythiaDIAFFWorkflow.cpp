@@ -292,6 +292,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
+
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
@@ -301,7 +302,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
 
     e = buildCalibration(&msReaderPointerAcc); ree;
-    
+
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(&msReaderPointerAcc); ree;
     }
@@ -445,6 +446,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 namespace {
 
+    struct TurboXICLoadInput {
+        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
+        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+        MzTargetKey mzTargetKey;
+    };
+
+    std::tuple<Err, MzTargetKey, TurboXIC*> buildTurboXICLogic(const TurboXICLoadInput &turboXicLoadInput) {
+
+        ERR_INIT
+
+        MsFrame msFrame;
+        e = msFrame.init(
+            turboXicLoadInput.scanNumberVsScanPoints,
+            turboXicLoadInput.scanNumberVsScanTime
+            ); rtee;
+
+        auto turboXic = new TurboXIC();
+        e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
+
+        return {e, turboXicLoadInput.mzTargetKey, turboXic};
+    }
+
     Err buildMzTargetKeyVsTurboXicPntrs(
         const QVector<MsScanInfo> &uniqueMsScanInfos,
         const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
@@ -458,19 +481,29 @@ namespace {
         e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
         e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
 
+        QVector<TurboXICLoadInput> turboXicLoadInputs;
         for (const MsScanInfo &msScanInfo : uniqueMsScanInfos) {
 
             const MzTargetKey mzTargetKey = msScanInfo.targetKey();
             e = ErrorUtils::contains(mzTargetKey, diaTargetFrames); ree;
 
-            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints = diaTargetFrames.value(mzTargetKey);
+            TurboXICLoadInput turboXicLoadInput;
+            turboXicLoadInput.scanNumberVsScanPoints = diaTargetFrames.value(mzTargetKey);
+            turboXicLoadInput.scanNumberVsScanTime = scanNumberVsScanTime;
+            turboXicLoadInput.mzTargetKey = mzTargetKey;
 
-            MsFrame msFrame;
-            e = msFrame.init(scanNumberVsScanPoints, scanNumberVsScanTime); ree;
+            turboXicLoadInputs.push_back(turboXicLoadInput);
+        }
 
-            auto turboXic = new TurboXIC();
-            e = turboXic->init(msFrame.frameIndexVsScanPoints()); ree;
-            mzTargetKeyVsTurboXicPntr->insert(mzTargetKey, turboXic);
+        QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
+            turboXicLoadInputs,
+            buildTurboXICLogic
+            );
+        futures.waitForFinished();
+
+        for (const std::tuple<Err, MzTargetKey, TurboXIC*> &result : futures) {
+            e = std::get<0>(result); ree;
+            mzTargetKeyVsTurboXicPntr->insert(std::get<1>(result), std::get<2>(result));
         }
 
         ERR_RETURN
