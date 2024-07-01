@@ -224,7 +224,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::CosineSimSpectrumCubed,
             CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
-            CandidateScores::Features::CosineSimSum20,
+            // CandidateScores::Features::CosineSimSum20,//TODO delete
             CandidateScores::Features::CosineSimSumTop,
             CandidateScores::Features::Charge,
             CandidateScores::Features::CosineSimSumBottom,
@@ -248,7 +248,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSpectrumCubed,
                 CandidateScores::Features::KlDivSpectrumCubeRoot,
                 CandidateScores::Features::CosineSimSum45,
-                CandidateScores::Features::CosineSimSum20,
+                // CandidateScores::Features::CosineSimSum20,//TODO delete
                 CandidateScores::Features::CosineSimSumTop,
                 CandidateScores::Features::CosineSimSumBottom,
                 CandidateScores::Features::TopBottomRatio,
@@ -262,7 +262,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::KlDivSpectrum,
                 CandidateScores::Features::CosineSimSpectrum,
                 CandidateScores::Features::CosineSim45MS1,
-                CandidateScores::Features::CosineSim20MS1,
+                // CandidateScores::Features::CosineSim20MS1,//TODO delete
                 CandidateScores::Features::CosineSim100MS1PreMono,
                 CandidateScores::Features::CosineSim100MS1Iso1,
                 CandidateScores::Features::CosineSim100MS1Iso2,
@@ -463,25 +463,25 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3,
                 CandidateScores::Features::Ms1MzMeanFound100,
                 CandidateScores::Features::Ms1MzMeanFound45,
-                CandidateScores::Features::Ms1MzMeanFound20,
+                // CandidateScores::Features::Ms1MzMeanFound20,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMono,
                 CandidateScores::Features::Ms1MzMeanFoundIso1,
                 CandidateScores::Features::Ms1MzMeanFoundIso2,
                 CandidateScores::Features::Ms1MzMeanFound100PPM,
                 CandidateScores::Features::Ms1MzMeanFound45PPM,
-                CandidateScores::Features::Ms1MzMeanFound20PPM,
+                // CandidateScores::Features::Ms1MzMeanFound20PPM,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso1PPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso2PPM,
                 CandidateScores::Features::Ms1MzStDevFound100,
                 CandidateScores::Features::Ms1MzStDevFound45,
-                CandidateScores::Features::Ms1MzStDevFound20,
+                // CandidateScores::Features::Ms1MzStDevFound20,//TODO delete
                 CandidateScores::Features::Ms1MzStDevFoundPreMono,
                 CandidateScores::Features::Ms1MzStDevFoundIso1,
                 CandidateScores::Features::Ms1MzStDevFoundIso2,
                 CandidateScores::Features::Ms1IntensityFound100,
                 CandidateScores::Features::Ms1IntensityFound45,
-                CandidateScores::Features::Ms1IntensityFound20,
+                // CandidateScores::Features::Ms1IntensityFound20,//TODO delete
                 CandidateScores::Features::Ms1IntensityFoundPreMono,
                 CandidateScores::Features::Ms1IntensityFoundIso1,
                 CandidateScores::Features::Ms1IntensityFoundIso2,
@@ -490,7 +490,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSpectrumStDev,
                 CandidateScores::Features::CosineSimSum100MS1,
                 CandidateScores::Features::MS1Averagine,
-                CandidateScores::Features::CosineSimSum100Frequencies,
                 CandidateScores::Features::CosineSimSum100Window1p5X,
                 CandidateScores::Features::CosineSimSum100Window2X
             };
