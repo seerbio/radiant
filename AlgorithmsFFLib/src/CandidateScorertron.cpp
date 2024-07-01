@@ -548,7 +548,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
         QVector<XICPoints> xicPointsVec100;
         QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
-        // QVector<XICPoints> xicPointsVec20;
+        // QVector<XICPoints> xicPointsVec20; //TODO delete
         e = getXICs(
             ms2IonsResized,
             static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
