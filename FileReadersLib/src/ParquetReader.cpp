@@ -14,6 +14,9 @@
 //NOTE that these have to go after parquet arrow import or there will be a compile error.
 #include "ParquetReader.h"
 
+#include "ParallelUtils.h"
+
+#include <QtConcurrent/QtConcurrent>
 
 class Q_DECL_HIDDEN ParquetReader::Private
 {
@@ -56,16 +59,12 @@ ParquetReader::Private::~Private() {}
 
 namespace {
 
-    QMap<QString, QVector<QVariant>> splitMapsToColumns(
-            const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-            ) {
+    QMap<QString, QVector<QVariant>> splitLogic(const QVector<QSharedPointer<ParquetReaderInputBase>> &pribs) {
 
         QMap<QString, QVector<QVariant>> mapsAsColumns;
 
-        for (const QSharedPointer<ParquetReaderInputBase> & prib : rowsToWrite) {
-
+        for (const QSharedPointer<ParquetReaderInputBase> &prib : pribs) {
             const QMap<QString, QVariant> &map = prib->map();
-
             for (auto it = map.begin(); it != map.end(); it++) {
 
                 const QString &columnName = it.key();
@@ -73,9 +72,32 @@ namespace {
 
                 mapsAsColumns[columnName].push_back(value);
             }
-
         }
 
+        return mapsAsColumns;
+    }
+
+    QMap<QString, QVector<QVariant>> splitMapsToColumns(
+            const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
+            ) {
+
+        QMap<QString, QVector<QVariant>> mapsAsColumns;
+
+        QVector<QVector<QSharedPointer<ParquetReaderInputBase>>> rowsToWriteTranched;
+        ParallelUtils::trancheVectorForParallelizationInOrder(rowsToWrite, 8, 0, &rowsToWriteTranched);
+
+        QFuture<QMap<QString, QVector<QVariant>>> futures = QtConcurrent::mapped(
+            rowsToWriteTranched,
+            splitLogic
+            );
+        futures.waitForFinished();
+
+        for (const QMap<QString, QVector<QVariant>> &res : futures) {
+            for (auto it = res.begin(); it != res.end(); ++it) {
+                mapsAsColumns[it.key()].append(it.value());
+            }
+        }
+        
         return mapsAsColumns;
     }
 
