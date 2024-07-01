@@ -68,7 +68,7 @@ Err TargetDecoyCandidatePairScoretron2::init(
     e = m_msReaderPointerAcc->ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
 
     QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
-    for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); it++) {
+    for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); ++it) {
         ms1FramePtrs.insert(it.key(), &it.value());
     }
 
