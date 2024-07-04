@@ -88,6 +88,8 @@ struct PythiaParameters{
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
+    int topNIntegrations = 15;
+    int maxAnchorColumnIndex = 12;
 
     //[FdrParams]
     double percentFDR = 1.0;

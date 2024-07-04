@@ -263,8 +263,6 @@ Err CandidateScorertron::calculateScores(
 
 namespace {
 
-    constexpr int maxAnchorColumnIndex = 12;
-
     void filterXICPointsByAccuracyPPM(
         float mzVal,
         float ppmTol,
@@ -448,6 +446,7 @@ namespace {
         const MatriciesAndVecs &matriciesAndVecs,
         const Eigen::VectorX<float> &kernelIntegration,
         float minPeakCount,
+        int maxAnchorColumnIndex,
         Eigen::VectorX<float> *integrationVec
         ) {
 
@@ -481,6 +480,7 @@ namespace {
         const MatriciesAndVecs &matriciesAndVecs,
         const QVector<MS2Ion> &ms2IonsTheo,
         const Eigen::VectorX<float> &kernelIntegration,
+        int maxAnchorColumnIndex,
         Eigen::VectorX<float> *integrationVecCosineSim
         ) {
 
@@ -596,6 +596,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             *matriciesAndVecs,
             d_ptr->m_kernelIntegration,
             m_minPeakCount,
+            m_pythiaParameters.maxAnchorColumnIndex,
             &matriciesAndVecs->integrationVec
             ); ree;
 
@@ -603,6 +604,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             *matriciesAndVecs,
             ms2IonsResized,
             d_ptr->m_kernelIntegration,
+            m_pythiaParameters.maxAnchorColumnIndex,
             &matriciesAndVecs->integrationVecCosineSim
             ); ree;
 
@@ -841,6 +843,7 @@ namespace {
     Err findBestAnchorColumn(
         const Eigen::MatrixX<float> &matBlockTrimmed,
         const QVector<int> &apexStarts,
+        int maxAnchorColumnIndex,
         QVector<float> *peakCorrelations,
         int *bestAnchorColumnIndex,
         int *bestAnchorRowIndex
@@ -924,7 +927,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
     const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
     BestCorrelationResult *bestCorrelationResult
-    ) {
+    ) const {
 
     ERR_INIT
 
@@ -934,8 +937,10 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
-    constexpr int topNIntegrations = 15;
-    peakIntegrationsVsIntensityResized.resize(std::min(topNIntegrations, peakIntegrationsVsIntensityResized.size()));
+    peakIntegrationsVsIntensityResized.resize(std::min(
+        m_pythiaParameters.topNIntegrations,
+        peakIntegrationsVsIntensityResized.size()
+        ));
 
     for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
 
@@ -984,6 +989,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         e = findBestAnchorColumn(
             matBlockTrimmed,
             apexStarts,
+            m_pythiaParameters.maxAnchorColumnIndex,
             &peakCorrelations,
             &bestAnchorColumnIndex,
             &bestAnchorRowIndex
