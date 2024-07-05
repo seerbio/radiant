@@ -822,36 +822,40 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
                     m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
                     ); ree;
 
-            // candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            // candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
-            // filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            // constexpr int recalibrationPointCountMin = 30;
-            // qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
-            // if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
-            //     ERR_RETURN
-            // }
-            //
-            // QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-            // e = buildMsCalibrationReaderRows(
-            //         MSLevelEnum::MS1,
-            //         candidateScoresVecBatchPntrsRecal,
-            //         &msCalibrationReaderRowsMS1
-            //         ); ree;
-            //
-            // if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
-            //     ERR_RETURN
-            // }
-            //
-            // e = m_msCalibratomatic.setMassCalibrationCoeffs(
-            //     msCalibrationReaderRowsMS1,
-            //     MSLevelEnum::MS1
-            //     ); ree;
-            //
-            // e = recalibrateMzVals(
-            //         MSLevelEnum::MS1,
-            //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-            //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-            //         ); ree;
+            candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
+            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
+            filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
+            constexpr int recalibrationPointCountMin = 200;
+            qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
+            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+                qWarning() << "Skipping MS1 recalibration.  Not enough points found";
+                ERR_RETURN
+            }
+
+            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+            e = buildMsCalibrationReaderRows(
+                    MSLevelEnum::MS1,
+                    candidateScoresVecBatchPntrsRecal,
+                    m_pythiaParameters.verbosity,
+                    &msCalibrationReaderRowsMS1
+                    ); ree;
+
+            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+                ERR_RETURN
+            }
+
+            e = m_msCalibratomatic.setMassCalibrationCoeffs(
+                msCalibrationReaderRowsMS1,
+                MSLevelEnum::MS1
+                ); ree;
+
+            e = recalibrateMzVals(
+                    MSLevelEnum::MS1,
+                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+                    ); ree;
+
+            e = m_targetDecoyCandidatePairScoretron.reloadTurboXICMS1(); ree;
 
             break;
         }
@@ -1047,52 +1051,6 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::recalibrateMs1Points(const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.diaTargetFrames()->isEmpty()); ree;
-    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()->isEmpty()); ree;
-
-    QVector<CandidateScores*> candidateScoresMS1Cal = candidateScoresVecBatchPntrsResized;
-
-    if (m_pythiaParameters.verbosity > 0) {
-        qDebug() << candidateScoresMS1Cal.size() << "Precursors for MS1 calibration!";
-
-    }
-
-    filterMs1CandidateRowsByCorr(&candidateScoresMS1Cal);
-    
-    constexpr int recalibrationPointCountMin = 30;
-    if (candidateScoresMS1Cal.size() < recalibrationPointCountMin) {
-        ERR_RETURN
-    }
-
-    QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-    e = buildMsCalibrationReaderRows(
-            MSLevelEnum::MS1,
-            candidateScoresMS1Cal,
-            m_pythiaParameters.verbosity,
-            &msCalibrationReaderRowsMS1
-    ); ree;
-
-    if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
-        ERR_RETURN
-    }
-
-    e = m_msCalibratomatic.setMassCalibrationCoeffs(
-        msCalibrationReaderRowsMS1,
-        MSLevelEnum::MS1
-        ); ree;
-
-    // e = recalibrateMzVals(
-    //         MSLevelEnum::MS1,
-    //         m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-    //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-    // ); ree;
-
-    ERR_RETURN
-}
 
 namespace {
 
@@ -1862,8 +1820,6 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
 
         msCalibrationReaderRows.resize(topCandidatesMass);
 
-        e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
-
         e = m_msCalibratomatic.setMassCalibrationCoeffs(
             msCalibrationReaderRows,
             MSLevelEnum::MS2
@@ -1882,11 +1838,6 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             selectDIATargetFrames.insert(mzTargetKey, spp);
         }
 
-        // e = recalibrateMzVals(
-        //         MSLevelEnum::MS2,
-        //         &selectDIATargetFrames,
-        //         m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-        //         ); ree;
     }
 
     ERR_RETURN

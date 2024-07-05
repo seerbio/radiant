@@ -131,6 +131,28 @@ QMap<ScanNumber, ScanPoints>* TargetDecoyCandidatePairScoretron2::ms1ScanNumberV
     return &m_ms1ScanNumberVsScanPoints;
 }
 
+Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+
+    delete m_turboXICMS1;
+
+    QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
+    for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
+        ms1FramePtrs.insert(it.key(), &it.value());
+    }
+
+    MsFrame msFrameMS1;
+    e = msFrameMS1.init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+
+    m_turboXICMS1 = new TurboXIC();
+    e = m_turboXICMS1->init(msFrameMS1.frameIndexVsScanPoints()); ree;
+
+    ERR_RETURN
+}
+
 namespace {
 
     Err buildMzHashedVsCount(

@@ -1781,7 +1781,8 @@ namespace {
             mzToExtract + massTol
             );
 
-        TurboXIC::filterXICPointsByScanNumber(frameIndexMin, frameIndexMax, &xicPoints);
+        int buffer = 0;
+        TurboXIC::filterXICPointsByScanNumber(frameIndexMin + buffer, frameIndexMax + buffer, &xicPoints);
 
         if (xicPoints.empty()) {
             ERR_RETURN
@@ -1913,8 +1914,7 @@ Err CandidateScorertron::setMs1RelatedScores(
         &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM],
         &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1]
         ); ree;
-
-
+    
     e = calculateMs1Scores(
         anchorColumn,
         c13isotopeMz2,

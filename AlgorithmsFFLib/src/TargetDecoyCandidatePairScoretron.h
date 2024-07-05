@@ -93,6 +93,8 @@ public:
 
     QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
 
+    Err reloadTurboXICMS1();
+
 private:
 
     Err buildParallelInput(
