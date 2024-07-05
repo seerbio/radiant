@@ -42,6 +42,9 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
 
+    extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
+    extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
+
     extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
     extern const QString FILEREADERSLIB_EXPORTS kPercentFDR;
     extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
@@ -88,8 +91,9 @@ struct PythiaParameters{
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
-    int topNIntegrations = 15;
-    int maxAnchorColumnIndex = 12;
+
+    int topNIntegrations = 5;
+    int maxAnchorColumnIndex = 6;
 
     //[FdrParams]
     double percentFDR = 1.0;
@@ -110,22 +114,40 @@ struct PythiaParameters{
 
         if (chargeStateMin > chargeStateMax) {
             print();
-            qDebug() << chargeStateMin << chargeStateMax << "Charge state min greater than max";
+            qDebug()
+            << chargeStateMin
+            << chargeStateMax
+            << PythiaParameterReaderConstants::kChargeStateMin
+            << "greater than"
+            << PythiaParameterReaderConstants::kChargeStateMax;
+
             return false;
         }
         if (chargeStateMin < 1) {
             print();
-            qDebug() << chargeStateMin << "charge state min";
+            qDebug() << chargeStateMin << PythiaParameterReaderConstants::kChargeStateMin;
             return false;
         }
         if (chargeStateMax < 1) {
             print();
-            qDebug() << chargeStateMax << "charge state max";
+            qDebug() << chargeStateMax << PythiaParameterReaderConstants::kChargeStateMax;
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
             print();
-            qDebug() << ms2ExtractionWidthPPM << "ms2ExtractPPM";
+            qDebug() << ms2ExtractionWidthPPM << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM;
+            return false;
+        }
+
+        if (topNIntegrations <= 0) {
+            print();
+            qDebug() << topNIntegrations << PythiaParameterReaderConstants::kTopNIntegrations;
+            return false;
+        }
+
+        if (maxAnchorColumnIndex <= 0) {
+            print();
+            qDebug() << maxAnchorColumnIndex << PythiaParameterReaderConstants::kMaxAnchorColumnIndex;
             return false;
         }
 
@@ -162,6 +184,8 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;

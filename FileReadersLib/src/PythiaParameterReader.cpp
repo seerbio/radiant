@@ -43,6 +43,9 @@ namespace PythiaParameterReaderConstants {
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
 
+    const QString kTopNIntegrations = QStringLiteral("topNIntegrations");
+    const QString kMaxAnchorColumnIndex = QStringLiteral("maxAnchorColumnIndex");
+
     const QString kFdrParams = QStringLiteral("FdrParams");
     const QString kPercentFDR = QStringLiteral("percentFDR");
     const QString kReportDecoys = QStringLiteral("reportDecoys");
@@ -122,6 +125,9 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(0.0f);
+
+    pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(15);
+    pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
 
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];
     pythiaParameters->percentFDR = fdrParamsNode[kPercentFDR.toStdString()].value_or(1.0);
