@@ -827,7 +827,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
             candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
             filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            constexpr int recalibrationPointCountMin = 200;
+            constexpr int recalibrationPointCountMin = 400;
             qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
             if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
                 qWarning() << "Skipping MS1 recalibration.  Not enough points found";
@@ -1817,7 +1817,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
                  <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
     }
 
-    constexpr int ms2MassRecalCountMin = 400;
+    constexpr int ms2MassRecalCountMin = 200;
     if (topCandidatesMass > ms2MassRecalCountMin) {
 
         msCalibrationReaderRows.resize(topCandidatesMass);
