@@ -1781,8 +1781,7 @@ namespace {
             mzToExtract + massTol
             );
 
-        int buffer = 0;
-        TurboXIC::filterXICPointsByScanNumber(frameIndexMin + buffer, frameIndexMax + buffer, &xicPoints);
+        TurboXIC::filterXICPointsByScanNumber(frameIndexMin, frameIndexMax, &xicPoints);
 
         if (xicPoints.empty()) {
             ERR_RETURN
