@@ -21,6 +21,7 @@ TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
 
 TargetDecoyCandidatePairScoretron2::~TargetDecoyCandidatePairScoretron2() {
     delete m_turboXICMS1;
+    delete m_msFrameMS1;
     for (MsFrame *msFrame : m_mzTargetKeyVsMsFrame) {
         delete msFrame;
     }
@@ -39,6 +40,7 @@ public:
     QPair<double, double> scanTimeMinMax;
     TurboXIC *turboXicMS1 = nullptr;
     TurboXIC *turboXicMS2 = nullptr;
+    MsFrame *msFrameMS1 = nullptr;
     float minPeakCount = -1.0;
     QMap<int, QVector<float>> averagineTable;
 };
@@ -72,11 +74,11 @@ Err TargetDecoyCandidatePairScoretron2::init(
         ms1FramePtrs.insert(it.key(), &it.value());
     }
 
-    MsFrame msFrameMS1;
-    e = msFrameMS1.init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+    m_msFrameMS1 = new MsFrame;
+    e = m_msFrameMS1->init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
 
     m_turboXICMS1 = new TurboXIC();
-    e = m_turboXICMS1->init(msFrameMS1.frameIndexVsScanPoints()); ree;
+    e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
 
     if (!diaTargetFrames.isEmpty()) {
         e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
@@ -138,17 +140,18 @@ Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
     e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
 
     delete m_turboXICMS1;
+    delete m_msFrameMS1;
 
     QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
     for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
         ms1FramePtrs.insert(it.key(), &it.value());
     }
 
-    MsFrame msFrameMS1;
-    e = msFrameMS1.init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+    m_msFrameMS1 = new MsFrame;
+    e = m_msFrameMS1->init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
 
     m_turboXICMS1 = new TurboXIC();
-    e = m_turboXICMS1->init(msFrameMS1.frameIndexVsScanPoints()); ree;
+    e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
 
     ERR_RETURN
 }
@@ -281,7 +284,8 @@ namespace {
                 pi.averagineTable,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
-                pi.turboXicMS1
+                pi.turboXicMS1,
+                pi.msFrameMS1
                 ); rree;
 
             for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
@@ -410,6 +414,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
+    e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
     e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
     e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFrame); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
@@ -430,6 +435,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.turboXicMS1 = m_turboXICMS1;
         tdppi.minPeakCount = minPeakCount;
         tdppi.averagineTable = m_averagineTable;
+        tdppi.msFrameMS1 = m_msFrameMS1;
 
         if (!mzTargetKeyVsTurboXicPntrs.isEmpty()) {
             e = ErrorUtils::contains(tdppi.targetKey, mzTargetKeyVsTurboXicPntrs); ree;

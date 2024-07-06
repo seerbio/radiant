@@ -305,6 +305,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(&msReaderPointerAcc); ree;
+        // m_pythiaParameters.ms2ExtractionWidthPPM = 6.75;
+        // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
     int targetCountBelowFDRThreshold;
@@ -594,7 +596,7 @@ namespace {
 
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
-        constexpr double cosineSimSumMS1Min = 0.7;
+        constexpr double cosineSimSumMS1Min = 0.9;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
             return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] <= cosineSimSumMS1Min;
         };
