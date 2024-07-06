@@ -536,7 +536,7 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
     }
-    qDebug() << "Scan Count" << m_msScanInfo->size();
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Scan Count" << m_msScanInfo->size();
 #else
 
     for (const FileChunk &fc : chunks) {

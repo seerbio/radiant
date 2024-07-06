@@ -93,6 +93,8 @@ public:
 
     QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
 
+    Err reloadTurboXICMS1();
+
 private:
 
     Err buildParallelInput(
@@ -115,6 +117,7 @@ private:
     PythiaParameters m_pythiaParameters;
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TurboXIC *m_turboXICMS1;
+    MsFrame *m_msFrameMS1;
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFrames;
     QMap<ScanNumber, ScanPoints> m_ms1ScanNumberVsScanPoints;

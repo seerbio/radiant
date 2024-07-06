@@ -46,7 +46,8 @@ public:
         const QMap<NominalMzMass, QVector<float>> &averagineTable,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
-        TurboXIC *turboXicMS1
+        TurboXIC *turboXicMS1,
+        MsFrame *msFrameMS1
         );
 
     Err calculateScores(
@@ -57,6 +58,13 @@ public:
 
 
 private:
+
+    Err initMatricesdAndVecs(
+        const QVector<MS2Ion> &ms2Ions,
+        FrameIndex frameIndexPredictedMin,
+        FrameIndex frameIndexPredictedMax,
+        MatriciesAndVecs *matriciesAndVecs
+        ) const;
 
     Err setPredictedFrameIndexes(
         float iRT,
@@ -93,6 +101,7 @@ private:
     MsFrame *m_msFrameMzTarget;
     MsCalibratomatic m_msCalibratomatic;
     TurboXIC *m_turboXicMS1;
+    MsFrame *m_msFrameMS1;
     MzTargetKey m_mzTargetKey;
 
     float m_minPeakCount;

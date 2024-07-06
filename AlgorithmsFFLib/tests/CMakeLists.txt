@@ -28,7 +28,6 @@ SET(TEST_CLASSES
         MsFrameTests
         MsUtilsTests
         PeakIntegratomaticTests
-        ProteinDigestomaticTests
         QValueSettertronTests
         SequenceSubstringSearchomaticTests
         TargetDecoyCandidatePairManagerTests

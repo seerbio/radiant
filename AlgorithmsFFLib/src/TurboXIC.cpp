@@ -22,7 +22,7 @@ class Q_DECL_HIDDEN TurboXIC::Private
     using rTreeIntensity = float;
     using rTreeCoor = bg::model::point<float, 1, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
-    using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>*> ;
+    using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 public:
@@ -37,19 +37,18 @@ public:
     XICPoints extractPointsXIC(
             float mzMin,
             float mzMax
-    );
+    ) const;
 
     Err getRTreeLimits(
             float *mzMin,
             float *mzMax
-            );
+            ) const;
 
-    bool isInit();
+    bool isInit() const;
 
 private:
 
     RTree *m_rTree;
-    QVector<std::pair<rTreeScanNumber , rTreeIntensity>> m_scanNumberVsIntensityPtrs;
 
 };
 
@@ -75,25 +74,20 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
             [](int sum, ScanPoints *sp){return sum + sp->size();}
             );
 
-    m_scanNumberVsIntensityPtrs.resize(scanPointsCount);
-    m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
-    int pointCounter = 0;
-
     QElapsedTimer et;
     et.start();
 
     std::vector<rTreePoint> cloudLoader;
     cloudLoader.reserve(scanPointsCount);
-    for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
+    for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); ++it) {
 
         const ScanNumber scanNumber = it.key();
         ScanPoints *scanPoints = it.value();
 
         for (ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(sp.x());
-            std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
-            m_scanNumberVsIntensityPtrs[pointCounter] = pr;
-            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]);
+            const std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
+            cloudLoader.emplace_back(coor, pr);
         }
     }
 
@@ -120,10 +114,6 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
             [](int sum, ScanPoints *sp){return sum + sp->size();}
     );
 
-    m_scanNumberVsIntensityPtrs.resize(scanPointsCount);
-    m_scanNumberVsIntensityPtrs.reserve(scanPointsCount);
-    int pointCounter = 0;
-
     std::vector<rTreePoint> cloudLoader;
     cloudLoader.reserve(scanPointsCount);
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
@@ -134,8 +124,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         for (const ScanPoint &sp : *scanPoints) {
             rTreeCoor coor(sp.x());
             std::pair<rTreeScanNumber, rTreeIntensity> pr(static_cast<float>(scanNumber), sp.y());
-            m_scanNumberVsIntensityPtrs[pointCounter] = pr;
-            cloudLoader.emplace_back(coor, &m_scanNumberVsIntensityPtrs[pointCounter++]);
+            cloudLoader.emplace_back(coor, pr);
         }
     }
 
@@ -143,7 +132,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
         return l.first.get<0>() < r.first.get<0>();
     });
 
-    const int maxElements = 16;
+    constexpr int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
     ERR_RETURN
@@ -152,7 +141,7 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
 XICPoints TurboXIC::Private::extractPointsXIC(
         float mzMin,
         float mzMax
-) {
+) const {
 
     const rTreeSearchBox queryBox(
             (rTreeCoor(mzMin)),
@@ -168,12 +157,12 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     for (int i = 0; i <  result.size(); i++) {
 
         const rTreePoint &rtp = result[i];
-        std::pair<rTreeScanNumber , rTreeIntensity> *pr = rtp.second;
+        const std::pair<rTreeScanNumber , rTreeIntensity> &pr = rtp.second;
 
         XICPoint xp;
         xp.mz = rtp.first.get<0>();
-        xp.intensity = pr->second;
-        xp.scanNumber = static_cast<ScanNumber>(pr->first);
+        xp.intensity = pr.second;
+        xp.scanNumber = static_cast<ScanNumber>(pr.first);
 
         xicPointsLoader[i] = xp;
     }
@@ -191,7 +180,7 @@ XICPoints TurboXIC::Private::extractPointsXIC(
 Err TurboXIC::Private::getRTreeLimits(
         float *mzMin,
         float *mzMax
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -203,7 +192,7 @@ Err TurboXIC::Private::getRTreeLimits(
     ERR_RETURN
 }
 
-bool TurboXIC::Private::isInit() {
+bool TurboXIC::Private::isInit() const {
 
     if (!m_rTree) {
         return false;
@@ -223,14 +212,14 @@ TurboXIC::~TurboXIC() {
 }
 
 
-Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
+Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const {
 
     ERR_INIT
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
-Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) {
+Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const {
     ERR_INIT
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN

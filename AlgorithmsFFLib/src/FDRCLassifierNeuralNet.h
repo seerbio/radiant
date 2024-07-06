@@ -135,6 +135,7 @@ public:
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
             int seed,
+            int verbosity,
             QVector<float> *meanPredictions
     );
 
@@ -179,22 +180,29 @@ public:
 
     static Err outputFDRResults(
             QVector<CandidateScores*> &candidateScores,
-            bool verbose,
+            int verbose,
             QMap<int, int> *fdrVsCount
     );
+
+    static Err outPutFDRCounts(
+        const QMap<int, int> &fdrVsCount,
+        QString *outputString
+        );
 
 private:
 
     Err trainClassifier(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
-            int seed
+            int seed,
+            int verbosity
             );
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
-            int seed
+            int seed,
+            int verbosity
             );
 
     Err predictBaggedClassifiers(

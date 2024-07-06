@@ -18,9 +18,9 @@ public:
 
 private Q_SLOTS:
 
-    void saveMsReaderToParquetOpenFileCombinedTests();
-    void readFilteredTest();
-    void readUniqueTest();
+    static void saveMsReaderToParquetOpenFileCombinedTests();
+    static void readFilteredTest();
+    static void readUniqueTest();
 
 };
 

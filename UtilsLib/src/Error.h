@@ -35,6 +35,8 @@ extern const UTILSLIB_EXPORTS QMap<Err, QString> errorMap;
 
 #define rree if (e) { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" << errorMap.value(e); return {e, {}}; }
 
+#define rtee if (e) { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" << errorMap.value(e); return {}; }
+
 #define einfo { qDebug() << QString::fromStdString(__FILE__) + "(" + QString::number(__LINE__) + ")" ;}
 
 //if error, log it and return its object.

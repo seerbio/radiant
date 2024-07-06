@@ -18,6 +18,7 @@
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
     ERR_INIT
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading MsFile";
     e = setMsReaderPointer(filePath); ree;
     ERR_RETURN
 }
@@ -53,7 +54,7 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
 
     const QString msReaderType = typeid(*ptr).name();
     const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
-    qDebug() << "MsReader Derived Type" << msReaderType << isMsReaderBase;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsReader Derived Type" << msReaderType << isMsReaderBase;
 
     ERR_RETURN
 }
@@ -93,7 +94,7 @@ Err MsReaderPointerAcc::openFile(
 
     const QString msReaderType = typeid(*ptr).name();
     const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
-    qDebug() << "MsReader Derived Type" << msReaderType << isMsReaderBase;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsReader Derived Type" << msReaderType << isMsReaderBase;
 
     ERR_RETURN
 }

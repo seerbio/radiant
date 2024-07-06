@@ -6,6 +6,8 @@
 
 const GlobalSettings S_GLOBAL_SETTINGS;
 
+const GlobalTimer S_GLOBAL_TIMER;
+
 QString GlobalSettings::VERSION() {
     return QStringLiteral("1.0");
 }

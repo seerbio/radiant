@@ -9,7 +9,6 @@
 #include "Deconvolvotron.h"
 #include "DiscriminantScoretron.h"
 #include "EigenUtils.h"
-#include "FastaFileToPeptidesListWorkFlow.h"
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
@@ -18,7 +17,6 @@
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
-#include "ProteinDigestomatic.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
 #include "SpectrumCentricMzTargetFrameSearch.h"
@@ -51,6 +49,7 @@ Err PythiaDIAFFWorkflow::init(
 
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
+    m_pythiaParameters.print();
 
     const double massMin
         = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::glycineFormula).monoisotopicMass();
@@ -86,7 +85,8 @@ namespace {
              + candidateScores->targetKey;
     }
 
-    Err filterScoredCandidatesTo50PercentFDR(
+    Err filterScoredCandidatesTo60PercentFDR(
+            int minMs2FragCount,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
     ) {
@@ -95,15 +95,20 @@ namespace {
 
         e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
 
+        const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
+            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < minMs2FragCount;
+        };
+        const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
+        candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
+
         std::sort(
                 candidateScoresTargetsAndDecoys->rbegin(),
                 candidateScoresTargetsAndDecoys->rend(),
                 [](const CandidateScores *l, const CandidateScores *r){
                     return l->discriminantScore < r->discriminantScore;
-                }
-        );
+                });
 
-        const double fdrThreshold = 0.5;
+        constexpr double fdrThreshold = 0.6;
         int counter = 0;
         for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
@@ -115,7 +120,7 @@ namespace {
         }
 
         *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(static_cast<int>(counter));
+        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(counter);
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
@@ -283,14 +288,11 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
-
     ERR_INIT
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
-
-    m_pythiaParameters.print();
-
     MsReaderPointerAcc msReaderPointerAcc;
+
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
@@ -299,14 +301,12 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &msReaderPointerAcc
             ); ree;
 
-    QVector<CandidateScores*> candidateScoresTrainings;
-    e = buildCalibration(
-         &msReaderPointerAcc,
-         &candidateScoresTrainings
-         ); ree;
+    e = buildCalibration(&msReaderPointerAcc); ree;
 
     if (m_msCalibratomatic.isInitRT()) {
-        e = optimizeParameters(candidateScoresTrainings); ree;
+        e = optimizeParameters(&msReaderPointerAcc); ree;
+        // m_pythiaParameters.ms2ExtractionWidthPPM = 6.75;
+        // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
     int targetCountBelowFDRThreshold;
@@ -318,12 +318,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
 
-     QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
-     e = filterScoredCandidatesTo50PercentFDR(
-             &candidateScoresTargetsAndDecoys,
-             &candidateScoresTargetsAndDecoys50PercentFDRFiltered
-             ); ree;
-     qDebug() << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
+    e = filterScoredCandidatesTo60PercentFDR(
+        m_pythiaParameters.minMs2FragCount,
+        &candidateScoresTargetsAndDecoys,
+        &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+        ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
 
     // qDebug() << "Starting spectrum centric search";
     // QElapsedTimer et;
@@ -335,57 +336,33 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     //     ); ree;
     // qDebug() << "Spectrum centric searched finsihed in" << et.elapsed() << "mSec";
 
-     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-    if (!m_pythiaParameters.bypassNeuralNet) {
 
-        const int seedFirstTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
-        e = applyNeuralNetClassifier(
-                candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-                seedFirstTry,
-                &candidateScoreClassifierPntrs
-        ); ree;
-
-        if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold) {
-
-            std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-            std::shuffle(
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
-                    rng
-            );
-
-            const int seedSecondTry = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST + 111;
-            candidateScoreClassifierPntrs.clear();
-            e = applyNeuralNetClassifier(
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-                    seedSecondTry,
-                    &candidateScoreClassifierPntrs
+    e = applyNeuralNetClassifier(
+            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
+            &candidateScoreClassifierPntrs
             ); ree;
 
-            if (candidateScoreClassifierPntrs.size() <= targetCountBelowFDRThreshold){
-                QVector<CandidateScores*> candidateScoresPntrs;
-                buildCandidateScoresPtrs(&candidateScoresPntrs);
+    int targetCountBelowFDRThresholdOnePercent;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+        candidateScoreClassifierPntrs,
+        m_pythiaParameters.percentFDR / 100.0,
+        &targetCountBelowFDRThresholdOnePercent
+        ); ree;
 
-                std::sort(candidateScoresPntrs.rbegin(), candidateScoresPntrs.rend(), [](CandidateScores *l, CandidateScores *r){
-                    return l->discriminantScore < r->discriminantScore;
-                });
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
+            << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
-                candidateScoresPntrs.resize(targetCountBelowFDRThreshold);
-                candidateScoreClassifierPntrs = candidateScoresPntrs;
-            }
-
-        }
-    }
-    else {
-        candidateScoreClassifierPntrs = candidateScoresTargetsAndDecoys50PercentFDRFiltered;
-        std::sort(
-            candidateScoreClassifierPntrs.rbegin(),
-            candidateScoreClassifierPntrs.rend(),
-            [](CandidateScores *l, CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-            );
-    }
+    const bool candidateScoresSortedHiLo = std::is_sorted(
+        candidateScoreClassifierPntrs.begin(),
+        candidateScoreClassifierPntrs.end(),
+        [](const CandidateScores *l, const CandidateScores *r){return l->classifierScore < r->classifierScore;}
+        );
+    e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
 
     if (!m_pythiaParameters.reportDecoys) {
 
@@ -400,36 +377,60 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
         candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
     }
+    else {
 
-    qDebug() << "Updating" << candidateScoreClassifierPntrs.size() << "PSMs";
+        int counter = 0;
+        int decoyCounter = 0;
+        for (const CandidateScores *candidateScores : candidateScoreClassifierPntrs) {
+
+            counter++;
+            if (candidateScores->isDecoy) {
+                decoyCounter++;
+            }
+
+            constexpr double fdrThreshold = 0.5;
+            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
+                break;
+            }
+        }
+
+        candidateScoreClassifierPntrs.resize(counter);
+    }
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
     e = updateProteinGroupAnnotation(
             m_fastaUri,
             &candidateScoreClassifierPntrs
             ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
-#define CALC_ENTRAP
-#ifdef CALC_ENTRAP
-    int counter = 0;
-    int decoys = 0;
-    int entrap = 0;
+    if (m_pythiaParameters.verbosity > -1) {
+        int counter = 0;
+        int decoys = 0;
+        int entrap = 0;
 
-    for (CandidateScores *cs : candidateScoreClassifierPntrs) {
-        counter++;
+        for (CandidateScores *cs : candidateScoreClassifierPntrs) {
+            counter++;
 
-        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
-            entrap++;
+            if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
+                entrap++;
+            }
+
+            if (cs->isDecoy) {
+                decoys++;
+            }
+            if (decoys/static_cast<double>(counter) >= 0.01) {
+                break;
+            }
+
         }
-
-        if (cs->isDecoy) {
-            decoys++;
-        }
-        if (decoys/static_cast<double>(counter) >= 0.01) {
-            break;
-        }
-
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "Alt:" << targetCountBelowFDRThresholdOnePercent
+                << "| Counter:" << counter
+                << "| Decoys:" <<  decoys
+                << "| Entrap:" << entrap
+                << "| Entrap%" << entrap / (double)counter;
     }
-    qDebug() << "Counter:" << counter << "Decoys:" <<  decoys << "Entrap:" << entrap << "Entrap%" << entrap / (double)counter;
-#endif
 
     QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
     std::transform(
@@ -447,6 +448,28 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
 namespace {
 
+    struct TurboXICLoadInput {
+        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
+        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+        MzTargetKey mzTargetKey;
+    };
+
+    std::tuple<Err, MzTargetKey, TurboXIC*> buildTurboXICLogic(const TurboXICLoadInput &turboXicLoadInput) {
+
+        ERR_INIT
+
+        MsFrame msFrame;
+        e = msFrame.init(
+            turboXicLoadInput.scanNumberVsScanPoints,
+            turboXicLoadInput.scanNumberVsScanTime
+            ); rtee;
+
+        auto turboXic = new TurboXIC();
+        e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
+
+        return {e, turboXicLoadInput.mzTargetKey, turboXic};
+    }
+
     Err buildMzTargetKeyVsTurboXicPntrs(
         const QVector<MsScanInfo> &uniqueMsScanInfos,
         const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
@@ -460,19 +483,29 @@ namespace {
         e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
         e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
 
+        QVector<TurboXICLoadInput> turboXicLoadInputs;
         for (const MsScanInfo &msScanInfo : uniqueMsScanInfos) {
 
             const MzTargetKey mzTargetKey = msScanInfo.targetKey();
             e = ErrorUtils::contains(mzTargetKey, diaTargetFrames); ree;
 
-            const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints = diaTargetFrames.value(mzTargetKey);
+            TurboXICLoadInput turboXicLoadInput;
+            turboXicLoadInput.scanNumberVsScanPoints = diaTargetFrames.value(mzTargetKey);
+            turboXicLoadInput.scanNumberVsScanTime = scanNumberVsScanTime;
+            turboXicLoadInput.mzTargetKey = mzTargetKey;
 
-            MsFrame msFrame;
-            e = msFrame.init(scanNumberVsScanPoints, scanNumberVsScanTime); ree;
+            turboXicLoadInputs.push_back(turboXicLoadInput);
+        }
 
-            auto turboXic = new TurboXIC();
-            e = turboXic->init(msFrame.frameIndexVsScanPoints()); ree;
-            mzTargetKeyVsTurboXicPntr->insert(mzTargetKey, turboXic);
+        QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
+            turboXicLoadInputs,
+            buildTurboXICLogic
+            );
+        futures.waitForFinished();
+
+        for (const std::tuple<Err, MzTargetKey, TurboXIC*> &result : futures) {
+            e = std::get<0>(result); ree;
+            mzTargetKeyVsTurboXicPntr->insert(std::get<1>(result), std::get<2>(result));
         }
 
         ERR_RETURN
@@ -503,6 +536,7 @@ namespace {
     Err buildMsCalibrationReaderRows(
             const MSLevelEnum &msLevel,
             const QVector<CandidateScores*> &_candidateScores,
+            int verbosity,
             QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
             ) {
 
@@ -510,11 +544,14 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(_candidateScores); ree;
 
-        qDebug() << _candidateScores.size() << "Found for recalibartion";
-
         QVector<CandidateScores*> candidateScoresFiltered = _candidateScores;
         filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
-        qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
+
+        if(verbosity > 0) {
+            qDebug() << _candidateScores.size() << "Found for recalibartion";
+            qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
+        }
+
 
         const int top6 = 6;
         const auto msCalibrationReaderRowsInsertLogic = [msLevel](CandidateScores *cs){
@@ -559,8 +596,7 @@ namespace {
 
     void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
 
-        const double cosineSimSumMS1Min = 0.8;
-
+        constexpr double cosineSimSumMS1Min = 0.9;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
             return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] <= cosineSimSumMS1Min;
         };
@@ -574,9 +610,10 @@ namespace {
         candidateScoresMS1Cal->erase(terminator, candidateScoresMS1Cal->end());
     }
 
-    Err buildUniqueMsScanInfosForCalibaration(
+    Err buildUniqueMsScanInfosForProcessing(
         const QVector<MsScanInfo> &uniqueMsScanInfos,
         int numberOfUniqueScanInfosForCalibration,
+        int offset,
         QVector<MsScanInfo> *uniqueMsScanInfosCalibration
         ) {
 
@@ -591,9 +628,9 @@ namespace {
         for (int i = 0; i < uniqueMsScanInfos.size(); i += incrementSize) {
 
             const int distanceFromCenterRight
-                    = std::min(static_cast<int>(halfSizeScanInfos) + i, uniqueMsScanInfos.size() - 1);
+                    = std::min(static_cast<int>(halfSizeScanInfos) + i + offset, uniqueMsScanInfos.size() - 1);
 
-            const int distanceFromCenterLeft = std::max(static_cast<int>(halfSizeScanInfos) - i, 0);
+            const int distanceFromCenterLeft = std::max(static_cast<int>(halfSizeScanInfos) - i - offset, 0);
 
             if (i == 0) {
                 uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterRight));
@@ -618,28 +655,31 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAFFWorkflow::buildCalibration(
-        const MsReaderPointerAcc *msReaderPointerAcc,
-        QVector<CandidateScores*> *candidateScoresForTrainings
-        ) {
+Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
 
+    constexpr int topNMS2IonsCalibration = 6;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMS2IonsCalibration << "fragments for calibration";
+
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
-    qDebug() << "Number of tranches for calibration:" << numberOfTranches
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Number of tranches for calibration:" << numberOfTranches
              << "target count:" << m_targetDecoyPairPntrs.size()
              << "sizePerTranche:" << static_cast<int>(sizePerTranche);
 
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
     constexpr int maxTrainingCount = 16;
+    constexpr int offset = 0;
     QVector<MsScanInfo> uniqueMsScanInfosCalibration;
-    e = buildUniqueMsScanInfosForCalibaration(
+    e = buildUniqueMsScanInfosForProcessing(
         uniqueMsScanInfos,
         maxTrainingCount,
+        offset,
         &uniqueMsScanInfosCalibration
         ); ree;
 
@@ -666,7 +706,6 @@ Err PythiaDIAFFWorkflow::buildCalibration(
 
         constexpr bool useExtendedScores = false;
         constexpr bool useNeuralNetworkScores = false;
-        constexpr int topNMS2IonsCalibration = 6;
 
         QElapsedTimer etBatch;
         etBatch.start();
@@ -702,20 +741,30 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             ); ree;
 
         constexpr int fdrKey = 5;
-        constexpr int fdrKeyMassCal = 2;
+        constexpr int fdrKeyMassCalMS2 = 2;
+        constexpr int fdrKeyMassCalMS1 = 5;
 
         const QVector<MzTargetKey> targetKeysToRecalibrateWhileBuildingCalibration = mzTargetKeyVsTurboXicPntrs.keys().toVector();
         e = honeIRTAndMassCalibration(
             targetKeysToRecalibrateWhileBuildingCalibration,
             &candidateScoresVecBatchPntrs,
             fdrVsCounts.value(fdrKey),
-            fdrVsCounts.value(fdrKeyMassCal)
+            fdrVsCounts.value(fdrKeyMassCalMS2)
             ); ree;
 
         scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
         ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
-        qDebug() << "********* Processed batch" << ++batchCounter << "of" << targetDecoyCandidatePointersTranched.size() << etBatch.elapsed() << "mSec ********";
+        QString fdrString;
+        e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "Processed batch" << ++batchCounter
+                << "of"
+                << targetDecoyCandidatePointersTranched.size()
+                << etBatch.elapsed()
+                << "mSec"
+                << qPrintable(fdrString);
 
         constexpr int targetTrainingCountCalibration = 750;
         if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration
@@ -726,14 +775,15 @@ Err PythiaDIAFFWorkflow::buildCalibration(
             candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
 
             QVector<CandidateScores*> candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKeyMassCal)));
+            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS2)));
 
             QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
             e = buildMsCalibrationReaderRows(
                     MSLevelEnum::MS2,
                     candidateScoresVecBatchPntrsRecal,
+                    m_pythiaParameters.verbosity,
                     &msCalibrationReaderRows
-            ); ree;
+                    ); ree;
 
             e = m_msCalibratomatic.setMassCalibrationCoeffs(
                 msCalibrationReaderRows,
@@ -757,13 +807,13 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                 ms2PPMStDevs.pop_back();
             }
 
-            qDebug() << scanTimeStDevs;
-            qDebug() << "ScanTimeWindow Mean|Median|Min"
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                     << "ScanTimeWindow Mean|Median|Min"
                      << MathUtils::mean(scanTimeStDevs)
                      << MathUtils::median(scanTimeStDevs)
                      << *std::min({scanTimeStDevs.begin(), scanTimeStDevs.end()});
 
-            qDebug() << "Ms2 ppm Mean|Median" << MathUtils::mean(ms2PPMStDevs) << MathUtils::median(ms2PPMStDevs);
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(ms2PPMStDevs) << MathUtils::median(ms2PPMStDevs);
 
             m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
@@ -772,9 +822,42 @@ Err PythiaDIAFFWorkflow::buildCalibration(
                     MSLevelEnum::MS2,
                     m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
                     m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-            ); ree;
+                    ); ree;
 
-            *candidateScoresForTrainings = candidateScoresVecBatchPntrs;
+            candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
+            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
+            filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
+            constexpr int recalibrationPointCountMin = 400;
+            qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
+            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+                qWarning() << "Skipping MS1 recalibration.  Not enough points found";
+                ERR_RETURN
+            }
+
+            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
+            e = buildMsCalibrationReaderRows(
+                    MSLevelEnum::MS1,
+                    candidateScoresVecBatchPntrsRecal,
+                    m_pythiaParameters.verbosity,
+                    &msCalibrationReaderRowsMS1
+                    ); ree;
+
+            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+                ERR_RETURN
+            }
+
+            e = m_msCalibratomatic.setMassCalibrationCoeffs(
+                msCalibrationReaderRowsMS1,
+                MSLevelEnum::MS1
+                ); ree;
+
+            e = recalibrateMzVals(
+                    MSLevelEnum::MS1,
+                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
+                    ); ree;
+
+            e = m_targetDecoyCandidatePairScoretron.reloadTurboXICMS1(); ree;
 
             break;
         }
@@ -841,6 +924,12 @@ Err PythiaDIAFFWorkflow::processBatch(
 
     ERR_INIT
 
+    const auto terminatorLogic = [&](CandidateScores *cs) {
+        return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < m_pythiaParameters.minMs2FragCount;
+    };
+    const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
+    candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
+
     e = buildCandidateScoresPtrs(candidateScoresVecBatchPntrs); ree;
     e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(*candidateScoresVecBatchPntrs); ree;
 
@@ -875,6 +964,7 @@ Err PythiaDIAFFWorkflow::processBatch(
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             m_pythiaParameters.threadCount,
+            m_pythiaParameters.verbosity,
             &weights
             ); ree;
 
@@ -898,7 +988,7 @@ Err PythiaDIAFFWorkflow::processBatch(
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
         *candidateScoresVecBatchPntrs,
-        true,
+        m_pythiaParameters.verbosity,
         fdrVsCounts
         ); ree;
 
@@ -955,7 +1045,7 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
 
         mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered);
 
-        if (m_pythiaParameters.verbosity > 1) {
+        if (m_pythiaParameters.verbosity > 0) {
             qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
         }
     }
@@ -963,47 +1053,6 @@ Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::recalibrateMs1Points(const QVector<CandidateScores*> &candidateScoresVecBatchPntrsResized) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.diaTargetFrames()->isEmpty()); ree;
-    e = ErrorUtils::isFalse(m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()->isEmpty()); ree;
-
-    QVector<CandidateScores*> candidateScoresMS1Cal = candidateScoresVecBatchPntrsResized;
-    qDebug() << candidateScoresMS1Cal.size() << "Precursors for MS1 calibration!";
-
-    filterMs1CandidateRowsByCorr(&candidateScoresMS1Cal);
-    
-    const int recalibrationPointCountMin = 30;
-    if (candidateScoresMS1Cal.size() < recalibrationPointCountMin) {
-        ERR_RETURN
-    }
-
-    QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-    e = buildMsCalibrationReaderRows(
-            MSLevelEnum::MS1,
-            candidateScoresMS1Cal,
-            &msCalibrationReaderRowsMS1
-    ); ree;
-
-    if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
-        ERR_RETURN
-    }
-
-    e = m_msCalibratomatic.setMassCalibrationCoeffs(
-        msCalibrationReaderRowsMS1,
-        MSLevelEnum::MS1
-        ); ree;
-
-    e = recalibrateMzVals(
-            MSLevelEnum::MS1,
-            m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-            m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-    ); ree;
-
-    ERR_RETURN
-}
 
 namespace {
 
@@ -1019,11 +1068,6 @@ namespace {
 
         e = msCalibratomatic.recalibrateScanPoints(
             MSLevelEnum::MS2,
-            scanPoints
-            ); ree;
-
-        e = msCalibratomatic.recalibrateScanPoints(
-            MSLevelEnum::MS1,
             scanPoints
             ); ree;
 
@@ -1043,7 +1087,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
     e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
     e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
-    qDebug() << "Recalibrating mz vals";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Recalibrating mz vals";
 
     QElapsedTimer et;
     et.start();
@@ -1085,7 +1129,7 @@ Err PythiaDIAFFWorkflow::recalibrateMzVals(
             ); ree;
     }
 
-    qDebug() << "Points recalibrated in" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Points recalibrated in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
@@ -1094,7 +1138,6 @@ namespace {
 
     struct DOEResult {
         double ppm = -1.0;
-        double scanTimeStDev = -1.0;
         int fdrCount = -1;
     };
 
@@ -1102,6 +1145,7 @@ namespace {
             const PythiaParameters &pythiaParameters,
             double mzPPMStDev,
             double scanTimeStDev,
+            int verbosity,
             QVector<PythiaParameters> *pythiaParametersExperiments
             ) {
 
@@ -1111,104 +1155,149 @@ namespace {
         e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
-        constexpr int numberOfExperiments = 9;
-        double runningPPM = mzPPMStDev;
+        const QVector<double> ppmList = {
+            5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
+        };
 
-        PythiaParameters paramsInitial = pythiaParameters;
-        paramsInitial.ms2ExtractionWidthPPM = runningPPM;
-        pythiaParametersExperiments->push_back(paramsInitial);
-
-        for (int exp = 0; exp < numberOfExperiments; exp++) {
-
-            constexpr double alpha = 1.2;
-
+        for (double ppm : ppmList ) {
             PythiaParameters params = pythiaParameters;
-            runningPPM *= alpha;
-            params.ms2ExtractionWidthPPM = runningPPM;
+            params.ms2ExtractionWidthPPM = ppm;
             pythiaParametersExperiments->push_back(params);
         }
 
-        for (const PythiaParameters &pp : *pythiaParametersExperiments) {
-            qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM;
+        if (verbosity > 0) {
+            qDebug() << "Testing PPM Values";
+            for (const PythiaParameters &pp : *pythiaParametersExperiments) {
+                qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM;
+            }
         }
+
 
         ERR_RETURN
     }
 
     Err getTopFrequencyParameters(
-            QVector<DOEResult> *results,
+            const QVector<DOEResult> &results,
+            int verbosity,
             double *ppmSetting
             ) {
 
         ERR_INIT
-        e = ErrorUtils::isNotEmpty(*results); ree;
+        e = ErrorUtils::isNotEmpty(results); ree;
 
-        std::sort(
-                results->begin(),
-                results->end(),
-                [](const DOEResult &l, const DOEResult &r) {
+        Eigen::MatrixX<double> xyMat(results.size() + 1, 2);
+        xyMat.setZero();
+        for (int row = 0; row < results.size(); row++) {
+            const DOEResult &doeResult = results.at(row);
+            xyMat.coeffRef(row + 1, 0) = doeResult.ppm;
+            xyMat.coeffRef(row + 1, 1) = static_cast<double>(doeResult.fdrCount);
+            if (verbosity > 0) {
+                qDebug() << doeResult.ppm << doeResult.fdrCount << xyMat.coeff(row, 1);
 
-                    if (l.fdrCount == r.fdrCount) {
-                        return l.ppm < r.ppm;
-                    }
-
-                    return l.fdrCount > r.fdrCount;
-                }
-                );
-
-        const int bestFDRCount = results->front().fdrCount;
-        QVector<double> bestPPMs;
-        for (const DOEResult &r : *results) {
-            qDebug() << r.ppm << r.scanTimeStDev << r.fdrCount;
-            if (r.fdrCount == bestFDRCount) {
-                bestPPMs.push_back(r.ppm);
             }
-
         }
 
-        *ppmSetting = MathUtils::mean(bestPPMs);
+        constexpr int polynomialOrder = 2;
+
+        QVector<double> coeffs;
+        EigenUtils::fitPolynomialQRDecomposition(xyMat, polynomialOrder, &coeffs);
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << coeffs;
+
+        QVector<double> xPoints = {results.first().ppm};
+        while (xPoints.back() < results.back().ppm) {
+            constexpr double incrementVal = 0.25;
+            xPoints.push_back(xPoints.back() + incrementVal);
+        }
+
+        QVector<double> yPoints;
+        for (double x : xPoints) {
+            double y = 0.0;
+            for (int i = 0; i < coeffs.size(); i++) {
+                y += coeffs.at(i) * std::pow(x, i);
+            }
+            if (verbosity > 0) {
+                qDebug() << x << y;
+
+            }
+            yPoints.push_back(y);
+        }
+
+        *ppmSetting = xPoints.at(std::max_element(yPoints.begin(), yPoints.end()) - yPoints.begin());
 
         ERR_RETURN
     }
 
 }//namespace
-Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &candidateScoresTrainings) {
+Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc) {
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
-    e = ErrorUtils::isNotEmpty(candidateScoresTrainings); ree;
+
 
     constexpr int topNMS2IonsOptimization = 12;
-    qDebug() << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
 
-    qDebug() << "Optimization selection fraction" << candidateScoresTrainings.size();
+    constexpr int optimizationMultiplicationFactor = 6;
+    const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax * optimizationMultiplicationFactor);
+    const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "target count:" << m_targetDecoyPairPntrs.size()
+             << "sizePerTranche:" << static_cast<int>(sizePerTranche);
+
+    const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
+
+    constexpr int maxTestingCount = 16;
+    constexpr int offset = 1;
+    QVector<MsScanInfo> uniqueMsScanInfosCalibration;
+    e = buildUniqueMsScanInfosForProcessing(
+        uniqueMsScanInfos,
+        maxTestingCount,
+        offset,
+        &uniqueMsScanInfosCalibration
+        ); ree;
+
+    QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
+    e = buildMzTargetKeyVsTurboXicPntrs(
+        uniqueMsScanInfosCalibration,
+        *m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
+        msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
+        &mzTargetKeyVsTurboXicPntrs
+        ); ree;
+
+    QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePointersTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+            m_targetDecoyPairPntrs,
+            numberOfTranches,
+            &targetDecoyCandidatePointersTranched
+            ); ree;
 
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    for (CandidateScores *cs : candidateScoresTrainings) {
-        mzTargetKeyVsTargetDecoyCandidatePointers[cs->targetKey].push_back(cs->targetDecoyCandidatePair);
-    }
+    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+            targetDecoyCandidatePointersTranched.first(),
+            uniqueMsScanInfosCalibration,
+            &mzTargetKeyVsTargetDecoyCandidatePointers
+            ); ree;
 
     QVector<PythiaParameters> pythiaParametersExperiments;
     e = buildDOE(
             m_pythiaParameters,
             m_msCalibratomatic.mzStDevMS2(),
             m_msCalibratomatic.scanTimeStDev(),
+            m_pythiaParameters.verbosity,
             &pythiaParametersExperiments
             ); ree;
 
+    int bestResultCount = 0;
+    int countSinceLastHigh = 0;
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
         constexpr bool useExtendedScores = true;
         constexpr bool useNeuralNetworkScores = false;
 
-        qDebug() << "ppmTol" << pythiaParams.ms2ExtractionWidthPPM;
-
         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
-        qDebug() << "STarting opt";
-
-        QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
         constexpr float minPeakCountOptimization = 2.9;
         constexpr int topNMS2Ions = 12;
@@ -1217,7 +1306,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &can
                 topNMS2Ions,
                 m_msCalibratomatic,
                 minPeakCountOptimization,
-                nullToBuildTurboXICInParallelLoop,
+                mzTargetKeyVsTurboXicPntrs,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree
@@ -1231,13 +1320,20 @@ Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &can
             &fdrVsCounts
             ); ree;
 
-        qDebug() << "Ending opt";
+        QString fdrString;
+        e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
 
-        constexpr double fdrThresholdCalibration = 0.5;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "ppmTol"
+                 << pythiaParams.ms2ExtractionWidthPPM
+                 << "Finished"
+                 << qPrintable(fdrString);
+
+        constexpr double fdrThresholdAccuracyOptimization = 0.1;
         int targetCountAboveFDRQValueThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
                 m_candidateScores,
-                fdrThresholdCalibration,
+                fdrThresholdAccuracyOptimization,
                 &targetCountAboveFDRQValueThreshold
                 ); ree;
 
@@ -1245,19 +1341,32 @@ Err PythiaDIAFFWorkflow::optimizeParameters(const QVector<CandidateScores*> &can
         res.ppm = pythiaParams.ms2ExtractionWidthPPM;
         res.fdrCount = targetCountAboveFDRQValueThreshold;
         results.push_back(res);
+
+        if (res.fdrCount >= bestResultCount) {
+            bestResultCount = res.fdrCount;
+            countSinceLastHigh = 0;
+            continue;
+        }
+
+        constexpr int maxCountsSinceLastHigh = 3;
+        if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
+            break;
+        }
     }
 
     e = getTopFrequencyParameters(
-            &results,
+            results,
+            m_pythiaParameters.verbosity,
             &m_pythiaParameters.ms2ExtractionWidthPPM
             ); ree;
 
     m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
     e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
-    qDebug() << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-    qDebug() << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs) << "minutes";
 
+    for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
 
     ERR_RETURN
 }
@@ -1275,13 +1384,11 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     constexpr bool useExtendedScores = true;
     constexpr bool useNeuralNetworkScores = false;
-
-    const int topNMs2IonsMainAnalysis = std::max(
-            m_minTopNMs2Ions,
-            static_cast<int>(std::round(m_pythiaParameters.topNMs2Ions))
-            );
-
-    qDebug() << "Using top:" << topNMs2IonsMainAnalysis << "fragments for main analysis";
+    constexpr int topNMs2IonsMainAnalysis = 12;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Using top:"
+            << topNMs2IonsMainAnalysis
+            << "fragments for main analysis";
 
     QElapsedTimer et;
     et.start();
@@ -1295,17 +1402,17 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
-    constexpr float minPeakCountCalibration = 2.9;
+    constexpr float minPeakCount = 2.9;
     m_candidateScores.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
-            minPeakCountCalibration,
+            minPeakCount,
             nullToBuildTurboXICInParallelLoop,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
             ); ree
-    qDebug() << "Targets scored" << et.restart() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;
@@ -1316,7 +1423,11 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
         &fdrVsCounts
         ); ree;
 
-    qDebug() << "Targets resulted" << et.restart() << "mSec";
+    QString fdrString;
+    e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << qPrintable(fdrString);
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets resulted" << et.restart() << "mSec";
 
     constexpr double fdrThresholdOnePercent = 0.01;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
@@ -1324,10 +1435,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             fdrThresholdOnePercent,
             targetCountBelowFDRThresholdOnePercent
     ); ree;
-    qDebug() << "Targets counted" << et.restart() << "mSec";
 
     sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
-    qDebug() << "Targets sorted" << et.restart() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets sorted" << et.restart() << "mSec";
 
     ERR_RETURN
 }
@@ -1426,14 +1536,16 @@ namespace {
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
             int seed,
             int threadCount,
+            int verbosity,
             QVector<float> *predictions
             ) {
 
         ERR_INIT
 
-        const int batchSize = std::min(200, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+        constexpr int batchSizeMin = 500;
+        const int batchSize = std::min(batchSizeMin, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
 
-        qDebug() << "Batch Size:" << batchSize;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Batch Size:" << batchSize;
 
         QVector<QVector<float>> xData;
         QVector<float> yData;
@@ -1458,6 +1570,7 @@ namespace {
                 xData,
                 yData,
                 seed,
+                verbosity,
                 predictions
                 ); ree;
 
@@ -1536,7 +1649,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             [](const CandidateScores* cs){return cs->isDecoy;}
             ));
 
-    qDebug() << "target vs decoy count" << totalCount - decoyCount << decoyCount
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "target vs decoy count for neural net training"
+             << totalCount - decoyCount << ":" << decoyCount
              << "total" << totalCount;
 
 //#define PRINT_AVERAGES
@@ -1564,6 +1679,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             karnnNNTargetsNorm,
             seed,
             m_pythiaParameters.threadCount,
+            m_pythiaParameters.verbosity,
             &predictions
             ); ree;
 
@@ -1664,20 +1780,23 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     QVector<CandidateScores*> candidateScoresVecBatchPntrsResized = *candidateScoresVecScoredPntrs;
     candidateScoresVecBatchPntrsResized.resize(std::max(m_minTrainingCountTranche, topNCandidates));
 
-    qDebug() << "Using" << candidateScoresVecBatchPntrsResized.size() << "for iRT Estimation";
-
     e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
             m_pythiaParameters.ionsSharedToReject,
             m_pythiaParameters.mzMinMS2,
             m_pythiaParameters.mzMaxMS2,
             &candidateScoresVecBatchPntrsResized
             ); ree;
-    qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
+
+    if (m_pythiaParameters.verbosity > 0) {
+        qDebug() << "Using" << candidateScoresVecBatchPntrsResized.size() << "for iRT Estimation";
+        qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
+    }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = buildMsCalibrationReaderRows(
             MSLevelEnum::MS2,
             candidateScoresVecBatchPntrsResized,
+            m_pythiaParameters.verbosity,
             &msCalibrationReaderRows
             ); ree;
 
@@ -1692,15 +1811,16 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-    qDebug() << "----- scanTimeWindowStDev x" << S_GLOBAL_SETTINGS.STDEV_MULTIPLIER
-             <<":" << m_msCalibratomatic.scanTimeStDev(S_GLOBAL_SETTINGS.STDEV_MULTIPLIER);
+
+    if (m_pythiaParameters.verbosity > 0) {
+        qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters.scanTimeWindowStDevs
+                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+    }
 
     constexpr int ms2MassRecalCountMin = 200;
     if (topCandidatesMass > ms2MassRecalCountMin) {
 
         msCalibrationReaderRows.resize(topCandidatesMass);
-
-        e = recalibrateMs1Points(candidateScoresVecBatchPntrsResized); ree;
 
         e = m_msCalibratomatic.setMassCalibrationCoeffs(
             msCalibrationReaderRows,
@@ -1720,11 +1840,6 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
             selectDIATargetFrames.insert(mzTargetKey, spp);
         }
 
-        e = recalibrateMzVals(
-                MSLevelEnum::MS2,
-                &selectDIATargetFrames,
-                m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-        ); ree;
     }
 
     ERR_RETURN

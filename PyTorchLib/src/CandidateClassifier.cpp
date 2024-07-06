@@ -97,7 +97,8 @@ public:
             int epochsMax,
             int batchSize,
             double learningRate,
-            int seed
+            int seed,
+            int verbosity
     );
 
     bool predict(
@@ -162,7 +163,8 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         int epochsMax,
         int batchSize,
         double learningRate,
-        int seed
+        int seed,
+        int verbosity
         ) {
 
     torch::manual_seed(seed);
@@ -251,15 +253,17 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         const float meanBatchLoss = batchLossSum / static_cast<float>(iters);
 
         if (meanBatchLoss < bestEpochLoss) {
-
-            qDebug() << "Updating weights";
+            if (verbosity > 0) {
+                qDebug() << "Updating weights";
+            }
 
             bestEpochLoss = meanBatchLoss;
         }
 
-        qDebug() << "****" << "Epoch" << epoch + 1 << "Best loss:" << bestEpochLoss << "Mean loss" << meanBatchLoss << et.restart() << "mSec";
+        if (verbosity > 0) {
+            qDebug() << "****" << "Epoch" << epoch + 1 << "Best loss:" << bestEpochLoss << "Mean loss" << meanBatchLoss << et.restart() << "mSec";
 
-
+        }
     }
 
     m_net->eval();
@@ -334,7 +338,8 @@ bool CandidateClassifier::trainCandidateClassifier(
         int epochsMax,
         int batchSize,
         double learningRate,
-        int seed
+        int seed,
+        int verbosity
         ) {
     return d_ptr->trainCandidateClassifier(
             xData,
@@ -342,17 +347,18 @@ bool CandidateClassifier::trainCandidateClassifier(
             epochsMax,
             batchSize,
             learningRate,
-            seed
+            seed,
+            verbosity
             );
 }
 
 bool CandidateClassifier::predict(
         const QVector<QVector<float>> &xData,
         QVector<float> *predictions
-        ) {
+        ) const {
     return d_ptr->predict(xData, predictions);
 }
 
-void CandidateClassifier::setThreadCount(int threadCount) {
+void CandidateClassifier::setThreadCount(int threadCount) const {
     d_ptr->setThreadCount(threadCount);
 }

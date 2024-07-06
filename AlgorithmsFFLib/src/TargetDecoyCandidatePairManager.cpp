@@ -263,21 +263,11 @@ namespace {
 
         QVector<MS2Ion> ms2IonsDecoy;
 
-//#define REVERSE_MIDDLE_DECOY
-#ifdef REVERSE_MIDDLE_DECOY
-        e= reverseCandidatePeptideTarget(
-                peptideStringWithMods,
-                pythiaParameters.aminoAcids,
-                ms2IonsTarget,
-                &ms2IonsDecoy
-        ); rree;
-#else
         e= mutateCandidatePeptideTarget(
                 peptideStringWithMods,
                 ms2IonsTarget,
                 &ms2IonsDecoy
         ); rree;
-#endif
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
                 peptideStringWithMods,
@@ -350,7 +340,7 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
 
     e = filterDecoySequencesThatAreAlsoTargetSequences();
 
-    qDebug() << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << m_targetDecoyCandidatePairs.size() << "Candidates loaded in" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }
@@ -418,7 +408,7 @@ Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequen
         modified += result;
     }
 
-    qDebug() << modified << "Sequences were found to have decoys that were also targets and were modified!!!!" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << modified << "Sequences were found to have decoys that were also targets and were modified!!!!" << et.elapsed() << "mSec";
 
     ERR_RETURN
 }

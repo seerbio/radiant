@@ -18,7 +18,7 @@ public:
 
 private Q_SLOTS:
 
-    void readFileTest();
+    static void readFileTest();
 
 };
 
@@ -35,68 +35,37 @@ void PythiaParameterReaderTests::readFileTest() {
     PythiaParameterReader::buildPythiaParameters(filePath, &pythiaParameters);
     QCOMPARE(e, eNoError);
 
-    const QStringList cTermExpected = {"K", "R"};
-    const QStringList nTermExpected = {};
-
-    QCOMPARE(pythiaParameters.cTermCleavePoints, cTermExpected);
-    QCOMPARE(pythiaParameters.nTermCleavePoints, nTermExpected);
-    QCOMPARE(pythiaParameters.raggedness, 0);
-    QCOMPARE(pythiaParameters.allowedMissedCleavages, 1);
-    QCOMPARE(pythiaParameters.peptideLengthMin, 7);
-    QCOMPARE(pythiaParameters.peptideLengthMax, 35);
-    QCOMPARE(pythiaParameters.maxModificationsPeptide, 1);
-
-    QCOMPARE(pythiaParameters.minFoundMzPeaks, 2);
-    QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 20.5);
-    QCOMPARE(pythiaParameters.mzMinMS2, 100.1);
-    QCOMPARE(pythiaParameters.mzMaxMS2, 1500.2);
-
+    QCOMPARE(pythiaParameters.threadCount, 16);
+    QCOMPARE(pythiaParameters.verbosity, 1);
     QCOMPARE(pythiaParameters.chargeStateMin, 1);
     QCOMPARE(pythiaParameters.chargeStateMax, 4);
+    QCOMPARE(pythiaParameters.mzMinMS2, 200.0);
+    QCOMPARE(pythiaParameters.mzMaxMS2, 1500.0);
+    QCOMPARE(pythiaParameters.peptideLengthMin, 8);
+    QCOMPARE(pythiaParameters.peptideLengthMax, 31);
+    QCOMPARE(pythiaParameters.trancheSizeMax, 1e4);
     QCOMPARE(pythiaParameters.precursorExtractionWindowThomsons, 0.5);
-
-    QCOMPARE(pythiaParameters.filterLength, 3);
-    QCOMPARE(pythiaParameters.sigma, 1.0);
-    QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.0);
-    QCOMPARE(pythiaParameters.smoothCount, 1);
-
-    QCOMPARE(pythiaParameters.bypassNeuralNet, true);
+    QCOMPARE(pythiaParameters.ms1ExtractionWidthPPM, 20.0);
+    QCOMPARE(pythiaParameters.filterLengthIntegration, 6);
+    QCOMPARE(pythiaParameters.filterLengthMS2, 4);
+    QCOMPARE(pythiaParameters.ionsSharedToReject, 2);
+    QCOMPARE(pythiaParameters.ms2ExtractionWidthPPM, 21.0);
+    QCOMPARE(pythiaParameters.minMs2FragCount, 3);
+    QCOMPARE(pythiaParameters.scanTimeWindowStDevs, 4);
+    QCOMPARE(pythiaParameters.subtractShadows, false);
+    QCOMPARE(pythiaParameters.smoothCountMS2, 2);
+    QCOMPARE(pythiaParameters.stopThresholdFractionMS2, 0.666f);
     QCOMPARE(pythiaParameters.percentFDR, 2.0);
     QCOMPARE(pythiaParameters.reportDecoys, true);
+    QCOMPARE(pythiaParameters.filterLength, 4);
+    QCOMPARE(pythiaParameters.sigma, 1.1);
+    QCOMPARE(pythiaParameters.signalToNoiseRatio, 2.1);
+    QCOMPARE(pythiaParameters.smoothCount, 3);
+    QCOMPARE(pythiaParameters.minScanCount, 4);
+    QCOMPARE(pythiaParameters.skipScanCount, 4);
 
-    QCOMPARE(pythiaParameters.modifications.size(), 3);
+    pythiaParameters.print();
 
-    const Modification &modFixed = pythiaParameters.modifications.at(0);
-    QCOMPARE(modFixed.name, "Carbamidomethyl");
-    QCOMPARE(modFixed.type, ModificationType::FIXED);
-    QCOMPARE(modFixed.formula, "H3C2NO");
-    QCOMPARE(modFixed.residue, "C");
-    QCOMPARE(
-            QString::number(pythiaParameters.aminoAcids.aminoAcid('C').monoisotopicMass()),
-            QString::number(160.031)
-            );
-
-    const Modification &modVar1 = pythiaParameters.modifications.at(1);
-    QCOMPARE(modVar1.name, "Oxidation");
-    QCOMPARE(modVar1.type, ModificationType::DYNAMIC);
-    QCOMPARE(modVar1.formula, "O");
-    QCOMPARE(modVar1.residue, "M");
-
-    MolecularFormula mfOx;
-    e = parseMolecularFormulaString(modVar1.formula, &mfOx);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(QString::number(Molecule(mfOx).monoisotopicMass()), QString::number(15.9949));
-
-    const Modification &modVar2 = pythiaParameters.modifications.at(2);
-    QCOMPARE(modVar2.name, "Acetyl");
-    QCOMPARE(modVar2.type, ModificationType::DYNAMIC);
-    QCOMPARE(modVar2.formula, "C2H3O");
-    QCOMPARE(modVar2.positionalLocation, "N-Term-Protein");
-
-    MolecularFormula mfAcetyl;
-    e = parseMolecularFormulaString(modVar2.formula, &mfAcetyl);
-    QCOMPARE(e, eNoError);
-    QCOMPARE(QString::number(Molecule(mfAcetyl).monoisotopicMass()), QString::number(43.0184));
 }
 
 

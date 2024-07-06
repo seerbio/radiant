@@ -10,6 +10,7 @@
 #include "ErrorUtils.h"
 #include "PointFF.h"
 
+#include <QElapsedTimer>
 #include <QPointF>
 #include <QString>
 #include <QVector>
@@ -159,14 +160,38 @@ public:
 
     const int MIN_MS2_IONS = 6;
 
-
     const QString MS1Key = QStringLiteral("MS1Key");
 
     static QString VERSION();
 };
 
+class GlobalTimer {
+
+public:
+    GlobalTimer() {
+        m_timer.start();
+    }
+
+    [[nodiscard]] QString elapsed() const {
+        const int minutesElapsed = static_cast<int>(std::floor(m_timer.elapsed() / (1000 * 60.0)));
+        const int secondsElapsed = static_cast<int>(std::floor(m_timer.elapsed() / 1000.0) - (minutesElapsed * 60.0));
+        const QString timerGoneBy = secondsElapsed < 10 ? QStringLiteral("[%1:0%2]") : QStringLiteral("[%1:%2]");
+        return timerGoneBy.arg(minutesElapsed).arg(secondsElapsed);
+    }
+
+    QElapsedTimer* timer() {
+        return &m_timer;
+    }
+
+private:
+    QElapsedTimer m_timer;
+
+};
+
 
 const extern UTILSLIB_EXPORTS GlobalSettings S_GLOBAL_SETTINGS;
+
+const extern UTILSLIB_EXPORTS GlobalTimer S_GLOBAL_TIMER;
 
 
 #endif //GLOBALSETTINGS_H

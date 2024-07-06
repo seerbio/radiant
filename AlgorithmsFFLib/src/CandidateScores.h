@@ -35,21 +35,23 @@ public:
         CosineSimSpectrumCubed,
         KlDivSpectrumCubeRoot,
         CosineSimSum45,
-        CosineSimSum20,
+        // CosineSimSum20,//TODO delete
         CosineSimSumTop,
         CosineSimSumBottom,
         TopBottomRatio,//10
         TopBottomRatioNorm,
         Charge,
         ScanTimeDelta,
+        ScanTimeDeltaAbs,
         ScanTimePd,
+        ScanTimePdAbs,
         ScanIonCount,
         MzNorm,
         Mass,
         KlDivSpectrum,
         CosineSimSpectrum,
         CosineSim45MS1,//20
-        CosineSim20MS1,
+        // CosineSim20MS1,//TODO delete
         CosineSim100MS1PreMono,
         CosineSim100MS1Iso1,
         CosineSim100MS1Iso2,
@@ -250,25 +252,25 @@ public:
         AltTargetKeyIdTimeDeltaCharge4_3,
         Ms1MzMeanFound100,//220
         Ms1MzMeanFound45,
-        Ms1MzMeanFound20,
+        // Ms1MzMeanFound20,//TODO delete
         Ms1MzMeanFoundPreMono,
         Ms1MzMeanFoundIso1,
         Ms1MzMeanFoundIso2,
         Ms1MzMeanFound100PPM,
         Ms1MzMeanFound45PPM,
-        Ms1MzMeanFound20PPM,
+        // Ms1MzMeanFound20PPM,//TODO delete
         Ms1MzMeanFoundPreMonoPPM,
         Ms1MzMeanFoundIso1PPM,//230
         Ms1MzMeanFoundIso2PPM,
         Ms1MzStDevFound100,
         Ms1MzStDevFound45,
-        Ms1MzStDevFound20,
+        // Ms1MzStDevFound20,//TODO delete
         Ms1MzStDevFoundPreMono,
         Ms1MzStDevFoundIso1,
         Ms1MzStDevFoundIso2,
         Ms1IntensityFound100,
         Ms1IntensityFound45,
-        Ms1IntensityFound20,//240
+        // Ms1IntensityFound20,//240//TODO delete
         Ms1IntensityFoundPreMono,
         Ms1IntensityFoundIso1,
         Ms1IntensityFoundIso2,
@@ -284,6 +286,7 @@ public:
         TotalIntensityRaw,
 
         TargetWindowLocation,
+        TargetWindowLocationAbs,
 
         FeaturesSize
     };
@@ -311,7 +314,7 @@ public:
     double decoyRatio = -1.0;
 
     QVector<float> featuresArray;
-
+//TODO delete
     /**
     * @brief Returns a reference to the features array.
     * @return QVector<float>* A pointer to the features array.
@@ -344,7 +347,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_SPEC_CUBED = QStringLiteral("CosineSimSpectrumCubed");
     const QString KL_DIV_SPEC_CUBE_RT = QStringLiteral("KlDivSpectrumCubeRoot");
     const QString COS_SIM_SUM_45 = QStringLiteral("CosineSimSum45");
-    const QString COS_SIM_SUM_20 = QStringLiteral("CosineSimSum20");
+    // const QString COS_SIM_SUM_20 = QStringLiteral("CosineSimSum20");//TODO delete
     const QString COS_SIM_SUM_TOP_6 = QStringLiteral("CosineSimSumTop");
     const QString COS_SIM_SUM_BOTTOM_6 = QStringLiteral("CosineSimSumBottom");
     const QString TOP_BOTTOM_RATIO = QStringLiteral("TopBottomRatio");
@@ -358,7 +361,7 @@ namespace CandidateScoresReaderRowNamespace {
     const QString KL_DIV_SPEC = QStringLiteral("KlDivSpectrum");
     const QString COSINE_SIM_SPEC = QStringLiteral("CosineSimSpectrum");
     const QString COSINE_SIM_SUM_MS1_45 = QStringLiteral("CosineSim45MS1");
-    const QString COSINE_SIM_SUM_MS1_20 = QStringLiteral("CosineSim20MS1");
+    // const QString COSINE_SIM_SUM_MS1_20 = QStringLiteral("CosineSim20MS1");//TODO delete
     const QString COSINE_SIM_SUM_MS1_PRE_MONO = QStringLiteral("CosineSim100MS1PreMono");
     const QString COSINE_SIM_SUM_MS1_ISO_1 = QStringLiteral("CosineSim100MS1Iso1");
     const QString COSINE_SIM_SUM_MS1_ISO_2 = QStringLiteral("CosineSim100MS1Iso2");
@@ -535,6 +538,8 @@ namespace CandidateScoresReaderRowNamespace {
     const QString IS_DECOY = QStringLiteral("IsDecoy");
     const QString SCAN_NUM = QStringLiteral("ScanNumber");
     const QString SCAN_TIME = QStringLiteral("ScanTime");
+    const QString SCAN_TIME_START = QStringLiteral("ScanTimeStart");
+    const QString SCAN_TIME_END = QStringLiteral("ScanTimeEnd");
     const QString CLASS_SCR = QStringLiteral("ClassifierScore");
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
@@ -572,25 +577,25 @@ namespace CandidateScoresReaderRowNamespace {
 
     const QString MS1_MZ_MEAN_FND_100 = QStringLiteral("Ms1MzMeanFound100");
     const QString MS1_MZ_MEAN_FND_45 = QStringLiteral("Ms1MzMeanFound45");
-    const QString MS1_MZ_MEAN_FND_20 = QStringLiteral("Ms1MzMeanFound20");
+    // const QString MS1_MZ_MEAN_FND_20 = QStringLiteral("Ms1MzMeanFound20");//TODO delete
     const QString MS1_MZ_MEAN_FND_PRE_MONO = QStringLiteral("Ms1MzMeanFoundPreMono");
     const QString MS1_MZ_MEAN_FND_ISO1 = QStringLiteral("Ms1MzMeanFoundIso1");
     const QString MS1_MZ_MEAN_FND_ISO2 = QStringLiteral("Ms1MzMeanFoundIso2");
     const QString MS1_MZ_MEAN_FND_100_PPM = QStringLiteral("Ms1MzMeanFound100PPM");
     const QString MS1_MZ_MEAN_FND_45_PPM = QStringLiteral("Ms1MzMeanFound45PPM");
-    const QString MS1_MZ_MEAN_FND_20_PPM = QStringLiteral("Ms1MzMeanFound20PPM");
+    // const QString MS1_MZ_MEAN_FND_20_PPM = QStringLiteral("Ms1MzMeanFound20PPM");//TODO delete
     const QString MS1_MZ_MEAN_FND_PRE_MONO_PPM = QStringLiteral("Ms1MzMeanFoundPreMonoPPM");
     const QString MS1_MZ_MEAN_FND_ISO_1_PPM = QStringLiteral("Ms1MzMeanFoundIso1PPM");
     const QString MS1_MZ_MEAN_FND_ISO_2_PPM = QStringLiteral("Ms1MzMeanFoundIso2PPM");
     const QString MS1_MZ_MEAN_FND_100_STD = QStringLiteral("Ms1MzStDevFound100");
     const QString MS1_MZ_MEAN_FND_45_STD = QStringLiteral("Ms1MzStDevFound45");
-    const QString MS1_MZ_MEAN_FND_20_STD = QStringLiteral("Ms1MzStDevFound20");
+    // const QString MS1_MZ_MEAN_FND_20_STD = QStringLiteral("Ms1MzStDevFound20");//TODO delete
     const QString MS1_MZ_MEAN_FND_PRE_MONO_STD = QStringLiteral("Ms1MzStDevFoundPreMono");
     const QString MS1_MZ_MEAN_FND_ISO_1_STD = QStringLiteral("Ms1MzStDevFoundIso1");
     const QString MS1_MZ_MEAN_FND_ISO_2_STD = QStringLiteral("Ms1MzStDevFoundIso2");
     const QString MS1_INTZ_FND_100 = QStringLiteral("Ms1IntensityFound100");
     const QString MS1_INTZ_FND_45 = QStringLiteral("Ms1IntensityFound45");
-    const QString MS1_INTZ_FND_20 = QStringLiteral("Ms1IntensityFound20");
+    // const QString MS1_INTZ_FND_20 = QStringLiteral("Ms1IntensityFound20");//TODO delete
     const QString MS1_INTZ_FND_PRE_MONO = QStringLiteral("Ms1IntensityFoundPreMono");
     const QString MS1_INTZ_FND_ISO_1 = QStringLiteral("Ms1IntensityFoundIso1");
     const QString MS1_INTZ_FND_ISO_2 = QStringLiteral("Ms1IntensityFoundIso2");
@@ -614,7 +619,7 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SPEC_CUBED,
             KL_DIV_SPEC_CUBE_RT,
             COS_SIM_SUM_45,
-            COS_SIM_SUM_20,
+            // COS_SIM_SUM_20,//TODO delete
             COS_SIM_SUM_TOP_6,
             COS_SIM_SUM_BOTTOM_6,
             TOP_BOTTOM_RATIO,
@@ -628,7 +633,7 @@ namespace CandidateScoresReaderRowNamespace {
             KL_DIV_SPEC,
             COSINE_SIM_SPEC,
             COSINE_SIM_SUM_MS1_45,
-            COSINE_SIM_SUM_MS1_20,
+            // COSINE_SIM_SUM_MS1_20,//TODO delete
             COSINE_SIM_SUM_MS1_PRE_MONO,
             COSINE_SIM_SUM_MS1_ISO_1,
             COSINE_SIM_SUM_MS1_ISO_2,
@@ -805,6 +810,8 @@ namespace CandidateScoresReaderRowNamespace {
             IS_DECOY,
             SCAN_NUM,
             SCAN_TIME,
+            SCAN_TIME_START,
+            SCAN_TIME_END,
             CLASS_SCR,
             DISC_SCR,
             Q_VAL,
@@ -839,25 +846,25 @@ namespace CandidateScoresReaderRowNamespace {
             ALT_TARG_ID_TIME_DELTA_CHRG4_3,
             MS1_MZ_MEAN_FND_100,
             MS1_MZ_MEAN_FND_45,
-            MS1_MZ_MEAN_FND_20,
+            // MS1_MZ_MEAN_FND_20,//TODO delete
             MS1_MZ_MEAN_FND_PRE_MONO,
             MS1_MZ_MEAN_FND_ISO1,
             MS1_MZ_MEAN_FND_ISO2,
             MS1_MZ_MEAN_FND_100_PPM,
             MS1_MZ_MEAN_FND_45_PPM,
-            MS1_MZ_MEAN_FND_20_PPM,
+            // MS1_MZ_MEAN_FND_20_PPM,//TODO delete
             MS1_MZ_MEAN_FND_PRE_MONO_PPM,
             MS1_MZ_MEAN_FND_ISO_1_PPM,
             MS1_MZ_MEAN_FND_ISO_2_PPM,
             MS1_MZ_MEAN_FND_100_STD,
             MS1_MZ_MEAN_FND_45_STD,
-            MS1_MZ_MEAN_FND_20_STD,
+            // MS1_MZ_MEAN_FND_20_STD,//TODO delete
             MS1_MZ_MEAN_FND_PRE_MONO_STD,
             MS1_MZ_MEAN_FND_ISO_1_STD,
             MS1_MZ_MEAN_FND_ISO_2_STD,
             MS1_INTZ_FND_100,
             MS1_INTZ_FND_45,
-            MS1_INTZ_FND_20,
+            // MS1_INTZ_FND_20,//TODO delete
             MS1_INTZ_FND_PRE_MONO,
             MS1_INTZ_FND_ISO_1,
             MS1_INTZ_FND_ISO_2,
@@ -884,7 +891,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float cosineSimSpectrumCubed = -1.0;
     float klDivSpectrumCubeRoot = -1.0;
     float cosineSimSum45 = -1.0;
-    float cosineSimSum20 = -1.0;
+    // float cosineSimSum20 = -1.0;//TODO delete
     float cosineSimSumTop = -1.0;
     float cosineSimSumBottom = -1.0;
     float topBottomRatio = -1.0;
@@ -898,7 +905,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float klDivSpectrum = -1.0;
     float cosineSimSpectrum = -1.0;
     float cosineSim45MS1 = -1.0;
-    float cosineSim20MS1 = -1.0;
+    // float cosineSim20MS1 = -1.0;//TODO delete
     float cosineSim100MS1PreMono = -1.0;
     float cosineSim100MS1Iso1 = -1.0;
     float cosineSim100MS1Iso2 = -1.0;
@@ -1076,6 +1083,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     bool isDecoy = false;
     ScanNumber scanNumber = -1;
     ScanTime scanTime = -1.0;
+    ScanTime scanTimeStart = -1.0;
+    ScanTime scanTimeEnd = -1.0;
     double classifierScore = -1.0;
     double discriminantScore = -1.0;
     double qValue = 1.0;
@@ -1113,25 +1122,25 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
     float ms1MzMeanFound100 = -1.0;
     float ms1MzMeanFound45 = -1.0;
-    float ms1MzMeanFound20 = -1.0;
+    // float ms1MzMeanFound20 = -1.0;//TODO delete
     float ms1MzMeanFoundPreMono = -1.0;
     float ms1MzMeanFoundIso1 = -1.0;
     float ms1MzMeanFoundIso2 = -1.0;
     float ms1MzMeanFound100PPM = -1.0;
     float ms1MzMeanFound45PPM = -1.0;
-    float ms1MzMeanFound20PPM = -1.0;
+    // float ms1MzMeanFound20PPM = -1.0;//TODO delete
     float ms1MzMeanFoundPreMonoPPM = -1.0;
     float ms1MzMeanFoundIso1PPM = -1.0;
     float ms1MzMeanFoundIso2PPM = -1.0;
     float ms1MzStDevFound100 = -1.0;
     float ms1MzStDevFound45 = -1.0;
-    float ms1MzStDevFound20 = -1.0;
+    // float ms1MzStDevFound20 = -1.0;//TODO delete
     float ms1MzStDevFoundPreMono = -1.0;
     float ms1MzStDevFoundIso1 = -1.0;
     float ms1MzStDevFoundIso2 = -1.0;
     float ms1IntensityFound100 = -1.0;
     float ms1IntensityFound45 = -1.0;
-    float ms1IntensityFound20 = -1.0;
+    // float ms1IntensityFound20 = -1.0;//TODO delete
     float ms1IntensityFoundPreMono = -1.0;
     float ms1IntensityFoundIso1 = -1.0;
     float ms1IntensityFoundIso2 = -1.0;
@@ -1168,7 +1177,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         cosineSimSpectrumCubed = dataMap.value(COS_SIM_SPEC_CUBED).toFloat();
         klDivSpectrumCubeRoot = dataMap.value(KL_DIV_SPEC_CUBE_RT).toFloat();
         cosineSimSum45 = dataMap.value(COS_SIM_SUM_45).toFloat();
-        cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toFloat();
+        // cosineSimSum20 = dataMap.value(COS_SIM_SUM_20).toFloat();//TODO delete
         cosineSimSumTop = dataMap.value(COS_SIM_SUM_TOP_6).toFloat();
         cosineSimSumBottom = dataMap.value(COS_SIM_SUM_BOTTOM_6).toFloat();
         topBottomRatio = dataMap.value(TOP_BOTTOM_RATIO).toFloat();
@@ -1182,7 +1191,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         klDivSpectrum = dataMap.value(KL_DIV_SPEC).toFloat();
         cosineSimSpectrum = dataMap.value(COSINE_SIM_SPEC).toFloat();
         cosineSim45MS1 = dataMap.value(COSINE_SIM_SUM_MS1_45).toFloat();
-        cosineSim20MS1 = dataMap.value(COSINE_SIM_SUM_MS1_20).toFloat();
+        // cosineSim20MS1 = dataMap.value(COSINE_SIM_SUM_MS1_20).toFloat();//TODO delete
         cosineSim100MS1PreMono = dataMap.value(COSINE_SIM_SUM_MS1_PRE_MONO).toFloat();
         cosineSim100MS1Iso1 = dataMap.value(COSINE_SIM_SUM_MS1_ISO_1).toFloat();
         cosineSim100MS1Iso2 = dataMap.value(COSINE_SIM_SUM_MS1_ISO_2).toFloat();
@@ -1360,6 +1369,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
+        scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
+        scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
         classifierScore = dataMap.value(CLASS_SCR).toDouble();
         discriminantScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
@@ -1395,25 +1406,25 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         altTargetKeyIdTimeDeltaCharge4_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_3).toFloat();
         ms1MzMeanFound100 = dataMap.value(MS1_MZ_MEAN_FND_100).toFloat();
         ms1MzMeanFound45 = dataMap.value(MS1_MZ_MEAN_FND_45).toFloat();
-        ms1MzMeanFound20 = dataMap.value(MS1_MZ_MEAN_FND_20).toFloat();
+        // ms1MzMeanFound20 = dataMap.value(MS1_MZ_MEAN_FND_20).toFloat();//TODO delete
         ms1MzMeanFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO).toFloat();
         ms1MzMeanFoundIso1 = dataMap.value(MS1_MZ_MEAN_FND_ISO1).toFloat();
         ms1MzMeanFoundIso2 = dataMap.value(MS1_MZ_MEAN_FND_ISO2).toFloat();
         ms1MzMeanFound100PPM = dataMap.value(MS1_MZ_MEAN_FND_100_PPM).toFloat();
         ms1MzMeanFound45PPM = dataMap.value(MS1_MZ_MEAN_FND_45_PPM).toFloat();
-        ms1MzMeanFound20PPM = dataMap.value(MS1_MZ_MEAN_FND_20_PPM).toFloat();
+        // ms1MzMeanFound20PPM = dataMap.value(MS1_MZ_MEAN_FND_20_PPM).toFloat();//TODO delete
         ms1MzMeanFoundPreMonoPPM = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_PPM).toFloat();
         ms1MzMeanFoundIso1PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO1).toFloat();
         ms1MzMeanFoundIso2PPM = dataMap.value(MS1_MZ_MEAN_FND_ISO2).toFloat();
         ms1MzStDevFound100 = dataMap.value(MS1_MZ_MEAN_FND_100_STD).toFloat();
         ms1MzStDevFound45 = dataMap.value(MS1_MZ_MEAN_FND_45_STD).toFloat();
-        ms1MzStDevFound20 = dataMap.value(MS1_MZ_MEAN_FND_20_STD).toFloat();
+        // ms1MzStDevFound20 = dataMap.value(MS1_MZ_MEAN_FND_20_STD).toFloat();//TODO delete
         ms1MzStDevFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO_STD).toFloat();
         ms1MzStDevFoundIso1 = dataMap.value(MS1_MZ_MEAN_FND_ISO_1_STD).toFloat();
         ms1MzStDevFoundIso2 = dataMap.value(MS1_MZ_MEAN_FND_ISO_2_STD).toFloat();
         ms1IntensityFound100 = dataMap.value(MS1_INTZ_FND_100).toFloat();
         ms1IntensityFound45 = dataMap.value(MS1_INTZ_FND_45).toFloat();
-        ms1IntensityFound20 = dataMap.value(MS1_INTZ_FND_20).toFloat();
+        // ms1IntensityFound20 = dataMap.value(MS1_INTZ_FND_20).toFloat();//TODO delete
         ms1IntensityFoundPreMono = dataMap.value(MS1_INTZ_FND_PRE_MONO).toFloat();
         ms1IntensityFoundIso1 = dataMap.value(MS1_INTZ_FND_ISO_1).toFloat();
         ms1IntensityFoundIso2 = dataMap.value(MS1_INTZ_FND_ISO_2).toFloat();
@@ -1443,7 +1454,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_SPEC_CUBED, QVariant(cosineSimSpectrumCubed)},
                 {KL_DIV_SPEC_CUBE_RT, QVariant(klDivSpectrumCubeRoot)},
                 {COS_SIM_SUM_45, QVariant(cosineSimSum45)},
-                {COS_SIM_SUM_20, QVariant(cosineSimSum20)},
+                // {COS_SIM_SUM_20, QVariant(cosineSimSum20)},//TODO delete
                 {COS_SIM_SUM_TOP_6, QVariant(cosineSimSumTop)},
                 {COS_SIM_SUM_BOTTOM_6, QVariant(cosineSimSumBottom)},
                 {TOP_BOTTOM_RATIO, QVariant(topBottomRatio)},
@@ -1457,7 +1468,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {KL_DIV_SPEC, QVariant(klDivSpectrum)},
                 {COSINE_SIM_SPEC, QVariant(cosineSimSpectrum)},
                 {COSINE_SIM_SUM_MS1_45, QVariant(cosineSim45MS1)},
-                {COSINE_SIM_SUM_MS1_20, QVariant(cosineSim20MS1)},
+                // {COSINE_SIM_SUM_MS1_20, QVariant(cosineSim20MS1)},//TODO delete
                 {COSINE_SIM_SUM_MS1_PRE_MONO, QVariant(cosineSim100MS1PreMono)},
                 {COSINE_SIM_SUM_MS1_ISO_1, QVariant(cosineSim100MS1Iso1)},
                 {COSINE_SIM_SUM_MS1_ISO_2, QVariant(cosineSim100MS1Iso2)},
@@ -1634,6 +1645,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUM, QVariant(scanNumber)},
                 {SCAN_TIME, QVariant(scanTime)},
+                {SCAN_TIME_START, QVariant(scanTimeStart)},
+                {SCAN_TIME_END, QVariant(scanTimeEnd)},
                 {CLASS_SCR, QVariant(classifierScore)},
                 {DISC_SCR, QVariant(discriminantScore)},
                 {Q_VAL, QVariant(qValue)},
@@ -1669,25 +1682,25 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {ALT_TARG_ID_TIME_DELTA_CHRG4_3 , QVariant(altTargetKeyIdTimeDeltaCharge4_3)},
                 {MS1_MZ_MEAN_FND_100, QVariant(ms1MzMeanFound100)},
                 {MS1_MZ_MEAN_FND_45, QVariant(ms1MzMeanFound45)},
-                {MS1_MZ_MEAN_FND_20, QVariant(ms1MzMeanFound20)},
+                // {MS1_MZ_MEAN_FND_20, QVariant(ms1MzMeanFound20)},//TODO delete
                 {MS1_MZ_MEAN_FND_PRE_MONO, QVariant(ms1MzMeanFoundPreMono)},
                 {MS1_MZ_MEAN_FND_ISO1, QVariant(ms1MzMeanFoundIso1)},
                 {MS1_MZ_MEAN_FND_ISO2, QVariant(ms1MzMeanFoundIso2)},
                 {MS1_MZ_MEAN_FND_100_PPM, QVariant(ms1MzMeanFound100PPM)},
                 {MS1_MZ_MEAN_FND_45_PPM, QVariant(ms1MzMeanFound45PPM)},
-                {MS1_MZ_MEAN_FND_20_PPM, QVariant(ms1MzMeanFound20PPM)},
+                // {MS1_MZ_MEAN_FND_20_PPM, QVariant(ms1MzMeanFound20PPM)},//TODO delete
                 {MS1_MZ_MEAN_FND_PRE_MONO_PPM, QVariant(ms1MzMeanFoundPreMonoPPM)},
                 {MS1_MZ_MEAN_FND_ISO_1_PPM, QVariant(ms1MzMeanFoundIso1PPM)},
                 {MS1_MZ_MEAN_FND_ISO_2_PPM, QVariant(ms1MzMeanFoundIso2PPM)},
                 {MS1_MZ_MEAN_FND_100_STD, QVariant(ms1MzStDevFound100)},
                 {MS1_MZ_MEAN_FND_45_STD, QVariant(ms1MzStDevFound45)},
-                {MS1_MZ_MEAN_FND_20_STD, QVariant(ms1MzStDevFound20)},
+                // {MS1_MZ_MEAN_FND_20_STD, QVariant(ms1MzStDevFound20)},//TODO delete
                 {MS1_MZ_MEAN_FND_PRE_MONO_STD, QVariant(ms1MzStDevFoundPreMono)},
                 {MS1_MZ_MEAN_FND_ISO_1_STD, QVariant(ms1MzStDevFoundIso1)},
                 {MS1_MZ_MEAN_FND_ISO_2_STD, QVariant(ms1MzStDevFoundIso2)},
                 {MS1_INTZ_FND_100, QVariant(ms1IntensityFound100)},
                 {MS1_INTZ_FND_45, QVariant(ms1IntensityFound45)},
-                {MS1_INTZ_FND_20, QVariant(ms1IntensityFound20)},
+                // {MS1_INTZ_FND_20, QVariant(ms1IntensityFound20)},//TODO delete
                 {MS1_INTZ_FND_PRE_MONO, QVariant(ms1IntensityFoundPreMono)},
                 {MS1_INTZ_FND_ISO_1, QVariant(ms1IntensityFoundIso1)},
                 {MS1_INTZ_FND_ISO_2, QVariant(ms1IntensityFoundIso2)},
@@ -1716,7 +1729,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.cosineSimSpectrumCubed = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed],
         row.klDivSpectrumCubeRoot = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot],
         row.cosineSimSum45 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45],
-        row.cosineSimSum20 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20],
+        // row.cosineSimSum20 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20],//TODO delete
         row.cosineSimSumTop = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop],
         row.cosineSimSumBottom = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom],
         row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio],
@@ -1730,7 +1743,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.klDivSpectrum = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum],
         row.cosineSimSpectrum = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum],
         row.cosineSim45MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1],
-        row.cosineSim20MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1],
+        // row.cosineSim20MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1],//TODO delete
         row.cosineSim100MS1PreMono = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
         row.cosineSim100MS1Iso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
         row.cosineSim100MS1Iso2 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
@@ -1910,6 +1923,8 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.isDecoy = candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
+        row.scanTimeStart = candidateScores->scanTimeStart;
+        row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
         row.discriminantScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
@@ -1947,25 +1962,25 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         row.ms1MzMeanFound100 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100];
         row.ms1MzMeanFound45 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45];
-        row.ms1MzMeanFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20];
+        // row.ms1MzMeanFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20];//TODO delete
         row.ms1MzMeanFoundPreMono = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono];
         row.ms1MzMeanFoundIso1 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1];
         row.ms1MzMeanFoundIso2 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2];
         row.ms1MzMeanFound100PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM];
         row.ms1MzMeanFound45PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM];
-        row.ms1MzMeanFound20PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM];
+        // row.ms1MzMeanFound20PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM];//TODO delete
         row.ms1MzMeanFoundPreMonoPPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM];
         row.ms1MzMeanFoundIso1PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM];
         row.ms1MzMeanFoundIso2PPM = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM];
         row.ms1MzStDevFound100 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100];
         row.ms1MzStDevFound45 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45];
-        row.ms1MzStDevFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20];
+        // row.ms1MzStDevFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20];//TODO delete
         row.ms1MzStDevFoundPreMono = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono];
         row.ms1MzStDevFoundIso1 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1];
         row.ms1MzStDevFoundIso2 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2];
         row.ms1IntensityFound100 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100];
         row.ms1IntensityFound45 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45];
-        row.ms1IntensityFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20];
+        // row.ms1IntensityFound20 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20];//TODO delete
         row.ms1IntensityFoundPreMono = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono];
         row.ms1IntensityFoundIso1 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1];
         row.ms1IntensityFoundIso2 = candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2];
@@ -1995,7 +2010,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::CosineSimSpectrumCubed] = candidateScoresReaderRow.cosineSimSpectrumCubed;
         featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot] = candidateScoresReaderRow.klDivSpectrumCubeRoot;
         featuresArray[CandidateScores::Features::CosineSim45MS1] = candidateScoresReaderRow.cosineSimSum45;
-        featuresArray[CandidateScores::Features::CosineSim20MS1] = candidateScoresReaderRow.cosineSimSum20;
+        // featuresArray[CandidateScores::Features::CosineSim20MS1] = candidateScoresReaderRow.cosineSimSum20;//TODO delete
         featuresArray[CandidateScores::Features::CosineSimSumTop] = candidateScoresReaderRow.cosineSimSumTop;
         featuresArray[CandidateScores::Features::CosineSimSumBottom] = candidateScoresReaderRow.cosineSimSumBottom;
         featuresArray[CandidateScores::Features::TopBottomRatio] = candidateScoresReaderRow.topBottomRatio;
@@ -2009,7 +2024,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::KlDivSpectrum] = candidateScoresReaderRow.klDivSpectrum;
         featuresArray[CandidateScores::Features::CosineSimSpectrum] = candidateScoresReaderRow.cosineSimSpectrum;
         featuresArray[CandidateScores::Features::CosineSim45MS1] = candidateScoresReaderRow.cosineSim45MS1;
-        featuresArray[CandidateScores::Features::CosineSim20MS1] = candidateScoresReaderRow.cosineSim20MS1;
+        // featuresArray[CandidateScores::Features::CosineSim20MS1] = candidateScoresReaderRow.cosineSim20MS1;//TODO delete
         featuresArray[CandidateScores::Features::CosineSim100MS1PreMono] = candidateScoresReaderRow.cosineSim100MS1PreMono;
         featuresArray[CandidateScores::Features::CosineSim100MS1Iso1] = candidateScoresReaderRow.cosineSim100MS1Iso1;
         featuresArray[CandidateScores::Features::CosineSim100MS1Iso2] = candidateScoresReaderRow.cosineSim100MS1Iso2;
@@ -2210,25 +2225,25 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge4_3;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = candidateScoresReaderRow.ms1MzMeanFound100;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound45] = candidateScoresReaderRow.ms1MzMeanFound45;
-        featuresArray[CandidateScores::Features::Ms1MzMeanFound20] = candidateScoresReaderRow.ms1MzMeanFound20;
+        // featuresArray[CandidateScores::Features::Ms1MzMeanFound20] = candidateScoresReaderRow.ms1MzMeanFound20;//TODO delete
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono] = candidateScoresReaderRow.ms1MzMeanFoundPreMono;
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1] = candidateScoresReaderRow.ms1MzMeanFoundIso1;
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2] = candidateScoresReaderRow.ms1MzMeanFoundIso2;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM] = candidateScoresReaderRow.ms1MzMeanFound100PPM;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM] = candidateScoresReaderRow.ms1MzMeanFound45PPM;
-        featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM] = candidateScoresReaderRow.ms1MzMeanFound20PPM;
+        // featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM] = candidateScoresReaderRow.ms1MzMeanFound20PPM;//TODO delete
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM] = candidateScoresReaderRow.ms1MzMeanFoundPreMonoPPM;
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM] = candidateScoresReaderRow.ms1MzMeanFoundIso1PPM;
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM] = candidateScoresReaderRow.ms1MzMeanFoundIso2PPM;
         featuresArray[CandidateScores::Features::Ms1MzStDevFound100] = candidateScoresReaderRow.ms1MzStDevFound100;
         featuresArray[CandidateScores::Features::Ms1MzStDevFound45] = candidateScoresReaderRow.ms1MzStDevFound45;
-        featuresArray[CandidateScores::Features::Ms1MzStDevFound20] = candidateScoresReaderRow.ms1MzStDevFound20;
+        // featuresArray[CandidateScores::Features::Ms1MzStDevFound20] = candidateScoresReaderRow.ms1MzStDevFound20;//TODO delete
         featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono] = candidateScoresReaderRow.ms1MzStDevFoundPreMono;
         featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1] = candidateScoresReaderRow.ms1MzStDevFoundIso1;
         featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2] = candidateScoresReaderRow.ms1MzStDevFoundIso2;
         featuresArray[CandidateScores::Features::Ms1IntensityFound100] = candidateScoresReaderRow.ms1IntensityFound100;
         featuresArray[CandidateScores::Features::Ms1IntensityFound45] = candidateScoresReaderRow.ms1IntensityFound45;
-        featuresArray[CandidateScores::Features::Ms1IntensityFound20] = candidateScoresReaderRow.ms1IntensityFound20;
+        // featuresArray[CandidateScores::Features::Ms1IntensityFound20] = candidateScoresReaderRow.ms1IntensityFound20;//TODO delete
         featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono] = candidateScoresReaderRow.ms1IntensityFoundPreMono;
         featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1] = candidateScoresReaderRow.ms1IntensityFoundIso1;
         featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2] = candidateScoresReaderRow.ms1IntensityFoundIso2;

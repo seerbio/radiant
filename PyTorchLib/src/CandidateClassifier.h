@@ -37,7 +37,8 @@ public:
             int epochsMax,
             int batchSize,
             double learningRate,
-            int seed
+            int seed,
+            int verbosity
             );
 
     /*!
@@ -51,9 +52,9 @@ public:
     bool predict(
             const QVector<QVector<float>> &xData,
             QVector<float> *predictions
-            );
+            ) const;
 
-    void setThreadCount(int threadCount);
+    void setThreadCount(int threadCount) const;
 
 private:
 

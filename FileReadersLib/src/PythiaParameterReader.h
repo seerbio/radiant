@@ -13,245 +13,197 @@
 using namespace Error;
 
 namespace PythiaParameterReaderConstants {
-    extern const QString FILEREADERSLIB_EXPORTS kNTermCleavePoints;
-    extern const QString FILEREADERSLIB_EXPORTS kCTermCleavePoints;
-    extern const QString FILEREADERSLIB_EXPORTS kRaggedness;
-    extern const QString FILEREADERSLIB_EXPORTS kAllowedMissedCleavages;
-    extern const QString FILEREADERSLIB_EXPORTS kDynamic;
-    extern const QString FILEREADERSLIB_EXPORTS kFixed;
-    extern const QString FILEREADERSLIB_EXPORTS kMaxModificationsPeptide;
-    extern const QString FILEREADERSLIB_EXPORTS kModifications;
+
+    extern const QString FILEREADERSLIB_EXPORTS kGeneral;
+    extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
+    extern const QString FILEREADERSLIB_EXPORTS kVerbosity;
+
+    extern const QString FILEREADERSLIB_EXPORTS kLibraryParams;
+    extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
+    extern const QString FILEREADERSLIB_EXPORTS kChargeStateMax;
     extern const QString FILEREADERSLIB_EXPORTS kMzMinMS2;
     extern const QString FILEREADERSLIB_EXPORTS kMzMaxMS2;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMin;
     extern const QString FILEREADERSLIB_EXPORTS kPeptideLengthMax;
-    extern const QString FILEREADERSLIB_EXPORTS kNoRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kCTermRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kNTermRagged;
-    extern const QString FILEREADERSLIB_EXPORTS kBothRagged;
+    extern const QString FILEREADERSLIB_EXPORTS kTrancheSizeMax;
 
-    extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
-    extern const QString FILEREADERSLIB_EXPORTS kChargeStateMax;
-    extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
+    extern const QString FILEREADERSLIB_EXPORTS kMS1Params;
     extern const QString FILEREADERSLIB_EXPORTS kPrecursorExtractionWindowThomsons;
-    extern const QString FILEREADERSLIB_EXPORTS kPercentFDR;
+    extern const QString FILEREADERSLIB_EXPORTS kMS1ExtractionWidthPPM;
 
-    extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
-    extern const QString FILEREADERSLIB_EXPORTS kMinScanCount;
-    extern const QString FILEREADERSLIB_EXPORTS kUseMeanMz;
+    extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
+    extern const QString FILEREADERSLIB_EXPORTS kFilterLengthIntegration;
+    extern const QString FILEREADERSLIB_EXPORTS kFilterLengthMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kIonsSharedToReject;
+    extern const QString FILEREADERSLIB_EXPORTS kMS2ExtractionWidthPPM;
+    extern const QString FILEREADERSLIB_EXPORTS kMinMs2FragCount;
+    extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
+    extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
+    extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
+
+    extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
+    extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
+
+    extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
+    extern const QString FILEREADERSLIB_EXPORTS kPercentFDR;
+    extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
+
+    extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
     extern const QString FILEREADERSLIB_EXPORTS kFilterLength;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCount;
     extern const QString FILEREADERSLIB_EXPORTS kSigma;
     extern const QString FILEREADERSLIB_EXPORTS kSignalToNoiseRatio;
-    extern const QString FILEREADERSLIB_EXPORTS kMinFoundMzPeaks;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFraction;
-    extern const QString FILEREADERSLIB_EXPORTS kCosineSimToAnchorThreshold;
-    extern const QString FILEREADERSLIB_EXPORTS kScanTimeWindowStDevs;
-    extern const QString FILEREADERSLIB_EXPORTS kReportDecoys;
 
-    extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
-    extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
-
-    extern const QString FILEREADERSLIB_EXPORTS kDigestParams;
-    extern const QString FILEREADERSLIB_EXPORTS kMS2Params;
-    extern const QString FILEREADERSLIB_EXPORTS kPrecursorParams;
-    extern const QString FILEREADERSLIB_EXPORTS kPeakIntegrationParams;
-    extern const QString FILEREADERSLIB_EXPORTS kFdrParams;
-    extern const QString FILEREADERSLIB_EXPORTS kGeneral;
-
-    extern const QString FILEREADERSLIB_EXPORTS kBypassNeuralNet;
+    extern const QString FILEREADERSLIB_EXPORTS kFeatureFinderParams;
+    extern const QString FILEREADERSLIB_EXPORTS kMinScanCount;
+    extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
 
 }
 
-
-enum Raggedness {
-    NoRagged = 0
-    , CTermRagged
-    , NTermRagged
-    , BothRagged
-};
-
-
-enum class ModificationType {
-    DYNAMIC,
-    FIXED
-};
-
-
-class FILEREADERSLIB_EXPORTS Modification {
-
-public:
-
-    Modification(
-            QChar residue,
-            const QString &name,
-            const ModificationType &type,
-            const QString &formula
-            );
-
-    Modification(
-            const QString &positionalLocation,
-            const QString &name,
-            const ModificationType &type,
-            const QString &formula
-            );
-
-    Modification() = default;
-    ~Modification() = default;
-
-    QChar residue;
-    QString positionalLocation;
-    QString name;
-    ModificationType type = ModificationType::DYNAMIC;
-    QString formula;
-
-    static QString nTermPeptide();
-    static QString nTermProtein();
-    static QString cTermPeptide();
-    static QString cTermProtein();
-
-    static int positionalLocationIndexes(
-            const QString &positionalLocation,
-            const QString &peptideSequence
-            );
-
-    static QStringList modKeys();
-
-    void print() const;
-};
-
 struct PythiaParameters{
 
-    QStringList nTermCleavePoints;
-    QStringList cTermCleavePoints;
-
-    Raggedness raggedness = Raggedness::NoRagged;
-
+    //[General]
     int threadCount = 8;
+    int verbosity = 0;
 
-    int allowedMissedCleavages = 0;
-    int peptideLengthMin = 7;
-    int peptideLengthMax = 35;
-    int maxModificationsPeptide = 1;
-
+    //[LibraryParams]
     int chargeStateMin = -1;
     int chargeStateMax = -1;
-
-    double precursorExtractionWindowThomsons = 0.0;
-    double percentFDR = 1.0;
     double mzMinMS2 = 300.0;
     double mzMaxMS2 = 1999.0;
-
-    int skipScanCount = 2;
-    int minScanCount = 3;
-    double signalToNoiseRatio = 2.0;
-
-    int filterLength = -1;
-    int smoothCount = -1;
-    double sigma = -1.0;
-    float stopThresholdFraction = 0.5;
-    int minFoundMzPeaks = -1;
-
-    double ms1ExtractionWidthPPM = 20.0;
-    double ms2ExtractionWidthPPM = 20.0;
-
-    int verbosity = 1;
-    bool reportDecoys = false;
-    bool subtractShadows = true;
-
-    int scanTimeWindowStDevs = 3;
+    int peptideLengthMin = 7;
+    int peptideLengthMax = 30;
     int trancheSizeMax = 2e4;
-    int ionsSharedToReject = 4;
-    int topNMs2Ions = 12;
 
-    bool bypassNeuralNet = false;
+    //[MS1Params]
+    double ms1ExtractionWidthPPM = 20.0;
+    double precursorExtractionWindowThomsons = 0.0;
+
+    //[MS2Params]
+    int filterLengthIntegration = 5;
+    int filterLengthMS2 = 3;
+    int ionsSharedToReject = 4;
+    double ms2ExtractionWidthPPM = 20.0;
+    int minMs2FragCount = 2;
+    int scanTimeWindowStDevs = 3;
+    bool subtractShadows = true;
+    int smoothCountMS2 = 1;
+    float stopThresholdFractionMS2 = 0.65;
+
+    int topNIntegrations = 5;
+    int maxAnchorColumnIndex = 6;
+
+    //[FdrParams]
+    double percentFDR = 1.0;
+    bool reportDecoys = false;
+
+    //[PeakIntegrationParams]
+    int filterLength = -1;
+    double sigma = -1.0;
+    double signalToNoiseRatio = 2.0;
+    int smoothCount = -1;
+    float stopThresholdFraction = 0.65;
+
+    //[FeatureFinder]
+    int minScanCount = 3;
+    int skipScanCount = 2;
 
     [[nodiscard]] bool isValid() const {
 
         if (chargeStateMin > chargeStateMax) {
             print();
-            qDebug() << chargeStateMin << chargeStateMax << "Charge state min greater than max";
+            qDebug()
+            << chargeStateMin
+            << chargeStateMax
+            << PythiaParameterReaderConstants::kChargeStateMin
+            << "greater than"
+            << PythiaParameterReaderConstants::kChargeStateMax;
+
             return false;
         }
         if (chargeStateMin < 1) {
             print();
-            qDebug() << chargeStateMin << "charge state min";
+            qDebug() << chargeStateMin << PythiaParameterReaderConstants::kChargeStateMin;
             return false;
         }
         if (chargeStateMax < 1) {
             print();
-            qDebug() << chargeStateMax << "charge state max";
+            qDebug() << chargeStateMax << PythiaParameterReaderConstants::kChargeStateMax;
             return false;
         }
         if (ms2ExtractionWidthPPM < 0) {
             print();
-            qDebug() << ms2ExtractionWidthPPM << "ms2ExtractPPM";
+            qDebug() << ms2ExtractionWidthPPM << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM;
             return false;
         }
-        if (precursorExtractionWindowThomsons < -1) {
+
+        if (topNIntegrations <= 0) {
             print();
-            qDebug() << precursorExtractionWindowThomsons << "precursorExtractWindowThompsons";
+            qDebug() << topNIntegrations << PythiaParameterReaderConstants::kTopNIntegrations;
             return false;
         }
-        if (topNMs2Ions < 6) {
+
+        if (maxAnchorColumnIndex <= 0) {
             print();
-            qDebug() << topNMs2Ions << "topNMS2Ions";
-            return false;
-        }
-        if (minFoundMzPeaks < 0) {
-            print();
-            qDebug() << minFoundMzPeaks << "minFoundMzPeaks";
+            qDebug() << maxAnchorColumnIndex << PythiaParameterReaderConstants::kMaxAnchorColumnIndex;
             return false;
         }
 
         return true;
     }
 
-    QVector<Modification> modifications;
-
-    AminoAcids aminoAcids;
-
     void print() const {
-        qDebug() << QStringLiteral("** Digest Parameters **************************");
-        qDebug() << PythiaParameterReaderConstants::kNTermCleavePoints << nTermCleavePoints;
-        qDebug() << PythiaParameterReaderConstants::kCTermCleavePoints << cTermCleavePoints;
-        qDebug() << PythiaParameterReaderConstants::kRaggedness << static_cast<std::underlying_type<Raggedness>::type>(raggedness);
-        qDebug() << PythiaParameterReaderConstants::kAllowedMissedCleavages << allowedMissedCleavages;
-        qDebug() << PythiaParameterReaderConstants::kMzMinMS2 << mzMinMS2;
-        qDebug() << PythiaParameterReaderConstants::kMzMaxMS2 << mzMaxMS2;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMin << peptideLengthMin;
-        qDebug() << PythiaParameterReaderConstants::kPeptideLengthMax << peptideLengthMax;
-        qDebug() << PythiaParameterReaderConstants::kChargeStateMin << chargeStateMin;
-        qDebug() << PythiaParameterReaderConstants::kChargeStateMax << chargeStateMax;
-        qDebug() << PythiaParameterReaderConstants::kMS2ExtractionWidthPPM << ms2ExtractionWidthPPM;
-        qDebug() << PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons << precursorExtractionWindowThomsons;
-        qDebug() << PythiaParameterReaderConstants::kPercentFDR << percentFDR;
-        qDebug() << PythiaParameterReaderConstants::kMaxModificationsPeptide << maxModificationsPeptide;
+        qDebug() << QStringLiteral("** Pythia Parameters **************************");
 
-        qDebug() << PythiaParameterReaderConstants::kSkipScanCount << skipScanCount;
-        qDebug() << PythiaParameterReaderConstants::kMinScanCount << minScanCount;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kGeneral << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
 
-        qDebug() << PythiaParameterReaderConstants::kFilterLength << filterLength;
-        qDebug() << PythiaParameterReaderConstants::kSmoothCount << smoothCount;
-        qDebug() << PythiaParameterReaderConstants::kSigma << sigma;
-        qDebug() << PythiaParameterReaderConstants::kSignalToNoiseRatio << signalToNoiseRatio;
-        qDebug() << PythiaParameterReaderConstants::kMinFoundMzPeaks << minFoundMzPeaks;
-        qDebug() << PythiaParameterReaderConstants::kStopThresholdFraction << stopThresholdFraction;
-        qDebug() << PythiaParameterReaderConstants::kScanTimeWindowStDevs << scanTimeWindowStDevs;
-        qDebug() << PythiaParameterReaderConstants::kReportDecoys << reportDecoys;
-        qDebug() << PythiaParameterReaderConstants::kSubtractShadows << subtractShadows;
-        qDebug() << PythiaParameterReaderConstants::kThreadCount << threadCount;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMax) << chargeStateMax;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMzMinMS2) << mzMinMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMzMaxMS2) << mzMaxMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMin) << peptideLengthMin;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeptideLengthMax) << peptideLengthMax;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kTrancheSizeMax) << trancheSizeMax;
 
-        qDebug() << PythiaParameterReaderConstants::kBypassNeuralNet << bypassNeuralNet;
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS1Params << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPrecursorExtractionWindowThomsons) << precursorExtractionWindowThomsons;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
 
-        qDebug() << PythiaParameterReaderConstants::kModifications;
-        for (const Modification &mod : modifications) {
-            mod.print();
-        }
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthIntegration) << filterLengthIntegration;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
+
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kReportDecoys) << reportDecoys;
+
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kPeakIntegrationParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLength) << filterLength;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCount) << smoothCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSigma) << sigma;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSignalToNoiseRatio) << signalToNoiseRatio;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFraction) << stopThresholdFraction;
+
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFeatureFinderParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMinScanCount) << minScanCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSkipScanCount) << skipScanCount;
 
         qDebug() << QStringLiteral("**********************************************");
     }
-
 };
 
 
@@ -262,21 +214,12 @@ public:
     PythiaParameterReader() = default;
     ~PythiaParameterReader() = default;
 
-    static Err applyFixedModificationsToAminoAcids(
-            const PythiaParameters &reader,
-            AminoAcids *aminoAcids
-            );
-
     static PythiaParameters genericPythiaParametersForTests();
 
     static Err buildPythiaParameters(
             const QString &pythiaParametersFilePath,
             PythiaParameters *pythiaParameters
     );
-
-private:
-
-    Err validateJsonKeys(); //TODO update this for toml
 
 };
 

@@ -87,6 +87,7 @@ namespace {
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
         int threadCount,
+        int verbosity,
         QVector<float> *weights
         ) {
 
@@ -125,9 +126,11 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
 
-    qDebug() << "fit weights" << et.restart() << "mSec";
-    qDebug() << "Weights:" << *weights;
-    qDebug() << "b:" << b;
+    if (verbosity > 0) {
+        qDebug() << "fit weights" << et.restart() << "mSec";
+        qDebug() << "Weights:" << *weights;
+        qDebug() << "b:" << b;
+    }
 
     ERR_RETURN
 }
@@ -221,7 +224,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::CosineSimSpectrumCubed,
             CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
-            CandidateScores::Features::CosineSimSum20,
+            // CandidateScores::Features::CosineSimSum20,//TODO delete
             CandidateScores::Features::CosineSimSumTop,
             CandidateScores::Features::Charge,
             CandidateScores::Features::CosineSimSumBottom,
@@ -245,7 +248,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSpectrumCubed,
                 CandidateScores::Features::KlDivSpectrumCubeRoot,
                 CandidateScores::Features::CosineSimSum45,
-                CandidateScores::Features::CosineSimSum20,
+                // CandidateScores::Features::CosineSimSum20,//TODO delete
                 CandidateScores::Features::CosineSimSumTop,
                 CandidateScores::Features::CosineSimSumBottom,
                 CandidateScores::Features::TopBottomRatio,
@@ -259,7 +262,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::KlDivSpectrum,
                 CandidateScores::Features::CosineSimSpectrum,
                 CandidateScores::Features::CosineSim45MS1,
-                CandidateScores::Features::CosineSim20MS1,
+                // CandidateScores::Features::CosineSim20MS1,//TODO delete
                 CandidateScores::Features::CosineSim100MS1PreMono,
                 CandidateScores::Features::CosineSim100MS1Iso1,
                 CandidateScores::Features::CosineSim100MS1Iso2,
@@ -460,25 +463,25 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3,
                 CandidateScores::Features::Ms1MzMeanFound100,
                 CandidateScores::Features::Ms1MzMeanFound45,
-                CandidateScores::Features::Ms1MzMeanFound20,
+                // CandidateScores::Features::Ms1MzMeanFound20,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMono,
                 CandidateScores::Features::Ms1MzMeanFoundIso1,
                 CandidateScores::Features::Ms1MzMeanFoundIso2,
                 CandidateScores::Features::Ms1MzMeanFound100PPM,
                 CandidateScores::Features::Ms1MzMeanFound45PPM,
-                CandidateScores::Features::Ms1MzMeanFound20PPM,
+                // CandidateScores::Features::Ms1MzMeanFound20PPM,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso1PPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso2PPM,
                 CandidateScores::Features::Ms1MzStDevFound100,
                 CandidateScores::Features::Ms1MzStDevFound45,
-                CandidateScores::Features::Ms1MzStDevFound20,
+                // CandidateScores::Features::Ms1MzStDevFound20,//TODO delete
                 CandidateScores::Features::Ms1MzStDevFoundPreMono,
                 CandidateScores::Features::Ms1MzStDevFoundIso1,
                 CandidateScores::Features::Ms1MzStDevFoundIso2,
                 CandidateScores::Features::Ms1IntensityFound100,
                 CandidateScores::Features::Ms1IntensityFound45,
-                CandidateScores::Features::Ms1IntensityFound20,
+                // CandidateScores::Features::Ms1IntensityFound20,//TODO delete
                 CandidateScores::Features::Ms1IntensityFoundPreMono,
                 CandidateScores::Features::Ms1IntensityFoundIso1,
                 CandidateScores::Features::Ms1IntensityFoundIso2,
@@ -487,7 +490,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSpectrumStDev,
                 CandidateScores::Features::CosineSimSum100MS1,
                 CandidateScores::Features::MS1Averagine,
-                CandidateScores::Features::CosineSimSum100Frequencies,
                 CandidateScores::Features::CosineSimSum100Window1p5X,
                 CandidateScores::Features::CosineSimSum100Window2X
             };
@@ -500,8 +502,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
             vec.append(candidateScores->selectFeaturesArrayFeatures({
                             CandidateScores::Features::CosineSimSum100,
-                            CandidateScores::Features::ScanTimeDelta,
-                            CandidateScores::Features::ScanTimePd,
+                            CandidateScores::Features::ScanTimeDeltaAbs,
+                            CandidateScores::Features::ScanTimePdAbs,
                             CandidateScores::Features::PeakShapeRatio1,
                             CandidateScores::Features::PeakShapeRatio2,
                             CandidateScores::Features::PeakShapeRatio3,
@@ -510,14 +512,44 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::CosineSimToAnchor2,
                             CandidateScores::Features::CosineSimToAnchor3,
                             CandidateScores::Features::CosineSimToAnchor4,
+                            CandidateScores::Features::CosineSimToAnchor5,
+                            CandidateScores::Features::CosineSimToAnchor6,
+                            CandidateScores::Features::CosineSimToAnchor7,
+                            CandidateScores::Features::CosineSimToAnchor8,
+                            CandidateScores::Features::CosineSimToAnchor9,
+                            CandidateScores::Features::CosineSimToAnchor10,
+                            CandidateScores::Features::CosineSimToAnchor11,
+                            CandidateScores::Features::CosineSimToAnchor12,
                             CandidateScores::Features::CosineSimShadowsToAnchor1,
                             CandidateScores::Features::CosineSimShadowsToAnchor2,
                             CandidateScores::Features::CosineSimShadowsToAnchor3,
                             CandidateScores::Features::CosineSimShadowsToAnchor4,
+                            CandidateScores::Features::CosineSimShadowsToAnchor5,
+                            CandidateScores::Features::CosineSimShadowsToAnchor6,
+                            CandidateScores::Features::CosineSimShadowsToAnchor7,
+                            CandidateScores::Features::CosineSimShadowsToAnchor8,
+                            CandidateScores::Features::CosineSimShadowsToAnchor9,
+                            CandidateScores::Features::CosineSimShadowsToAnchor10,
+                            CandidateScores::Features::CosineSimShadowsToAnchor11,
+                            CandidateScores::Features::CosineSimShadowsToAnchor12,
+                            CandidateScores::Features::MzPeakLengthsNorm1,
+                            CandidateScores::Features::MzPeakLengthsNorm2,
+                            CandidateScores::Features::MzPeakLengthsNorm3,
+                            CandidateScores::Features::MzPeakLengthsNorm4,
+                            CandidateScores::Features::MzPeakLengthsNorm5,
+                            CandidateScores::Features::MzPeakLengthsNorm6,
+                            CandidateScores::Features::MzPeakLengthsNorm7,
+                            CandidateScores::Features::MzPeakLengthsNorm8,
+                            CandidateScores::Features::MzPeakLengthsNorm9,
+                            CandidateScores::Features::MzPeakLengthsNorm10,
+                            CandidateScores::Features::MzPeakLengthsNorm11,
+                            CandidateScores::Features::MzPeakLengthsNorm12,
                             CandidateScores::Features::CosineSimSpectrumOverTime,
                             CandidateScores::Features::TotalIntensityLog,
                             CandidateScores::CosineSimSum100Window1p5X,
-                            CandidateScores::CosineSimSum100Window2X
+                            CandidateScores::CosineSimSum100Window2X,
+                
+                            CandidateScores::TargetWindowLocationAbs
                             }));
             return vec;
         }

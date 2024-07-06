@@ -52,7 +52,7 @@ void CandidateClassifierTests::trainCandidateClassifierAndPredictTest() {
     const QVector<float> yVec = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0};
 
     CandidateClassifier classifier;
-    const bool classifierTrainedNoErrors = classifier.trainCandidateClassifier(xVec, yVec, 10, 2, 1e-2, 666);
+    const bool classifierTrainedNoErrors = classifier.trainCandidateClassifier(xVec, yVec, 10, 2, 1e-2, 666, 0);
     QCOMPARE(classifierTrainedNoErrors, true);
 
     QVector<float> predictions;

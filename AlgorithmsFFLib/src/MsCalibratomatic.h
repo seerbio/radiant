@@ -32,17 +32,23 @@ public:
 
     Err setMassCalibrationCoeffs(
         const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
-        const MSLevelEnum msLevelEnum
+        const MSLevelEnum &msLevelEnum
         );
 
-    Err recalibrateScanPoints(
+    [[nodiscard]] Err recalibrateScanPoints(
         const MSLevelEnum &msLevel,
         const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints
-        );
+        ) const;
 
     Err recalibrateScanPoints(
         const MSLevelEnum &msLevel,
         QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+        ) const;
+
+    Err recalibrateScanPoint(
+        const MSLevelEnum &msLevel,
+        float mzVal,
+        float *mzValRecal
         );
 
     [[nodiscard]] float mzStDevMS1() const;

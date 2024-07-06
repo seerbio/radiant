@@ -1004,10 +1004,10 @@ public:
                     break;
                 }
 
-                if (currentValue <= rightStopVal) {
+                if (currentValue < rightStopVal || MathUtils::tSame(currentValue, rightStopVal)) {
                     rightStopVal = currentValue;
                     rightStopIndex = rightCurrentIndex;
-                    rightCurrentIndex++;
+                    ++rightCurrentIndex;
                     continue;
                 }
 
@@ -1026,10 +1026,10 @@ public:
                     break;
                 }
 
-                if (currentValue <= leftStopVal) {
+                if (currentValue < leftStopVal || MathUtils::tSame(currentValue, leftStopVal)) {
                     leftStopVal = currentValue;
                     leftStopIndex = leftCurrentIndex;
-                    leftCurrentIndex--;
+                    --leftCurrentIndex;
                     continue;
                 }
 

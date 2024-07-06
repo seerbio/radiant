@@ -24,7 +24,7 @@ public:
 
 private Q_SLOTS:
 
-    void execTests();
+    static void execTests();
 
 
 };
@@ -32,24 +32,18 @@ private Q_SLOTS:
 MsCalibratomaticTests::MsCalibratomaticTests() : QObject(){}
 
 void MsCalibratomaticTests::execTests() {
-    QSKIP("TODO: reenable with internal test data");
-
     ERR_INIT
 
-    const QString reCalFile = QStringLiteral("/home/anichols/Desktop/Data/ConfigFiles/cal2.prq");
+    const QString reCalFile = QDir(qApp->applicationDirPath()).filePath("cal2.prq");
 
     MsCalibratomatic calibratomatic;
-    // e = calibratomatic.init(reCalFile);
-    QCOMPARE(e, eNoError);
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = ParquetReader::read(reCalFile, &msCalibrationReaderRows);
     QCOMPARE(e, eNoError);
 
-    // e = calibratomatic.initMzOnly(msCalibrationReaderRows, MSLevelClassEnum::MS2);
-    // QCOMPARE(e, eNoError);
-
-
+    e = calibratomatic.setMassCalibrationCoeffs(msCalibrationReaderRows, MSLevelEnum::MS2);
+    QCOMPARE(e, eNoError);
 }
 
 
