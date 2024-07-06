@@ -1817,7 +1817,7 @@ Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
                  <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
     }
 
-    constexpr int ms2MassRecalCountMin = 200;
+    constexpr int ms2MassRecalCountMin = 400;
     if (topCandidatesMass > ms2MassRecalCountMin) {
 
         msCalibrationReaderRows.resize(topCandidatesMass);
