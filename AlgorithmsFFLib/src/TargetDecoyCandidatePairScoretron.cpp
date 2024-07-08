@@ -17,6 +17,7 @@
 TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
 : m_msReaderPointerAcc(nullptr)
 , m_turboXICMS1(nullptr)
+, m_msFrameMS1(nullptr)
 {}
 
 TargetDecoyCandidatePairScoretron2::~TargetDecoyCandidatePairScoretron2() {

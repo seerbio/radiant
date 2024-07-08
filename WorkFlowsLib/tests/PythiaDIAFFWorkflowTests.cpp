@@ -26,7 +26,6 @@ private slots:
 };
 
 void PythiaDIAFFWorkflowTests::initTest() {
-
     ERR_INIT
 
     const QString &testFragLibFilePath
@@ -62,7 +61,7 @@ void PythiaDIAFFWorkflowTests::initTest() {
 void PythiaDIAFFWorkflowTests::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointersTest() {
 
     ERR_INIT
-
+        
     const QString &testFragLibFilePath
             = QDir(qApp->applicationDirPath()).filePath("FragLibReaderTests.fragLibFF");
 
