@@ -27,6 +27,8 @@ scanTimeWindowStDevs = 4
 subtractShadows = false
 smoothCountMS2 = 2
 stopThresholdFractionMS2 = 0.666
+topNIntegrations = 5
+maxAnchorColumnIndex = 6
 
 [FdrParams]
 percentFDR = 2.0
