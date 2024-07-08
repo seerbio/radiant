@@ -157,7 +157,11 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     for (int bag = 0; bag < m_baggingSize; bag++) {
 
         auto *candidateClassifier = new CandidateClassifier();
-        candidateClassifier->setThreadCount(m_threadCount);
+
+        //NOTE: Setting this at 8 because setting it higher degrades time performance no matter how many cores.
+        constexpr int neuralNetThreadCount = 8;
+
+        candidateClassifier->setThreadCount(neuralNetThreadCount);
         m_candidateClassifiers.push_back(candidateClassifier);
 
         CandidateClassifierParallelInput ccpi;

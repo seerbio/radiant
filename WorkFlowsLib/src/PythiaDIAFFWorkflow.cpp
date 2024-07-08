@@ -1542,8 +1542,8 @@ namespace {
 
         ERR_INIT
 
-        constexpr int batchSizeMin = 500;
-        const int batchSize = std::min(batchSizeMin, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+        constexpr int batchSizeMax = 500;
+        const int batchSize = std::min(batchSizeMax, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Batch Size:" << batchSize;
 
