@@ -110,7 +110,6 @@ public:
 
     void setThreadCount(int threadCount) {
         m_threadCount = threadCount;
-        qDebug() << "Thread count for neural nets set to" << m_threadCount;
     }
 
 private:
