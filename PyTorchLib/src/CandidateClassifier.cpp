@@ -108,22 +108,16 @@ public:
 
     bool isTrained();
 
-    void setThreadCount(int threadCount) {
-        m_threadCount = threadCount;
-    }
-
 private:
 
     Net *m_net;
     bool m_isTrained;
-    int m_threadCount;
 
 };
 
 CandidateClassifier::Private::Private()
 : m_net(nullptr)
 , m_isTrained(false)
-, m_threadCount(8)
 {}
 
 CandidateClassifier::Private::~Private() { delete m_net;}
@@ -173,7 +167,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         torch::cuda::manual_seed_all(seed);
     }
     torch::globalContext().setDeterministicCuDNN(true);
-    torch::set_num_threads(m_threadCount);
+    torch::set_num_threads(1);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -327,7 +321,6 @@ bool CandidateClassifier::Private::predict(
 
 CandidateClassifier::CandidateClassifier()
 : d_ptr(QScopedPointer<Private>(new Private))
-, m_threadCount(-1)
 {}
 
 CandidateClassifier::~CandidateClassifier() {}
@@ -341,9 +334,19 @@ bool CandidateClassifier::trainCandidateClassifier(
         int seed,
         int verbosity
         ) {
+
+    QVector<QVector<float>> xDataResized = xData;
+    QVector<float> yDataResized = yData;
+
+    if (yData.size() > 2e6) {
+        const int resizeCount = yDataResized.size() / 2;
+        xDataResized.resize(resizeCount);
+        yDataResized.resize(resizeCount);
+    }
+    
     return d_ptr->trainCandidateClassifier(
-            xData,
-            yData,
+            xDataResized,
+            yDataResized,
             epochsMax,
             batchSize,
             learningRate,
@@ -357,8 +360,4 @@ bool CandidateClassifier::predict(
         QVector<float> *predictions
         ) const {
     return d_ptr->predict(xData, predictions);
-}
-
-void CandidateClassifier::setThreadCount(int threadCount) const {
-    d_ptr->setThreadCount(threadCount);
 }

@@ -54,14 +54,10 @@ public:
             QVector<float> *predictions
             ) const;
 
-    void setThreadCount(int threadCount) const;
-
 private:
 
     Q_DISABLE_COPY(CandidateClassifier) class Private;
     const QScopedPointer<Private> d_ptr;
-
-    int m_threadCount;
 
 };
 

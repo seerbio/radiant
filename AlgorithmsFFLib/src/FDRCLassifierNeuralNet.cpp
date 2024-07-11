@@ -157,7 +157,6 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     for (int bag = 0; bag < m_baggingSize; bag++) {
 
         auto *candidateClassifier = new CandidateClassifier();
-        candidateClassifier->setThreadCount(m_threadCount);
         m_candidateClassifiers.push_back(candidateClassifier);
 
         CandidateClassifierParallelInput ccpi;
@@ -172,11 +171,18 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         parallelInputs.push_back(ccpi);
     }
 
-//#define PARALLEL_TRAIN_NN
+#define PARALLEL_TRAIN_NN
 #ifdef PARALLEL_TRAIN_NN
+
+    const auto trainingLogicBinder = std::bind(
+        trainingLogic,
+        std::placeholders::_1,
+        verbosity
+        );
+
     QFuture<Err> futures = QtConcurrent::mapped(
             parallelInputs,
-            trainingLogic
+            trainingLogicBinder
             );
     futures.waitForFinished();
 
