@@ -1,6 +1,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 PROJECT(PythiaDIACpp)
 
+list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/pytorch/build/share/cmake/Torch")
+
 enable_testing(true)
 
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
@@ -16,8 +18,6 @@ add_definitions("-DBOOST_BIND_GLOBAL_PLACEHOLDERS")
 
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.90")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
-
-MESSAGE("TELL ME SOMETHING")
 
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")

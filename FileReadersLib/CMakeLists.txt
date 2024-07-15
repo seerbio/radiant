@@ -70,6 +70,8 @@ INCLUDE_DIRECTORIES(
         ${NANOFLANN_DIRECTORY}
 )
 
+FIND_PACKAGE(aws-cpp-sdk-core REQUIRED)
+FIND_PACKAGE(aws-cpp-sdk-s3 REQUIRED)
 FIND_PACKAGE(Parquet REQUIRED)
 
 FIND_PACKAGE(Qt5 COMPONENTS
@@ -83,6 +85,8 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
         UtilsLib
+        aws-cpp-sdk-core
+        aws-cpp-sdk-s3
         Parquet::parquet_static
         )
 

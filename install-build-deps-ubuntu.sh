@@ -26,11 +26,27 @@ ${APT} install --no-install-recommends -y \
     qtbase5-dev \
     libarrow-dev \
     libparquet-dev \
-    libseqan2-dev
+    libseqan2-dev \
+    python3.9  \
+    curl \
+    tar \
+    python-is-python3  \
+    python3-pip  \
+    pkg-config  \
+    libssl-dev \
+    unzip \
+    zip \
+    git \
+    flex
 
-# Install latest CMAKE > 3.17
+# Install latest CMAKE > 3.23
 wget "https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-$(uname -m).sh" -q -O /tmp/cmake-install.sh
 chmod u+x /tmp/cmake-install.sh
 mkdir -p "${CMAKE_PREFIX}"
 /tmp/cmake-install.sh --skip-license --prefix="${CMAKE_PREFIX}"
 rm /tmp/cmake-install.sh
+
+git clone https://github.com/microsoft/vcpkg.git
+./vcpkg/bootstrap-vcpkg.sh
+./vcpkg/vcpkg install aws-sdk-cpp
+./vcpkg/vcpkg integrate install
