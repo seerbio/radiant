@@ -5,17 +5,15 @@
 #include "ParallelUtils.h"
 #include "SqlUtils.h"
 
-#include <QCoreApplication>
+#include <QDebug>
+#include <QFileInfo>
 #include <QFile>
 #include <QMap>
 #include <QXmlStreamReader>
 
-#include <zlib.h>
-
 #include <algorithm>
 #include <iostream>
-#include <QDebug>
-#include <QFileInfo>
+#include <zlib.h>
 
 
 const QString scanKey = QStringLiteral("scan");
