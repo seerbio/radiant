@@ -69,7 +69,7 @@ RUN mv /src/pytorch/ /src/PythiaDIACpp/pytorch/
 
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
     && make -j
 
 ################################################
