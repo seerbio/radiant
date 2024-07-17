@@ -50,7 +50,7 @@ git clone https://github.com/microsoft/vcpkg.git
 ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install aws-sdk-cpp
 ./vcpkg/vcpkg install utf8proc
-./vcpkg/vcpkg install lz4
-./vcpkg/vcpkg install zstd
-./vcpkg/vcpkg install re2
+#./vcpkg/vcpkg install lz4
+#./vcpkg/vcpkg install zstd
+#./vcpkg/vcpkg install re2
 ./vcpkg/vcpkg integrate install
