@@ -19,6 +19,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/AWSStreamifier.cpp
         src/MsCalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
@@ -36,6 +37,7 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
+        src/AWSStreamifier.h
         src/MsCalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
