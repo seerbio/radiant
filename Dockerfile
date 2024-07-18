@@ -69,7 +69,7 @@ RUN mv /src/pytorch/ /src/PythiaDIACpp/pytorch/
 
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
     && make -j
 
 ################################################
