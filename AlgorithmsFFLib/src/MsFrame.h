@@ -180,6 +180,7 @@ public:
     */
     [[nodiscard]] ScanTime scanTimeFromScanNumber(ScanNumber scanNumber) const;
 
+    [[nodiscard]] ScanTime scanTimeFromFrameIndex(FrameIndex frameIndex) const;
 
     /**
     * @brief Get the ScanNumber corresponding to the closest ScanTime.
