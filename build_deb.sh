@@ -42,7 +42,7 @@ cp UtilsLib/libUtilsLib.so "$pythia_lib/libUtilsLib.so"
 cp WorkFlowsLib/libWorkFlowsLib.so "$pythia_lib/libWorkFlowsLib.so"
 cp PyTorchLib/libPyTorchLib.so "$pythia_lib/libPyTorchLib.so"
 
-cp /src/PythiaDIACpp/pytorch/build/lib/* "$pythia_lib/"
+cp /src/pytorch/build/lib/* "$pythia_lib/"
 
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"

@@ -21,7 +21,7 @@ To set up your environment:
 ## Running in CLion IDE
 1. Run the script from **Setting up a development environment**
 2. Run the script from **Running a local build**
-3. ~~In CLion->File->Settings->Build,Execution,Deployment->CMake, add the following to the _Enviornment_ textbox:  **CMAKE_PREFIX_PATH=/Path/to/PythiaDIACpp/pytorch/build/share/cmake/Torch**~~ 
+3. In CLion->File->Settings->Build,Execution,Deployment->CMake, add the following to the _Enviornment_ textbox:  **CMAKE_PREFIX_PATH=/Path/to/PythiaDIACpp/pytorch/build/share/cmake/Torch** 
 
 ## Running tests
 
