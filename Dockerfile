@@ -14,8 +14,8 @@ FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
 #
 # Set timezone
@@ -65,9 +65,11 @@ RUN chmod u+x /tmp/get-or-build-libtorch.sh \
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
 
+RUN mv /src/pytorch/ /src/PythiaDIACpp/pytorch/
+
 # Build the project in /app/
 WORKDIR /app/
-RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DPYTORCH_PATH="${PYTORCH_PREFIX_PATH}/pytorch" \
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release \
     && make -j
 
 ################################################
@@ -121,8 +123,6 @@ RUN cp \
     /src/PythiaDIACpp/s3_package_uploader.py \
     /app/
 
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
-#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
 
 WORKDIR /app/
 
