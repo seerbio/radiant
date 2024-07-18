@@ -233,6 +233,11 @@ ScanTime MsFrame::scanTimeFromScanNumber(ScanNumber scanNumber) const {
     return m_scanNumberVsScanTime.value(scanNumber);
 }
 
+ScanTime MsFrame::scanTimeFromFrameIndex(FrameIndex frameIndex) const {
+    const ScanNumber scanNumber = scanNumberFromFrameIndex(frameIndex);
+    return scanTimeFromScanNumber(scanNumber);
+}
+
 ScanNumber MsFrame::frameIndexFromScanNumber(ScanNumber scanNumber) const {
     return m_frameIndexVsScanNumber.key(scanNumber);
 }
