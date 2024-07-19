@@ -85,6 +85,7 @@ ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         Qt5::Core
+        AWSLib
         ChemLib
         UtilsLib
         aws-cpp-sdk-core
