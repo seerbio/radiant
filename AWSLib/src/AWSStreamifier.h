@@ -34,7 +34,7 @@ public:
 
     bool streamTextFile(
         const QString &uri,
-        char* *fileData
+        uchar* *fileData
         );
 
 private:

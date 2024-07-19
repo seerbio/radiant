@@ -17,16 +17,17 @@ public:
 private Q_SLOTS:
 
     void streamTextFileTest();
+
+    void streamParquetFileTest();
 };
 
 void AWSStreamifierTests::streamTextFileTest() {
 
     QSKIP("temp");
 
-
-    const QString accessKeyId = "ASIA2OXTCKO6N76GY4ON";
-    const QString secretAccessKey = "mAv41v/lHnowAfm2qtEshFYWr9AUPjS94sXA5PxH";
-    const QString accessToken = "IQoJb3JpZ2luX2VjEDAaCXVzLXdlc3QtMiJHMEUCIAebzaY1JUx++SsyNpwXoHsu5sp05hOqWAYNBdVWKEvPAiEAjVo4ME17cGqndRU4d8WUhR8MWqWPM3G9CcOcs7/nUVQqlQMI+f//////////ARAFGgw3MTg4NDMwNDA3MDAiDPSsZzWzzlk9Gx1k6yrpAgOc5e5WRGtuq16HmxcCRIw8Mad6GFMNzdqc8ewS2oCR7w+jpbhB81qF6p+tlRUMwFDA+JqnWbvwfPNitQjbTC1duiGhpTXzVoq9AEmPy3nCsa+u+qdc2GjStqifPI/HOw2otOt1J42oR7TJCVOQ0T530Nqa9fuzb3Y/mDZIa1aH9rDWs/2pLzJbeFkDnP3sObGjzi9CE633SNEcBlywl4joX8BQS/HFKgLaRqxX6NsVm5WJdHVOi0b7d4LctxoEie1TbDZx2nn70YvaIRAmkbvNgJKYb0Ew6DrarCmJ7hGbfak+pT6oRk0laL/kBIvMC0x4BdGba0jsBQ0okozijBnWUX2SPZln+gEOyYZCF7ZEVnb7FZNM0IZOz/C8u/YafFHSJs/g6ATze2PmWhcxTQQYxRRc6Lbn7vo32pHuIglU0ml/W5bDlj2X8x2VzVDbkV9QAj9yudtCRZSru/hn8eva+o3VR6YUkI4wrbfhtAY6pgFb90LPF3ePaiBfB9sAa1sBYs1z2DdnUSVYrXCcedIh4dmZl52LSYUgv14U2btXCfbaXSYleZyMh85r+Dea2VsGQzQIZPvJGJByh1WVlzbBRLPpCQj5cwj9bWcgYQm/KPdSZQThKOc/bhpvIaRR3+02OZPafyrEANA65iFFdIb5Vsyz8cLyEzBg4OpdEpRdYgOY5SL4uIZJ4mpnxD3tyelRogVolg0p";
+    const QString accessKeyId = "ASIA2OXTCKO6AFXJIBOJ";
+    const QString secretAccessKey = "nyAGcu1/gHDBqypr2UZQVl1RNTa5VA8joOz4hC+E";
+    const QString accessToken = "IQoJb3JpZ2luX2VjEFsaCXVzLXdlc3QtMiJGMEQCICxWGVgGZSdqDtcHBpIh5zyHB3xNjOvNjQ5w0t8W+n8pAiAGt/oyjpFGa2LFjKI8vsNCpngZaFpplDl5aHWkVLMc9SqMAwg0EAUaDDcxODg0MzA0MDcwMCIMjQq949PgLVNtnPTKKukCES+e7JHJST1dkSowNU0HbRbe0jtEk8lViyUNqTvEhvo5Z/Bs7RDLgX7XoWT6Wnmcx2creKM9PTMUP8Yi7HrIC6jxCG1DQeJpxllwFd3dT1KEk0rs4VKrFkDXeP3cmwIHhGuoQC9EM6tDfYG2uMtskVIdIOQ18DJvLdI4UksqIC4iZu1ADF/6ctOmVUnOeSmhM9eGHtHd3mrPiw15wSG/gQFYQ5rUy+vbO4yCm1kzSUP9aVxkZpl6K6uMlv1d38fGhbe9OIZncj7Ozt1CuquP9XJBV1DnTEl9YDmNjii+3Ck5+t429tJ3rES3QHBxr4a1Somt6ZoSysgnyogr5qbNrfD80EmEa/werYG9edIy6fGc+r5SAe10k/AfzOO6nHtSDKVzUquRwEmHxls/vXAWz1LTjJuQ5Zap1YcSW2Ob7w+u6H0rNwRC1xgNJIT8+4kLgywKToiCbFVh9R1OXp8C3LyBDCE+CoYH/DD45+q0BjqnAc8Qa9F7FlWe7NR6Wz1+/RzH11O5gBQ7mLYd+oW3WhEwR0TRndRRD9X812sSK43/3gQG7sEDNXrHYRIcCzoDcu3wayGa8KXTiLbMHIXwrtmBa3kiPX54HvNGCPPceMYhWoozejRMgxMWsLSN8RclngQDy9Fhy6gvCm5r2qYghZk0L02xBRpECpfo+x8ZGZ5/adpuAh2etw8bVTmeVlN+cTJFwOHWaA4S";
 
     AWSStreamifier awsStreamifier;
     const bool credentialsSet = awsStreamifier.setAWSCredentials(
@@ -37,8 +38,30 @@ void AWSStreamifierTests::streamTextFileTest() {
 
     const QString uri = "s3://seer-experiments/EXP24001/mzml/EXP24001_2023ms1005bX1_A.raw.mzML";
 
-    char* fileData;
+    uchar* fileData;
     const bool streamIsValid = awsStreamifier.streamTextFile(uri, &fileData);
+
+}
+
+void AWSStreamifierTests::streamParquetFileTest() {
+
+    // QSKIP("temp");
+
+    const QString accessKeyId = "ASIA2OXTCKO6AFXJIBOJ";
+    const QString secretAccessKey = "nyAGcu1/gHDBqypr2UZQVl1RNTa5VA8joOz4hC+E";
+    const QString accessToken = "IQoJb3JpZ2luX2VjEFsaCXVzLXdlc3QtMiJGMEQCICxWGVgGZSdqDtcHBpIh5zyHB3xNjOvNjQ5w0t8W+n8pAiAGt/oyjpFGa2LFjKI8vsNCpngZaFpplDl5aHWkVLMc9SqMAwg0EAUaDDcxODg0MzA0MDcwMCIMjQq949PgLVNtnPTKKukCES+e7JHJST1dkSowNU0HbRbe0jtEk8lViyUNqTvEhvo5Z/Bs7RDLgX7XoWT6Wnmcx2creKM9PTMUP8Yi7HrIC6jxCG1DQeJpxllwFd3dT1KEk0rs4VKrFkDXeP3cmwIHhGuoQC9EM6tDfYG2uMtskVIdIOQ18DJvLdI4UksqIC4iZu1ADF/6ctOmVUnOeSmhM9eGHtHd3mrPiw15wSG/gQFYQ5rUy+vbO4yCm1kzSUP9aVxkZpl6K6uMlv1d38fGhbe9OIZncj7Ozt1CuquP9XJBV1DnTEl9YDmNjii+3Ck5+t429tJ3rES3QHBxr4a1Somt6ZoSysgnyogr5qbNrfD80EmEa/werYG9edIy6fGc+r5SAe10k/AfzOO6nHtSDKVzUquRwEmHxls/vXAWz1LTjJuQ5Zap1YcSW2Ob7w+u6H0rNwRC1xgNJIT8+4kLgywKToiCbFVh9R1OXp8C3LyBDCE+CoYH/DD45+q0BjqnAc8Qa9F7FlWe7NR6Wz1+/RzH11O5gBQ7mLYd+oW3WhEwR0TRndRRD9X812sSK43/3gQG7sEDNXrHYRIcCzoDcu3wayGa8KXTiLbMHIXwrtmBa3kiPX54HvNGCPPceMYhWoozejRMgxMWsLSN8RclngQDy9Fhy6gvCm5r2qYghZk0L02xBRpECpfo+x8ZGZ5/adpuAh2etw8bVTmeVlN+cTJFwOHWaA4S";
+
+    AWSStreamifier awsStreamifier;
+    const bool credentialsSet = awsStreamifier.setAWSCredentials(
+        accessKeyId,
+        secretAccessKey,
+        accessToken
+        );
+
+    const QString uri = "s3://seer-experiments/EXP24039/interimresult/0b6d21d0b237173e9ed0ec96aea642cd/500873.EXP24039_2024ms0407dX45_A.raw.mzML.pythiaDIA";
+
+    std::vector<uint8_t> fileBuffer;
+    const bool streamIsValid = awsStreamifier.streamParquetFile(uri, &fileBuffer);
 
 }
 
