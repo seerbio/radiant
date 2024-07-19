@@ -1,5 +1,6 @@
-
 #include "MsReaderMzMLMapped.h"
+
+#include "AWSStreamifier.h"
 
 #include "ErrorUtils.h"
 #include "ParallelUtils.h"
@@ -94,6 +95,9 @@ public:
     ~PrivateData();
 
     Err openFile(const QString& filename);
+
+    Err readLogic(uchar* ucharData);
+
     Err closeFile();
 
     [[nodiscard]] bool isScanNumberValid(int scanNumber) const;
@@ -500,6 +504,13 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
 
     ERR_INIT
 
+    if (filename.contains("s3://")) {
+
+
+
+        ERR_INIT
+    }
+
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
         qCritical() << "Error opening file:" << file.errorString();
@@ -509,11 +520,25 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
     const QFileInfo fileInfo(file);
     const qint64 fileSize = fileInfo.size();
     uchar* ucharData = file.map(0, fileSize);
+
+    e= readLogic(ucharData); ree;
+
+    file.unmap(ucharData);
+    file.close();
+
+    ERR_RETURN
+}
+
+Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
+
+    ERR_INIT
+
     if (!ucharData) {
-        qCritical() << "Error mapping file:" << file.errorString();
+        qCritical() << "Error mapping file:";
         ERR_RETURN
     }
 
+    const qint64 fileSize = static_cast<qint64>(strlen(reinterpret_cast<char*>(ucharData)));
     const QVector<FileChunk> chunks = buildFileChunks(fileSize, ucharData);
 
 #define RUN_PARALLEL
@@ -553,8 +578,6 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
 
 #endif
 
-    file.unmap(ucharData);
-    file.close();
 
     ERR_RETURN
 }
