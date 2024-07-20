@@ -1235,7 +1235,6 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
 
-
     constexpr int topNMS2IonsOptimization = 12;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
 

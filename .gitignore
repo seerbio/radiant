@@ -18,3 +18,5 @@ cmake-build-release/
 
 CMakeUserPresets.json
 /cmake-build-relwithdebinfo/
+
+vcpkg/

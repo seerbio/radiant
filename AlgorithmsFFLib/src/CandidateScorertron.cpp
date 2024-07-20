@@ -879,13 +879,26 @@ namespace {
 
             if (cosineSimSum > bestCosineSimSum) {
                 *bestAnchorColumnIndex = anchorCol;
-                *peakCorrelations = corrs;
                 bestCosineSimSum = cosineSimSum;
             }
         }
 
         const Eigen::VectorX<float> &anchor = matBlockTrimmed.col(*bestAnchorColumnIndex);
         const QVector<float> anchorVec = EigenUtils::convertEigenVectorToQVector(anchor);
+
+        QVector<float> corrs;
+
+        const int colCountFull = matBlockTrimmed.cols();
+        corrs.reserve(colCountFull);
+        for (int col = 0; col < colCountFull; col++) {
+            const Eigen::VectorX<float> &c = matBlockTrimmed.col(col);
+
+            float cosineSim;
+            e = EigenUtils::cosineSimilarity(anchor, c, &cosineSim); ree;
+
+            corrs.push_back(cosineSim);
+        }
+        *peakCorrelations = corrs;
 
         *bestAnchorRowIndex = MathUtils::closest(anchorVec, anchor.maxCoeff());
 
