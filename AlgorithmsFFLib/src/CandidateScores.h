@@ -313,6 +313,7 @@ public:
     double qValue = 1.0;
     double decoyRatio = -1.0;
 
+    QVector<float> trapAreas;
     QVector<float> featuresArray;
 //TODO delete
     /**
@@ -611,6 +612,19 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TOT_INTENSITY_RAW = QStringLiteral("TotalIntensityRaw");
     const QString TARGET_WINDOW_LOCATION = QStringLiteral("TargetWindowLocation");
 
+    const QString TRAP_AREA_1 = QStringLiteral("TrapArea1");
+    const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
+    const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
+    const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
+    const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
+    const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
+    const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
+    const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
+    const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
+    const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
+    const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
+    const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
+
     const QStringList keysToCheck = {
             COS_SIM_SUM_100,
             COS_SIM_SUM_100_GREATER_80,
@@ -877,7 +891,7 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SUM100_WIN_2X,
             TOT_INTENSITY_PEAK_HEIGHTS,
             TOT_INTENSITY_RAW,
-            TARGET_WINDOW_LOCATION
+            TARGET_WINDOW_LOCATION,
     };
 
 }//namespace
@@ -1155,6 +1169,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float totalIntensityPeakHeights = -1.0;
     float totalIntensityRaw = -1.0;
     float targetWindowLocation = -1.0;
+
+    float trapArea1 = -1.0;
+    float trapArea2 = -1.0;
+    float trapArea3 = -1.0;
+    float trapArea4 = -1.0;
+    float trapArea5 = -1.0;
+    float trapArea6 = -1.0;
+    float trapArea7 = -1.0;
+    float trapArea8 = -1.0;
+    float trapArea9 = -1.0;
+    float trapArea10 = -1.0;
+    float trapArea11 = -1.0;
+    float trapArea12 = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1714,7 +1741,20 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_SUM100_WIN_2X, QVariant(cosineSimSum100Window2X)},
                 {TOT_INTENSITY_PEAK_HEIGHTS, QVariant(totalIntensityPeakHeights)},
                 {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
-                {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)}
+                {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)},
+
+                {TRAP_AREA_1, QVariant(trapArea1)},
+                {TRAP_AREA_2, QVariant(trapArea2)},
+                {TRAP_AREA_3, QVariant(trapArea3)},
+                {TRAP_AREA_4, QVariant(trapArea4)},
+                {TRAP_AREA_5, QVariant(trapArea5)},
+                {TRAP_AREA_6, QVariant(trapArea6)},
+                {TRAP_AREA_7, QVariant(trapArea7)},
+                {TRAP_AREA_8, QVariant(trapArea8)},
+                {TRAP_AREA_9, QVariant(trapArea9)},
+                {TRAP_AREA_10, QVariant(trapArea10)},
+                {TRAP_AREA_11, QVariant(trapArea11)},
+                {TRAP_AREA_12, QVariant(trapArea12)}
         };
     }
 
@@ -1995,6 +2035,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.totalIntensityPeakHeights = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityPeakHeights];
         row.totalIntensityRaw = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityRaw];
         row.targetWindowLocation = candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocation];
+
+        row.trapArea1 = candidateScores->trapAreas.at(0);
+        row.trapArea2 = candidateScores->trapAreas.at(1);
+        row.trapArea3 = candidateScores->trapAreas.at(2);
+        row.trapArea4 = candidateScores->trapAreas.at(3);
+        row.trapArea5 = candidateScores->trapAreas.at(4);
+        row.trapArea6 = candidateScores->trapAreas.at(5);
+        row.trapArea7 = candidateScores->trapAreas.at(6);
+        row.trapArea8 = candidateScores->trapAreas.at(7);
+        row.trapArea9 = candidateScores->trapAreas.at(8);
+        row.trapArea10 = candidateScores->trapAreas.at(9);
+        row.trapArea11 = candidateScores->trapAreas.at(10);
+        row.trapArea12 = candidateScores->trapAreas.at(11);
 
         return row;
     }

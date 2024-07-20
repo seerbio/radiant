@@ -879,13 +879,26 @@ namespace {
 
             if (cosineSimSum > bestCosineSimSum) {
                 *bestAnchorColumnIndex = anchorCol;
-                *peakCorrelations = corrs;
                 bestCosineSimSum = cosineSimSum;
             }
         }
 
         const Eigen::VectorX<float> &anchor = matBlockTrimmed.col(*bestAnchorColumnIndex);
         const QVector<float> anchorVec = EigenUtils::convertEigenVectorToQVector(anchor);
+
+        QVector<float> corrs;
+
+        const int colCountFull = matBlockTrimmed.cols();
+        corrs.reserve(colCountFull);
+        for (int col = 0; col < colCountFull; col++) {
+            const Eigen::VectorX<float> &c = matBlockTrimmed.col(col);
+
+            float cosineSim;
+            e = EigenUtils::cosineSimilarity(anchor, c, &cosineSim); ree;
+
+            corrs.push_back(cosineSim);
+        }
+        *peakCorrelations = corrs;
 
         *bestAnchorRowIndex = MathUtils::closest(anchorVec, anchor.maxCoeff());
 
@@ -1277,8 +1290,50 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildScanTimeVectorFromFrameIndexIntegrationLimits(
+        const PeakIntegrationIndexes &peakIntegrationIndexes,
+        MsFrame *msFrameMzTarget,
+        QVector<ScanTime> *scanTimes
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
+        e = ErrorUtils::isTrue(peakIntegrationIndexes.second > peakIntegrationIndexes.first); ree;
+
+        scanTimes->reserve(peakIntegrationIndexes.second - peakIntegrationIndexes.first + 1);
+        for (int frameIndex = peakIntegrationIndexes.first; frameIndex <= peakIntegrationIndexes.second; ++frameIndex) {
+            scanTimes->push_back(msFrameMzTarget->scanTimeFromFrameIndex(frameIndex));
+        }
+
+        ERR_RETURN
+    }
+
+    Err calculateTrapezoidalArea(
+        const Eigen::MatrixX<float> &xicMat,
+        const QVector<float> &scanTimes,
+        Eigen::VectorX<float> *areas
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(scanTimes); ree;
+        e = ErrorUtils::isEqual(scanTimes.size(), static_cast<int>(xicMat.rows())); ree;
+
+        const Eigen::VectorX<float> scanTimesVec = EigenUtils::convertQVectorToEigenVector(scanTimes);
+
+        const int vSize = scanTimes.size() - 1;
+        const Eigen::VectorX<float> dScanTimes = scanTimesVec.tail(vSize) - scanTimesVec.head(vSize);
+        const Eigen::MatrixX<float> xicMatSums = xicMat.bottomRows(vSize) + xicMat.topRows(vSize);
+
+        *areas = (dScanTimes.transpose() * xicMatSums) * 0.5;
+
+        ERR_RETURN
+    }
+
     Err setFoundMs2Ions(
         const BestCorrelationResult &bestCorrelationResult,
+        MsFrame *msFrameMzTarget,
         CandidateScores *candidateScores
         ) {
 
@@ -1317,8 +1372,23 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
-        Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
-        // intensitySums /= intensitySums.sum();
+        QVector<ScanTime> scanTimes;
+        e = buildScanTimeVectorFromFrameIndexIntegrationLimits(
+            bestCorrelationResult.peakIntegrationIndexes,
+            msFrameMzTarget,
+            &scanTimes
+            );
+
+        const Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+        Eigen::VectorX<float> trapAreas;
+        e = calculateTrapezoidalArea(
+            bestCorrelationResult.matBlockTrimmedIntensity,
+            scanTimes,
+            &trapAreas
+            ); ree;
+        const QVector<float> trapAreasQVec = EigenUtils::convertEigenVectorToQVector(trapAreas);
+        candidateScores->trapAreas = QVector<float>(arraySizeMax, -1.0);
+        std::copy(trapAreasQVec.begin(), trapAreasQVec.end(), candidateScores->trapAreas.begin());
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
@@ -1639,7 +1709,8 @@ Err CandidateScorertron::setCandidateScores(
         std::numeric_limits<float>::min()
         );
 
-    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount] = static_cast<float>(m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
+    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount]
+        = static_cast<float>(m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
@@ -1717,7 +1788,7 @@ Err CandidateScorertron::setCandidateScores(
 
     e = setTheoreticalMs2Ions(ms2IonsTheoritical, candidateScores); ree;
 
-    e = setFoundMs2Ions(bestCorrelationResult, candidateScores); ree;
+    e = setFoundMs2Ions(bestCorrelationResult, m_msFrameMzTarget, candidateScores); ree;
 
     e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
 

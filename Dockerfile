@@ -162,6 +162,8 @@ RUN apt-get update \
 # Set up a dedicated folder as the normal working dir
 WORKDIR /work/
 
+# This is a random note.
+
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
 # this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
 # overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
