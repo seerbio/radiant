@@ -122,20 +122,17 @@ bool AWSStreamifier::streamParquetFile(
     return true;
 }
 
-bool AWSStreamifier::streamTextFile(
-    const QString& uri,
-    uchar** fileData
-    ) {
+QPair<bool, std::string>  AWSStreamifier::streamTextFile(const QString& uri) {
 
     if (!credentialsValid()) {
-        return false;
+        return {false, {}};
     }
 
     const std::tuple<bool, QString, QString> bucketNameVsObjectKey = getBucketNameVsObjectKey(uri);
 
     const bool isValid = std::get<0>(bucketNameVsObjectKey);
     if (!isValid) {
-        return false;
+        return {false, {}};
     }
 
     const QString bucket = std::get<1>(bucketNameVsObjectKey);
@@ -168,7 +165,7 @@ bool AWSStreamifier::streamTextFile(
 
             std::string line;
             while (std::getline(s3Stream, line)) {
-                lineAggregate += line;
+                lineAggregate += line + " " + '\n';
             }
 
             s3Stream.clear();
@@ -181,8 +178,5 @@ bool AWSStreamifier::streamTextFile(
     }
     Aws::ShutdownAPI(options);
 
-    auto dataPtr = reinterpret_cast<uchar*>(lineAggregate.data());
-    fileData = &dataPtr;
-
-    return true;
+    return {true, lineAggregate};
 }

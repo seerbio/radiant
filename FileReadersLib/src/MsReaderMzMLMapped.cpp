@@ -506,9 +506,25 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
 
     if (filename.contains("s3://")) {
 
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+        AWSStreamifier awsStreamifier;
+        const bool credentialsSet = awsStreamifier.setAWSCredentials(
+            env.value("AWS_ACCESS_KEY_ID"),
+            env.value("AWS_SECRET_ACCESS_KEY"),
+            env.value("AWS_SESSION_TOKEN")
+            );
+
+        const QPair<bool, std::string> streamIsValid = awsStreamifier.streamTextFile(filename);
 
 
-        ERR_INIT
+        uchar* ucharPtr
+            = const_cast<uchar*>(reinterpret_cast<const uchar*>(streamIsValid.second.c_str()));
+
+        e = ErrorUtils::isTrue(streamIsValid.first); ree;
+        e= readLogic(ucharPtr); ree;
+
+        ERR_RETURN
     }
 
     QFile file(filename);
@@ -554,7 +570,6 @@ Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
             if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
                 continue;
             }
-
             m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
@@ -571,6 +586,7 @@ Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
             if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
                 continue;
             }
+            qDebug() << msScanInfo.scanNumber << "SLFKJSDL";
             m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }

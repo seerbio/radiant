@@ -8,6 +8,8 @@
 
 #include "AWSLib_Exports.h"
 
+#include <QPair>
+
 /* NOTE:
  * Cannot use Error.h or ErrorUtils.h as includes as it conflict w/ Arrow/Parquet libary.
  */
@@ -32,10 +34,7 @@ public:
         std::vector<uint8_t> *fileBuffer
         );
 
-    bool streamTextFile(
-        const QString &uri,
-        uchar* *fileData
-        );
+    QPair<bool, std::string> streamTextFile(const QString& uri);
 
 private:
 

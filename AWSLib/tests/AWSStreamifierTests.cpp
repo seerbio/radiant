@@ -43,8 +43,7 @@ void AWSStreamifierTests::streamTextFileTest() {
 
     const QString uri = "s3://seer-experiments/EXP24001/mzml/EXP24001_2023ms1005bX1_A.raw.mzML";
 
-    uchar* fileData;
-    const bool streamIsValid = awsStreamifier.streamTextFile(uri, &fileData);
+    const QPair<bool, std::string> streamIsValid = awsStreamifier.streamTextFile(uri);
 
 }
 

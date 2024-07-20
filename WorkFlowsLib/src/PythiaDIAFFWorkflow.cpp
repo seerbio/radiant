@@ -290,9 +290,11 @@ namespace {
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_INIT
 
-    e = ErrorUtils::fileExists(msDataFilePath); ree;
-    MsReaderPointerAcc msReaderPointerAcc;
+    if (!msDataFilePath.contains("s3://")) {
+        e = ErrorUtils::fileExists(msDataFilePath); ree;
+    }
 
+    MsReaderPointerAcc msReaderPointerAcc;
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
