@@ -504,7 +504,7 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) const {
 
     ERR_INIT
 
-    if (filename.contains("s3://")) {
+    if (filename.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
 
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 

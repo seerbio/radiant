@@ -114,6 +114,7 @@ public:
     const QString NONE = QStringLiteral("NONE");
     const int POLYNOMIAL_DEGREE = 11;
     const int ROUNDING_PRECISION = 12;
+    const QString S3_PREFIX = QStringLiteral("s3://");
     const QChar SEPARATOR = ';';
     const double STDEV_MULTIPLIER = 3.0;
     const QString TAB = "\t";

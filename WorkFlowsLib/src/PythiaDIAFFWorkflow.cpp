@@ -40,7 +40,10 @@ Err PythiaDIAFFWorkflow::init(
     ERR_INIT
 
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-    e = ErrorUtils::fileExists(fragLibUri); ree;
+
+    if (!fragLibUri.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+        e = ErrorUtils::fileExists(fragLibUri); ree;
+    }
 
     if (!fastaUri.isEmpty()) {
         e = ErrorUtils::fileExists(fastaUri); ree;
@@ -290,7 +293,7 @@ namespace {
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_INIT
 
-    if (!msDataFilePath.contains("s3://")) {
+    if (!msDataFilePath.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
         e = ErrorUtils::fileExists(msDataFilePath); ree;
     }
 

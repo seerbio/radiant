@@ -39,7 +39,7 @@ public:
             QVector<ParquetReaderInputBase> *rowsRead
     );
 
-    arrow::Status readDataFromParquet(
+    static arrow::Status readDataFromParquet(
             const QString &parquetFilePath,
             const QString &columnToFilterBy,
             const QPair<double, double> &filterRange,
@@ -576,18 +576,11 @@ Err ParquetReader::Private::readDataFromParquet(
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem fileSystem;
 
-    std::shared_ptr<arrow::io::RandomAccessFile> input
-            = fileSystem.OpenInputFile(parquetFilePath.toStdString()).ValueOrDie();
-
     std::unique_ptr<parquet::arrow::FileReader> arrowReader;
-    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
-    if (!st.ok()) {
-        return Error::eFileError;
-    }
 
     std::shared_ptr<arrow::Table> table;
 
-    if (parquetFilePath.contains("s3://")) {
+    if (parquetFilePath.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
 
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
@@ -604,12 +597,21 @@ Err ParquetReader::Private::readDataFromParquet(
             );
         e = ErrorUtils::isTrue(streamIsValid); ree;
 
-        ERR_RETURN
     }
+    else {
 
-    st = arrowReader->ReadTable(&table);
-    if (!st.ok()) {
-        return Error::eError;
+        std::shared_ptr<arrow::io::RandomAccessFile> input
+                    = fileSystem.OpenInputFile(parquetFilePath.toStdString()).ValueOrDie();
+
+        st = parquet::arrow::OpenFile(input, pool, &arrowReader);
+        if (!st.ok()) {
+            return Error::eFileError;
+        }
+
+        st = arrowReader->ReadTable(&table);
+        if (!st.ok()) {
+            return Error::eError;
+        }
     }
 
     QMap<QString, QVector<QVariant>> columnsMap;
@@ -753,10 +755,8 @@ arrow::Status ParquetReader::Private::readDataFromParquet(
 
     ERR_INIT
 
-    arrow::Status st;
-
     parquet::arrow::FileReaderBuilder readerBuilder;
-    st = initArrowReaderBuilder(
+    arrow::Status st = initArrowReaderBuilder(
             parquetFilePath,
             &readerBuilder
             );
@@ -912,7 +912,7 @@ ParquetReader::~ParquetReader() {}
 Err ParquetReader::writeDataToParquet(
         const QString &outputFilePath,
         const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -927,7 +927,7 @@ Err ParquetReader::writeDataToParquet(
 Err ParquetReader::readDataFromParquet(
         const QString &parquetFilePath,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -944,11 +944,11 @@ Err ParquetReader::readDataFromParquet(
         const QString &columnToFilterBy,
         const QPair<double, double> &filterRange,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 
-    arrow::Status st = d_ptr->readDataFromParquet(
+    const arrow::Status st = d_ptr->readDataFromParquet(
             parquetFilePath,
             columnToFilterBy,
             filterRange,

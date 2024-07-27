@@ -248,7 +248,9 @@ public:
 
         readerRows->clear();
 
-        e = ErrorUtils::fileExists(fileURI); ree;
+        if(!fileURI.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+            e = ErrorUtils::fileExists(fileURI); ree;
+        }
 
         ParquetReader reader;
 
@@ -294,7 +296,9 @@ public:
 
         ERR_INIT
 
-        e = ErrorUtils::fileExists(fileURI); ree;
+        if (!fileURI.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+            e = ErrorUtils::fileExists(fileURI); ree;
+        }
 
         readerRows->clear();
 
@@ -437,7 +441,7 @@ public:
     Err writeDataToParquet(
             const QString &outputFilePath,
             const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-            );
+            ) const;
 
     /**
     * @brief Reads data from a Parquet file.
@@ -457,7 +461,7 @@ public:
     Err readDataFromParquet(
             const QString &parquetFilePath,
             QVector<ParquetReaderInputBase> *rowsRead
-            );
+            ) const;
 
     /**
     * @brief Reads data from a Parquet file based on a specified column and filter range.
@@ -482,7 +486,7 @@ public:
             const QString &columnToFilterBy,
             const QPair<double, double> &filterRange,
             QVector<ParquetReaderInputBase> *rowsRead
-    );
+    ) const;
 
 private:
 
