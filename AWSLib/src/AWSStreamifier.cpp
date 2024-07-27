@@ -70,7 +70,7 @@ namespace {
 }//namespace
 bool AWSStreamifier::streamParquetFile(
     const QString& uri,
-    std::vector<uint8_t> *fileBuffer
+    std::shared_ptr<arrow::Table> *table
     ) const {
 
     if (!credentialsValid()) {
@@ -87,7 +87,7 @@ bool AWSStreamifier::streamParquetFile(
     const QString bucket = std::get<1>(bucketNameVsObjectKey);
     const QString objectKey = std::get<2>(bucketNameVsObjectKey);
 
-    Aws::SDKOptions options;
+    const Aws::SDKOptions options;
     Aws::InitAPI(options);
     {
         Aws::Client::ClientConfiguration clientConfiguration;
@@ -110,9 +110,17 @@ bool AWSStreamifier::streamParquetFile(
 
             auto& s3Stream = getObjectOutcome.GetResult().GetBody();
             std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(s3Stream), {});
-            fileBuffer = &buffer;
 
-            std::cout << "Successfully read Parquet data into memory." << std::endl;
+            auto arrow_buffer = std::make_shared<arrow::Buffer>(buffer.data(), buffer.size());
+            std::shared_ptr<arrow::io::BufferReader> reader(new arrow::io::BufferReader(arrow_buffer));
+
+            arrow::Status st;
+
+            std::unique_ptr<parquet::arrow::FileReader> parquet_reader;
+            st = parquet::arrow::OpenFile(reader, arrow::default_memory_pool(), &parquet_reader);
+
+            st = parquet_reader->ReadTable(table);
+
         } else {
             std::cerr << "Failed to get object: " << getObjectOutcome.GetError().GetMessage() << std::endl;
         }
@@ -141,7 +149,7 @@ QPair<bool, std::string>  AWSStreamifier::streamTextFile(const QString& uri) con
 
     std::string lineAggregate;
 
-    Aws::SDKOptions options;
+    const Aws::SDKOptions options;
     Aws::InitAPI(options);
     {
         Aws::Client::ClientConfiguration clientConfiguration;

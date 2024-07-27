@@ -16,6 +16,8 @@
 
 #include <QString>
 
+#include <arrow/table.h>
+
 class AWSLIB_EXPORTS AWSStreamifier {
 
 public:
@@ -31,7 +33,7 @@ public:
 
     bool streamParquetFile(
         const QString &uri,
-        std::vector<uint8_t> *fileBuffer
+        std::shared_ptr<arrow::Table> *table
         ) const;
 
     QPair<bool, std::string> streamTextFile(const QString& uri) const;
@@ -47,7 +49,6 @@ private:
     QString m_accessToken;
 
 };
-
 
 
 #endif //AWSSTREAMIFIER_H

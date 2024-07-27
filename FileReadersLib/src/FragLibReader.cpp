@@ -3,6 +3,8 @@
 //
 
 #include "FragLibReader.h"
+
+#include "AWSStreamifier.h"
 #include "FragLibTsvReader.h"
 
 #include <QElapsedTimer>

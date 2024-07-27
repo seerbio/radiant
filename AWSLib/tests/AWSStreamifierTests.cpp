@@ -68,8 +68,8 @@ void AWSStreamifierTests::streamParquetFileTest() {
 
     const QString uri = "s3://seer-experiments/EXP24039/interimresult/0b6d21d0b237173e9ed0ec96aea642cd/500873.EXP24039_2024ms0407dX45_A.raw.mzML.pythiaDIA";
 
-    std::vector<uint8_t> fileBuffer;
-    const bool streamIsValid = awsStreamifier.streamParquetFile(uri, &fileBuffer);
+    std::shared_ptr<arrow::Table> table;
+    const bool streamIsValid = awsStreamifier.streamParquetFile(uri, &table);
 
 }
 

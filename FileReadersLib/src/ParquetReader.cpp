@@ -12,6 +12,7 @@
 #include <parquet/arrow/writer.h>
 
 //NOTE that these have to go after parquet arrow import or there will be a compile error.
+#include "AWSStreamifier.h"
 #include "ParquetReader.h"
 
 #include "ParallelUtils.h"
@@ -585,6 +586,27 @@ Err ParquetReader::Private::readDataFromParquet(
     }
 
     std::shared_ptr<arrow::Table> table;
+
+    if (parquetFilePath.contains("s3://")) {
+
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+        AWSStreamifier awsStreamifier;
+        const bool credentialsSet = awsStreamifier.setAWSCredentials(
+            env.value("AWS_ACCESS_KEY_ID"),
+            env.value("AWS_SECRET_ACCESS_KEY"),
+            env.value("AWS_SESSION_TOKEN")
+            );
+
+        const bool streamIsValid = awsStreamifier.streamParquetFile(
+            parquetFilePath,
+            &table
+            );
+        e = ErrorUtils::isTrue(streamIsValid); ree;
+
+        ERR_RETURN
+    }
+
     st = arrowReader->ReadTable(&table);
     if (!st.ok()) {
         return Error::eError;
