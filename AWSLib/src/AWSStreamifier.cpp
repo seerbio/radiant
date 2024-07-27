@@ -70,8 +70,8 @@ namespace {
 }//namespace
 bool AWSStreamifier::streamParquetFile(
     const QString& uri,
-    std::vector<uint8_t>* fileBuffer
-    ) {
+    std::vector<uint8_t> *fileBuffer
+    ) const {
 
     if (!credentialsValid()) {
         return false;

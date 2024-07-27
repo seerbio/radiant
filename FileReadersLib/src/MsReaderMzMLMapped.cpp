@@ -94,11 +94,11 @@ public:
 
     ~PrivateData();
 
-    Err openFile(const QString& filename);
+    Err openFile(const QString& filename) const ;
 
-    Err readLogic(uchar* ucharData);
+    Err readLogic(uchar* ucharData) const;
 
-    Err closeFile();
+    Err closeFile() const;
 
     [[nodiscard]] bool isScanNumberValid(int scanNumber) const;
 
@@ -500,7 +500,7 @@ namespace {
     }
 
 }//NAMESPACE
-Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
+Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) const {
 
     ERR_INIT
 
@@ -545,7 +545,7 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
     ERR_RETURN
 }
 
-Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
+Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) const {
 
     ERR_INIT
 
@@ -554,7 +554,7 @@ Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
         ERR_RETURN
     }
 
-    const qint64 fileSize = static_cast<qint64>(strlen(reinterpret_cast<char*>(ucharData)));
+    const auto fileSize = static_cast<qint64>(strlen(reinterpret_cast<char*>(ucharData)));
     const QVector<FileChunk> chunks = buildFileChunks(fileSize, ucharData);
 
 #define RUN_PARALLEL
@@ -598,7 +598,7 @@ Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) {
     ERR_RETURN
 }
 
-Err MsReaderMzMLMapped::PrivateData::closeFile() {
+Err MsReaderMzMLMapped::PrivateData::closeFile() const {
 
     ERR_INIT
 

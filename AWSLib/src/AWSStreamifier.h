@@ -32,7 +32,7 @@ public:
     bool streamParquetFile(
         const QString &uri,
         std::vector<uint8_t> *fileBuffer
-        );
+        ) const;
 
     QPair<bool, std::string> streamTextFile(const QString& uri) const;
 

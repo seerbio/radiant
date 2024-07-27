@@ -19,7 +19,7 @@ private Q_SLOTS:
 
     static void streamTextFileTest();
 
-    void streamParquetFileTest();
+    static void streamParquetFileTest();
 };
 
 void AWSStreamifierTests::streamTextFileTest() {
