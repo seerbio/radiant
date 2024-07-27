@@ -34,7 +34,7 @@ public:
         std::vector<uint8_t> *fileBuffer
         );
 
-    QPair<bool, std::string> streamTextFile(const QString& uri);
+    QPair<bool, std::string> streamTextFile(const QString& uri) const;
 
 private:
 

@@ -17,14 +17,14 @@ public:
 
 private Q_SLOTS:
 
-    void streamTextFileTest();
+    static void streamTextFileTest();
 
     void streamParquetFileTest();
 };
 
 void AWSStreamifierTests::streamTextFileTest() {
 
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
     if(
         !(env.contains("AWS_ACCESS_KEY_ID")

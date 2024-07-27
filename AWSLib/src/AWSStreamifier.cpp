@@ -38,6 +38,7 @@ bool AWSStreamifier::setAWSCredentials(
 }
 
 bool AWSStreamifier::credentialsValid() const {
+    //TODO do a check for the connection
     return !m_accessToken.isEmpty() && !m_secretAccessKey.isEmpty() && !m_accessToken.isEmpty();
 }
 
@@ -122,7 +123,7 @@ bool AWSStreamifier::streamParquetFile(
     return true;
 }
 
-QPair<bool, std::string>  AWSStreamifier::streamTextFile(const QString& uri) {
+QPair<bool, std::string>  AWSStreamifier::streamTextFile(const QString& uri) const {
 
     if (!credentialsValid()) {
         return {false, {}};
