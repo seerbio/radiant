@@ -42,6 +42,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
+    const QString kCalibrationTrainingVolume = QStringLiteral("calibrationTrainingVolume");
 
     const QString kTopNIntegrations = QStringLiteral("topNIntegrations");
     const QString kMaxAnchorColumnIndex = QStringLiteral("maxAnchorColumnIndex");
@@ -125,6 +126,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(0.0f);
+    pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
 
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(15);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);

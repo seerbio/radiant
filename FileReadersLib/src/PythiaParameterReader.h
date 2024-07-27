@@ -41,6 +41,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kCalibrationTrainingVolume;
 
     extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
     extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
@@ -94,6 +95,7 @@ struct PythiaParameters{
 
     int topNIntegrations = 5;
     int maxAnchorColumnIndex = 6;
+    int calibrationTrainingVolume = 1000;
 
     //[FdrParams]
     double percentFDR = 1.0;
@@ -186,6 +188,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
