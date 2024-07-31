@@ -73,6 +73,20 @@ Err XYMappermatic::init(const QVector<QPair<XVal, YVal>> &_data) {
     ERR_RETURN
 }
 
+Err XYMappermatic::setBinning(int val) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isAboveThreshold(val, 1, ErrorUtilsParam::IncludeThreshold); ree;
+
+    m_xSegments = val;
+    m_minXPredBin = val;
+
+    qDebug() << "Min prediction bins set to:" << m_minXPredBin;
+
+    ERR_RETURN
+}
+
 
 namespace {
 

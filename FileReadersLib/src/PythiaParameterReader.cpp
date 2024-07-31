@@ -61,6 +61,8 @@ namespace PythiaParameterReaderConstants {
     const QString kFeatureFinderParams = QStringLiteral("FeatureFinderParams");
     const QString kMinScanCount = QStringLiteral("minScanCount");
     const QString kSkipScanCount = QStringLiteral("skipScanCount");
+
+    const QString kRtBinning = QStringLiteral("rtBinning");
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -127,6 +129,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(0.0f);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
+    pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
 
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(15);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
