@@ -673,12 +673,12 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
 
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    constexpr int maxTrainingCount = 16;
+    constexpr int maxUniqueScanInfosTrainingCount = 16;
     constexpr int offset = 0;
     QVector<MsScanInfo> uniqueMsScanInfosCalibration;
     e = buildUniqueMsScanInfosForProcessing(
         uniqueMsScanInfos,
-        maxTrainingCount,
+        maxUniqueScanInfosTrainingCount,
         offset,
         &uniqueMsScanInfosCalibration
         ); ree;
@@ -726,6 +726,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
                 minPeakCountCalibration,
+                maxUniqueScanInfosTrainingCount,
                 mzTargetKeyVsTurboXicPntrs,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
@@ -766,8 +767,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
                 << "mSec"
                 << qPrintable(fdrString);
 
-        constexpr int targetTrainingCountCalibration = 750;
-        if (fdrVsCounts.value(fdrKey) > targetTrainingCountCalibration
+        if (fdrVsCounts.value(fdrKey) > m_pythiaParameters.calibrationTrainingVolume
             || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
             ) {
 
@@ -1247,12 +1247,12 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
 
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    constexpr int maxTestingCount = 16;
+    constexpr int maxUniqueScanInfosTrainingCount = 16;
     constexpr int offset = 1;
     QVector<MsScanInfo> uniqueMsScanInfosCalibration;
     e = buildUniqueMsScanInfosForProcessing(
         uniqueMsScanInfos,
-        maxTestingCount,
+        maxUniqueScanInfosTrainingCount,
         offset,
         &uniqueMsScanInfosCalibration
         ); ree;
@@ -1305,6 +1305,7 @@ Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerA
                 topNMS2Ions,
                 m_msCalibratomatic,
                 minPeakCountOptimization,
+                maxUniqueScanInfosTrainingCount,
                 mzTargetKeyVsTurboXicPntrs,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
@@ -1392,14 +1393,18 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     QElapsedTimer et;
     et.start();
 
+    const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
+
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
     e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             m_targetDecoyPairPntrs,
-            msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos(),
+            uniqueMsScanInfos,
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
+
+    const int threadCount = std::min(uniqueMsScanInfos.size(), m_pythiaParameters.threadCount);
 
     constexpr float minPeakCount = 2.9;
     m_candidateScores.clear();
@@ -1407,6 +1412,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
             minPeakCount,
+            threadCount,
             nullToBuildTurboXICInParallelLoop,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores

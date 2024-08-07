@@ -64,6 +64,7 @@ public:
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
+            int threadCount,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec

@@ -325,6 +325,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
+        int threadCount,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
@@ -353,7 +354,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
-            m_pythiaParameters.threadCount,
+            threadCount,
             &parallelInputsTranched
             ); ree;
 

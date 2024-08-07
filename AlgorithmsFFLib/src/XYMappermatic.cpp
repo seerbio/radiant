@@ -82,7 +82,7 @@ Err XYMappermatic::setBinning(int val) {
     m_xSegments = val;
     m_minXPredBin = val;
 
-    qDebug() << "Min prediction bins set to:" << m_minXPredBin;
+    // qDebug() << "Min prediction bins set to:" << m_minXPredBin;
 
     ERR_RETURN
 }
