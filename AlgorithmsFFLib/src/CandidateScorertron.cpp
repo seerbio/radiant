@@ -155,7 +155,8 @@ public:
 
     Eigen::MatrixX<float> mzMatrix100;
 
-    Eigen::VectorX<float> integrationVec;
+    Eigen::VectorX<float> intensityVec;
+    Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
 
@@ -164,7 +165,7 @@ public:
     }
 
     [[nodiscard]] bool integrationVecIsValid() const {
-        return integrationVec.size() > 0;
+        return ionCountVec.size() > 0;
     }
 };
 
@@ -450,7 +451,7 @@ namespace {
         const Eigen::VectorX<float> &kernelIntegration,
         float minPeakCount,
         int maxAnchorColumnIndex,
-        Eigen::VectorX<float> *integrationVec
+        Eigen::VectorX<float> *ionCountVec
         ) {
 
         ERR_INIT
@@ -471,7 +472,7 @@ namespace {
         Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
-        *integrationVec = EigenKernelUtils::convolveVectorWithKernel(
+        *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
         integrationVecLocal,
         kernelIntegration
         );
@@ -578,6 +579,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
+        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
         Eigen::MatrixX<float> unused;
         e = buildEigenMatrix(
@@ -600,7 +602,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             d_ptr->m_kernelIntegration,
             m_minPeakCount,
             m_pythiaParameters.maxAnchorColumnIndex,
-            &matriciesAndVecs->integrationVec
+            &matriciesAndVecs->ionCountVec
             ); ree;
 
         e = buildIntegrationVectorCosineSim(
@@ -611,7 +613,8 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->integrationVecCosineSim
             ); ree;
 
-        matriciesAndVecs->productVec = matriciesAndVecs->integrationVec.array() * matriciesAndVecs->integrationVecCosineSim.array();
+        matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
+                                     * matriciesAndVecs->integrationVecCosineSim.array();
 
         constexpr int noSmooths = 0;
         e = buildEigenMatrix(
@@ -669,13 +672,13 @@ namespace {
 
     QPair<PeakIntegrationIndexes, Intensity> correctPeakIntegrationForSingleRow(
         const QPair<PeakIntegrationIndexes, Intensity> &pii,
-        const Eigen::VectorX<float> &integrationVec
+        const Eigen::VectorX<float> &ionCountVec
         ) {
         QPair<PeakIntegrationIndexes, Intensity> piiWorking = pii;
         if (piiWorking.first.first == piiWorking.first.second) {
             piiWorking.first.first = std::max(0, piiWorking.first.first - 1);
             piiWorking.first.second = std::min(
-                static_cast<int>(integrationVec.size()) - 1,
+                static_cast<int>(ionCountVec.size()) - 1,
                 piiWorking.first.second + 1
                 );
         }
@@ -715,14 +718,13 @@ namespace {
             int apexIndex
             ) {
 
-            QVector<int> apexesStartsToUse;
-            apexesStartsToUse.reserve(static_cast<int>(matBlockApexes.cols()));
+            QVector<int> apexesStartsToUse(static_cast<int>(matBlockApexes.cols()), -1);
             for (int col = 0; col < matBlockApexes.cols(); col++) {
 
                 const Eigen::VectorX<float> &apexColumn = matBlockApexes.col(col);
 
                 if (apexColumn.coeff(apexIndex) > 0) {
-                    apexesStartsToUse.push_back(apexIndex);
+                    apexesStartsToUse[col] = apexIndex;
                     continue;
                 }
 
@@ -744,20 +746,20 @@ namespace {
 
                     if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
                         const int higherIndex = rowLeftIndexValue >= rowRightIndexValue ? rowLeftIndex : rowRightIndex;
-                        apexesStartsToUse.push_back(higherIndex);
+                        apexesStartsToUse[col] = higherIndex;
                         break;
                     }
                     else if (rowLeftIndexValue > 0) {
-                        apexesStartsToUse.push_back(rowLeftIndex);
+                        apexesStartsToUse[col] = rowLeftIndex;
                         break;
                     }
                     else if (rowRightIndexValue > 0) {
-                        apexesStartsToUse.push_back(rowRightIndex);
+                        apexesStartsToUse[col] = rowRightIndex;
                         break;
                     }
 
                     if (rowLeftIndex <= 0 && rowRightIndex >= apexColumn.size() - 1) {
-                        apexesStartsToUse.push_back(-1);
+                        apexesStartsToUse[col] = -1;
                         break;
                     }
                 }
@@ -962,7 +964,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const QPair<PeakIntegrationIndexes, Intensity> piiWorking = correctPeakIntegrationForSingleRow(
             pii,
-            matriciesAndVecs.integrationVec
+            matriciesAndVecs.ionCountVec
             );
 
         const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
@@ -980,7 +982,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             apexIndexesByColumn
             );
 
-        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.integrationVec.segment(
+        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.ionCountVec.segment(
             piiWorking.first.first,
             piiWorking.first.second - piiWorking.first.first + 1
             ).eval();
