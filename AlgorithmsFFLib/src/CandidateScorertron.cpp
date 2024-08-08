@@ -988,7 +988,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
 
         const QVector<int> apexStarts = findStartApexes(matBlockApexes, apexIndex.first);
-        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols()));
+        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols())); ree;
 
         //TODO delete
         // const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
