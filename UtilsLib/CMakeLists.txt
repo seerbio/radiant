@@ -26,6 +26,7 @@ SET(SOURCE_FILES
         src/ErrorUtils.cpp
         src/GlobalSettings.cpp
         src/MathUtils.cpp
+        src/ObjectCSVWriters.cpp
         src/ParallelUtils.cpp
         src/PointFF.cpp
         src/SqlUtils.cpp
@@ -37,6 +38,7 @@ SET(HEADER_FILES
         src/ErrorUtils.h
         src/GlobalSettings.h
         src/MathUtils.h
+        src/ObjectCSVWriters.h
         src/ParallelUtils.h
         src/PointFF.h
         src/SqlUtils.h
