@@ -19,13 +19,14 @@ public:
 
 private Q_SLOTS:
 
-    static void writeReadTest();
+    static void writeReadTestVec();
+    static void writeReadTestPairs();
 
 };
 
 ObjectCSVWritersTests::ObjectCSVWritersTests() : QObject() {}
 
-void ObjectCSVWritersTests::writeReadTest() {
+void ObjectCSVWritersTests::writeReadTestVec() {
 
     ERR_INIT
 
@@ -41,6 +42,24 @@ void ObjectCSVWritersTests::writeReadTest() {
     QCOMPARE(e, eNoError);
     QCOMPARE(vecToRead, vecToWrite);
 
+}
+
+void ObjectCSVWritersTests::writeReadTestPairs() {
+
+    ERR_INIT
+
+    const QString writePath = QStringLiteral("writeMeAmadeus2.csv");
+
+    const QVector<QPair<int, float>> vecToWrite = {{6, 6.6}, {66, 66.6}, {666, 666.6}};
+
+    e = ObjectCSVWriters::writeVectorToFile(vecToWrite, writePath);
+    QCOMPARE(e, eNoError);
+
+    QVector<QPair<int, float>> vecToRead;
+    e = ObjectCSVWriters::readVectorFromFile(writePath, &vecToRead);
+    QCOMPARE(e, eNoError);
+
+    QCOMPARE(vecToRead, vecToWrite);
 }
 
 
