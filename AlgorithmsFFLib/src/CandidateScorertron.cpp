@@ -10,6 +10,7 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "IsotopicDistributionBuilder.h"
+#include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
@@ -155,7 +156,8 @@ public:
 
     Eigen::MatrixX<float> mzMatrix100;
 
-    Eigen::VectorX<float> integrationVec;
+    Eigen::VectorX<float> intensityVec;
+    Eigen::VectorX<float> ionCountVec;
     Eigen::VectorX<float> integrationVecCosineSim;
     Eigen::VectorX<float> productVec;
 
@@ -164,7 +166,7 @@ public:
     }
 
     [[nodiscard]] bool integrationVecIsValid() const {
-        return integrationVec.size() > 0;
+        return ionCountVec.size() > 0;
     }
 };
 
@@ -260,6 +262,28 @@ Err CandidateScorertron::calculateScores(
         ms1Averagine,
         candidateScores
         ); ree;
+
+// #define TROUBLE_SHOOT_INTEGRATION
+#ifdef TROUBLE_SHOOT_INTEGRATION
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "TVC(UniMod:4)LPDGSFPSGSEC(UniMod:4)HISGWGVTETGK"
+        && targetDecoyCandidatePair->charge() == 3
+        && !candidateScores->isDecoy
+        ) {
+
+        const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
+        const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
+
+        e = ObjectCSVWriters::writeVectorToFile(
+            EigenUtils::convertEigenVectorToQVector(matriciesAndVecs.intensityVec),
+            intensityVecPath
+            ); ree;
+
+        e = ObjectCSVWriters::writeVectorToFile(
+            EigenUtils::convertEigenVectorToQVector(matriciesAndVecs.productVec),
+            prodVecPath
+            ); ree;
+    }
+#endif
 
     ERR_RETURN
 }
@@ -450,7 +474,7 @@ namespace {
         const Eigen::VectorX<float> &kernelIntegration,
         float minPeakCount,
         int maxAnchorColumnIndex,
-        Eigen::VectorX<float> *integrationVec
+        Eigen::VectorX<float> *ionCountVec
         ) {
 
         ERR_INIT
@@ -471,7 +495,7 @@ namespace {
         Eigen::VectorX<float> integrationVecLocal = matCount.rowwise().sum();
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
-        *integrationVec = EigenKernelUtils::convolveVectorWithKernel(
+        *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
         integrationVecLocal,
         kernelIntegration
         );
@@ -578,6 +602,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->intensityMatrix100,
             &matriciesAndVecs->mzMatrix100
             ); ree;
+        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
 
         Eigen::MatrixX<float> unused;
         e = buildEigenMatrix(
@@ -600,7 +625,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             d_ptr->m_kernelIntegration,
             m_minPeakCount,
             m_pythiaParameters.maxAnchorColumnIndex,
-            &matriciesAndVecs->integrationVec
+            &matriciesAndVecs->ionCountVec
             ); ree;
 
         e = buildIntegrationVectorCosineSim(
@@ -611,7 +636,8 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->integrationVecCosineSim
             ); ree;
 
-        matriciesAndVecs->productVec = matriciesAndVecs->integrationVec.array() * matriciesAndVecs->integrationVecCosineSim.array();
+        matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
+                                     * matriciesAndVecs->integrationVecCosineSim.array();
 
         constexpr int noSmooths = 0;
         e = buildEigenMatrix(
@@ -669,13 +695,13 @@ namespace {
 
     QPair<PeakIntegrationIndexes, Intensity> correctPeakIntegrationForSingleRow(
         const QPair<PeakIntegrationIndexes, Intensity> &pii,
-        const Eigen::VectorX<float> &integrationVec
+        const Eigen::VectorX<float> &ionCountVec
         ) {
         QPair<PeakIntegrationIndexes, Intensity> piiWorking = pii;
         if (piiWorking.first.first == piiWorking.first.second) {
             piiWorking.first.first = std::max(0, piiWorking.first.first - 1);
             piiWorking.first.second = std::min(
-                static_cast<int>(integrationVec.size()) - 1,
+                static_cast<int>(ionCountVec.size()) - 1,
                 piiWorking.first.second + 1
                 );
         }
@@ -715,14 +741,13 @@ namespace {
             int apexIndex
             ) {
 
-            QVector<int> apexesStartsToUse;
-            apexesStartsToUse.reserve(static_cast<int>(matBlockApexes.cols()));
+            QVector<int> apexesStartsToUse(static_cast<int>(matBlockApexes.cols()), -1);
             for (int col = 0; col < matBlockApexes.cols(); col++) {
 
                 const Eigen::VectorX<float> &apexColumn = matBlockApexes.col(col);
 
                 if (apexColumn.coeff(apexIndex) > 0) {
-                    apexesStartsToUse.push_back(apexIndex);
+                    apexesStartsToUse[col] = apexIndex;
                     continue;
                 }
 
@@ -744,20 +769,20 @@ namespace {
 
                     if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
                         const int higherIndex = rowLeftIndexValue >= rowRightIndexValue ? rowLeftIndex : rowRightIndex;
-                        apexesStartsToUse.push_back(higherIndex);
+                        apexesStartsToUse[col] = higherIndex;
                         break;
                     }
                     else if (rowLeftIndexValue > 0) {
-                        apexesStartsToUse.push_back(rowLeftIndex);
+                        apexesStartsToUse[col] = rowLeftIndex;
                         break;
                     }
                     else if (rowRightIndexValue > 0) {
-                        apexesStartsToUse.push_back(rowRightIndex);
+                        apexesStartsToUse[col] = rowRightIndex;
                         break;
                     }
 
                     if (rowLeftIndex <= 0 && rowRightIndex >= apexColumn.size() - 1) {
-                        apexesStartsToUse.push_back(-1);
+                        apexesStartsToUse[col] = -1;
                         break;
                     }
                 }
@@ -818,30 +843,30 @@ namespace {
     }
 
     //TODO delete
-    // Eigen::MatrixX<float> trimMatrixBlock(
-    //     const Eigen::MatrixX<float> &matBlock,
-    //     const QVector<int> &apexStarts,
-    //     float stopThresholdFraction
-    //     ) {
-    //
-    //     Eigen::MatrixX<float> matBlockTrimmedColumns(matBlock.rows(), matBlock.cols());
-    //     matBlockTrimmedColumns.setZero();
-    //
-    //     for (int col = 0; col < matBlock.cols(); col++) {
-    //
-    //         const Eigen::VectorX<float> &colVec = matBlock.col(col);
-    //         const QPair<int, int> peakLimits = simpleIntegratorTrimmer(
-    //             colVec,
-    //             apexStarts.at(col),
-    //             stopThresholdFraction
-    //             );
-    //
-    //         for(int row = peakLimits.first; row <= peakLimits.second; row++) {
-    //             matBlockTrimmedColumns.coeffRef(row, col) = colVec.coeff(row);
-    //         }
-    //     }
-    //     return matBlockTrimmedColumns;
-    // }
+    Eigen::MatrixX<float> trimMatrixBlock(
+        const Eigen::MatrixX<float> &matBlock,
+        const QVector<int> &apexStarts,
+        float stopThresholdFraction
+        ) {
+
+        Eigen::MatrixX<float> matBlockTrimmedColumns(matBlock.rows(), matBlock.cols());
+        matBlockTrimmedColumns.setZero();
+
+        for (int col = 0; col < matBlock.cols(); col++) {
+
+            const Eigen::VectorX<float> &colVec = matBlock.col(col);
+            const QPair<int, int> peakLimits = simpleIntegratorTrimmer(
+                colVec,
+                apexStarts.at(col),
+                stopThresholdFraction
+                );
+
+            for(int row = peakLimits.first; row <= peakLimits.second; row++) {
+                matBlockTrimmedColumns.coeffRef(row, col) = colVec.coeff(row);
+            }
+        }
+        return matBlockTrimmedColumns;
+    }
 
     Err findBestAnchorColumn(
         const Eigen::MatrixX<float> &matBlockTrimmed,
@@ -962,7 +987,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const QPair<PeakIntegrationIndexes, Intensity> piiWorking = correctPeakIntegrationForSingleRow(
             pii,
-            matriciesAndVecs.integrationVec
+            matriciesAndVecs.ionCountVec
             );
 
         const int ogPeakLength = piiWorking.first.second - piiWorking.first.first + 1;
@@ -980,7 +1005,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             apexIndexesByColumn
             );
 
-        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.integrationVec.segment(
+        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.ionCountVec.segment(
             piiWorking.first.first,
             piiWorking.first.second - piiWorking.first.first + 1
             ).eval();
@@ -988,16 +1013,16 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
 
         const QVector<int> apexStarts = findStartApexes(matBlockApexes, apexIndex.first);
-        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols()));
+        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols())); ree;
 
         //TODO delete
-        // const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
-        //     matBlock,
-        //     apexStarts,
-        //     m_pythiaParameters.stopThresholdFraction
-        //     );
+        const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
+            matBlock,
+            apexStarts,
+            m_pythiaParameters.stopThresholdFraction
+            );
 
-        const Eigen::MatrixX<float> &matBlockTrimmed = matBlock;
+        // const Eigen::MatrixX<float> &matBlockTrimmed = matBlock;
 
         QVector<float> peakCorrelations;
         int bestAnchorColumnIndex = -1;
@@ -1051,12 +1076,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                           ).eval();
 
             //TODO delete
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
-            //     matBlock1p5X,
-            //     apexStarts,
-            //     m_pythiaParameters.stopThresholdFraction
-            //     );
-            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
+                matBlock1p5X,
+                apexStarts,
+                m_pythiaParameters.stopThresholdFraction
+                );
+            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X,
                 bestAnchorColumnIndex,
@@ -1064,12 +1089,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 ); ree;
 
             //TODO delete
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
-            //             matBlock2X,
-            //             apexStarts,
-            //             m_pythiaParameters.stopThresholdFraction
-            //             );
-            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
+            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
+                        matBlock2X,
+                        apexStarts,
+                        m_pythiaParameters.stopThresholdFraction
+                        );
+            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow2X,
                 bestAnchorColumnIndex,

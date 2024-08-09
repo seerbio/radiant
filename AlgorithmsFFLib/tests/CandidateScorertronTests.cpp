@@ -3,8 +3,10 @@
 
 #include "CandidateScores.h"
 #include "CandidateScorertron.h"
+#include "EigenUtils.h"
 #include "MS2Ion.h"
 #include "MsReaderPointerAcc.h"
+#include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
 
@@ -20,6 +22,7 @@ public:
 
 private slots:
     static void initTest();
+    static void integrationDev();
     static void calculateScoresAndOtherStuffTooTest();
 
 private:
@@ -117,7 +120,140 @@ private:
 };
 
 
+namespace {
 
+    Err simpleIntegrator(
+        const Eigen::VectorX<float> &vec,
+        float stopThresholdFraction,
+        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(vec.size() > 0); ree;
+
+        Eigen::VectorX<float> eVec = vec;
+        EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
+
+        const QMap<int, float> vecApexs = EigenUtils::apexes(eVec);
+        if (vecApexs.isEmpty()) {
+            ERR_RETURN
+        }
+
+        Eigen::VectorX<float> apexes =EigenUtils::convertQMapToEigenVector(vecApexs, vecApexs.lastKey() + 1);
+        QVector<QPair<int, float>> apexPairs = EigenUtils::returnTopXIndexAndValues(apexes, vecApexs.size());
+
+        for (const QPair<int, float> &pr : apexPairs) {
+
+            const int apexIndex = pr.first;
+            const float apexValue = pr.second;
+
+            if (MathUtils::tZero(apexValue) || MathUtils::tZero(eVec.coeff(apexIndex))) {
+                continue;
+            }
+
+            const float stopThreshold = apexValue * stopThresholdFraction;
+
+            float rightStopVal = apexValue;
+            int rightStopIndex = apexIndex;
+
+            int rightCurrentIndex = apexIndex;
+            while (rightCurrentIndex < eVec.size()) {
+
+                const float currentValue = eVec.coeff(rightCurrentIndex);
+
+                if (currentValue < stopThreshold) {
+                    rightStopIndex = rightCurrentIndex;
+                    break;
+                }
+
+                if (currentValue < rightStopVal || MathUtils::tSame(currentValue, rightStopVal)) {
+                    rightStopVal = currentValue;
+                    rightStopIndex = rightCurrentIndex;
+                    ++rightCurrentIndex;
+                    continue;
+                }
+
+                break;
+            }
+
+            float leftStopVal = apexValue;
+            int leftStopIndex = apexIndex;
+
+            int leftCurrentIndex = apexIndex;
+            while (leftCurrentIndex < eVec.size()) {
+
+                const float currentValue = eVec(leftCurrentIndex);
+                if (currentValue < stopThreshold) {
+                    leftStopIndex = leftCurrentIndex;
+                    break;
+                }
+
+                if (currentValue < leftStopVal || MathUtils::tSame(currentValue, leftStopVal)) {
+                    leftStopVal = currentValue;
+                    leftStopIndex = leftCurrentIndex;
+                    --leftCurrentIndex;
+                    continue;
+                }
+
+                break;
+            }
+
+            peakIntegrationIndexesVsIntensity->push_back({
+                 {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size() - 1))},
+                 apexValue
+            }
+            );
+
+            for (int i = leftStopIndex; i <= rightStopIndex; i++) {
+                eVec.coeffRef(i) = 0.0;
+            }
+        }
+
+        std::sort(
+            peakIntegrationIndexesVsIntensity->rbegin(),
+            peakIntegrationIndexesVsIntensity->rend(),
+            [](const QPair<PeakIntegrationIndexes, float> &l, const QPair<PeakIntegrationIndexes, float> &r) {
+                return l.second < r.second;
+            }
+            );
+
+        ERR_RETURN
+    }
+
+}//namespace
+void CandidateScorertronTests::integrationDev() {
+
+    QSKIP("For testing");
+
+    ERR_INIT
+
+    const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
+    const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
+    const QString &limitsPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/limits.csv");
+
+    QVector<float> prod;
+    e = ObjectCSVWriters::readVectorFromFile(prodVecPath, &prod);
+    QCOMPARE(e, eNoError);
+
+    QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
+    e = simpleIntegrator(
+        EigenUtils::convertQVectorToEigenVector(prod),
+        0.65f,
+        &peakIntegrationsVsIntensities
+        );
+    QCOMPARE(e, eNoError);
+
+    QVector<QPair<int, int>> limits;
+    for (const auto pr : peakIntegrationsVsIntensities) {
+        limits.push_back(pr.first);
+        qDebug() << pr << pr.first.first << pr.first.second;
+    }
+
+    e = ObjectCSVWriters::writeVectorToFile(limits, limitsPath);
+    QCOMPARE(e, eNoError);
+
+}
 
 void CandidateScorertronTests::initTest() {
 
