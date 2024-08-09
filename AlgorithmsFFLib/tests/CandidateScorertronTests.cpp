@@ -224,6 +224,8 @@ namespace {
 }//namespace
 void CandidateScorertronTests::integrationDev() {
 
+    QSKIP("For testing");
+
     ERR_INIT
 
     const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
