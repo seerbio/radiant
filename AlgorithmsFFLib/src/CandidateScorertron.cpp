@@ -10,6 +10,7 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "IsotopicDistributionBuilder.h"
+#include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 #include "XICPeakManager.h"
@@ -261,6 +262,28 @@ Err CandidateScorertron::calculateScores(
         ms1Averagine,
         candidateScores
         ); ree;
+
+// #define TROUBLE_SHOOT_INTEGRATION
+#ifdef TROUBLE_SHOOT_INTEGRATION
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "TVC(UniMod:4)LPDGSFPSGSEC(UniMod:4)HISGWGVTETGK"
+        && targetDecoyCandidatePair->charge() == 3
+        && !candidateScores->isDecoy
+        ) {
+
+        const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
+        const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
+
+        e = ObjectCSVWriters::writeVectorToFile(
+            EigenUtils::convertEigenVectorToQVector(matriciesAndVecs.intensityVec),
+            intensityVecPath
+            ); ree;
+
+        e = ObjectCSVWriters::writeVectorToFile(
+            EigenUtils::convertEigenVectorToQVector(matriciesAndVecs.productVec),
+            prodVecPath
+            ); ree;
+    }
+#endif
 
     ERR_RETURN
 }
@@ -820,30 +843,30 @@ namespace {
     }
 
     //TODO delete
-    // Eigen::MatrixX<float> trimMatrixBlock(
-    //     const Eigen::MatrixX<float> &matBlock,
-    //     const QVector<int> &apexStarts,
-    //     float stopThresholdFraction
-    //     ) {
-    //
-    //     Eigen::MatrixX<float> matBlockTrimmedColumns(matBlock.rows(), matBlock.cols());
-    //     matBlockTrimmedColumns.setZero();
-    //
-    //     for (int col = 0; col < matBlock.cols(); col++) {
-    //
-    //         const Eigen::VectorX<float> &colVec = matBlock.col(col);
-    //         const QPair<int, int> peakLimits = simpleIntegratorTrimmer(
-    //             colVec,
-    //             apexStarts.at(col),
-    //             stopThresholdFraction
-    //             );
-    //
-    //         for(int row = peakLimits.first; row <= peakLimits.second; row++) {
-    //             matBlockTrimmedColumns.coeffRef(row, col) = colVec.coeff(row);
-    //         }
-    //     }
-    //     return matBlockTrimmedColumns;
-    // }
+    Eigen::MatrixX<float> trimMatrixBlock(
+        const Eigen::MatrixX<float> &matBlock,
+        const QVector<int> &apexStarts,
+        float stopThresholdFraction
+        ) {
+
+        Eigen::MatrixX<float> matBlockTrimmedColumns(matBlock.rows(), matBlock.cols());
+        matBlockTrimmedColumns.setZero();
+
+        for (int col = 0; col < matBlock.cols(); col++) {
+
+            const Eigen::VectorX<float> &colVec = matBlock.col(col);
+            const QPair<int, int> peakLimits = simpleIntegratorTrimmer(
+                colVec,
+                apexStarts.at(col),
+                stopThresholdFraction
+                );
+
+            for(int row = peakLimits.first; row <= peakLimits.second; row++) {
+                matBlockTrimmedColumns.coeffRef(row, col) = colVec.coeff(row);
+            }
+        }
+        return matBlockTrimmedColumns;
+    }
 
     Err findBestAnchorColumn(
         const Eigen::MatrixX<float> &matBlockTrimmed,
@@ -993,13 +1016,13 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols())); ree;
 
         //TODO delete
-        // const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
-        //     matBlock,
-        //     apexStarts,
-        //     m_pythiaParameters.stopThresholdFraction
-        //     );
+        const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
+            matBlock,
+            apexStarts,
+            m_pythiaParameters.stopThresholdFraction
+            );
 
-        const Eigen::MatrixX<float> &matBlockTrimmed = matBlock;
+        // const Eigen::MatrixX<float> &matBlockTrimmed = matBlock;
 
         QVector<float> peakCorrelations;
         int bestAnchorColumnIndex = -1;
@@ -1053,12 +1076,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                           ).eval();
 
             //TODO delete
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
-            //     matBlock1p5X,
-            //     apexStarts,
-            //     m_pythiaParameters.stopThresholdFraction
-            //     );
-            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
+                matBlock1p5X,
+                apexStarts,
+                m_pythiaParameters.stopThresholdFraction
+                );
+            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X,
                 bestAnchorColumnIndex,
@@ -1066,12 +1089,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                 ); ree;
 
             //TODO delete
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
-            //             matBlock2X,
-            //             apexStarts,
-            //             m_pythiaParameters.stopThresholdFraction
-            //             );
-            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
+            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
+                        matBlock2X,
+                        apexStarts,
+                        m_pythiaParameters.stopThresholdFraction
+                        );
+            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow2X,
                 bestAnchorColumnIndex,

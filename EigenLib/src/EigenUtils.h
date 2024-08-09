@@ -986,7 +986,7 @@ public:
             const int apexIndex = pr.first;
             const T apexValue = pr.second;
 
-            if (MathUtils::tZero(apexValue)) {
+            if (MathUtils::tZero(apexValue) || MathUtils::tZero(eVec.coeff(apexIndex))) {
                 continue;
             }
 
