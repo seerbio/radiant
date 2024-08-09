@@ -93,6 +93,7 @@ private:
         CandidateScores *candidateScores
         ) const;
 
+
 private:
 
     PythiaParameters m_pythiaParameters;
