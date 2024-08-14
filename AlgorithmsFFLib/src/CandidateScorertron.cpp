@@ -1698,12 +1698,15 @@ Err CandidateScorertron::setCandidateScores(
 
     candidateScores->initFeaturesArray();
 
-    candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(
-        bestCorrelationResult.peakIntegrationIndexes.first
-        + bestCorrelationResult.apexStarts.at(bestCorrelationResult.bestAnchorColumnIndex)
-        );
-    candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(bestCorrelationResult.peakIntegrationIndexes.first);
-    candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(bestCorrelationResult.peakIntegrationIndexes.second);
+    candidateScores->frameIndex = bestCorrelationResult.peakIntegrationIndexes.first
+                                + bestCorrelationResult.apexStarts.at(bestCorrelationResult.bestAnchorColumnIndex);
+
+    candidateScores->frameIndexStart = bestCorrelationResult.peakIntegrationIndexes.first;
+    candidateScores->frameIndexEnd = bestCorrelationResult.peakIntegrationIndexes.second;
+
+    candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndex);
+    candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexStart);
+    candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
 
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);

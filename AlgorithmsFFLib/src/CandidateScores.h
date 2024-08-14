@@ -300,6 +300,9 @@ public:
     QString proteinGroup;
 
     bool isDecoy = false;
+    FrameIndex frameIndex = -1;
+    FrameIndex frameIndexStart = -1;
+    FrameIndex frameIndexEnd = -1;
     ScanNumber scanNumber = -1;
     ScanNumber scanNumberStart = -1;
     ScanNumber scanNumberEnd = -1;
@@ -315,6 +318,8 @@ public:
 
     QVector<float> trapAreas;
     QVector<float> featuresArray;
+    QVector<float> mzInterferences;
+
 //TODO delete
     /**
     * @brief Returns a reference to the features array.

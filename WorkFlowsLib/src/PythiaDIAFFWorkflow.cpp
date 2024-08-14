@@ -17,6 +17,7 @@
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
+#include "QuanTransitionRefinertron.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
 #include "SpectrumCentricMzTargetFrameSearch.h"
@@ -404,6 +405,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
+//TODO delete this after dev is done.
+#define REPORT_ENTRAP
+#ifdef REPORT_ENTRAP
     if (m_pythiaParameters.verbosity > -1) {
         int counter = 0;
         int decoys = 0;
@@ -431,6 +435,27 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 << "| Entrap:" << entrap
                 << "| Entrap%" << entrap / (double)counter;
     }
+#endif
+
+#define TRANSITION_EXCLUSION
+#ifdef TRANSITION_EXCLUSION
+    QElapsedTimer etTrans;
+    etTrans.start();
+
+    QVector<CandidateScores*> candidateScoreClassifierPntrsFDRFiltered = candidateScoreClassifierPntrs;
+    const auto terminator = std::remove_if(
+        candidateScoreClassifierPntrsFDRFiltered.begin(),
+        candidateScoreClassifierPntrsFDRFiltered.end(),
+        [&](const CandidateScores *cs){return cs->isDecoy || cs->qValue >= m_pythiaParameters.percentFDR / 100.0f;}
+        );
+    candidateScoreClassifierPntrsFDRFiltered.erase(terminator, candidateScoreClassifierPntrsFDRFiltered.end());
+
+    constexpr int frameIndexBuffer = 1;
+    QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
+    e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrsFDRFiltered); ree;
+    
+    qDebug() << "Transitions refined in" << etTrans.elapsed();
+#endif
 
     QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
     std::transform(

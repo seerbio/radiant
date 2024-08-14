@@ -46,14 +46,15 @@ Err InterferingCandidatesEliminatomatic::removeInterferingCandidates(
         Eigen::MatrixX<float> mat(rows, cols);
         mat.setZero();
 
-        int top6MzValsFound = 12;
 
         for (int row = 0; row < rows; row++) {
 
             const CandidateScores* cs = scanNumberCandidates.at(row);
 
+            constexpr int top6MzValsFound = 12;
             const QVector<float> top6MzValsFoundArr = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6MzValsFound);
             for (float mz : top6MzValsFoundArr) {
+
                 const int col = static_cast<int>(std::round(mz));
 
                 if (col < 0 || col >= cols) {

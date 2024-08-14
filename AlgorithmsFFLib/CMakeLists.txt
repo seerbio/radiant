@@ -39,6 +39,7 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/QuanTransitionRefinertron.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
         src/SpectrumCentricMzTargetFrameSearch.cpp
@@ -70,6 +71,7 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
+        src/QuanTransitionRefinertron.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h
         src/SpectrumCentricMzTargetFrameSearch.h
