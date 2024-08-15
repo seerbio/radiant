@@ -28,6 +28,7 @@ SET(TEST_CLASSES
         MsReaderPointerAccTests
         ParquetReaderTests
         PythiaParameterReaderTests
+        QuanReaderTests
         )
 
 foreach(class ${TEST_CLASSES})
