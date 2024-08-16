@@ -17,6 +17,7 @@
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
+#include "QuanFileBuilder.h"
 #include "QuanTransitionRefinertron.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
@@ -467,6 +468,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+
+    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    e = QuanFileBuilder::buildQuanFile(
+        candidateScoreClassifierPntrs,
+        m_targetDecoyCandidatePairScoretron.mzTargetKeyVsMsFramePntr(),
+        quanFilePath,
+        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+        ); ree;
 
     ERR_RETURN
 }

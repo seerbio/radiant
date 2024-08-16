@@ -53,6 +53,9 @@ void QuanReaderTests::readWrteTestCombined() {
     qr.scanTimesMz6 = {6.1, 6.2};
     qr.intensityValsMz6 = {666.1, 666.2};
 
+    qr.mzInterferences = {666.1};
+    qr.isDecoy = true;
+
     ERR_INIT
 
     const QString testFilePath = QStringLiteral("test.txt");
@@ -95,6 +98,9 @@ void QuanReaderTests::readWrteTestCombined() {
     QCOMPARE(readRow.intensityValsMz5 , qr.intensityValsMz5);
     QCOMPARE(readRow.scanTimesMz6 , qr.scanTimesMz6);
     QCOMPARE(readRow.intensityValsMz6 , qr.intensityValsMz6);
+    QCOMPARE(readRow.mzInterferences , qr.mzInterferences);
+
+    QCOMPARE(readRow.isDecoy , qr.isDecoy);
 
 }
 

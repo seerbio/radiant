@@ -44,6 +44,9 @@ namespace QuanReaderNamespace {
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString DISC_SCORE = QStringLiteral("discScore");
     const QString Q_VALUE = QStringLiteral("qValue");
+    const QString MZ_INTERF = QStringLiteral("mzInterferences");
+
+    const QString IS_DECOY = QStringLiteral("isDecoy");
 
     const QStringList keysToCheck = {
         PEP_STR_W_MODS,
@@ -69,7 +72,9 @@ namespace QuanReaderNamespace {
         INTENSITY_VALS_MZ6,
         CLASSIFIER_SCORE,
         DISC_SCORE,
-        Q_VALUE
+        Q_VALUE,
+        MZ_INTERF,
+        IS_DECOY
     };
 
 }//namespace
@@ -98,9 +103,13 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
     QVector<float> scanTimesMz6;
     QVector<float> intensityValsMz6;
 
+    QVector<float> mzInterferences;
+
     float classifierScore = -1.0;
     float discScore = -1.0;
     float qValue = -1.0;
+
+    bool isDecoy = false;
 
     QMap<QString, QVariant> map() override {
 
@@ -131,9 +140,13 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
             {INTENSITY_VALS_MZ5, QVariant(qVectorToQByteArray(intensityValsMz5))},
             {INTENSITY_VALS_MZ6, QVariant(qVectorToQByteArray(intensityValsMz6))},
 
+            {MZ_INTERF, QVariant(qVectorToQByteArray(mzInterferences))},
+
             {CLASSIFIER_SCORE, QVariant(classifierScore)},
             {DISC_SCORE, QVariant(discScore)},
             {Q_VALUE, QVariant(qValue)},
+
+            {IS_DECOY, QVariant(isDecoy)}
         };
     }
 
@@ -175,9 +188,13 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
         intensityValsMz5 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ5).toByteArray());
         intensityValsMz6 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ6).toByteArray());
 
+        mzInterferences = bytesArrayToQVector<float>(dataMap.value(MZ_INTERF).toByteArray());
+
         classifierScore = dataMap.value(CLASSIFIER_SCORE).toFloat();
         discScore = dataMap.value(DISC_SCORE).toFloat();
         qValue = dataMap.value(Q_VALUE).toFloat();
+
+        isDecoy = dataMap.value(IS_DECOY).toBool();
 
         ERR_RETURN
     }

@@ -94,6 +94,8 @@ public:
 
     QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
 
+    QMap<MzTargetKey, MsFrame*> mzTargetKeyVsMsFramePntr();
+
     Err reloadTurboXICMS1();
 
 private:
@@ -125,7 +127,7 @@ private:
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     QPair<ScanTime, ScanTime> m_scanTimeMinMax;
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
-    QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFrame;
+    QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
 
 };
