@@ -173,6 +173,10 @@ namespace {
         qr->mzInterferences = cs->mzInterferences;
         qr->isDecoy = cs->isDecoy;
 
+        if (qr->isDecoy) {
+            ERR_RETURN
+        }
+
         Eigen::MatrixX<float> xicMatrix;
         e = buildXICMatrix(indexVsXICPoints, &xicMatrix); ree;
 
@@ -249,6 +253,19 @@ namespace {
                 cs->frameIndexStart,
                 ErrorUtilsParam::ExcludeThreshold
                 ); rree;
+
+            if (cs->isDecoy) {
+                QMap<Index, XICPoints> indexVsXICPointsDecoy;
+                QuanReaderRow quanReaderRowDecoy;
+                e = buildQuanReaderRow(
+                    indexVsXICPointsDecoy,
+                    pi.msFrame,
+                    cs,
+                    &quanReaderRowDecoy
+                ); rree;
+                quanReaderRows.push_back(quanReaderRowDecoy);
+                continue;
+            }
 
             const int peakLength = cs->frameIndexEnd - cs->frameIndexStart;
             const int bufferLength = std::max(1, static_cast<int>(std::round(peakLength / 2.0)));
