@@ -458,6 +458,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     qDebug() << "Transitions refined in" << etTrans.elapsed();
 #endif
 
+// #define WRITE_PYTHIA_DIA
+#ifdef WRITE_PYTHIA_DIA
     QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
     std::transform(
             candidateScoreClassifierPntrs.begin(),
@@ -468,6 +470,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
     e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+#endif
 
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(

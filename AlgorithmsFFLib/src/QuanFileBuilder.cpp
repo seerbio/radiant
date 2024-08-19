@@ -5,16 +5,21 @@
 #include "QuanFileBuilder.h"
 
 #include "CandidateScores.h"
+#include "EigenUtils.h"
 #include "MsFrame.h"
 #include "ParquetReader.h"
 #include "TurboXIC.h"
 #include "TurboXIC2D.h"
 #include "QuanReader.h"
 
+#include "Eigen/Dense"
+
 #include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 
 namespace {
+
+    constexpr int topN = 12;
 
     QMap<MzTargetKey, QVector<CandidateScores*>> buildMzTargetKeyVsCandidateScoresPntrs(
         const QVector<CandidateScores*> &candidateScores
@@ -66,50 +71,80 @@ namespace {
         ERR_RETURN
     }
 
-    Err findBestXICPointsKey(
-        float mzTransition,
-        const QVector<MzHashed> &mzHahsedVec,
-        MzHashed *bestKey
-        ) {
+    QPair<FrameIndex, FrameIndex> findFrameIndexMinMax(const QMap<Index, XICPoints> &indexVsXICPoints) {
 
-        ERR_INIT
+        QPair<FrameIndex, FrameIndex> frameIndexMinMax = {std::numeric_limits<FrameIndex>::max(), 0};
 
-        e = ErrorUtils::isNotEmpty(mzHahsedVec); ree;
+        for (const XICPoints &xicPoints : indexVsXICPoints) {
 
-        const MzHashed mzTransitionHashed
-                = MathUtils::hashDecimal(mzTransition, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+            if (xicPoints.empty()) {
+                continue;
+            }
 
-        const int closestIndex = MathUtils::closest(mzHahsedVec, mzTransitionHashed);
+            const auto minMaxLogic = [](const XICPoint &l, const XICPoint &r) {return l.scanNumber < r.scanNumber;};
 
-        *bestKey = mzHahsedVec.at(closestIndex);
+            const auto frameIndexMinMaxIter = std::minmax_element(
+                xicPoints.begin(),
+                xicPoints.end(),
+                minMaxLogic
+                );
 
-        constexpr int errorCheckDistance = 100;
-        e = ErrorUtils::isTrue(std::abs(*bestKey - mzTransitionHashed) < errorCheckDistance); ree;
+            frameIndexMinMax.first = std::min(frameIndexMinMax.first, frameIndexMinMaxIter.first->scanNumber);
+            frameIndexMinMax.second = std::max(frameIndexMinMax.second, frameIndexMinMaxIter.second->scanNumber);
+        }
 
-        ERR_RETURN
+        return frameIndexMinMax;
     }
 
-    Err convertXICPointsToVectors(
-        const XICPoints &xicPoints,
-        MsFrame *msFrame,
-        QVector<float> *intensityVec,
-        QVector<float> *scanTimeVec
+    Err buildXICMatrix(
+        const QMap<Index, XICPoints> &indexVsXICPoints,
+        Eigen::MatrixX<float> *xicMatrix
         ) {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(msFrame->isValid()); ree;
+        e = ErrorUtils::isNotEmpty(indexVsXICPoints); ree;
 
-        for (const XICPoint& xic : xicPoints) {
-            intensityVec->push_back(xic.intensity);
-            scanTimeVec->push_back(msFrame->scanTimeFromFrameIndex(xic.scanNumber));
+        const QPair<FrameIndex, FrameIndex> frameIndexMinMax = findFrameIndexMinMax(indexVsXICPoints);
+
+        e = ErrorUtils::isAboveThreshold(
+            frameIndexMinMax.second,
+            frameIndexMinMax.first,
+            ErrorUtilsParam::IncludeThreshold
+            );
+        if (e != eNoError) {
+            qDebug() << indexVsXICPoints;
+        }; ree;
+
+        const int cols = indexVsXICPoints.size() + 1;
+        const int rows = frameIndexMinMax.second - frameIndexMinMax.first + 1;
+
+        xicMatrix->resize(rows, cols);
+        xicMatrix->setZero();
+
+        QVector<FrameIndex> frameIndexes(rows);
+        std::iota(frameIndexes.begin(), frameIndexes.end(), frameIndexMinMax.first);
+
+        const Eigen::VectorX<float> frameIndexesVec = EigenUtils::convertQVectorToEigenVector(frameIndexes).cast<float>();
+
+        xicMatrix->col(0) = frameIndexesVec;
+
+        for (auto it = indexVsXICPoints.begin(); it != indexVsXICPoints.end(); ++it) {
+
+            const int col = it.key() + 1;
+            const XICPoints &xicPoints = it.value();
+
+            for (const XICPoint &xicPoint : xicPoints) {
+                const int row = xicPoint.scanNumber - frameIndexMinMax.first;
+                xicMatrix->coeffRef(row, col) = xicPoint.intensity;
+            }
         }
 
         ERR_RETURN
     }
 
     Err buildQuanReaderRow(
-        const QHash<MzHashed, XICPoints> &mzHashedVsXICPoints,
+        const QMap<Index, XICPoints> &indexVsXICPoints,
         MsFrame *msFrame,
         const CandidateScores *cs,
         QuanReaderRow *qr
@@ -126,66 +161,73 @@ namespace {
         qr->mzSearched4 = cs->featuresArray[CandidateScores::Features::MzSearched4];
         qr->mzSearched5 = cs->featuresArray[CandidateScores::Features::MzSearched5];
         qr->mzSearched6 = cs->featuresArray[CandidateScores::Features::MzSearched6];
+        qr->mzSearched7 = cs->featuresArray[CandidateScores::Features::MzSearched7];
+        qr->mzSearched8 = cs->featuresArray[CandidateScores::Features::MzSearched8];
+        qr->mzSearched9 = cs->featuresArray[CandidateScores::Features::MzSearched9];
+        qr->mzSearched10 = cs->featuresArray[CandidateScores::Features::MzSearched10];
+        qr->mzSearched11 = cs->featuresArray[CandidateScores::Features::MzSearched11];
+        qr->mzSearched12 = cs->featuresArray[CandidateScores::Features::MzSearched12];
         qr->classifierScore = static_cast<float>(cs->classifierScore);
         qr->discScore = static_cast<float>(cs->discriminantScore);
         qr->qValue = static_cast<float>(cs->qValue);
         qr->mzInterferences = cs->mzInterferences;
+        qr->isDecoy = cs->isDecoy;
 
-        constexpr int top6 = 6;
-        const QVector<float> mzSearched = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
+        Eigen::MatrixX<float> xicMatrix;
+        e = buildXICMatrix(indexVsXICPoints, &xicMatrix); ree;
 
-        const QVector<MzHashed> mzHashedKeysVec = mzHashedVsXICPoints.keys().toVector();
-        for (int i = 0; i < mzSearched.size(); i++) {
+        for (int col = 0; col < xicMatrix.cols(); col++) {
 
-            float mzTransition = mzSearched.at(i);
+            const Eigen::VectorX<float> &matCol = xicMatrix.col(col);
+            const QVector<float> matColVec = EigenUtils::convertEigenVectorToQVector(matCol);
 
-            constexpr float mzMin = 10.0;
-            if (mzTransition < mzMin) {
-                continue;
-            }
-
-            MzHashed mzHashedKey;
-            e = findBestXICPointsKey(mzTransition, mzHashedKeysVec, &mzHashedKey); ree;
-            e = ErrorUtils::contains(mzHashedKey, mzHashedVsXICPoints); ree;
-
-            const XICPoints &xicPoints = mzHashedVsXICPoints.value(mzHashedKey);
-
-            QVector<float> intensityVec;
-            QVector<float> scanTimeVec;
-            e = convertXICPointsToVectors(
-                xicPoints,
-                msFrame,
-                &intensityVec,
-                &scanTimeVec
-            ); ree;
-
-            switch (i){
-                case 0:
-                    qr->intensityValsMz1 = intensityVec;
-                    qr->scanTimesMz1 = scanTimeVec;
-                    break;
-                case 1:
-                    qr->intensityValsMz2 = intensityVec;
-                    qr->scanTimesMz2 = scanTimeVec;
-                    break;
-                case 2:
-                    qr->intensityValsMz3 = intensityVec;
-                    qr->scanTimesMz3 = scanTimeVec;
-                    break;
-                case 3:
-                    qr->intensityValsMz4 = intensityVec;
-                    qr->scanTimesMz4 = scanTimeVec;
-                    break;
-                case 4:
-                    qr->intensityValsMz5 = intensityVec;
-                    qr->scanTimesMz5 = scanTimeVec;
-                    break;
-                case 5:
-                    qr->intensityValsMz6 = intensityVec;
-                    qr->scanTimesMz6 = scanTimeVec;
-                    break;
-                default:
-                    rrr(eValueError);
+            switch (col) {
+            case 0:
+                std::transform(
+                    matColVec.begin(),
+                    matColVec.end(),
+                    std::back_inserter(qr->scanTimes),
+                    [msFrame](float f){return msFrame->scanTimeFromFrameIndex(static_cast<int>(f));}
+                    );
+                break;
+            case 1:
+                qr->intensityValsMz1 = matColVec;
+                break;
+            case 2:
+                qr->intensityValsMz2 = matColVec;
+                break;
+            case 3:
+                qr->intensityValsMz3 = matColVec;
+                break;
+            case 4:
+                qr->intensityValsMz4 = matColVec;
+                break;
+            case 5:
+                qr->intensityValsMz5 = matColVec;
+                break;
+            case 6:
+                qr->intensityValsMz6 = matColVec;
+                break;
+            case 7:
+                qr->intensityValsMz7 = matColVec;
+                break;
+            case 8:
+                qr->intensityValsMz8 = matColVec;
+                break;
+            case 9:
+                qr->intensityValsMz9 = matColVec;
+                break;
+            case 10:
+                qr->intensityValsMz10 = matColVec;
+                break;
+            case 11:
+                qr->intensityValsMz11 = matColVec;
+                break;
+            case 12:
+                qr->intensityValsMz12 = matColVec;
+                break;
+            default:
+                rrr(eValueError)
             }
         }
 
@@ -212,16 +254,15 @@ namespace {
             const int bufferLength = std::max(1, static_cast<int>(std::round(peakLength / 2.0)));
 
             const FrameIndex frameIndexStart = cs->frameIndexStart - bufferLength;
-            const FrameIndex frameIndexEnd = cs->frameIndexStart + bufferLength;
+            const FrameIndex frameIndexEnd = cs->frameIndexEnd + bufferLength;
 
             QVector<MS2Ion> ms2Ions = cs->isDecoy
                             ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
                             : cs->targetDecoyCandidatePair->ms2IonsTarget();
 
-            constexpr int top6 = 6;
-            ms2Ions.resize(std::min(top6, ms2Ions.size()));
+            ms2Ions.resize(std::min(topN, ms2Ions.size()));
 
-            QHash<MzHashed, XICPoints> mzHashedVsXICPoints;
+            QMap<Index, XICPoints> indexVsXICPoints;
 
             for (const MS2Ion &ms2Ion : ms2Ions) {
 
@@ -236,13 +277,23 @@ namespace {
                     static_cast<float>(frameIndexEnd)
                     );
 
-                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                mzHashedVsXICPoints.insert(mzHashed, xicPoints);
+                indexVsXICPoints.insert(indexVsXICPoints.size(), xicPoints);
+            }
+
+            const int xicPointsCount = std::accumulate(
+                indexVsXICPoints.begin(),
+                indexVsXICPoints.end(),
+                0,
+                [](int sum, const XICPoints &x){return sum + x.size();}
+                );
+
+            if(xicPointsCount < 1) {
+                continue;
             }
 
             QuanReaderRow quanReaderRow;
             e = buildQuanReaderRow(
-                mzHashedVsXICPoints,
+                indexVsXICPoints,
                 pi.msFrame,
                 cs,
                 &quanReaderRow

@@ -26,13 +26,14 @@ namespace QuanReaderNamespace {
     const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
     const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
     const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
+    const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
+    const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
+    const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
+    const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
+    const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
+    const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
 
-    const QString SCAN_TIMES_1 = QStringLiteral("scanTimesMz1");
-    const QString SCAN_TIMES_2 = QStringLiteral("scanTimesMz2");
-    const QString SCAN_TIMES_3 = QStringLiteral("scanTimesMz3");
-    const QString SCAN_TIMES_4 = QStringLiteral("scanTimesMz4");
-    const QString SCAN_TIMES_5 = QStringLiteral("scanTimesMz5");
-    const QString SCAN_TIMES_6 = QStringLiteral("scanTimesMz6");
+    const QString SCAN_TIMES = QStringLiteral("scanTimes");
 
     const QString INTENSITY_VALS_MZ1 = QStringLiteral("intensityValsMz1");
     const QString INTENSITY_VALS_MZ2 = QStringLiteral("intensityValsMz2");
@@ -40,6 +41,12 @@ namespace QuanReaderNamespace {
     const QString INTENSITY_VALS_MZ4 = QStringLiteral("intensityValsMz4");
     const QString INTENSITY_VALS_MZ5 = QStringLiteral("intensityValsMz5");
     const QString INTENSITY_VALS_MZ6 = QStringLiteral("intensityValsMz6");
+    const QString INTENSITY_VALS_MZ7 = QStringLiteral("intensityValsMz7");
+    const QString INTENSITY_VALS_MZ8 = QStringLiteral("intensityValsMz8");
+    const QString INTENSITY_VALS_MZ9 = QStringLiteral("intensityValsMz9");
+    const QString INTENSITY_VALS_MZ10 = QStringLiteral("intensityValsMz10");
+    const QString INTENSITY_VALS_MZ11 = QStringLiteral("intensityValsMz11");
+    const QString INTENSITY_VALS_MZ12 = QStringLiteral("intensityValsMz12");
 
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString DISC_SCORE = QStringLiteral("discScore");
@@ -58,12 +65,7 @@ namespace QuanReaderNamespace {
         MZ_SEARCHED_4,
         MZ_SEARCHED_5,
         MZ_SEARCHED_6,
-        SCAN_TIMES_1,
-        SCAN_TIMES_2,
-        SCAN_TIMES_3,
-        SCAN_TIMES_4,
-        SCAN_TIMES_5,
-        SCAN_TIMES_6,
+        SCAN_TIMES,
         INTENSITY_VALS_MZ1,
         INTENSITY_VALS_MZ2,
         INTENSITY_VALS_MZ3,
@@ -90,18 +92,25 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
     float mzSearched4 = -1.0;
     float mzSearched5 = -1.0;
     float mzSearched6 = -1.0;
-    QVector<float> scanTimesMz1;
+    float mzSearched7 = -1.0;
+    float mzSearched8 = -1.0;
+    float mzSearched9 = -1.0;
+    float mzSearched10 = -1.0;
+    float mzSearched11 = -1.0;
+    float mzSearched12 = -1.0;
+    QVector<float> scanTimes;
     QVector<float> intensityValsMz1;
-    QVector<float> scanTimesMz2;
     QVector<float> intensityValsMz2;
-    QVector<float> scanTimesMz3;
     QVector<float> intensityValsMz3;
-    QVector<float> scanTimesMz4;
     QVector<float> intensityValsMz4;
-    QVector<float> scanTimesMz5;
     QVector<float> intensityValsMz5;
-    QVector<float> scanTimesMz6;
     QVector<float> intensityValsMz6;
+    QVector<float> intensityValsMz7;
+    QVector<float> intensityValsMz8;
+    QVector<float> intensityValsMz9;
+    QVector<float> intensityValsMz10;
+    QVector<float> intensityValsMz11;
+    QVector<float> intensityValsMz12;
 
     QVector<float> mzInterferences;
 
@@ -125,13 +134,14 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
             {MZ_SEARCHED_4, QVariant(mzSearched4)},
             {MZ_SEARCHED_5, QVariant(mzSearched5)},
             {MZ_SEARCHED_6, QVariant(mzSearched6)},
+            {MZ_SEARCHED_7, QVariant(mzSearched7)},
+            {MZ_SEARCHED_8, QVariant(mzSearched8)},
+            {MZ_SEARCHED_9, QVariant(mzSearched9)},
+            {MZ_SEARCHED_10, QVariant(mzSearched10)},
+            {MZ_SEARCHED_11, QVariant(mzSearched11)},
+            {MZ_SEARCHED_12, QVariant(mzSearched12)},
 
-            {SCAN_TIMES_1, QVariant(qVectorToQByteArray(scanTimesMz1))},
-            {SCAN_TIMES_2, QVariant(qVectorToQByteArray(scanTimesMz2))},
-            {SCAN_TIMES_3, QVariant(qVectorToQByteArray(scanTimesMz3))},
-            {SCAN_TIMES_4, QVariant(qVectorToQByteArray(scanTimesMz4))},
-            {SCAN_TIMES_5, QVariant(qVectorToQByteArray(scanTimesMz5))},
-            {SCAN_TIMES_6, QVariant(qVectorToQByteArray(scanTimesMz6))},
+            {SCAN_TIMES, QVariant(qVectorToQByteArray(scanTimes))},
 
             {INTENSITY_VALS_MZ1, QVariant(qVectorToQByteArray(intensityValsMz1))},
             {INTENSITY_VALS_MZ2, QVariant(qVectorToQByteArray(intensityValsMz2))},
@@ -139,6 +149,12 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
             {INTENSITY_VALS_MZ4, QVariant(qVectorToQByteArray(intensityValsMz4))},
             {INTENSITY_VALS_MZ5, QVariant(qVectorToQByteArray(intensityValsMz5))},
             {INTENSITY_VALS_MZ6, QVariant(qVectorToQByteArray(intensityValsMz6))},
+            {INTENSITY_VALS_MZ7, QVariant(qVectorToQByteArray(intensityValsMz7))},
+            {INTENSITY_VALS_MZ8, QVariant(qVectorToQByteArray(intensityValsMz8))},
+            {INTENSITY_VALS_MZ9, QVariant(qVectorToQByteArray(intensityValsMz9))},
+            {INTENSITY_VALS_MZ10, QVariant(qVectorToQByteArray(intensityValsMz10))},
+            {INTENSITY_VALS_MZ11, QVariant(qVectorToQByteArray(intensityValsMz11))},
+            {INTENSITY_VALS_MZ12, QVariant(qVectorToQByteArray(intensityValsMz12))},
 
             {MZ_INTERF, QVariant(qVectorToQByteArray(mzInterferences))},
 
@@ -173,13 +189,14 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
         mzSearched4 = dataMap.value(MZ_SEARCHED_4).toFloat();
         mzSearched5 = dataMap.value(MZ_SEARCHED_5).toFloat();
         mzSearched6 = dataMap.value(MZ_SEARCHED_6).toFloat();
+        mzSearched7 = dataMap.value(MZ_SEARCHED_7).toFloat();
+        mzSearched8 = dataMap.value(MZ_SEARCHED_8).toFloat();
+        mzSearched9 = dataMap.value(MZ_SEARCHED_9).toFloat();
+        mzSearched10 = dataMap.value(MZ_SEARCHED_10).toFloat();
+        mzSearched11 = dataMap.value(MZ_SEARCHED_11).toFloat();
+        mzSearched12 = dataMap.value(MZ_SEARCHED_12).toFloat();
 
-        scanTimesMz1 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_1).toByteArray());
-        scanTimesMz2 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_2).toByteArray());
-        scanTimesMz3 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_3).toByteArray());
-        scanTimesMz4 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_4).toByteArray());
-        scanTimesMz5 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_5).toByteArray());
-        scanTimesMz6 = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES_6).toByteArray());
+        scanTimes = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES).toByteArray());
 
         intensityValsMz1 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ1).toByteArray());
         intensityValsMz2 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ2).toByteArray());
@@ -187,6 +204,12 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
         intensityValsMz4 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ4).toByteArray());
         intensityValsMz5 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ5).toByteArray());
         intensityValsMz6 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ6).toByteArray());
+        intensityValsMz7 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ7).toByteArray());
+        intensityValsMz8 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ8).toByteArray());
+        intensityValsMz9 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ9).toByteArray());
+        intensityValsMz10 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ10).toByteArray());
+        intensityValsMz11 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ11).toByteArray());
+        intensityValsMz12 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ12).toByteArray());
 
         mzInterferences = bytesArrayToQVector<float>(dataMap.value(MZ_INTERF).toByteArray());
 
