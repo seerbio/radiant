@@ -63,6 +63,8 @@ namespace PythiaParameterReaderConstants {
     const QString kSkipScanCount = QStringLiteral("skipScanCount");
 
     const QString kRtBinning = QStringLiteral("rtBinning");
+
+    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -104,6 +106,7 @@ Err PythiaParameterReader::buildPythiaParameters(
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
                                   : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
+    pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(false);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
     pythiaParameters->chargeStateMin = libraryNode[kChargeStateMin.toStdString()].value_or(0);

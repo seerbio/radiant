@@ -39,6 +39,8 @@ SET(SOURCE_FILES
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/QuanFileBuilder.cpp
+        src/QuanTransitionRefinertron.cpp
         src/QValueSettertron.cpp
         src/SequenceSubstringSearchomatic.cpp
         src/SpectrumCentricMzTargetFrameSearch.cpp
@@ -46,6 +48,7 @@ SET(SOURCE_FILES
         src/TargetDecoyCandidatePairManager.cpp
         src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
+        src/TurboXIC2D.cpp
         src/XICPeakManager.cpp
         src/XYMappermatic.cpp
 )
@@ -70,6 +73,8 @@ SET(HEADER_FILES
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
+        src/QuanFileBuilder.h
+        src/QuanTransitionRefinertron.h
         src/QValueSettertron.h
         src/SequenceSubstringSearchomatic.h
         src/SpectrumCentricMzTargetFrameSearch.h
@@ -77,6 +82,7 @@ SET(HEADER_FILES
         src/TargetDecoyCandidatePairManager.h
         src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
+        src/TurboXIC2D.h
         src/XICPeakManager.h
         src/XYMappermatic.h
 )

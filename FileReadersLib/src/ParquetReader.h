@@ -20,7 +20,7 @@ struct FILEREADERSLIB_EXPORTS ParquetReaderInputBase {
 public:
 
     ParquetReaderInputBase() = default;
-    ~ParquetReaderInputBase() = default;
+    virtual ~ParquetReaderInputBase() = default;
 
     /**
     * @brief returns a collection of key/value pairs that store the information to be written.

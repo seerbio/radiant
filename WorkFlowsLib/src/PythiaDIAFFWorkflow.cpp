@@ -17,6 +17,8 @@
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
+#include "QuanFileBuilder.h"
+#include "QuanTransitionRefinertron.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
 #include "SpectrumCentricMzTargetFrameSearch.h"
@@ -397,51 +399,81 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
-    e = updateProteinGroupAnnotation(
-            m_fastaUri,
-            &candidateScoreClassifierPntrs
-            ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
+    if (m_pythiaParameters.writePythiaDIA) {
 
-    if (m_pythiaParameters.verbosity > -1) {
-        int counter = 0;
-        int decoys = 0;
-        int entrap = 0;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
+        e = updateProteinGroupAnnotation(
+                m_fastaUri,
+                &candidateScoreClassifierPntrs
+                ); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
-        for (CandidateScores *cs : candidateScoreClassifierPntrs) {
-            counter++;
+        QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
+        std::transform(
+                candidateScoreClassifierPntrs.begin(),
+                candidateScoreClassifierPntrs.end(),
+                std::back_inserter(candidateScoreReaderRows),
+                [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+                );
 
-            if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
-                entrap++;
+        const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+        e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+
+//TODO delete this after dev is done.
+#define REPORT_ENTRAP
+#ifdef REPORT_ENTRAP
+        if (m_pythiaParameters.verbosity > -1) {
+            int counter = 0;
+            int decoys = 0;
+            int entrap = 0;
+
+            for (CandidateScores *cs : candidateScoreClassifierPntrs) {
+                counter++;
+
+                if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
+                    entrap++;
+                }
+
+                if (cs->isDecoy) {
+                    decoys++;
+                }
+                if (decoys/static_cast<double>(counter) >= 0.01) {
+                    break;
+                }
+
             }
-
-            if (cs->isDecoy) {
-                decoys++;
-            }
-            if (decoys/static_cast<double>(counter) >= 0.01) {
-                break;
-            }
-
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                    << "Alt:" << targetCountBelowFDRThresholdOnePercent
+                    << "| Counter:" << counter
+                    << "| Decoys:" <<  decoys
+                    << "| Entrap:" << entrap
+                    << "| Entrap%" << entrap / (double)counter;
         }
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "Alt:" << targetCountBelowFDRThresholdOnePercent
-                << "| Counter:" << counter
-                << "| Decoys:" <<  decoys
-                << "| Entrap:" << entrap
-                << "| Entrap%" << entrap / (double)counter;
+#endif
     }
 
-    QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
-    std::transform(
-            candidateScoreClassifierPntrs.begin(),
-            candidateScoreClassifierPntrs.end(),
-            std::back_inserter(candidateScoreReaderRows),
-            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
-            );
+    QElapsedTimer etTrans;
+    etTrans.start();
+    QVector<CandidateScores*> candidateScoreClassifierPntrsFDRFiltered = candidateScoreClassifierPntrs;
+    const auto terminator = std::remove_if(
+        candidateScoreClassifierPntrsFDRFiltered.begin(),
+        candidateScoreClassifierPntrsFDRFiltered.end(),
+        [&](const CandidateScores *cs){return cs->isDecoy || cs->qValue >= m_pythiaParameters.percentFDR / 100.0f;}
+        );
+    candidateScoreClassifierPntrsFDRFiltered.erase(terminator, candidateScoreClassifierPntrsFDRFiltered.end());
 
-    const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-    e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+    constexpr int frameIndexBuffer = 1;
+    QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
+    e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrsFDRFiltered); ree;
+    qDebug() << "Transitions refined in" << etTrans.elapsed();
+
+    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    e = QuanFileBuilder::buildQuanFile(
+        candidateScoreClassifierPntrs,
+        m_targetDecoyCandidatePairScoretron.mzTargetKeyVsMsFramePntr(),
+        quanFilePath,
+        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+        ); ree;
 
     ERR_RETURN
 }

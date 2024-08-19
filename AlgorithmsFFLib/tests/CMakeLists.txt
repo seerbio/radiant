@@ -28,12 +28,14 @@ SET(TEST_CLASSES
         MsFrameTests
         MsUtilsTests
         PeakIntegratomaticTests
+        QuanTransitionRefinertronTests
         QValueSettertronTests
         SequenceSubstringSearchomaticTests
         TargetDecoyCandidatePairManagerTests
         TargetDecoyCandidatePairScoretronTests
         TargetDecoyCandidatePairTests
         TurboXICTests
+        TurboXIC2DTests
         XICPeakManagerTests
         XYMappermaticTests
 )
