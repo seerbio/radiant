@@ -63,6 +63,8 @@ namespace PythiaParameterReaderConstants {
 
     extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
 
+    extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
+
 }
 
 struct PythiaParameters{
@@ -70,6 +72,7 @@ struct PythiaParameters{
     //[General]
     int threadCount = 8;
     int verbosity = 0;
+    bool writePythiaDIA = false;
 
     //[LibraryParams]
     int chargeStateMin = -1;
