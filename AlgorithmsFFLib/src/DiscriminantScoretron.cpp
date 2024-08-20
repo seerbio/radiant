@@ -11,78 +11,6 @@
 
 #include "EigenUtils.h"
 
-namespace {
-
-    struct BuildClassiferParallelInput {
-        QVector<ScoresTargets*> scoresTargets;
-        QVector<ScoresDecoys*> scoresDecoys;
-    };
-
-    struct BuildClassifierParallelOutput {
-        QVector<QVector<float>> A;
-        QVector<float> b;
-    };
-
-    QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel2(
-            const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &pairs
-            ) {
-
-        ERR_INIT
-
-        BuildClassifierParallelOutput output;
-
-        const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped = ParallelUtils::unZip(pairs);
-
-        const QVector<QVector<float>*> &scoresTargetsPntrs = unzipped.first;
-        const QVector<QVector<float>*> &scoresDecoysPntrs = unzipped.second;
-
-        e = ClassifierWeightsManager::buildDataClassifier2(
-                scoresTargetsPntrs,
-                scoresDecoysPntrs,
-                &output.A,
-                &output.b
-        ); rree;
-
-        return {e, output};
-    }
-
-    Err processParallelResults(
-            const QPair<Err, BuildClassifierParallelOutput> &result,
-            int inputsSize,
-            QVector<QVector<float>> *A,
-            QVector<float> *b
-    ) {
-
-        ERR_INIT
-        e = result.first; ree;
-
-        const QVector<QVector<float>> &ALocal = result.second.A;
-        const QVector<float> bLocal = result.second.b;
-
-        if (A->isEmpty() || b->isEmpty()) {
-            A->resize(ALocal.size());
-            for(int row = 0; row < A->size(); row++) {
-                QVector<float> v(ALocal.front().size(), 0.0);
-                (*A)[row] = v;
-            }
-            b->resize(bLocal.size());
-        }
-
-        for (int row = 0; row < A->size(); row++) {
-            for (int col = 0; col < A->front().size(); col++) {
-                (*A)[row][col] += ALocal[row][col] / static_cast<float>(inputsSize);
-            }
-        }
-
-        for (int row = 0; row < bLocal.size(); row++) {
-            (*b)[row] += bLocal[row] / static_cast<float>(inputsSize);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-
 
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
@@ -100,29 +28,17 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     weights->clear();
 
-    QVector<QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>>> targetDecoyCandidateScoresPairTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            targetDecoyCandidateScoresPair,
-            threadCount,
-            &targetDecoyCandidateScoresPairTranched
-            ); ree;
-
-    QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
-            targetDecoyCandidateScoresPairTranched,
-            buildClassifierDataParallel2
-    );
-    futures.waitForFinished();
+    const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped
+                                                        = ParallelUtils::unZip(targetDecoyCandidateScoresPair);
 
     QVector<QVector<float>> A;
     QVector<float> b;
-    for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
-        e = processParallelResults(
-                result,
-                targetDecoyCandidateScoresPairTranched.size(),
-                &A,
-                &b
+    e = ClassifierWeightsManager::buildDataClassifier2(
+        unzipped.first,
+        unzipped.second,
+        &A,
+        &b
         ); ree;
-    }
 
     e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
 
