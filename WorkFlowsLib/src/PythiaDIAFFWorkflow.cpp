@@ -465,7 +465,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     constexpr int frameIndexBuffer = 1;
     QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
     e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrsFDRFiltered); ree;
-    qDebug() << "Transitions refined in" << etTrans.elapsed();
 
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(
