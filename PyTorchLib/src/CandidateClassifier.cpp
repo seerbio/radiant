@@ -165,8 +165,10 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     if (torch::cuda::is_available()) {
         qDebug() << "CUDA IS AVAILABLE";
         torch::cuda::manual_seed_all(seed);
+        torch::globalContext().setDeterministicCuDNN(true);
+        torch::globalContext().setBenchmarkCuDNN(false);
     }
-    torch::globalContext().setDeterministicCuDNN(true);
+
     torch::set_num_threads(1);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
