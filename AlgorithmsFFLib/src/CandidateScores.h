@@ -100,30 +100,6 @@ public:
         ShadowsIntensityRatio10,
         ShadowsIntensityRatio11,
         ShadowsIntensityRatio12,
-        MzSearched1,//70
-        MzSearched2,
-        MzSearched3,
-        MzSearched4,
-        MzSearched5,
-        MzSearched6,
-        MzSearched7,
-        MzSearched8,
-        MzSearched9,
-        MzSearched10,
-        MzSearched11,//80
-        MzSearched12,
-        TheoIntensity1,
-        TheoIntensity2,
-        TheoIntensity3,
-        TheoIntensity4,
-        TheoIntensity5,
-        TheoIntensity6,
-        TheoIntensity7,
-        TheoIntensity8,
-        TheoIntensity9,//90
-        TheoIntensity10,
-        TheoIntensity11,
-        TheoIntensity12,
         MzFoundMean1,
         MzFoundMean2,
         MzFoundMean3,
@@ -160,18 +136,6 @@ public:
         MzPeakLengthsNorm10,
         MzPeakLengthsNorm11,
         MzPeakLengthsNorm12,
-        ColumnApexIndexRatiosToAnchor1,//130
-        ColumnApexIndexRatiosToAnchor2,
-        ColumnApexIndexRatiosToAnchor3,
-        ColumnApexIndexRatiosToAnchor4,
-        ColumnApexIndexRatiosToAnchor5,
-        ColumnApexIndexRatiosToAnchor6,
-        ColumnApexIndexRatiosToAnchor7,
-        ColumnApexIndexRatiosToAnchor8,
-        ColumnApexIndexRatiosToAnchor9,
-        ColumnApexIndexRatiosToAnchor10,
-        ColumnApexIndexRatiosToAnchor11,//140
-        ColumnApexIndexRatiosToAnchor12,
         AminoAcidCountA,
         AminoAcidCountC,
         AminoAcidCountD,
@@ -416,30 +380,6 @@ namespace CandidateScoresReaderRowNamespace {
     const QString SHAD_INTS_RATIO_10 = QStringLiteral("ShadowsIntensityRatio10");
     const QString SHAD_INTS_RATIO_11 = QStringLiteral("ShadowsIntensityRatio11");
     const QString SHAD_INTS_RATIO_12 = QStringLiteral("ShadowsIntensityRatio12");
-    const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
-    const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
-    const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
-    const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
-    const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
-    const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
-    const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
-    const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
-    const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
-    const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
-    const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
-    const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
-    const QString THEO_INTS_1 = QStringLiteral("TheoIntensity1");
-    const QString THEO_INTS_2 = QStringLiteral("TheoIntensity2");
-    const QString THEO_INTS_3 = QStringLiteral("TheoIntensity3");
-    const QString THEO_INTS_4 = QStringLiteral("TheoIntensity4");
-    const QString THEO_INTS_5 = QStringLiteral("TheoIntensity5");
-    const QString THEO_INTS_6 = QStringLiteral("TheoIntensity6");
-    const QString THEO_INTS_7 = QStringLiteral("TheoIntensity7");
-    const QString THEO_INTS_8 = QStringLiteral("TheoIntensity8");
-    const QString THEO_INTS_9 = QStringLiteral("TheoIntensity9");
-    const QString THEO_INTS_10 = QStringLiteral("TheoIntensity10");
-    const QString THEO_INTS_11 = QStringLiteral("TheoIntensity11");
-    const QString THEO_INTS_12 = QStringLiteral("TheoIntensity12");
     const QString MZ_FND_MEAN_1 = QStringLiteral("MzFoundMean1");
     const QString MZ_FND_MEAN_2 = QStringLiteral("MzFoundMean2");
     const QString MZ_FND_MEAN_3 = QStringLiteral("MzFoundMean3");
@@ -476,18 +416,6 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MZ_PK_LEN_NORM_10 = QStringLiteral("MzPeakLengthsNorm10");
     const QString MZ_PK_LEN_NORM_11 = QStringLiteral("MzPeakLengthsNorm11");
     const QString MZ_PK_LEN_NORM_12 = QStringLiteral("MzPeakLengthsNorm12");
-    const QString COL_APX_IND_RATIO_TO_ANCH_1 = QStringLiteral("ColumnApexIndexRatiosToAnchor1");
-    const QString COL_APX_IND_RATIO_TO_ANCH_2 = QStringLiteral("ColumnApexIndexRatiosToAnchor2");
-    const QString COL_APX_IND_RATIO_TO_ANCH_3 = QStringLiteral("ColumnApexIndexRatiosToAnchor3");
-    const QString COL_APX_IND_RATIO_TO_ANCH_4 = QStringLiteral("ColumnApexIndexRatiosToAnchor4");
-    const QString COL_APX_IND_RATIO_TO_ANCH_5 = QStringLiteral("ColumnApexIndexRatiosToAnchor5");
-    const QString COL_APX_IND_RATIO_TO_ANCH_6 = QStringLiteral("ColumnApexIndexRatiosToAnchor6");
-    const QString COL_APX_IND_RATIO_TO_ANCH_7 = QStringLiteral("ColumnApexIndexRatiosToAnchor7");
-    const QString COL_APX_IND_RATIO_TO_ANCH_8 = QStringLiteral("ColumnApexIndexRatiosToAnchor8");
-    const QString COL_APX_IND_RATIO_TO_ANCH_9 = QStringLiteral("ColumnApexIndexRatiosToAnchor9");
-    const QString COL_APX_IND_RATIO_TO_ANCH_10 = QStringLiteral("ColumnApexIndexRatiosToAnchor10");
-    const QString COL_APX_IND_RATIO_TO_ANCH_11 = QStringLiteral("ColumnApexIndexRatiosToAnchor11");
-    const QString COL_APX_IND_RATIO_TO_ANCH_12 = QStringLiteral("ColumnApexIndexRatiosToAnchor12");
     const QString AA_A = QStringLiteral("AminoAcidCountA");
     const QString AA_C = QStringLiteral("AminoAcidCountC");
     const QString AA_D = QStringLiteral("AminoAcidCountD");
@@ -701,30 +629,6 @@ namespace CandidateScoresReaderRowNamespace {
             SHAD_INTS_RATIO_10,
             SHAD_INTS_RATIO_11,
             SHAD_INTS_RATIO_12,
-            MZ_SEARCHED_1,
-            MZ_SEARCHED_2,
-            MZ_SEARCHED_3,
-            MZ_SEARCHED_4,
-            MZ_SEARCHED_5,
-            MZ_SEARCHED_6,
-            MZ_SEARCHED_7,
-            MZ_SEARCHED_8,
-            MZ_SEARCHED_9,
-            MZ_SEARCHED_10,
-            MZ_SEARCHED_11,
-            MZ_SEARCHED_12,
-            THEO_INTS_1,
-            THEO_INTS_2,
-            THEO_INTS_3,
-            THEO_INTS_4,
-            THEO_INTS_5,
-            THEO_INTS_6,
-            THEO_INTS_7,
-            THEO_INTS_8,
-            THEO_INTS_9,
-            THEO_INTS_10,
-            THEO_INTS_11,
-            THEO_INTS_12,
             MZ_FND_MEAN_1,
             MZ_FND_MEAN_2,
             MZ_FND_MEAN_3,
@@ -761,18 +665,6 @@ namespace CandidateScoresReaderRowNamespace {
             MZ_PK_LEN_NORM_10,
             MZ_PK_LEN_NORM_11,
             MZ_PK_LEN_NORM_12,
-            COL_APX_IND_RATIO_TO_ANCH_1,
-            COL_APX_IND_RATIO_TO_ANCH_2,
-            COL_APX_IND_RATIO_TO_ANCH_3,
-            COL_APX_IND_RATIO_TO_ANCH_4,
-            COL_APX_IND_RATIO_TO_ANCH_5,
-            COL_APX_IND_RATIO_TO_ANCH_6,
-            COL_APX_IND_RATIO_TO_ANCH_7,
-            COL_APX_IND_RATIO_TO_ANCH_8,
-            COL_APX_IND_RATIO_TO_ANCH_9,
-            COL_APX_IND_RATIO_TO_ANCH_10,
-            COL_APX_IND_RATIO_TO_ANCH_11,
-            COL_APX_IND_RATIO_TO_ANCH_12,
             AA_A,
             AA_C,
             AA_D,
@@ -973,30 +865,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float shadowsIntensityRatio10 = -1.0;
     float shadowsIntensityRatio11 = -1.0;
     float shadowsIntensityRatio12 = -1.0;
-    float mzSearched1 = -1.0;
-    float mzSearched2 = -1.0;
-    float mzSearched3 = -1.0;
-    float mzSearched4 = -1.0;
-    float mzSearched5 = -1.0;
-    float mzSearched6 = -1.0;
-    float mzSearched7 = -1.0;
-    float mzSearched8 = -1.0;
-    float mzSearched9 = -1.0;
-    float mzSearched10 = -1.0;
-    float mzSearched11 = -1.0;
-    float mzSearched12 = -1.0;
-    float theoIntensity1 = -1.0;
-    float theoIntensity2 = -1.0;
-    float theoIntensity3 = -1.0;
-    float theoIntensity4 = -1.0;
-    float theoIntensity5 = -1.0;
-    float theoIntensity6 = -1.0;
-    float theoIntensity7 = -1.0;
-    float theoIntensity8 = -1.0;
-    float theoIntensity9 = -1.0;
-    float theoIntensity10 = -1.0;
-    float theoIntensity11 = -1.0;
-    float theoIntensity12 = -1.0;
     float mzFoundMean1 = -1.0;
     float mzFoundMean2 = -1.0;
     float mzFoundMean3 = -1.0;
@@ -1033,18 +901,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzPeakLengthsNorm10 = -1.0;
     float mzPeakLengthsNorm11 = -1.0;
     float mzPeakLengthsNorm12 = -1.0;
-    float columnApexIndexRatiosToAnchor1 = -1.0;
-    float columnApexIndexRatiosToAnchor2 = -1.0;
-    float columnApexIndexRatiosToAnchor3 = -1.0;
-    float columnApexIndexRatiosToAnchor4 = -1.0;
-    float columnApexIndexRatiosToAnchor5 = -1.0;
-    float columnApexIndexRatiosToAnchor6 = -1.0;
-    float columnApexIndexRatiosToAnchor7 = -1.0;
-    float columnApexIndexRatiosToAnchor8 = -1.0;
-    float columnApexIndexRatiosToAnchor9 = -1.0;
-    float columnApexIndexRatiosToAnchor10 = -1.0;
-    float columnApexIndexRatiosToAnchor11 = -1.0;
-    float columnApexIndexRatiosToAnchor12 = -1.0;
     float aminoAcidCountA = -1.0;
     float aminoAcidCountC = -1.0;
     float aminoAcidCountD = -1.0;
@@ -1272,30 +1128,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         shadowsIntensityRatio10 = dataMap.value(SHAD_INTS_RATIO_10).toFloat();
         shadowsIntensityRatio11 = dataMap.value(SHAD_INTS_RATIO_11).toFloat();
         shadowsIntensityRatio12 = dataMap.value(SHAD_INTS_RATIO_12).toFloat();
-        mzSearched1 = dataMap.value(MZ_SEARCHED_1).toFloat();
-        mzSearched2 = dataMap.value(MZ_SEARCHED_2).toFloat();
-        mzSearched3 = dataMap.value(MZ_SEARCHED_3).toFloat();
-        mzSearched4 = dataMap.value(MZ_SEARCHED_4).toFloat();
-        mzSearched5 = dataMap.value(MZ_SEARCHED_5).toFloat();
-        mzSearched6 = dataMap.value(MZ_SEARCHED_6).toFloat();
-        mzSearched7 = dataMap.value(MZ_SEARCHED_7).toFloat();
-        mzSearched8 = dataMap.value(MZ_SEARCHED_8).toFloat();
-        mzSearched9 = dataMap.value(MZ_SEARCHED_9).toFloat();
-        mzSearched10 = dataMap.value(MZ_SEARCHED_10).toFloat();
-        mzSearched11 = dataMap.value(MZ_SEARCHED_11).toFloat();
-        mzSearched12 = dataMap.value(MZ_SEARCHED_12).toFloat();
-        theoIntensity1 = dataMap.value(THEO_INTS_1).toFloat();
-        theoIntensity2 = dataMap.value(THEO_INTS_2).toFloat();
-        theoIntensity3 = dataMap.value(THEO_INTS_3).toFloat();
-        theoIntensity4 = dataMap.value(THEO_INTS_4).toFloat();
-        theoIntensity5 = dataMap.value(THEO_INTS_5).toFloat();
-        theoIntensity6 = dataMap.value(THEO_INTS_6).toFloat();
-        theoIntensity7 = dataMap.value(THEO_INTS_7).toFloat();
-        theoIntensity8 = dataMap.value(THEO_INTS_8).toFloat();
-        theoIntensity9 = dataMap.value(THEO_INTS_9).toFloat();
-        theoIntensity10 = dataMap.value(THEO_INTS_10).toFloat();
-        theoIntensity11 = dataMap.value(THEO_INTS_11).toFloat();
-        theoIntensity12 = dataMap.value(THEO_INTS_12).toFloat();
         mzFoundMean1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
         mzFoundMean2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
         mzFoundMean3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
@@ -1332,18 +1164,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         mzPeakLengthsNorm10 = dataMap.value(MZ_PK_LEN_NORM_10).toFloat();
         mzPeakLengthsNorm11 = dataMap.value(MZ_PK_LEN_NORM_11).toFloat();
         mzPeakLengthsNorm12 = dataMap.value(MZ_PK_LEN_NORM_12).toFloat();
-        columnApexIndexRatiosToAnchor1 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_1).toFloat();
-        columnApexIndexRatiosToAnchor2 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_2).toFloat();
-        columnApexIndexRatiosToAnchor3 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_3).toFloat();
-        columnApexIndexRatiosToAnchor4 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_4).toFloat();
-        columnApexIndexRatiosToAnchor5 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_5).toFloat();
-        columnApexIndexRatiosToAnchor6 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_6).toFloat();
-        columnApexIndexRatiosToAnchor7 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_7).toFloat();
-        columnApexIndexRatiosToAnchor8 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_8).toFloat();
-        columnApexIndexRatiosToAnchor9 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_9).toFloat();
-        columnApexIndexRatiosToAnchor10 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_10).toFloat();
-        columnApexIndexRatiosToAnchor11 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_11).toFloat();
-        columnApexIndexRatiosToAnchor12 = dataMap.value(COL_APX_IND_RATIO_TO_ANCH_12).toFloat();
         aminoAcidCountA = dataMap.value(AA_A).toFloat();
         aminoAcidCountC = dataMap.value(AA_C).toFloat();
         aminoAcidCountD = dataMap.value(AA_D).toFloat();
@@ -1549,30 +1369,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {SHAD_INTS_RATIO_10, QVariant(shadowsIntensityRatio10)},
                 {SHAD_INTS_RATIO_11, QVariant(shadowsIntensityRatio11)},
                 {SHAD_INTS_RATIO_12, QVariant(shadowsIntensityRatio12)},
-                {MZ_SEARCHED_1, QVariant(mzSearched1)},
-                {MZ_SEARCHED_2, QVariant(mzSearched2)},
-                {MZ_SEARCHED_3, QVariant(mzSearched3)},
-                {MZ_SEARCHED_4, QVariant(mzSearched4)},
-                {MZ_SEARCHED_5, QVariant(mzSearched5)},
-                {MZ_SEARCHED_6, QVariant(mzSearched6)},
-                {MZ_SEARCHED_7, QVariant(mzSearched7)},
-                {MZ_SEARCHED_8, QVariant(mzSearched8)},
-                {MZ_SEARCHED_9, QVariant(mzSearched9)},
-                {MZ_SEARCHED_10, QVariant(mzSearched10)},
-                {MZ_SEARCHED_11, QVariant(mzSearched11)},
-                {MZ_SEARCHED_12, QVariant(mzSearched12)},
-                {THEO_INTS_1, QVariant(theoIntensity1)},
-                {THEO_INTS_2, QVariant(theoIntensity2)},
-                {THEO_INTS_3, QVariant(theoIntensity3)},
-                {THEO_INTS_4, QVariant(theoIntensity4)},
-                {THEO_INTS_5, QVariant(theoIntensity5)},
-                {THEO_INTS_6, QVariant(theoIntensity6)},
-                {THEO_INTS_7, QVariant(theoIntensity7)},
-                {THEO_INTS_8, QVariant(theoIntensity8)},
-                {THEO_INTS_9, QVariant(theoIntensity9)},
-                {THEO_INTS_10, QVariant(theoIntensity10)},
-                {THEO_INTS_11, QVariant(theoIntensity11)},
-                {THEO_INTS_12, QVariant(theoIntensity12)},
                 {MZ_FND_MEAN_1, QVariant(mzFoundMean1)},
                 {MZ_FND_MEAN_2, QVariant(mzFoundMean2)},
                 {MZ_FND_MEAN_3, QVariant(mzFoundMean3)},
@@ -1609,18 +1405,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MZ_PK_LEN_NORM_10, QVariant(mzPeakLengthsNorm10)},
                 {MZ_PK_LEN_NORM_11, QVariant(mzPeakLengthsNorm11)},
                 {MZ_PK_LEN_NORM_12, QVariant(mzPeakLengthsNorm12)},
-                {COL_APX_IND_RATIO_TO_ANCH_1, QVariant(columnApexIndexRatiosToAnchor1)},
-                {COL_APX_IND_RATIO_TO_ANCH_2, QVariant(columnApexIndexRatiosToAnchor2)},
-                {COL_APX_IND_RATIO_TO_ANCH_3, QVariant(columnApexIndexRatiosToAnchor3)},
-                {COL_APX_IND_RATIO_TO_ANCH_4, QVariant(columnApexIndexRatiosToAnchor4)},
-                {COL_APX_IND_RATIO_TO_ANCH_5, QVariant(columnApexIndexRatiosToAnchor5)},
-                {COL_APX_IND_RATIO_TO_ANCH_6, QVariant(columnApexIndexRatiosToAnchor6)},
-                {COL_APX_IND_RATIO_TO_ANCH_7, QVariant(columnApexIndexRatiosToAnchor7)},
-                {COL_APX_IND_RATIO_TO_ANCH_8, QVariant(columnApexIndexRatiosToAnchor8)},
-                {COL_APX_IND_RATIO_TO_ANCH_9, QVariant(columnApexIndexRatiosToAnchor9)},
-                {COL_APX_IND_RATIO_TO_ANCH_10, QVariant(columnApexIndexRatiosToAnchor10)},
-                {COL_APX_IND_RATIO_TO_ANCH_11, QVariant(columnApexIndexRatiosToAnchor11)},
-                {COL_APX_IND_RATIO_TO_ANCH_12, QVariant(columnApexIndexRatiosToAnchor12)},
                 {AA_A, QVariant(aminoAcidCountA)},
                 {AA_C, QVariant(aminoAcidCountC)},
                 {AA_D, QVariant(aminoAcidCountD)},
@@ -1837,30 +1621,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.shadowsIntensityRatio10 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio10],
         row.shadowsIntensityRatio11 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio11],
         row.shadowsIntensityRatio12 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio12],
-        row.mzSearched1 = candidateScores->featuresArray[CandidateScores::Features::MzSearched1],
-        row.mzSearched2 = candidateScores->featuresArray[CandidateScores::Features::MzSearched2],
-        row.mzSearched3 = candidateScores->featuresArray[CandidateScores::Features::MzSearched3],
-        row.mzSearched4 = candidateScores->featuresArray[CandidateScores::Features::MzSearched4],
-        row.mzSearched5 = candidateScores->featuresArray[CandidateScores::Features::MzSearched5],
-        row.mzSearched6 = candidateScores->featuresArray[CandidateScores::Features::MzSearched6],
-        row.mzSearched7 = candidateScores->featuresArray[CandidateScores::Features::MzSearched7],
-        row.mzSearched8 = candidateScores->featuresArray[CandidateScores::Features::MzSearched8],
-        row.mzSearched9 = candidateScores->featuresArray[CandidateScores::Features::MzSearched9],
-        row.mzSearched10 = candidateScores->featuresArray[CandidateScores::Features::MzSearched10],
-        row.mzSearched11 = candidateScores->featuresArray[CandidateScores::Features::MzSearched11],
-        row.mzSearched12 = candidateScores->featuresArray[CandidateScores::Features::MzSearched12],
-        row.theoIntensity1 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1],
-        row.theoIntensity2 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity2],
-        row.theoIntensity3 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity3],
-        row.theoIntensity4 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity4],
-        row.theoIntensity5 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity5],
-        row.theoIntensity6 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity6],
-        row.theoIntensity7 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity7],
-        row.theoIntensity8 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity8],
-        row.theoIntensity9 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity9],
-        row.theoIntensity10 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity10],
-        row.theoIntensity11 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity11],
-        row.theoIntensity12 = candidateScores->featuresArray[CandidateScores::Features::TheoIntensity12],
         row.mzFoundMean1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1],
         row.mzFoundMean2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean2],
         row.mzFoundMean3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean3],
@@ -1897,18 +1657,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.mzPeakLengthsNorm10 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm10],
         row.mzPeakLengthsNorm11 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm11],
         row.mzPeakLengthsNorm12 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm12],
-        row.columnApexIndexRatiosToAnchor1 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1],
-        row.columnApexIndexRatiosToAnchor2 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor2],
-        row.columnApexIndexRatiosToAnchor3 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor3],
-        row.columnApexIndexRatiosToAnchor4 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor4],
-        row.columnApexIndexRatiosToAnchor5 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor5],
-        row.columnApexIndexRatiosToAnchor6 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor6],
-        row.columnApexIndexRatiosToAnchor7 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor7],
-        row.columnApexIndexRatiosToAnchor8 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor8],
-        row.columnApexIndexRatiosToAnchor9 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor9],
-        row.columnApexIndexRatiosToAnchor10 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor10],
-        row.columnApexIndexRatiosToAnchor11 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor11],
-        row.columnApexIndexRatiosToAnchor12 = candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor12],
         row.aminoAcidCountA = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA],
         row.aminoAcidCountC = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC],
         row.aminoAcidCountD = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD],
@@ -2131,30 +1879,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::ShadowsIntensityRatio10] = candidateScoresReaderRow.shadowsIntensityRatio10;
         featuresArray[CandidateScores::Features::ShadowsIntensityRatio11] = candidateScoresReaderRow.shadowsIntensityRatio11;
         featuresArray[CandidateScores::Features::ShadowsIntensityRatio12] = candidateScoresReaderRow.shadowsIntensityRatio12;
-        featuresArray[CandidateScores::Features::MzSearched1] = candidateScoresReaderRow.mzSearched1;
-        featuresArray[CandidateScores::Features::MzSearched2] = candidateScoresReaderRow.mzSearched2;
-        featuresArray[CandidateScores::Features::MzSearched3] = candidateScoresReaderRow.mzSearched3;
-        featuresArray[CandidateScores::Features::MzSearched4] = candidateScoresReaderRow.mzSearched4;
-        featuresArray[CandidateScores::Features::MzSearched5] = candidateScoresReaderRow.mzSearched5;
-        featuresArray[CandidateScores::Features::MzSearched6] = candidateScoresReaderRow.mzSearched6;
-        featuresArray[CandidateScores::Features::MzSearched7] = candidateScoresReaderRow.mzSearched7;
-        featuresArray[CandidateScores::Features::MzSearched8] = candidateScoresReaderRow.mzSearched8;
-        featuresArray[CandidateScores::Features::MzSearched9] = candidateScoresReaderRow.mzSearched9;
-        featuresArray[CandidateScores::Features::MzSearched10] = candidateScoresReaderRow.mzSearched10;
-        featuresArray[CandidateScores::Features::MzSearched11] = candidateScoresReaderRow.mzSearched11;
-        featuresArray[CandidateScores::Features::MzSearched12] = candidateScoresReaderRow.mzSearched12;
-        featuresArray[CandidateScores::Features::TheoIntensity1] = candidateScoresReaderRow.theoIntensity1;
-        featuresArray[CandidateScores::Features::TheoIntensity2] = candidateScoresReaderRow.theoIntensity2;
-        featuresArray[CandidateScores::Features::TheoIntensity3] = candidateScoresReaderRow.theoIntensity3;
-        featuresArray[CandidateScores::Features::TheoIntensity4] = candidateScoresReaderRow.theoIntensity4;
-        featuresArray[CandidateScores::Features::TheoIntensity5] = candidateScoresReaderRow.theoIntensity5;
-        featuresArray[CandidateScores::Features::TheoIntensity6] = candidateScoresReaderRow.theoIntensity6;
-        featuresArray[CandidateScores::Features::TheoIntensity7] = candidateScoresReaderRow.theoIntensity7;
-        featuresArray[CandidateScores::Features::TheoIntensity8] = candidateScoresReaderRow.theoIntensity8;
-        featuresArray[CandidateScores::Features::TheoIntensity9] = candidateScoresReaderRow.theoIntensity9;
-        featuresArray[CandidateScores::Features::TheoIntensity10] = candidateScoresReaderRow.theoIntensity10;
-        featuresArray[CandidateScores::Features::TheoIntensity11] = candidateScoresReaderRow.theoIntensity11;
-        featuresArray[CandidateScores::Features::TheoIntensity12] = candidateScoresReaderRow.theoIntensity12;
         featuresArray[CandidateScores::Features::MzFoundMean1] = candidateScoresReaderRow.mzFoundMean1;
         featuresArray[CandidateScores::Features::MzFoundMean2] = candidateScoresReaderRow.mzFoundMean2;
         featuresArray[CandidateScores::Features::MzFoundMean3] = candidateScoresReaderRow.mzFoundMean3;
@@ -2191,18 +1915,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::MzPeakLengthsNorm10] = candidateScoresReaderRow.mzPeakLengthsNorm10;
         featuresArray[CandidateScores::Features::MzPeakLengthsNorm11] = candidateScoresReaderRow.mzPeakLengthsNorm11;
         featuresArray[CandidateScores::Features::MzPeakLengthsNorm12] = candidateScoresReaderRow.mzPeakLengthsNorm12;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor1;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor2] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor2;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor3] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor3;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor4] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor4;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor5] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor5;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor6] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor6;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor7] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor7;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor8] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor8;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor9] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor9;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor10] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor10;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor11] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor11;
-        featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor12] = candidateScoresReaderRow.columnApexIndexRatiosToAnchor12;
         featuresArray[CandidateScores::Features::AminoAcidCountA] = candidateScoresReaderRow.aminoAcidCountA;
         featuresArray[CandidateScores::Features::AminoAcidCountC] = candidateScoresReaderRow.aminoAcidCountC;
         featuresArray[CandidateScores::Features::AminoAcidCountD] = candidateScoresReaderRow.aminoAcidCountD;

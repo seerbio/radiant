@@ -581,9 +581,8 @@ namespace {
             qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
         }
 
-
-        const int top6 = 6;
-        const auto msCalibrationReaderRowsInsertLogic = [msLevel](CandidateScores *cs){
+        constexpr int top6 = 6;
+        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top6](CandidateScores *cs){
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
@@ -592,7 +591,19 @@ namespace {
             row.scanNumber = cs->scanNumber;
 
             if (msLevel == MSLevelEnum::MS2) {
-                row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
+
+                const QVector<MS2Ion> ms2Ions = cs->isDecoy
+                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
+                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
+
+                QVector<float> mzSearchedVals(top6, -1.0f);
+                const int maxSize = std::min(top6, ms2Ions.size());
+
+                for (int i = 0; i < maxSize; i++) {
+                    mzSearchedVals[i] = ms2Ions.at(i).mz;
+                }
+
+                row.mzSearchedVec = mzSearchedVals;
                 row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
                 row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
                 row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
@@ -1560,14 +1571,14 @@ namespace {
             karnnNnTarget.index = i;
             karnnNnTarget.scoreVec = cs->featuresArray;
 
-            for (int j = CandidateScores::Features::ColumnApexIndexRatiosToAnchor1;
-                j <= CandidateScores::Features::ColumnApexIndexRatiosToAnchor12; j++) {
-                karnnNnTarget.scoreVec[j] = 0.0f;
-            }
-            for (int j = CandidateScores::Features::MzSearched1;
-                    j <= CandidateScores::Features::TheoIntensity12; j++) {
-                                karnnNnTarget.scoreVec[j] = 0.0f;
-                    }
+            // for (int j = CandidateScores::Features::ColumnApexIndexRatiosToAnchor1;
+            //     j <= CandidateScores::Features::ColumnApexIndexRatiosToAnchor12; j++) {
+            //     karnnNnTarget.scoreVec[j] = 0.0f;
+            // }
+            // for (int j = CandidateScores::Features::MzSearched1;
+            //         j <= CandidateScores::Features::TheoIntensity12; j++) {
+            //                     karnnNnTarget.scoreVec[j] = 0.0f;
+            //         }
             for (int j = CandidateScores::Features::MzAccuracy1;
                 j <= CandidateScores::Features::MzAccuracy12; j++) {
                         karnnNnTarget.scoreVec[j] = 0.0f;
@@ -1576,17 +1587,6 @@ namespace {
                 j <= CandidateScores::Features::ShadowsIntensityRatio12; j++) {
                 karnnNnTarget.scoreVec[j] = 0.0f;
                 }
-
-            // for (int j = CandidateScores::Features::CosineSimToAnchor7;
-            //     j <= CandidateScores::Features::CosineSimToAnchor12; j++) {
-            //     karnnNnTarget.scoreVec[j] = 0.0f;
-            //     }
-
-            // for (int j = CandidateScores::Features::CosineSimToAnchor7;
-            //     j <= CandidateScores::Features::CosineSimToAnchor12; j++) {
-            //     karnnNnTarget.scoreVec[j] = 0.0f;
-            //     }
-
 
 
 
