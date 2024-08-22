@@ -396,7 +396,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    if (true) {
+    if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
         e = updateProteinGroupAnnotation(
