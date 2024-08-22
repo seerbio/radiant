@@ -396,6 +396,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
+    m_pythiaParameters.writePythiaDIA = true;
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -1558,6 +1559,37 @@ namespace {
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
             karnnNnTarget.scoreVec = cs->featuresArray;
+
+            for (int j = CandidateScores::Features::ColumnApexIndexRatiosToAnchor1;
+                j <= CandidateScores::Features::ColumnApexIndexRatiosToAnchor12; j++) {
+                karnnNnTarget.scoreVec[j] = 0.0f;
+            }
+            for (int j = CandidateScores::Features::MzSearched1;
+                    j <= CandidateScores::Features::TheoIntensity12; j++) {
+                                karnnNnTarget.scoreVec[j] = 0.0f;
+                    }
+            for (int j = CandidateScores::Features::MzAccuracy1;
+                j <= CandidateScores::Features::MzAccuracy12; j++) {
+                        karnnNnTarget.scoreVec[j] = 0.0f;
+                }
+            for (int j = CandidateScores::Features::ShadowsIntensityRatio1;
+                j <= CandidateScores::Features::ShadowsIntensityRatio12; j++) {
+                karnnNnTarget.scoreVec[j] = 0.0f;
+                }
+
+            // for (int j = CandidateScores::Features::CosineSimToAnchor7;
+            //     j <= CandidateScores::Features::CosineSimToAnchor12; j++) {
+            //     karnnNnTarget.scoreVec[j] = 0.0f;
+            //     }
+
+            // for (int j = CandidateScores::Features::CosineSimToAnchor7;
+            //     j <= CandidateScores::Features::CosineSimToAnchor12; j++) {
+            //     karnnNnTarget.scoreVec[j] = 0.0f;
+            //     }
+
+
+
+
             karnnNNTargets.push_back(karnnNnTarget);
         }
 
