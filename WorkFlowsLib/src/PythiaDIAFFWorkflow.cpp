@@ -91,7 +91,7 @@ namespace {
             int minMs2FragCount,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
-    ) {
+            ) {
 
         ERR_INIT
 
@@ -110,13 +110,11 @@ namespace {
                     return l->discriminantScore < r->discriminantScore;
                 });
 
-        constexpr double fdrThreshold = 0.6;
         int counter = 0;
-        for (CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
+        for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
             counter++;
-
-            if (csp->qValue >= fdrThreshold && !csp->isDecoy) {
+            if (constexpr double fdrThreshold = 0.6; csp->qValue >= fdrThreshold && !csp->isDecoy) {
                 break;
             }
         }
@@ -341,7 +339,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
@@ -465,7 +462,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     constexpr int frameIndexBuffer = 1;
     QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
     e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrsFDRFiltered); ree;
-    qDebug() << "Transitions refined in" << etTrans.elapsed();
 
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(
@@ -1545,17 +1541,18 @@ namespace {
     }
 
     Err buildKarnnNNTargetsNormalized(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
             QVector<KarnnNNTarget> *karnnNNTargetsNorm
     ){
 
         ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+        e = ErrorUtils::isNotEmpty(candidateScoresTargetsAndDecoysFDRFiltered); ree;
 
         QVector<KarnnNNTarget> karnnNNTargets;
-        for (int i = 0; i < candidateScoresTargetsAndDecoys50PercentFDRFiltered.size(); i++) {
-            const CandidateScores *cs = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(i);
+        karnnNNTargets.reserve(candidateScoresTargetsAndDecoysFDRFiltered.size());
+        for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
+            const CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
@@ -1591,7 +1588,7 @@ namespace {
             yData.push_back(kt.isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 8;
+        constexpr int baggingSize = 6;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
         FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
@@ -1675,7 +1672,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     }
     file.close();
 #endif
-
 
     candidateScoreClassifier->clear();
 

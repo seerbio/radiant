@@ -171,9 +171,8 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
         parallelInputs.push_back(ccpi);
     }
 
-#define PARALLEL_TRAIN_NN
+// #define PARALLEL_TRAIN_NN
 #ifdef PARALLEL_TRAIN_NN
-
     const auto trainingLogicBinder = std::bind(
         trainingLogic,
         std::placeholders::_1,
@@ -208,10 +207,10 @@ Err FDRCLassifierNeuralNet::predictBaggedClassifiers(
     e = ErrorUtils::isNotEmpty(m_candidateClassifiers); ree;
     e = ErrorUtils::isNotEmpty(allDataVecs); ree;
 
-    Eigen::VectorX<float> predictionsSum(allDataVecs.size());ree
+    Eigen::VectorX<double> predictionsSum(allDataVecs.size());ree
     predictionsSum.setZero();
 
-    for (CandidateClassifier *cc : m_candidateClassifiers) {
+    for (const CandidateClassifier *cc : m_candidateClassifiers) {
 
         QVector<float> predictions;
         const bool predictionOK = cc->predict(
@@ -220,13 +219,17 @@ Err FDRCLassifierNeuralNet::predictBaggedClassifiers(
                 );
         e = ErrorUtils::isTrue(predictionOK); ree;
 
-        const Eigen::VectorX<float> tranchePred = EigenUtils::convertQVectorToEigenVector(predictions);
+        QVector<double> predictionsDouble(predictions.begin(), predictions.end());
+
+        const Eigen::VectorX<double> tranchePred = EigenUtils::convertQVectorToEigenVector(predictionsDouble);
         predictionsSum += tranchePred;
     }
 
-    predictionsSum /= static_cast<float>(m_baggingSize);
+    predictionsSum /= static_cast<double>(m_baggingSize);
 
-    *meanPredictions = EigenUtils::convertEigenVectorToQVector(predictionsSum);
+    const QVector<double> vD = EigenUtils::convertEigenVectorToQVector(predictionsSum);
+
+    *meanPredictions = QVector<float>(vD.begin(), vD.end());
 
     ERR_RETURN
 }
