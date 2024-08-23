@@ -872,6 +872,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
             qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
             if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
                 qWarning() << "Skipping MS1 recalibration.  Not enough points found";
+                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 ERR_RETURN
             }
 
@@ -884,6 +885,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
                     ); ree;
 
             if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 ERR_RETURN
             }
 
