@@ -1559,9 +1559,6 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] += cosineSim;
             candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
-            float intensityRatio = MathUtils::tZero(v1Max) ? 1.0f : v2Max / v1Max;
-            intensityRatio = MathUtils::tZero(v2Max) ? 0.0f : intensityRatio;
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = intensityRatio;
         }
 
         ERR_RETURN

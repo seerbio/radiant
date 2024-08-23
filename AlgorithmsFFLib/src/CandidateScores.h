@@ -88,18 +88,6 @@ public:
         CosineSimShadowsToAnchor10,
         CosineSimShadowsToAnchor11,
         CosineSimShadowsToAnchor12,
-        ShadowsIntensityRatio1,
-        ShadowsIntensityRatio2,
-        ShadowsIntensityRatio3,//60
-        ShadowsIntensityRatio4,
-        ShadowsIntensityRatio5,
-        ShadowsIntensityRatio6,
-        ShadowsIntensityRatio7,
-        ShadowsIntensityRatio8,
-        ShadowsIntensityRatio9,
-        ShadowsIntensityRatio10,
-        ShadowsIntensityRatio11,
-        ShadowsIntensityRatio12,
         MzFoundMean1,
         MzFoundMean2,
         MzFoundMean3,
@@ -174,18 +162,6 @@ public:
         MzFoundStDev10,
         MzFoundStDev11,
         MzFoundStDev12,
-        MzAccuracy1,//180
-        MzAccuracy2,
-        MzAccuracy3,
-        MzAccuracy4,
-        MzAccuracy5,
-        MzAccuracy6,
-        MzAccuracy7,
-        MzAccuracy8,
-        MzAccuracy9,
-        MzAccuracy10,
-        MzAccuracy11,//190
-        MzAccuracy12,
         AltTargetKeyIdCosineSimSumCharge1_OG,
         AltTargetKeyIdCosineSimSumCharge1_1,
         AltTargetKeyIdCosineSimSumCharge1_2,
@@ -368,18 +344,6 @@ namespace CandidateScoresReaderRowNamespace {
     const QString COS_SIM_ANCH_SHADOW_10 = QStringLiteral("CosineSimShadowsToAnchor10");
     const QString COS_SIM_ANCH_SHADOW_11 = QStringLiteral("CosineSimShadowsToAnchor11");
     const QString COS_SIM_ANCH_SHADOW_12 = QStringLiteral("CosineSimShadowsToAnchor12");
-    const QString SHAD_INTS_RATIO_1 = QStringLiteral("ShadowsIntensityRatio1");
-    const QString SHAD_INTS_RATIO_2 = QStringLiteral("ShadowsIntensityRatio2");
-    const QString SHAD_INTS_RATIO_3 = QStringLiteral("ShadowsIntensityRatio3");
-    const QString SHAD_INTS_RATIO_4 = QStringLiteral("ShadowsIntensityRatio4");
-    const QString SHAD_INTS_RATIO_5 = QStringLiteral("ShadowsIntensityRatio5");
-    const QString SHAD_INTS_RATIO_6 = QStringLiteral("ShadowsIntensityRatio6");
-    const QString SHAD_INTS_RATIO_7 = QStringLiteral("ShadowsIntensityRatio7");
-    const QString SHAD_INTS_RATIO_8 = QStringLiteral("ShadowsIntensityRatio8");
-    const QString SHAD_INTS_RATIO_9 = QStringLiteral("ShadowsIntensityRatio9");
-    const QString SHAD_INTS_RATIO_10 = QStringLiteral("ShadowsIntensityRatio10");
-    const QString SHAD_INTS_RATIO_11 = QStringLiteral("ShadowsIntensityRatio11");
-    const QString SHAD_INTS_RATIO_12 = QStringLiteral("ShadowsIntensityRatio12");
     const QString MZ_FND_MEAN_1 = QStringLiteral("MzFoundMean1");
     const QString MZ_FND_MEAN_2 = QStringLiteral("MzFoundMean2");
     const QString MZ_FND_MEAN_3 = QStringLiteral("MzFoundMean3");
@@ -454,18 +418,6 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MZ_FND_STDEV_10 = QStringLiteral("MzFoundStDev10");
     const QString MZ_FND_STDEV_11 = QStringLiteral("MzFoundStDev11");
     const QString MZ_FND_STDEV_12 = QStringLiteral("MzFoundStDev12");
-    const QString MZ_ACC_1 = QStringLiteral("MzAccuracy1");
-    const QString MZ_ACC_2 = QStringLiteral("MzAccuracy2");
-    const QString MZ_ACC_3 = QStringLiteral("MzAccuracy3");
-    const QString MZ_ACC_4 = QStringLiteral("MzAccuracy4");
-    const QString MZ_ACC_5 = QStringLiteral("MzAccuracy5");
-    const QString MZ_ACC_6 = QStringLiteral("MzAccuracy6");
-    const QString MZ_ACC_7 = QStringLiteral("MzAccuracy7");
-    const QString MZ_ACC_8 = QStringLiteral("MzAccuracy8");
-    const QString MZ_ACC_9 = QStringLiteral("MzAccuracy9");
-    const QString MZ_ACC_10 = QStringLiteral("MzAccuracy10");
-    const QString MZ_ACC_11 = QStringLiteral("MzAccuracy11");
-    const QString MZ_ACC_12 = QStringLiteral("MzAccuracy12");
     const QString TARG_KEY = QStringLiteral("TargetKey");
     const QString PEP_STR_W_MODS = QStringLiteral("PeptideStringWithMods");
     const QString PROT_GRP = QStringLiteral("ProteinGroup");
@@ -617,18 +569,6 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_ANCH_SHADOW_10,
             COS_SIM_ANCH_SHADOW_11,
             COS_SIM_ANCH_SHADOW_12,
-            SHAD_INTS_RATIO_1,
-            SHAD_INTS_RATIO_2,
-            SHAD_INTS_RATIO_3,
-            SHAD_INTS_RATIO_4,
-            SHAD_INTS_RATIO_5,
-            SHAD_INTS_RATIO_6,
-            SHAD_INTS_RATIO_7,
-            SHAD_INTS_RATIO_8,
-            SHAD_INTS_RATIO_9,
-            SHAD_INTS_RATIO_10,
-            SHAD_INTS_RATIO_11,
-            SHAD_INTS_RATIO_12,
             MZ_FND_MEAN_1,
             MZ_FND_MEAN_2,
             MZ_FND_MEAN_3,
@@ -703,18 +643,6 @@ namespace CandidateScoresReaderRowNamespace {
             MZ_FND_STDEV_10,
             MZ_FND_STDEV_11,
             MZ_FND_STDEV_12,
-            MZ_ACC_1,
-            MZ_ACC_2,
-            MZ_ACC_3,
-            MZ_ACC_4,
-            MZ_ACC_5,
-            MZ_ACC_6,
-            MZ_ACC_7,
-            MZ_ACC_8,
-            MZ_ACC_9,
-            MZ_ACC_10,
-            MZ_ACC_11,
-            MZ_ACC_12,
             TARG_KEY,
             PEP_STR_W_MODS,
             PROT_GRP,
@@ -853,18 +781,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float cosineSimShadowsToAnchor10 = -1.0;
     float cosineSimShadowsToAnchor11 = -1.0;
     float cosineSimShadowsToAnchor12 = -1.0;
-    float shadowsIntensityRatio1 = -1.0;
-    float shadowsIntensityRatio2 = -1.0;
-    float shadowsIntensityRatio3 = -1.0;
-    float shadowsIntensityRatio4 = -1.0;
-    float shadowsIntensityRatio5 = -1.0;
-    float shadowsIntensityRatio6 = -1.0;
-    float shadowsIntensityRatio7 = -1.0;
-    float shadowsIntensityRatio8 = -1.0;
-    float shadowsIntensityRatio9 = -1.0;
-    float shadowsIntensityRatio10 = -1.0;
-    float shadowsIntensityRatio11 = -1.0;
-    float shadowsIntensityRatio12 = -1.0;
     float mzFoundMean1 = -1.0;
     float mzFoundMean2 = -1.0;
     float mzFoundMean3 = -1.0;
@@ -939,18 +855,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzFoundStDev10 = -1.0;
     float mzFoundStDev11 = -1.0;
     float mzFoundStDev12 = -1.0;
-    float mzAccuracy1 = -1.0;
-    float mzAccuracy2 = -1.0;
-    float mzAccuracy3 = -1.0;
-    float mzAccuracy4 = -1.0;
-    float mzAccuracy5 = -1.0;
-    float mzAccuracy6 = -1.0;
-    float mzAccuracy7 = -1.0;
-    float mzAccuracy8 = -1.0;
-    float mzAccuracy9 = -1.0;
-    float mzAccuracy10 = -1.0;
-    float mzAccuracy11 = -1.0;
-    float mzAccuracy12 = -1.0;
 
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
@@ -1116,18 +1020,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         cosineSimShadowsToAnchor10 = dataMap.value(COS_SIM_ANCH_SHADOW_10).toFloat();
         cosineSimShadowsToAnchor11 = dataMap.value(COS_SIM_ANCH_SHADOW_11).toFloat();
         cosineSimShadowsToAnchor12 = dataMap.value(COS_SIM_ANCH_SHADOW_12).toFloat();
-        shadowsIntensityRatio1 = dataMap.value(SHAD_INTS_RATIO_1).toFloat();
-        shadowsIntensityRatio2 = dataMap.value(SHAD_INTS_RATIO_2).toFloat();
-        shadowsIntensityRatio3 = dataMap.value(SHAD_INTS_RATIO_3).toFloat();
-        shadowsIntensityRatio4 = dataMap.value(SHAD_INTS_RATIO_4).toFloat();
-        shadowsIntensityRatio5 = dataMap.value(SHAD_INTS_RATIO_5).toFloat();
-        shadowsIntensityRatio6 = dataMap.value(SHAD_INTS_RATIO_6).toFloat();
-        shadowsIntensityRatio7 = dataMap.value(SHAD_INTS_RATIO_7).toFloat();
-        shadowsIntensityRatio8 = dataMap.value(SHAD_INTS_RATIO_8).toFloat();
-        shadowsIntensityRatio9 = dataMap.value(SHAD_INTS_RATIO_9).toFloat();
-        shadowsIntensityRatio10 = dataMap.value(SHAD_INTS_RATIO_10).toFloat();
-        shadowsIntensityRatio11 = dataMap.value(SHAD_INTS_RATIO_11).toFloat();
-        shadowsIntensityRatio12 = dataMap.value(SHAD_INTS_RATIO_12).toFloat();
         mzFoundMean1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
         mzFoundMean2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
         mzFoundMean3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
@@ -1202,18 +1094,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         mzFoundStDev10 = dataMap.value(MZ_FND_MEAN_10).toFloat();
         mzFoundStDev11 = dataMap.value(MZ_FND_MEAN_11).toFloat();
         mzFoundStDev12 = dataMap.value(MZ_FND_MEAN_12).toFloat();
-        mzAccuracy1 = dataMap.value(MZ_ACC_1).toFloat();
-        mzAccuracy2 = dataMap.value(MZ_ACC_2).toFloat();
-        mzAccuracy3 = dataMap.value(MZ_ACC_3).toFloat();
-        mzAccuracy4 = dataMap.value(MZ_ACC_4).toFloat();
-        mzAccuracy5 = dataMap.value(MZ_ACC_5).toFloat();
-        mzAccuracy6 = dataMap.value(MZ_ACC_6).toFloat();
-        mzAccuracy7 = dataMap.value(MZ_ACC_7).toFloat();
-        mzAccuracy8 = dataMap.value(MZ_ACC_8).toFloat();
-        mzAccuracy9 = dataMap.value(MZ_ACC_9).toFloat();
-        mzAccuracy10 = dataMap.value(MZ_ACC_10).toFloat();
-        mzAccuracy11 = dataMap.value(MZ_ACC_11).toFloat();
-        mzAccuracy12 = dataMap.value(MZ_ACC_12).toFloat();
 
         targetKey = dataMap.value(TARG_KEY).toString();
         peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS).toString());
@@ -1357,18 +1237,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {COS_SIM_ANCH_SHADOW_10, QVariant(cosineSimShadowsToAnchor10)},
                 {COS_SIM_ANCH_SHADOW_11, QVariant(cosineSimShadowsToAnchor11)},
                 {COS_SIM_ANCH_SHADOW_12, QVariant(cosineSimShadowsToAnchor12)},
-                {SHAD_INTS_RATIO_1, QVariant(shadowsIntensityRatio1)},
-                {SHAD_INTS_RATIO_2, QVariant(shadowsIntensityRatio2)},
-                {SHAD_INTS_RATIO_3, QVariant(shadowsIntensityRatio3)},
-                {SHAD_INTS_RATIO_4, QVariant(shadowsIntensityRatio4)},
-                {SHAD_INTS_RATIO_5, QVariant(shadowsIntensityRatio5)},
-                {SHAD_INTS_RATIO_6, QVariant(shadowsIntensityRatio6)},
-                {SHAD_INTS_RATIO_7, QVariant(shadowsIntensityRatio7)},
-                {SHAD_INTS_RATIO_8, QVariant(shadowsIntensityRatio8)},
-                {SHAD_INTS_RATIO_9, QVariant(shadowsIntensityRatio9)},
-                {SHAD_INTS_RATIO_10, QVariant(shadowsIntensityRatio10)},
-                {SHAD_INTS_RATIO_11, QVariant(shadowsIntensityRatio11)},
-                {SHAD_INTS_RATIO_12, QVariant(shadowsIntensityRatio12)},
                 {MZ_FND_MEAN_1, QVariant(mzFoundMean1)},
                 {MZ_FND_MEAN_2, QVariant(mzFoundMean2)},
                 {MZ_FND_MEAN_3, QVariant(mzFoundMean3)},
@@ -1443,18 +1311,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MZ_FND_STDEV_10, QVariant(mzFoundStDev10)},
                 {MZ_FND_STDEV_11, QVariant(mzFoundStDev11)},
                 {MZ_FND_STDEV_12, QVariant(mzFoundStDev12)},
-                {MZ_ACC_1, QVariant(mzAccuracy1)},
-                {MZ_ACC_2, QVariant(mzAccuracy2)},
-                {MZ_ACC_3, QVariant(mzAccuracy3)},
-                {MZ_ACC_4, QVariant(mzAccuracy4)},
-                {MZ_ACC_5, QVariant(mzAccuracy5)},
-                {MZ_ACC_6, QVariant(mzAccuracy6)},
-                {MZ_ACC_7, QVariant(mzAccuracy7)},
-                {MZ_ACC_8, QVariant(mzAccuracy8)},
-                {MZ_ACC_9, QVariant(mzAccuracy9)},
-                {MZ_ACC_10, QVariant(mzAccuracy10)},
-                {MZ_ACC_11, QVariant(mzAccuracy11)},
-                {MZ_ACC_12, QVariant(mzAccuracy12)},
                 {TARG_KEY, QVariant(targetKey)},
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
                 {PROT_GRP, QVariant(proteinGroup)},
@@ -1551,162 +1407,138 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         CandidateScoresReaderRow row;
 
-        row.cosineSimSum100 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100],
-        row.cosineSimSum100Greater80 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80],
-        row.allignedMaxIndexesCount = candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount],
-        row.cosineSim100MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
-        row.cosineSimSpectrumCubed = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed],
-        row.klDivSpectrumCubeRoot = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot],
-        row.cosineSimSum45 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45],
-        // row.cosineSimSum20 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20],//TODO delete
-        row.cosineSimSumTop = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop],
-        row.cosineSimSumBottom = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom],
-        row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio],
-        row.topBottomRatioNorm = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm],
-        row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge],
-        row.mass = candidateScores->featuresArray[CandidateScores::Features::Mass],
-        row.scanTimeDelta = candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta],
-        row.scanTimePd = candidateScores->featuresArray[CandidateScores::Features::ScanTimePd],
-        row.scanIonCount = candidateScores->featuresArray[CandidateScores::Features::ScanIonCount],
-        row.mzNorm = candidateScores->featuresArray[CandidateScores::Features::MzNorm],
-        row.klDivSpectrum = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum],
-        row.cosineSimSpectrum = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum],
-        row.cosineSim45MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1],
+        row.cosineSimSum100 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100];
+        row.cosineSimSum100Greater80 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80];
+        row.allignedMaxIndexesCount = candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount];
+        row.cosineSim100MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1];
+        row.cosineSimSpectrumCubed = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed];
+        row.klDivSpectrumCubeRoot = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot];
+        row.cosineSimSum45 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45];
+        // row.cosineSimSum20 = candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20];//TODO delete
+        row.cosineSimSumTop = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop];
+        row.cosineSimSumBottom = candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom];
+        row.topBottomRatio = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio];
+        row.topBottomRatioNorm = candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm];
+        row.charge = candidateScores->featuresArray[CandidateScores::Features::Charge];
+        row.mass = candidateScores->featuresArray[CandidateScores::Features::Mass];
+        row.scanTimeDelta = candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta];
+        row.scanTimePd = candidateScores->featuresArray[CandidateScores::Features::ScanTimePd];
+        row.scanIonCount = candidateScores->featuresArray[CandidateScores::Features::ScanIonCount];
+        row.mzNorm = candidateScores->featuresArray[CandidateScores::Features::MzNorm];
+        row.klDivSpectrum = candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum];
+        row.cosineSimSpectrum = candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum];
+        row.cosineSim45MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1];
         // row.cosineSim20MS1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1],//TODO delete
-        row.cosineSim100MS1PreMono = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
-        row.cosineSim100MS1Iso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
-        row.cosineSim100MS1Iso2 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
-        row.peptideLengthNorm = candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm],
-        row.scanTimePredicted = candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted],
-        row.theoFragmentCount = candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount],
-        row.totalIntensityLog = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog],
-        row.peakShapeRatio1 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1],
-        row.peakShapeRatio2 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2],
-        row.peakShapeRatio3 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3],
-        row.shadowsCosineSimSum = candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum],
-        row.iRtPredicted = candidateScores->featuresArray[CandidateScores::Features::IRTPredicted],
-        row.cosineSimToAnchor1 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1],
-        row.cosineSimToAnchor2 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor2],
-        row.cosineSimToAnchor3 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor3],
-        row.cosineSimToAnchor4 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor4],
-        row.cosineSimToAnchor5 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor5],
-        row.cosineSimToAnchor6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor6],
-        row.cosineSimToAnchor7 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor7],
-        row.cosineSimToAnchor8 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor8],
-        row.cosineSimToAnchor9 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor9],
-        row.cosineSimToAnchor10 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor10],
-        row.cosineSimToAnchor11 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor11],
-        row.cosineSimToAnchor12 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor12],
-        row.cosineSimShadowsToAnchor1 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1],
-        row.cosineSimShadowsToAnchor2 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor2],
-        row.cosineSimShadowsToAnchor3 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor3],
-        row.cosineSimShadowsToAnchor4 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor4],
-        row.cosineSimShadowsToAnchor5 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor5],
-        row.cosineSimShadowsToAnchor6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor6],
-        row.cosineSimShadowsToAnchor7 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor7],
-        row.cosineSimShadowsToAnchor8 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor8],
-        row.cosineSimShadowsToAnchor9 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor9],
-        row.cosineSimShadowsToAnchor10 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor10],
-        row.cosineSimShadowsToAnchor11 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor11],
-        row.cosineSimShadowsToAnchor12 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor12],
-        row.shadowsIntensityRatio1 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1],
-        row.shadowsIntensityRatio2 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio2],
-        row.shadowsIntensityRatio3 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio3],
-        row.shadowsIntensityRatio4 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio4],
-        row.shadowsIntensityRatio5 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio5],
-        row.shadowsIntensityRatio6 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio6],
-        row.shadowsIntensityRatio7 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio7],
-        row.shadowsIntensityRatio8 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio8],
-        row.shadowsIntensityRatio9 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio9],
-        row.shadowsIntensityRatio10 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio10],
-        row.shadowsIntensityRatio11 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio11],
-        row.shadowsIntensityRatio12 = candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio12],
-        row.mzFoundMean1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1],
-        row.mzFoundMean2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean2],
-        row.mzFoundMean3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean3],
-        row.mzFoundMean4 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean4],
-        row.mzFoundMean5 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean5],
-        row.mzFoundMean6 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean6],
-        row.mzFoundMean7 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean7],
-        row.mzFoundMean8 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean8],
-        row.mzFoundMean9 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean9],
-        row.mzFoundMean10 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean10],
-        row.mzFoundMean11 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean11],
-        row.mzFoundMean12 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean12],
-        row.intensityFoundMax1 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1],
-        row.intensityFoundMax2 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax2],
-        row.intensityFoundMax3 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax3],
-        row.intensityFoundMax4 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax4],
-        row.intensityFoundMax5 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax5],
-        row.intensityFoundMax6 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax6],
-        row.intensityFoundMax7 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax7],
-        row.intensityFoundMax8 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax8],
-        row.intensityFoundMax9 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax9],
-        row.intensityFoundMax10 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax10],
-        row.intensityFoundMax11 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax11],
-        row.intensityFoundMax12 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax12],
-        row.mzPeakLengthsNorm1 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1],
-        row.mzPeakLengthsNorm2 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm2],
-        row.mzPeakLengthsNorm3 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm3],
-        row.mzPeakLengthsNorm4 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm4],
-        row.mzPeakLengthsNorm5 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm5],
-        row.mzPeakLengthsNorm6 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm6],
-        row.mzPeakLengthsNorm7 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm7],
-        row.mzPeakLengthsNorm8 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm8],
-        row.mzPeakLengthsNorm9 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm9],
-        row.mzPeakLengthsNorm10 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm10],
-        row.mzPeakLengthsNorm11 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm11],
-        row.mzPeakLengthsNorm12 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm12],
-        row.aminoAcidCountA = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA],
-        row.aminoAcidCountC = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC],
-        row.aminoAcidCountD = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD],
-        row.aminoAcidCountE = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE],
-        row.aminoAcidCountF = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF],
-        row.aminoAcidCountG = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG],
-        row.aminoAcidCountH = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH],
-        row.aminoAcidCountI = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI],
-        row.aminoAcidCountK = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK],
-        row.aminoAcidCountL = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL],
-        row.aminoAcidCountM = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM],
-        row.aminoAcidCountN = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN],
-        row.aminoAcidCountP = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP],
-        row.aminoAcidCountQ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ],
-        row.aminoAcidCountR = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR],
-        row.aminoAcidCountS = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS],
-        row.aminoAcidCountT = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT],
-        row.aminoAcidCountV = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV],
-        row.aminoAcidCountW = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW],
-        row.aminoAcidCountY = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY],
-        row.aminoAcidCountB = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB],
-        row.aminoAcidCountJ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ],
-        row.aminoAcidCountO = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO],
-        row.aminoAcidCountU = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU],
-        row.aminoAcidCountX = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX],
-        row.aminoAcidCountZ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ],
-        row.mzFoundStDev1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1],
-        row.mzFoundStDev2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev2],
-        row.mzFoundStDev3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev3],
-        row.mzFoundStDev4 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev4],
-        row.mzFoundStDev5 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev5],
-        row.mzFoundStDev6 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev6],
-        row.mzFoundStDev7 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev7],
-        row.mzFoundStDev8 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev8],
-        row.mzFoundStDev9 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev9],
-        row.mzFoundStDev10 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev10],
-        row.mzFoundStDev11 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev11],
-        row.mzFoundStDev12 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev12],
-        row.mzAccuracy1 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1],
-        row.mzAccuracy2 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy2],
-        row.mzAccuracy3 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy3],
-        row.mzAccuracy4 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy4],
-        row.mzAccuracy5 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy5],
-        row.mzAccuracy6 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy6],
-        row.mzAccuracy7 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy7],
-        row.mzAccuracy8 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy8],
-        row.mzAccuracy9 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy9],
-        row.mzAccuracy10 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy10],
-        row.mzAccuracy11 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy11],
-        row.mzAccuracy12 = candidateScores->featuresArray[CandidateScores::Features::MzAccuracy12],
+        row.cosineSim100MS1PreMono = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono];
+        row.cosineSim100MS1Iso1 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1];
+        row.cosineSim100MS1Iso2 = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2];
+        row.peptideLengthNorm = candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm];
+        row.scanTimePredicted = candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted];
+        row.theoFragmentCount = candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount];
+        row.totalIntensityLog = candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog];
+        row.peakShapeRatio1 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1];
+        row.peakShapeRatio2 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2];
+        row.peakShapeRatio3 = candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3];
+        row.shadowsCosineSimSum = candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum];
+        row.iRtPredicted = candidateScores->featuresArray[CandidateScores::Features::IRTPredicted];
+        row.cosineSimToAnchor1 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1];
+        row.cosineSimToAnchor2 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor2];
+        row.cosineSimToAnchor3 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor3];
+        row.cosineSimToAnchor4 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor4];
+        row.cosineSimToAnchor5 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor5];
+        row.cosineSimToAnchor6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor6];
+        row.cosineSimToAnchor7 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor7];
+        row.cosineSimToAnchor8 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor8];
+        row.cosineSimToAnchor9 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor9];
+        row.cosineSimToAnchor10 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor10];
+        row.cosineSimToAnchor11 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor11];
+        row.cosineSimToAnchor12 = candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor12];
+        row.cosineSimShadowsToAnchor1 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1];
+        row.cosineSimShadowsToAnchor2 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor2];
+        row.cosineSimShadowsToAnchor3 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor3];
+        row.cosineSimShadowsToAnchor4 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor4];
+        row.cosineSimShadowsToAnchor5 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor5];
+        row.cosineSimShadowsToAnchor6 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor6];
+        row.cosineSimShadowsToAnchor7 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor7];
+        row.cosineSimShadowsToAnchor8 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor8];
+        row.cosineSimShadowsToAnchor9 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor9];
+        row.cosineSimShadowsToAnchor10 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor10];
+        row.cosineSimShadowsToAnchor11 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor11];
+        row.cosineSimShadowsToAnchor12 = candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor12];
+        row.mzFoundMean1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1];
+        row.mzFoundMean2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean2];
+        row.mzFoundMean3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean3];
+        row.mzFoundMean4 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean4];
+        row.mzFoundMean5 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean5];
+        row.mzFoundMean6 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean6];
+        row.mzFoundMean7 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean7];
+        row.mzFoundMean8 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean8];
+        row.mzFoundMean9 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean9];
+        row.mzFoundMean10 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean10];
+        row.mzFoundMean11 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean11];
+        row.mzFoundMean12 = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean12];
+        row.intensityFoundMax1 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1];
+        row.intensityFoundMax2 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax2];
+        row.intensityFoundMax3 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax3];
+        row.intensityFoundMax4 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax4];
+        row.intensityFoundMax5 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax5];
+        row.intensityFoundMax6 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax6];
+        row.intensityFoundMax7 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax7];
+        row.intensityFoundMax8 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax8];
+        row.intensityFoundMax9 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax9];
+        row.intensityFoundMax10 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax10];
+        row.intensityFoundMax11 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax11];
+        row.intensityFoundMax12 = candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax12];
+        row.mzPeakLengthsNorm1 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1];
+        row.mzPeakLengthsNorm2 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm2];
+        row.mzPeakLengthsNorm3 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm3];
+        row.mzPeakLengthsNorm4 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm4];
+        row.mzPeakLengthsNorm5 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm5];
+        row.mzPeakLengthsNorm6 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm6];
+        row.mzPeakLengthsNorm7 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm7];
+        row.mzPeakLengthsNorm8 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm8];
+        row.mzPeakLengthsNorm9 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm9];
+        row.mzPeakLengthsNorm10 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm10];
+        row.mzPeakLengthsNorm11 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm11];
+        row.mzPeakLengthsNorm12 = candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm12];
+        row.aminoAcidCountA = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA];
+        row.aminoAcidCountC = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC];
+        row.aminoAcidCountD = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD];
+        row.aminoAcidCountE = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE];
+        row.aminoAcidCountF = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF];
+        row.aminoAcidCountG = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG];
+        row.aminoAcidCountH = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH];
+        row.aminoAcidCountI = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI];
+        row.aminoAcidCountK = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK];
+        row.aminoAcidCountL = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL];
+        row.aminoAcidCountM = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM];
+        row.aminoAcidCountN = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN];
+        row.aminoAcidCountP = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP];
+        row.aminoAcidCountQ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ];
+        row.aminoAcidCountR = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR];
+        row.aminoAcidCountS = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS];
+        row.aminoAcidCountT = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT];
+        row.aminoAcidCountV = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV];
+        row.aminoAcidCountW = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW];
+        row.aminoAcidCountY = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY];
+        row.aminoAcidCountB = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB];
+        row.aminoAcidCountJ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ];
+        row.aminoAcidCountO = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO];
+        row.aminoAcidCountU = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU];
+        row.aminoAcidCountX = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX];
+        row.aminoAcidCountZ = candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ];
+        row.mzFoundStDev1 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1];
+        row.mzFoundStDev2 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev2];
+        row.mzFoundStDev3 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev3];
+        row.mzFoundStDev4 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev4];
+        row.mzFoundStDev5 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev5];
+        row.mzFoundStDev6 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev6];
+        row.mzFoundStDev7 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev7];
+        row.mzFoundStDev8 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev8];
+        row.mzFoundStDev9 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev9];
+        row.mzFoundStDev10 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev10];
+        row.mzFoundStDev11 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev11];
+        row.mzFoundStDev12 = candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
@@ -1867,18 +1699,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor10] = candidateScoresReaderRow.cosineSimShadowsToAnchor10;
         featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor11] = candidateScoresReaderRow.cosineSimShadowsToAnchor11;
         featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor12] = candidateScoresReaderRow.cosineSimShadowsToAnchor12;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio1] = candidateScoresReaderRow.shadowsIntensityRatio1;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio2] = candidateScoresReaderRow.shadowsIntensityRatio2;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio3] = candidateScoresReaderRow.shadowsIntensityRatio3;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio4] = candidateScoresReaderRow.shadowsIntensityRatio4;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio5] = candidateScoresReaderRow.shadowsIntensityRatio5;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio6] = candidateScoresReaderRow.shadowsIntensityRatio6;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio7] = candidateScoresReaderRow.shadowsIntensityRatio7;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio8] = candidateScoresReaderRow.shadowsIntensityRatio8;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio9] = candidateScoresReaderRow.shadowsIntensityRatio9;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio10] = candidateScoresReaderRow.shadowsIntensityRatio10;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio11] = candidateScoresReaderRow.shadowsIntensityRatio11;
-        featuresArray[CandidateScores::Features::ShadowsIntensityRatio12] = candidateScoresReaderRow.shadowsIntensityRatio12;
         featuresArray[CandidateScores::Features::MzFoundMean1] = candidateScoresReaderRow.mzFoundMean1;
         featuresArray[CandidateScores::Features::MzFoundMean2] = candidateScoresReaderRow.mzFoundMean2;
         featuresArray[CandidateScores::Features::MzFoundMean3] = candidateScoresReaderRow.mzFoundMean3;
@@ -1953,18 +1773,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::MzFoundStDev10] = candidateScoresReaderRow.mzFoundStDev10;
         featuresArray[CandidateScores::Features::MzFoundStDev11] = candidateScoresReaderRow.mzFoundStDev11;
         featuresArray[CandidateScores::Features::MzFoundStDev12] = candidateScoresReaderRow.mzFoundStDev12;
-        featuresArray[CandidateScores::Features::MzAccuracy1] = candidateScoresReaderRow.mzAccuracy1;
-        featuresArray[CandidateScores::Features::MzAccuracy2] = candidateScoresReaderRow.mzAccuracy2;
-        featuresArray[CandidateScores::Features::MzAccuracy3] = candidateScoresReaderRow.mzAccuracy3;
-        featuresArray[CandidateScores::Features::MzAccuracy4] = candidateScoresReaderRow.mzAccuracy4;
-        featuresArray[CandidateScores::Features::MzAccuracy5] = candidateScoresReaderRow.mzAccuracy5;
-        featuresArray[CandidateScores::Features::MzAccuracy6] = candidateScoresReaderRow.mzAccuracy6;
-        featuresArray[CandidateScores::Features::MzAccuracy7] = candidateScoresReaderRow.mzAccuracy7;
-        featuresArray[CandidateScores::Features::MzAccuracy8] = candidateScoresReaderRow.mzAccuracy8;
-        featuresArray[CandidateScores::Features::MzAccuracy9] = candidateScoresReaderRow.mzAccuracy9;
-        featuresArray[CandidateScores::Features::MzAccuracy10] = candidateScoresReaderRow.mzAccuracy10;
-        featuresArray[CandidateScores::Features::MzAccuracy11] = candidateScoresReaderRow.mzAccuracy11;
-        featuresArray[CandidateScores::Features::MzAccuracy12] = candidateScoresReaderRow.mzAccuracy12;
         featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_OG;
         featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_1;
         featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_2;
