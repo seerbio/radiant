@@ -396,7 +396,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    m_pythiaParameters.writePythiaDIA = true;
+    // m_pythiaParameters.writePythiaDIA = true;
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -471,6 +471,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         quanFilePath,
         static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
         ); ree;
+
 
     ERR_RETURN
 }

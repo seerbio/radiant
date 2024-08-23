@@ -159,7 +159,7 @@ namespace {
         constexpr int maxIonsSize = 12;
         QVector<float> mzSearchedVals(maxIonsSize, -1.0f);
 
-        for (int i = 0; i < std::min(maxIonsSize, mzSearchedVals.size()); i++) {
+        for (int i = 0; i < std::min(maxIonsSize, ms2Ions.size()); i++) {
             mzSearchedVals[i] = ms2Ions.at(i).mz;
         }
 
