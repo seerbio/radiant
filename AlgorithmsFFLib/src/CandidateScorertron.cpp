@@ -1593,9 +1593,7 @@ namespace {
         for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
         }
-
-        const QVector<int> &columnApexIndexes = bestCorrelationResult.apexStarts;
-
+        
         ERR_RETURN
     }
 
