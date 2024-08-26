@@ -152,21 +152,32 @@ namespace {
 
         ERR_INIT
 
+        const QVector<MS2Ion> ms2Ions = cs->isDecoy
+                                      ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
+                                      : cs->targetDecoyCandidatePair->ms2IonsTarget();
+
+        constexpr int maxIonsSize = 12;
+        QVector<float> mzSearchedVals(maxIonsSize, -1.0f);
+
+        for (int i = 0; i < std::min(maxIonsSize, ms2Ions.size()); i++) {
+            mzSearchedVals[i] = ms2Ions.at(i).mz;
+        }
+
         qr->peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
         qr->charge = cs->targetDecoyCandidatePair->charge();
         qr->targetKey = cs->targetKey;
-        qr->mzSearched1 = cs->featuresArray[CandidateScores::Features::MzSearched1];
-        qr->mzSearched2 = cs->featuresArray[CandidateScores::Features::MzSearched2];
-        qr->mzSearched3 = cs->featuresArray[CandidateScores::Features::MzSearched3];
-        qr->mzSearched4 = cs->featuresArray[CandidateScores::Features::MzSearched4];
-        qr->mzSearched5 = cs->featuresArray[CandidateScores::Features::MzSearched5];
-        qr->mzSearched6 = cs->featuresArray[CandidateScores::Features::MzSearched6];
-        qr->mzSearched7 = cs->featuresArray[CandidateScores::Features::MzSearched7];
-        qr->mzSearched8 = cs->featuresArray[CandidateScores::Features::MzSearched8];
-        qr->mzSearched9 = cs->featuresArray[CandidateScores::Features::MzSearched9];
-        qr->mzSearched10 = cs->featuresArray[CandidateScores::Features::MzSearched10];
-        qr->mzSearched11 = cs->featuresArray[CandidateScores::Features::MzSearched11];
-        qr->mzSearched12 = cs->featuresArray[CandidateScores::Features::MzSearched12];
+        qr->mzSearched1 = mzSearchedVals.at(0);
+        qr->mzSearched2 = mzSearchedVals.at(1);
+        qr->mzSearched3 = mzSearchedVals.at(2);
+        qr->mzSearched4 = mzSearchedVals.at(3);
+        qr->mzSearched5 = mzSearchedVals.at(4);
+        qr->mzSearched6 = mzSearchedVals.at(5);
+        qr->mzSearched7 = mzSearchedVals.at(6);
+        qr->mzSearched8 = mzSearchedVals.at(7);
+        qr->mzSearched9 = mzSearchedVals.at(8);
+        qr->mzSearched10 = mzSearchedVals.at(9);
+        qr->mzSearched11 = mzSearchedVals.at(10);
+        qr->mzSearched12 = mzSearchedVals.at(11);
         qr->classifierScore = static_cast<float>(cs->classifierScore);
         qr->discScore = static_cast<float>(cs->discriminantScore);
         qr->qValue = static_cast<float>(cs->qValue);

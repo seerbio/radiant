@@ -1299,22 +1299,6 @@ namespace {
 
     constexpr int arraySizeMax = 12;
 
-    Err setTheoreticalMs2Ions(
-        const QVector<MS2Ion> &ms2IonsTheoretical,
-        CandidateScores *candidateScores
-        ) {
-
-        ERR_INIT
-
-        for (int i = 0; i < std::min(ms2IonsTheoretical.size(), arraySizeMax); i++) {
-            const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
-            candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = static_cast<float>(ms2Ion.mz);
-            candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
-        }
-
-        ERR_RETURN
-    }
-
     Err buildScanTimeVectorFromFrameIndexIntegrationLimits(
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         MsFrame *msFrameMzTarget,
@@ -1417,29 +1401,6 @@ namespace {
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
-        }
-
-        ERR_RETURN
-    }
-
-    Err setMassAccuracies(CandidateScores *candidateScores) {
-
-        ERR_INIT
-
-        constexpr int top12 = 12;
-
-        for (int i = 0; i < top12; i++) {
-
-            const float mzSearched = candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i];
-            const float mzFound = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i];
-
-            if (MathUtils::tZero(mzSearched)) {
-                continue;
-            }
-
-            const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
-            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = 1.0f / std::min(std::max(absAccuracy, 0.001f), 200.0f);
-
         }
 
         ERR_RETURN
@@ -1598,9 +1559,6 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] += cosineSim;
             candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
-            float intensityRatio = MathUtils::tZero(v1Max) ? 1.0f : v2Max / v1Max;
-            intensityRatio = MathUtils::tZero(v2Max) ? 0.0f : intensityRatio;
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = intensityRatio;
         }
 
         ERR_RETURN
@@ -1634,21 +1592,6 @@ namespace {
         }
         for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        }
-
-        const QVector<int> &columnApexIndexes = bestCorrelationResult.apexStarts;
-        const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
-        const double columnApexIndexesSize = columnApexIndexes.size();
-        QVector<float> columnApexIndexRatiosToAnchor;
-        std::transform(
-                columnApexIndexes.begin(),
-                columnApexIndexes.end(),
-                std::back_inserter(columnApexIndexRatiosToAnchor),
-                [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
-                );
-
-        for (int i = 0; i < std::min(columnApexIndexRatiosToAnchor.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
         }
 
         ERR_RETURN
@@ -1814,13 +1757,9 @@ Err CandidateScorertron::setCandidateScores(
                                              ? targetDecoyCandidatePair->ms2IonsDecoy()
                                              : targetDecoyCandidatePair->ms2IonsTarget();
 
-    e = setTheoreticalMs2Ions(ms2IonsTheoritical, candidateScores); ree;
-
     e = setFoundMs2Ions(bestCorrelationResult, m_msFrameMzTarget, candidateScores); ree;
 
     e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
-
-    e = setMassAccuracies(candidateScores); ree;
 
     e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
 
