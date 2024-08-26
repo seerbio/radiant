@@ -665,7 +665,7 @@ Err CandidateScorertron::setPredictedFrameIndexes(
     if (m_msCalibratomatic.isInitRT()) {
 
         const float scanTimeWindow
-            = m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+            = m_msCalibratomatic.scanTimeStDev(static_cast<float>(m_pythiaParameters.scanTimeWindowStDevs));
 
         e = m_msCalibratomatic.predictScanTime(
                 iRT,
