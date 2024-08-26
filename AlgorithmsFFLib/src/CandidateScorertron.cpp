@@ -842,7 +842,6 @@ namespace {
         return {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size()) - 1)};
     }
 
-    //TODO delete
     Eigen::MatrixX<float> trimMatrixBlock(
         const Eigen::MatrixX<float> &matBlock,
         const QVector<int> &apexStarts,
@@ -1075,26 +1074,24 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
                           matriciesAndVecs.intensityMatrix100.cols()
                           ).eval();
 
-            //TODO delete
             bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
                 matBlock1p5X,
                 apexStarts,
                 m_pythiaParameters.stopThresholdFraction
                 );
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
+
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X,
                 bestAnchorColumnIndex,
                 &bestCorrelationResult->peakCorrelationsWindow1p5X
                 ); ree;
 
-            //TODO delete
             bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
                         matBlock2X,
                         apexStarts,
                         m_pythiaParameters.stopThresholdFraction
                         );
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
+
             e = calculatePeakCorrelations(
                 bestCorrelationResult->matBlockTrimmedIntensityWindow2X,
                 bestAnchorColumnIndex,
