@@ -21,9 +21,7 @@ public:
 
     static Err buildQuanFile(
         const QVector<CandidateScores*> &candidateScores,
-        const QMap<MzTargetKey, MsFrame*> &mzTargetKeyVsMsFrame,
-        const QString& outputFilePath,
-        float ppmTolerance
+        const QString& outputFilePath
         );
 
 

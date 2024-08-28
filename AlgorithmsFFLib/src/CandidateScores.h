@@ -35,7 +35,6 @@ public:
         CosineSimSpectrumCubed,
         KlDivSpectrumCubeRoot,
         CosineSimSum45,
-        // CosineSimSum20,//TODO delete
         CosineSimSumTop,
         CosineSimSumBottom,
         TopBottomRatio,//10
@@ -51,7 +50,6 @@ public:
         KlDivSpectrum,
         CosineSimSpectrum,
         CosineSim45MS1,//20
-        // CosineSim20MS1,//TODO delete
         CosineSim100MS1PreMono,
         CosineSim100MS1Iso1,
         CosineSim100MS1Iso2,
@@ -192,29 +190,24 @@ public:
         AltTargetKeyIdTimeDeltaCharge4_3,
         Ms1MzMeanFound100,//220
         Ms1MzMeanFound45,
-        // Ms1MzMeanFound20,//TODO delete
         Ms1MzMeanFoundPreMono,
         Ms1MzMeanFoundIso1,
         Ms1MzMeanFoundIso2,
         Ms1MzMeanFound100PPM,
         Ms1MzMeanFound45PPM,
-        // Ms1MzMeanFound20PPM,//TODO delete
         Ms1MzMeanFoundPreMonoPPM,
         Ms1MzMeanFoundIso1PPM,//230
         Ms1MzMeanFoundIso2PPM,
         Ms1MzStDevFound100,
         Ms1MzStDevFound45,
-        // Ms1MzStDevFound20,//TODO delete
         Ms1MzStDevFoundPreMono,
         Ms1MzStDevFoundIso1,
         Ms1MzStDevFoundIso2,
         Ms1IntensityFound100,
         Ms1IntensityFound45,
-        // Ms1IntensityFound20,//240//TODO delete
         Ms1IntensityFoundPreMono,
         Ms1IntensityFoundIso1,
         Ms1IntensityFoundIso2,
-
         CosineSimSpectrumOverTime,
         CosineSimSpectrumOverTimeCubed,
         CosineSimSpectrumStDev,
@@ -224,10 +217,8 @@ public:
         CosineSimSum100Window2X,
         TotalIntensityPeakHeights,
         TotalIntensityRaw,
-
         TargetWindowLocation,
         TargetWindowLocationAbs,
-
         FeaturesSize
     };
 
@@ -259,6 +250,12 @@ public:
     QVector<float> trapAreas;
     QVector<float> featuresArray;
     QVector<float> mzInterferences;
+
+    QVector<float> intensityValsAlt;
+    ScanTime scanTimeAlt = -1.0;
+    ScanTime scanTimeStartAlt = -1.0;
+    ScanTime scanTimeEndAlt = -1.0;
+    float cosineSimSum100Alt = -1.0;
 
 //TODO delete
     /**

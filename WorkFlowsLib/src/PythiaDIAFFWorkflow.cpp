@@ -396,7 +396,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    // m_pythiaParameters.writePythiaDIA = true;
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -467,11 +466,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(
         candidateScoreClassifierPntrs,
-        m_targetDecoyCandidatePairScoretron.mzTargetKeyVsMsFramePntr(),
-        quanFilePath,
-        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+        quanFilePath
         ); ree;
-
 
     ERR_RETURN
 }

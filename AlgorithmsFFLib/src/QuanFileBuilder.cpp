@@ -36,34 +36,25 @@ namespace {
 
     struct ParallelInput {
         MzTargetKey targetKey;
-        MsFrame *msFrame = nullptr;
         QVector<CandidateScores*> candidateScores;
-        float ppmTol = -1.0;
     };
 
     Err buildParallelInputs(
         const QMap<MzTargetKey, QVector<CandidateScores*>> &mzTargetKeyVsCandidateScoresPntrs,
-        const QMap<MzTargetKey, MsFrame*> &mzTargetKeyVsMsFrame,
-        float ppmTol,
         QVector<ParallelInput> *parallelInputs
         ) {
 
         ERR_INIT
 
         e = ErrorUtils::isNotEmpty(mzTargetKeyVsCandidateScoresPntrs); ree;
-        e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFrame); ree;
 
         parallelInputs->clear();
 
         for (const MzTargetKey &mzk : mzTargetKeyVsCandidateScoresPntrs.keys()) {
 
-            e = ErrorUtils::contains(mzk, mzTargetKeyVsMsFrame); ree;
-
             ParallelInput pi;
             pi.targetKey = mzk;
             pi.candidateScores = mzTargetKeyVsCandidateScoresPntrs.value(pi.targetKey);
-            pi.msFrame = mzTargetKeyVsMsFrame.value(pi.targetKey);
-            pi.ppmTol = ppmTol;
 
             parallelInputs->push_back(pi);
         }
@@ -144,8 +135,6 @@ namespace {
     }
 
     Err buildQuanReaderRow(
-        const QMap<Index, XICPoints> &indexVsXICPoints,
-        MsFrame *msFrame,
         const CandidateScores *cs,
         QuanReaderRow *qr
         ) {
@@ -178,72 +167,79 @@ namespace {
         qr->mzSearched10 = mzSearchedVals.at(9);
         qr->mzSearched11 = mzSearchedVals.at(10);
         qr->mzSearched12 = mzSearchedVals.at(11);
+
         qr->classifierScore = static_cast<float>(cs->classifierScore);
         qr->discScore = static_cast<float>(cs->discriminantScore);
         qr->qValue = static_cast<float>(cs->qValue);
         qr->mzInterferences = cs->mzInterferences;
         qr->isDecoy = cs->isDecoy;
 
-        if (qr->isDecoy) {
-            ERR_RETURN
-        }
+        qr->scanTime = cs->scanTime;
+        qr->scanTimeStart = cs->scanTimeStart;
+        qr->scanTimeEnd = cs->scanTimeEnd;
+        qr->cosineSimSum100 = cs->featuresArray[CandidateScores::Features::CosineSimSum100Top12];
+        qr->intensityValMz1 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax1];
+        qr->intensityValMz2 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax2];
+        qr->intensityValMz3 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax3];
+        qr->intensityValMz4 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax4];
+        qr->intensityValMz5 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax5];
+        qr->intensityValMz6 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax6];
+        qr->intensityValMz7 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax7];
+        qr->intensityValMz8 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax8];
+        qr->intensityValMz9 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax9];
+        qr->intensityValMz10 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax10];
+        qr->intensityValMz11 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax11];
+        qr->intensityValMz12 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax12];
 
-        Eigen::MatrixX<float> xicMatrix;
-        e = buildXICMatrix(indexVsXICPoints, &xicMatrix); ree;
+        qr->scanTimeAlt = cs->scanTimeAlt;
+        qr->scanTimeStartAlt = cs->scanTimeStartAlt;
+        qr->scanTimeEndAlt = cs->scanTimeEndAlt;
+        qr->cosineSimSum100Alt = cs->cosineSimSum100Alt;
+        qr->scanTimePredicted = cs->scanTimePredicted;
 
-        for (int col = 0; col < xicMatrix.cols(); col++) {
+        for (int i = 0; i < cs->intensityValsAlt.size(); i++) {
 
-            const Eigen::VectorX<float> &matCol = xicMatrix.col(col);
-            const QVector<float> matColVec = EigenUtils::convertEigenVectorToQVector(matCol);
-
-            switch (col) {
-            case 0:
-                std::transform(
-                    matColVec.begin(),
-                    matColVec.end(),
-                    std::back_inserter(qr->scanTimes),
-                    [msFrame](float f){return msFrame->scanTimeFromFrameIndex(static_cast<int>(f));}
-                    );
-                break;
-            case 1:
-                qr->intensityValsMz1 = matColVec;
-                break;
-            case 2:
-                qr->intensityValsMz2 = matColVec;
-                break;
-            case 3:
-                qr->intensityValsMz3 = matColVec;
-                break;
-            case 4:
-                qr->intensityValsMz4 = matColVec;
-                break;
-            case 5:
-                qr->intensityValsMz5 = matColVec;
-                break;
-            case 6:
-                qr->intensityValsMz6 = matColVec;
-                break;
-            case 7:
-                qr->intensityValsMz7 = matColVec;
-                break;
-            case 8:
-                qr->intensityValsMz8 = matColVec;
-                break;
-            case 9:
-                qr->intensityValsMz9 = matColVec;
-                break;
-            case 10:
-                qr->intensityValsMz10 = matColVec;
-                break;
-            case 11:
-                qr->intensityValsMz11 = matColVec;
-                break;
-            case 12:
-                qr->intensityValsMz12 = matColVec;
-                break;
-            default:
-                rrr(eValueError)
+            switch (i) {
+                case 0:
+                    qr->intensityValMzAlt1 = cs->intensityValsAlt.at(i);
+                    break;
+                case 1:
+                    qr->intensityValMzAlt2 = cs->intensityValsAlt.at(i);
+                    break;
+                case 2:
+                    qr->intensityValMzAlt3 = cs->intensityValsAlt.at(i);
+                    break;
+                case 3:
+                    qr->intensityValMzAlt4 = cs->intensityValsAlt.at(i);
+                    break;
+                case 4:
+                    qr->intensityValMzAlt5 = cs->intensityValsAlt.at(i);
+                    break;
+                case 5:
+                    qr->intensityValMzAlt6 = cs->intensityValsAlt.at(i);
+                    break;
+                case 6:
+                    qr->intensityValMzAlt7 = cs->intensityValsAlt.at(i);
+                    break;
+                case 7:
+                    qr->intensityValMzAlt8 = cs->intensityValsAlt.at(i);
+                    break;
+                case 8:
+                    qr->intensityValMzAlt9 = cs->intensityValsAlt.at(i);
+                    break;
+                case 9:
+                    qr->intensityValMzAlt10 = cs->intensityValsAlt.at(i);
+                    break;
+                case 10:
+                    qr->intensityValMzAlt11 = cs->intensityValsAlt.at(i);
+                    break;
+                case 11:
+                    qr->intensityValMzAlt12 = cs->intensityValsAlt.at(i);
+                    break;
+                default:
+                    rrr(eValueError);
             }
+
         }
 
         ERR_RETURN
@@ -252,77 +248,13 @@ namespace {
     QPair<Err, QVector<QuanReaderRow>> parallelLogic(const ParallelInput &pi) {
 
         ERR_INIT
-        TurboXIC2D turboXIC;
-        e = turboXIC.init(pi.msFrame->frameIndexVsScanPoints());
 
         QVector<QuanReaderRow> quanReaderRows;
 
         for (const CandidateScores *cs : pi.candidateScores) {
 
-            e = ErrorUtils::isAboveThreshold(
-                cs->frameIndexEnd,
-                cs->frameIndexStart,
-                ErrorUtilsParam::ExcludeThreshold
-                ); rree;
-
-            if (cs->isDecoy) {
-                QMap<Index, XICPoints> indexVsXICPointsDecoy;
-                QuanReaderRow quanReaderRowDecoy;
-                e = buildQuanReaderRow(
-                    indexVsXICPointsDecoy,
-                    pi.msFrame,
-                    cs,
-                    &quanReaderRowDecoy
-                ); rree;
-                quanReaderRows.push_back(quanReaderRowDecoy);
-                continue;
-            }
-
-            const int peakLength = cs->frameIndexEnd - cs->frameIndexStart;
-            const int bufferLength = std::max(1, static_cast<int>(std::round(peakLength / 2.0)));
-
-            const FrameIndex frameIndexStart = cs->frameIndexStart - bufferLength;
-            const FrameIndex frameIndexEnd = cs->frameIndexEnd + bufferLength;
-
-            QVector<MS2Ion> ms2Ions = cs->isDecoy
-                            ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                            : cs->targetDecoyCandidatePair->ms2IonsTarget();
-
-            ms2Ions.resize(std::min(topN, ms2Ions.size()));
-
-            QMap<Index, XICPoints> indexVsXICPoints;
-
-            for (const MS2Ion &ms2Ion : ms2Ions) {
-
-                const float mzTol = MathUtils::calculatePPM(ms2Ion.mz, pi.ppmTol);
-                const float mzStart = ms2Ion.mz - mzTol;
-                const float mzEnd = ms2Ion.mz + mzTol;
-
-                const XICPoints xicPoints = turboXIC.extractPointsXIC(
-                    mzStart,
-                    mzEnd,
-                    static_cast<float>(frameIndexStart),
-                    static_cast<float>(frameIndexEnd)
-                    );
-
-                indexVsXICPoints.insert(indexVsXICPoints.size(), xicPoints);
-            }
-
-            const int xicPointsCount = std::accumulate(
-                indexVsXICPoints.begin(),
-                indexVsXICPoints.end(),
-                0,
-                [](int sum, const XICPoints &x){return sum + x.size();}
-                );
-
-            if(xicPointsCount < 1) {
-                continue;
-            }
-
             QuanReaderRow quanReaderRow;
             e = buildQuanReaderRow(
-                indexVsXICPoints,
-                pi.msFrame,
                 cs,
                 &quanReaderRow
             ); rree;
@@ -336,16 +268,13 @@ namespace {
 }//namespace
 Err QuanFileBuilder::buildQuanFile(
     const QVector<CandidateScores*> &candidateScores,
-    const QMap<MzTargetKey, MsFrame*> &mzTargetKeyVsMsFrame,
-    const QString& outputFilePath,
-    float ppmTolerance
+    const QString& outputFilePath
     ) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(candidateScores); ree;
     e = ErrorUtils::isNotEmpty(outputFilePath); ree;
-    e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFrame); ree;
 
     QElapsedTimer et;
     et.start();
@@ -356,8 +285,6 @@ Err QuanFileBuilder::buildQuanFile(
     QVector<ParallelInput> parallelInputs;
     e = buildParallelInputs(
         mzTargetKeyVsCandidateScoresPntrs,
-        mzTargetKeyVsMsFrame,
-        ppmTolerance,
         &parallelInputs
         ); ree;
 

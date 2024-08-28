@@ -33,20 +33,24 @@ namespace QuanReaderNamespace {
     const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
     const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
 
-    const QString SCAN_TIMES = QStringLiteral("scanTimes");
+    const QString SCAN_TIME = QStringLiteral("scanTime");
+    const QString SCAN_TIME_START = QStringLiteral("scanTimeStart");
+    const QString SCAN_TIME_END = QStringLiteral("scanTimeEnd");
 
-    const QString INTENSITY_VALS_MZ1 = QStringLiteral("intensityValsMz1");
-    const QString INTENSITY_VALS_MZ2 = QStringLiteral("intensityValsMz2");
-    const QString INTENSITY_VALS_MZ3 = QStringLiteral("intensityValsMz3");
-    const QString INTENSITY_VALS_MZ4 = QStringLiteral("intensityValsMz4");
-    const QString INTENSITY_VALS_MZ5 = QStringLiteral("intensityValsMz5");
-    const QString INTENSITY_VALS_MZ6 = QStringLiteral("intensityValsMz6");
-    const QString INTENSITY_VALS_MZ7 = QStringLiteral("intensityValsMz7");
-    const QString INTENSITY_VALS_MZ8 = QStringLiteral("intensityValsMz8");
-    const QString INTENSITY_VALS_MZ9 = QStringLiteral("intensityValsMz9");
-    const QString INTENSITY_VALS_MZ10 = QStringLiteral("intensityValsMz10");
-    const QString INTENSITY_VALS_MZ11 = QStringLiteral("intensityValsMz11");
-    const QString INTENSITY_VALS_MZ12 = QStringLiteral("intensityValsMz12");
+    const QString INTENSITY_VAL_MZ1 = QStringLiteral("intensityValMz1");
+    const QString INTENSITY_VAL_MZ2 = QStringLiteral("intensityValMz2");
+    const QString INTENSITY_VAL_MZ3 = QStringLiteral("intensityValMz3");
+    const QString INTENSITY_VAL_MZ4 = QStringLiteral("intensityValMz4");
+    const QString INTENSITY_VAL_MZ5 = QStringLiteral("intensityValMz5");
+    const QString INTENSITY_VAL_MZ6 = QStringLiteral("intensityValMz6");
+    const QString INTENSITY_VAL_MZ7 = QStringLiteral("intensityValMz7");
+    const QString INTENSITY_VAL_MZ8 = QStringLiteral("intensityValMz8");
+    const QString INTENSITY_VAL_MZ9 = QStringLiteral("intensityValMz9");
+    const QString INTENSITY_VAL_MZ10 = QStringLiteral("intensityValMz10");
+    const QString INTENSITY_VAL_MZ11 = QStringLiteral("intensityValMz11");
+    const QString INTENSITY_VAL_MZ12 = QStringLiteral("intensityValMz12");
+
+    const QString COS_SIM_SUM_100 = QStringLiteral("cosineSimSum100");
 
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString DISC_SCORE = QStringLiteral("discScore");
@@ -54,6 +58,26 @@ namespace QuanReaderNamespace {
     const QString MZ_INTERF = QStringLiteral("mzInterferences");
 
     const QString IS_DECOY = QStringLiteral("isDecoy");
+
+    const QString SCAN_TIME_ALT = QStringLiteral("scanTimeAlt");
+    const QString SCAN_TIME_START_ALT = QStringLiteral("scanTimeStartAlt");
+    const QString SCAN_TIME_END_ALT = QStringLiteral("scanTimeEndAlt");
+
+    const QString INTENSITY_VAL_ALT_MZ1 = QStringLiteral("intensityValMzAlt1");
+    const QString INTENSITY_VAL_ALT_MZ2 = QStringLiteral("intensityValMzAlt2");
+    const QString INTENSITY_VAL_ALT_MZ3 = QStringLiteral("intensityValMzAlt3");
+    const QString INTENSITY_VAL_ALT_MZ4 = QStringLiteral("intensityValMzAlt4");
+    const QString INTENSITY_VAL_ALT_MZ5 = QStringLiteral("intensityValMzAlt5");
+    const QString INTENSITY_VAL_ALT_MZ6 = QStringLiteral("intensityValMzAlt6");
+    const QString INTENSITY_VAL_ALT_MZ7 = QStringLiteral("intensityValMzAlt7");
+    const QString INTENSITY_VAL_ALT_MZ8 = QStringLiteral("intensityValMzAlt8");
+    const QString INTENSITY_VAL_ALT_MZ9 = QStringLiteral("intensityValMzAlt9");
+    const QString INTENSITY_VAL_ALT_MZ10 = QStringLiteral("intensityValMzAlt10");
+    const QString INTENSITY_VAL_ALT_MZ11 = QStringLiteral("intensityValMzAlt11");
+    const QString INTENSITY_VAL_ALT_MZ12 = QStringLiteral("intensityValMzAlt12");
+
+    const QString COS_SIM_SUM_100_ALT = QStringLiteral("cosineSimSum100Alt");
+    const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
 
     const QStringList keysToCheck = {
         PEP_STR_W_MODS,
@@ -65,18 +89,50 @@ namespace QuanReaderNamespace {
         MZ_SEARCHED_4,
         MZ_SEARCHED_5,
         MZ_SEARCHED_6,
-        SCAN_TIMES,
-        INTENSITY_VALS_MZ1,
-        INTENSITY_VALS_MZ2,
-        INTENSITY_VALS_MZ3,
-        INTENSITY_VALS_MZ4,
-        INTENSITY_VALS_MZ5,
-        INTENSITY_VALS_MZ6,
+        MZ_SEARCHED_7,
+        MZ_SEARCHED_8,
+        MZ_SEARCHED_9,
+        MZ_SEARCHED_10,
+        MZ_SEARCHED_11,
+        MZ_SEARCHED_12,
+        SCAN_TIME,
+        SCAN_TIME_START,
+        SCAN_TIME_END,
+        INTENSITY_VAL_MZ1,
+        INTENSITY_VAL_MZ2,
+        INTENSITY_VAL_MZ3,
+        INTENSITY_VAL_MZ4,
+        INTENSITY_VAL_MZ5,
+        INTENSITY_VAL_MZ6,
+        INTENSITY_VAL_MZ7,
+        INTENSITY_VAL_MZ8,
+        INTENSITY_VAL_MZ9,
+        INTENSITY_VAL_MZ10,
+        INTENSITY_VAL_MZ11,
+        INTENSITY_VAL_MZ12,
+        COS_SIM_SUM_100,
         CLASSIFIER_SCORE,
         DISC_SCORE,
         Q_VALUE,
         MZ_INTERF,
-        IS_DECOY
+        IS_DECOY,
+        SCAN_TIME_ALT,
+        SCAN_TIME_START_ALT,
+        SCAN_TIME_END_ALT,
+        INTENSITY_VAL_ALT_MZ1,
+        INTENSITY_VAL_ALT_MZ2,
+        INTENSITY_VAL_ALT_MZ3,
+        INTENSITY_VAL_ALT_MZ4,
+        INTENSITY_VAL_ALT_MZ5,
+        INTENSITY_VAL_ALT_MZ6,
+        INTENSITY_VAL_ALT_MZ7,
+        INTENSITY_VAL_ALT_MZ8,
+        INTENSITY_VAL_ALT_MZ9,
+        INTENSITY_VAL_ALT_MZ10,
+        INTENSITY_VAL_ALT_MZ11,
+        INTENSITY_VAL_ALT_MZ12,
+        COS_SIM_SUM_100_ALT,
+        SCAN_TIME_PRED
     };
 
 }//namespace
@@ -98,19 +154,24 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
     float mzSearched10 = -1.0;
     float mzSearched11 = -1.0;
     float mzSearched12 = -1.0;
-    QVector<float> scanTimes;
-    QVector<float> intensityValsMz1;
-    QVector<float> intensityValsMz2;
-    QVector<float> intensityValsMz3;
-    QVector<float> intensityValsMz4;
-    QVector<float> intensityValsMz5;
-    QVector<float> intensityValsMz6;
-    QVector<float> intensityValsMz7;
-    QVector<float> intensityValsMz8;
-    QVector<float> intensityValsMz9;
-    QVector<float> intensityValsMz10;
-    QVector<float> intensityValsMz11;
-    QVector<float> intensityValsMz12;
+
+    float scanTime = -1.0;
+    float scanTimeStart = -1.0;
+    float scanTimeEnd = -1.0;
+    float intensityValMz1 = -1.0;
+    float intensityValMz2 = -1.0;
+    float intensityValMz3 = -1.0;
+    float intensityValMz4 = -1.0;
+    float intensityValMz5 = -1.0;
+    float intensityValMz6 = -1.0;
+    float intensityValMz7 = -1.0;
+    float intensityValMz8 = -1.0;
+    float intensityValMz9 = -1.0;
+    float intensityValMz10 = -1.0;
+    float intensityValMz11 = -1.0;
+    float intensityValMz12 = -1.0;
+
+    float cosineSimSum100 = -1.0;
 
     QVector<float> mzInterferences;
 
@@ -119,6 +180,26 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
     float qValue = -1.0;
 
     bool isDecoy = false;
+
+    float scanTimeAlt = -1.0;
+    float scanTimeStartAlt = -1.0;
+    float scanTimeEndAlt = -1.0;
+    float intensityValMzAlt1 = -1.0;
+    float intensityValMzAlt2 = -1.0;
+    float intensityValMzAlt3 = -1.0;
+    float intensityValMzAlt4 = -1.0;
+    float intensityValMzAlt5 = -1.0;
+    float intensityValMzAlt6 = -1.0;
+    float intensityValMzAlt7 = -1.0;
+    float intensityValMzAlt8 = -1.0;
+    float intensityValMzAlt9 = -1.0;
+    float intensityValMzAlt10 = -1.0;
+    float intensityValMzAlt11 = -1.0;
+    float intensityValMzAlt12 = -1.0;
+
+    float cosineSimSum100Alt = -1.0;
+    float scanTimePredicted = -1.0;
+
 
     QMap<QString, QVariant> map() override {
 
@@ -141,20 +222,22 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
             {MZ_SEARCHED_11, QVariant(mzSearched11)},
             {MZ_SEARCHED_12, QVariant(mzSearched12)},
 
-            {SCAN_TIMES, QVariant(qVectorToQByteArray(scanTimes))},
-
-            {INTENSITY_VALS_MZ1, QVariant(qVectorToQByteArray(intensityValsMz1))},
-            {INTENSITY_VALS_MZ2, QVariant(qVectorToQByteArray(intensityValsMz2))},
-            {INTENSITY_VALS_MZ3, QVariant(qVectorToQByteArray(intensityValsMz3))},
-            {INTENSITY_VALS_MZ4, QVariant(qVectorToQByteArray(intensityValsMz4))},
-            {INTENSITY_VALS_MZ5, QVariant(qVectorToQByteArray(intensityValsMz5))},
-            {INTENSITY_VALS_MZ6, QVariant(qVectorToQByteArray(intensityValsMz6))},
-            {INTENSITY_VALS_MZ7, QVariant(qVectorToQByteArray(intensityValsMz7))},
-            {INTENSITY_VALS_MZ8, QVariant(qVectorToQByteArray(intensityValsMz8))},
-            {INTENSITY_VALS_MZ9, QVariant(qVectorToQByteArray(intensityValsMz9))},
-            {INTENSITY_VALS_MZ10, QVariant(qVectorToQByteArray(intensityValsMz10))},
-            {INTENSITY_VALS_MZ11, QVariant(qVectorToQByteArray(intensityValsMz11))},
-            {INTENSITY_VALS_MZ12, QVariant(qVectorToQByteArray(intensityValsMz12))},
+            {SCAN_TIME, QVariant(scanTime)},
+            {SCAN_TIME_START, QVariant(scanTimeStart)},
+            {SCAN_TIME_END, QVariant(scanTimeEnd)},
+            {INTENSITY_VAL_MZ1, QVariant(intensityValMz1)},
+            {INTENSITY_VAL_MZ2, QVariant(intensityValMz2)},
+            {INTENSITY_VAL_MZ3, QVariant(intensityValMz3)},
+            {INTENSITY_VAL_MZ4, QVariant(intensityValMz4)},
+            {INTENSITY_VAL_MZ5, QVariant(intensityValMz5)},
+            {INTENSITY_VAL_MZ6, QVariant(intensityValMz6)},
+            {INTENSITY_VAL_MZ7, QVariant(intensityValMz7)},
+            {INTENSITY_VAL_MZ8, QVariant(intensityValMz8)},
+            {INTENSITY_VAL_MZ9, QVariant(intensityValMz9)},
+            {INTENSITY_VAL_MZ10, QVariant(intensityValMz10)},
+            {INTENSITY_VAL_MZ11, QVariant(intensityValMz11)},
+            {INTENSITY_VAL_MZ12, QVariant(intensityValMz12)},
+            {COS_SIM_SUM_100, QVariant(cosineSimSum100)},
 
             {MZ_INTERF, QVariant(qVectorToQByteArray(mzInterferences))},
 
@@ -162,7 +245,26 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
             {DISC_SCORE, QVariant(discScore)},
             {Q_VALUE, QVariant(qValue)},
 
-            {IS_DECOY, QVariant(isDecoy)}
+            {IS_DECOY, QVariant(isDecoy)},
+
+            {SCAN_TIME_ALT, QVariant(scanTimeAlt)},
+            {SCAN_TIME_START_ALT, QVariant(scanTimeStartAlt)},
+            {SCAN_TIME_END_ALT, QVariant(scanTimeEndAlt)},
+            {INTENSITY_VAL_ALT_MZ1, QVariant(intensityValMzAlt1)},
+            {INTENSITY_VAL_ALT_MZ2, QVariant(intensityValMzAlt2)},
+            {INTENSITY_VAL_ALT_MZ3, QVariant(intensityValMzAlt3)},
+            {INTENSITY_VAL_ALT_MZ4, QVariant(intensityValMzAlt4)},
+            {INTENSITY_VAL_ALT_MZ5, QVariant(intensityValMzAlt5)},
+            {INTENSITY_VAL_ALT_MZ6, QVariant(intensityValMzAlt6)},
+            {INTENSITY_VAL_ALT_MZ7, QVariant(intensityValMzAlt7)},
+            {INTENSITY_VAL_ALT_MZ8, QVariant(intensityValMzAlt8)},
+            {INTENSITY_VAL_ALT_MZ9, QVariant(intensityValMzAlt9)},
+            {INTENSITY_VAL_ALT_MZ10, QVariant(intensityValMzAlt10)},
+            {INTENSITY_VAL_ALT_MZ11, QVariant(intensityValMzAlt11)},
+            {INTENSITY_VAL_ALT_MZ12, QVariant(intensityValMzAlt12)},
+            {COS_SIM_SUM_100_ALT, QVariant(cosineSimSum100Alt)},
+            {SCAN_TIME_PRED, QVariant(scanTimePredicted)},
+
         };
     }
 
@@ -196,20 +298,39 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
         mzSearched11 = dataMap.value(MZ_SEARCHED_11).toFloat();
         mzSearched12 = dataMap.value(MZ_SEARCHED_12).toFloat();
 
-        scanTimes = bytesArrayToQVector<float>(dataMap.value(SCAN_TIMES).toByteArray());
+        scanTime = dataMap.value(SCAN_TIME).toFloat();
+        scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
+        scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
+        intensityValMz1 = dataMap.value(INTENSITY_VAL_MZ1).toFloat();
+        intensityValMz2 = dataMap.value(INTENSITY_VAL_MZ2).toFloat();
+        intensityValMz3 = dataMap.value(INTENSITY_VAL_MZ3).toFloat();
+        intensityValMz4 = dataMap.value(INTENSITY_VAL_MZ4).toFloat();
+        intensityValMz5 = dataMap.value(INTENSITY_VAL_MZ5).toFloat();
+        intensityValMz6 = dataMap.value(INTENSITY_VAL_MZ6).toFloat();
+        intensityValMz7 = dataMap.value(INTENSITY_VAL_MZ7).toFloat();
+        intensityValMz8 = dataMap.value(INTENSITY_VAL_MZ8).toFloat();
+        intensityValMz9 = dataMap.value(INTENSITY_VAL_MZ9).toFloat();
+        intensityValMz10 = dataMap.value(INTENSITY_VAL_MZ10).toFloat();
+        intensityValMz11 = dataMap.value(INTENSITY_VAL_MZ11).toFloat();
+        intensityValMz12 = dataMap.value(INTENSITY_VAL_MZ12).toFloat();
+        cosineSimSum100 = dataMap.value(COS_SIM_SUM_100).toFloat();
 
-        intensityValsMz1 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ1).toByteArray());
-        intensityValsMz2 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ2).toByteArray());
-        intensityValsMz3 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ3).toByteArray());
-        intensityValsMz4 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ4).toByteArray());
-        intensityValsMz5 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ5).toByteArray());
-        intensityValsMz6 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ6).toByteArray());
-        intensityValsMz7 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ7).toByteArray());
-        intensityValsMz8 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ8).toByteArray());
-        intensityValsMz9 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ9).toByteArray());
-        intensityValsMz10 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ10).toByteArray());
-        intensityValsMz11 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ11).toByteArray());
-        intensityValsMz12 = bytesArrayToQVector<float>(dataMap.value(INTENSITY_VALS_MZ12).toByteArray());
+        scanTimeAlt = dataMap.value(SCAN_TIME_ALT).toFloat();
+        scanTimeStartAlt = dataMap.value(SCAN_TIME_START_ALT).toFloat();
+        scanTimeEndAlt = dataMap.value(SCAN_TIME_END_ALT).toFloat();
+        intensityValMzAlt1 = dataMap.value(INTENSITY_VAL_ALT_MZ1).toFloat();
+        intensityValMzAlt2 = dataMap.value(INTENSITY_VAL_ALT_MZ2).toFloat();
+        intensityValMzAlt3 = dataMap.value(INTENSITY_VAL_ALT_MZ3).toFloat();
+        intensityValMzAlt4 = dataMap.value(INTENSITY_VAL_ALT_MZ4).toFloat();
+        intensityValMzAlt5 = dataMap.value(INTENSITY_VAL_ALT_MZ5).toFloat();
+        intensityValMzAlt6 = dataMap.value(INTENSITY_VAL_ALT_MZ6).toFloat();
+        intensityValMzAlt7 = dataMap.value(INTENSITY_VAL_ALT_MZ7).toFloat();
+        intensityValMzAlt8 = dataMap.value(INTENSITY_VAL_ALT_MZ8).toFloat();
+        intensityValMzAlt9 = dataMap.value(INTENSITY_VAL_ALT_MZ9).toFloat();
+        intensityValMzAlt10 = dataMap.value(INTENSITY_VAL_ALT_MZ10).toFloat();
+        intensityValMzAlt11 = dataMap.value(INTENSITY_VAL_ALT_MZ11).toFloat();
+        intensityValMzAlt12 = dataMap.value(INTENSITY_VAL_ALT_MZ12).toFloat();
+        cosineSimSum100Alt = dataMap.value(COS_SIM_SUM_100_ALT).toFloat();
 
         mzInterferences = bytesArrayToQVector<float>(dataMap.value(MZ_INTERF).toByteArray());
 
@@ -218,6 +339,8 @@ struct FILEREADERSLIB_EXPORTS QuanReaderRow : public ParquetReaderInputBase {
         qValue = dataMap.value(Q_VALUE).toFloat();
 
         isDecoy = dataMap.value(IS_DECOY).toBool();
+
+        scanTimePredicted = dataMap.value(SCAN_TIME_PRED).toFloat();
 
         ERR_RETURN
     }
