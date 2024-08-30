@@ -395,7 +395,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
         candidateScoreClassifierPntrs.resize(counter);
     }
-
+    m_pythiaParameters.writePythiaDIA = true;
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -1563,12 +1563,12 @@ namespace {
         QVector<KarnnNNTarget> karnnNNTargets;
         karnnNNTargets.reserve(candidateScoresTargetsAndDecoysFDRFiltered.size());
         for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
-            const CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
+            CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
-            karnnNnTarget.scoreVec = cs->featuresArray;
+            karnnNnTarget.scoreVec = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
