@@ -395,7 +395,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
         candidateScoreClassifierPntrs.resize(counter);
     }
-
+    m_pythiaParameters.writePythiaDIA = true;
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -466,9 +466,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(
         candidateScoreClassifierPntrs,
-        m_targetDecoyCandidatePairScoretron.mzTargetKeyVsMsFramePntr(),
-        quanFilePath,
-        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM)
+        quanFilePath
         ); ree;
 
     ERR_RETURN
@@ -580,9 +578,8 @@ namespace {
             qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
         }
 
-
-        const int top6 = 6;
-        const auto msCalibrationReaderRowsInsertLogic = [msLevel](CandidateScores *cs){
+        constexpr int top6 = 6;
+        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top6](CandidateScores *cs){
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
@@ -591,7 +588,19 @@ namespace {
             row.scanNumber = cs->scanNumber;
 
             if (msLevel == MSLevelEnum::MS2) {
-                row.mzSearchedVec = cs->featuresArray.mid(CandidateScores::Features::MzSearched1, top6);
+
+                const QVector<MS2Ion> ms2Ions = cs->isDecoy
+                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
+                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
+
+                QVector<float> mzSearchedVals(top6, -1.0f);
+                const int maxSize = std::min(top6, ms2Ions.size());
+
+                for (int i = 0; i < maxSize; i++) {
+                    mzSearchedVals[i] = ms2Ions.at(i).mz;
+                }
+
+                row.mzSearchedVec = mzSearchedVals;
                 row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
                 row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
                 row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
@@ -859,6 +868,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
             qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
             if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
                 qWarning() << "Skipping MS1 recalibration.  Not enough points found";
+                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 ERR_RETURN
             }
 
@@ -871,6 +881,7 @@ Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPoin
                     ); ree;
 
             if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 ERR_RETURN
             }
 
@@ -1552,12 +1563,13 @@ namespace {
         QVector<KarnnNNTarget> karnnNNTargets;
         karnnNNTargets.reserve(candidateScoresTargetsAndDecoysFDRFiltered.size());
         for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
-            const CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
+            CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
             karnnNnTarget.isDecoy = cs->isDecoy;
             karnnNnTarget.index = i;
-            karnnNnTarget.scoreVec = cs->featuresArray;
+            karnnNnTarget.scoreVec = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+
             karnnNNTargets.push_back(karnnNnTarget);
         }
 

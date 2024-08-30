@@ -245,12 +245,18 @@ Err CandidateScorertron::calculateScores(
         ERR_RETURN
     }
 
-    BestCorrelationResult bestCorrelationResult;
+    QVector<BestCorrelationResult> bestCorrelationResults;
     e = processIntegrationVectorPeakIntegrations(
         matriciesAndVecs,
         peakIntegrationsVsIntensities,
-        &bestCorrelationResult
+        &bestCorrelationResults
         ); ree;
+
+    std::sort(
+        bestCorrelationResults.rbegin(),
+        bestCorrelationResults.rend(),
+        [](const BestCorrelationResult &l, const BestCorrelationResult &r){return l.peakCorrelationsSum < r.peakCorrelationsSum;}
+        );
 
     const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
@@ -258,7 +264,7 @@ Err CandidateScorertron::calculateScores(
 
     e = setCandidateScores(
         targetDecoyCandidatePair,
-        bestCorrelationResult,
+        bestCorrelationResults,
         ms1Averagine,
         candidateScores
         ); ree;
@@ -665,7 +671,7 @@ Err CandidateScorertron::setPredictedFrameIndexes(
     if (m_msCalibratomatic.isInitRT()) {
 
         const float scanTimeWindow
-            = m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
+            = m_msCalibratomatic.scanTimeStDev(static_cast<float>(m_pythiaParameters.scanTimeWindowStDevs));
 
         e = m_msCalibratomatic.predictScanTime(
                 iRT,
@@ -842,7 +848,6 @@ namespace {
         return {std::max(leftStopIndex, 0), std::min(rightStopIndex, static_cast<int>(vec.size()) - 1)};
     }
 
-    //TODO delete
     Eigen::MatrixX<float> trimMatrixBlock(
         const Eigen::MatrixX<float> &matBlock,
         const QVector<int> &apexStarts,
@@ -967,7 +972,7 @@ namespace {
 Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const MatriciesAndVecs &matriciesAndVecs,
     const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
-    BestCorrelationResult *bestCorrelationResult
+    QVector<BestCorrelationResult> *bestCorrelationResults
     ) const {
 
     ERR_INIT
@@ -1015,14 +1020,11 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const QVector<int> apexStarts = findStartApexes(matBlockApexes, apexIndex.first);
         e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols())); ree;
 
-        //TODO delete
         const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
             matBlock,
             apexStarts,
             m_pythiaParameters.stopThresholdFraction
             );
-
-        // const Eigen::MatrixX<float> &matBlockTrimmed = matBlock;
 
         QVector<float> peakCorrelations;
         int bestAnchorColumnIndex = -1;
@@ -1039,98 +1041,97 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const float peakCorrelationsSum
                 = std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f);
 
-        if (peakCorrelationsSum > bestCorrelationResult->peakCorrelationsSum) {
+        BestCorrelationResult bestCorrelationResultPii;
 
-            bestCorrelationResult->peakCorrelations = peakCorrelations;
-            bestCorrelationResult->peakCorrelationsSum = peakCorrelationsSum;
-            bestCorrelationResult->matBlockTrimmedIntensity = matBlockTrimmed;
-            bestCorrelationResult->bestAnchorColumnIndex = bestAnchorColumnIndex;
-            bestCorrelationResult->bestAnchorRowIndex = bestAnchorRowIndex;
-            bestCorrelationResult->apexStarts = apexStarts;
-            bestCorrelationResult->peakIntegrationIndexes = piiWorking.first;
+        bestCorrelationResultPii.peakCorrelations = peakCorrelations;
+        bestCorrelationResultPii.peakCorrelationsSum = peakCorrelationsSum;
+        bestCorrelationResultPii.matBlockTrimmedIntensity = matBlockTrimmed;
+        bestCorrelationResultPii.bestAnchorColumnIndex = bestAnchorColumnIndex;
+        bestCorrelationResultPii.bestAnchorRowIndex = bestAnchorRowIndex;
+        bestCorrelationResultPii.apexStarts = apexStarts;
+        bestCorrelationResultPii.peakIntegrationIndexes = piiWorking.first;
 
-            constexpr float windowMultiplier1p5X = 0.5;
-            const auto frameIndex1p5XMin
-                = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier1p5X * ogPeakLength))), 0);
-            const auto frameIndex1p5XMax
-                = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
-            const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin;
-            Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
-                  frameIndex1p5XMin,
-                  0,
-                  peakLength1p5X,
-                  matriciesAndVecs.intensityMatrix100.cols()
-                  ).eval();
+        constexpr float windowMultiplier1p5X = 0.5;
+        const auto frameIndex1p5XMin
+            = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier1p5X * ogPeakLength))), 0);
+        const auto frameIndex1p5XMax
+            = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier1p5X * ogPeakLength))), maxRows);
+        const int peakLength1p5X = frameIndex1p5XMax - frameIndex1p5XMin;
+        Eigen::MatrixX<float> matBlock1p5X = matriciesAndVecs.intensityMatrix100.block(
+              frameIndex1p5XMin,
+              0,
+              peakLength1p5X,
+              matriciesAndVecs.intensityMatrix100.cols()
+              ).eval();
 
-            constexpr float windowMultiplier2X = 1.0;
-            const auto frameIndex2XMin
-                = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier2X * ogPeakLength))), 0);
-            const auto frameIndex2XMax
-                = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
-            const int peakLength2X = frameIndex2XMax - frameIndex2XMin;
-            Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
-                          frameIndex2XMin,
-                          0,
-                          peakLength2X,
-                          matriciesAndVecs.intensityMatrix100.cols()
-                          ).eval();
+        constexpr float windowMultiplier2X = 1.0;
+        const auto frameIndex2XMin
+            = std::max(static_cast<FrameIndex>(std::round(piiWorking.first.first - (windowMultiplier2X * ogPeakLength))), 0);
+        const auto frameIndex2XMax
+            = std::min(static_cast<FrameIndex>(std::round(piiWorking.first.first + (windowMultiplier2X * ogPeakLength))), maxRows);
+        const int peakLength2X = frameIndex2XMax - frameIndex2XMin;
+        Eigen::MatrixX<float> matBlock2X = matriciesAndVecs.intensityMatrix100.block(
+                      frameIndex2XMin,
+                      0,
+                      peakLength2X,
+                      matriciesAndVecs.intensityMatrix100.cols()
+                      ).eval();
 
-            //TODO delete
-            bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
-                matBlock1p5X,
-                apexStarts,
-                m_pythiaParameters.stopThresholdFraction
-                );
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X = matBlock1p5X;
-            e = calculatePeakCorrelations(
-                bestCorrelationResult->matBlockTrimmedIntensityWindow1p5X,
-                bestAnchorColumnIndex,
-                &bestCorrelationResult->peakCorrelationsWindow1p5X
-                ); ree;
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
+            matBlock1p5X,
+            apexStarts,
+            m_pythiaParameters.stopThresholdFraction
+            );
 
-            //TODO delete
-            bestCorrelationResult->matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
-                        matBlock2X,
-                        apexStarts,
-                        m_pythiaParameters.stopThresholdFraction
-                        );
-            // bestCorrelationResult->matBlockTrimmedIntensityWindow2X = matBlock2X;
-            e = calculatePeakCorrelations(
-                bestCorrelationResult->matBlockTrimmedIntensityWindow2X,
-                bestAnchorColumnIndex,
-                &bestCorrelationResult->peakCorrelationsWindow2X
-                ); ree;
+        e = calculatePeakCorrelations(
+            bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X,
+            bestAnchorColumnIndex,
+            &bestCorrelationResultPii.peakCorrelationsWindow1p5X
+            ); ree;
 
-            const PeakIntegrationIndexes &p = piiWorking.first;
-            const int pSize = p.second - p.first + 1;
-            bestCorrelationResult->matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
-                p.first,
-                0,
-                pSize,
-                matBlockTrimmed.cols()
-                ).eval();
+        bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
+                    matBlock2X,
+                    apexStarts,
+                    m_pythiaParameters.stopThresholdFraction
+                    );
 
-            bestCorrelationResult->matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
-                p.first,
-                0,
-                pSize,
-                matBlockTrimmed.cols()
-                ).eval();
+        e = calculatePeakCorrelations(
+            bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X,
+            bestAnchorColumnIndex,
+            &bestCorrelationResultPii.peakCorrelationsWindow2X
+            ); ree;
 
-            bestCorrelationResult->matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
-                p.first,
-                0,
-                pSize,
-                matBlockTrimmed.cols()
-                ).eval();
+        const PeakIntegrationIndexes &p = piiWorking.first;
+        const int pSize = p.second - p.first + 1;
+        bestCorrelationResultPii.matBlockTrimmedMz = matriciesAndVecs.mzMatrix100.block(
+            p.first,
+            0,
+            pSize,
+            matBlockTrimmed.cols()
+            ).eval();
 
-            e = calculatePeakCorrelations(
-                bestCorrelationResult->matBlockTrimmedIntensity45,
-                bestAnchorColumnIndex,
-                &bestCorrelationResult->peakCorrelations45
-                ); ree;
+        bestCorrelationResultPii.matBlockTrimmedIntensityShadows = matriciesAndVecs.intensityMatrix100Shadow.block(
+            p.first,
+            0,
+            pSize,
+            matBlockTrimmed.cols()
+            ).eval();
 
-        }
+        bestCorrelationResultPii.matBlockTrimmedIntensity45 = matriciesAndVecs.intensityMatrix45.block(
+            p.first,
+            0,
+            pSize,
+            matBlockTrimmed.cols()
+            ).eval();
+
+        e = calculatePeakCorrelations(
+            bestCorrelationResultPii.matBlockTrimmedIntensity45,
+            bestAnchorColumnIndex,
+            &bestCorrelationResultPii.peakCorrelations45
+            ); ree;
+
+        bestCorrelationResults->push_back(bestCorrelationResultPii);
+
 // #define OUTPUT_MATS
 #ifdef OUTPUT_MATS
         qDebug() << peakCorrelations << std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f) << "SLDFJSDLFLJ";
@@ -1299,22 +1300,6 @@ namespace {
 
     constexpr int arraySizeMax = 12;
 
-    Err setTheoreticalMs2Ions(
-        const QVector<MS2Ion> &ms2IonsTheoretical,
-        CandidateScores *candidateScores
-        ) {
-
-        ERR_INIT
-
-        for (int i = 0; i < std::min(ms2IonsTheoretical.size(), arraySizeMax); i++) {
-            const MS2Ion &ms2Ion = ms2IonsTheoretical.at(i);
-            candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i] = static_cast<float>(ms2Ion.mz);
-            candidateScores->featuresArray[CandidateScores::Features::TheoIntensity1 + i] = ms2Ion.intensity;
-        }
-
-        ERR_RETURN
-    }
-
     Err buildScanTimeVectorFromFrameIndexIntegrationLimits(
         const PeakIntegrationIndexes &peakIntegrationIndexes,
         MsFrame *msFrameMzTarget,
@@ -1357,12 +1342,14 @@ namespace {
     }
 
     Err setFoundMs2Ions(
-        const BestCorrelationResult &bestCorrelationResult,
+        const QVector<BestCorrelationResult> &bestCorrelationResults,
         MsFrame *msFrameMzTarget,
         CandidateScores *candidateScores
         ) {
 
         ERR_INIT
+
+        const BestCorrelationResult &bestCorrelationResult = bestCorrelationResults.front();
 
         e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedMz.size() > 0); ree;
 
@@ -1419,27 +1406,14 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
 
-        ERR_RETURN
-    }
+        if (bestCorrelationResults.size() > 1) {
+            const BestCorrelationResult &bestCorrelationResultAlt = bestCorrelationResults.at(1);
+            const Eigen::VectorX<float> intensitySumsAlt = bestCorrelationResultAlt.matBlockTrimmedIntensity.colwise().sum();
 
-    Err setMassAccuracies(CandidateScores *candidateScores) {
-
-        ERR_INIT
-
-        constexpr int top12 = 12;
-
-        for (int i = 0; i < top12; i++) {
-
-            const float mzSearched = candidateScores->featuresArray[CandidateScores::Features::MzSearched1 + i];
-            const float mzFound = candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i];
-
-            if (MathUtils::tZero(mzSearched)) {
-                continue;
+            candidateScores->intensityValsAlt.resize(static_cast<int>(intensitySumsAlt.size()));
+            for (int i = 0; i < std::min(static_cast<int>(intensitySumsAlt.size()), arraySizeMax); i++) {
+                candidateScores->intensityValsAlt[i] = intensitySumsAlt.coeff(i);
             }
-
-            const float absAccuracy = std::abs(MathUtils::calculateMassAccuracyPPM(mzSearched, mzFound));
-            candidateScores->featuresArray[CandidateScores::Features::MzAccuracy1 + i] = 1.0f / std::min(std::max(absAccuracy, 0.001f), 200.0f);
-
         }
 
         ERR_RETURN
@@ -1598,9 +1572,6 @@ namespace {
             candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] += cosineSim;
             candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
-            float intensityRatio = MathUtils::tZero(v1Max) ? 1.0f : v2Max / v1Max;
-            intensityRatio = MathUtils::tZero(v2Max) ? 0.0f : intensityRatio;
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsIntensityRatio1 + col] = intensityRatio;
         }
 
         ERR_RETURN
@@ -1634,21 +1605,6 @@ namespace {
         }
         for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        }
-
-        const QVector<int> &columnApexIndexes = bestCorrelationResult.apexStarts;
-        const double columnApexIndexesMean = MathUtils::mean(columnApexIndexes);
-        const double columnApexIndexesSize = columnApexIndexes.size();
-        QVector<float> columnApexIndexRatiosToAnchor;
-        std::transform(
-                columnApexIndexes.begin(),
-                columnApexIndexes.end(),
-                std::back_inserter(columnApexIndexRatiosToAnchor),
-                [columnApexIndexesMean, columnApexIndexesSize](int i){return (i - columnApexIndexesMean) / columnApexIndexesSize;}
-                );
-
-        for (int i = 0; i < std::min(columnApexIndexRatiosToAnchor.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::ColumnApexIndexRatiosToAnchor1 + i] = columnApexIndexRatiosToAnchor.at(i);
         }
 
         ERR_RETURN
@@ -1686,15 +1642,25 @@ namespace {
 }//namespace
 Err CandidateScorertron::setCandidateScores(
     const TargetDecoyCandidatePair *targetDecoyCandidatePair,
-    const BestCorrelationResult& bestCorrelationResult,
+    const QVector<BestCorrelationResult> &bestCorrelationResults,
     const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
     ) const {
 
     ERR_INIT
 
+    const BestCorrelationResult &bestCorrelationResult = bestCorrelationResults.front();
+
     e = ErrorUtils::isNotEmpty(bestCorrelationResult.peakCorrelations); ree;
     e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
+
+    const bool isSorted = std::is_sorted(
+        bestCorrelationResults.rbegin(),
+        bestCorrelationResults.rend(),
+        [](const BestCorrelationResult &l, const BestCorrelationResult &r){return l.peakCorrelationsSum < r.peakCorrelationsSum;}
+    );
+
+    e = ErrorUtils::isTrue(isSorted); ree;
 
     candidateScores->initFeaturesArray();
 
@@ -1707,6 +1673,24 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndex);
     candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexStart);
     candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
+
+    if(bestCorrelationResults.size() > 1) {
+
+        const BestCorrelationResult &bestCorrelationResultAlt = bestCorrelationResults.at(1);
+
+        candidateScores->scanTimeStartAlt
+            = m_msFrameMzTarget->scanTimeFromFrameIndex(bestCorrelationResultAlt.peakIntegrationIndexes.first);
+
+        candidateScores->scanTimeEndAlt
+            = m_msFrameMzTarget->scanTimeFromFrameIndex(bestCorrelationResultAlt.peakIntegrationIndexes.second);
+
+        candidateScores->scanTimeAlt
+                = m_msFrameMzTarget->scanTimeFromFrameIndex(
+                    bestCorrelationResultAlt.peakIntegrationIndexes.first + bestCorrelationResult.bestAnchorRowIndex
+                    );
+
+        candidateScores->cosineSimSum100Alt = bestCorrelationResultAlt.peakCorrelationsSum;
+    }
 
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
@@ -1814,13 +1798,9 @@ Err CandidateScorertron::setCandidateScores(
                                              ? targetDecoyCandidatePair->ms2IonsDecoy()
                                              : targetDecoyCandidatePair->ms2IonsTarget();
 
-    e = setTheoreticalMs2Ions(ms2IonsTheoritical, candidateScores); ree;
-
-    e = setFoundMs2Ions(bestCorrelationResult, m_msFrameMzTarget, candidateScores); ree;
+    e = setFoundMs2Ions(bestCorrelationResults, m_msFrameMzTarget, candidateScores); ree;
 
     e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
-
-    e = setMassAccuracies(candidateScores); ree;
 
     e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
 

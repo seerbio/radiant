@@ -76,12 +76,12 @@ private:
     Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
         const QVector<QPair<PeakIntegrationIndexes, Intensity>> &peakIntegrationsVsIntensity,
-        BestCorrelationResult *bestCorrelationResult
+        QVector<BestCorrelationResult> *bestCorrelationResults
         ) const;
 
     Err setCandidateScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
-        const BestCorrelationResult &bestCorrelationResult,
+        const QVector<BestCorrelationResult> &bestCorrelationResults,
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
         ) const;
