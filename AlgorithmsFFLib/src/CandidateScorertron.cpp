@@ -202,7 +202,59 @@ public:
     }
 };
 
+namespace {
 
+    Err sortBestCorrelationResult(QVector<BestCorrelationResult> *bestCorrelationResults) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(bestCorrelationResults->isEmpty()); ree;
+
+        const float bestScore = std::max_element(
+            bestCorrelationResults->begin(),
+            bestCorrelationResults->end(),
+            [](const BestCorrelationResult &l, const BestCorrelationResult &r){return l.peakCorrelationsSum < r.peakCorrelationsSum;}
+            )->peakCorrelationsSum;
+
+        const auto terminatorLogic = [bestScore](const BestCorrelationResult &r) {
+            constexpr float tolerance = 1.15;
+            return (bestScore - r.peakCorrelationsSum) > tolerance;
+        };
+        const auto terminator = std::remove_if(
+            bestCorrelationResults->begin(),
+            bestCorrelationResults->end(),
+            terminatorLogic
+            );
+
+        bestCorrelationResults->erase(terminator, bestCorrelationResults->end());
+
+        std::sort(
+            bestCorrelationResults->begin(),
+            bestCorrelationResults->end(),
+            [](const BestCorrelationResult &l, const BestCorrelationResult &r) {
+
+                const int lCorr = static_cast<int>(std::round(l.peakCorrelationsSum));
+                const int rCorr = static_cast<int>(std::round(r.peakCorrelationsSum));
+
+                if (lCorr == rCorr) {
+                    const int lLen = l.peakIntegrationIndexes.second - l.peakIntegrationIndexes.first;
+                    const int rLen = r.peakIntegrationIndexes.second - r.peakIntegrationIndexes.first;
+
+                    if (lLen == rLen) {
+                        return l.matBlockTrimmedIntensity.coeff(l.bestAnchorRowIndex, l.bestAnchorColumnIndex)
+                             > r.matBlockTrimmedIntensity.coeff(r.bestAnchorRowIndex, r.bestAnchorColumnIndex);
+                    }
+
+                    return lLen > rLen;
+                }
+
+                return  lCorr > rCorr;
+            });
+
+        ERR_RETURN;
+    }
+
+}//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
     TargetDecoyCandidatePair* targetDecoyCandidatePair,
@@ -252,11 +304,7 @@ Err CandidateScorertron::calculateScores(
         &bestCorrelationResults
         ); ree;
 
-    std::sort(
-        bestCorrelationResults.rbegin(),
-        bestCorrelationResults.rend(),
-        [](const BestCorrelationResult &l, const BestCorrelationResult &r){return l.peakCorrelationsSum < r.peakCorrelationsSum;}
-        );
+    e = sortBestCorrelationResult(&bestCorrelationResults); ree;
 
     const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
@@ -705,10 +753,11 @@ namespace {
         ) {
         QPair<PeakIntegrationIndexes, Intensity> piiWorking = pii;
         if (piiWorking.first.first == piiWorking.first.second) {
-            piiWorking.first.first = std::max(0, piiWorking.first.first - 1);
+            constexpr int bufferDistance = 1;
+            piiWorking.first.first = std::max(0, piiWorking.first.first - bufferDistance);
             piiWorking.first.second = std::min(
                 static_cast<int>(ionCountVec.size()) - 1,
-                piiWorking.first.second + 1
+                piiWorking.first.second + bufferDistance
                 );
         }
         return piiWorking;
@@ -759,18 +808,18 @@ namespace {
 
                 for (int rowFromCenter = 1; rowFromCenter < apexColumn.size(); rowFromCenter++) {
 
-                    const int rowLeftIndex = apexIndex - rowFromCenter;
-                    const int rowRightIndex = apexIndex + rowFromCenter;
+                    const int rowLeftIndex = std::max(apexIndex - rowFromCenter, 0);
+                    const int rowRightIndex = std::min(apexIndex + rowFromCenter, static_cast<int>(apexColumn.size() - 1));
 
                     int rowLeftIndexValue = -1;
                     int rowRightIndexValue = -1;
 
                     if (rowLeftIndex >= 0) {
-                        rowLeftIndexValue = static_cast<int>(apexColumn.coeff(rowLeftIndex));
+                        rowLeftIndexValue = static_cast<int>(std::round(apexColumn.coeff(rowLeftIndex)));
                     }
 
                     if (rowRightIndex < apexColumn.size()) {
-                        rowRightIndexValue = static_cast<int>(apexColumn.coeff(rowRightIndex));
+                        rowRightIndexValue = static_cast<int>(std::round(apexColumn.coeff(rowRightIndex)));
                     }
 
                     if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
@@ -1012,7 +1061,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
         const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.ionCountVec.segment(
             piiWorking.first.first,
-            piiWorking.first.second - piiWorking.first.first + 1
+            ogPeakLength
             ).eval();
 
         const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
@@ -1653,14 +1702,6 @@ Err CandidateScorertron::setCandidateScores(
 
     e = ErrorUtils::isNotEmpty(bestCorrelationResult.peakCorrelations); ree;
     e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
-
-    const bool isSorted = std::is_sorted(
-        bestCorrelationResults.rbegin(),
-        bestCorrelationResults.rend(),
-        [](const BestCorrelationResult &l, const BestCorrelationResult &r){return l.peakCorrelationsSum < r.peakCorrelationsSum;}
-    );
-
-    e = ErrorUtils::isTrue(isSorted); ree;
 
     candidateScores->initFeaturesArray();
 
