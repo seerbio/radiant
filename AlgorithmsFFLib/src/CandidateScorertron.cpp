@@ -152,7 +152,6 @@ public:
     Eigen::MatrixX<float> intensityMatrix100;
     Eigen::MatrixX<float> intensityMatrix100Shadow;
     Eigen::MatrixX<float> intensityMatrix45;
-    // Eigen::MatrixX<float> intensityMatrix20;//TODO delete
 
     Eigen::MatrixX<float> mzMatrix100;
 
@@ -623,7 +622,6 @@ Err CandidateScorertron::initMatricesdAndVecs(
         QVector<XICPoints> xicPointsVec100;
         QVector<XICPoints> xicPointsVec100Shadow;
         QVector<XICPoints> xicPointsVec45;
-        // QVector<XICPoints> xicPointsVec20; //TODO delete
         e = getXICs(
             ms2IonsResized,
             static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
@@ -1804,8 +1802,6 @@ Err CandidateScorertron::setCandidateScores(
 
     candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
         = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());
-    // candidateScores->featuresArray[CandidateScores::Features::CosineSimSum20]
-    //     = std::max(std::accumulate(bestCorrelationResult.peakCorrelations20.begin(), bestCorrelationResult.peakCorrelations20.begin() + top6, 0.0f), std::numeric_limits<float>::min());
 
     int bestAlignmentMatrixRowIndex = bestCorrelationResult.bestAnchorRowIndex;
     candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
@@ -2048,21 +2044,6 @@ Err CandidateScorertron::setMs1RelatedScores(
         &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM],
         &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45]
         ); ree;
-
-    //TODO delete
-    // e = calculateMs1Scores(
-    //     anchorColumn,
-    //     monoIsotopeMz,
-    //     massTol * S_GLOBAL_SETTINGS.TIGHT_2_FRACTION,
-    //     frameIndexMin,
-    //     frameIndexMax,
-    //     m_turboXicMS1,
-    //     &candidateScores->featuresArray[CandidateScores::Features::CosineSim20MS1],
-    //     &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20],
-    //     &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound20],
-    //     &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound20PPM],
-    //     &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound20]
-    //     ); ree;
 
     e = calculateMs1Scores(
         d_ptr->m_kernelMs2,
