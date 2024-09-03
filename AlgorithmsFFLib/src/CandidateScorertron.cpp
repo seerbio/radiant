@@ -217,7 +217,7 @@ namespace {
             )->peakCorrelationsSum;
 
         const auto terminatorLogic = [bestScore](const BestCorrelationResult &r) {
-            constexpr float tolerance = 1.15;
+            constexpr float tolerance = 0.75;
             return (bestScore - r.peakCorrelationsSum) > tolerance;
         };
         const auto terminator = std::remove_if(
@@ -233,22 +233,16 @@ namespace {
             bestCorrelationResults->end(),
             [](const BestCorrelationResult &l, const BestCorrelationResult &r) {
 
-                const int lCorr = static_cast<int>(std::round(l.peakCorrelationsSum));
-                const int rCorr = static_cast<int>(std::round(r.peakCorrelationsSum));
+                const int lLen = l.peakIntegrationIndexes.second - l.peakIntegrationIndexes.first;
+                const int rLen = r.peakIntegrationIndexes.second - r.peakIntegrationIndexes.first;
 
-                if (lCorr == rCorr) {
-                    const int lLen = l.peakIntegrationIndexes.second - l.peakIntegrationIndexes.first;
-                    const int rLen = r.peakIntegrationIndexes.second - r.peakIntegrationIndexes.first;
-
-                    if (lLen == rLen) {
-                        return l.matBlockTrimmedIntensity.coeff(l.bestAnchorRowIndex, l.bestAnchorColumnIndex)
-                             > r.matBlockTrimmedIntensity.coeff(r.bestAnchorRowIndex, r.bestAnchorColumnIndex);
-                    }
-
-                    return lLen > rLen;
+                if (lLen == rLen) {
+                    return l.matBlockTrimmedIntensity.coeff(l.bestAnchorRowIndex, l.bestAnchorColumnIndex)
+                         > r.matBlockTrimmedIntensity.coeff(r.bestAnchorRowIndex, r.bestAnchorColumnIndex);
                 }
 
-                return  lCorr > rCorr;
+                return lLen > rLen;
+
             });
 
         ERR_RETURN;
