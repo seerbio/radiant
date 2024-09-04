@@ -232,6 +232,8 @@ namespace {
             bestCorrelationResults->end(),
             [](const BestCorrelationResult &l, const BestCorrelationResult &r) {
 
+// #define USE_PEAK_LENGTH
+#ifdef USE_PEAK_LENGTH
                 const int lLen = l.peakIntegrationIndexes.second - l.peakIntegrationIndexes.first;
                 const int rLen = r.peakIntegrationIndexes.second - r.peakIntegrationIndexes.first;
 
@@ -241,6 +243,9 @@ namespace {
                 }
 
                 return lLen > rLen;
+#else
+                return l.matBlockTrimmedIntensity.sum() > r.matBlockTrimmedIntensity.sum();
+#endif
 
             });
 
