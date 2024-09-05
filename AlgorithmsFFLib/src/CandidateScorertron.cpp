@@ -216,7 +216,7 @@ namespace {
             )->peakCorrelationsSum;
 
         const auto terminatorLogic = [bestScore](const BestCorrelationResult &r) {
-            constexpr float tolerance = 0.75;
+            constexpr float tolerance = 1.0;
             return (bestScore - r.peakCorrelationsSum) > tolerance;
         };
         const auto terminator = std::remove_if(
@@ -302,6 +302,24 @@ Err CandidateScorertron::calculateScores(
         &bestCorrelationResults
         ); ree;
 
+// #define TROUBLE_SHOOT_INTEGRATION
+#ifdef TROUBLE_SHOOT_INTEGRATION
+
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "DWHGVPGQVDAAMAGR"
+    && targetDecoyCandidatePair->charge() == 3
+    && !candidateScores->isDecoy
+    ) {
+        for (const BestCorrelationResult &b : bestCorrelationResults) {
+            qDebug() << b.peakIntegrationIndexes.first << "," << b.peakIntegrationIndexes.second;
+        }
+
+        for (const BestCorrelationResult &b : bestCorrelationResults) {
+            qDebug() << m_msFrameMzTarget->scanTimeFromFrameIndex(b.peakIntegrationIndexes.first) << "," << m_msFrameMzTarget->scanTimeFromFrameIndex(b.peakIntegrationIndexes.second) << b.peakCorrelationsSum << "SDLKFJSDL";
+        }
+    }
+
+#endif
+
     e = sortBestCorrelationResult(&bestCorrelationResults); ree;
 
     const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
@@ -315,9 +333,8 @@ Err CandidateScorertron::calculateScores(
         candidateScores
         ); ree;
 
-// #define TROUBLE_SHOOT_INTEGRATION
 #ifdef TROUBLE_SHOOT_INTEGRATION
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "TVC(UniMod:4)LPDGSFPSGSEC(UniMod:4)HISGWGVTETGK"
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "DWHGVPGQVDAAMAGR"
         && targetDecoyCandidatePair->charge() == 3
         && !candidateScores->isDecoy
         ) {
@@ -1084,8 +1101,9 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
             &bestAnchorRowIndex
             ); ree;
 
+        const int topN = std::min(6, peakCorrelations.size());
         const float peakCorrelationsSum
-                = std::accumulate(peakCorrelations.begin(), peakCorrelations.end(), 0.0f);
+                = std::accumulate(peakCorrelations.begin(), peakCorrelations.begin() + topN, 0.0f);
 
         BestCorrelationResult bestCorrelationResultPii;
 
