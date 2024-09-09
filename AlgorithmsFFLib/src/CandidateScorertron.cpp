@@ -829,11 +829,11 @@ namespace {
                     int rowRightIndexValue = -1;
 
                     if (rowLeftIndex >= 0) {
-                        rowLeftIndexValue = static_cast<int>(std::round(apexColumn.coeff(rowLeftIndex)));
+                        rowLeftIndexValue = static_cast<int>(std::ceil(apexColumn.coeff(rowLeftIndex)));
                     }
 
                     if (rowRightIndex < apexColumn.size()) {
-                        rowRightIndexValue = static_cast<int>(std::round(apexColumn.coeff(rowRightIndex)));
+                        rowRightIndexValue = static_cast<int>(std::ceil(apexColumn.coeff(rowRightIndex)));
                     }
 
                     if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
