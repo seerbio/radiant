@@ -61,6 +61,10 @@ namespace PythiaParameterReaderConstants {
     const QString kFeatureFinderParams = QStringLiteral("FeatureFinderParams");
     const QString kMinScanCount = QStringLiteral("minScanCount");
     const QString kSkipScanCount = QStringLiteral("skipScanCount");
+
+    const QString kRtBinning = QStringLiteral("rtBinning");
+
+    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -102,6 +106,7 @@ Err PythiaParameterReader::buildPythiaParameters(
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
                                   : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
+    pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(false);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
     pythiaParameters->chargeStateMin = libraryNode[kChargeStateMin.toStdString()].value_or(0);
@@ -127,8 +132,9 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(0.0f);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
+    pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
 
-    pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(15);
+    pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
 
     const auto fdrParamsNode = parser[kFdrParams.toStdString()];

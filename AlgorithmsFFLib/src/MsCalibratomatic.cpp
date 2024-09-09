@@ -27,6 +27,7 @@ namespace {
     Err generateMetricsIRTtoScanTime(
             const QVector<QPair<XVal, YVal>> &data,
             int verbosity,
+            int rtBinning,
             double *stDevScanTimeDiff
             ) {
 
@@ -48,6 +49,7 @@ namespace {
 
         XYMappermatic mapperMetrics;
         e = mapperMetrics.init(trainingData); ree;
+        e = mapperMetrics.setBinning(rtBinning); ree;
 
         QVector<QPair<double, double>> actualVsPredicted;
         QVector<double> diffs;
@@ -95,10 +97,16 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
             );
 
     double stDevScanTimeDiff;
-    e = generateMetricsIRTtoScanTime(data, m_params.verbosity, &stDevScanTimeDiff); ree;
+    e = generateMetricsIRTtoScanTime(
+        data,
+        m_params.verbosity,
+        m_params.rtBinning,
+        &stDevScanTimeDiff
+        ); ree;
     m_scanTimeStd = stDevScanTimeDiff;
 
     e = m_iRTtoScanTimeMapper.init(data); ree;
+    e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 
     if (m_params.verbosity > 0) {

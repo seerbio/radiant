@@ -165,8 +165,10 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     if (torch::cuda::is_available()) {
         qDebug() << "CUDA IS AVAILABLE";
         torch::cuda::manual_seed_all(seed);
+        torch::globalContext().setDeterministicCuDNN(true);
+        torch::globalContext().setBenchmarkCuDNN(false);
     }
-    torch::globalContext().setDeterministicCuDNN(true);
+
     torch::set_num_threads(1);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
@@ -261,25 +263,6 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     m_net->eval();
-
-    torch::Tensor output = m_net->forward(X);
-    const QVector<float> outputVec = tensorToVector(output);
-
-    int falsePos = 0;
-    int falseNeg = 0;
-    for (int i = 0; i < yData.size(); i++) {
-
-        const float act = yData.at(i);
-        const float pred =  outputVec.at(i);
-
-        if (act > 0.5 && pred < 0.5) {
-            falsePos++;
-        }
-        else if (act < 0.5 && pred >= 0.5) {
-            falseNeg++;
-        }
-
-    }
 
     m_isTrained = true;
 

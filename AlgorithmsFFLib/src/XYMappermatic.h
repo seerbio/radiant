@@ -102,6 +102,8 @@ public:
     */
     Err init(const QVector<QPair<XVal, YVal>> &data);
 
+    Err setBinning(int val);
+
     /**
     * @brief Predicts Y value for a given X using the initialized spline.
     *

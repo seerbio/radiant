@@ -64,6 +64,7 @@ public:
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
+            int threadCount,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
@@ -92,6 +93,8 @@ public:
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>>* diaTargetFrames();
 
     QMap<ScanNumber, ScanPoints>* ms1ScanNumberVsScanPoints();
+
+    QMap<MzTargetKey, MsFrame*> mzTargetKeyVsMsFramePntr();
 
     Err reloadTurboXICMS1();
 
@@ -124,7 +127,7 @@ private:
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
     QPair<ScanTime, ScanTime> m_scanTimeMinMax;
     QVector<MsScanInfo> m_uniqueTandemMsScanInfos;
-    QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFrame;
+    QMap<MzTargetKey, MsFrame*> m_mzTargetKeyVsMsFramePntr;
     QMap<NominalMzMass, QVector<float>> m_averagineTable;
 
 };

@@ -61,6 +61,10 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kMinScanCount;
     extern const QString FILEREADERSLIB_EXPORTS kSkipScanCount;
 
+    extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
+
+    extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
+
 }
 
 struct PythiaParameters{
@@ -68,6 +72,7 @@ struct PythiaParameters{
     //[General]
     int threadCount = 8;
     int verbosity = 0;
+    bool writePythiaDIA = false;
 
     //[LibraryParams]
     int chargeStateMin = -1;
@@ -88,12 +93,13 @@ struct PythiaParameters{
     int ionsSharedToReject = 4;
     double ms2ExtractionWidthPPM = 20.0;
     int minMs2FragCount = 2;
+    int rtBinning = 20;
     int scanTimeWindowStDevs = 3;
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
 
-    int topNIntegrations = 5;
+    int topNIntegrations = 10;
     int maxAnchorColumnIndex = 6;
     int calibrationTrainingVolume = 1000;
 
@@ -177,18 +183,19 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS1ExtractionWidthPPM) << ms1ExtractionWidthPPM;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kMS2Params << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthIntegration) << filterLengthIntegration;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kFilterLengthMS2) << filterLengthMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kIonsSharedToReject) << ionsSharedToReject;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMS2ExtractionWidthPPM) << ms2ExtractionWidthPPM;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinMs2FragCount) << minMs2FragCount;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kRtBinning) << rtBinning;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kMaxAnchorColumnIndex) << maxAnchorColumnIndex;
-        qDebug() << qPrintable(PythiaParameterReaderConstants::kCalibrationTrainingVolume) << calibrationTrainingVolume;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;

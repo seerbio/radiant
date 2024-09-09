@@ -11,78 +11,6 @@
 
 #include "EigenUtils.h"
 
-namespace {
-
-    struct BuildClassiferParallelInput {
-        QVector<ScoresTargets*> scoresTargets;
-        QVector<ScoresDecoys*> scoresDecoys;
-    };
-
-    struct BuildClassifierParallelOutput {
-        QVector<QVector<float>> A;
-        QVector<float> b;
-    };
-
-    QPair<Err, BuildClassifierParallelOutput> buildClassifierDataParallel2(
-            const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &pairs
-            ) {
-
-        ERR_INIT
-
-        BuildClassifierParallelOutput output;
-
-        const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped = ParallelUtils::unZip(pairs);
-
-        const QVector<QVector<float>*> &scoresTargetsPntrs = unzipped.first;
-        const QVector<QVector<float>*> &scoresDecoysPntrs = unzipped.second;
-
-        e = ClassifierWeightsManager::buildDataClassifier2(
-                scoresTargetsPntrs,
-                scoresDecoysPntrs,
-                &output.A,
-                &output.b
-        ); rree;
-
-        return {e, output};
-    }
-
-    Err processParallelResults(
-            const QPair<Err, BuildClassifierParallelOutput> &result,
-            int inputsSize,
-            QVector<QVector<float>> *A,
-            QVector<float> *b
-    ) {
-
-        ERR_INIT
-        e = result.first; ree;
-
-        const QVector<QVector<float>> &ALocal = result.second.A;
-        const QVector<float> bLocal = result.second.b;
-
-        if (A->isEmpty() || b->isEmpty()) {
-            A->resize(ALocal.size());
-            for(int row = 0; row < A->size(); row++) {
-                QVector<float> v(ALocal.front().size(), 0.0);
-                (*A)[row] = v;
-            }
-            b->resize(bLocal.size());
-        }
-
-        for (int row = 0; row < A->size(); row++) {
-            for (int col = 0; col < A->front().size(); col++) {
-                (*A)[row][col] += ALocal[row][col] / static_cast<float>(inputsSize);
-            }
-        }
-
-        for (int row = 0; row < bLocal.size(); row++) {
-            (*b)[row] += bLocal[row] / static_cast<float>(inputsSize);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-
 
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
@@ -100,29 +28,17 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     weights->clear();
 
-    QVector<QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>>> targetDecoyCandidateScoresPairTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            targetDecoyCandidateScoresPair,
-            threadCount,
-            &targetDecoyCandidateScoresPairTranched
-            ); ree;
-
-    QFuture<QPair<Err, BuildClassifierParallelOutput>> futures = QtConcurrent::mapped(
-            targetDecoyCandidateScoresPairTranched,
-            buildClassifierDataParallel2
-    );
-    futures.waitForFinished();
+    const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped
+                                                        = ParallelUtils::unZip(targetDecoyCandidateScoresPair);
 
     QVector<QVector<float>> A;
     QVector<float> b;
-    for (const QPair<Err, BuildClassifierParallelOutput> &result : futures) {
-        e = processParallelResults(
-                result,
-                targetDecoyCandidateScoresPairTranched.size(),
-                &A,
-                &b
+    e = ClassifierWeightsManager::buildDataClassifier2(
+        unzipped.first,
+        unzipped.second,
+        &A,
+        &b
         ); ree;
-    }
 
     e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
 
@@ -224,7 +140,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             CandidateScores::Features::CosineSimSpectrumCubed,
             CandidateScores::Features::KlDivSpectrumCubeRoot,
             CandidateScores::Features::CosineSimSum45,
-            // CandidateScores::Features::CosineSimSum20,//TODO delete
             CandidateScores::Features::CosineSimSumTop,
             CandidateScores::Features::Charge,
             CandidateScores::Features::CosineSimSumBottom,
@@ -234,11 +149,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
         if (useNeuralNetworkScores) {
 
-#define PRODUCTION
-#ifdef PRODUCTION
-            QVector<float> &vec = candidateScores->featuresArray;
-            return vec;
-#else
             const QVector<CandidateScores::Features> nnFeatures = {
                 CandidateScores::Features::CosineSimSum100,
                 CandidateScores::Features::CosineSimSum100Top12,
@@ -248,21 +158,21 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSpectrumCubed,
                 CandidateScores::Features::KlDivSpectrumCubeRoot,
                 CandidateScores::Features::CosineSimSum45,
-                // CandidateScores::Features::CosineSimSum20,//TODO delete
                 CandidateScores::Features::CosineSimSumTop,
                 CandidateScores::Features::CosineSimSumBottom,
                 CandidateScores::Features::TopBottomRatio,
                 CandidateScores::Features::TopBottomRatioNorm,
                 CandidateScores::Features::Charge,
                 CandidateScores::Features::ScanTimeDelta,
+                CandidateScores::Features::ScanTimeDeltaAbs,
                 CandidateScores::Features::ScanTimePd,
+                CandidateScores::Features::ScanTimePdAbs,
                 CandidateScores::Features::ScanIonCount,
                 CandidateScores::Features::MzNorm,
                 CandidateScores::Features::Mass,
                 CandidateScores::Features::KlDivSpectrum,
                 CandidateScores::Features::CosineSimSpectrum,
                 CandidateScores::Features::CosineSim45MS1,
-                // CandidateScores::Features::CosineSim20MS1,//TODO delete
                 CandidateScores::Features::CosineSim100MS1PreMono,
                 CandidateScores::Features::CosineSim100MS1Iso1,
                 CandidateScores::Features::CosineSim100MS1Iso2,
@@ -299,42 +209,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimShadowsToAnchor10,
                 CandidateScores::Features::CosineSimShadowsToAnchor11,
                 CandidateScores::Features::CosineSimShadowsToAnchor12,
-                CandidateScores::Features::ShadowsIntensityRatio1,
-                CandidateScores::Features::ShadowsIntensityRatio2,
-                CandidateScores::Features::ShadowsIntensityRatio3,
-                CandidateScores::Features::ShadowsIntensityRatio4,
-                CandidateScores::Features::ShadowsIntensityRatio5,
-                CandidateScores::Features::ShadowsIntensityRatio6,
-                CandidateScores::Features::ShadowsIntensityRatio7,
-                CandidateScores::Features::ShadowsIntensityRatio8,
-                CandidateScores::Features::ShadowsIntensityRatio9,
-                CandidateScores::Features::ShadowsIntensityRatio10,
-                CandidateScores::Features::ShadowsIntensityRatio11,
-                CandidateScores::Features::ShadowsIntensityRatio12,
-                CandidateScores::Features::MzSearched1,
-                CandidateScores::Features::MzSearched2,
-                CandidateScores::Features::MzSearched3,
-                CandidateScores::Features::MzSearched4,
-                CandidateScores::Features::MzSearched5,
-                CandidateScores::Features::MzSearched6,
-                CandidateScores::Features::MzSearched7,
-                CandidateScores::Features::MzSearched8,
-                CandidateScores::Features::MzSearched9,
-                CandidateScores::Features::MzSearched10,
-                CandidateScores::Features::MzSearched11,
-                CandidateScores::Features::MzSearched12,
-                CandidateScores::Features::TheoIntensity1,
-                CandidateScores::Features::TheoIntensity2,
-                CandidateScores::Features::TheoIntensity3,
-                CandidateScores::Features::TheoIntensity4,
-                CandidateScores::Features::TheoIntensity5,
-                CandidateScores::Features::TheoIntensity6,
-                CandidateScores::Features::TheoIntensity7,
-                CandidateScores::Features::TheoIntensity8,
-                CandidateScores::Features::TheoIntensity9,
-                CandidateScores::Features::TheoIntensity10,
-                CandidateScores::Features::TheoIntensity11,
-                CandidateScores::Features::TheoIntensity12,
                 CandidateScores::Features::MzFoundMean1,
                 CandidateScores::Features::MzFoundMean2,
                 CandidateScores::Features::MzFoundMean3,
@@ -371,18 +245,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::MzPeakLengthsNorm10,
                 CandidateScores::Features::MzPeakLengthsNorm11,
                 CandidateScores::Features::MzPeakLengthsNorm12,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor1,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor2,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor3,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor4,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor5,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor6,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor7,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor8,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor9,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor10,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor11,
-                CandidateScores::Features::ColumnApexIndexRatiosToAnchor12,
                 CandidateScores::Features::AminoAcidCountA,
                 CandidateScores::Features::AminoAcidCountC,
                 CandidateScores::Features::AminoAcidCountD,
@@ -409,30 +271,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::AminoAcidCountU,
                 CandidateScores::Features::AminoAcidCountX,
                 CandidateScores::Features::AminoAcidCountZ,
-                CandidateScores::Features::MzFoundStDev1,
-                CandidateScores::Features::MzFoundStDev2,
-                CandidateScores::Features::MzFoundStDev3,
-                CandidateScores::Features::MzFoundStDev4,
-                CandidateScores::Features::MzFoundStDev5,
-                CandidateScores::Features::MzFoundStDev6,
-                CandidateScores::Features::MzFoundStDev7,
-                CandidateScores::Features::MzFoundStDev8,
-                CandidateScores::Features::MzFoundStDev9,
-                CandidateScores::Features::MzFoundStDev10,
-                CandidateScores::Features::MzFoundStDev11,
-                CandidateScores::Features::MzFoundStDev12,
-                CandidateScores::Features::MzAccuracy1,
-                CandidateScores::Features::MzAccuracy2,
-                CandidateScores::Features::MzAccuracy3,
-                CandidateScores::Features::MzAccuracy4,
-                CandidateScores::Features::MzAccuracy5,
-                CandidateScores::Features::MzAccuracy6,
-                CandidateScores::Features::MzAccuracy7,
-                CandidateScores::Features::MzAccuracy8,
-                CandidateScores::Features::MzAccuracy9,
-                CandidateScores::Features::MzAccuracy10,
-                CandidateScores::Features::MzAccuracy11,
-                CandidateScores::Features::MzAccuracy12,
                 CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG,
                 CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1,
                 CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2,
@@ -463,25 +301,21 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3,
                 CandidateScores::Features::Ms1MzMeanFound100,
                 CandidateScores::Features::Ms1MzMeanFound45,
-                // CandidateScores::Features::Ms1MzMeanFound20,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMono,
                 CandidateScores::Features::Ms1MzMeanFoundIso1,
                 CandidateScores::Features::Ms1MzMeanFoundIso2,
                 CandidateScores::Features::Ms1MzMeanFound100PPM,
                 CandidateScores::Features::Ms1MzMeanFound45PPM,
-                // CandidateScores::Features::Ms1MzMeanFound20PPM,//TODO delete
                 CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso1PPM,
                 CandidateScores::Features::Ms1MzMeanFoundIso2PPM,
                 CandidateScores::Features::Ms1MzStDevFound100,
                 CandidateScores::Features::Ms1MzStDevFound45,
-                // CandidateScores::Features::Ms1MzStDevFound20,//TODO delete
                 CandidateScores::Features::Ms1MzStDevFoundPreMono,
                 CandidateScores::Features::Ms1MzStDevFoundIso1,
                 CandidateScores::Features::Ms1MzStDevFoundIso2,
                 CandidateScores::Features::Ms1IntensityFound100,
                 CandidateScores::Features::Ms1IntensityFound45,
-                // CandidateScores::Features::Ms1IntensityFound20,//TODO delete
                 CandidateScores::Features::Ms1IntensityFoundPreMono,
                 CandidateScores::Features::Ms1IntensityFoundIso1,
                 CandidateScores::Features::Ms1IntensityFoundIso2,
@@ -491,11 +325,14 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::CosineSimSum100MS1,
                 CandidateScores::Features::MS1Averagine,
                 CandidateScores::Features::CosineSimSum100Window1p5X,
-                CandidateScores::Features::CosineSimSum100Window2X
+                CandidateScores::Features::CosineSimSum100Window2X,
+                CandidateScores::Features::TotalIntensityPeakHeights,
+                CandidateScores::Features::TotalIntensityRaw,
+                CandidateScores::Features::TargetWindowLocation,
+                CandidateScores::Features::TargetWindowLocationAbs
             };
             const QVector<float> nnVec = candidateScores->selectFeaturesArrayFeatures(nnFeatures);
             return nnVec;
-#endif
 
         }
         else if (useExtendedScores) {
@@ -514,8 +351,8 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::CosineSimToAnchor4,
                             CandidateScores::Features::CosineSimToAnchor5,
                             CandidateScores::Features::CosineSimToAnchor6,
-                            // CandidateScores::Features::CosineSimToAnchor7,
-                            // CandidateScores::Features::CosineSimToAnchor8,
+                            CandidateScores::Features::CosineSimToAnchor7,
+                            CandidateScores::Features::CosineSimToAnchor8,
                             // CandidateScores::Features::CosineSimToAnchor9,
                             // CandidateScores::Features::CosineSimToAnchor10,
                             // CandidateScores::Features::CosineSimToAnchor11,

@@ -142,6 +142,7 @@ public:
     const QString DOT_PYTHIA_FILE_EXTENSION = QStringLiteral(".pythia");
     const QString DOT_PYTHIA_CAL_FILE_EXTENSION = QStringLiteral(".pythiaCAL");
     const QString DOT_PYTHIA_DIA_FILE_EXTENSION = QStringLiteral(".pythiaDIA");
+    const QString DOT_PYTHIA_QUAN_FILE_EXTENSION = QStringLiteral(".pythiaQuan");
 
     const QString Y_IONS = QStringLiteral("yIons");
     const QString B_IONS = QStringLiteral("bIons");

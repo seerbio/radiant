@@ -23,7 +23,7 @@ TargetDecoyCandidatePairScoretron2::TargetDecoyCandidatePairScoretron2()
 TargetDecoyCandidatePairScoretron2::~TargetDecoyCandidatePairScoretron2() {
     delete m_turboXICMS1;
     delete m_msFrameMS1;
-    for (MsFrame *msFrame : m_mzTargetKeyVsMsFrame) {
+    for (MsFrame *msFrame : m_mzTargetKeyVsMsFramePntr) {
         delete msFrame;
     }
 }
@@ -103,7 +103,7 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
     for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
         auto *msFrame = new MsFrame();
         e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;
-        m_mzTargetKeyVsMsFrame.insert(it.key(), msFrame);
+        m_mzTargetKeyVsMsFramePntr.insert(it.key(), msFrame);
     }
 
     ERR_RETURN
@@ -132,6 +132,10 @@ QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>>* TargetDecoyCandidatePairScoret
 
 QMap<ScanNumber, ScanPoints>* TargetDecoyCandidatePairScoretron2::ms1ScanNumberVsScanPoints() {
     return &m_ms1ScanNumberVsScanPoints;
+}
+
+QMap<MzTargetKey, MsFrame*> TargetDecoyCandidatePairScoretron2::mzTargetKeyVsMsFramePntr() {
+    return m_mzTargetKeyVsMsFramePntr;
 }
 
 Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
@@ -325,6 +329,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
+        int threadCount,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
@@ -353,7 +358,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
             parallelInputs,
-            m_pythiaParameters.threadCount,
+            threadCount,
             &parallelInputsTranched
             ); ree;
 
@@ -417,7 +422,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
     e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
     e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
-    e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFrame); ree;
+    e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFramePntr); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
     input->reserve(mzTargetKeyVsTargetDecoyCandidatePointers->size());
@@ -432,7 +437,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
         tdppi.scanTimeMinMax = scanTimeMinMax;
         tdppi.diaTargetFrame = m_diaTargetFrames.value(tdppi.targetKey);
-        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFrame.value(tdppi.targetKey);
+        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi.targetKey);
         tdppi.turboXicMS1 = m_turboXICMS1;
         tdppi.minPeakCount = minPeakCount;
         tdppi.averagineTable = m_averagineTable;

@@ -33,6 +33,7 @@ SET(SOURCE_FILES
         src/MsReaderPointerAcc.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
+        src/QuanReader.cpp
         )
 
 SET(HEADER_FILES
@@ -50,6 +51,7 @@ SET(HEADER_FILES
         src/MsReaderPointerAcc.h
         src/ParquetReader.h
         src/PythiaParameterReader.h
+        src/QuanReader.h
         src/toml.hpp
         )
 
