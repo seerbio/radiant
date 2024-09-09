@@ -87,7 +87,7 @@ namespace {
              + candidateScores->targetKey;
     }
 
-    Err filterScoredCandidatesTo60PercentFDR(
+    Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
             QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
@@ -114,7 +114,7 @@ namespace {
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
             counter++;
-            if (constexpr double fdrThreshold = 0.6; csp->qValue >= fdrThreshold && !csp->isDecoy) {
+            if (constexpr double fdrThreshold = 0.5; csp->qValue >= fdrThreshold && !csp->isDecoy) {
                 break;
             }
         }
@@ -305,7 +305,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(&msReaderPointerAcc); ree;
-        // m_pythiaParameters.ms2ExtractionWidthPPM = 6.75;
+        // m_pythiaParameters.ms2ExtractionWidthPPM = 6;
         // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
@@ -318,13 +318,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
 
-    QVector<CandidateScores*> candidateScoresTargetsAndDecoys50PercentFDRFiltered;
-    e = filterScoredCandidatesTo60PercentFDR(
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet;
+    e = filterScoredCandidatesForNeuralNet(
         m_pythiaParameters.minMs2FragCount,
         &candidateScoresTargetsAndDecoys,
-        &candidateScoresTargetsAndDecoys50PercentFDRFiltered
+        &candidateScoresTargetsAndDecoysNeuralNet
         ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoys50PercentFDRFiltered.size() << "for filtering";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
 
     // qDebug() << "Starting spectrum centric search";
     // QElapsedTimer et;
@@ -336,11 +336,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     //     ); ree;
     // qDebug() << "Spectrum centric searched finsihed in" << et.elapsed() << "mSec";
 
-    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys50PercentFDRFiltered); ree;
+    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoysNeuralNet); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            candidateScoresTargetsAndDecoysNeuralNet,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs
             ); ree;
@@ -1195,7 +1195,7 @@ namespace {
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
         const QVector<double> ppmList = {
-            3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
+            5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
         };
 
         for (double ppm : ppmList ) {

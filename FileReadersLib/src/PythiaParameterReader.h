@@ -99,7 +99,7 @@ struct PythiaParameters{
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
 
-    int topNIntegrations = 5;
+    int topNIntegrations = 10;
     int maxAnchorColumnIndex = 6;
     int calibrationTrainingVolume = 1000;
 
