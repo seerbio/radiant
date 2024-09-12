@@ -87,4 +87,6 @@ git clone https://github.com/microsoft/vcpkg.git
 #./vcpkg/vcpkg install lz4
 #./vcpkg/vcpkg install zstd
 #./vcpkg/vcpkg install re2
+#./vcpkg/vcpkg install parquet
+#./vcpkg/vcpkg install arrow
 ./vcpkg/vcpkg integrate install
