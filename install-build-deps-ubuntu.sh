@@ -27,7 +27,8 @@ ${APT} install --no-install-recommends -y \
     libarrow-dev \
     libparquet-dev \
     libseqan2-dev \
-    python3.9  \
+    python3.10  \
+    python3.10-venv \
     curl \
     tar \
     python-is-python3  \
@@ -38,6 +39,38 @@ ${APT} install --no-install-recommends -y \
     zip \
     git \
     flex
+
+#  LIBRARIES NEEDED TO BUILD LIBTORCH W/ VCPKG
+#  Figure this out so you don't have to build pytorch w/ a scrpt
+#        autoconf \
+#        automake \
+#        autoconf-archive \
+#        libtool \
+#        bison \
+#        libxi-dev \
+#        libxtst-dev \
+#        libx11-dev \
+#        libxft-dev \
+#        libxext-dev \
+#        pkg-config \
+#        ninja-build \
+#        libglib2.0-dev \
+#        libgdk-pixbuf2.0-dev \
+#        libpango1.0-dev \
+#        libcairo2-dev \
+#        libxrandr-dev \
+#        gfortran \
+#        libgirepository1.0-dev \
+#        m4 \
+#        gettext \
+#        libgoogle-glog-dev \
+#        libarchive-dev \
+#        libxkbcommon-dev \
+#        libpcre2-dev \
+#        libglib2.0-dev \
+#        libdbus-1-dev \
+#        python3-jinja2 \
+#        libgflags-dev
 
 # Install latest CMAKE > 3.23
 wget "https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-$(uname -m).sh" -q -O /tmp/cmake-install.sh
@@ -50,6 +83,7 @@ git clone https://github.com/microsoft/vcpkg.git
 ./vcpkg/bootstrap-vcpkg.sh
 ./vcpkg/vcpkg install aws-sdk-cpp
 ./vcpkg/vcpkg install utf8proc
+#./vcpkg/vcpkg install libtorch
 #./vcpkg/vcpkg install lz4
 #./vcpkg/vcpkg install zstd
 #./vcpkg/vcpkg install re2

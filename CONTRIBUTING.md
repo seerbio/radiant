@@ -22,7 +22,7 @@ To set up your environment:
 1. Run the script from **Setting up a development environment**
 2. Run the script from **Running a local build**
 3. ~~In CLion->File->Settings->Build,Execution,Deployment->CMake, add the following to the _Enviornment_ textbox:  **CMAKE_PREFIX_PATH=/Path/to/PythiaDIACpp/pytorch/build/share/cmake/Torch**~~
-4. In CLion->File->Settings->Build,Execution,Deployment->CMake, add the following to the _Environment_ textbox: **-G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/snap/clion/284/bin/ninja/linux/x64/ninja -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake** Replace the path for DCMAKE_MAKE_PROGRAM with the default value shown.
+4. In CLion->File->Settings->Build,Execution,Deployment->CMake, add the following to the _CMake Options_ textbox: **-DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake** Replace the path for DCMAKE_MAKE_PROGRAM with the default value shown.
 
 ## Running tests
 
