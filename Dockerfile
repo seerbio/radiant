@@ -62,6 +62,14 @@ RUN chmod u+x /tmp/get-or-build-libtorch.sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build-aws-sdk-cpp.sh /tmp/
+RUN chmod u+x /tmp/build-aws-sdk-cpp.sh \
+    && apt-get update \
+    && APT='apt-get' /tmp/build-aws-sdk-cpp.sh \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
 

@@ -34,11 +34,15 @@ ${APT} install --no-install-recommends -y \
     python-is-python3  \
     python3-pip  \
     pkg-config  \
+    libcurl4-openssl-dev \
     libssl-dev \
     unzip \
     zip \
     git \
-    flex
+    flex \
+    uuid-dev \
+    zlib1g-dev \
+    libthrift-dev
 
 #  LIBRARIES NEEDED TO BUILD LIBTORCH W/ VCPKG
 #  Figure this out so you don't have to build pytorch w/ a scrpt
@@ -79,14 +83,14 @@ mkdir -p "${CMAKE_PREFIX}"
 /tmp/cmake-install.sh --skip-license --prefix="${CMAKE_PREFIX}"
 rm /tmp/cmake-install.sh
 
-git clone https://github.com/microsoft/vcpkg.git
-./vcpkg/bootstrap-vcpkg.sh
-./vcpkg/vcpkg install aws-sdk-cpp
-./vcpkg/vcpkg install utf8proc
-#./vcpkg/vcpkg install libtorch
-#./vcpkg/vcpkg install lz4
-#./vcpkg/vcpkg install zstd
-#./vcpkg/vcpkg install re2
-#./vcpkg/vcpkg install parquet
-#./vcpkg/vcpkg install arrow
-./vcpkg/vcpkg integrate install
+#git clone https://github.com/microsoft/vcpkg.git
+#./vcpkg/bootstrap-vcpkg.sh
+#./vcpkg/vcpkg install aws-sdk-cpp
+#./vcpkg/vcpkg install utf8proc
+##./vcpkg/vcpkg install libtorch
+##./vcpkg/vcpkg install lz4
+##./vcpkg/vcpkg install zstd
+##./vcpkg/vcpkg install re2
+##./vcpkg/vcpkg install parquet
+##./vcpkg/vcpkg install arrow
+#./vcpkg/vcpkg integrate install
