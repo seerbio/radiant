@@ -41,6 +41,7 @@ cp FileReadersLib/libFileReadersLib.so "$pythia_lib/libFileReadersLib.so"
 cp UtilsLib/libUtilsLib.so "$pythia_lib/libUtilsLib.so"
 cp WorkFlowsLib/libWorkFlowsLib.so "$pythia_lib/libWorkFlowsLib.so"
 cp PyTorchLib/libPyTorchLib.so "$pythia_lib/libPyTorchLib.so"
+cp AWSLib/libAWSLib.so "$pythia_lib/libAWSLib.so"
 
 cp /src/PythiaDIACpp/pytorch/build/lib/* "$pythia_lib/"
 
