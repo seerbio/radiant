@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 PROJECT(PythiaDIACpp)
 
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/pytorch/build/share/cmake/Torch")
+set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
 #list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/build")
 #list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/cmake")
 #list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/build/generated/src/aws-cpp-sdk-s3")

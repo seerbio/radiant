@@ -112,7 +112,8 @@ bool AWSStreamifier::streamParquetFile(
             std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(s3Stream), {});
 
             auto arrow_buffer = std::make_shared<arrow::Buffer>(buffer.data(), buffer.size());
-            std::shared_ptr<arrow::io::BufferReader> reader(new arrow::io::BufferReader(arrow_buffer));
+//            std::shared_ptr<arrow::io::BufferReader> reader(new arrow::io::BufferReader(arrow_buffer));
+            auto reader = std::make_shared<arrow::io::BufferReader>(arrow_buffer);
 
             arrow::Status st;
 

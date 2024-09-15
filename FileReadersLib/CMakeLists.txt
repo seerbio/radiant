@@ -92,7 +92,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         UtilsLib
         aws-cpp-sdk-core
         aws-cpp-sdk-s3
-        Parquet::parquet_shared
+        Parquet::parquet_static
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run
