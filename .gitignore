@@ -22,3 +22,5 @@ CMakeUserPresets.json
 vcpkg/
 
 aws-sdk-cpp
+
+aws-crt-cpp
