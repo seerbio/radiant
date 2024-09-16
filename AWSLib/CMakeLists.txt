@@ -56,7 +56,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         aws-cpp-sdk-core
         aws-cpp-sdk-s3
-        Parquet::parquet_static
+        Parquet::parquet_shared
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

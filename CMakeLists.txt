@@ -2,28 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 PROJECT(PythiaDIACpp)
 
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/pytorch/build/share/cmake/Torch")
-set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/build")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/cmake")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/build/generated/src/aws-cpp-sdk-s3")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/build/src/aws-cpp-sdk-core")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/crt/aws-crt-cpp/cmake")
-#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/crt/aws-crt-cpp/crt")
-
-#function(recurse_subdirectories base_path)
-#    file(GLOB_RECURSE subdirs RELATIVE ${base_path} ${base_path}/*)
-#    foreach(subdir ${subdirs})
-#        if(IS_DIRECTORY "${base_path}/${subdir}")
-#            list(APPEND CMAKE_PREFIX_PATH "${base_path}/${subdir}")
-#        endif()
-#    endforeach()
-#endfunction()
-#
-## Initial base path to start the search
-#set(BASE_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/)
-#
-## Populate CMAKE_PREFIX_PATH
-#recurse_subdirectories(${BASE_PATH})
 
 enable_testing(true)
 
