@@ -62,6 +62,9 @@ RUN chmod u+x /tmp/get-or-build-libtorch.sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build-aws-sdk-cpp.sh /tmp/
+RUN chmod u+x /tmp/build-aws-sdk-cpp.sh \
+    && /tmp/build-aws-sdk-cpp.sh
 
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
@@ -71,102 +74,102 @@ RUN mv /src/pytorch/ /src/PythiaDIACpp/pytorch/
 
 # Build the project in /app/
 WORKDIR /app/
-#RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/vcpkg/scripts/buildsystems/vcpkg.cmake \
-#    && make -j
+RUN cmake -S /src/PythiaDIACpp/ -B /app/ -DCMAKE_BUILD_TYPE=Release
+RUN make -j
+
+################################################
+#
+# Test stage
+#
+# Here we add test dependencies to the build container
+# and define an ENTRYPOINT that will run them.
+#
+################################################
+FROM build AS test
+
+#
+# This entrypoint allows running tests (with coverage)
+# by building with `--target test` and then running the
+# resulting container. See README.md for more.
+#
+WORKDIR /app/
+CMD ["ctest", "--output-on-failure"]
+
+###############################################
+#
+# DEB stage
+#
+# Here we put everything in its right place for
+# Debian Package Deployment and build the DEB.
+# This DEB can then be copied out of the container
+# for later reuse. Deployment is as easy as running
+# this stage's default command:
+#
+#     # NOTE: Do not run this command!! Use GitHub
+#     # actions to deploy each new release!!
+#     $ docker run --rm -it $(docker build --target deploy .)
+#
+################################################
+FROM build AS build-deb
+
+# Install Python and dependencies
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir awscli boto3
+
+# Copy some extra contents into /app/
+RUN cp \
+    /src/PythiaDIACpp/control.* \
+    /src/PythiaDIACpp/build_deb.sh \
+    /src/PythiaDIACpp/s3_package_uploader.py \
+    /app/
+
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
+#RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
+
+WORKDIR /app/
+
+ARG pythiadia_version=0.0-dev
+ENV package_dir=pythiadia_${pythiadia_version}
+ENV PACKAGE_NAME=${package_dir}
+
+# Build the package into this stage's container
+RUN /app/build_deb.sh
+
+# Running this stage will deploy the DEB package
+CMD ["python", "s3_package_uploader.py"]
 
 #################################################
 ##
-## Test stage
+## App stage
 ##
-## Here we add test dependencies to the build container
-## and define an ENTRYPOINT that will run them.
-##
-#################################################
-#FROM build AS test
-#
-##
-## This entrypoint allows running tests (with coverage)
-## by building with `--target test` and then running the
-## resulting container. See README.md for more.
-##
-#WORKDIR /app/
-#CMD ["ctest", "--output-on-failure"]
-#
-################################################
-##
-## DEB stage
-##
-## Here we put everything in its right place for
-## Debian Package Deployment and build the DEB.
-## This DEB can then be copied out of the container
-## for later reuse. Deployment is as easy as running
-## this stage's default command:
-##
-##     # NOTE: Do not run this command!! Use GitHub
-##     # actions to deploy each new release!!
-##     $ docker run --rm -it $(docker build --target deploy .)
+## Here we build the final container used to run the app in production.
+## Must be the last stage for compatibility with GitHub Actions build.
 ##
 #################################################
-#FROM build AS build-deb
-#
-## Install Python and dependencies
-#RUN apt-get update \
-#    && apt-get upgrade -y \
-#    && apt-get install --no-install-recommends -y python3.9 python-is-python3 python3-pip \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/* \
-#    && pip install --no-cache-dir awscli boto3
-#
-## Copy some extra contents into /app/
-#RUN cp \
-#    /src/PythiaDIACpp/control.* \
-#    /src/PythiaDIACpp/build_deb.sh \
-#    /src/PythiaDIACpp/s3_package_uploader.py \
-#    /app/
-#
-##RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libarrow.so.1100 /usr/lib/libarrow.so.1100
-##RUN cp /src/PythiaDIACpp/ThirdPartyLibs/arrow_parquet/release/libparquet.so.1100 /usr/lib/libparquet.so.1100
-#
-#WORKDIR /app/
-#
-#ARG pythiadia_version=0.0-dev
-#ENV package_dir=pythiadia_${pythiadia_version}
-#ENV PACKAGE_NAME=${package_dir}
-#
-## Build the package into this stage's container
-#RUN /app/build_deb.sh
-#
-## Running this stage will deploy the DEB package
-#CMD ["python", "s3_package_uploader.py"]
-#
-##################################################
-###
-### App stage
-###
-### Here we build the final container used to run the app in production.
-### Must be the last stage for compatibility with GitHub Actions build.
-###
-##################################################
-#FROM base AS app
-#
-## Set labels
-#LABEL author="Seer, Inc."
-#LABEL description="PythiaDIACpp"
-#
-#COPY --from=build-deb /app/*.deb /app/
-#RUN apt-get update \
-#    && apt-get install -y /app/*.deb \
-#    && apt-get autoremove -y \
-#    && apt-get clean \
-#    && rm -rf /app/ /var/lib/apt/lists/*
-#
-## Set up a dedicated folder as the normal working dir
-#WORKDIR /work/
-#
-## This is a random note.
-#
-## Using this entrypoint means the "command" passed to `docker run` will be arguments to
-## this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
-## overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
-#ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]
+FROM base AS app
+
+# Set labels
+LABEL author="Seer, Inc."
+LABEL description="PythiaDIACpp"
+
+COPY --from=build-deb /app/*.deb /app/
+RUN apt-get update \
+    && apt-get install -y /app/*.deb \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /app/ /var/lib/apt/lists/*
+
+# Set up a dedicated folder as the normal working dir
+WORKDIR /work/
+
+# This is a random note.
+
+# Using this entrypoint means the "command" passed to `docker run` will be arguments to
+# this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
+# overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
+ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]

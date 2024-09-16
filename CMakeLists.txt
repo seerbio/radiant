@@ -3,6 +3,13 @@ PROJECT(PythiaDIACpp)
 
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/pytorch/build/share/cmake/Torch")
 
+set(SDK_INSTALL_DIR "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/local-install")
+#list(APPEND CMAKE_PREFIX_PATH "${SDK_INSTALL_DIR}/lib/cmake/aws-cpp-sdk-core")
+#list(APPEND CMAKE_PREFIX_PATH "${SDK_INSTALL_DIR}/lib/cmake/aws-cpp-sdk-s3")
+#list(APPEND CMAKE_PREFIX_PATH "${SDK_INSTALL_DIR}/lib/aws-crt-cpp/cmake")
+#list(APPEND CMAKE_PREFIX_PATH "${SDK_INSTALL_DIR}/lib/aws-c-http/cmake")
+#list(APPEND CMAKE_PREFIX_PATH "${SDK_INSTALL_DIR}/lib/aws-c-io/cmake")
+
 enable_testing(true)
 
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
