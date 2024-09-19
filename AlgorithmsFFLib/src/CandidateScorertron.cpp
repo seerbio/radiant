@@ -1086,7 +1086,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
             matBlock,
             apexStarts,
-            m_pythiaParameters.stopThresholdFraction
+            m_pythiaParameters.stopThresholdFractionMS2
             );
 
         QVector<float> peakCorrelations;
@@ -1144,7 +1144,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         bestCorrelationResultPii.matBlockTrimmedIntensityWindow1p5X = trimMatrixBlock(
             matBlock1p5X,
             apexStarts,
-            m_pythiaParameters.stopThresholdFraction
+            m_pythiaParameters.stopThresholdFractionMS2
             );
 
         e = calculatePeakCorrelations(
@@ -1156,7 +1156,7 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
         bestCorrelationResultPii.matBlockTrimmedIntensityWindow2X = trimMatrixBlock(
                     matBlock2X,
                     apexStarts,
-                    m_pythiaParameters.stopThresholdFraction
+                    m_pythiaParameters.stopThresholdFractionMS2
                     );
 
         e = calculatePeakCorrelations(
