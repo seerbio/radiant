@@ -112,7 +112,7 @@ struct PythiaParameters{
     double sigma = -1.0;
     double signalToNoiseRatio = 2.0;
     int smoothCount = -1;
-    float stopThresholdFraction = 0.0;
+    float stopThresholdFraction = 0.65;
 
     //[FeatureFinder]
     int minScanCount = 3;
