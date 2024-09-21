@@ -130,7 +130,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(0);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
-    pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(0.0f);
+    pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
     pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
 
@@ -146,7 +146,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->sigma = peakIntegrationParamsNode[kSigma.toStdString()].value_or(0.0);
     pythiaParameters->signalToNoiseRatio = peakIntegrationParamsNode[kSignalToNoiseRatio.toStdString()].value_or(0.0);
     pythiaParameters->smoothCount = peakIntegrationParamsNode[kSmoothCount.toStdString()].value_or(0);
-    pythiaParameters->stopThresholdFraction = ms2ParamsNode[kStopThresholdFraction.toStdString()].value_or(0.0f);
+    pythiaParameters->stopThresholdFraction = ms2ParamsNode[kStopThresholdFraction.toStdString()].value_or(pythiaParameters->stopThresholdFraction);
 
     const auto featureFinderParamsNode = parser[kFeatureFinderParams.toStdString()];
     pythiaParameters->minScanCount = featureFinderParamsNode[kMinScanCount.toStdString()].value_or(0);
