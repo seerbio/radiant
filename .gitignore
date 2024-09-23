@@ -20,3 +20,5 @@ CMakeUserPresets.json
 /cmake-build-relwithdebinfo/
 
 vcpkg/
+
+aws-sdk-cpp/
