@@ -1,6 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 PROJECT(PythiaDIACpp)
 
+#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/local-install")
+#list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/aws-sdk-cpp/cmake")
+list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/pytorch/build/share/cmake/Torch")
+
 enable_testing(true)
 
 SET(ROOT_PROJECT_NAME ${PROJECT_NAME})
