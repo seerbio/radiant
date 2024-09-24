@@ -12,6 +12,7 @@
 #include <parquet/arrow/writer.h>
 
 //NOTE that these have to go after parquet arrow import or there will be a compile error.
+#include "AWSStreamifier.h"
 #include "ParquetReader.h"
 
 #include "ParallelUtils.h"
@@ -38,7 +39,7 @@ public:
             QVector<ParquetReaderInputBase> *rowsRead
     );
 
-    arrow::Status readDataFromParquet(
+    static arrow::Status readDataFromParquet(
             const QString &parquetFilePath,
             const QString &columnToFilterBy,
             const QPair<double, double> &filterRange,
@@ -575,19 +576,42 @@ Err ParquetReader::Private::readDataFromParquet(
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem fileSystem;
 
-    std::shared_ptr<arrow::io::RandomAccessFile> input
-            = fileSystem.OpenInputFile(parquetFilePath.toStdString()).ValueOrDie();
-
     std::unique_ptr<parquet::arrow::FileReader> arrowReader;
-    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
-    if (!st.ok()) {
-        return Error::eFileError;
-    }
 
     std::shared_ptr<arrow::Table> table;
-    st = arrowReader->ReadTable(&table);
-    if (!st.ok()) {
-        return Error::eError;
+
+    if (parquetFilePath.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+        AWSStreamifier awsStreamifier;
+        const bool credentialsSet = awsStreamifier.setAWSCredentials(
+            env.value("AWS_ACCESS_KEY_ID"),
+            env.value("AWS_SECRET_ACCESS_KEY"),
+            env.value("AWS_SESSION_TOKEN")
+            );
+
+        const bool streamIsValid = awsStreamifier.streamParquetFile(
+            parquetFilePath,
+            &table
+            );
+        e = ErrorUtils::isTrue(streamIsValid); ree;
+
+    }
+    else {
+
+        std::shared_ptr<arrow::io::RandomAccessFile> input
+                    = fileSystem.OpenInputFile(parquetFilePath.toStdString()).ValueOrDie();
+
+        st = parquet::arrow::OpenFile(input, pool, &arrowReader);
+        if (!st.ok()) {
+            return Error::eFileError;
+        }
+
+        st = arrowReader->ReadTable(&table);
+        if (!st.ok()) {
+            return Error::eError;
+        }
     }
 
     QMap<QString, QVector<QVariant>> columnsMap;
@@ -731,10 +755,8 @@ arrow::Status ParquetReader::Private::readDataFromParquet(
 
     ERR_INIT
 
-    arrow::Status st;
-
     parquet::arrow::FileReaderBuilder readerBuilder;
-    st = initArrowReaderBuilder(
+    arrow::Status st = initArrowReaderBuilder(
             parquetFilePath,
             &readerBuilder
             );
@@ -890,7 +912,7 @@ ParquetReader::~ParquetReader() {}
 Err ParquetReader::writeDataToParquet(
         const QString &outputFilePath,
         const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -905,7 +927,7 @@ Err ParquetReader::writeDataToParquet(
 Err ParquetReader::readDataFromParquet(
         const QString &parquetFilePath,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -922,11 +944,11 @@ Err ParquetReader::readDataFromParquet(
         const QString &columnToFilterBy,
         const QPair<double, double> &filterRange,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 
-    arrow::Status st = d_ptr->readDataFromParquet(
+    const arrow::Status st = d_ptr->readDataFromParquet(
             parquetFilePath,
             columnToFilterBy,
             filterRange,

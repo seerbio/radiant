@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-PROJECT(FileReadersLib
+PROJECT(AWSLib
         VERSION "1.0"
         )
 
@@ -19,40 +19,11 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/MsCalibrationReader.cpp
-        src/CommandLineParserUtils.cpp
-        src/CSVReader.cpp
-        src/FastaReader.cpp
-        src/FeatureFinderHillReader.cpp
-        src/FragLibReader.cpp
-        src/FragLibTsvReader.cpp
-        src/MsReaderParquet.cpp
-        src/MsReaderBase.cpp
-        src/MsReaderMzML.cpp
-        src/MsReaderMzMLMapped.cpp
-        src/MsReaderPointerAcc.cpp
-        src/ParquetReader.cpp
-        src/PythiaParameterReader.cpp
-        src/QuanReader.cpp
+        src/AWSStreamifier.cpp
         )
 
 SET(HEADER_FILES
-        src/MsCalibrationReader.h
-        src/CommandLineParserUtils.h
-        src/CSVReader.h
-        src/FastaReader.h
-        src/FeatureFinderHillReader.h
-        src/FragLibReader.h
-        src/FragLibTsvReader.h
-        src/MsReaderParquet.h
-        src/MsReaderBase.h
-        src/MsReaderMzML.h
-        src/MsReaderMzMLMapped.h
-        src/MsReaderPointerAcc.h
-        src/ParquetReader.h
-        src/PythiaParameterReader.h
-        src/QuanReader.h
-        src/toml.hpp
+        src/AWSStreamifier.h
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -68,8 +39,6 @@ SET(DLL_LIB_INCLUDE_DIRS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        ${EIGEN_DIRECTORY}
-        ${NANOFLANN_DIRECTORY}
 )
 
 FIND_PACKAGE(aws-cpp-sdk-core REQUIRED)
@@ -77,7 +46,6 @@ FIND_PACKAGE(aws-cpp-sdk-s3 REQUIRED)
 FIND_PACKAGE(Parquet REQUIRED)
 
 FIND_PACKAGE(Qt5 COMPONENTS
-        Concurrent
         Core
         Test
         REQUIRED
@@ -85,11 +53,7 @@ FIND_PACKAGE(Qt5 COMPONENTS
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-        Qt5::Concurrent
         Qt5::Core
-        AWSLib
-        ChemLib
-        UtilsLib
         aws-cpp-sdk-core
         aws-cpp-sdk-s3
         Parquet::parquet_shared

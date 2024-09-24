@@ -1,21 +1,20 @@
-
 #include "MsReaderMzMLMapped.h"
+
+#include "AWSStreamifier.h"
 
 #include "ErrorUtils.h"
 #include "ParallelUtils.h"
 #include "SqlUtils.h"
 
-#include <QCoreApplication>
+#include <QDebug>
+#include <QFileInfo>
 #include <QFile>
 #include <QMap>
 #include <QXmlStreamReader>
 
-#include <zlib.h>
-
 #include <algorithm>
 #include <iostream>
-#include <QDebug>
-#include <QFileInfo>
+#include <zlib.h>
 
 
 const QString scanKey = QStringLiteral("scan");
@@ -95,8 +94,11 @@ public:
 
     ~PrivateData();
 
-    Err openFile(const QString& filename);
-    Err closeFile();
+    Err openFile(const QString& filename) const ;
+
+    Err readLogic(uchar* ucharData) const;
+
+    Err closeFile() const;
 
     [[nodiscard]] bool isScanNumberValid(int scanNumber) const;
 
@@ -498,9 +500,32 @@ namespace {
     }
 
 }//NAMESPACE
-Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
+Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) const {
 
     ERR_INIT
+
+    if (filename.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+        AWSStreamifier awsStreamifier;
+        const bool credentialsSet = awsStreamifier.setAWSCredentials(
+            env.value("AWS_ACCESS_KEY_ID"),
+            env.value("AWS_SECRET_ACCESS_KEY"),
+            env.value("AWS_SESSION_TOKEN")
+            );
+
+        const QPair<bool, std::string> streamIsValid = awsStreamifier.streamTextFile(filename);
+
+
+        uchar* ucharPtr
+            = const_cast<uchar*>(reinterpret_cast<const uchar*>(streamIsValid.second.c_str()));
+
+        e = ErrorUtils::isTrue(streamIsValid.first); ree;
+        e= readLogic(ucharPtr); ree;
+
+        ERR_RETURN
+    }
 
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -511,11 +536,25 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
     const QFileInfo fileInfo(file);
     const qint64 fileSize = fileInfo.size();
     uchar* ucharData = file.map(0, fileSize);
+
+    e= readLogic(ucharData); ree;
+
+    file.unmap(ucharData);
+    file.close();
+
+    ERR_RETURN
+}
+
+Err MsReaderMzMLMapped::PrivateData::readLogic(uchar* ucharData) const {
+
+    ERR_INIT
+
     if (!ucharData) {
-        qCritical() << "Error mapping file:" << file.errorString();
+        qCritical() << "Error mapping file:";
         ERR_RETURN
     }
 
+    const auto fileSize = static_cast<qint64>(strlen(reinterpret_cast<char*>(ucharData)));
     const QVector<FileChunk> chunks = buildFileChunks(fileSize, ucharData);
 
 #define RUN_PARALLEL
@@ -531,7 +570,6 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
             if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
                 continue;
             }
-
             m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
@@ -548,6 +586,7 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
             if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
                 continue;
             }
+            qDebug() << msScanInfo.scanNumber << "SLFKJSDL";
             m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
             m_scanPoints->insert(msScanInfo.scanNumber, scanPoints);
         }
@@ -555,13 +594,11 @@ Err MsReaderMzMLMapped::PrivateData::openFile(const QString &filename) {
 
 #endif
 
-    file.unmap(ucharData);
-    file.close();
 
     ERR_RETURN
 }
 
-Err MsReaderMzMLMapped::PrivateData::closeFile() {
+Err MsReaderMzMLMapped::PrivateData::closeFile() const {
 
     ERR_INIT
 

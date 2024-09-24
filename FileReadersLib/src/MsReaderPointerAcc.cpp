@@ -30,7 +30,7 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     QFileInfo fi(filePath);
     const QString fileSuffix = fi.suffix();
 
-    if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
+    if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false)) {
         QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
         ptr = msReader;
         e = ptr->openFile(filePath); ree;

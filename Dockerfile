@@ -14,8 +14,8 @@ FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
 #
 # Set timezone
@@ -62,8 +62,15 @@ RUN chmod u+x /tmp/get-or-build-libtorch.sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build-aws-sdk-cpp.sh /tmp/
+RUN chmod u+x /tmp/build-aws-sdk-cpp.sh \
+    && /tmp/build-aws-sdk-cpp.sh
+
 # Copy project source into the container
 COPY ./ /src/PythiaDIACpp/
+
+RUN mv /src/pytorch/ /src/PythiaDIACpp/pytorch/
+#RUN mv /tmp/vcpkg/ /src/PythiaDIACpp/vcpkg/
 
 # Build the project in /app/
 WORKDIR /app/
@@ -144,7 +151,7 @@ CMD ["python", "s3_package_uploader.py"]
 ## Must be the last stage for compatibility with GitHub Actions build.
 ##
 #################################################
-FROM base AS app
+FROM build AS app
 
 # Set labels
 LABEL author="Seer, Inc."

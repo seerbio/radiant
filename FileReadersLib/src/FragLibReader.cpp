@@ -3,6 +3,8 @@
 //
 
 #include "FragLibReader.h"
+
+#include "AWSStreamifier.h"
 #include "FragLibTsvReader.h"
 
 #include <QElapsedTimer>
@@ -17,10 +19,12 @@ Err FragLibReader::getFragLibReaderRows(
 
     ERR_INIT
 
-    e = ErrorUtils::fileExists(fragLibFilePath); ree;
+    if (!fragLibFilePath.contains(S_GLOBAL_SETTINGS.S3_PREFIX)) {
+        e = ErrorUtils::fileExists(fragLibFilePath); ree;
+    }
     e = ErrorUtils::isTrue(massEnd > massStart); ree;
 
-    QFileInfo fi(fragLibFilePath);
+    const QFileInfo fi(fragLibFilePath);
     const QString fileSuffix = fi.suffix();
 
     const QStringList viableFileExtensions = {
@@ -42,8 +46,8 @@ Err FragLibReader::getFragLibReaderRows(
     if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_FRAGLIB_FF)) {
         e = ParquetReader::read(
                 fragLibFilePath,
-                FragLibReaderNamespace::MASS,
-                {massStart, massEnd},
+                // FragLibReaderNamespace::MASS,
+                // {massStart, massEnd},
                 fragLibReaderRows
         ); ree;
 
