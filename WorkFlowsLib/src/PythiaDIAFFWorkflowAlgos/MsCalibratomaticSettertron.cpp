@@ -278,7 +278,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
 
-
     *msCalibratomatic = m_msCalibratomatic;
     ERR_RETURN
 }

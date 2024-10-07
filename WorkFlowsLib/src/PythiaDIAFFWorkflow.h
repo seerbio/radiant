@@ -85,39 +85,9 @@ public:
 
 private:
 
-    Err buildCalibration(const MsReaderPointerAcc *msReaderPointerAcc);
-
-    Err processBatch(
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
-        QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-        QMap<int, int> *fdrVsCounts
-    );
-
-    Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-            const QVector<MsScanInfo> &msScanInfos,
-            QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
-            );
-
-    Err recalibrateMzVals(
-        const MSLevelEnum &msLevel,
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
-        );
-
-    Err optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc);
-
     Err mainAnalysis(
             MsReaderPointerAcc *msReaderPointerAcc,
             int *targetCountBelowFDRThresholdOnePercent
-            );
-
-    Err buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs);
-
-    static Err buildCandidateScoresPtrs(
-            QVector<CandidateScores> &candidateScores,
-            QVector<CandidateScores*> *candidateScoresPntrs
             );
 
     Err applyNeuralNetClassifier(
@@ -131,20 +101,11 @@ private:
         QVector<CandidateScores*> *candidateScores
         );
 
-    Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const QVector<CandidateScores*> &candidateScores);
-
-    Err honeIRTAndMassCalibration(
-        const QVector<MzTargetKey> &mzTargetKeysToRecal,
-        QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
-        int topNCandidates,
-        int topCandidatesMass
-        );
-
-    Err spectrumCentricSearch(
-        const QVector<CandidateScores*> &candidateScoresPntrs,
-        const MsCalibratomatic &msCalibratomatic,
-        const MsReaderPointerAcc *msReaderPointerAcc
-        ) const;
+    // Err spectrumCentricSearch(
+    //     const QVector<CandidateScores*> &candidateScoresPntrs,
+    //     const MsCalibratomatic &msCalibratomatic,
+    //     const MsReaderPointerAcc *msReaderPointerAcc
+    //     ) const;
 
 
 private:

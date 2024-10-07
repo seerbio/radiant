@@ -12,21 +12,21 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
-#include "InterferingCandidatesEliminatomatic.h"
-#include "MsFrame.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
+#include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
 #include "QuanFileBuilder.h"
 #include "QuanTransitionRefinertron.h"
 #include "QValueSettertron.h"
 #include "SequenceSubstringSearchomatic.h"
-#include "SpectrumCentricMzTargetFrameSearch.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
 
 #include <QElapsedTimer>
+
+#include "PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h"
 
 
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
@@ -79,14 +79,6 @@ Err PythiaDIAFFWorkflow::init(
 }
 
 namespace {
-
-    PeptideSequenceWithModsChargeAndTargetKey buildPeptideSequenceWithModsChargeAndTargetKey(const CandidateScores* candidateScores) {
-        return candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
-             + "|"
-             + QString::number(candidateScores->targetDecoyCandidatePair->charge())
-             + "|"
-             + candidateScores->targetKey;
-    }
 
     Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
@@ -312,7 +304,16 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
 
     if (m_msCalibratomatic.isInitRT()) {
-        e = optimizeParameters(&msReaderPointerAcc); ree;
+
+        OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
+        e = msOptimizeMassAccuracyPPMSettertron.initExec(
+            &msReaderPointerAcc,
+            &m_msCalibratomatic,
+            &m_pythiaParameters,
+            &m_targetDecoyCandidatePairScoretron,
+            &m_targetDecoyPairPntrs
+            ); ree;
+
         // m_pythiaParameters.ms2ExtractionWidthPPM = 6;
         // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
@@ -324,7 +325,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         ); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
-    e = buildCandidateScoresPtrs(&candidateScoresTargetsAndDecoys); ree;
+    e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
+        m_candidateScores,
+        &candidateScoresTargetsAndDecoys
+        ); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet;
     e = filterScoredCandidatesForNeuralNet(
@@ -333,16 +337,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoysNeuralNet
         ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
-
-    // qDebug() << "Starting spectrum centric search";
-    // QElapsedTimer et;
-    // et.start();
-    // e = spectrumCentricSearch(
-    //     candidateScoresTargetsAndDecoys50PercentFDRFiltered,
-    //     m_msCalibratomatic,
-    //     &msReaderPointerAcc
-    //     ); ree;
-    // qDebug() << "Spectrum centric searched finsihed in" << et.elapsed() << "mSec";
 
     e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoysNeuralNet); ree;
 
@@ -480,944 +474,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
-namespace {
-
-    struct TurboXICLoadInput {
-        QMap<ScanNumber, ScanPoints*> scanNumberVsScanPoints;
-        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-        MzTargetKey mzTargetKey;
-    };
-
-    std::tuple<Err, MzTargetKey, TurboXIC*> buildTurboXICLogic(const TurboXICLoadInput &turboXicLoadInput) {
-
-        ERR_INIT
-
-        MsFrame msFrame;
-        e = msFrame.init(
-            turboXicLoadInput.scanNumberVsScanPoints,
-            turboXicLoadInput.scanNumberVsScanTime
-            ); rtee;
-
-        auto turboXic = new TurboXIC();
-        e = turboXic->init(msFrame.frameIndexVsScanPoints()); rtee;
-
-        return {e, turboXicLoadInput.mzTargetKey, turboXic};
-    }
-
-    Err buildMzTargetKeyVsTurboXicPntrs(
-        const QVector<MsScanInfo> &uniqueMsScanInfos,
-        const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        QMap<MzTargetKey, TurboXIC*> *mzTargetKeyVsTurboXicPntr
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
-        e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
-        e = ErrorUtils::isNotEmpty(scanNumberVsScanTime); ree;
-
-        QVector<TurboXICLoadInput> turboXicLoadInputs;
-        for (const MsScanInfo &msScanInfo : uniqueMsScanInfos) {
-
-            const MzTargetKey mzTargetKey = msScanInfo.targetKey();
-            e = ErrorUtils::contains(mzTargetKey, diaTargetFrames); ree;
-
-            TurboXICLoadInput turboXicLoadInput;
-            turboXicLoadInput.scanNumberVsScanPoints = diaTargetFrames.value(mzTargetKey);
-            turboXicLoadInput.scanNumberVsScanTime = scanNumberVsScanTime;
-            turboXicLoadInput.mzTargetKey = mzTargetKey;
-
-            turboXicLoadInputs.push_back(turboXicLoadInput);
-        }
-
-        QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
-            turboXicLoadInputs,
-            buildTurboXICLogic
-            );
-        futures.waitForFinished();
-
-        for (const std::tuple<Err, MzTargetKey, TurboXIC*> &result : futures) {
-            e = std::get<0>(result); ree;
-            mzTargetKeyVsTurboXicPntr->insert(std::get<1>(result), std::get<2>(result));
-        }
-
-        ERR_RETURN
-    }
-
-    void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores*> *candidateScores) {
-
-        QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
-
-        // for (auto *cs : *candidateScores) {
-        //     qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->targetDecoyCandidatePair->charge() << cs->isDecoy << cs->targetKey << "SDLFKJSL";
-        // }
-
-        for (CandidateScores *cs : *candidateScores) {
-
-            const QString key
-                = cs->targetDecoyCandidatePair->peptideStringWithMods() + QString::number(cs->targetDecoyCandidatePair->charge());
-            if (keyVsCandidatesFoundBest.contains(key)) {
-                continue;
-            }
-
-            keyVsCandidatesFoundBest.insert(key, cs);
-        }
-
-        *candidateScores = keyVsCandidatesFoundBest.values().toVector();
-    }
-
-    Err buildMsCalibrationReaderRows(
-            const MSLevelEnum &msLevel,
-            const QVector<CandidateScores*> &_candidateScores,
-            int verbosity,
-            QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(_candidateScores); ree;
-
-        QVector<CandidateScores*> candidateScoresFiltered = _candidateScores;
-        filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
-
-        if(verbosity > 0) {
-            qDebug() << _candidateScores.size() << "Found for recalibartion";
-            qDebug() << candidateScoresFiltered.size() << "Found for recalibartion after duplicates filtered";
-        }
-
-        constexpr int top6 = 6;
-        const auto msCalibrationReaderRowsInsertLogic = [msLevel, top6](CandidateScores *cs){
-
-            MsCalibarationReaderRow row;
-            row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
-            row.scanTime = cs->scanTime;
-            row.scanNumber = cs->scanNumber;
-
-            if (msLevel == MSLevelEnum::MS2) {
-
-                const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
-
-                QVector<float> mzSearchedVals(top6, -1.0f);
-                const int maxSize = std::min(top6, ms2Ions.size());
-
-                for (int i = 0; i < maxSize; i++) {
-                    mzSearchedVals[i] = ms2Ions.at(i).mz;
-                }
-
-                row.mzSearchedVec = mzSearchedVals;
-                row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
-                row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
-                row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
-            }
-            else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz()};
-                row.mzFoundMeanVec = {cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100]};
-                row.mzFoundStDevVec = {cs->featuresArray[CandidateScores::Features::Ms1MzStDevFound100]};
-                row.intensityFoundMaxVec = {cs->featuresArray[CandidateScores::Features::Ms1IntensityFound100]};
-            }
-
-            return row;
-        };
-
-        std::transform(
-                candidateScoresFiltered.begin(),
-                candidateScoresFiltered.end(),
-                std::back_inserter(*msCalibrationReaderRows),
-                msCalibrationReaderRowsInsertLogic
-        );
-
-        ERR_RETURN
-    }
-
-    void sortCandidatePointersDiscScoreDesc(QVector<CandidateScores*> *candidateScoresPntrs) {
-        std::sort(candidateScoresPntrs->rbegin(), candidateScoresPntrs->rend(), [](const CandidateScores *l, const CandidateScores *r){
-            return l->discriminantScore < r->discriminantScore;
-        });
-    }
-
-    void filterMs1CandidateRowsByCorr(QVector<CandidateScores*> *candidateScoresMS1Cal) {
-
-        constexpr double cosineSimSumMS1Min = 0.9;
-        const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
-            return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] <= cosineSimSumMS1Min;
-        };
-
-        const auto terminator = std::remove_if(
-                candidateScoresMS1Cal->begin(),
-                candidateScoresMS1Cal->end(),
-                terminatorLogic
-                );
-
-        candidateScoresMS1Cal->erase(terminator, candidateScoresMS1Cal->end());
-    }
-
-    Err buildUniqueMsScanInfosForProcessing(
-        const QVector<MsScanInfo> &uniqueMsScanInfos,
-        int numberOfUniqueScanInfosForCalibration,
-        int offset,
-        QVector<MsScanInfo> *uniqueMsScanInfosCalibration
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(uniqueMsScanInfos); ree;
-        e = ErrorUtils::isAboveThreshold(numberOfUniqueScanInfosForCalibration, 8, ErrorUtilsParam::IncludeThreshold); ree;
-
-        const double halfSizeScanInfos = uniqueMsScanInfos.size() / 2.0;
-        const int incrementSize = std::max(1, static_cast<int>(halfSizeScanInfos / numberOfUniqueScanInfosForCalibration));
-
-        for (int i = 0; i < uniqueMsScanInfos.size(); i += incrementSize) {
-
-            const int distanceFromCenterRight
-                    = std::min(static_cast<int>(halfSizeScanInfos) + i + offset, uniqueMsScanInfos.size() - 1);
-
-            const int distanceFromCenterLeft = std::max(static_cast<int>(halfSizeScanInfos) - i - offset, 0);
-
-            if (i == 0) {
-                uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterRight));
-                continue;
-            }
-
-            uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterRight));
-            uniqueMsScanInfosCalibration->push_back(uniqueMsScanInfos.at(distanceFromCenterLeft));
-
-            if (uniqueMsScanInfosCalibration->size() >= numberOfUniqueScanInfosForCalibration) {
-                break;
-            }
-
-        }
-
-        uniqueMsScanInfosCalibration->resize(std::min(
-            numberOfUniqueScanInfosForCalibration,
-            uniqueMsScanInfosCalibration->size()
-            ));
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::buildCalibration(const MsReaderPointerAcc *msReaderPointerAcc) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
-
-    constexpr int topNMS2IonsCalibration = 6;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMS2IonsCalibration << "fragments for calibration";
-
-    const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax);
-    const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "Number of tranches for calibration:" << numberOfTranches
-             << "target count:" << m_targetDecoyPairPntrs.size()
-             << "sizePerTranche:" << static_cast<int>(sizePerTranche);
-
-    const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
-
-    constexpr int maxUniqueScanInfosTrainingCount = 16;
-    constexpr int offset = 0;
-    QVector<MsScanInfo> uniqueMsScanInfosCalibration;
-    e = buildUniqueMsScanInfosForProcessing(
-        uniqueMsScanInfos,
-        maxUniqueScanInfosTrainingCount,
-        offset,
-        &uniqueMsScanInfosCalibration
-        ); ree;
-
-    QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
-    e = buildMzTargetKeyVsTurboXicPntrs(
-        uniqueMsScanInfosCalibration,
-        *m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-        msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
-        &mzTargetKeyVsTurboXicPntrs
-        ); ree;
-
-    QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePointersTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            m_targetDecoyPairPntrs,
-            numberOfTranches,
-            &targetDecoyCandidatePointersTranched
-            ); ree;
-
-    QVector<float> scanTimeStDevs;
-    QVector<float> ms2PPMStDevs;
-
-    int batchCounter = 0;
-    for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
-
-        constexpr bool useExtendedScores = false;
-        constexpr bool useNeuralNetworkScores = false;
-
-        QElapsedTimer etBatch;
-        etBatch.start();
-
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsBatch = m_targetDecoyCandidatePairsTopScores;
-        targetDecoyCandidatePairsBatch.append(tdcp);
-
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-        e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-                targetDecoyCandidatePairsBatch,
-                uniqueMsScanInfosCalibration,
-                &mzTargetKeyVsTargetDecoyCandidatePointers
-                ); ree;
-
-        constexpr float minPeakCountCalibration = 4.9;
-        m_candidateScores.clear();
-        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-                topNMS2IonsCalibration,
-                m_msCalibratomatic,
-                minPeakCountCalibration,
-                maxUniqueScanInfosTrainingCount,
-                mzTargetKeyVsTurboXicPntrs,
-                &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScores
-                ); ree
-
-        QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-        QMap<int, int> fdrVsCounts;
-        e = processBatch(
-            useExtendedScores,
-            useNeuralNetworkScores,
-            &candidateScoresVecBatchPntrs,
-            &fdrVsCounts
-            ); ree;
-
-        constexpr int fdrKey = 5;
-        constexpr int fdrKeyMassCalMS2 = 2;
-        constexpr int fdrKeyMassCalMS1 = 5;
-
-        const QVector<MzTargetKey> targetKeysToRecalibrateWhileBuildingCalibration = mzTargetKeyVsTurboXicPntrs.keys().toVector();
-        e = honeIRTAndMassCalibration(
-            targetKeysToRecalibrateWhileBuildingCalibration,
-            &candidateScoresVecBatchPntrs,
-            fdrVsCounts.value(fdrKey),
-            fdrVsCounts.value(fdrKeyMassCalMS2)
-            ); ree;
-
-        scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-        ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
-
-        QString fdrString;
-        e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "Processed batch" << ++batchCounter
-                << "of"
-                << targetDecoyCandidatePointersTranched.size()
-                << etBatch.elapsed()
-                << "mSec"
-                << qPrintable(fdrString);
-
-        if (fdrVsCounts.value(fdrKey) > m_pythiaParameters.calibrationTrainingVolume
-            || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
-            ) {
-
-            constexpr int fdrKey50PercentFDR = 50;
-            candidateScoresVecBatchPntrs.resize(std::min(candidateScoresVecBatchPntrs.size(), fdrVsCounts.value(fdrKey50PercentFDR)));
-
-            QVector<CandidateScores*> candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS2)));
-
-            QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-            e = buildMsCalibrationReaderRows(
-                    MSLevelEnum::MS2,
-                    candidateScoresVecBatchPntrsRecal,
-                    m_pythiaParameters.verbosity,
-                    &msCalibrationReaderRows
-                    ); ree;
-
-            e = m_msCalibratomatic.setMassCalibrationCoeffs(
-                msCalibrationReaderRows,
-                MSLevelEnum::MS2
-                ); ree;
-
-            scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-            ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
-
-            constexpr int minVecSize = 3;
-            std::sort(scanTimeStDevs.begin(), scanTimeStDevs.end());
-            if (scanTimeStDevs.size() >= minVecSize) {
-                scanTimeStDevs.pop_front();
-                scanTimeStDevs.pop_back();
-
-            }
-
-            std::sort(ms2PPMStDevs.begin(), ms2PPMStDevs.end());
-            if (ms2PPMStDevs.size() >= minVecSize) {
-                ms2PPMStDevs.pop_front();
-                ms2PPMStDevs.pop_back();
-            }
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "ScanTimeWindow Mean|Median|Min"
-                     << MathUtils::mean(scanTimeStDevs)
-                     << MathUtils::median(scanTimeStDevs)
-                     << *std::min({scanTimeStDevs.begin(), scanTimeStDevs.end()});
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(ms2PPMStDevs) << MathUtils::median(ms2PPMStDevs);
-
-            m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
-            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
-
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS2,
-                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-                    ); ree;
-
-            candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
-            candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
-            filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            constexpr int recalibrationPointCountMin = 400;
-            qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
-            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
-                qWarning() << "Skipping MS1 recalibration.  Not enough points found";
-                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-                ERR_RETURN
-            }
-
-            QVector<MsCalibarationReaderRow> msCalibrationReaderRowsMS1;
-            e = buildMsCalibrationReaderRows(
-                    MSLevelEnum::MS1,
-                    candidateScoresVecBatchPntrsRecal,
-                    m_pythiaParameters.verbosity,
-                    &msCalibrationReaderRowsMS1
-                    ); ree;
-
-            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
-                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-                ERR_RETURN
-            }
-
-            e = m_msCalibratomatic.setMassCalibrationCoeffs(
-                msCalibrationReaderRowsMS1,
-                MSLevelEnum::MS1
-                ); ree;
-
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS1,
-                    m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron.ms1ScanNumberVsScanPoints()
-                    ); ree;
-
-            e = m_targetDecoyCandidatePairScoretron.reloadTurboXICMS1(); ree;
-
-            break;
-        }
-
-    }
-
-    for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-
-    ERR_RETURN
-}
-
-namespace {
-
-    Err buildProcessBatchPointers(
-        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
-        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
-        QVector<CandidateScores*> *candidateScoresesPntrs,
-        QVector<FeaturesArray*> *featuresArrayPntrs,
-        QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isFalse(featuresArrayTargetVsDecoy->isEmpty()); ree;
-
-        for (int i = 0; i < featuresArrayTargetVsDecoy->size(); i++) {
-
-            const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
-            QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = (*featuresArrayTargetVsDecoy)[i];
-            featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
-
-            candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
-            featuresArrayPntrs->append({&featuresArrayPair.first, &featuresArrayPair.second});
-        }
-
-        ERR_RETURN
-    }
-
-    Err setCandidateScoresDiscriminantScore(
-        const QVector<float> &discriminantScores,
-        QVector<CandidateScores*> *candidateScoresesPntrs
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(discriminantScores); ree;
-        e = ErrorUtils::isEqual(discriminantScores.size(), candidateScoresesPntrs->size()); ree;
-
-        for (int i = 0; i < discriminantScores.size(); i++) {
-            CandidateScores* cs = (*candidateScoresesPntrs)[i];
-            cs->discriminantScore = discriminantScores.at(i);
-        }
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::processBatch(
-    bool useExtendedScores,
-    bool useNeuralNetworkScores,
-    QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-    QMap<int, int> *fdrVsCounts
-    ) {
-
-    ERR_INIT
-
-    const auto terminatorLogic = [&](CandidateScores *cs) {
-        return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < m_pythiaParameters.minMs2FragCount;
-    };
-    const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
-    candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
-
-    e = buildCandidateScoresPtrs(candidateScoresVecBatchPntrs); ree;
-    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(*candidateScoresVecBatchPntrs); ree;
-
-    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
-    e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
-        useExtendedScores,
-        useNeuralNetworkScores,
-        &featuresArrayTargetVsDecoy
-        ); ree;
-
-    e = ErrorUtils::isEqual(
-        m_peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
-        featuresArrayTargetVsDecoy.size()
-        ); ree;
-
-    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                        = m_peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
-
-    QVector<CandidateScores*> candidateScoresesPntrs;
-    QVector<FeaturesArray*> featuresArrayPntrs;
-    QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
-    e = buildProcessBatchPointers(
-        candidateScorePairs,
-        &featuresArrayTargetVsDecoy,
-        &candidateScoresesPntrs,
-        &featuresArrayPntrs,
-        &featuresArrayTargetVsDecoyPntrs
-        ); ree;
-
-    QVector<float> weights;
-    e = DiscriminantScoretron::trainLDAClassifier(
-            featuresArrayTargetVsDecoyPntrs,
-            m_pythiaParameters.threadCount,
-            m_pythiaParameters.verbosity,
-            &weights
-            ); ree;
-
-    QVector<float> discriminantScores;
-    e = DiscriminantScoretron::applyWeights(
-        weights,
-        m_pythiaParameters.threadCount,
-        featuresArrayPntrs,
-        &discriminantScores
-        ); ree;
-
-    e = setCandidateScoresDiscriminantScore(
-        discriminantScores,
-        &candidateScoresesPntrs
-        ); ree;
-
-    e = QValueSettertron::setQValueForCandidates(
-        QValueSettertron::QValueScoreType::DiscriminantScore,
-        candidateScoresVecBatchPntrs
-        ); ree;
-
-    e = FDRCLassifierNeuralNet::outputFDRResults(
-        *candidateScoresVecBatchPntrs,
-        m_pythiaParameters.verbosity,
-        fdrVsCounts
-        ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    void filterTargetDecoyPairPointersByPrecursorMzRange(
-        float precursorMzMin,
-        float precursorMzMax,
-        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairs
-        ) {
-
-        const auto terminatorLogic = [precursorMzMin, precursorMzMax](const TargetDecoyCandidatePair *tdcp) {
-            const float mzPrecursorTargetDecoyPair = tdcp->mz();
-            return !(precursorMzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= precursorMzMax);
-        };
-
-        const auto terminator = std::remove_if(
-            targetDecoyCandidatePairs->begin(),
-            targetDecoyCandidatePairs->end(),
-            terminatorLogic
-            );
-
-        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
-    }
-
-} //namespace
-Err PythiaDIAFFWorkflow::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-        const QVector<MsScanInfo> &msScanInfos,
-        QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(msScanInfos); ree;
-    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairManager.isInit()); ree;
-
-    mzTargetKeyVsTargetDecoyCandidatePointers->clear();
-
-    for (const MsScanInfo &msScanInfo : msScanInfos) {
-
-        if (msScanInfo.msLevel < 2) {
-            continue;
-        }
-
-        const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons);
-        const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + m_pythiaParameters.precursorExtractionWindowThomsons);
-
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-        filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
-
-        mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered);
-
-        if (m_pythiaParameters.verbosity > 0) {
-            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
-        }
-    }
-
-    ERR_RETURN
-}
-
-
-namespace {
-
-    Err recalibrationLogic(
-        MsCalibratomatic msCalibratomatic,
-        const QMap<ScanNumber, ScanPoints*> &scanPoints
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(msCalibratomatic.isInitCalMS2()); ree;
-        e = ErrorUtils::isNotEmpty(scanPoints); ree;
-
-        e = msCalibratomatic.recalibrateScanPoints(
-            MSLevelEnum::MS2,
-            scanPoints
-            ); ree;
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::recalibrateMzVals(
-        const MSLevelEnum &msLevel,
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
-        QMap<ScanNumber, ScanPoints> *scanNumberVsScanTimeMS1
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(m_msCalibratomatic.isInitCalMS2() || m_msCalibratomatic.isInitCalMS1()); ree;
-    e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Recalibrating mz vals";
-
-    QElapsedTimer et;
-    et.start();
-
-    if (msLevel == MSLevelEnum::MS2) {
-
-#define RECAL_PARALLEL
-#ifdef RECAL_PARALLEL
-        const auto reCalBinder = std::bind(
-                recalibrationLogic,
-                m_msCalibratomatic,
-                std::placeholders::_1
-        );
-
-        const QList<QMap<ScanNumber, ScanPoints*>> &tandemPointsVec = diaTargetFrames->values();
-
-        QFuture<Err> futures = QtConcurrent::mapped(
-                tandemPointsVec,
-                reCalBinder
-        );
-        futures.waitForFinished();
-
-        for (const Err &err: futures) {
-            e = err; ree;
-        }
-#else
-        const QList<MzTargetKey> &diaTargetFrameKeys = diaTargetFrames->keys();
-        for (const MzTargetKey &k: diaTargetFrameKeys) {
-            e = recalibrationLogic(m_msCalibratomatic, diaTargetFrames->value(k)); ree;
-        }
-#endif
-    }
-
-    if (msLevel == MSLevelEnum::MS1) {
-        qDebug() << "Recalibrating MS1 mz vals frame";
-        e = m_msCalibratomatic.recalibrateScanPoints(
-            MSLevelEnum::MS1,
-            scanNumberVsScanTimeMS1
-            ); ree;
-    }
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Points recalibrated in" << et.elapsed() << "mSec";
-
-    ERR_RETURN
-}
-
-namespace {
-
-    struct DOEResult {
-        double ppm = -1.0;
-        int fdrCount = -1;
-    };
-
-    Err buildDOE(
-            const PythiaParameters &pythiaParameters,
-            double mzPPMStDev,
-            double scanTimeStDev,
-            int verbosity,
-            QVector<PythiaParameters> *pythiaParametersExperiments
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(mzPPMStDev > 0.0); ree;
-        e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
-        e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-
-        const QVector<double> ppmList = {
-            5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
-        };
-
-        for (double ppm : ppmList ) {
-            PythiaParameters params = pythiaParameters;
-            params.ms2ExtractionWidthPPM = ppm;
-            pythiaParametersExperiments->push_back(params);
-        }
-
-        if (verbosity > 0) {
-            qDebug() << "Testing PPM Values";
-            for (const PythiaParameters &pp : *pythiaParametersExperiments) {
-                qDebug() << "ppmTol" << pp.ms2ExtractionWidthPPM;
-            }
-        }
-
-
-        ERR_RETURN
-    }
-
-    Err getTopFrequencyParameters(
-            const QVector<DOEResult> &results,
-            int verbosity,
-            double *ppmSetting
-            ) {
-
-        ERR_INIT
-        e = ErrorUtils::isNotEmpty(results); ree;
-
-        Eigen::MatrixX<double> xyMat(results.size() + 1, 2);
-        xyMat.setZero();
-        for (int row = 0; row < results.size(); row++) {
-            const DOEResult &doeResult = results.at(row);
-            xyMat.coeffRef(row + 1, 0) = doeResult.ppm;
-            xyMat.coeffRef(row + 1, 1) = static_cast<double>(doeResult.fdrCount);
-            if (verbosity > 0) {
-                qDebug() << doeResult.ppm << doeResult.fdrCount << xyMat.coeff(row, 1);
-
-            }
-        }
-
-        constexpr int polynomialOrder = 2;
-
-        QVector<double> coeffs;
-        EigenUtils::fitPolynomialQRDecomposition(xyMat, polynomialOrder, &coeffs);
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PPM Coeffs" << coeffs;
-
-        QVector<double> xPoints = {results.first().ppm};
-        while (xPoints.back() < results.back().ppm) {
-            constexpr double incrementVal = 0.25;
-            xPoints.push_back(xPoints.back() + incrementVal);
-        }
-
-        QVector<double> yPoints;
-        for (double x : xPoints) {
-            double y = 0.0;
-            for (int i = 0; i < coeffs.size(); i++) {
-                y += coeffs.at(i) * std::pow(x, i);
-            }
-            if (verbosity > 0) {
-                qDebug() << x << y;
-
-            }
-            yPoints.push_back(y);
-        }
-
-        *ppmSetting = xPoints.at(std::max_element(yPoints.begin(), yPoints.end()) - yPoints.begin());
-
-        ERR_RETURN
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::optimizeParameters(MsReaderPointerAcc *msReaderPointerAcc) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
-
-    constexpr int topNMS2IonsOptimization = 12;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Using top:" << topNMS2IonsOptimization << "fragments for optimization";
-
-    constexpr int optimizationMultiplicationFactor = 6;
-    const auto sizePerTranche = static_cast<double>(m_pythiaParameters.trancheSizeMax * optimizationMultiplicationFactor);
-    const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "target count:" << m_targetDecoyPairPntrs.size()
-             << "sizePerTranche:" << static_cast<int>(sizePerTranche);
-
-    const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
-
-    constexpr int maxUniqueScanInfosTrainingCount = 16;
-    constexpr int offset = 1;
-    QVector<MsScanInfo> uniqueMsScanInfosCalibration;
-    e = buildUniqueMsScanInfosForProcessing(
-        uniqueMsScanInfos,
-        maxUniqueScanInfosTrainingCount,
-        offset,
-        &uniqueMsScanInfosCalibration
-        ); ree;
-
-    QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
-    e = buildMzTargetKeyVsTurboXicPntrs(
-        uniqueMsScanInfosCalibration,
-        *m_targetDecoyCandidatePairScoretron.diaTargetFrames(),
-        msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
-        &mzTargetKeyVsTurboXicPntrs
-        ); ree;
-
-    QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePointersTranched;
-    e = ParallelUtils::trancheVectorForParallelization(
-            m_targetDecoyPairPntrs,
-            numberOfTranches,
-            &targetDecoyCandidatePointersTranched
-            ); ree;
-
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            targetDecoyCandidatePointersTranched.first(),
-            uniqueMsScanInfosCalibration,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            ); ree;
-
-    QVector<PythiaParameters> pythiaParametersExperiments;
-    e = buildDOE(
-            m_pythiaParameters,
-            m_msCalibratomatic.mzStDevMS2(),
-            m_msCalibratomatic.scanTimeStDev(),
-            m_pythiaParameters.verbosity,
-            &pythiaParametersExperiments
-            ); ree;
-
-    int bestResultCount = 0;
-    int countSinceLastHigh = 0;
-    QVector<DOEResult> results;
-    for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
-
-        constexpr bool useExtendedScores = true;
-        constexpr bool useNeuralNetworkScores = false;
-
-        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(pythiaParams); ree;
-
-        constexpr float minPeakCountOptimization = 2.9;
-        constexpr int topNMS2Ions = 12;
-        m_candidateScores.clear();
-        e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
-                topNMS2Ions,
-                m_msCalibratomatic,
-                minPeakCountOptimization,
-                maxUniqueScanInfosTrainingCount,
-                mzTargetKeyVsTurboXicPntrs,
-                &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScores
-                ); ree
-
-        QVector<CandidateScores*> candidateScoresVecBatchPntrs;
-        QMap<int, int> fdrVsCounts;
-        e = processBatch(
-            useExtendedScores,
-            useNeuralNetworkScores,
-            &candidateScoresVecBatchPntrs,
-            &fdrVsCounts
-            ); ree;
-
-        QString fdrString;
-        e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                 << "ppmTol"
-                 << pythiaParams.ms2ExtractionWidthPPM
-                 << "Finished"
-                 << qPrintable(fdrString);
-
-        constexpr double fdrThresholdAccuracyOptimization = 0.1;
-        int targetCountAboveFDRQValueThreshold;
-        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                m_candidateScores,
-                fdrThresholdAccuracyOptimization,
-                &targetCountAboveFDRQValueThreshold
-                ); ree;
-
-        DOEResult res;
-        res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-        res.fdrCount = targetCountAboveFDRQValueThreshold;
-        results.push_back(res);
-
-        if (res.fdrCount >= bestResultCount) {
-            bestResultCount = res.fdrCount;
-            countSinceLastHigh = 0;
-            continue;
-        }
-
-        constexpr int maxCountsSinceLastHigh = 3;
-        if (++countSinceLastHigh >= maxCountsSinceLastHigh) {
-            break;
-        }
-    }
-
-    e = getTopFrequencyParameters(
-            results,
-            m_pythiaParameters.verbosity,
-            &m_pythiaParameters.ms2ExtractionWidthPPM
-            ); ree;
-
-    m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-    e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Optimal ppm setting:" << m_pythiaParameters.ms2ExtractionWidthPPM;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Optimal scanTimeWindow setting:" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs) << "minutes";
-
-    for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-
-    ERR_RETURN
-}
-
 Err PythiaDIAFFWorkflow::mainAnalysis(
         MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent
@@ -1443,8 +499,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
     QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
+    e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
             m_targetDecoyPairPntrs,
+            m_pythiaParameters,
             uniqueMsScanInfos,
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
@@ -1468,7 +525,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;
-    e = processBatch(
+    e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+        m_candidateScores,
+        m_pythiaParameters,
         useExtendedScores,
         useNeuralNetworkScores,
         &candidateScoresVecBatchPntrs,
@@ -1488,40 +547,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             targetCountBelowFDRThresholdOnePercent
     ); ree;
 
-    sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
+    PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets sorted" << et.restart() << "mSec";
 
     ERR_RETURN
-}
-
-Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(QVector<CandidateScores*> *candidateScoresPntrs) {
-
-    ERR_INIT
-    e = buildCandidateScoresPtrs(
-            m_candidateScores,
-            candidateScoresPntrs
-            ); ree;
-    ERR_RETURN
-}
-
-Err PythiaDIAFFWorkflow::buildCandidateScoresPtrs(
-        QVector<CandidateScores> &candidateScores,
-        QVector<CandidateScores*> *candidateScoresPntrs
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
-
-    std::transform(
-            candidateScores.begin(),
-            candidateScores.end(),
-            std::back_inserter(*candidateScoresPntrs),
-            [](CandidateScores &cs){return &cs;}
-            );
-
-    ERR_RETURN
-
 }
 
 namespace {
@@ -1785,234 +814,121 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     ERR_RETURN
 }
 
-Err PythiaDIAFFWorkflow::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(const QVector<CandidateScores*> &candidateScores) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
-
-    m_peptideKeyVsTargetDecoyCandidateScoresPntrs.clear();
-
-    for (CandidateScores *cs: candidateScores) {
-
-        const PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey
-                                                                    = buildPeptideSequenceWithModsChargeAndTargetKey(cs);
-
-        if (cs->isDecoy) {
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs[peptideSequenceWithModsChargeAndTargetKey].second = cs;
-            continue;
-        }
-        m_peptideKeyVsTargetDecoyCandidateScoresPntrs[peptideSequenceWithModsChargeAndTargetKey].first = cs;
-    }
-
-    const bool allTargetsMatchedWithDecoy = std::all_of(
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.begin(),
-            m_peptideKeyVsTargetDecoyCandidateScoresPntrs.end(),
-            [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr){
-                return pr.first != nullptr && pr.second != nullptr;
-            }
-    );
-    e = ErrorUtils::isTrue(allTargetsMatchedWithDecoy); ree;
-
-    ERR_RETURN
-}
-
-Err PythiaDIAFFWorkflow::honeIRTAndMassCalibration(
-    const QVector<MzTargetKey> &mzTargetKeysToRecal,
-    QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
-    int topNCandidates,
-    int topCandidatesMass
-    ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(candidateScoresVecScoredPntrs->isEmpty()); ree;
-
-    sortCandidatePointersDiscScoreDesc(candidateScoresVecScoredPntrs);
-
-    QVector<CandidateScores*> candidateScoresVecBatchPntrsResized = *candidateScoresVecScoredPntrs;
-    candidateScoresVecBatchPntrsResized.resize(std::max(m_minTrainingCountTranche, topNCandidates));
-
-    e = InterferingCandidatesEliminatomatic::removeInterferingCandidates(
-            m_pythiaParameters.ionsSharedToReject,
-            m_pythiaParameters.mzMinMS2,
-            m_pythiaParameters.mzMaxMS2,
-            &candidateScoresVecBatchPntrsResized
-            ); ree;
-
-    if (m_pythiaParameters.verbosity > 0) {
-        qDebug() << "Using" << candidateScoresVecBatchPntrsResized.size() << "for iRT Estimation";
-        qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
-    }
-
-    QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-    e = buildMsCalibrationReaderRows(
-            MSLevelEnum::MS2,
-            candidateScoresVecBatchPntrsResized,
-            m_pythiaParameters.verbosity,
-            &msCalibrationReaderRows
-            ); ree;
-
-    for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
-
-        if (m_entered.value(cs->targetDecoyCandidatePair)) {
-            continue;
-        }
-
-        m_targetDecoyCandidatePairsTopScores.push_back(cs->targetDecoyCandidatePair);
-        m_entered.insert(cs->targetDecoyCandidatePair, true);
-    }
-
-    e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
-
-    if (m_pythiaParameters.verbosity > 0) {
-        qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters.scanTimeWindowStDevs
-                 <<":" << m_msCalibratomatic.scanTimeStDev(m_pythiaParameters.scanTimeWindowStDevs);
-    }
-
-    constexpr int ms2MassRecalCountMin = 200;
-    if (topCandidatesMass > ms2MassRecalCountMin) {
-
-        msCalibrationReaderRows.resize(topCandidatesMass);
-
-        e = m_msCalibratomatic.setMassCalibrationCoeffs(
-            msCalibrationReaderRows,
-            MSLevelEnum::MS2
-            ); ree;
-
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames = m_targetDecoyCandidatePairScoretron.diaTargetFrames();
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> selectDIATargetFrames;
-        for (auto it = diaTargetFrames->begin(); it != diaTargetFrames->end(); ++it) {
-
-            const MzTargetKey &mzTargetKey = it.key();
-            const QMap<ScanNumber, ScanPoints*> &spp = it.value();
-
-            if (!mzTargetKeysToRecal.contains(mzTargetKey)) {
-                continue;
-            }
-            selectDIATargetFrames.insert(mzTargetKey, spp);
-        }
-
-    }
-
-    ERR_RETURN
-}
-
-namespace {
-
-    struct SpectrumCentricParallelInput {
-        MzTargetKey mzTargetKey;
-        QVector<CandidateScores*> candidateScoresPntrs;
-        QMap<ScanNumber, ScanPoints*> diaTargetFrame;
-        PythiaParameters pythiaParameters;
-        MsCalibratomatic msCalibratomatic;
-        QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
-    };
-
-    Err buildSpectrumCentricParallelInput(
-        const QMap<MzTargetKey, QVector<CandidateScores*>> &mzTargetKeyVsCandidateScoresPointers,
-        const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
-        const MsCalibratomatic &msCalibratomatic,
-        const PythiaParameters &pythiaParameters,
-        const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
-        QVector<SpectrumCentricParallelInput> *spectrumCentricParallelInputs
-        ) {
-
-        ERR_INIT
-        e = ErrorUtils::isNotEmpty(mzTargetKeyVsCandidateScoresPointers); ree;
-        e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
-
-        for(auto it = mzTargetKeyVsCandidateScoresPointers.begin(); it != mzTargetKeyVsCandidateScoresPointers.end(); ++it) {
-            SpectrumCentricParallelInput spectrumCentricParallelInput;
-            spectrumCentricParallelInput.mzTargetKey = it.key();
-            spectrumCentricParallelInput.candidateScoresPntrs = it.value();
-            spectrumCentricParallelInput.msCalibratomatic = msCalibratomatic;
-            spectrumCentricParallelInput.pythiaParameters = pythiaParameters;
-            spectrumCentricParallelInput.scanNumberVsScanTime = scanNumberVsScanTime;
-
-            e = ErrorUtils::contains(spectrumCentricParallelInput.mzTargetKey, diaTargetFrames); ree;
-            spectrumCentricParallelInput.diaTargetFrame = diaTargetFrames.value(spectrumCentricParallelInput.mzTargetKey);
-            spectrumCentricParallelInputs->push_back(spectrumCentricParallelInput);
-        }
-
-        ERR_RETURN
-    }
-
-    QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(scpi.candidateScoresPntrs); rree;
-        e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); rree;
-        e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); rree;
-
-        QElapsedTimer et;
-        et.start();
-
-        SpectrumCentricMzTargetFrameSearch spectrumCentricMzTargetFrameSearch;
-        e = spectrumCentricMzTargetFrameSearch.init(
-            scpi.pythiaParameters,
-            scpi.msCalibratomatic,
-            scpi.diaTargetFrame,
-            scpi.candidateScoresPntrs,
-            scpi.scanNumberVsScanTime
-            ); rree;
-
-        QVector<QPair<CandidateScores*, DeconvolvotronResult>> candidateScoresPntrsVsScore;
-        e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(&candidateScoresPntrsVsScore); rree;
-
-        qDebug() << "Processed MzTargetKey" << scpi.mzTargetKey << et.elapsed() << "mSec";
-
-        return {e, candidateScoresPntrsVsScore};
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::spectrumCentricSearch(
-    const QVector<CandidateScores*> &candidateScoresPntrs,
-    const MsCalibratomatic &msCalibratomatic,
-    const MsReaderPointerAcc *msReaderPointerAcc
-    ) const {
-
-    ERR_INIT
-    e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;
-
-    QMap<MzTargetKey, QVector<CandidateScores*>> mzTargetKeyVsCandidateScoresPntrs;
-    for (CandidateScores *cs : candidateScoresPntrs) {
-        mzTargetKeyVsCandidateScoresPntrs[cs->targetKey].push_back(cs);
-    }
-
-    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    e = msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
-
-    QVector<SpectrumCentricParallelInput> spectrumCentricParallelInputs;
-    e = buildSpectrumCentricParallelInput(
-        mzTargetKeyVsCandidateScoresPntrs,
-        diaTargetFrames,
-        msCalibratomatic,
-        m_pythiaParameters,
-        msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
-        &spectrumCentricParallelInputs
-        ); ree;
-
-#define PARALLEL_DCON
-#ifdef PARALLEL_DCON
-    QFuture<QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>>> futures = QtConcurrent::mapped(
-        spectrumCentricParallelInputs,
-        spectrumCentricParallelLogic
-        ); ree;
-    futures.waitForFinished();
-
-    for (const QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> &res : futures) {
-        e = res.first; ree;
-        const QVector<QPair<CandidateScores*, DeconvolvotronResult>> &prs = res.second;
-    }
-#else
-    for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
-        QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
-        e = res.first; ree;
-        qDebug() << res.second.size() << "SDLFKDJSL";
-    }
-#endif
-
-    ERR_RETURN
-}
+// namespace {
+//
+//     struct SpectrumCentricParallelInput {
+//         MzTargetKey mzTargetKey;
+//         QVector<CandidateScores*> candidateScoresPntrs;
+//         QMap<ScanNumber, ScanPoints*> diaTargetFrame;
+//         PythiaParameters pythiaParameters;
+//         MsCalibratomatic msCalibratomatic;
+//         QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
+//     };
+//
+//     Err buildSpectrumCentricParallelInput(
+//         const QMap<MzTargetKey, QVector<CandidateScores*>> &mzTargetKeyVsCandidateScoresPointers,
+//         const QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> &diaTargetFrames,
+//         const MsCalibratomatic &msCalibratomatic,
+//         const PythiaParameters &pythiaParameters,
+//         const QMap<ScanNumber, ScanTime> &scanNumberVsScanTime,
+//         QVector<SpectrumCentricParallelInput> *spectrumCentricParallelInputs
+//         ) {
+//
+//         ERR_INIT
+//         e = ErrorUtils::isNotEmpty(mzTargetKeyVsCandidateScoresPointers); ree;
+//         e = ErrorUtils::isNotEmpty(diaTargetFrames); ree;
+//
+//         for(auto it = mzTargetKeyVsCandidateScoresPointers.begin(); it != mzTargetKeyVsCandidateScoresPointers.end(); ++it) {
+//             SpectrumCentricParallelInput spectrumCentricParallelInput;
+//             spectrumCentricParallelInput.mzTargetKey = it.key();
+//             spectrumCentricParallelInput.candidateScoresPntrs = it.value();
+//             spectrumCentricParallelInput.msCalibratomatic = msCalibratomatic;
+//             spectrumCentricParallelInput.pythiaParameters = pythiaParameters;
+//             spectrumCentricParallelInput.scanNumberVsScanTime = scanNumberVsScanTime;
+//
+//             e = ErrorUtils::contains(spectrumCentricParallelInput.mzTargetKey, diaTargetFrames); ree;
+//             spectrumCentricParallelInput.diaTargetFrame = diaTargetFrames.value(spectrumCentricParallelInput.mzTargetKey);
+//             spectrumCentricParallelInputs->push_back(spectrumCentricParallelInput);
+//         }
+//
+//         ERR_RETURN
+//     }
+//
+//     QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> spectrumCentricParallelLogic(const SpectrumCentricParallelInput &scpi) {
+//
+//         ERR_INIT
+//
+//         e = ErrorUtils::isNotEmpty(scpi.candidateScoresPntrs); rree;
+//         e = ErrorUtils::isNotEmpty(scpi.diaTargetFrame); rree;
+//         e = ErrorUtils::isNotEmpty(scpi.mzTargetKey); rree;
+//
+//         QElapsedTimer et;
+//         et.start();
+//
+//         SpectrumCentricMzTargetFrameSearch spectrumCentricMzTargetFrameSearch;
+//         e = spectrumCentricMzTargetFrameSearch.init(
+//             scpi.pythiaParameters,
+//             scpi.msCalibratomatic,
+//             scpi.diaTargetFrame,
+//             scpi.candidateScoresPntrs,
+//             scpi.scanNumberVsScanTime
+//             ); rree;
+//
+//         QVector<QPair<CandidateScores*, DeconvolvotronResult>> candidateScoresPntrsVsScore;
+//         e = spectrumCentricMzTargetFrameSearch.assignIdsToScans(&candidateScoresPntrsVsScore); rree;
+//
+//         qDebug() << "Processed MzTargetKey" << scpi.mzTargetKey << et.elapsed() << "mSec";
+//
+//         return {e, candidateScoresPntrsVsScore};
+//     }
+//
+// }//namespace
+// Err PythiaDIAFFWorkflow::spectrumCentricSearch(
+//     const QVector<CandidateScores*> &candidateScoresPntrs,
+//     const MsCalibratomatic &msCalibratomatic,
+//     const MsReaderPointerAcc *msReaderPointerAcc
+//     ) const {
+//
+//     ERR_INIT
+//     e = ErrorUtils::isNotEmpty(m_targetDecoyPairPntrs); ree;
+//
+//     QMap<MzTargetKey, QVector<CandidateScores*>> mzTargetKeyVsCandidateScoresPntrs;
+//     for (CandidateScores *cs : candidateScoresPntrs) {
+//         mzTargetKeyVsCandidateScoresPntrs[cs->targetKey].push_back(cs);
+//     }
+//
+//     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+//     e = msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
+//
+//     QVector<SpectrumCentricParallelInput> spectrumCentricParallelInputs;
+//     e = buildSpectrumCentricParallelInput(
+//         mzTargetKeyVsCandidateScoresPntrs,
+//         diaTargetFrames,
+//         msCalibratomatic,
+//         m_pythiaParameters,
+//         msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
+//         &spectrumCentricParallelInputs
+//         ); ree;
+//
+// #define PARALLEL_DCON
+// #ifdef PARALLEL_DCON
+//     QFuture<QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>>> futures = QtConcurrent::mapped(
+//         spectrumCentricParallelInputs,
+//         spectrumCentricParallelLogic
+//         ); ree;
+//     futures.waitForFinished();
+//
+//     for (const QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> &res : futures) {
+//         e = res.first; ree;
+//         const QVector<QPair<CandidateScores*, DeconvolvotronResult>> &prs = res.second;
+//     }
+// #else
+//     for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
+//         QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
+//         e = res.first; ree;
+//         qDebug() << res.second.size() << "SDLFKDJSL";
+//     }
+// #endif
+//
+//     ERR_RETURN
+// }
