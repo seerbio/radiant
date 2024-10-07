@@ -14,6 +14,7 @@
 #include "FragLibReader.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsFrame.h"
+#include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
 #include "PeptideStringWithMods.h"
@@ -301,7 +302,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &msReaderPointerAcc
             ); ree;
 
-    e = buildCalibration(&msReaderPointerAcc); ree;
+    MsCalibratomaticSettertron msCalibratomaticSettertron;
+    e = msCalibratomaticSettertron.init(
+        &m_pythiaParameters,
+        &msReaderPointerAcc,
+        &m_targetDecoyCandidatePairManager,
+        &m_targetDecoyCandidatePairScoretron
+        ); ree;
+    e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
 
     if (m_msCalibratomatic.isInitRT()) {
         e = optimizeParameters(&msReaderPointerAcc); ree;
