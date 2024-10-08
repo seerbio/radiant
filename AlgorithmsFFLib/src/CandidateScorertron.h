@@ -44,6 +44,7 @@ public:
         float minPeakCount,
         float scanTimeRange,
         const QMap<NominalMzMass, QVector<float>> &averagineTable,
+        bool useGaussFilter,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
         TurboXIC *turboXicMS1,

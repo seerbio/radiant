@@ -44,6 +44,7 @@ public:
     MsFrame *msFrameMS1 = nullptr;
     float minPeakCount = -1.0;
     QMap<int, QVector<float>> averagineTable;
+    bool useGaussianFilter = false;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -287,6 +288,7 @@ namespace {
                 pi.minPeakCount,
                 scanTimeRange,
                 pi.averagineTable,
+                pi.useGaussianFilter,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1,
@@ -331,6 +333,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         float minPeakCount,
         int threadCount,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+        bool useGaussFilter,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) const {
@@ -351,6 +354,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             msCalibratomatic,
             minPeakCount,
             mzTargetKeyVsTurboXicPntrs,
+            useGaussFilter,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
             ); ree;
@@ -410,6 +414,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+        bool useGaussFilter,
         const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) const {
@@ -442,6 +447,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.minPeakCount = minPeakCount;
         tdppi.averagineTable = m_averagineTable;
         tdppi.msFrameMS1 = m_msFrameMS1;
+        tdppi.useGaussianFilter = useGaussFilter;
 
         if (!mzTargetKeyVsTurboXicPntrs.isEmpty()) {
             e = ErrorUtils::contains(tdppi.targetKey, mzTargetKeyVsTurboXicPntrs); ree;

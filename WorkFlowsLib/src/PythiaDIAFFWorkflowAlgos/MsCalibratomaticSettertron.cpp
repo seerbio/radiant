@@ -133,6 +133,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 minPeakCountCalibration,
                 maxUniqueScanInfosTrainingCount,
                 mzTargetKeyVsTurboXicPntrs,
+                false,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree

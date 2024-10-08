@@ -66,6 +66,7 @@ public:
             float minPeakCount,
             int threadCount,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            bool useGaussFilter,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             ) const;
@@ -106,6 +107,7 @@ private:
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            bool useGaussFilter,
             const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             ) const;
