@@ -22,11 +22,17 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 SET(SOURCE_FILES
         src/ConvertMzMLToParquetWorkFlow.cpp
         src/PythiaDIAFFWorkflow.cpp
+        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
+        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
+        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.cpp
     )
 
 SET(HEADER_FILES
         src/ConvertMzMLToParquetWorkFlow.h
         src/PythiaDIAFFWorkflow.h
+        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
+        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h
+        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

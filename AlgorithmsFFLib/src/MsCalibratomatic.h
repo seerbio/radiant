@@ -71,6 +71,8 @@ public:
 
     [[nodiscard]] bool isInitCalMS2() const;
 
+    Err setCalibrationCoeffsUsingAllMeans();
+
 private:
 
     PythiaParameters m_params;
@@ -81,6 +83,8 @@ private:
     XYMappermatic m_iRTtoScanTimeMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;
+
+    QVector<QVector<double>> m_calibrationCurveCoEffsAll;
 
     bool m_isInitRT;
     bool m_isInitMS1;

@@ -11,9 +11,52 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QVector>
 
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <sstream>
+
 class UTILSLIB_EXPORTS ParallelUtils {
 
 public:
+
+    static long getCurrentRSS() {
+        std::ifstream procStatus("/proc/self/status");
+        std::string line;
+        long currentRSS = -1;
+
+        while (std::getline(procStatus, line)) {
+            if (line.substr(0, 6) == "VmRSS:") {  // VmRSS stands for "Resident Set Size" and represents current memory usage
+                std::istringstream iss(line);
+                std::string key;
+                long value;
+                std::string unit;
+                iss >> key >> value >> unit;
+                currentRSS = value * 1024; // value is in kB, convert it to bytes
+            }
+        }
+
+        return static_cast<double>(currentRSS) / (1024.0 * 1024.0);;;
+    }
+
+    static long getPeakRSS() {
+        std::ifstream procStatus("/proc/self/status");
+        std::string line;
+        long peakRSS = -1;
+
+        while (std::getline(procStatus, line)) {
+            if (line.substr(0, 6) == "VmHWM:") {  // VmHWM stands for "High Water Mark" and represents peak memory usage
+                std::istringstream iss(line);
+                std::string key;
+                long value;
+                std::string unit;
+                iss >> key >> value >> unit;
+                peakRSS = value * 1024; // value is in kB, convert it to bytes
+            }
+        }
+
+        return static_cast<double>(peakRSS) / (1024.0 * 1024.0);;
+    }
 
     /*!
     * @brief  Gets the number of processors available in the current system.
