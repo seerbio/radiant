@@ -4,6 +4,8 @@
 
 #include "OptimizeMassAccuracyPPMSettertron.h"
 
+#include <boost/math/distributions/normal.hpp>
+
 #include "EigenUtils.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "MsCalibratomaticSettertron.h"
@@ -54,7 +56,7 @@ namespace {
 
     struct DOEResult {
         double ppm = -1.0;
-        int fdrCount = -1;
+        double fdrCount = -1;
     };
 
     Err buildDOE(
@@ -211,7 +213,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
             &pythiaParametersExperiments
             ); ree;
 
-    int bestResultCount = 0;
+    double bestResultCount = 0;
     int countSinceLastHigh = 0;
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
@@ -247,24 +249,19 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+        const double fdrMean = MathUtils::mean(fdrVsCounts.values());
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "ppmTol"
                  << pythiaParams.ms2ExtractionWidthPPM
+                 << "fdrMean"
+                 << fdrMean
                  << "Finished"
                  << qPrintable(fdrString);
 
-        constexpr double fdrThresholdAccuracyOptimization = 0.2;
-        int targetCountAboveFDRQValueThreshold;
-        e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-                m_candidateScores,
-                fdrThresholdAccuracyOptimization,
-                &targetCountAboveFDRQValueThreshold
-                ); ree;
-
         DOEResult res;
         res.ppm = pythiaParams.ms2ExtractionWidthPPM;
-        res.fdrCount = targetCountAboveFDRQValueThreshold;
+        res.fdrCount = fdrMean;
         results.push_back(res);
 
         if (res.fdrCount >= bestResultCount) {
@@ -304,7 +301,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
 int OptimizeMassAccuracyPPMSettertron::calculateNumberOfTranches() const {
 
-    constexpr int optimizationMultiplicationFactor = 6;
+    constexpr int optimizationMultiplicationFactor = 10;
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters->trancheSizeMax * optimizationMultiplicationFactor);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs->size() / sizePerTranche), 1);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
