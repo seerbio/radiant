@@ -312,7 +312,10 @@ Err QuanFileBuilder::buildQuanFile(
 
     e = ParquetReader::write(quanReaderRows, outputFilePath); ree;
 
-    qDebug() << "Quan file built in" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Quan file built in"
+            << et.elapsed()
+            << "mSec";
 
     ERR_RETURN
 }

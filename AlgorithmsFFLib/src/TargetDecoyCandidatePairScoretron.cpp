@@ -237,7 +237,7 @@ namespace {
             e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
 
             if (pi.targetDecoyPointers.isEmpty()) {
-                qDebug() << pi.targetKey << "Target key is empty";
+                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << pi.targetKey << "Target key is empty";
                 continue;
             }
 

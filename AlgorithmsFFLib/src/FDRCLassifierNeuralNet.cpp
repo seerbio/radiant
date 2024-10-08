@@ -7,6 +7,7 @@
 #include "BiophysicalCalcs.h"
 #include "CandidateScores.h"
 #include "EigenUtils.h"
+#include "GlobalSettings.h"
 #include "ParallelUtils.h"
 #include "TargetDecoyCandidatePair.h"
 
@@ -194,7 +195,10 @@ Err FDRCLassifierNeuralNet::trainBaggedNeuralNets(
     }
 #endif
 
-    qDebug() << "Neural nets trained in:" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Neural nets trained in:"
+            << et.elapsed()
+            << "mSec";
     ERR_RETURN
 }
 

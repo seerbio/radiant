@@ -105,9 +105,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             &targetDecoyCandidatePointersTranched
             ); ree;
 
-    QVector<float> scanTimeStDevs;
-    QVector<float> ms2PPMStDevs;
-
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
@@ -161,8 +158,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             fdrVsCounts.value(fdrKeyMassCalMS2)
             ); ree;
 
-        scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-        ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
+        m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+        m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
@@ -197,34 +194,34 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 msCalibrationReaderRows,
                 MSLevelEnum::MS2
                 ); ree;
+            e = m_msCalibratomatic.setCalibrationCoeffsUsingAllMeans(); ree;
 
-            scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
-            ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
+            m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+            m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
             constexpr int minVecSize = 3;
-            std::sort(scanTimeStDevs.begin(), scanTimeStDevs.end());
-            if (scanTimeStDevs.size() >= minVecSize) {
-                scanTimeStDevs.pop_front();
-                scanTimeStDevs.pop_back();
-
+            std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
+            if (m_scanTimeStDevs.size() >= minVecSize) {
+                m_scanTimeStDevs.pop_front();
+                m_scanTimeStDevs.pop_back();
             }
 
-            std::sort(ms2PPMStDevs.begin(), ms2PPMStDevs.end());
-            if (ms2PPMStDevs.size() >= minVecSize) {
-                ms2PPMStDevs.pop_front();
-                ms2PPMStDevs.pop_back();
+            std::sort(m_ms2PPMStDevs.begin(), m_ms2PPMStDevs.end());
+            if (m_ms2PPMStDevs.size() >= minVecSize) {
+                m_ms2PPMStDevs.pop_front();
+                m_ms2PPMStDevs.pop_back();
             }
 
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                      << "ScanTimeWindow Mean|Median|Min"
-                     << MathUtils::mean(scanTimeStDevs)
-                     << MathUtils::median(scanTimeStDevs)
-                     << *std::min({scanTimeStDevs.begin(), scanTimeStDevs.end()});
+                     << MathUtils::mean(m_scanTimeStDevs)
+                     << MathUtils::median(m_scanTimeStDevs)
+                     << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
 
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(ms2PPMStDevs) << MathUtils::median(ms2PPMStDevs);
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(m_ms2PPMStDevs) << MathUtils::median(m_ms2PPMStDevs);
 
-            m_msCalibratomatic.setScanTimeStDev(scanTimeStDevs.front());
-            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(ms2PPMStDevs));
+            m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
+            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
 
             e = recalibrateMzVals(
                     MSLevelEnum::MS2,
@@ -236,9 +233,12 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
             filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
             constexpr int recalibrationPointCountMin = 400;
-            qDebug() << candidateScoresVecBatchPntrsRecal.size() << "found for MS1 Recalibration";
+            qDebug()<< qPrintable(S_GLOBAL_TIMER.elapsed())
+                << candidateScoresVecBatchPntrsRecal.size()
+                << "found for MS1 Recalibration";
             if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
-                qWarning() << "Skipping MS1 recalibration.  Not enough points found";
+                qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                        << "Skipping MS1 recalibration.  Not enough points found";
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
                 ERR_RETURN
@@ -431,7 +431,7 @@ Err MsCalibratomaticSettertron::recalibrateMzVals(
     }
 
     if (msLevel == MSLevelEnum::MS1) {
-        qDebug() << "Recalibrating MS1 mz vals frame";
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Recalibrating MS1 mz vals frame";
         e = m_msCalibratomatic.recalibrateScanPoints(
             MSLevelEnum::MS1,
             scanNumberVsScanTimeMS1

@@ -391,6 +391,8 @@ Err MsCalibratomatic::setMassCalibrationCoeffs(
         &m_calibrationCurveCoeffsMS2
     ); ree;
 
+    m_calibrationCurveCoEffsAll.push_back(m_calibrationCurveCoeffsMS2);
+
     if (m_params.verbosity > 0) {
         qDebug() << "mzStDevMS2" << m_mzStDevMS2;
     }
@@ -529,6 +531,65 @@ bool MsCalibratomatic::isInitCalMS1() const {
 
 bool MsCalibratomatic::isInitCalMS2() const {
     return m_isInitMS2;
+}
+
+Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(m_calibrationCurveCoEffsAll); ree;
+
+    constexpr int addBiasUnit = 1;
+    QVector<double> calibrationCoeffsMeans(m_polynomialOrderMassCal + addBiasUnit, 0.0);
+
+    QVector<double> coeffsMeans;
+    for (const QVector<double> &coeffs : m_calibrationCurveCoEffsAll) {
+        coeffsMeans.push_back(MathUtils::mean(coeffs));
+    }
+
+    const int ogCoeffsSize = m_calibrationCurveCoEffsAll.size();
+    if (constexpr int minCoeffsSizeToCut = 3; coeffsMeans.size() > minCoeffsSizeToCut) {
+        const double coeffMean = MathUtils::mean(coeffsMeans);
+        const double coeffStDev = MathUtils::stDev(coeffsMeans);
+
+        const auto terminatorLogic = [coeffMean, coeffStDev](const QVector<double> &m) {
+            constexpr double stDevMultiplier = 1.5;
+            return std::abs(MathUtils::mean(m) - coeffMean) > coeffStDev * stDevMultiplier;
+        };
+
+        const auto terminator = std::remove_if(m_calibrationCurveCoEffsAll.begin(), m_calibrationCurveCoEffsAll.end(), terminatorLogic);
+
+        m_calibrationCurveCoEffsAll.erase(terminator, m_calibrationCurveCoEffsAll.end());
+    }
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Using" << m_calibrationCurveCoEffsAll.size()
+             << "of"
+             << ogCoeffsSize
+             << "for calibration curve averaging";
+
+    for (const QVector<double> &coeffs : m_calibrationCurveCoEffsAll) {
+
+        if (m_params.verbosity > 1) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << coeffs
+                << "Mean:"
+                << MathUtils::mean(coeffs)
+                << "StDev:"
+                << MathUtils::stDev(coeffs);
+        }
+
+        for (int i = 0; i < coeffs.size(); i++) {
+            calibrationCoeffsMeans[i] += coeffs.at(i);
+        }
+    }
+
+    for (int i = 0; i < calibrationCoeffsMeans.size(); i++) {
+        calibrationCoeffsMeans[i] /= m_calibrationCurveCoEffsAll.size();
+    }
+
+    m_calibrationCurveCoeffsMS2 = calibrationCoeffsMeans;
+
+    ERR_RETURN
 }
 
 void MsCalibratomatic::setScanTimeStDev(double val) {

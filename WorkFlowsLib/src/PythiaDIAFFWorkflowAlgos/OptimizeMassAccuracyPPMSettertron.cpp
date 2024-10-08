@@ -72,7 +72,7 @@ namespace {
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
         const QVector<double> ppmList = {
-            5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
+            3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
         };
 
         for (double ppm : ppmList ) {
@@ -254,7 +254,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                  << "Finished"
                  << qPrintable(fdrString);
 
-        constexpr double fdrThresholdAccuracyOptimization = 0.1;
+        constexpr double fdrThresholdAccuracyOptimization = 0.2;
         int targetCountAboveFDRQValueThreshold;
         e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
                 m_candidateScores,

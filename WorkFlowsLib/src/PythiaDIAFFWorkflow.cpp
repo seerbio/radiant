@@ -314,8 +314,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyPairPntrs
             ); ree;
 
-        // m_pythiaParameters.ms2ExtractionWidthPPM = 6;
-        // m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
     }
 
     int targetCountBelowFDRThreshold;
