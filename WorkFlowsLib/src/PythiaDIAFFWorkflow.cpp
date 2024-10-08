@@ -314,9 +314,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyPairPntrs
             ); ree;
 
-        m_pythiaParameters.ms2ExtractionWidthPPM = 13;
-        m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters);
-
     }
 
     int targetCountBelowFDRThreshold;
@@ -519,7 +516,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             minPeakCount,
             threadCount,
             nullToBuildTurboXICInParallelLoop,
-            false,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
             ); ree

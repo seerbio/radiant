@@ -230,7 +230,6 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 minPeakCountOptimization,
                 maxUniqueScanInfosTrainingCount,
                 mzTargetKeyVsTurboXicPntrs,
-                false,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree
