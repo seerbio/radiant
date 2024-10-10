@@ -16,6 +16,11 @@ add_definitions("-DBOOST_BIND_GLOBAL_PLACEHOLDERS")
 
 SET(EIGEN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/eigen-3.4.90")
 SET(NANOFLANN_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/nanoflann/include")
+SET(TIMS_INCLUDE_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/include/c/")
+SET(TIMS_CPPSQL_DIRECTORY "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/thirdparty/CppSQLite-master")
+SET(TIMS_CPPSQL_HEADER "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/thirdparty/CppSQLite-master/CppSQLite3.h")
+SET(TIMS_CPPSQL_SOURCE "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/thirdparty/CppSQLite-master/CppSQLite3.cpp")
+SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so")
 
 MESSAGE("TELL ME SOMETHING")
 

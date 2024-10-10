@@ -119,6 +119,7 @@ public:
     const double STDEV_MULTIPLIER = 3.0;
     const QString TAB = "\t";
 
+    const QString BRUKER_FILE_EXTENSION = QStringLiteral("d");
     const QString CACHED_FILE_EXTENSION = QStringLiteral("cached");
     const QString CSV_FILE_EXTENSION = QStringLiteral("csv");
     const QString FASTA_FILE_EXTENSION = QStringLiteral("fasta");

@@ -28,12 +28,14 @@ SET(SOURCE_FILES
         src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
+        src/MsReaderBrukerTims.cpp
         src/MsReaderMzML.cpp
         src/MsReaderMzMLMapped.cpp
         src/MsReaderPointerAcc.cpp
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/QuanReader.cpp
+        ${TIMS_CPPSQL_SOURCE}
         )
 
 SET(HEADER_FILES
@@ -46,6 +48,7 @@ SET(HEADER_FILES
         src/FragLibTsvReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
+        src/MsReaderBrukerTims.h
         src/MsReaderMzML.h
         src/MsReaderMzMLMapped.h
         src/MsReaderPointerAcc.h
@@ -53,6 +56,7 @@ SET(HEADER_FILES
         src/PythiaParameterReader.h
         src/QuanReader.h
         src/toml.hpp
+        ${TIMS_CPPSQL_HEADER}
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -70,6 +74,8 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
         ${NANOFLANN_DIRECTORY}
+        ${TIMS_INCLUDE_DIRECTORY}
+        ${TIMS_CPPSQL_DIRECTORY}
 )
 
 FIND_PACKAGE(Parquet REQUIRED)
@@ -84,8 +90,11 @@ ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         ChemLib
+        EigenLib
         UtilsLib
         Parquet::parquet_static
+        ${TIMS_LIB}
+        sqlite3
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

@@ -182,6 +182,63 @@ public:
         ERR_RETURN;
     }
 
+    template <typename T>
+    static Err trancheVectorForParallelizationInOrder(
+            const std::vector<T> &input,
+            int desiredTrancheSegments,
+            int trancheBuffer,
+            QVector<std::vector<T>> *output
+    ) {
+
+        ERR_INIT
+
+        output->clear();
+        output->reserve(desiredTrancheSegments);
+
+        e = ErrorUtils::isNotEmpty(input); ree;
+        e = ErrorUtils::isNotEqual(desiredTrancheSegments, 0); ree;
+
+        if (desiredTrancheSegments == -1) {
+            desiredTrancheSegments = numberOfAvailableSystemProcessors();
+        }
+
+        const int minTrancheSize = 1;
+        const int trancheSize = std::max(
+                    static_cast<int>(std::round(input.size() / static_cast<double>(desiredTrancheSegments))),
+                    minTrancheSize
+        );
+
+        std::vector<T> currentTranchVec;
+        for (int i = 0; i < input.size(); i++) {
+
+            const T &inp = input.at(i);
+
+            if (i % trancheSize == 0 && i > 0) {
+
+                for (int j = i; j < i + trancheBuffer; j++) {
+
+                    if (j >= input.size()) {
+                        break;
+                    }
+
+                    const T &inpBuffer = input.at(j);
+                    currentTranchVec.push_back(inpBuffer);
+                }
+
+                output->push_back(currentTranchVec);
+                currentTranchVec.clear();
+            }
+
+            currentTranchVec.push_back(inp);
+        }
+
+        if(!currentTranchVec.empty()) {
+            output->push_back(currentTranchVec);
+        }
+
+        ERR_RETURN;
+    }
+
     /*!
     * @brief  Converts a QMap to a QVector.
     * @tparam T: The datatype of the elements in the QMap and the QVector. This can be a numeric datatype or any other datatype that supports assignment.
