@@ -12,7 +12,7 @@ Err ErrorUtils::fileExists(const QString &filePath) {
 
     e = ErrorUtils::isNotEmpty(filePath); ree;
 
-    if (!fi.exists() || !fi.isFile()) {
+    if (!fi.exists() || !(fi.isFile() || fi.isDir())) {
         qDebug() << filePath << "not found";
         rrr(eFileError);
     }

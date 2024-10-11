@@ -265,21 +265,20 @@ namespace {
         ScanPoints scanPointsFrame;
         scanPointsFrame.reserve(static_cast<int>(scans.getTotalNbrPeaks()));
 
-        constexpr int nonZeroIndexArrayOffset = -1;
-        for(int scanNumber = 0 + nonZeroIndexArrayOffset ; scanNumber < scans.getNbrScans(); scanNumber++) {
+        for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < scans.getNbrScans(); ionMobilityIndex++) {
 
-            if (scans.getNbrPeaks(scanNumber) < 1) {
+            if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
                 continue;
             }
 
-            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(scanNumber);
-            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(scanNumber);
+            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
+            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
 
             std::vector<double> xAxisMasses;
             std::vector<double> indices(xAxis.first, xAxis.second);
             data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
 
-            const size_t numberOfPeaks = scans.getNbrPeaks(scanNumber);
+            const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
 
             ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
             for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
@@ -326,21 +325,20 @@ namespace {
             ScanPoints scanPointsFrame;
             scanPointsFrame.reserve(static_cast<int>(totalPeaks));
 
-            constexpr int nonZeroIndexArrayOffset = -1;
-            for(int scanNumber = tmwi.scanNumberBegin + nonZeroIndexArrayOffset ; scanNumber < tmwi.scanNumberEnd; scanNumber++) {
+            for(IonMobilityIndex ionMobilityIndex = tmwi.scanNumberBegin; ionMobilityIndex < tmwi.scanNumberEnd; ionMobilityIndex++) {
 
-                if (scans.getNbrPeaks(scanNumber) < 1) {
+                if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
                     continue;
                 }
 
-                timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(scanNumber);
-                const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(scanNumber);
+                timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
+                const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
 
                 std::vector<double> xAxisMasses;
                 std::vector<double> indices(xAxis.first, xAxis.second);
                 data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
 
-                const size_t numberOfPeaks = scans.getNbrPeaks(scanNumber);
+                const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
 
                 ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
                 for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
@@ -360,9 +358,30 @@ namespace {
         ERR_RETURN
     }
 
-    Err parallelReadTimsLogic(
+    Err buildMzTargetVsTimsMs2WindowsInfos(
+        const QHash<int, QVector<TimsMS2WindowsInfo>> &windowGroupIndexVsTimsMs2WindowsInfoses,
+        QHash<MzTargetKey, TimsMS2WindowsInfo> *mzTargetVsTimsMs2WindowsInfos
+        ) {
+
+        ERR_INIT
+        e = ErrorUtils::isNotEmpty(windowGroupIndexVsTimsMs2WindowsInfoses); ree;
+
+        for (const QVector<TimsMS2WindowsInfo> &infosVector : windowGroupIndexVsTimsMs2WindowsInfoses) {
+            for(const TimsMS2WindowsInfo &tmwi : infosVector) {
+                const MzTargetKey mzTargetKey
+                    = QString::number(MathUtils::hashDecimal(tmwi.isolationMz, S_GLOBAL_SETTINGS.HASHING_PRECISION));
+                mzTargetVsTimsMs2WindowsInfos->insert(mzTargetKey, tmwi);
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>>  parallelReadTimsLogic(
         const std::string &tdfDirectory,
         const std::vector<TimsFrameInfo> &timsFramesInfos,
+        const QMap<FrameIndex, double> &frameIndexVsDriftTime,
+        const QHash<MzTargetKey, TimsMS2WindowsInfo> &mzTargetVsTimsMs2WindowsInfos,
         const QHash<int, QVector<TimsMS2WindowsInfo>> &windowGroupIndexVsTimsMs2WindowsInfoses
         ) {
 
@@ -370,9 +389,13 @@ namespace {
 
         timsdata::TimsData data(tdfDirectory);
 
+        QVector<QPair<MsScanInfo, ScanPoints>> msScanInfoScanPointsPairs;
+
         for (const TimsFrameInfo &t : timsFramesInfos) {
 
-            std::cout << t.frameId << " " << t.windowGroup << std::endl;
+            MsScanInfo msScanInfo;
+            msScanInfo.scanNumber = t.frameId;
+            msScanInfo.scanTime = t.scanTime;
 
             if (t.msmsType < 1) {
 
@@ -381,17 +404,62 @@ namespace {
                     t,
                     &data,
                     &scanPointsMS1
-                    ); ree;
+                    ); rree;
+
+                msScanInfo.msLevel = 1;
+
+                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPointsMS1});
                 continue;
             }
 
-            QMap<MzTargetKey, ScanPoints> scanPointFrameClustered;
+            QMap<MzTargetKey, ScanPoints> mzTargetKeyVsScanPoints;
             e = extractMS2ScanPointsFromFrame(
                 t,
                 windowGroupIndexVsTimsMs2WindowsInfoses,
                 &data,
-                &scanPointFrameClustered
-                ); ree;
+                &mzTargetKeyVsScanPoints
+                ); rree;
+
+            for (auto it = mzTargetKeyVsScanPoints.begin(); it != mzTargetKeyVsScanPoints.end(); ++it) {
+                const MzTargetKey &mzTargetKey = it.key();
+                const ScanPoints &scanPoints = it.value();
+
+                e = ErrorUtils::contains(mzTargetKey, mzTargetVsTimsMs2WindowsInfos); rree;
+                const TimsMS2WindowsInfo& timsMs2WindowsInfo = mzTargetVsTimsMs2WindowsInfos.value(mzTargetKey);
+
+                msScanInfo.msLevel = 2;
+                msScanInfo.collisionEnergy = timsMs2WindowsInfo.collisionEnergy;
+                msScanInfo.precursorTargetMz = timsMs2WindowsInfo.isolationMz;
+                msScanInfo.isoWindowLower = timsMs2WindowsInfo.isolationMz / 2.0f;
+                msScanInfo.isoWindowUpper = msScanInfo.isoWindowLower;
+                msScanInfo.ionMobilityIndex
+                    = static_cast<int>(std::round((timsMs2WindowsInfo.scanNumberBegin + timsMs2WindowsInfo.scanNumberEnd) / 2.0f));
+
+                e = ErrorUtils::contains(msScanInfo.ionMobilityIndex, frameIndexVsDriftTime); rree;
+                msScanInfo.ionMobilityDriftTime = static_cast<float>(frameIndexVsDriftTime.value(msScanInfo.ionMobilityIndex));
+
+                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPoints});
+            }
+        }
+
+        return {e, msScanInfoScanPointsPairs};
+    }
+
+    Err buildFrameIndexVsDriftTime(
+        const TimsFrameInfo &timsFrameInfo,
+        timsdata::TimsData *data,
+        QMap<FrameIndex, double> *frameIndexVsDriftTime
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(timsFrameInfo.numScans, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+
+        const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
+        for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < scans.getNbrScans(); ionMobilityIndex++) {
+            std::vector<double> mobility;
+            data->scanNumToOneOverK0(timsFrameInfo.frameId, { static_cast<double>(ionMobilityIndex) }, mobility);
+            frameIndexVsDriftTime->insert(ionMobilityIndex, mobility[0]);
         }
 
         ERR_RETURN
@@ -421,9 +489,22 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             windowGroupIndexVsTimsMs2WindowsInfoses[w.windowGroup].push_back(w);
         }
 
+        QHash<MzTargetKey, TimsMS2WindowsInfo> mzTargetVsTimsMs2WindowsInfos;
+        e = buildMzTargetVsTimsMs2WindowsInfos(
+            windowGroupIndexVsTimsMs2WindowsInfoses,
+            &mzTargetVsTimsMs2WindowsInfos
+            ); ree;
+
         std::vector<TimsFrameInfo> timsFramesInfos = buildTimsFrameInfo(&db);
         e = ErrorUtils::isNotEmpty(timsFramesInfos); ree;
         db.close();
+
+        QMap<FrameIndex, double> frameIndexVsDriftTime;
+        e = buildFrameIndexVsDriftTime(
+            timsFramesInfos.front(),
+            &data,
+            &frameIndexVsDriftTime
+            ); ree;
 
         e = assignWindowGroupToTimsFrameInfos(
             &data,
@@ -431,14 +512,14 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             &timsFramesInfos
             ); ree;
 
-
 #define TIMS_PARALLEL
 #ifdef TIMS_PARALLEL
-
         const auto readerLogicBinder = std::bind(
             parallelReadTimsLogic,
             tdfDirectory,
             std::placeholders::_1,
+            frameIndexVsDriftTime,
+            mzTargetVsTimsMs2WindowsInfos,
             windowGroupIndexVsTimsMs2WindowsInfoses
             );
 
@@ -450,17 +531,34 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             &timsFramesInfosTranched
             );
 
-        QFuture<Err> future = QtConcurrent::mapped(
+        QFuture<QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>>> future = QtConcurrent::mapped(
             timsFramesInfosTranched,
             readerLogicBinder
             );
         future.waitForFinished();
+
+        int scanNumber = 0;
+        for (const QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> &res : future) {
+            e = res.first; ree;
+
+            const QVector<QPair<MsScanInfo, ScanPoints>> &resVector = res.second;
+            for (int i = 0; i < resVector.size(); i++) {
+                const QPair<MsScanInfo, ScanPoints> &pr = resVector.at(i);
+                MsScanInfo msi = pr.first;
+                msi.scanNumber = ++scanNumber;
+                m_msScanInfo.insert(msi.scanNumber, msi);
+                m_scanPoints.insert(msi.scanNumber, pr.second);
+            }
+        }
 #else
-        e = parallelReadTimsLogic(
+        const QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> result = parallelReadTimsLogic(
             tdfDirectory,
             timsFramesInfos,
+            frameIndexVsDriftTime,
+            mzTargetVsTimsMs2WindowsInfos,
             windowGroupIndexVsTimsMs2WindowsInfoses
-            ); ree;
+            );
+        e = result.first; ree;
 #endif
 
     }
