@@ -75,7 +75,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    constexpr int topNMS2IonsCalibration = 6;
     const int numberOfTranches = calculateNumberOfTranches();
 
     const QVector<MsScanInfo> uniqueMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
@@ -107,7 +106,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
-
+        constexpr int topNMS2IonsCalibration = 6;
         constexpr bool useExtendedScores = false;
         constexpr bool useNeuralNetworkScores = false;
 
