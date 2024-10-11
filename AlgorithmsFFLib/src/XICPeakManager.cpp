@@ -6,7 +6,9 @@
 
 #include "EigenKernelUtils.h"
 #include "ErrorUtils.h"
+#include "MS2Ion.h"
 #include "MsFrame.h"
+#include "TargetDecoyCandidatePair.h"
 
 
 XICPeakManager::XICPeakManager()
@@ -15,52 +17,129 @@ XICPeakManager::XICPeakManager()
 , m_smoothCount(-1)
 , m_stopThresholdValue(-1.0)
 , m_isInit(false)
+, m_turboXic(nullptr)
+, m_deleteTurboXicLocal(false)
+, m_ppmTolerance(-1.0)
 {}
 
+XICPeakManager::~XICPeakManager() {
+    if (m_deleteTurboXicLocal) {
+        delete m_turboXic;
+    }
+}
+
+namespace {
+
+    Err buildMzHashedVsCount(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+        int topNFragIons,
+        QHash<MzHashed, Occurrence> *mzHashedVsCount
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
+        for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
+
+            int counter = 0;
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(
+                    ms2Ion.mz,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
+                (*mzHashedVsCount)[mzHashed]++;
+
+                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                    ms2Ion.mz - isotopeDistanceThomsons,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
+                (*mzHashedVsCount)[mzHashedShadow]++;
+            }
+
+            counter = 0;
+            for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
+
+                if (counter++ >= topNFragIons) {
+                    break;
+                }
+
+                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+                (*mzHashedVsCount)[mzHashed]++;
+
+                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
+                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
+                    ms2Ion.mz - isotopeDistanceThomsons,
+                    S_GLOBAL_SETTINGS.HASHING_PRECISION
+                    );
+
+                (*mzHashedVsCount)[mzHashedShadow]++;
+
+            }
+        }
+
+        ERR_RETURN
+    }
+}//namespace
 Err XICPeakManager::init(
     const MsFrame &msFrame,
-    const QVector<float> &mzValsToExtract,
+    const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+    int topNMs2Ions,
     float ppmTolerance
     ){
 
     ERR_INIT
 
     e = ErrorUtils::isTrue(msFrame.isValid()); ree;
-    e = ErrorUtils::isNotEmpty(mzValsToExtract); ree;
+    e = ErrorUtils::isNotEmpty(targetDecoyPointers); ree;
     e = ErrorUtils::isAboveThreshold(ppmTolerance, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    TurboXIC turboXic;
-    e = turboXic.init(msFrame.frameIndexVsScanPoints()); ree;
+    m_ppmTolerance = ppmTolerance;
 
-    e = extractXICs(
-        mzValsToExtract,
-        ppmTolerance,
-        &turboXic
+    e = buildMzHashedVsCount(
+        targetDecoyPointers,
+        topNMs2Ions,
+        &m_mzHashedOccurrences
         ); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedOccurrences); ree;
+
+    m_turboXic = new TurboXIC();
+    e = m_turboXic->init(msFrame.frameIndexVsScanPoints()); ree;
 
     m_isInit = true;
+    m_deleteTurboXicLocal = true;
 
     ERR_RETURN
 }
 
 Err XICPeakManager::init(
-    const QVector<float>& mzValsToExtract,
+    const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+    int topNMs2Ions,
     float ppmTolerance,
     TurboXIC* turboXic
     ) {
 
-
     ERR_INIT
 
     e = ErrorUtils::isTrue(turboXic->isInit()); ree;
-    e = ErrorUtils::isNotEmpty(mzValsToExtract); ree;
+    e = ErrorUtils::isNotEmpty(targetDecoyPointers); ree;
     e = ErrorUtils::isAboveThreshold(ppmTolerance, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    e = extractXICs(
-        mzValsToExtract,
-        ppmTolerance,
-        turboXic
+    m_ppmTolerance = ppmTolerance;
+
+    e = buildMzHashedVsCount(
+        targetDecoyPointers,
+        topNMs2Ions,
+        &m_mzHashedOccurrences
         ); ree;
+    e = ErrorUtils::isNotEmpty(m_mzHashedOccurrences); ree;
+
+    m_turboXic = turboXic;
 
     m_isInit = true;
 
@@ -74,7 +153,7 @@ bool XICPeakManager::isValid() const {
 Err XICPeakManager:: getXIC(
     float mzVal,
     XICPoints *xicPoints
-    ) const {
+    ) {
 
     ERR_INIT
 
@@ -83,7 +162,32 @@ Err XICPeakManager:: getXIC(
 
     const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
 
-    *xicPoints = m_mzHashedVsXicPoints.value(mzHashed);
+    if (m_mzHashedVsXicPoints.contains(mzHashed)) {
+
+        *xicPoints = m_mzHashedVsXicPoints.value(mzHashed);
+
+        m_mzHashedOccurrences[mzHashed]--;
+        if (m_mzHashedOccurrences[mzHashed] == 0) {
+            XICPoints().swap(m_mzHashedVsXicPoints[mzHashed]);
+            m_mzHashedVsXicPoints.remove(mzHashed);
+        }
+        ERR_RETURN
+    }
+
+    const float massTol = MathUtils::calculatePPM(mzVal, m_ppmTolerance);
+    const float mzMin = mzVal - massTol;
+    const float mzMax = mzVal + massTol;
+
+    const XICPoints xicPointsLocal = m_turboXic->extractPointsXIC(mzMin, mzMax);
+    *xicPoints = xicPointsLocal;
+
+    if (constexpr int minOccuranceCountToCache = 2; m_mzHashedOccurrences.value(mzHashed) < minOccuranceCountToCache) {
+        ERR_RETURN
+    }
+
+    m_mzHashedVsXicPoints.insert(mzHashed , xicPointsLocal);
+    m_mzHashedOccurrences[mzHashed]--;
+
     ERR_RETURN
 }
 
@@ -161,34 +265,6 @@ Err XICPeakManager::loadXICPeakManagerCache(const QString& outputFilePath) {
     }
 
     file.close();
-
-    ERR_RETURN
-}
-
-Err XICPeakManager::extractXICs(
-    const QVector<float> &mzValsToExtract,
-    float ppmTolerance,
-    TurboXIC *turboXic
-) {
-
-    ERR_INIT
-
-    for (float mzVal : mzValsToExtract) {
-
-        const float massTol = MathUtils::calculatePPM(mzVal, ppmTolerance);
-        const float mzMin = mzVal - massTol;
-        const float mzMax = mzVal + massTol;
-
-        const XICPoints xicPoints = turboXic->extractPointsXIC(mzMin, mzMax);
-
-        if (xicPoints.empty()) {
-            continue;
-        }
-
-        const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-        m_mzHashedVsXicPoints.insert(mzHashed , xicPoints);
-
-    }
 
     ERR_RETURN
 }

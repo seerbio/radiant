@@ -163,61 +163,6 @@ Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
 
 namespace {
 
-    Err buildMzHashedVsCount(
-            const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
-            int topNFragIons,
-            QMap<MzHashed, int> *mzHashedVsCount
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(targetDecoyPointers); eee_absorb;
-        for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
-
-            int counter = 0;
-            for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
-
-                if (counter++ >= topNFragIons) {
-                    break;
-                }
-
-                const MzHashed mzHashed = MathUtils::hashDecimal(
-                    ms2Ion.mz,
-                    S_GLOBAL_SETTINGS.HASHING_PRECISION
-                    );
-                (*mzHashedVsCount)[mzHashed]++;
-
-                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
-                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                    ms2Ion.mz - isotopeDistanceThomsons,
-                    S_GLOBAL_SETTINGS.HASHING_PRECISION
-                    );
-                (*mzHashedVsCount)[mzHashedShadow]++;
-            }
-
-            counter = 0;
-            for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
-
-                if (counter++ >= topNFragIons) {
-                    break;
-                }
-
-                const MzHashed mzHashed = MathUtils::hashDecimal(ms2Ion.mz, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                (*mzHashedVsCount)[mzHashed]++;
-
-                const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(ms2Ion.charge);
-                const MzHashed mzHashedShadow = MathUtils::hashDecimal(
-                    ms2Ion.mz - isotopeDistanceThomsons,
-                    S_GLOBAL_SETTINGS.HASHING_PRECISION
-                    );
-
-                (*mzHashedVsCount)[mzHashedShadow]++;
-
-            }
-        }
-
-        ERR_RETURN
-    }
 
     QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs
@@ -245,26 +190,11 @@ namespace {
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
-            QMap<MzHashed, int> mzHashedVsCount;
-            e = buildMzHashedVsCount(
-                pi.targetDecoyPointers,
-                pi.topNMs2Ions,
-                &mzHashedVsCount
-                ); rree;
-
-            const QList<int> &mzHashedVsCountKeys = mzHashedVsCount.keys();
-            QVector<float> mzValsToExtract;
-            std::transform(
-                mzHashedVsCountKeys.begin(),
-                mzHashedVsCountKeys.end(),
-                std::back_inserter(mzValsToExtract),
-                [](int mzHashed){return MathUtils::unHashDecimal<float>(mzHashed, S_GLOBAL_SETTINGS.HASHING_PRECISION);}
-                );
-
             XICPeakManager xicPeakManager;
             if (pi.turboXicMS2 != nullptr) {
                 e = xicPeakManager.init(
-                    mzValsToExtract,
+                    pi.targetDecoyPointers,
+                    pi.topNMs2Ions,
                     static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM),
                     pi.turboXicMS2
                     ); rree;
@@ -272,7 +202,8 @@ namespace {
             else {
                 e = xicPeakManager.init(
                     *pi.msFrameMzTarget,
-                    mzValsToExtract,
+                    pi.targetDecoyPointers,
+                    pi.topNMs2Ions,
                     static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
                     ); rree;
             }

@@ -14,53 +14,52 @@ using namespace Error;
 
 class MsFrame;
 class PeakIntegratomatic;
-class TurboXIC;
+class TargetDecoyCandidatePair;
 
 class ALGORITHMSFFLIB_EXPORTS XICPeakManager {
 
 public:
 
     XICPeakManager();
-    ~XICPeakManager() = default;
+    ~XICPeakManager();
 
     Err init(
         const MsFrame &msFrame,
-        const QVector<float> &mzValsToExtract,
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+        int topNMs2Ions,
         float ppmTolerance
         );
 
     Err init(
-        const QVector<float> &mzValsToExtract,
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyPointers,
+        int topNMs2Ions,
         float ppmTolerance,
         TurboXIC *turboXic
         );
 
-    bool isValid() const;
+    [[nodiscard]] bool isValid() const;
 
     Err getXIC(
         float mzVal,
         XICPoints *xicPoints
-        ) const;
+        );
 
     Err cacheXICPeakManager(const QString &outputFilePath);
     Err loadXICPeakManagerCache(const QString &outputFilePath);
 
 private:
-
-    Err extractXICs(
-        const QVector<float> &mzValsToExtract,
-        float ppmTolerance,
-        TurboXIC *turboXic
-        );
-
-private:
     int m_filterLength;
     int m_polynomialOrder;
     int m_smoothCount;
+    float m_ppmTolerance;
     float m_stopThresholdValue;
 
     QHash<MzHashed , XICPoints> m_mzHashedVsXicPoints;
+    QHash<MzHashed, Occurrence> m_mzHashedOccurrences;
     bool m_isInit;
+
+    TurboXIC *m_turboXic;
+    bool m_deleteTurboXicLocal;
 
 };
 
