@@ -241,6 +241,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                         << "Skipping MS1 recalibration.  Not enough points found";
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
+                m_targetDecoyCandidatePairsTopScores.clear();
+                m_entered.clear();
+                m_candidateScores.clear();
                 ERR_RETURN
             }
 
@@ -255,6 +258,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
+                m_targetDecoyCandidatePairsTopScores.clear();
+                m_entered.clear();
+                m_candidateScores.clear();
                 ERR_RETURN
             }
 
@@ -277,7 +283,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     }
 
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-
+    m_targetDecoyCandidatePairsTopScores.clear();
+    m_entered.clear();
+    m_candidateScores.clear();
     *msCalibratomatic = m_msCalibratomatic;
     ERR_RETURN
 }
