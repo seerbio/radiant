@@ -430,7 +430,7 @@ namespace {
                 msScanInfo.msLevel = 2;
                 msScanInfo.collisionEnergy = timsMs2WindowsInfo.collisionEnergy;
                 msScanInfo.precursorTargetMz = timsMs2WindowsInfo.isolationMz;
-                msScanInfo.isoWindowLower = timsMs2WindowsInfo.isolationMz / 2.0f;
+                msScanInfo.isoWindowLower = timsMs2WindowsInfo.isolationWidth / 2.0f;
                 msScanInfo.isoWindowUpper = msScanInfo.isoWindowLower;
                 msScanInfo.ionMobilityIndex
                     = static_cast<int>(std::round((timsMs2WindowsInfo.scanNumberBegin + timsMs2WindowsInfo.scanNumberEnd) / 2.0f));
