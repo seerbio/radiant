@@ -567,6 +567,8 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
         rrr(eFileError);
     }
 
+    e = printFileInfo(); ree;
+
     ERR_RETURN
 }
 
