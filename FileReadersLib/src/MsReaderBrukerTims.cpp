@@ -260,37 +260,40 @@ namespace {
 
         ERR_INIT
 
-        const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
+        const timsdata::SpectrumData scans = data->readScansSummed(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
 
-        ScanPoints scanPointsFrame;
-        scanPointsFrame.reserve(static_cast<int>(scans.getTotalNbrPeaks()));
+        const int numberOfPeaks = static_cast<int>(scans.area_values.size());
+        scanPointsMS1->reserve(numberOfPeaks);
 
-        for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < scans.getNbrScans(); ionMobilityIndex++) {
-
-            if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
-                continue;
-            }
-
-            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
-            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
-
-            std::vector<double> xAxisMasses;
-            std::vector<double> indices(xAxis.first, xAxis.second);
-            data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
-
-            const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
-
-            ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
-            for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
-                scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
-            }
-
-            scanPointsFrame.append(scanPointsScan);
+        for (int i = 0; i < numberOfPeaks; i++) {
+            scanPointsMS1->push_back({static_cast<float>(scans.mz_values.at(i)), scans.area_values.at(i)});
         }
 
-        std::sort(scanPointsFrame.begin(), scanPointsFrame.end(), [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();});
-
-        e = scanClustererer(scanPointsFrame, scanPointsMS1); ree;
+        // for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < scans.getNbrScans(); ionMobilityIndex++) {
+        //
+        //     if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
+        //         continue;
+        //     }
+        //
+        //     timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
+        //     const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
+        //
+        //     std::vector<double> xAxisMasses;
+        //     std::vector<double> indices(xAxis.first, xAxis.second);
+        //     data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
+        //
+        //     const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
+        //
+        //     ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
+        //     for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
+        //         scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
+        //     }
+        //
+        //     scanPointsFrame.append(scanPointsScan);
+        // }
+        //
+        // std::sort(scanPointsFrame.begin(), scanPointsFrame.end(), [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();});
+        // e = scanClustererer(scanPointsFrame, scanPointsMS1); ree;
 
         ERR_RETURN
     }
@@ -312,9 +315,6 @@ namespace {
         const QVector<TimsMS2WindowsInfo> &timsMs2WindowsInfos
                         = windowGroupIndexVsTimsMs2WindowsInfoses.value(timsFrameInfo.windowGroup);
 
-        const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
-        const size_t totalPeaks = scans.getTotalNbrPeaks();
-
         for (const TimsMS2WindowsInfo &tmwi : timsMs2WindowsInfos) {
 
             const MzTargetKey mzTargetKey = QString::number(MathUtils::hashDecimal(
@@ -322,37 +322,24 @@ namespace {
                 S_GLOBAL_SETTINGS.HASHING_PRECISION)
                 );
 
+            const timsdata::SpectrumData spectrumData = data->readScansSummed(
+                timsFrameInfo.frameId,
+                tmwi.scanNumberBegin,
+                tmwi.scanNumberEnd
+                );
+
+            int scanPointsSize = static_cast<int>(spectrumData.mz_values.size());
+
             ScanPoints scanPointsFrame;
-            scanPointsFrame.reserve(static_cast<int>(totalPeaks));
+            scanPointsFrame.reserve(scanPointsSize);
 
-            for(IonMobilityIndex ionMobilityIndex = tmwi.scanNumberBegin; ionMobilityIndex < tmwi.scanNumberEnd; ionMobilityIndex++) {
-
-                if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
-                    continue;
-                }
-
-                timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
-                const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
-
-                std::vector<double> xAxisMasses;
-                std::vector<double> indices(xAxis.first, xAxis.second);
-                data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
-
-                const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
-
-                ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
-                for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
-                    scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
-                }
-
-                scanPointsFrame.append(scanPointsScan);
+            for (int i = 0; i < scanPointsSize; i++) {
+                scanPointsFrame.push_back({static_cast<float>(spectrumData.mz_values.at(i)), spectrumData.area_values.at(i)});
             }
 
             std::sort(scanPointsFrame.begin(), scanPointsFrame.end(), [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();});
 
-            ScanPoints scanPointsClustered;
-            e = scanClustererer(scanPointsFrame, &scanPointsClustered); ree;
-            scanPointFrameClustered->insert(mzTargetKey, scanPointsClustered);
+            scanPointFrameClustered->insert(mzTargetKey, scanPointsFrame);
         }
 
         ERR_RETURN
@@ -377,7 +364,7 @@ namespace {
         ERR_RETURN
     }
 
-    QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>>  parallelReadTimsLogic(
+    QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> parallelReadTimsLogic(
         const std::string &tdfDirectory,
         const std::vector<TimsFrameInfo> &timsFramesInfos,
         const QMap<FrameIndex, double> &frameIndexVsDriftTime,
@@ -388,6 +375,11 @@ namespace {
         ERR_INIT
 
         timsdata::TimsData data(tdfDirectory);
+
+        e = ErrorUtils::isNotEmpty(timsFramesInfos); rree;
+        e = ErrorUtils::isNotEmpty(frameIndexVsDriftTime); rree;
+        e = ErrorUtils::isNotEmpty(mzTargetVsTimsMs2WindowsInfos); rree;
+        e = ErrorUtils::isNotEmpty(windowGroupIndexVsTimsMs2WindowsInfoses); rree;
 
         QVector<QPair<MsScanInfo, ScanPoints>> msScanInfoScanPointsPairs;
 

@@ -313,7 +313,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyCandidatePairScoretron,
             &m_targetDecoyPairPntrs
             ); ree;
-
     }
 
     int targetCountBelowFDRThreshold;

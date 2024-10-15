@@ -20,8 +20,13 @@
 
 #include "timsdata.h" // fundamental C API
 
-namespace timsdata
-{
+namespace timsdata {
+
+    struct SpectrumData {
+        int64_t id = -1;
+        std::vector<double> mz_values;
+        std::vector<float> area_values;
+    };
 
     /// Proxy object to conveniently access the data read via tims_read_scans() of the C
     /// API. (Copies of this object share the same underlying data buffer.)
@@ -114,9 +119,8 @@ namespace timsdata
             bool use_recalibration = false,
             pressure_compensation_strategy pressure_compensation = AnalyisGlobalPressureCompensation
         )
-            : handle(0)
-            , initial_frame_buffer_size(128)
-        {
+        : handle(0)
+        , initial_frame_buffer_size(128) {
             handle = tims_open_v2(analysis_directory_name.c_str(), use_recalibration, pressure_compensation);
             if(handle == 0)
                 throwLastError();
@@ -129,17 +133,36 @@ namespace timsdata
         TimsData& operator=(TimsData&&) = default;
 
         /// Close TIMS analysis.
-        ~TimsData ()
-        {
+        ~TimsData () {
             tims_close(handle);
         }
 
         /// Get the C-API handle corresponding to this instance. (Caller does not get
         /// ownership of the handle.) (This call is here for the case that the user wants
         /// to call C-library functions directly.)
-        uint64_t getHandle () const
-        {
+        [[nodiscard]] uint64_t getHandle () const {
             return handle;
+        }
+
+        static void spectrum_callback(
+            int64_t id,
+            uint32_t num_peaks,
+            const double* mz_values,
+            const float* area_values,
+            void* user_data
+            ) {
+            // std::cout << "Spectrum for ID " << id << " with " << num_peaks << " peaks:" << std::endl;
+            // for (uint32_t i = 0; i < num_peaks; ++i) {
+            //     std::cout << "m/z: " << mz_values[i] << ", Area: " << area_values[i] << std::endl;
+            // }
+            if (user_data) {
+                auto* instance = static_cast<TimsData*>(user_data);
+                SpectrumData data;
+                data.id = id;
+                data.mz_values.assign(mz_values, mz_values + num_peaks);
+                data.area_values.assign(area_values, area_values + num_peaks);
+                instance->spectra_.emplace_back(std::move(data));
+            }
         }
 
         /// Read a range of scans from a single frame. Not thread-safe.
@@ -147,18 +170,43 @@ namespace timsdata
         /// \returns a proxy object that represents only the requested scan range of the
         /// specified frame (i.e., FrameProxy::getNbrScans() will return 'scan_end -
         /// scan_begin', and scan #0 in the proxy will correspond to 'scan_begin').
-        FrameProxy readScans (
+        SpectrumData readScansSummed (
             int64_t frame_id,     //< frame index
             uint32_t scan_begin,  //< first scan number to read (inclusive)
-            uint32_t scan_end )   //< last scan number (exclusive)
-        {
-            if(scan_end < scan_begin)
+            uint32_t scan_end
+            ) {   //< last scan number (exclusive)
+
+            if(scan_end < scan_begin) {
                 throw std::runtime_error("scan_end must be >= scan_begin");
+            }
+
+            spectra_.clear();
+
+            uint32_t required_len = tims_extract_centroided_spectrum_for_frame_v2(
+                handle,
+                frame_id,
+                scan_begin,
+                scan_end,
+                TimsData::spectrum_callback,
+                this
+                );
+
+            return spectra_.back();
+        }
+
+        FrameProxy readScans (
+            int64_t frame_id,
+            uint32_t scan_begin,
+            uint32_t scan_end
+            ){
+
+            if(scan_end < scan_begin) {
+                throw std::runtime_error("scan_end must be >= scan_begin");
+            }
+
             const uint32_t num_scans = scan_end - scan_begin;
 
             std::unique_ptr<uint32_t[]> pData;
-
-            // buffer-growing loop
             for(;;) {
                 pData.reset(new uint32_t[initial_frame_buffer_size]);
 
@@ -175,7 +223,7 @@ namespace timsdata
 
                 if(required_len > 16777216) // arbitrary limit for now...
                     throw std::runtime_error("Maximum expected frame size exceeded.");
-                
+
                 initial_frame_buffer_size = required_len / 4 + 1; // grow buffer
             }
         }
@@ -200,14 +248,16 @@ namespace timsdata
         uint64_t handle;
         size_t initial_frame_buffer_size; // number of uint32_t elements
 
+        std::vector<SpectrumData> spectra_;
+
         void doTransformation (
             int64_t frame_id,
             const std::vector<double> & in,
             std::vector<double> & out,
-            BdalTimsConversionFunction * func )
-        {
-            if(in.empty())
-            {
+            BdalTimsConversionFunction * func
+            ){
+
+            if(in.empty()) {
                 out.clear();
                 return;
             }

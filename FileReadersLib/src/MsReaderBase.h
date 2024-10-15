@@ -61,7 +61,7 @@ public:
 
     MsReaderBase();
 
-    ~MsReaderBase() = default;
+    virtual ~MsReaderBase() = default;
 
     /**
     * @brief Sets the MS scan information.
