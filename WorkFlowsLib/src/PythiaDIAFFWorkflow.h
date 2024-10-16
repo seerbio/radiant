@@ -128,6 +128,8 @@ private:
     int m_minTopNMs2Ions;
     int m_minTrainingCountTranche;
 
+    QVector<float> m_weights;
+
 };
 
 

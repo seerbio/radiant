@@ -124,6 +124,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
+        m_weights = m_weights.isEmpty()
+                  ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
+                  : m_weights;
+
         constexpr float minPeakCountCalibration = 4.9;
         m_candidateScores.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
@@ -131,25 +135,34 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 m_msCalibratomatic,
                 minPeakCountCalibration,
                 maxUniqueScanInfosTrainingCount,
+                useExtendedScores,
+                useNeuralNetworkScores,
                 mzTargetKeyVsTurboXicPntrs,
+                m_weights,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
+        QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
             m_candidateScores,
             *m_pythiaParameters,
             useExtendedScores,
             useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
-            &fdrVsCounts
+            &fdrVsCounts,
+            &weights
             ); ree;
 
         constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCalMS2 = 2;
         constexpr int fdrKeyMassCalMS1 = 5;
+
+        if (constexpr int minFDRCountForWeightsUpdate = 100; fdrVsCounts.value(fdrKey) >= minFDRCountForWeightsUpdate) {
+            m_weights = weights;
+        }
 
         e = honeIRTAndMassCalibration(
             &candidateScoresVecBatchPntrs,

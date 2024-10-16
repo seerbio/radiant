@@ -31,6 +31,8 @@ public:
         QVector<TargetDecoyCandidatePair*> *targetDecoyPairPntrs
         );
 
+    [[nodiscard]] QVector<float> weights() const;
+
 private:
 
     int calculateNumberOfTranches() const;
@@ -46,6 +48,8 @@ private:
 
     QVector<TargetDecoyCandidatePair*> *m_targetDecoyPairPntrs;
     QVector<CandidateScores> m_candidateScores;
+
+    QVector<float> m_weights;
 
 };
 

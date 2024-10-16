@@ -5,6 +5,7 @@
 #include "CandidateScorertron.h"
 
 #include "CandidateScores.h"
+#include "DiscriminantScoretron.h"
 #include "EigenKernelUtils.h"
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
@@ -84,10 +85,13 @@ CandidateScorertron::CandidateScorertron()
 : m_topNMS2Ions(-1)
 , m_xicPeakManager(nullptr)
 , m_msFrameMzTarget(nullptr)
+, m_msFrameMS1(nullptr)
 , m_turboXicMS1(nullptr)
 , d_ptr(QScopedPointer<Private>(new Private))
 , m_minPeakCount(3.9)
 , m_scanTimeRange(0)
+, m_useExtendedScores(false)
+, m_useNeuralNetworkScores(false)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
@@ -100,6 +104,8 @@ Err CandidateScorertron::init(
     float minPeakCount,
     float scanTimeRange,
     const QMap<NominalMzMass, QVector<float>> &averagineTable,
+    bool useExtendedScores,
+    bool useNeuralNetworkScores,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1,
@@ -119,12 +125,14 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isAboveThreshold(
         topNMS2Ions,
         S_GLOBAL_SETTINGS.MIN_MS2_IONS,
-        ErrorUtilsParam::IncludeThreshold); ree;
+        ErrorUtilsParam::IncludeThreshold)
+    ; ree;
 
     e = ErrorUtils::isAboveThreshold(
         minPeakCount,
         1.0f,
-        ErrorUtilsParam::ExcludeThreshold); ree;
+        ErrorUtilsParam::ExcludeThreshold
+        ); ree;
 
     m_pythiaParameters = pythiaParameters;
     m_topNMS2Ions = topNMS2Ions;
@@ -135,6 +143,9 @@ Err CandidateScorertron::init(
     m_scanTimeRange = scanTimeRange;
     m_averagineTable = averagineTable;
     m_msFrameMS1 = msFrameMS1;
+    m_useExtendedScores = useExtendedScores;
+    m_useNeuralNetworkScores = useNeuralNetworkScores;
+    m_minPeakCount = minPeakCount;
 
     if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
@@ -255,6 +266,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
+    const QVector<float> &weights,
     TargetDecoyCandidatePair* targetDecoyCandidatePair,
     CandidateScores *candidateScores
     ) const {
@@ -320,11 +332,15 @@ Err CandidateScorertron::calculateScores(
 
 #endif
 
-    e = sortBestCorrelationResult(&bestCorrelationResults); ree;
-
-    const int nominalMass = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / 10) * 10));
+    constexpr int multiplierForKeySettingByTen = 10;
+    const int nominalMass
+        = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
     const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
+
+// #define TURBO_SCORE
+#ifdef TURBO_SCORE
+    e = sortBestCorrelationResult(&bestCorrelationResults); ree;
 
     e = setCandidateScores(
         targetDecoyCandidatePair,
@@ -332,6 +348,49 @@ Err CandidateScorertron::calculateScores(
         ms1Averagine,
         candidateScores
         ); ree;
+#else
+    QVector<FeaturesArray> candidateScoresFeatureArrays;
+    QVector<CandidateScores> candidateScoresFeatures;
+    for (const BestCorrelationResult &bcr : bestCorrelationResults) {
+        CandidateScores cs = *candidateScores;
+        e = setCandidateScores(
+            targetDecoyCandidatePair,
+            {bcr},
+            ms1Averagine,
+            &cs
+            ); ree;
+
+        const FeaturesArray fa = DiscriminantScoretron::scoreVectorLogic(
+            m_useExtendedScores,
+            m_useNeuralNetworkScores,
+            &cs);
+
+        candidateScoresFeatures.push_back(cs);
+        candidateScoresFeatureArrays.push_back(fa);
+    }
+
+    QVector<FeaturesArray*> featuresArraysPntrs;
+    std::transform(
+        candidateScoresFeatureArrays.begin(),
+        candidateScoresFeatureArrays.end(),
+        std::back_inserter(featuresArraysPntrs),
+        [](FeaturesArray &f){return &f;}
+        );
+
+    constexpr int threadCount = 1;
+    QVector<float> discScores;
+    e = DiscriminantScoretron::applyWeights(
+        weights,
+        threadCount,
+        featuresArraysPntrs,
+        &discScores
+        );
+
+    const float maxDisScore =  *std::max_element(discScores.begin(), discScores.end());
+    const int bestIndex = MathUtils::closest(discScores, maxDisScore);
+
+    *candidateScores = candidateScoresFeatures[bestIndex];
+#endif
 
 #ifdef TROUBLE_SHOOT_INTEGRATION
     if (targetDecoyCandidatePair->peptideStringWithMods() == "DWHGVPGQVDAAMAGR"
@@ -1046,10 +1105,10 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
-    peakIntegrationsVsIntensityResized.resize(std::min(
-        m_pythiaParameters.topNIntegrations,
-        peakIntegrationsVsIntensityResized.size()
-        ));
+    // peakIntegrationsVsIntensityResized.resize(std::min(
+    //     m_pythiaParameters.topNIntegrations,
+    //     peakIntegrationsVsIntensityResized.size()
+    //     ));
 
     for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
 

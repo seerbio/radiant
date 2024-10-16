@@ -44,6 +44,9 @@ public:
     MsFrame *msFrameMS1 = nullptr;
     float minPeakCount = -1.0;
     QMap<int, QVector<float>> averagineTable;
+    QVector<float> weights;
+    bool useExtendedScores = false;
+    bool useNeuralNetworkScores = false;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -218,6 +221,8 @@ namespace {
                 pi.minPeakCount,
                 scanTimeRange,
                 pi.averagineTable,
+                pi.useExtendedScores,
+                pi.useNeuralNetworkScores,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1,
@@ -230,6 +235,7 @@ namespace {
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsTarget(),
+                        pi.weights,
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
@@ -239,6 +245,7 @@ namespace {
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
                         tdcp->ms2IonsDecoy(),
+                        pi.weights,
                         tdcp,
                         &candidateScoresDecoy
                 ); rree;
@@ -261,7 +268,10 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
         int threadCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+        const QVector<float> &weights,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<CandidateScores> *candidateScoresVec
         ) const {
@@ -281,7 +291,10 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             m_scanTimeMinMax,
             msCalibratomatic,
             minPeakCount,
+            useExtendedScores,
+            useNeuralNetworkScores,
             mzTargetKeyVsTurboXicPntrs,
+            weights,
             mzTargetKeyVsTargetDecoyCandidatePointers,
             &parallelInputs
             ); ree;
@@ -340,7 +353,10 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+        const QVector<float> &weights,
         const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
         QVector<TargetDecoyPairParallelInput> *input
         ) const {
@@ -373,6 +389,9 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi.minPeakCount = minPeakCount;
         tdppi.averagineTable = m_averagineTable;
         tdppi.msFrameMS1 = m_msFrameMS1;
+        tdppi.weights = weights;
+        tdppi.useExtendedScores = useExtendedScores;
+        tdppi.useNeuralNetworkScores = useNeuralNetworkScores;
 
         if (!mzTargetKeyVsTurboXicPntrs.isEmpty()) {
             e = ErrorUtils::contains(tdppi.targetKey, mzTargetKeyVsTurboXicPntrs); ree;

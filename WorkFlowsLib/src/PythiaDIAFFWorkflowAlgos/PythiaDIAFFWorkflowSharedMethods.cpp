@@ -197,7 +197,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     bool useExtendedScores,
     bool useNeuralNetworkScores,
     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-    QMap<int, int> *fdrVsCounts
+    QMap<int, int> *fdrVsCounts,
+    QVector<float> *weights
     ) {
 
     ERR_INIT
@@ -246,17 +247,16 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         &featuresArrayTargetVsDecoyPntrs
         ); ree;
 
-    QVector<float> weights;
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             pythiaParameters.threadCount,
             pythiaParameters.verbosity,
-            &weights
+            weights
             ); ree;
 
     QVector<float> discriminantScores;
     e = DiscriminantScoretron::applyWeights(
-        weights,
+        *weights,
         pythiaParameters.threadCount,
         featuresArrayPntrs,
         &discriminantScores

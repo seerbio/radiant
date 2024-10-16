@@ -14,6 +14,7 @@
 
 #include <QtConcurrent/QtConcurrent>
 
+#include "DiscriminantScoretron.h"
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 
 OptimizeMassAccuracyPPMSettertron::OptimizeMassAccuracyPPMSettertron()
@@ -50,6 +51,10 @@ Err OptimizeMassAccuracyPPMSettertron::initExec(
     optimizePPM();
 
     ERR_RETURN
+}
+
+QVector<float> OptimizeMassAccuracyPPMSettertron::weights() const {
+    return m_weights;
 }
 
 namespace {
@@ -223,7 +228,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
         e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
 
-        constexpr float minPeakCountOptimization = 2.9;
+        constexpr float minPeakCountOptimization = 3.9;
         constexpr int topNMS2Ions = 12;
         m_candidateScores.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
@@ -231,20 +236,25 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 *m_msCalibratomatic,
                 minPeakCountOptimization,
                 maxUniqueScanInfosTrainingCount,
+                useExtendedScores,
+                useNeuralNetworkScores,
                 mzTargetKeyVsTurboXicPntrs,
+                DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores),
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
+        QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
             m_candidateScores,
             *m_pythiaParameters,
             useExtendedScores,
             useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
-            &fdrVsCounts
+            &fdrVsCounts,
+            &weights
             ); ree;
 
         QString fdrString;
@@ -267,6 +277,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         if (res.fdrCount >= bestResultCount) {
             bestResultCount = res.fdrCount;
             countSinceLastHigh = 0;
+            m_weights = weights;
             continue;
         }
 

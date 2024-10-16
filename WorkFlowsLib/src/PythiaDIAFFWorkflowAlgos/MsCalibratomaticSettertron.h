@@ -68,6 +68,7 @@ private:
 
     QVector<float> m_scanTimeStDevs;
     QVector<float> m_ms2PPMStDevs;
+    QVector<float> m_weights;
 
 };
 

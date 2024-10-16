@@ -52,7 +52,8 @@ public:
             bool useExtendedScores,
             bool useNeuralNetworkScores,
             QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-            QMap<int, int> *fdrVsCounts
+            QMap<int, int> *fdrVsCounts,
+            QVector<float> *weights
         );
 
     static Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(

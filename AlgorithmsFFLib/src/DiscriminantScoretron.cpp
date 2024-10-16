@@ -91,13 +91,20 @@ Err DiscriminantScoretron::applyWeights(
     e = ErrorUtils::isNotEmpty(weights); ree;
     e = ErrorUtils::isNotEmpty(featuresArray); ree;
 
+    if (threadCount == 1) {
+        const QPair<Err, QVector<float>> result = applyWeightsLogic(weights, featuresArray);
+        e = result.first; ree;
+        discriminantScores->append(result.second);
+        ERR_RETURN
+    }
+
     QVector<QVector<FeaturesArray*>> featuresArrayPntrsTranched;
     e = ParallelUtils::trancheVectorForParallelizationInOrder(
         featuresArray,
         threadCount,
         0,
         &featuresArrayPntrsTranched
-    ); ree;
+        ); ree;
 
     const auto applyWeightsBinder = std::bind(
         applyWeightsLogic,
@@ -395,6 +402,21 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
         return vec;
     }
+
+QVector<float> DiscriminantScoretron::defaultWeights(
+    bool useExtendedScores,
+    bool useNeuralNetworkScores
+    ) {
+
+    CandidateScores cs;
+    cs.initFeaturesArray();
+
+    cs.featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80] = 1.0f;
+    cs.featuresArray[CandidateScores::CosineSimSpectrumOverTimeCubed] = 1.0f;
+    cs.featuresArray[CandidateScores::Features::CosineSim100MS1] = 1.0f;
+
+    return scoreVectorLogic(useExtendedScores, useNeuralNetworkScores, &cs);
+}
 
 Err DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
     const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>& candidateScoresTargetVsDecoy,

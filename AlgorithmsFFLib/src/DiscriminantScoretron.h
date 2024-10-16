@@ -27,7 +27,7 @@ public:
     static Err applyWeights(
         const QVector<float> &weights,
         int threadCount,
-        const QVector<FeaturesArray*> &candidateScoresPntrs,
+        const QVector<FeaturesArray*> &featureArrayPntrs,
         QVector<float> *discriminantScores
     );
 
@@ -36,6 +36,11 @@ public:
             bool useNeuralNetworkScores,
             CandidateScores* candidateScores
             );
+
+    static QVector<float> defaultWeights(
+        bool useExtendedScores,
+        bool useNeuralNetworkScores
+        );
 
     static Err convertScoreCandidatesToFeaturesArrays(
         const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScoresTargetVsDecoy,

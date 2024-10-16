@@ -313,6 +313,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyCandidatePairScoretron,
             &m_targetDecoyPairPntrs
             ); ree;
+
+        m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
     }
 
     int targetCountBelowFDRThreshold;
@@ -507,14 +509,21 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     const int threadCount = std::min(uniqueMsScanInfos.size(), m_pythiaParameters.threadCount);
 
-    constexpr float minPeakCount = 2.9;
+    m_weights = m_weights.isEmpty()
+              ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
+              : m_weights;
+
+    constexpr float minPeakCount = 3.9;
     m_candidateScores.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
             minPeakCount,
             threadCount,
+            useExtendedScores,
+            useNeuralNetworkScores,
             nullToBuildTurboXICInParallelLoop,
+            m_weights,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
             ); ree
@@ -522,13 +531,15 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;
+    QVector<float> weights;
     e = PythiaDIAFFWorkflowSharedMethods::processBatch(
         m_candidateScores,
         m_pythiaParameters,
         useExtendedScores,
         useNeuralNetworkScores,
         &candidateScoresVecBatchPntrs,
-        &fdrVsCounts
+        &fdrVsCounts,
+        &weights
         ); ree;
 
     QString fdrString;
