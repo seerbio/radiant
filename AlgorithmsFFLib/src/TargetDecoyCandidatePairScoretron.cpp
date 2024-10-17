@@ -416,7 +416,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         }
 
         input->push_back(tdppi1);
-        input->pu   sh_back(tdppi2);
+        input->push_back(tdppi2);
     }
 
     ERR_RETURN
