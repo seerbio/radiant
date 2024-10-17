@@ -79,6 +79,7 @@ namespace {
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
         const QVector<double> ppmList = {
+            // 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
             3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 26, 30, 35, 40, 50
         };
 
@@ -223,11 +224,16 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
     QVector<DOEResult> results;
     for (const PythiaParameters &pythiaParams : pythiaParametersExperiments) {
 
-        constexpr bool useExtendedScores = true;
-        constexpr bool useNeuralNetworkScores = false;
-
         e = m_targetDecoyCandidatePairScoretron->setPythiaParameters(pythiaParams); ree;
 
+        constexpr int splitter = 2;
+        const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters->threadCount
+                      ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
+                      : m_pythiaParameters->threadCount;
+
+        constexpr bool useExtendedScores = true;
+        constexpr bool useNeuralNetworkScores = false;
+        constexpr bool useTopNIntegrationsParameter = true;
         constexpr float minPeakCountOptimization = 3.9;
         constexpr int topNMS2Ions = 12;
         m_candidateScores.clear();
@@ -235,9 +241,10 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 topNMS2Ions,
                 *m_msCalibratomatic,
                 minPeakCountOptimization,
-                maxUniqueScanInfosTrainingCount,
+                threadCount,
                 useExtendedScores,
                 useNeuralNetworkScores,
+                useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
                 DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores),
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
@@ -312,7 +319,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
 int OptimizeMassAccuracyPPMSettertron::calculateNumberOfTranches() const {
 
-    constexpr int optimizationMultiplicationFactor = 10;
+    constexpr int optimizationMultiplicationFactor = 30;
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters->trancheSizeMax * optimizationMultiplicationFactor);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs->size() / sizePerTranche), 1);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())

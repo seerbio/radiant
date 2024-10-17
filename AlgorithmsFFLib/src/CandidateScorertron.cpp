@@ -92,6 +92,7 @@ CandidateScorertron::CandidateScorertron()
 , m_scanTimeRange(0)
 , m_useExtendedScores(false)
 , m_useNeuralNetworkScores(false)
+, m_useTopNIntegrationsParam(false)
 {}
 
 CandidateScorertron::~CandidateScorertron() {}
@@ -106,6 +107,7 @@ Err CandidateScorertron::init(
     const QMap<NominalMzMass, QVector<float>> &averagineTable,
     bool useExtendedScores,
     bool useNeuralNetworkScores,
+    bool useTopNIntegrationsParameter,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
     TurboXIC *turboXicMS1,
@@ -146,6 +148,7 @@ Err CandidateScorertron::init(
     m_useExtendedScores = useExtendedScores;
     m_useNeuralNetworkScores = useNeuralNetworkScores;
     m_minPeakCount = minPeakCount;
+    m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
 
     if (msCalibratomatic.isInitRT()) {
         m_msCalibratomatic = msCalibratomatic;
@@ -1105,10 +1108,12 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
 
-    // peakIntegrationsVsIntensityResized.resize(std::min(
-    //     m_pythiaParameters.topNIntegrations,
-    //     peakIntegrationsVsIntensityResized.size()
-    //     ));
+    if (m_useTopNIntegrationsParam) {
+        peakIntegrationsVsIntensityResized.resize(std::min(
+            m_pythiaParameters.topNIntegrations,
+            peakIntegrationsVsIntensityResized.size()
+            ));
+    }
 
     for (const QPair<PeakIntegrationIndexes, Intensity> &pii : peakIntegrationsVsIntensityResized) {
 

@@ -487,6 +487,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     constexpr bool useExtendedScores = true;
     constexpr bool useNeuralNetworkScores = false;
     constexpr int topNMs2IonsMainAnalysis = 12;
+    constexpr bool useTopNIntegrationsParameter = false;
+
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "Using top:"
             << topNMs2IonsMainAnalysis
@@ -507,7 +509,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
-    const int threadCount = std::min(uniqueMsScanInfos.size(), m_pythiaParameters.threadCount);
+    constexpr int splitter = 2;
+    const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters.threadCount
+                          ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters.threadCount)
+                          : m_pythiaParameters.threadCount;
 
     m_weights = m_weights.isEmpty()
               ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
@@ -522,6 +527,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             threadCount,
             useExtendedScores,
             useNeuralNetworkScores,
+            useTopNIntegrationsParameter,
             nullToBuildTurboXICInParallelLoop,
             m_weights,
             &mzTargetKeyVsTargetDecoyCandidatePointers,

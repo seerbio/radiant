@@ -46,6 +46,7 @@ public:
         const QMap<NominalMzMass, QVector<float>> &averagineTable,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
         TurboXIC *turboXicMS1,
@@ -115,6 +116,7 @@ private:
 
     bool m_useExtendedScores;
     bool m_useNeuralNetworkScores;
+    bool m_useTopNIntegrationsParam;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

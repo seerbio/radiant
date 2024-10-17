@@ -47,6 +47,7 @@ public:
     QVector<float> weights;
     bool useExtendedScores = false;
     bool useNeuralNetworkScores = false;
+    bool useTopNIntegrationsParameter = false;
 };
 
 Err TargetDecoyCandidatePairScoretron2::init(
@@ -223,6 +224,7 @@ namespace {
                 pi.averagineTable,
                 pi.useExtendedScores,
                 pi.useNeuralNetworkScores,
+                pi.useTopNIntegrationsParameter,
                 &xicPeakManager,
                 pi.msFrameMzTarget,
                 pi.turboXicMS1,
@@ -270,6 +272,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         int threadCount,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         const QVector<float> &weights,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
@@ -293,6 +296,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             minPeakCount,
             useExtendedScores,
             useNeuralNetworkScores,
+            useTopNIntegrationsParameter,
             mzTargetKeyVsTurboXicPntrs,
             weights,
             mzTargetKeyVsTargetDecoyCandidatePointers,
@@ -355,6 +359,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         float minPeakCount,
         bool useExtendedScores,
         bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         const QVector<float> &weights,
         const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
@@ -376,29 +381,42 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
 
     for (const MzTargetKey &mzTargetKey : mzTargetKeyVsTargetDecoyCandidatePointers->keys()) {
 
-        TargetDecoyPairParallelInput tdppi;
-        tdppi.topNMs2Ions = topNMS2Ions;
-        tdppi.targetKey = mzTargetKey;
-        tdppi.msCalibratomatic = msCalibratomatic;
-        tdppi.pythiaParameters = m_pythiaParameters;
-        tdppi.targetDecoyPointers = mzTargetKeyVsTargetDecoyCandidatePointers->value(tdppi.targetKey);
-        tdppi.scanTimeMinMax = scanTimeMinMax;
-        tdppi.diaTargetFrame = m_diaTargetFrames.value(tdppi.targetKey);
-        tdppi.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi.targetKey);
-        tdppi.turboXicMS1 = m_turboXICMS1;
-        tdppi.minPeakCount = minPeakCount;
-        tdppi.averagineTable = m_averagineTable;
-        tdppi.msFrameMS1 = m_msFrameMS1;
-        tdppi.weights = weights;
-        tdppi.useExtendedScores = useExtendedScores;
-        tdppi.useNeuralNetworkScores = useNeuralNetworkScores;
+        const QVector<TargetDecoyCandidatePair*> &tdcpPntrs
+                            = mzTargetKeyVsTargetDecoyCandidatePointers->value(mzTargetKey);
+
+        const int bufferOddEvenSize = tdcpPntrs.size() % 2 == 1 ? 1 : 0;
+
+        const int midSize = tdcpPntrs.size() / 2;
+
+        TargetDecoyPairParallelInput tdppi1;
+        tdppi1.topNMs2Ions = topNMS2Ions;
+        tdppi1.targetKey = mzTargetKey;
+        tdppi1.msCalibratomatic = msCalibratomatic;
+        tdppi1.pythiaParameters = m_pythiaParameters;
+        tdppi1.targetDecoyPointers = tdcpPntrs.mid(0, midSize);
+        tdppi1.scanTimeMinMax = scanTimeMinMax;
+        tdppi1.diaTargetFrame = m_diaTargetFrames.value(tdppi1.targetKey);
+        tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
+        tdppi1.turboXicMS1 = m_turboXICMS1;
+        tdppi1.minPeakCount = minPeakCount;
+        tdppi1.averagineTable = m_averagineTable;
+        tdppi1.msFrameMS1 = m_msFrameMS1;
+        tdppi1.weights = weights;
+        tdppi1.useExtendedScores = useExtendedScores;
+        tdppi1.useNeuralNetworkScores = useNeuralNetworkScores;
+        tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
+
+        TargetDecoyPairParallelInput tdppi2 = tdppi1;
+        tdppi2.targetDecoyPointers = tdcpPntrs.mid(midSize, midSize + bufferOddEvenSize);
 
         if (!mzTargetKeyVsTurboXicPntrs.isEmpty()) {
-            e = ErrorUtils::contains(tdppi.targetKey, mzTargetKeyVsTurboXicPntrs); ree;
-            tdppi.turboXicMS2 = mzTargetKeyVsTurboXicPntrs.value(tdppi.targetKey);
+            e = ErrorUtils::contains(tdppi1.targetKey, mzTargetKeyVsTurboXicPntrs); ree;
+            tdppi1.turboXicMS2 = mzTargetKeyVsTurboXicPntrs.value(tdppi1.targetKey);
+            tdppi2.turboXicMS2 = mzTargetKeyVsTurboXicPntrs.value(tdppi2.targetKey);
         }
 
-        input->push_back(tdppi);
+        input->push_back(tdppi1);
+        input->pu   sh_back(tdppi2);
     }
 
     ERR_RETURN

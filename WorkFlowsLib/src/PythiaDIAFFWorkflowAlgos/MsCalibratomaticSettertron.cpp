@@ -106,9 +106,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
-        constexpr int topNMS2IonsCalibration = 6;
-        constexpr bool useExtendedScores = false;
-        constexpr bool useNeuralNetworkScores = false;
+
 
         QElapsedTimer etBatch;
         etBatch.start();
@@ -124,9 +122,19 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
+        constexpr int topNMS2IonsCalibration = 6;
+        constexpr bool useExtendedScores = false;
+        constexpr bool useNeuralNetworkScores = false;
+        constexpr bool useTopNIntegrationsParameter = false;
+
         m_weights = m_weights.isEmpty()
                   ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
                   : m_weights;
+
+        constexpr int splitter = 2;
+        const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters->threadCount
+                      ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
+                      : m_pythiaParameters->threadCount;
 
         constexpr float minPeakCountCalibration = 4.9;
         m_candidateScores.clear();
@@ -134,9 +142,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
                 minPeakCountCalibration,
-                maxUniqueScanInfosTrainingCount,
+                threadCount,
                 useExtendedScores,
                 useNeuralNetworkScores,
+                useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
                 m_weights,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
