@@ -319,7 +319,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
 int OptimizeMassAccuracyPPMSettertron::calculateNumberOfTranches() const {
 
-    constexpr int optimizationMultiplicationFactor = 15;
+    constexpr int optimizationMultiplicationFactor = 25;
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters->trancheSizeMax * optimizationMultiplicationFactor);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs->size() / sizePerTranche), 1);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())

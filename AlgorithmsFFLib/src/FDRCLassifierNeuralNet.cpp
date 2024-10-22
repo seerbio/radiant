@@ -20,6 +20,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 , m_learningRate(-1.0)
 , m_isInit(false)
 , m_threadCount(8)
+, m_baggingSize(6)
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
