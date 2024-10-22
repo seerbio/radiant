@@ -82,8 +82,7 @@ namespace {
 
     Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys
             ) {
 
         ERR_INIT
@@ -112,16 +111,15 @@ namespace {
             }
         }
 
-        *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(counter);
+        candidateScoresTargetsAndDecoys->resize(counter);
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
         const int shuffleCount = 3;
         for (int i = 0; i < shuffleCount; i++) {
             std::shuffle(
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->begin(),
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->end(),
+                    candidateScoresTargetsAndDecoys->begin(),
+                    candidateScoresTargetsAndDecoys->end(),
                     rng
             );
         }
@@ -300,17 +298,9 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoys
         ); ree;
 
-    QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet;
-    e = filterScoredCandidatesForNeuralNet(
-        m_pythiaParameters.minMs2FragCount,
-        &candidateScoresTargetsAndDecoys,
-        &candidateScoresTargetsAndDecoysNeuralNet
-        ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
-
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
-            candidateScoresTargetsAndDecoysNeuralNet,
+            candidateScoresTargetsAndDecoys,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs
             ); ree;
@@ -552,7 +542,7 @@ namespace {
                 karnnNNTargets.begin(),
                 karnnNNTargets.end(),
                 std::back_inserter(vecs),
-                [](const KarnnNNTarget &kt){return kt.scoreVec;}
+                [](const KarnnNNTarget &kt){return kt.scoreVecNormalized;}
                 );
 
         Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
@@ -564,7 +554,7 @@ namespace {
 
         for (int i = 0; i < vecsNorm.size(); i++) {
             KarnnNNTarget ktNew = karnnNNTargets.at(i);
-            ktNew.scoreVec = vecsNorm.at(i);
+            ktNew.scoreVecNormalized = vecsNorm.at(i);
             karnnNNTargetsNorm->push_back(ktNew);
         }
 
@@ -585,10 +575,8 @@ namespace {
         for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
             CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
-            karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            karnnNnTarget.isDecoy = cs->isDecoy;
-            karnnNnTarget.index = i;
-            karnnNnTarget.scoreVec = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+            karnnNnTarget.candidateScores = cs;
+            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
@@ -598,12 +586,12 @@ namespace {
         ERR_RETURN
     }
 
-    Err predictNNScores(
+    Err trainNeuralNetwork(
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
             int seed,
             int threadCount,
             int verbosity,
-            QVector<float> *predictions
+            FDRCLassifierNeuralNet *fdrcLassifierNeuralNet
             ) {
 
         ERR_INIT
@@ -616,15 +604,15 @@ namespace {
         QVector<QVector<float>> xData;
         QVector<float> yData;
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            xData.push_back(kt.scoreVec);
-            yData.push_back(kt.isDecoy ? 1.0 : 0.0);
+            xData.push_back(kt.scoreVecNormalized);
+            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
 
         constexpr int baggingSize = 6;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
-        FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
-        e = fdrcLassifierNeuralNet.init(
+
+        e = fdrcLassifierNeuralNet->init(
                 epochs,
                 baggingSize,
                 batchSize,
@@ -632,53 +620,58 @@ namespace {
                 threadCount
         ); ree;
 
-        e = fdrcLassifierNeuralNet.exec(
+        e = fdrcLassifierNeuralNet->trainClassifier(
                 xData,
                 yData,
                 seed,
-                verbosity,
-                predictions
+                verbosity
                 ); ree;
 
         ERR_RETURN
     }
 
+    Err predictClassifierScores(
+        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+        FDRCLassifierNeuralNet *fdrcLassifierNeuralNet,
+        QVector<float> *predictions
+        ) {
+
+        ERR_INIT
+
+        QVector<QVector<float>> xData;
+        QVector<float> yData;
+        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+            xData.push_back(kt.scoreVecNormalized);
+            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+        }
+
+        e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
+            xData,
+            predictions
+            ); ree;
+
+        ERR_RETURN
+    }
+
     Err processPredictions(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             const QVector<float> &predictions,
-            QVector<KarnnNNTarget> *karnnNNTargetsNorm,
-            QVector<CandidateScores*> *candidateScoreClassifier
+            QVector<KarnnNNTarget> *karnnNNTargetsNorm
             ) {
 
         ERR_INIT
 
+        e = ErrorUtils::isFalse(karnnNNTargetsNorm->isEmpty()); ree;
+
         for (int i = 0; i < predictions.size(); i++) {
-            (*karnnNNTargetsNorm)[i].nnScore = predictions.at(i);
+            (*karnnNNTargetsNorm)[i].candidateScores->classifierScore = predictions.at(i);
         }
-
-        std::sort(
-                karnnNNTargetsNorm->begin(),
-                karnnNNTargetsNorm->end(),
-                [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
-        );
-
-        std::transform(
-                karnnNNTargetsNorm->begin(),
-                karnnNNTargetsNorm->end(),
-                std::back_inserter(*candidateScoreClassifier),
-                [candidateScoresTargetsAndDecoys50PercentFDRFiltered](const KarnnNNTarget &kt){
-                    CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(kt.index);
-                    candidateScoresNew->classifierScore = kt.nnScore;
-                    return candidateScoresNew;
-                }
-                );
 
         ERR_RETURN
     }
 
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
-        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
         ) const {
@@ -686,6 +679,13 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
+    e = filterScoredCandidatesForNeuralNet(
+        m_pythiaParameters.minMs2FragCount,
+        &candidateScoresTargetsAndDecoysNeuralNet
+        ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
 
 // #define WRITENN
 #ifdef WRITENN
@@ -707,10 +707,10 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     candidateScoreClassifier->clear();
 
-    const int totalCount = candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
+    const int totalCount = candidateScoresTargetsAndDecoysNeuralNet.size();
     const int decoyCount = static_cast<int>(std::count_if(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+            candidateScoresTargetsAndDecoysNeuralNet.begin(),
+            candidateScoresTargetsAndDecoysNeuralNet.end(),
             [](const CandidateScores* cs){return cs->isDecoy;}
             ));
 
@@ -735,25 +735,38 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            candidateScoresTargetsAndDecoysNeuralNet,
             &karnnNNTargetsNorm
             ); ree;
 
-    QVector<float> predictions;
-    e = predictNNScores(
+    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    e = trainNeuralNetwork(
             karnnNNTargetsNorm,
             seed,
             m_pythiaParameters.threadCount,
             m_pythiaParameters.verbosity,
-            &predictions
+            &fdrClassifierNeuralNet
             ); ree;
 
+    QVector<float> predictions;
+    e = predictClassifierScores(
+        karnnNNTargetsNorm,
+        &fdrClassifierNeuralNet,
+        &predictions
+        ); ree;
+
     e = processPredictions(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
-            &karnnNNTargetsNorm,
-            candidateScoreClassifier
+            &karnnNNTargetsNorm
             ); ree;
+
+    *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
+
+    std::sort(
+        candidateScoreClassifier->begin(),
+        candidateScoreClassifier->end(),
+        [](CandidateScores *l, CandidateScores *r){return l->classifierScore < r->classifierScore;}
+        );
 
     e = QValueSettertron::setQValueForCandidates(
             QValueSettertron::QValueScoreType::NNClassifierScore,

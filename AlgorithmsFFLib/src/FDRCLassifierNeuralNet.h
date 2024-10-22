@@ -139,6 +139,19 @@ public:
             QVector<float> *meanPredictions
     );
 
+    Err trainClassifier(
+            const QVector<QVector<float>> &xData,
+            const QVector<float> &yData,
+            int seed,
+            int verbosity
+            );
+
+    Err predictBaggedClassifiers(
+            const QVector<QVector<float>> &allDataVecs,
+            QVector<float> *meanPredictions
+            );
+
+
     /**
     * @brief Counts the number of target candidates below a specified q-value threshold.
     *
@@ -189,14 +202,8 @@ public:
         QString *outputString
         );
 
-private:
 
-    Err trainClassifier(
-            const QVector<QVector<float>> &xData,
-            const QVector<float> &yData,
-            int seed,
-            int verbosity
-            );
+private:
 
     Err trainBaggedNeuralNets(
             const QVector<QVector<float>> &xData,
@@ -205,10 +212,7 @@ private:
             int verbosity
             );
 
-    Err predictBaggedClassifiers(
-            const QVector<QVector<float>> &allDataVecs,
-            QVector<float> *meanPredictions
-            );
+
 
 private:
 
