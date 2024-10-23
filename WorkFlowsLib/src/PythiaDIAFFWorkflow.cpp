@@ -669,6 +669,36 @@ namespace {
         ERR_RETURN
     }
 
+    Err serialFilterByValue(
+        double threshold,
+        QVector<CandidateScores*> *candidateScoreses
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScoreses->isEmpty()); ree;
+
+        std::sort(
+            candidateScoreses->begin(),
+            candidateScoreses->end(),
+            [](const CandidateScores *l, const CandidateScores *r){
+                return l->classifierScore < r->classifierScore;
+            });
+
+        int counter = 0;
+        for (const CandidateScores *csp : *candidateScoreses) {
+
+            counter++;
+            if (csp->qValue >= threshold && !csp->isDecoy) {
+                break;
+            }
+        }
+
+        candidateScoreses->resize(counter);
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
@@ -758,6 +788,12 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             QValueSettertron::QValueScoreType::NNClassifierScore,
             candidateScoreClassifier
             ); ree
+
+    constexpr double fdrQValThreshold = 0.5;
+    e = serialFilterByValue(
+        fdrQValThreshold,
+        candidateScoreClassifier
+        ); ree;
 
     ERR_RETURN
 }
