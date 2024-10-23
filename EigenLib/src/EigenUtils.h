@@ -854,6 +854,19 @@ public:
         EigenUtils::replaceNaN(static_cast<T>(0.0), mat);
     }
 
+    template<typename T>
+    static void normalizeMatrixByColumn(Eigen::MatrixX<T> *mat) {
+
+        for (int col = 0; col < mat->cols(); col++) {
+
+            Eigen::VectorX<T> vec = mat->col(col);
+            vec /= vec.maxCoeff();
+            mat->col(col) = vec;
+        }
+
+        EigenUtils::replaceNaN(static_cast<T>(0.0), mat);
+    }
+
     /*!
     * @brief  Converts a QVector of QVectors to an Eigen::MatrixX
     * @tparam T: The datatype of the elements in the QVectors and the created Eigen::MatrixX. Could be any numeric type such as int, float, double etc.

@@ -106,7 +106,7 @@ namespace {
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
             counter++;
-            if (constexpr double fdrThreshold = 0.5; csp->qValue >= fdrThreshold && !csp->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.65; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
                 break;
             }
         }
@@ -718,20 +718,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
              << "target vs decoy count for neural net training"
              << totalCount - decoyCount << ":" << decoyCount
              << "total" << totalCount;
-
-//#define PRINT_AVERAGES
-#ifdef PRINT_AVERAGES
-    Eigen::VectorX<float> vec(CandidateScores::Features::FeaturesSize);
-    vec.setZero();
-    for (const CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
-        vec += EigenUtils::convertQVectorToEigenVector(cs->featuresArray);
-    }
-    vec /= candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
-    for(int i = 0; i < vec.size(); i++) {
-        qDebug() << i << vec.coeff(i);
-    }
-    einfo;
-#endif
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
