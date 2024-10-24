@@ -90,7 +90,7 @@ namespace {
         e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
 
         const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
-            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < minMs2FragCount;
+            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < static_cast<float>(minMs2FragCount);
         };
         const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
         candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
@@ -106,7 +106,7 @@ namespace {
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
             counter++;
-            if (constexpr double fdrTrainingThreshold = 0.65; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
                 break;
             }
         }
@@ -699,6 +699,45 @@ namespace {
         ERR_RETURN
     }
 
+    Err subsetKarnnNNTargetsForTraining(
+        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+        QVector<KarnnNNTarget> *karnnNNTargetsNormTrain
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(karnnNNTargetsNorm); ree;
+
+        *karnnNNTargetsNormTrain = karnnNNTargetsNorm;
+        std::sort(
+            karnnNNTargetsNormTrain->rbegin(),
+            karnnNNTargetsNormTrain->rend(),
+            [](const KarnnNNTarget &l, const KarnnNNTarget &r) {
+                return l.candidateScores->discriminantScore < r.candidateScores->discriminantScore;
+            });
+
+        int counter = 0;
+        for (const KarnnNNTarget &knt : *karnnNNTargetsNormTrain) {
+            counter++;
+            if (constexpr double fdrTrainingThreshold = 0.65; knt.candidateScores->qValue >= fdrTrainingThreshold && !knt.candidateScores->isDecoy) {
+                break;
+            }
+        }
+        karnnNNTargetsNormTrain->resize(counter);
+
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        constexpr int shuffleCount = 3;
+        for (int i = 0; i < shuffleCount; i++) {
+            std::shuffle(
+                    karnnNNTargetsNormTrain->begin(),
+                    karnnNNTargetsNormTrain->end(),
+                    rng
+            );
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
@@ -755,9 +794,15 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             &karnnNNTargetsNorm
             ); ree;
 
+    QVector<KarnnNNTarget> karnnNNTargetsNormTrain;
+    e = subsetKarnnNNTargetsForTraining(
+        karnnNNTargetsNorm,
+        &karnnNNTargetsNormTrain
+        ); ree;
+
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = trainNeuralNetwork(
-            karnnNNTargetsNorm,
+            karnnNNTargetsNormTrain,
             seed,
             m_pythiaParameters.threadCount,
             m_pythiaParameters.verbosity,
