@@ -156,7 +156,8 @@ namespace {
                 inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<float>::min());
                 inp.intensity = intensityFoundMaxVec.at(i);
 
-                if (inp.mzFound < 1 || inp.intensity < 1) {
+                constexpr float minIntensity = 1;
+                if (inp.mzFound < 1 || inp.intensity <= minIntensity) {
                     continue;
                 }
 

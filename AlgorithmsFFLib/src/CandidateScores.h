@@ -110,6 +110,18 @@ public:
         IntensityFoundMax10,
         IntensityFoundMax11,
         IntensityFoundMax12,
+        IntensityFoundMaxNorm1,
+        IntensityFoundMaxNorm2,
+        IntensityFoundMaxNorm3,
+        IntensityFoundMaxNorm4,
+        IntensityFoundMaxNorm5,//110
+        IntensityFoundMaxNorm6,
+        IntensityFoundMaxNorm7,
+        IntensityFoundMaxNorm8,
+        IntensityFoundMaxNorm9,
+        IntensityFoundMaxNorm10,
+        IntensityFoundMaxNorm11,
+        IntensityFoundMaxNorm12,
         MzPeakLengthsNorm1,
         MzPeakLengthsNorm2,
         MzPeakLengthsNorm3,//120
@@ -204,6 +216,9 @@ public:
         TotalIntensityRaw,
         TargetWindowLocation,
         TargetWindowLocationAbs,
+
+        DiscriminantScore,
+
         FeaturesSize
     };
 

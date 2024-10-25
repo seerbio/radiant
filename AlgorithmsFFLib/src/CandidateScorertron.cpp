@@ -1521,6 +1521,10 @@ namespace {
             );
 
         const Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+
+        const Eigen::VectorX<float> intensitySumsNormalized
+                = intensitySums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
+
         Eigen::VectorX<float> trapAreas;
         e = calculateTrapezoidalArea(
             bestCorrelationResult.matBlockTrimmedIntensity,
@@ -1533,6 +1537,10 @@ namespace {
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
+        }
+
+        for (int i = 0; i < std::min(static_cast<int>(intensitySumsNormalized.size()), arraySizeMax); i++) {
+            candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMaxNorm1 + i] = intensitySumsNormalized.coeff(i);
         }
 
         if (bestCorrelationResults.size() > 1) {
@@ -1917,7 +1925,11 @@ Err CandidateScorertron::setCandidateScores(
                                              ? targetDecoyCandidatePair->ms2IonsDecoy()
                                              : targetDecoyCandidatePair->ms2IonsTarget();
 
-    e = setFoundMs2Ions(bestCorrelationResults, m_msFrameMzTarget, candidateScores); ree;
+    e = setFoundMs2Ions(
+        bestCorrelationResults,
+        m_msFrameMzTarget,
+        candidateScores
+        ); ree;
 
     e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
 

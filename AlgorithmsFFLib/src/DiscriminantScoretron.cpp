@@ -228,18 +228,30 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::MzFoundMean10,
                 CandidateScores::Features::MzFoundMean11,
                 CandidateScores::Features::MzFoundMean12,
-                CandidateScores::Features::IntensityFoundMax1,
-                CandidateScores::Features::IntensityFoundMax2,
-                CandidateScores::Features::IntensityFoundMax3,
-                CandidateScores::Features::IntensityFoundMax4,
-                CandidateScores::Features::IntensityFoundMax5,
-                CandidateScores::Features::IntensityFoundMax6,
-                CandidateScores::Features::IntensityFoundMax7,
-                CandidateScores::Features::IntensityFoundMax8,
-                CandidateScores::Features::IntensityFoundMax9,
-                CandidateScores::Features::IntensityFoundMax10,
-                CandidateScores::Features::IntensityFoundMax11,
-                CandidateScores::Features::IntensityFoundMax12,
+                // CandidateScores::Features::IntensityFoundMax1,
+                // CandidateScores::Features::IntensityFoundMax2,
+                // CandidateScores::Features::IntensityFoundMax3,
+                // CandidateScores::Features::IntensityFoundMax4,
+                // CandidateScores::Features::IntensityFoundMax5,
+                // CandidateScores::Features::IntensityFoundMax6,
+                // CandidateScores::Features::IntensityFoundMax7,
+                // CandidateScores::Features::IntensityFoundMax8,
+                // CandidateScores::Features::IntensityFoundMax9,
+                // CandidateScores::Features::IntensityFoundMax10,
+                // CandidateScores::Features::IntensityFoundMax11,
+                // CandidateScores::Features::IntensityFoundMax12,
+                CandidateScores::Features::IntensityFoundMaxNorm1,
+                CandidateScores::Features::IntensityFoundMaxNorm2,
+                CandidateScores::Features::IntensityFoundMaxNorm3,
+                CandidateScores::Features::IntensityFoundMaxNorm4,
+                CandidateScores::Features::IntensityFoundMaxNorm5,
+                CandidateScores::Features::IntensityFoundMaxNorm6,
+                CandidateScores::Features::IntensityFoundMaxNorm7,
+                CandidateScores::Features::IntensityFoundMaxNorm8,
+                CandidateScores::Features::IntensityFoundMaxNorm9,
+                CandidateScores::Features::IntensityFoundMaxNorm10,
+                CandidateScores::Features::IntensityFoundMaxNorm11,
+                CandidateScores::Features::IntensityFoundMaxNorm12,
                 CandidateScores::Features::MzPeakLengthsNorm1,
                 CandidateScores::Features::MzPeakLengthsNorm2,
                 CandidateScores::Features::MzPeakLengthsNorm3,
@@ -321,7 +333,9 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CandidateScores::Features::TotalIntensityPeakHeights,
                 CandidateScores::Features::TotalIntensityRaw,
                 CandidateScores::Features::TargetWindowLocation,
-                CandidateScores::Features::TargetWindowLocationAbs
+                // CandidateScores::Features::TargetWindowLocationAbs,
+                CandidateScores::Features::DiscriminantScore,
+                // CandidateScores::Features::TestVar2
             };
             const QVector<float> nnVec = candidateScores->selectFeaturesArrayFeatures(nnFeatures);
             return nnVec;
@@ -377,7 +391,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             CandidateScores::Features::TotalIntensityLog,
                             CandidateScores::CosineSimSum100Window1p5X,
                             CandidateScores::CosineSimSum100Window2X,
-                
+
                             CandidateScores::TargetWindowLocationAbs
                             }));
             return vec;

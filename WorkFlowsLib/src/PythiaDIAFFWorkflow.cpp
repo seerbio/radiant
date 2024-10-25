@@ -134,6 +134,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(candidateScoreses); ree;
 
         for (CandidateScores *csOG : candidateScoreses) {
+
             for (const CandidateScores *csAlt : candidateScoreses) {
 
                 if (csOG == csAlt) {
@@ -145,6 +146,7 @@ namespace {
                                         = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
                                             - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
                                         / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    csOG->featuresArray[CandidateScores::Features::DiscriminantScore] = csOG->discriminantScore;
                     continue;
                 }
 
