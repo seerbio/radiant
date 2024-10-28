@@ -149,6 +149,8 @@ Err QuanTransitionRefinertron::refineTransitions(const QVector<CandidateScores*>
     const QMap<MzTargetKey, QVector<CandidateScores*>> mzTargetKeyVsCandidateScoresPntrs
                                                                 = groupCandidateScoresByTargetKey(candidateScoresPntrs);
 
+#define REFINE_PARALLEL
+#ifdef REFINE_PARALLEL
     const auto transitionRefinerBinder = std::bind(
         refineTransitionsParallelLogic,
         std::placeholders::_1,
@@ -161,7 +163,15 @@ Err QuanTransitionRefinertron::refineTransitions(const QVector<CandidateScores*>
         transitionRefinerBinder
         );
     futures.waitForFinished();
-
+#else
+    for (const QVector<CandidateScores*> &css : mzTargetKeyVsCandidateScoresPntrs) {
+        e = refineTransitionsParallelLogic(
+            css,
+            m_ppmThreshold,
+            m_frameIndexBuffer
+            ); ree;
+    }
+#endif
 
     ERR_RETURN
 }
