@@ -151,7 +151,6 @@ namespace {
         const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
         QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
         QVector<CandidateScores*> *candidateScoresesPntrs,
-        QVector<FeaturesArray*> *featuresArrayPntrs,
         QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
         ) {
 
@@ -166,7 +165,6 @@ namespace {
             featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
 
             candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
-            featuresArrayPntrs->append({&featuresArrayPair.first, &featuresArrayPair.second});
         }
 
         ERR_RETURN
@@ -237,13 +235,11 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
                                                         = peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
 
     QVector<CandidateScores*> candidateScoresesPntrs;
-    QVector<FeaturesArray*> featuresArrayPntrs;
     QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
     e = buildProcessBatchPointers(
         candidateScorePairs,
         &featuresArrayTargetVsDecoy,
         &candidateScoresesPntrs,
-        &featuresArrayPntrs,
         &featuresArrayTargetVsDecoyPntrs
         ); ree;
 
@@ -253,6 +249,11 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
             pythiaParameters.verbosity,
             weights
             ); ree;
+
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
+        featuresArrayPntrs.append({pr.first, pr.second});
+    }
 
     QVector<float> discriminantScores;
     e = DiscriminantScoretron::applyWeights(
