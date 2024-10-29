@@ -870,9 +870,24 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
     QVector<QString> proteinGroupsAll;
     e = sequenceSubstringSearchomatic.findProteinGroups(searchSequences, &proteinGroupsAll);
-    e = ErrorUtils::isEqual(proteinGroupsAll.size(), candidateScores->size()); ree;
+    e = ErrorUtils::isEqual(
+        proteinGroupsAll.size(),
+        candidateScores->size()
+        ); ree;
 
     for (int i = 0; i < proteinGroupsAll.size(); i++) {
+
+        if (candidateScores->at(i)->isDecoy) {
+            QStringList proteinGroupSplit = proteinGroupsAll.at(i).split(";");
+            for (QString &pg : proteinGroupSplit) {
+                pg = pg.replace('>', ">decoy_");
+            }
+
+            const QString updatedProteinGroup = proteinGroupSplit.join(";");
+            (*candidateScores)[i]->proteinGroup = updatedProteinGroup;
+            continue;
+        }
+
         (*candidateScores)[i]->proteinGroup = proteinGroupsAll.at(i);
     }
 
