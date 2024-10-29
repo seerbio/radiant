@@ -41,7 +41,7 @@ cp FileReadersLib/libFileReadersLib.so "$pythia_lib/libFileReadersLib.so"
 cp UtilsLib/libUtilsLib.so "$pythia_lib/libUtilsLib.so"
 cp WorkFlowsLib/libWorkFlowsLib.so "$pythia_lib/libWorkFlowsLib.so"
 cp PyTorchLib/libPyTorchLib.so "$pythia_lib/libPyTorchLib.so"
-cp ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so "$pythia_lib/libtimsdata.so"
+cp /src/PythiaDIACpp/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so "$pythia_lib/libtimsdata.so"
 
 cp /src/pytorch/build/lib/* "$pythia_lib/"
 
