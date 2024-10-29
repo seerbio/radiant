@@ -76,10 +76,11 @@ INCLUDE_DIRECTORIES(
         ${NANOFLANN_DIRECTORY}
         ${TIMS_INCLUDE_DIRECTORY}
         ${TIMS_CPPSQL_DIRECTORY}
+        ${LIBXML2_INCLUDE_DIR}
 )
 
 FIND_PACKAGE(Parquet REQUIRED)
-
+FIND_PACKAGE(LibXml2 REQUIRED)
 FIND_PACKAGE(Qt5 COMPONENTS
         Concurrent
         Test
@@ -94,6 +95,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         UtilsLib
         Parquet::parquet_static
         ${TIMS_LIB}
+        ${LIBXML2_LIBRARIES}
         sqlite3
         )
 

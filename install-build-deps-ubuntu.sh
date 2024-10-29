@@ -27,7 +27,8 @@ ${APT} install --no-install-recommends -y \
     libarrow-dev \
     libparquet-dev \
     libseqan2-dev \
-    libsqlite3-dev
+    libsqlite3-dev \
+    libxml2-dev
 
 # Install latest CMAKE > 3.17
 wget "https://github.com/Kitware/CMake/releases/download/v3.23.2/cmake-3.23.2-Linux-$(uname -m).sh" -q -O /tmp/cmake-install.sh
