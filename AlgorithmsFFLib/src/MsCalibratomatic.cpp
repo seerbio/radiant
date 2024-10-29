@@ -111,7 +111,6 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
 
     if (m_params.verbosity > 0) {
         qDebug() << "scanTimeStDev" << m_scanTimeStd;
-
     }
     m_isInitRT = true;
 
@@ -157,7 +156,8 @@ namespace {
                 inp.stDev = std::max(mzFoundStDevVec.at(i), std::numeric_limits<float>::min());
                 inp.intensity = intensityFoundMaxVec.at(i);
 
-                if (inp.mzFound < 1 || inp.intensity < 1) {
+                constexpr float minIntensity = 1;
+                if (inp.mzFound < 1 || inp.intensity <= minIntensity) {
                     continue;
                 }
 
@@ -210,9 +210,9 @@ namespace {
         const auto stDevsMinMax = std::minmax_element(stDevs.begin(), stDevs.end());
 
         if (verbosity > 0) {
-            qDebug() << "ppmMeanAll" << ppmMean << "ppmStDevAll"
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ppmMeanAll" << ppmMean << "ppmStDevAll"
                     << ppmStDev << "ppmMinAll" << *ppmsMinMax.first << "ppmMaxAll" << *ppmsMinMax.second;
-            qDebug() << "stDevMeanAll" << stDevMean << "stDevMeanAll" << stDevStDev
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "stDevMeanAll" << stDevMean << "stDevMeanAll" << stDevStDev
                     << "stDevMinAll" << *stDevsMinMax.first << "stDevMaxAll" << *stDevsMinMax.second;
         }
 
@@ -311,10 +311,10 @@ namespace {
         const double meanReCal = MathUtils::mean(ppmReCals);
         const double stDevReCal = MathUtils::stDev(ppmReCals);
 
-        if (verbosity > 0) {
-            qDebug() << "Mz Cal Metrics: rmse" << rmse;
-            qDebug() << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
-            qDebug() << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
+        if (verbosity >= 0) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Mz Cal Metrics: rmse" << rmse;
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
         }
 
         *stDevMz = stDevReCal;

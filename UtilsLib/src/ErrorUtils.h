@@ -355,7 +355,7 @@ public:
     static Err contains(T value, const QMap<T, U> &container, Err e = eError) {
 
         if (!container.contains(value)) {
-            qCritical() << "Value is not in container";
+            qCritical() << "Value" << value << "is not in container";
             rrr(e);
         }
 
@@ -375,7 +375,7 @@ public:
     static Err contains(T value, const QHash<T, U> &container, Err e = eError) {
 
         if (!container.contains(value)) {
-            qCritical() << "Value is not in container";
+            qCritical() << "Value" << value << "is not in container";
             rrr(e);
         }
 

@@ -98,6 +98,7 @@ private:
 FeatureFinderHillBuilder::Private::Private()
 : m_runParallel(false)
 , m_isInit(false)
+, m_rTree(nullptr)
 {}
 
 FeatureFinderHillBuilder::Private::~Private(){

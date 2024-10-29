@@ -74,7 +74,8 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
 
     m_cliParams.msDataFile = args[4];
     const bool dataFilesPathIsValid = CommandLineParserUtils::checkFileNameExtensions(m_cliParams.msDataFile, {"prqFF"})
-                                   || CommandLineParserUtils::checkFileNameExtensions(m_cliParams.msDataFile, {"mzML"});
+                                   || CommandLineParserUtils::checkFileNameExtensions(m_cliParams.msDataFile, {"mzML"})
+                                   || CommandLineParserUtils::checkFileNameExtensions(m_cliParams.msDataFile, {"d"});
     if (!dataFilesPathIsValid) {
         qCritical() << QStringLiteral("Fourth command line argument data directory path argument invalid");
         argumentsLocal.append("-h");

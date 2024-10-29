@@ -151,7 +151,6 @@ namespace {
         const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs,
         QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> *featuresArrayTargetVsDecoy,
         QVector<CandidateScores*> *candidateScoresesPntrs,
-        QVector<FeaturesArray*> *featuresArrayPntrs,
         QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *featuresArrayTargetVsDecoyPntrs
         ) {
 
@@ -166,7 +165,6 @@ namespace {
             featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
 
             candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
-            featuresArrayPntrs->append({&featuresArrayPair.first, &featuresArrayPair.second});
         }
 
         ERR_RETURN
@@ -197,7 +195,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     bool useExtendedScores,
     bool useNeuralNetworkScores,
     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
-    QMap<int, int> *fdrVsCounts
+    QMap<int, int> *fdrVsCounts,
+    QVector<float> *weights
     ) {
 
     ERR_INIT
@@ -236,27 +235,29 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
                                                         = peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
 
     QVector<CandidateScores*> candidateScoresesPntrs;
-    QVector<FeaturesArray*> featuresArrayPntrs;
     QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
     e = buildProcessBatchPointers(
         candidateScorePairs,
         &featuresArrayTargetVsDecoy,
         &candidateScoresesPntrs,
-        &featuresArrayPntrs,
         &featuresArrayTargetVsDecoyPntrs
         ); ree;
 
-    QVector<float> weights;
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             pythiaParameters.threadCount,
             pythiaParameters.verbosity,
-            &weights
+            weights
             ); ree;
+
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
+        featuresArrayPntrs.append({pr.first, pr.second});
+    }
 
     QVector<float> discriminantScores;
     e = DiscriminantScoretron::applyWeights(
-        weights,
+        *weights,
         pythiaParameters.threadCount,
         featuresArrayPntrs,
         &discriminantScores

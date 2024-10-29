@@ -110,6 +110,18 @@ public:
         IntensityFoundMax10,
         IntensityFoundMax11,
         IntensityFoundMax12,
+        IntensityFoundMaxNorm1,
+        IntensityFoundMaxNorm2,
+        IntensityFoundMaxNorm3,
+        IntensityFoundMaxNorm4,
+        IntensityFoundMaxNorm5,//110
+        IntensityFoundMaxNorm6,
+        IntensityFoundMaxNorm7,
+        IntensityFoundMaxNorm8,
+        IntensityFoundMaxNorm9,
+        IntensityFoundMaxNorm10,
+        IntensityFoundMaxNorm11,
+        IntensityFoundMaxNorm12,
         MzPeakLengthsNorm1,
         MzPeakLengthsNorm2,
         MzPeakLengthsNorm3,//120
@@ -160,34 +172,19 @@ public:
         MzFoundStDev10,
         MzFoundStDev11,
         MzFoundStDev12,
-        AltTargetKeyIdCosineSimSumCharge1_OG,
-        AltTargetKeyIdCosineSimSumCharge1_1,
-        AltTargetKeyIdCosineSimSumCharge1_2,
-        AltTargetKeyIdCosineSimSumCharge1_3,
-        AltTargetKeyIdCosineSimSumCharge2_OG,
-        AltTargetKeyIdCosineSimSumCharge2_1,
-        AltTargetKeyIdCosineSimSumCharge2_2,
-        AltTargetKeyIdCosineSimSumCharge2_3,
-        AltTargetKeyIdCosineSimSumCharge3_OG,//200
-        AltTargetKeyIdCosineSimSumCharge3_1,
-        AltTargetKeyIdCosineSimSumCharge3_2,
-        AltTargetKeyIdCosineSimSumCharge3_3,
-        AltTargetKeyIdCosineSimSumCharge4_OG,
-        AltTargetKeyIdCosineSimSumCharge4_1,
-        AltTargetKeyIdCosineSimSumCharge4_2,
-        AltTargetKeyIdCosineSimSumCharge4_3,
+        AltTargetKeyIdDiscScoreChargeOG_alt,
+        AltTargetKeyIdDiscScoreCharge1_1,
+        AltTargetKeyIdDiscScoreCharge1_2,
+        AltTargetKeyIdDiscScoreCharge2_1,
+        AltTargetKeyIdDiscScoreCharge2_2,
+        AltTargetKeyIdDiscScoreCharge3_1,
+        AltTargetKeyIdDiscScoreCharge3_2,
+        AltTargetKeyIdDiscScoreCharge4_1,
+        AltTargetKeyIdDiscScoreCharge4_2,
         AltTargetKeyIdTimeDeltaCharge1_1,
-        AltTargetKeyIdTimeDeltaCharge1_2,
-        AltTargetKeyIdTimeDeltaCharge1_3,//210
         AltTargetKeyIdTimeDeltaCharge2_1,
-        AltTargetKeyIdTimeDeltaCharge2_2,
-        AltTargetKeyIdTimeDeltaCharge2_3,
         AltTargetKeyIdTimeDeltaCharge3_1,
-        AltTargetKeyIdTimeDeltaCharge3_2,
-        AltTargetKeyIdTimeDeltaCharge3_3,
         AltTargetKeyIdTimeDeltaCharge4_1,
-        AltTargetKeyIdTimeDeltaCharge4_2,
-        AltTargetKeyIdTimeDeltaCharge4_3,
         Ms1MzMeanFound100,//220
         Ms1MzMeanFound45,
         Ms1MzMeanFoundPreMono,
@@ -219,6 +216,9 @@ public:
         TotalIntensityRaw,
         TargetWindowLocation,
         TargetWindowLocationAbs,
+
+        DiscriminantScore,
+
         FeaturesSize
     };
 
@@ -418,34 +418,19 @@ namespace CandidateScoresReaderRowNamespace {
     const QString DISC_SCR = QStringLiteral("DiscriminantScore");
     const QString Q_VAL = QStringLiteral("QValue");
     const QString DECOY_RATIO = QStringLiteral("DecoyRatio");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_OG");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_1");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_2");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG1_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge1_3");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_OG");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_1");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_2");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG2_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge2_3");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_OG");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_1");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_2");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG3_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge3_3");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_OG");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_1 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_1");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_2 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_2");
-    const QString ALT_TARG_ID_COS_SIM_SUM_CHRG4_3 = QStringLiteral("AltTargetKeyIdCosineSimSumCharge4_3");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT = QStringLiteral("AltTargetKeyIdDiscScoreChargeOG_alt");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG1_1 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge1_1");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG1_2 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge1_2");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG2_1 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge2_1");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG2_2 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge2_2");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG3_1 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge3_1");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG3_2 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge3_2");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG4_1 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge4_1");
+    const QString ALT_TARG_ID_DISC_SCORE_CHRG4_2 = QStringLiteral("AltTargetKeyIdCosineDiscScoreCharge4_2");
     const QString ALT_TARG_ID_TIME_DELTA_CHRG1_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_1");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG1_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_2");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG1_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge1_3");
     const QString ALT_TARG_ID_TIME_DELTA_CHRG2_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_1");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG2_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_2");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG2_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge2_3");
     const QString ALT_TARG_ID_TIME_DELTA_CHRG3_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_1");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG3_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_2");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG3_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge3_3");
     const QString ALT_TARG_ID_TIME_DELTA_CHRG4_1 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_1");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG4_2 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_2");
-    const QString ALT_TARG_ID_TIME_DELTA_CHRG4_3 = QStringLiteral("AltTargetKeyIdTimeDeltaCharge4_3");
     const QString MS1_MZ_MEAN_FND_100 = QStringLiteral("Ms1MzMeanFound100");
     const QString MS1_MZ_MEAN_FND_45 = QStringLiteral("Ms1MzMeanFound45");
     const QString MS1_MZ_MEAN_FND_PRE_MONO = QStringLiteral("Ms1MzMeanFoundPreMono");
@@ -646,34 +631,19 @@ namespace CandidateScoresReaderRowNamespace {
             DISC_SCR,
             Q_VAL,
             DECOY_RATIO,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG1_1,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG1_2,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG1_3,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG2_1,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG2_2,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG2_3,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG3_1,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG3_2,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG3_3,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG4_1,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG4_2,
-            ALT_TARG_ID_COS_SIM_SUM_CHRG4_3,
+            ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT,
+            ALT_TARG_ID_DISC_SCORE_CHRG1_1,
+            ALT_TARG_ID_DISC_SCORE_CHRG1_2,
+            ALT_TARG_ID_DISC_SCORE_CHRG2_1,
+            ALT_TARG_ID_DISC_SCORE_CHRG2_2,
+            ALT_TARG_ID_DISC_SCORE_CHRG3_1,
+            ALT_TARG_ID_DISC_SCORE_CHRG3_2,
+            ALT_TARG_ID_DISC_SCORE_CHRG4_1,
+            ALT_TARG_ID_DISC_SCORE_CHRG4_2,
             ALT_TARG_ID_TIME_DELTA_CHRG1_1,
-            ALT_TARG_ID_TIME_DELTA_CHRG1_2,
-            ALT_TARG_ID_TIME_DELTA_CHRG1_3,
             ALT_TARG_ID_TIME_DELTA_CHRG2_1,
-            ALT_TARG_ID_TIME_DELTA_CHRG2_2,
-            ALT_TARG_ID_TIME_DELTA_CHRG2_3,
             ALT_TARG_ID_TIME_DELTA_CHRG3_1,
-            ALT_TARG_ID_TIME_DELTA_CHRG3_2,
-            ALT_TARG_ID_TIME_DELTA_CHRG3_3,
             ALT_TARG_ID_TIME_DELTA_CHRG4_1,
-            ALT_TARG_ID_TIME_DELTA_CHRG4_2,
-            ALT_TARG_ID_TIME_DELTA_CHRG4_3,
             MS1_MZ_MEAN_FND_100,
             MS1_MZ_MEAN_FND_45,
             MS1_MZ_MEAN_FND_PRE_MONO,
@@ -866,35 +836,20 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     double qValue = 1.0;
     double decoyRatio = -1.0;
 
-    float altTargetKeyIdCosineSimSumCharge1_OG = -1.0;
-    float altTargetKeyIdCosineSimSumCharge1_1 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge1_2 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge1_3 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge2_OG = -1.0;
-    float altTargetKeyIdCosineSimSumCharge2_1 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge2_2 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge2_3 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge3_OG = -1.0;
-    float altTargetKeyIdCosineSimSumCharge3_1 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge3_2 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge3_3 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge4_OG = -1.0;
-    float altTargetKeyIdCosineSimSumCharge4_1 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge4_2 = -1.0;
-    float altTargetKeyIdCosineSimSumCharge4_3 = -1.0;
+    float altTargetKeyIdDiscScoreChargeOG_alt = -1.0;
+    float altTargetKeyIdDiscScoreCharge1_1 = -1.0;
+    float altTargetKeyIdDiscScoreCharge1_2 = -1.0;
+    float altTargetKeyIdDiscScoreCharge2_1 = -1.0;
+    float altTargetKeyIdDiscScoreCharge2_2 = -1.0;
+    float altTargetKeyIdDiscScoreCharge3_1 = -1.0;
+    float altTargetKeyIdDiscScoreCharge3_2 = -1.0;
+    float altTargetKeyIdDiscScoreCharge4_1 = -1.0;
+    float altTargetKeyIdDiscScoreCharge4_2 = -1.0;
 
     float altTargetKeyIdTimeDeltaCharge1_1 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge1_2 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge1_3 = -1.0;
     float altTargetKeyIdTimeDeltaCharge2_1 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge2_2 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge2_3 = -1.0;
     float altTargetKeyIdTimeDeltaCharge3_1 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge3_2 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge3_3 = -1.0;
     float altTargetKeyIdTimeDeltaCharge4_1 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge4_2 = -1.0;
-    float altTargetKeyIdTimeDeltaCharge4_3 = -1.0;
 
     float ms1MzMeanFound100 = -1.0;
     float ms1MzMeanFound45 = -1.0;
@@ -1112,34 +1067,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         qValue = dataMap.value(Q_VAL).toDouble();
         decoyRatio = dataMap.value(DECOY_RATIO).toDouble();
 
-        altTargetKeyIdCosineSimSumCharge1_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG).toFloat();
-        altTargetKeyIdCosineSimSumCharge1_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_1).toFloat();
-        altTargetKeyIdCosineSimSumCharge1_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_2).toFloat();
-        altTargetKeyIdCosineSimSumCharge1_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG1_3).toFloat();
-        altTargetKeyIdCosineSimSumCharge2_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG).toFloat();
-        altTargetKeyIdCosineSimSumCharge2_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_1).toFloat();
-        altTargetKeyIdCosineSimSumCharge2_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_2).toFloat();
-        altTargetKeyIdCosineSimSumCharge2_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG2_3).toFloat();
-        altTargetKeyIdCosineSimSumCharge3_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG).toFloat();
-        altTargetKeyIdCosineSimSumCharge3_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_1).toFloat();
-        altTargetKeyIdCosineSimSumCharge3_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_2).toFloat();
-        altTargetKeyIdCosineSimSumCharge3_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG3_3).toFloat();
-        altTargetKeyIdCosineSimSumCharge4_OG = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG).toFloat();
-        altTargetKeyIdCosineSimSumCharge4_1 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_1).toFloat();
-        altTargetKeyIdCosineSimSumCharge4_2 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_2).toFloat();
-        altTargetKeyIdCosineSimSumCharge4_3 = dataMap.value(ALT_TARG_ID_COS_SIM_SUM_CHRG4_3).toFloat();
+        altTargetKeyIdDiscScoreChargeOG_alt = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT).toFloat();
+        altTargetKeyIdDiscScoreCharge1_1 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG1_1).toFloat();
+        altTargetKeyIdDiscScoreCharge1_2 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG1_2).toFloat();
+        altTargetKeyIdDiscScoreCharge2_1 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG2_1).toFloat();
+        altTargetKeyIdDiscScoreCharge2_2 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG2_2).toFloat();
+        altTargetKeyIdDiscScoreCharge3_1 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG3_1).toFloat();
+        altTargetKeyIdDiscScoreCharge3_2 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG3_2).toFloat();
+        altTargetKeyIdDiscScoreCharge4_1 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG4_1).toFloat();
+        altTargetKeyIdDiscScoreCharge4_2 = dataMap.value(ALT_TARG_ID_DISC_SCORE_CHRG4_2).toFloat();
         altTargetKeyIdTimeDeltaCharge1_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_1).toFloat();
-        altTargetKeyIdTimeDeltaCharge1_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_2).toFloat();
-        altTargetKeyIdTimeDeltaCharge1_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG1_3).toFloat();
         altTargetKeyIdTimeDeltaCharge2_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_1).toFloat();
-        altTargetKeyIdTimeDeltaCharge2_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_2).toFloat();
-        altTargetKeyIdTimeDeltaCharge2_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG2_3).toFloat();
         altTargetKeyIdTimeDeltaCharge3_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_1).toFloat();
-        altTargetKeyIdTimeDeltaCharge3_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_2).toFloat();
-        altTargetKeyIdTimeDeltaCharge3_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG3_3).toFloat();
         altTargetKeyIdTimeDeltaCharge4_1 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_1).toFloat();
-        altTargetKeyIdTimeDeltaCharge4_2 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_2).toFloat();
-        altTargetKeyIdTimeDeltaCharge4_3 = dataMap.value(ALT_TARG_ID_TIME_DELTA_CHRG4_3).toFloat();
         ms1MzMeanFound100 = dataMap.value(MS1_MZ_MEAN_FND_100).toFloat();
         ms1MzMeanFound45 = dataMap.value(MS1_MZ_MEAN_FND_45).toFloat();
         ms1MzMeanFoundPreMono = dataMap.value(MS1_MZ_MEAN_FND_PRE_MONO).toFloat();
@@ -1322,34 +1262,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {Q_VAL, QVariant(qValue)},
                 {DECOY_RATIO, QVariant(decoyRatio)},
 
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_OG, QVariant(altTargetKeyIdCosineSimSumCharge1_OG)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_1, QVariant(altTargetKeyIdCosineSimSumCharge1_1)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_2, QVariant(altTargetKeyIdCosineSimSumCharge1_2)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG1_3, QVariant(altTargetKeyIdCosineSimSumCharge1_3)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_OG, QVariant(altTargetKeyIdCosineSimSumCharge2_OG)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_1, QVariant(altTargetKeyIdCosineSimSumCharge2_1)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_2, QVariant(altTargetKeyIdCosineSimSumCharge2_2)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG2_3, QVariant(altTargetKeyIdCosineSimSumCharge2_3)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_OG, QVariant(altTargetKeyIdCosineSimSumCharge3_OG)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_1, QVariant(altTargetKeyIdCosineSimSumCharge3_1)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_2, QVariant(altTargetKeyIdCosineSimSumCharge3_2)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG3_3, QVariant(altTargetKeyIdCosineSimSumCharge3_3)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_OG, QVariant(altTargetKeyIdCosineSimSumCharge4_OG)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_1, QVariant(altTargetKeyIdCosineSimSumCharge4_1)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_2, QVariant(altTargetKeyIdCosineSimSumCharge4_2)},
-                {ALT_TARG_ID_COS_SIM_SUM_CHRG4_3, QVariant(altTargetKeyIdCosineSimSumCharge4_3)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG_OG_ALT, QVariant(altTargetKeyIdDiscScoreChargeOG_alt)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG1_1, QVariant(altTargetKeyIdDiscScoreCharge1_1)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG1_2, QVariant(altTargetKeyIdDiscScoreCharge1_2)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG2_1, QVariant(altTargetKeyIdDiscScoreCharge2_1)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG2_2, QVariant(altTargetKeyIdDiscScoreCharge2_2)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG3_1, QVariant(altTargetKeyIdDiscScoreCharge3_1)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG3_2, QVariant(altTargetKeyIdDiscScoreCharge3_2)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG4_1, QVariant(altTargetKeyIdDiscScoreCharge4_1)},
+                {ALT_TARG_ID_DISC_SCORE_CHRG4_2, QVariant(altTargetKeyIdDiscScoreCharge4_2)},
                 {ALT_TARG_ID_TIME_DELTA_CHRG1_1 , QVariant(altTargetKeyIdTimeDeltaCharge1_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG1_2 , QVariant(altTargetKeyIdTimeDeltaCharge1_2)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG1_3 , QVariant(altTargetKeyIdTimeDeltaCharge1_3)},
                 {ALT_TARG_ID_TIME_DELTA_CHRG2_1 , QVariant(altTargetKeyIdTimeDeltaCharge2_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG2_2 , QVariant(altTargetKeyIdTimeDeltaCharge2_2)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG2_3 , QVariant(altTargetKeyIdTimeDeltaCharge2_3)},
                 {ALT_TARG_ID_TIME_DELTA_CHRG3_1 , QVariant(altTargetKeyIdTimeDeltaCharge3_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG3_2 , QVariant(altTargetKeyIdTimeDeltaCharge3_2)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG3_3 , QVariant(altTargetKeyIdTimeDeltaCharge3_3)},
                 {ALT_TARG_ID_TIME_DELTA_CHRG4_1 , QVariant(altTargetKeyIdTimeDeltaCharge4_1)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG4_2 , QVariant(altTargetKeyIdTimeDeltaCharge4_2)},
-                {ALT_TARG_ID_TIME_DELTA_CHRG4_3 , QVariant(altTargetKeyIdTimeDeltaCharge4_3)},
                 {MS1_MZ_MEAN_FND_100, QVariant(ms1MzMeanFound100)},
                 {MS1_MZ_MEAN_FND_45, QVariant(ms1MzMeanFound45)},
                 {MS1_MZ_MEAN_FND_PRE_MONO, QVariant(ms1MzMeanFoundPreMono)},
@@ -1560,35 +1485,20 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.qValue = candidateScores->qValue;
         row.decoyRatio = candidateScores->decoyRatio;
 
-        row.altTargetKeyIdCosineSimSumCharge1_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG];
-        row.altTargetKeyIdCosineSimSumCharge1_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1];
-        row.altTargetKeyIdCosineSimSumCharge1_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2];
-        row.altTargetKeyIdCosineSimSumCharge1_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_3];
-        row.altTargetKeyIdCosineSimSumCharge2_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG];
-        row.altTargetKeyIdCosineSimSumCharge2_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_1];
-        row.altTargetKeyIdCosineSimSumCharge2_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2];
-        row.altTargetKeyIdCosineSimSumCharge2_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_3];
-        row.altTargetKeyIdCosineSimSumCharge3_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG];
-        row.altTargetKeyIdCosineSimSumCharge3_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1];
-        row.altTargetKeyIdCosineSimSumCharge3_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2];
-        row.altTargetKeyIdCosineSimSumCharge3_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3];
-        row.altTargetKeyIdCosineSimSumCharge4_OG = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG];
-        row.altTargetKeyIdCosineSimSumCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_1];
-        row.altTargetKeyIdCosineSimSumCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2];
-        row.altTargetKeyIdCosineSimSumCharge4_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_3];
+        row.altTargetKeyIdDiscScoreChargeOG_alt = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt];
+        row.altTargetKeyIdDiscScoreCharge1_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge1_1];
+        row.altTargetKeyIdDiscScoreCharge1_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge1_2];
+        row.altTargetKeyIdDiscScoreCharge2_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge2_1];
+        row.altTargetKeyIdDiscScoreCharge2_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge2_2];
+        row.altTargetKeyIdDiscScoreCharge3_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_1];
+        row.altTargetKeyIdDiscScoreCharge3_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_2];
+        row.altTargetKeyIdDiscScoreCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge4_1];
+        row.altTargetKeyIdDiscScoreCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge4_2];
 
         row.altTargetKeyIdTimeDeltaCharge1_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1];
-        row.altTargetKeyIdTimeDeltaCharge1_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_2];
-        row.altTargetKeyIdTimeDeltaCharge1_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_3];
         row.altTargetKeyIdTimeDeltaCharge2_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_1];
-        row.altTargetKeyIdTimeDeltaCharge2_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_2];
-        row.altTargetKeyIdTimeDeltaCharge2_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_3];
         row.altTargetKeyIdTimeDeltaCharge3_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_1];
-        row.altTargetKeyIdTimeDeltaCharge3_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_2];
-        row.altTargetKeyIdTimeDeltaCharge3_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_3];
         row.altTargetKeyIdTimeDeltaCharge4_1 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_1];
-        row.altTargetKeyIdTimeDeltaCharge4_2 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_2];
-        row.altTargetKeyIdTimeDeltaCharge4_3 = candidateScores->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3];
 
         row.ms1MzMeanFound100 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100];
         row.ms1MzMeanFound45 = candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45];
@@ -1821,34 +1731,19 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[CandidateScores::Features::MzFoundStDev10] = candidateScoresReaderRow.mzFoundStDev10;
         featuresArray[CandidateScores::Features::MzFoundStDev11] = candidateScoresReaderRow.mzFoundStDev11;
         featuresArray[CandidateScores::Features::MzFoundStDev12] = candidateScoresReaderRow.mzFoundStDev12;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_OG;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_3] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge1_3;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge2_OG;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_1] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge2_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge2_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_3] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge2_3;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge3_OG;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge3_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge3_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge3_3;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge4_OG;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge4_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge4_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3] = candidateScoresReaderRow.altTargetKeyIdCosineSimSumCharge4_3;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt] = candidateScoresReaderRow.altTargetKeyIdDiscScoreChargeOG_alt;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge1_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge1_1;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge1_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge1_2;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge2_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge2_1;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge2_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge2_2;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge3_1;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge3_2;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_1;
+        featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreCharge3_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge4_2;
         featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge1_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge1_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge1_3;
         featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge2_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_2] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge2_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_3] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge2_3;
         featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge3_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_2] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge3_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_3] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge3_3;
         featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_1] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge4_1;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_2] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge4_2;
-        featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3] = candidateScoresReaderRow.altTargetKeyIdTimeDeltaCharge4_3;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound100] = candidateScoresReaderRow.ms1MzMeanFound100;
         featuresArray[CandidateScores::Features::Ms1MzMeanFound45] = candidateScoresReaderRow.ms1MzMeanFound45;
         featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono] = candidateScoresReaderRow.ms1MzMeanFoundPreMono;

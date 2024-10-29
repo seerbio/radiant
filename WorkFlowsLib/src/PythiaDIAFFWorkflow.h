@@ -25,11 +25,8 @@ using CandidateScoresTarget = CandidateScores;
 using CandidateScoresDecoy = CandidateScores;
 
 struct KarnnNNTarget {
-    QString seq;
-    float nnScore = 0.0;
-    bool isDecoy = false;
-    QVector<float> scoreVec;
-    int index = -1;
+    CandidateScores *candidateScores;
+    QVector<float> scoreVecNormalized;
 };
 
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflow {
@@ -91,7 +88,7 @@ private:
             );
 
     Err applyNeuralNetClassifier(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
             int seed,
             QVector<CandidateScores*> *candidateScoreClassifier
             ) const;
@@ -127,6 +124,8 @@ private:
 
     int m_minTopNMs2Ions;
     int m_minTrainingCountTranche;
+
+    QVector<float> m_weights;
 
 };
 

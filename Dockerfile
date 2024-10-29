@@ -14,8 +14,8 @@ FROM ubuntu:22.04 AS base
 #
 # Set locales to UTF-8
 #
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
 
 #
 # Set timezone

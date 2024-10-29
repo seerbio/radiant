@@ -44,6 +44,9 @@ public:
         float minPeakCount,
         float scanTimeRange,
         const QMap<NominalMzMass, QVector<float>> &averagineTable,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
         TurboXIC *turboXicMS1,
@@ -52,6 +55,7 @@ public:
 
     Err calculateScores(
         const QVector<MS2Ion> &ms2Ions,
+        const QVector<float> &weights,
         TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
         ) const;
@@ -109,6 +113,10 @@ private:
     float m_scanTimeRange;
 
     QMap<NominalMzMass, QVector<float>> m_averagineTable;;
+
+    bool m_useExtendedScores;
+    bool m_useNeuralNetworkScores;
+    bool m_useTopNIntegrationsParam;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;
     const QScopedPointer<Private> d_ptr;

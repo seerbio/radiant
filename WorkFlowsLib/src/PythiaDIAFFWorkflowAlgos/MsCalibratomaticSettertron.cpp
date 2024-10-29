@@ -75,7 +75,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    constexpr int topNMS2IonsCalibration = 6;
     const int numberOfTranches = calculateNumberOfTranches();
 
     const QVector<MsScanInfo> uniqueMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
@@ -108,8 +107,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     int batchCounter = 0;
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
-        constexpr bool useExtendedScores = false;
-        constexpr bool useNeuralNetworkScores = false;
 
         QElapsedTimer etBatch;
         etBatch.start();
@@ -125,32 +122,56 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers
                 ); ree;
 
+        constexpr int topNMS2IonsCalibration = 6;
+        constexpr bool useExtendedScores = false;
+        constexpr bool useNeuralNetworkScores = false;
+        constexpr bool useTopNIntegrationsParameter = false;
+
+        m_weights = m_weights.isEmpty()
+                  ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
+                  : m_weights;
+
+        constexpr int splitter = 2;
+        const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters->threadCount
+                      ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
+                      : m_pythiaParameters->threadCount;
+
         constexpr float minPeakCountCalibration = 4.9;
         m_candidateScores.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
                 minPeakCountCalibration,
-                maxUniqueScanInfosTrainingCount,
+                threadCount,
+                useExtendedScores,
+                useNeuralNetworkScores,
+                useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
+                m_weights,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScores
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
+        QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
             m_candidateScores,
             *m_pythiaParameters,
             useExtendedScores,
             useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
-            &fdrVsCounts
+            &fdrVsCounts,
+            &weights
             ); ree;
 
         constexpr int fdrKey = 5;
         constexpr int fdrKeyMassCalMS2 = 2;
         constexpr int fdrKeyMassCalMS1 = 5;
+
+        if (constexpr int minFDRCountForWeightsUpdate = 100; fdrVsCounts.value(fdrKey) >= minFDRCountForWeightsUpdate) {
+            m_weights = weights;
+        }
 
         e = honeIRTAndMassCalibration(
             &candidateScoresVecBatchPntrs,
@@ -241,6 +262,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                         << "Skipping MS1 recalibration.  Not enough points found";
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
+                m_targetDecoyCandidatePairsTopScores.clear();
+                m_entered.clear();
+                m_candidateScores.clear();
                 ERR_RETURN
             }
 
@@ -255,6 +279,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
+                m_targetDecoyCandidatePairsTopScores.clear();
+                m_entered.clear();
+                m_candidateScores.clear();
                 ERR_RETURN
             }
 
@@ -277,7 +304,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     }
 
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
-
+    m_targetDecoyCandidatePairsTopScores.clear();
+    m_entered.clear();
+    m_candidateScores.clear();
     *msCalibratomatic = m_msCalibratomatic;
     ERR_RETURN
 }

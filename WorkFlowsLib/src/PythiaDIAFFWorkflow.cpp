@@ -82,8 +82,7 @@ namespace {
 
     Err filterScoredCandidatesForNeuralNet(
             int minMs2FragCount,
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys,
-            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys50PercentFDRFiltered
+            QVector<CandidateScores*> *candidateScoresTargetsAndDecoys
             ) {
 
         ERR_INIT
@@ -91,7 +90,7 @@ namespace {
         e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
 
         const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
-            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < minMs2FragCount;
+            return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < static_cast<float>(minMs2FragCount);
         };
         const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
         candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
@@ -107,21 +106,20 @@ namespace {
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
 
             counter++;
-            if (constexpr double fdrThreshold = 0.5; csp->qValue >= fdrThreshold && !csp->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
                 break;
             }
         }
 
-        *candidateScoresTargetsAndDecoys50PercentFDRFiltered = *candidateScoresTargetsAndDecoys;
-        candidateScoresTargetsAndDecoys50PercentFDRFiltered->resize(counter);
+        candidateScoresTargetsAndDecoys->resize(counter);
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
         const int shuffleCount = 3;
         for (int i = 0; i < shuffleCount; i++) {
             std::shuffle(
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->begin(),
-                    candidateScoresTargetsAndDecoys50PercentFDRFiltered->end(),
+                    candidateScoresTargetsAndDecoys->begin(),
+                    candidateScoresTargetsAndDecoys->end(),
                     rng
             );
         }
@@ -129,152 +127,120 @@ namespace {
         ERR_RETURN
     }
 
-    Err populateAltIdTargetKeys(QVector<CandidateScores*> *candidateScoresPntrs) {
+    Err populateAltIdTargetKeysLogic(const QVector<CandidateScores*> &candidateScoreses) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(candidateScoreses); ree;
+
+        for (CandidateScores *csOG : candidateScoreses) {
+
+            for (const CandidateScores *csAlt : candidateScoreses) {
+
+                if (csOG == csAlt) {
+                    continue;
+                }
+
+                if (csOG->targetKey == csAlt->targetKey) {
+                    csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                            - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                        / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    csOG->featuresArray[CandidateScores::Features::DiscriminantScore] = csOG->discriminantScore;
+                    continue;
+                }
+
+                switch (csAlt->targetDecoyCandidatePair->charge()) {
+                case 1:
+                    if (!csAlt->isDecoy) {
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                                - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                            / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        break;
+                    }
+                    csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                            - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                        / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    break;
+
+                case 2:
+                    if (!csAlt->isDecoy) {
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                                - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                            / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        break;
+                    }
+                    csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                            - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                        / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    break;
+
+                case 3:
+                    if (!csAlt->isDecoy) {
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                                - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                            / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        break;
+                    }
+                    csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                            - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                        / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    break;
+
+                case 4:
+                    if (!csAlt->isDecoy) {
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                                - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                            / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                        csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        break;
+                    }
+                    csOG->featuresArray[CandidateScores::Features::AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CandidateScores::Features::CosineSimSum100] * csOG->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CandidateScores::Features::CosineSim100MS1])
+                                            - (csAlt->featuresArray[CandidateScores::Features::CosineSimSum100]  * csAlt->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CandidateScores::Features::CosineSim100MS1]))
+                                        / csOG->featuresArray[CandidateScores::Features::CosineSimSum100];
+                    break;
+
+                    default:
+                        rrr(eValueError);
+                }
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    Err populateAltIdTargetKeys(
+        int threadCount,
+        QVector<CandidateScores*> *candidateScoresPntrs
+        ) {
 
         ERR_INIT
 
         e = ErrorUtils::isFalse(candidateScoresPntrs->isEmpty()); ree;
 
-        struct CandidateScoresEntry {
-            int charge = -1;
-            float cosineSimSum100 = -1.0;
-            float scanTime = -1.0;
-            MzTargetKey mzTargetKey;
-            bool isDecoy = false;
-        };
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PopulateAltIdTargetKeys";
 
-        QMap<PeptideStringWithMods, QVector<CandidateScoresEntry>> pepStrWModsVsCandScoresEntries;
-
+        QMap<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
         for (CandidateScores *cs : *candidateScoresPntrs) {
-
-            CandidateScoresEntry cse;
-            cse.mzTargetKey = cs->targetKey;
-            cse.charge = cs->targetDecoyCandidatePair->charge();
-            cse.scanTime = cs->scanTime;
-            cse.cosineSimSum100 = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
-            cse.isDecoy = cs->isDecoy;
-
-            pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cse);
+            pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cs);
         }
 
-        for (QVector<CandidateScoresEntry> &cse : pepStrWModsVsCandScoresEntries) {
-            std::sort(cse.begin(), cse.end(), [](const CandidateScoresEntry &l, const CandidateScoresEntry &r){
-                if (l.charge == r.charge) {
-
-                    if (l.mzTargetKey == r.mzTargetKey) {
-                        return l.cosineSimSum100 > r.cosineSimSum100;
-                    }
-
-                    return l.mzTargetKey < r.mzTargetKey;
-                }
-                return l.charge< r.charge;
-            });
+        for (const QVector<CandidateScores*> &csPntrs : pepStrWModsVsCandScoresEntries) {
+            e = populateAltIdTargetKeysLogic(csPntrs); ree;
         }
 
-        for (CandidateScores *cs : *candidateScoresPntrs) {
-
-            const QVector<CandidateScoresEntry> &csEntries
-                    = pepStrWModsVsCandScoresEntries.value(cs->targetDecoyCandidatePair->peptideStringWithMods());
-
-            for(const CandidateScoresEntry &cse : csEntries) {
-
-                if (cse.mzTargetKey == cs->targetKey) {
-
-                    switch (cs->targetDecoyCandidatePair->charge()) {
-                        case 1:
-                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
-                                && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] > 0.01) {
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_1] = cse.cosineSimSum100;
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_1] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                                break;
-                            }
-
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
-                            break;
-
-                        case 2:
-                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
-                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG] > 0.01) {
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_1] = cse.cosineSimSum100;
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_1] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                                break;
-                            }
-
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
-                            break;
-                        case 3:
-                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
-                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG] > 0.01) {
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_1] = cse.cosineSimSum100;
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_1] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                                break;
-                            }
-
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
-                            break;
-                        case 4:
-                            if(!MathUtils::tSame(cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG], cs->featuresArray[CandidateScores::Features::CosineSimSum100])
-                               && cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG] > 0.01) {
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_1] = cse.cosineSimSum100;
-                                cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_1] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                                break;
-                            }
-
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_OG] = cs->featuresArray[CandidateScores::Features::CosineSimSum100];
-                            break;
-                        default:
-                            rrr(eValueError);
-                    }
-
-                    continue;
-                }
-
-                switch (cse.charge) {
-
-                    case 1:
-                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] > 0.01) {
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_3] = cse.cosineSimSum100;
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_3] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                            break;
-                        }
-
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge1_2] = cse.cosineSimSum100;
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge1_2] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                        break;
-                    case 2:
-                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2] > 0.01) {
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_3] = cse.cosineSimSum100;
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_3] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                            break;
-                        }
-
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge2_2] = cse.cosineSimSum100;
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge2_2] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                        break;
-                    case 3:
-                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] > 0.01) {
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_3] = cse.cosineSimSum100;
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_3] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                            break;
-                        }
-
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge3_2] = cse.cosineSimSum100;
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge3_2] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                        break;
-                    case 4:
-                        if (cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2] > 0.01) {
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_3] = cse.cosineSimSum100;
-                            cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_3] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                            break;
-                        }
-
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdCosineSimSumCharge4_2] = cse.cosineSimSum100;
-                        cs->featuresArray[CandidateScores::Features::AltTargetKeyIdTimeDeltaCharge4_2] = std::abs(cs->scanTime - cse.scanTime) / cs->scanTime;
-                        break;
-                }
-
-            }
-        }
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PopulateAltIdTargetKeys Finished";
 
         ERR_RETURN
     }
@@ -314,6 +280,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyPairPntrs
             ); ree;
 
+        m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
     }
 
     int targetCountBelowFDRThreshold;
@@ -328,19 +295,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoys
         ); ree;
 
-    QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet;
-    e = filterScoredCandidatesForNeuralNet(
-        m_pythiaParameters.minMs2FragCount,
-        &candidateScoresTargetsAndDecoys,
-        &candidateScoresTargetsAndDecoysNeuralNet
+    e = populateAltIdTargetKeys(
+        m_pythiaParameters.threadCount,
+        &candidateScoresTargetsAndDecoys
         ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
-
-    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoysNeuralNet); ree;
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
-            candidateScoresTargetsAndDecoysNeuralNet,
+            candidateScoresTargetsAndDecoys,
             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
             &candidateScoreClassifierPntrs
             ); ree;
@@ -486,6 +448,8 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     constexpr bool useExtendedScores = true;
     constexpr bool useNeuralNetworkScores = false;
     constexpr int topNMs2IonsMainAnalysis = 12;
+    constexpr bool useTopNIntegrationsParameter = false;
+
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "Using top:"
             << topNMs2IonsMainAnalysis
@@ -506,16 +470,27 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
-    const int threadCount = std::min(uniqueMsScanInfos.size(), m_pythiaParameters.threadCount);
+    constexpr int splitter = 2;
+    const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters.threadCount
+                          ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters.threadCount)
+                          : m_pythiaParameters.threadCount;
 
-    constexpr float minPeakCount = 2.9;
+    m_weights = m_weights.isEmpty()
+              ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
+              : m_weights;
+
+    constexpr float minPeakCount = 3.9;
     m_candidateScores.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
             minPeakCount,
             threadCount,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            useTopNIntegrationsParameter,
             nullToBuildTurboXICInParallelLoop,
+            m_weights,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
             &m_candidateScores
             ); ree
@@ -523,13 +498,15 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;
+    QVector<float> weights;
     e = PythiaDIAFFWorkflowSharedMethods::processBatch(
         m_candidateScores,
         m_pythiaParameters,
         useExtendedScores,
         useNeuralNetworkScores,
         &candidateScoresVecBatchPntrs,
-        &fdrVsCounts
+        &fdrVsCounts,
+        &weights
         ); ree;
 
     QString fdrString;
@@ -567,7 +544,7 @@ namespace {
                 karnnNNTargets.begin(),
                 karnnNNTargets.end(),
                 std::back_inserter(vecs),
-                [](const KarnnNNTarget &kt){return kt.scoreVec;}
+                [](const KarnnNNTarget &kt){return kt.scoreVecNormalized;}
                 );
 
         Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
@@ -579,7 +556,7 @@ namespace {
 
         for (int i = 0; i < vecsNorm.size(); i++) {
             KarnnNNTarget ktNew = karnnNNTargets.at(i);
-            ktNew.scoreVec = vecsNorm.at(i);
+            ktNew.scoreVecNormalized = vecsNorm.at(i);
             karnnNNTargetsNorm->push_back(ktNew);
         }
 
@@ -600,10 +577,8 @@ namespace {
         for (int i = 0; i < candidateScoresTargetsAndDecoysFDRFiltered.size(); i++) {
             CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
-            karnnNnTarget.seq = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            karnnNnTarget.isDecoy = cs->isDecoy;
-            karnnNnTarget.index = i;
-            karnnNnTarget.scoreVec = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+            karnnNnTarget.candidateScores = cs;
+            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
@@ -613,12 +588,12 @@ namespace {
         ERR_RETURN
     }
 
-    Err predictNNScores(
+    Err trainNeuralNetwork(
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
             int seed,
             int threadCount,
             int verbosity,
-            QVector<float> *predictions
+            FDRCLassifierNeuralNet *fdrcLassifierNeuralNet
             ) {
 
         ERR_INIT
@@ -631,15 +606,15 @@ namespace {
         QVector<QVector<float>> xData;
         QVector<float> yData;
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            xData.push_back(kt.scoreVec);
-            yData.push_back(kt.isDecoy ? 1.0 : 0.0);
+            xData.push_back(kt.scoreVecNormalized);
+            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
 
         constexpr int baggingSize = 6;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
-        FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
-        e = fdrcLassifierNeuralNet.init(
+
+        e = fdrcLassifierNeuralNet->init(
                 epochs,
                 baggingSize,
                 batchSize,
@@ -647,53 +622,127 @@ namespace {
                 threadCount
         ); ree;
 
-        e = fdrcLassifierNeuralNet.exec(
+        e = fdrcLassifierNeuralNet->trainClassifier(
                 xData,
                 yData,
                 seed,
-                verbosity,
-                predictions
+                verbosity
                 ); ree;
 
         ERR_RETURN
     }
 
+    Err predictClassifierScores(
+        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+        FDRCLassifierNeuralNet *fdrcLassifierNeuralNet,
+        QVector<float> *predictions
+        ) {
+
+        ERR_INIT
+
+        QVector<QVector<float>> xData;
+        QVector<float> yData;
+        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+            xData.push_back(kt.scoreVecNormalized);
+            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+        }
+
+        e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
+            xData,
+            predictions
+            ); ree;
+
+        ERR_RETURN
+    }
+
     Err processPredictions(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             const QVector<float> &predictions,
-            QVector<KarnnNNTarget> *karnnNNTargetsNorm,
-            QVector<CandidateScores*> *candidateScoreClassifier
+            QVector<KarnnNNTarget> *karnnNNTargetsNorm
             ) {
 
         ERR_INIT
 
+        e = ErrorUtils::isFalse(karnnNNTargetsNorm->isEmpty()); ree;
+
         for (int i = 0; i < predictions.size(); i++) {
-            (*karnnNNTargetsNorm)[i].nnScore = predictions.at(i);
+            (*karnnNNTargetsNorm)[i].candidateScores->classifierScore = predictions.at(i);
         }
 
-        std::sort(
-                karnnNNTargetsNorm->begin(),
-                karnnNNTargetsNorm->end(),
-                [](const KarnnNNTarget &l, const KarnnNNTarget &r){return l.nnScore < r.nnScore;}
-        );
+        ERR_RETURN
+    }
 
-        std::transform(
-                karnnNNTargetsNorm->begin(),
-                karnnNNTargetsNorm->end(),
-                std::back_inserter(*candidateScoreClassifier),
-                [candidateScoresTargetsAndDecoys50PercentFDRFiltered](const KarnnNNTarget &kt){
-                    CandidateScores *candidateScoresNew = candidateScoresTargetsAndDecoys50PercentFDRFiltered.at(kt.index);
-                    candidateScoresNew->classifierScore = kt.nnScore;
-                    return candidateScoresNew;
-                }
-                );
+    Err serialFilterByValue(
+        double threshold,
+        QVector<CandidateScores*> *candidateScoreses
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(candidateScoreses->isEmpty()); ree;
+
+        std::sort(
+            candidateScoreses->begin(),
+            candidateScoreses->end(),
+            [](const CandidateScores *l, const CandidateScores *r){
+                return l->classifierScore < r->classifierScore;
+            });
+
+        int counter = 0;
+        for (const CandidateScores *csp : *candidateScoreses) {
+
+            counter++;
+            if (csp->qValue >= threshold && !csp->isDecoy) {
+                break;
+            }
+        }
+
+        candidateScoreses->resize(counter);
+
+        ERR_RETURN
+    }
+
+    Err subsetKarnnNNTargetsForTraining(
+        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+        QVector<KarnnNNTarget> *karnnNNTargetsNormTrain
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(karnnNNTargetsNorm); ree;
+
+        *karnnNNTargetsNormTrain = karnnNNTargetsNorm;
+        std::sort(
+            karnnNNTargetsNormTrain->rbegin(),
+            karnnNNTargetsNormTrain->rend(),
+            [](const KarnnNNTarget &l, const KarnnNNTarget &r) {
+                return l.candidateScores->discriminantScore < r.candidateScores->discriminantScore;
+            });
+
+        int counter = 0;
+        for (const KarnnNNTarget &knt : *karnnNNTargetsNormTrain) {
+            counter++;
+            if (constexpr double fdrTrainingThreshold = 0.65; knt.candidateScores->qValue >= fdrTrainingThreshold && !knt.candidateScores->isDecoy) {
+                break;
+            }
+        }
+        karnnNNTargetsNormTrain->resize(counter);
+
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        constexpr int shuffleCount = 3;
+        for (int i = 0; i < shuffleCount; i++) {
+            std::shuffle(
+                    karnnNNTargetsNormTrain->begin(),
+                    karnnNNTargetsNormTrain->end(),
+                    rng
+            );
+        }
 
         ERR_RETURN
     }
 
 }//namespace
 Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
-        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
         ) const {
@@ -701,6 +750,13 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
+    e = filterScoredCandidatesForNeuralNet(
+        m_pythiaParameters.minMs2FragCount,
+        &candidateScoresTargetsAndDecoysNeuralNet
+        ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Analyzing" << candidateScoresTargetsAndDecoysNeuralNet.size() << "for filtering";
 
 // #define WRITENN
 #ifdef WRITENN
@@ -722,10 +778,10 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     candidateScoreClassifier->clear();
 
-    const int totalCount = candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
+    const int totalCount = candidateScoresTargetsAndDecoysNeuralNet.size();
     const int decoyCount = static_cast<int>(std::count_if(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.begin(),
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered.end(),
+            candidateScoresTargetsAndDecoysNeuralNet.begin(),
+            candidateScoresTargetsAndDecoysNeuralNet.end(),
             [](const CandidateScores* cs){return cs->isDecoy;}
             ));
 
@@ -734,46 +790,57 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
              << totalCount - decoyCount << ":" << decoyCount
              << "total" << totalCount;
 
-//#define PRINT_AVERAGES
-#ifdef PRINT_AVERAGES
-    Eigen::VectorX<float> vec(CandidateScores::Features::FeaturesSize);
-    vec.setZero();
-    for (const CandidateScores *cs : candidateScoresTargetsAndDecoys50PercentFDRFiltered) {
-        vec += EigenUtils::convertQVectorToEigenVector(cs->featuresArray);
-    }
-    vec /= candidateScoresTargetsAndDecoys50PercentFDRFiltered.size();
-    for(int i = 0; i < vec.size(); i++) {
-        qDebug() << i << vec.coeff(i);
-    }
-    einfo;
-#endif
-
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
+            candidateScoresTargetsAndDecoysNeuralNet,
             &karnnNNTargetsNorm
             ); ree;
 
-    QVector<float> predictions;
-    e = predictNNScores(
-            karnnNNTargetsNorm,
+    QVector<KarnnNNTarget> karnnNNTargetsNormTrain;
+    e = subsetKarnnNNTargetsForTraining(
+        karnnNNTargetsNorm,
+        &karnnNNTargetsNormTrain
+        ); ree;
+
+    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    e = trainNeuralNetwork(
+            karnnNNTargetsNormTrain,
             seed,
             m_pythiaParameters.threadCount,
             m_pythiaParameters.verbosity,
-            &predictions
+            &fdrClassifierNeuralNet
             ); ree;
 
+    QVector<float> predictions;
+    e = predictClassifierScores(
+        karnnNNTargetsNorm,
+        &fdrClassifierNeuralNet,
+        &predictions
+        ); ree;
+
     e = processPredictions(
-            candidateScoresTargetsAndDecoys50PercentFDRFiltered,
             predictions,
-            &karnnNNTargetsNorm,
-            candidateScoreClassifier
+            &karnnNNTargetsNorm
             ); ree;
+
+    *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
+
+    std::sort(
+        candidateScoreClassifier->begin(),
+        candidateScoreClassifier->end(),
+        [](CandidateScores *l, CandidateScores *r){return l->classifierScore < r->classifierScore;}
+        );
 
     e = QValueSettertron::setQValueForCandidates(
             QValueSettertron::QValueScoreType::NNClassifierScore,
             candidateScoreClassifier
             ); ree
+
+    constexpr double fdrQValThreshold = 0.5;
+    e = serialFilterByValue(
+        fdrQValThreshold,
+        candidateScoreClassifier
+        ); ree;
 
     ERR_RETURN
 }
@@ -803,9 +870,24 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
     QVector<QString> proteinGroupsAll;
     e = sequenceSubstringSearchomatic.findProteinGroups(searchSequences, &proteinGroupsAll);
-    e = ErrorUtils::isEqual(proteinGroupsAll.size(), candidateScores->size()); ree;
+    e = ErrorUtils::isEqual(
+        proteinGroupsAll.size(),
+        candidateScores->size()
+        ); ree;
 
     for (int i = 0; i < proteinGroupsAll.size(); i++) {
+
+        if (candidateScores->at(i)->isDecoy) {
+            QStringList proteinGroupSplit = proteinGroupsAll.at(i).split(";");
+            for (QString &pg : proteinGroupSplit) {
+                pg = pg.replace('>', ">decoy_");
+            }
+
+            const QString updatedProteinGroup = proteinGroupSplit.join(";");
+            (*candidateScores)[i]->proteinGroup = updatedProteinGroup;
+            continue;
+        }
+
         (*candidateScores)[i]->proteinGroup = proteinGroupsAll.at(i);
     }
 

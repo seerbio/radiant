@@ -65,7 +65,11 @@ public:
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
             int threadCount,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            bool useTopNIntegrationsParameter,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            const QVector<float> &weights,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<CandidateScores> *candidateScoresVec
             ) const;
@@ -105,7 +109,11 @@ private:
             const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
+            bool useExtendedScores,
+            bool useNeuralNetworkScores,
+            bool useTopNIntegrationsParameter,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
+            const QVector<float> &weights,
             const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             ) const;

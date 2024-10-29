@@ -46,39 +46,40 @@ struct Net : torch::nn::Module {
     torch::nn::Linear layer1{nullptr};
     torch::nn::Linear layer2{nullptr};
     torch::nn::Linear layer3{nullptr};
-    torch::nn::Linear layer4{nullptr};
-    torch::nn::Linear layer5{nullptr};
+    // torch::nn::Linear layer4{nullptr};
+    // torch::nn::Linear layer5{nullptr};
     torch::nn::Linear layer6{nullptr};
 
-    Net(int input_size, int nodes, int num_classes) {
 
+    Net(int input_size, int nodes, int num_classes) {
         layer1 = register_module("layer1", torch::nn::Linear(torch::nn::LinearOptions(input_size, nodes).bias(true)));
         layer2 = register_module("layer2", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer3 = register_module("layer3", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
-        layer4 = register_module("layer4", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
-        layer5 = register_module("layer5", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        // layer4 = register_module("layer4", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
+        // layer5 = register_module("layer5", torch::nn::Linear(torch::nn::LinearOptions(nodes, nodes).bias(true)));
         layer6 = register_module("layer6", torch::nn::Linear(nodes, num_classes));
 
-        torch::nn::init::kaiming_uniform_(layer1->weight, 0, torch::kFanIn, torch::kTanh);
-        torch::nn::init::kaiming_uniform_(layer2->weight, 0, torch::kFanIn, torch::kTanh);
-        torch::nn::init::kaiming_uniform_(layer3->weight, 0, torch::kFanIn, torch::kTanh);
-        torch::nn::init::kaiming_uniform_(layer4->weight, 0, torch::kFanIn, torch::kTanh);
-        torch::nn::init::kaiming_uniform_(layer5->weight, 0, torch::kFanIn, torch::kTanh);
-        torch::nn::init::kaiming_uniform_(layer6->weight, 0, torch::kFanIn, torch::kSigmoid);
+        torch::nn::init::kaiming_uniform_(layer1->weight, torch::nn::init::calculate_gain(torch::kReLU));
+        torch::nn::init::kaiming_uniform_(layer2->weight, torch::nn::init::calculate_gain(torch::kReLU));
+        torch::nn::init::kaiming_uniform_(layer3->weight, torch::nn::init::calculate_gain(torch::kReLU));
+        // torch::nn::init::kaiming_uniform_(layer4->weight, torch::nn::init::calculate_gain(torch::kReLU));
+        // torch::nn::init::kaiming_uniform_(layer5->weight, torch::nn::init::calculate_gain(torch::kReLU));
+        torch::nn::init::kaiming_uniform_(layer6->weight, torch::nn::init::calculate_gain(torch::kSigmoid));
+
         torch::nn::init::constant_(layer1->bias, 0.01);
         torch::nn::init::constant_(layer2->bias, 0.01);
         torch::nn::init::constant_(layer3->bias, 0.01);
-        torch::nn::init::constant_(layer4->bias, 0.01);
-        torch::nn::init::constant_(layer5->bias, 0.01);
+        // torch::nn::init::constant_(layer4->bias, 0.01);
+        // torch::nn::init::constant_(layer5->bias, 0.01);
         torch::nn::init::constant_(layer6->bias, 0.01);
     }
 
     torch::Tensor forward(torch::Tensor x) {
-        x = torch::tanh(layer1->forward(x));
-        x = torch::tanh(layer2->forward(x));
-        x = torch::tanh(layer3->forward(x));
-        x = torch::tanh(layer4->forward(x));
-        x = torch::tanh(layer5->forward(x));
+        x = torch::relu(layer1->forward(x));
+        x = torch::relu(layer2->forward(x));
+        x = torch::relu(layer3->forward(x));
+        // x = torch::relu(layer4->forward(x));
+        // x = torch::relu(layer5->forward(x));
         x = torch::sigmoid(layer6->forward(x));
         return x;
     }
@@ -182,7 +183,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     }
 
     const int input_size = xData.front().size();
-    const int nodes = std::max(static_cast<int>(xData.front().size() / 5.0), 1);
+    const int nodes = std::max(static_cast<int>(xData.front().size() / 2.0), 1);
     const int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);

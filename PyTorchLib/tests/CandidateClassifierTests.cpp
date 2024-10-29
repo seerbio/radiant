@@ -52,7 +52,7 @@ void CandidateClassifierTests::trainCandidateClassifierAndPredictTest() {
     const QVector<float> yVec = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0};
 
     CandidateClassifier classifier;
-    const bool classifierTrainedNoErrors = classifier.trainCandidateClassifier(xVec, yVec, 10, 2, 1e-2, 666, 0);
+    const bool classifierTrainedNoErrors = classifier.trainCandidateClassifier(xVec, yVec, 30, 2, 1e-2, 666, 0);
     QCOMPARE(classifierTrainedNoErrors, true);
 
     QVector<float> predictions;
@@ -60,6 +60,7 @@ void CandidateClassifierTests::trainCandidateClassifierAndPredictTest() {
     QCOMPARE(predictions.size(), yVec.size());
     QCOMPARE(predictedNoErrors, true);
     for (int i = 0; i < predictions.size(); i++) {
+        qDebug() << predictions.at(i) << static_cast<int>(yVec.at(i));
         QCOMPARE(static_cast<int>(std::round(predictions.at(i))), static_cast<int>(yVec.at(i)));
     }
 
