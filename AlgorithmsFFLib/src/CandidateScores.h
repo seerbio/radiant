@@ -219,6 +219,11 @@ public:
 
         DiscriminantScore,
 
+        AlignmentIndexMean,
+        AlignmentIndexStDev,
+        AlignmentCombinedScore,
+        MatrixZeroPercentage,
+
         FeaturesSize
     };
 

@@ -317,24 +317,6 @@ Err CandidateScorertron::calculateScores(
         &bestCorrelationResults
         ); ree;
 
-// #define TROUBLE_SHOOT_INTEGRATION
-#ifdef TROUBLE_SHOOT_INTEGRATION
-
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "DWHGVPGQVDAAMAGR"
-    && targetDecoyCandidatePair->charge() == 3
-    && !candidateScores->isDecoy
-    ) {
-        for (const BestCorrelationResult &b : bestCorrelationResults) {
-            qDebug() << b.peakIntegrationIndexes.first << "," << b.peakIntegrationIndexes.second;
-        }
-
-        for (const BestCorrelationResult &b : bestCorrelationResults) {
-            qDebug() << m_msFrameMzTarget->scanTimeFromFrameIndex(b.peakIntegrationIndexes.first) << "," << m_msFrameMzTarget->scanTimeFromFrameIndex(b.peakIntegrationIndexes.second) << b.peakCorrelationsSum << "SDLKFJSDL";
-        }
-    }
-
-#endif
-
     constexpr int multiplierForKeySettingByTen = 10;
     const int nominalMass
         = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
@@ -389,17 +371,50 @@ Err CandidateScorertron::calculateScores(
         &discScores
         );
 
+    QVector<QPair<float, CandidateScores>> candidateScoresPairs;
+    for (int i = 0; i < discScores.size(); ++i) {
+        candidateScoresPairs.push_back({discScores[i], candidateScoresFeatures[i]});
+    }
+
     const float maxDisScore =  *std::max_element(discScores.begin(), discScores.end());
     const int bestIndex = MathUtils::closest(discScores, maxDisScore);
 
     *candidateScores = candidateScoresFeatures[bestIndex];
 #endif
 
+// #define TROUBLE_SHOOT_INTEGRATION
 #ifdef TROUBLE_SHOOT_INTEGRATION
-    if (targetDecoyCandidatePair->peptideStringWithMods() == "DWHGVPGQVDAAMAGR"
+    if (targetDecoyCandidatePair->peptideStringWithMods() == "TVC(UniMod:4)LPDGSFPSGSEC(UniMod:4)HISGWGVTETGK"
         && targetDecoyCandidatePair->charge() == 3
         && !candidateScores->isDecoy
         ) {
+
+        QMap<FrameIndex, BestCorrelationResult> bestCorrelationResultsInds;
+        for (const BestCorrelationResult &bcr : bestCorrelationResults) {
+            bestCorrelationResultsInds.insert(bcr.peakIntegrationIndexes.first, bcr);
+        }
+
+        std::sort(
+            candidateScoresPairs.rbegin(),
+            candidateScoresPairs.rend(),
+            [](const QPair<float, CandidateScores> &l, const QPair<float, CandidateScores> &r){return l.first < r.first;}
+            );
+
+        for (QPair<float, CandidateScores> &b : candidateScoresPairs) {
+            qDebug()
+            << b.second.frameIndexStart << ","
+            << b.second.frameIndexEnd
+            << b.first
+            << DiscriminantScoretron::scoreVectorLogic(true, false, &b.second)
+            << bestCorrelationResultsInds.value(b.second.frameIndexStart).apexStarts
+            << "SDLKFJSDL";
+
+            // std::cout << bestCorrelationResultsInds.value(b.second.frameIndexStart).matBlockTrimmedIntensity << std::endl;;
+            // std::cout << " **************** " << std::endl;
+
+        }
+
+        qDebug() << weights;
 
         const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
         const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
@@ -1906,6 +1921,14 @@ Err CandidateScorertron::setCandidateScores(
         [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
         ));
 
+    candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexMean] = MathUtils::mean(bestCorrelationResult.apexStarts);
+    candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexStDev] = MathUtils::stDev(bestCorrelationResult.apexStarts);
+    candidateScores->featuresArray[CandidateScores::Features::AlignmentCombinedScore]
+                        = candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexMean]
+                        * candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount];
+
+    candidateScores->featuresArray[CandidateScores::Features::MatrixZeroPercentage] = static_cast<float>((bestCorrelationResult.matBlockTrimmedIntensity.array() < 1).count())
+                                                                                    / bestCorrelationResult.matBlockTrimmedIntensity.size();
     e = setAminoAcidFrequencies(candidateScores); ree;
 
     e = setCosineSimilarityMetrics(
