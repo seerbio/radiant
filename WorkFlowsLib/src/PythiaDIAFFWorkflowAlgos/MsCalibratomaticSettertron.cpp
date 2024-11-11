@@ -53,7 +53,7 @@ namespace {
 
         constexpr double cosineSimSumMS1Min = 0.9;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
-            return cs->featuresArray[CandidateScores::Features::CosineSim100MS1] <= cosineSimSumMS1Min;
+            return cs->featuresArray[Features::CosineSim100MS1] <= cosineSimSumMS1Min;
         };
 
         const auto terminator = std::remove_if(

@@ -58,7 +58,7 @@ void TargetDecoyCandidatePairManagerTests::peptideStringWithModsFromPeptideSeque
     ERR_INIT
 
     PeptideStringWithMods peptideStringWithMods;
-    Charge charge;
+    int charge;
 
     e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
             "BELLAFLOPSANDCHAUNCY|2",

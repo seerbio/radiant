@@ -18,7 +18,6 @@
 
 using namespace Error;
 
-using Charge = int;
 using Coors = QVector<double>;
 using CosineSimSum = double;
 using DecoyRatio = double;
@@ -41,7 +40,6 @@ using IonMobilityIndex = int;
 using IonType = QString;
 using IRT = float;
 using IsolationWindowKey = QString;
-using Mass = double;
 using ModificationMass = double;
 using MonoOffset = int;
 using MsLevel = int;

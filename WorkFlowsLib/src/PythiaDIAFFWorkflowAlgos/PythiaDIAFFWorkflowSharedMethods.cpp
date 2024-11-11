@@ -202,7 +202,7 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     ERR_INIT
 
     const auto terminatorLogic = [&](CandidateScores *cs) {
-        return cs->featuresArray[CandidateScores::Features::CosineSimSum100] < pythiaParameters.minMs2FragCount;
+        return cs->featuresArray[Features::CosineSimSum100] < pythiaParameters.minMs2FragCount;
     };
     const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
     candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
@@ -452,15 +452,15 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 }
 
                 row.mzSearchedVec = mzSearchedVals;
-                row.mzFoundMeanVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundMean1, top6);
-                row.mzFoundStDevVec = cs->featuresArray.mid(CandidateScores::Features::MzFoundStDev1, top6);
-                row.intensityFoundMaxVec = cs->featuresArray.mid(CandidateScores::Features::IntensityFoundMax1, top6);
+                row.mzFoundMeanVec = cs->featuresArray.mid(Features::MzFoundMean1, top6);
+                row.mzFoundStDevVec = cs->featuresArray.mid(Features::MzFoundStDev1, top6);
+                row.intensityFoundMaxVec = cs->featuresArray.mid(Features::IntensityFoundMax1, top6);
             }
             else {
                 row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz()};
-                row.mzFoundMeanVec = {cs->featuresArray[CandidateScores::Features::Ms1MzMeanFound100]};
-                row.mzFoundStDevVec = {cs->featuresArray[CandidateScores::Features::Ms1MzStDevFound100]};
-                row.intensityFoundMaxVec = {cs->featuresArray[CandidateScores::Features::Ms1IntensityFound100]};
+                row.mzFoundMeanVec = {cs->featuresArray[Features::Ms1MzMeanFound100]};
+                row.mzFoundStDevVec = {cs->featuresArray[Features::Ms1MzStDevFound100]};
+                row.intensityFoundMaxVec = {cs->featuresArray[Features::Ms1IntensityFound100]};
             }
 
             return row;

@@ -77,7 +77,7 @@ public:
     static Err peptideStringWithModsFromPeptideSequenceChargeKey(
             const PeptideSequenceChargeKey &peptideSequenceChargeKey,
             PeptideStringWithMods *peptideStringWithMods,
-            Charge *charge
+            int *charge
             );
 
 private:

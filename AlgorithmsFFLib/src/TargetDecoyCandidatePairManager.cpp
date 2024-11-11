@@ -234,7 +234,7 @@ namespace {
         ERR_INIT
 
         PeptideStringWithMods peptideStringWithMods;
-        Charge charge;
+        int charge;
         e = TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
                 flrr.peptideSequenceChargeKey,
                 &peptideStringWithMods,
@@ -434,7 +434,7 @@ Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(QVector
 Err TargetDecoyCandidatePairManager::peptideStringWithModsFromPeptideSequenceChargeKey(
         const PeptideSequenceChargeKey &peptideSequenceChargeKey,
         PeptideStringWithMods *peptideStringWithMods,
-        Charge *charge
+        int *charge
         ){
 
     ERR_INIT

@@ -43,9 +43,9 @@ PeptideString PeptideStringWithMods::removeUniModChars() const {
 }
 
 
-QMap<Index, Mass> PeptideStringWithMods::modificationsMap() const {
+QMap<Index, double> PeptideStringWithMods::modificationsMap() const {
 
-    QMap<Index, Mass> modMap;
+    QMap<Index, double> modMap;
 
     bool unimodOn = false;
     QString modBuilder;

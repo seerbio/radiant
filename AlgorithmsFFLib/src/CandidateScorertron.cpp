@@ -1372,23 +1372,23 @@ namespace {
         }
 
         for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
+            candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
         }
 
         const float cosineSimMax = cosineSimsByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrum] = cosineSimMax;
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]
+        candidateScores->featuresArray[Features::CosineSimSpectrum] = cosineSimMax;
+        candidateScores->featuresArray[Features::CosineSimSpectrumCubed]
                                                     = static_cast<float>(std::pow(cosineSimMax, 3));
 
         const float klDivMax = klDivByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
-        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrum] = klDivMax;
-        candidateScores->featuresArray[CandidateScores::Features::KlDivSpectrumCubeRoot]
+        candidateScores->featuresArray[Features::KlDivSpectrum] = klDivMax;
+        candidateScores->featuresArray[Features::KlDivSpectrumCubeRoot]
                                                     = static_cast<float>(std::pow(cosineSimMax, 1.0f/3.0f));
 
         const float cosineSimRowsSummed = cosineSimsByRow.sum();
         if (MathUtils::tZero(cosineSimRowsSummed)) {
-            candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = 0.0f;
-            candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed] = 0.0f;
+            candidateScores->featuresArray[Features::CosineSimSpectrumOverTime] = 0.0f;
+            candidateScores->featuresArray[Features::CosineSimSpectrumOverTimeCubed] = 0.0f;
 
             ERR_RETURN
         }
@@ -1396,8 +1396,8 @@ namespace {
         const int nonZeroRows = EigenUtils::nonZeros(cosineSimsByRow);
         const float cosineSimSpectrumOverTime = cosineSimRowsSummed / static_cast<float>(nonZeroRows);
 
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTime] = cosineSimSpectrumOverTime;
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumOverTimeCubed]
+        candidateScores->featuresArray[Features::CosineSimSpectrumOverTime] = cosineSimSpectrumOverTime;
+        candidateScores->featuresArray[Features::CosineSimSpectrumOverTimeCubed]
                                                                 = static_cast<float>(std::pow(cosineSimSpectrumOverTime, 3));
 
         QVector<float> cosineSimsByRowSansZeros;
@@ -1409,7 +1409,7 @@ namespace {
             }
             cosineSimsByRowSansZeros.push_back(f);
         }
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSpectrumStDev]
+        candidateScores->featuresArray[Features::CosineSimSpectrumStDev]
                                                         = static_cast<float>(MathUtils::stDev(cosineSimsByRowSansZeros));
 
         const QVector<float> &cosineSimToAnchorVec = bestCorrelationResult.peakCorrelations;
@@ -1420,7 +1420,7 @@ namespace {
             cosineSimToAnchorVec.begin() + top6,
             0.0f
     );
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumTop] = cosineSimSumTop;
+        candidateScores->featuresArray[Features::CosineSimSumTop] = cosineSimSumTop;
 
         float cosineSimSumBottom = 0.1;
         if (cosineSimToAnchorVec.size() > top6) {
@@ -1431,12 +1431,12 @@ namespace {
             );
         }
 
-        candidateScores->featuresArray[CandidateScores::Features::CosineSimSumBottom] = cosineSimSumBottom;
+        candidateScores->featuresArray[Features::CosineSimSumBottom] = cosineSimSumBottom;
 
-        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatio]
+        candidateScores->featuresArray[Features::TopBottomRatio]
                 = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
 
-        candidateScores->featuresArray[CandidateScores::Features::TopBottomRatioNorm]
+        candidateScores->featuresArray[Features::TopBottomRatioNorm]
                 = cosineSimSumBottom / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
         ERR_RETURN
@@ -1521,11 +1521,11 @@ namespace {
         }
 
         for (int i = 0; i < std::min(mzMeanValsFound.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::MzFoundMean1 + i] = mzMeanValsFound.at(i);
+            candidateScores->featuresArray[Features::MzFoundMean1 + i] = mzMeanValsFound.at(i);
         }
 
         for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
+            candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
         QVector<ScanTime> scanTimes;
@@ -1551,11 +1551,11 @@ namespace {
         std::copy(trapAreasQVec.begin(), trapAreasQVec.end(), candidateScores->trapAreas.begin());
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
+            candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySumsNormalized.size()), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::IntensityFoundMaxNorm1 + i] = intensitySumsNormalized.coeff(i);
+            candidateScores->featuresArray[Features::IntensityFoundMaxNorm1 + i] = intensitySumsNormalized.coeff(i);
         }
 
         if (bestCorrelationResults.size() > 1) {
@@ -1596,25 +1596,25 @@ namespace {
         const double bestAnchorColumnVecSum = std::accumulate(bestAnchorColumnVec.begin(), bestAnchorColumnVec.end(), 0.0001);
 
         if (bestAnchorColumnVec.size() < chunkDivision) {
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::numeric_limits<float>::min();
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = 1.0;
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::numeric_limits<float>::min();
+            candidateScores->featuresArray[Features::PeakShapeRatio1] = std::numeric_limits<float>::min();
+            candidateScores->featuresArray[Features::PeakShapeRatio2] = 1.0;
+            candidateScores->featuresArray[Features::PeakShapeRatio3] = std::numeric_limits<float>::min();
         }
         else {
 
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio1] = std::accumulate(
+            candidateScores->featuresArray[Features::PeakShapeRatio1] = std::accumulate(
                     bestAnchorColumnVec.begin(),
                     bestAnchorColumnVec.begin() + chunkSize,
                     std::numeric_limits<float>::min()
             ) / bestAnchorColumnVecSum;
 
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio2] = std::accumulate(
+            candidateScores->featuresArray[Features::PeakShapeRatio2] = std::accumulate(
                     bestAnchorColumnVec.begin() + chunkSize,
                     bestAnchorColumnVec.begin() + (chunkSize * 2),
                     std::numeric_limits<float>::min()
             ) / bestAnchorColumnVecSum;
 
-            candidateScores->featuresArray[CandidateScores::Features::PeakShapeRatio3] = std::accumulate(
+            candidateScores->featuresArray[Features::PeakShapeRatio3] = std::accumulate(
                     bestAnchorColumnVec.begin() + (chunkSize * 2),
                     bestAnchorColumnVec.end(),
                     std::numeric_limits<float>::min()
@@ -1671,33 +1671,33 @@ namespace {
             aminoAcidCounts[aminoAcid]++;
         }
 
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountA] = static_cast<float>(aminoAcidCounts['A']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountC] = static_cast<float>(aminoAcidCounts['C']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountD] = static_cast<float>(aminoAcidCounts['D']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountE] = static_cast<float>(aminoAcidCounts['E']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountF] = static_cast<float>(aminoAcidCounts['F']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountG] = static_cast<float>(aminoAcidCounts['G']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountH] = static_cast<float>(aminoAcidCounts['H']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountI] = static_cast<float>(aminoAcidCounts['I']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountK] = static_cast<float>(aminoAcidCounts['K']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountL] = static_cast<float>(aminoAcidCounts['L']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountM] = static_cast<float>(aminoAcidCounts['M']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountN] = static_cast<float>(aminoAcidCounts['N']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountP] = static_cast<float>(aminoAcidCounts['P']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountQ] = static_cast<float>(aminoAcidCounts['Q']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountR] = static_cast<float>(aminoAcidCounts['R']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountS] = static_cast<float>(aminoAcidCounts['S']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountT] = static_cast<float>(aminoAcidCounts['T']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountV] = static_cast<float>(aminoAcidCounts['V']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountW] = static_cast<float>(aminoAcidCounts['W']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountY] = static_cast<float>(aminoAcidCounts['Y']);
+        candidateScores->featuresArray[Features::AminoAcidCountA] = static_cast<float>(aminoAcidCounts['A']);
+        candidateScores->featuresArray[Features::AminoAcidCountC] = static_cast<float>(aminoAcidCounts['C']);
+        candidateScores->featuresArray[Features::AminoAcidCountD] = static_cast<float>(aminoAcidCounts['D']);
+        candidateScores->featuresArray[Features::AminoAcidCountE] = static_cast<float>(aminoAcidCounts['E']);
+        candidateScores->featuresArray[Features::AminoAcidCountF] = static_cast<float>(aminoAcidCounts['F']);
+        candidateScores->featuresArray[Features::AminoAcidCountG] = static_cast<float>(aminoAcidCounts['G']);
+        candidateScores->featuresArray[Features::AminoAcidCountH] = static_cast<float>(aminoAcidCounts['H']);
+        candidateScores->featuresArray[Features::AminoAcidCountI] = static_cast<float>(aminoAcidCounts['I']);
+        candidateScores->featuresArray[Features::AminoAcidCountK] = static_cast<float>(aminoAcidCounts['K']);
+        candidateScores->featuresArray[Features::AminoAcidCountL] = static_cast<float>(aminoAcidCounts['L']);
+        candidateScores->featuresArray[Features::AminoAcidCountM] = static_cast<float>(aminoAcidCounts['M']);
+        candidateScores->featuresArray[Features::AminoAcidCountN] = static_cast<float>(aminoAcidCounts['N']);
+        candidateScores->featuresArray[Features::AminoAcidCountP] = static_cast<float>(aminoAcidCounts['P']);
+        candidateScores->featuresArray[Features::AminoAcidCountQ] = static_cast<float>(aminoAcidCounts['Q']);
+        candidateScores->featuresArray[Features::AminoAcidCountR] = static_cast<float>(aminoAcidCounts['R']);
+        candidateScores->featuresArray[Features::AminoAcidCountS] = static_cast<float>(aminoAcidCounts['S']);
+        candidateScores->featuresArray[Features::AminoAcidCountT] = static_cast<float>(aminoAcidCounts['T']);
+        candidateScores->featuresArray[Features::AminoAcidCountV] = static_cast<float>(aminoAcidCounts['V']);
+        candidateScores->featuresArray[Features::AminoAcidCountW] = static_cast<float>(aminoAcidCounts['W']);
+        candidateScores->featuresArray[Features::AminoAcidCountY] = static_cast<float>(aminoAcidCounts['Y']);
 
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountB] = static_cast<float>(aminoAcidCounts['B']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountJ] = static_cast<float>(aminoAcidCounts['J']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountO] = static_cast<float>(aminoAcidCounts['O']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountU] = static_cast<float>(aminoAcidCounts['U']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountX] = static_cast<float>(aminoAcidCounts['X']);
-        candidateScores->featuresArray[CandidateScores::Features::AminoAcidCountZ] = static_cast<float>(aminoAcidCounts['Z']);
+        candidateScores->featuresArray[Features::AminoAcidCountB] = static_cast<float>(aminoAcidCounts['B']);
+        candidateScores->featuresArray[Features::AminoAcidCountJ] = static_cast<float>(aminoAcidCounts['J']);
+        candidateScores->featuresArray[Features::AminoAcidCountO] = static_cast<float>(aminoAcidCounts['O']);
+        candidateScores->featuresArray[Features::AminoAcidCountU] = static_cast<float>(aminoAcidCounts['U']);
+        candidateScores->featuresArray[Features::AminoAcidCountX] = static_cast<float>(aminoAcidCounts['X']);
+        candidateScores->featuresArray[Features::AminoAcidCountZ] = static_cast<float>(aminoAcidCounts['Z']);
 
         ERR_RETURN
     }
@@ -1721,8 +1721,8 @@ namespace {
             float cosineSim;
             e = EigenUtils::cosineSimilarity(v1, v2, &cosineSim); ree;
 
-            candidateScores->featuresArray[CandidateScores::Features::ShadowsCosineSimSum] += cosineSim;
-            candidateScores->featuresArray[CandidateScores::Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
+            candidateScores->featuresArray[Features::ShadowsCosineSimSum] += cosineSim;
+            candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
         }
 
@@ -1756,7 +1756,7 @@ namespace {
             );
         }
         for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[CandidateScores::Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
+            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
         }
 
         ERR_RETURN
@@ -1772,10 +1772,10 @@ namespace {
         const Eigen::VectorX<float> averagineVec = EigenUtils::convertQVectorToEigenVector(ms1Averagine);
 
         const QVector<float> ms1IsoDisActualVec = {
-            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
-            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
-            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
-            candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
+            candidateScores->featuresArray[Features::CosineSim100MS1PreMono],
+            candidateScores->featuresArray[Features::CosineSim100MS1],
+            candidateScores->featuresArray[Features::CosineSim100MS1Iso1],
+            candidateScores->featuresArray[Features::CosineSim100MS1Iso2]
             };
         const Eigen::VectorX<float> ms1IsoDistActual = EigenUtils::convertQVectorToEigenVector(ms1IsoDisActualVec);
 
@@ -1786,7 +1786,7 @@ namespace {
             &cosineSimAveragine
             ); ree;
 
-        candidateScores->featuresArray[CandidateScores::Features::MS1Averagine] = cosineSimAveragine;
+        candidateScores->featuresArray[Features::MS1Averagine] = cosineSimAveragine;
 
         ERR_RETURN
     }
@@ -1841,93 +1841,93 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
 
     const int top6 = std::min(6, bestCorrelationResult.peakCorrelations.size());
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100] = std::accumulate(
+    candidateScores->featuresArray[Features::CosineSimSum100] = std::accumulate(
             bestCorrelationResult.peakCorrelations.begin(),
             bestCorrelationResult.peakCorrelations.begin() + top6,
             std::numeric_limits<float>::min()
             );
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Top12] = std::accumulate(
+    candidateScores->featuresArray[Features::CosineSimSum100Top12] = std::accumulate(
             bestCorrelationResult.peakCorrelations.begin(),
             bestCorrelationResult.peakCorrelations.end(),
             std::numeric_limits<float>::min()
             );
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window1p5X] = std::accumulate(
+    candidateScores->featuresArray[Features::CosineSimSum100Window1p5X] = std::accumulate(
         bestCorrelationResult.peakCorrelationsWindow1p5X.begin(),
         bestCorrelationResult.peakCorrelationsWindow1p5X.begin() + top6,
         std::numeric_limits<float>::min()
         );
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100Window2X] = std::accumulate(
+    candidateScores->featuresArray[Features::CosineSimSum100Window2X] = std::accumulate(
         bestCorrelationResult.peakCorrelationsWindow2X.begin(),
         bestCorrelationResult.peakCorrelationsWindow2X.begin() + top6,
         std::numeric_limits<float>::min()
         );
 
-    candidateScores->featuresArray[CandidateScores::Features::ScanIonCount]
+    candidateScores->featuresArray[Features::ScanIonCount]
         = static_cast<float>(m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber)->size());
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100GreaterThan80]
+    candidateScores->featuresArray[Features::CosineSimSum100GreaterThan80]
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
-    candidateScores->featuresArray[CandidateScores::Features::TheoFragmentCount]
+    candidateScores->featuresArray[Features::TheoFragmentCount]
                                                             = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
 
-    candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog]
+    candidateScores->featuresArray[Features::TotalIntensityLog]
                                         = std::log(std::max(bestCorrelationResult.matBlockTrimmedIntensity.sum(),
                                                     std::numeric_limits<float>::min()));
 
-     candidateScores->featuresArray[CandidateScores::Features::TotalIntensityPeakHeights]
+     candidateScores->featuresArray[Features::TotalIntensityPeakHeights]
                                 = bestCorrelationResult.matBlockTrimmedIntensity.colwise().maxCoeff().sum();
 
-    candidateScores->featuresArray[CandidateScores::Features::TotalIntensityRaw]
-                                            = std::exp(candidateScores->featuresArray[CandidateScores::Features::TotalIntensityLog]);
+    candidateScores->featuresArray[Features::TotalIntensityRaw]
+                                            = std::exp(candidateScores->featuresArray[Features::TotalIntensityLog]);
 
-    candidateScores->featuresArray[CandidateScores::Features::Charge]
+    candidateScores->featuresArray[Features::Charge]
                                                         = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
     const float scanTimeDelta = candidateScores->scanTime - candidateScores->scanTimePredicted;
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimeDelta] = scanTimeDelta;
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimeDeltaAbs] = std::abs(scanTimeDelta);
+    candidateScores->featuresArray[Features::ScanTimeDelta] = scanTimeDelta;
+    candidateScores->featuresArray[Features::ScanTimeDeltaAbs] = std::abs(scanTimeDelta);
 
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
+    candidateScores->featuresArray[Features::ScanTimePredicted] = candidateScores->scanTimePredicted;
 
     const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), m_scanTimeRange) / m_scanTimeRange);
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimePdAbs] = static_cast<float>(pdScanTime);
-    candidateScores->featuresArray[CandidateScores::Features::ScanTimePd] = scanTimeDelta < 0
+    candidateScores->featuresArray[Features::ScanTimePdAbs] = static_cast<float>(pdScanTime);
+    candidateScores->featuresArray[Features::ScanTimePd] = scanTimeDelta < 0
                                                                              ? -static_cast<float>(std::abs(pdScanTime))
                                                                              : static_cast<float>(std::abs(pdScanTime));
 
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
-    candidateScores->featuresArray[CandidateScores::Features::PeptideLengthNorm] = static_cast<float>(pepLength);
+    candidateScores->featuresArray[Features::PeptideLengthNorm] = static_cast<float>(pepLength);
 
     const auto mz = candidateScores->targetDecoyCandidatePair->mz();
-    candidateScores->featuresArray[CandidateScores::Features::MzNorm] = (mz - 600.0f) * 0.002f;
-    candidateScores->featuresArray[CandidateScores::Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
-    candidateScores->featuresArray[CandidateScores::Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
+    candidateScores->featuresArray[Features::MzNorm] = (mz - 600.0f) * 0.002f;
+    candidateScores->featuresArray[Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
+    candidateScores->featuresArray[Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
 
     const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
-    candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocation] = mzTargetKey - mz;
-    candidateScores->featuresArray[CandidateScores::Features::TargetWindowLocationAbs] = std::abs(mzTargetKey - mz);
+    candidateScores->featuresArray[Features::TargetWindowLocation] = mzTargetKey - mz;
+    candidateScores->featuresArray[Features::TargetWindowLocationAbs] = std::abs(mzTargetKey - mz);
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum45]
+    candidateScores->featuresArray[Features::CosineSimSum45]
         = std::max(std::accumulate(bestCorrelationResult.peakCorrelations45.begin(), bestCorrelationResult.peakCorrelations45.begin() + top6, 0.0f), std::numeric_limits<float>::min());
 
     int bestAlignmentMatrixRowIndex = bestCorrelationResult.bestAnchorRowIndex;
-    candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
+    candidateScores->featuresArray[Features::AllignedMaxIndexesCount] = static_cast<float>(std::count_if(
         bestCorrelationResult.apexStarts.begin(),
         bestCorrelationResult.apexStarts.end(),
         [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
         ));
 
-    candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexMean] = MathUtils::mean(bestCorrelationResult.apexStarts);
-    candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexStDev] = MathUtils::stDev(bestCorrelationResult.apexStarts);
-    candidateScores->featuresArray[CandidateScores::Features::AlignmentCombinedScore]
-                        = candidateScores->featuresArray[CandidateScores::Features::AlignmentIndexMean]
-                        * candidateScores->featuresArray[CandidateScores::Features::AllignedMaxIndexesCount];
+    candidateScores->featuresArray[Features::AlignmentIndexMean] = MathUtils::mean(bestCorrelationResult.apexStarts);
+    candidateScores->featuresArray[Features::AlignmentIndexStDev] = MathUtils::stDev(bestCorrelationResult.apexStarts);
+    candidateScores->featuresArray[Features::AlignmentCombinedScore]
+                        = candidateScores->featuresArray[Features::AlignmentIndexMean]
+                        * candidateScores->featuresArray[Features::AllignedMaxIndexesCount];
 
-    candidateScores->featuresArray[CandidateScores::Features::MatrixZeroPercentage] = static_cast<float>((bestCorrelationResult.matBlockTrimmedIntensity.array() < 1).count())
+    candidateScores->featuresArray[Features::MatrixZeroPercentage] = static_cast<float>((bestCorrelationResult.matBlockTrimmedIntensity.array() < 1).count())
                                                                                     / bestCorrelationResult.matBlockTrimmedIntensity.size();
     e = setAminoAcidFrequencies(candidateScores); ree;
 
@@ -2146,11 +2146,11 @@ Err CandidateScorertron::setMs1RelatedScores(
         frameIndexMinMS1,
         frameIndexMaxMS1,
         m_turboXicMS1,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound100],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound100PPM],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound100]
+        &candidateScores->featuresArray[Features::CosineSim100MS1],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFound100],
+        &candidateScores->featuresArray[Features::Ms1MzStDevFound100],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFound100PPM],
+        &candidateScores->featuresArray[Features::Ms1IntensityFound100]
         ); ree;
 
     e = calculateMs1Scores(
@@ -2161,11 +2161,11 @@ Err CandidateScorertron::setMs1RelatedScores(
         frameIndexMinMS1,
         frameIndexMaxMS1,
         m_turboXicMS1,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim45MS1],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFound45],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFound45PPM],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFound45]
+        &candidateScores->featuresArray[Features::CosineSim45MS1],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFound45],
+        &candidateScores->featuresArray[Features::Ms1MzStDevFound45],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFound45PPM],
+        &candidateScores->featuresArray[Features::Ms1IntensityFound45]
         ); ree;
 
     e = calculateMs1Scores(
@@ -2176,11 +2176,11 @@ Err CandidateScorertron::setMs1RelatedScores(
         frameIndexMinMS1,
         frameIndexMaxMS1,
         m_turboXicMS1,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMono],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundPreMono],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundPreMonoPPM],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundPreMono]
+        &candidateScores->featuresArray[Features::CosineSim100MS1PreMono],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundPreMono],
+        &candidateScores->featuresArray[Features::Ms1MzStDevFoundPreMono],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundPreMonoPPM],
+        &candidateScores->featuresArray[Features::Ms1IntensityFoundPreMono]
         ); ree;
 
     e = calculateMs1Scores(
@@ -2191,11 +2191,11 @@ Err CandidateScorertron::setMs1RelatedScores(
         frameIndexMinMS1,
         frameIndexMaxMS1,
         m_turboXicMS1,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso1],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso1PPM],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso1]
+        &candidateScores->featuresArray[Features::CosineSim100MS1Iso1],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundIso1],
+        &candidateScores->featuresArray[Features::Ms1MzStDevFoundIso1],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundIso1PPM],
+        &candidateScores->featuresArray[Features::Ms1IntensityFoundIso1]
         ); ree;
     
     e = calculateMs1Scores(
@@ -2206,18 +2206,18 @@ Err CandidateScorertron::setMs1RelatedScores(
         frameIndexMinMS1,
         frameIndexMaxMS1,
         m_turboXicMS1,
-        &candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzStDevFoundIso2],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1MzMeanFoundIso2PPM],
-        &candidateScores->featuresArray[CandidateScores::Features::Ms1IntensityFoundIso2]
+        &candidateScores->featuresArray[Features::CosineSim100MS1Iso2],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundIso2],
+        &candidateScores->featuresArray[Features::Ms1MzStDevFoundIso2],
+        &candidateScores->featuresArray[Features::Ms1MzMeanFoundIso2PPM],
+        &candidateScores->featuresArray[Features::Ms1IntensityFoundIso2]
         ); ree;
 
-    candidateScores->featuresArray[CandidateScores::Features::CosineSimSum100MS1]
-        = candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1]
-        + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso1]
-        + candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1Iso2]
-        - candidateScores->featuresArray[CandidateScores::Features::CosineSim100MS1PreMono];
+    candidateScores->featuresArray[Features::CosineSimSum100MS1]
+        = candidateScores->featuresArray[Features::CosineSim100MS1]
+        + candidateScores->featuresArray[Features::CosineSim100MS1Iso1]
+        + candidateScores->featuresArray[Features::CosineSim100MS1Iso2]
+        - candidateScores->featuresArray[Features::CosineSim100MS1PreMono];
 
     ERR_RETURN
 }
