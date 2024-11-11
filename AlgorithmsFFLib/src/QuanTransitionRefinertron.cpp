@@ -55,86 +55,86 @@ namespace {
 
         ERR_INIT
 
-        QMap<FrameIndex, QVector<CandidateScores*>> frameIndexVsCandidateScoresPntrs;
-        for (CandidateScores *cs : candidateScoresPntrs) {
-            frameIndexVsCandidateScoresPntrs[cs->frameIndex].push_back(cs);
-        }
-
-        for (FrameIndex frameIndex : frameIndexVsCandidateScoresPntrs.keys()) {
-
-            const int frameIndexMin = frameIndex - frameIndexBuffer;
-            const int frameIndexMax = frameIndex + frameIndexBuffer;
-
-            QVector<float> mzVals;
-            for (int fi = frameIndexMin; fi <= frameIndexMax; fi++) {
-                const QVector<CandidateScores*> &candidateScoreses = frameIndexVsCandidateScoresPntrs.value(fi);
-
-                for (CandidateScores *cs : candidateScoreses) {
-
-                    const QVector<MS2Ion> &ms2Ions = cs->isDecoy
-                                                   ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                                   : cs->targetDecoyCandidatePair->ms2IonsTarget();
-
-                    std::transform(
-                        ms2Ions.begin(),
-                        ms2Ions.end(),
-                        std::back_inserter(mzVals),
-                        [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
-                        );
-
-                }
-            }
-
-            QHash<MzHashed, int> mzHashedVsCount;
-            e = QuanTransitionRefinertron::groupTransitionsByMz(
-                mzVals,
-                ppmThreshold,
-                &mzHashedVsCount
-                ); ree;
-
-            QVector<QPair<MzHashed, int>> mzHashedVsCountPairs
-                    = ParallelUtils::convertHashToVectorPairs(mzHashedVsCount);
-
-            filterNonInterferingTransitions(&mzHashedVsCountPairs);
-
-            if (mzHashedVsCountPairs.isEmpty()) {
-                continue;
-            }
-
-            QVector<float> mzIntererencesFrame;
-            std::transform(
-                mzHashedVsCountPairs.begin(),
-                mzHashedVsCountPairs.end(),
-                std::back_inserter(mzIntererencesFrame),
-                [](const QPair<MzHashed, int> &pr) {
-                    return MathUtils::unHashDecimal<float>(pr.first, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-                });
-
-            const QVector<CandidateScores*> candidateScoresFrameIndex
-                        = frameIndexVsCandidateScoresPntrs.value(frameIndex);
-
-            for (CandidateScores *cs : candidateScoresFrameIndex) {
-
-                const QVector<MS2Ion> &ms2Ions = cs->isDecoy
-                                               ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                               : cs->targetDecoyCandidatePair->ms2IonsTarget();
-
-                for (const MS2Ion &ms2Ion : ms2Ions) {
-                    const int closestMzHashedVsCountPairsIndex = MathUtils::closest(mzIntererencesFrame, ms2Ion.mz);
-                    const float mzInterenceFound = mzIntererencesFrame.at(closestMzHashedVsCountPairsIndex);
-
-                    const float ppmAccuracy = MathUtils::calculateMassAccuracyPPM(ms2Ion.mz, mzInterenceFound);
-
-                    if (std::abs(ppmAccuracy) > ppmThreshold) {
-                        continue;
-                    }
-
-                    cs->mzInterferences.push_back(ms2Ion.mz);
-                }
-
-            }
-
-        }
+        // QMap<FrameIndex, QVector<CandidateScores*>> frameIndexVsCandidateScoresPntrs;
+        // for (CandidateScores *cs : candidateScoresPntrs) {
+        //     frameIndexVsCandidateScoresPntrs[cs->frameIndex].push_back(cs);
+        // }
+        //
+        // for (FrameIndex frameIndex : frameIndexVsCandidateScoresPntrs.keys()) {
+        //
+        //     const int frameIndexMin = frameIndex - frameIndexBuffer;
+        //     const int frameIndexMax = frameIndex + frameIndexBuffer;
+        //
+        //     QVector<float> mzVals;
+        //     for (int fi = frameIndexMin; fi <= frameIndexMax; fi++) {
+        //         const QVector<CandidateScores*> &candidateScoreses = frameIndexVsCandidateScoresPntrs.value(fi);
+        //
+        //         for (CandidateScores *cs : candidateScoreses) {
+        //
+        //             const QVector<MS2Ion> &ms2Ions = cs->isDecoy
+        //                                            ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
+        //                                            : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        //
+        //             std::transform(
+        //                 ms2Ions.begin(),
+        //                 ms2Ions.end(),
+        //                 std::back_inserter(mzVals),
+        //                 [](const MS2Ion &ms2Ion){return ms2Ion.mz;}
+        //                 );
+        //
+        //         }
+        //     }
+        //
+        //     QHash<MzHashed, int> mzHashedVsCount;
+        //     e = QuanTransitionRefinertron::groupTransitionsByMz(
+        //         mzVals,
+        //         ppmThreshold,
+        //         &mzHashedVsCount
+        //         ); ree;
+        //
+        //     QVector<QPair<MzHashed, int>> mzHashedVsCountPairs
+        //             = ParallelUtils::convertHashToVectorPairs(mzHashedVsCount);
+        //
+        //     filterNonInterferingTransitions(&mzHashedVsCountPairs);
+        //
+        //     if (mzHashedVsCountPairs.isEmpty()) {
+        //         continue;
+        //     }
+        //
+        //     QVector<float> mzIntererencesFrame;
+        //     std::transform(
+        //         mzHashedVsCountPairs.begin(),
+        //         mzHashedVsCountPairs.end(),
+        //         std::back_inserter(mzIntererencesFrame),
+        //         [](const QPair<MzHashed, int> &pr) {
+        //             return MathUtils::unHashDecimal<float>(pr.first, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+        //         });
+        //
+        //     const QVector<CandidateScores*> candidateScoresFrameIndex
+        //                 = frameIndexVsCandidateScoresPntrs.value(frameIndex);
+        //
+        //     for (CandidateScores *cs : candidateScoresFrameIndex) {
+        //
+        //         const QVector<MS2Ion> &ms2Ions = cs->isDecoy
+        //                                        ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
+        //                                        : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        //
+        //         for (const MS2Ion &ms2Ion : ms2Ions) {
+        //             const int closestMzHashedVsCountPairsIndex = MathUtils::closest(mzIntererencesFrame, ms2Ion.mz);
+        //             const float mzInterenceFound = mzIntererencesFrame.at(closestMzHashedVsCountPairsIndex);
+        //
+        //             const float ppmAccuracy = MathUtils::calculateMassAccuracyPPM(ms2Ion.mz, mzInterenceFound);
+        //
+        //             if (std::abs(ppmAccuracy) > ppmThreshold) {
+        //                 continue;
+        //             }
+        //
+        //             cs->mzInterferences.push_back(ms2Ion.mz);
+        //         }
+        //
+        //     }
+        //
+        // }
 
         ERR_RETURN
     }

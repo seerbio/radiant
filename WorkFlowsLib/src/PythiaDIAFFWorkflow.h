@@ -83,15 +83,15 @@ public:
 private:
 
     Err mainAnalysis(
-            MsReaderPointerAcc *msReaderPointerAcc,
-            int *targetCountBelowFDRThresholdOnePercent
-            );
+        const MsReaderPointerAcc *msReaderPointerAcc,
+        int *targetCountBelowFDRThresholdOnePercent
+        );
 
     Err applyNeuralNetClassifier(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
-            int seed,
-            QVector<CandidateScores*> *candidateScoreClassifier
-            ) const;
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+        int seed,
+        QVector<CandidateScores*> *candidateScoreClassifier
+        ) const;
 
     static Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,

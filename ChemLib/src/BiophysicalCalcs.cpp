@@ -67,7 +67,7 @@ QVector<double> BiophysicalCalcs::buildTandemFragmentMasses(
     const double NULL_VALUE = -1.0;
 
     const PeptideString peptideString = peptideStringWithMods.removeUniModChars();
-    const QMap<Index, Mass> modsMap = peptideStringWithMods.modificationsMap();
+    const QMap<Index, double> modsMap = peptideStringWithMods.modificationsMap();
 
     const int pepLength = peptideString.size();
 

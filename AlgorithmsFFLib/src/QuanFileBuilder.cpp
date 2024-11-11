@@ -171,76 +171,27 @@ namespace {
         qr->classifierScore = static_cast<float>(cs->classifierScore);
         qr->discScore = static_cast<float>(cs->discriminantScore);
         qr->qValue = static_cast<float>(cs->qValue);
-        qr->mzInterferences = cs->mzInterferences;
         qr->isDecoy = cs->isDecoy;
 
         qr->scanTime = cs->scanTime;
         qr->scanTimeStart = cs->scanTimeStart;
         qr->scanTimeEnd = cs->scanTimeEnd;
-        qr->cosineSimSum100 = cs->featuresArray[CandidateScores::Features::CosineSimSum100Top12];
-        qr->intensityValMz1 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax1];
-        qr->intensityValMz2 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax2];
-        qr->intensityValMz3 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax3];
-        qr->intensityValMz4 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax4];
-        qr->intensityValMz5 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax5];
-        qr->intensityValMz6 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax6];
-        qr->intensityValMz7 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax7];
-        qr->intensityValMz8 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax8];
-        qr->intensityValMz9 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax9];
-        qr->intensityValMz10 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax10];
-        qr->intensityValMz11 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax11];
-        qr->intensityValMz12 = cs->featuresArray[CandidateScores::Features::IntensityFoundMax12];
+        qr->cosineSimSum100 = cs->featuresArray[Features::CosineSimSum100Top12];
+        qr->intensityValMz1 = cs->featuresArray[Features::IntensityFoundMax1];
+        qr->intensityValMz2 = cs->featuresArray[Features::IntensityFoundMax2];
+        qr->intensityValMz3 = cs->featuresArray[Features::IntensityFoundMax3];
+        qr->intensityValMz4 = cs->featuresArray[Features::IntensityFoundMax4];
+        qr->intensityValMz5 = cs->featuresArray[Features::IntensityFoundMax5];
+        qr->intensityValMz6 = cs->featuresArray[Features::IntensityFoundMax6];
+        qr->intensityValMz7 = cs->featuresArray[Features::IntensityFoundMax7];
+        qr->intensityValMz8 = cs->featuresArray[Features::IntensityFoundMax8];
+        qr->intensityValMz9 = cs->featuresArray[Features::IntensityFoundMax9];
+        qr->intensityValMz10 = cs->featuresArray[Features::IntensityFoundMax10];
+        qr->intensityValMz11 = cs->featuresArray[Features::IntensityFoundMax11];
+        qr->intensityValMz12 = cs->featuresArray[Features::IntensityFoundMax12];
 
-        qr->scanTimeAlt = cs->scanTimeAlt;
-        qr->scanTimeStartAlt = cs->scanTimeStartAlt;
-        qr->scanTimeEndAlt = cs->scanTimeEndAlt;
-        qr->cosineSimSum100Alt = cs->cosineSimSum100Alt;
         qr->scanTimePredicted = cs->scanTimePredicted;
 
-        for (int i = 0; i < cs->intensityValsAlt.size(); i++) {
-
-            switch (i) {
-                case 0:
-                    qr->intensityValMzAlt1 = cs->intensityValsAlt.at(i);
-                    break;
-                case 1:
-                    qr->intensityValMzAlt2 = cs->intensityValsAlt.at(i);
-                    break;
-                case 2:
-                    qr->intensityValMzAlt3 = cs->intensityValsAlt.at(i);
-                    break;
-                case 3:
-                    qr->intensityValMzAlt4 = cs->intensityValsAlt.at(i);
-                    break;
-                case 4:
-                    qr->intensityValMzAlt5 = cs->intensityValsAlt.at(i);
-                    break;
-                case 5:
-                    qr->intensityValMzAlt6 = cs->intensityValsAlt.at(i);
-                    break;
-                case 6:
-                    qr->intensityValMzAlt7 = cs->intensityValsAlt.at(i);
-                    break;
-                case 7:
-                    qr->intensityValMzAlt8 = cs->intensityValsAlt.at(i);
-                    break;
-                case 8:
-                    qr->intensityValMzAlt9 = cs->intensityValsAlt.at(i);
-                    break;
-                case 9:
-                    qr->intensityValMzAlt10 = cs->intensityValsAlt.at(i);
-                    break;
-                case 10:
-                    qr->intensityValMzAlt11 = cs->intensityValsAlt.at(i);
-                    break;
-                case 11:
-                    qr->intensityValMzAlt12 = cs->intensityValsAlt.at(i);
-                    break;
-                default:
-                    rrr(eValueError);
-            }
-
-        }
 
         ERR_RETURN
     }

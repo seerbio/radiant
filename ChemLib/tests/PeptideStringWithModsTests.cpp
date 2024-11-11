@@ -41,7 +41,7 @@ void PeptideStringWithModsTests::removeUniModCharsTest() {
 void PeptideStringWithModsTests::modificationsMapTest() {
 
     const PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("B[66.6]ELL[+6666.6]ATRIX[-666.6]");
-    const QMap<Index, Mass> modsMap = peptideStringWithMods.modificationsMap();
+    const QMap<Index, double> modsMap = peptideStringWithMods.modificationsMap();
 
     QCOMPARE(modsMap.size(), 3);
     QCOMPARE(modsMap.firstKey(), 0);
@@ -52,7 +52,7 @@ void PeptideStringWithModsTests::modificationsMapTest() {
     QCOMPARE(modsMap.values().at(1), 6666.6);
 
     const PeptideStringWithMods peptideStringWithModsUniMod = PeptideStringWithMods("K(UniMod:4)ALL(Carbamidomethyl)IOPE(CAM)");
-    const QMap<Index, Mass> modsMapUniMod = peptideStringWithModsUniMod.modificationsMap();
+    const QMap<Index, double> modsMapUniMod = peptideStringWithModsUniMod.modificationsMap();
 
     QCOMPARE(modsMapUniMod.size(), 3);
     QCOMPARE(modsMapUniMod.firstKey(), 0);

@@ -445,7 +445,7 @@ void CandidateScorertronTests::calculateScoresAndOtherStuffTooTest() {
     // QCOMPARE(e, eNoError);
     //
     // QCOMPARE(
-    //         MathUtils::pRound(static_cast<double>(candidateScores.featuresArray[CandidateScores::Features::CosineSimSpectrumCubed]), 3),
+    //         MathUtils::pRound(static_cast<double>(candidateScores.featuresArray[Features::CosineSimSpectrumCubed]), 3),
     //         MathUtils::pRound(0.0767656341195, 3)
     //         );
     //

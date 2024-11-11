@@ -40,7 +40,7 @@ public:
     QVector<double> scores;
     double discScore;
     bool isDecoy = false;
-    Charge charge = -1;
+    int charge = -1;
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
 

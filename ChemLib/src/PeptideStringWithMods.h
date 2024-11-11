@@ -26,7 +26,7 @@ public:
 
     [[nodiscard]] PeptideString removeUniModChars() const;
 
-    [[nodiscard]] QMap<Index, Mass> modificationsMap() const;
+    [[nodiscard]] QMap<Index, double> modificationsMap() const;
 
     [[nodiscard]] QVector<double> bSeries(
             int charge,
