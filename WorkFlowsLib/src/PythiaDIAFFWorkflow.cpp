@@ -411,31 +411,19 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 #endif
     }
 
-    QElapsedTimer etTrans;
-    etTrans.start();
-    QVector<CandidateScores*> candidateScoreClassifierPntrsFDRFiltered = candidateScoreClassifierPntrs;
-    const auto terminator = std::remove_if(
-        candidateScoreClassifierPntrsFDRFiltered.begin(),
-        candidateScoreClassifierPntrsFDRFiltered.end(),
-        [&](const CandidateScores *cs){return cs->isDecoy || cs->qValue >= m_pythiaParameters.percentFDR / 100.0f;}
-        );
-    candidateScoreClassifierPntrsFDRFiltered.erase(terminator, candidateScoreClassifierPntrsFDRFiltered.end());
-
-    constexpr int frameIndexBuffer = 1;
-    QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
-    e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrsFDRFiltered); ree;
-
-    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
-    e = QuanFileBuilder::buildQuanFile(
-        candidateScoreClassifierPntrs,
-        quanFilePath
-        ); ree;
+    // constexpr int frameIndexBuffer = 1;
+    // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
+    // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    // e = QuanFileBuilder::buildQuanFile(
+    //     candidateScoreClassifierPntrs,
+    //     quanFilePath
+    //     ); ree;
 
     ERR_RETURN
 }
 
 Err PythiaDIAFFWorkflow::mainAnalysis(
-        MsReaderPointerAcc *msReaderPointerAcc,
+        const MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent
         ) {
 

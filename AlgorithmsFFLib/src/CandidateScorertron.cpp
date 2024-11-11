@@ -1540,16 +1540,6 @@ namespace {
         const Eigen::VectorX<float> intensitySumsNormalized
                 = intensitySums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        Eigen::VectorX<float> trapAreas;
-        e = calculateTrapezoidalArea(
-            bestCorrelationResult.matBlockTrimmedIntensity,
-            scanTimes,
-            &trapAreas
-            ); ree;
-        const QVector<float> trapAreasQVec = EigenUtils::convertEigenVectorToQVector(trapAreas);
-        candidateScores->trapAreas = QVector<float>(arraySizeMax, -1.0);
-        std::copy(trapAreasQVec.begin(), trapAreasQVec.end(), candidateScores->trapAreas.begin());
-
         for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
@@ -1562,10 +1552,6 @@ namespace {
             const BestCorrelationResult &bestCorrelationResultAlt = bestCorrelationResults.at(1);
             const Eigen::VectorX<float> intensitySumsAlt = bestCorrelationResultAlt.matBlockTrimmedIntensity.colwise().sum();
 
-            candidateScores->intensityValsAlt.resize(static_cast<int>(intensitySumsAlt.size()));
-            for (int i = 0; i < std::min(static_cast<int>(intensitySumsAlt.size()), arraySizeMax); i++) {
-                candidateScores->intensityValsAlt[i] = intensitySumsAlt.coeff(i);
-            }
         }
 
         ERR_RETURN
@@ -1817,25 +1803,7 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndex);
     candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexStart);
     candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
-
-    if(bestCorrelationResults.size() > 1) {
-
-        const BestCorrelationResult &bestCorrelationResultAlt = bestCorrelationResults.at(1);
-
-        candidateScores->scanTimeStartAlt
-            = m_msFrameMzTarget->scanTimeFromFrameIndex(bestCorrelationResultAlt.peakIntegrationIndexes.first);
-
-        candidateScores->scanTimeEndAlt
-            = m_msFrameMzTarget->scanTimeFromFrameIndex(bestCorrelationResultAlt.peakIntegrationIndexes.second);
-
-        candidateScores->scanTimeAlt
-                = m_msFrameMzTarget->scanTimeFromFrameIndex(
-                    bestCorrelationResultAlt.peakIntegrationIndexes.first + bestCorrelationResult.bestAnchorRowIndex
-                    );
-
-        candidateScores->cosineSimSum100Alt = bestCorrelationResultAlt.peakCorrelationsSum;
-    }
-
+    
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);

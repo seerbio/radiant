@@ -252,15 +252,15 @@ public:
     double qValue = 1.0;
     double decoyRatio = -1.0;
 
-    QVector<float> trapAreas;
     QVector<float> featuresArray;
-    QVector<float> mzInterferences;
 
-    QVector<float> intensityValsAlt;
-    ScanTime scanTimeAlt = -1.0;
-    ScanTime scanTimeStartAlt = -1.0;
-    ScanTime scanTimeEndAlt = -1.0;
-    float cosineSimSum100Alt = -1.0;
+    // QVector<float> mzInterferences;
+    // QVector<float> trapAreas;
+    // QVector<float> intensityValsAlt;
+    // ScanTime scanTimeAlt = -1.0;
+    // ScanTime scanTimeStartAlt = -1.0;
+    // ScanTime scanTimeEndAlt = -1.0;
+    // float cosineSimSum100Alt = -1.0;
 
     /**
     * @brief Initializes the features array with default values.
@@ -1536,19 +1536,6 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.totalIntensityPeakHeights = candidateScores->featuresArray[Features::TotalIntensityPeakHeights];
         row.totalIntensityRaw = candidateScores->featuresArray[Features::TotalIntensityRaw];
         row.targetWindowLocation = candidateScores->featuresArray[Features::TargetWindowLocation];
-
-        row.trapArea1 = candidateScores->trapAreas.at(0);
-        row.trapArea2 = candidateScores->trapAreas.at(1);
-        row.trapArea3 = candidateScores->trapAreas.at(2);
-        row.trapArea4 = candidateScores->trapAreas.at(3);
-        row.trapArea5 = candidateScores->trapAreas.at(4);
-        row.trapArea6 = candidateScores->trapAreas.at(5);
-        row.trapArea7 = candidateScores->trapAreas.at(6);
-        row.trapArea8 = candidateScores->trapAreas.at(7);
-        row.trapArea9 = candidateScores->trapAreas.at(8);
-        row.trapArea10 = candidateScores->trapAreas.at(9);
-        row.trapArea11 = candidateScores->trapAreas.at(10);
-        row.trapArea12 = candidateScores->trapAreas.at(11);
 
         const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
