@@ -1501,6 +1501,8 @@ namespace {
 
         QVector<float> mzMeanValsFound;
         mzMeanValsFound.reserve(static_cast<int>(matMz.cols()));
+        QVector<float> mzMeanValsFoundPPM;
+        mzMeanValsFoundPPM.reserve(static_cast<int>(matMz.cols()));
         QVector<float> stdMeanValsFound;
         stdMeanValsFound.reserve(static_cast<int>(matMz.cols()));
 
@@ -1520,9 +1522,45 @@ namespace {
             stdMeanValsFound.push_back(static_cast<float>(EigenUtils::calculateStDevOfVector(colMzNonZero)));
         }
 
+        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
+                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
+                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+        int foundB = 0;
+        int foundY = 0;
         for (int i = 0; i < std::min(mzMeanValsFound.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[Features::MzFoundMean1 + i] = mzMeanValsFound.at(i);
+            const float ppm = mzMeanValsFound.at(i) > 1.0f
+                            ? std::min(MathUtils::calculateMassAccuracyPPM(ms2Ions.at(i).mz, mzMeanValsFound.at(i)), 100.0f)
+                            : 100.0f;
+            candidateScores->featuresArray[Features::MzFoundMean1PPM + i] = ppm;
+
+            if (ppm > 99.9) {
+                continue;
+            }
+            mzMeanValsFoundPPM.push_back(ppm);
+            if (ms2Ions.at(i).ionLabel.contains('y')) {
+                foundY++;
+            }
+            if (ms2Ions.at(i).ionLabel.contains('b')) {
+                foundB++;
+            }
         }
+
+        candidateScores->featuresArray[Features::MzPPMMean] = MathUtils::mean(mzMeanValsFoundPPM);
+        candidateScores->featuresArray[Features::MzPPMMeanAbs] = std::abs(MathUtils::mean(mzMeanValsFoundPPM));
+        candidateScores->featuresArray[Features::MzPPMStd] = MathUtils::stDev(mzMeanValsFoundPPM);
+        candidateScores->featuresArray[Features::FoundB] = foundB / static_cast<float>(ms2Ions.size());
+        candidateScores->featuresArray[Features::FoundY] = foundY / static_cast<float>(ms2Ions.size());
+        candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(ms2Ions.size());
+
+
+
+        // qDebug()
+        // << mzMeanValsFoundPPM
+        // << candidateScores->featuresArray[Features::MzPPMMean]
+        // << candidateScores->featuresArray[Features::MzPPMStd]
+        // << "SLKFJDS";
 
         for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax); i++) {
             candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);

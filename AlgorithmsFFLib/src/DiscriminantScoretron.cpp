@@ -155,7 +155,13 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::AlignmentIndexMean,
             Features::AlignmentIndexStDev,
             Features::AlignmentCombinedScore,
-            Features::MatrixZeroPercentage
+            Features::MatrixZeroPercentage,
+
+            Features::MzPPMMeanAbs,
+            Features::FoundB,
+            Features::FoundY,
+            Features::FoundPercent,
+            // Features::MzPPMStd,
         };
 
         if (useNeuralNetworkScores) {
@@ -329,7 +335,25 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::AlignmentIndexMean,
                 Features::AlignmentIndexStDev,
                 Features::AlignmentCombinedScore,
-                Features::MatrixZeroPercentage
+                Features::MatrixZeroPercentage,
+
+                Features::MzFoundMean1PPM,
+                Features::MzFoundMean2PPM,
+                Features::MzFoundMean3PPM,
+                Features::MzFoundMean4PPM,
+                Features::MzFoundMean5PPM,
+                Features::MzFoundMean6PPM,
+                Features::MzFoundMean7PPM,
+                Features::MzFoundMean8PPM,
+                Features::MzFoundMean9PPM,
+                Features::MzFoundMean10PPM,
+                Features::MzFoundMean11PPM,
+                Features::MzFoundMean12PPM,
+                Features::MzPPMMean,
+                Features::FoundB,
+                Features::FoundY,
+                Features::FoundPercent,
+                Features::MzPPMStd
             };
             const QVector<float> nnVec = candidateScores->selectFeaturesArrayFeatures(nnFeatures);
             return nnVec;
@@ -367,7 +391,14 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             Features::TotalIntensityLog,
                             Features::CosineSimSum100Window1p5X,
                             Features::CosineSimSum100Window2X,
-                            Features::TargetWindowLocationAbs
+                            Features::TargetWindowLocationAbs,
+
+                            Features::MzFoundMean1PPM,
+                            Features::MzFoundMean2PPM,
+                            Features::MzFoundMean3PPM,
+                            Features::MzFoundMean4PPM,
+                            Features::MzFoundMean5PPM,
+                            Features::MzFoundMean6PPM
                             }));
             return vec;
         }

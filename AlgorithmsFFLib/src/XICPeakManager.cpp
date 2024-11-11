@@ -160,19 +160,19 @@ Err XICPeakManager:: getXIC(
     e = ErrorUtils::isTrue(m_isInit); ree;
     e = ErrorUtils::isAboveThreshold(mzVal, 0.0f, ErrorUtilsParam::ExcludeThreshold); ree;
 
-    const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
-
-    if (m_mzHashedVsXicPoints.contains(mzHashed)) {
-
-        *xicPoints = m_mzHashedVsXicPoints.value(mzHashed);
-
-        m_mzHashedOccurrences[mzHashed]--;
-        if (m_mzHashedOccurrences[mzHashed] == 0) {
-            XICPoints().swap(m_mzHashedVsXicPoints[mzHashed]);
-            m_mzHashedVsXicPoints.remove(mzHashed);
-        }
-        ERR_RETURN
-    }
+    // const MzHashed mzHashed = MathUtils::hashDecimal(mzVal, S_GLOBAL_SETTINGS.HASHING_PRECISION);
+    //
+    // if (m_mzHashedVsXicPoints.contains(mzHashed)) {
+    //
+    //     *xicPoints = m_mzHashedVsXicPoints.value(mzHashed);
+    //
+    //     m_mzHashedOccurrences[mzHashed]--;
+    //     if (m_mzHashedOccurrences[mzHashed] == 0) {
+    //         XICPoints().swap(m_mzHashedVsXicPoints[mzHashed]);
+    //         m_mzHashedVsXicPoints.remove(mzHashed);
+    //     }
+    //     ERR_RETURN
+    // }
 
     const float massTol = MathUtils::calculatePPM(mzVal, m_ppmTolerance);
     const float mzMin = mzVal - massTol;
@@ -181,12 +181,12 @@ Err XICPeakManager:: getXIC(
     const XICPoints xicPointsLocal = m_turboXic->extractPointsXIC(mzMin, mzMax);
     *xicPoints = xicPointsLocal;
 
-    if (constexpr int minOccuranceCountToCache = 2; m_mzHashedOccurrences.value(mzHashed) < minOccuranceCountToCache) {
-        ERR_RETURN
-    }
-
-    m_mzHashedVsXicPoints.insert(mzHashed , xicPointsLocal);
-    m_mzHashedOccurrences[mzHashed]--;
+    // if (constexpr int minOccuranceCountToCache = 2; m_mzHashedOccurrences.value(mzHashed) < minOccuranceCountToCache) {
+    //     ERR_RETURN
+    // }
+    //
+    // m_mzHashedVsXicPoints.insert(mzHashed , xicPointsLocal);
+    // m_mzHashedOccurrences[mzHashed]--;
 
     ERR_RETURN
 }

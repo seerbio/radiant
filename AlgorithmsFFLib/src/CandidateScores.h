@@ -212,6 +212,26 @@ enum Features {
         AlignmentCombinedScore,
         MatrixZeroPercentage,
 
+        MzFoundMean1PPM,
+        MzFoundMean2PPM,
+        MzFoundMean3PPM,
+        MzFoundMean4PPM,
+        MzFoundMean5PPM,
+        MzFoundMean6PPM,
+        MzFoundMean7PPM,//100
+        MzFoundMean8PPM,
+        MzFoundMean9PPM,
+        MzFoundMean10PPM,
+        MzFoundMean11PPM,
+        MzFoundMean12PPM,
+        MzPPMMeanAbs,
+        MzPPMMean,
+        MzPPMStd,
+
+        FoundB,
+        FoundY,
+        FoundPercent,
+
         FeaturesSize
     };
 
