@@ -152,11 +152,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::PeakShapeRatio1,
             Features::PeakShapeRatio2,
             Features::PeakShapeRatio3,
-            Features::AlignmentIndexMean,
-            Features::AlignmentIndexStDev,
-            Features::AlignmentCombinedScore,
+            // Features::AlignmentIndexMean,
+            // Features::AlignmentIndexStDev,
+            // Features::AlignmentCombinedScore,
             Features::MatrixZeroPercentage,
-
             Features::MzPPMMeanAbs,
             Features::FoundB,
             Features::FoundY,
@@ -332,9 +331,9 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::TotalIntensityRaw,
                 Features::TargetWindowLocation,
                 Features::DiscriminantScore,
-                Features::AlignmentIndexMean,
-                Features::AlignmentIndexStDev,
-                Features::AlignmentCombinedScore,
+                // Features::AlignmentIndexMean,
+                // Features::AlignmentIndexStDev,
+                // Features::AlignmentCombinedScore,
                 Features::MatrixZeroPercentage,
 
                 Features::MzFoundMean1PPM,
@@ -360,23 +359,42 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
         }
         else if (useExtendedScores) {
-            QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
-            vec.append(candidateScores->selectFeaturesArrayFeatures({
-                            // Features::CosineSimSum100,
+            const QVector<Features> vec = {
+                            Features::CosineSimSum100GreaterThan80,
+                            Features::CosineSimSpectrumOverTimeCubed,
+                            Features::CosineSimSpectrumStDev,
+                            Features::CosineSim100MS1,
+                            Features::CosineSim100MS1Iso1, //5
+                            Features::CosineSim100MS1Iso2,
+                            Features::CosineSim100MS1PreMono,
+                            Features::CosineSimSpectrumCubed,
+                            Features::CosineSimSum45,
+                            Features::CosineSimSumTop, //10
+                            Features::CosineSimSumBottom,
+                            Features::TopBottomRatio,
+                            Features::TopBottomRatioNorm,
+                            Features::PeakShapeRatio1,
+                            Features::PeakShapeRatio2,//15
+                            Features::PeakShapeRatio3,
+                            Features::MatrixZeroPercentage,
+                            Features::MzPPMMeanAbs,
+                            Features::FoundB,
+                            Features::FoundY, //20
+                            Features::FoundPercent,
+                            Features::CosineSimSum100Top12,
                             Features::ScanTimeDeltaAbs,
                             Features::ScanTimePdAbs,
-                            Features::Charge,
-                            Features::ShadowsCosineSimSum,
+                            Features::ShadowsCosineSimSum, //25
                             Features::CosineSimToAnchor1,
                             Features::CosineSimToAnchor2,
                             Features::CosineSimToAnchor3,
                             Features::CosineSimToAnchor4,
-                            Features::CosineSimToAnchor5,
+                            Features::CosineSimToAnchor5,//30
                             Features::CosineSimToAnchor6,
                             Features::CosineSimToAnchor7,
                             Features::CosineSimToAnchor8,
                             Features::CosineSimShadowsToAnchor1,
-                            Features::CosineSimShadowsToAnchor2,
+                            Features::CosineSimShadowsToAnchor2, //35
                             Features::CosineSimShadowsToAnchor3,
                             Features::CosineSimShadowsToAnchor4,
                             Features::CosineSimShadowsToAnchor5,
@@ -392,19 +410,30 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             Features::CosineSimSum100Window1p5X,
                             Features::CosineSimSum100Window2X,
                             Features::TargetWindowLocationAbs,
-
                             Features::MzFoundMean1PPM,
                             Features::MzFoundMean2PPM,
                             Features::MzFoundMean3PPM,
                             Features::MzFoundMean4PPM,
                             Features::MzFoundMean5PPM,
-                            Features::MzFoundMean6PPM
-                            }));
-            return vec;
+                            Features::MzFoundMean6PPM,
+                            // Features::AlignmentIndexMean,
+                            // Features::AlignmentIndexStDev,
+                            // Features::AlignmentCombinedScore,
+                            // Features::MzFoundMean7PPM,
+                            // Features::MzFoundMean8PPM,
+                            // Features::MzFoundMean9PPM,
+                            // Features::MzFoundMean10PPM,
+                            // Features::MzFoundMean11PPM,
+                            // Features::MzFoundMean12PPM
+                            // Features::MzPPMStd,
+                            // Features::Charge,
+                            };
+
+            const QVector<float> vecScores = candidateScores->selectFeaturesArrayFeatures(vec);
+            return vecScores;
         }
 
         const QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
-
         return vec;
     }
 
@@ -418,7 +447,10 @@ QVector<float> DiscriminantScoretron::defaultWeights(
 
     cs.featuresArray[Features::CosineSimSum100GreaterThan80] = 1.0f;
     cs.featuresArray[Features::CosineSimSpectrumOverTimeCubed] = 1.0f;
-    cs.featuresArray[Features::CosineSim100MS1] = 1.0f;
+    // cs.featuresArray[Features::CosineSim100MS1] = 1.0f;
+    // cs.featuresArray[Features::CosineSimSpectrumStDev] = -1.0f;
+    cs.featuresArray[Features::ScanTimeDeltaAbs] = -0.5f;
+    // cs.featuresArray[Features::ShadowsCosineSimSum] = -1.0f;
 
     return scoreVectorLogic(useExtendedScores, useNeuralNetworkScores, &cs);
 }
