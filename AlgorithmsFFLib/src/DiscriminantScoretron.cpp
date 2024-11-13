@@ -446,6 +446,7 @@ QVector<float> DiscriminantScoretron::defaultWeights(
     cs.initFeaturesArray();
 
     cs.featuresArray[Features::CosineSimSum100GreaterThan80] = 1.0f;
+    cs.featuresArray[Features::CosineSimSum100Top12] = 1.0f;
     cs.featuresArray[Features::CosineSimSpectrumOverTimeCubed] = 1.0f;
     // cs.featuresArray[Features::KlDivSpectrumCubeRoot] = -1.0f;
     // cs.featuresArray[Features::CosineSim100MS1] = 1.0f;
