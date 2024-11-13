@@ -19,22 +19,22 @@ enum Features {
         CosineSimSum100Top12,
         CosineSimSum100GreaterThan80,
         AllignedMaxIndexesCount,
-        CosineSim100MS1,
+        CosineSim100MS1, //5
         CosineSimSpectrumCubed,
         KlDivSpectrumCubeRoot,
         CosineSimSum45,
         CosineSimSumTop,
-        CosineSimSumBottom,
-        TopBottomRatio,//10
+        CosineSimSumBottom, //10
+        TopBottomRatio,
         TopBottomRatioNorm,
         Charge,
         ScanTimeDelta,
-        ScanTimeDeltaAbs,
+        ScanTimeDeltaAbs, //15
         ScanTimePd,
         ScanTimePdAbs,
         ScanIonCount,
         MzNorm,
-        Mass,
+        Mass, //20
         KlDivSpectrum,
         CosineSimSpectrum,
         CosineSim45MS1,//20

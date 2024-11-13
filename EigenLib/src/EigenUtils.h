@@ -54,7 +54,12 @@ public:
     */
     template<typename T>
     static void replaceInf(T replaceVal, Eigen::MatrixX<T> *mat){
-        *mat = mat->unaryExpr([replaceVal](double v) { return std::isinf(v) ? replaceVal : v; });
+        *mat = mat->unaryExpr([replaceVal](T v) { return std::isinf(v) ? replaceVal : v; });
+    }
+
+    template<typename T>
+    static void replaceInf(T replaceVal, Eigen::VectorX<T> *mat){
+        *mat = mat->unaryExpr([replaceVal](T v) { return std::isinf(v) ? replaceVal : v; });
     }
 
     /*!

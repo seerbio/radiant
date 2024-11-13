@@ -463,9 +463,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
                           ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters.threadCount)
                           : m_pythiaParameters.threadCount;
 
-    m_weights = m_weights.isEmpty()
-              ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
-              : m_weights;
+    m_weights = DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores);
 
     constexpr float minPeakCount = 3.9;
     m_candidateScores.clear();

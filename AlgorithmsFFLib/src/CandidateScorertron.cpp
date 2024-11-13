@@ -408,13 +408,20 @@ Err CandidateScorertron::calculateScores(
             << DiscriminantScoretron::scoreVectorLogic(true, false, &b.second)
             << bestCorrelationResultsInds.value(b.second.frameIndexStart).apexStarts
             << "SDLKFJSDL";
-
+            //
             // std::cout << bestCorrelationResultsInds.value(b.second.frameIndexStart).matBlockTrimmedIntensity << std::endl;;
             // std::cout << " **************** " << std::endl;
 
         }
 
         qDebug() << weights;
+
+        const QVector<float> arr1 = DiscriminantScoretron::scoreVectorLogic(true, false, &candidateScoresPairs[0].second);
+        const QVector<float> arr2 = DiscriminantScoretron::scoreVectorLogic(true, false, &candidateScoresPairs[1].second);
+
+        for (int i = 0; i < weights.size(); ++i) {
+            qDebug() << i+1 << weights.at(i) << arr1.at(i) << arr2.at(i) << "SDLKFJS";
+        }
 
         const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
         const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
@@ -748,6 +755,14 @@ Err CandidateScorertron::initMatricesdAndVecs(
             &matriciesAndVecs->mzMatrix100
             ); ree;
         matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
+        matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
+            matriciesAndVecs->intensityVec,
+            d_ptr->m_kernelIntegration
+            );
+        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityVec.array().log10();
+        matriciesAndVecs->intensityVec /= matriciesAndVecs->intensityVec.maxCoeff();
+        EigenUtils::replaceInf(0.0f, &matriciesAndVecs->intensityVec);
+        matriciesAndVecs->intensityVec *= matriciesAndVecs->intensityVec.maxCoeff();
 
         Eigen::MatrixX<float> unused;
         e = buildEigenMatrix(
@@ -782,6 +797,7 @@ Err CandidateScorertron::initMatricesdAndVecs(
             ); ree;
 
         matriciesAndVecs->productVec = matriciesAndVecs->ionCountVec.array()
+                                     * matriciesAndVecs->intensityVec.array()
                                      * matriciesAndVecs->integrationVecCosineSim.array();
 
         constexpr int noSmooths = 0;
@@ -856,11 +872,10 @@ namespace {
 
     QVector<QVector<int>> getMatrxColumnApexes(const Eigen::MatrixX<float> &matBlock) {
 
-        QVector<QVector<int>> apexIndexesByColumn;
-        apexIndexesByColumn.reserve(matBlock.cols());
+        QVector<QVector<int>> apexIndexesByColumn(matBlock.cols());
         for (int col = 0; col < matBlock.cols(); col++) {
             const Eigen::VectorX<float> &column = matBlock.col(col);
-            apexIndexesByColumn.push_back(EigenUtils::apexesIndexesOnly(column));
+            apexIndexesByColumn[col] = EigenUtils::apexesIndexesOnly(column);
         }
 
         return apexIndexesByColumn;
@@ -883,55 +898,19 @@ namespace {
     }
 
     QVector<int> findStartApexes(
-            const Eigen::MatrixX<float> &matBlockApexes,
+            const QVector<QVector<int>> &apexIndexes,
             int apexIndex
             ) {
 
-            QVector<int> apexesStartsToUse(static_cast<int>(matBlockApexes.cols()), -1);
-            for (int col = 0; col < matBlockApexes.cols(); col++) {
+            QVector<int> apexesStartsToUse(apexIndexes.size(), -1);
+            for (int col = 0; col < apexIndexes.size(); col++) {
 
-                const Eigen::VectorX<float> &apexColumn = matBlockApexes.col(col);
-
-                if (apexColumn.coeff(apexIndex) > 0) {
-                    apexesStartsToUse[col] = apexIndex;
+                const QVector<int> &apexesColumn = apexIndexes.at(col);
+                if(apexesColumn.isEmpty()) {
                     continue;
                 }
 
-                for (int rowFromCenter = 1; rowFromCenter < apexColumn.size(); rowFromCenter++) {
-
-                    const int rowLeftIndex = std::max(apexIndex - rowFromCenter, 0);
-                    const int rowRightIndex = std::min(apexIndex + rowFromCenter, static_cast<int>(apexColumn.size() - 1));
-
-                    int rowLeftIndexValue = -1;
-                    int rowRightIndexValue = -1;
-
-                    if (rowLeftIndex >= 0) {
-                        rowLeftIndexValue = static_cast<int>(std::ceil(apexColumn.coeff(rowLeftIndex)));
-                    }
-
-                    if (rowRightIndex < apexColumn.size()) {
-                        rowRightIndexValue = static_cast<int>(std::ceil(apexColumn.coeff(rowRightIndex)));
-                    }
-
-                    if (rowLeftIndexValue > 0 && rowRightIndexValue > 0) {
-                        const int higherIndex = rowLeftIndexValue >= rowRightIndexValue ? rowLeftIndex : rowRightIndex;
-                        apexesStartsToUse[col] = higherIndex;
-                        break;
-                    }
-                    else if (rowLeftIndexValue > 0) {
-                        apexesStartsToUse[col] = rowLeftIndex;
-                        break;
-                    }
-                    else if (rowRightIndexValue > 0) {
-                        apexesStartsToUse[col] = rowRightIndex;
-                        break;
-                    }
-
-                    if (rowLeftIndex <= 0 && rowRightIndex >= apexColumn.size() - 1) {
-                        apexesStartsToUse[col] = -1;
-                        break;
-                    }
-                }
+                apexesStartsToUse[col] = apexesColumn.at(MathUtils::closest(apexesColumn, apexIndex));
             }
 
             return apexesStartsToUse;
@@ -1147,20 +1126,20 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
               ).eval();
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
-        const Eigen::MatrixX<float> matBlockApexes = buildMatBlockApexes(
-            matBlock,
-            apexIndexesByColumn
-            );
+        // const Eigen::MatrixX<float> matBlockApexes = buildMatBlockApexes(
+        //     matBlock,
+        //     apexIndexesByColumn
+        //     );
 
-        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.ionCountVec.segment(
+        const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.productVec.segment(
             piiWorking.first.first,
             ogPeakLength
             ).eval();
 
         const QPair<int, float> apexIndex = EigenUtils::returnTopIndexAndValue(integrationVecSegment);
 
-        const QVector<int> apexStarts = findStartApexes(matBlockApexes, apexIndex.first);
-        e = ErrorUtils::isEqual(apexStarts.size(), static_cast<int>(matBlockApexes.cols())); ree;
+        const QVector<int> apexStarts = findStartApexes(apexIndexesByColumn, apexIndex.first);
+        e = ErrorUtils::isEqual(apexStarts.size(), apexIndexesByColumn.size()); ree;
 
         constexpr float stopThresholdFraction = 0.0;
         const Eigen::MatrixX<float> matBlockTrimmed = trimMatrixBlock(
@@ -1487,6 +1466,7 @@ namespace {
 
     Err setFoundMs2Ions(
         const QVector<BestCorrelationResult> &bestCorrelationResults,
+        int topNMS2Ions,
         MsFrame *msFrameMzTarget,
         CandidateScores *candidateScores
         ) {
@@ -1550,9 +1530,9 @@ namespace {
         candidateScores->featuresArray[Features::MzPPMMean] = MathUtils::mean(mzMeanValsFoundPPM);
         candidateScores->featuresArray[Features::MzPPMMeanAbs] = std::abs(MathUtils::mean(mzMeanValsFoundPPM));
         candidateScores->featuresArray[Features::MzPPMStd] = MathUtils::stDev(mzMeanValsFoundPPM);
-        candidateScores->featuresArray[Features::FoundB] = foundB / static_cast<float>(ms2Ions.size());
-        candidateScores->featuresArray[Features::FoundY] = foundY / static_cast<float>(ms2Ions.size());
-        candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(ms2Ions.size());
+        candidateScores->featuresArray[Features::FoundB] = foundB / static_cast<float>(topNMS2Ions);
+        candidateScores->featuresArray[Features::FoundY] = foundY / static_cast<float>(topNMS2Ions);
+        candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
 
 
 
@@ -1744,8 +1724,9 @@ namespace {
 
             float cosineSim;
             e = EigenUtils::cosineSimilarity(v1, v2, &cosineSim); ree;
-
-            candidateScores->featuresArray[Features::ShadowsCosineSimSum] += cosineSim;
+            if (col < 6 && cosineSim > 0.80) {
+                candidateScores->featuresArray[Features::ShadowsCosineSimSum] += cosineSim;
+            }
             candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
         }
@@ -1927,7 +1908,8 @@ Err CandidateScorertron::setCandidateScores(
         [bestAlignmentMatrixRowIndex](int i){return i == bestAlignmentMatrixRowIndex;}
         ));
 
-    candidateScores->featuresArray[Features::AlignmentIndexMean] = MathUtils::mean(bestCorrelationResult.apexStarts);
+    const float length = bestCorrelationResult.peakIntegrationIndexes.second - bestCorrelationResult.peakIntegrationIndexes.first;
+    candidateScores->featuresArray[Features::AlignmentIndexMean] = MathUtils::mean(bestCorrelationResult.apexStarts) / std::max(length, 1.0f);
     candidateScores->featuresArray[Features::AlignmentIndexStDev] = MathUtils::stDev(bestCorrelationResult.apexStarts);
     candidateScores->featuresArray[Features::AlignmentCombinedScore]
                         = candidateScores->featuresArray[Features::AlignmentIndexMean]
@@ -1956,6 +1938,7 @@ Err CandidateScorertron::setCandidateScores(
 
     e = setFoundMs2Ions(
         bestCorrelationResults,
+        m_topNMS2Ions,
         m_msFrameMzTarget,
         candidateScores
         ); ree;
