@@ -47,6 +47,7 @@ cp /src/pytorch/build/lib/* "$pythia_lib/"
 
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
+echo "Version: ${pythiadia_version}" >> "${package_dir}/DEBIAN/control"
 
 echo "Building PythiaDIA DEB…"
 
