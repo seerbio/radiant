@@ -5,7 +5,7 @@
 #include "MsReaderPointerAcc.h"
 
 #include "GlobalSettings.h"
-#include "MsReaderBrukerTims.h"
+// #include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
 #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
@@ -47,11 +47,11 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
         e = ptr->openFile(filePath); ree;
     }
 
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
-        ptr = msReader;
-        e = ptr->openFile(filePath); ree;
-    }
+    // else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
+    //     QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+    //     ptr = msReader;
+    //     e = ptr->openFile(filePath); ree;
+    // }
 
     else {
         qDebug() << "Filepath" << filePath;

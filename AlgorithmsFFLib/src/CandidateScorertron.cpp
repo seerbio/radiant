@@ -881,22 +881,6 @@ namespace {
         return apexIndexesByColumn;
     }
 
-    Eigen::MatrixX<float> buildMatBlockApexes(
-        const Eigen::MatrixX<float> &matBlock,
-        const QVector<QVector<int>> &apexIndexesByColumn
-        ) {
-
-        Eigen::MatrixX<float> matBlockApexes(matBlock.rows(), matBlock.cols());
-        matBlockApexes.setZero();
-        for (int col = 0; col < apexIndexesByColumn.size(); col++) {
-            const QVector<int> &columnApexes = apexIndexesByColumn.at(col);
-            for (int row : columnApexes) {
-                matBlockApexes.coeffRef(row, col) = matBlock.coeff(row, col);
-            }
-        }
-        return matBlockApexes;
-    }
-
     QVector<int> findStartApexes(
             const QVector<QVector<int>> &apexIndexes,
             int apexIndex
@@ -1101,7 +1085,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
 
     const int maxRows = static_cast<int>(matriciesAndVecs.intensityMatrix100.rows());
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensityResized = peakIntegrationsVsIntensity;
-
     if (m_useTopNIntegrationsParam) {
         peakIntegrationsVsIntensityResized.resize(std::min(
             m_pythiaParameters.topNIntegrations,
@@ -1126,10 +1109,6 @@ Err CandidateScorertron::processIntegrationVectorPeakIntegrations(
               ).eval();
 
         const QVector<QVector<int>> apexIndexesByColumn = getMatrxColumnApexes(matBlock);
-        // const Eigen::MatrixX<float> matBlockApexes = buildMatBlockApexes(
-        //     matBlock,
-        //     apexIndexesByColumn
-        //     );
 
         const Eigen::VectorX<float> integrationVecSegment = matriciesAndVecs.productVec.segment(
             piiWorking.first.first,
