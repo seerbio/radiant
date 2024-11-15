@@ -19,6 +19,11 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+
+        src/SpecLibSrc/Library.cpp
+        src/SpecLibSrc/Readers.cpp
+        src/SpecLibSrc/SpecLibStructures.cpp
+
         src/MsCalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
@@ -39,6 +44,11 @@ SET(SOURCE_FILES
         )
 
 SET(HEADER_FILES
+
+        src/SpecLibSrc/Library.h
+        src/SpecLibSrc/Readers.h
+        src/SpecLibSrc/SpecLibStructures.h
+
         src/MsCalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
@@ -56,7 +66,7 @@ SET(HEADER_FILES
         src/PythiaParameterReader.h
         src/QuanReader.h
         src/toml.hpp
-        ${TIMS_CPPSQL_HEADER}
+#        ${TIMS_CPPSQL_HEADER}
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
