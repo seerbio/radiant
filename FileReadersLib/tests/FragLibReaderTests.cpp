@@ -67,8 +67,6 @@ void FragLibReaderTests::getSM2IonsTest() {
 
     e = FragLibReader::getFragLibReaderRows(
             testFilePath,
-            100.0,
-            40000.0,
             &fragLibReaderRows
             );
 
@@ -76,17 +74,7 @@ void FragLibReaderTests::getSM2IonsTest() {
     QCOMPARE(fragLibReaderRows.size(), 9581);
 
     e = FragLibReader::getFragLibReaderRows(
-            testFilePath,
-            900.0,
-            600.0,
-            &fragLibReaderRows
-    );
-    QCOMPARE(e, eError);
-
-    e = FragLibReader::getFragLibReaderRows(
             testFilePath + "CHAUNCYANDFLOPS",
-            600.0,
-            900.0,
             &fragLibReaderRows
     );
     QCOMPARE(e, eFileError);

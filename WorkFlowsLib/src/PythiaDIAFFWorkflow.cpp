@@ -54,17 +54,9 @@ Err PythiaDIAFFWorkflow::init(
     m_fragLibUri = fragLibUri;
     m_pythiaParameters.print();
 
-    const double massMin
-        = pythiaParameters.peptideLengthMin * Molecule(MolecularFormulas::glycineFormula).monoisotopicMass();
-
-    const double massMax
-            = pythiaParameters.peptideLengthMax * Molecule(MolecularFormulas::tryptophanFormula).monoisotopicMass();
-
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             m_fragLibUri,
-            massMin,
-            massMax,
             &fragLibReaderRows
             ); ree;
 

@@ -19,12 +19,18 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+
+        src/SpecLibSrc/Library.cpp
+        src/SpecLibSrc/Readers.cpp
+        src/SpecLibSrc/SpecLibStructures.cpp
+
         src/MsCalibrationReader.cpp
         src/CommandLineParserUtils.cpp
         src/CSVReader.cpp
         src/FastaReader.cpp
         src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
+        src/FragLibReaderRow.cpp
         src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
@@ -35,16 +41,23 @@ SET(SOURCE_FILES
         src/ParquetReader.cpp
         src/PythiaParameterReader.cpp
         src/QuanReader.cpp
+        src/SpecLibReader.cpp
 #        ${TIMS_CPPSQL_SOURCE}
         )
 
 SET(HEADER_FILES
+
+        src/SpecLibSrc/Library.h
+        src/SpecLibSrc/Readers.h
+        src/SpecLibSrc/SpecLibStructures.h
+
         src/MsCalibrationReader.h
         src/CommandLineParserUtils.h
         src/CSVReader.h
         src/FastaReader.h
         src/FeatureFinderHillReader.h
         src/FragLibReader.h
+        src/FragLibReaderRow.h
         src/FragLibTsvReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
@@ -55,13 +68,18 @@ SET(HEADER_FILES
         src/ParquetReader.h
         src/PythiaParameterReader.h
         src/QuanReader.h
+        src/SpecLibReader.h
         src/toml.hpp
-        ${TIMS_CPPSQL_HEADER}
+#        ${TIMS_CPPSQL_HEADER}
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
+        src/SpecLibReader.cpp
+        src/SpecLibReader.h
+        src/FragLibReaderRow.cpp
+        src/FragLibReaderRow.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
