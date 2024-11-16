@@ -5,7 +5,11 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
+#include "ChemConstants.h"
+#include "Error.h"
 #include "FileReadersLib_Exports.h"
+#include "FragLibReaderRow.h"
+#include "PeptideStringWithMods.h"
 #include "Readers.h"
 #include "SpecLibStructures.h"
 
@@ -14,6 +18,10 @@
 #include <vector>
 #include <string>
 #include <regex>
+
+
+using namespace Error;
+
 
 class FILEREADERSLIB_EXPORTS Entry {
 
@@ -80,8 +88,45 @@ public:
 
 	std::vector<Entry> entries;
 
-	template<class F> void
-	read(F &input) {
+	static Err extractIonLabel(
+		unsigned int ionIndexRaw,
+		unsigned int ionTypeInt,
+		unsigned int ionCharge,
+		unsigned int ionLoss,
+		int peptideLen,
+		IonLabel *ionLabel
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isWithinRange(
+			static_cast<int>(ionTypeInt),
+			1, 2,
+			ErrorUtilsParam::IncludeThreshold,
+			eValueError
+			); ree;
+
+		e = ErrorUtils::isEqual(static_cast<int>(ionLoss), 0); ree;
+
+		const QChar ionType = ionTypeInt == 1 ? 'b' : 'y';
+		const int ionIndex = ionTypeInt == 1 ? ionIndexRaw : peptideLen - ionIndexRaw;
+
+		IonLabel ionLabelLocal = ionType + QString::number(ionIndex);
+		ionLabelLocal = ionCharge > 1 ? ionLabelLocal + '^' + QString::number(static_cast<int>(ionCharge)) : ionLabelLocal;
+
+		*ionLabel = ionLabelLocal;
+
+		ERR_RETURN;
+	}
+
+	template<class F>
+	Err read(
+		F &input,
+		QVector<FragLibReaderRow> *fragLibReaderRows
+		) {
+
+		ERR_INIT
+
 		int gd = 0;
 		int gc = 0;
 		int ip = 0;
@@ -92,8 +137,8 @@ public:
 		else input.read(reinterpret_cast<char*>(&gd), sizeof(int));
 
 		if (version < -3) {
-			std::cout << "ERROR: version " << -version << " of the .speclib format is not supported by this DIA-NN version" << std::endl;
-			exit(-1);
+			std::cout << "ERROR: version is not supported" << -version << std::endl;
+			rrr(eFileError);
 		}
 
 		input.read(reinterpret_cast<char*>(&gc), sizeof(int));
@@ -117,22 +162,64 @@ public:
 			Readers::readVector(input, elution_groups);
 		}
 
+		fragLibReaderRows->reserve(static_cast<int>(entries.size()));
+
 		for (int i = 0; i < entries.size(); i++) {
+
 			const auto &[target, decoy, entryFlags, proteotypic, name, pidIndex, pgQValue, ptmQvalue, siteConf] = entries.at(i);
 			const auto &p = precursors.at(i);
-			std::cout
-			<< p
-			<< " " << target.iRT
-			<< " " << target.iIM
-			<< " " << static_cast<unsigned int>(target.fragments.at(0).index)
-			<< " " << static_cast<unsigned int>(target.fragments.at(0).type)
-			<< " " << static_cast<unsigned int>(target.fragments.at(0).charge)
-			<< " " << static_cast<unsigned int>(target.fragments.at(0).loss)
-			<< " " << target.fragments.at(0).height
-			<< " " << target.fragments.at(0).mz
-			<< std::endl;;
+
+			FragLibReaderRow flrr;
+
+			QString specLibPeptide = QString::fromStdString(p);
+			const QChar specLibPeptideCharge = specLibPeptide.back();
+
+			specLibPeptide.chop(1);
+			const PeptideString peptideString = PeptideStringWithMods(specLibPeptide).removeUniModChars();
+			specLibPeptide += '|' + specLibPeptideCharge;
+
+			flrr.peptideSequenceChargeKey = specLibPeptide;
+			e = ErrorUtils::toInt(QString(specLibPeptideCharge), &flrr.precursorCharge); ree;
+			flrr.iM = target.iIM;
+			flrr.iRT = target.iRT;
+			flrr.isDecoy = false;
+
+			const int fragmentsSize = static_cast<int>(target.fragments.size());
+			flrr.intensityVals.reserve(fragmentsSize);
+			flrr.mzVals.reserve(fragmentsSize);
+			flrr.mass = (target.mz * static_cast<float>(flrr.precursorCharge)) - (ChemConstants::PROTON * flrr.precursorCharge);
+
+			QStringList ionLabelsList;
+			ionLabelsList.reserve(fragmentsSize);
+
+			for (int i = 0; i < fragmentsSize; i++) {
+				const auto ionIndexRaw = static_cast<unsigned int>(target.fragments.at(i).index);
+				const auto ionTypeInt = static_cast<unsigned int>(target.fragments.at(i).type);
+				const auto ionCharge = static_cast<unsigned int>(target.fragments.at(i).charge);
+				const auto ionLoss = static_cast<unsigned int>(target.fragments.at(i).loss);
+				const float intensityVal = target.fragments.at(i).height;
+				const float mzVal = target.fragments.at(i).mz;
+
+				flrr.mzVals.push_back(mzVal);
+				flrr.intensityVals.push_back(intensityVal);
+
+				IonLabel ionLabel;
+				e = extractIonLabel(
+					ionIndexRaw,
+					ionTypeInt,
+					ionCharge,
+					ionLoss,
+					peptideString.size(),
+					&ionLabel
+					); ree;
+				ionLabelsList.push_back(ionLabel);
+			}
+
+			flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
+			fragLibReaderRows->push_back(flrr);
 		}
 
+		ERR_RETURN
 	}
 };
 

@@ -23,8 +23,8 @@ public:
 		}
 	}
 
-	template<class F> void
-    static readString(F &input, std::string &string) {
+	template<class F>
+    static void readString(F &input, std::string &string) {
 		int size = 0; input.read(reinterpret_cast<char*>(&size), sizeof(int));
 		if (size) {
 			string.resize(size);
@@ -32,8 +32,8 @@ public:
 		}
 	}
 
-	template <class F, class T> void
-    static readArray(F &input, std::vector<T> &array) {
+	template <class F, class T>
+    static void readArray(F &input, std::vector<T> &array) {
 		int size = 0; input.read(reinterpret_cast<char*>(&size), sizeof(int));
 		if (size) {
 			array.resize(size);
