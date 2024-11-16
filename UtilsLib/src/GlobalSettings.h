@@ -102,6 +102,7 @@ public:
     const QString DOT_PRQ_FF = QStringLiteral(".prqFF");
     const QString DOT_PEPLIB = QStringLiteral(".pepLib");
     const QString DOT_PSM = QStringLiteral(".psm");
+    const QString DOT_SPECLIB = QStringLiteral(".speclib");
     const QString DOT_TSV = QStringLiteral(".tsv");
     const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
     const int HASHING_PRECISION = 3;

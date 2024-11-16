@@ -7,6 +7,7 @@
 #include "AminoAcids.h"
 #include "ChemConstants.h"
 #include "FragLibReader.h"
+#include "FragLibReaderRow.h"
 #include "PeptideStringWithMods.h"
 
 #include <nanoflann.hpp>

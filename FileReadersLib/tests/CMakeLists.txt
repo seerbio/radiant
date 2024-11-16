@@ -30,6 +30,7 @@ SET(TEST_CLASSES
         ParquetReaderTests
         PythiaParameterReaderTests
         QuanReaderTests
+        SpecLibReaderTests
         )
 
 foreach(class ${TEST_CLASSES})

@@ -92,8 +92,6 @@ void FragLibTsvReaderTests::compareTest() {
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             testFile,
-            massStart,
-            massEnd,
             &fragLibReaderRows
             );
     std::sort(fragLibReaderRows.begin(), fragLibReaderRows.end(), [](const FragLibReaderRow &l, const FragLibReaderRow &r){

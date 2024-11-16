@@ -53,7 +53,7 @@ void PlayGroundTests::testme() {
     QCOMPARE(e, eNoError);
 
     QVector<FragLibReaderRow> fragLibReaderRows;
-    e = FragLibReader::getFragLibReaderRows(fragLibFilepath, 400, 4000, &fragLibReaderRows);
+    e = FragLibReader::getFragLibReaderRows(fragLibFilepath, &fragLibReaderRows);
     QCOMPARE(e, eNoError);
 
     TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
