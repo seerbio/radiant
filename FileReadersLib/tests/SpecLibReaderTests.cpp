@@ -25,6 +25,8 @@ private Q_SLOTS:
 
 void SpecLibReaderTests::getFragLibReaerRowsTest() {
 
+    QSKIP("Build a test for this when a small lib file is found");
+
     ERR_INIT
 
     const QString specLibFile = QStringLiteral("/home/andrewnichols/Desktop/Data/Libraries/lib.predicted.speclib");
