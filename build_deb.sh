@@ -19,7 +19,8 @@ set -eu -o pipefail
 # This string will be appended to the package name.
 ARCH=$(dpkg-architecture | grep 'DEB_BUILD_ARCH=' | cut -d = -f 2)
 
-# Required argument (as env var)
+pythiadia_version="${pythiadia_version:-0.0-dev}"
+
 package_dir="${package_dir}+${ARCH}"
 
 pythia_bin="${pythia_bin:=${package_dir}/usr/local/bin/PythiaDIACpp}"
