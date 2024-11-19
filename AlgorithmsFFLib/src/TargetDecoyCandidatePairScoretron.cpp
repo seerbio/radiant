@@ -112,6 +112,10 @@ Err TargetDecoyCandidatePairScoretron2::buildMzTargetKeyVsMsFrames() {
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
     e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
 
+    for (MsFrame *msFrame : m_mzTargetKeyVsMsFramePntr) {
+        delete msFrame;
+    }
+
     for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); ++it) {
         auto *msFrame = new MsFrame();
         e = msFrame->init(it.value(), m_scanNumberVsScanTime); ree;

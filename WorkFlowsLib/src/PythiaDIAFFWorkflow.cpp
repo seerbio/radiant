@@ -264,19 +264,18 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
     }
 
-     // if (m_msCalibratomatic.isInitRT()) {
-     //
-     //     OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
-     //     e = msOptimizeMassAccuracyPPMSettertron.initExec(
-     //         &msReaderPointerAcc,
-     //         &m_msCalibratomatic,
-     //         &m_pythiaParameters,
-     //         &m_targetDecoyCandidatePairScoretron,
-     //         &m_targetDecoyPairPntrs
-     //         ); ree;
-     //
-     //     m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
-     // }
+     if (m_msCalibratomatic.isInitRT()) {
+         OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
+         e = msOptimizeMassAccuracyPPMSettertron.initExec(
+             &msReaderPointerAcc,
+             &m_msCalibratomatic,
+             &m_pythiaParameters,
+             &m_targetDecoyCandidatePairScoretron,
+             &m_targetDecoyPairPntrs
+             ); ree;
+
+         m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
+     }
 
 //     int targetCountBelowFDRThreshold;
 //     e = mainAnalysis(

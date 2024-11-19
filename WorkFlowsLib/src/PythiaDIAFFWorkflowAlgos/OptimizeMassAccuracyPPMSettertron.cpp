@@ -179,19 +179,31 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         &uniqueMsScanInfosOptimization
         ); ree;
 
-    QVector<MzTargetKey> mzTargetKeys;
-    std::transform(
-        uniqueMsScanInfosOptimization.begin(),
-        uniqueMsScanInfosOptimization.end(),
-        std::back_inserter(mzTargetKeys),
-        [](const MsScanInfo &msi){return msi.targetKey();}
-        );
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs
+                                    = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
+    if (m_pythiaParameters->useLazyLoading) {
+        e = PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
+            uniqueMsScanInfosOptimization,
+            m_msReaderPointerAcc,
+            m_msCalibratomatic,
+            &m_diaTargetFrames
+            ); ree;
+        for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); it++) {
+            const MzTargetKey &mzTargetKey = it.key();
+            QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints = it.value();
+            for (auto itt = scanNumberVsScanPoints.begin(); itt != scanNumberVsScanPoints.end(); itt++) {
+                m_diaTargetFramesPntrs[mzTargetKey].insert(itt.key(), &itt.value());
+            }
+        }
+        *diaTargetFramesPntrs = m_diaTargetFramesPntrs;
+        e = m_targetDecoyCandidatePairScoretron->buildMzTargetKeyVsMsFrames(); ree;
+    }
 
     QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
     e = PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
         uniqueMsScanInfosOptimization,
         m_msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
-        m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
+        diaTargetFramesPntrs,
         &mzTargetKeyVsTurboXicPntrs
         ); ree;
 

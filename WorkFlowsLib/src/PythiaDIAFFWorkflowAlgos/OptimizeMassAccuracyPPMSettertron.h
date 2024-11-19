@@ -51,6 +51,9 @@ private:
 
     QVector<float> m_weights;
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> m_diaTargetFrames;
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFramesPntrs;
+
 };
 
 

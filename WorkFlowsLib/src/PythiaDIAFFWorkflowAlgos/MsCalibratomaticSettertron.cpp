@@ -89,7 +89,8 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         &uniqueMsScanInfosCalibration
         ); ree;
 
-    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs
+                                        = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
     if (m_pythiaParameters->useLazyLoading) {
         e = PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
             uniqueMsScanInfosCalibration,
