@@ -7,6 +7,7 @@
 #include "GlobalSettings.h"
 // #include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
+#include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
 
@@ -16,6 +17,12 @@
 #include <QFile>
 #include <QFileInfo>
 
+
+MsReaderPointerAcc::MsReaderPointerAcc() : m_useLazyLoading(false) {}
+
+void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
+    m_useLazyLoading = useLazyLoading;
+}
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
     ERR_INIT
@@ -32,9 +39,17 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     const QString fileSuffix = fi.suffix();
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
-        QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
-        ptr = msReader;
-        e = ptr->openFile(filePath); ree;
+        if (m_useLazyLoading) {
+            QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLLazyLoad);
+            ptr = msReader;
+            e = ptr->openFile(filePath); ree;
+        }
+        else {
+            QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
+            ptr = msReader;
+            e = ptr->openFile(filePath); ree;
+        }
+
     }
 
     else if (
@@ -78,6 +93,7 @@ Err MsReaderPointerAcc::openFile(
     const QString fileSuffix = fi.suffix();
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
+
         QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
         ptr = msReader;
         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;

@@ -73,6 +73,7 @@ struct PythiaParameters{
     int threadCount = 8;
     int verbosity = 0;
     bool writePythiaDIA = false;
+    bool useLazyLoading = true;
 
     //[LibraryParams]
     int chargeStateMin = -1;

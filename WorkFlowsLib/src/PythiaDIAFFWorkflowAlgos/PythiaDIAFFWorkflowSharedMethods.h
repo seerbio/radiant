@@ -75,6 +75,13 @@ public:
         QVector<MsCalibarationReaderRow> *msCalibrationReaderRows
         );
 
+    static Err buildDiaTargetFrames(
+        const QVector<MsScanInfo> &uniqueMsScanInfos,
+        MsReaderPointerAcc *msReadPointerAcc,
+        MsCalibratomatic *msCalibratomatic,
+        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames
+        );
+
 };
 
 

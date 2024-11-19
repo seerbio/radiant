@@ -1,5 +1,5 @@
-#ifndef MSREADERMZMLMAPPED_H
-#define MSREADERMZMLMAPPED_H
+#ifndef MSREADERMZMLLAZYLOAD_H
+#define MSREADERMZMLLAZYLOAD_H
 
 #include "Error.h"
 #include "FileReadersLib_Exports.h"
@@ -88,4 +88,4 @@ private:
 };
 
 
-#endif // MSREADERMZMLMAPPED_H
+#endif // MSREADERMZMLLAZYLOAD_H

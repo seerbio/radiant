@@ -59,6 +59,9 @@ private:
 
     MsCalibratomatic m_msCalibratomatic;
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> m_diaTargetFrames;
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFramesPntrs;
+
 
     QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;

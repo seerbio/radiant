@@ -475,3 +475,79 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
         ERR_RETURN
     }
+
+namespace {
+
+    std::tuple<Err, MzTargetKey, QMap<ScanNumber, ScanPoints>> buildDiaTargetFramesLoadLogic(
+        const MsScanInfo &msi,
+        MsReaderPointerAcc *msReaderPointerAcc,
+        MsCalibratomatic *msCalibratomatic
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); rtee;
+
+        QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
+        e = msReaderPointerAcc->ptr->getMzTargetScanPoints(msi.targetKey(), &scanNumberVsScanPoints); rtee;
+
+        if (msCalibratomatic->isInitCalMS2()) {
+            e = msCalibratomatic->recalibrateScanPoints(
+                MSLevelEnum::MS2,
+                &scanNumberVsScanPoints
+                ); rtee;
+        }
+
+        return {e, msi.targetKey(), scanNumberVsScanPoints};
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
+    const QVector<MsScanInfo> &uniqueMsScanInfos,
+    MsReaderPointerAcc *msReadPointerAcc,
+    MsCalibratomatic *msCalibratomatic,
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames
+    ) {
+
+    ERR_INIT
+
+#define RUN_PARALLEL_DIATARGETFRAMES
+#ifdef RUN_PARALLEL_DIATARGETFRAMES
+QVector<QVector<MsScanInfo>> msScanInfosesTranced;
+    e = ParallelUtils::trancheVectorForParallelization(
+        uniqueMsScanInfos,
+        ParallelUtils::numberOfAvailableSystemProcessors(),
+        &msScanInfosesTranced
+        );
+
+    const auto trainingLogicBinder = std::bind(
+        buildDiaTargetFramesLoadLogic,
+        std::placeholders::_1,
+        msReadPointerAcc,
+        msCalibratomatic
+        );
+
+    QFuture<std::tuple<Err, MzTargetKey, QMap<ScanNumber, ScanPoints>>> futures = QtConcurrent::mapped(
+        uniqueMsScanInfos,
+        trainingLogicBinder
+        );
+    futures.waitForFinished();
+
+    for (const std::tuple<Err, MzTargetKey, QMap<ScanNumber, ScanPoints>> &res : futures) {
+        e = std::get<0>(res); ree;
+        (*diaTargetFrames)[std::get<1>(res)] = std::get<2>(res);
+    }
+#else
+    for (const MsScanInfo& msi : uniqueMsScanInfos) {
+        std::tuple<Err, MzTargetKey, QMap<ScanNumber, ScanPoints>> result = buildDiaTargetFramesLoadLogic(
+            msi,
+            msReadPointerAcc,
+            msCalibratomatic
+            );
+        e = std::get<0>(result); ree;
+        (*diaTargetFrames)[std::get<1>(result)] = std::get<2>(result);
+    }
+#endif
+
+    ERR_RETURN
+}

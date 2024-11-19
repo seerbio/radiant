@@ -68,14 +68,23 @@ Err TargetDecoyCandidatePairScoretron2::init(
     m_uniqueTandemMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    e = m_msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
+    if (!m_pythiaParameters.useLazyLoading) {
+        e = m_msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
+    }
 
-    constexpr int msLevel = 1;
-    QMap<ScanNumber, ScanPoints> scanNumberVsScanPointsMS1;
-    e = m_msReaderPointerAcc->ptr->getScanPoints(msLevel, &scanNumberVsScanPointsMS1); ree;
+    if (m_pythiaParameters.useLazyLoading) {
+        e = m_msReaderPointerAcc->ptr->getMzTargetScanPoints(
+            S_GLOBAL_SETTINGS.MS1Key,
+            &m_ms1ScanNumberVsScanPoints
+            ); ree;
+    }
+    else {
+        constexpr int msLevel = 1;
+        e = m_msReaderPointerAcc->ptr->getScanPoints(msLevel, &m_ms1ScanNumberVsScanPoints); ree;
+    }
 
     QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
-    for (auto it = scanNumberVsScanPointsMS1.begin(); it != scanNumberVsScanPointsMS1.end(); ++it) {
+    for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
         ms1FramePtrs.insert(it.key(), &it.value());
     }
 
@@ -86,9 +95,8 @@ Err TargetDecoyCandidatePairScoretron2::init(
     e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
 
     if (!diaTargetFrames.isEmpty()) {
-        e = ErrorUtils::isNotEmpty(scanNumberVsScanPointsMS1); ree;
+        e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
         m_diaTargetFrames = diaTargetFrames;
-        m_ms1ScanNumberVsScanPoints = scanNumberVsScanPointsMS1;
         e = buildMzTargetKeyVsMsFrames(); ree;
     }
 
@@ -346,10 +354,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 }
 
 bool TargetDecoyCandidatePairScoretron2::isInit() const {
-
-    return m_pythiaParameters.isValid()
-       && !m_diaTargetFrames.isEmpty()
-       && !m_ms1ScanNumberVsScanPoints.isEmpty();
+    return m_pythiaParameters.isValid() && !m_ms1ScanNumberVsScanPoints.isEmpty();
 }
 
 Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
