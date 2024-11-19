@@ -40,6 +40,17 @@ public:
         return eNoError;
     }
 
+    template<typename T>
+    static Err toLong(const T &object, long *out, Err e = eError) {
+        bool ok;
+        *out = object.toLong(&ok);
+        if (!ok) {
+            qDebug() << "input to convert" << object;
+            rrr(e);
+        }
+        return eNoError;
+    }
+
     /*!
     * @brief  Converts an object of type T to a float.
     * @tparam T: The datatype of the object. The object should support toDouble() conversion method.

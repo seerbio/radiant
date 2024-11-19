@@ -24,6 +24,7 @@ SET(TEST_CLASSES
         MsReaderBaseTests
 #        MsReaderBrukerTimsTests
         MsReaderMZMLTests
+        MsReaderMZMLLazyLoadTests
         MsReaderMZMLMappedTests
         MsReaderParquetTests
         MsReaderPointerAccTests
