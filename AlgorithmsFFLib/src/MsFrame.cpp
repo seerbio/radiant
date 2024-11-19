@@ -45,13 +45,15 @@ private:
 
 };
 
-MsFrame::Private::Private() : m_isInit(false) {}
+MsFrame::Private::Private()
+: m_isInit(false)
+, m_kdTree(nullptr)
+, m_mat(nullptr)
+{}
 
 MsFrame::Private::~Private() {
-    if (m_isInit) {
-        delete m_kdTree;
-        delete m_mat;
-    }
+    delete m_kdTree;
+    delete m_mat;
 }
 
 
