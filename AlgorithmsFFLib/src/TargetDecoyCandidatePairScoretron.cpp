@@ -290,7 +290,7 @@ namespace {
                         pi.weights,
                         tdcp,
                         &candidateScoresDecoy
-                ); rree;
+                        ); rree;
                 allCandidateScores.push_back(candidateScoresDecoy);
             }
 
@@ -352,7 +352,6 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-
     QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
             parallelInputsTranched,
             parallelScoreLogic
