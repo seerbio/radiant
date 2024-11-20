@@ -477,7 +477,7 @@ Err MsCalibratomatic::recalibrateScanPoint(
     const MSLevelEnum& msLevel,
     float mzVal,
     float* mzValRecal
-    ) {
+    ) const {
 
     ERR_INIT
 
