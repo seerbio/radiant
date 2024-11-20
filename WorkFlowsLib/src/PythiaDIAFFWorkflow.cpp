@@ -243,6 +243,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
+    // m_pythiaParameters.useLazyLoading = false;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
@@ -277,141 +278,141 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
          m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
      }
 
-//     int targetCountBelowFDRThreshold;
-//     e = mainAnalysis(
-//         &msReaderPointerAcc,
-//         &targetCountBelowFDRThreshold
-//         ); ree;
-//
-//     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
-//     e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
-//         m_candidateScores,
-//         &candidateScoresTargetsAndDecoys
-//         ); ree;
-//
-//     e = populateAltIdTargetKeys(
-//         m_pythiaParameters.threadCount,
-//         &candidateScoresTargetsAndDecoys
-//         ); ree;
-//
-//     QVector<CandidateScores*> candidateScoreClassifierPntrs;
-//     e = applyNeuralNetClassifier(
-//             candidateScoresTargetsAndDecoys,
-//             S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
-//             &candidateScoreClassifierPntrs
-//             ); ree;
-//
-//     int targetCountBelowFDRThresholdOnePercent;
-//     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-//         candidateScoreClassifierPntrs,
-//         m_pythiaParameters.percentFDR / 100.0,
-//         &targetCountBelowFDRThresholdOnePercent
-//         ); ree;
-//
-//     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-//             << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
-//             << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
-//
-//     const bool candidateScoresSortedHiLo = std::is_sorted(
-//         candidateScoreClassifierPntrs.begin(),
-//         candidateScoreClassifierPntrs.end(),
-//         [](const CandidateScores *l, const CandidateScores *r){return l->classifierScore < r->classifierScore;}
-//         );
-//     e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
-//
-//     if (!m_pythiaParameters.reportDecoys) {
-//
-//         const auto terminatorLogicFDRFilter
-//             = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
-//
-//         const auto terminator = std::remove_if(
-//                 candidateScoreClassifierPntrs.begin(),
-//                 candidateScoreClassifierPntrs.end(),
-//                 terminatorLogicFDRFilter
-//                 );
-//
-//         candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
-//     }
-//     else {
-//
-//         int counter = 0;
-//         int decoyCounter = 0;
-//         for (const CandidateScores *candidateScores : candidateScoreClassifierPntrs) {
-//
-//             counter++;
-//             if (candidateScores->isDecoy) {
-//                 decoyCounter++;
-//             }
-//
-//             constexpr double fdrThreshold = 0.5;
-//             if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
-//                 break;
-//             }
-//         }
-//
-//         candidateScoreClassifierPntrs.resize(counter);
-//     }
-//     m_pythiaParameters.writePythiaDIA = true;
-//     if (m_pythiaParameters.writePythiaDIA) {
-//
-//         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
-//         e = updateProteinGroupAnnotation(
-//                 m_fastaUri,
-//                 &candidateScoreClassifierPntrs
-//                 ); ree;
-//         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
-//
-//         QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
-//         std::transform(
-//                 candidateScoreClassifierPntrs.begin(),
-//                 candidateScoreClassifierPntrs.end(),
-//                 std::back_inserter(candidateScoreReaderRows),
-//                 [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
-//                 );
-//
-//         const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
-//         e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
-//
-// //TODO delete this after dev is done.
-// #define REPORT_ENTRAP
-// #ifdef REPORT_ENTRAP
-//         if (m_pythiaParameters.verbosity > -1) {
-//             int counter = 0;
-//             int decoys = 0;
-//             int entrap = 0;
-//
-//             for (CandidateScores *cs : candidateScoreClassifierPntrs) {
-//                 counter++;
-//
-//                 if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
-//                     entrap++;
-//                 }
-//
-//                 if (cs->isDecoy) {
-//                     decoys++;
-//                 }
-//                 if (decoys/static_cast<double>(counter) >= 0.01) {
-//                     break;
-//                 }
-//
-//             }
-//             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-//                     << "Alt:" << targetCountBelowFDRThresholdOnePercent
-//                     << "| Counter:" << counter
-//                     << "| Decoys:" <<  decoys
-//                     << "| Entrap:" << entrap
-//                     << "| Entrap%" << entrap / (double)counter;
-//         }
-// #endif
-//     }
-//
-//     // constexpr int frameIndexBuffer = 1;
-//     // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
-//     // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
-//     // e = QuanFileBuilder::buildQuanFile(
-//     //     candidateScoreClassifierPntrs,
-//     //     quanFilePath
-//     //     ); ree;
+     int targetCountBelowFDRThreshold;
+     e = mainAnalysis(
+         &msReaderPointerAcc,
+         &targetCountBelowFDRThreshold
+         ); ree;
+
+    QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
+    e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
+        m_candidateScores,
+        &candidateScoresTargetsAndDecoys
+        ); ree;
+
+    e = populateAltIdTargetKeys(
+        m_pythiaParameters.threadCount,
+        &candidateScoresTargetsAndDecoys
+        ); ree;
+
+    QVector<CandidateScores*> candidateScoreClassifierPntrs;
+    e = applyNeuralNetClassifier(
+            candidateScoresTargetsAndDecoys,
+            S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
+            &candidateScoreClassifierPntrs
+            ); ree;
+
+    int targetCountBelowFDRThresholdOnePercent;
+    e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
+        candidateScoreClassifierPntrs,
+        m_pythiaParameters.percentFDR / 100.0,
+        &targetCountBelowFDRThresholdOnePercent
+        ); ree;
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
+            << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
+
+    const bool candidateScoresSortedHiLo = std::is_sorted(
+        candidateScoreClassifierPntrs.begin(),
+        candidateScoreClassifierPntrs.end(),
+        [](const CandidateScores *l, const CandidateScores *r){return l->classifierScore < r->classifierScore;}
+        );
+    e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
+
+    if (!m_pythiaParameters.reportDecoys) {
+
+        const auto terminatorLogicFDRFilter
+            = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
+
+        const auto terminator = std::remove_if(
+                candidateScoreClassifierPntrs.begin(),
+                candidateScoreClassifierPntrs.end(),
+                terminatorLogicFDRFilter
+                );
+
+        candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
+    }
+    else {
+
+        int counter = 0;
+        int decoyCounter = 0;
+        for (const CandidateScores *candidateScores : candidateScoreClassifierPntrs) {
+
+            counter++;
+            if (candidateScores->isDecoy) {
+                decoyCounter++;
+            }
+
+            constexpr double fdrThreshold = 0.5;
+            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
+                break;
+            }
+        }
+
+        candidateScoreClassifierPntrs.resize(counter);
+    }
+    m_pythiaParameters.writePythiaDIA = true;
+    if (m_pythiaParameters.writePythiaDIA) {
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
+        e = updateProteinGroupAnnotation(
+                m_fastaUri,
+                &candidateScoreClassifierPntrs
+                ); ree;
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
+
+        QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
+        std::transform(
+                candidateScoreClassifierPntrs.begin(),
+                candidateScoreClassifierPntrs.end(),
+                std::back_inserter(candidateScoreReaderRows),
+                [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+                );
+
+        const QString resultsFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+        e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+
+//TODO delete this after dev is done.
+#define REPORT_ENTRAP
+#ifdef REPORT_ENTRAP
+        if (m_pythiaParameters.verbosity > -1) {
+            int counter = 0;
+            int decoys = 0;
+            int entrap = 0;
+
+            for (CandidateScores *cs : candidateScoreClassifierPntrs) {
+                counter++;
+
+                if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
+                    entrap++;
+                }
+
+                if (cs->isDecoy) {
+                    decoys++;
+                }
+                if (decoys/static_cast<double>(counter) >= 0.01) {
+                    break;
+                }
+
+            }
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                    << "Alt:" << targetCountBelowFDRThresholdOnePercent
+                    << "| Counter:" << counter
+                    << "| Decoys:" <<  decoys
+                    << "| Entrap:" << entrap
+                    << "| Entrap%" << entrap / (double)counter;
+        }
+#endif
+    }
+
+    // constexpr int frameIndexBuffer = 1;
+    // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
+    // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    // e = QuanFileBuilder::buildQuanFile(
+    //     candidateScoreClassifierPntrs,
+    //     quanFilePath
+    //     ); ree;
 
     ERR_RETURN
 }
