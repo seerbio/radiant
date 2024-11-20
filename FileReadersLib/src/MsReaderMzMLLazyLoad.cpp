@@ -779,12 +779,12 @@ namespace {
                     scanPointsLocal.resize(mzValues.size());
                     scanPointsLocal.reserve(mzValues.size());
 
-                    for (int i = 0; i < mzValues.size(); i++) {
+                    for (int j = 0; j < mzValues.size(); j++) {
                         const ScanPoint point(
-                                static_cast<float>(mzValues.at(i)),
-                                static_cast<float>(intensityValues.at(i))
+                                static_cast<float>(mzValues.at(j)),
+                                static_cast<float>(intensityValues.at(j))
                                 );
-                        scanPointsLocal[i] = point;
+                        scanPointsLocal[j] = point;
                     }
 
                     filterZeroIntensityQPoints(&scanPointsLocal);

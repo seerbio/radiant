@@ -17,6 +17,8 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kGeneral;
     extern const QString FILEREADERSLIB_EXPORTS kThreadCount;
     extern const QString FILEREADERSLIB_EXPORTS kVerbosity;
+    extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
+    extern const QString FILEREADERSLIB_EXPORTS kUseLazyLoading;
 
     extern const QString FILEREADERSLIB_EXPORTS kLibraryParams;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
@@ -63,7 +65,6 @@ namespace PythiaParameterReaderConstants {
 
     extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
 
-    extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
 
 }
 
@@ -169,6 +170,8 @@ struct PythiaParameters{
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kGeneral << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kThreadCount) << threadCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kWritePythiaDIA) << writePythiaDIA;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;

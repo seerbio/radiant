@@ -17,7 +17,9 @@ namespace PythiaParameterReaderConstants {
 
     const QString kGeneral = QStringLiteral("General");
     const QString kThreadCount = QStringLiteral("threadCount");
-    const QString  kVerbosity = QStringLiteral("verbosity");
+    const QString kVerbosity = QStringLiteral("verbosity");
+    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
+    const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
 
     const QString kLibraryParams = QStringLiteral("LibraryParams");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
@@ -64,7 +66,6 @@ namespace PythiaParameterReaderConstants {
 
     const QString kRtBinning = QStringLiteral("rtBinning");
 
-    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -106,6 +107,7 @@ Err PythiaParameterReader::buildPythiaParameters(
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
                                   : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
+    pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
     pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(false);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];

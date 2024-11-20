@@ -212,6 +212,7 @@ namespace {
             QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
             MsFrame msFrameMzTarget;
             if (pi.msFrameMzTarget == nullptr) {
+
                 e = pi.msReaderPointerAcc->ptr->getMzTargetScanPoints(pi.targetKey, &scanNumberVsScanPoints); rtee;
 
                 if (pi.msCalibratomatic.isInitCalMS2()) {
