@@ -206,6 +206,7 @@ namespace {
             }
 
             QVector<CandidateScores> allCandidateScores;
+            allCandidateScores.reserve(pi.targetDecoyPointers.size() * 2);
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
