@@ -265,24 +265,38 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
     }
 
-     if (m_msCalibratomatic.isInitRT()) {
+    if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
+        m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
+        m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
+
+        if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
+            m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+        }
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
+    }
+    else {
          OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
          e = msOptimizeMassAccuracyPPMSettertron.initExec(
-             &msReaderPointerAcc,
-             &m_msCalibratomatic,
-             &m_pythiaParameters,
-             &m_targetDecoyCandidatePairScoretron,
-             &m_targetDecoyPairPntrs
-             ); ree;
+                &msReaderPointerAcc,
+                &m_msCalibratomatic,
+                &m_pythiaParameters,
+                &m_targetDecoyCandidatePairScoretron,
+                &m_targetDecoyPairPntrs
+                ); ree;
+    }
 
-         m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
-     }
-
-     int targetCountBelowFDRThreshold;
-     e = mainAnalysis(
-         &msReaderPointerAcc,
-         &targetCountBelowFDRThreshold
-         ); ree;
+    int targetCountBelowFDRThreshold;
+    e = mainAnalysis(
+        &msReaderPointerAcc,
+        &targetCountBelowFDRThreshold
+     ); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
@@ -405,7 +419,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         }
 #endif
     }
-
     // constexpr int frameIndexBuffer = 1;
     // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
     // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
@@ -450,6 +463,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             uniqueMsScanInfos,
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "TargetKeys size:" << mzTargetKeyVsTargetDecoyCandidatePointers.size();
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
