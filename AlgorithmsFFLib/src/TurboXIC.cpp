@@ -213,7 +213,6 @@ TurboXIC::~TurboXIC() {
 
 
 Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const {
-
     ERR_INIT
     e = d_ptr->init(scanNumberVsScanPoints); ree;
     ERR_RETURN
@@ -228,7 +227,7 @@ Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const 
 XICPoints TurboXIC::extractPointsXIC(
         float mzMin,
         float mzMax
-) {
+) const {
     return d_ptr->extractPointsXIC(
             mzMin,
             mzMax
