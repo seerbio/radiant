@@ -1342,9 +1342,9 @@ namespace {
             klDivByRow.coeffRef(row) = klDiv;
         }
 
-        for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
-            candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
-        }
+        // for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
+        //     candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
+        // }
 
         const float cosineSimMax = cosineSimsByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
         candidateScores->featuresArray[Features::CosineSimSpectrum] = cosineSimMax;
@@ -1505,7 +1505,7 @@ namespace {
             const float ppm = mzMeanValsFound.at(i) > 1.0f
                             ? std::min(MathUtils::calculateMassAccuracyPPM(ms2Ions.at(i).mz, mzMeanValsFound.at(i)), 100.0f)
                             : 100.0f;
-            candidateScores->featuresArray[Features::MzFoundMean1PPM + i] = ppm;
+            // candidateScores->featuresArray[Features::MzFoundMean1PPM + i] = ppm;
 
             if (ppm > 99.9) {
                 continue;
@@ -1534,7 +1534,7 @@ namespace {
         // << candidateScores->featuresArray[Features::MzPPMStd]
         // << "SLKFJDS";
 
-        for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax); i++) {
+        for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
@@ -1550,7 +1550,7 @@ namespace {
         const Eigen::VectorX<float> intensitySumsNormalized
                 = intensitySums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
+        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
 
@@ -1719,7 +1719,7 @@ namespace {
             if (col < 6 && cosineSim > 0.80) {
                 candidateScores->featuresArray[Features::ShadowsCosineSimSum] += cosineSim;
             }
-            candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
+            // candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
         }
 
@@ -1743,18 +1743,18 @@ namespace {
             0
             );
 
-        QVector<float> mzPeakLengthsNormalized;
-        if (mzPeakLengthsSum != 0) {
-            std::transform(
-                    mzPeakLengthsVec.begin(),
-                    mzPeakLengthsVec.end(),
-                    std::back_inserter(mzPeakLengthsNormalized),
-                    [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
-            );
-        }
-        for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        }
+        // QVector<float> mzPeakLengthsNormalized;
+        // if (mzPeakLengthsSum != 0) {
+        //     std::transform(
+        //             mzPeakLengthsVec.begin(),
+        //             mzPeakLengthsVec.end(),
+        //             std::back_inserter(mzPeakLengthsNormalized),
+        //             [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
+        //     );
+        // }
+        // for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
+        //     candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
+        // }
 
         ERR_RETURN
     }

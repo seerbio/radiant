@@ -243,6 +243,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
+
+    m_pythiaParameters.useLazyLoading = true;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
