@@ -631,10 +631,10 @@ namespace {
             for (const XICPoint &p : xicPointsCol) {
 
                 if (p.scanNumber >= rows) {
-                    break;
+                    continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) = p.intensity;
+                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
                 if (buildMzMatrix) {
                     matMz->coeffRef(p.scanNumber, col) = p.mz;
                 }
@@ -1974,7 +1974,7 @@ namespace {
             if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
                 continue;
             }
-            vec.coeffRef(scanNumber) = intensity;
+            vec.coeffRef(scanNumber) += intensity;
         }
 
         return vec;
