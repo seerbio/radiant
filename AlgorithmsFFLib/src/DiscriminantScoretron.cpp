@@ -161,6 +161,9 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::FoundY,
             Features::FoundPercent,
             // Features::MzPPMStd,
+            DiscScoresCount,
+            DiscScoresMean,
+            DiscScoresStDev,
             DiscScore1stRunnerUp,
             DiscScore2ndRunnerUp
         };
@@ -353,6 +356,9 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
 
                 DiscScore1stRunnerUp,
                 DiscScore2ndRunnerUp,
+                DiscScoresCount,
+                DiscScoresMean,
+                DiscScoresStDev,
 
                 Features::MzPPMMean,
                 Features::FoundB,

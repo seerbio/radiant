@@ -169,6 +169,9 @@ enum Features {
         FoundPercent,
         DiscScore1stRunnerUp,
         DiscScore2ndRunnerUp,
+        DiscScoresCount,
+        DiscScoresMean,
+        DiscScoresStDev,
 
         // Test1,
         // Test2,

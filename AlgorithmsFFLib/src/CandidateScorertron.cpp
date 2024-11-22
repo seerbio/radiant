@@ -383,6 +383,8 @@ Err CandidateScorertron::calculateScores(
             return l.first < r.first;
         });
 
+    const float topDiscScore = candidateScoresPairs.front().first;
+
     *candidateScores = candidateScoresPairs.front().second;
     if (candidateScoresPairs.size() > 1) {
         candidateScores->featuresArray[Features::DiscScore1stRunnerUp]
@@ -392,6 +394,17 @@ Err CandidateScorertron::calculateScores(
         candidateScores->featuresArray[Features::DiscScore2ndRunnerUp]
             = candidateScoresPairs.front().first - candidateScoresPairs.at(2).first;
     }
+
+    QVector<float> discScoresSubbed;
+    std::transform(
+        discScores.begin(),
+        discScores.end(),
+        std::back_inserter(discScoresSubbed),
+        [topDiscScore](float df){return topDiscScore - df;}
+        );
+    candidateScores->featuresArray[Features::DiscScoresCount] = discScoresSubbed.size();
+    candidateScores->featuresArray[Features::DiscScoresMean] = MathUtils::mean(discScoresSubbed);
+    candidateScores->featuresArray[Features::DiscScoresStDev] = MathUtils::stDev(discScoresSubbed);
 
 #endif
 
@@ -1527,7 +1540,6 @@ namespace {
         candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
 
 
-
         // qDebug()
         // << mzMeanValsFoundPPM
         // << candidateScores->featuresArray[Features::MzPPMMean]
@@ -1814,7 +1826,7 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndex);
     candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexStart);
     candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
-    
+
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
