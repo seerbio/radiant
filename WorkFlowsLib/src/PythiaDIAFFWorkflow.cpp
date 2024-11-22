@@ -609,7 +609,7 @@ namespace {
             yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 6;
+        constexpr int baggingSize = 4;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
 
