@@ -232,6 +232,9 @@ enum Features {
         FoundY,
         FoundPercent,
 
+        DiscScore1stRunnerUp,
+        DiscScore2ndRunnerUp,
+
         FeaturesSize
     };
 

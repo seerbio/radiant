@@ -281,6 +281,9 @@ namespace {
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
+                // if (pi.turboXicMS2 != nullptr) {
+                //     allCandidateScores.push_back(candidateScoresTarget);
+                // }
                 allCandidateScores.push_back(candidateScoresTarget);
 
                 CandidateScores candidateScoresDecoy;
@@ -291,6 +294,9 @@ namespace {
                         tdcp,
                         &candidateScoresDecoy
                         ); rree;
+                // if (pi.turboXicMS2 != nullptr) {
+                //     allCandidateScores.push_back(candidateScoresDecoy);
+                // }
                 allCandidateScores.push_back(candidateScoresDecoy);
             }
 

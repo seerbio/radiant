@@ -376,10 +376,23 @@ Err CandidateScorertron::calculateScores(
         candidateScoresPairs.push_back({discScores[i], candidateScoresFeatures[i]});
     }
 
-    const float maxDisScore =  *std::max_element(discScores.begin(), discScores.end());
-    const int bestIndex = MathUtils::closest(discScores, maxDisScore);
+    std::sort(
+        candidateScoresPairs.rbegin(),
+        candidateScoresPairs.rend(),
+        [](const QPair<float, CandidateScores> &l, const QPair<float, CandidateScores> &r) {
+            return l.first < r.first;
+        });
 
-    *candidateScores = candidateScoresFeatures[bestIndex];
+    *candidateScores = candidateScoresPairs.front().second;
+    if (candidateScoresPairs.size() > 1) {
+        candidateScores->featuresArray[Features::DiscScore1stRunnerUp]
+            = candidateScoresPairs.front().first - candidateScoresPairs.at(1).first;
+    }
+    if (candidateScoresPairs.size() > 2) {
+        candidateScores->featuresArray[Features::DiscScore2ndRunnerUp]
+            = candidateScoresPairs.front().first - candidateScoresPairs.at(2).first;
+    }
+
 #endif
 
 // #define TROUBLE_SHOOT_INTEGRATION
