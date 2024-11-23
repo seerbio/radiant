@@ -245,6 +245,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     MsReaderPointerAcc msReaderPointerAcc;
 
     // m_pythiaParameters.useLazyLoading = true;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.5;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
