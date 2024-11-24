@@ -299,6 +299,16 @@ Err CandidateScorertron::calculateScores(
         &matriciesAndVecs
         ); ree;
 
+    // // qDebug() << targetDecoyCandidatePair->peptideStringWithMods() << targetDecoyCandidatePair->charge() << candidateScores->isDecoy;
+    // if (targetDecoyCandidatePair->peptideStringWithMods() == "QTIIDTVDPYPMGK"
+    //     && targetDecoyCandidatePair->charge() == 2
+    //     && !candidateScores->isDecoy
+    // ) {
+    //
+    //     std::cout << matriciesAndVecs.mzMatrix100 << std::endl;
+    //     std::cout << matriciesAndVecs.mzMatrix100.sum() << std::endl;
+    // }
+
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
         matriciesAndVecs.productVec,
@@ -636,6 +646,13 @@ namespace {
 
                 matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
                 if (buildMzMatrix) {
+
+                    if (matMz->coeff(p.scanNumber, col) > 0) {
+                        matMz->coeffRef(p.scanNumber, col) += p.mz;
+                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                        continue;
+                    }
+
                     matMz->coeffRef(p.scanNumber, col) = p.mz;
                 }
             }
