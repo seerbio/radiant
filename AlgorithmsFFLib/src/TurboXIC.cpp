@@ -168,11 +168,11 @@ XICPoints TurboXIC::Private::extractPointsXIC(
     }
 
     XICPoints xicPoints = {xicPointsLoader, xicPointsLoader + loaderSize};
-    std::sort(
-        xicPoints.begin(),
-        xicPoints.end(),
-        [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-        );
+    // std::sort(
+    //     xicPoints.begin(),
+    //     xicPoints.end(),
+    //     [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
+    //     );
 
     return xicPoints;
 }
