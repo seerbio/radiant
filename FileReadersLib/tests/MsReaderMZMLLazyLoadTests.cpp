@@ -116,6 +116,7 @@ void MsReaderMZMLLazyLoadTests::troubleShoot() {
 
     ERR_INIT
 
+    QSKIP("Troubleshooting");
     //TODO make more tests.
 
     const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
