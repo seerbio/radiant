@@ -89,11 +89,31 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         &uniqueMsScanInfosCalibration
         ); ree;
 
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs
+                                        = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
+    if (m_pythiaParameters->useLazyLoading) {
+        e = PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
+            uniqueMsScanInfosCalibration,
+            m_msReaderPointerAcc,
+            &m_msCalibratomatic,
+            &m_diaTargetFrames
+            ); ree;
+        for (auto it = m_diaTargetFrames.begin(); it != m_diaTargetFrames.end(); it++) {
+            const MzTargetKey &mzTargetKey = it.key();
+            QMap<ScanNumber, ScanPoints> &scanNumberVsScanPoints = it.value();
+            for (auto itt = scanNumberVsScanPoints.begin(); itt != scanNumberVsScanPoints.end(); itt++) {
+                m_diaTargetFramesPntrs[mzTargetKey].insert(itt.key(), &itt.value());
+            }
+        }
+        *diaTargetFramesPntrs = m_diaTargetFramesPntrs;
+        e = m_targetDecoyCandidatePairScoretron->buildMzTargetKeyVsMsFrames(); ree;
+    }
+
     QMap<MzTargetKey, TurboXIC*> mzTargetKeyVsTurboXicPntrs;
     e = PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
         uniqueMsScanInfosCalibration,
         m_msReaderPointerAcc->ptr->getScanNumberVsScanTime(),
-        m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
+        diaTargetFramesPntrs,
         &mzTargetKeyVsTurboXicPntrs
         ); ree;
 
@@ -244,11 +264,13 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
 
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS2,
-                    m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron->ms1ScanNumberVsScanPoints()
-                    ); ree;
+            if (!m_pythiaParameters->useLazyLoading) {
+                e = recalibrateMzVals(
+                        MSLevelEnum::MS2,
+                        m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
+                        m_targetDecoyCandidatePairScoretron->ms1ScanNumberVsScanPoints()
+                        ); ree;
+            }
 
             candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));

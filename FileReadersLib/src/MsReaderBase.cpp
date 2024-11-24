@@ -61,6 +61,20 @@ Err MsReaderBase::closeFile() {
     return Error::eNoError;
 }
 
+Err MsReaderBase::extractScanPoints(
+    const QVector<MsScanInfo*> &msScanInfos,
+    QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+    ){
+    return eFunctionNotImplemented;
+}
+
+Err MsReaderBase::getMzTargetScanPoints(
+    const MzTargetKey &targetKey,
+    QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+    ){
+    return eFunctionNotImplemented;
+}
+
 QString MsReaderBase::filePath() {
     return m_filePath;
 }
@@ -238,6 +252,20 @@ QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
     }
 
     return msScanInfos;
+}
+
+Err MsReaderBase::getMsScanInfos(
+    const MzTargetKey &mzTargetKey,
+    QVector<MsScanInfo*> *msScanInfos
+    ) {
+
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(m_mzTargetVsScanInfosPntrs); ree;
+    e = ErrorUtils::contains(mzTargetKey, m_mzTargetVsScanInfosPntrs); ree;
+
+    *msScanInfos = m_mzTargetVsScanInfosPntrs.value(mzTargetKey);
+
+    ERR_RETURN
 }
 
 QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos() {
@@ -420,6 +448,7 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsData FilePath" << m_filePath;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Count" << ms1ScanSize;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Count" << ms2ScanSize;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Target Window Count" << uniqueTandemScanInfos.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "File is DIA" << isDIA();
 
     ERR_RETURN

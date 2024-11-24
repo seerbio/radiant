@@ -86,7 +86,7 @@ public:
     XICPoints extractPointsXIC(
             float mzMin,
             float mzMax
-    );
+    ) const;
 
     /**
     * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.

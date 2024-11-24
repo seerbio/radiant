@@ -18,7 +18,7 @@ class FILEREADERSLIB_EXPORTS MsReaderPointerAcc {
 
 public:
 
-    MsReaderPointerAcc() = default;
+    MsReaderPointerAcc();
 
     ~MsReaderPointerAcc() = default;
 
@@ -83,6 +83,8 @@ public:
     */
     bool isInit();
 
+    void setUseLazyLoading(bool useLazyLoading);
+
     QSharedPointer<MsReaderBase> ptr;
 
 
@@ -94,6 +96,7 @@ private:
 
     QString m_cachedFilePath;
     QMap<MzTargetKey, FilePath> m_mzTargetKeyVsFilePathCache;
+    bool m_useLazyLoading;
 
 };
 

@@ -17,7 +17,9 @@ namespace PythiaParameterReaderConstants {
 
     const QString kGeneral = QStringLiteral("General");
     const QString kThreadCount = QStringLiteral("threadCount");
-    const QString  kVerbosity = QStringLiteral("verbosity");
+    const QString kVerbosity = QStringLiteral("verbosity");
+    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
+    const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
 
     const QString kLibraryParams = QStringLiteral("LibraryParams");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
@@ -31,12 +33,14 @@ namespace PythiaParameterReaderConstants {
     const QString kMS1Params = QStringLiteral("MS1Params");
     const QString kPrecursorExtractionWindowThomsons = QStringLiteral("precursorExtractionWindowThomsons");
     const QString kMS1ExtractionWidthPPM = QStringLiteral("ms1ExtractionWidthPPM");
+    const QString kMS1ExtractionWidthPPMOverride = QStringLiteral("ms1ExtractionWidthPPMOverride");
 
     const QString kMS2Params = QStringLiteral("MS2Params");
     const QString kFilterLengthIntegration = QStringLiteral("filterLengthIntegration");
     const QString kFilterLengthMS2 = QStringLiteral("filterLengthMS2");
     const QString kIonsSharedToReject = QStringLiteral("ionsSharedToReject");
     const QString kMS2ExtractionWidthPPM = QStringLiteral("ms2ExtractionWidthPPM");
+    const QString kMS2ExtractionWidthPPMOverride = QStringLiteral("ms2ExtractionWidthPPMOverride");
     const QString kMinMs2FragCount = QStringLiteral("minMs2FragCount");
     const QString kScanTimeWindowStDevs = QStringLiteral("scanTimeWindowStDevs");
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
@@ -64,7 +68,6 @@ namespace PythiaParameterReaderConstants {
 
     const QString kRtBinning = QStringLiteral("rtBinning");
 
-    const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -106,6 +109,7 @@ Err PythiaParameterReader::buildPythiaParameters(
                                   ? ParallelUtils::numberOfAvailableSystemProcessors()
                                   : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
+    pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
     pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(false);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
@@ -119,6 +123,7 @@ Err PythiaParameterReader::buildPythiaParameters(
 
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
     pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(0.0);
+    pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(0.0);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
@@ -126,6 +131,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(0);
     pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(0);
     pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(0.0);
+    pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
     pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(0);
     pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(0);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);

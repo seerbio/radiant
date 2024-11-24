@@ -42,10 +42,8 @@ public:
     Err getXIC(
         float mzVal,
         XICPoints *xicPoints
-        );
+        ) const;
 
-    Err cacheXICPeakManager(const QString &outputFilePath);
-    Err loadXICPeakManagerCache(const QString &outputFilePath);
 
 private:
     int m_filterLength;
@@ -54,8 +52,6 @@ private:
     float m_ppmTolerance;
     float m_stopThresholdValue;
 
-    QHash<MzHashed , XICPoints> m_mzHashedVsXicPoints;
-    QHash<MzHashed, Occurrence> m_mzHashedOccurrences;
     bool m_isInit;
 
     TurboXIC *m_turboXic;

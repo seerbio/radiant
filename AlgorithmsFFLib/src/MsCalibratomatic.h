@@ -49,7 +49,7 @@ public:
         const MSLevelEnum &msLevel,
         float mzVal,
         float *mzValRecal
-        );
+        ) const;
 
     [[nodiscard]] float mzStDevMS1() const;
 

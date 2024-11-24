@@ -38,6 +38,9 @@ public:
     float ionMobilityDriftTime = -1.0;
     IonMobilityIndex ionMobilityIndex = -1;
 
+    long scanOffsetStart = -1;
+    long scanOffsetEnd = -1;
+
     [[nodiscard]] MzTargetKey targetKey() const {
         return targetKey(
                 precursorTargetMz - isoWindowLower,
@@ -152,6 +155,16 @@ public:
     * @return Returns an Err object with a success state indicating that the operation has completed successfully.
     */
     virtual Err closeFile();
+
+    virtual Err extractScanPoints(
+            const QVector<MsScanInfo*> &msScanInfos,
+            QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
+            );
+
+    virtual Err getMzTargetScanPoints(
+            const MzTargetKey& targetKey,
+            QMap<ScanNumber, ScanPoints>* scanNumberVsScanPoints
+            );
 
     /**
     * @brief Gets the file path of the currently opened file in the MS Reader.
@@ -323,6 +336,10 @@ public:
     *
     */
     QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
+    Err getMsScanInfos(
+            const MzTargetKey &mzTargetKey,
+            QVector<MsScanInfo*> *msScanInfos
+            );
 
     /**
     * @brief Retrieves all available MS scan information for a particular msLevel.
@@ -479,6 +496,7 @@ protected:
     bool m_fileIsCalibrated;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
+    QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 

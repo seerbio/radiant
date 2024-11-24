@@ -102,6 +102,8 @@ public:
 
     Err reloadTurboXICMS1();
 
+    Err buildMzTargetKeyVsMsFrames();
+
 private:
 
     Err buildParallelInput(
@@ -117,8 +119,6 @@ private:
             const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             ) const;
-
-    Err buildMzTargetKeyVsMsFrames();
 
     Err buildAveragineTable();
 

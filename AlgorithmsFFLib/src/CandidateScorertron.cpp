@@ -299,6 +299,16 @@ Err CandidateScorertron::calculateScores(
         &matriciesAndVecs
         ); ree;
 
+    // // qDebug() << targetDecoyCandidatePair->peptideStringWithMods() << targetDecoyCandidatePair->charge() << candidateScores->isDecoy;
+    // if (targetDecoyCandidatePair->peptideStringWithMods() == "QTIIDTVDPYPMGK"
+    //     && targetDecoyCandidatePair->charge() == 2
+    //     && !candidateScores->isDecoy
+    // ) {
+    //
+    //     std::cout << matriciesAndVecs.mzMatrix100 << std::endl;
+    //     std::cout << matriciesAndVecs.mzMatrix100.sum() << std::endl;
+    // }
+
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
         matriciesAndVecs.productVec,
@@ -376,10 +386,36 @@ Err CandidateScorertron::calculateScores(
         candidateScoresPairs.push_back({discScores[i], candidateScoresFeatures[i]});
     }
 
-    const float maxDisScore =  *std::max_element(discScores.begin(), discScores.end());
-    const int bestIndex = MathUtils::closest(discScores, maxDisScore);
+    std::sort(
+        candidateScoresPairs.rbegin(),
+        candidateScoresPairs.rend(),
+        [](const QPair<float, CandidateScores> &l, const QPair<float, CandidateScores> &r) {
+            return l.first < r.first;
+        });
 
-    *candidateScores = candidateScoresFeatures[bestIndex];
+    const float topDiscScore = candidateScoresPairs.front().first;
+
+    *candidateScores = candidateScoresPairs.front().second;
+    if (candidateScoresPairs.size() > 1) {
+        candidateScores->featuresArray[Features::DiscScore1stRunnerUp]
+            = candidateScoresPairs.front().first - candidateScoresPairs.at(1).first;
+    }
+    if (candidateScoresPairs.size() > 2) {
+        candidateScores->featuresArray[Features::DiscScore2ndRunnerUp]
+            = candidateScoresPairs.front().first - candidateScoresPairs.at(2).first;
+    }
+
+    QVector<float> discScoresSubbed;
+    std::transform(
+        discScores.begin(),
+        discScores.end(),
+        std::back_inserter(discScoresSubbed),
+        [topDiscScore](float df){return topDiscScore - df;}
+        );
+    candidateScores->featuresArray[Features::DiscScoresCount] = discScoresSubbed.size();
+    candidateScores->featuresArray[Features::DiscScoresMean] = MathUtils::mean(discScoresSubbed);
+    candidateScores->featuresArray[Features::DiscScoresStDev] = MathUtils::stDev(discScoresSubbed);
+
 #endif
 
 // #define TROUBLE_SHOOT_INTEGRATION
@@ -605,11 +641,18 @@ namespace {
             for (const XICPoint &p : xicPointsCol) {
 
                 if (p.scanNumber >= rows) {
-                    break;
+                    continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) = p.intensity;
+                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
                 if (buildMzMatrix) {
+
+                    if (matMz->coeff(p.scanNumber, col) > 0) {
+                        matMz->coeffRef(p.scanNumber, col) += p.mz;
+                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                        continue;
+                    }
+
                     matMz->coeffRef(p.scanNumber, col) = p.mz;
                 }
             }
@@ -1329,9 +1372,9 @@ namespace {
             klDivByRow.coeffRef(row) = klDiv;
         }
 
-        for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
-            candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
-        }
+        // for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
+        //     candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
+        // }
 
         const float cosineSimMax = cosineSimsByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
         candidateScores->featuresArray[Features::CosineSimSpectrum] = cosineSimMax;
@@ -1492,7 +1535,7 @@ namespace {
             const float ppm = mzMeanValsFound.at(i) > 1.0f
                             ? std::min(MathUtils::calculateMassAccuracyPPM(ms2Ions.at(i).mz, mzMeanValsFound.at(i)), 100.0f)
                             : 100.0f;
-            candidateScores->featuresArray[Features::MzFoundMean1PPM + i] = ppm;
+            // candidateScores->featuresArray[Features::MzFoundMean1PPM + i] = ppm;
 
             if (ppm > 99.9) {
                 continue;
@@ -1514,14 +1557,13 @@ namespace {
         candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
 
 
-
         // qDebug()
         // << mzMeanValsFoundPPM
         // << candidateScores->featuresArray[Features::MzPPMMean]
         // << candidateScores->featuresArray[Features::MzPPMStd]
         // << "SLKFJDS";
 
-        for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax); i++) {
+        for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
 
@@ -1537,7 +1579,7 @@ namespace {
         const Eigen::VectorX<float> intensitySumsNormalized
                 = intensitySums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax); i++) {
+        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
         }
 
@@ -1706,7 +1748,7 @@ namespace {
             if (col < 6 && cosineSim > 0.80) {
                 candidateScores->featuresArray[Features::ShadowsCosineSimSum] += cosineSim;
             }
-            candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
+            // candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
         }
 
@@ -1730,18 +1772,18 @@ namespace {
             0
             );
 
-        QVector<float> mzPeakLengthsNormalized;
-        if (mzPeakLengthsSum != 0) {
-            std::transform(
-                    mzPeakLengthsVec.begin(),
-                    mzPeakLengthsVec.end(),
-                    std::back_inserter(mzPeakLengthsNormalized),
-                    [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
-            );
-        }
-        for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
-            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        }
+        // QVector<float> mzPeakLengthsNormalized;
+        // if (mzPeakLengthsSum != 0) {
+        //     std::transform(
+        //             mzPeakLengthsVec.begin(),
+        //             mzPeakLengthsVec.end(),
+        //             std::back_inserter(mzPeakLengthsNormalized),
+        //             [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
+        //     );
+        // }
+        // for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
+        //     candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
+        // }
 
         ERR_RETURN
     }
@@ -1801,7 +1843,7 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->scanNumber = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndex);
     candidateScores->scanNumberStart = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexStart);
     candidateScores->scanNumberEnd = m_msFrameMzTarget->scanNumberFromFrameIndex(candidateScores->frameIndexEnd);
-    
+
     candidateScores->scanTime = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumber);
     candidateScores->scanTimeStart = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberStart);
     candidateScores->scanTimeEnd = m_msFrameMzTarget->scanTimeFromScanNumber(candidateScores->scanNumberEnd);
@@ -1949,7 +1991,7 @@ namespace {
             if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
                 continue;
             }
-            vec.coeffRef(scanNumber) = intensity;
+            vec.coeffRef(scanNumber) += intensity;
         }
 
         return vec;

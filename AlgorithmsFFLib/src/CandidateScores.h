@@ -50,30 +50,6 @@ enum Features {
         PeakShapeRatio3,
         ShadowsCosineSimSum,
         IRTPredicted,
-        CosineSimToAnchor1,
-        CosineSimToAnchor2,
-        CosineSimToAnchor3,
-        CosineSimToAnchor4,
-        CosineSimToAnchor5,
-        CosineSimToAnchor6,
-        CosineSimToAnchor7,//40
-        CosineSimToAnchor8,
-        CosineSimToAnchor9,
-        CosineSimToAnchor10,
-        CosineSimToAnchor11,
-        CosineSimToAnchor12,
-        CosineSimShadowsToAnchor1,
-        CosineSimShadowsToAnchor2,
-        CosineSimShadowsToAnchor3,
-        CosineSimShadowsToAnchor4,
-        CosineSimShadowsToAnchor5,//50
-        CosineSimShadowsToAnchor6,
-        CosineSimShadowsToAnchor7,
-        CosineSimShadowsToAnchor8,
-        CosineSimShadowsToAnchor9,
-        CosineSimShadowsToAnchor10,
-        CosineSimShadowsToAnchor11,
-        CosineSimShadowsToAnchor12,
         MzFoundMean1,
         MzFoundMean2,
         MzFoundMean3,
@@ -92,12 +68,6 @@ enum Features {
         IntensityFoundMax4,
         IntensityFoundMax5,//110
         IntensityFoundMax6,
-        IntensityFoundMax7,
-        IntensityFoundMax8,
-        IntensityFoundMax9,
-        IntensityFoundMax10,
-        IntensityFoundMax11,
-        IntensityFoundMax12,
         IntensityFoundMaxNorm1,
         IntensityFoundMaxNorm2,
         IntensityFoundMaxNorm3,
@@ -110,18 +80,6 @@ enum Features {
         IntensityFoundMaxNorm10,
         IntensityFoundMaxNorm11,
         IntensityFoundMaxNorm12,
-        MzPeakLengthsNorm1,
-        MzPeakLengthsNorm2,
-        MzPeakLengthsNorm3,//120
-        MzPeakLengthsNorm4,
-        MzPeakLengthsNorm5,
-        MzPeakLengthsNorm6,
-        MzPeakLengthsNorm7,
-        MzPeakLengthsNorm8,
-        MzPeakLengthsNorm9,
-        MzPeakLengthsNorm10,
-        MzPeakLengthsNorm11,
-        MzPeakLengthsNorm12,
         AminoAcidCountA,
         AminoAcidCountC,
         AminoAcidCountD,
@@ -154,12 +112,6 @@ enum Features {
         MzFoundStDev4,
         MzFoundStDev5,
         MzFoundStDev6,
-        MzFoundStDev7,
-        MzFoundStDev8,
-        MzFoundStDev9,
-        MzFoundStDev10,
-        MzFoundStDev11,
-        MzFoundStDev12,
         AltTargetKeyIdDiscScoreChargeOG_alt,
         AltTargetKeyIdDiscScoreCharge1_1,
         AltTargetKeyIdDiscScoreCharge1_2,
@@ -204,33 +156,87 @@ enum Features {
         TotalIntensityRaw,
         TargetWindowLocation,
         TargetWindowLocationAbs,
-
         DiscriminantScore,
-
         AlignmentIndexMean,
         AlignmentIndexStDev,
         AlignmentCombinedScore,
         MatrixZeroPercentage,
-
-        MzFoundMean1PPM,
-        MzFoundMean2PPM,
-        MzFoundMean3PPM,
-        MzFoundMean4PPM,
-        MzFoundMean5PPM,
-        MzFoundMean6PPM,
-        MzFoundMean7PPM,//100
-        MzFoundMean8PPM,
-        MzFoundMean9PPM,
-        MzFoundMean10PPM,
-        MzFoundMean11PPM,
-        MzFoundMean12PPM,
         MzPPMMeanAbs,
         MzPPMMean,
         MzPPMStd,
-
         FoundB,
         FoundY,
         FoundPercent,
+        DiscScore1stRunnerUp,
+        DiscScore2ndRunnerUp,
+        DiscScoresCount,
+        DiscScoresMean,
+        DiscScoresStDev,
+
+        // Test1,
+        // Test2,
+        // Test3,
+
+// MzFoundMean1PPM,
+// MzFoundMean2PPM,
+// MzFoundMean3PPM,
+// MzFoundMean4PPM,
+// MzFoundMean5PPM,
+// MzFoundMean6PPM,
+// MzFoundMean7PPM,//100
+// MzFoundMean8PPM,
+// MzFoundMean9PPM,
+// MzFoundMean10PPM,
+// MzFoundMean11PPM,
+// MzFoundMean12PPM,
+// CosineSimToAnchor1,
+// CosineSimToAnchor2,
+// CosineSimToAnchor3,
+// CosineSimToAnchor4,
+// CosineSimToAnchor5,
+// CosineSimToAnchor6,
+// CosineSimToAnchor7,//40
+// CosineSimToAnchor8,
+// CosineSimToAnchor9,
+// CosineSimToAnchor10,
+// CosineSimToAnchor11,
+// CosineSimToAnchor12,
+// CosineSimShadowsToAnchor1,
+// CosineSimShadowsToAnchor2,
+// CosineSimShadowsToAnchor3,
+// CosineSimShadowsToAnchor4,
+// CosineSimShadowsToAnchor5,//50
+// CosineSimShadowsToAnchor6,
+// CosineSimShadowsToAnchor7,
+// CosineSimShadowsToAnchor8,
+// CosineSimShadowsToAnchor9,
+// CosineSimShadowsToAnchor10,
+// CosineSimShadowsToAnchor11,
+// CosineSimShadowsToAnchor12,
+// MzPeakLengthsNorm1,
+// MzPeakLengthsNorm2,
+// MzPeakLengthsNorm3,//120
+// MzPeakLengthsNorm4,
+// MzPeakLengthsNorm5,
+// MzPeakLengthsNorm6,
+// MzPeakLengthsNorm7,
+// MzPeakLengthsNorm8,
+// MzPeakLengthsNorm9,
+// MzPeakLengthsNorm10,
+// MzPeakLengthsNorm11,
+// MzPeakLengthsNorm12,
+// MzFoundStDev7,
+// MzFoundStDev8,
+// MzFoundStDev9,
+// MzFoundStDev10,
+// MzFoundStDev11,
+// MzFoundStDev12,
+// IntensityFoundMax7,
+// IntensityFoundMax8,
+// IntensityFoundMax9,
+// IntensityFoundMax10,
+// IntensityFoundMax11,
+// IntensityFoundMax12,
 
         FeaturesSize
     };
@@ -333,30 +339,30 @@ namespace CandidateScoresReaderRowNamespace {
     const QString PEAK_RATIO_3 = QStringLiteral("PeakShapeRatio3");
     const QString SHADOW_COSINE_SIM_SUM = QStringLiteral("ShadowsCosineSimSum");
     const QString IRT_PRED = QStringLiteral("IRTPredicted");
-    const QString COS_SIM_ANCH_1 = QStringLiteral("CosineSimToAnchor1");
-    const QString COS_SIM_ANCH_2 = QStringLiteral("CosineSimToAnchor2");
-    const QString COS_SIM_ANCH_3 = QStringLiteral("CosineSimToAnchor3");
-    const QString COS_SIM_ANCH_4 = QStringLiteral("CosineSimToAnchor4");
-    const QString COS_SIM_ANCH_5 = QStringLiteral("CosineSimToAnchor5");
-    const QString COS_SIM_ANCH_6 = QStringLiteral("CosineSimToAnchor6");
-    const QString COS_SIM_ANCH_7 = QStringLiteral("CosineSimToAnchor7");
-    const QString COS_SIM_ANCH_8 = QStringLiteral("CosineSimToAnchor8");
-    const QString COS_SIM_ANCH_9 = QStringLiteral("CosineSimToAnchor9");
-    const QString COS_SIM_ANCH_10 = QStringLiteral("CosineSimToAnchor10");
-    const QString COS_SIM_ANCH_11 = QStringLiteral("CosineSimToAnchor11");
-    const QString COS_SIM_ANCH_12 = QStringLiteral("CosineSimToAnchor12");
-    const QString COS_SIM_ANCH_SHADOW_1 = QStringLiteral("CosineSimShadowsToAnchor1");
-    const QString COS_SIM_ANCH_SHADOW_2 = QStringLiteral("CosineSimShadowsToAnchor2");
-    const QString COS_SIM_ANCH_SHADOW_3 = QStringLiteral("CosineSimShadowsToAnchor3");
-    const QString COS_SIM_ANCH_SHADOW_4 = QStringLiteral("CosineSimShadowsToAnchor4");
-    const QString COS_SIM_ANCH_SHADOW_5 = QStringLiteral("CosineSimShadowsToAnchor5");
-    const QString COS_SIM_ANCH_SHADOW_6 = QStringLiteral("CosineSimShadowsToAnchor6");
-    const QString COS_SIM_ANCH_SHADOW_7 = QStringLiteral("CosineSimShadowsToAnchor7");
-    const QString COS_SIM_ANCH_SHADOW_8 = QStringLiteral("CosineSimShadowsToAnchor8");
-    const QString COS_SIM_ANCH_SHADOW_9 = QStringLiteral("CosineSimShadowsToAnchor9");
-    const QString COS_SIM_ANCH_SHADOW_10 = QStringLiteral("CosineSimShadowsToAnchor10");
-    const QString COS_SIM_ANCH_SHADOW_11 = QStringLiteral("CosineSimShadowsToAnchor11");
-    const QString COS_SIM_ANCH_SHADOW_12 = QStringLiteral("CosineSimShadowsToAnchor12");
+    // const QString COS_SIM_ANCH_1 = QStringLiteral("CosineSimToAnchor1");
+    // const QString COS_SIM_ANCH_2 = QStringLiteral("CosineSimToAnchor2");
+    // const QString COS_SIM_ANCH_3 = QStringLiteral("CosineSimToAnchor3");
+    // const QString COS_SIM_ANCH_4 = QStringLiteral("CosineSimToAnchor4");
+    // const QString COS_SIM_ANCH_5 = QStringLiteral("CosineSimToAnchor5");
+    // const QString COS_SIM_ANCH_6 = QStringLiteral("CosineSimToAnchor6");
+    // const QString COS_SIM_ANCH_7 = QStringLiteral("CosineSimToAnchor7");
+    // const QString COS_SIM_ANCH_8 = QStringLiteral("CosineSimToAnchor8");
+    // const QString COS_SIM_ANCH_9 = QStringLiteral("CosineSimToAnchor9");
+    // const QString COS_SIM_ANCH_10 = QStringLiteral("CosineSimToAnchor10");
+    // const QString COS_SIM_ANCH_11 = QStringLiteral("CosineSimToAnchor11");
+    // const QString COS_SIM_ANCH_12 = QStringLiteral("CosineSimToAnchor12");
+    // const QString COS_SIM_ANCH_SHADOW_1 = QStringLiteral("CosineSimShadowsToAnchor1");
+    // const QString COS_SIM_ANCH_SHADOW_2 = QStringLiteral("CosineSimShadowsToAnchor2");
+    // const QString COS_SIM_ANCH_SHADOW_3 = QStringLiteral("CosineSimShadowsToAnchor3");
+    // const QString COS_SIM_ANCH_SHADOW_4 = QStringLiteral("CosineSimShadowsToAnchor4");
+    // const QString COS_SIM_ANCH_SHADOW_5 = QStringLiteral("CosineSimShadowsToAnchor5");
+    // const QString COS_SIM_ANCH_SHADOW_6 = QStringLiteral("CosineSimShadowsToAnchor6");
+    // const QString COS_SIM_ANCH_SHADOW_7 = QStringLiteral("CosineSimShadowsToAnchor7");
+    // const QString COS_SIM_ANCH_SHADOW_8 = QStringLiteral("CosineSimShadowsToAnchor8");
+    // const QString COS_SIM_ANCH_SHADOW_9 = QStringLiteral("CosineSimShadowsToAnchor9");
+    // const QString COS_SIM_ANCH_SHADOW_10 = QStringLiteral("CosineSimShadowsToAnchor10");
+    // const QString COS_SIM_ANCH_SHADOW_11 = QStringLiteral("CosineSimShadowsToAnchor11");
+    // const QString COS_SIM_ANCH_SHADOW_12 = QStringLiteral("CosineSimShadowsToAnchor12");
     const QString MZ_FND_MEAN_1 = QStringLiteral("MzFoundMean1");
     const QString MZ_FND_MEAN_2 = QStringLiteral("MzFoundMean2");
     const QString MZ_FND_MEAN_3 = QStringLiteral("MzFoundMean3");
@@ -375,24 +381,24 @@ namespace CandidateScoresReaderRowNamespace {
     const QString INTS_FND_MAX_4 = QStringLiteral("IntensityFoundMax4");
     const QString INTS_FND_MAX_5 = QStringLiteral("IntensityFoundMax5");
     const QString INTS_FND_MAX_6 = QStringLiteral("IntensityFoundMax6");
-    const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
-    const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
-    const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
-    const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
-    const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
-    const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
-    const QString MZ_PK_LEN_NORM_1 = QStringLiteral("MzPeakLengthsNorm1");
-    const QString MZ_PK_LEN_NORM_2 = QStringLiteral("MzPeakLengthsNorm2");
-    const QString MZ_PK_LEN_NORM_3 = QStringLiteral("MzPeakLengthsNorm3");
-    const QString MZ_PK_LEN_NORM_4 = QStringLiteral("MzPeakLengthsNorm4");
-    const QString MZ_PK_LEN_NORM_5 = QStringLiteral("MzPeakLengthsNorm5");
-    const QString MZ_PK_LEN_NORM_6 = QStringLiteral("MzPeakLengthsNorm6");
-    const QString MZ_PK_LEN_NORM_7 = QStringLiteral("MzPeakLengthsNorm7");
-    const QString MZ_PK_LEN_NORM_8 = QStringLiteral("MzPeakLengthsNorm8");
-    const QString MZ_PK_LEN_NORM_9 = QStringLiteral("MzPeakLengthsNorm9");
-    const QString MZ_PK_LEN_NORM_10 = QStringLiteral("MzPeakLengthsNorm10");
-    const QString MZ_PK_LEN_NORM_11 = QStringLiteral("MzPeakLengthsNorm11");
-    const QString MZ_PK_LEN_NORM_12 = QStringLiteral("MzPeakLengthsNorm12");
+    // const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
+    // const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
+    // const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
+    // const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
+    // const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
+    // const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
+    // const QString MZ_PK_LEN_NORM_1 = QStringLiteral("MzPeakLengthsNorm1");
+    // const QString MZ_PK_LEN_NORM_2 = QStringLiteral("MzPeakLengthsNorm2");
+    // const QString MZ_PK_LEN_NORM_3 = QStringLiteral("MzPeakLengthsNorm3");
+    // const QString MZ_PK_LEN_NORM_4 = QStringLiteral("MzPeakLengthsNorm4");
+    // const QString MZ_PK_LEN_NORM_5 = QStringLiteral("MzPeakLengthsNorm5");
+    // const QString MZ_PK_LEN_NORM_6 = QStringLiteral("MzPeakLengthsNorm6");
+    // const QString MZ_PK_LEN_NORM_7 = QStringLiteral("MzPeakLengthsNorm7");
+    // const QString MZ_PK_LEN_NORM_8 = QStringLiteral("MzPeakLengthsNorm8");
+    // const QString MZ_PK_LEN_NORM_9 = QStringLiteral("MzPeakLengthsNorm9");
+    // const QString MZ_PK_LEN_NORM_10 = QStringLiteral("MzPeakLengthsNorm10");
+    // const QString MZ_PK_LEN_NORM_11 = QStringLiteral("MzPeakLengthsNorm11");
+    // const QString MZ_PK_LEN_NORM_12 = QStringLiteral("MzPeakLengthsNorm12");
     const QString AA_A = QStringLiteral("AminoAcidCountA");
     const QString AA_C = QStringLiteral("AminoAcidCountC");
     const QString AA_D = QStringLiteral("AminoAcidCountD");
@@ -425,12 +431,12 @@ namespace CandidateScoresReaderRowNamespace {
     const QString MZ_FND_STDEV_4 = QStringLiteral("MzFoundStDev4");
     const QString MZ_FND_STDEV_5 = QStringLiteral("MzFoundStDev5");
     const QString MZ_FND_STDEV_6 = QStringLiteral("MzFoundStDev6");
-    const QString MZ_FND_STDEV_7 = QStringLiteral("MzFoundStDev7");
-    const QString MZ_FND_STDEV_8 = QStringLiteral("MzFoundStDev8");
-    const QString MZ_FND_STDEV_9 = QStringLiteral("MzFoundStDev9");
-    const QString MZ_FND_STDEV_10 = QStringLiteral("MzFoundStDev10");
-    const QString MZ_FND_STDEV_11 = QStringLiteral("MzFoundStDev11");
-    const QString MZ_FND_STDEV_12 = QStringLiteral("MzFoundStDev12");
+    // const QString MZ_FND_STDEV_7 = QStringLiteral("MzFoundStDev7");
+    // const QString MZ_FND_STDEV_8 = QStringLiteral("MzFoundStDev8");
+    // const QString MZ_FND_STDEV_9 = QStringLiteral("MzFoundStDev9");
+    // const QString MZ_FND_STDEV_10 = QStringLiteral("MzFoundStDev10");
+    // const QString MZ_FND_STDEV_11 = QStringLiteral("MzFoundStDev11");
+    // const QString MZ_FND_STDEV_12 = QStringLiteral("MzFoundStDev12");
     const QString TARG_KEY = QStringLiteral("TargetKey");
     const QString PEP_STR_W_MODS = QStringLiteral("PeptideStringWithMods");
     const QString PROT_GRP = QStringLiteral("ProteinGroup");
@@ -499,18 +505,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
     const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
 
-    const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
-    const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
-    const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
-    const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
-    const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
-    const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
-    const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
-    const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
-    const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
-    const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
-    const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
-    const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
+    // const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
+    // const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
+    // const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
+    // const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
+    // const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
+    // const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
+    // const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
+    // const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
+    // const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
+    // const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
+    // const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
+    // const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
 
 
     const QStringList keysToCheck = {
@@ -546,30 +552,30 @@ namespace CandidateScoresReaderRowNamespace {
             PEAK_RATIO_3,
             SHADOW_COSINE_SIM_SUM,
             IRT_PRED,
-            COS_SIM_ANCH_1,
-            COS_SIM_ANCH_2,
-            COS_SIM_ANCH_3,
-            COS_SIM_ANCH_4,
-            COS_SIM_ANCH_5,
-            COS_SIM_ANCH_6,
-            COS_SIM_ANCH_7,
-            COS_SIM_ANCH_8,
-            COS_SIM_ANCH_9,
-            COS_SIM_ANCH_10,
-            COS_SIM_ANCH_11,
-            COS_SIM_ANCH_12,
-            COS_SIM_ANCH_SHADOW_1,
-            COS_SIM_ANCH_SHADOW_2,
-            COS_SIM_ANCH_SHADOW_3,
-            COS_SIM_ANCH_SHADOW_4,
-            COS_SIM_ANCH_SHADOW_5,
-            COS_SIM_ANCH_SHADOW_6,
-            COS_SIM_ANCH_SHADOW_7,
-            COS_SIM_ANCH_SHADOW_8,
-            COS_SIM_ANCH_SHADOW_9,
-            COS_SIM_ANCH_SHADOW_10,
-            COS_SIM_ANCH_SHADOW_11,
-            COS_SIM_ANCH_SHADOW_12,
+            // COS_SIM_ANCH_1,
+            // COS_SIM_ANCH_2,
+            // COS_SIM_ANCH_3,
+            // COS_SIM_ANCH_4,
+            // COS_SIM_ANCH_5,
+            // COS_SIM_ANCH_6,
+            // COS_SIM_ANCH_7,
+            // COS_SIM_ANCH_8,
+            // COS_SIM_ANCH_9,
+            // COS_SIM_ANCH_10,
+            // COS_SIM_ANCH_11,
+            // COS_SIM_ANCH_12,
+            // COS_SIM_ANCH_SHADOW_1,
+            // COS_SIM_ANCH_SHADOW_2,
+            // COS_SIM_ANCH_SHADOW_3,
+            // COS_SIM_ANCH_SHADOW_4,
+            // COS_SIM_ANCH_SHADOW_5,
+            // COS_SIM_ANCH_SHADOW_6,
+            // COS_SIM_ANCH_SHADOW_7,
+            // COS_SIM_ANCH_SHADOW_8,
+            // COS_SIM_ANCH_SHADOW_9,
+            // COS_SIM_ANCH_SHADOW_10,
+            // COS_SIM_ANCH_SHADOW_11,
+            // COS_SIM_ANCH_SHADOW_12,
             MZ_FND_MEAN_1,
             MZ_FND_MEAN_2,
             MZ_FND_MEAN_3,
@@ -588,24 +594,24 @@ namespace CandidateScoresReaderRowNamespace {
             INTS_FND_MAX_4,
             INTS_FND_MAX_5,
             INTS_FND_MAX_6,
-            INTS_FND_MAX_7,
-            INTS_FND_MAX_8,
-            INTS_FND_MAX_9,
-            INTS_FND_MAX_10,
-            INTS_FND_MAX_11,
-            INTS_FND_MAX_12,
-            MZ_PK_LEN_NORM_1,
-            MZ_PK_LEN_NORM_2,
-            MZ_PK_LEN_NORM_3,
-            MZ_PK_LEN_NORM_4,
-            MZ_PK_LEN_NORM_5,
-            MZ_PK_LEN_NORM_6,
-            MZ_PK_LEN_NORM_7,
-            MZ_PK_LEN_NORM_8,
-            MZ_PK_LEN_NORM_9,
-            MZ_PK_LEN_NORM_10,
-            MZ_PK_LEN_NORM_11,
-            MZ_PK_LEN_NORM_12,
+            // INTS_FND_MAX_7,
+            // INTS_FND_MAX_8,
+            // INTS_FND_MAX_9,
+            // INTS_FND_MAX_10,
+            // INTS_FND_MAX_11,
+            // INTS_FND_MAX_12,
+            // MZ_PK_LEN_NORM_1,
+            // MZ_PK_LEN_NORM_2,
+            // MZ_PK_LEN_NORM_3,
+            // MZ_PK_LEN_NORM_4,
+            // MZ_PK_LEN_NORM_5,
+            // MZ_PK_LEN_NORM_6,
+            // MZ_PK_LEN_NORM_7,
+            // MZ_PK_LEN_NORM_8,
+            // MZ_PK_LEN_NORM_9,
+            // MZ_PK_LEN_NORM_10,
+            // MZ_PK_LEN_NORM_11,
+            // MZ_PK_LEN_NORM_12,
             AA_A,
             AA_C,
             AA_D,
@@ -638,12 +644,12 @@ namespace CandidateScoresReaderRowNamespace {
             MZ_FND_STDEV_4,
             MZ_FND_STDEV_5,
             MZ_FND_STDEV_6,
-            MZ_FND_STDEV_7,
-            MZ_FND_STDEV_8,
-            MZ_FND_STDEV_9,
-            MZ_FND_STDEV_10,
-            MZ_FND_STDEV_11,
-            MZ_FND_STDEV_12,
+            // MZ_FND_STDEV_7,
+            // MZ_FND_STDEV_8,
+            // MZ_FND_STDEV_9,
+            // MZ_FND_STDEV_10,
+            // MZ_FND_STDEV_11,
+            // MZ_FND_STDEV_12,
             TARG_KEY,
             PEP_STR_W_MODS,
             PROT_GRP,
@@ -698,19 +704,19 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SUM100_WIN_2X,
             TOT_INTENSITY_PEAK_HEIGHTS,
             TOT_INTENSITY_RAW,
-            TARGET_WINDOW_LOCATION,
-            MZ_SEARCHED_1,
-            MZ_SEARCHED_2,
-            MZ_SEARCHED_3,
-            MZ_SEARCHED_4,
-            MZ_SEARCHED_5,
-            MZ_SEARCHED_6,
-            MZ_SEARCHED_7,
-            MZ_SEARCHED_8,
-            MZ_SEARCHED_9,
-            MZ_SEARCHED_10,
-            MZ_SEARCHED_11,
-            MZ_SEARCHED_12
+            TARGET_WINDOW_LOCATION
+            // MZ_SEARCHED_1,
+            // MZ_SEARCHED_2,
+            // MZ_SEARCHED_3,
+            // MZ_SEARCHED_4,
+            // MZ_SEARCHED_5,
+            // MZ_SEARCHED_6,
+            // MZ_SEARCHED_7,
+            // MZ_SEARCHED_8,
+            // MZ_SEARCHED_9,
+            // MZ_SEARCHED_10,
+            // MZ_SEARCHED_11,
+            // MZ_SEARCHED_12
     };
 
 }//namespace
@@ -749,30 +755,30 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float peakShapeRatio3 = -1.0;
     float shadowsCosineSimSum = -1.0;
     float iRtPredicted = -1.0;
-    float cosineSimToAnchor1 = -1.0;
-    float cosineSimToAnchor2 = -1.0;
-    float cosineSimToAnchor3 = -1.0;
-    float cosineSimToAnchor4 = -1.0;
-    float cosineSimToAnchor5 = -1.0;
-    float cosineSimToAnchor6 = -1.0;
-    float cosineSimToAnchor7 = -1.0;
-    float cosineSimToAnchor8 = -1.0;
-    float cosineSimToAnchor9 = -1.0;
-    float cosineSimToAnchor10 = -1.0;
-    float cosineSimToAnchor11 = -1.0;
-    float cosineSimToAnchor12 = -1.0;
-    float cosineSimShadowsToAnchor1 = -1.0;
-    float cosineSimShadowsToAnchor2 = -1.0;
-    float cosineSimShadowsToAnchor3 = -1.0;
-    float cosineSimShadowsToAnchor4 = -1.0;
-    float cosineSimShadowsToAnchor5 = -1.0;
-    float cosineSimShadowsToAnchor6 = -1.0;
-    float cosineSimShadowsToAnchor7 = -1.0;
-    float cosineSimShadowsToAnchor8 = -1.0;
-    float cosineSimShadowsToAnchor9 = -1.0;
-    float cosineSimShadowsToAnchor10 = -1.0;
-    float cosineSimShadowsToAnchor11 = -1.0;
-    float cosineSimShadowsToAnchor12 = -1.0;
+    // float cosineSimToAnchor1 = -1.0;
+    // float cosineSimToAnchor2 = -1.0;
+    // float cosineSimToAnchor3 = -1.0;
+    // float cosineSimToAnchor4 = -1.0;
+    // float cosineSimToAnchor5 = -1.0;
+    // float cosineSimToAnchor6 = -1.0;
+    // float cosineSimToAnchor7 = -1.0;
+    // float cosineSimToAnchor8 = -1.0;
+    // float cosineSimToAnchor9 = -1.0;
+    // float cosineSimToAnchor10 = -1.0;
+    // float cosineSimToAnchor11 = -1.0;
+    // float cosineSimToAnchor12 = -1.0;
+    // float cosineSimShadowsToAnchor1 = -1.0;
+    // float cosineSimShadowsToAnchor2 = -1.0;
+    // float cosineSimShadowsToAnchor3 = -1.0;
+    // float cosineSimShadowsToAnchor4 = -1.0;
+    // float cosineSimShadowsToAnchor5 = -1.0;
+    // float cosineSimShadowsToAnchor6 = -1.0;
+    // float cosineSimShadowsToAnchor7 = -1.0;
+    // float cosineSimShadowsToAnchor8 = -1.0;
+    // float cosineSimShadowsToAnchor9 = -1.0;
+    // float cosineSimShadowsToAnchor10 = -1.0;
+    // float cosineSimShadowsToAnchor11 = -1.0;
+    // float cosineSimShadowsToAnchor12 = -1.0;
     float mzFoundMean1 = -1.0;
     float mzFoundMean2 = -1.0;
     float mzFoundMean3 = -1.0;
@@ -791,24 +797,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float intensityFoundMax4 = -1.0;
     float intensityFoundMax5 = -1.0;
     float intensityFoundMax6 = -1.0;
-    float intensityFoundMax7 = -1.0;
-    float intensityFoundMax8 = -1.0;
-    float intensityFoundMax9 = -1.0;
-    float intensityFoundMax10 = -1.0;
-    float intensityFoundMax11 = -1.0;
-    float intensityFoundMax12 = -1.0;
-    float mzPeakLengthsNorm1 = -1.0;
-    float mzPeakLengthsNorm2 = -1.0;
-    float mzPeakLengthsNorm3 = -1.0;
-    float mzPeakLengthsNorm4 = -1.0;
-    float mzPeakLengthsNorm5 = -1.0;
-    float mzPeakLengthsNorm6 = -1.0;
-    float mzPeakLengthsNorm7 = -1.0;
-    float mzPeakLengthsNorm8 = -1.0;
-    float mzPeakLengthsNorm9 = -1.0;
-    float mzPeakLengthsNorm10 = -1.0;
-    float mzPeakLengthsNorm11 = -1.0;
-    float mzPeakLengthsNorm12 = -1.0;
+    // float intensityFoundMax7 = -1.0;
+    // float intensityFoundMax8 = -1.0;
+    // float intensityFoundMax9 = -1.0;
+    // float intensityFoundMax10 = -1.0;
+    // float intensityFoundMax11 = -1.0;
+    // float intensityFoundMax12 = -1.0;
+    // float mzPeakLengthsNorm1 = -1.0;
+    // float mzPeakLengthsNorm2 = -1.0;
+    // float mzPeakLengthsNorm3 = -1.0;
+    // float mzPeakLengthsNorm4 = -1.0;
+    // float mzPeakLengthsNorm5 = -1.0;
+    // float mzPeakLengthsNorm6 = -1.0;
+    // float mzPeakLengthsNorm7 = -1.0;
+    // float mzPeakLengthsNorm8 = -1.0;
+    // float mzPeakLengthsNorm9 = -1.0;
+    // float mzPeakLengthsNorm10 = -1.0;
+    // float mzPeakLengthsNorm11 = -1.0;
+    // float mzPeakLengthsNorm12 = -1.0;
     float aminoAcidCountA = -1.0;
     float aminoAcidCountC = -1.0;
     float aminoAcidCountD = -1.0;
@@ -841,12 +847,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float mzFoundStDev4 = -1.0;
     float mzFoundStDev5 = -1.0;
     float mzFoundStDev6 = -1.0;
-    float mzFoundStDev7 = -1.0;
-    float mzFoundStDev8 = -1.0;
-    float mzFoundStDev9 = -1.0;
-    float mzFoundStDev10 = -1.0;
-    float mzFoundStDev11 = -1.0;
-    float mzFoundStDev12 = -1.0;
+    // float mzFoundStDev7 = -1.0;
+    // float mzFoundStDev8 = -1.0;
+    // float mzFoundStDev9 = -1.0;
+    // float mzFoundStDev10 = -1.0;
+    // float mzFoundStDev11 = -1.0;
+    // float mzFoundStDev12 = -1.0;
 
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
@@ -921,18 +927,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float trapArea11 = -1.0;
     float trapArea12 = -1.0;
 
-    float mzSearched1 = -1.0;
-    float mzSearched2 = -1.0;
-    float mzSearched3 = -1.0;
-    float mzSearched4 = -1.0;
-    float mzSearched5 = -1.0;
-    float mzSearched6 = -1.0;
-    float mzSearched7 = -1.0;
-    float mzSearched8 = -1.0;
-    float mzSearched9 = -1.0;
-    float mzSearched10 = -1.0;
-    float mzSearched11 = -1.0;
-    float mzSearched12 = -1.0;
+    // float mzSearched1 = -1.0;
+    // float mzSearched2 = -1.0;
+    // float mzSearched3 = -1.0;
+    // float mzSearched4 = -1.0;
+    // float mzSearched5 = -1.0;
+    // float mzSearched6 = -1.0;
+    // float mzSearched7 = -1.0;
+    // float mzSearched8 = -1.0;
+    // float mzSearched9 = -1.0;
+    // float mzSearched10 = -1.0;
+    // float mzSearched11 = -1.0;
+    // float mzSearched12 = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -980,30 +986,30 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         peakShapeRatio3 = dataMap.value(PEAK_RATIO_3).toFloat();
         shadowsCosineSimSum = dataMap.value(SHADOW_COSINE_SIM_SUM).toFloat();
         iRtPredicted = dataMap.value(IRT_PRED).toFloat();
-        cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
-        cosineSimToAnchor2 = dataMap.value(COS_SIM_ANCH_2).toFloat();
-        cosineSimToAnchor3 = dataMap.value(COS_SIM_ANCH_3).toFloat();
-        cosineSimToAnchor4 = dataMap.value(COS_SIM_ANCH_4).toFloat();
-        cosineSimToAnchor5 = dataMap.value(COS_SIM_ANCH_5).toFloat();
-        cosineSimToAnchor6 = dataMap.value(COS_SIM_ANCH_6).toFloat();
-        cosineSimToAnchor7 = dataMap.value(COS_SIM_ANCH_7).toFloat();
-        cosineSimToAnchor8 = dataMap.value(COS_SIM_ANCH_8).toFloat();
-        cosineSimToAnchor9 = dataMap.value(COS_SIM_ANCH_9).toFloat();
-        cosineSimToAnchor10 = dataMap.value(COS_SIM_ANCH_10).toFloat();
-        cosineSimToAnchor11 = dataMap.value(COS_SIM_ANCH_11).toFloat();
-        cosineSimToAnchor12 = dataMap.value(COS_SIM_ANCH_12).toFloat();
-        cosineSimShadowsToAnchor1 = dataMap.value(COS_SIM_ANCH_SHADOW_1).toFloat();
-        cosineSimShadowsToAnchor2 = dataMap.value(COS_SIM_ANCH_SHADOW_2).toFloat();
-        cosineSimShadowsToAnchor3 = dataMap.value(COS_SIM_ANCH_SHADOW_3).toFloat();
-        cosineSimShadowsToAnchor4 = dataMap.value(COS_SIM_ANCH_SHADOW_4).toFloat();
-        cosineSimShadowsToAnchor5 = dataMap.value(COS_SIM_ANCH_SHADOW_5).toFloat();
-        cosineSimShadowsToAnchor6 = dataMap.value(COS_SIM_ANCH_SHADOW_6).toFloat();
-        cosineSimShadowsToAnchor7 = dataMap.value(COS_SIM_ANCH_SHADOW_7).toFloat();
-        cosineSimShadowsToAnchor8 = dataMap.value(COS_SIM_ANCH_SHADOW_8).toFloat();
-        cosineSimShadowsToAnchor9 = dataMap.value(COS_SIM_ANCH_SHADOW_9).toFloat();
-        cosineSimShadowsToAnchor10 = dataMap.value(COS_SIM_ANCH_SHADOW_10).toFloat();
-        cosineSimShadowsToAnchor11 = dataMap.value(COS_SIM_ANCH_SHADOW_11).toFloat();
-        cosineSimShadowsToAnchor12 = dataMap.value(COS_SIM_ANCH_SHADOW_12).toFloat();
+        // cosineSimToAnchor1 = dataMap.value(COS_SIM_ANCH_1).toFloat();
+        // cosineSimToAnchor2 = dataMap.value(COS_SIM_ANCH_2).toFloat();
+        // cosineSimToAnchor3 = dataMap.value(COS_SIM_ANCH_3).toFloat();
+        // cosineSimToAnchor4 = dataMap.value(COS_SIM_ANCH_4).toFloat();
+        // cosineSimToAnchor5 = dataMap.value(COS_SIM_ANCH_5).toFloat();
+        // cosineSimToAnchor6 = dataMap.value(COS_SIM_ANCH_6).toFloat();
+        // cosineSimToAnchor7 = dataMap.value(COS_SIM_ANCH_7).toFloat();
+        // cosineSimToAnchor8 = dataMap.value(COS_SIM_ANCH_8).toFloat();
+        // cosineSimToAnchor9 = dataMap.value(COS_SIM_ANCH_9).toFloat();
+        // cosineSimToAnchor10 = dataMap.value(COS_SIM_ANCH_10).toFloat();
+        // cosineSimToAnchor11 = dataMap.value(COS_SIM_ANCH_11).toFloat();
+        // cosineSimToAnchor12 = dataMap.value(COS_SIM_ANCH_12).toFloat();
+        // cosineSimShadowsToAnchor1 = dataMap.value(COS_SIM_ANCH_SHADOW_1).toFloat();
+        // cosineSimShadowsToAnchor2 = dataMap.value(COS_SIM_ANCH_SHADOW_2).toFloat();
+        // cosineSimShadowsToAnchor3 = dataMap.value(COS_SIM_ANCH_SHADOW_3).toFloat();
+        // cosineSimShadowsToAnchor4 = dataMap.value(COS_SIM_ANCH_SHADOW_4).toFloat();
+        // cosineSimShadowsToAnchor5 = dataMap.value(COS_SIM_ANCH_SHADOW_5).toFloat();
+        // cosineSimShadowsToAnchor6 = dataMap.value(COS_SIM_ANCH_SHADOW_6).toFloat();
+        // cosineSimShadowsToAnchor7 = dataMap.value(COS_SIM_ANCH_SHADOW_7).toFloat();
+        // cosineSimShadowsToAnchor8 = dataMap.value(COS_SIM_ANCH_SHADOW_8).toFloat();
+        // cosineSimShadowsToAnchor9 = dataMap.value(COS_SIM_ANCH_SHADOW_9).toFloat();
+        // cosineSimShadowsToAnchor10 = dataMap.value(COS_SIM_ANCH_SHADOW_10).toFloat();
+        // cosineSimShadowsToAnchor11 = dataMap.value(COS_SIM_ANCH_SHADOW_11).toFloat();
+        // cosineSimShadowsToAnchor12 = dataMap.value(COS_SIM_ANCH_SHADOW_12).toFloat();
         mzFoundMean1 = dataMap.value(MZ_FND_MEAN_1).toFloat();
         mzFoundMean2 = dataMap.value(MZ_FND_MEAN_2).toFloat();
         mzFoundMean3 = dataMap.value(MZ_FND_MEAN_3).toFloat();
@@ -1022,24 +1028,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         intensityFoundMax4 = dataMap.value(INTS_FND_MAX_4).toFloat();
         intensityFoundMax5 = dataMap.value(INTS_FND_MAX_5).toFloat();
         intensityFoundMax6 = dataMap.value(INTS_FND_MAX_6).toFloat();
-        intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
-        intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
-        intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
-        intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
-        intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
-        intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
-        mzPeakLengthsNorm1 = dataMap.value(MZ_PK_LEN_NORM_1).toFloat();
-        mzPeakLengthsNorm2 = dataMap.value(MZ_PK_LEN_NORM_2).toFloat();
-        mzPeakLengthsNorm3 = dataMap.value(MZ_PK_LEN_NORM_3).toFloat();
-        mzPeakLengthsNorm4 = dataMap.value(MZ_PK_LEN_NORM_4).toFloat();
-        mzPeakLengthsNorm5 = dataMap.value(MZ_PK_LEN_NORM_5).toFloat();
-        mzPeakLengthsNorm6 = dataMap.value(MZ_PK_LEN_NORM_6).toFloat();
-        mzPeakLengthsNorm7 = dataMap.value(MZ_PK_LEN_NORM_7).toFloat();
-        mzPeakLengthsNorm8 = dataMap.value(MZ_PK_LEN_NORM_8).toFloat();
-        mzPeakLengthsNorm9 = dataMap.value(MZ_PK_LEN_NORM_9).toFloat();
-        mzPeakLengthsNorm10 = dataMap.value(MZ_PK_LEN_NORM_10).toFloat();
-        mzPeakLengthsNorm11 = dataMap.value(MZ_PK_LEN_NORM_11).toFloat();
-        mzPeakLengthsNorm12 = dataMap.value(MZ_PK_LEN_NORM_12).toFloat();
+        // intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
+        // intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
+        // intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
+        // intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
+        // intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
+        // intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
+        // mzPeakLengthsNorm1 = dataMap.value(MZ_PK_LEN_NORM_1).toFloat();
+        // mzPeakLengthsNorm2 = dataMap.value(MZ_PK_LEN_NORM_2).toFloat();
+        // mzPeakLengthsNorm3 = dataMap.value(MZ_PK_LEN_NORM_3).toFloat();
+        // mzPeakLengthsNorm4 = dataMap.value(MZ_PK_LEN_NORM_4).toFloat();
+        // mzPeakLengthsNorm5 = dataMap.value(MZ_PK_LEN_NORM_5).toFloat();
+        // mzPeakLengthsNorm6 = dataMap.value(MZ_PK_LEN_NORM_6).toFloat();
+        // mzPeakLengthsNorm7 = dataMap.value(MZ_PK_LEN_NORM_7).toFloat();
+        // mzPeakLengthsNorm8 = dataMap.value(MZ_PK_LEN_NORM_8).toFloat();
+        // mzPeakLengthsNorm9 = dataMap.value(MZ_PK_LEN_NORM_9).toFloat();
+        // mzPeakLengthsNorm10 = dataMap.value(MZ_PK_LEN_NORM_10).toFloat();
+        // mzPeakLengthsNorm11 = dataMap.value(MZ_PK_LEN_NORM_11).toFloat();
+        // mzPeakLengthsNorm12 = dataMap.value(MZ_PK_LEN_NORM_12).toFloat();
         aminoAcidCountA = dataMap.value(AA_A).toFloat();
         aminoAcidCountC = dataMap.value(AA_C).toFloat();
         aminoAcidCountD = dataMap.value(AA_D).toFloat();
@@ -1072,12 +1078,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         mzFoundStDev4 = dataMap.value(MZ_FND_MEAN_4).toFloat();
         mzFoundStDev5 = dataMap.value(MZ_FND_MEAN_5).toFloat();
         mzFoundStDev6 = dataMap.value(MZ_FND_MEAN_6).toFloat();
-        mzFoundStDev7 = dataMap.value(MZ_FND_MEAN_8).toFloat();
-        mzFoundStDev8 = dataMap.value(MZ_FND_MEAN_8).toFloat();
-        mzFoundStDev9 = dataMap.value(MZ_FND_MEAN_9).toFloat();
-        mzFoundStDev10 = dataMap.value(MZ_FND_MEAN_10).toFloat();
-        mzFoundStDev11 = dataMap.value(MZ_FND_MEAN_11).toFloat();
-        mzFoundStDev12 = dataMap.value(MZ_FND_MEAN_12).toFloat();
+        // mzFoundStDev7 = dataMap.value(MZ_FND_MEAN_8).toFloat();
+        // mzFoundStDev8 = dataMap.value(MZ_FND_MEAN_8).toFloat();
+        // mzFoundStDev9 = dataMap.value(MZ_FND_MEAN_9).toFloat();
+        // mzFoundStDev10 = dataMap.value(MZ_FND_MEAN_10).toFloat();
+        // mzFoundStDev11 = dataMap.value(MZ_FND_MEAN_11).toFloat();
+        // mzFoundStDev12 = dataMap.value(MZ_FND_MEAN_12).toFloat();
 
         targetKey = dataMap.value(TARG_KEY).toString();
         peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS).toString());
@@ -1176,30 +1182,30 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {PEAK_RATIO_3, QVariant(peakShapeRatio3)},
                 {SHADOW_COSINE_SIM_SUM, QVariant(shadowsCosineSimSum)},
                 {IRT_PRED, QVariant(iRtPredicted)},
-                {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
-                {COS_SIM_ANCH_2, QVariant(cosineSimToAnchor2)},
-                {COS_SIM_ANCH_3, QVariant(cosineSimToAnchor3)},
-                {COS_SIM_ANCH_4, QVariant(cosineSimToAnchor4)},
-                {COS_SIM_ANCH_5, QVariant(cosineSimToAnchor5)},
-                {COS_SIM_ANCH_6, QVariant(cosineSimToAnchor6)},
-                {COS_SIM_ANCH_7, QVariant(cosineSimToAnchor7)},
-                {COS_SIM_ANCH_8, QVariant(cosineSimToAnchor8)},
-                {COS_SIM_ANCH_9, QVariant(cosineSimToAnchor9)},
-                {COS_SIM_ANCH_10, QVariant(cosineSimToAnchor10)},
-                {COS_SIM_ANCH_11, QVariant(cosineSimToAnchor11)},
-                {COS_SIM_ANCH_12, QVariant(cosineSimToAnchor12)},
-                {COS_SIM_ANCH_SHADOW_1, QVariant(cosineSimShadowsToAnchor1)},
-                {COS_SIM_ANCH_SHADOW_2, QVariant(cosineSimShadowsToAnchor2)},
-                {COS_SIM_ANCH_SHADOW_3, QVariant(cosineSimShadowsToAnchor3)},
-                {COS_SIM_ANCH_SHADOW_4, QVariant(cosineSimShadowsToAnchor4)},
-                {COS_SIM_ANCH_SHADOW_5, QVariant(cosineSimShadowsToAnchor5)},
-                {COS_SIM_ANCH_SHADOW_6, QVariant(cosineSimShadowsToAnchor6)},
-                {COS_SIM_ANCH_SHADOW_7, QVariant(cosineSimShadowsToAnchor7)},
-                {COS_SIM_ANCH_SHADOW_8, QVariant(cosineSimShadowsToAnchor8)},
-                {COS_SIM_ANCH_SHADOW_9, QVariant(cosineSimShadowsToAnchor9)},
-                {COS_SIM_ANCH_SHADOW_10, QVariant(cosineSimShadowsToAnchor10)},
-                {COS_SIM_ANCH_SHADOW_11, QVariant(cosineSimShadowsToAnchor11)},
-                {COS_SIM_ANCH_SHADOW_12, QVariant(cosineSimShadowsToAnchor12)},
+                // {COS_SIM_ANCH_1, QVariant(cosineSimToAnchor1)},
+                // {COS_SIM_ANCH_2, QVariant(cosineSimToAnchor2)},
+                // {COS_SIM_ANCH_3, QVariant(cosineSimToAnchor3)},
+                // {COS_SIM_ANCH_4, QVariant(cosineSimToAnchor4)},
+                // {COS_SIM_ANCH_5, QVariant(cosineSimToAnchor5)},
+                // {COS_SIM_ANCH_6, QVariant(cosineSimToAnchor6)},
+                // {COS_SIM_ANCH_7, QVariant(cosineSimToAnchor7)},
+                // {COS_SIM_ANCH_8, QVariant(cosineSimToAnchor8)},
+                // {COS_SIM_ANCH_9, QVariant(cosineSimToAnchor9)},
+                // {COS_SIM_ANCH_10, QVariant(cosineSimToAnchor10)},
+                // {COS_SIM_ANCH_11, QVariant(cosineSimToAnchor11)},
+                // {COS_SIM_ANCH_12, QVariant(cosineSimToAnchor12)},
+                // {COS_SIM_ANCH_SHADOW_1, QVariant(cosineSimShadowsToAnchor1)},
+                // {COS_SIM_ANCH_SHADOW_2, QVariant(cosineSimShadowsToAnchor2)},
+                // {COS_SIM_ANCH_SHADOW_3, QVariant(cosineSimShadowsToAnchor3)},
+                // {COS_SIM_ANCH_SHADOW_4, QVariant(cosineSimShadowsToAnchor4)},
+                // {COS_SIM_ANCH_SHADOW_5, QVariant(cosineSimShadowsToAnchor5)},
+                // {COS_SIM_ANCH_SHADOW_6, QVariant(cosineSimShadowsToAnchor6)},
+                // {COS_SIM_ANCH_SHADOW_7, QVariant(cosineSimShadowsToAnchor7)},
+                // {COS_SIM_ANCH_SHADOW_8, QVariant(cosineSimShadowsToAnchor8)},
+                // {COS_SIM_ANCH_SHADOW_9, QVariant(cosineSimShadowsToAnchor9)},
+                // {COS_SIM_ANCH_SHADOW_10, QVariant(cosineSimShadowsToAnchor10)},
+                // {COS_SIM_ANCH_SHADOW_11, QVariant(cosineSimShadowsToAnchor11)},
+                // {COS_SIM_ANCH_SHADOW_12, QVariant(cosineSimShadowsToAnchor12)},
                 {MZ_FND_MEAN_1, QVariant(mzFoundMean1)},
                 {MZ_FND_MEAN_2, QVariant(mzFoundMean2)},
                 {MZ_FND_MEAN_3, QVariant(mzFoundMean3)},
@@ -1218,24 +1224,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {INTS_FND_MAX_4, QVariant(intensityFoundMax4)},
                 {INTS_FND_MAX_5, QVariant(intensityFoundMax5)},
                 {INTS_FND_MAX_6, QVariant(intensityFoundMax6)},
-                {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
-                {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
-                {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
-                {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
-                {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
-                {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
-                {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
-                {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
-                {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
-                {MZ_PK_LEN_NORM_4, QVariant(mzPeakLengthsNorm4)},
-                {MZ_PK_LEN_NORM_5, QVariant(mzPeakLengthsNorm5)},
-                {MZ_PK_LEN_NORM_6, QVariant(mzPeakLengthsNorm6)},
-                {MZ_PK_LEN_NORM_7, QVariant(mzPeakLengthsNorm7)},
-                {MZ_PK_LEN_NORM_8, QVariant(mzPeakLengthsNorm8)},
-                {MZ_PK_LEN_NORM_9, QVariant(mzPeakLengthsNorm9)},
-                {MZ_PK_LEN_NORM_10, QVariant(mzPeakLengthsNorm10)},
-                {MZ_PK_LEN_NORM_11, QVariant(mzPeakLengthsNorm11)},
-                {MZ_PK_LEN_NORM_12, QVariant(mzPeakLengthsNorm12)},
+                // {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
+                // {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
+                // {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
+                // {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
+                // {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
+                // {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
+                // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
+                // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
+                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
+                // {MZ_PK_LEN_NORM_4, QVariant(mzPeakLengthsNorm4)},
+                // {MZ_PK_LEN_NORM_5, QVariant(mzPeakLengthsNorm5)},
+                // {MZ_PK_LEN_NORM_6, QVariant(mzPeakLengthsNorm6)},
+                // {MZ_PK_LEN_NORM_7, QVariant(mzPeakLengthsNorm7)},
+                // {MZ_PK_LEN_NORM_8, QVariant(mzPeakLengthsNorm8)},
+                // {MZ_PK_LEN_NORM_9, QVariant(mzPeakLengthsNorm9)},
+                // {MZ_PK_LEN_NORM_10, QVariant(mzPeakLengthsNorm10)},
+                // {MZ_PK_LEN_NORM_11, QVariant(mzPeakLengthsNorm11)},
+                // {MZ_PK_LEN_NORM_12, QVariant(mzPeakLengthsNorm12)},
                 {AA_A, QVariant(aminoAcidCountA)},
                 {AA_C, QVariant(aminoAcidCountC)},
                 {AA_D, QVariant(aminoAcidCountD)},
@@ -1268,12 +1274,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {MZ_FND_STDEV_4, QVariant(mzFoundStDev4)},
                 {MZ_FND_STDEV_5, QVariant(mzFoundStDev5)},
                 {MZ_FND_STDEV_6, QVariant(mzFoundStDev6)},
-                {MZ_FND_STDEV_7, QVariant(mzFoundStDev7)},
-                {MZ_FND_STDEV_8, QVariant(mzFoundStDev8)},
-                {MZ_FND_STDEV_9, QVariant(mzFoundStDev9)},
-                {MZ_FND_STDEV_10, QVariant(mzFoundStDev10)},
-                {MZ_FND_STDEV_11, QVariant(mzFoundStDev11)},
-                {MZ_FND_STDEV_12, QVariant(mzFoundStDev12)},
+                // {MZ_FND_STDEV_7, QVariant(mzFoundStDev7)},
+                // {MZ_FND_STDEV_8, QVariant(mzFoundStDev8)},
+                // {MZ_FND_STDEV_9, QVariant(mzFoundStDev9)},
+                // {MZ_FND_STDEV_10, QVariant(mzFoundStDev10)},
+                // {MZ_FND_STDEV_11, QVariant(mzFoundStDev11)},
+                // {MZ_FND_STDEV_12, QVariant(mzFoundStDev12)},
                 {TARG_KEY, QVariant(targetKey)},
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
                 {PROT_GRP, QVariant(proteinGroup)},
@@ -1345,18 +1351,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {TRAP_AREA_11, QVariant(trapArea11)},
                 {TRAP_AREA_12, QVariant(trapArea12)},
 
-                {MZ_SEARCHED_1, QVariant(mzSearched1)},
-                {MZ_SEARCHED_2, QVariant(mzSearched2)},
-                {MZ_SEARCHED_3, QVariant(mzSearched3)},
-                {MZ_SEARCHED_4, QVariant(mzSearched4)},
-                {MZ_SEARCHED_5, QVariant(mzSearched5)},
-                {MZ_SEARCHED_6, QVariant(mzSearched6)},
-                {MZ_SEARCHED_7, QVariant(mzSearched7)},
-                {MZ_SEARCHED_8, QVariant(mzSearched8)},
-                {MZ_SEARCHED_9, QVariant(mzSearched9)},
-                {MZ_SEARCHED_10, QVariant(mzSearched10)},
-                {MZ_SEARCHED_11, QVariant(mzSearched11)},
-                {MZ_SEARCHED_12, QVariant(mzSearched12)},
+                // {MZ_SEARCHED_1, QVariant(mzSearched1)},
+                // {MZ_SEARCHED_2, QVariant(mzSearched2)},
+                // {MZ_SEARCHED_3, QVariant(mzSearched3)},
+                // {MZ_SEARCHED_4, QVariant(mzSearched4)},
+                // {MZ_SEARCHED_5, QVariant(mzSearched5)},
+                // {MZ_SEARCHED_6, QVariant(mzSearched6)},
+                // {MZ_SEARCHED_7, QVariant(mzSearched7)},
+                // {MZ_SEARCHED_8, QVariant(mzSearched8)},
+                // {MZ_SEARCHED_9, QVariant(mzSearched9)},
+                // {MZ_SEARCHED_10, QVariant(mzSearched10)},
+                // {MZ_SEARCHED_11, QVariant(mzSearched11)},
+                // {MZ_SEARCHED_12, QVariant(mzSearched12)},
         };
     }
 
@@ -1396,30 +1402,30 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.peakShapeRatio3 = candidateScores->featuresArray[Features::PeakShapeRatio3];
         row.shadowsCosineSimSum = candidateScores->featuresArray[Features::ShadowsCosineSimSum];
         row.iRtPredicted = candidateScores->featuresArray[Features::IRTPredicted];
-        row.cosineSimToAnchor1 = candidateScores->featuresArray[Features::CosineSimToAnchor1];
-        row.cosineSimToAnchor2 = candidateScores->featuresArray[Features::CosineSimToAnchor2];
-        row.cosineSimToAnchor3 = candidateScores->featuresArray[Features::CosineSimToAnchor3];
-        row.cosineSimToAnchor4 = candidateScores->featuresArray[Features::CosineSimToAnchor4];
-        row.cosineSimToAnchor5 = candidateScores->featuresArray[Features::CosineSimToAnchor5];
-        row.cosineSimToAnchor6 = candidateScores->featuresArray[Features::CosineSimToAnchor6];
-        row.cosineSimToAnchor7 = candidateScores->featuresArray[Features::CosineSimToAnchor7];
-        row.cosineSimToAnchor8 = candidateScores->featuresArray[Features::CosineSimToAnchor8];
-        row.cosineSimToAnchor9 = candidateScores->featuresArray[Features::CosineSimToAnchor9];
-        row.cosineSimToAnchor10 = candidateScores->featuresArray[Features::CosineSimToAnchor10];
-        row.cosineSimToAnchor11 = candidateScores->featuresArray[Features::CosineSimToAnchor11];
-        row.cosineSimToAnchor12 = candidateScores->featuresArray[Features::CosineSimToAnchor12];
-        row.cosineSimShadowsToAnchor1 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1];
-        row.cosineSimShadowsToAnchor2 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor2];
-        row.cosineSimShadowsToAnchor3 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor3];
-        row.cosineSimShadowsToAnchor4 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor4];
-        row.cosineSimShadowsToAnchor5 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor5];
-        row.cosineSimShadowsToAnchor6 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor6];
-        row.cosineSimShadowsToAnchor7 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor7];
-        row.cosineSimShadowsToAnchor8 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor8];
-        row.cosineSimShadowsToAnchor9 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor9];
-        row.cosineSimShadowsToAnchor10 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor10];
-        row.cosineSimShadowsToAnchor11 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor11];
-        row.cosineSimShadowsToAnchor12 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor12];
+        // row.cosineSimToAnchor1 = candidateScores->featuresArray[Features::CosineSimToAnchor1];
+        // row.cosineSimToAnchor2 = candidateScores->featuresArray[Features::CosineSimToAnchor2];
+        // row.cosineSimToAnchor3 = candidateScores->featuresArray[Features::CosineSimToAnchor3];
+        // row.cosineSimToAnchor4 = candidateScores->featuresArray[Features::CosineSimToAnchor4];
+        // row.cosineSimToAnchor5 = candidateScores->featuresArray[Features::CosineSimToAnchor5];
+        // row.cosineSimToAnchor6 = candidateScores->featuresArray[Features::CosineSimToAnchor6];
+        // row.cosineSimToAnchor7 = candidateScores->featuresArray[Features::CosineSimToAnchor7];
+        // row.cosineSimToAnchor8 = candidateScores->featuresArray[Features::CosineSimToAnchor8];
+        // row.cosineSimToAnchor9 = candidateScores->featuresArray[Features::CosineSimToAnchor9];
+        // row.cosineSimToAnchor10 = candidateScores->featuresArray[Features::CosineSimToAnchor10];
+        // row.cosineSimToAnchor11 = candidateScores->featuresArray[Features::CosineSimToAnchor11];
+        // row.cosineSimToAnchor12 = candidateScores->featuresArray[Features::CosineSimToAnchor12];
+        // row.cosineSimShadowsToAnchor1 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1];
+        // row.cosineSimShadowsToAnchor2 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor2];
+        // row.cosineSimShadowsToAnchor3 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor3];
+        // row.cosineSimShadowsToAnchor4 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor4];
+        // row.cosineSimShadowsToAnchor5 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor5];
+        // row.cosineSimShadowsToAnchor6 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor6];
+        // row.cosineSimShadowsToAnchor7 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor7];
+        // row.cosineSimShadowsToAnchor8 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor8];
+        // row.cosineSimShadowsToAnchor9 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor9];
+        // row.cosineSimShadowsToAnchor10 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor10];
+        // row.cosineSimShadowsToAnchor11 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor11];
+        // row.cosineSimShadowsToAnchor12 = candidateScores->featuresArray[Features::CosineSimShadowsToAnchor12];
         row.mzFoundMean1 = candidateScores->featuresArray[Features::MzFoundMean1];
         row.mzFoundMean2 = candidateScores->featuresArray[Features::MzFoundMean2];
         row.mzFoundMean3 = candidateScores->featuresArray[Features::MzFoundMean3];
@@ -1438,24 +1444,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.intensityFoundMax4 = candidateScores->featuresArray[Features::IntensityFoundMax4];
         row.intensityFoundMax5 = candidateScores->featuresArray[Features::IntensityFoundMax5];
         row.intensityFoundMax6 = candidateScores->featuresArray[Features::IntensityFoundMax6];
-        row.intensityFoundMax7 = candidateScores->featuresArray[Features::IntensityFoundMax7];
-        row.intensityFoundMax8 = candidateScores->featuresArray[Features::IntensityFoundMax8];
-        row.intensityFoundMax9 = candidateScores->featuresArray[Features::IntensityFoundMax9];
-        row.intensityFoundMax10 = candidateScores->featuresArray[Features::IntensityFoundMax10];
-        row.intensityFoundMax11 = candidateScores->featuresArray[Features::IntensityFoundMax11];
-        row.intensityFoundMax12 = candidateScores->featuresArray[Features::IntensityFoundMax12];
-        row.mzPeakLengthsNorm1 = candidateScores->featuresArray[Features::MzPeakLengthsNorm1];
-        row.mzPeakLengthsNorm2 = candidateScores->featuresArray[Features::MzPeakLengthsNorm2];
-        row.mzPeakLengthsNorm3 = candidateScores->featuresArray[Features::MzPeakLengthsNorm3];
-        row.mzPeakLengthsNorm4 = candidateScores->featuresArray[Features::MzPeakLengthsNorm4];
-        row.mzPeakLengthsNorm5 = candidateScores->featuresArray[Features::MzPeakLengthsNorm5];
-        row.mzPeakLengthsNorm6 = candidateScores->featuresArray[Features::MzPeakLengthsNorm6];
-        row.mzPeakLengthsNorm7 = candidateScores->featuresArray[Features::MzPeakLengthsNorm7];
-        row.mzPeakLengthsNorm8 = candidateScores->featuresArray[Features::MzPeakLengthsNorm8];
-        row.mzPeakLengthsNorm9 = candidateScores->featuresArray[Features::MzPeakLengthsNorm9];
-        row.mzPeakLengthsNorm10 = candidateScores->featuresArray[Features::MzPeakLengthsNorm10];
-        row.mzPeakLengthsNorm11 = candidateScores->featuresArray[Features::MzPeakLengthsNorm11];
-        row.mzPeakLengthsNorm12 = candidateScores->featuresArray[Features::MzPeakLengthsNorm12];
+        // row.intensityFoundMax7 = candidateScores->featuresArray[Features::IntensityFoundMax7];
+        // row.intensityFoundMax8 = candidateScores->featuresArray[Features::IntensityFoundMax8];
+        // row.intensityFoundMax9 = candidateScores->featuresArray[Features::IntensityFoundMax9];
+        // row.intensityFoundMax10 = candidateScores->featuresArray[Features::IntensityFoundMax10];
+        // row.intensityFoundMax11 = candidateScores->featuresArray[Features::IntensityFoundMax11];
+        // row.intensityFoundMax12 = candidateScores->featuresArray[Features::IntensityFoundMax12];
+        // row.mzPeakLengthsNorm1 = candidateScores->featuresArray[Features::MzPeakLengthsNorm1];
+        // row.mzPeakLengthsNorm2 = candidateScores->featuresArray[Features::MzPeakLengthsNorm2];
+        // row.mzPeakLengthsNorm3 = candidateScores->featuresArray[Features::MzPeakLengthsNorm3];
+        // row.mzPeakLengthsNorm4 = candidateScores->featuresArray[Features::MzPeakLengthsNorm4];
+        // row.mzPeakLengthsNorm5 = candidateScores->featuresArray[Features::MzPeakLengthsNorm5];
+        // row.mzPeakLengthsNorm6 = candidateScores->featuresArray[Features::MzPeakLengthsNorm6];
+        // row.mzPeakLengthsNorm7 = candidateScores->featuresArray[Features::MzPeakLengthsNorm7];
+        // row.mzPeakLengthsNorm8 = candidateScores->featuresArray[Features::MzPeakLengthsNorm8];
+        // row.mzPeakLengthsNorm9 = candidateScores->featuresArray[Features::MzPeakLengthsNorm9];
+        // row.mzPeakLengthsNorm10 = candidateScores->featuresArray[Features::MzPeakLengthsNorm10];
+        // row.mzPeakLengthsNorm11 = candidateScores->featuresArray[Features::MzPeakLengthsNorm11];
+        // row.mzPeakLengthsNorm12 = candidateScores->featuresArray[Features::MzPeakLengthsNorm12];
         row.aminoAcidCountA = candidateScores->featuresArray[Features::AminoAcidCountA];
         row.aminoAcidCountC = candidateScores->featuresArray[Features::AminoAcidCountC];
         row.aminoAcidCountD = candidateScores->featuresArray[Features::AminoAcidCountD];
@@ -1488,12 +1494,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.mzFoundStDev4 = candidateScores->featuresArray[Features::MzFoundStDev4];
         row.mzFoundStDev5 = candidateScores->featuresArray[Features::MzFoundStDev5];
         row.mzFoundStDev6 = candidateScores->featuresArray[Features::MzFoundStDev6];
-        row.mzFoundStDev7 = candidateScores->featuresArray[Features::MzFoundStDev7];
-        row.mzFoundStDev8 = candidateScores->featuresArray[Features::MzFoundStDev8];
-        row.mzFoundStDev9 = candidateScores->featuresArray[Features::MzFoundStDev9];
-        row.mzFoundStDev10 = candidateScores->featuresArray[Features::MzFoundStDev10];
-        row.mzFoundStDev11 = candidateScores->featuresArray[Features::MzFoundStDev11];
-        row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
+        // row.mzFoundStDev7 = candidateScores->featuresArray[Features::MzFoundStDev7];
+        // row.mzFoundStDev8 = candidateScores->featuresArray[Features::MzFoundStDev8];
+        // row.mzFoundStDev9 = candidateScores->featuresArray[Features::MzFoundStDev9];
+        // row.mzFoundStDev10 = candidateScores->featuresArray[Features::MzFoundStDev10];
+        // row.mzFoundStDev11 = candidateScores->featuresArray[Features::MzFoundStDev11];
+        // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
@@ -1561,50 +1567,50 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
                                        : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
 
-        for (int i = 0; i < ms2Ions.size(); ++i) {
-
-            switch (i) {
-                case 0:
-                    row.mzSearched1 = ms2Ions.at(0).mz;
-                    break;
-                case 1:
-                    row.mzSearched2 = ms2Ions.at(1).mz;
-                    break;
-                case 2:
-                    row.mzSearched3 = ms2Ions.at(2).mz;
-                    break;
-                case 3:
-                    row.mzSearched4 = ms2Ions.at(3).mz;
-                    break;
-                case 4:
-                    row.mzSearched5 = ms2Ions.at(4).mz;
-                    break;
-                case 5:
-                    row.mzSearched6 = ms2Ions.at(5).mz;
-                    break;
-                case 6:
-                    row.mzSearched7 = ms2Ions.at(6).mz;
-                    break;
-                case 7:
-                    row.mzSearched8 = ms2Ions.at(7).mz;
-                    break;
-                case 8:
-                    row.mzSearched9 = ms2Ions.at(8).mz;
-                    break;
-                case 9:
-                    row.mzSearched10 = ms2Ions.at(9).mz;
-                    break;
-                case 10:
-                    row.mzSearched11 = ms2Ions.at(10).mz;
-                    break;
-                case 11:
-                    row.mzSearched12 = ms2Ions.at(10).mz;
-                    break;
-                default:
-                    break;
-            }
-
-        }
+        // for (int i = 0; i < ms2Ions.size(); ++i) {
+        //
+        //     switch (i) {
+        //         case 0:
+        //             row.mzSearched1 = ms2Ions.at(0).mz;
+        //             break;
+        //         case 1:
+        //             row.mzSearched2 = ms2Ions.at(1).mz;
+        //             break;
+        //         case 2:
+        //             row.mzSearched3 = ms2Ions.at(2).mz;
+        //             break;
+        //         case 3:
+        //             row.mzSearched4 = ms2Ions.at(3).mz;
+        //             break;
+        //         case 4:
+        //             row.mzSearched5 = ms2Ions.at(4).mz;
+        //             break;
+        //         case 5:
+        //             row.mzSearched6 = ms2Ions.at(5).mz;
+        //             break;
+        //         case 6:
+        //             row.mzSearched7 = ms2Ions.at(6).mz;
+        //             break;
+        //         case 7:
+        //             row.mzSearched8 = ms2Ions.at(7).mz;
+        //             break;
+        //         case 8:
+        //             row.mzSearched9 = ms2Ions.at(8).mz;
+        //             break;
+        //         case 9:
+        //             row.mzSearched10 = ms2Ions.at(9).mz;
+        //             break;
+        //         case 10:
+        //             row.mzSearched11 = ms2Ions.at(10).mz;
+        //             break;
+        //         case 11:
+        //             row.mzSearched12 = ms2Ions.at(10).mz;
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        //
+        // }
 
         return row;
     }
@@ -1645,30 +1651,30 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::PeakShapeRatio3] = candidateScoresReaderRow.peakShapeRatio3;
         featuresArray[Features::ShadowsCosineSimSum] = candidateScoresReaderRow.shadowsCosineSimSum;
         featuresArray[Features::IRTPredicted] = candidateScoresReaderRow.iRtPredicted;
-        featuresArray[Features::CosineSimToAnchor1] = candidateScoresReaderRow.cosineSimToAnchor1;
-        featuresArray[Features::CosineSimToAnchor2] = candidateScoresReaderRow.cosineSimToAnchor2;
-        featuresArray[Features::CosineSimToAnchor3] = candidateScoresReaderRow.cosineSimToAnchor3;
-        featuresArray[Features::CosineSimToAnchor4] = candidateScoresReaderRow.cosineSimToAnchor4;
-        featuresArray[Features::CosineSimToAnchor5] = candidateScoresReaderRow.cosineSimToAnchor5;
-        featuresArray[Features::CosineSimToAnchor6] = candidateScoresReaderRow.cosineSimToAnchor6;
-        featuresArray[Features::CosineSimToAnchor7] = candidateScoresReaderRow.cosineSimToAnchor7;
-        featuresArray[Features::CosineSimToAnchor8] = candidateScoresReaderRow.cosineSimToAnchor8;
-        featuresArray[Features::CosineSimToAnchor9] = candidateScoresReaderRow.cosineSimToAnchor9;
-        featuresArray[Features::CosineSimToAnchor10] = candidateScoresReaderRow.cosineSimToAnchor10;
-        featuresArray[Features::CosineSimToAnchor11] = candidateScoresReaderRow.cosineSimToAnchor11;
-        featuresArray[Features::CosineSimToAnchor12] = candidateScoresReaderRow.cosineSimToAnchor12;
-        featuresArray[Features::CosineSimShadowsToAnchor1] = candidateScoresReaderRow.cosineSimShadowsToAnchor1;
-        featuresArray[Features::CosineSimShadowsToAnchor2] = candidateScoresReaderRow.cosineSimShadowsToAnchor2;
-        featuresArray[Features::CosineSimShadowsToAnchor3] = candidateScoresReaderRow.cosineSimShadowsToAnchor3;
-        featuresArray[Features::CosineSimShadowsToAnchor4] = candidateScoresReaderRow.cosineSimShadowsToAnchor4;
-        featuresArray[Features::CosineSimShadowsToAnchor5] = candidateScoresReaderRow.cosineSimShadowsToAnchor5;
-        featuresArray[Features::CosineSimShadowsToAnchor6] = candidateScoresReaderRow.cosineSimShadowsToAnchor6;
-        featuresArray[Features::CosineSimShadowsToAnchor7] = candidateScoresReaderRow.cosineSimShadowsToAnchor7;
-        featuresArray[Features::CosineSimShadowsToAnchor8] = candidateScoresReaderRow.cosineSimShadowsToAnchor8;
-        featuresArray[Features::CosineSimShadowsToAnchor9] = candidateScoresReaderRow.cosineSimShadowsToAnchor9;
-        featuresArray[Features::CosineSimShadowsToAnchor10] = candidateScoresReaderRow.cosineSimShadowsToAnchor10;
-        featuresArray[Features::CosineSimShadowsToAnchor11] = candidateScoresReaderRow.cosineSimShadowsToAnchor11;
-        featuresArray[Features::CosineSimShadowsToAnchor12] = candidateScoresReaderRow.cosineSimShadowsToAnchor12;
+        // featuresArray[Features::CosineSimToAnchor1] = candidateScoresReaderRow.cosineSimToAnchor1;
+        // featuresArray[Features::CosineSimToAnchor2] = candidateScoresReaderRow.cosineSimToAnchor2;
+        // featuresArray[Features::CosineSimToAnchor3] = candidateScoresReaderRow.cosineSimToAnchor3;
+        // featuresArray[Features::CosineSimToAnchor4] = candidateScoresReaderRow.cosineSimToAnchor4;
+        // featuresArray[Features::CosineSimToAnchor5] = candidateScoresReaderRow.cosineSimToAnchor5;
+        // featuresArray[Features::CosineSimToAnchor6] = candidateScoresReaderRow.cosineSimToAnchor6;
+        // featuresArray[Features::CosineSimToAnchor7] = candidateScoresReaderRow.cosineSimToAnchor7;
+        // featuresArray[Features::CosineSimToAnchor8] = candidateScoresReaderRow.cosineSimToAnchor8;
+        // featuresArray[Features::CosineSimToAnchor9] = candidateScoresReaderRow.cosineSimToAnchor9;
+        // featuresArray[Features::CosineSimToAnchor10] = candidateScoresReaderRow.cosineSimToAnchor10;
+        // featuresArray[Features::CosineSimToAnchor11] = candidateScoresReaderRow.cosineSimToAnchor11;
+        // featuresArray[Features::CosineSimToAnchor12] = candidateScoresReaderRow.cosineSimToAnchor12;
+        // featuresArray[Features::CosineSimShadowsToAnchor1] = candidateScoresReaderRow.cosineSimShadowsToAnchor1;
+        // featuresArray[Features::CosineSimShadowsToAnchor2] = candidateScoresReaderRow.cosineSimShadowsToAnchor2;
+        // featuresArray[Features::CosineSimShadowsToAnchor3] = candidateScoresReaderRow.cosineSimShadowsToAnchor3;
+        // featuresArray[Features::CosineSimShadowsToAnchor4] = candidateScoresReaderRow.cosineSimShadowsToAnchor4;
+        // featuresArray[Features::CosineSimShadowsToAnchor5] = candidateScoresReaderRow.cosineSimShadowsToAnchor5;
+        // featuresArray[Features::CosineSimShadowsToAnchor6] = candidateScoresReaderRow.cosineSimShadowsToAnchor6;
+        // featuresArray[Features::CosineSimShadowsToAnchor7] = candidateScoresReaderRow.cosineSimShadowsToAnchor7;
+        // featuresArray[Features::CosineSimShadowsToAnchor8] = candidateScoresReaderRow.cosineSimShadowsToAnchor8;
+        // featuresArray[Features::CosineSimShadowsToAnchor9] = candidateScoresReaderRow.cosineSimShadowsToAnchor9;
+        // featuresArray[Features::CosineSimShadowsToAnchor10] = candidateScoresReaderRow.cosineSimShadowsToAnchor10;
+        // featuresArray[Features::CosineSimShadowsToAnchor11] = candidateScoresReaderRow.cosineSimShadowsToAnchor11;
+        // featuresArray[Features::CosineSimShadowsToAnchor12] = candidateScoresReaderRow.cosineSimShadowsToAnchor12;
         featuresArray[Features::MzFoundMean1] = candidateScoresReaderRow.mzFoundMean1;
         featuresArray[Features::MzFoundMean2] = candidateScoresReaderRow.mzFoundMean2;
         featuresArray[Features::MzFoundMean3] = candidateScoresReaderRow.mzFoundMean3;
@@ -1687,24 +1693,24 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::IntensityFoundMax4] = candidateScoresReaderRow.intensityFoundMax4;
         featuresArray[Features::IntensityFoundMax5] = candidateScoresReaderRow.intensityFoundMax5;
         featuresArray[Features::IntensityFoundMax6] = candidateScoresReaderRow.intensityFoundMax6;
-        featuresArray[Features::IntensityFoundMax7] = candidateScoresReaderRow.intensityFoundMax7;
-        featuresArray[Features::IntensityFoundMax8] = candidateScoresReaderRow.intensityFoundMax8;
-        featuresArray[Features::IntensityFoundMax9] = candidateScoresReaderRow.intensityFoundMax9;
-        featuresArray[Features::IntensityFoundMax10] = candidateScoresReaderRow.intensityFoundMax10;
-        featuresArray[Features::IntensityFoundMax11] = candidateScoresReaderRow.intensityFoundMax11;
-        featuresArray[Features::IntensityFoundMax12] = candidateScoresReaderRow.intensityFoundMax12;
-        featuresArray[Features::MzPeakLengthsNorm1] = candidateScoresReaderRow.mzPeakLengthsNorm1;
-        featuresArray[Features::MzPeakLengthsNorm2] = candidateScoresReaderRow.mzPeakLengthsNorm2;
-        featuresArray[Features::MzPeakLengthsNorm3] = candidateScoresReaderRow.mzPeakLengthsNorm3;
-        featuresArray[Features::MzPeakLengthsNorm4] = candidateScoresReaderRow.mzPeakLengthsNorm4;
-        featuresArray[Features::MzPeakLengthsNorm5] = candidateScoresReaderRow.mzPeakLengthsNorm5;
-        featuresArray[Features::MzPeakLengthsNorm6] = candidateScoresReaderRow.mzPeakLengthsNorm6;
-        featuresArray[Features::MzPeakLengthsNorm7] = candidateScoresReaderRow.mzPeakLengthsNorm7;
-        featuresArray[Features::MzPeakLengthsNorm8] = candidateScoresReaderRow.mzPeakLengthsNorm8;
-        featuresArray[Features::MzPeakLengthsNorm9] = candidateScoresReaderRow.mzPeakLengthsNorm9;
-        featuresArray[Features::MzPeakLengthsNorm10] = candidateScoresReaderRow.mzPeakLengthsNorm10;
-        featuresArray[Features::MzPeakLengthsNorm11] = candidateScoresReaderRow.mzPeakLengthsNorm11;
-        featuresArray[Features::MzPeakLengthsNorm12] = candidateScoresReaderRow.mzPeakLengthsNorm12;
+        // featuresArray[Features::IntensityFoundMax7] = candidateScoresReaderRow.intensityFoundMax7;
+        // featuresArray[Features::IntensityFoundMax8] = candidateScoresReaderRow.intensityFoundMax8;
+        // featuresArray[Features::IntensityFoundMax9] = candidateScoresReaderRow.intensityFoundMax9;
+        // featuresArray[Features::IntensityFoundMax10] = candidateScoresReaderRow.intensityFoundMax10;
+        // featuresArray[Features::IntensityFoundMax11] = candidateScoresReaderRow.intensityFoundMax11;
+        // featuresArray[Features::IntensityFoundMax12] = candidateScoresReaderRow.intensityFoundMax12;
+        // featuresArray[Features::MzPeakLengthsNorm1] = candidateScoresReaderRow.mzPeakLengthsNorm1;
+        // featuresArray[Features::MzPeakLengthsNorm2] = candidateScoresReaderRow.mzPeakLengthsNorm2;
+        // featuresArray[Features::MzPeakLengthsNorm3] = candidateScoresReaderRow.mzPeakLengthsNorm3;
+        // featuresArray[Features::MzPeakLengthsNorm4] = candidateScoresReaderRow.mzPeakLengthsNorm4;
+        // featuresArray[Features::MzPeakLengthsNorm5] = candidateScoresReaderRow.mzPeakLengthsNorm5;
+        // featuresArray[Features::MzPeakLengthsNorm6] = candidateScoresReaderRow.mzPeakLengthsNorm6;
+        // featuresArray[Features::MzPeakLengthsNorm7] = candidateScoresReaderRow.mzPeakLengthsNorm7;
+        // featuresArray[Features::MzPeakLengthsNorm8] = candidateScoresReaderRow.mzPeakLengthsNorm8;
+        // featuresArray[Features::MzPeakLengthsNorm9] = candidateScoresReaderRow.mzPeakLengthsNorm9;
+        // featuresArray[Features::MzPeakLengthsNorm10] = candidateScoresReaderRow.mzPeakLengthsNorm10;
+        // featuresArray[Features::MzPeakLengthsNorm11] = candidateScoresReaderRow.mzPeakLengthsNorm11;
+        // featuresArray[Features::MzPeakLengthsNorm12] = candidateScoresReaderRow.mzPeakLengthsNorm12;
         featuresArray[Features::AminoAcidCountA] = candidateScoresReaderRow.aminoAcidCountA;
         featuresArray[Features::AminoAcidCountC] = candidateScoresReaderRow.aminoAcidCountC;
         featuresArray[Features::AminoAcidCountD] = candidateScoresReaderRow.aminoAcidCountD;
@@ -1737,12 +1743,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[Features::MzFoundStDev4] = candidateScoresReaderRow.mzFoundStDev4;
         featuresArray[Features::MzFoundStDev5] = candidateScoresReaderRow.mzFoundStDev5;
         featuresArray[Features::MzFoundStDev6] = candidateScoresReaderRow.mzFoundStDev6;
-        featuresArray[Features::MzFoundStDev7] = candidateScoresReaderRow.mzFoundStDev7;
-        featuresArray[Features::MzFoundStDev8] = candidateScoresReaderRow.mzFoundStDev8;
-        featuresArray[Features::MzFoundStDev9] = candidateScoresReaderRow.mzFoundStDev9;
-        featuresArray[Features::MzFoundStDev10] = candidateScoresReaderRow.mzFoundStDev10;
-        featuresArray[Features::MzFoundStDev11] = candidateScoresReaderRow.mzFoundStDev11;
-        featuresArray[Features::MzFoundStDev12] = candidateScoresReaderRow.mzFoundStDev12;
+        // featuresArray[Features::MzFoundStDev7] = candidateScoresReaderRow.mzFoundStDev7;
+        // featuresArray[Features::MzFoundStDev8] = candidateScoresReaderRow.mzFoundStDev8;
+        // featuresArray[Features::MzFoundStDev9] = candidateScoresReaderRow.mzFoundStDev9;
+        // featuresArray[Features::MzFoundStDev10] = candidateScoresReaderRow.mzFoundStDev10;
+        // featuresArray[Features::MzFoundStDev11] = candidateScoresReaderRow.mzFoundStDev11;
+        // featuresArray[Features::MzFoundStDev12] = candidateScoresReaderRow.mzFoundStDev12;
         featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt] = candidateScoresReaderRow.altTargetKeyIdDiscScoreChargeOG_alt;
         featuresArray[Features::AltTargetKeyIdDiscScoreCharge1_1] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge1_1;
         featuresArray[Features::AltTargetKeyIdDiscScoreCharge1_2] = candidateScoresReaderRow.altTargetKeyIdDiscScoreCharge1_2;

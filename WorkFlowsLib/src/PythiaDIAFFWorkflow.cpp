@@ -244,6 +244,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
 
+    // m_pythiaParameters.useLazyLoading = true;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
+    msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
+
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
@@ -252,34 +256,49 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &msReaderPointerAcc
             ); ree;
 
-    MsCalibratomaticSettertron msCalibratomaticSettertron;
-    e = msCalibratomaticSettertron.init(
-        &m_pythiaParameters,
-        &msReaderPointerAcc,
-        &m_targetDecoyCandidatePairManager,
-        &m_targetDecoyCandidatePairScoretron
-        ); ree;
-    e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
-
-    if (m_msCalibratomatic.isInitRT()) {
-
-        OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
-        e = msOptimizeMassAccuracyPPMSettertron.initExec(
-            &msReaderPointerAcc,
-            &m_msCalibratomatic,
+    {
+        MsCalibratomaticSettertron msCalibratomaticSettertron;
+        e = msCalibratomaticSettertron.init(
             &m_pythiaParameters,
-            &m_targetDecoyCandidatePairScoretron,
-            &m_targetDecoyPairPntrs
+            &msReaderPointerAcc,
+            &m_targetDecoyCandidatePairManager,
+            &m_targetDecoyCandidatePairScoretron
             ); ree;
+        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
+    }
 
-        m_weights = msOptimizeMassAccuracyPPMSettertron.weights();
+    if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
+        m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
+        m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
+
+        if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
+            m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+        }
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
+    }
+    else {
+         OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
+         e = msOptimizeMassAccuracyPPMSettertron.initExec(
+                &msReaderPointerAcc,
+                &m_msCalibratomatic,
+                &m_pythiaParameters,
+                &m_targetDecoyCandidatePairScoretron,
+                &m_targetDecoyPairPntrs
+                ); ree;
     }
 
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
         &msReaderPointerAcc,
         &targetCountBelowFDRThreshold
-        ); ree;
+     ); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
@@ -402,7 +421,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         }
 #endif
     }
-
     // constexpr int frameIndexBuffer = 1;
     // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
     // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
@@ -447,6 +465,10 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             uniqueMsScanInfos,
             &mzTargetKeyVsTargetDecoyCandidatePointers
             ); ree;
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "TargetKeys size:" << mzTargetKeyVsTargetDecoyCandidatePointers.size();
 
     QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
 
@@ -588,7 +610,7 @@ namespace {
             yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
 
-        constexpr int baggingSize = 6;
+        constexpr int baggingSize = 4;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
 
