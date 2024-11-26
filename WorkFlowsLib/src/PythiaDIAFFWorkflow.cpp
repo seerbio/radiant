@@ -246,6 +246,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
+    // m_pythiaParameters.peakCenter = 4;
+    // m_pythiaParameters.writePythiaDIA = false;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
@@ -368,7 +370,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
         candidateScoreClassifierPntrs.resize(counter);
     }
-    m_pythiaParameters.writePythiaDIA = true;
+
     if (m_pythiaParameters.writePythiaDIA) {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
@@ -421,13 +423,15 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         }
 #endif
     }
-    // constexpr int frameIndexBuffer = 1;
+
+    constexpr int frameIndexBuffer = 1;
     // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
-    // const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
-    // e = QuanFileBuilder::buildQuanFile(
-    //     candidateScoreClassifierPntrs,
-    //     quanFilePath
-    //     ); ree;
+    // e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrs); ree;
+    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    e = QuanFileBuilder::buildQuanFile(
+        candidateScoreClassifierPntrs,
+        quanFilePath
+        ); ree;
 
     ERR_RETURN
 }

@@ -47,6 +47,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
     const QString kCalibrationTrainingVolume = QStringLiteral("calibrationTrainingVolume");
+    const QString kPeakCenter = QStringLiteral("peakCenter");
 
     const QString kTopNIntegrations = QStringLiteral("topNIntegrations");
     const QString kMaxAnchorColumnIndex = QStringLiteral("maxAnchorColumnIndex");
@@ -110,7 +111,7 @@ Err PythiaParameterReader::buildPythiaParameters(
                                   : generalNode[kThreadCount.toStdString()].value_or(defaultThreadCount);
     pythiaParameters->verbosity = parser[kGeneral.toStdString()][kVerbosity.toStdString()].value_or(0);
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
-    pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(false);
+    pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(true);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
     pythiaParameters->chargeStateMin = libraryNode[kChargeStateMin.toStdString()].value_or(0);
@@ -122,24 +123,24 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->trancheSizeMax = libraryNode[kTrancheSizeMax.toStdString()].value_or(0);
 
     const auto ms1ParamsNode =  parser[kMS1Params.toStdString()];
-    pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(0.0);
+    pythiaParameters->ms1ExtractionWidthPPM = ms1ParamsNode[kMS1ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms1ExtractionWidthPPM);
     pythiaParameters->ms1ExtractionWidthPPMOverride = ms1ParamsNode[kMS1ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
-    pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(0.0);
+    pythiaParameters->precursorExtractionWindowThomsons = ms1ParamsNode[kPrecursorExtractionWindowThomsons.toStdString()].value_or(pythiaParameters->precursorExtractionWindowThomsons);
 
     const auto ms2ParamsNode =  parser[kMS2Params.toStdString()];
-    pythiaParameters->filterLengthIntegration = ms2ParamsNode[kFilterLengthIntegration.toStdString()].value_or(0);
-    pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(0);
-    pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(0);
-    pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(0.0);
+    pythiaParameters->filterLengthIntegration = ms2ParamsNode[kFilterLengthIntegration.toStdString()].value_or(pythiaParameters->filterLengthIntegration);
+    pythiaParameters->filterLengthMS2 = ms2ParamsNode[kFilterLengthMS2.toStdString()].value_or(pythiaParameters->filterLengthMS2);
+    pythiaParameters->ionsSharedToReject = ms2ParamsNode[kIonsSharedToReject.toStdString()].value_or(pythiaParameters->ionsSharedToReject);
+    pythiaParameters->ms2ExtractionWidthPPM = ms2ParamsNode[kMS2ExtractionWidthPPM.toStdString()].value_or(pythiaParameters->ms2ExtractionWidthPPM);
     pythiaParameters->ms2ExtractionWidthPPMOverride = ms2ParamsNode[kMS2ExtractionWidthPPMOverride.toStdString()].value_or(-1.0);
-    pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(0);
-    pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(0);
+    pythiaParameters->minMs2FragCount = ms2ParamsNode[kMinMs2FragCount.toStdString()].value_or(pythiaParameters->minMs2FragCount);
+    pythiaParameters->scanTimeWindowStDevs = ms2ParamsNode[kScanTimeWindowStDevs.toStdString()].value_or(pythiaParameters->scanTimeWindowStDevs);
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
-    pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(0);
+    pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
     pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
-
+    pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
     pythiaParameters->topNIntegrations = ms2ParamsNode[kTopNIntegrations.toStdString()].value_or(pythiaParameters->topNIntegrations);
     pythiaParameters->maxAnchorColumnIndex = ms2ParamsNode[kMaxAnchorColumnIndex.toStdString()].value_or(12);
 

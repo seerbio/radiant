@@ -46,6 +46,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
     extern const QString FILEREADERSLIB_EXPORTS kCalibrationTrainingVolume;
+    extern const QString FILEREADERSLIB_EXPORTS kPeakCenter;
 
     extern const QString FILEREADERSLIB_EXPORTS kTopNIntegrations;
     extern const QString FILEREADERSLIB_EXPORTS kMaxAnchorColumnIndex;
@@ -75,7 +76,7 @@ struct PythiaParameters{
     //[General]
     int threadCount = 8;
     int verbosity = 0;
-    bool writePythiaDIA = false;
+    bool writePythiaDIA = true;
     bool useLazyLoading = false;
 
     //[LibraryParams]
@@ -108,6 +109,7 @@ struct PythiaParameters{
     int topNIntegrations = 10;
     int maxAnchorColumnIndex = 6;
     int calibrationTrainingVolume = 1000;
+    int peakCenter = -1;
 
     //[FdrParams]
     double percentFDR = 1.0;
@@ -206,6 +208,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakCenter) << peakCenter;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFdrParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPercentFDR) << percentFDR;
