@@ -49,13 +49,11 @@ namespace QuanReaderNamespace {
     const QString CLASSIFIER_SCORE = QStringLiteral("classifierScore");
     const QString DISC_SCORE = QStringLiteral("discScore");
     const QString Q_VALUE = QStringLiteral("qValue");
-    const QString MZ_INTERF = QStringLiteral("mzInterferences");
 
     const QString IS_DECOY = QStringLiteral("isDecoy");
 
     const QString RAW_INTENSITY = QStringLiteral("rawIntensity");
 
-    const QString COS_SIM_SUM_100_ALT = QStringLiteral("cosineSimSum100Alt");
     const QString SCAN_TIME_PRED = QStringLiteral("scanTimePredicted");
 
     const QStringList keysToCheck = {
@@ -88,9 +86,7 @@ namespace QuanReaderNamespace {
         CLASSIFIER_SCORE,
         DISC_SCORE,
         Q_VALUE,
-        MZ_INTERF,
         IS_DECOY,
-        COS_SIM_SUM_100_ALT,
         SCAN_TIME_PRED
     };
 
