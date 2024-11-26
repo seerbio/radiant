@@ -173,10 +173,6 @@ enum Features {
         DiscScoresMean,
         DiscScoresStDev,
 
-        // Test1,
-        // Test2,
-        // Test3,
-
 // MzFoundMean1PPM,
 // MzFoundMean2PPM,
 // MzFoundMean3PPM,

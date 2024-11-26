@@ -1557,12 +1557,6 @@ namespace {
         candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
 
 
-        // qDebug()
-        // << mzMeanValsFoundPPM
-        // << candidateScores->featuresArray[Features::MzPPMMean]
-        // << candidateScores->featuresArray[Features::MzPPMStd]
-        // << "SLKFJDS";
-
         for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
@@ -1579,7 +1573,7 @@ namespace {
         const Eigen::VectorX<float> intensitySumsNormalized
                 = matBlockTrimmedIntensityIntegrationSums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        for (int i = 0; i < std::min(static_cast<int>(intensitySumsNormalized.size()), arraySizeMax / 2); i++) {
+        for (int i = 0; i < std::min(static_cast<int>(matBlockTrimmedIntensityIntegrationSums.size()), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = matBlockTrimmedIntensityIntegrationSums.coeff(i);
         }
 
@@ -1745,39 +1739,6 @@ namespace {
             // candidateScores->featuresArray[Features::CosineSimShadowsToAnchor1 + col] = std::max(cosineSim, 0.0f);
 
         }
-
-        ERR_RETURN
-    }
-
-    Err setMzPeakLengthRelatedScores(
-        const BestCorrelationResult &bestCorrelationResult,
-        CandidateScores *candidateScores
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.sum() > 0); ree;
-
-        const QVector<int> mzPeakLengthsVec = bestCorrelationResult.columnNonZeroPeakLengths();
-
-        const int mzPeakLengthsSum = std::accumulate(
-            mzPeakLengthsVec.begin(),
-            mzPeakLengthsVec.end(),
-            0
-            );
-
-        // QVector<float> mzPeakLengthsNormalized;
-        // if (mzPeakLengthsSum != 0) {
-        //     std::transform(
-        //             mzPeakLengthsVec.begin(),
-        //             mzPeakLengthsVec.end(),
-        //             std::back_inserter(mzPeakLengthsNormalized),
-        //             [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
-        //     );
-        // }
-        // for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
-        //     candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        // }
 
         ERR_RETURN
     }
@@ -2005,8 +1966,6 @@ Err CandidateScorertron::setCandidateScores(
     e = setPeakShapeRatios(bestCorrelationResult, candidateScores); ree;
 
     e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
-
-    e = setMzPeakLengthRelatedScores(bestCorrelationResult, candidateScores); ree;
 
     e = setMs1Averagine(ms1Averagine, candidateScores); ree;
 
