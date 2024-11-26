@@ -1557,12 +1557,6 @@ namespace {
         candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
 
 
-        // qDebug()
-        // << mzMeanValsFoundPPM
-        // << candidateScores->featuresArray[Features::MzPPMMean]
-        // << candidateScores->featuresArray[Features::MzPPMStd]
-        // << "SLKFJDS";
-
         for (int i = 0; i < std::min(stdMeanValsFound.size(), arraySizeMax / 2); i++) {
             candidateScores->featuresArray[Features::MzFoundStDev1 + i] = stdMeanValsFound.at(i);
         }
@@ -1574,23 +1568,17 @@ namespace {
             &scanTimes
             );
 
-        const Eigen::VectorX<float> intensitySums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
+        const Eigen::VectorX<float> matBlockTrimmedIntensityIntegrationSums = bestCorrelationResult.matBlockTrimmedIntensity.colwise().sum();
 
         const Eigen::VectorX<float> intensitySumsNormalized
-                = intensitySums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
+                = matBlockTrimmedIntensityIntegrationSums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        for (int i = 0; i < std::min(static_cast<int>(intensitySums.size()), arraySizeMax / 2); i++) {
-            candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = intensitySums.coeff(i);
+        for (int i = 0; i < std::min(static_cast<int>(matBlockTrimmedIntensityIntegrationSums.size()), arraySizeMax / 2); i++) {
+            candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = matBlockTrimmedIntensityIntegrationSums.coeff(i);
         }
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySumsNormalized.size()), arraySizeMax); i++) {
             candidateScores->featuresArray[Features::IntensityFoundMaxNorm1 + i] = intensitySumsNormalized.coeff(i);
-        }
-
-        if (bestCorrelationResults.size() > 1) {
-            const BestCorrelationResult &bestCorrelationResultAlt = bestCorrelationResults.at(1);
-            const Eigen::VectorX<float> intensitySumsAlt = bestCorrelationResultAlt.matBlockTrimmedIntensity.colwise().sum();
-
         }
 
         ERR_RETURN
@@ -1755,39 +1743,6 @@ namespace {
         ERR_RETURN
     }
 
-    Err setMzPeakLengthRelatedScores(
-        const BestCorrelationResult &bestCorrelationResult,
-        CandidateScores *candidateScores
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.sum() > 0); ree;
-
-        const QVector<int> mzPeakLengthsVec = bestCorrelationResult.columnNonZeroPeakLengths();
-
-        const int mzPeakLengthsSum = std::accumulate(
-            mzPeakLengthsVec.begin(),
-            mzPeakLengthsVec.end(),
-            0
-            );
-
-        // QVector<float> mzPeakLengthsNormalized;
-        // if (mzPeakLengthsSum != 0) {
-        //     std::transform(
-        //             mzPeakLengthsVec.begin(),
-        //             mzPeakLengthsVec.end(),
-        //             std::back_inserter(mzPeakLengthsNormalized),
-        //             [mzPeakLengthsSum](int i){return i / static_cast<double>(mzPeakLengthsSum);}
-        //     );
-        // }
-        // for (int i = 0; i < std::min(mzPeakLengthsNormalized.size(), arraySizeMax); i++) {
-        //     candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = mzPeakLengthsNormalized.at(i);
-        // }
-
-        ERR_RETURN
-    }
-
     Err setMs1Averagine(
         const QVector<float> &ms1Averagine,
         CandidateScores *candidateScores
@@ -1816,6 +1771,51 @@ namespace {
 
         ERR_RETURN
     }
+
+    Err setIntegrations(
+        const BestCorrelationResult &bestCorrelationResult,
+        int peakCenter,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        constexpr int top6 = 6;
+
+        if (peakCenter > 0) {
+            const int startScan = std::max(bestCorrelationResult.bestAnchorRowIndex - static_cast<int>(std::round(peakCenter / 2.0)), 0);
+            const int distance = startScan + peakCenter > bestCorrelationResult.matBlockTrimmedIntensity.rows()
+                               ? static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.rows()) - startScan
+                               : peakCenter;
+
+            const Eigen::MatrixX<float> matBlockTrimmedIntensityIntegration
+                                                      = peakCenter < 0 || bestCorrelationResult.matBlockTrimmedIntensity.rows() <= peakCenter
+                                                      ? bestCorrelationResult.matBlockTrimmedIntensity
+                                                      : bestCorrelationResult.matBlockTrimmedIntensity.block(
+                                                          startScan,
+                                                          0,
+                                                          distance,
+                                                          bestCorrelationResult.matBlockTrimmedIntensity.cols()
+                                                          ).eval();
+
+            const Eigen::VectorX<float> matBlockTrimmedIntensityIntegrationSum = matBlockTrimmedIntensityIntegration.colwise().sum();
+            QVector<float> vec = EigenUtils::convertEigenVectorToQVector(matBlockTrimmedIntensityIntegrationSum);
+
+            vec.resize(top6);
+
+            candidateScores->integrations = vec;
+
+            ERR_RETURN
+        }
+
+        candidateScores->integrations = QVector<float>(top6, 0.0f);
+        for (int i = 0; i < top6; i++) {
+            candidateScores->integrations[i] = candidateScores->featuresArray[Features::IntensityFoundMax1 + i];
+        }
+
+        ERR_RETURN
+    }
+
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
@@ -1892,8 +1892,7 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[Features::TotalIntensityRaw]
                                             = std::exp(candidateScores->featuresArray[Features::TotalIntensityLog]);
 
-    candidateScores->featuresArray[Features::Charge]
-                                                        = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
+    candidateScores->featuresArray[Features::Charge] = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
 
     const float scanTimeDelta = candidateScores->scanTime - candidateScores->scanTimePredicted;
     candidateScores->featuresArray[Features::ScanTimeDelta] = scanTimeDelta;
@@ -1904,8 +1903,8 @@ Err CandidateScorertron::setCandidateScores(
     const double pdScanTime = std::sqrt(std::min(std::abs(scanTimeDelta), m_scanTimeRange) / m_scanTimeRange);
     candidateScores->featuresArray[Features::ScanTimePdAbs] = static_cast<float>(pdScanTime);
     candidateScores->featuresArray[Features::ScanTimePd] = scanTimeDelta < 0
-                                                                             ? -static_cast<float>(std::abs(pdScanTime))
-                                                                             : static_cast<float>(std::abs(pdScanTime));
+                                                         ? -static_cast<float>(std::abs(pdScanTime))
+                                                         : static_cast<float>(std::abs(pdScanTime));
 
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[Features::PeptideLengthNorm] = static_cast<float>(pepLength);
@@ -1968,9 +1967,13 @@ Err CandidateScorertron::setCandidateScores(
 
     e = setShadowCorrelations(bestCorrelationResult, candidateScores); ree;
 
-    e = setMzPeakLengthRelatedScores(bestCorrelationResult, candidateScores); ree;
-
     e = setMs1Averagine(ms1Averagine, candidateScores); ree;
+
+    e = setIntegrations(
+        bestCorrelationResult,
+        m_pythiaParameters.peakCenter,
+        candidateScores
+        ); ree;
 
     ERR_RETURN
 }

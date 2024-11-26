@@ -173,10 +173,6 @@ enum Features {
         DiscScoresMean,
         DiscScoresStDev,
 
-        // Test1,
-        // Test2,
-        // Test3,
-
 // MzFoundMean1PPM,
 // MzFoundMean2PPM,
 // MzFoundMean3PPM,
@@ -279,14 +275,8 @@ public:
     double decoyRatio = -1.0;
 
     QVector<float> featuresArray;
+    QVector<float> integrations;
 
-    // QVector<float> mzInterferences;
-    // QVector<float> trapAreas;
-    // QVector<float> intensityValsAlt;
-    // ScanTime scanTimeAlt = -1.0;
-    // ScanTime scanTimeStartAlt = -1.0;
-    // ScanTime scanTimeEndAlt = -1.0;
-    // float cosineSimSum100Alt = -1.0;
 
     /**
     * @brief Initializes the features array with default values.
@@ -1438,12 +1428,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.mzFoundMean10 = candidateScores->featuresArray[Features::MzFoundMean10];
         row.mzFoundMean11 = candidateScores->featuresArray[Features::MzFoundMean11];
         row.mzFoundMean12 = candidateScores->featuresArray[Features::MzFoundMean12];
-        row.intensityFoundMax1 = candidateScores->featuresArray[Features::IntensityFoundMax1];
-        row.intensityFoundMax2 = candidateScores->featuresArray[Features::IntensityFoundMax2];
-        row.intensityFoundMax3 = candidateScores->featuresArray[Features::IntensityFoundMax3];
-        row.intensityFoundMax4 = candidateScores->featuresArray[Features::IntensityFoundMax4];
-        row.intensityFoundMax5 = candidateScores->featuresArray[Features::IntensityFoundMax5];
-        row.intensityFoundMax6 = candidateScores->featuresArray[Features::IntensityFoundMax6];
+        row.intensityFoundMax1 = candidateScores->integrations.at(0);
+        row.intensityFoundMax2 = candidateScores->integrations.at(1);
+        row.intensityFoundMax3 = candidateScores->integrations.at(2);
+        row.intensityFoundMax4 = candidateScores->integrations.at(3);
+        row.intensityFoundMax5 = candidateScores->integrations.at(4);
+        row.intensityFoundMax6 = candidateScores->integrations.at(5);
         // row.intensityFoundMax7 = candidateScores->featuresArray[Features::IntensityFoundMax7];
         // row.intensityFoundMax8 = candidateScores->featuresArray[Features::IntensityFoundMax8];
         // row.intensityFoundMax9 = candidateScores->featuresArray[Features::IntensityFoundMax9];
@@ -1560,7 +1550,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.cosineSimSum100Window1p5X = candidateScores->featuresArray[Features::CosineSimSum100Window1p5X];
         row.cosineSimSum100Window2X = candidateScores->featuresArray[Features::CosineSimSum100Window2X];
         row.totalIntensityPeakHeights = candidateScores->featuresArray[Features::TotalIntensityPeakHeights];
-        row.totalIntensityRaw = candidateScores->featuresArray[Features::TotalIntensityRaw];
+        row.totalIntensityRaw = std::accumulate(candidateScores->integrations.begin(), candidateScores->integrations.end(), 0.0f);
         row.targetWindowLocation = candidateScores->featuresArray[Features::TargetWindowLocation];
 
         const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy

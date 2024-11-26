@@ -177,21 +177,15 @@ namespace {
         qr->scanTimeStart = cs->scanTimeStart;
         qr->scanTimeEnd = cs->scanTimeEnd;
         qr->cosineSimSum100 = cs->featuresArray[Features::CosineSimSum100Top12];
-        qr->intensityValMz1 = cs->featuresArray[Features::IntensityFoundMax1];
-        qr->intensityValMz2 = cs->featuresArray[Features::IntensityFoundMax2];
-        qr->intensityValMz3 = cs->featuresArray[Features::IntensityFoundMax3];
-        qr->intensityValMz4 = cs->featuresArray[Features::IntensityFoundMax4];
-        qr->intensityValMz5 = cs->featuresArray[Features::IntensityFoundMax5];
-        qr->intensityValMz6 = cs->featuresArray[Features::IntensityFoundMax6];
-        // qr->intensityValMz7 = cs->featuresArray[Features::IntensityFoundMax7];
-        // qr->intensityValMz8 = cs->featuresArray[Features::IntensityFoundMax8];
-        // qr->intensityValMz9 = cs->featuresArray[Features::IntensityFoundMax9];
-        // qr->intensityValMz10 = cs->featuresArray[Features::IntensityFoundMax10];
-        // qr->intensityValMz11 = cs->featuresArray[Features::IntensityFoundMax11];
-        // qr->intensityValMz12 = cs->featuresArray[Features::IntensityFoundMax12];
+        qr->intensityValMz1 = cs->integrations.at(0);
+        qr->intensityValMz2 = cs->integrations.at(1);
+        qr->intensityValMz3 = cs->integrations.at(2);
+        qr->intensityValMz4 = cs->integrations.at(3);
+        qr->intensityValMz5 = cs->integrations.at(4);
+        qr->intensityValMz6 = cs->integrations.at(5);
+        qr->rawIntensity = std::accumulate(cs->integrations.begin(), cs->integrations.end(), 0.0f);
 
         qr->scanTimePredicted = cs->scanTimePredicted;
-
 
         ERR_RETURN
     }
