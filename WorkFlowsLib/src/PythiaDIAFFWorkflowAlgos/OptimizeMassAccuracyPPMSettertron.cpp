@@ -66,7 +66,6 @@ namespace {
 
     Err buildDOE(
             const PythiaParameters &pythiaParameters,
-            double mzPPMStDev,
             double scanTimeStDev,
             int verbosity,
             QVector<PythiaParameters> *pythiaParametersExperiments
@@ -74,7 +73,6 @@ namespace {
 
         ERR_INIT
 
-        e = ErrorUtils::isTrue(mzPPMStDev > 0.0); ree;
         e = ErrorUtils::isTrue(scanTimeStDev > 0.0); ree;
         e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
@@ -225,7 +223,6 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
     QVector<PythiaParameters> pythiaParametersExperiments;
     e = buildDOE(
             *m_pythiaParameters,
-            m_msCalibratomatic->mzStDevMS2(),
             m_msCalibratomatic->scanTimeStDev(),
             m_pythiaParameters->verbosity,
             &pythiaParametersExperiments

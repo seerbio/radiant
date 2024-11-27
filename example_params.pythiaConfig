@@ -1,0 +1,51 @@
+# Text describing stuff
+
+[General]
+threadCount = 16
+verbosity = 0
+#useLazyLoading = false
+#writePythiaDIA = true
+
+[LibraryParams]
+chargeStateMin = 1
+chargeStateMax = 4
+mzMinMS2 = 200.0
+mzMaxMS2 = 1500.0
+peptideLengthMin = 7
+peptideLengthMax = 35
+trancheSizeMax = 2e4
+
+[MS1Params]
+precursorExtractionWindowThomsons = 0.0
+ms1ExtractionWidthPPM = 20.0
+#ms1ExtractionWidthPPMOverride = -1.0
+
+[MS2Params]
+filterLengthIntegration = 5
+filterLengthMS2 = 3
+ionsSharedToReject = 4
+ms2ExtractionWidthPPM = 20.0
+#ms2ExtractionWidthPPMOverride = -1.0
+minMs2FragCount = 2
+scanTimeWindowStDevs = 3
+subtractShadows = true
+smoothCountMS2 = 1
+stopThresholdFractionMS2 = 0.65
+#topNIntegrations = 10
+maxAnchorColumnIndex = 6
+#peakCenter = -1
+
+[FdrParams]
+percentFDR = 1.0
+reportDecoys = true
+
+[PeakIntegrationParams]
+filterLength = 3
+sigma = 1.0
+signalToNoiseRatio = 2.0
+smoothCount = 1
+
+[FeatureFinderParams]
+minScanCount = 3
+skipScanCount = 3
+
