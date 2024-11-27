@@ -9,6 +9,7 @@
 #include "UtilsLib_Exports.h"
 
 #include <QtConcurrent/QtConcurrent>
+#include <QSysInfo>
 #include <QVector>
 
 #include <fstream>
@@ -66,6 +67,16 @@ public:
     */
     static int numberOfAvailableSystemProcessors() {
         return QThread::idealThreadCount();
+    }
+
+    static void printSystemDetails() {
+        qDebug() << qPrintable("** System details **************************");
+        qDebug() << qPrintable("System procesors") << numberOfAvailableSystemProcessors();
+        qDebug() << qPrintable("CPU Architecture") << QSysInfo::currentCpuArchitecture();
+        qDebug() << qPrintable("Kernel Type") << QSysInfo::kernelType();
+        qDebug() << qPrintable("Kernel Version") << QSysInfo::kernelVersion();
+        qDebug() << qPrintable("Operating System Name") << QSysInfo::prettyProductName();
+        qDebug() << qPrintable("********************************************");
     }
 
     /*!

@@ -50,6 +50,8 @@ Err PythiaDIAFFWorkflow::init(
         m_fastaUri = fastaUri;
     }
 
+    ParallelUtils::printSystemDetails();
+
     m_pythiaParameters = pythiaParameters;
     m_fragLibUri = fragLibUri;
     m_pythiaParameters.print();
