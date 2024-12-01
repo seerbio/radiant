@@ -31,6 +31,7 @@ scanTimeWindowStDevs = 3
 subtractShadows = true
 smoothCountMS2 = 1
 stopThresholdFractionMS2 = 0.65
+#peakDifferenceThresholdFraction = 0.1
 #topNIntegrations = 10
 maxAnchorColumnIndex = 6
 #peakCenter = -1

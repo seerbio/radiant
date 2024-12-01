@@ -981,12 +981,17 @@ public:
     static Err simpleIntegrator(
         const Eigen::VectorX<T> &vec,
         T stopThresholdFraction,
+        T peakDifferenceThreshold,
         QVector<QPair<PeakIntegrationIndexes, T>> *peakIntegrationIndexesVsIntensity
         ) {
 
         ERR_INIT
 
+        constexpr T zero = 0.0;
+
         e = ErrorUtils::isTrue(vec.size() > 0); ree;
+        e = ErrorUtils::isAboveThreshold(stopThresholdFraction, zero, ErrorUtilsParam::IncludeThreshold); ree;
+        e = ErrorUtils::isAboveThreshold(peakDifferenceThreshold, zero, ErrorUtilsParam::IncludeThreshold); ree;
 
         Eigen::VectorX<T> eVec = vec;
         EigenUtils::thresholdVector(static_cast<float>(1.01), &eVec);
@@ -1022,7 +1027,7 @@ public:
                     break;
                 }
 
-                if (currentValue < rightStopVal || MathUtils::tSame(currentValue, rightStopVal)) {
+                if (currentValue * (1.0 - peakDifferenceThreshold) < rightStopVal || MathUtils::tSame(currentValue, rightStopVal)) {
                     rightStopVal = currentValue;
                     rightStopIndex = rightCurrentIndex;
                     ++rightCurrentIndex;
@@ -1044,7 +1049,7 @@ public:
                     break;
                 }
 
-                if (currentValue < leftStopVal || MathUtils::tSame(currentValue, leftStopVal)) {
+                if (currentValue * (1.0 - peakDifferenceThreshold) < leftStopVal || MathUtils::tSame(currentValue, leftStopVal)) {
                     leftStopVal = currentValue;
                     leftStopIndex = leftCurrentIndex;
                     --leftCurrentIndex;
