@@ -45,6 +45,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kSubtractShadows;
     extern const QString FILEREADERSLIB_EXPORTS kSmoothCountMS2;
     extern const QString FILEREADERSLIB_EXPORTS kStopThresholdFractionMS2;
+    extern const QString FILEREADERSLIB_EXPORTS kPeakDifferenceThresholdFraction;
     extern const QString FILEREADERSLIB_EXPORTS kCalibrationTrainingVolume;
     extern const QString FILEREADERSLIB_EXPORTS kPeakCenter;
 
@@ -105,6 +106,7 @@ struct PythiaParameters{
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;
+    float peakDifferenceFractionThreshold = 0.1;
 
     int topNIntegrations = 10;
     int maxAnchorColumnIndex = 6;
@@ -206,6 +208,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants::kScanTimeWindowStDevs) << scanTimeWindowStDevs;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSmoothCountMS2) << smoothCountMS2;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kStopThresholdFractionMS2) << stopThresholdFractionMS2;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakDifferenceThresholdFraction) << peakDifferenceFractionThreshold;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSubtractShadows) << subtractShadows;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kTopNIntegrations) << topNIntegrations;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kPeakCenter) << peakCenter;

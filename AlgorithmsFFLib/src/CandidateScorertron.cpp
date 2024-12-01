@@ -299,20 +299,11 @@ Err CandidateScorertron::calculateScores(
         &matriciesAndVecs
         ); ree;
 
-    // // qDebug() << targetDecoyCandidatePair->peptideStringWithMods() << targetDecoyCandidatePair->charge() << candidateScores->isDecoy;
-    // if (targetDecoyCandidatePair->peptideStringWithMods() == "QTIIDTVDPYPMGK"
-    //     && targetDecoyCandidatePair->charge() == 2
-    //     && !candidateScores->isDecoy
-    // ) {
-    //
-    //     std::cout << matriciesAndVecs.mzMatrix100 << std::endl;
-    //     std::cout << matriciesAndVecs.mzMatrix100.sum() << std::endl;
-    // }
-
     QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
     e = EigenUtils::simpleIntegrator(
         matriciesAndVecs.productVec,
         m_pythiaParameters.stopThresholdFractionMS2,
+        m_pythiaParameters.peakDifferenceFractionThreshold,
         &peakIntegrationsVsIntensities
         ); ree;
 
@@ -2128,16 +2119,12 @@ Err CandidateScorertron::setMs1RelatedScores(
     ERR_INIT
 
     e = ErrorUtils::isTrue(m_turboXicMS1->isInit()); ree;
-    const FrameIndex frameIndexMin = bestCorrelationResult.peakIntegrationIndexes.first;
-    const FrameIndex frameIndexMax = bestCorrelationResult.peakIntegrationIndexes.second;
 
     FrameIndex frameIndexMinMS1;
     e = m_msFrameMS1->frameIndexFromScanTime(candidateScores->scanTimeStart, &frameIndexMinMS1); ree;
 
     FrameIndex frameIndexMaxMS1;
     e = m_msFrameMS1->frameIndexFromScanTime(candidateScores->scanTimeEnd, &frameIndexMaxMS1); ree;
-
-    // qDebug() << frameIndexMin << frameIndexMinMS1 << frameIndexMax << frameIndexMaxMS1 << "SDLFDKJsl";
 
     const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
 

@@ -46,6 +46,7 @@ namespace PythiaParameterReaderConstants {
     const QString kSubtractShadows = QStringLiteral("subtractShadows");
     const QString kSmoothCountMS2 = QStringLiteral("smoothCountMS2");
     const QString kStopThresholdFractionMS2 = QStringLiteral("stopThresholdFractionMS2");
+    const QString kPeakDifferenceThresholdFraction = QStringLiteral("peakDifferenceThresholdFraction");
     const QString kCalibrationTrainingVolume = QStringLiteral("calibrationTrainingVolume");
     const QString kPeakCenter = QStringLiteral("peakCenter");
 
@@ -138,6 +139,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->subtractShadows = ms2ParamsNode[kSubtractShadows.toStdString()].value_or(true);
     pythiaParameters->smoothCountMS2 = ms2ParamsNode[kSmoothCountMS2.toStdString()].value_or(pythiaParameters->smoothCountMS2);
     pythiaParameters->stopThresholdFractionMS2 = ms2ParamsNode[kStopThresholdFractionMS2.toStdString()].value_or(pythiaParameters->stopThresholdFractionMS2);
+    pythiaParameters->peakDifferenceFractionThreshold = ms2ParamsNode[kPeakDifferenceThresholdFraction.toStdString()].value_or(pythiaParameters->peakDifferenceFractionThreshold);
     pythiaParameters->calibrationTrainingVolume = ms2ParamsNode[kCalibrationTrainingVolume.toStdString()].value_or(pythiaParameters->calibrationTrainingVolume);
     pythiaParameters->rtBinning = ms2ParamsNode[kRtBinning.toStdString()].value_or(pythiaParameters->rtBinning);
     pythiaParameters->peakCenter = ms2ParamsNode[kPeakCenter.toStdString()].value_or(pythiaParameters->peakCenter);
