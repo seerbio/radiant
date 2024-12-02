@@ -69,7 +69,8 @@ namespace {
         QVector<QPointF> bVecExtractPoints = MsUtils::extractPointsFromPoints(
             bVecPoints,
             xValMeans,
-            ppmExtractTol
+            ppmExtractTol,
+            false
             );
 
         aMat->resize(bVecExtractPoints.size(), aMatrixPoints.size());
