@@ -97,6 +97,7 @@ private:
         CandidateScores *candidateScores
         ) const;
 
+    Err setFullTheoMs2IonsScores(CandidateScores *candidateScores) const;
 
 private:
 

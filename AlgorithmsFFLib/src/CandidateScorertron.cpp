@@ -11,6 +11,7 @@
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
 #include "IsotopicDistributionBuilder.h"
+#include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 #include "TurboXIC.h"
@@ -406,6 +407,9 @@ Err CandidateScorertron::calculateScores(
     candidateScores->featuresArray[Features::DiscScoresCount] = discScoresSubbed.size();
     candidateScores->featuresArray[Features::DiscScoresMean] = MathUtils::mean(discScoresSubbed);
     candidateScores->featuresArray[Features::DiscScoresStDev] = MathUtils::stDev(discScoresSubbed);
+
+    e = setFullTheoMs2IonsScores(candidateScores); ree;
+
 
 #endif
 
@@ -1943,10 +1947,6 @@ Err CandidateScorertron::setCandidateScores(
         candidateScores
         ); ree;
 
-    const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
-                                             ? targetDecoyCandidatePair->ms2IonsDecoy()
-                                             : targetDecoyCandidatePair->ms2IonsTarget();
-
     e = setFoundMs2Ions(
         bestCorrelationResults,
         m_topNMS2Ions,
@@ -2218,6 +2218,241 @@ Err CandidateScorertron::setMs1RelatedScores(
         + candidateScores->featuresArray[Features::CosineSim100MS1Iso1]
         + candidateScores->featuresArray[Features::CosineSim100MS1Iso2]
         - candidateScores->featuresArray[Features::CosineSim100MS1PreMono];
+
+    ERR_RETURN
+}
+
+namespace {
+
+    Err closest(
+        const QVector<MS2Ion> &ms2Ions,
+        double mzVal,
+        MS2Ion *ms2IonFound
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+
+        auto it = std::min_element(ms2Ions.begin(), ms2Ions.end(), [mzVal] (const MS2Ion &a, const MS2Ion &b) {
+            return std::abs(a.mz - mzVal) <= std::abs(b.mz - mzVal);
+        });
+
+        if(it == ms2Ions.end()) {
+            ERR_RETURN
+        }
+
+        *ms2IonFound = *it;
+
+        ERR_RETURN
+    }
+
+    Err extractFullTheoreticalPointsFromScan(
+        const ScanPoints* scanPoints,
+        const QVector<MS2Ion> &ms2IonsTheoritical,
+        double ms2ExtractionWidthPPM,
+        QVector<QPair<QPointF, MS2Ion>> *foundPointVsMS2Ions
+        ) {
+
+        ERR_INIT
+
+        QVector<QPointF> scanPointsQF;
+        std::transform(
+            scanPoints->begin(),
+            scanPoints->end(),
+            std::back_inserter(scanPointsQF),
+            [](const ScanPoint& scanPoint){return QPointF(static_cast<double>(scanPoint.x()), static_cast<double>(scanPoint.y()));}
+            );
+
+        QVector<double> mzVals;
+        std::transform(
+            ms2IonsTheoritical.begin(),
+            ms2IonsTheoritical.end(),
+            std::back_inserter(mzVals),
+            [](const MS2Ion& ms2Ion){return static_cast<double>(ms2Ion.mz);}
+            );
+
+        const QVector<QPointF> foundPoints = MsUtils::extractPointsFromPoints(
+            scanPointsQF,
+            mzVals,
+            ms2ExtractionWidthPPM,
+            true
+            );
+
+
+        foundPointVsMS2Ions->reserve(foundPoints.size());
+        for (const QPointF &fp : foundPoints) {
+            MS2Ion ms2Ion;
+            e = closest(
+                ms2IonsTheoritical,
+                fp.x(),
+                &ms2Ion
+                ); ree;
+
+            foundPointVsMS2Ions->push_back({fp, ms2Ion});
+        }
+
+        ERR_RETURN
+    }
+
+    QVector<int> findLongestSeriesInSet(const QSet<int> &set) {
+
+        QVector<int> vec = {set.begin(), set.end()};
+        std::sort(vec.begin(), vec.end());
+
+        QVector<int> longestSeriesCountVec;
+        int longestSeriesCountPassing = 0;
+
+        int currentVal = -2;
+        for (int v : vec) {
+
+            if (currentVal == v - 1) {
+                longestSeriesCountPassing++;
+                currentVal = v;
+                continue;
+            }
+
+            currentVal = v;
+
+            if (longestSeriesCountPassing > 0) {
+                longestSeriesCountVec.push_back(longestSeriesCountPassing + 1);
+            }
+            longestSeriesCountPassing = 0;
+        }
+
+        if (longestSeriesCountPassing > 0) {
+            longestSeriesCountVec.push_back(longestSeriesCountPassing + 1);
+        }
+
+        return longestSeriesCountVec;
+    }
+
+    Err buildFoundIonSeriesSets(
+        const QVector<QPair<QPointF, MS2Ion>> &foundPointVsMS2Ions,
+        QSet<int> *yIonsSeries,
+        QSet<int> *bIonsSeries
+        ) {
+
+        ERR_INIT
+
+        for (const QPair<QPointF, MS2Ion> &pr : foundPointVsMS2Ions) {
+            QPair<IonIndex, IonType> ionInfo;
+            e = pr.second.getIonLabelInfo(&ionInfo); ree;
+
+            if (ionInfo.second.contains("y")) {
+                yIonsSeries->insert(ionInfo.first);
+            }
+            else if (ionInfo.second.contains("b")) {
+                bIonsSeries->insert(ionInfo.first);
+            }
+            else {
+                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ion other than b or y found";
+            }
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildTheoIonSeriesSets(
+    const QVector<MS2Ion> &ms2IonsTheo,
+    QSet<int> *yIonsSeriesTheo,
+    QSet<int> *bIonsSeriesTheo
+    ) {
+
+        ERR_INIT
+
+        for (const MS2Ion &ms2Ion : ms2IonsTheo) {
+            QPair<IonIndex, IonType> ionInfo;
+            e = ms2Ion.getIonLabelInfo(&ionInfo); ree;
+
+            if (ionInfo.second.contains("y")) {
+                yIonsSeriesTheo->insert(ionInfo.first);
+            }
+            else if (ionInfo.second.contains("b")) {
+                bIonsSeriesTheo->insert(ionInfo.first);
+            }
+            else {
+                qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ion other than b or y found";
+            }
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScores) const {
+
+    ERR_INIT
+
+    const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
+
+    const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
+                                     ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
+                                     : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+    QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
+    e = extractFullTheoreticalPointsFromScan(
+        scanPoints,
+        ms2IonsTheoritical,
+        m_pythiaParameters.ms2ExtractionWidthPPM,
+        &foundPointVsMS2Ions
+        ); ree;
+
+    Eigen::VectorX<float> v1(foundPointVsMS2Ions.size());
+    Eigen::VectorX<float> v2(foundPointVsMS2Ions.size());
+    for (int i = 0; i < foundPointVsMS2Ions.size(); i++) {
+        v1.coeffRef(i) = foundPointVsMS2Ions.at(i).first.y();
+        v2.coeffRef(i) = foundPointVsMS2Ions.at(i).second.intensity;
+    }
+
+    float cosineSimFullTheo;
+    e = EigenUtils::cosineSimilarity(v1, v2, &cosineSimFullTheo); ree;
+    candidateScores->featuresArray[Features::CosineSimFullTheo] = cosineSimFullTheo;
+
+    candidateScores->featuresArray[Features::IonsFoundFractionFull] = foundPointVsMS2Ions.size() / static_cast<float>(ms2IonsTheoritical.size());
+    candidateScores->featuresArray[Features::CosineSimFullTheoXIonsFoundFractionFull] = cosineSimFullTheo * candidateScores->featuresArray[Features::IonsFoundFractionFull];
+
+    QSet<int> yIonsSeries;
+    QSet<int> bIonsSeries;
+    e = buildFoundIonSeriesSets(foundPointVsMS2Ions, &yIonsSeries, &bIonsSeries);
+    const QVector<int> yIonsSeriesLongest = findLongestSeriesInSet(yIonsSeries);
+    const QVector<int> bIonsSeriesLongest = findLongestSeriesInSet(bIonsSeries);
+
+    QSet<int> yIonsSeriesTheo;
+    QSet<int> bIonsSeriesTheo;
+    e = buildTheoIonSeriesSets(ms2IonsTheoritical, &yIonsSeriesTheo, &bIonsSeriesTheo);
+    const QVector<int> yIonsSeriesLongestTheo = findLongestSeriesInSet(yIonsSeriesTheo);
+    const QVector<int> bIonsSeriesLongestTheo = findLongestSeriesInSet(bIonsSeriesTheo);
+
+    const int yIonsSeriesLongestMax =*std::max_element(yIonsSeriesLongest.begin(), yIonsSeriesLongest.end());
+    const int yIonsSeriesLongestTheoMax =*std::max_element(yIonsSeriesLongestTheo.begin(), yIonsSeriesLongestTheo.end());
+
+    const int bIonsSeriesLongestMax =*std::max_element(bIonsSeriesLongest.begin(), bIonsSeriesLongest.end());
+    const int bIonsSeriesLongestTheoMax =*std::max_element(bIonsSeriesLongestTheo.begin(), bIonsSeriesLongestTheo.end());
+
+    candidateScores->featuresArray[Features::YIonSeriesMax] = yIonsSeriesLongestMax;
+    candidateScores->featuresArray[Features::YIonSeriesCount] = yIonsSeriesLongest.size();
+    candidateScores->featuresArray[Features::YIonSeriesMean] = MathUtils::mean(yIonsSeriesLongest);
+    candidateScores->featuresArray[Features::YIonSeriesStd] = MathUtils::stDev(yIonsSeriesLongest);
+    candidateScores->featuresArray[Features::YIonSeriesTheoMax] = yIonsSeriesLongestTheoMax;
+    candidateScores->featuresArray[Features::YIonSeriesTheoCount] = yIonsSeriesLongestTheo.size();
+    candidateScores->featuresArray[Features::YIonSeriesTheoMean] = MathUtils::mean(yIonsSeriesLongestTheo);
+    candidateScores->featuresArray[Features::YIonSeriesTheoStd] = MathUtils::stDev(yIonsSeriesLongestTheo);
+    candidateScores->featuresArray[Features::YIonSeriesMaxFoundToTheoFraction] = yIonsSeriesLongestMax / std::max(static_cast<float>(yIonsSeriesLongestTheoMax), 1.0f);
+    candidateScores->featuresArray[Features::YIonSeriesCountRatio] = candidateScores->featuresArray[Features::YIonSeriesCount]
+                                                                   / std::max(candidateScores->featuresArray[Features::YIonSeriesTheoCount], 1.0f);
+
+    candidateScores->featuresArray[Features::BIonSeriesMax] = bIonsSeriesLongestMax;
+    candidateScores->featuresArray[Features::BIonSeriesCount] = bIonsSeriesLongest.size();
+    candidateScores->featuresArray[Features::BIonSeriesMean] = MathUtils::mean(bIonsSeriesLongest);
+    candidateScores->featuresArray[Features::BIonSeriesStd] = MathUtils::stDev(bIonsSeriesLongest);
+    candidateScores->featuresArray[Features::BIonSeriesTheoMax] = bIonsSeriesLongestTheoMax;
+    candidateScores->featuresArray[Features::BIonSeriesTheoCount] = bIonsSeriesLongestTheo.size();
+    candidateScores->featuresArray[Features::BIonSeriesTheoMean] = MathUtils::mean(bIonsSeriesLongestTheo);
+    candidateScores->featuresArray[Features::BIonSeriesTheoStd] = MathUtils::stDev(bIonsSeriesLongestTheo);
+    candidateScores->featuresArray[Features::BIonSeriesMaxFoundToTheoFraction] = bIonsSeriesLongestMax / std::max(static_cast<float>(bIonsSeriesLongestTheoMax), 1.0f);
+    candidateScores->featuresArray[Features::BIonSeriesCountRatio] = candidateScores->featuresArray[Features::BIonSeriesCount]
+                                                                   / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
 
     ERR_RETURN
 }
