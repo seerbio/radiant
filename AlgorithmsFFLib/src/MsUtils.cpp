@@ -106,6 +106,11 @@ QVector<QPointF> MsUtils::extractPointsFromPoints(
     for (int i = 0; i < ep.mzFoundVsSearched.size(); i++) {
         const double mzSearched = ep.mzFoundVsSearched.at(i).y();
         const double intensityFound = ep.intensityFoundVsSearched.at(i).x();
+
+        if (removeZeroPoints && (intensityFound < 0 || MathUtils::tZero(intensityFound))) {
+            continue;
+        }
+
         extractedPoints.push_back({mzSearched, std::max(intensityFound, 0.0)});
     }
 
