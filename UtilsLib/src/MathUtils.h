@@ -508,6 +508,16 @@ public:
         return 1e6 * (massObserved - massTheo) / massTheo;
     }
 
+    template<typename T>
+    static bool vectorContainsInfOrNaN(const QVector<T>& vec) {
+        for (T val : vec) {
+            if (std::isinf(val) || std::isnan(val)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 };
 
 

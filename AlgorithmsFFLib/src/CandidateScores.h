@@ -193,7 +193,6 @@ enum Features {
     BIonSeriesTheoStd,
     BIonSeriesMaxFoundToTheoFraction,
     BIonSeriesCountRatio,
-
     CosineSimFullTheo,
     IonsFoundFractionFull,
     CosineSimFullTheoXIonsFoundFractionFull,
