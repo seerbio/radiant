@@ -172,7 +172,6 @@ enum Features {
     DiscScoresCount,
     DiscScoresMean,
     DiscScoresStDev,
-
     YIonSeriesMax,
     YIonSeriesCount,
     YIonSeriesMean,

@@ -42,10 +42,13 @@ Err DiscriminantScoretron::trainLDAClassifier(
 
     e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
 
-    if (verbosity > 0) {
+    if (verbosity > -1) {
         qDebug() << "fit weights" << et.restart() << "mSec";
         qDebug() << "Weights:" << *weights;
         qDebug() << "b:" << b;
+        // for (const QVector<float> &v : A) {
+        //     qDebug() << v.mid(18, 3);
+        // }
     }
 
     ERR_RETURN

@@ -1547,6 +1547,10 @@ namespace {
         candidateScores->featuresArray[Features::MzPPMMean] = MathUtils::mean(mzMeanValsFoundPPM);
         candidateScores->featuresArray[Features::MzPPMMeanAbs] = std::abs(MathUtils::mean(mzMeanValsFoundPPM));
         candidateScores->featuresArray[Features::MzPPMStd] = MathUtils::stDev(mzMeanValsFoundPPM);
+        candidateScores->featuresArray[Features::MzPPMStd] = std::isinf(candidateScores->featuresArray[Features::MzPPMStd]) || std::isnan(candidateScores->featuresArray[Features::MzPPMStd])
+                                                                ? -1.0f
+                                                                : candidateScores->featuresArray[Features::MzPPMStd];
+
         candidateScores->featuresArray[Features::FoundB] = foundB / static_cast<float>(topNMS2Ions);
         candidateScores->featuresArray[Features::FoundY] = foundY / static_cast<float>(topNMS2Ions);
         candidateScores->featuresArray[Features::FoundPercent] = (foundB + foundY) / static_cast<float>(topNMS2Ions);
@@ -2469,10 +2473,10 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
                                                                    / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
 
     const bool featureVectorHasNanOrInfVal = MathUtils::vectorContainsInfOrNaN(candidateScores->featuresArray);
-
     if (featureVectorHasNanOrInfVal) {
-        qDebug() << "candidateScores->featuresArray has NaN or Inf values" << candidateScores->featuresArray;
+        qDebug() << "FeaturesArray contains at least one NaN or Inf value" << candidateScores->featuresArray;
     }
+    e = ErrorUtils::isFalse(featureVectorHasNanOrInfVal); ree;
 
     ERR_RETURN
 }
