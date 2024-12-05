@@ -245,8 +245,13 @@ Err ClassifierWeightsManager::fitWeights(
 
     // double lambda = 0.001; //TODO auto set this
     // Eigen::MatrixX<float> Areg = A + lambda * Eigen::MatrixX<float>::Identity(A.rows(), A.cols());
+    //
 
-    const Eigen::VectorX<double> x = A.fullPivHouseholderQr().solve(b);
+    Eigen::VectorX<double> x = A.fullPivHouseholderQr().solve(b);
+
+    // Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qrDecomp(A);
+    // x = qrDecomp.solve(b);
+
     const Eigen::VectorX<float> xF = x.cast<float>();
     *weights = EigenUtils::convertEigenVectorToQVector(xF);
 

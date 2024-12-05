@@ -158,14 +158,34 @@ namespace {
 
         e = ErrorUtils::isFalse(featuresArrayTargetVsDecoy->isEmpty()); ree;
 
+// #define CHECK_MIN_MAX_MEANS
+        QVector<QVector<float>> vecs;
         for (int i = 0; i < featuresArrayTargetVsDecoy->size(); i++) {
 
             const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &candidatePair = candidateScorePairs.at(i);
             QPair<FeaturesArrayTargets, FeaturesArrayDecoys> &featuresArrayPair = (*featuresArrayTargetVsDecoy)[i];
             featuresArrayTargetVsDecoyPntrs->push_back({&featuresArrayPair.first, &featuresArrayPair.second});
 
+#ifdef CHECK_MIN_MAX_MEANS
+            vecs.append({featuresArrayPair.first, featuresArrayPair.second});
+#endif
             candidateScoresesPntrs->append({candidatePair.first, candidatePair.second});
         }
+
+#ifdef CHECK_MIN_MAX_MEANS
+        qDebug() << "Min max mean check";
+        Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
+        for (int i = 0; i < mat.cols(); i++) {
+            const Eigen::VectorX<float> c = mat.col(i);
+            qDebug()
+            << "Column" << i
+            << "min" << c.minCoeff()
+            << "max" << c.maxCoeff()
+            << "mean" << c.mean()
+            << "stdDev" << EigenUtils::calculateStDevOfVector(c)
+            ;
+        }
+#endif
 
         ERR_RETURN
     }
