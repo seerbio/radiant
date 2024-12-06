@@ -172,7 +172,6 @@ enum Features {
     DiscScoresCount,
     DiscScoresMean,
     DiscScoresStDev,
-
     YIonSeriesMax,
     YIonSeriesCount,
     YIonSeriesMean,
@@ -193,7 +192,6 @@ enum Features {
     BIonSeriesTheoStd,
     BIonSeriesMaxFoundToTheoFraction,
     BIonSeriesCountRatio,
-
     CosineSimFullTheo,
     IonsFoundFractionFull,
     CosineSimFullTheoXIonsFoundFractionFull,

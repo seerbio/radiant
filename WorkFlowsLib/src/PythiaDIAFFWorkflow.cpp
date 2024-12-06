@@ -556,7 +556,6 @@ namespace {
 
         Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(vecs);
         EigenUtils::minMaxScaleMatrix(&mat);
-
         const QVector<QVector<float>> vecsNorm = EigenUtils::convertEigenMatrixToQVectors(mat);
 
         e = ErrorUtils::isEqual(vecsNorm.size(), karnnNNTargets.size()); ree;

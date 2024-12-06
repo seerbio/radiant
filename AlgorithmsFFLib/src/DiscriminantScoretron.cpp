@@ -40,12 +40,19 @@ Err DiscriminantScoretron::trainLDAClassifier(
         &b
         ); ree;
 
-    e = ClassifierWeightsManager::fitWeights(A, b, weights); ree;
+    e = ClassifierWeightsManager::fitWeights(
+        A,
+        b,
+        weights
+        ); ree;
 
     if (verbosity > 0) {
-        qDebug() << "fit weights" << et.restart() << "mSec";
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "fit weights" << et.restart() << "mSec";
         qDebug() << "Weights:" << *weights;
         qDebug() << "b:" << b;
+        for (const QVector<float> &v : A) {
+            qDebug() << v;
+        }
     }
 
     ERR_RETURN
@@ -347,14 +354,14 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             Features::PeakShapeRatio3,
                             Features::MatrixZeroPercentage,
                             Features::MzPPMMeanAbs,
-                            Features::FoundB,
+                            // Features::FoundB,
                             Features::FoundY, //20
                             Features::FoundPercent,
                             Features::CosineSimSum100Top12,
                             Features::ScanTimeDeltaAbs,
                             Features::ScanTimePdAbs,
                             Features::ShadowsCosineSimSum, //25
-                            Features::CosineSimSpectrumOverTime,
+                            // Features::CosineSimSpectrumOverTime,
                             Features::TotalIntensityLog,
                             Features::CosineSimSum100Window1p5X,
                             Features::CosineSimSum100Window2X,
