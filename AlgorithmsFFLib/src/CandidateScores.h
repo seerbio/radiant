@@ -300,6 +300,9 @@ public:
     QVector<float> featuresArray;
     QVector<float> integrations;
 
+    PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey;
+    CandidateScores *converseCandidateScore;
+
 
     /**
     * @brief Initializes the features array with default values.
