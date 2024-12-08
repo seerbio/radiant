@@ -326,14 +326,11 @@ Err PythiaDIAFFWorkflowSharedMethods::buildPeptideKeyVsTargetDecoyCandidateScore
 
     for (CandidateScores *cs: candidateScores) {
 
-        const PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey
-                                                                    = buildPeptideSequenceWithModsChargeAndTargetKey(cs);
-
         if (cs->isDecoy) {
-            (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[peptideSequenceWithModsChargeAndTargetKey].second = cs;
+            (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[cs->peptideSequenceWithModsChargeAndTargetKey].second = cs;
             continue;
         }
-        (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[peptideSequenceWithModsChargeAndTargetKey].first = cs;
+        (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[cs->peptideSequenceWithModsChargeAndTargetKey].first = cs;
     }
 
     const bool allTargetsMatchedWithDecoy = std::all_of(
