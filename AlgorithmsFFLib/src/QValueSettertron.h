@@ -12,7 +12,8 @@
 using namespace Error;
 
 class CandidateScores;
-
+using CandidateScoresTarget = CandidateScores;
+using CandidateScoresDecoy = CandidateScores;
 
 class ALGORITHMSFFLIB_EXPORTS QValueSettertron {
 
@@ -36,6 +37,11 @@ public:
     static Err setQValueForCandidates(
             const QValueScoreType &qValueScoreType,
             QVector<CandidateScores*> *candidateScores
+    );
+
+    static Err setQValueForCandidates(
+        const QValueScoreType &qValueScoreType,
+        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
     );
 
 };

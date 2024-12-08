@@ -91,7 +91,7 @@ private:
         const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
         int seed,
         QVector<CandidateScores*> *candidateScoreClassifier
-        ) const;
+        );
 
     static Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,

@@ -287,7 +287,7 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     //Need to speed this up
     e = QValueSettertron::setQValueForCandidates(
         QValueSettertron::QValueScoreType::DiscriminantScore,
-        candidateScoresVecBatchPntrs
+        &targetDecoyCandidateScorePairsPntrs
         ); ree;
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
