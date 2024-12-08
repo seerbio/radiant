@@ -374,14 +374,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    if (m_pythiaParameters.writePythiaDIA) {
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
+    e = updateProteinGroupAnnotation(
+            m_fastaUri,
+            &candidateScoreClassifierPntrs
+            ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
-        e = updateProteinGroupAnnotation(
-                m_fastaUri,
-                &candidateScoreClassifierPntrs
-                ); ree;
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
+    if (m_pythiaParameters.writePythiaDIA) {
 
         QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
         std::transform(
