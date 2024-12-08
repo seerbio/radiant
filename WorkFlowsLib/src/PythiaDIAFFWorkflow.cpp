@@ -272,32 +272,32 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
     }
 
-    if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
-        m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
-        m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
+     if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
+         m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
+         m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
 
-        if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
-            m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-        }
-        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+         if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
+             m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+         }
+         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
-    }
-    else {
-         OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
-         e = msOptimizeMassAccuracyPPMSettertron.initExec(
-                &msReaderPointerAcc,
-                &m_msCalibratomatic,
-                &m_pythiaParameters,
-                &m_targetDecoyCandidatePairScoretron,
-                &m_targetDecoyPairPntrs
-                ); ree;
-    }
+         qDebug()
+         << qPrintable(S_GLOBAL_TIMER.elapsed())
+         << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
+         qDebug()
+         << qPrintable(S_GLOBAL_TIMER.elapsed())
+         << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
+     }
+     else {
+          OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
+          e = msOptimizeMassAccuracyPPMSettertron.initExec(
+                 &msReaderPointerAcc,
+                 &m_msCalibratomatic,
+                 &m_pythiaParameters,
+                 &m_targetDecoyCandidatePairScoretron,
+                 &m_targetDecoyPairPntrs
+                 ); ree;
+     }
 
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
@@ -307,7 +307,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoys;
     e = PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
-        m_candidateScores,
+        m_candidateScorePairs,
         &candidateScoresTargetsAndDecoys
         ); ree;
 
@@ -448,7 +448,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron.isInit()); ree;
 
-    m_candidateScores.clear();
+    m_candidateScorePairs.clear();
 
     constexpr bool useExtendedScores = true;
     constexpr bool useNeuralNetworkScores = false;
@@ -487,7 +487,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     m_weights = DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores);
 
     constexpr float minPeakCount = 3.9;
-    m_candidateScores.clear();
+    m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
@@ -499,7 +499,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             nullToBuildTurboXICInParallelLoop,
             m_weights,
             &mzTargetKeyVsTargetDecoyCandidatePointers,
-            &m_candidateScores
+            &m_candidateScorePairs
             ); ree
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
 
@@ -507,7 +507,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     QMap<int, int> fdrVsCounts;
     QVector<float> weights;
     e = PythiaDIAFFWorkflowSharedMethods::processBatch(
-        m_candidateScores,
+        m_candidateScorePairs,
         m_pythiaParameters,
         useExtendedScores,
         useNeuralNetworkScores,
@@ -519,12 +519,12 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     QString fdrString;
     e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << qPrintable(fdrString);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets resulted" << et.restart() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << qPrintable(fdrString);
 
     constexpr double fdrThresholdOnePercent = 0.01;
     e = FDRCLassifierNeuralNet::countScoreCandidatesByFDR(
-            m_candidateScores,
+            candidateScoresVecBatchPntrs,
             fdrThresholdOnePercent,
             targetCountBelowFDRThresholdOnePercent
     ); ree;
@@ -638,6 +638,32 @@ namespace {
         ERR_RETURN
     }
 
+    QPair<Err, QVector<float>> predictClassiferScoresLogic(
+        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+        FDRCLassifierNeuralNet *fdrcLassifierNeuralNet
+        ) {
+
+        ERR_INIT
+
+        QVector<float> predictions;
+
+        QVector<QVector<float>> xData;
+        xData.reserve(karnnNNTargetsNorm.size());
+        QVector<float> yData;
+        yData.reserve(karnnNNTargetsNorm.size());
+        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+            xData.push_back(kt.scoreVecNormalized);
+            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+        }
+
+        e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
+            xData,
+            &predictions
+            ); rree;
+
+        return {e, predictions};
+    }
+
     Err predictClassifierScores(
         const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
         FDRCLassifierNeuralNet *fdrcLassifierNeuralNet,
@@ -646,17 +672,30 @@ namespace {
 
         ERR_INIT
 
-        QVector<QVector<float>> xData;
-        QVector<float> yData;
-        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            xData.push_back(kt.scoreVecNormalized);
-            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
-        }
+        const auto applyWeightsBinder = std::bind(
+            predictClassiferScoresLogic,
+            std::placeholders::_1,
+            fdrcLassifierNeuralNet
+            );
 
-        e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
-            xData,
-            predictions
+        QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormVecsTranched;
+        e = ParallelUtils::trancheVectorForParallelizationInOrder(
+            karnnNNTargetsNorm,
+            ParallelUtils::numberOfAvailableSystemProcessors(),
+            0,
+            &karnnNNTargetsNormVecsTranched
             ); ree;
+
+        QFuture<QPair<Err, QVector<float>>> future = QtConcurrent::mapped(
+            karnnNNTargetsNormVecsTranched,
+            applyWeightsBinder
+            );
+        future.waitForFinished();
+
+        for (const QPair<Err, QVector<float>> &pr : future) {
+            e = pr.first; ree;
+            predictions->append(pr.second);
+        }
 
         ERR_RETURN
     }
@@ -755,7 +794,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_candidateScores); ree;
+    e = ErrorUtils::isNotEmpty(m_candidateScorePairs); ree;
 
     QVector<CandidateScores*> candidateScoresTargetsAndDecoysNeuralNet = candidateScoresTargetsAndDecoys;
     e = filterScoredCandidatesForNeuralNet(
@@ -784,18 +823,6 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     candidateScoreClassifier->clear();
 
-    const int totalCount = candidateScoresTargetsAndDecoysNeuralNet.size();
-    const int decoyCount = static_cast<int>(std::count_if(
-            candidateScoresTargetsAndDecoysNeuralNet.begin(),
-            candidateScoresTargetsAndDecoysNeuralNet.end(),
-            [](const CandidateScores* cs){return cs->isDecoy;}
-            ));
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "target vs decoy count for neural net training"
-             << totalCount - decoyCount << ":" << decoyCount
-             << "total" << totalCount;
-
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
             candidateScoresTargetsAndDecoysNeuralNet,
@@ -808,6 +835,18 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         &karnnNNTargetsNormTrain
         ); ree;
 
+    const int totalCount = karnnNNTargetsNormTrain.size();
+    const int decoyCount = static_cast<int>(std::count_if(
+            karnnNNTargetsNormTrain.begin(),
+            karnnNNTargetsNormTrain.end(),
+            [](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy;}
+            ));
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "target vs decoy count for neural net training"
+             << totalCount - decoyCount << ":" << decoyCount
+             << "total" << totalCount;
+
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = trainNeuralNetwork(
             karnnNNTargetsNormTrain,
@@ -817,12 +856,14 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             &fdrClassifierNeuralNet
             ); ree;
 
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Training neural inf start";
     QVector<float> predictions;
     e = predictClassifierScores(
         karnnNNTargetsNorm,
         &fdrClassifierNeuralNet,
         &predictions
         ); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Training neural inf end";
 
     e = processPredictions(
             predictions,

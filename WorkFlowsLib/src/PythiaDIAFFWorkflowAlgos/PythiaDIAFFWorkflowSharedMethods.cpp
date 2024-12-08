@@ -120,20 +120,17 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
 }
 
 Err PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
-        QVector<CandidateScores> &candidateScores,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
         QVector<CandidateScores*> *candidateScoresPntrs
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
 
-    std::transform(
-            candidateScores.begin(),
-            candidateScores.end(),
-            std::back_inserter(*candidateScoresPntrs),
-            [](CandidateScores &cs){return &cs;}
-            );
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> & pr : candidateScoresPairsVecBatch) {
+        candidateScoresPntrs->append({&pr.first, &pr.second});
+    }
 
     ERR_RETURN
 
@@ -210,7 +207,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::processBatch(
-    QVector<CandidateScores> &candidateScoresVecBatch,
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
     const PythiaParameters &pythiaParameters,
     bool useExtendedScores,
     bool useNeuralNetworkScores,
@@ -221,43 +218,42 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
 
     ERR_INIT
 
-    const auto terminatorLogic = [&](CandidateScores *cs) {
-        return cs->featuresArray[Features::CosineSimSum100] < pythiaParameters.minMs2FragCount;
-    };
-    const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
-    candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
 
     e = buildCandidateScoresPtrs(
-        candidateScoresVecBatch,
+        candidateScoresPairsVecBatch,
         candidateScoresVecBatchPntrs
         ); ree;
 
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> peptideKeyVsTargetDecoyCandidateScoresPntrs;
-    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(
-        *candidateScoresVecBatchPntrs,
-        &peptideKeyVsTargetDecoyCandidateScoresPntrs
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
+    e = buildTargetDecoyCandidateScorePairsPntrs(
+        candidateScoresPairsVecBatch,
+        &targetDecoyCandidateScorePairsPntrs
         ); ree;
+
+    std::sort(
+        targetDecoyCandidateScorePairsPntrs.begin(),
+        targetDecoyCandidateScorePairsPntrs.end(),
+        [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &l, const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &r) {
+            return l.first->peptideSequenceWithModsChargeAndTargetKey < r.first->peptideSequenceWithModsChargeAndTargetKey;
+        });
 
     QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
     e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-        peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+        targetDecoyCandidateScorePairsPntrs,
         useExtendedScores,
         useNeuralNetworkScores,
         &featuresArrayTargetVsDecoy
         ); ree;
 
     e = ErrorUtils::isEqual(
-        peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
+        targetDecoyCandidateScorePairsPntrs.size(),
         featuresArrayTargetVsDecoy.size()
         ); ree;
-
-    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                        = peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
 
     QVector<CandidateScores*> candidateScoresesPntrs;
     QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
     e = buildProcessBatchPointers(
-        candidateScorePairs,
+        targetDecoyCandidateScorePairsPntrs,
         &featuresArrayTargetVsDecoy,
         &candidateScoresesPntrs,
         &featuresArrayTargetVsDecoyPntrs
@@ -314,34 +310,20 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAFFWorkflowSharedMethods::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(
-    const QVector<CandidateScores*> &candidateScores,
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *peptideKeyVsTargetDecoyCandidateScoresPntrs
+Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
     ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidateScorePairs); ree;
 
-    peptideKeyVsTargetDecoyCandidateScoresPntrs->clear();
+    targetDecoyCandidateScorePairsPntrs->clear();
 
-    for (CandidateScores *cs: candidateScores) {
-
-        if (cs->isDecoy) {
-            (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[cs->peptideSequenceWithModsChargeAndTargetKey].second = cs;
-            continue;
-        }
-        (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[cs->peptideSequenceWithModsChargeAndTargetKey].first = cs;
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : targetDecoyCandidateScorePairs) {
+        targetDecoyCandidateScorePairsPntrs->push_back({&pr.first, &pr.second});
     }
-
-    const bool allTargetsMatchedWithDecoy = std::all_of(
-            peptideKeyVsTargetDecoyCandidateScoresPntrs->begin(),
-            peptideKeyVsTargetDecoyCandidateScoresPntrs->end(),
-            [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr){
-                return pr.first != nullptr && pr.second != nullptr;
-            }
-    );
-    e = ErrorUtils::isTrue(allTargetsMatchedWithDecoy); ree;
 
     ERR_RETURN
 }

@@ -71,7 +71,7 @@ public:
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             const QVector<float> &weights,
             QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
-            QVector<CandidateScores> *candidateScoresVec
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
             ) const;
 
     /**

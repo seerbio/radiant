@@ -38,7 +38,7 @@ public:
         );
 
     static Err buildCandidateScoresPtrs(
-        QVector<CandidateScores> &candidateScores,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
         QVector<CandidateScores*> *candidateScoresPntrs
         );
 
@@ -47,7 +47,7 @@ public:
         );
 
     static Err processBatch(
-            QVector<CandidateScores> &candidateScoresVecBatch,
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
             const PythiaParameters &pythiaParameters,
             bool useExtendedScores,
             bool useNeuralNetworkScores,
@@ -56,9 +56,9 @@ public:
             QVector<float> *weights
         );
 
-    static Err buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(
-        const QVector<CandidateScores*> &candidateScores,
-        QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *peptideKeyVsTargetDecoyCandidateScoresPntrs
+    static Err buildTargetDecoyCandidateScorePairsPntrs(
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
+        QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairssPntrs
         );
 
     static Err buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(

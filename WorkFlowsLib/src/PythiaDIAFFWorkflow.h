@@ -115,7 +115,7 @@ private:
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
 
-    QVector<CandidateScores> m_candidateScores;
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
     QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> m_peptideKeyVsTargetDecoyCandidateScoresPntrs;
 
     PythiaParameters m_pythiaParameters;
