@@ -856,14 +856,14 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             &fdrClassifierNeuralNet
             ); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Training neural inf start";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference start";
     QVector<float> predictions;
     e = predictClassifierScores(
         karnnNNTargetsNorm,
         &fdrClassifierNeuralNet,
         &predictions
         ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Training neural inf end";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
 
     e = processPredictions(
             predictions,
