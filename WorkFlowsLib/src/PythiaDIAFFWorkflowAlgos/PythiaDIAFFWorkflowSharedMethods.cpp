@@ -288,6 +288,7 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         &candidateScoresesPntrs
         ); ree;
 
+    //Need to speed this up
     e = QValueSettertron::setQValueForCandidates(
         QValueSettertron::QValueScoreType::DiscriminantScore,
         candidateScoresVecBatchPntrs
