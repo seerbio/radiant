@@ -16,6 +16,8 @@
 #include <iostream>
 #include <random>
 
+#include "ParallelUtils.h"
+
 struct TransformerModel : torch::nn::Module {
 
     TransformerModel(
@@ -107,7 +109,7 @@ public:
             QVector<float> *predictions
     );
 
-    bool isTrained();
+    bool isTrained() const;
 
 private:
 
@@ -184,7 +186,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
     const int input_size = xData.front().size();
     const int nodes = std::max(static_cast<int>(xData.front().size() / 2), 1);
-    const int num_classes = 1;
+    constexpr int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);
 
@@ -270,7 +272,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     return true;
 }
 
-bool CandidateClassifier::Private::isTrained() {
+bool CandidateClassifier::Private::isTrained() const {
     return m_isTrained;
 }
 
