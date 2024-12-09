@@ -95,8 +95,11 @@ private:
 
     Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,
+        int targetCountBelowFDRThresholdOnePercent,
         QVector<CandidateScores*> *candidateScores
         ) const;
+
+    void filterDecoysOrNot(QVector<CandidateScores*> *candidateScoreClassifierPntrs) const;
 
     // Err spectrumCentricSearch(
     //     const QVector<CandidateScores*> &candidateScoresPntrs,

@@ -19,6 +19,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kVerbosity;
     extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
     extern const QString FILEREADERSLIB_EXPORTS kUseLazyLoading;
+    extern const QString FILEREADERSLIB_EXPORTS kReannotate;
 
     extern const QString FILEREADERSLIB_EXPORTS kLibraryParams;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
@@ -78,6 +79,7 @@ struct PythiaParameters{
     int threadCount = 8;
     int verbosity = 0;
     bool writePythiaDIA = true;
+    bool reannotate = false;
     bool useLazyLoading = false;
 
     //[LibraryParams]
@@ -180,6 +182,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kVerbosity) << verbosity;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kWritePythiaDIA) << writePythiaDIA;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kReannotate) << reannotate;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;

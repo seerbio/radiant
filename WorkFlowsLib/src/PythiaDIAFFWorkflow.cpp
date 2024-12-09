@@ -273,7 +273,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
     // m_pythiaParameters.peakCenter = 4;
-    m_pythiaParameters.writePythiaDIA = false;
+    // m_pythiaParameters.writePythiaDIA = false;
+    // m_pythiaParameters.reannotate = true;
     // m_pythiaParameters.ionsSharedToReject = 4;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
@@ -365,73 +366,15 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         );
     e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
 
-    if (!m_pythiaParameters.reportDecoys) {
+    filterDecoysOrNot(&candidateScoreClassifierPntrs);
 
-        const auto terminatorLogicFDRFilter
-            = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
-
-        const auto terminator = std::remove_if(
-                candidateScoreClassifierPntrs.begin(),
-                candidateScoreClassifierPntrs.end(),
-                terminatorLogicFDRFilter
-                );
-
-        candidateScoreClassifierPntrs.erase(terminator, candidateScoreClassifierPntrs.end());
+    if (m_pythiaParameters.reannotate) {
+        e = updateProteinGroupAnnotation(
+                m_fastaUri,
+                targetCountBelowFDRThresholdOnePercent,
+                &candidateScoreClassifierPntrs
+                ); ree;
     }
-    else {
-
-        int counter = 0;
-        int decoyCounter = 0;
-        for (const CandidateScores *candidateScores : candidateScoreClassifierPntrs) {
-
-            counter++;
-            if (candidateScores->isDecoy) {
-                decoyCounter++;
-            }
-
-            constexpr double fdrThreshold = 0.5;
-            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
-                break;
-            }
-        }
-
-        candidateScoreClassifierPntrs.resize(counter);
-    }
-
-    e = updateProteinGroupAnnotation(
-            m_fastaUri,
-            &candidateScoreClassifierPntrs
-            ); ree;
-
-//TODO delete this after dev is done.
-#define REPORT_ENTRAP
-#ifdef REPORT_ENTRAP
-    int counter = 0;
-    int decoys = 0;
-    int entrap = 0;
-
-    for (CandidateScores *cs : candidateScoreClassifierPntrs) {
-        counter++;
-
-        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
-            entrap++;
-        }
-
-        if (cs->isDecoy) {
-            decoys++;
-        }
-        if (decoys/static_cast<double>(counter) >= 0.01) {
-            break;
-        }
-
-    }
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "Alt:" << targetCountBelowFDRThresholdOnePercent
-            << "| Counter:" << counter
-            << "| Decoys:" <<  decoys
-            << "| Entrap:" << entrap
-            << "| Entrap%" << entrap / (double)counter;
-#endif
 
     if (m_pythiaParameters.writePythiaDIA) {
         e = writePythiaDIA(
@@ -922,6 +865,7 @@ namespace {
 }//namespace
 Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         const QString &fastaFilePath,
+        int targetCountBelowFDRThresholdOnePercent,
         QVector<CandidateScores*> *candidateScores
         ) const {
 
@@ -977,9 +921,75 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         (*candidateScores)[i]->proteinGroup = proteinGroupsAll.at(i);
     }
 
+//TODO delete this after dev is done.
+#define REPORT_ENTRAP
+#ifdef REPORT_ENTRAP
+    int counter = 0;
+    int decoys = 0;
+    int entrap = 0;
+
+    for (CandidateScores *cs : *candidateScores) {
+        counter++;
+
+        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
+            entrap++;
+        }
+
+        if (cs->isDecoy) {
+            decoys++;
+        }
+        if (decoys/static_cast<double>(counter) >= 0.01) {
+            break;
+        }
+
+    }
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Alt:" << targetCountBelowFDRThresholdOnePercent
+            << "| Counter:" << counter
+            << "| Decoys:" <<  decoys
+            << "| Entrap:" << entrap
+            << "| Entrap%" << entrap / (double)counter;
+#endif
+
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
     ERR_RETURN
+}
+
+void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidateScoreClassifierPntrs) const {
+
+    if (!m_pythiaParameters.reportDecoys) {
+
+        const auto terminatorLogicFDRFilter
+            = [&](CandidateScores *cs){return cs->qValue > m_pythiaParameters.percentFDR / 100.0;};
+
+        const auto terminator = std::remove_if(
+                candidateScoreClassifierPntrs->begin(),
+                candidateScoreClassifierPntrs->end(),
+                terminatorLogicFDRFilter
+                );
+
+        candidateScoreClassifierPntrs->erase(terminator, candidateScoreClassifierPntrs->end());
+    }
+    else {
+
+        int counter = 0;
+        int decoyCounter = 0;
+        for (const CandidateScores *candidateScores : *candidateScoreClassifierPntrs) {
+
+            counter++;
+            if (candidateScores->isDecoy) {
+                decoyCounter++;
+            }
+
+            constexpr double fdrThreshold = 0.5;
+            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
+                break;
+            }
+        }
+
+        candidateScoreClassifierPntrs->resize(counter);
+    }
 }
 
 // namespace {
