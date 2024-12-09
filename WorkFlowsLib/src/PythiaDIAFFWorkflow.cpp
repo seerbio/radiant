@@ -56,11 +56,15 @@ Err PythiaDIAFFWorkflow::init(
     m_fragLibUri = fragLibUri;
     m_pythiaParameters.print();
 
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
+
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             m_fragLibUri,
             &fragLibReaderRows
             ); ree;
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading read";
 
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
@@ -225,7 +229,7 @@ namespace {
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PopulateAltIdTargetKeys";
 
-        QMap<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
+        QHash<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
         for (CandidateScores *cs : *candidateScoresPntrs) {
             pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cs);
         }

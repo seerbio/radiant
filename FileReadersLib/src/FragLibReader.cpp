@@ -59,6 +59,6 @@ Err FragLibReader::getFragLibReaderRows(
     //         fragLibReaderRows
     //         ); ree;
 
-    qDebug() << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
     ERR_RETURN
 }

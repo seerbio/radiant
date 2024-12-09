@@ -7,6 +7,7 @@
 #include <torch/torch.h>
 #include <torch/nn/modules/loss.h>
 #include <torch/optim/adam.h>
+#include <omp.h>
 
 //NOTE: QDebug and many QT classes that rely on it have to come after pytorch or a compile error occurs.
 #include <QCoreApplication>
@@ -17,6 +18,7 @@
 #include <random>
 
 #include "ParallelUtils.h"
+
 
 struct TransformerModel : torch::nn::Module {
 
@@ -172,7 +174,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         torch::globalContext().setBenchmarkCuDNN(false);
     }
 
+    omp_set_num_threads(1);
     torch::set_num_threads(1);
+    std::srand(seed);
+
+    torch::data::DataLoaderOptions options;
+    options.enforce_ordering(true);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
