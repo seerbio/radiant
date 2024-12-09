@@ -93,10 +93,10 @@ private:
         QVector<CandidateScores*> *candidateScoreClassifier
         );
 
-    static Err updateProteinGroupAnnotation(
+    Err updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         QVector<CandidateScores*> *candidateScores
-        );
+        ) const;
 
     // Err spectrumCentricSearch(
     //     const QVector<CandidateScores*> &candidateScoresPntrs,

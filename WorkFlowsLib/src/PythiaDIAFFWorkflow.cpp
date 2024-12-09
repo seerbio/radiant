@@ -394,12 +394,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs.resize(counter);
     }
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScoreClassifierPntrs.size() << "PSMs";
     e = updateProteinGroupAnnotation(
             m_fastaUri,
             &candidateScoreClassifierPntrs
             ); ree;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
 //TODO delete this after dev is done.
 #define REPORT_ENTRAP
@@ -429,7 +427,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             << "| Decoys:" <<  decoys
             << "| Entrap:" << entrap
             << "| Entrap%" << entrap / (double)counter;
-
 #endif
 
     if (m_pythiaParameters.writePythiaDIA) {
@@ -904,20 +901,46 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_RETURN
 }
 
+namespace {
+
+    QPair<Err, SequenceSubstringSearchomatic> parallelRevTreiLoad(const QVector<FastaEntry> &fastaEntries) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(fastaEntries); rree;
+
+        SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
+        e = sequenceSubstringSearchomatic.init(fastaEntries); rree;
+
+        return {e, sequenceSubstringSearchomatic};
+    }
+
+}//namespace
 Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         QVector<CandidateScores*> *candidateScores
-        ) {
+        ) const {
 
     ERR_INIT
 
-    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotating" << candidateScores->size() << "PSMs";
 
-    SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
+    e = ErrorUtils::isFalse(candidateScores->isEmpty()); ree;
 
     FastaReader fastaReader;
     e = fastaReader.parseFastaFile(fastaFilePath); ree;
-    e = sequenceSubstringSearchomatic.init(fastaReader.fastaEntries()); ree;
+
+    const QVector<FastaEntry> fastaEntries = fastaReader.fastaEntries().values().toVector();
+
+    QVector<QVector<FastaEntry>> fastaEntriesTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+        fastaEntries,
+        m_pythiaParameters.threadCount,
+        &fastaEntriesTranched
+        ); ree;
+
+    SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
+    e = sequenceSubstringSearchomatic.init(fastaEntries); ree;
 
     QStringList searchSequences;
     std::transform(
@@ -928,7 +951,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         );
 
     QVector<QString> proteinGroupsAll;
-    e = sequenceSubstringSearchomatic.findProteinGroups(searchSequences, &proteinGroupsAll);
+    e = sequenceSubstringSearchomatic.findProteinGroups(searchSequences, &proteinGroupsAll); ree;
     e = ErrorUtils::isEqual(
         proteinGroupsAll.size(),
         candidateScores->size()
@@ -949,6 +972,8 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
         (*candidateScores)[i]->proteinGroup = proteinGroupsAll.at(i);
     }
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
 
     ERR_RETURN
 }
