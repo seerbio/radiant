@@ -274,7 +274,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
     // m_pythiaParameters.peakCenter = 4;
-    m_pythiaParameters.writePythiaDIA = false;
+    // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
     // m_pythiaParameters.ionsSharedToReject = 4;
 #endif

@@ -32,7 +32,7 @@ void SequenceSubstringSearchomaticTests::searchSequencesTest() {
     QCOMPARE(e, eNoError);
 
     SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
-    e = sequenceSubstringSearchomatic.init(fastaReader.fastaEntries());
+    e = sequenceSubstringSearchomatic.init(fastaReader.fastaEntries().values().toVector());
     QCOMPARE(e, eNoError);
 
     const QString searchSequence = QStringLiteral("FLEEDGNVNSKLTKDSVWNYHC");
