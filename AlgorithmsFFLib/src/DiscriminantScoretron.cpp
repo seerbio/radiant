@@ -354,15 +354,13 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             Features::PeakShapeRatio3,
                             Features::MatrixZeroPercentage,
                             Features::MzPPMMeanAbs,
-                            // Features::FoundB,
-                            Features::FoundY, //20
-                            Features::FoundPercent,
+                            Features::FoundY,
+                            Features::FoundPercent, //20
                             Features::CosineSimSum100Top12,
                             Features::ScanTimeDeltaAbs,
                             Features::ScanTimePdAbs,
-                            Features::ShadowsCosineSimSum, //25
-                            // Features::CosineSimSpectrumOverTime,
-                            Features::TotalIntensityLog,
+                            Features::ShadowsCosineSimSum,
+                            Features::TotalIntensityLog, //25
                             Features::CosineSimSum100Window1p5X,
                             Features::CosineSimSum100Window2X,
                             Features::TargetWindowLocationAbs
