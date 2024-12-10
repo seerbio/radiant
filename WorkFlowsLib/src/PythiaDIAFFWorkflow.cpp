@@ -265,17 +265,24 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
+
     ERR_INIT
+
+/***** DEV OVERRIDES *****/
+// #define DEV_OVERRIDES
+#ifdef DEV_OVERRIDES
+    // m_pythiaParameters.useLazyLoading = true;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
+    // m_pythiaParameters.peakCenter = 4;
+    m_pythiaParameters.writePythiaDIA = false;
+    m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.ionsSharedToReject = 4;
+#endif
+/**************************/
 
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
 
-    // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
-    // m_pythiaParameters.peakCenter = 4;
-    // m_pythiaParameters.writePythiaDIA = false;
-    // m_pythiaParameters.reannotate = true;
-    // m_pythiaParameters.ionsSharedToReject = 4;
     msReaderPointerAcc.setUseLazyLoading(m_pythiaParameters.useLazyLoading);
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
@@ -383,9 +390,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     }
 
-    constexpr int frameIndexBuffer = 1;
-    // QuanTransitionRefinertron quanTransitionRefinertron(m_pythiaParameters.ms2ExtractionWidthPPM, frameIndexBuffer);
-    // e = quanTransitionRefinertron.refineTransitions(candidateScoreClassifierPntrs); ree;
     const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
     e = QuanFileBuilder::buildQuanFile(
         candidateScoreClassifierPntrs,
@@ -931,7 +935,8 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     for (CandidateScores *cs : *candidateScores) {
         counter++;
 
-        if (cs->proteinGroup.contains("_ARATH") && !cs->proteinGroup.contains("_HUMAN") && !cs->isDecoy) {
+        const QString entrapString = QStringLiteral("_HUMAN");
+        if (!cs->proteinGroup.contains(entrapString) && !cs->isDecoy && !cs->proteinGroup.isEmpty()) {
             entrap++;
         }
 
