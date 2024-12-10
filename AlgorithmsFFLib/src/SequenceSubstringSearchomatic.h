@@ -15,10 +15,10 @@ class ALGORITHMSFFLIB_EXPORTS SequenceSubstringSearchomatic {
 
 public:
 
-    SequenceSubstringSearchomatic();
-    ~SequenceSubstringSearchomatic();
+    SequenceSubstringSearchomatic() = default;
+    ~SequenceSubstringSearchomatic() = default;
 
-    Err init(const QMap<ProteinId, FastaEntry> &fastaEntries);
+    Err init(const QVector<FastaEntry> &fastaEntries);
 
     Err findProteinGroups(
         const QStringList &searchSequences,

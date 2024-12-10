@@ -14,16 +14,12 @@ typedef seqan::StringSet<TSequence> TStringSet;
 typedef seqan::Index<TStringSet, seqan::IndexEsa<> > TIndex;
 
 
-SequenceSubstringSearchomatic::SequenceSubstringSearchomatic() {}
-
-SequenceSubstringSearchomatic::~SequenceSubstringSearchomatic() {}
-
-Err SequenceSubstringSearchomatic::init(const QMap<ProteinId, FastaEntry> &fastaEntries) {
+Err SequenceSubstringSearchomatic::init(const QVector<FastaEntry> &fastaEntries) {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(fastaEntries); ree;
-    m_fastaEntries = fastaEntries.values().toVector();
+    m_fastaEntries = fastaEntries;
 
     ERR_RETURN
 }

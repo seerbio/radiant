@@ -354,15 +354,13 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                             Features::PeakShapeRatio3,
                             Features::MatrixZeroPercentage,
                             Features::MzPPMMeanAbs,
-                            // Features::FoundB,
-                            Features::FoundY, //20
-                            Features::FoundPercent,
+                            Features::FoundY,
+                            Features::FoundPercent, //20
                             Features::CosineSimSum100Top12,
                             Features::ScanTimeDeltaAbs,
                             Features::ScanTimePdAbs,
-                            Features::ShadowsCosineSimSum, //25
-                            // Features::CosineSimSpectrumOverTime,
-                            Features::TotalIntensityLog,
+                            Features::ShadowsCosineSimSum,
+                            Features::TotalIntensityLog, //25
                             Features::CosineSimSum100Window1p5X,
                             Features::CosineSimSum100Window2X,
                             Features::TargetWindowLocationAbs
@@ -396,6 +394,36 @@ QVector<float> DiscriminantScoretron::defaultWeights(
     return scoreVectorLogic(useExtendedScores, useNeuralNetworkScores, &cs);
 }
 
+namespace {
+
+    QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> extractFeaturesLogic(
+        const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &pairs,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores
+        ) {
+
+        QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> output;
+        for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : pairs) {
+            const FeaturesArray featuresArrayTarget = DiscriminantScoretron::scoreVectorLogic(
+                useExtendedScores,
+                useNeuralNetworkScores,
+                pr.first
+                );
+
+            const FeaturesArray featuresArrayDecoy = DiscriminantScoretron::scoreVectorLogic(
+                useExtendedScores,
+                useNeuralNetworkScores,
+                pr.second
+                );
+
+            output.push_back({featuresArrayTarget, featuresArrayDecoy});
+        }
+
+        return output;
+    }
+
+
+}//namespace
 Err DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
     const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>& candidateScoresTargetVsDecoy,
     bool useExtendedScores,
@@ -410,20 +438,29 @@ Err DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
     featuresArrayTargetVsDecoy->clear();
     featuresArrayTargetVsDecoy->reserve(candidateScoresTargetVsDecoy.size());
 
-    for (const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr : candidateScoresTargetVsDecoy) {
-        const FeaturesArray featuresArrayTarget = scoreVectorLogic(
-            useExtendedScores,
-            useNeuralNetworkScores,
-            pr.first
-            );
+    const auto trainingLogicBinder = std::bind(
+        extractFeaturesLogic,
+        std::placeholders::_1,
+        useExtendedScores,
+        useNeuralNetworkScores
+    );
 
-        const FeaturesArray featuresArrayDecoy = scoreVectorLogic(
-            useExtendedScores,
-            useNeuralNetworkScores,
-            pr.second
-            );
+    QVector<QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>> candidateScoresTargetVsDecoyTranched;
+    e = ParallelUtils::trancheVectorForParallelizationInOrder(
+        candidateScoresTargetVsDecoy,
+        ParallelUtils::numberOfAvailableSystemProcessors(),
+        0,
+        &candidateScoresTargetVsDecoyTranched
+        ); ree;
 
-        featuresArrayTargetVsDecoy->push_back({featuresArrayTarget, featuresArrayDecoy});
+    QFuture<QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>>> futures = QtConcurrent::mapped(
+        candidateScoresTargetVsDecoyTranched,
+        trainingLogicBinder
+        );
+    futures.waitForFinished();
+
+    for (const QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> &res : futures) {
+        featuresArrayTargetVsDecoy->append(res);
     }
 
     ERR_RETURN

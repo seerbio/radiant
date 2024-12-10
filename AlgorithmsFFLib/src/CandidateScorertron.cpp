@@ -267,6 +267,16 @@ namespace {
         ERR_RETURN;
     }
 
+
+    PeptideSequenceWithModsChargeAndTargetKey buildPeptideSequenceWithModsChargeAndTargetKey(const CandidateScores* candidateScores) {
+        return candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
+             + "|"
+             + QString::number(candidateScores->targetDecoyCandidatePair->charge())
+             + "|"
+             + candidateScores->targetKey;
+    }
+
+
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<MS2Ion> &ms2Ions,
@@ -282,6 +292,9 @@ Err CandidateScorertron::calculateScores(
     candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
     candidateScores->initFeaturesArray();
     candidateScores->targetKey = m_mzTargetKey;
+
+    //Note, target key must be set before peptideSequenceWithModsChargeAndTargetKey
+    candidateScores->peptideSequenceWithModsChargeAndTargetKey = buildPeptideSequenceWithModsChargeAndTargetKey(candidateScores);
 
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;

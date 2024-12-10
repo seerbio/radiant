@@ -245,7 +245,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         constexpr bool useTopNIntegrationsParameter = true;
         constexpr float minPeakCountOptimization = 3.9;
         constexpr int topNMS2Ions = 12;
-        m_candidateScores.clear();
+        m_candidateScorePairs.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
                 topNMS2Ions,
                 *m_msCalibratomatic,
@@ -257,14 +257,14 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                 mzTargetKeyVsTurboXicPntrs,
                 DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores),
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScores
+                &m_candidateScorePairs
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
-            m_candidateScores,
+            m_candidateScorePairs,
             *m_pythiaParameters,
             useExtendedScores,
             useNeuralNetworkScores,
@@ -275,7 +275,13 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
-        const double fdrMean = MathUtils::mean(fdrVsCounts.values());
+
+        QVector<float> weightValues;
+        int counter = 0;
+        for (int v : fdrVsCounts.values()) {
+            weightValues.push_back(v * ((10.0 - counter++)/10.0));
+        }
+        const double fdrMean = MathUtils::mean(weightValues);
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "ppmTol"
@@ -328,7 +334,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
 int OptimizeMassAccuracyPPMSettertron::calculateNumberOfTranches() const {
 
-    constexpr int optimizationMultiplicationFactor = 25;
+    constexpr int optimizationMultiplicationFactor = 5;
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters->trancheSizeMax * optimizationMultiplicationFactor);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs->size() / sizePerTranche), 1);
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())

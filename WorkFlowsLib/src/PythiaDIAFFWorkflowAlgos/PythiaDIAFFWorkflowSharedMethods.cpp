@@ -120,20 +120,17 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMzTargetKeyVsTurboXicPntrs(
 }
 
 Err PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
-        QVector<CandidateScores> &candidateScores,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
         QVector<CandidateScores*> *candidateScoresPntrs
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
 
-    std::transform(
-            candidateScores.begin(),
-            candidateScores.end(),
-            std::back_inserter(*candidateScoresPntrs),
-            [](CandidateScores &cs){return &cs;}
-            );
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> & pr : candidateScoresPairsVecBatch) {
+        candidateScoresPntrs->append({&pr.first, &pr.second});
+    }
 
     ERR_RETURN
 
@@ -210,7 +207,7 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::processBatch(
-    QVector<CandidateScores> &candidateScoresVecBatch,
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
     const PythiaParameters &pythiaParameters,
     bool useExtendedScores,
     bool useNeuralNetworkScores,
@@ -221,43 +218,42 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
 
     ERR_INIT
 
-    const auto terminatorLogic = [&](CandidateScores *cs) {
-        return cs->featuresArray[Features::CosineSimSum100] < pythiaParameters.minMs2FragCount;
-    };
-    const auto terminator = std::remove_if(candidateScoresVecBatchPntrs->begin(), candidateScoresVecBatchPntrs->end(), terminatorLogic);
-    candidateScoresVecBatchPntrs->erase(terminator, candidateScoresVecBatchPntrs->end());
 
     e = buildCandidateScoresPtrs(
-        candidateScoresVecBatch,
+        candidateScoresPairsVecBatch,
         candidateScoresVecBatchPntrs
         ); ree;
 
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> peptideKeyVsTargetDecoyCandidateScoresPntrs;
-    e = buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(
-        *candidateScoresVecBatchPntrs,
-        &peptideKeyVsTargetDecoyCandidateScoresPntrs
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> targetDecoyCandidateScorePairsPntrs;
+    e = buildTargetDecoyCandidateScorePairsPntrs(
+        candidateScoresPairsVecBatch,
+        &targetDecoyCandidateScorePairsPntrs
         ); ree;
+
+    std::sort(
+        targetDecoyCandidateScorePairsPntrs.begin(),
+        targetDecoyCandidateScorePairsPntrs.end(),
+        [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &l, const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &r) {
+            return l.first->peptideSequenceWithModsChargeAndTargetKey < r.first->peptideSequenceWithModsChargeAndTargetKey;
+        });
 
     QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
     e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
-        peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector(),
+        targetDecoyCandidateScorePairsPntrs,
         useExtendedScores,
         useNeuralNetworkScores,
         &featuresArrayTargetVsDecoy
         ); ree;
 
     e = ErrorUtils::isEqual(
-        peptideKeyVsTargetDecoyCandidateScoresPntrs.size(),
+        targetDecoyCandidateScorePairsPntrs.size(),
         featuresArrayTargetVsDecoy.size()
         ); ree;
-
-    const QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> &candidateScorePairs
-                                                        = peptideKeyVsTargetDecoyCandidateScoresPntrs.values().toVector();
 
     QVector<CandidateScores*> candidateScoresesPntrs;
     QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> featuresArrayTargetVsDecoyPntrs;
     e = buildProcessBatchPointers(
-        candidateScorePairs,
+        targetDecoyCandidateScorePairsPntrs,
         &featuresArrayTargetVsDecoy,
         &candidateScoresesPntrs,
         &featuresArrayTargetVsDecoyPntrs
@@ -288,9 +284,10 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         &candidateScoresesPntrs
         ); ree;
 
+    //Need to speed this up
     e = QValueSettertron::setQValueForCandidates(
         QValueSettertron::QValueScoreType::DiscriminantScore,
-        candidateScoresVecBatchPntrs
+        &targetDecoyCandidateScorePairsPntrs
         ); ree;
 
     e = FDRCLassifierNeuralNet::outputFDRResults(
@@ -313,37 +310,20 @@ namespace {
     }
 
 }//namespace
-Err PythiaDIAFFWorkflowSharedMethods::buildPeptideKeyVsTargetDecoyCandidateScoresPntrs(
-    const QVector<CandidateScores*> &candidateScores,
-    QMap<PeptideSequenceWithModsChargeAndTargetKey , QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *peptideKeyVsTargetDecoyCandidateScoresPntrs
+Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
+    QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
     ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(candidateScores); ree;
+    e = ErrorUtils::isNotEmpty(targetDecoyCandidateScorePairs); ree;
 
-    peptideKeyVsTargetDecoyCandidateScoresPntrs->clear();
+    targetDecoyCandidateScorePairsPntrs->clear();
 
-    for (CandidateScores *cs: candidateScores) {
-
-        const PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey
-                                                                    = buildPeptideSequenceWithModsChargeAndTargetKey(cs);
-
-        if (cs->isDecoy) {
-            (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[peptideSequenceWithModsChargeAndTargetKey].second = cs;
-            continue;
-        }
-        (*peptideKeyVsTargetDecoyCandidateScoresPntrs)[peptideSequenceWithModsChargeAndTargetKey].first = cs;
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &pr : targetDecoyCandidateScorePairs) {
+        targetDecoyCandidateScorePairsPntrs->push_back({&pr.first, &pr.second});
     }
-
-    const bool allTargetsMatchedWithDecoy = std::all_of(
-            peptideKeyVsTargetDecoyCandidateScoresPntrs->begin(),
-            peptideKeyVsTargetDecoyCandidateScoresPntrs->end(),
-            [](const QPair<CandidateScoresTarget*, CandidateScoresDecoy*> &pr){
-                return pr.first != nullptr && pr.second != nullptr;
-            }
-    );
-    e = ErrorUtils::isTrue(allTargetsMatchedWithDecoy); ree;
 
     ERR_RETURN
 }
@@ -370,6 +350,29 @@ namespace {
         targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
     }
 
+    QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const PythiaParameters &pythiaParameters,
+        const MsScanInfo &msScanInfo
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
+
+        const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+        const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+
+        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
+        filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
+
+        if (pythiaParameters.verbosity > 0) {
+            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
+        }
+
+        return {e, {msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered}};
+    }
+
 } //namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
@@ -384,23 +387,22 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
 
     mzTargetKeyVsTargetDecoyCandidatePointers->clear();
 
-    for (const MsScanInfo &msScanInfo : msScanInfos) {
+    const auto filterBinder = std::bind(
+        filterParallelLogic,
+        targetDecoyCandidatePairs,
+        pythiaParameters,
+        std::placeholders::_1
+        );
 
-        if (msScanInfo.msLevel < 2) {
-            continue;
-        }
+    QFuture<QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>>> futures = QtConcurrent::mapped(
+        msScanInfos,
+        filterBinder
+        );
+    futures.waitForFinished();
 
-        const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-        const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-        filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
-
-        mzTargetKeyVsTargetDecoyCandidatePointers->insert(msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered);
-
-        if (pythiaParameters.verbosity > 0) {
-            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
-        }
+    for (const QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> &res: futures) {
+        e = res.first; ree;
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(res.second.first, res.second.second);
     }
 
     ERR_RETURN
@@ -411,10 +413,6 @@ namespace {
     void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores*> *candidateScores) {
 
         QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
-
-        // for (auto *cs : *candidateScores) {
-        //     qDebug() << cs->targetDecoyCandidatePair->peptideStringWithMods() << cs->targetDecoyCandidatePair->charge() << cs->isDecoy << cs->targetKey << "SDLFKJSL";
-        // }
 
         for (CandidateScores *cs : *candidateScores) {
 

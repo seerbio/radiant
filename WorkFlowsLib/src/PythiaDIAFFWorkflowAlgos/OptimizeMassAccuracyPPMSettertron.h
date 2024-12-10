@@ -47,7 +47,7 @@ private:
     TargetDecoyCandidatePairScoretron2 *m_targetDecoyCandidatePairScoretron;
 
     QVector<TargetDecoyCandidatePair*> *m_targetDecoyPairPntrs;
-    QVector<CandidateScores> m_candidateScores;
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
 
     QVector<float> m_weights;
 

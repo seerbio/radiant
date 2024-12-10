@@ -7,6 +7,7 @@
 #include <torch/torch.h>
 #include <torch/nn/modules/loss.h>
 #include <torch/optim/adam.h>
+#include <omp.h>
 
 //NOTE: QDebug and many QT classes that rely on it have to come after pytorch or a compile error occurs.
 #include <QCoreApplication>
@@ -15,6 +16,9 @@
 
 #include <iostream>
 #include <random>
+
+#include "ParallelUtils.h"
+
 
 struct TransformerModel : torch::nn::Module {
 
@@ -107,7 +111,7 @@ public:
             QVector<float> *predictions
     );
 
-    bool isTrained();
+    bool isTrained() const;
 
 private:
 
@@ -170,7 +174,12 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
         torch::globalContext().setBenchmarkCuDNN(false);
     }
 
+    omp_set_num_threads(1);
     torch::set_num_threads(1);
+    std::srand(seed);
+
+    torch::data::DataLoaderOptions options;
+    options.enforce_ordering(true);
 
     const bool dataInputIsValid = checkIfInputsAreValid(
             xData,
@@ -184,7 +193,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
 
     const int input_size = xData.front().size();
     const int nodes = std::max(static_cast<int>(xData.front().size() / 2), 1);
-    const int num_classes = 1;
+    constexpr int num_classes = 1;
 
     m_net = new Net(input_size, nodes, num_classes);
 
@@ -270,7 +279,7 @@ bool CandidateClassifier::Private::trainCandidateClassifier(
     return true;
 }
 
-bool CandidateClassifier::Private::isTrained() {
+bool CandidateClassifier::Private::isTrained() const {
     return m_isTrained;
 }
 

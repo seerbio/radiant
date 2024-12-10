@@ -183,7 +183,7 @@ Err TargetDecoyCandidatePairScoretron2::reloadTurboXICMS1() {
 namespace {
 
 
-    QVector<QPair<Err, QVector<CandidateScores>>> parallelScoreLogic(
+    QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> parallelScoreLogic(
             const QVector<TargetDecoyPairParallelInput> &inputs
             ) {
 
@@ -194,7 +194,7 @@ namespace {
 
         e = ErrorUtils::isNotEmpty(inputs); rree;
 
-        QVector<QPair<Err, QVector<CandidateScores>>> outputs;
+        QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> outputs;
 
         for (const TargetDecoyPairParallelInput &pi : inputs) {
 
@@ -205,7 +205,7 @@ namespace {
                 continue;
             }
 
-            QVector<CandidateScores> allCandidateScores;
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> allCandidateScores;
             allCandidateScores.reserve(pi.targetDecoyPointers.size() * 2);
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
@@ -284,7 +284,6 @@ namespace {
                 // if (pi.turboXicMS2 != nullptr) {
                 //     allCandidateScores.push_back(candidateScoresTarget);
                 // }
-                allCandidateScores.push_back(candidateScoresTarget);
 
                 CandidateScores candidateScoresDecoy;
                 candidateScoresDecoy.isDecoy = true;
@@ -297,7 +296,7 @@ namespace {
                 // if (pi.turboXicMS2 != nullptr) {
                 //     allCandidateScores.push_back(candidateScoresDecoy);
                 // }
-                allCandidateScores.push_back(candidateScoresDecoy);
+                allCandidateScores.push_back({candidateScoresTarget, candidateScoresDecoy});
             }
 
             if (pi.pythiaParameters.verbosity > 0) {
@@ -322,7 +321,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
         const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
         const QVector<float> &weights,
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
-        QVector<CandidateScores> *candidateScoresVec
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
         ) const {
 
     ERR_INIT
@@ -332,7 +331,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     e = ErrorUtils::isFalse(m_diaTargetFrames.isEmpty()); ree;
     e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
 
-    candidateScoresVec->clear();
+    candidateScoresPairsVec->clear();
 
     QVector<TargetDecoyPairParallelInput> parallelInputs;
     e = buildParallelInput(
@@ -358,31 +357,31 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
-    QFuture<QVector<QPair<Err, QVector<CandidateScores>>>> futures = QtConcurrent::mapped(
+    QFuture<QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>>> futures = QtConcurrent::mapped(
             parallelInputsTranched,
             parallelScoreLogic
             );
     futures.waitForFinished();
 
-    for (const QVector<QPair<Err, QVector<CandidateScores>>> &results : futures) {
+    for (const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> &results : futures) {
 
-        const QVector<QPair<Err, QVector<CandidateScores>>> &result = results;
-        for (const QPair<Err, QVector<CandidateScores>> &r : result) {
+        const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> &result = results;
+        for (const QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> &r : result) {
             e = r.first; ree;
-            const QVector<CandidateScores> &candidateScoresTargetMz = r.second;
-            candidateScoresVec->append(candidateScoresTargetMz);
+            const QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresTargetMz = r.second;
+            candidateScoresPairsVec->append(candidateScoresTargetMz);
         }
     }
 #else
     for(const QVector<TargetDecoyPairParallelInput> &tdppis : parallelInputsTranched) {
 
-        const QVector<QPair<Err, QVector<CandidateScores>>> results = parallelScoreLogic(
+        const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> results = parallelScoreLogic(
                 tdppis
                 ); ree;
 
-        for (const QPair<Err, QVector<CandidateScores>> &res : results) {
+        for (const QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> &res : results) {
             e = res.first; ree;
-            candidateScoresVec->append(res.second);
+            candidateScoresPairsVec->append(res.second);
         }
     }
 #endif

@@ -156,7 +156,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                       : m_pythiaParameters->threadCount;
 
         constexpr float minPeakCountCalibration = 4.9;
-        m_candidateScores.clear();
+        m_candidateScorePairs.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
@@ -168,14 +168,14 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 mzTargetKeyVsTurboXicPntrs,
                 m_weights,
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
-                &m_candidateScores
+                &m_candidateScorePairs
                 ); ree
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
-            m_candidateScores,
+            m_candidateScorePairs,
             *m_pythiaParameters,
             useExtendedScores,
             useNeuralNetworkScores,
@@ -285,7 +285,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 *msCalibratomatic = m_msCalibratomatic;
                 m_targetDecoyCandidatePairsTopScores.clear();
                 m_entered.clear();
-                m_candidateScores.clear();
+                m_candidateScorePairs.clear();
                 ERR_RETURN
             }
 
@@ -302,7 +302,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 *msCalibratomatic = m_msCalibratomatic;
                 m_targetDecoyCandidatePairsTopScores.clear();
                 m_entered.clear();
-                m_candidateScores.clear();
+                m_candidateScorePairs.clear();
                 ERR_RETURN
             }
 
@@ -327,7 +327,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
     m_targetDecoyCandidatePairsTopScores.clear();
     m_entered.clear();
-    m_candidateScores.clear();
+    m_candidateScorePairs.clear();
     *msCalibratomatic = m_msCalibratomatic;
     ERR_RETURN
 }

@@ -122,6 +122,9 @@ namespace {
 
         ERR_INIT
 
+        QMutex mutex;
+        mutex.lock();
+
         e = ErrorUtils::isNotEmpty(input.xData); ree;
         e = ErrorUtils::isEqual(input.xData.size(), input.yData.size()); ree;
 
@@ -135,6 +138,8 @@ namespace {
                 verbosity
         );
         e = ErrorUtils::isTrue(trainingCompletedNoErrors); ree;
+
+        mutex.unlock();
 
         ERR_RETURN
     }
