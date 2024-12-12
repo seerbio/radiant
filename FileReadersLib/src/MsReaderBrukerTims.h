@@ -35,9 +35,9 @@ class FILEREADERSLIB_EXPORTS MsReaderBrukerTims : public MsReaderBase {
 
 public:
 
-    MsReaderBrukerTims();
+    MsReaderBrukerTims() = default;
 
-    ~MsReaderBrukerTims();
+    ~MsReaderBrukerTims() override = default;
 
     Err openFile(const QString &filePath) override;
 

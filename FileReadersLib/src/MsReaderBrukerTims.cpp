@@ -23,12 +23,6 @@
 #define OUTPUT_PRECISION 8
 #define OUTPUT_WIDTH 9
 
-MsReaderBrukerTims::MsReaderBrukerTims() {
-}
-
-MsReaderBrukerTims::~MsReaderBrukerTims() {
-}
-
 namespace {
 
     std::vector<TimsMS2WindowsInfo> buildTimsWindowsInfos(CppSQLite3DB *db) {
@@ -255,45 +249,47 @@ namespace {
     Err extractMS1ScanPointsFromFrame(
         const TimsFrameInfo &timsFrameInfo,
         timsdata::TimsData *data,
-        ScanPoints *scanPointsMS1
+        ScanPoints *scanPointsMS1,
+        Ms1FrameTIMS *frameTims
         ) {
 
         ERR_INIT
 
-        const timsdata::SpectrumData scans = data->readScansSummed(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
+        const timsdata::SpectrumData scansCollapsed = data->readScansSummed(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
 
-        const int numberOfPeaks = static_cast<int>(scans.area_values.size());
+        const int numberOfPeaks = static_cast<int>(scansCollapsed.area_values.size());
         scanPointsMS1->reserve(numberOfPeaks);
 
         for (int i = 0; i < numberOfPeaks; i++) {
-            scanPointsMS1->push_back({static_cast<float>(scans.mz_values.at(i)), scans.area_values.at(i)});
+            scanPointsMS1->push_back({static_cast<float>(scansCollapsed.mz_values.at(i)), scansCollapsed.area_values.at(i)});
         }
 
-        // for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < scans.getNbrScans(); ionMobilityIndex++) {
-        //
-        //     if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
-        //         continue;
-        //     }
-        //
-        //     timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
-        //     const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
-        //
-        //     std::vector<double> xAxisMasses;
-        //     std::vector<double> indices(xAxis.first, xAxis.second);
-        //     data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
-        //
-        //     const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
-        //
-        //     ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
-        //     for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
-        //         scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
-        //     }
-        //
-        //     scanPointsFrame.append(scanPointsScan);
-        // }
-        //
-        // std::sort(scanPointsFrame.begin(), scanPointsFrame.end(), [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();});
-        // e = scanClustererer(scanPointsFrame, scanPointsMS1); ree;
+        const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
+
+
+
+        for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < timsFrameInfo.numScans; ionMobilityIndex++) {
+
+            if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
+                continue;
+            }
+
+            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
+            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
+
+            std::vector<double> xAxisMasses;
+            std::vector<double> indices(xAxis.first, xAxis.second);
+            data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
+
+            const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
+
+            ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
+            for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
+                scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
+            }
+
+            frameTims->insert(ionMobilityIndex, scanPointsScan);
+        }
 
         ERR_RETURN
     }
@@ -322,10 +318,11 @@ namespace {
                 S_GLOBAL_SETTINGS.HASHING_PRECISION)
                 );
 
+            constexpr int buffer = 1;
             const timsdata::SpectrumData spectrumData = data->readScansSummed(
                 timsFrameInfo.frameId,
-                tmwi.scanNumberBegin,
-                tmwi.scanNumberEnd
+                tmwi.scanNumberBegin + buffer,
+                tmwi.scanNumberEnd - buffer
                 );
 
             int scanPointsSize = static_cast<int>(spectrumData.mz_values.size());
@@ -364,7 +361,7 @@ namespace {
         ERR_RETURN
     }
 
-    QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> parallelReadTimsLogic(
+    QPair<Err, QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>>> parallelReadTimsLogic(
         const std::string &tdfDirectory,
         const std::vector<TimsFrameInfo> &timsFramesInfos,
         const QMap<FrameIndex, double> &frameIndexVsDriftTime,
@@ -381,7 +378,7 @@ namespace {
         e = ErrorUtils::isNotEmpty(mzTargetVsTimsMs2WindowsInfos); rree;
         e = ErrorUtils::isNotEmpty(windowGroupIndexVsTimsMs2WindowsInfoses); rree;
 
-        QVector<QPair<MsScanInfo, ScanPoints>> msScanInfoScanPointsPairs;
+        QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>> msScanInfoScanPointsPairs;
 
         for (const TimsFrameInfo &t : timsFramesInfos) {
 
@@ -392,15 +389,17 @@ namespace {
             if (t.msmsType < 1) {
 
                 ScanPoints scanPointsMS1;
+                Ms1FrameTIMS ms1FrameTims;
                 e = extractMS1ScanPointsFromFrame(
                     t,
                     &data,
-                    &scanPointsMS1
+                    &scanPointsMS1,
+                    &ms1FrameTims
                     ); rree;
 
                 msScanInfo.msLevel = 1;
 
-                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPointsMS1});
+                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPointsMS1, ms1FrameTims});
                 continue;
             }
 
@@ -430,7 +429,7 @@ namespace {
                 e = ErrorUtils::contains(msScanInfo.ionMobilityIndex, frameIndexVsDriftTime); rree;
                 msScanInfo.ionMobilityDriftTime = static_cast<float>(frameIndexVsDriftTime.value(msScanInfo.ionMobilityIndex));
 
-                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPoints});
+                msScanInfoScanPointsPairs.push_back({msScanInfo, scanPoints, {}});
             }
         }
 
@@ -466,6 +465,8 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
     std::string tdfFile = tdfDirectory + "/analysis.tdf";
 
     e = ErrorUtils::fileExists(QString::fromStdString(tdfFile)); ree;
+    m_filePath = filePath;
+    m_isTIMS = true;
 
     try {
         timsdata::TimsData data(tdfDirectory);  // NOTE: UTF-8 conversion needed here!
@@ -523,23 +524,28 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             &timsFramesInfosTranched
             );
 
-        QFuture<QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>>> future = QtConcurrent::mapped(
+        QFuture<QPair<Err, QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>>>> future = QtConcurrent::mapped(
             timsFramesInfosTranched,
             readerLogicBinder
             );
         future.waitForFinished();
 
         int scanNumber = 0;
-        for (const QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> &res : future) {
+        for (const QPair<Err, QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>>> &res : future) {
             e = res.first; ree;
 
-            const QVector<QPair<MsScanInfo, ScanPoints>> &resVector = res.second;
+            const QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>> &resVector = res.second;
             for (int i = 0; i < resVector.size(); i++) {
-                const QPair<MsScanInfo, ScanPoints> &pr = resVector.at(i);
-                MsScanInfo msi = pr.first;
+                const std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS> &tup = resVector.at(i);
+                MsScanInfo msi = std::get<0>(tup);
                 msi.scanNumber = ++scanNumber;
                 m_msScanInfo.insert(msi.scanNumber, msi);
-                m_scanPoints.insert(msi.scanNumber, pr.second);
+                m_scanPoints.insert(msi.scanNumber, std::get<1>(tup));
+
+                if (msi.msLevel > 1) {
+                    continue;
+                }
+                m_frameNumberVsFrameTIMS.insert(msi.scanNumber, std::get<2>(tup));
             }
         }
 #else

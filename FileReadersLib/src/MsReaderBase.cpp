@@ -12,7 +12,10 @@
 
 #include <iostream>
 
-MsReaderBase::MsReaderBase() : m_fileIsCalibrated(false) {}
+MsReaderBase::MsReaderBase()
+: m_fileIsCalibrated(false)
+, m_isTIMS(false)
+{}
 
 void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
     m_msScanInfo = msScanInfos;
@@ -452,4 +455,8 @@ Err MsReaderBase::printFileInfo() {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "File is DIA" << isDIA();
 
     ERR_RETURN
+}
+
+bool MsReaderBase::isTIMS() {
+    return m_isTIMS;
 }
