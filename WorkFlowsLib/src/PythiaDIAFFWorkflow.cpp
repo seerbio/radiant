@@ -64,7 +64,7 @@ Err PythiaDIAFFWorkflow::init(
             &fragLibReaderRows
             ); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading read";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished reading library";
 
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
@@ -269,7 +269,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_INIT
 
 /***** DEV OVERRIDES *****/
-// #define DEV_OVERRIDES
+#define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
