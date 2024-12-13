@@ -755,62 +755,64 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::initMatricesdAndVecs(
-        const QVector<MS2Ion> &ms2Ions,
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax,
-        MatriciesAndVecs *matriciesAndVecs
-        ) const {
+    const QVector<MS2Ion> &ms2Ions,
+    FrameIndex frameIndexPredictedMin,
+    FrameIndex frameIndexPredictedMax,
+    MatriciesAndVecs *matriciesAndVecs
+    ) const {
 
-        ERR_INIT
+    ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-        e = ErrorUtils::isAboveThreshold(m_topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+    e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+    e = ErrorUtils::isAboveThreshold(m_topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
 
-        QVector<MS2Ion> ms2IonsResized = ms2Ions;
-        ms2IonsResized.resize(std::min(m_topNMS2Ions, ms2Ions.size()));
+    QVector<MS2Ion> ms2IonsResized = ms2Ions;
+    ms2IonsResized.resize(std::min(m_topNMS2Ions, ms2Ions.size()));
 
-        const bool ms2IonsAreSorted = std::is_sorted(
-            ms2IonsResized.rbegin(),
-            ms2IonsResized.rend(),
-            [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
-            );
-        e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
+    const bool ms2IonsAreSorted = std::is_sorted(
+        ms2IonsResized.rbegin(),
+        ms2IonsResized.rend(),
+        [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
+        );
+    e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
 
-        QVector<XICPoints> xicPointsVec100;
-        QVector<XICPoints> xicPointsVec100Shadow;
-        QVector<XICPoints> xicPointsVec45;
-        e = getXICs(
-            ms2IonsResized,
-            static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
-            frameIndexPredictedMin,
-            frameIndexPredictedMax,
-            m_xicPeakManager,
-            &xicPointsVec100,
-            &xicPointsVec100Shadow,
-            &xicPointsVec45
-            ); ree;
+    QVector<XICPoints> xicPointsVec100;
+    QVector<XICPoints> xicPointsVec100Shadow;
+    QVector<XICPoints> xicPointsVec45;
+    e = getXICs(
+        ms2IonsResized,
+        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
+        frameIndexPredictedMin,
+        frameIndexPredictedMax,
+        m_xicPeakManager,
+        &xicPointsVec100,
+        &xicPointsVec100Shadow,
+        &xicPointsVec45
+        ); ree;
 
-        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
-        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
+    e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
+    e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
-        const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+    const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
-        constexpr int smoothCount = 1;
-        e = buildEigenMatrix(
-            xicPointsVec100,
-            d_ptr->m_kernelMs2,
-            frameIndexMax,
-            true,
-            smoothCount,
-            &matriciesAndVecs->intensityMatrix100,
-            &matriciesAndVecs->mzMatrix100
-            ); ree;
-        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
-        matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
-            matriciesAndVecs->intensityVec,
-            d_ptr->m_kernelIntegration
-            );
-        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityVec.array().log10();
+    constexpr int smoothCount = 1;
+    e = buildEigenMatrix(
+        xicPointsVec100,
+        d_ptr->m_kernelMs2,
+        frameIndexMax,
+        true,
+        smoothCount,
+        &matriciesAndVecs->intensityMatrix100,
+        &matriciesAndVecs->mzMatrix100
+        ); ree;
+    matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
+
+    matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
+        matriciesAndVecs->intensityVec,
+        d_ptr->m_kernelIntegration
+        );
+
+    matriciesAndVecs->intensityVec = matriciesAndVecs->intensityVec.array().log10();
         matriciesAndVecs->intensityVec /= matriciesAndVecs->intensityVec.maxCoeff();
         EigenUtils::replaceInf(0.0f, &matriciesAndVecs->intensityVec);
         matriciesAndVecs->intensityVec *= matriciesAndVecs->intensityVec.maxCoeff();
