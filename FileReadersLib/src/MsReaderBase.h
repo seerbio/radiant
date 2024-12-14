@@ -488,10 +488,13 @@ public:
             ScanPoints *scanPoints
             );
 
-    void printSize();
+    void printSize() const;
 
     Err printFileInfo();
-    bool isTIMS();
+    bool isTIMS() const;
+
+    float mzMs2Min() const;
+    float mzMs2Max() const;
 
 
 protected:
@@ -508,6 +511,10 @@ protected:
 
     QString m_filePath;
 
+    float m_mzMs1Min;
+    float m_mzMs1Max;
+    float m_mzMs2Min;
+    float m_mzMs2Max;
 };
 
 
