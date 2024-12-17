@@ -21,8 +21,26 @@ public:
 
 private Q_SLOTS:
     void openFileTest();
+    static void writeFrameTest();
 
 };
+
+void MsReaderBrukerTimsTests::writeFrameTest() {
+
+    ERR_INIT
+
+    const QString openFileTest
+        = QStringLiteral("/home/andrewnichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d");
+
+    constexpr float scanTime = 16.78975;
+
+    MsReaderBrukerTims reader;
+    e = reader.openFile(openFileTest);
+    QCOMPARE(e, eNoError);
+
+    e = reader.writeFrame(openFileTest + QString::number(scanTime) + ".prq", scanTime, 1);
+    QCOMPARE(e, eNoError);
+}
 
 void MsReaderBrukerTimsTests::openFileTest() {
 

@@ -5,6 +5,7 @@
 #include "MsReaderBrukerTims.h"
 
 #include "ParallelUtils.h"
+#include "MsReaderParquet.h"
 
 #include "CppSQLite3.h"
 #include "timsdata_cpp.h"
@@ -380,18 +381,18 @@ namespace {
 
         QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>> msScanInfoScanPointsPairs;
 
-        for (const TimsFrameInfo &t : timsFramesInfos) {
+        for (const TimsFrameInfo &tfi : timsFramesInfos) {
 
             MsScanInfo msScanInfo;
-            msScanInfo.scanNumber = t.frameId;
-            msScanInfo.scanTime = t.scanTime;
+            msScanInfo.scanNumber = tfi.frameId;
+            msScanInfo.scanTime = tfi.scanTime;
 
-            if (t.msmsType < 1) {
+            if (tfi.msmsType < 1) {
 
                 ScanPoints scanPointsMS1;
                 Ms1FrameTIMS ms1FrameTims;
                 e = extractMS1ScanPointsFromFrame(
-                    t,
+                    tfi,
                     &data,
                     &scanPointsMS1,
                     &ms1FrameTims
@@ -405,7 +406,7 @@ namespace {
 
             QMap<MzTargetKey, ScanPoints> mzTargetKeyVsScanPoints;
             e = extractMS2ScanPointsFromFrame(
-                t,
+                tfi,
                 windowGroupIndexVsTimsMs2WindowsInfoses,
                 &data,
                 &mzTargetKeyVsScanPoints
@@ -477,32 +478,30 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
         std::vector<TimsMS2WindowsInfo> timsMS2WindowsInfos = buildTimsWindowsInfos(&db);
         e = ErrorUtils::isNotEmpty(timsMS2WindowsInfos); ree;
 
-        QHash<int, QVector<TimsMS2WindowsInfo>> windowGroupIndexVsTimsMs2WindowsInfoses;
+
         for (const TimsMS2WindowsInfo &w : timsMS2WindowsInfos) {
-            windowGroupIndexVsTimsMs2WindowsInfoses[w.windowGroup].push_back(w);
+            m_windowGroupIndexVsTimsMs2WindowsInfoses[w.windowGroup].push_back(w);
         }
 
-        QHash<MzTargetKey, TimsMS2WindowsInfo> mzTargetVsTimsMs2WindowsInfos;
         e = buildMzTargetVsTimsMs2WindowsInfos(
-            windowGroupIndexVsTimsMs2WindowsInfoses,
-            &mzTargetVsTimsMs2WindowsInfos
+            m_windowGroupIndexVsTimsMs2WindowsInfoses,
+            &m_mzTargetVsTimsMs2WindowsInfos
             ); ree;
 
-        std::vector<TimsFrameInfo> timsFramesInfos = buildTimsFrameInfo(&db);
-        e = ErrorUtils::isNotEmpty(timsFramesInfos); ree;
+        m_timsFramesInfos = buildTimsFrameInfo(&db);
+        e = ErrorUtils::isNotEmpty(m_timsFramesInfos); ree;
         db.close();
 
-        QMap<FrameIndex, double> frameIndexVsDriftTime;
         e = buildFrameIndexVsDriftTime(
-            timsFramesInfos.front(),
+            m_timsFramesInfos.front(),
             &data,
-            &frameIndexVsDriftTime
+            &m_frameIndexVsDriftTime
             ); ree;
 
         e = assignWindowGroupToTimsFrameInfos(
             &data,
             &timsMS2WindowsInfos,
-            &timsFramesInfos
+            &m_timsFramesInfos
             ); ree;
 
 #define TIMS_PARALLEL
@@ -511,14 +510,14 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             parallelReadTimsLogic,
             tdfDirectory,
             std::placeholders::_1,
-            frameIndexVsDriftTime,
-            mzTargetVsTimsMs2WindowsInfos,
-            windowGroupIndexVsTimsMs2WindowsInfoses
+            m_frameIndexVsDriftTime,
+            m_mzTargetVsTimsMs2WindowsInfos,
+            m_windowGroupIndexVsTimsMs2WindowsInfoses
             );
 
         QVector<std::vector<TimsFrameInfo>> timsFramesInfosTranched;
         ParallelUtils::trancheVectorForParallelizationInOrder(
-            timsFramesInfos,
+            m_timsFramesInfos,
             ParallelUtils::numberOfAvailableSystemProcessors(),
             0,
             &timsFramesInfosTranched
@@ -549,7 +548,7 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
             }
         }
 #else
-        const QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> result = parallelReadTimsLogic(
+        QPair<Err, QVector<std::tuple<MsScanInfo, ScanPoints, Ms1FrameTIMS>>> result = parallelReadTimsLogic(
             tdfDirectory,
             timsFramesInfos,
             frameIndexVsDriftTime,
@@ -572,6 +571,97 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
 
 Err MsReaderBrukerTims::closeFile() {
     ERR_INIT
+
+    ERR_RETURN
+}
+
+Err MsReaderBrukerTims::writeFrame(
+    const QString &filePath,
+    float scanTime,
+    int msLevel
+    ) {
+
+    ERR_INIT
+
+    timsdata::TimsData data(m_filePath.toStdString());
+
+    TimsFrameInfo timsFrameInfo;
+    for (const TimsFrameInfo &tfi : m_timsFramesInfos) {
+
+        if (msLevel > 1) {
+            if (tfi.msmsType == 0) {
+                continue;
+            }
+        }
+        else {
+            if (tfi.msmsType != 0) {
+                continue;
+            }
+        }
+
+        timsFrameInfo = tfi;
+        if (tfi.scanTime > scanTime || MathUtils::tSame(scanTime, tfi.scanTime, 0.00001)) {
+            break;
+        }
+    }
+
+    qDebug() << "Frame index range" << m_timsFramesInfos.front().frameId << m_timsFramesInfos.back().frameId << timsFrameInfo.frameId;
+
+    const timsdata::FrameProxy scans = data.readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
+
+    e = ErrorUtils::contains(timsFrameInfo.windowGroup, m_windowGroupIndexVsTimsMs2WindowsInfoses); ree;
+    const QVector<TimsMS2WindowsInfo> &timsMs2WindowsInfos
+                    = m_windowGroupIndexVsTimsMs2WindowsInfoses.value(timsFrameInfo.windowGroup);
+
+    QVector<MsParquetReaderRow> msParquetReaderRows;
+    for (const TimsMS2WindowsInfo &tmwi : timsMs2WindowsInfos) {
+
+        const MzTargetKey mzTargetKey = QString::number(MathUtils::hashDecimal(
+            tmwi.isolationMz,
+            S_GLOBAL_SETTINGS.HASHING_PRECISION)
+            );
+
+        constexpr int nonZeroIndexArrayOffset = -1;
+        for(int scanNumber = tmwi.scanNumberBegin + nonZeroIndexArrayOffset ; scanNumber < tmwi.scanNumberEnd; scanNumber++) {
+
+            if (scans.getNbrPeaks(scanNumber) < 1) {
+                continue;
+            }
+
+            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(scanNumber);
+            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(scanNumber);
+
+            std::vector<double> xAxisMasses;
+            std::vector<double> indices(xAxis.first, xAxis.second);
+            data.indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
+
+            QVector<float> mzVals;
+            QVector<float> intensityVals;
+            const size_t numberOfPeaks = scans.getNbrPeaks(scanNumber);
+            for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
+                 mzVals.push_back(static_cast<float>(xAxisMasses[pkNum]));
+                 intensityVals.push_back(static_cast<float>(yAxis.first[pkNum]));
+            }
+
+            MsParquetReaderRow msParquetReaderRow;
+            msParquetReaderRow.scanNumber = timsFrameInfo.frameId;
+            msParquetReaderRow.scanTime = timsFrameInfo.scanTime;
+            msParquetReaderRow.msLevel = 2;
+            msParquetReaderRow.collisionEnergy = tmwi.collisionEnergy;
+            msParquetReaderRow.precursorTargetMz = tmwi.isolationMz;
+            msParquetReaderRow.isoWindowLower = tmwi.isolationWidth / 2.0f;
+            msParquetReaderRow.isoWindowUpper = msParquetReaderRow.isoWindowLower;
+            msParquetReaderRow.ionMobilityIndex = scanNumber;
+            msParquetReaderRow.ionMobilityDriftTime = m_frameIndexVsDriftTime.value(msParquetReaderRow.ionMobilityIndex);
+            msParquetReaderRow.mzVals = mzVals;
+            msParquetReaderRow.intensityVals = intensityVals;
+            msParquetReaderRow.targetKey = mzTargetKey;
+
+            msParquetReaderRows.push_back(msParquetReaderRow);
+        }
+    }
+
+    e = ParquetReader::write(msParquetReaderRows, filePath); ree;
 
     ERR_RETURN
 }

@@ -43,6 +43,18 @@ public:
 
     Err closeFile() override;
 
+    Err writeFrame(
+        const QString &filePath,
+        float scanTime,
+        int msLevel
+        );
+
+private:
+
+    QHash<MzTargetKey, TimsMS2WindowsInfo> m_mzTargetVsTimsMs2WindowsInfos;
+    QMap<FrameIndex, double> m_frameIndexVsDriftTime;
+    QHash<int, QVector<TimsMS2WindowsInfo>> m_windowGroupIndexVsTimsMs2WindowsInfoses;
+    std::vector<TimsFrameInfo> m_timsFramesInfos;
 };
 
 
