@@ -18,6 +18,7 @@ using namespace Error;
 
 using FrameNumberTIMS = int;
 using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
+using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
 
 enum class ScanPointsSort {
     AscMz,
@@ -491,10 +492,12 @@ public:
     void printSize() const;
 
     Err printFileInfo();
-    bool isTIMS() const;
+    [[nodiscard]] bool isTIMS() const;
 
-    float mzMs2Min() const;
-    float mzMs2Max() const;
+    [[nodiscard]] float mzMs2Min() const;
+    [[nodiscard]] float mzMs2Max() const;
+
+    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsFrameTIMSPntr();
 
 
 protected:

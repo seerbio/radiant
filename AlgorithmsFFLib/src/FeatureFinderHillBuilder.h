@@ -87,7 +87,7 @@ public:
 
     ~FeatureFinderHillBuilder();
 
-    Err init(const FeatureFinderParameters &featureFinderParameters);
+    Err init(const FeatureFinderParameters &featureFinderParameters) const;
 
     Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
@@ -126,13 +126,13 @@ private:
             const QVector<ScanPoints*> &allScanPoints,
             QVector<QVector<QVector<float>>> *groupedMzVals,
             QVector<QVector<QVector<float>>> *groupedIntensityVals
-    );
+    ) const;
 
     Err connectCentroidsInGroupedMzValsTest(
             const QVector<QVector<QVector<float>>> &groupedMzVals,
             double tolerancePPM,
             QVector<QVector<int>> *connectedCentroidsVecs
-    );
+    ) const;
 
 
 private:
