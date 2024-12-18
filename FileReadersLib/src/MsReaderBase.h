@@ -497,7 +497,7 @@ public:
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsFrameTIMSPntr();
+    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
 
 
 protected:
@@ -510,7 +510,7 @@ protected:
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsFrameTIMS;
+    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
     QMap<FrameIndex, double> m_frameIndexVsDriftTime;
 
 

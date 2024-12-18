@@ -1999,7 +1999,7 @@ namespace {
         Eigen::VectorX<float> vec(frameIndexMax + 1);
         vec.setZero();
 
-        for (const auto &[mz, intensity, scanNumber] : xicPoints) {
+        for (const auto &[mz, intensity, scanNumber, ionMobilityIndex] : xicPoints) {
 
             if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
                 continue;

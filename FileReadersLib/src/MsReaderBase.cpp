@@ -490,6 +490,6 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsFrameTIMSPntr() {
-    return &m_frameNumberVsFrameTIMS;
+QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
+    return &m_frameNumberVsMS1FrameTIMS;
 }

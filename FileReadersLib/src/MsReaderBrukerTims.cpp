@@ -544,7 +544,7 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
                 if (msi.msLevel > 1) {
                     continue;
                 }
-                m_frameNumberVsFrameTIMS.insert(msi.scanNumber, std::get<2>(tup));
+                m_frameNumberVsMS1FrameTIMS.insert(msi.scanNumber, std::get<2>(tup));
             }
         }
 #else
