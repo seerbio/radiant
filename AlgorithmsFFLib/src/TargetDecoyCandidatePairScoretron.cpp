@@ -52,6 +52,7 @@ public:
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
 };
 
+
 Err TargetDecoyCandidatePairScoretron2::init(
         const PythiaParameters &pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc
@@ -95,6 +96,15 @@ Err TargetDecoyCandidatePairScoretron2::init(
 
     m_turboXICMS1 = new TurboXIC();
     e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
+
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        const QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr
+                                                        = m_msReaderPointerAcc->ptr->frameNumberVsFrameTIMSPntr();
+        e = buildTurboXIC2DMS1(
+            frameNumberVsFrameTIMSPntr,
+            m_turboXIC2DMS1
+            ); ree;
+    }
 
     if (!diaTargetFrames.isEmpty()) {
         e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;

@@ -52,7 +52,6 @@ public:
 private:
 
     QHash<MzTargetKey, TimsMS2WindowsInfo> m_mzTargetVsTimsMs2WindowsInfos;
-    QMap<FrameIndex, double> m_frameIndexVsDriftTime;
     QHash<int, QVector<TimsMS2WindowsInfo>> m_windowGroupIndexVsTimsMs2WindowsInfoses;
     std::vector<TimsFrameInfo> m_timsFramesInfos;
 };

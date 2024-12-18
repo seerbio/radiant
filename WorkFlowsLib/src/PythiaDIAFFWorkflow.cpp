@@ -305,11 +305,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
-    if (msReaderPointerAcc.ptr->isTIMS()) {
-        e = buildMs1FeaturesforTIMS(&msReaderPointerAcc); ree;
-    }
-
-
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
             &msReaderPointerAcc
@@ -421,66 +416,66 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
-namespace {
-
-    QPair<Err, FeatureFinderHillBuilder*> timsFeatureFinderLogic(
-        const Ms1FrameTIMS &ms1FrameTims,
-        const FeatureFinderParameters &featureFinderParameters
-            ) {
-
-        ERR_INIT
-
-        auto *featureFinderHillBuilder = new FeatureFinderHillBuilder();
-        e = featureFinderHillBuilder->init(featureFinderParameters); rree;
-
-        Ms1FrameTIMS ms1FrameTimsCopy = ms1FrameTims;
-
-        Ms1FrameTIMSPntrs ms1FrameTIMSPntrs;
-        for (auto it = ms1FrameTimsCopy.begin(); it != ms1FrameTimsCopy.end(); ++it) {
-            ms1FrameTIMSPntrs.insert(it.key(), &it.value());
-        }
-
-        e = featureFinderHillBuilder->buildHills(ms1FrameTIMSPntrs); rree;
-
-        return {e, featureFinderHillBuilder};
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc) {
-
-    ERR_INIT
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding start";
-
-    QElapsedTimer etFF;
-    etFF.start();
-
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr = msReaderPointerAcc->ptr->frameNumberVsFrameTIMSPntr();
-
-    FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
-
-    const auto featureFinderBinder = std::bind(
-        timsFeatureFinderLogic,
-        std::placeholders::_1,
-        featureFinderParameters
-        );
-
-    QFuture<QPair<Err, FeatureFinderHillBuilder*>> future = QtConcurrent::mapped(
-        *frameNumberVsFrameTIMSPntr,
-        featureFinderBinder
-        );
-    future.waitForFinished();
-
-
-    for (const QPair<Err, FeatureFinderHillBuilder*> &pr : future) {
-        e = pr.first; ree;
-        m_featureFinderHillBuildersTIMS.push_back(pr.second);
-    }
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished" << etFF.restart() << "mSec";
-
-    ERR_RETURN
-}
+// namespace {
+//
+//     QPair<Err, FeatureFinderHillBuilder*> timsFeatureFinderLogic(
+//         const Ms1FrameTIMS &ms1FrameTims,
+//         const FeatureFinderParameters &featureFinderParameters
+//             ) {
+//
+//         ERR_INIT
+//
+//         auto *featureFinderHillBuilder = new FeatureFinderHillBuilder();
+//         e = featureFinderHillBuilder->init(featureFinderParameters); rree;
+//
+//         Ms1FrameTIMS ms1FrameTimsCopy = ms1FrameTims;
+//
+//         Ms1FrameTIMSPntrs ms1FrameTIMSPntrs;
+//         for (auto it = ms1FrameTimsCopy.begin(); it != ms1FrameTimsCopy.end(); ++it) {
+//             ms1FrameTIMSPntrs.insert(it.key(), &it.value());
+//         }
+//
+//         e = featureFinderHillBuilder->buildHills(ms1FrameTIMSPntrs); rree;
+//
+//         return {e, featureFinderHillBuilder};
+//     }
+//
+// }//namespace
+// Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc) {
+//
+//     ERR_INIT
+//
+//     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding start";
+//
+//     QElapsedTimer etFF;
+//     etFF.start();
+//
+//     QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr = msReaderPointerAcc->ptr->frameNumberVsFrameTIMSPntr();
+//
+//     FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
+//
+//     const auto featureFinderBinder = std::bind(
+//         timsFeatureFinderLogic,
+//         std::placeholders::_1,
+//         featureFinderParameters
+//         );
+//
+//     QFuture<QPair<Err, FeatureFinderHillBuilder*>> future = QtConcurrent::mapped(
+//         *frameNumberVsFrameTIMSPntr,
+//         featureFinderBinder
+//         );
+//     future.waitForFinished();
+//
+//
+//     for (const QPair<Err, FeatureFinderHillBuilder*> &pr : future) {
+//         e = pr.first; ree;
+//         m_featureFinderHillBuildersTIMS.push_back(pr.second);
+//     }
+//
+//     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished" << etFF.restart() << "mSec";
+//
+//     ERR_RETURN
+// }
 
 Err PythiaDIAFFWorkflow::mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,

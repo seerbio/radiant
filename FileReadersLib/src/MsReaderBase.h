@@ -511,6 +511,8 @@ protected:
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
     QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsFrameTIMS;
+    QMap<FrameIndex, double> m_frameIndexVsDriftTime;
+
 
     QString m_filePath;
 

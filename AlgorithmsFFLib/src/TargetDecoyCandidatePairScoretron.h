@@ -15,13 +15,14 @@
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
+#include "TurboXIC.h"
+#include "TurboXIC2D.h"
 
 using namespace Error;
 
 
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
-class TurboXIC;
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron2 {
 
@@ -129,6 +130,9 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TurboXIC *m_turboXICMS1;
     MsFrame *m_msFrameMS1;
+
+    TurboXIC2D *m_turboXIC2DMS1;
+
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFrames;
     QMap<ScanNumber, ScanPoints> m_ms1ScanNumberVsScanPoints;
