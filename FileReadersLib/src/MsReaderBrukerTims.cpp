@@ -247,6 +247,23 @@ namespace {
         ERR_RETURN
     }
 
+    void filterBottomPointsByPercentile(
+        double percentileAsFraction,
+        ScanPoints *scanPoints
+    ) {
+        std::sort(
+            scanPoints->rbegin(),
+            scanPoints->rend(),
+            [](const ScanPoint &l, const ScanPoint &r){return l.y() < r.y();}
+            );
+        scanPoints->resize(static_cast<int>(scanPoints->size() * percentileAsFraction));
+        std::sort(
+            scanPoints->begin(),
+            scanPoints->end(),
+            [](const ScanPoint &l, const ScanPoint &r){return l.x() < r.x();}
+            );
+    }
+
     Err extractMS1ScanPointsFromFrame(
         const TimsFrameInfo &timsFrameInfo,
         timsdata::TimsData *data,
@@ -258,16 +275,20 @@ namespace {
 
         const timsdata::SpectrumData scansCollapsed = data->readScansSummed(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
 
-        const int numberOfPeaks = static_cast<int>(scansCollapsed.area_values.size());
-        scanPointsMS1->reserve(numberOfPeaks);
+        const int numberOfPeaksCollapsed = static_cast<int>(scansCollapsed.area_values.size());
+        scanPointsMS1->reserve(numberOfPeaksCollapsed);
 
-        for (int i = 0; i < numberOfPeaks; i++) {
+        for (int i = 0; i < numberOfPeaksCollapsed; i++) {
             scanPointsMS1->push_back({static_cast<float>(scansCollapsed.mz_values.at(i)), scansCollapsed.area_values.at(i)});
         }
 
+        constexpr double percentileFilterFraction = 0.33;
+        filterBottomPointsByPercentile(
+            percentileFilterFraction,
+            scanPointsMS1
+            );
+
         const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
-
-
 
         for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < timsFrameInfo.numScans; ionMobilityIndex++) {
 
