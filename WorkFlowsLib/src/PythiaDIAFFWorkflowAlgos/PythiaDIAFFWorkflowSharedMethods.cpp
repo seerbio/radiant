@@ -337,7 +337,7 @@ namespace {
         ) {
 
         const auto terminatorLogic = [precursorMzMin, precursorMzMax](const TargetDecoyCandidatePair *tdcp) {
-            const float mzPrecursorTargetDecoyPair = tdcp->mz();
+            const float mzPrecursorTargetDecoyPair = tdcp->mz(false);
             return !(precursorMzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= precursorMzMax);
         };
 
@@ -475,7 +475,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(Features::IntensityFoundMax1, top6);
             }
             else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz()};
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(false)};
                 row.mzFoundMeanVec = {cs->featuresArray[Features::Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Features::Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Features::Ms1IntensityFound100]};
