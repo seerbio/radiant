@@ -185,6 +185,10 @@ namespace {
                 }
 
                 ScanPoints* scanPoints = sgpi.allScanPointsTranch.at(nextScanIndex);
+                if (scanPoints->isEmpty()) {
+                    const ScanPoint placeholderPointForEmptyScan(1,0);
+                    scanPoints->push_back(placeholderPointForEmptyScan);
+                }
 
                 QVector<float> mzVals;
                 QVector<float> intensityVals;
@@ -965,7 +969,7 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
+Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const {
     ERR_INIT
     e = d_ptr->buildHills(scanNumberVsScanPoints); ree;
     ERR_RETURN

@@ -89,7 +89,7 @@ public:
 
     Err init(const FeatureFinderParameters &featureFinderParameters) const;
 
-    Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+    Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const;
 
     Err getHills(
             double mzMin,

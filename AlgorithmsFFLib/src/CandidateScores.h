@@ -508,18 +508,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TOT_INTENSITY_PEAK_HEIGHTS = QStringLiteral("TotalIntensityPeakHeights");
     const QString TOT_INTENSITY_RAW = QStringLiteral("TotalIntensityRaw");
     const QString TARGET_WINDOW_LOCATION = QStringLiteral("TargetWindowLocation");
-    const QString TRAP_AREA_1 = QStringLiteral("TrapArea1");
-    const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
-    const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
-    const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
-    const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
-    const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
-    const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
-    const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
-    const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
-    const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
-    const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
-    const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
+    // const QString TRAP_AREA_1 = QStringLiteral("TrapArea1");
+    // const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
+    // const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
+    // const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
+    // const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
+    // const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
+    // const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
+    // const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
+    // const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
+    // const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
+    // const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
+    // const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
 
     // const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
     // const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
@@ -930,18 +930,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float totalIntensityRaw = -1.0;
     float targetWindowLocation = -1.0;
 
-    float trapArea1 = -1.0;
-    float trapArea2 = -1.0;
-    float trapArea3 = -1.0;
-    float trapArea4 = -1.0;
-    float trapArea5 = -1.0;
-    float trapArea6 = -1.0;
-    float trapArea7 = -1.0;
-    float trapArea8 = -1.0;
-    float trapArea9 = -1.0;
-    float trapArea10 = -1.0;
-    float trapArea11 = -1.0;
-    float trapArea12 = -1.0;
+    // float trapArea1 = -1.0;
+    // float trapArea2 = -1.0;
+    // float trapArea3 = -1.0;
+    // float trapArea4 = -1.0;
+    // float trapArea5 = -1.0;
+    // float trapArea6 = -1.0;
+    // float trapArea7 = -1.0;
+    // float trapArea8 = -1.0;
+    // float trapArea9 = -1.0;
+    // float trapArea10 = -1.0;
+    // float trapArea11 = -1.0;
+    // float trapArea12 = -1.0;
 
     // float mzSearched1 = -1.0;
     // float mzSearched2 = -1.0;
@@ -1248,7 +1248,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 // {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
                 // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
                 // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
-                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
+                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},g TRAP_AREA_1 = QStringLiteral("TrapArea1");
+    // const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
+    // const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
+    // const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
+    // const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
+    // const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
+    // const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
+    // const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
+    // const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
+    // const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
+    // const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
+    // const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
                 // {MZ_PK_LEN_NORM_4, QVariant(mzPeakLengthsNorm4)},
                 // {MZ_PK_LEN_NORM_5, QVariant(mzPeakLengthsNorm5)},
                 // {MZ_PK_LEN_NORM_6, QVariant(mzPeakLengthsNorm6)},
@@ -1354,18 +1365,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
                 {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)},
 
-                {TRAP_AREA_1, QVariant(trapArea1)},
-                {TRAP_AREA_2, QVariant(trapArea2)},
-                {TRAP_AREA_3, QVariant(trapArea3)},
-                {TRAP_AREA_4, QVariant(trapArea4)},
-                {TRAP_AREA_5, QVariant(trapArea5)},
-                {TRAP_AREA_6, QVariant(trapArea6)},
-                {TRAP_AREA_7, QVariant(trapArea7)},
-                {TRAP_AREA_8, QVariant(trapArea8)},
-                {TRAP_AREA_9, QVariant(trapArea9)},
-                {TRAP_AREA_10, QVariant(trapArea10)},
-                {TRAP_AREA_11, QVariant(trapArea11)},
-                {TRAP_AREA_12, QVariant(trapArea12)},
+                // {TRAP_AREA_1, QVariant(trapArea1)},
+                // {TRAP_AREA_2, QVariant(trapArea2)},
+                // {TRAP_AREA_3, QVariant(trapArea3)},
+                // {TRAP_AREA_4, QVariant(trapArea4)},
+                // {TRAP_AREA_5, QVariant(trapArea5)},
+                // {TRAP_AREA_6, QVariant(trapArea6)},
+                // {TRAP_AREA_7, QVariant(trapArea7)},
+                // {TRAP_AREA_8, QVariant(trapArea8)},
+                // {TRAP_AREA_9, QVariant(trapArea9)},
+                // {TRAP_AREA_10, QVariant(trapArea10)},
+                // {TRAP_AREA_11, QVariant(trapArea11)},
+                // {TRAP_AREA_12, QVariant(trapArea12)},
 
                 // {MZ_SEARCHED_1, QVariant(mzSearched1)},
                 // {MZ_SEARCHED_2, QVariant(mzSearched2)},
