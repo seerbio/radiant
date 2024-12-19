@@ -23,7 +23,8 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         int charge,
         float mass,
         float iRt,
-        int totalFramentCount
+        int totalFramentCount,
+        float decoyMassDelta
 )
 : m_peptideString(peptideStringWithMods.removeUniModChars())
 , m_peptideStringWithMods(peptideStringWithMods)
@@ -33,6 +34,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 , m_mass(mass)
 , m_iRt(iRt)
 , m_totalFragmentCount(totalFramentCount)
+, m_decoyMassDelta(decoyMassDelta)
 {}
 
 
@@ -57,8 +59,10 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
     return m_ms2IonsDecoy;
 }
 
-float TargetDecoyCandidatePair::mz() const {
-    return static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(m_mass, m_charge));
+float TargetDecoyCandidatePair::mz(bool isDecoy) const {
+    return isDecoy
+        ? static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(m_mass + m_decoyMassDelta, m_charge))
+        : static_cast<float>(BiophysicalCalcs::calculateThomsonFromMass(m_mass, m_charge));
 }
 
 int TargetDecoyCandidatePair::charge() const {

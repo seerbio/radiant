@@ -87,8 +87,9 @@ namespace {
     Err mutateCandidatePeptideTarget(
             const PeptideStringWithMods &peptideStringWithMods,
             const QVector<MS2Ion> &ms2IonTarget,
-            QVector<MS2Ion> *ms2IonDecoys
-    ) {
+            QVector<MS2Ion> *ms2IonDecoys,
+            float *decoyMassDelta
+            ) {
 
         ERR_INIT
 
@@ -110,6 +111,8 @@ namespace {
         const double nTermDeltaMassCharge2 = nTermDeltaMass / 2.0;
         const double cTermDeltaMassCharge2 = cTermDeltaMass / 2.0;
 
+        *decoyMassDelta = nTermDeltaMass + cTermDeltaMass;
+
         for (const MS2Ion &ms2Ion : ms2IonTarget) {
 
             MS2Ion ms2IonDecoy = ms2Ion;
@@ -122,21 +125,21 @@ namespace {
                 if (ionLableInfo.second.contains("^2")) {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
+                        ms2IonDecoy.mz += nTermDeltaMassCharge2;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
+                        ms2IonDecoy.mz += cTermDeltaMassCharge2;
                     }
                 }
                 else {
 
                     if (ionLableInfo.first >= firstIndexToMutate) {
-                        ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
+                        ms2IonDecoy.mz += nTermDeltaMass;
                     }
 
                     if (ionLableInfo.first >= secondIndexToMutate) {
-                        ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
+                        ms2IonDecoy.mz += cTermDeltaMass;
                     }
                 }
             }
@@ -263,10 +266,12 @@ namespace {
 
         QVector<MS2Ion> ms2IonsDecoy;
 
+        float decoyMassDelta;
         e= mutateCandidatePeptideTarget(
                 peptideStringWithMods,
                 ms2IonsTarget,
-                &ms2IonsDecoy
+                &ms2IonsDecoy,
+                &decoyMassDelta
         ); rree;
 
         TargetDecoyCandidatePair targetDecoyCandidatePair(
@@ -276,7 +281,8 @@ namespace {
                 flrr.precursorCharge,
                 static_cast<float>(flrr.mass),
                 static_cast<float>(flrr.iRT),
-                flrr.mzVals.size()
+                flrr.mzVals.size(),
+                decoyMassDelta
         );
 
         return {e, targetDecoyCandidatePair};

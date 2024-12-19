@@ -1923,7 +1923,7 @@ Err CandidateScorertron::setCandidateScores(
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[Features::PeptideLengthNorm] = static_cast<float>(pepLength);
 
-    const auto mz = candidateScores->targetDecoyCandidatePair->mz();
+    const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
     candidateScores->featuresArray[Features::MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
     candidateScores->featuresArray[Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
@@ -2147,7 +2147,7 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
 
-    const float monoIsotopeMz = targetDecoyCandidatePair->mz();
+    const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);

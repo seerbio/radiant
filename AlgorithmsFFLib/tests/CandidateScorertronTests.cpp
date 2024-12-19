@@ -87,7 +87,8 @@ private:
                 2,
                 776.443,
                 69.0608,
-                3
+                3,
+                0
                 );
 
         return targetDecoyCandidatePair;

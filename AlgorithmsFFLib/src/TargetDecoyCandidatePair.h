@@ -32,7 +32,8 @@ public:
             int charge,
             float mass,
             float iRt,
-            int totalFramentCount
+            int totalFramentCount,
+            float decoyMassDelta
             );
 
     ~TargetDecoyCandidatePair() = default;
@@ -72,7 +73,7 @@ public:
     *
     * @return float representing the calculated m/z.
     */
-    [[nodiscard]] float mz() const;
+    [[nodiscard]] float mz(bool isDecoy) const;
 
     /**
     * @brief Gets the charge of the target-decoy candidate pair.
@@ -122,6 +123,7 @@ private:
     float m_mass;
     float m_iRt;
     int m_totalFragmentCount;
+    float m_decoyMassDelta;
 
 };
 

@@ -41,13 +41,14 @@ void TargetDecoyCandidatePairTests::gettersTest() {
             charge,
             mass,
             iRt,
-            totalFramentCount
+            totalFramentCount,
+            0.0
             );
 
     QCOMPARE(targetDecoyCandidatePair.peptideStringWithMods(), peptideStringWithMods);
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsTarget().first().mz, 666.6f));
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.ms2IonsDecoy().first().mz, 777.7f));
-    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(), 334.3072f));
+    QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mz(false), 334.3072f));
     QCOMPARE(targetDecoyCandidatePair.charge(), charge);
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6f));
     QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6f));
