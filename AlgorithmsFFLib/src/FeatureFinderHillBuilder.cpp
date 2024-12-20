@@ -1056,7 +1056,7 @@ Err FeatureFinderHillBuilder::getHills(
         FrameIndex frameIndexMin,
         FrameIndex frameIndexMax,
         QVector<FeatureFinderHill*> *featureFinderHills
-        ) {
+        ) const {
     ERR_INIT
     e = d_ptr->getHills(
             mzMin,
@@ -1072,7 +1072,7 @@ Err FeatureFinderHillBuilder::getHills(
         double mzMin,
         double mzMax,
         QVector<FeatureFinderHill*> *featureFinderHills
-) {
+) const {
     ERR_INIT
     e = d_ptr->getHills(
             mzMin,

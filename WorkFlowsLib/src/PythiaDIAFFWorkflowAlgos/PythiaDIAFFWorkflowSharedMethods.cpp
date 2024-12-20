@@ -569,3 +569,129 @@ QVector<QVector<MsScanInfo>> msScanInfosesTranced;
 
     ERR_RETURN
 }
+
+namespace {
+
+    Err assignIonMobilityLogic(
+            float ppmTolerance,
+            const QVector<CandidateScores*> &candidateScoresPntrs,
+            QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(candidateScoresPntrs); ree;
+        e = ErrorUtils::isFalse(scanNumberVsFeatureFinderHillBuildersPntrsTIMS->isEmpty()); ree;
+
+        const QVector<ScanNumber> scanNumbers = scanNumberVsFeatureFinderHillBuildersPntrsTIMS->keys().toVector();
+
+        for (CandidateScores *cs : candidateScoresPntrs) {
+
+            if (cs->scanNumber < 0) {
+                continue;
+            }
+
+            FrameIndex ms1ScanNumberClosest = scanNumbers.at(MathUtils::closest(scanNumbers, cs->scanNumber));
+            ms1ScanNumberClosest = ms1ScanNumberClosest > cs->scanNumber
+                                 ? scanNumbers.at(MathUtils::closest(scanNumbers, cs->scanNumber) - 1)
+                                 : ms1ScanNumberClosest;
+
+            e = ErrorUtils::contains(ms1ScanNumberClosest, *scanNumberVsFeatureFinderHillBuildersPntrsTIMS); ree;
+
+            const FeatureFinderHillBuilder *ffhb = scanNumberVsFeatureFinderHillBuildersPntrsTIMS->value(ms1ScanNumberClosest);
+
+            const float mzMonoIso = cs->targetDecoyCandidatePair->mz(false);
+            const float massToleranceMonoIso = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
+            QVector<FeatureFinderHill*> featureFinderHillsMs1MonoIso;
+            e = ffhb->getHills(
+                static_cast<double>(mzMonoIso - massToleranceMonoIso),
+                static_cast<double>(mzMonoIso + massToleranceMonoIso),
+                &featureFinderHillsMs1MonoIso
+                ); ree;
+
+            const float isoDistance
+                = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(cs->targetDecoyCandidatePair->charge());
+
+            const float mzIso1 = mzMonoIso + isoDistance;
+            const float massToleranceIso1 = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
+            QVector<FeatureFinderHill*> featureFinderHillsMs1Iso1;
+            e = ffhb->getHills(
+                static_cast<double>(mzIso1 - massToleranceIso1),
+                static_cast<double>(mzIso1 + massToleranceIso1),
+                &featureFinderHillsMs1Iso1
+                ); ree;
+
+            const float mzIso2 = mzMonoIso + (isoDistance * 2);
+            const float massToleranceIso2 = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
+            QVector<FeatureFinderHill*> featureFinderHillsMs1Iso2;
+            e = ffhb->getHills(
+                static_cast<double>(mzIso2 - massToleranceIso2),
+                static_cast<double>(mzIso2 + massToleranceIso2),
+                &featureFinderHillsMs1Iso2
+                ); ree;
+        }
+
+        ERR_RETURN
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflowSharedMethods::assignIonMobilityValues(
+    const PythiaParameters &pythiaParameters,
+    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairs,
+    QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+    ) {
+
+    ERR_INIT
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Assigning ion mobility values";
+
+    e = ErrorUtils::isFalse(candidateScorePairs->isEmpty()); ree;
+
+    QVector<CandidateScores*> candidateScoresPntrs;
+    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &csp : *candidateScorePairs) {
+        candidateScoresPntrs.append({&csp.first, &csp.second});
+    }
+    std::sort(
+        candidateScoresPntrs.begin(),
+        candidateScoresPntrs.end(),
+        [](const CandidateScores* l, const CandidateScores* r) {return l->scanNumber < r->scanNumber;}
+        );
+
+    QVector<QVector<CandidateScores*>> candidateScoresPntrsTranched;
+    e = ParallelUtils::trancheVectorForParallelizationInOrder(
+        candidateScoresPntrs,
+        pythiaParameters.threadCount,
+        0,
+        &candidateScoresPntrsTranched
+        ); ree;
+
+#define ASSIGN_ION_MOBILITY_PARALLEL
+#ifdef ASSIGN_ION_MOBILITY_PARALLEL
+
+    const auto assignMobilityBinder = std::bind(
+            assignIonMobilityLogic,
+            pythiaParameters.ms2ExtractionWidthPPM,
+            std::placeholders::_1,
+            scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            );
+
+    QFuture<Err> futures = QtConcurrent::mapped(
+        candidateScoresPntrsTranched,
+        assignMobilityBinder
+        );
+    futures.waitForFinished();
+
+#else
+    for (QVector<CandidateScores*> &csTranche : candidateScoresPntrsTranched) {
+        e = assignIonMobilityLogic(
+            pythiaParameters.ms2ExtractionWidthPPM,
+            &csTranche,
+            scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            ); ree;
+    }
+#endif
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished assigning ion mobility values";
+
+    ERR_RETURN
+}

@@ -133,7 +133,7 @@ private:
 
     QVector<float> m_weights;
 
-    QVector<FeatureFinderHillBuilder*> m_featureFinderHillBuildersTIMS;
+    QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
 };
 

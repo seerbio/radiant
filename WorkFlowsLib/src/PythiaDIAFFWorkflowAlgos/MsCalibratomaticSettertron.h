@@ -9,6 +9,7 @@
 
 #include "CandidateScores.h"
 #include "Error.h"
+#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsReaderPointerAcc.h"
@@ -29,7 +30,8 @@ public:
         PythiaParameters *pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
-        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron
+        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
+        QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
         );
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
@@ -55,6 +57,7 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TargetDecoyCandidatePairManager *m_targetDecoyCandidatePairManager;
     TargetDecoyCandidatePairScoretron2 *m_targetDecoyCandidatePairScoretron;
+    QMap<ScanNumber, FeatureFinderHillBuilder*> *m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
     PythiaParameters *m_pythiaParameters;
 
     MsCalibratomatic m_msCalibratomatic;

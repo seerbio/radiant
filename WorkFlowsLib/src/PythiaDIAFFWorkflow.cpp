@@ -36,7 +36,7 @@ PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 
 PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
 
-    for (FeatureFinderHillBuilder *h : m_featureFinderHillBuildersTIMS) {
+    for (FeatureFinderHillBuilder *h : m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS) {
         delete h;
     }
 
@@ -321,7 +321,8 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
-            &m_targetDecoyCandidatePairScoretron
+            &m_targetDecoyCandidatePairScoretron,
+            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
             ); ree;
         e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
     }
@@ -456,6 +457,7 @@ Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPoi
     etFF.start();
 
     QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+    const QVector<FrameIndex> frameIndexesTIMS = frameNumberVsFrameTIMSPntr->keys().toVector();
 
     FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
 
@@ -473,10 +475,13 @@ Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPoi
         );
     future.waitForFinished();
 
-
+    int scanNumberIndexCurrent = 0;
     for (const QPair<Err, FeatureFinderHillBuilder*> &pr : future) {
         e = pr.first; ree;
-        m_featureFinderHillBuildersTIMS.push_back(pr.second);
+        m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS.insert(
+            frameIndexesTIMS.at(scanNumberIndexCurrent++),
+            pr.second
+            );
     }
 #else
     for (auto it = frameNumberVsFrameTIMSPntr->begin(); it != frameNumberVsFrameTIMSPntr->end(); ++it) {
@@ -552,6 +557,14 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &m_candidateScorePairs
             ); ree
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
+
+    if (msReaderPointerAcc->ptr->isTIMS()) {
+        e = PythiaDIAFFWorkflowSharedMethods::assignIonMobilityValues(
+            m_pythiaParameters,
+            &m_candidateScorePairs,
+            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            ); ree;
+    }
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;

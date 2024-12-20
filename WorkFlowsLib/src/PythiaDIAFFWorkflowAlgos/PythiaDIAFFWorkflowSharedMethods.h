@@ -9,6 +9,7 @@
 
 #include "CandidateScores.h"
 #include "Error.h"
+#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsReaderBase.h"
@@ -81,6 +82,11 @@ public:
         MsCalibratomatic *msCalibratomatic,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames
         );
+
+    static Err assignIonMobilityValues(
+        const PythiaParameters &pythiaParameters,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairs,
+        QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS);
 
 };
 

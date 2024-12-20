@@ -18,6 +18,7 @@ MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 : m_msReaderPointerAcc(nullptr)
 , m_targetDecoyCandidatePairManager(nullptr)
 , m_targetDecoyCandidatePairScoretron(nullptr)
+, m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS(nullptr)
 , m_pythiaParameters(nullptr)
 {}
 
@@ -25,7 +26,8 @@ Err MsCalibratomaticSettertron::init(
     PythiaParameters *pythiaParameters,
     MsReaderPointerAcc *msReaderPointerAcc,
     TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
-    TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron
+    TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
+    QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
     ) {
 
     ERR_INIT
@@ -35,10 +37,15 @@ Err MsCalibratomaticSettertron::init(
     e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
 
+    if (msReaderPointerAcc->ptr->isTIMS()) {
+        e = ErrorUtils::isFalse(scanNumberVsFeatureFinderHillBuildersPntrsTIMS->isEmpty()); ree;
+    }
+
     m_msReaderPointerAcc = msReaderPointerAcc;
     m_targetDecoyCandidatePairManager = targetDecoyCandidatePairManager;
     m_pythiaParameters = pythiaParameters;
     m_targetDecoyCandidatePairScoretron = targetDecoyCandidatePairScoretron;
+    m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS = scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
     e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
         &m_targetDecoyPairPntrs
@@ -170,6 +177,14 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScorePairs
                 ); ree
+
+        if (m_msReaderPointerAcc->ptr->isTIMS()) {
+            e = PythiaDIAFFWorkflowSharedMethods::assignIonMobilityValues(
+                *m_pythiaParameters,
+                &m_candidateScorePairs,
+                m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+                ); ree;
+        }
 
         QVector<CandidateScores*> candidateScoresVecBatchPntrs;
         QMap<int, int> fdrVsCounts;
@@ -344,6 +359,7 @@ int MsCalibratomaticSettertron::calculateNumberOfTranches() const {
     return numberOfTranches;
 
 }
+
 
 Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     QVector<CandidateScores*> *candidateScoresVecScoredPntrs,

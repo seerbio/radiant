@@ -97,7 +97,7 @@ public:
             FrameIndex frameIndexMin,
             FrameIndex frameIndexMax,
             QVector<FeatureFinderHill*> *featureFinderHills
-            );
+            ) const;
 
     Err featureFinderHills(QVector<FeatureFinderHill*> *featureFinderHills);
 
@@ -105,7 +105,7 @@ public:
             double mzMin,
             double mzMax,
             QVector<FeatureFinderHill*> *featureFinderHills
-    );
+    ) const;
 
     Err refineHills(bool useSmoothing);
 
