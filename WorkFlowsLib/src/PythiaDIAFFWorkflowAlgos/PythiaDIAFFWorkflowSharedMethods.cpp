@@ -613,7 +613,7 @@ namespace {
                 = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(cs->targetDecoyCandidatePair->charge());
 
             const float mzIso1 = mzMonoIso + isoDistance;
-            const float massToleranceIso1 = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
+            const float massToleranceIso1 = MathUtils::calculatePPM(mzIso1, ppmTolerance);
             QVector<FeatureFinderHill*> featureFinderHillsMs1Iso1;
             e = ffhb->getHills(
                 static_cast<double>(mzIso1 - massToleranceIso1),
@@ -622,7 +622,7 @@ namespace {
                 ); ree;
 
             const float mzIso2 = mzMonoIso + (isoDistance * 2);
-            const float massToleranceIso2 = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
+            const float massToleranceIso2 = MathUtils::calculatePPM(mzIso2, ppmTolerance);
             QVector<FeatureFinderHill*> featureFinderHillsMs1Iso2;
             e = ffhb->getHills(
                 static_cast<double>(mzIso2 - massToleranceIso2),
