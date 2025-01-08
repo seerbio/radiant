@@ -1101,6 +1101,36 @@ public:
         return result;
     }
 
+    template<typename T>
+    static T calculateTrapizoidalArea(const Eigen::VectorX<T> &vec) {
+
+        QVector<QPair<int, T>> vecPairs;
+
+        for (int i = 0; i < vec.size(); i++) {
+
+            const T currentIntensity = vec.coeff(i);
+
+            if (MathUtils::tZero(currentIntensity)) {
+                continue;
+            }
+
+            vecPairs.push_back({i, currentIntensity});
+        }
+
+        if (vecPairs.size() < 2) {
+            return static_cast<T>(0.0);
+        }
+
+        T area = 0.0;
+        for (int i = 0; i < vecPairs.size() - 1; i++) {
+            const QPair<int, T> &p1 = vecPairs[i];
+            const QPair<int, T> &p2 = vecPairs[i + 1];
+            area += (p1.second + p2.second) * (p2.first - p1.first) / 2.0;
+        }
+
+        return area;
+    }
+
 };
 
 #endif //EIGENUTILS_H

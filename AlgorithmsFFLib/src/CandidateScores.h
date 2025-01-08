@@ -196,6 +196,13 @@ enum Features {
     IonsFoundFractionFull,
     CosineSimFullTheoXIonsFoundFractionFull,
 
+    ImPeakCount,
+    ImAreaLog10,
+    ImAreaRatioTop2,
+    ImIndexMax,
+    ImPeakLength,
+
+
     // MzFoundMean1PPM,
     // MzFoundMean2PPM,
     // MzFoundMean3PPM,
@@ -291,6 +298,11 @@ public:
     ScanTime scanTimeStart = -1.0;
     ScanTime scanTimeEnd = -1.0;
     ScanTime scanTimePredicted = -1.0;
+
+    IonMobilityIndex ionMobilityIndexPredicted = -1;
+    IonMobilityIndex ionMobilityIndex = -1;
+    IonMobilityIndex ionMobilityIndexStart = -1;
+    IonMobilityIndex ionMobilityIndexEnd = -1;
 
     double classifierScore = -1.0;
     double discriminantScore = -1.0;

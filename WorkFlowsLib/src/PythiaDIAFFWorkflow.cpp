@@ -12,6 +12,7 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
+#include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
@@ -559,7 +560,7 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
 
     if (msReaderPointerAcc->ptr->isTIMS()) {
-        e = PythiaDIAFFWorkflowSharedMethods::assignIonMobilityValues(
+        e = IonMobilitron::assignIonMobilityValues(
             m_pythiaParameters,
             &m_candidateScorePairs,
             &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS

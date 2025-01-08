@@ -7,6 +7,7 @@
 #include "ErrorUtils.h"
 #include "DiscriminantScoretron.h"
 #include "FDRCLassifierNeuralNet.h"
+#include "IonMobilitron.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
 #include "ParallelUtils.h"
@@ -179,7 +180,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 ); ree
 
         if (m_msReaderPointerAcc->ptr->isTIMS()) {
-            e = PythiaDIAFFWorkflowSharedMethods::assignIonMobilityValues(
+            e = IonMobilitron::assignIonMobilityValues(
                 *m_pythiaParameters,
                 &m_candidateScorePairs,
                 m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
