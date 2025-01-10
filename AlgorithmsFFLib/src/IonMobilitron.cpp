@@ -334,8 +334,8 @@ namespace {
 
             const int imPeakLen = imPeakIntegrationIndexes.second - imPeakIntegrationIndexes.first + 1;
 
-            cs->featuresArray[Features::ImPeakCount] = imPeakCount;
-            cs->featuresArray[Features::ImPeakLength] = imPeakLen < 2 ? -1 : imPeakLen;
+            cs->featuresArray[Features::ImPeakCount] = static_cast<float>(imPeakCount);
+            cs->featuresArray[Features::ImPeakLength] = imPeakLen < 2 ? -1 : static_cast<float>(imPeakLen);
             cs->featuresArray[Features::ImAreaLog10] = std::log10(imArea);
             cs->featuresArray[Features::ImAreaRatioTop2] = imAreaRatioTop2;
             cs->ionMobilityIndex = imIndexMax;
@@ -371,7 +371,6 @@ Err IonMobilitron::assignIonMobilityValues(
         &kernel
         ); ree;
     const Eigen::VectorX<float> kernelVec(kernel);
-
 
     QVector<CandidateScores*> candidateScoresPntrs;
     for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &csp : *candidateScorePairs) {

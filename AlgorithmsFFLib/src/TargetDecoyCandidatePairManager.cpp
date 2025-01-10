@@ -281,6 +281,7 @@ namespace {
                 flrr.precursorCharge,
                 static_cast<float>(flrr.mass),
                 static_cast<float>(flrr.iRT),
+                static_cast<float>(flrr.iM),
                 flrr.mzVals.size(),
                 decoyMassDelta
         );

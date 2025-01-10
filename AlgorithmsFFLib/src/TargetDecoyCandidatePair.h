@@ -32,6 +32,7 @@ public:
             int charge,
             float mass,
             float iRt,
+            float iIM,
             int totalFramentCount,
             float decoyMassDelta
             );
@@ -95,6 +96,7 @@ public:
     * @return float representing the iRT value.
     */
     [[nodiscard]] float iRt() const;
+    [[nodiscard]] float iIM() const;
 
 
     /**
@@ -122,6 +124,7 @@ private:
     int m_charge;
     float m_mass;
     float m_iRt;
+    float m_iIM;
     int m_totalFragmentCount;
     float m_decoyMassDelta;
 

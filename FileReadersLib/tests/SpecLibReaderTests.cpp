@@ -27,7 +27,7 @@ private Q_SLOTS:
 
 void SpecLibReaderTests::getFragLibReaerRowsTest() {
 
-    QSKIP("Build a test for this when a small lib file is found");
+    // QSKIP("Build a test for this when a small lib file is found");
 
     ERR_INIT
 
@@ -55,6 +55,12 @@ void SpecLibReaderTests::getFragLibReaerRowsTest() {
     for (int i = 0; i < fragLibReaderRows.size(); i++) {
         QCOMPARE(fragLibReaderRows.at(i).peptideSequenceChargeKey, fragLibReaderRowsFF.at(i).peptideSequenceChargeKey);
         QCOMPARE(fragLibReaderRows.at(i).intensityVals, fragLibReaderRowsFF.at(i).intensityVals);
+        // if (fragLibReaderRows.at(i).ionLabels != fragLibReaderRowsFF.at(i).ionLabels) {
+        //     qDebug() << fragLibReaderRows.at(i).ionLabels << fragLibReaderRowsFF.at(i).ionLabels;
+        //     qDebug() << fragLibReaderRows.at(i).intensityVals << fragLibReaderRowsFF.at(i).intensityVals;
+        //
+        // }
+
 
     }
 

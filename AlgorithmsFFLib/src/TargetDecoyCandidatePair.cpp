@@ -23,6 +23,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
         int charge,
         float mass,
         float iRt,
+        float iIM,
         int totalFramentCount,
         float decoyMassDelta
 )
@@ -33,6 +34,7 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 , m_charge(charge)
 , m_mass(mass)
 , m_iRt(iRt)
+, m_iIM(iIM)
 , m_totalFragmentCount(totalFramentCount)
 , m_decoyMassDelta(decoyMassDelta)
 {}
@@ -75,6 +77,10 @@ float TargetDecoyCandidatePair::mass() const {
 
 float TargetDecoyCandidatePair::iRt() const {
     return m_iRt;
+}
+
+float TargetDecoyCandidatePair::iIM() const {
+    return m_iIM;
 }
 
 int TargetDecoyCandidatePair::totalFragmentCount() const {
