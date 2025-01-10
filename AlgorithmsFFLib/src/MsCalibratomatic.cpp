@@ -34,7 +34,7 @@ namespace {
         ERR_INIT
         e = ErrorUtils::isNotEmpty(data); ree;
 
-        const double testFraction = 0.2;
+        constexpr double testFraction = 0.2;
         const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<XVal, YVal>> trainingData;
@@ -93,7 +93,7 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
             std::back_inserter(dataIRT),
             insertLogicIRT
             );
-    
+
     double stDevScanTimeDiff;
     e = generateMetricsIRTtoScanTime(
         dataIRT,

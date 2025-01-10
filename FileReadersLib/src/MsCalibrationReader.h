@@ -26,7 +26,6 @@ namespace MsCalibarationReaderNamespace {
     const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
     const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
     const QString INTZ_FND_VEC = QStringLiteral("intensityFoundMaxVec");
-    const QString ION_MOBILITY_INDEX = QStringLiteral("ionMobilityIndex");
 
     const QStringList keysToCheck = {
             PEP_STR_MODS,
@@ -37,8 +36,7 @@ namespace MsCalibarationReaderNamespace {
             MZ_SRCH_V,
             MZ_FND_MEAN_V,
             MZ_FND_STDEV_V,
-            INTZ_FND_VEC,
-            ION_MOBILITY_INDEX
+            INTZ_FND_VEC
     };
 }
 
@@ -51,8 +49,6 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
     IRT iRTPredicted = -1.0;
     ScanTime scanTime = -1.0;
     ScanNumber scanNumber = -1;
-    float iImPredicted = -1.0;
-    IonMobilityIndex ionMobilityIndex = -1;
     QVector<float> mzSearchedVec;
     QVector<float> mzFoundMeanVec;
     QVector<float> mzFoundStDevVec;
@@ -65,10 +61,8 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
         return {
                 {PEP_STR_MODS, QVariant(peptideStringWithMods)},
                 {IRT_PRED, QVariant(iRTPredicted)},
-                {IIM_PRED, QVariant(iImPredicted)},
                 {SCAN_TIME, QVariant(scanTime)},
                 {SCAN_NUMBER, QVariant(scanNumber)},
-                {ION_MOBILITY_INDEX, QVariant(ionMobilityIndex)},
                 {MZ_SRCH_V, QVariant(qVectorToQByteArray(mzSearchedVec))},
                 {MZ_FND_MEAN_V, QVariant(qVectorToQByteArray(mzFoundMeanVec))},
                 {MZ_FND_STDEV_V, QVariant(qVectorToQByteArray(mzFoundStDevVec))},
@@ -97,10 +91,8 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
 
         peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_MODS).toString());
         iRTPredicted = dataMap.value(IRT_PRED).toFloat();
-        iImPredicted = dataMap.value(IIM_PRED).toFloat();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
         scanNumber = dataMap.value(SCAN_NUMBER).toInt();
-        ionMobilityIndex = dataMap.value(ION_MOBILITY_INDEX).toInt();
         mzSearchedVec = bytesArrayToQVector<float>(dataMap.value(MZ_SRCH_V).toByteArray());
         mzFoundMeanVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_STDEV_V).toByteArray());

@@ -20,7 +20,7 @@ public:
 
     static Err assignIonMobilityValues(
         const PythiaParameters &pythiaParameters,
-        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairs,
+        const QVector<CandidateScores*> &candidateScorePairs,
         QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
     );
 

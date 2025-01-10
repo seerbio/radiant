@@ -349,13 +349,15 @@ namespace {
 }//namespace
 Err IonMobilitron::assignIonMobilityValues(
     const PythiaParameters &pythiaParameters,
-    QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScorePairs,
+    const QVector<CandidateScores*> &_candidateScoresPntrs,
     QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
     ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isFalse(candidateScorePairs->isEmpty()); ree;
+    e = ErrorUtils::isNotEmpty(_candidateScoresPntrs); ree;
+
+    QVector<CandidateScores*> candidateScoresPntrs = _candidateScoresPntrs;
 
     constexpr int filterLength = 3;
     constexpr int order = 1;
@@ -372,10 +374,6 @@ Err IonMobilitron::assignIonMobilityValues(
         ); ree;
     const Eigen::VectorX<float> kernelVec(kernel);
 
-    QVector<CandidateScores*> candidateScoresPntrs;
-    for (QPair<CandidateScoresTarget, CandidateScoresDecoy> &csp : *candidateScorePairs) {
-        candidateScoresPntrs.append({&csp.first, &csp.second});
-    }
     std::sort(
         candidateScoresPntrs.begin(),
         candidateScoresPntrs.end(),

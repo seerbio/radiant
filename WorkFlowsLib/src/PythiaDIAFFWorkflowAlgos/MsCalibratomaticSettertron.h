@@ -30,8 +30,7 @@ public:
         PythiaParameters *pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
-        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
-        QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron
         );
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
@@ -57,7 +56,6 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TargetDecoyCandidatePairManager *m_targetDecoyCandidatePairManager;
     TargetDecoyCandidatePairScoretron2 *m_targetDecoyCandidatePairScoretron;
-    QMap<ScanNumber, FeatureFinderHillBuilder*> *m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
     PythiaParameters *m_pythiaParameters;
 
     MsCalibratomatic m_msCalibratomatic;

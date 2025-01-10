@@ -457,9 +457,6 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
 
-            row.iImPredicted = cs->targetDecoyCandidatePair->iIM();
-            row.ionMobilityIndex = cs->ionMobilityIndex;
-
             if (msLevel == MSLevelEnum::MS2) {
 
                 const QVector<MS2Ion> ms2Ions = cs->isDecoy
