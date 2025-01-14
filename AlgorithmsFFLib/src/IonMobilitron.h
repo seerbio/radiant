@@ -11,12 +11,26 @@
 #include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "PythiaParameterReader.h"
+#include "XYMappermatic.h"
 
 using namespace Error;
+
+using IMPredicted = double;
+using IMEmpirical = double;
 
 class ALGORITHMSFFLIB_EXPORTS IonMobilitron {
 
 public:
+
+    IonMobilitron() = default;
+    ~IonMobilitron() = default;
+
+    Err init(const QVector<QPair<IMPredicted, IMEmpirical>> &imPredVsImEmpValuesSortedDiscScoreHiLo);
+
+    Err predictIonMobilityIndex(
+        float iIM,
+        int *predictedIonMobilityIndex
+        ) const;
 
     static Err assignIonMobilityValues(
         const PythiaParameters &pythiaParameters,
@@ -24,8 +38,9 @@ public:
         QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
     );
 
-
 private:
+
+    XYMappermatic m_iIMtoIonMobilityIndexMapper;
 
 
 

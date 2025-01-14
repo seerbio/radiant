@@ -81,7 +81,6 @@ private:
     double m_scanTimeStd;
 
     XYMappermatic m_iRTtoScanTimeMapper;
-    XYMappermatic m_iIMtoScanTimeMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;
 

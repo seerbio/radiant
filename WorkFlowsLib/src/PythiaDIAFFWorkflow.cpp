@@ -273,6 +273,99 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildIonMobilityTrainingSet(
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+        QVector<CandidateScores*> *candidateScoresIMTraining
+        ) {
+
+        ERR_INIT
+
+        constexpr int trainingCount = 500;
+
+        QVector<CandidateScores*> candidateScoresTargetsAndDecoysSorted = candidateScoresTargetsAndDecoys;
+        std::sort(
+            candidateScoresTargetsAndDecoysSorted.rbegin(),
+            candidateScoresTargetsAndDecoysSorted.rend(),
+            [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+            );
+
+        candidateScoresIMTraining->reserve(trainingCount);
+
+        int counter = 0;
+        for (CandidateScores *cs : candidateScoresTargetsAndDecoysSorted) {
+
+            if (cs->ionMobilityIndex < 0) {
+                continue;
+            }
+
+            candidateScoresIMTraining->push_back(cs);
+
+            if (counter++ > trainingCount) {
+                break;
+            }
+        }
+
+        e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
+
+        std::sort(
+            candidateScoresIMTraining->rbegin(),
+            candidateScoresIMTraining->rend(),
+            [](const CandidateScores *l, const CandidateScores *r) {
+                return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
+            });
+
+        candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
+
+        std::sort(
+            candidateScoresIMTraining->rbegin(),
+            candidateScoresIMTraining->rend(),
+            [](const CandidateScores *l, const CandidateScores *r) {
+                return l->discriminantScore < r->discriminantScore;
+            });
+
+        ERR_RETURN
+    }
+
+    Err predictIonMobilityIndexes(const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys) {
+
+        ERR_INIT
+
+        QVector<CandidateScores*> candidateScoresIMTraining;
+        e = buildIonMobilityTrainingSet(
+            candidateScoresTargetsAndDecoys,
+            &candidateScoresIMTraining
+            ); ree;
+
+        QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
+        std::transform(
+            candidateScoresIMTraining.begin(),
+            candidateScoresIMTraining.end(),
+            std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
+            [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
+            );
+
+        IonMobilitron ionMobilitron;
+        e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
+
+        for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
+
+            if (cs->ionMobilityIndex < 0) {
+                continue;
+            }
+
+            e = ionMobilitron.predictIonMobilityIndex(
+                cs->targetDecoyCandidatePair->iIM(),
+                &cs->ionMobilityIndexPredicted
+                ); ree;
+
+            cs->featuresArray[Features::ImTheoDiff]
+                    = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
+        }
+
+        ERR_RETURN
+
+    }
+
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
         MsReaderPointerAcc *msReaderPointerAcc
@@ -322,8 +415,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
-            &m_targetDecoyCandidatePairScoretron,
-            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            &m_targetDecoyCandidatePairScoretron
             ); ree;
         e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
     }
@@ -371,6 +463,22 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         m_pythiaParameters.threadCount,
         &candidateScoresTargetsAndDecoys
         ); ree;
+
+    if (msReaderPointerAcc.ptr->isTIMS()) {
+
+        e = IonMobilitron::assignIonMobilityValues(
+            m_pythiaParameters,
+            candidateScoresTargetsAndDecoys,
+            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+            ); ree;
+
+
+
+        e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
+
+
+
+    }
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
@@ -558,14 +666,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             &m_candidateScorePairs
             ); ree
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
-
-    if (msReaderPointerAcc->ptr->isTIMS()) {
-        e = IonMobilitron::assignIonMobilityValues(
-            m_pythiaParameters,
-            &m_candidateScorePairs,
-            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-            ); ree;
-    }
 
     QVector<CandidateScores*> candidateScoresVecBatchPntrs;
     QMap<int, int> fdrVsCounts;

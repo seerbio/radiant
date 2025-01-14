@@ -201,6 +201,7 @@ enum Features {
     ImAreaRatioTop2,
     ImIndexMax,
     ImPeakLength,
+    ImTheoDiff,
 
 
     // MzFoundMean1PPM,

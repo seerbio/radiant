@@ -12,6 +12,75 @@
 #include "ObjectCSVWriters.h"
 
 
+Err IonMobilitron::init(const QVector<QPair<IMPredicted, IMEmpirical>> &imPredVsImEmpValuesSortedDiscScoreHiLo) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
+
+    const QVector<int> heads = {400, 350, 300, 250, 200, 150, 100, 50};
+
+    QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLoCopy = imPredVsImEmpValuesSortedDiscScoreHiLo;
+
+    double bestPValue = std::numeric_limits<double>::max();
+    int bestHead = 0;
+    for (int head : heads) {
+        imPredVsImEmpValuesSortedDiscScoreHiLoCopy.resize(head);
+
+        double slope;
+        double intercept;
+        double stdError;
+        double pValue;
+        e = EigenUtils::linearRegression(
+            imPredVsImEmpValuesSortedDiscScoreHiLoCopy,
+            &slope,
+            &intercept,
+            &stdError,
+            &pValue
+            ); ree;
+
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "IonMobilitron init optimiztation:"
+        << "head count" << head
+        << "| slope" << slope
+        << "| intercept" << intercept
+        << "| std_error" << stdError
+        << "| p_value" << pValue;
+
+        if (bestPValue > stdError && slope < 0.0) {
+            e = m_iIMtoIonMobilityIndexMapper.init(imPredVsImEmpValuesSortedDiscScoreHiLoCopy); ree;
+            bestPValue = stdError;
+            bestHead = head;
+            for (const QPair<IMPredicted, IMEmpirical> &pr : imPredVsImEmpValuesSortedDiscScoreHiLoCopy) {
+                qDebug() << "(" << pr.first << ", " << pr.second << ")";
+
+            }
+        }
+    }
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "Head count of" << bestHead << "chosen for IonMobilitron init";
+
+    ERR_RETURN
+}
+
+Err IonMobilitron::predictIonMobilityIndex(
+    float iIM,
+    int *predictedIonMobilityIndex
+    ) const {
+
+    ERR_INIT
+
+    double predictedScanTimeDouble;
+    e = m_iIMtoIonMobilityIndexMapper.predictY(static_cast<double>(iIM), &predictedScanTimeDouble); ree;
+    *predictedIonMobilityIndex = static_cast<int>(predictedScanTimeDouble);
+
+    ERR_RETURN
+}
+
+
 namespace {
 
     Err loadMatrix(
@@ -141,7 +210,8 @@ namespace {
         float numerator = 0.0f;
         float denominator = 0.0f;
 
-        const int peakLen = imPeakIntegrationIndexes.second - imPeakIntegrationIndexes.first + 1;
+        const int peakLen = imPeakIntegrationIndexes.first + (imPeakIntegrationIndexes.second - imPeakIntegrationIndexes.first + 1);
+
         for (int i = imPeakIntegrationIndexes.first; i < peakLen; i++) {
 
             const float intensity = imIntegrationVec.coeff(i);
@@ -355,6 +425,8 @@ Err IonMobilitron::assignIonMobilityValues(
 
     ERR_INIT
 
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "IonMobilitron::assignIonMobilityValues";
+
     e = ErrorUtils::isNotEmpty(_candidateScoresPntrs); ree;
 
     QVector<CandidateScores*> candidateScoresPntrs = _candidateScoresPntrs;
@@ -413,6 +485,8 @@ Err IonMobilitron::assignIonMobilityValues(
             ); ree;
     }
 #endif
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "IonMobilitron::assignIonMobilityValues finished";
 
     ERR_RETURN
 }

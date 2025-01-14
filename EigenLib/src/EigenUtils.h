@@ -1131,6 +1131,48 @@ public:
         return area;
     }
 
+    template<typename T>
+    static Err linearRegression(
+        const QVector<QPair<T, T>> &data,
+        T *slope,
+        T *intercept,
+        T *stdError,
+        T *pValue
+        ) {
+
+        ERR_INIT
+
+        constexpr int minPointCount = 2;
+        e = ErrorUtils::isTrue(data.size() >= minPointCount); ree;
+
+        QPair<QVector<T>, QVector<T>> XValuesVsYValues = ParallelUtils::unZip(data);
+
+        Eigen::VectorX<T> x = EigenUtils::convertQVectorToEigenVector(XValuesVsYValues.first);
+        Eigen::VectorX<T> y = EigenUtils::convertQVectorToEigenVector(XValuesVsYValues.second);
+
+        T xMean = x.mean();
+        T yMean = y.mean();
+
+        T numerator = (x.array() - xMean).matrix().transpose() * (y.array() - yMean).matrix();
+        T denominator = (x.array() - xMean).square().sum();
+        *slope = numerator / denominator;
+        *intercept = yMean - *slope * xMean;
+
+        Eigen::VectorX<T> yPred = x.array() * *slope + *intercept;
+        Eigen::VectorX<T> residuals = y.array() - yPred.array();
+        T residualSumOfSquares = residuals.squaredNorm();
+        T stdDevResiduals = std::sqrt(residualSumOfSquares / (data.size() - 2)); // Standard error
+
+        *stdError = stdDevResiduals / std::sqrt((x.array() - xMean).square().sum());
+
+        T tStat = *slope / *stdError; // t-statistic
+
+        *pValue = (1 - std::erf(std::abs(tStat) / std::sqrt(2.0))); // Simplified approximation for p-value
+
+        ERR_RETURN
+    }
+
+
 };
 
 #endif //EIGENUTILS_H
