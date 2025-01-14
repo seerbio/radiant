@@ -41,6 +41,7 @@ void TargetDecoyCandidatePairTests::gettersTest() {
             charge,
             mass,
             iRt,
+            iRt,
             totalFramentCount,
             0.0
             );
