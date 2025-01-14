@@ -315,9 +315,9 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 BIonSeriesTheoCount,
                 BIonSeriesTheoMean,
                 BIonSeriesTheoStd,
-                // BIonSeriesMaxFoundToTheoFraction,
-                // YIonSeriesCountRatio,
-                // BIonSeriesCountRatio,
+                BIonSeriesMaxFoundToTheoFraction,
+                YIonSeriesCountRatio,
+                BIonSeriesCountRatio,
 
                 // CosineSimFullTheo,
                 IonsFoundFractionFull,
