@@ -329,10 +329,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::FoundPercent,
                 Features::MzPPMStd,
 
-                ImPeakLength,
-                ImAreaRatioTop2,
-                ImAreaLog10,
-                ImTheoDiff
+                // ImPeakLength,
+                // ImAreaRatioTop2,
+                // ImAreaLog10,
+                // ImTheoDiff
 
             };
             const QVector<float> nnVec = candidateScores->selectFeaturesArrayFeatures(nnFeatures);

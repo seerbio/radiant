@@ -780,6 +780,19 @@ namespace {
             yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
 
+
+// #define WRITENN_NORM
+#ifdef WRITENN_NORM
+        QFile file("nn_train_data.csv");
+        if (!file.open(QIODevice::WriteOnly)) {
+            rrr(eFileError)
+        }
+        QDataStream out(&file);
+        out << xData;
+        out << yData;
+        file.close();
+#endif
+
         constexpr int baggingSize = 4;
         constexpr float learningRate = 0.003;
         constexpr int epochs = 3; //TODO make this settable
