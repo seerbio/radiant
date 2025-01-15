@@ -73,6 +73,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters.reannotate = true;
     // m_pythiaParameters.ionsSharedToReject = 4;
     m_pythiaParameters.skipScanCount = 1;
+    // m_pythiaParameters.filterLengthIntegration = 7;
 
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
@@ -399,10 +400,10 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
-    if (msReaderPointerAcc.ptr->isTIMS()) {
-        e = buildMs1FeaturesforTIMS(&msReaderPointerAcc); ree;
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished";
-    }
+    // if (msReaderPointerAcc.ptr->isTIMS()) {
+    //     e = buildMs1FeaturesforTIMS(&msReaderPointerAcc); ree;
+    //     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished";
+    // }
 
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
@@ -464,21 +465,16 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoys
         ); ree;
 
-    if (msReaderPointerAcc.ptr->isTIMS()) {
-
-        e = IonMobilitron::assignIonMobilityValues(
-            m_pythiaParameters,
-            candidateScoresTargetsAndDecoys,
-            &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-            ); ree;
-
-
-
-        e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
-
-
-
-    }
+    // if (msReaderPointerAcc.ptr->isTIMS()) {
+    //
+    //     e = IonMobilitron::assignIonMobilityValues(
+    //         m_pythiaParameters,
+    //         candidateScoresTargetsAndDecoys,
+    //         &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+    //         ); ree;
+    //
+    //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
+    // }
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
@@ -748,7 +744,13 @@ namespace {
             CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.candidateScores = cs;
-            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+
+// #define WRITE_KARNNN_NORM_TO_FILE
+#ifdef WRITE_KARNNN_NORM_TO_FILE
+            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(cs);
+#else
+        karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+#endif
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
@@ -1004,6 +1006,17 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     file.close();
 #endif
 
+// #define WRITE_CANDIDATES_TO_FILE
+#ifdef WRITE_CANDIDATES_TO_FILE
+    QVector<CandidateScoresReaderRow> candidateScoresReaderRows;
+    for (const CandidateScores *cs : candidateScoresTargetsAndDecoysNeuralNet) {
+        CandidateScoresReaderRow csrr = CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);
+        candidateScoresReaderRows.push_back(csrr);
+    }
+
+    e = ParquetReader::write(candidateScoresReaderRows, "candidates.parquet"); ree;
+#endif
+
     candidateScoreClassifier->clear();
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
@@ -1017,6 +1030,33 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         karnnNNTargetsNorm,
         &karnnNNTargetsNormTrain
         ); ree;
+
+#ifdef WRITE_KARNNN_NORM_TO_FILE
+
+    e = updateProteinGroupAnnotation(
+        m_fastaUri,
+        0,
+        &candidateScoresTargetsAndDecoysNeuralNet
+        ); ree;
+
+    QFile file("kareNN.dat");
+    if (!file.open(QIODevice::WriteOnly)) {
+        rrr(eFileError);
+    }
+
+    QDataStream out(&file);
+    out << karnnNNTargetsNormTrain.size();
+
+    for (const KarnnNNTarget &kt : karnnNNTargetsNormTrain) {
+        float label =kt.candidateScores->isDecoy ? 1.0 : 0.0;
+        out << kt.scoreVecNormalized;
+        out << label;
+        out << kt.candidateScores->proteinGroup;
+    }
+    file.close();
+
+
+#endif
 
     const int totalCount = karnnNNTargetsNormTrain.size();
     const int decoyCount = static_cast<int>(std::count_if(
@@ -1152,25 +1192,29 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     for (CandidateScores *cs : *candidateScores) {
         counter++;
 
-        const QString entrapString = QStringLiteral("_HUMAN");
-        if (!cs->proteinGroup.contains(entrapString) && !cs->isDecoy && !cs->proteinGroup.isEmpty()) {
-            entrap++;
-        }
-
-        if (cs->isDecoy) {
-            decoys++;
-        }
         if (decoys/static_cast<double>(counter) >= 0.01) {
             break;
         }
 
+        if (cs->isDecoy) {
+            decoys++;
+            continue;
+        }
+
+        if (!cs->proteinGroup.contains("_HUMAN")
+            && !cs->isDecoy
+            && cs->proteinGroup.contains("_ARATH")
+            && !cs->proteinGroup.isEmpty()
+            ) {
+            entrap++;
+        }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "Alt:" << targetCountBelowFDRThresholdOnePercent
             << "| Counter:" << counter
             << "| Decoys:" <<  decoys
             << "| Entrap:" << entrap
-            << "| Entrap%" << entrap / (double)counter;
+            << "| Entrap%" << entrap / static_cast<double>(counter);
 #endif
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
@@ -1204,8 +1248,10 @@ void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidate
                 decoyCounter++;
             }
 
-            constexpr double fdrThreshold = 0.5;
-            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
+            if (
+                constexpr double fdrThreshold = 0.5;
+                decoyCounter / static_cast<double>(counter) >= fdrThreshold
+                ) {
                 break;
             }
         }

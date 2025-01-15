@@ -700,9 +700,9 @@ namespace {
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
-        integrationVecLocal,
-        kernelIntegration
-        );
+            integrationVecLocal,
+            kernelIntegration
+            );
 
         ERR_RETURN
     }
@@ -2147,7 +2147,7 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
 
-    const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
+    const float monoIsotopeMz = targetDecoyCandidatePair->mz(candidateScores->isDecoy);
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);

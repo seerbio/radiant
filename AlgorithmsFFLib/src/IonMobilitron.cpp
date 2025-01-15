@@ -52,10 +52,10 @@ Err IonMobilitron::init(const QVector<QPair<IMPredicted, IMEmpirical>> &imPredVs
             e = m_iIMtoIonMobilityIndexMapper.init(imPredVsImEmpValuesSortedDiscScoreHiLoCopy); ree;
             bestPValue = stdError;
             bestHead = head;
-            for (const QPair<IMPredicted, IMEmpirical> &pr : imPredVsImEmpValuesSortedDiscScoreHiLoCopy) {
-                qDebug() << "(" << pr.first << ", " << pr.second << ")";
-
-            }
+            // for (const QPair<IMPredicted, IMEmpirical> &pr : imPredVsImEmpValuesSortedDiscScoreHiLoCopy) {
+            //     qDebug() << "(" << pr.first << ", " << pr.second << ")";
+            //
+            // }
         }
     }
 
@@ -340,7 +340,7 @@ namespace {
 
             const FeatureFinderHillBuilder *ffhb = scanNumberVsFeatureFinderHillBuildersPntrsTIMS->value(ms1ScanNumberClosest);
 
-            const float mzMonoIso = cs->targetDecoyCandidatePair->mz(false);
+            const float mzMonoIso = cs->targetDecoyCandidatePair->mz(cs->isDecoy);
             const float massToleranceMonoIso = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
             QVector<FeatureFinderHill*> featureFinderHillsMs1MonoIso;
             e = ffhb->getHills(

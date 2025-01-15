@@ -319,7 +319,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 YIonSeriesCountRatio,
                 BIonSeriesCountRatio,
 
-                // CosineSimFullTheo,
+                CosineSimFullTheo,
                 IonsFoundFractionFull,
                 CosineSimFullTheoXIonsFoundFractionFull,
 
@@ -378,6 +378,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         const QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
         return vec;
     }
+
+QVector<float> DiscriminantScoretron::scoreVectorLogic(CandidateScores *candidateScores) {
+    return candidateScores->featuresArray;
+}
 
 QVector<float> DiscriminantScoretron::defaultWeights(
     bool useExtendedScores,

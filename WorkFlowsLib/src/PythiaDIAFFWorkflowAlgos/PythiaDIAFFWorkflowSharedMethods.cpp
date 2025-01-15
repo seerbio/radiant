@@ -476,7 +476,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(Features::IntensityFoundMax1, top6);
             }
             else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(false)};
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
                 row.mzFoundMeanVec = {cs->featuresArray[Features::Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Features::Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Features::Ms1IntensityFound100]};

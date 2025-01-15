@@ -322,7 +322,7 @@ public:
     */
     void initFeaturesArray();
 
-    QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures);
+    QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures) const;
 
     static QVector<float> selectFeaturesArrayFeatures(
             const QVector<float> &featureArray,
