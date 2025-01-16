@@ -262,6 +262,21 @@ public:
         return eNoError;
     }
 
+    template <typename T, typename U>
+    static Err isWithinRange(
+            const T &value,
+            std::vector<U> &vec,
+            Err e = eError
+            ){
+
+            if (value < 0 || value >= vec.size()) {
+                qCritical() << value << "vs." << vec.size();
+                rrr(e);
+            }
+
+            return eNoError;
+        }
+
     /*!
     * @brief  Checks if a given value is above a specified threshold.
     * @tparam T: The datatype of the value and the threshold. The datatype should be suitable for comparison operations and should support the MathUtils::tSame() function if 'includeThreshold' is set to 'IncludeThreshold'.

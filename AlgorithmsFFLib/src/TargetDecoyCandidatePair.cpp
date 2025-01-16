@@ -35,6 +35,13 @@ TargetDecoyCandidatePair::TargetDecoyCandidatePair(
 , m_totalFragmentCount(totalFramentCount)
 {}
 
+void TargetDecoyCandidatePair::setProteinGroups(const QString &proteinGroups) {
+    m_proteinGroups = proteinGroups;
+}
+
+QString TargetDecoyCandidatePair::proteinGroups() const {
+    return m_proteinGroups;
+}
 
 PeptideString TargetDecoyCandidatePair::peptideString() const {
     return m_peptideString;
