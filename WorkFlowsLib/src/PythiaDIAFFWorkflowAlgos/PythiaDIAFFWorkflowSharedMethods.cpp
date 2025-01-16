@@ -413,6 +413,12 @@ namespace {
 
     void filterDuplicateCandidateScoresByDiscriminantScore(QVector<CandidateScores*> *candidateScores) {
 
+        std::sort(
+            candidateScores->rbegin(),
+            candidateScores->rend(),
+            [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+            );
+
         QMap<QString, CandidateScores*> keyVsCandidatesFoundBest;
 
         for (CandidateScores *cs : *candidateScores) {

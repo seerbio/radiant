@@ -131,7 +131,7 @@ private:
     float m_iIM;
     int m_totalFragmentCount;
     QString m_proteinGroups;
-
+    float m_decoyMassDelta;
 };
 
 
