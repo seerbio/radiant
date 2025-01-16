@@ -166,10 +166,15 @@ public:
 
 		for (int i = 0; i < entries.size(); i++) {
 
+			e = ErrorUtils::isWithinRange(i, entries); ree;
+
 			const auto &[target, decoy, entryFlags, proteotypic, name, pidIndex, pgQValue, ptmQvalue, siteConf] = entries.at(i);
 			const auto &p = precursors.at(i);
 
 			FragLibReaderRow flrr;
+
+			const QString proteinGroups = QString::fromStdString(proteinIds.at(entries.at(i).pidIndex).names);
+			flrr.proteinGroups = proteinGroups;
 
 			QString specLibPeptide = QString::fromStdString(p);
 			const QChar specLibPeptideCharge = specLibPeptide.back();

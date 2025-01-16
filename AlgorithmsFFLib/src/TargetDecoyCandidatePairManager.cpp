@@ -285,6 +285,7 @@ namespace {
                 flrr.mzVals.size(),
                 decoyMassDelta
         );
+        targetDecoyCandidatePair.setProteinGroups(flrr.proteinGroups);
 
         return {e, targetDecoyCandidatePair};
     }

@@ -468,6 +468,7 @@ namespace CandidateScoresReaderRowNamespace {
     // const QString MZ_FND_STDEV_12 = QStringLiteral("MzFoundStDev12");
     const QString TARG_KEY = QStringLiteral("TargetKey");
     const QString PEP_STR_W_MODS = QStringLiteral("PeptideStringWithMods");
+    const QString PEP_STR_W_MODS_OG = QStringLiteral("PeptideStringWithModsOG");
     const QString PROT_GRP = QStringLiteral("ProteinGroup");
     const QString IS_DECOY = QStringLiteral("IsDecoy");
     const QString SCAN_NUM = QStringLiteral("ScanNumber");
@@ -681,6 +682,7 @@ namespace CandidateScoresReaderRowNamespace {
             // MZ_FND_STDEV_12,
             TARG_KEY,
             PEP_STR_W_MODS,
+            PEP_STR_W_MODS_OG,
             PROT_GRP,
             IS_DECOY,
             SCAN_NUM,
@@ -885,6 +887,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
     QString targetKey;
     PeptideStringWithMods peptideStringWithMods;
+    PeptideStringWithMods peptideStringWithModsOG;
     QString proteinGroup;
     bool isDecoy = false;
     ScanNumber scanNumber = -1;
@@ -1116,6 +1119,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         targetKey = dataMap.value(TARG_KEY).toString();
         peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS).toString());
+        peptideStringWithModsOG = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS_OG).toString());
         proteinGroup = dataMap.value(PROT_GRP).toString();
         isDecoy = dataMap.value(IS_DECOY).toBool();
         scanNumber = dataMap.value(SCAN_NUM).toInt();
@@ -1322,6 +1326,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 // {MZ_FND_STDEV_12, QVariant(mzFoundStDev12)},
                 {TARG_KEY, QVariant(targetKey)},
                 {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
+                {PEP_STR_W_MODS_OG, QVariant(peptideStringWithModsOG)},
                 {PROT_GRP, QVariant(proteinGroup)},
                 {IS_DECOY, QVariant(isDecoy)},
                 {SCAN_NUM, QVariant(scanNumber)},
@@ -1404,6 +1409,14 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 // {MZ_SEARCHED_11, QVariant(mzSearched11)},
                 // {MZ_SEARCHED_12, QVariant(mzSearched12)},
         };
+    }
+
+    static QString addDecoyTag(const QString &proteinGroups) {
+        QStringList proteinGroupList = proteinGroups.split(S_GLOBAL_SETTINGS.SEPARATOR);
+        for (QString &s : proteinGroupList) {
+            s = "decoy_" + s;
+        }
+        return proteinGroupList.join(S_GLOBAL_SETTINGS.SEPARATOR);
     }
 
     static CandidateScoresReaderRow buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
@@ -1545,7 +1558,14 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
-        row.proteinGroup = candidateScores->proteinGroup;
+        row.peptideStringWithModsOG = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+
+        row.proteinGroup = candidateScores->proteinGroup.isEmpty()
+                         ? candidateScores->targetDecoyCandidatePair->proteinGroups()
+                         : candidateScores->proteinGroup;
+
+        row.proteinGroup = candidateScores->isDecoy ? addDecoyTag(row.proteinGroup) : row.proteinGroup;
+
         row.isDecoy = candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;

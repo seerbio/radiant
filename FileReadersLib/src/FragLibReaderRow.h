@@ -52,6 +52,7 @@ struct FILEREADERSLIB_EXPORTS FragLibReaderRow : public ParquetReaderInputBase {
     double iRT = -1.0;
     double iM = -1.0;
     int precursorCharge = -1; //TODO include charge as column in fragLib files.
+    QString proteinGroups;
 
     QMap<QString, QVariant> map() override {
 

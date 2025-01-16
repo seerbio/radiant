@@ -356,6 +356,18 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
             &parallelInputsTranched
             ); ree;
 
+    const auto filterEmptyTranchesTerminatorLogic = [](const QVector<TargetDecoyPairParallelInput> &input) {
+        return input.isEmpty();
+    };
+    const auto terminator = std::remove_if(
+        parallelInputsTranched.begin(),
+        parallelInputsTranched.end(),
+        filterEmptyTranchesTerminatorLogic
+        );
+    parallelInputsTranched.erase(terminator, parallelInputsTranched.end());
+
+    e = ErrorUtils::isNotEmpty(parallelInputsTranched); ree;
+
 #define PARALLEL_SCORE
 #ifdef PARALLEL_SCORE
     QFuture<QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>>> futures = QtConcurrent::mapped(
