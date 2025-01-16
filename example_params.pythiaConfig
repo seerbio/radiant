@@ -3,8 +3,9 @@
 [General]
 threadCount = 16
 verbosity = 0
-#useLazyLoading = false
-#writePythiaDIA = true
+useLazyLoading = false
+writePythiaDIA = true
+reannotate = false
 
 [LibraryParams]
 chargeStateMin = 1

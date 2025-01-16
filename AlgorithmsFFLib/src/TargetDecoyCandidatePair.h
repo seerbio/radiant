@@ -37,6 +37,10 @@ public:
 
     ~TargetDecoyCandidatePair() = default;
 
+    void setProteinGroups(const QString &proteinGroups);
+
+    [[nodiscard]] QString proteinGroups() const;
+
     /**
     * @brief Gets the peptide string without modifications for the target-decoy candidate pair.
     *
@@ -122,6 +126,7 @@ private:
     float m_mass;
     float m_iRt;
     int m_totalFragmentCount;
+    QString m_proteinGroups;
 
 };
 

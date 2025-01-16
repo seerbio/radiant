@@ -278,6 +278,7 @@ namespace {
                 static_cast<float>(flrr.iRT),
                 flrr.mzVals.size()
         );
+        targetDecoyCandidatePair.setProteinGroups(flrr.proteinGroups);
 
         return {e, targetDecoyCandidatePair};
     }
