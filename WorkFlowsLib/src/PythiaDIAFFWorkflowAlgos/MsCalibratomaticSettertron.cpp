@@ -186,7 +186,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             ); ree;
 
         constexpr int fdrKey = 5;
-        constexpr int fdrKeyMassCalMS2 = 2;
+        constexpr int fdrKeyMassCalMS2 = 5;
         constexpr int fdrKeyMassCalMS1 = 5;
 
         if (constexpr int minFDRCountForWeightsUpdate = 100; fdrVsCounts.value(fdrKey) >= minFDRCountForWeightsUpdate) {
@@ -386,7 +386,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
-        if (m_entered.value(cs->targetDecoyCandidatePair)) {
+        if (m_entered.value(cs->targetDecoyCandidatePair) || cs->isDecoy) {
             continue;
         }
 
