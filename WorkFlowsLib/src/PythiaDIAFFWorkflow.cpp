@@ -72,7 +72,6 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
     // m_pythiaParameters.ionsSharedToReject = 4;
-    m_pythiaParameters.skipScanCount = 1;
     // m_pythiaParameters.filterLengthIntegration = 7;
 
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
