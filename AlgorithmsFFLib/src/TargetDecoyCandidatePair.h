@@ -8,6 +8,7 @@
 #include "AlgorithmsFFLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibReaderRow.h"
 #include "GlobalSettings.h"
 #include "MS2Ion.h"
 #include "PeptideStringWithMods.h"
@@ -27,19 +28,14 @@ public:
 
     TargetDecoyCandidatePair(
             const PeptideStringWithMods &peptideStringWithMods,
-            const QVector<MS2Ion> &ms2IonsTarget,
-            const QVector<MS2Ion> &ms2IonsDecoy,
-            int charge,
-            float mass,
-            float iRt,
-            float iIM,
-            int totalFramentCount,
             float decoyMassDelta
             );
 
     ~TargetDecoyCandidatePair() = default;
 
-    void setProteinGroups(const QString &proteinGroups);
+    void setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr);
+
+
 
     [[nodiscard]] QString proteinGroups() const;
 
@@ -63,8 +59,6 @@ public:
     * @return QVector<MS2Ion> representing the MS2 ions for the target.
     */
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget() const;
-
-    [[nodiscard]] QVector<MS2Ion>* ms2IonsTargetRef();
 
     /**
     * @brief Gets the MS2 ions for the decoy of the target-decoy candidate pair.
@@ -110,28 +104,21 @@ public:
     */
     [[nodiscard]] int totalFragmentCount() const;
 
-    void mangleMs2IonsDecoy(); //TODO document
+    static void mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions); //TODO document
+    void decoySharesSequenceWithOtherTarget(bool val);
 
 
 private:
 
     void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
-    void setCharge(int charge);
 
 private:
 
-    PeptideString m_peptideString;
     PeptideStringWithMods m_peptideStringWithMods;
-    QVector<MS2Ion> m_ms2IonsTarget;
-    QVector<MS2Ion> m_ms2IonsDecoy;
-    QVector<float> m_targetDecoyFrequencyRatios;
-    int m_charge;
-    float m_mass;
-    float m_iRt;
-    float m_iIM;
-    int m_totalFragmentCount;
-    QString m_proteinGroups;
     float m_decoyMassDelta;
+
+    FragLibReaderRow *m_fragLibReaderRowPntr;
+    bool m_decoySharesSequenceWithOtherTarget;
 };
 
 

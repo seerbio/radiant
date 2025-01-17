@@ -135,6 +135,8 @@ private:
 
     QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
 
+    QVector<FragLibReaderRow> m_fragLibReaderRows;
+
 };
 
 

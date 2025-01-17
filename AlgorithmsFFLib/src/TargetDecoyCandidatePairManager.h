@@ -82,7 +82,7 @@ public:
 
 private:
 
-    Err buildTargetDecoyCandidatePairs(const QVector<FragLibReaderRow> &fragLibReaderRows);
+    Err buildTargetDecoyCandidatePairs(QVector<FragLibReaderRow> *fragLibReaderRows);
     Err filterDecoySequencesThatAreAlsoTargetSequences();
 
 private:

@@ -89,20 +89,19 @@ Err PythiaDIAFFWorkflow::init(
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             m_fragLibUri,
-            &fragLibReaderRows
+            &m_fragLibReaderRows
             ); ree;
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished reading library";
 
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
-            &fragLibReaderRows
+            &m_fragLibReaderRows
             ); ree;
 
-    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree //TODO HERHHERHEHREH
 
     ERR_RETURN
 }
