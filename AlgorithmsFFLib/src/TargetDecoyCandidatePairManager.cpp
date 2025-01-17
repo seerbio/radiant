@@ -217,20 +217,53 @@ Err TargetDecoyCandidatePairManager::filterDecoySequencesThatAreAlsoTargetSequen
     ERR_RETURN
 }
 
+namespace {
+
+    void logic(
+        PythiaParameters pythiaParameters,
+        QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs
+        ) {
+
+        const auto terminatorLogic = [pythiaParameters](TargetDecoyCandidatePair *tdcp) {
+            const int peptideStringsize = tdcp->peptideString().size();
+            return !(pythiaParameters.peptideLengthMin <= peptideStringsize && peptideStringsize <= pythiaParameters.peptideLengthMax);
+        };
+        const auto terminator = std::remove_if(
+            targetDecoyCandidatePairs.begin(),
+            targetDecoyCandidatePairs.end(),
+            terminatorLogic
+            );
+
+        targetDecoyCandidatePairs.erase(terminator, targetDecoyCandidatePairs.end());
+    }
+
+}//namespace
 Err TargetDecoyCandidatePairManager::getTargetDecoyCandidatePairPointers(QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePairsPntrs) {
 
     ERR_INIT
     e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairs); ree;
-
     for (TargetDecoyCandidatePair &t : m_targetDecoyCandidatePairs) {
-
-        const int peptideStringsize = t.peptideString().size();
-        if (!(m_pythiaParameters.peptideLengthMin <= peptideStringsize && peptideStringsize <= m_pythiaParameters.peptideLengthMax)) {
-            continue;
-        }
-
         targetDecoyCandidatePairsPntrs->push_back(&t);
     }
+
+    QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+        *targetDecoyCandidatePairsPntrs,
+        m_pythiaParameters.threadCount,
+        &targetDecoyCandidatePairsPntrsTranched
+        ); ree;
+
+    const auto binder = std::bind(
+        logic,
+        m_pythiaParameters,
+        std::placeholders::_1
+        );
+
+    QFuture<void> futures = QtConcurrent::map(
+        targetDecoyCandidatePairsPntrsTranched,
+        binder
+        );
+    futures.waitForFinished();
 
     ERR_RETURN
 }
