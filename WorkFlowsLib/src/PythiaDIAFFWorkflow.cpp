@@ -623,19 +623,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            m_targetDecoyPairPntrs,
-            m_pythiaParameters,
-            uniqueMsScanInfos,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            ); ree;
-
     qDebug()
     << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "TargetKeys size:" << mzTargetKeyVsTargetDecoyCandidatePointers.size();
-
-    QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
+    << "TargetKeys size:" << uniqueMsScanInfos.size();
 
     constexpr int splitter = 2;
     const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters.threadCount
@@ -654,9 +644,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             useExtendedScores,
             useNeuralNetworkScores,
             useTopNIntegrationsParameter,
-            nullToBuildTurboXICInParallelLoop,
+            uniqueMsScanInfos,
             m_weights,
-            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &m_targetDecoyPairPntrs,
             &m_candidateScorePairs
             ); ree
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";

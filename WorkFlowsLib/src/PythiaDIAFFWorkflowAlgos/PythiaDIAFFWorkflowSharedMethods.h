@@ -68,6 +68,12 @@ public:
         QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers
         );
 
+    static QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
+        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+        const PythiaParameters &pythiaParameters,
+        const MsScanInfo &msScanInfo
+        );
+
     static Err buildMsCalibrationReaderRows(
         const MSLevelEnum &msLevel,
         const QVector<CandidateScores*> &_candidateScores,

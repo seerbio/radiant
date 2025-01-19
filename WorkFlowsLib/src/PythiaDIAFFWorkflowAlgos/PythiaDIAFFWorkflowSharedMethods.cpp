@@ -351,29 +351,6 @@ namespace {
         targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
     }
 
-    QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> filterParallelLogic(
-        const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
-        const PythiaParameters &pythiaParameters,
-        const MsScanInfo &msScanInfo
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
-
-        const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-        const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
-
-        QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
-        filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
-
-        if (pythiaParameters.verbosity > 0) {
-            qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
-        }
-
-        return {e, {msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered}};
-    }
-
 } //namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
         const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
@@ -388,6 +365,8 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
 
     mzTargetKeyVsTargetDecoyCandidatePointers->clear();
 
+#define USE_PARALLEL_FILTERING2
+#ifdef USE_PARALLEL_FILTERING2
     const auto filterBinder = std::bind(
         filterParallelLogic,
         targetDecoyCandidatePairs,
@@ -405,8 +384,42 @@ Err PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandida
         e = res.first; ree;
         mzTargetKeyVsTargetDecoyCandidatePointers->insert(res.second.first, res.second.second);
     }
+#else
+    for (const MsScanInfo &msScanInfo : msScanInfos) {
+        QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> result = filterParallelLogic(
+            targetDecoyCandidatePairs,
+            pythiaParameters,
+            msScanInfo
+            );
+        e = result.first; ree;
+        mzTargetKeyVsTargetDecoyCandidatePointers->insert(result.second.first, result.second.second);
+    }
+#endif
 
     ERR_RETURN
+}
+
+QPair<Err, QPair<MzTargetKey ,QVector<TargetDecoyCandidatePair*>>> PythiaDIAFFWorkflowSharedMethods::filterParallelLogic(
+    const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairs,
+    const PythiaParameters &pythiaParameters,
+    const MsScanInfo &msScanInfo
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(msScanInfo.msLevel < 2); rree;
+
+    const float precursorMzMin = msScanInfo.precursorTargetMz - (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+    const float precursorMzMax = msScanInfo.precursorTargetMz + (msScanInfo.isoWindowLower + pythiaParameters.precursorExtractionWindowThomsons);
+
+    QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsFiltered = targetDecoyCandidatePairs;
+    filterTargetDecoyPairPointersByPrecursorMzRange(precursorMzMin, precursorMzMax, &targetDecoyCandidatePairsFiltered);
+
+    if (pythiaParameters.verbosity > 0) {
+        qDebug() << "MzTargetKey" << msScanInfo.targetKey() << targetDecoyCandidatePairsFiltered.size() << "targetDecoyPairs found";
+    }
+
+    return {e, {msScanInfo.targetKey(), targetDecoyCandidatePairsFiltered}};
 }
 
 namespace {

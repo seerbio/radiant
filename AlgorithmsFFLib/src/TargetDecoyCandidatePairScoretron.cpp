@@ -32,6 +32,7 @@ class TargetDecoyPairParallelInput {
 
 public:
     MzTargetKey targetKey;
+    MsScanInfo msScanInfo;
     MsCalibratomatic msCalibratomatic;
     QMap<ScanNumber, ScanPoints*> diaTargetFrame;
     QMap<ScanNumber, ScanTime> scanNumberVsScanTime;
@@ -50,6 +51,9 @@ public:
     bool useNeuralNetworkScores = false;
     bool useTopNIntegrationsParameter = false;
     MsReaderPointerAcc *msReaderPointerAcc = nullptr;
+    QVector<TargetDecoyCandidatePair*> *targetDecoyCandidatePointersAllPntr = nullptr;
+    bool splitMzTargetKey = false;
+    bool isBottomSplit = false;
 };
 
 
@@ -198,16 +202,48 @@ namespace {
         QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> outputs;
 
         for (const TargetDecoyPairParallelInput &pi : inputs) {
-
+            
             e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
 
-            if (pi.targetDecoyPointers.isEmpty()) {
+            QVector<TargetDecoyCandidatePair*> targetDecoyPointers = pi.targetDecoyPointers;
+
+            if (targetDecoyPointers.isEmpty()) {
+
+                const float mzMin
+                    = pi.msScanInfo.precursorTargetMz - (pi.msScanInfo.isoWindowLower + pi.pythiaParameters.precursorExtractionWindowThomsons);
+
+                const float mzMax
+                    = pi.msScanInfo.precursorTargetMz + (pi.msScanInfo.isoWindowUpper + pi.pythiaParameters.precursorExtractionWindowThomsons);
+
+                const auto terminatorLogic = [mzMin, mzMax](const TargetDecoyCandidatePair *tdcp) {
+                    const float mzPrecursorTargetDecoyPair = tdcp->mz(false);
+                    return !(mzMin <= mzPrecursorTargetDecoyPair && mzPrecursorTargetDecoyPair <= mzMax);
+                };
+
+                targetDecoyPointers = *pi.targetDecoyCandidatePointersAllPntr;
+                const auto terminator = std::remove_if(
+                    targetDecoyPointers.begin(),
+                    targetDecoyPointers.end(),
+                    terminatorLogic
+                    );
+
+                targetDecoyPointers.erase(terminator, targetDecoyPointers.end());
+            }
+
+            if (pi.splitMzTargetKey) {
+                const int midPoint = targetDecoyPointers.size() / 2;
+                targetDecoyPointers = pi.isBottomSplit
+                                    ? targetDecoyPointers.mid(0, midPoint)
+                                    : targetDecoyPointers.mid(midPoint, targetDecoyPointers.size() - midPoint);
+            }
+
+            if (targetDecoyPointers.isEmpty()) {
                 qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << pi.targetKey << "Target key is empty";
                 continue;
             }
 
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> allCandidateScores;
-            allCandidateScores.reserve(pi.targetDecoyPointers.size() * 2);
+            allCandidateScores.reserve(targetDecoyPointers.size() * 2);
 
             MsCalibratomatic msCalibratomatic = pi.msCalibratomatic;
 
@@ -238,7 +274,7 @@ namespace {
             XICPeakManager xicPeakManager;
             if (pi.turboXicMS2 != nullptr) {
                 e = xicPeakManager.init(
-                    pi.targetDecoyPointers,
+                    targetDecoyPointers,
                     pi.topNMs2Ions,
                     static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM),
                     pi.turboXicMS2
@@ -247,7 +283,7 @@ namespace {
             else {
                 e = xicPeakManager.init(
                     msFrameMzTarget.isValid() ? msFrameMzTarget : *pi.msFrameMzTarget,
-                    pi.targetDecoyPointers,
+                    targetDecoyPointers,
                     pi.topNMs2Ions,
                     static_cast<float>(pi.pythiaParameters.ms2ExtractionWidthPPM)
                     ); rree;
@@ -272,7 +308,7 @@ namespace {
                 pi.msFrameMS1
                 ); rree;
 
-            for (TargetDecoyCandidatePair* tdcp : pi.targetDecoyPointers) {
+            for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
 
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.isDecoy = false;
@@ -282,9 +318,6 @@ namespace {
                         tdcp,
                         &candidateScoresTarget
                         ); rree;
-                // if (pi.turboXicMS2 != nullptr) {
-                //     allCandidateScores.push_back(candidateScoresTarget);
-                // }
 
                 CandidateScores candidateScoresDecoy;
                 candidateScoresDecoy.isDecoy = true;
@@ -294,9 +327,14 @@ namespace {
                         tdcp,
                         &candidateScoresDecoy
                         ); rree;
-                // if (pi.turboXicMS2 != nullptr) {
-                //     allCandidateScores.push_back(candidateScoresDecoy);
-                // }
+
+                if (
+                    MathUtils::tZero(candidateScoresTarget.featuresArray[Features::CosineSimSum100])
+                    && MathUtils::tZero(candidateScoresDecoy.featuresArray[Features::CosineSimSum100])
+                    ) {
+                    continue;
+                }
+
                 allCandidateScores.push_back({candidateScoresTarget, candidateScoresDecoy});
             }
 
@@ -402,6 +440,97 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
     ERR_RETURN
 }
 
+Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
+        int topNMS2Ions,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        int threadCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isFalse(m_diaTargetFrames.isEmpty()); ree;
+    e = ErrorUtils::isNotEmpty(m_scanNumberVsScanTime); ree;
+
+    candidateScoresPairsVec->clear();
+
+    QVector<TargetDecoyPairParallelInput> parallelInputs;
+    e = buildParallelInput(
+            topNMS2Ions,
+            m_scanTimeMinMax,
+            msCalibratomatic,
+            minPeakCount,
+            useExtendedScores,
+            useNeuralNetworkScores,
+            useTopNIntegrationsParameter,
+            msScanInfos,
+            weights,
+            targetDecoyCandidateAllPntrs,
+            &parallelInputs
+            ); ree;
+
+    QVector<QVector<TargetDecoyPairParallelInput>> parallelInputsTranched;
+    e = ParallelUtils::trancheVectorForParallelization(
+            parallelInputs,
+            threadCount,
+            &parallelInputsTranched
+            ); ree;
+
+    const auto filterEmptyTranchesTerminatorLogic = [](const QVector<TargetDecoyPairParallelInput> &input) {
+        return input.isEmpty();
+    };
+    const auto terminator = std::remove_if(
+        parallelInputsTranched.begin(),
+        parallelInputsTranched.end(),
+        filterEmptyTranchesTerminatorLogic
+        );
+    parallelInputsTranched.erase(terminator, parallelInputsTranched.end());
+
+    e = ErrorUtils::isNotEmpty(parallelInputsTranched); ree;
+
+#define PARALLEL_SCORE2
+#ifdef PARALLEL_SCORE2
+    QFuture<QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>>> futures = QtConcurrent::mapped(
+            parallelInputsTranched,
+            parallelScoreLogic
+            );
+    futures.waitForFinished();
+
+    for (const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> &results : futures) {
+
+        const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> &result = results;
+        for (const QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> &r : result) {
+            e = r.first; ree;
+            QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> candidateScoresTargetMz = r.second;
+            candidateScoresPairsVec->append(candidateScoresTargetMz);
+        }
+    }
+#else
+    for(const QVector<TargetDecoyPairParallelInput> &tdppis : parallelInputsTranched) {
+
+        const QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> results = parallelScoreLogic(
+                tdppis
+                ); ree;
+
+        for (const QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>> &res : results) {
+            e = res.first; ree;
+            candidateScoresPairsVec->append(res.second);
+        }
+    }
+#endif
+
+    ERR_RETURN
+}
+
 bool TargetDecoyCandidatePairScoretron2::isInit() const {
     return m_pythiaParameters.isValid() && !m_ms1ScanNumberVsScanPoints.isEmpty();
 }
@@ -478,6 +607,73 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
 
         input->push_back(tdppi1);
         input->push_back(tdppi2);
+    }
+
+    ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
+        int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<TargetDecoyPairParallelInput> *input
+        ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(targetDecoyCandidateAllPntrs->isEmpty()); ree;
+    e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
+    e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
+    e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
+    e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+    e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFramePntr); ree;
+    e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
+
+    const bool splitMzTargetKey = m_pythiaParameters.threadCount > msScanInfos.size();
+
+    for (const MsScanInfo &msi : msScanInfos) {
+
+        TargetDecoyPairParallelInput tdppi1;
+        tdppi1.topNMs2Ions = topNMS2Ions;
+        tdppi1.targetKey = msi.targetKey();
+        tdppi1.msScanInfo = msi;
+        tdppi1.msCalibratomatic = msCalibratomatic;
+        tdppi1.pythiaParameters = m_pythiaParameters;
+        tdppi1.scanTimeMinMax = scanTimeMinMax;
+        tdppi1.diaTargetFrame = m_diaTargetFrames.value(tdppi1.targetKey);
+        tdppi1.turboXicMS1 = m_turboXICMS1;
+        tdppi1.minPeakCount = minPeakCount;
+        tdppi1.averagineTable = m_averagineTable;
+        tdppi1.msFrameMS1 = m_msFrameMS1;
+        tdppi1.weights = weights;
+        tdppi1.useExtendedScores = useExtendedScores;
+        tdppi1.useNeuralNetworkScores = useNeuralNetworkScores;
+        tdppi1.useTopNIntegrationsParameter = useTopNIntegrationsParameter;
+        tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
+        tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
+        tdppi1.targetDecoyCandidatePointersAllPntr = targetDecoyCandidateAllPntrs;
+        tdppi1.splitMzTargetKey = splitMzTargetKey;
+
+        if (!m_pythiaParameters.useLazyLoading) {
+            e = ErrorUtils::contains(tdppi1.targetKey, m_mzTargetKeyVsMsFramePntr); ree;
+            tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
+        }
+
+        input->push_back(tdppi1);
+
+        if (splitMzTargetKey) {
+            tdppi1.isBottomSplit = true;
+            input->push_back(tdppi1);
+        }
+
     }
 
     ERR_RETURN

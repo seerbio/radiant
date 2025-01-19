@@ -75,6 +75,20 @@ public:
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
             ) const;
 
+    Err scoreTargetDecoyPairs(
+        int topNMS2Ions,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        int threadCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        ) const;
+
     /**
     * @brief Checks if the TargetDecoyCandidatePairScoretron2 is initialized.
     *
@@ -120,6 +134,20 @@ private:
             const QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> *mzTargetKeyVsTargetDecoyCandidatePointers,
             QVector<TargetDecoyPairParallelInput> *input
             ) const;
+
+    Err buildParallelInput(
+        int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<TargetDecoyPairParallelInput> *input
+        ) const;
 
     Err buildAveragineTable();
 
