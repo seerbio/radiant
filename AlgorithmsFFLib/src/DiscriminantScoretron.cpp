@@ -159,16 +159,16 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::PeakShapeRatio1,
             Features::PeakShapeRatio2,
             Features::PeakShapeRatio3,
-            Features::MatrixZeroPercentage,
-            Features::MzPPMMeanAbs,
-            Features::FoundB,
-            Features::FoundY,
-            Features::FoundPercent,
-            DiscScoresCount,
-            DiscScoresMean,
-            DiscScoresStDev,
-            DiscScore1stRunnerUp,
-            DiscScore2ndRunnerUp
+            // Features::MatrixZeroPercentage,
+            // Features::MzPPMMeanAbs,
+            // Features::FoundB,
+            // Features::FoundY,
+            // Features::FoundPercent,
+            // DiscScoresCount,
+            // DiscScoresMean,
+            // DiscScoresStDev,
+            // DiscScore1stRunnerUp,
+            // DiscScore2ndRunnerUp
         };
 
         if (useNeuralNetworkScores) {
