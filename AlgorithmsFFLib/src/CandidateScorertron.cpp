@@ -2452,43 +2452,43 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     const int bIonsSeriesLongestMax =*std::max_element(bIonsSeriesLongest.begin(), bIonsSeriesLongest.end());
     const int bIonsSeriesLongestTheoMax =*std::max_element(bIonsSeriesLongestTheo.begin(), bIonsSeriesLongestTheo.end());
 
-    candidateScores->featuresArray[Features::YIonSeriesMax] = yIonsSeriesLongestMax;
-    candidateScores->featuresArray[Features::YIonSeriesCount] = yIonsSeriesLongest.size();
-    candidateScores->featuresArray[Features::YIonSeriesMean] = MathUtils::mean(yIonsSeriesLongest);
-    candidateScores->featuresArray[Features::YIonSeriesStd] =  MathUtils::stDev(yIonsSeriesLongest);
-    candidateScores->featuresArray[Features::YIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::YIonSeriesStd];
-
-    candidateScores->featuresArray[Features::YIonSeriesTheoMax] = yIonsSeriesLongestTheoMax;
-    candidateScores->featuresArray[Features::YIonSeriesTheoCount] = yIonsSeriesLongestTheo.size();
-    candidateScores->featuresArray[Features::YIonSeriesTheoMean] = MathUtils::mean(yIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::YIonSeriesTheoStd] = MathUtils::stDev(yIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::YIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesTheoStd])
-                                                        ? -1.0f
-                                                        : candidateScores->featuresArray[Features::YIonSeriesTheoStd];
-    candidateScores->featuresArray[Features::YIonSeriesMaxFoundToTheoFraction] = yIonsSeriesLongestMax / std::max(static_cast<float>(yIonsSeriesLongestTheoMax), 1.0f);
-    candidateScores->featuresArray[Features::YIonSeriesCountRatio] = candidateScores->featuresArray[Features::YIonSeriesCount]
-                                                                   / std::max(candidateScores->featuresArray[Features::YIonSeriesTheoCount], 1.0f);
-
-    candidateScores->featuresArray[Features::BIonSeriesMax] = bIonsSeriesLongestMax;
-    candidateScores->featuresArray[Features::BIonSeriesCount] = bIonsSeriesLongest.size();
-    candidateScores->featuresArray[Features::BIonSeriesMean] = MathUtils::mean(bIonsSeriesLongest);
-    candidateScores->featuresArray[Features::BIonSeriesStd] = MathUtils::stDev(bIonsSeriesLongest);
-    candidateScores->featuresArray[Features::BIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::BIonSeriesStd];
-    candidateScores->featuresArray[Features::BIonSeriesTheoMax] = bIonsSeriesLongestTheoMax;
-    candidateScores->featuresArray[Features::BIonSeriesTheoCount] = bIonsSeriesLongestTheo.size();
-    candidateScores->featuresArray[Features::BIonSeriesTheoMean] = MathUtils::mean(bIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::BIonSeriesTheoStd] = MathUtils::stDev(bIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::BIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesTheoStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::BIonSeriesTheoStd];
-
-    candidateScores->featuresArray[Features::BIonSeriesMaxFoundToTheoFraction] = bIonsSeriesLongestMax / std::max(static_cast<float>(bIonsSeriesLongestTheoMax), 1.0f);
-    candidateScores->featuresArray[Features::BIonSeriesCountRatio] = candidateScores->featuresArray[Features::BIonSeriesCount]
-                                                                   / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
+    // candidateScores->featuresArray[Features::YIonSeriesMax] = yIonsSeriesLongestMax;
+    // candidateScores->featuresArray[Features::YIonSeriesCount] = yIonsSeriesLongest.size();
+    // candidateScores->featuresArray[Features::YIonSeriesMean] = MathUtils::mean(yIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::YIonSeriesStd] =  MathUtils::stDev(yIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::YIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::YIonSeriesStd];
+    //
+    // candidateScores->featuresArray[Features::YIonSeriesTheoMax] = yIonsSeriesLongestTheoMax;
+    // candidateScores->featuresArray[Features::YIonSeriesTheoCount] = yIonsSeriesLongestTheo.size();
+    // candidateScores->featuresArray[Features::YIonSeriesTheoMean] = MathUtils::mean(yIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::YIonSeriesTheoStd] = MathUtils::stDev(yIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::YIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesTheoStd])
+    //                                                     ? -1.0f
+    //                                                     : candidateScores->featuresArray[Features::YIonSeriesTheoStd];
+    // candidateScores->featuresArray[Features::YIonSeriesMaxFoundToTheoFraction] = yIonsSeriesLongestMax / std::max(static_cast<float>(yIonsSeriesLongestTheoMax), 1.0f);
+    // candidateScores->featuresArray[Features::YIonSeriesCountRatio] = candidateScores->featuresArray[Features::YIonSeriesCount]
+    //                                                                / std::max(candidateScores->featuresArray[Features::YIonSeriesTheoCount], 1.0f);
+    //
+    // candidateScores->featuresArray[Features::BIonSeriesMax] = bIonsSeriesLongestMax;
+    // candidateScores->featuresArray[Features::BIonSeriesCount] = bIonsSeriesLongest.size();
+    // candidateScores->featuresArray[Features::BIonSeriesMean] = MathUtils::mean(bIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::BIonSeriesStd] = MathUtils::stDev(bIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::BIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::BIonSeriesStd];
+    // candidateScores->featuresArray[Features::BIonSeriesTheoMax] = bIonsSeriesLongestTheoMax;
+    // candidateScores->featuresArray[Features::BIonSeriesTheoCount] = bIonsSeriesLongestTheo.size();
+    // candidateScores->featuresArray[Features::BIonSeriesTheoMean] = MathUtils::mean(bIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::BIonSeriesTheoStd] = MathUtils::stDev(bIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::BIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesTheoStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::BIonSeriesTheoStd];
+    //
+    // candidateScores->featuresArray[Features::BIonSeriesMaxFoundToTheoFraction] = bIonsSeriesLongestMax / std::max(static_cast<float>(bIonsSeriesLongestTheoMax), 1.0f);
+    // candidateScores->featuresArray[Features::BIonSeriesCountRatio] = candidateScores->featuresArray[Features::BIonSeriesCount]
+    //                                                                / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
 
     const bool featureVectorHasNanOrInfVal = MathUtils::vectorContainsInfOrNaN(candidateScores->featuresArray);
     if (featureVectorHasNanOrInfVal) {

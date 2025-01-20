@@ -304,23 +304,23 @@ namespace {
             }
         }
 
-        e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
-
-        std::sort(
-            candidateScoresIMTraining->rbegin(),
-            candidateScoresIMTraining->rend(),
-            [](const CandidateScores *l, const CandidateScores *r) {
-                return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
-            });
-
-        candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
-
-        std::sort(
-            candidateScoresIMTraining->rbegin(),
-            candidateScoresIMTraining->rend(),
-            [](const CandidateScores *l, const CandidateScores *r) {
-                return l->discriminantScore < r->discriminantScore;
-            });
+        // e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
+        //
+        // std::sort(
+        //     candidateScoresIMTraining->rbegin(),
+        //     candidateScoresIMTraining->rend(),
+        //     [](const CandidateScores *l, const CandidateScores *r) {
+        //         return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
+        //     });
+        //
+        // candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
+        //
+        // std::sort(
+        //     candidateScoresIMTraining->rbegin(),
+        //     candidateScoresIMTraining->rend(),
+        //     [](const CandidateScores *l, const CandidateScores *r) {
+        //         return l->discriminantScore < r->discriminantScore;
+        //     });
 
         ERR_RETURN
     }
@@ -329,37 +329,37 @@ namespace {
 
         ERR_INIT
 
-        QVector<CandidateScores*> candidateScoresIMTraining;
-        e = buildIonMobilityTrainingSet(
-            candidateScoresTargetsAndDecoys,
-            &candidateScoresIMTraining
-            ); ree;
-
-        QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
-        std::transform(
-            candidateScoresIMTraining.begin(),
-            candidateScoresIMTraining.end(),
-            std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
-            [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
-            );
-
-        IonMobilitron ionMobilitron;
-        e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
-
-        for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
-
-            if (cs->ionMobilityIndex < 0) {
-                continue;
-            }
-
-            e = ionMobilitron.predictIonMobilityIndex(
-                cs->targetDecoyCandidatePair->iIM(),
-                &cs->ionMobilityIndexPredicted
-                ); ree;
-
-            cs->featuresArray[Features::ImTheoDiff]
-                    = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
-        }
+        // QVector<CandidateScores*> candidateScoresIMTraining;
+        // e = buildIonMobilityTrainingSet(
+        //     candidateScoresTargetsAndDecoys,
+        //     &candidateScoresIMTraining
+        //     ); ree;
+        //
+        // QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
+        // std::transform(
+        //     candidateScoresIMTraining.begin(),
+        //     candidateScoresIMTraining.end(),
+        //     std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
+        //     [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
+        //     );
+        //
+        // IonMobilitron ionMobilitron;
+        // e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
+        //
+        // for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
+        //
+        //     if (cs->ionMobilityIndex < 0) {
+        //         continue;
+        //     }
+        //
+        //     e = ionMobilitron.predictIonMobilityIndex(
+        //         cs->targetDecoyCandidatePair->iIM(),
+        //         &cs->ionMobilityIndexPredicted
+        //         ); ree;
+        //
+        //     cs->featuresArray[Features::ImTheoDiff]
+        //             = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
+        // }
 
         ERR_RETURN
 
