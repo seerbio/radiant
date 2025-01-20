@@ -167,6 +167,7 @@ enum Features {
     FoundB,
     FoundY,
     FoundPercent,
+    DiscScore1stRunnerUpDiffRatio,
     DiscScore1stRunnerUp,
     DiscScore2ndRunnerUp,
     DiscScoresCount,

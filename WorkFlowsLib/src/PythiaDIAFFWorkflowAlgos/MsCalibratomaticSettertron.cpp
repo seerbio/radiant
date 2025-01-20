@@ -92,7 +92,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs
                                         = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
-    if (m_pythiaParameters->useLazyLoading) {
+    if (m_msReaderPointerAcc->useLazyLoading()) {
         e = PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
             uniqueMsScanInfosCalibration,
             m_msReaderPointerAcc,
@@ -222,6 +222,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
             QVector<CandidateScores*> candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS2)));
+            if (candidateScoresVecBatchPntrsRecal.isEmpty()) {
+                candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
+                candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKey)));
+            }
 
             QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
             e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
@@ -264,7 +268,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
 
-            if (!m_pythiaParameters->useLazyLoading) {
+            if (!m_msReaderPointerAcc->useLazyLoading()) {
                 e = recalibrateMzVals(
                         MSLevelEnum::MS2,
                         m_targetDecoyCandidatePairScoretron->diaTargetFrames(),

@@ -75,11 +75,11 @@ Err TargetDecoyCandidatePairScoretron2::init(
     m_uniqueTandemMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
-    if (!m_pythiaParameters.useLazyLoading) {
+    if (!msReaderPointerAcc->useLazyLoading()) {
         e = m_msReaderPointerAcc->ptr->collateMS2MzTargetFrames(&diaTargetFrames); ree;
     }
 
-    if (m_pythiaParameters.useLazyLoading) {
+    if (msReaderPointerAcc->useLazyLoading()) {
         e = m_msReaderPointerAcc->ptr->getMzTargetScanPoints(
             S_GLOBAL_SETTINGS.MS1Key,
             &m_ms1ScanNumberVsScanPoints
@@ -590,7 +590,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.msReaderPointerAcc = m_msReaderPointerAcc;
         tdppi1.scanNumberVsScanTime = m_scanNumberVsScanTime;
 
-        if (!m_pythiaParameters.useLazyLoading) {
+        if (!m_msReaderPointerAcc->useLazyLoading()) {
             e = ErrorUtils::contains(tdppi1.targetKey, m_mzTargetKeyVsMsFramePntr); ree;
             tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
         }
@@ -662,7 +662,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
         tdppi1.targetDecoyCandidatePointersAllPntr = targetDecoyCandidateAllPntrs;
         tdppi1.splitMzTargetKey = splitMzTargetKey;
 
-        if (!m_pythiaParameters.useLazyLoading) {
+        if (!m_msReaderPointerAcc->useLazyLoading()) {
             e = ErrorUtils::contains(tdppi1.targetKey, m_mzTargetKeyVsMsFramePntr); ree;
             tdppi1.msFrameMzTarget = m_mzTargetKeyVsMsFramePntr.value(tdppi1.targetKey);
         }

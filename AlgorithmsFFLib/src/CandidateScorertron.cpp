@@ -404,6 +404,9 @@ Err CandidateScorertron::calculateScores(
     if (candidateScoresPairs.size() > 1) {
         candidateScores->featuresArray[Features::DiscScore1stRunnerUp]
             = candidateScoresPairs.front().first - candidateScoresPairs.at(1).first;
+
+        candidateScores->featuresArray[Features::DiscScore1stRunnerUpDiffRatio]
+            = (candidateScoresPairs.front().first - candidateScoresPairs.at(1).first) / candidateScoresPairs.front().first;
     }
     if (candidateScoresPairs.size() > 2) {
         candidateScores->featuresArray[Features::DiscScore2ndRunnerUp]
