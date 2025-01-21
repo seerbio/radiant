@@ -58,41 +58,41 @@ private:
         ERR_RETURN
     }
 
-    static TargetDecoyCandidatePair buildTargetDecoyCandidatePair() {
-
-        MS2Ion i1;
-        i1.mz = 506.335;
-        i1.intensity = 1.0;
-        i1.charge = 1;
-        i1.ionLabel = "y4";
-
-        MS2Ion i2;
-        i2.mz = 407.266;
-        i2.intensity = 0.488;
-        i2.charge = 1;
-        i2.ionLabel = "y3";
-
-        MS2Ion i3;
-        i3.mz = 272.125;
-        i3.intensity = 0.30;
-        i3.charge = 1;
-        i3.ionLabel = "b4";
-
-        QVector<MS2Ion> targetIons;
-
-        TargetDecoyCandidatePair targetDecoyCandidatePair(
-                PeptideStringWithMods("DGVVLFK"),
-                {i1, i2, i3},
-                {i1, i2, i3},
-                2,
-                776.443,
-                69.0608,
-                3,
-                0
-                );
-
-        return targetDecoyCandidatePair;
-    }
+    // static TargetDecoyCandidatePair buildTargetDecoyCandidatePair() {
+    //
+    //     MS2Ion i1;
+    //     i1.mz = 506.335;
+    //     i1.intensity = 1.0;
+    //     i1.charge = 1;
+    //     i1.ionLabel = "y4";
+    //
+    //     MS2Ion i2;
+    //     i2.mz = 407.266;
+    //     i2.intensity = 0.488;
+    //     i2.charge = 1;
+    //     i2.ionLabel = "y3";
+    //
+    //     MS2Ion i3;
+    //     i3.mz = 272.125;
+    //     i3.intensity = 0.30;
+    //     i3.charge = 1;
+    //     i3.ionLabel = "b4";
+    //
+    //     QVector<MS2Ion> targetIons;
+    //
+    //     TargetDecoyCandidatePair targetDecoyCandidatePair(
+    //             PeptideStringWithMods("DGVVLFK"),
+    //             {i1, i2, i3},
+    //             {i1, i2, i3},
+    //             2,
+    //             776.443,
+    //             69.0608,
+    //             3,
+    //             0
+    //             );
+    //
+    //     return targetDecoyCandidatePair;
+    // }
 
     static Err buildFrame(QMap<ScanNumber, ScanPoints> *frame) {
 
