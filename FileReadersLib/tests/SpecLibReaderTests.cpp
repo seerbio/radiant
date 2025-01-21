@@ -27,7 +27,7 @@ private Q_SLOTS:
 
 void SpecLibReaderTests::getFragLibReaerRowsTest() {
 
-    // QSKIP("Build a test for this when a small lib file is found");
+    QSKIP("Build a test for this when a small lib file is found");
 
     ERR_INIT
 
