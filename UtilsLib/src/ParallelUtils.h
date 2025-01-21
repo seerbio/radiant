@@ -92,30 +92,30 @@ public:
     template <typename T>
     static Err trancheVectorForParallelization(
             const QVector<T> &input,
-            int desiredTrancheSize,
+            int desiredTranches,
             QVector<QVector<T>> *output
     ) {
 
         ERR_INIT
 
         output->clear();
-        output->reserve(desiredTrancheSize);
+        output->reserve(desiredTranches);
 
         e = ErrorUtils::isNotEmpty(input); ree;
-        e = ErrorUtils::isNotEqual(desiredTrancheSize, 0); ree;
+        e = ErrorUtils::isNotEqual(desiredTranches, 0); ree;
 
-        if (desiredTrancheSize == -1) {
-            desiredTrancheSize = numberOfAvailableSystemProcessors();
+        if (desiredTranches == -1) {
+            desiredTranches = numberOfAvailableSystemProcessors();
         }
 
-        output->resize(desiredTrancheSize);
+        output->resize(desiredTranches);
 
         int currentVecIndex = 0;
         for (const T &inp : input) {
 
             (*output)[currentVecIndex++].push_back(inp) ;
 
-            if (currentVecIndex == desiredTrancheSize){
+            if (currentVecIndex == desiredTranches){
                 currentVecIndex = 0;
             }
         }

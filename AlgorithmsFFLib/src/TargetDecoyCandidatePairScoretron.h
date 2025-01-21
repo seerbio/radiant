@@ -15,13 +15,14 @@
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
+#include "TurboXIC.h"
+#include "TurboXIC2D.h"
 
 using namespace Error;
 
 
 class MsCalibratomatic;
 class TargetDecoyPairParallelInput;
-class TurboXIC;
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretron2 {
 
@@ -74,6 +75,20 @@ public:
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
             ) const;
 
+    Err scoreTargetDecoyPairs(
+        int topNMS2Ions,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        int threadCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> *candidateScoresPairsVec
+        ) const;
+
     /**
     * @brief Checks if the TargetDecoyCandidatePairScoretron2 is initialized.
     *
@@ -120,6 +135,20 @@ private:
             QVector<TargetDecoyPairParallelInput> *input
             ) const;
 
+    Err buildParallelInput(
+        int topNMS2Ions,
+        const QPair<double, double> &scanTimeMinMax,
+        const MsCalibratomatic &msCalibratomatic,
+        float minPeakCount,
+        bool useExtendedScores,
+        bool useNeuralNetworkScores,
+        bool useTopNIntegrationsParameter,
+        const QVector<MsScanInfo> &msScanInfos,
+        const QVector<float> &weights,
+        QVector<TargetDecoyCandidatePair*> *targetDecoyCandidateAllPntrs,
+        QVector<TargetDecoyPairParallelInput> *input
+        ) const;
+
     Err buildAveragineTable();
 
 
@@ -129,6 +158,9 @@ private:
     MsReaderPointerAcc *m_msReaderPointerAcc;
     TurboXIC *m_turboXICMS1;
     MsFrame *m_msFrameMS1;
+
+    TurboXIC2D *m_turboXIC2DMS1;
+
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFrames;
     QMap<ScanNumber, ScanPoints> m_ms1ScanNumberVsScanPoints;

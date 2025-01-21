@@ -37,16 +37,16 @@ enum Features {
     Mass, //20
     KlDivSpectrum,
     CosineSimSpectrum,
-    CosineSim45MS1,//20
+    CosineSim45MS1,
     CosineSim100MS1PreMono,
     CosineSim100MS1Iso1,
     CosineSim100MS1Iso2,
     PeptideLengthNorm,
     ScanTimePredicted,
     TheoFragmentCount,
-    TotalIntensityLog,
+    TotalIntensityLog,//30
     PeakShapeRatio1,
-    PeakShapeRatio2,//30
+    PeakShapeRatio2,
     PeakShapeRatio3,
     ShadowsCosineSimSum,
     IRTPredicted,
@@ -54,9 +54,9 @@ enum Features {
     MzFoundMean2,
     MzFoundMean3,
     MzFoundMean4,
-    MzFoundMean5,
+    MzFoundMean5,//40
     MzFoundMean6,
-    MzFoundMean7,//100
+    MzFoundMean7,
     MzFoundMean8,
     MzFoundMean9,
     MzFoundMean10,
@@ -64,17 +64,17 @@ enum Features {
     MzFoundMean12,
     IntensityFoundMax1,
     IntensityFoundMax2,
-    IntensityFoundMax3,
+    IntensityFoundMax3,//50
     IntensityFoundMax4,
-    IntensityFoundMax5,//110
+    IntensityFoundMax5,
     IntensityFoundMax6,
     IntensityFoundMaxNorm1,
     IntensityFoundMaxNorm2,
     IntensityFoundMaxNorm3,
     IntensityFoundMaxNorm4,
-    IntensityFoundMaxNorm5,//110
+    IntensityFoundMaxNorm5,
     IntensityFoundMaxNorm6,
-    IntensityFoundMaxNorm7,
+    IntensityFoundMaxNorm7,//60
     IntensityFoundMaxNorm8,
     IntensityFoundMaxNorm9,
     IntensityFoundMaxNorm10,
@@ -84,37 +84,37 @@ enum Features {
     AminoAcidCountC,
     AminoAcidCountD,
     AminoAcidCountE,
-    AminoAcidCountF,
+    AminoAcidCountF,//70
     AminoAcidCountG,
     AminoAcidCountH,
     AminoAcidCountI,
-    AminoAcidCountK,//150
+    AminoAcidCountK,
     AminoAcidCountL,
     AminoAcidCountM,
     AminoAcidCountN,
     AminoAcidCountP,
     AminoAcidCountQ,
-    AminoAcidCountR,
+    AminoAcidCountR,//80
     AminoAcidCountS,
     AminoAcidCountT,
     AminoAcidCountV,
-    AminoAcidCountW,//160
+    AminoAcidCountW,
     AminoAcidCountY,
     AminoAcidCountB,
     AminoAcidCountJ,
     AminoAcidCountO,
     AminoAcidCountU,
-    AminoAcidCountX,
+    AminoAcidCountX,//90
     AminoAcidCountZ,
     MzFoundStDev1,
     MzFoundStDev2,
-    MzFoundStDev3,//170
+    MzFoundStDev3,
     MzFoundStDev4,
     MzFoundStDev5,
     MzFoundStDev6,
     AltTargetKeyIdDiscScoreChargeOG_alt,
     AltTargetKeyIdDiscScoreCharge1_1,
-    AltTargetKeyIdDiscScoreCharge1_2,
+    AltTargetKeyIdDiscScoreCharge1_2,//100
     AltTargetKeyIdDiscScoreCharge2_1,
     AltTargetKeyIdDiscScoreCharge2_2,
     AltTargetKeyIdDiscScoreCharge3_1,
@@ -124,8 +124,8 @@ enum Features {
     AltTargetKeyIdTimeDeltaCharge1_1,
     AltTargetKeyIdTimeDeltaCharge2_1,
     AltTargetKeyIdTimeDeltaCharge3_1,
-    AltTargetKeyIdTimeDeltaCharge4_1,
-    Ms1MzMeanFound100,//220
+    AltTargetKeyIdTimeDeltaCharge4_1,//110
+    Ms1MzMeanFound100,
     Ms1MzMeanFound45,
     Ms1MzMeanFoundPreMono,
     Ms1MzMeanFoundIso1,
@@ -133,8 +133,8 @@ enum Features {
     Ms1MzMeanFound100PPM,
     Ms1MzMeanFound45PPM,
     Ms1MzMeanFoundPreMonoPPM,
-    Ms1MzMeanFoundIso1PPM,//230
-    Ms1MzMeanFoundIso2PPM,
+    Ms1MzMeanFoundIso1PPM,
+    Ms1MzMeanFoundIso2PPM,//120
     Ms1MzStDevFound100,
     Ms1MzStDevFound45,
     Ms1MzStDevFoundPreMono,
@@ -144,17 +144,17 @@ enum Features {
     Ms1IntensityFound45,
     Ms1IntensityFoundPreMono,
     Ms1IntensityFoundIso1,
-    Ms1IntensityFoundIso2,
+    Ms1IntensityFoundIso2,//130
     CosineSimSpectrumOverTime,
     CosineSimSpectrumOverTimeCubed,
     CosineSimSpectrumStDev,
     CosineSimSum100MS1,
     MS1Averagine,
-    CosineSimSum100Window1p5X,//250
+    CosineSimSum100Window1p5X,
     CosineSimSum100Window2X,
     TotalIntensityPeakHeights,
     TotalIntensityRaw,
-    TargetWindowLocation,
+    TargetWindowLocation,//140
     TargetWindowLocationAbs,
     DiscriminantScore,
     AlignmentIndexMean,
@@ -164,38 +164,45 @@ enum Features {
     MzPPMMeanAbs,
     MzPPMMean,
     MzPPMStd,
-    FoundB,
+    FoundB,//150
     FoundY,
     FoundPercent,
+    DiscScore1stRunnerUpDiffRatio,
     DiscScore1stRunnerUp,
     DiscScore2ndRunnerUp,
     DiscScoresCount,
     DiscScoresMean,
     DiscScoresStDev,
-    YIonSeriesMax,
-    YIonSeriesCount,
-    YIonSeriesMean,
-    YIonSeriesStd,
-    YIonSeriesTheoMax,
-    YIonSeriesTheoCount,
-    YIonSeriesTheoMean,
-    YIonSeriesTheoStd,
-    YIonSeriesMaxFoundToTheoFraction,
-    YIonSeriesCountRatio,
-    BIonSeriesMax,
-    BIonSeriesCount,
-    BIonSeriesMean,
-    BIonSeriesStd,
-    BIonSeriesTheoMax,
-    BIonSeriesTheoCount,
-    BIonSeriesTheoMean,
-    BIonSeriesTheoStd,
-    BIonSeriesMaxFoundToTheoFraction,
-    BIonSeriesCountRatio,
     CosineSimFullTheo,
-    IonsFoundFractionFull,
+    IonsFoundFractionFull,//160
     CosineSimFullTheoXIonsFoundFractionFull,
 
+    // YIonSeriesMax,
+    // YIonSeriesCount,
+    // YIonSeriesMean,
+    // YIonSeriesStd,
+    // YIonSeriesTheoMax,
+    // YIonSeriesTheoCount,
+    // YIonSeriesTheoMean,
+    // YIonSeriesTheoStd,
+    // YIonSeriesMaxFoundToTheoFraction,
+    // YIonSeriesCountRatio,
+    // BIonSeriesMax,
+    // BIonSeriesCount,
+    // BIonSeriesMean,
+    // BIonSeriesStd,
+    // BIonSeriesTheoMax,
+    // BIonSeriesTheoCount,
+    // BIonSeriesTheoMean,
+    // BIonSeriesTheoStd,
+    // BIonSeriesMaxFoundToTheoFraction,
+    // BIonSeriesCountRatio,
+    // ImPeakCount,
+    // ImAreaLog10,
+    // ImAreaRatioTop2,
+    // ImIndexMax,
+    // ImPeakLength,
+    // ImTheoDiff,
     // MzFoundMean1PPM,
     // MzFoundMean2PPM,
     // MzFoundMean3PPM,
@@ -292,6 +299,11 @@ public:
     ScanTime scanTimeEnd = -1.0;
     ScanTime scanTimePredicted = -1.0;
 
+    IonMobilityIndex ionMobilityIndexPredicted = -1;
+    IonMobilityIndex ionMobilityIndex = -1;
+    IonMobilityIndex ionMobilityIndexStart = -1;
+    IonMobilityIndex ionMobilityIndexEnd = -1;
+
     double classifierScore = -1.0;
     double discriminantScore = -1.0;
     double qValue = 1.0;
@@ -309,7 +321,7 @@ public:
     */
     void initFeaturesArray();
 
-    QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures);
+    QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures) const;
 
     static QVector<float> selectFeaturesArrayFeatures(
             const QVector<float> &featureArray,
@@ -509,18 +521,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TOT_INTENSITY_PEAK_HEIGHTS = QStringLiteral("TotalIntensityPeakHeights");
     const QString TOT_INTENSITY_RAW = QStringLiteral("TotalIntensityRaw");
     const QString TARGET_WINDOW_LOCATION = QStringLiteral("TargetWindowLocation");
-    const QString TRAP_AREA_1 = QStringLiteral("TrapArea1");
-    const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
-    const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
-    const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
-    const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
-    const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
-    const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
-    const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
-    const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
-    const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
-    const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
-    const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
+    // const QString TRAP_AREA_1 = QStringLiteral("TrapArea1");
+    // const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
+    // const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
+    // const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
+    // const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
+    // const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
+    // const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
+    // const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
+    // const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
+    // const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
+    // const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
+    // const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
 
     // const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
     // const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
@@ -933,18 +945,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float totalIntensityRaw = -1.0;
     float targetWindowLocation = -1.0;
 
-    float trapArea1 = -1.0;
-    float trapArea2 = -1.0;
-    float trapArea3 = -1.0;
-    float trapArea4 = -1.0;
-    float trapArea5 = -1.0;
-    float trapArea6 = -1.0;
-    float trapArea7 = -1.0;
-    float trapArea8 = -1.0;
-    float trapArea9 = -1.0;
-    float trapArea10 = -1.0;
-    float trapArea11 = -1.0;
-    float trapArea12 = -1.0;
+    // float trapArea1 = -1.0;
+    // float trapArea2 = -1.0;
+    // float trapArea3 = -1.0;
+    // float trapArea4 = -1.0;
+    // float trapArea5 = -1.0;
+    // float trapArea6 = -1.0;
+    // float trapArea7 = -1.0;
+    // float trapArea8 = -1.0;
+    // float trapArea9 = -1.0;
+    // float trapArea10 = -1.0;
+    // float trapArea11 = -1.0;
+    // float trapArea12 = -1.0;
 
     // float mzSearched1 = -1.0;
     // float mzSearched2 = -1.0;
@@ -1252,7 +1264,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 // {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
                 // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
                 // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
-                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
+                // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},g TRAP_AREA_1 = QStringLiteral("TrapArea1");
+    // const QString TRAP_AREA_2 = QStringLiteral("TrapArea2");
+    // const QString TRAP_AREA_3 = QStringLiteral("TrapArea3");
+    // const QString TRAP_AREA_4 = QStringLiteral("TrapArea4");
+    // const QString TRAP_AREA_5 = QStringLiteral("TrapArea5");
+    // const QString TRAP_AREA_6 = QStringLiteral("TrapArea6");
+    // const QString TRAP_AREA_7 = QStringLiteral("TrapArea7");
+    // const QString TRAP_AREA_8 = QStringLiteral("TrapArea8");
+    // const QString TRAP_AREA_9 = QStringLiteral("TrapArea9");
+    // const QString TRAP_AREA_10 = QStringLiteral("TrapArea10");
+    // const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
+    // const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
                 // {MZ_PK_LEN_NORM_4, QVariant(mzPeakLengthsNorm4)},
                 // {MZ_PK_LEN_NORM_5, QVariant(mzPeakLengthsNorm5)},
                 // {MZ_PK_LEN_NORM_6, QVariant(mzPeakLengthsNorm6)},
@@ -1359,18 +1382,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {TOT_INTENSITY_RAW, QVariant(totalIntensityRaw)},
                 {TARGET_WINDOW_LOCATION, QVariant(targetWindowLocation)},
 
-                {TRAP_AREA_1, QVariant(trapArea1)},
-                {TRAP_AREA_2, QVariant(trapArea2)},
-                {TRAP_AREA_3, QVariant(trapArea3)},
-                {TRAP_AREA_4, QVariant(trapArea4)},
-                {TRAP_AREA_5, QVariant(trapArea5)},
-                {TRAP_AREA_6, QVariant(trapArea6)},
-                {TRAP_AREA_7, QVariant(trapArea7)},
-                {TRAP_AREA_8, QVariant(trapArea8)},
-                {TRAP_AREA_9, QVariant(trapArea9)},
-                {TRAP_AREA_10, QVariant(trapArea10)},
-                {TRAP_AREA_11, QVariant(trapArea11)},
-                {TRAP_AREA_12, QVariant(trapArea12)},
+                // {TRAP_AREA_1, QVariant(trapArea1)},
+                // {TRAP_AREA_2, QVariant(trapArea2)},
+                // {TRAP_AREA_3, QVariant(trapArea3)},
+                // {TRAP_AREA_4, QVariant(trapArea4)},
+                // {TRAP_AREA_5, QVariant(trapArea5)},
+                // {TRAP_AREA_6, QVariant(trapArea6)},
+                // {TRAP_AREA_7, QVariant(trapArea7)},
+                // {TRAP_AREA_8, QVariant(trapArea8)},
+                // {TRAP_AREA_9, QVariant(trapArea9)},
+                // {TRAP_AREA_10, QVariant(trapArea10)},
+                // {TRAP_AREA_11, QVariant(trapArea11)},
+                // {TRAP_AREA_12, QVariant(trapArea12)},
 
                 // {MZ_SEARCHED_1, QVariant(mzSearched1)},
                 // {MZ_SEARCHED_2, QVariant(mzSearched2)},

@@ -87,9 +87,9 @@ public:
 
     ~FeatureFinderHillBuilder();
 
-    Err init(const FeatureFinderParameters &featureFinderParameters);
+    Err init(const FeatureFinderParameters &featureFinderParameters) const;
 
-    Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+    Err buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const;
 
     Err getHills(
             double mzMin,
@@ -97,7 +97,7 @@ public:
             FrameIndex frameIndexMin,
             FrameIndex frameIndexMax,
             QVector<FeatureFinderHill*> *featureFinderHills
-            );
+            ) const;
 
     Err featureFinderHills(QVector<FeatureFinderHill*> *featureFinderHills);
 
@@ -105,7 +105,7 @@ public:
             double mzMin,
             double mzMax,
             QVector<FeatureFinderHill*> *featureFinderHills
-    );
+    ) const;
 
     Err refineHills(bool useSmoothing);
 
@@ -126,13 +126,13 @@ private:
             const QVector<ScanPoints*> &allScanPoints,
             QVector<QVector<QVector<float>>> *groupedMzVals,
             QVector<QVector<QVector<float>>> *groupedIntensityVals
-    );
+    ) const;
 
     Err connectCentroidsInGroupedMzValsTest(
             const QVector<QVector<QVector<float>>> &groupedMzVals,
             double tolerancePPM,
             QVector<QVector<int>> *connectedCentroidsVecs
-    );
+    ) const;
 
 
 private:

@@ -5,7 +5,7 @@
 #include "MsReaderPointerAcc.h"
 
 #include "GlobalSettings.h"
-// #include "MsReaderBrukerTims.h"
+#include "MsReaderBrukerTims.h"
 #include "MsReaderParquet.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderMzMLMapped.h"
@@ -22,6 +22,10 @@ MsReaderPointerAcc::MsReaderPointerAcc() : m_useLazyLoading(false) {}
 
 void MsReaderPointerAcc::setUseLazyLoading(bool useLazyLoading) {
     m_useLazyLoading = useLazyLoading;
+}
+
+bool MsReaderPointerAcc::useLazyLoading() const {
+    return m_useLazyLoading;
 }
 
 Err MsReaderPointerAcc::openFile(const QString &filePath) {
@@ -57,16 +61,23 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
                 || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
             && fi.isFile()) {
 
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ .prq files";
+        m_useLazyLoading = false;
+
         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
         ptr = msReader;
         e = ptr->openFile(filePath); ree;
     }
 
-    // else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-    //     QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
-    //     ptr = msReader;
-    //     e = ptr->openFile(filePath); ree;
-    // }
+    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
+
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+        m_useLazyLoading = false;
+
+        QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+        ptr = msReader;
+        e = ptr->openFile(filePath); ree;
+    }
 
     else {
         qDebug() << "Filepath" << filePath;

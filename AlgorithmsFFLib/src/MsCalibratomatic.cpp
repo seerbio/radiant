@@ -34,7 +34,7 @@ namespace {
         ERR_INIT
         e = ErrorUtils::isNotEmpty(data); ree;
 
-        const double testFraction = 0.2;
+        constexpr double testFraction = 0.2;
         const int seed = S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST;
 
         QVector<QPair<XVal, YVal>> trainingData;
@@ -81,31 +81,29 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
 
     e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
 
-    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
-
-    const auto insertLogic = [](const MsCalibarationReaderRow &r){
+    const auto insertLogicIRT = [](const MsCalibarationReaderRow &r){
         return QPair(r.iRTPredicted, r.scanTime);
     };
 
-    QVector<QPair<XVal, YVal>> data;
-    data.reserve(msCalibarationReaderRows.size());
+    QVector<QPair<XVal, YVal>> dataIRT;
+    dataIRT.reserve(msCalibarationReaderRows.size());
     std::transform(
             msCalibarationReaderRows.begin(),
             msCalibarationReaderRows.end(),
-            std::back_inserter(data),
-            insertLogic
+            std::back_inserter(dataIRT),
+            insertLogicIRT
             );
 
     double stDevScanTimeDiff;
     e = generateMetricsIRTtoScanTime(
-        data,
+        dataIRT,
         m_params.verbosity,
         m_params.rtBinning,
         &stDevScanTimeDiff
         ); ree;
     m_scanTimeStd = stDevScanTimeDiff;
 
-    e = m_iRTtoScanTimeMapper.init(data); ree;
+    e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
     e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
     e = ErrorUtils::isTrue(m_scanTimeStd > 0.0); ree;
 

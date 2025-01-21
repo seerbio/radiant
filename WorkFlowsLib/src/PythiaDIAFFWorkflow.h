@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "PythiaParameterReader.h"
@@ -36,7 +37,7 @@ public:
     friend class PythiaDIAFFWorkflowTests;
 
     PythiaDIAFFWorkflow();
-    ~PythiaDIAFFWorkflow() = default;
+    ~PythiaDIAFFWorkflow();
 
     /**
     * @brief Initializes the PythiaDIAFFWorkflow with necessary parameters
@@ -81,6 +82,8 @@ public:
 
 
 private:
+
+    Err buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc);
 
     Err mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
@@ -129,6 +132,10 @@ private:
     int m_minTrainingCountTranche;
 
     QVector<float> m_weights;
+
+    QMap<ScanNumber, FeatureFinderHillBuilder*> m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS;
+
+    QVector<FragLibReaderRow> m_fragLibReaderRows;
 
 };
 

@@ -12,7 +12,14 @@
 
 #include <iostream>
 
-MsReaderBase::MsReaderBase() : m_fileIsCalibrated(false) {}
+MsReaderBase::MsReaderBase()
+: m_fileIsCalibrated(false)
+, m_isTIMS(false)
+, m_mzMs1Min(std::numeric_limits<float>::max())
+, m_mzMs1Max(-1.0)
+, m_mzMs2Min(std::numeric_limits<float>::max())
+, m_mzMs2Max(-1.0)
+{}
 
 void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
     m_msScanInfo = msScanInfos;
@@ -423,7 +430,7 @@ Err MsReaderBase::zipScanPoints(
     ERR_RETURN
 }
 
-void MsReaderBase::printSize() {
+void MsReaderBase::printSize() const {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsScanInfo size" << m_msScanInfo.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanPoints size" << m_scanPoints.size();
 }
@@ -435,21 +442,54 @@ Err MsReaderBase::printFileInfo() {
     int ms1ScanSize = -1;
     int ms2ScanSize = -1;
     int msLevel = 1;
+
     {
         const QMap<ScanNumber, MsScanInfo> ms1Scans = getMsScanInfos(msLevel);
         ms1ScanSize = ms1Scans.size();
 
+        for (const MsScanInfo &msScanInfo : ms1Scans) {
+            const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
+            m_mzMs1Min = std::min(m_mzMs1Min, scanPoints.front().x());
+            m_mzMs1Max = std::max(m_mzMs1Max, scanPoints.back().x());
+        }
+
         const QMap<ScanNumber, MsScanInfo> ms2Scans = getMsScanInfos(++msLevel);
         ms2ScanSize = ms2Scans.size();
+
+        for (const MsScanInfo &msScanInfo : ms2Scans) {
+            const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
+            m_mzMs2Min = std::min(m_mzMs1Min, scanPoints.front().x());
+            m_mzMs2Max = std::max(m_mzMs1Max, scanPoints.back().x());
+        }
     }
 
     const QVector<MsScanInfo> uniqueTandemScanInfos = getUniqueTandemMsScanInfos();
+    const int meanFrameScanCount = static_cast<int>(std::round(static_cast<float>(ms2ScanSize) / uniqueTandemScanInfos.size()));
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsData FilePath" << m_filePath;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Range" << m_mzMs1Min << "-" << m_mzMs1Max;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Count" << ms1ScanSize;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Range" << m_mzMs2Min << "-" << m_mzMs2Max;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Target Window Count" << uniqueTandemScanInfos.size();
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Target Window Mean Scan Count" << meanFrameScanCount;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "File is DIA" << isDIA();
 
     ERR_RETURN
+}
+
+bool MsReaderBase::isTIMS() const {
+    return m_isTIMS;
+}
+
+float MsReaderBase::mzMs2Min() const {
+    return m_mzMs2Min;
+}
+
+float MsReaderBase::mzMs2Max() const {
+    return m_mzMs2Max;
+}
+
+QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
+    return &m_frameNumberVsMS1FrameTIMS;
 }

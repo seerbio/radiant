@@ -35,14 +35,25 @@ class FILEREADERSLIB_EXPORTS MsReaderBrukerTims : public MsReaderBase {
 
 public:
 
-    MsReaderBrukerTims();
+    MsReaderBrukerTims() = default;
 
-    ~MsReaderBrukerTims();
+    ~MsReaderBrukerTims() override = default;
 
     Err openFile(const QString &filePath) override;
 
     Err closeFile() override;
 
+    Err writeFrame(
+        const QString &filePath,
+        float scanTime,
+        int msLevel
+        );
+
+private:
+
+    QHash<MzTargetKey, TimsMS2WindowsInfo> m_mzTargetVsTimsMs2WindowsInfos;
+    QHash<int, QVector<TimsMS2WindowsInfo>> m_windowGroupIndexVsTimsMs2WindowsInfoses;
+    std::vector<TimsFrameInfo> m_timsFramesInfos;
 };
 
 

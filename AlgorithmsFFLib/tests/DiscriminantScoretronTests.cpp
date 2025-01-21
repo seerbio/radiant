@@ -54,49 +54,49 @@ void DiscriminantScoretronTests::setDisciminantScoreForCandidatesTest() {
             TargetDecoyCandidatePair()
     };
 
-    QVector<CandidateScores> candidateScoresVec;
-    for (int i = 0; i < targetsData.size(); i++) {
-
-
-        CandidateScores cs;
-        cs.featuresArray = targetsData.at(i);
-        cs.isDecoy = false;
-        cs.targetDecoyCandidatePair = &targetDecoyPairsTargets[i];
-        cs.targetDecoyCandidatePair->setCharge(2);
-        cs.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
-        cs.targetKey = "1234";
-
-        CandidateScores csDecoy;
-        csDecoy.featuresArray = decoyData.at(i);
-        csDecoy.isDecoy = true;
-        csDecoy.targetDecoyCandidatePair = &targetDecoyPairsDecoys[i];
-        csDecoy.targetDecoyCandidatePair->setCharge(2);
-        csDecoy.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
-        csDecoy.targetKey = "1234";
-
-        candidateScoresVec.push_back(cs);
-        candidateScoresVec.push_back(csDecoy);
-    }
-
-    QVector<CandidateScores*> candidateScoresPtrsVec;
-    std::transform(
-            candidateScoresVec.begin(),
-            candidateScoresVec.end(),
-            std::back_inserter(candidateScoresPtrsVec),
-            [](CandidateScores &c){return &c;}
-            );
-
-    // e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
-    //         false,
-    //         false,
-    //         &candidateScoresPtrsVec
-    //         );
-    // QCOMPARE(e, eNoError);
-
-    //TODO this is not really much of a test.  replace arrays w/ values that will yield a non-zero disc score.
-    // for (const CandidateScores *cs : candidateScoresPtrsVec) {
-    //     QCOMPARE(cs->discriminantScore, 0);
+    // QVector<CandidateScores> candidateScoresVec;
+    // for (int i = 0; i < targetsData.size(); i++) {
+    //
+    //
+    //     CandidateScores cs;
+    //     cs.featuresArray = targetsData.at(i);
+    //     cs.isDecoy = false;
+    //     cs.targetDecoyCandidatePair = &targetDecoyPairsTargets[i];
+    //     cs.targetDecoyCandidatePair->setCharge(2);
+    //     cs.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
+    //     cs.targetKey = "1234";
+    //
+    //     CandidateScores csDecoy;
+    //     csDecoy.featuresArray = decoyData.at(i);
+    //     csDecoy.isDecoy = true;
+    //     csDecoy.targetDecoyCandidatePair = &targetDecoyPairsDecoys[i];
+    //     csDecoy.targetDecoyCandidatePair->setCharge(2);
+    //     csDecoy.targetDecoyCandidatePair->setPeptideStringWithMods(PeptideStringWithMods(seqs.at(i)));
+    //     csDecoy.targetKey = "1234";
+    //
+    //     candidateScoresVec.push_back(cs);
+    //     candidateScoresVec.push_back(csDecoy);
     // }
+    //
+    // QVector<CandidateScores*> candidateScoresPtrsVec;
+    // std::transform(
+    //         candidateScoresVec.begin(),
+    //         candidateScoresVec.end(),
+    //         std::back_inserter(candidateScoresPtrsVec),
+    //         [](CandidateScores &c){return &c;}
+    //         );
+    //
+    // // e = DiscriminantScoretron::setDiscriminantScoreForCandidates(
+    // //         false,
+    // //         false,
+    // //         &candidateScoresPtrsVec
+    // //         );
+    // // QCOMPARE(e, eNoError);
+    //
+    // //TODO this is not really much of a test.  replace arrays w/ values that will yield a non-zero disc score.
+    // // for (const CandidateScores *cs : candidateScoresPtrsVec) {
+    // //     QCOMPARE(cs->discriminantScore, 0);
+    // // }
 
 }
 

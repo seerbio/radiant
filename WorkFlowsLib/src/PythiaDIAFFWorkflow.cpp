@@ -12,6 +12,7 @@
 #include "FastaReader.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "FragLibReader.h"
+#include "IonMobilitron.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h"
@@ -34,6 +35,14 @@ PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 , m_minTrainingCountTranche(50)
 {}
 
+PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
+
+    for (FeatureFinderHillBuilder *h : m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS) {
+        delete h;
+    }
+
+}
+
 Err PythiaDIAFFWorkflow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri,
@@ -53,25 +62,45 @@ Err PythiaDIAFFWorkflow::init(
     ParallelUtils::printSystemDetails();
 
     m_pythiaParameters = pythiaParameters;
+
+/***** DEV OVERRIDES *****/
+// #define DEV_OVERRIDES
+#ifdef DEV_OVERRIDES
+    // m_pythiaParameters.useLazyLoading = true;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
+    // m_pythiaParameters.peakCenter = 4;
+    m_pythiaParameters.writePythiaDIA = false;
+    // m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.ionsSharedToReject = 4;
+    // m_pythiaParameters.filterLengthIntegration = 7;
+
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+    qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
+#endif
+/**************************/
+
     m_fragLibUri = fragLibUri;
     m_pythiaParameters.print();
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
 
-    QVector<FragLibReaderRow> fragLibReaderRows;
     e = FragLibReader::getFragLibReaderRows(
             m_fragLibUri,
-            &fragLibReaderRows
+            &m_fragLibReaderRows
             ); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading read";
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished reading library";
 
     e = m_targetDecoyCandidatePairManager.init(
             m_pythiaParameters,
-            &fragLibReaderRows
+            &m_fragLibReaderRows
             ); ree;
 
-    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree
+    e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyPairPntrs); ree //TODO HERHHERHEHREH
 
     ERR_RETURN
 }
@@ -243,6 +272,99 @@ namespace {
         ERR_RETURN
     }
 
+    Err buildIonMobilityTrainingSet(
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+        QVector<CandidateScores*> *candidateScoresIMTraining
+        ) {
+
+        ERR_INIT
+
+        constexpr int trainingCount = 500;
+
+        QVector<CandidateScores*> candidateScoresTargetsAndDecoysSorted = candidateScoresTargetsAndDecoys;
+        std::sort(
+            candidateScoresTargetsAndDecoysSorted.rbegin(),
+            candidateScoresTargetsAndDecoysSorted.rend(),
+            [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+            );
+
+        candidateScoresIMTraining->reserve(trainingCount);
+
+        int counter = 0;
+        for (CandidateScores *cs : candidateScoresTargetsAndDecoysSorted) {
+
+            if (cs->ionMobilityIndex < 0) {
+                continue;
+            }
+
+            candidateScoresIMTraining->push_back(cs);
+
+            if (counter++ > trainingCount) {
+                break;
+            }
+        }
+
+        // e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
+        //
+        // std::sort(
+        //     candidateScoresIMTraining->rbegin(),
+        //     candidateScoresIMTraining->rend(),
+        //     [](const CandidateScores *l, const CandidateScores *r) {
+        //         return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
+        //     });
+        //
+        // candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
+        //
+        // std::sort(
+        //     candidateScoresIMTraining->rbegin(),
+        //     candidateScoresIMTraining->rend(),
+        //     [](const CandidateScores *l, const CandidateScores *r) {
+        //         return l->discriminantScore < r->discriminantScore;
+        //     });
+
+        ERR_RETURN
+    }
+
+    Err predictIonMobilityIndexes(const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys) {
+
+        ERR_INIT
+
+        // QVector<CandidateScores*> candidateScoresIMTraining;
+        // e = buildIonMobilityTrainingSet(
+        //     candidateScoresTargetsAndDecoys,
+        //     &candidateScoresIMTraining
+        //     ); ree;
+        //
+        // QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
+        // std::transform(
+        //     candidateScoresIMTraining.begin(),
+        //     candidateScoresIMTraining.end(),
+        //     std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
+        //     [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
+        //     );
+        //
+        // IonMobilitron ionMobilitron;
+        // e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
+        //
+        // for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
+        //
+        //     if (cs->ionMobilityIndex < 0) {
+        //         continue;
+        //     }
+        //
+        //     e = ionMobilitron.predictIonMobilityIndex(
+        //         cs->targetDecoyCandidatePair->iIM(),
+        //         &cs->ionMobilityIndexPredicted
+        //         ); ree;
+        //
+        //     cs->featuresArray[Features::ImTheoDiff]
+        //             = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
+        // }
+
+        ERR_RETURN
+
+    }
+
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
         MsReaderPointerAcc *msReaderPointerAcc
@@ -268,18 +390,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     ERR_INIT
 
-/***** DEV OVERRIDES *****/
-// #define DEV_OVERRIDES
-#ifdef DEV_OVERRIDES
-    // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
-    // m_pythiaParameters.peakCenter = 4;
-    // m_pythiaParameters.writePythiaDIA = false;
-    m_pythiaParameters.reannotate = true;
-    // m_pythiaParameters.ionsSharedToReject = 4;
-#endif
-/**************************/
-
     e = ErrorUtils::fileExists(msDataFilePath); ree;
     MsReaderPointerAcc msReaderPointerAcc;
 
@@ -287,6 +397,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
+
+    // if (msReaderPointerAcc.ptr->isTIMS()) {
+    //     e = buildMs1FeaturesforTIMS(&msReaderPointerAcc); ree;
+    //     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished";
+    // }
 
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
@@ -348,6 +463,17 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoys
         ); ree;
 
+    // if (msReaderPointerAcc.ptr->isTIMS()) {
+    //
+    //     e = IonMobilitron::assignIonMobilityValues(
+    //         m_pythiaParameters,
+    //         candidateScoresTargetsAndDecoys,
+    //         &m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+    //         ); ree;
+    //
+    //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
+    // }
+
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
             candidateScoresTargetsAndDecoys,
@@ -399,6 +525,78 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
+namespace {
+
+    QPair<Err, FeatureFinderHillBuilder*> timsFeatureFinderLogic(
+        const Ms1FrameTIMS &ms1FrameTims,
+        const FeatureFinderParameters &featureFinderParameters
+            ) {
+
+        ERR_INIT
+
+        auto *featureFinderHillBuilder = new FeatureFinderHillBuilder();
+        e = featureFinderHillBuilder->init(featureFinderParameters); rree;
+
+        Ms1FrameTIMS ms1FrameTimsCopy = ms1FrameTims;
+
+        Ms1FrameTIMSPntrs ms1FrameTIMSPntrs;
+        for (auto it = ms1FrameTimsCopy.begin(); it != ms1FrameTimsCopy.end(); ++it) {
+            ms1FrameTIMSPntrs.insert(it.key(), &it.value());
+        }
+
+        e = featureFinderHillBuilder->buildHills(ms1FrameTIMSPntrs); rree;
+
+        return {e, featureFinderHillBuilder};
+    }
+
+}//namespace
+Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc) {
+
+    ERR_INIT
+
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding start";
+
+    QElapsedTimer etFF;
+    etFF.start();
+
+    QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+    const QVector<FrameIndex> frameIndexesTIMS = frameNumberVsFrameTIMSPntr->keys().toVector();
+
+    FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
+
+#define BUILD_FEATURES_PARALLEL
+#ifdef BUILD_FEATURES_PARALLEL
+    const auto featureFinderBinder = std::bind(
+        timsFeatureFinderLogic,
+        std::placeholders::_1,
+        featureFinderParameters
+        );
+
+    QFuture<QPair<Err, FeatureFinderHillBuilder*>> future = QtConcurrent::mapped(
+        *frameNumberVsFrameTIMSPntr,
+        featureFinderBinder
+        );
+    future.waitForFinished();
+
+    int scanNumberIndexCurrent = 0;
+    for (const QPair<Err, FeatureFinderHillBuilder*> &pr : future) {
+        e = pr.first; ree;
+        m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS.insert(
+            frameIndexesTIMS.at(scanNumberIndexCurrent++),
+            pr.second
+            );
+    }
+#else
+    for (auto it = frameNumberVsFrameTIMSPntr->begin(); it != frameNumberVsFrameTIMSPntr->end(); ++it) {
+        const QPair<Err, FeatureFinderHillBuilder*> &result = timsFeatureFinderLogic(it.value(), featureFinderParameters); ree;
+        e = result.first; ree;
+        m_featureFinderHillBuildersTIMS.push_back(result.second);
+    }
+#endif
+
+    ERR_RETURN
+}
+
 Err PythiaDIAFFWorkflow::mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent
@@ -425,19 +623,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     const QVector<MsScanInfo> uniqueMsScanInfos = msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
-    QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePointers;
-    e = PythiaDIAFFWorkflowSharedMethods::buildUniqueInfoScanKeyVsTargetDecoyCandidatePointers(
-            m_targetDecoyPairPntrs,
-            m_pythiaParameters,
-            uniqueMsScanInfos,
-            &mzTargetKeyVsTargetDecoyCandidatePointers
-            ); ree;
-
     qDebug()
     << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "TargetKeys size:" << mzTargetKeyVsTargetDecoyCandidatePointers.size();
-
-    QMap<MzTargetKey, TurboXIC*> nullToBuildTurboXICInParallelLoop;
+    << "TargetKeys size:" << uniqueMsScanInfos.size();
 
     constexpr int splitter = 2;
     const int threadCount = uniqueMsScanInfos.size() < m_pythiaParameters.threadCount
@@ -456,9 +644,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
             useExtendedScores,
             useNeuralNetworkScores,
             useTopNIntegrationsParameter,
-            nullToBuildTurboXICInParallelLoop,
+            uniqueMsScanInfos,
             m_weights,
-            &mzTargetKeyVsTargetDecoyCandidatePointers,
+            &m_targetDecoyPairPntrs,
             &m_candidateScorePairs
             ); ree
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets scored" << et.restart() << "mSec";
@@ -544,7 +732,13 @@ namespace {
             CandidateScores *cs = candidateScoresTargetsAndDecoysFDRFiltered.at(i);
             KarnnNNTarget karnnNnTarget;
             karnnNnTarget.candidateScores = cs;
-            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+
+// #define WRITE_KARNNN_NORM_TO_FILE
+#ifdef WRITE_KARNNN_NORM_TO_FILE
+            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(cs);
+#else
+        karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+#endif
 
             karnnNNTargets.push_back(karnnNnTarget);
         }
@@ -575,6 +769,19 @@ namespace {
             xData.push_back(kt.scoreVecNormalized);
             yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
         }
+
+
+// #define WRITENN_NORM
+#ifdef WRITENN_NORM
+        QFile file("nn_train_data.csv");
+        if (!file.open(QIODevice::WriteOnly)) {
+            rrr(eFileError)
+        }
+        QDataStream out(&file);
+        out << xData;
+        out << yData;
+        file.close();
+#endif
 
         constexpr int baggingSize = 4;
         constexpr float learningRate = 0.003;
@@ -787,6 +994,17 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     file.close();
 #endif
 
+// #define WRITE_CANDIDATES_TO_FILE
+#ifdef WRITE_CANDIDATES_TO_FILE
+    QVector<CandidateScoresReaderRow> candidateScoresReaderRows;
+    for (const CandidateScores *cs : candidateScoresTargetsAndDecoysNeuralNet) {
+        CandidateScoresReaderRow csrr = CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);
+        candidateScoresReaderRows.push_back(csrr);
+    }
+
+    e = ParquetReader::write(candidateScoresReaderRows, "candidates.parquet"); ree;
+#endif
+
     candidateScoreClassifier->clear();
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
@@ -800,6 +1018,33 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         karnnNNTargetsNorm,
         &karnnNNTargetsNormTrain
         ); ree;
+
+#ifdef WRITE_KARNNN_NORM_TO_FILE
+
+    e = updateProteinGroupAnnotation(
+        m_fastaUri,
+        0,
+        &candidateScoresTargetsAndDecoysNeuralNet
+        ); ree;
+
+    QFile file("kareNN.dat");
+    if (!file.open(QIODevice::WriteOnly)) {
+        rrr(eFileError);
+    }
+
+    QDataStream out(&file);
+    out << karnnNNTargetsNormTrain.size();
+
+    for (const KarnnNNTarget &kt : karnnNNTargetsNormTrain) {
+        float label =kt.candidateScores->isDecoy ? 1.0 : 0.0;
+        out << kt.scoreVecNormalized;
+        out << label;
+        out << kt.candidateScores->proteinGroup;
+    }
+    file.close();
+
+
+#endif
 
     const int totalCount = karnnNNTargetsNormTrain.size();
     const int decoyCount = static_cast<int>(std::count_if(
@@ -935,25 +1180,29 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     for (CandidateScores *cs : *candidateScores) {
         counter++;
 
-        const QString entrapString = QStringLiteral("_HUMAN");
-        if (!cs->proteinGroup.contains(entrapString) && !cs->isDecoy && !cs->proteinGroup.isEmpty()) {
-            entrap++;
-        }
-
-        if (cs->isDecoy) {
-            decoys++;
-        }
         if (decoys/static_cast<double>(counter) >= 0.01) {
             break;
         }
 
+        if (cs->isDecoy) {
+            decoys++;
+            continue;
+        }
+
+        if (!cs->proteinGroup.contains("_HUMAN")
+            && !cs->isDecoy
+            && cs->proteinGroup.contains("_ARATH")
+            && !cs->proteinGroup.isEmpty()
+            ) {
+            entrap++;
+        }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "Alt:" << targetCountBelowFDRThresholdOnePercent
             << "| Counter:" << counter
             << "| Decoys:" <<  decoys
             << "| Entrap:" << entrap
-            << "| Entrap%" << entrap / (double)counter;
+            << "| Entrap%" << entrap / static_cast<double>(counter);
 #endif
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
@@ -987,8 +1236,10 @@ void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidate
                 decoyCounter++;
             }
 
-            constexpr double fdrThreshold = 0.5;
-            if (decoyCounter / static_cast<double>(counter) >= fdrThreshold) {
+            if (
+                constexpr double fdrThreshold = 0.5;
+                decoyCounter / static_cast<double>(counter) >= fdrThreshold
+                ) {
                 break;
             }
         }

@@ -9,6 +9,7 @@
 
 #include "CandidateScores.h"
 #include "Error.h"
+#include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
 #include "MsReaderPointerAcc.h"

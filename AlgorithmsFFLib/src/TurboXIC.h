@@ -17,6 +17,7 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
     float mz = -1.0;
     float intensity = -1.0;
     ScanNumber scanNumber = -1;
+    IonMobilityIndex ionMobilityIndex = -1;
 
     friend QDebug operator<<(QDebug dbg, const XICPoint& obj) {
         dbg.nospace() << "XICPoint(" << obj.scanNumber << " " << obj.mz << ", " << obj.intensity << ") ";

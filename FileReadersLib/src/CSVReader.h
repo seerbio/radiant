@@ -15,6 +15,7 @@ using namespace Error;
 class CSVReaderInputBase {
 
 public:
+    virtual ~CSVReaderInputBase() = default;
 
     /**
      * @brief returns a collection of key/value pairs that store the information to be written.

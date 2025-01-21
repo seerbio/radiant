@@ -404,6 +404,9 @@ Err CandidateScorertron::calculateScores(
     if (candidateScoresPairs.size() > 1) {
         candidateScores->featuresArray[Features::DiscScore1stRunnerUp]
             = candidateScoresPairs.front().first - candidateScoresPairs.at(1).first;
+
+        candidateScores->featuresArray[Features::DiscScore1stRunnerUpDiffRatio]
+            = (candidateScoresPairs.front().first - candidateScoresPairs.at(1).first) / candidateScoresPairs.front().first;
     }
     if (candidateScoresPairs.size() > 2) {
         candidateScores->featuresArray[Features::DiscScore2ndRunnerUp]
@@ -700,9 +703,9 @@ namespace {
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
-        integrationVecLocal,
-        kernelIntegration
-        );
+            integrationVecLocal,
+            kernelIntegration
+            );
 
         ERR_RETURN
     }
@@ -755,62 +758,64 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::initMatricesdAndVecs(
-        const QVector<MS2Ion> &ms2Ions,
-        FrameIndex frameIndexPredictedMin,
-        FrameIndex frameIndexPredictedMax,
-        MatriciesAndVecs *matriciesAndVecs
-        ) const {
+    const QVector<MS2Ion> &ms2Ions,
+    FrameIndex frameIndexPredictedMin,
+    FrameIndex frameIndexPredictedMax,
+    MatriciesAndVecs *matriciesAndVecs
+    ) const {
 
-        ERR_INIT
+    ERR_INIT
 
-        e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-        e = ErrorUtils::isAboveThreshold(m_topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
+    e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+    e = ErrorUtils::isAboveThreshold(m_topNMS2Ions, 0, ErrorUtilsParam::ExcludeThreshold); ree;
 
-        QVector<MS2Ion> ms2IonsResized = ms2Ions;
-        ms2IonsResized.resize(std::min(m_topNMS2Ions, ms2Ions.size()));
+    QVector<MS2Ion> ms2IonsResized = ms2Ions;
+    ms2IonsResized.resize(std::min(m_topNMS2Ions, ms2Ions.size()));
 
-        const bool ms2IonsAreSorted = std::is_sorted(
-            ms2IonsResized.rbegin(),
-            ms2IonsResized.rend(),
-            [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
-            );
-        e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
+    const bool ms2IonsAreSorted = std::is_sorted(
+        ms2IonsResized.rbegin(),
+        ms2IonsResized.rend(),
+        [](const MS2Ion &l, const MS2Ion &r){return l.intensity < r.intensity;}
+        );
+    e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
 
-        QVector<XICPoints> xicPointsVec100;
-        QVector<XICPoints> xicPointsVec100Shadow;
-        QVector<XICPoints> xicPointsVec45;
-        e = getXICs(
-            ms2IonsResized,
-            static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
-            frameIndexPredictedMin,
-            frameIndexPredictedMax,
-            m_xicPeakManager,
-            &xicPointsVec100,
-            &xicPointsVec100Shadow,
-            &xicPointsVec45
-            ); ree;
+    QVector<XICPoints> xicPointsVec100;
+    QVector<XICPoints> xicPointsVec100Shadow;
+    QVector<XICPoints> xicPointsVec45;
+    e = getXICs(
+        ms2IonsResized,
+        static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
+        frameIndexPredictedMin,
+        frameIndexPredictedMax,
+        m_xicPeakManager,
+        &xicPointsVec100,
+        &xicPointsVec100Shadow,
+        &xicPointsVec45
+        ); ree;
 
-        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
-        e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
+    e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec45.size()); ree;
+    e = ErrorUtils::isEqual(xicPointsVec100.size(), xicPointsVec100Shadow.size()); ree;
 
-        const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
+    const FrameIndex frameIndexMax = findFrameIndexMaxXICPointsVec(xicPointsVec100);
 
-        constexpr int smoothCount = 1;
-        e = buildEigenMatrix(
-            xicPointsVec100,
-            d_ptr->m_kernelMs2,
-            frameIndexMax,
-            true,
-            smoothCount,
-            &matriciesAndVecs->intensityMatrix100,
-            &matriciesAndVecs->mzMatrix100
-            ); ree;
-        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
-        matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
-            matriciesAndVecs->intensityVec,
-            d_ptr->m_kernelIntegration
-            );
-        matriciesAndVecs->intensityVec = matriciesAndVecs->intensityVec.array().log10();
+    constexpr int smoothCount = 1;
+    e = buildEigenMatrix(
+        xicPointsVec100,
+        d_ptr->m_kernelMs2,
+        frameIndexMax,
+        true,
+        smoothCount,
+        &matriciesAndVecs->intensityMatrix100,
+        &matriciesAndVecs->mzMatrix100
+        ); ree;
+    matriciesAndVecs->intensityVec = matriciesAndVecs->intensityMatrix100.rowwise().sum();
+
+    matriciesAndVecs->intensityVec = EigenKernelUtils::convolveVectorWithKernel(
+        matriciesAndVecs->intensityVec,
+        d_ptr->m_kernelIntegration
+        );
+
+    matriciesAndVecs->intensityVec = matriciesAndVecs->intensityVec.array().log10();
         matriciesAndVecs->intensityVec /= matriciesAndVecs->intensityVec.maxCoeff();
         EigenUtils::replaceInf(0.0f, &matriciesAndVecs->intensityVec);
         matriciesAndVecs->intensityVec *= matriciesAndVecs->intensityVec.maxCoeff();
@@ -1921,7 +1926,7 @@ Err CandidateScorertron::setCandidateScores(
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[Features::PeptideLengthNorm] = static_cast<float>(pepLength);
 
-    const auto mz = candidateScores->targetDecoyCandidatePair->mz();
+    const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
     candidateScores->featuresArray[Features::MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[Features::IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
     candidateScores->featuresArray[Features::Mass] = candidateScores->targetDecoyCandidatePair->mass();
@@ -1997,7 +2002,7 @@ namespace {
         Eigen::VectorX<float> vec(frameIndexMax + 1);
         vec.setZero();
 
-        for (const auto &[mz, intensity, scanNumber] : xicPoints) {
+        for (const auto &[mz, intensity, scanNumber, ionMobilityIndex] : xicPoints) {
 
             if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
                 continue;
@@ -2145,7 +2150,7 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
 
-    const float monoIsotopeMz = targetDecoyCandidatePair->mz();
+    const float monoIsotopeMz = targetDecoyCandidatePair->mz(candidateScores->isDecoy);
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);
@@ -2447,43 +2452,43 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     const int bIonsSeriesLongestMax =*std::max_element(bIonsSeriesLongest.begin(), bIonsSeriesLongest.end());
     const int bIonsSeriesLongestTheoMax =*std::max_element(bIonsSeriesLongestTheo.begin(), bIonsSeriesLongestTheo.end());
 
-    candidateScores->featuresArray[Features::YIonSeriesMax] = yIonsSeriesLongestMax;
-    candidateScores->featuresArray[Features::YIonSeriesCount] = yIonsSeriesLongest.size();
-    candidateScores->featuresArray[Features::YIonSeriesMean] = MathUtils::mean(yIonsSeriesLongest);
-    candidateScores->featuresArray[Features::YIonSeriesStd] =  MathUtils::stDev(yIonsSeriesLongest);
-    candidateScores->featuresArray[Features::YIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::YIonSeriesStd];
-
-    candidateScores->featuresArray[Features::YIonSeriesTheoMax] = yIonsSeriesLongestTheoMax;
-    candidateScores->featuresArray[Features::YIonSeriesTheoCount] = yIonsSeriesLongestTheo.size();
-    candidateScores->featuresArray[Features::YIonSeriesTheoMean] = MathUtils::mean(yIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::YIonSeriesTheoStd] = MathUtils::stDev(yIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::YIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesTheoStd])
-                                                        ? -1.0f
-                                                        : candidateScores->featuresArray[Features::YIonSeriesTheoStd];
-    candidateScores->featuresArray[Features::YIonSeriesMaxFoundToTheoFraction] = yIonsSeriesLongestMax / std::max(static_cast<float>(yIonsSeriesLongestTheoMax), 1.0f);
-    candidateScores->featuresArray[Features::YIonSeriesCountRatio] = candidateScores->featuresArray[Features::YIonSeriesCount]
-                                                                   / std::max(candidateScores->featuresArray[Features::YIonSeriesTheoCount], 1.0f);
-
-    candidateScores->featuresArray[Features::BIonSeriesMax] = bIonsSeriesLongestMax;
-    candidateScores->featuresArray[Features::BIonSeriesCount] = bIonsSeriesLongest.size();
-    candidateScores->featuresArray[Features::BIonSeriesMean] = MathUtils::mean(bIonsSeriesLongest);
-    candidateScores->featuresArray[Features::BIonSeriesStd] = MathUtils::stDev(bIonsSeriesLongest);
-    candidateScores->featuresArray[Features::BIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::BIonSeriesStd];
-    candidateScores->featuresArray[Features::BIonSeriesTheoMax] = bIonsSeriesLongestTheoMax;
-    candidateScores->featuresArray[Features::BIonSeriesTheoCount] = bIonsSeriesLongestTheo.size();
-    candidateScores->featuresArray[Features::BIonSeriesTheoMean] = MathUtils::mean(bIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::BIonSeriesTheoStd] = MathUtils::stDev(bIonsSeriesLongestTheo);
-    candidateScores->featuresArray[Features::BIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesTheoStd])
-                                                            ? -1.0f
-                                                            : candidateScores->featuresArray[Features::BIonSeriesTheoStd];
-
-    candidateScores->featuresArray[Features::BIonSeriesMaxFoundToTheoFraction] = bIonsSeriesLongestMax / std::max(static_cast<float>(bIonsSeriesLongestTheoMax), 1.0f);
-    candidateScores->featuresArray[Features::BIonSeriesCountRatio] = candidateScores->featuresArray[Features::BIonSeriesCount]
-                                                                   / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
+    // candidateScores->featuresArray[Features::YIonSeriesMax] = yIonsSeriesLongestMax;
+    // candidateScores->featuresArray[Features::YIonSeriesCount] = yIonsSeriesLongest.size();
+    // candidateScores->featuresArray[Features::YIonSeriesMean] = MathUtils::mean(yIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::YIonSeriesStd] =  MathUtils::stDev(yIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::YIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::YIonSeriesStd];
+    //
+    // candidateScores->featuresArray[Features::YIonSeriesTheoMax] = yIonsSeriesLongestTheoMax;
+    // candidateScores->featuresArray[Features::YIonSeriesTheoCount] = yIonsSeriesLongestTheo.size();
+    // candidateScores->featuresArray[Features::YIonSeriesTheoMean] = MathUtils::mean(yIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::YIonSeriesTheoStd] = MathUtils::stDev(yIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::YIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::YIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::YIonSeriesTheoStd])
+    //                                                     ? -1.0f
+    //                                                     : candidateScores->featuresArray[Features::YIonSeriesTheoStd];
+    // candidateScores->featuresArray[Features::YIonSeriesMaxFoundToTheoFraction] = yIonsSeriesLongestMax / std::max(static_cast<float>(yIonsSeriesLongestTheoMax), 1.0f);
+    // candidateScores->featuresArray[Features::YIonSeriesCountRatio] = candidateScores->featuresArray[Features::YIonSeriesCount]
+    //                                                                / std::max(candidateScores->featuresArray[Features::YIonSeriesTheoCount], 1.0f);
+    //
+    // candidateScores->featuresArray[Features::BIonSeriesMax] = bIonsSeriesLongestMax;
+    // candidateScores->featuresArray[Features::BIonSeriesCount] = bIonsSeriesLongest.size();
+    // candidateScores->featuresArray[Features::BIonSeriesMean] = MathUtils::mean(bIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::BIonSeriesStd] = MathUtils::stDev(bIonsSeriesLongest);
+    // candidateScores->featuresArray[Features::BIonSeriesStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::BIonSeriesStd];
+    // candidateScores->featuresArray[Features::BIonSeriesTheoMax] = bIonsSeriesLongestTheoMax;
+    // candidateScores->featuresArray[Features::BIonSeriesTheoCount] = bIonsSeriesLongestTheo.size();
+    // candidateScores->featuresArray[Features::BIonSeriesTheoMean] = MathUtils::mean(bIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::BIonSeriesTheoStd] = MathUtils::stDev(bIonsSeriesLongestTheo);
+    // candidateScores->featuresArray[Features::BIonSeriesTheoStd] = std::isinf(candidateScores->featuresArray[Features::BIonSeriesTheoStd]) || std::isnan(candidateScores->featuresArray[Features::BIonSeriesTheoStd])
+    //                                                         ? -1.0f
+    //                                                         : candidateScores->featuresArray[Features::BIonSeriesTheoStd];
+    //
+    // candidateScores->featuresArray[Features::BIonSeriesMaxFoundToTheoFraction] = bIonsSeriesLongestMax / std::max(static_cast<float>(bIonsSeriesLongestTheoMax), 1.0f);
+    // candidateScores->featuresArray[Features::BIonSeriesCountRatio] = candidateScores->featuresArray[Features::BIonSeriesCount]
+    //                                                                / std::max(candidateScores->featuresArray[Features::BIonSeriesTheoCount], 1.0f);
 
     const bool featureVectorHasNanOrInfVal = MathUtils::vectorContainsInfOrNaN(candidateScores->featuresArray);
     if (featureVectorHasNanOrInfVal) {

@@ -179,7 +179,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFramesPntrs
                                     = m_targetDecoyCandidatePairScoretron->diaTargetFrames();
-    if (m_pythiaParameters->useLazyLoading) {
+    if (m_msReaderPointerAcc->useLazyLoading()) {
         e = PythiaDIAFFWorkflowSharedMethods::buildDiaTargetFrames(
             uniqueMsScanInfosOptimization,
             m_msReaderPointerAcc,

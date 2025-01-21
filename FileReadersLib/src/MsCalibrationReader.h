@@ -19,6 +19,7 @@ namespace MsCalibarationReaderNamespace {
 
     const QString PEP_STR_MODS = QStringLiteral("peptideStringWithMods");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
+    const QString IIM_PRED = QStringLiteral("iIM");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
@@ -29,6 +30,7 @@ namespace MsCalibarationReaderNamespace {
     const QStringList keysToCheck = {
             PEP_STR_MODS,
             IRT_PRED,
+            IIM_PRED,
             SCAN_TIME,
             SCAN_NUMBER,
             MZ_SRCH_V,
@@ -37,7 +39,6 @@ namespace MsCalibarationReaderNamespace {
             INTZ_FND_VEC
     };
 }
-
 
 /**
  * See ParquetReaderInputBase for documentation

@@ -104,7 +104,7 @@ struct PythiaParameters{
     double ms2ExtractionWidthPPMOverride = -1.0;
     int minMs2FragCount = 2;
     int rtBinning = 20;
-    int scanTimeWindowStDevs = 3;
+    float scanTimeWindowStDevs = 3;
     bool subtractShadows = true;
     int smoothCountMS2 = 1;
     float stopThresholdFractionMS2 = 0.65;

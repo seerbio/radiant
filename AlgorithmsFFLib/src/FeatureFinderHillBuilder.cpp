@@ -44,7 +44,7 @@ public:
             const QVector<ScanPoints*> &allScanPoints,
             QVector<QVector<QVector<float>>> *groupedMzVals,
             QVector<QVector<QVector<float>>> *groupedIntensityVals
-    );
+    ) const;
 
     Err connectCentroidsInGroupedMzVals(
             const QVector<QVector<QVector<float>>> &groupedMzVals,
@@ -185,6 +185,10 @@ namespace {
                 }
 
                 ScanPoints* scanPoints = sgpi.allScanPointsTranch.at(nextScanIndex);
+                if (scanPoints->isEmpty()) {
+                    const ScanPoint placeholderPointForEmptyScan(1,0);
+                    scanPoints->push_back(placeholderPointForEmptyScan);
+                }
 
                 QVector<float> mzVals;
                 QVector<float> intensityVals;
@@ -214,7 +218,7 @@ Err FeatureFinderHillBuilder::Private::buildScanPointGroups(
         const QVector<ScanPoints*> &allScanPoints,
         QVector<QVector<QVector<float>>> *groupedMzVals,
         QVector<QVector<QVector<float>>> *groupedIntensityVals
-) {
+) const {
 
     ERR_INIT
 
@@ -908,7 +912,7 @@ FeatureFinderHillBuilder::FeatureFinderHillBuilder() : d_ptr(QScopedPointer<Priv
 
 FeatureFinderHillBuilder::~FeatureFinderHillBuilder(){}
 
-Err FeatureFinderHillBuilder::init(const FeatureFinderParameters &featureFinderParameters) {
+Err FeatureFinderHillBuilder::init(const FeatureFinderParameters &featureFinderParameters) const {
     ERR_INIT
     e = d_ptr->init(featureFinderParameters); ree;
     ERR_RETURN
@@ -918,7 +922,7 @@ Err FeatureFinderHillBuilder::buildScanPointGroupsTest(
         const QVector<ScanPoints*> &allScanPoints,
         QVector<QVector<QVector<float>>> *groupedMzVals,
         QVector<QVector<QVector<float>>> *groupedIntensityVals
-) {
+) const {
 
     ERR_INIT
 
@@ -935,7 +939,7 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
         const QVector<QVector<QVector<float>>> &groupedMzVals,
         double tolerancePPM,
         QVector<QVector<int>> *connectedCentroidsVecs
-) {
+) const {
 
     ERR_INIT
 
@@ -965,7 +969,7 @@ Err FeatureFinderHillBuilder::connectCentroidsInGroupedMzValsTest(
     ERR_RETURN
 }
 
-Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
+Err FeatureFinderHillBuilder::buildHills(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const {
     ERR_INIT
     e = d_ptr->buildHills(scanNumberVsScanPoints); ree;
     ERR_RETURN
@@ -1052,7 +1056,7 @@ Err FeatureFinderHillBuilder::getHills(
         FrameIndex frameIndexMin,
         FrameIndex frameIndexMax,
         QVector<FeatureFinderHill*> *featureFinderHills
-        ) {
+        ) const {
     ERR_INIT
     e = d_ptr->getHills(
             mzMin,
@@ -1068,7 +1072,7 @@ Err FeatureFinderHillBuilder::getHills(
         double mzMin,
         double mzMax,
         QVector<FeatureFinderHill*> *featureFinderHills
-) {
+) const {
     ERR_INIT
     e = d_ptr->getHills(
             mzMin,

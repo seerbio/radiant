@@ -16,6 +16,9 @@
 
 using namespace Error;
 
+using FrameNumberTIMS = int;
+using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
+using Ms1FrameTIMSPntrs = QMap<IonMobilityIndex, ScanPoints*>;
 
 enum class ScanPointsSort {
     AscMz,
@@ -486,22 +489,37 @@ public:
             ScanPoints *scanPoints
             );
 
-    void printSize();
+    void printSize() const;
 
     Err printFileInfo();
+    [[nodiscard]] bool isTIMS() const;
+
+    [[nodiscard]] float mzMs2Min() const;
+    [[nodiscard]] float mzMs2Max() const;
+
+    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
 
 
 protected:
 
     bool m_fileIsCalibrated;
+    bool m_isTIMS;
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;
     QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
+    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
+    QMap<FrameIndex, double> m_frameIndexVsDriftTime;
+
+
     QString m_filePath;
 
+    float m_mzMs1Min;
+    float m_mzMs1Max;
+    float m_mzMs2Min;
+    float m_mzMs2Max;
 };
 
 

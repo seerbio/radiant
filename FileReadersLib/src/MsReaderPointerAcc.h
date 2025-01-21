@@ -87,6 +87,8 @@ public:
 
     QSharedPointer<MsReaderBase> ptr;
 
+    bool useLazyLoading() const;
+
 
 private:
 
