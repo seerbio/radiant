@@ -67,7 +67,7 @@ Err PythiaDIAFFWorkflow::init(
 #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 7.5;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
@@ -271,99 +271,99 @@ namespace {
 
         ERR_RETURN
     }
-
-    Err buildIonMobilityTrainingSet(
-        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
-        QVector<CandidateScores*> *candidateScoresIMTraining
-        ) {
-
-        ERR_INIT
-
-        constexpr int trainingCount = 500;
-
-        QVector<CandidateScores*> candidateScoresTargetsAndDecoysSorted = candidateScoresTargetsAndDecoys;
-        std::sort(
-            candidateScoresTargetsAndDecoysSorted.rbegin(),
-            candidateScoresTargetsAndDecoysSorted.rend(),
-            [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-            );
-
-        candidateScoresIMTraining->reserve(trainingCount);
-
-        int counter = 0;
-        for (CandidateScores *cs : candidateScoresTargetsAndDecoysSorted) {
-
-            if (cs->ionMobilityIndex < 0) {
-                continue;
-            }
-
-            candidateScoresIMTraining->push_back(cs);
-
-            if (counter++ > trainingCount) {
-                break;
-            }
-        }
-
-        // e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
-        //
-        // std::sort(
-        //     candidateScoresIMTraining->rbegin(),
-        //     candidateScoresIMTraining->rend(),
-        //     [](const CandidateScores *l, const CandidateScores *r) {
-        //         return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
-        //     });
-        //
-        // candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
-        //
-        // std::sort(
-        //     candidateScoresIMTraining->rbegin(),
-        //     candidateScoresIMTraining->rend(),
-        //     [](const CandidateScores *l, const CandidateScores *r) {
-        //         return l->discriminantScore < r->discriminantScore;
-        //     });
-
-        ERR_RETURN
-    }
-
-    Err predictIonMobilityIndexes(const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys) {
-
-        ERR_INIT
-
-        // QVector<CandidateScores*> candidateScoresIMTraining;
-        // e = buildIonMobilityTrainingSet(
-        //     candidateScoresTargetsAndDecoys,
-        //     &candidateScoresIMTraining
-        //     ); ree;
-        //
-        // QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
-        // std::transform(
-        //     candidateScoresIMTraining.begin(),
-        //     candidateScoresIMTraining.end(),
-        //     std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
-        //     [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
-        //     );
-        //
-        // IonMobilitron ionMobilitron;
-        // e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
-        //
-        // for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
-        //
-        //     if (cs->ionMobilityIndex < 0) {
-        //         continue;
-        //     }
-        //
-        //     e = ionMobilitron.predictIonMobilityIndex(
-        //         cs->targetDecoyCandidatePair->iIM(),
-        //         &cs->ionMobilityIndexPredicted
-        //         ); ree;
-        //
-        //     cs->featuresArray[Features::ImTheoDiff]
-        //             = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
-        // }
-
-        ERR_RETURN
-
-    }
+    //
+    // Err buildIonMobilityTrainingSet(
+    //     const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
+    //     QVector<CandidateScores*> *candidateScoresIMTrainingWR
+    //     ) {
+    //
+    //     ERR_INIT
+    //
+    //     constexpr int trainingCount = 500;
+    //
+    //     QVector<CandidateScores*> candidateScoresTargetsAndDecoysSorted = candidateScoresTargetsAndDecoys;
+    //     std::sort(
+    //         candidateScoresTargetsAndDecoysSorted.rbegin(),
+    //         candidateScoresTargetsAndDecoysSorted.rend(),
+    //         [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+    //         );
+    //
+    //     candidateScoresIMTraining->reserve(trainingCount);
+    //
+    //     int counter = 0;
+    //     for (CandidateScores *cs : candidateScoresTargetsAndDecoysSorted) {
+    //
+    //         if (cs->ionMobilityIndex < 0) {
+    //             continue;
+    //         }
+    //
+    //         candidateScoresIMTraining->push_back(cs);
+    //
+    //         if (counter++ > trainingCount) {
+    //             break;
+    //         }
+    //     }
+    //
+    //     // e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
+    //     //
+    //     // std::sort(
+    //     //     candidateScoresIMTraining->rbegin(),
+    //     //     candidateScoresIMTraining->rend(),
+    //     //     [](const CandidateScores *l, const CandidateScores *r) {
+    //     //         return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
+    //     //     });
+    //     //
+    //     // candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
+    //     //
+    //     // std::sort(
+    //     //     candidateScoresIMTraining->rbegin(),
+    //     //     candidateScoresIMTraining->rend(),
+    //     //     [](const CandidateScores *l, const CandidateScores *r) {
+    //     //         return l->discriminantScore < r->discriminantScore;
+    //     //     });
+    //
+    //     ERR_RETURN
+    // }
+    //
+    // Err predictIonMobilityIndexes(const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys) {
+    //
+    //     ERR_INIT
+    //
+    //     // QVector<CandidateScores*> candidateScoresIMTraining;
+    //     // e = buildIonMobilityTrainingSet(
+    //     //     candidateScoresTargetsAndDecoys,
+    //     //     &candidateScoresIMTraining
+    //     //     ); ree;
+    //     //
+    //     // QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
+    //     // std::transform(
+    //     //     candidateScoresIMTraining.begin(),
+    //     //     candidateScoresIMTraining.end(),
+    //     //     std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
+    //     //     [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
+    //     //     );
+    //     //
+    //     // IonMobilitron ionMobilitron;
+    //     // e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
+    //     //
+    //     // for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
+    //     //
+    //     //     if (cs->ionMobilityIndex < 0) {
+    //     //         continue;
+    //     //     }
+    //     //
+    //     //     e = ionMobilitron.predictIonMobilityIndex(
+    //     //         cs->targetDecoyCandidatePair->iIM(),
+    //     //         &cs->ionMobilityIndexPredicted
+    //     //         ); ree;
+    //     //
+    //     //     cs->featuresArray[Features::ImTheoDiff]
+    //     //             = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
+    //     // }
+    //
+    //     ERR_RETURN
+    //
+    // }
 
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
