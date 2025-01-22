@@ -78,10 +78,6 @@ SET(HEADER_FILES
 SET(${PROJECT_NAME}_LIB_SOURCES
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        src/SpecLibReader.cpp
-        src/SpecLibReader.h
-        src/FragLibReaderRow.cpp
-        src/FragLibReaderRow.h
 )
 
 SET(DLL_LIB_INCLUDE_DIRS
