@@ -20,13 +20,15 @@ MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 , m_targetDecoyCandidatePairManager(nullptr)
 , m_targetDecoyCandidatePairScoretron(nullptr)
 , m_pythiaParameters(nullptr)
+, m_excludeDecoys(false)
 {}
 
 Err MsCalibratomaticSettertron::init(
     PythiaParameters *pythiaParameters,
     MsReaderPointerAcc *msReaderPointerAcc,
     TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
-    TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron
+    TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
+    bool excludeDecoys
     ) {
 
     ERR_INIT
@@ -44,6 +46,8 @@ Err MsCalibratomaticSettertron::init(
     e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
         &m_targetDecoyPairPntrs
         ); ree
+
+    m_excludeDecoys = excludeDecoys;
 
     ERR_RETURN
 }
@@ -390,8 +394,14 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     for (const CandidateScores *cs : candidateScoresVecBatchPntrsResized) {
 
-        if (m_entered.value(cs->targetDecoyCandidatePair)) {
+        if (m_entered.value(cs->targetDecoyCandidatePair) ) {
             continue;
+        }
+
+        if (m_excludeDecoys) {
+            if (cs->isDecoy) {
+                continue;
+            }
         }
 
         m_targetDecoyCandidatePairsTopScores.push_back(cs->targetDecoyCandidatePair);

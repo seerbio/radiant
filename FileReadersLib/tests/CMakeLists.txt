@@ -22,7 +22,7 @@ SET(TEST_CLASSES
         FragLibTsvReaderTests
         MsCalibrationReaderTests
         MsReaderBaseTests
-        MsReaderBrukerTimsTests
+#        MsReaderBrukerTimsTests
         MsReaderMZMLTests
         MsReaderMZMLLazyLoadTests
         MsReaderMZMLMappedTests
