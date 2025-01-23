@@ -64,7 +64,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-// #define DEV_OVERRIDES
+#define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
@@ -73,6 +73,10 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters.reannotate = true;
     // m_pythiaParameters.ionsSharedToReject = 4;
     // m_pythiaParameters.filterLengthIntegration = 7;
+    // m_pythiaParameters.maxAnchorColumnIndex = 6;
+    // m_pythiaParameters.minMs2FragCount = 2;
+    // m_pythiaParameters.stopThresholdFractionMS2 = 0.75;
+    // m_pythiaParameters.calibrationTrainingVolume = 1000;
 
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
     qDebug() << "ACTUNG!!! TURN OVERRIDES OFF IN PRODUCTION!!!!";
@@ -435,32 +439,32 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         }
     }
 
-     if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
-         m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
-         m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
+    if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
+        m_pythiaParameters.ms2ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPMOverride;
+        m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms1ExtractionWidthPPMOverride;
 
-         if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
-             m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
-         }
-         e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
+        if (m_pythiaParameters.ms1ExtractionWidthPPMOverride < 0.0) {
+            m_pythiaParameters.ms1ExtractionWidthPPM = m_pythiaParameters.ms2ExtractionWidthPPM;
+        }
+        e = m_targetDecoyCandidatePairScoretron.setPythiaParameters(m_pythiaParameters); ree;
 
-         qDebug()
-         << qPrintable(S_GLOBAL_TIMER.elapsed())
-         << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
-         qDebug()
-         << qPrintable(S_GLOBAL_TIMER.elapsed())
-         << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
-     }
-     else {
-          OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
-          e = msOptimizeMassAccuracyPPMSettertron.initExec(
-                 &msReaderPointerAcc,
-                 &m_msCalibratomatic,
-                 &m_pythiaParameters,
-                 &m_targetDecoyCandidatePairScoretron,
-                 &m_targetDecoyPairPntrs
-                 ); ree;
-     }
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms2 Accuracy overridden to" << m_pythiaParameters.ms2ExtractionWidthPPM;
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms1 Accuracy overridden to" << m_pythiaParameters.ms1ExtractionWidthPPM;
+    }
+    else {
+        OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
+        e = msOptimizeMassAccuracyPPMSettertron.initExec(
+             &msReaderPointerAcc,
+             &m_msCalibratomatic,
+             &m_pythiaParameters,
+             &m_targetDecoyCandidatePairScoretron,
+             &m_targetDecoyPairPntrs
+             ); ree;
+    }
 
     int targetCountBelowFDRThreshold;
     e = mainAnalysis(
