@@ -191,7 +191,7 @@ namespace {
 }//namespace
 void FDRCLassifierNeuralNetTests::playGround() {
 
-    // QSKIP("Skipping as this is for debugging");
+    QSKIP("Skipping as this is for debugging");
 
     ERR_INIT
 
