@@ -64,7 +64,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-#define DEV_OVERRIDES
+// #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
@@ -414,9 +414,25 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
-            &m_targetDecoyCandidatePairScoretron
+            &m_targetDecoyCandidatePairScoretron,
+            false
             ); ree;
-        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
+        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic);
+
+        if (e != eNoError) {
+
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Retrying calibration w/ exclusion";
+
+            MsCalibratomaticSettertron msCalibratomaticSettertronBackup;
+            e = msCalibratomaticSettertronBackup.init(
+                &m_pythiaParameters,
+                &msReaderPointerAcc,
+                &m_targetDecoyCandidatePairManager,
+                &m_targetDecoyCandidatePairScoretron,
+                true
+                ); ree;
+            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic);
+        }
     }
 
      if (m_pythiaParameters.ms2ExtractionWidthPPMOverride > 0.0) {
@@ -1097,21 +1113,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     ERR_RETURN
 }
 
-namespace {
 
-    QPair<Err, SequenceSubstringSearchomatic> parallelRevTreiLoad(const QVector<FastaEntry> &fastaEntries) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(fastaEntries); rree;
-
-        SequenceSubstringSearchomatic sequenceSubstringSearchomatic;
-        e = sequenceSubstringSearchomatic.init(fastaEntries); rree;
-
-        return {e, sequenceSubstringSearchomatic};
-    }
-
-}//namespace
 Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         int targetCountBelowFDRThresholdOnePercent,

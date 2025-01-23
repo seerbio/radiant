@@ -30,7 +30,8 @@ public:
         PythiaParameters *pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
-        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron
+        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
+        bool excludeDecoys
         );
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
@@ -73,6 +74,8 @@ private:
     QVector<float> m_scanTimeStDevs;
     QVector<float> m_ms2PPMStDevs;
     QVector<float> m_weights;
+
+    bool m_excludeDecoys;
 
 };
 
