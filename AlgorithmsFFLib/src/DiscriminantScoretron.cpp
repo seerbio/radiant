@@ -293,6 +293,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::DiscriminantScore,
                 Features::MatrixZeroPercentage,
 
+                // AlignmentIndexMean,
+                AlignmentIndexStDev,
+                AlignmentCombinedScore,
+
                 DiscScore1stRunnerUp,
                 DiscScore2ndRunnerUp,
                 DiscScoresCount,
