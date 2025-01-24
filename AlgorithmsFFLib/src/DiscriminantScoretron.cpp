@@ -148,7 +148,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::CosineSimSpectrumStDev,
             Features::CosineSim100MS1,
             Features::CosineSim100MS1Iso1,
-            // Features::CosineSim100MS1Iso2,
             Features::CosineSim100MS1PreMono,
             Features::CosineSimSpectrumCubed,
             Features::CosineSimSum45,
@@ -158,18 +157,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::TopBottomRatioNorm,
             Features::PeakShapeRatio1,
             Features::PeakShapeRatio2,
-            Features::PeakShapeRatio3,
-            // Features::MatrixZeroPercentage,
-            // Features::MzPPMMeanAbs,
-            // Features::FoundB,
-            // Features::FoundY,
-            // Features::FoundPercent,
-            // DiscScoresCount,
-            // DiscScoresMean,
-            // DiscScoresStDev,
-            // DiscScore1stRunnerUp,
-            // DiscScore2ndRunnerUp
-
+            Features::PeakShapeRatio3
         };
 
         if (useNeuralNetworkScores) {

@@ -384,6 +384,10 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         qDebug() << candidateScoresVecBatchPntrsResized.size() << "after filtering";
     }
 
+    if (candidateScoresVecBatchPntrsResized.isEmpty()) {
+        ERR_RETURN
+    }
+
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             MSLevelEnum::MS2,

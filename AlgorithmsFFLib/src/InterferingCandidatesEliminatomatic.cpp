@@ -20,6 +20,11 @@ Err InterferingCandidatesEliminatomatic::removeInterferingCandidates(
     QMap<ScanNumber, QVector<CandidateScores*>> scanNumberVsCandidateScoresPtr;
     for (int i = 0; i < candidates->size(); i++) {
         CandidateScores *cs = candidates->at(i);
+
+        if (cs == nullptr) {
+            continue;
+        }
+
         scanNumberVsCandidateScoresPtr[cs->scanNumber].push_back(cs);
     }
 
