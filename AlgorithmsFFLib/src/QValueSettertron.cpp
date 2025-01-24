@@ -239,7 +239,7 @@ Err QValueSettertron::setQValueForCandidates(
     QVector<QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>>> targetDecoyCandidateScorePairsPntrsTranched;
     e = ParallelUtils::trancheVectorForParallelization(
         *targetDecoyCandidateScorePairsPntrs,
-        ParallelUtils::numberOfAvailableSystemProcessors(),
+        std::min(ParallelUtils::numberOfAvailableSystemProcessors(), targetDecoyCandidateScorePairsPntrs->size()),
         &targetDecoyCandidateScorePairsPntrsTranched
         );
 
@@ -248,6 +248,10 @@ Err QValueSettertron::setQValueForCandidates(
         setQValBinder
         );
     futures.waitForFinished();
+
+    for (Err result : futures) {
+        e = result; ree;
+    }
 
     ERR_RETURN
 }

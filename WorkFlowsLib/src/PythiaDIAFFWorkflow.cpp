@@ -64,7 +64,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-#define DEV_OVERRIDES
+// #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;

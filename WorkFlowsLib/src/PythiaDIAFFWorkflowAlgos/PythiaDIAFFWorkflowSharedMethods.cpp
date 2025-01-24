@@ -219,6 +219,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
 
     ERR_INIT
 
+    e = ErrorUtils::isNotEmpty(candidateScoresPairsVecBatch); ree;
+    e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 
     e = buildCandidateScoresPtrs(
         candidateScoresPairsVecBatch,
