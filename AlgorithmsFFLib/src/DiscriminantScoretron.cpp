@@ -148,6 +148,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::CosineSimSpectrumStDev,
             Features::CosineSim100MS1,
             Features::CosineSim100MS1Iso1,
+            Features::CosineSim100MS1Iso2,
             Features::CosineSim100MS1PreMono,
             Features::CosineSimSpectrumCubed,
             Features::CosineSimSum45,
@@ -157,7 +158,17 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Features::TopBottomRatioNorm,
             Features::PeakShapeRatio1,
             Features::PeakShapeRatio2,
-            Features::PeakShapeRatio3
+            Features::PeakShapeRatio3,
+            Features::MatrixZeroPercentage,
+            Features::MzPPMMeanAbs,
+            Features::FoundB,
+            Features::FoundY,
+            Features::FoundPercent,
+            DiscScoresCount,
+            DiscScoresMean,
+            DiscScoresStDev,
+            DiscScore1stRunnerUp,
+            DiscScore2ndRunnerUp
         };
 
         if (useNeuralNetworkScores) {
@@ -281,38 +292,34 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::DiscriminantScore,
                 Features::MatrixZeroPercentage,
 
-                // AlignmentIndexMean,
-                AlignmentIndexStDev,
-                AlignmentCombinedScore,
-
                 DiscScore1stRunnerUp,
                 DiscScore2ndRunnerUp,
                 DiscScoresCount,
                 DiscScoresMean,
                 DiscScoresStDev,
 
-                // YIonSeriesMax,
-                // YIonSeriesCount,
-                // YIonSeriesMean,
-                // YIonSeriesStd,
-                // YIonSeriesTheoMax,
-                // YIonSeriesTheoCount,
-                // YIonSeriesTheoMean,
-                // YIonSeriesTheoStd,
-                // YIonSeriesMaxFoundToTheoFraction,
-                // BIonSeriesMax,
-                // BIonSeriesCount,
-                // BIonSeriesMean,
-                // BIonSeriesStd,
-                // BIonSeriesTheoMax,
-                // BIonSeriesTheoCount,
-                // BIonSeriesTheoMean,
-                // BIonSeriesTheoStd,
+                YIonSeriesMax,
+                YIonSeriesCount,
+                YIonSeriesMean,
+                YIonSeriesStd,
+                YIonSeriesTheoMax,
+                YIonSeriesTheoCount,
+                YIonSeriesTheoMean,
+                YIonSeriesTheoStd,
+                YIonSeriesMaxFoundToTheoFraction,
+                BIonSeriesMax,
+                BIonSeriesCount,
+                BIonSeriesMean,
+                BIonSeriesStd,
+                BIonSeriesTheoMax,
+                BIonSeriesTheoCount,
+                BIonSeriesTheoMean,
+                BIonSeriesTheoStd,
                 // BIonSeriesMaxFoundToTheoFraction,
                 // YIonSeriesCountRatio,
                 // BIonSeriesCountRatio,
 
-                CosineSimFullTheo,
+                // CosineSimFullTheo,
                 IonsFoundFractionFull,
                 CosineSimFullTheoXIonsFoundFractionFull,
 
@@ -320,11 +327,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 Features::FoundB,
                 Features::FoundY,
                 Features::FoundPercent,
-                Features::MzPPMStd,
-                // ImPeakLength,
-                // ImAreaRatioTop2,
-                // ImAreaLog10,
-                // ImTheoDiff
+                Features::MzPPMStd
 
             };
             const QVector<float> nnVec = candidateScores->selectFeaturesArrayFeatures(nnFeatures);
@@ -370,10 +373,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         const QVector<float> vec = candidateScores->selectFeaturesArrayFeatures(baseFeatures);
         return vec;
     }
-
-QVector<float> DiscriminantScoretron::scoreVectorLogic(CandidateScores *candidateScores) {
-    return candidateScores->featuresArray;
-}
 
 QVector<float> DiscriminantScoretron::defaultWeights(
     bool useExtendedScores,

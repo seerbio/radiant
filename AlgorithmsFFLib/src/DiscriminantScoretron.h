@@ -37,8 +37,6 @@ public:
             CandidateScores* candidateScores
             );
 
-    static QVector<float> scoreVectorLogic(CandidateScores* candidateScores);
-
     static QVector<float> defaultWeights(
         bool useExtendedScores,
         bool useNeuralNetworkScores
