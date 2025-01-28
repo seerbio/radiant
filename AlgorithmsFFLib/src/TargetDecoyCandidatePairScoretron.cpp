@@ -310,10 +310,16 @@ namespace {
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
 
+                const QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
+
+                if (ms2TargetIons.isEmpty()) {
+                    continue;
+                }
+
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
-                        tdcp->ms2IonsTarget(),
+                        ms2TargetIons,
                         pi.weights,
                         tdcp,
                         &candidateScoresTarget
