@@ -374,6 +374,10 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         return vec;
     }
 
+QVector<float> DiscriminantScoretron::scoreVectorLogic(CandidateScores *candidateScores) {
+    return candidateScores->featuresArray;
+}
+
 QVector<float> DiscriminantScoretron::defaultWeights(
     bool useExtendedScores,
     bool useNeuralNetworkScores
