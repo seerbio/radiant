@@ -575,14 +575,14 @@ Err ParquetReader::Private::readDataFromParquet(
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem fileSystem;
 
-    std::shared_ptr<arrow::io::RandomAccessFile> input
+    const std::shared_ptr<arrow::io::RandomAccessFile> input
             = fileSystem.OpenInputFile(parquetFilePath.toStdString()).ValueOrDie();
 
-    std::unique_ptr<parquet::arrow::FileReader> arrowReader;
-    st = parquet::arrow::OpenFile(input, pool, &arrowReader);
-    if (!st.ok()) {
+    auto result = parquet::arrow::OpenFile(input, pool);
+    if (!result.ok()) {
         return Error::eFileError;
     }
+    const std::unique_ptr<parquet::arrow::FileReader> arrowReader = std::move(result).ValueOrDie();
 
     std::shared_ptr<arrow::Table> table;
     st = arrowReader->ReadTable(&table);
