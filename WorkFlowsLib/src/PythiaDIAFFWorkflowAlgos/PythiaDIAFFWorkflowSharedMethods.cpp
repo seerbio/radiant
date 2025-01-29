@@ -302,17 +302,6 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     ERR_RETURN
 }
 
-namespace {
-
-    PeptideSequenceWithModsChargeAndTargetKey buildPeptideSequenceWithModsChargeAndTargetKey(const CandidateScores* candidateScores) {
-        return candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
-             + "|"
-             + QString::number(candidateScores->targetDecoyCandidatePair->charge())
-             + "|"
-             + candidateScores->targetKey;
-    }
-
-}//namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
     QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs

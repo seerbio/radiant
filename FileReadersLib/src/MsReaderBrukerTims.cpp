@@ -180,6 +180,53 @@ namespace {
 
     }
 
+    Err buildMs1Frame(
+        const TimsFrameInfo &timsFrameInfo,
+        timsdata::TimsData *data,
+        Ms1FrameTIMS *frameTims
+        ) {
+
+        ERR_INIT
+
+        // e = ErrorUtils::isFalse(timsFrameInfo.numScans > 0); ree;
+
+        const timsdata::FrameProxy scans = data->readScans(
+            timsFrameInfo.frameId,
+            0,
+            timsFrameInfo.numScans
+            );
+
+        for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < timsFrameInfo.numScans; ionMobilityIndex++) {
+
+            if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
+                continue;
+            }
+
+            timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
+            const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
+
+            std::vector<double> xAxisMasses;
+            std::vector<double> indices(xAxis.first, xAxis.second);
+            data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
+
+            const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
+
+            ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
+            for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
+                scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
+            }
+
+            frameTims->insert(ionMobilityIndex, scanPointsScan);
+        }
+
+        // filterTopPointsByPercentile(
+        //     percentileFilterFraction,
+        //     frameTims
+        //     );
+
+        ERR_RETURN
+    }
+
     Err extractMS1ScanPointsFromFrame(
         const TimsFrameInfo &timsFrameInfo,
         timsdata::TimsData *data,
@@ -188,6 +235,8 @@ namespace {
         ) {
 
         ERR_INIT
+
+        // e = ErrorUtils::isFalse(timsFrameInfo.numScans > 0); ree;
 
         const timsdata::SpectrumData scansCollapsed = data->readScansSummed(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
 
@@ -204,35 +253,7 @@ namespace {
             scanPointsMS1
             );
 
-        // const timsdata::FrameProxy scans = data->readScans(timsFrameInfo.frameId, 0, timsFrameInfo.numScans);
-        //
-        // for(IonMobilityIndex ionMobilityIndex = 0; ionMobilityIndex < timsFrameInfo.numScans; ionMobilityIndex++) {
-        //
-        //     if (scans.getNbrPeaks(ionMobilityIndex) < 1) {
-        //         continue;
-        //     }
-        //
-        //     timsdata::FrameProxy::FrameIteratorRange xAxis = scans.getScanX(ionMobilityIndex);
-        //     const timsdata::FrameProxy::FrameIteratorRange yAxis = scans.getScanY(ionMobilityIndex);
-        //
-        //     std::vector<double> xAxisMasses;
-        //     std::vector<double> indices(xAxis.first, xAxis.second);
-        //     data->indexToMz(timsFrameInfo.frameId, indices, xAxisMasses);
-        //
-        //     const size_t numberOfPeaks = scans.getNbrPeaks(ionMobilityIndex);
-        //
-        //     ScanPoints scanPointsScan(static_cast<int>(numberOfPeaks));
-        //     for(size_t pkNum = 0; pkNum < numberOfPeaks; ++pkNum) {
-        //         scanPointsScan[static_cast<int>(pkNum)] = {static_cast<float>(xAxisMasses[pkNum]), static_cast<float>(yAxis.first[pkNum])};
-        //     }
-        //
-        //     frameTims->insert(ionMobilityIndex, scanPointsScan);
-        // }
-        //
-        // filterTopPointsByPercentile(
-        //     percentileFilterFraction,
-        //     frameTims
-        //     );
+        e = buildMs1Frame(timsFrameInfo, data, frameTims); ree;
 
         ERR_RETURN
     }
@@ -420,7 +441,6 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
         std::vector<TimsMS2WindowsInfo> timsMS2WindowsInfos = buildTimsWindowsInfos(&db);
         e = ErrorUtils::isNotEmpty(timsMS2WindowsInfos); ree;
 
-
         for (const TimsMS2WindowsInfo &w : timsMS2WindowsInfos) {
             m_windowGroupIndexVsTimsMs2WindowsInfoses[w.windowGroup].push_back(w);
         }
@@ -486,6 +506,7 @@ Err MsReaderBrukerTims::openFile(const QString &filePath) {
                 if (msi.msLevel > 1) {
                     continue;
                 }
+
                 m_frameNumberVsMS1FrameTIMS.insert(msi.scanNumber, std::get<2>(tup));
             }
         }
