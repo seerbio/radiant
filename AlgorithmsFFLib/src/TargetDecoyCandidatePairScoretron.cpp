@@ -335,8 +335,8 @@ namespace {
                         ); rree;
 
                 if (
-                    MathUtils::tZero(candidateScoresTarget.featuresArray[Features::CosineSimSum100])
-                    && MathUtils::tZero(candidateScoresDecoy.featuresArray[Features::CosineSimSum100])
+                    MathUtils::tZero(candidateScoresTarget.featuresArray[CosineSimSum100])
+                    && MathUtils::tZero(candidateScoresDecoy.featuresArray[CosineSimSum100])
                     ) {
                     continue;
                 }

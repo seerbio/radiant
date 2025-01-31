@@ -91,10 +91,10 @@ public:
         }
 
     template <typename T, typename U>
-        static Err readVectorFromFile(
-            const QString &filePath,
-            QVector<QPair<T, U>> *vec
-            ) {
+    static Err readVectorFromFile(
+        const QString &filePath,
+        QVector<QPair<T, U>> *vec
+        ) {
 
         ERR_INIT
 
@@ -123,7 +123,10 @@ public:
         ERR_RETURN
     }
 
-
+    static Err writeScanPoints(
+        const QMap<int, QVector<PointFF>> &scanPoints,
+        const QString &filePathDestination
+        );
 
 };
 

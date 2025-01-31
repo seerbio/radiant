@@ -83,8 +83,6 @@ public:
 
 private:
 
-    Err buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc);
-
     Err mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent

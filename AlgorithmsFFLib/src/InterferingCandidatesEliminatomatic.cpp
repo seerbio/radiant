@@ -57,7 +57,7 @@ Err InterferingCandidatesEliminatomatic::removeInterferingCandidates(
             const CandidateScores* cs = scanNumberCandidates.at(row);
 
             constexpr int top6MzValsFound = 12;
-            const QVector<float> top6MzValsFoundArr = cs->featuresArray.mid(Features::MzFoundMean1, top6MzValsFound);
+            const QVector<float> top6MzValsFoundArr = cs->featuresArray.mid(MzFoundMean1, top6MzValsFound);
             for (float mz : top6MzValsFoundArr) {
 
                 const int col = static_cast<int>(std::round(mz));

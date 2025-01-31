@@ -10,6 +10,7 @@
 #include "IonMobilitron.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
+#include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 #include "QValueSettertron.h"
@@ -58,7 +59,7 @@ namespace {
 
         constexpr double cosineSimSumMS1Min = 0.9;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
-            return cs->featuresArray[Features::CosineSim100MS1] <= cosineSimSumMS1Min;
+            return cs->featuresArray[CosineSim100MS1] <= cosineSimSumMS1Min;
         };
 
         const auto terminator = std::remove_if(
@@ -386,6 +387,14 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
 
     if (candidateScoresVecBatchPntrsResized.isEmpty()) {
         ERR_RETURN
+    }
+
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
+            candidateScoresVecBatchPntrsResized,
+            m_pythiaParameters->ms1ExtractionWidthPPM,
+            m_msReaderPointerAcc
+            ); ree;
     }
 
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;

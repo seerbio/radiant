@@ -8,8 +8,8 @@
 
 
 void CandidateScores::initFeaturesArray() {
-    featuresArray = QVector<float>(Features::FeaturesSize, 0.0f);
-    featuresArray.reserve(Features::FeaturesSize);
+    featuresArray = QVector<float>(FeaturesSize, 0.0f);
+    featuresArray.reserve(FeaturesSize);
 }
 
 QVector<float> CandidateScores::selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures) {

@@ -121,7 +121,7 @@ namespace {
         e = ErrorUtils::isFalse(candidateScoresTargetsAndDecoys->isEmpty()); ree;
 
         const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
-            return cs->featuresArray[Features::CosineSimSum100] < static_cast<float>(minMs2FragCount);
+            return cs->featuresArray[CosineSimSum100] < static_cast<float>(minMs2FragCount);
         };
         const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
         candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
@@ -173,73 +173,73 @@ namespace {
                 }
 
                 if (csOG->targetKey == csAlt->targetKey) {
-                    csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                        = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                            - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                        / csOG->featuresArray[Features::CosineSimSum100];
-                    csOG->featuresArray[Features::DiscriminantScore] = csOG->discriminantScore;
+                    csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                            - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                        / csOG->featuresArray[CosineSimSum100];
+                    csOG->featuresArray[DiscriminantScore] = csOG->discriminantScore;
                     continue;
                 }
 
                 switch (csAlt->targetDecoyCandidatePair->charge()) {
                 case 1:
                     if (!csAlt->isDecoy) {
-                        csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                            = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                                - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                            / csOG->featuresArray[Features::CosineSimSum100];
-                        csOG->featuresArray[Features::AltTargetKeyIdTimeDeltaCharge1_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                                - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                            / csOG->featuresArray[CosineSimSum100];
+                        csOG->featuresArray[AltTargetKeyIdTimeDeltaCharge1_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
                         break;
                     }
-                    csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                        = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                            - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                        / csOG->featuresArray[Features::CosineSimSum100];
+                    csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                            - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                        / csOG->featuresArray[CosineSimSum100];
                     break;
 
                 case 2:
                     if (!csAlt->isDecoy) {
-                        csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                            = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                                - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                            / csOG->featuresArray[Features::CosineSimSum100];
-                        csOG->featuresArray[Features::AltTargetKeyIdTimeDeltaCharge2_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                                - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                            / csOG->featuresArray[CosineSimSum100];
+                        csOG->featuresArray[AltTargetKeyIdTimeDeltaCharge2_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
                         break;
                     }
-                    csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                        = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                            - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                        / csOG->featuresArray[Features::CosineSimSum100];
+                    csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                            - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                        / csOG->featuresArray[CosineSimSum100];
                     break;
 
                 case 3:
                     if (!csAlt->isDecoy) {
-                        csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                            = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                                - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                            / csOG->featuresArray[Features::CosineSimSum100];
-                        csOG->featuresArray[Features::AltTargetKeyIdTimeDeltaCharge3_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                                - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                            / csOG->featuresArray[CosineSimSum100];
+                        csOG->featuresArray[AltTargetKeyIdTimeDeltaCharge3_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
                         break;
                     }
-                    csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                        = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                            - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                        / csOG->featuresArray[Features::CosineSimSum100];
+                    csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                            - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                        / csOG->featuresArray[CosineSimSum100];
                     break;
 
                 case 4:
                     if (!csAlt->isDecoy) {
-                        csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                            = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                                - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                            / csOG->featuresArray[Features::CosineSimSum100];
-                        csOG->featuresArray[Features::AltTargetKeyIdTimeDeltaCharge4_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
+                        csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                            = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                                - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                            / csOG->featuresArray[CosineSimSum100];
+                        csOG->featuresArray[AltTargetKeyIdTimeDeltaCharge4_1] = std::abs((csOG->scanTime - csAlt->scanTime) / csOG->scanTime);
                         break;
                     }
-                    csOG->featuresArray[Features::AltTargetKeyIdDiscScoreChargeOG_alt]
-                                        = ((csOG->featuresArray[Features::CosineSimSum100] * csOG->featuresArray[Features::CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[Features::CosineSim100MS1])
-                                            - (csAlt->featuresArray[Features::CosineSimSum100]  * csAlt->featuresArray[Features::CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[Features::CosineSim100MS1]))
-                                        / csOG->featuresArray[Features::CosineSimSum100];
+                    csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
+                                        = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
+                                            - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
+                                        / csOG->featuresArray[CosineSimSum100];
                     break;
 
                     default:
@@ -252,7 +252,6 @@ namespace {
     }
 
     Err populateAltIdTargetKeys(
-        int threadCount,
         QVector<CandidateScores*> *candidateScoresPntrs
         ) {
 
@@ -275,99 +274,6 @@ namespace {
 
         ERR_RETURN
     }
-    //
-    // Err buildIonMobilityTrainingSet(
-    //     const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys,
-    //     QVector<CandidateScores*> *candidateScoresIMTrainingWR
-    //     ) {
-    //
-    //     ERR_INIT
-    //
-    //     constexpr int trainingCount = 500;
-    //
-    //     QVector<CandidateScores*> candidateScoresTargetsAndDecoysSorted = candidateScoresTargetsAndDecoys;
-    //     std::sort(
-    //         candidateScoresTargetsAndDecoysSorted.rbegin(),
-    //         candidateScoresTargetsAndDecoysSorted.rend(),
-    //         [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-    //         );
-    //
-    //     candidateScoresIMTraining->reserve(trainingCount);
-    //
-    //     int counter = 0;
-    //     for (CandidateScores *cs : candidateScoresTargetsAndDecoysSorted) {
-    //
-    //         if (cs->ionMobilityIndex < 0) {
-    //             continue;
-    //         }
-    //
-    //         candidateScoresIMTraining->push_back(cs);
-    //
-    //         if (counter++ > trainingCount) {
-    //             break;
-    //         }
-    //     }
-    //
-    //     // e = ErrorUtils::isNotEmpty(*candidateScoresIMTraining); ree;
-    //     //
-    //     // std::sort(
-    //     //     candidateScoresIMTraining->rbegin(),
-    //     //     candidateScoresIMTraining->rend(),
-    //     //     [](const CandidateScores *l, const CandidateScores *r) {
-    //     //         return l->featuresArray[Features::ImAreaLog10] < r->featuresArray[Features::ImAreaLog10];
-    //     //     });
-    //     //
-    //     // candidateScoresIMTraining->resize(static_cast<int>(std::round(candidateScoresIMTraining->size() * 0.5)));
-    //     //
-    //     // std::sort(
-    //     //     candidateScoresIMTraining->rbegin(),
-    //     //     candidateScoresIMTraining->rend(),
-    //     //     [](const CandidateScores *l, const CandidateScores *r) {
-    //     //         return l->discriminantScore < r->discriminantScore;
-    //     //     });
-    //
-    //     ERR_RETURN
-    // }
-    //
-    // Err predictIonMobilityIndexes(const QVector<CandidateScores*> &candidateScoresTargetsAndDecoys) {
-    //
-    //     ERR_INIT
-    //
-    //     // QVector<CandidateScores*> candidateScoresIMTraining;
-    //     // e = buildIonMobilityTrainingSet(
-    //     //     candidateScoresTargetsAndDecoys,
-    //     //     &candidateScoresIMTraining
-    //     //     ); ree;
-    //     //
-    //     // QVector<QPair<IMPredicted, IMEmpirical>> imPredVsImEmpValuesSortedDiscScoreHiLo;
-    //     // std::transform(
-    //     //     candidateScoresIMTraining.begin(),
-    //     //     candidateScoresIMTraining.end(),
-    //     //     std::back_inserter(imPredVsImEmpValuesSortedDiscScoreHiLo),
-    //     //     [](const CandidateScores *cs){return QPair(cs->targetDecoyCandidatePair->iIM(), cs->ionMobilityIndex);}
-    //     //     );
-    //     //
-    //     // IonMobilitron ionMobilitron;
-    //     // e = ionMobilitron.init(imPredVsImEmpValuesSortedDiscScoreHiLo); ree;
-    //     //
-    //     // for (CandidateScores *cs : candidateScoresTargetsAndDecoys) {
-    //     //
-    //     //     if (cs->ionMobilityIndex < 0) {
-    //     //         continue;
-    //     //     }
-    //     //
-    //     //     e = ionMobilitron.predictIonMobilityIndex(
-    //     //         cs->targetDecoyCandidatePair->iIM(),
-    //     //         &cs->ionMobilityIndexPredicted
-    //     //         ); ree;
-    //     //
-    //     //     cs->featuresArray[Features::ImTheoDiff]
-    //     //             = static_cast<float>((cs->ionMobilityIndex - cs->ionMobilityIndexPredicted)) / cs->ionMobilityIndexPredicted;
-    //     // }
-    //
-    //     ERR_RETURN
-    //
-    // }
 
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
@@ -401,11 +307,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
-
-    // if (msReaderPointerAcc.ptr->isTIMS()) {
-    //     e = buildMs1FeaturesforTIMS(&msReaderPointerAcc); ree;
-    //     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding finished";
-    // }
 
     e = m_targetDecoyCandidatePairScoretron.init(
             m_pythiaParameters,
@@ -478,10 +379,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         &candidateScoresTargetsAndDecoys
         ); ree;
 
-    e = populateAltIdTargetKeys(
-        m_pythiaParameters.threadCount,
-        &candidateScoresTargetsAndDecoys
-        ); ree;
+    e = populateAltIdTargetKeys(&candidateScoresTargetsAndDecoys); ree;
 
     // if (msReaderPointerAcc.ptr->isTIMS()) {
     //
@@ -541,78 +439,6 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         candidateScoreClassifierPntrs,
         quanFilePath
         ); ree;
-
-    ERR_RETURN
-}
-
-namespace {
-
-    QPair<Err, FeatureFinderHillBuilder*> timsFeatureFinderLogic(
-        const Ms1FrameTIMS &ms1FrameTims,
-        const FeatureFinderParameters &featureFinderParameters
-            ) {
-
-        ERR_INIT
-
-        auto *featureFinderHillBuilder = new FeatureFinderHillBuilder();
-        e = featureFinderHillBuilder->init(featureFinderParameters); rree;
-
-        Ms1FrameTIMS ms1FrameTimsCopy = ms1FrameTims;
-
-        Ms1FrameTIMSPntrs ms1FrameTIMSPntrs;
-        for (auto it = ms1FrameTimsCopy.begin(); it != ms1FrameTimsCopy.end(); ++it) {
-            ms1FrameTIMSPntrs.insert(it.key(), &it.value());
-        }
-
-        e = featureFinderHillBuilder->buildHills(ms1FrameTIMSPntrs); rree;
-
-        return {e, featureFinderHillBuilder};
-    }
-
-}//namespace
-Err PythiaDIAFFWorkflow::buildMs1FeaturesforTIMS(MsReaderPointerAcc *msReaderPointerAcc) {
-
-    ERR_INIT
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "TIMS feature finding start";
-
-    QElapsedTimer etFF;
-    etFF.start();
-
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> *frameNumberVsFrameTIMSPntr = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
-    const QVector<FrameIndex> frameIndexesTIMS = frameNumberVsFrameTIMSPntr->keys().toVector();
-
-    FeatureFinderParameters featureFinderParameters(m_pythiaParameters);
-
-#define BUILD_FEATURES_PARALLEL
-#ifdef BUILD_FEATURES_PARALLEL
-    const auto featureFinderBinder = std::bind(
-        timsFeatureFinderLogic,
-        std::placeholders::_1,
-        featureFinderParameters
-        );
-
-    QFuture<QPair<Err, FeatureFinderHillBuilder*>> future = QtConcurrent::mapped(
-        *frameNumberVsFrameTIMSPntr,
-        featureFinderBinder
-        );
-    future.waitForFinished();
-
-    int scanNumberIndexCurrent = 0;
-    for (const QPair<Err, FeatureFinderHillBuilder*> &pr : future) {
-        e = pr.first; ree;
-        m_scanNumberVsFeatureFinderHillBuildersPntrsTIMS.insert(
-            frameIndexesTIMS.at(scanNumberIndexCurrent++),
-            pr.second
-            );
-    }
-#else
-    for (auto it = frameNumberVsFrameTIMSPntr->begin(); it != frameNumberVsFrameTIMSPntr->end(); ++it) {
-        const QPair<Err, FeatureFinderHillBuilder*> &result = timsFeatureFinderLogic(it.value(), featureFinderParameters); ree;
-        e = result.first; ree;
-        m_featureFinderHillBuildersTIMS.push_back(result.second);
-    }
-#endif
 
     ERR_RETURN
 }
