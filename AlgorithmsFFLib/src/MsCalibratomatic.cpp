@@ -24,11 +24,17 @@ MsCalibratomatic::MsCalibratomatic()
 
 namespace {
 
-    Err generateMetricsIRTtoScanTime(
+    enum class MetricType {
+        IRT,
+        IIM
+    };
+
+    Err generateMetricsXYMapperMetrics(
             const QVector<QPair<XVal, YVal>> &data,
             int verbosity,
             int rtBinning,
-            double *stDevScanTimeDiff
+            MetricType metricType,
+            double *stDevMetricDiff
             ) {
 
         ERR_INIT
@@ -45,7 +51,7 @@ namespace {
                 seed,
                 &trainingData,
                 &testData
-        ); ree;
+                ); ree;
 
         XYMappermatic mapperMetrics;
         e = mapperMetrics.init(trainingData); ree;
@@ -61,15 +67,38 @@ namespace {
             diffs.push_back({pr.second - yPredicted});
         }
 
+        const QPair<QVector<double>, QVector<double>> actualVsPredictedUnzipped
+                                            = ParallelUtils::unZip(actualVsPredicted);
+
+        const float pearsonsCorr = MathUtils::calculatePearsonCoefficient(
+            actualVsPredictedUnzipped.first,
+            actualVsPredictedUnzipped.second
+            );
+
         const double rmse = MathUtils::rmse(actualVsPredicted);
         const double mean = MathUtils::mean(diffs);
         const double stDev = MathUtils::stDev(diffs);
 
-        if (verbosity > 0) {
-            qDebug() << "iRT Cal Metrics: rmse" << rmse << "mean" << mean << "stDev" << stDev;
+        if (verbosity > -1) {
+            if (metricType == MetricType::IRT) {
+                qDebug()
+                << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "iRT Cal Metrics: rmse" << rmse
+                << "mean" << mean
+                << "stDev" << stDev
+                << "R^2" << pearsonsCorr;
+            }
+            else {
+                qDebug()
+                << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "iIM Cal Metrics: rmse" << rmse
+                << "mean" << mean
+                << "stDev" << stDev
+                << "R^2" << pearsonsCorr;
+            }
         }
 
-        *stDevScanTimeDiff = stDev;
+        *stDevMetricDiff = stDev;
 
         ERR_RETURN
     }
@@ -94,14 +123,13 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
             insertLogicIRT
             );
 
-    double stDevScanTimeDiff;
-    e = generateMetricsIRTtoScanTime(
+    e = generateMetricsXYMapperMetrics(
         dataIRT,
         m_params.verbosity,
         m_params.rtBinning,
-        &stDevScanTimeDiff
+        MetricType::IRT,
+        &m_scanTimeStd
         ); ree;
-    m_scanTimeStd = stDevScanTimeDiff;
 
     e = m_iRTtoScanTimeMapper.init(dataIRT); ree;
     e = m_iRTtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
@@ -114,6 +142,55 @@ Err MsCalibratomatic::buildRTMapper(const QVector<MsCalibarationReaderRow> &msCa
 
     ERR_RETURN
 }
+
+Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isNotEmpty(msCalibarationReaderRows); ree;
+
+    const auto insertLogicIIM = [](const MsCalibarationReaderRow &r){
+        return QPair(r.iMPredicted, r.driftTime);
+    };
+
+    QVector<QPair<XVal, YVal>> dataIIM;
+    dataIIM.reserve(msCalibarationReaderRows.size());
+    std::transform(
+            msCalibarationReaderRows.begin(),
+            msCalibarationReaderRows.end(),
+            std::back_inserter(dataIIM),
+            insertLogicIIM
+            );
+
+    const auto terminatorLogic = [](const QPair<XVal, YVal> &p){return p.second < 0.0;};
+    const auto terminator = std::remove_if(dataIIM.begin(), dataIIM.end(), terminatorLogic);
+    dataIIM.erase(terminator, dataIIM.end());
+
+    constexpr int minIIMTrainingSamples = 10;
+    if (dataIIM.size() < minIIMTrainingSamples) {
+        ERR_RETURN
+    }
+
+    e = generateMetricsXYMapperMetrics(
+        dataIIM,
+        m_params.verbosity,
+        m_params.rtBinning,
+        MetricType::IIM,
+        &m_ionMobilityStd
+        ); ree;
+
+    e = m_iIMtoScanTimeMapper.init(dataIIM); ree;
+    e = m_iIMtoScanTimeMapper.setBinning(m_params.rtBinning); ree;
+    e = ErrorUtils::isTrue(m_ionMobilityStd > 0.0); ree;
+
+    if (m_params.verbosity > 0) {
+        qDebug() << "ionMobilityStDev" << m_ionMobilityStd;
+    }
+    m_isInitIM = true;
+
+    ERR_RETURN
+}
+
 
 namespace {
 
@@ -509,6 +586,10 @@ float MsCalibratomatic::scanTimeStDev(float nStdDevs /* = 1.0 */) const {
     return static_cast<float>(m_scanTimeStd) * nStdDevs;
 }
 
+float MsCalibratomatic::ionMobilityStDev(float nStdDevs /* = 1.0 */) const {
+    return static_cast<float>(m_ionMobilityStd) * nStdDevs;
+}
+
 Err MsCalibratomatic::predictScanTime(float iRT, float *predictedScanTime) const {
     ERR_INIT
 
@@ -592,8 +673,32 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
 
 void MsCalibratomatic::setScanTimeStDev(double val) {
     m_scanTimeStd = val;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimeStDev has been set to:" << scanTimeStDev() << "seconds";
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimeStDev x 3:" << scanTimeStDev(3) << "seconds";
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "ScanTimeStDev has been set to:"
+    << scanTimeStDev()
+    << "seconds";
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "ScanTimeStDev x 3:"
+    << scanTimeStDev(m_params.scanTimeWindowStDevs)
+    << "seconds";
+}
+
+void MsCalibratomatic::setIonMobilityStDev(double val) {
+    m_ionMobilityStd = val;
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "IonMobilityStDev has been set to:"
+    << ionMobilityStDev()
+    << "mSec";
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "IonMobilityStDev x 3:"
+    << ionMobilityStDev(m_params.scanTimeWindowStDevs)
+    << "mSec";
 }
 
 void MsCalibratomatic::setMzStDevMS2(double val) {

@@ -327,6 +327,13 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
              << m_msCalibratomatic->scanTimeStDev(m_pythiaParameters->scanTimeWindowStDevs)
              << "minutes";
 
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+             << "Optimal ionMobilityWindow setting:"
+             << m_msCalibratomatic->ionMobilityStDev(m_pythiaParameters->scanTimeWindowStDevs)
+             << "mSec";
+    }
+
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
 
     ERR_RETURN

@@ -466,6 +466,8 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
+            row.driftTime = cs->imDriftTime;
+            row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
 
             if (msLevel == MSLevelEnum::MS2) {
 

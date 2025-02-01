@@ -71,6 +71,7 @@ private:
     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
 
     QVector<float> m_scanTimeStDevs;
+    QVector<float> m_ionMobilityStDevs;
     QVector<float> m_ms2PPMStDevs;
     QVector<float> m_weights;
 

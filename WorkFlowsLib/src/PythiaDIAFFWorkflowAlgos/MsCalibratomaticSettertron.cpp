@@ -205,6 +205,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             ); ree;
 
         m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+        m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
         m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
         QString fdrString;
@@ -247,6 +248,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             e = m_msCalibratomatic.setCalibrationCoeffsUsingAllMeans(); ree;
 
             m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+            m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
             m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
             constexpr int minVecSize = 3;
@@ -262,13 +264,35 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 m_ms2PPMStDevs.pop_back();
             }
 
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "ScanTimeWindow Mean|Median|Min"
-                     << MathUtils::mean(m_scanTimeStDevs)
-                     << MathUtils::median(m_scanTimeStDevs)
-                     << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+            qDebug()
+            << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "ScanTimeWindow Mean|Median|Min"
+            << MathUtils::mean(m_scanTimeStDevs)
+            << MathUtils::median(m_scanTimeStDevs)
+            << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
 
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(m_ms2PPMStDevs) << MathUtils::median(m_ms2PPMStDevs);
+            qDebug()
+            << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "Ms2 ppm Mean|Median"
+            << MathUtils::mean(m_ms2PPMStDevs)
+            << MathUtils::median(m_ms2PPMStDevs);
+
+            if (m_msReaderPointerAcc->ptr->isTIMS()) {
+                std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
+                if (m_ionMobilityStDevs.size() >= minVecSize) {
+                    m_ionMobilityStDevs.pop_front();
+                    m_ionMobilityStDevs.pop_back();
+                }
+
+                qDebug()
+                << qPrintable(S_GLOBAL_TIMER.elapsed())
+                << "ScanTimeWindow Mean|Median|Min"
+                << MathUtils::mean(m_ionMobilityStDevs)
+                << MathUtils::median(m_ionMobilityStDevs)
+                << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+
+                m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
+            }
 
             m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
             m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
@@ -422,6 +446,9 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
+    }
 
     if (m_pythiaParameters->verbosity > 0) {
         qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters->scanTimeWindowStDevs
