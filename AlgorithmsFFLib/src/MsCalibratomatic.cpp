@@ -83,18 +83,22 @@ namespace {
             if (metricType == MetricType::IRT) {
                 qDebug()
                 << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "iRT Cal Metrics: rmse" << rmse
-                << "mean" << mean
-                << "stDev" << stDev
-                << "R^2" << pearsonsCorr;
+                << "iRT Cal Metrics: rmse:" << rmse
+                << "| mean:" << mean
+                << "| stDev:" << stDev
+                << "| R^2:" << pearsonsCorr
+                << "| Training set:" << trainingData.size()
+                << "| Test set:" << testData.size();
             }
             else {
                 qDebug()
                 << qPrintable(S_GLOBAL_TIMER.elapsed())
                 << "iIM Cal Metrics: rmse" << rmse
-                << "mean" << mean
-                << "stDev" << stDev
-                << "R^2" << pearsonsCorr;
+                << "| mean:" << mean
+                << "| stDev:" << stDev
+                << "| R^2:" << pearsonsCorr
+                << "| Training set:" << trainingData.size()
+                << "| Test set:" << testData.size();
             }
         }
 
