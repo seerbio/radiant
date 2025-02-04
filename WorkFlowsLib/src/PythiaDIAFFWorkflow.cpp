@@ -1030,6 +1030,45 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "By Classifier Score:"
+            << "Alt:" << targetCountBelowFDRThresholdOnePercent
+            << "| Counter:" << counter
+            << "| Decoys:" <<  decoys
+            << "| Entrap:" << entrap
+            << "| Entrap%" << entrap / static_cast<double>(counter);
+
+    counter = 0;
+    decoys = 0;
+    entrap = 0;
+    QVector<CandidateScores*> candidateScoresCopy = *candidateScores;
+    std::sort(
+        candidateScoresCopy.rbegin(),
+        candidateScoresCopy.rend(),
+        [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
+        );
+
+    for (CandidateScores *cs : candidateScoresCopy) {
+        counter++;
+
+        if (decoys/static_cast<double>(counter) >= 0.01) {
+            break;
+        }
+
+        if (cs->isDecoy) {
+            decoys++;
+            continue;
+        }
+
+        if (!cs->proteinGroup.contains("_HUMAN")
+            && !cs->isDecoy
+            && cs->proteinGroup.contains("_ARATH")
+            && !cs->proteinGroup.isEmpty()
+            ) {
+            entrap++;
+            }
+    }
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "By Discriminant Score:"
             << "Alt:" << targetCountBelowFDRThresholdOnePercent
             << "| Counter:" << counter
             << "| Decoys:" <<  decoys
