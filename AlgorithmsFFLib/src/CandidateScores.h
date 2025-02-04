@@ -525,18 +525,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
     const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
 
-    // const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
-    // const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
-    // const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
-    // const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
-    // const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
-    // const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
-    // const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
-    // const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
-    // const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
-    // const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
-    // const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
-    // const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
+    const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
+    const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
+    const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
+    const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
+    const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
+    const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
+    const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
+    const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
+    const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
+    const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
+    const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
+    const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
 
 
     const QStringList keysToCheck = {
@@ -724,19 +724,19 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SUM100_WIN_2X,
             TOT_INTENSITY_PEAK_HEIGHTS,
             TOT_INTENSITY_RAW,
-            TARGET_WINDOW_LOCATION
-            // MZ_SEARCHED_1,
-            // MZ_SEARCHED_2,
-            // MZ_SEARCHED_3,
-            // MZ_SEARCHED_4,
-            // MZ_SEARCHED_5,
-            // MZ_SEARCHED_6,
-            // MZ_SEARCHED_7,
-            // MZ_SEARCHED_8,
-            // MZ_SEARCHED_9,
-            // MZ_SEARCHED_10,
-            // MZ_SEARCHED_11,
-            // MZ_SEARCHED_12
+            TARGET_WINDOW_LOCATION,
+            MZ_SEARCHED_1,
+            MZ_SEARCHED_2,
+            MZ_SEARCHED_3,
+            MZ_SEARCHED_4,
+            MZ_SEARCHED_5,
+            MZ_SEARCHED_6,
+            MZ_SEARCHED_7,
+            MZ_SEARCHED_8,
+            MZ_SEARCHED_9,
+            MZ_SEARCHED_10,
+            MZ_SEARCHED_11,
+            MZ_SEARCHED_12
     };
 
 }//namespace
@@ -947,18 +947,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float trapArea11 = -1.0;
     float trapArea12 = -1.0;
 
-    // float mzSearched1 = -1.0;
-    // float mzSearched2 = -1.0;
-    // float mzSearched3 = -1.0;
-    // float mzSearched4 = -1.0;
-    // float mzSearched5 = -1.0;
-    // float mzSearched6 = -1.0;
-    // float mzSearched7 = -1.0;
-    // float mzSearched8 = -1.0;
-    // float mzSearched9 = -1.0;
-    // float mzSearched10 = -1.0;
-    // float mzSearched11 = -1.0;
-    // float mzSearched12 = -1.0;
+    float mzSearched1 = -1.0;
+    float mzSearched2 = -1.0;
+    float mzSearched3 = -1.0;
+    float mzSearched4 = -1.0;
+    float mzSearched5 = -1.0;
+    float mzSearched6 = -1.0;
+    float mzSearched7 = -1.0;
+    float mzSearched8 = -1.0;
+    float mzSearched9 = -1.0;
+    float mzSearched10 = -1.0;
+    float mzSearched11 = -1.0;
+    float mzSearched12 = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1371,18 +1371,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {TRAP_AREA_11, QVariant(trapArea11)},
                 {TRAP_AREA_12, QVariant(trapArea12)},
 
-                // {MZ_SEARCHED_1, QVariant(mzSearched1)},
-                // {MZ_SEARCHED_2, QVariant(mzSearched2)},
-                // {MZ_SEARCHED_3, QVariant(mzSearched3)},
-                // {MZ_SEARCHED_4, QVariant(mzSearched4)},
-                // {MZ_SEARCHED_5, QVariant(mzSearched5)},
-                // {MZ_SEARCHED_6, QVariant(mzSearched6)},
-                // {MZ_SEARCHED_7, QVariant(mzSearched7)},
-                // {MZ_SEARCHED_8, QVariant(mzSearched8)},
-                // {MZ_SEARCHED_9, QVariant(mzSearched9)},
-                // {MZ_SEARCHED_10, QVariant(mzSearched10)},
-                // {MZ_SEARCHED_11, QVariant(mzSearched11)},
-                // {MZ_SEARCHED_12, QVariant(mzSearched12)},
+                {MZ_SEARCHED_1, QVariant(mzSearched1)},
+                {MZ_SEARCHED_2, QVariant(mzSearched2)},
+                {MZ_SEARCHED_3, QVariant(mzSearched3)},
+                {MZ_SEARCHED_4, QVariant(mzSearched4)},
+                {MZ_SEARCHED_5, QVariant(mzSearched5)},
+                {MZ_SEARCHED_6, QVariant(mzSearched6)},
+                {MZ_SEARCHED_7, QVariant(mzSearched7)},
+                {MZ_SEARCHED_8, QVariant(mzSearched8)},
+                {MZ_SEARCHED_9, QVariant(mzSearched9)},
+                {MZ_SEARCHED_10, QVariant(mzSearched10)},
+                {MZ_SEARCHED_11, QVariant(mzSearched11)},
+                {MZ_SEARCHED_12, QVariant(mzSearched12)},
         };
     }
 
@@ -1587,50 +1587,50 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
                                        : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
 
-        // for (int i = 0; i < ms2Ions.size(); ++i) {
-        //
-        //     switch (i) {
-        //         case 0:
-        //             row.mzSearched1 = ms2Ions.at(0).mz;
-        //             break;
-        //         case 1:
-        //             row.mzSearched2 = ms2Ions.at(1).mz;
-        //             break;
-        //         case 2:
-        //             row.mzSearched3 = ms2Ions.at(2).mz;
-        //             break;
-        //         case 3:
-        //             row.mzSearched4 = ms2Ions.at(3).mz;
-        //             break;
-        //         case 4:
-        //             row.mzSearched5 = ms2Ions.at(4).mz;
-        //             break;
-        //         case 5:
-        //             row.mzSearched6 = ms2Ions.at(5).mz;
-        //             break;
-        //         case 6:
-        //             row.mzSearched7 = ms2Ions.at(6).mz;
-        //             break;
-        //         case 7:
-        //             row.mzSearched8 = ms2Ions.at(7).mz;
-        //             break;
-        //         case 8:
-        //             row.mzSearched9 = ms2Ions.at(8).mz;
-        //             break;
-        //         case 9:
-        //             row.mzSearched10 = ms2Ions.at(9).mz;
-        //             break;
-        //         case 10:
-        //             row.mzSearched11 = ms2Ions.at(10).mz;
-        //             break;
-        //         case 11:
-        //             row.mzSearched12 = ms2Ions.at(10).mz;
-        //             break;
-        //         default:
-        //             break;
-        //     }
-        //
-        // }
+        for (int i = 0; i < ms2Ions.size(); ++i) {
+
+            switch (i) {
+                case 0:
+                    row.mzSearched1 = ms2Ions.at(0).mz;
+                    break;
+                case 1:
+                    row.mzSearched2 = ms2Ions.at(1).mz;
+                    break;
+                case 2:
+                    row.mzSearched3 = ms2Ions.at(2).mz;
+                    break;
+                case 3:
+                    row.mzSearched4 = ms2Ions.at(3).mz;
+                    break;
+                case 4:
+                    row.mzSearched5 = ms2Ions.at(4).mz;
+                    break;
+                case 5:
+                    row.mzSearched6 = ms2Ions.at(5).mz;
+                    break;
+                case 6:
+                    row.mzSearched7 = ms2Ions.at(6).mz;
+                    break;
+                case 7:
+                    row.mzSearched8 = ms2Ions.at(7).mz;
+                    break;
+                case 8:
+                    row.mzSearched9 = ms2Ions.at(8).mz;
+                    break;
+                case 9:
+                    row.mzSearched10 = ms2Ions.at(9).mz;
+                    break;
+                case 10:
+                    row.mzSearched11 = ms2Ions.at(10).mz;
+                    break;
+                case 11:
+                    row.mzSearched12 = ms2Ions.at(11).mz;
+                    break;
+                default:
+                    break;
+            }
+
+        }
 
         return row;
     }
