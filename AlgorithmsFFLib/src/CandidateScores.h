@@ -401,12 +401,12 @@ namespace CandidateScoresReaderRowNamespace {
     const QString INTS_FND_MAX_4 = QStringLiteral("IntensityFoundMax4");
     const QString INTS_FND_MAX_5 = QStringLiteral("IntensityFoundMax5");
     const QString INTS_FND_MAX_6 = QStringLiteral("IntensityFoundMax6");
-    // const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
-    // const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
-    // const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
-    // const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
-    // const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
-    // const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
+    const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
+    const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
+    const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
+    const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
+    const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
+    const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
     // const QString MZ_PK_LEN_NORM_1 = QStringLiteral("MzPeakLengthsNorm1");
     // const QString MZ_PK_LEN_NORM_2 = QStringLiteral("MzPeakLengthsNorm2");
     // const QString MZ_PK_LEN_NORM_3 = QStringLiteral("MzPeakLengthsNorm3");
@@ -614,12 +614,12 @@ namespace CandidateScoresReaderRowNamespace {
             INTS_FND_MAX_4,
             INTS_FND_MAX_5,
             INTS_FND_MAX_6,
-            // INTS_FND_MAX_7,
-            // INTS_FND_MAX_8,
-            // INTS_FND_MAX_9,
-            // INTS_FND_MAX_10,
-            // INTS_FND_MAX_11,
-            // INTS_FND_MAX_12,
+            INTS_FND_MAX_7,
+            INTS_FND_MAX_8,
+            INTS_FND_MAX_9,
+            INTS_FND_MAX_10,
+            INTS_FND_MAX_11,
+            INTS_FND_MAX_12,
             // MZ_PK_LEN_NORM_1,
             // MZ_PK_LEN_NORM_2,
             // MZ_PK_LEN_NORM_3,
@@ -817,12 +817,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float intensityFoundMax4 = -1.0;
     float intensityFoundMax5 = -1.0;
     float intensityFoundMax6 = -1.0;
-    // float intensityFoundMax7 = -1.0;
-    // float intensityFoundMax8 = -1.0;
-    // float intensityFoundMax9 = -1.0;
-    // float intensityFoundMax10 = -1.0;
-    // float intensityFoundMax11 = -1.0;
-    // float intensityFoundMax12 = -1.0;
+    float intensityFoundMax7 = -1.0;
+    float intensityFoundMax8 = -1.0;
+    float intensityFoundMax9 = -1.0;
+    float intensityFoundMax10 = -1.0;
+    float intensityFoundMax11 = -1.0;
+    float intensityFoundMax12 = -1.0;
     // float mzPeakLengthsNorm1 = -1.0;
     // float mzPeakLengthsNorm2 = -1.0;
     // float mzPeakLengthsNorm3 = -1.0;
@@ -1048,12 +1048,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         intensityFoundMax4 = dataMap.value(INTS_FND_MAX_4).toFloat();
         intensityFoundMax5 = dataMap.value(INTS_FND_MAX_5).toFloat();
         intensityFoundMax6 = dataMap.value(INTS_FND_MAX_6).toFloat();
-        // intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
-        // intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
-        // intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
-        // intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
-        // intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
-        // intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
+        intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
+        intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
+        intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
+        intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
+        intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
+        intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
         // mzPeakLengthsNorm1 = dataMap.value(MZ_PK_LEN_NORM_1).toFloat();
         // mzPeakLengthsNorm2 = dataMap.value(MZ_PK_LEN_NORM_2).toFloat();
         // mzPeakLengthsNorm3 = dataMap.value(MZ_PK_LEN_NORM_3).toFloat();
@@ -1244,12 +1244,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {INTS_FND_MAX_4, QVariant(intensityFoundMax4)},
                 {INTS_FND_MAX_5, QVariant(intensityFoundMax5)},
                 {INTS_FND_MAX_6, QVariant(intensityFoundMax6)},
-                // {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
-                // {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
-                // {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
-                // {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
-                // {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
-                // {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
+                {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
+                {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
+                {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
+                {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
+                {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
+                {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
                 // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
                 // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
                 // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
@@ -1464,12 +1464,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.intensityFoundMax4 = candidateScores->integrations.at(3);
         row.intensityFoundMax5 = candidateScores->integrations.at(4);
         row.intensityFoundMax6 = candidateScores->integrations.at(5);
-        // row.intensityFoundMax7 = candidateScores->featuresArray[Features::IntensityFoundMax7];
-        // row.intensityFoundMax8 = candidateScores->featuresArray[Features::IntensityFoundMax8];
-        // row.intensityFoundMax9 = candidateScores->featuresArray[Features::IntensityFoundMax9];
-        // row.intensityFoundMax10 = candidateScores->featuresArray[Features::IntensityFoundMax10];
-        // row.intensityFoundMax11 = candidateScores->featuresArray[Features::IntensityFoundMax11];
-        // row.intensityFoundMax12 = candidateScores->featuresArray[Features::IntensityFoundMax12];
+        row.intensityFoundMax7 = candidateScores->integrations.at(6);
+        row.intensityFoundMax8 = candidateScores->integrations.at(7);
+        row.intensityFoundMax9 = candidateScores->integrations.at(8);
+        row.intensityFoundMax10 = candidateScores->integrations.at(9);
+        row.intensityFoundMax11 = candidateScores->integrations.at(10);
+        row.intensityFoundMax12 = candidateScores->integrations.at(11);
         // row.mzPeakLengthsNorm1 = candidateScores->featuresArray[Features::MzPeakLengthsNorm1];
         // row.mzPeakLengthsNorm2 = candidateScores->featuresArray[Features::MzPeakLengthsNorm2];
         // row.mzPeakLengthsNorm3 = candidateScores->featuresArray[Features::MzPeakLengthsNorm3];
