@@ -407,12 +407,12 @@ namespace CandidateScoresReaderRowNamespace {
     const QString INTS_FND_MAX_4 = QStringLiteral("IntensityFoundMax4");
     const QString INTS_FND_MAX_5 = QStringLiteral("IntensityFoundMax5");
     const QString INTS_FND_MAX_6 = QStringLiteral("IntensityFoundMax6");
-    // const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
-    // const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
-    // const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
-    // const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
-    // const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
-    // const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
+    const QString INTS_FND_MAX_7 = QStringLiteral("IntensityFoundMax7");
+    const QString INTS_FND_MAX_8 = QStringLiteral("IntensityFoundMax8");
+    const QString INTS_FND_MAX_9 = QStringLiteral("IntensityFoundMax9");
+    const QString INTS_FND_MAX_10 = QStringLiteral("IntensityFoundMax10");
+    const QString INTS_FND_MAX_11 = QStringLiteral("IntensityFoundMax11");
+    const QString INTS_FND_MAX_12 = QStringLiteral("IntensityFoundMax12");
     // const QString MZ_PK_LEN_NORM_1 = QStringLiteral("MzPeakLengthsNorm1");
     // const QString MZ_PK_LEN_NORM_2 = QStringLiteral("MzPeakLengthsNorm2");
     // const QString MZ_PK_LEN_NORM_3 = QStringLiteral("MzPeakLengthsNorm3");
@@ -531,18 +531,18 @@ namespace CandidateScoresReaderRowNamespace {
     const QString TRAP_AREA_11 = QStringLiteral("TrapArea11");
     const QString TRAP_AREA_12 = QStringLiteral("TrapArea12");
 
-    // const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
-    // const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
-    // const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
-    // const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
-    // const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
-    // const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
-    // const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
-    // const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
-    // const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
-    // const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
-    // const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
-    // const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
+    const QString MZ_SEARCHED_1 = QStringLiteral("MzSearched1");
+    const QString MZ_SEARCHED_2 = QStringLiteral("MzSearched2");
+    const QString MZ_SEARCHED_3 = QStringLiteral("MzSearched3");
+    const QString MZ_SEARCHED_4 = QStringLiteral("MzSearched4");
+    const QString MZ_SEARCHED_5 = QStringLiteral("MzSearched5");
+    const QString MZ_SEARCHED_6 = QStringLiteral("MzSearched6");
+    const QString MZ_SEARCHED_7 = QStringLiteral("MzSearched7");
+    const QString MZ_SEARCHED_8 = QStringLiteral("MzSearched8");
+    const QString MZ_SEARCHED_9 = QStringLiteral("MzSearched9");
+    const QString MZ_SEARCHED_10 = QStringLiteral("MzSearched10");
+    const QString MZ_SEARCHED_11 = QStringLiteral("MzSearched11");
+    const QString MZ_SEARCHED_12 = QStringLiteral("MzSearched12");
 
 
     const QStringList keysToCheck = {
@@ -620,12 +620,12 @@ namespace CandidateScoresReaderRowNamespace {
             INTS_FND_MAX_4,
             INTS_FND_MAX_5,
             INTS_FND_MAX_6,
-            // INTS_FND_MAX_7,
-            // INTS_FND_MAX_8,
-            // INTS_FND_MAX_9,
-            // INTS_FND_MAX_10,
-            // INTS_FND_MAX_11,
-            // INTS_FND_MAX_12,
+            INTS_FND_MAX_7,
+            INTS_FND_MAX_8,
+            INTS_FND_MAX_9,
+            INTS_FND_MAX_10,
+            INTS_FND_MAX_11,
+            INTS_FND_MAX_12,
             // MZ_PK_LEN_NORM_1,
             // MZ_PK_LEN_NORM_2,
             // MZ_PK_LEN_NORM_3,
@@ -730,19 +730,19 @@ namespace CandidateScoresReaderRowNamespace {
             COS_SIM_SUM100_WIN_2X,
             TOT_INTENSITY_PEAK_HEIGHTS,
             TOT_INTENSITY_RAW,
-            TARGET_WINDOW_LOCATION
-            // MZ_SEARCHED_1,
-            // MZ_SEARCHED_2,
-            // MZ_SEARCHED_3,
-            // MZ_SEARCHED_4,
-            // MZ_SEARCHED_5,
-            // MZ_SEARCHED_6,
-            // MZ_SEARCHED_7,
-            // MZ_SEARCHED_8,
-            // MZ_SEARCHED_9,
-            // MZ_SEARCHED_10,
-            // MZ_SEARCHED_11,
-            // MZ_SEARCHED_12
+            TARGET_WINDOW_LOCATION,
+            MZ_SEARCHED_1,
+            MZ_SEARCHED_2,
+            MZ_SEARCHED_3,
+            MZ_SEARCHED_4,
+            MZ_SEARCHED_5,
+            MZ_SEARCHED_6,
+            MZ_SEARCHED_7,
+            MZ_SEARCHED_8,
+            MZ_SEARCHED_9,
+            MZ_SEARCHED_10,
+            MZ_SEARCHED_11,
+            MZ_SEARCHED_12
     };
 
 }//namespace
@@ -823,12 +823,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float intensityFoundMax4 = -1.0;
     float intensityFoundMax5 = -1.0;
     float intensityFoundMax6 = -1.0;
-    // float intensityFoundMax7 = -1.0;
-    // float intensityFoundMax8 = -1.0;
-    // float intensityFoundMax9 = -1.0;
-    // float intensityFoundMax10 = -1.0;
-    // float intensityFoundMax11 = -1.0;
-    // float intensityFoundMax12 = -1.0;
+    float intensityFoundMax7 = -1.0;
+    float intensityFoundMax8 = -1.0;
+    float intensityFoundMax9 = -1.0;
+    float intensityFoundMax10 = -1.0;
+    float intensityFoundMax11 = -1.0;
+    float intensityFoundMax12 = -1.0;
     // float mzPeakLengthsNorm1 = -1.0;
     // float mzPeakLengthsNorm2 = -1.0;
     // float mzPeakLengthsNorm3 = -1.0;
@@ -953,18 +953,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
     float trapArea11 = -1.0;
     float trapArea12 = -1.0;
 
-    // float mzSearched1 = -1.0;
-    // float mzSearched2 = -1.0;
-    // float mzSearched3 = -1.0;
-    // float mzSearched4 = -1.0;
-    // float mzSearched5 = -1.0;
-    // float mzSearched6 = -1.0;
-    // float mzSearched7 = -1.0;
-    // float mzSearched8 = -1.0;
-    // float mzSearched9 = -1.0;
-    // float mzSearched10 = -1.0;
-    // float mzSearched11 = -1.0;
-    // float mzSearched12 = -1.0;
+    float mzSearched1 = -1.0;
+    float mzSearched2 = -1.0;
+    float mzSearched3 = -1.0;
+    float mzSearched4 = -1.0;
+    float mzSearched5 = -1.0;
+    float mzSearched6 = -1.0;
+    float mzSearched7 = -1.0;
+    float mzSearched8 = -1.0;
+    float mzSearched9 = -1.0;
+    float mzSearched10 = -1.0;
+    float mzSearched11 = -1.0;
+    float mzSearched12 = -1.0;
 
     Err initFromRead(const ParquetReaderInputBase &row) override {
 
@@ -1054,12 +1054,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         intensityFoundMax4 = dataMap.value(INTS_FND_MAX_4).toFloat();
         intensityFoundMax5 = dataMap.value(INTS_FND_MAX_5).toFloat();
         intensityFoundMax6 = dataMap.value(INTS_FND_MAX_6).toFloat();
-        // intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
-        // intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
-        // intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
-        // intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
-        // intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
-        // intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
+        intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
+        intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
+        intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
+        intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
+        intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
+        intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
         // mzPeakLengthsNorm1 = dataMap.value(MZ_PK_LEN_NORM_1).toFloat();
         // mzPeakLengthsNorm2 = dataMap.value(MZ_PK_LEN_NORM_2).toFloat();
         // mzPeakLengthsNorm3 = dataMap.value(MZ_PK_LEN_NORM_3).toFloat();
@@ -1250,12 +1250,12 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {INTS_FND_MAX_4, QVariant(intensityFoundMax4)},
                 {INTS_FND_MAX_5, QVariant(intensityFoundMax5)},
                 {INTS_FND_MAX_6, QVariant(intensityFoundMax6)},
-                // {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
-                // {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
-                // {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
-                // {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
-                // {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
-                // {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
+                {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
+                {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
+                {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
+                {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
+                {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
+                {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
                 // {MZ_PK_LEN_NORM_1, QVariant(mzPeakLengthsNorm1)},
                 // {MZ_PK_LEN_NORM_2, QVariant(mzPeakLengthsNorm2)},
                 // {MZ_PK_LEN_NORM_3, QVariant(mzPeakLengthsNorm3)},
@@ -1377,18 +1377,18 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                 {TRAP_AREA_11, QVariant(trapArea11)},
                 {TRAP_AREA_12, QVariant(trapArea12)},
 
-                // {MZ_SEARCHED_1, QVariant(mzSearched1)},
-                // {MZ_SEARCHED_2, QVariant(mzSearched2)},
-                // {MZ_SEARCHED_3, QVariant(mzSearched3)},
-                // {MZ_SEARCHED_4, QVariant(mzSearched4)},
-                // {MZ_SEARCHED_5, QVariant(mzSearched5)},
-                // {MZ_SEARCHED_6, QVariant(mzSearched6)},
-                // {MZ_SEARCHED_7, QVariant(mzSearched7)},
-                // {MZ_SEARCHED_8, QVariant(mzSearched8)},
-                // {MZ_SEARCHED_9, QVariant(mzSearched9)},
-                // {MZ_SEARCHED_10, QVariant(mzSearched10)},
-                // {MZ_SEARCHED_11, QVariant(mzSearched11)},
-                // {MZ_SEARCHED_12, QVariant(mzSearched12)},
+                {MZ_SEARCHED_1, QVariant(mzSearched1)},
+                {MZ_SEARCHED_2, QVariant(mzSearched2)},
+                {MZ_SEARCHED_3, QVariant(mzSearched3)},
+                {MZ_SEARCHED_4, QVariant(mzSearched4)},
+                {MZ_SEARCHED_5, QVariant(mzSearched5)},
+                {MZ_SEARCHED_6, QVariant(mzSearched6)},
+                {MZ_SEARCHED_7, QVariant(mzSearched7)},
+                {MZ_SEARCHED_8, QVariant(mzSearched8)},
+                {MZ_SEARCHED_9, QVariant(mzSearched9)},
+                {MZ_SEARCHED_10, QVariant(mzSearched10)},
+                {MZ_SEARCHED_11, QVariant(mzSearched11)},
+                {MZ_SEARCHED_12, QVariant(mzSearched12)},
         };
     }
 
@@ -1470,62 +1470,62 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.intensityFoundMax4 = candidateScores->integrations.at(3);
         row.intensityFoundMax5 = candidateScores->integrations.at(4);
         row.intensityFoundMax6 = candidateScores->integrations.at(5);
-        // row.intensityFoundMax7 = candidateScores->featuresArray[IntensityFoundMax7];
-        // row.intensityFoundMax8 = candidateScores->featuresArray[IntensityFoundMax8];
-        // row.intensityFoundMax9 = candidateScores->featuresArray[IntensityFoundMax9];
-        // row.intensityFoundMax10 = candidateScores->featuresArray[IntensityFoundMax10];
-        // row.intensityFoundMax11 = candidateScores->featuresArray[IntensityFoundMax11];
-        // row.intensityFoundMax12 = candidateScores->featuresArray[IntensityFoundMax12];
-        // row.mzPeakLengthsNorm1 = candidateScores->featuresArray[MzPeakLengthsNorm1];
-        // row.mzPeakLengthsNorm2 = candidateScores->featuresArray[MzPeakLengthsNorm2];
-        // row.mzPeakLengthsNorm3 = candidateScores->featuresArray[MzPeakLengthsNorm3];
-        // row.mzPeakLengthsNorm4 = candidateScores->featuresArray[MzPeakLengthsNorm4];
-        // row.mzPeakLengthsNorm5 = candidateScores->featuresArray[MzPeakLengthsNorm5];
-        // row.mzPeakLengthsNorm6 = candidateScores->featuresArray[MzPeakLengthsNorm6];
-        // row.mzPeakLengthsNorm7 = candidateScores->featuresArray[MzPeakLengthsNorm7];
-        // row.mzPeakLengthsNorm8 = candidateScores->featuresArray[MzPeakLengthsNorm8];
-        // row.mzPeakLengthsNorm9 = candidateScores->featuresArray[MzPeakLengthsNorm9];
-        // row.mzPeakLengthsNorm10 = candidateScores->featuresArray[MzPeakLengthsNorm10];
-        // row.mzPeakLengthsNorm11 = candidateScores->featuresArray[MzPeakLengthsNorm11];
-        // row.mzPeakLengthsNorm12 = candidateScores->featuresArray[MzPeakLengthsNorm12];
-        row.aminoAcidCountA = candidateScores->featuresArray[AminoAcidCountA];
-        row.aminoAcidCountC = candidateScores->featuresArray[AminoAcidCountC];
-        row.aminoAcidCountD = candidateScores->featuresArray[AminoAcidCountD];
-        row.aminoAcidCountE = candidateScores->featuresArray[AminoAcidCountE];
-        row.aminoAcidCountF = candidateScores->featuresArray[AminoAcidCountF];
-        row.aminoAcidCountG = candidateScores->featuresArray[AminoAcidCountG];
-        row.aminoAcidCountH = candidateScores->featuresArray[AminoAcidCountH];
-        row.aminoAcidCountI = candidateScores->featuresArray[AminoAcidCountI];
-        row.aminoAcidCountK = candidateScores->featuresArray[AminoAcidCountK];
-        row.aminoAcidCountL = candidateScores->featuresArray[AminoAcidCountL];
-        row.aminoAcidCountM = candidateScores->featuresArray[AminoAcidCountM];
-        row.aminoAcidCountN = candidateScores->featuresArray[AminoAcidCountN];
-        row.aminoAcidCountP = candidateScores->featuresArray[AminoAcidCountP];
-        row.aminoAcidCountQ = candidateScores->featuresArray[AminoAcidCountQ];
-        row.aminoAcidCountR = candidateScores->featuresArray[AminoAcidCountR];
-        row.aminoAcidCountS = candidateScores->featuresArray[AminoAcidCountS];
-        row.aminoAcidCountT = candidateScores->featuresArray[AminoAcidCountT];
-        row.aminoAcidCountV = candidateScores->featuresArray[AminoAcidCountV];
-        row.aminoAcidCountW = candidateScores->featuresArray[AminoAcidCountW];
-        row.aminoAcidCountY = candidateScores->featuresArray[AminoAcidCountY];
-        row.aminoAcidCountB = candidateScores->featuresArray[AminoAcidCountB];
-        row.aminoAcidCountJ = candidateScores->featuresArray[AminoAcidCountJ];
-        row.aminoAcidCountO = candidateScores->featuresArray[AminoAcidCountO];
-        row.aminoAcidCountU = candidateScores->featuresArray[AminoAcidCountU];
-        row.aminoAcidCountX = candidateScores->featuresArray[AminoAcidCountX];
-        row.aminoAcidCountZ = candidateScores->featuresArray[AminoAcidCountZ];
-        row.mzFoundStDev1 = candidateScores->featuresArray[MzFoundStDev1];
-        row.mzFoundStDev2 = candidateScores->featuresArray[MzFoundStDev2];
-        row.mzFoundStDev3 = candidateScores->featuresArray[MzFoundStDev3];
-        row.mzFoundStDev4 = candidateScores->featuresArray[MzFoundStDev4];
-        row.mzFoundStDev5 = candidateScores->featuresArray[MzFoundStDev5];
-        row.mzFoundStDev6 = candidateScores->featuresArray[MzFoundStDev6];
-        // row.mzFoundStDev7 = candidateScores->featuresArray[MzFoundStDev7];
-        // row.mzFoundStDev8 = candidateScores->featuresArray[MzFoundStDev8];
-        // row.mzFoundStDev9 = candidateScores->featuresArray[MzFoundStDev9];
-        // row.mzFoundStDev10 = candidateScores->featuresArray[MzFoundStDev10];
-        // row.mzFoundStDev11 = candidateScores->featuresArray[MzFoundStDev11];
-        // row.mzFoundStDev12 = candidateScores->featuresArray[MzFoundStDev12];
+        row.intensityFoundMax7 = candidateScores->integrations.at(6);
+        row.intensityFoundMax8 = candidateScores->integrations.at(7);
+        row.intensityFoundMax9 = candidateScores->integrations.at(8);
+        row.intensityFoundMax10 = candidateScores->integrations.at(9);
+        row.intensityFoundMax11 = candidateScores->integrations.at(10);
+        row.intensityFoundMax12 = candidateScores->integrations.at(11);
+        // row.mzPeakLengthsNorm1 = candidateScores->featuresArray[Features::MzPeakLengthsNorm1];
+        // row.mzPeakLengthsNorm2 = candidateScores->featuresArray[Features::MzPeakLengthsNorm2];
+        // row.mzPeakLengthsNorm3 = candidateScores->featuresArray[Features::MzPeakLengthsNorm3];
+        // row.mzPeakLengthsNorm4 = candidateScores->featuresArray[Features::MzPeakLengthsNorm4];
+        // row.mzPeakLengthsNorm5 = candidateScores->featuresArray[Features::MzPeakLengthsNorm5];
+        // row.mzPeakLengthsNorm6 = candidateScores->featuresArray[Features::MzPeakLengthsNorm6];
+        // row.mzPeakLengthsNorm7 = candidateScores->featuresArray[Features::MzPeakLengthsNorm7];
+        // row.mzPeakLengthsNorm8 = candidateScores->featuresArray[Features::MzPeakLengthsNorm8];
+        // row.mzPeakLengthsNorm9 = candidateScores->featuresArray[Features::MzPeakLengthsNorm9];
+        // row.mzPeakLengthsNorm10 = candidateScores->featuresArray[Features::MzPeakLengthsNorm10];
+        // row.mzPeakLengthsNorm11 = candidateScores->featuresArray[Features::MzPeakLengthsNorm11];
+        // row.mzPeakLengthsNorm12 = candidateScores->featuresArray[Features::MzPeakLengthsNorm12];
+        row.aminoAcidCountA = candidateScores->featuresArray[Features::AminoAcidCountA];
+        row.aminoAcidCountC = candidateScores->featuresArray[Features::AminoAcidCountC];
+        row.aminoAcidCountD = candidateScores->featuresArray[Features::AminoAcidCountD];
+        row.aminoAcidCountE = candidateScores->featuresArray[Features::AminoAcidCountE];
+        row.aminoAcidCountF = candidateScores->featuresArray[Features::AminoAcidCountF];
+        row.aminoAcidCountG = candidateScores->featuresArray[Features::AminoAcidCountG];
+        row.aminoAcidCountH = candidateScores->featuresArray[Features::AminoAcidCountH];
+        row.aminoAcidCountI = candidateScores->featuresArray[Features::AminoAcidCountI];
+        row.aminoAcidCountK = candidateScores->featuresArray[Features::AminoAcidCountK];
+        row.aminoAcidCountL = candidateScores->featuresArray[Features::AminoAcidCountL];
+        row.aminoAcidCountM = candidateScores->featuresArray[Features::AminoAcidCountM];
+        row.aminoAcidCountN = candidateScores->featuresArray[Features::AminoAcidCountN];
+        row.aminoAcidCountP = candidateScores->featuresArray[Features::AminoAcidCountP];
+        row.aminoAcidCountQ = candidateScores->featuresArray[Features::AminoAcidCountQ];
+        row.aminoAcidCountR = candidateScores->featuresArray[Features::AminoAcidCountR];
+        row.aminoAcidCountS = candidateScores->featuresArray[Features::AminoAcidCountS];
+        row.aminoAcidCountT = candidateScores->featuresArray[Features::AminoAcidCountT];
+        row.aminoAcidCountV = candidateScores->featuresArray[Features::AminoAcidCountV];
+        row.aminoAcidCountW = candidateScores->featuresArray[Features::AminoAcidCountW];
+        row.aminoAcidCountY = candidateScores->featuresArray[Features::AminoAcidCountY];
+        row.aminoAcidCountB = candidateScores->featuresArray[Features::AminoAcidCountB];
+        row.aminoAcidCountJ = candidateScores->featuresArray[Features::AminoAcidCountJ];
+        row.aminoAcidCountO = candidateScores->featuresArray[Features::AminoAcidCountO];
+        row.aminoAcidCountU = candidateScores->featuresArray[Features::AminoAcidCountU];
+        row.aminoAcidCountX = candidateScores->featuresArray[Features::AminoAcidCountX];
+        row.aminoAcidCountZ = candidateScores->featuresArray[Features::AminoAcidCountZ];
+        row.mzFoundStDev1 = candidateScores->featuresArray[Features::MzFoundStDev1];
+        row.mzFoundStDev2 = candidateScores->featuresArray[Features::MzFoundStDev2];
+        row.mzFoundStDev3 = candidateScores->featuresArray[Features::MzFoundStDev3];
+        row.mzFoundStDev4 = candidateScores->featuresArray[Features::MzFoundStDev4];
+        row.mzFoundStDev5 = candidateScores->featuresArray[Features::MzFoundStDev5];
+        row.mzFoundStDev6 = candidateScores->featuresArray[Features::MzFoundStDev6];
+        // row.mzFoundStDev7 = candidateScores->featuresArray[Features::MzFoundStDev7];
+        // row.mzFoundStDev8 = candidateScores->featuresArray[Features::MzFoundStDev8];
+        // row.mzFoundStDev9 = candidateScores->featuresArray[Features::MzFoundStDev9];
+        // row.mzFoundStDev10 = candidateScores->featuresArray[Features::MzFoundStDev10];
+        // row.mzFoundStDev11 = candidateScores->featuresArray[Features::MzFoundStDev11];
+        // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
         row.peptideStringWithMods = candidateScores->isDecoy
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
@@ -1593,50 +1593,50 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
                                        ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
                                        : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
 
-        // for (int i = 0; i < ms2Ions.size(); ++i) {
-        //
-        //     switch (i) {
-        //         case 0:
-        //             row.mzSearched1 = ms2Ions.at(0).mz;
-        //             break;
-        //         case 1:
-        //             row.mzSearched2 = ms2Ions.at(1).mz;
-        //             break;
-        //         case 2:
-        //             row.mzSearched3 = ms2Ions.at(2).mz;
-        //             break;
-        //         case 3:
-        //             row.mzSearched4 = ms2Ions.at(3).mz;
-        //             break;
-        //         case 4:
-        //             row.mzSearched5 = ms2Ions.at(4).mz;
-        //             break;
-        //         case 5:
-        //             row.mzSearched6 = ms2Ions.at(5).mz;
-        //             break;
-        //         case 6:
-        //             row.mzSearched7 = ms2Ions.at(6).mz;
-        //             break;
-        //         case 7:
-        //             row.mzSearched8 = ms2Ions.at(7).mz;
-        //             break;
-        //         case 8:
-        //             row.mzSearched9 = ms2Ions.at(8).mz;
-        //             break;
-        //         case 9:
-        //             row.mzSearched10 = ms2Ions.at(9).mz;
-        //             break;
-        //         case 10:
-        //             row.mzSearched11 = ms2Ions.at(10).mz;
-        //             break;
-        //         case 11:
-        //             row.mzSearched12 = ms2Ions.at(10).mz;
-        //             break;
-        //         default:
-        //             break;
-        //     }
-        //
-        // }
+        for (int i = 0; i < ms2Ions.size(); ++i) {
+
+            switch (i) {
+                case 0:
+                    row.mzSearched1 = ms2Ions.at(0).mz;
+                    break;
+                case 1:
+                    row.mzSearched2 = ms2Ions.at(1).mz;
+                    break;
+                case 2:
+                    row.mzSearched3 = ms2Ions.at(2).mz;
+                    break;
+                case 3:
+                    row.mzSearched4 = ms2Ions.at(3).mz;
+                    break;
+                case 4:
+                    row.mzSearched5 = ms2Ions.at(4).mz;
+                    break;
+                case 5:
+                    row.mzSearched6 = ms2Ions.at(5).mz;
+                    break;
+                case 6:
+                    row.mzSearched7 = ms2Ions.at(6).mz;
+                    break;
+                case 7:
+                    row.mzSearched8 = ms2Ions.at(7).mz;
+                    break;
+                case 8:
+                    row.mzSearched9 = ms2Ions.at(8).mz;
+                    break;
+                case 9:
+                    row.mzSearched10 = ms2Ions.at(9).mz;
+                    break;
+                case 10:
+                    row.mzSearched11 = ms2Ions.at(10).mz;
+                    break;
+                case 11:
+                    row.mzSearched12 = ms2Ions.at(11).mz;
+                    break;
+                default:
+                    break;
+            }
+
+        }
 
         return row;
     }
