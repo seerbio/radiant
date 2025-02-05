@@ -35,8 +35,6 @@ void FragLibTsvReaderTests::getFragLibReaderRowsTest() {
     QVector<FragLibReaderRow> fragLibReaderRows;
     e = fragLibTsvReader.getFragLibReaderRows(
             testFile,
-            100.0,
-            4000.0,
             &fragLibReaderRows
             );
 
@@ -71,51 +69,27 @@ void FragLibTsvReaderTests::compareTest() {
     ERR_INIT
 
     QString testFile = QStringLiteral("/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv");
-//    testFile =
-
-    const double massStart = 100.0;
-    const double massEnd = 4000.0;
+    testFile = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib_trunc.tsv";
+    // testFile = "/home/andrewnichols/Desktop/Data/Libraries/Test.tsv";
+    // testFile = "/home/andrewnichols/Downloads/pythia-firstpass-lib.tsv";
 
     FragLibTsvReader fragLibTsvReader;
     QVector<FragLibReaderRow> fragLibReaderTSVRows;
     e = fragLibTsvReader.getFragLibReaderRows(
             testFile,
-            massStart,
-            massEnd,
             &fragLibReaderTSVRows
     );
-    std::sort(fragLibReaderTSVRows.begin(), fragLibReaderTSVRows.end(), [](const FragLibReaderRow &l, const FragLibReaderRow &r){
-        return l.peptideSequenceChargeKey < r.peptideSequenceChargeKey;
-    });
 
-    testFile = "/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
-    QVector<FragLibReaderRow> fragLibReaderRows;
-    e = FragLibReader::getFragLibReaderRows(
-            testFile,
-            &fragLibReaderRows
-            );
-    std::sort(fragLibReaderRows.begin(), fragLibReaderRows.end(), [](const FragLibReaderRow &l, const FragLibReaderRow &r){
-        return l.peptideSequenceChargeKey < r.peptideSequenceChargeKey;
-    });
 
-//    for (const FragLibReaderRow &flrr : fragLibReaderRows) {
-//        qDebug() << flrr.peptideSequenceChargeKey << flrr.mzVals;
-//    }
-
-    QCOMPARE(fragLibReaderTSVRows.size(), fragLibReaderRows.size());
-
-    for (int i = 0; i < fragLibReaderRows.size(); i++) {
+    for (int i = 0; i < fragLibReaderTSVRows.size(); i++) {
 
         const FragLibReaderRow &tsv = fragLibReaderTSVRows.at(i);
-        const FragLibReaderRow &reg = fragLibReaderRows.at(i);
-
-        if (tsv.ionLabels != reg.ionLabels) {
-            qDebug() << i;
-            qDebug() << tsv.peptideSequenceChargeKey << reg.peptideSequenceChargeKey;
-            qDebug() << tsv.mzVals << tsv.ionLabels;
-            qDebug() << reg.mzVals << reg.ionLabels;
-            qDebug() << "******";
-        }
+        qDebug()
+        << i
+        << tsv.peptideSequenceChargeKey
+        << tsv.mzVals
+        << tsv.intensityVals
+        << tsv.ionLabels;
 
     }
 }
