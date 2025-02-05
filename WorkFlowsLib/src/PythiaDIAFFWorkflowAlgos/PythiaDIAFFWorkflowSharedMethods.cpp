@@ -264,7 +264,6 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
 
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
-            pythiaParameters.threadCount,
             pythiaParameters.verbosity,
             weights
             ); ree;

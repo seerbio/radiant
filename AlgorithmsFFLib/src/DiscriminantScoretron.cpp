@@ -14,7 +14,6 @@
 
 Err DiscriminantScoretron::trainLDAClassifier(
         const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
-        int threadCount,
         int verbosity,
         QVector<float> *weights
         ) {
@@ -322,7 +321,6 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 // CosineSimFullTheo,
                 IonsFoundFractionFull,
                 CosineSimFullTheoXIonsFoundFractionFull,
-
                 MzPPMMean,
                 FoundB,
                 FoundY,
