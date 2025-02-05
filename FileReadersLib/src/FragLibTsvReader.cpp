@@ -151,8 +151,13 @@ namespace {
                     mzIndex.data(),
                     outDistSqr.data()
             );
-            if (outDistSqr.front() > 1.0) {
-                qDebug() << peptideStringWithMods << mzVal << outDistSqr.front();
+
+            e = ErrorUtils::isTrue(resultsSize > 0); ree;
+
+            if (outDistSqr.front() > 0.2) {
+                qDebug() << peptideStringWithMods;
+                qDebug() << mzVal;
+                qDebug() << outDistSqr.front();
                 qDebug() << "Theo Frag" << mzValsTree;
                 qDebug() << "Emp Frag" << mzValsToPair;
                 rrr(eValueError);
@@ -220,11 +225,30 @@ namespace {
         ERR_RETURN
     }
 
+    Err normalizeIntensityValues(
+        const QVector<float> &intensityVals,
+        QVector<float> *intensityValsNormalized
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(intensityVals); ree;
+        intensityValsNormalized->clear();
+
+        const float intensityMax = *std::max_element(intensityVals.begin(), intensityVals.end());
+        std::transform(
+            intensityVals.begin(),
+            intensityVals.end(),
+            std::back_inserter(*intensityValsNormalized),
+            [intensityMax](const float val) {return val / std::max(1.0f, intensityMax); }
+            );
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err FragLibTsvReader::getFragLibReaderRows(
         const QString &tsvFilePath,
-        double massStart,
-        double massEnd,
         QVector<FragLibReaderRow> *fragLibReaderRows
         ) {
 
@@ -233,7 +257,6 @@ Err FragLibTsvReader::getFragLibReaderRows(
     using namespace FragLibTsvReaderRowNamespace;
 
     e = ErrorUtils::fileExists(tsvFilePath); ree;
-    e = ErrorUtils::isTrue(massEnd > massStart); ree;
 
     m_tsvFilePath = tsvFilePath;
 
@@ -331,21 +354,24 @@ Err FragLibTsvReader::getFragLibReaderRows(
                 }
             }
 
-            e = convertFragLibTsvReaderRowsToFragLibReaderRow(
-                    fragLibTsvReaderRow,
-                    massStart,
-                    massEnd
-            ); ree;
+            e = convertFragLibTsvReaderRowsToFragLibReaderRow(fragLibTsvReaderRow); ree;
         }
     }
 
     m_fragLibReaderRows.swap(*fragLibReaderRows);
 
     if (!m_mzValsCurrent.isEmpty()) {
+
+        QVector<float> intensityCurrentNormalized;
+        e = normalizeIntensityValues(
+            m_intensityCurrent,
+            &intensityCurrentNormalized
+            ); ree;
+
         FragLibReaderRow fragLibReaderRow;
         fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
-        fragLibReaderRow.intensityVals = m_intensityCurrent;
+        fragLibReaderRow.intensityVals = intensityCurrentNormalized;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
         fragLibReaderRow.ionLabels = m_labelsCurrent.join(S_GLOBAL_SETTINGS.SEPARATOR);
         fragLibReaderRow.isDecoy = m_decoyCurrent;
@@ -353,10 +379,7 @@ Err FragLibTsvReader::getFragLibReaderRows(
         fragLibReaderRow.mass = (m_precursorMzCurrent * static_cast<float>(m_precursorChargeCurrent))
                                 - (ChemConstants::PROTON * m_precursorChargeCurrent);
 
-        if (massStart <= fragLibReaderRow.mass && fragLibReaderRow.mass <= massEnd) {
-            fragLibReaderRows->push_back(fragLibReaderRow);
-        }
-
+        fragLibReaderRows->push_back(fragLibReaderRow);
     }
 
     if (fragLibReaderRows->front().ionLabels.contains("-1^") || fragLibReaderRows->front().ionLabels.isEmpty()) {
@@ -367,13 +390,10 @@ Err FragLibTsvReader::getFragLibReaderRows(
 }
 
 Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
-        const FragLibTsvReaderRow &tsvRow,
-        double massStart,
-        double massEnd
-) {
+    const FragLibTsvReaderRow &tsvRow
+    ) {
 
     ERR_INIT
-
     const QString peptideSequenceChargeKey = tsvRow.modifiedPeptide + "|" + QString::number(tsvRow.precursorCharge);
     if (m_currentPeptide.isEmpty()) {
         m_currentPeptide = peptideSequenceChargeKey;
@@ -381,10 +401,16 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
 
     if (m_currentPeptide != peptideSequenceChargeKey) {
 
+        QVector<float> intensityValsNormalized;
+        e = normalizeIntensityValues(
+                   m_intensityCurrent,
+                   &intensityValsNormalized
+                   ); ree;
+
         FragLibReaderRow fragLibReaderRow;
         fragLibReaderRow.precursorCharge = m_precursorChargeCurrent;
         fragLibReaderRow.iRT = m_irtCurrent;
-        fragLibReaderRow.intensityVals = m_intensityCurrent;
+        fragLibReaderRow.intensityVals = intensityValsNormalized;
         fragLibReaderRow.mzVals = m_mzValsCurrent;
         fragLibReaderRow.ionLabels = m_labelsCurrent.join(S_GLOBAL_SETTINGS.SEPARATOR);
         fragLibReaderRow.isDecoy = m_decoyCurrent;
@@ -392,9 +418,7 @@ Err FragLibTsvReader::convertFragLibTsvReaderRowsToFragLibReaderRow(
         fragLibReaderRow.mass = (m_precursorMzCurrent * static_cast<float>(m_precursorChargeCurrent))
                                 - (ChemConstants::PROTON * m_precursorChargeCurrent);
 
-        if (massStart <= fragLibReaderRow.mass && fragLibReaderRow.mass <= massEnd) {
-            m_fragLibReaderRows.push_back(fragLibReaderRow);
-        }
+        m_fragLibReaderRows.push_back(fragLibReaderRow);
 
         m_intensityCurrent.clear();
         m_mzValsCurrent.clear();
