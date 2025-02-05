@@ -36,7 +36,6 @@ public:
     void setFragLibReaderRowPntr(FragLibReaderRow *fragLibReaderRowPntr);
 
 
-
     [[nodiscard]] QString proteinGroups() const;
 
     /**
