@@ -51,12 +51,13 @@ Err FragLibReader::getFragLibReaderRows(
                 fragLibReaderRows
         ); ree;
     }
-
-    // FragLibTsvReader fragLibTsvReader;
-    // e = fragLibTsvReader.getFragLibReaderRows(
-    //         fragLibFilePath,
-    //         fragLibReaderRows
-    //         ); ree;
+    else if (fragLibFilePath.contains(S_GLOBAL_SETTINGS.DOT_TSV)){
+            FragLibTsvReader fragLibTsvReader;
+            e = fragLibTsvReader.getFragLibReaderRows(
+                    fragLibFilePath,
+                    fragLibReaderRows
+                    ); ree;
+    }
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Predictions count:" << fragLibReaderRows->size() << "retrieved in" << et.elapsed() << "mSec";
     ERR_RETURN
