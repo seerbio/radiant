@@ -16,9 +16,14 @@ MsCalibratomatic::MsCalibratomatic()
 : m_mzStDevMS1(-1.0)
 , m_mzStDevMS2(-1.0)
 , m_scanTimeStd(-1.0)
+, m_ionMobilityStd(-1.0)
+, m_params()
+, m_iRTtoScanTimeMapper()
+, m_iIMtoScanTimeMapper()
 , m_isInitRT(false)
 , m_isInitMS1(false)
 , m_isInitMS2(false)
+, m_isInitIM(false)
 , m_polynomialOrderMassCal(2)
 {}
 
@@ -194,7 +199,6 @@ Err MsCalibratomatic::buildIMMapper(const QVector<MsCalibarationReaderRow> &msCa
 
     ERR_RETURN
 }
-
 
 namespace {
 
@@ -496,7 +500,8 @@ Err MsCalibratomatic::recalibrateScanPoints(
         e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
     }
 
-    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
+    const QVector<double> calibrationCoeffs = msLevel
+            == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); it++) {
 
@@ -531,7 +536,8 @@ Err MsCalibratomatic::recalibrateScanPoints(
         e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
     }
 
-    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
+    const QVector<double> calibrationCoeffs = msLevel
+                    == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     for (auto it = scanNumberVsScanPoints->begin(); it != scanNumberVsScanPoints->end(); it++) {
 
@@ -567,7 +573,8 @@ Err MsCalibratomatic::recalibrateScanPoint(
         e = ErrorUtils::isNotEmpty(m_calibrationCurveCoeffsMS1); ree;
     }
 
-    const QVector<double> calibrationCoeffs = msLevel == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
+    const QVector<double> calibrationCoeffs = msLevel
+                    == MSLevelEnum::MS2 ? m_calibrationCurveCoeffsMS2 : m_calibrationCurveCoeffsMS1;
 
     double mzRecal = 0.0f;
     for (int i = 0; i < calibrationCoeffs.size(); i++) {
@@ -640,7 +647,11 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
             return std::abs(MathUtils::mean(m) - coeffMean) > coeffStDev * stDevMultiplier;
         };
 
-        const auto terminator = std::remove_if(m_calibrationCurveCoEffsAll.begin(), m_calibrationCurveCoEffsAll.end(), terminatorLogic);
+        const auto terminator = std::remove_if(
+            m_calibrationCurveCoEffsAll.begin(),
+            m_calibrationCurveCoEffsAll.end(),
+            terminatorLogic
+            );
 
         m_calibrationCurveCoEffsAll.erase(terminator, m_calibrationCurveCoEffsAll.end());
     }

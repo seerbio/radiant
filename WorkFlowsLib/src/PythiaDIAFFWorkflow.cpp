@@ -259,8 +259,6 @@ namespace {
 
         e = ErrorUtils::isFalse(candidateScoresPntrs->isEmpty()); ree;
 
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PopulateAltIdTargetKeys";
-
         QHash<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
         for (CandidateScores *cs : *candidateScoresPntrs) {
             pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cs);
@@ -269,8 +267,6 @@ namespace {
         for (const QVector<CandidateScores*> &csPntrs : pepStrWModsVsCandScoresEntries) {
             e = populateAltIdTargetKeysLogic(csPntrs); ree;
         }
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PopulateAltIdTargetKeys Finished";
 
         ERR_RETURN
     }
@@ -524,7 +520,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     ); ree;
 
     PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&candidateScoresVecBatchPntrs);
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Targets sorted" << et.restart() << "mSec";
 
     ERR_RETURN
 }
