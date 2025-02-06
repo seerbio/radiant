@@ -21,7 +21,7 @@ Err SpecLibReader::getFragLibReaerRows(
     std::ifstream speclibStream(fragLibFilePath.toStdString(), std::ifstream::binary);
 
     Library library;
-    library.read(speclibStream, fragLibReaderRows);
+    e = library.read(speclibStream, fragLibReaderRows); ree;
 
     ERR_RETURN
 }

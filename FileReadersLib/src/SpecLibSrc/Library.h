@@ -205,6 +205,13 @@ public:
 				const float intensityVal = target.fragments.at(i).height;
 				const float mzVal = target.fragments.at(i).mz;
 
+				if (
+					constexpr float intensityCutoff = 0.01;
+					ionCharge > flrr.precursorCharge || intensityVal < intensityCutoff)
+					{
+					continue;
+				}
+
 				flrr.mzVals.push_back(mzVal);
 				flrr.intensityVals.push_back(intensityVal);
 

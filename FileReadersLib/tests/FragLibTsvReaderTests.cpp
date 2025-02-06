@@ -68,10 +68,11 @@ void FragLibTsvReaderTests::compareTest() {
 
     ERR_INIT
 
-    QString testFile = QStringLiteral("/home/anichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv");
-    testFile = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib_trunc.tsv";
+    QString testFile = QStringLiteral("/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv");
+    // testFile = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib_trunc.tsv";
     // testFile = "/home/andrewnichols/Desktop/Data/Libraries/Test.tsv";
     // testFile = "/home/andrewnichols/Downloads/pythia-firstpass-lib.tsv";
+    testFile = "/home/andrewnichols/Downloads/lib-mbr-2025-02-06.tsv";
 
     FragLibTsvReader fragLibTsvReader;
     QVector<FragLibReaderRow> fragLibReaderTSVRows;
@@ -81,17 +82,17 @@ void FragLibTsvReaderTests::compareTest() {
     );
 
 
-    for (int i = 0; i < fragLibReaderTSVRows.size(); i++) {
-
-        const FragLibReaderRow &tsv = fragLibReaderTSVRows.at(i);
-        qDebug()
-        << i
-        << tsv.peptideSequenceChargeKey
-        << tsv.mzVals
-        << tsv.intensityVals
-        << tsv.ionLabels;
-
-    }
+    // for (int i = 0; i < fragLibReaderTSVRows.size(); i++) {
+    //
+    //     const FragLibReaderRow &tsv = fragLibReaderTSVRows.at(i);
+    //     qDebug()
+    //     << i
+    //     << tsv.peptideSequenceChargeKey
+    //     << tsv.mzVals
+    //     << tsv.intensityVals
+    //     << tsv.ionLabels;
+    //
+    // }
 }
 
 

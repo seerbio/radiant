@@ -84,25 +84,28 @@ namespace {
 
     using KDTree = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd>;
 
-    Err loadKDTree(
-            const QVector<float> &mzValsToPair,
-            const PeptideStringWithMods &peptideStringWithMods,
-            int charge,
-            QString *ionLabels
-    ) {
+    Err loadKDTreeStructures(
+        const PeptideStringWithMods &peptideStringWithMods,
+        int charge,
+        QVector<double> *mzValsTree,
+        QStringList *ionLabelsList,
+        Eigen::MatrixX<double> *mat
+        ) {
 
         ERR_INIT
 
-        QVector<double> mzValsTree;
-        QStringList ionLabelsList;
+        e = ErrorUtils::isNotEmpty(peptideStringWithMods); ree;
+
+        mzValsTree->clear();
+        ionLabelsList->clear();
 
         AminoAcids aminoAcids;
 
-        mzValsTree.append(peptideStringWithMods.bSeries(1, aminoAcids));
-        ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels({}));
+        mzValsTree->append(peptideStringWithMods.bSeries(1, aminoAcids));
+        ionLabelsList->append(peptideStringWithMods.bSeriesIonLabels({}));
 
-        mzValsTree.append(peptideStringWithMods.ySeries(1, aminoAcids));
-        ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels({}));
+        mzValsTree->append(peptideStringWithMods.ySeries(1, aminoAcids));
+        ionLabelsList->append(peptideStringWithMods.ySeriesIonLabels({}));
 
         if (charge > 1) {
 
@@ -110,23 +113,48 @@ namespace {
 
                 const QString chargeChar = QString::number(i+1);
 
-                mzValsTree.append(peptideStringWithMods.bSeries(i+1, aminoAcids));
-                ionLabelsList.append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
+                mzValsTree->append(peptideStringWithMods.bSeries(i+1, aminoAcids));
+                ionLabelsList->append(peptideStringWithMods.bSeriesIonLabels("^" + chargeChar));
 
-                mzValsTree.append(peptideStringWithMods.ySeries(i+1, aminoAcids));
-                ionLabelsList.append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
+                mzValsTree->append(peptideStringWithMods.ySeries(i+1, aminoAcids));
+                ionLabelsList->append(peptideStringWithMods.ySeriesIonLabels("^" + chargeChar));
             }
-
         }
 
-        e = ErrorUtils::isEqual(mzValsTree.size(), ionLabelsList.size()); ree;
+        e = ErrorUtils::isEqual(mzValsTree->size(), ionLabelsList->size());
 
-        Eigen::MatrixX<double> mat(mzValsTree.size() ,2);
-        mat.setZero();
-        for (int i = 0; i < mzValsTree.size(); i++) {
-            mat.coeffRef(i, 0) = mzValsTree.at(i);
-            mat.coeffRef(i, 1) = 0.0;
+        mat->resize(mzValsTree->size() ,2);
+        mat->setZero();
+        for (int i = 0; i < mzValsTree->size(); i++) {
+            mat->coeffRef(i, 0) = mzValsTree->at(i);
+            mat->coeffRef(i, 1) = 0.0;
         }
+
+        ERR_RETURN
+    }
+
+    Err matchMzValsToIonType(
+            const QVector<float> &mzValsToPair,
+            const PeptideStringWithMods &peptideStringWithMods,
+            int charge,
+            QString *ionLabels
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(mzValsToPair); ree;
+        e = ErrorUtils::isNotEmpty(peptideStringWithMods); ree;
+
+        QVector<double> mzValsTree;
+        QStringList ionLabelsList;
+        Eigen::MatrixX<double> mat;
+        e = loadKDTreeStructures(
+            peptideStringWithMods,
+            charge,
+            &mzValsTree,
+            &ionLabelsList,
+            &mat
+            ); ree;
 
         const int treeLeafSize = 5;
         KDTree kdTree(static_cast<int>(mat.cols()), mat, treeLeafSize);
@@ -151,13 +179,16 @@ namespace {
                     mzIndex.data(),
                     outDistSqr.data()
             );
-
             e = ErrorUtils::isTrue(resultsSize > 0); ree;
 
-            if (outDistSqr.front() > 0.2) {
+            const double mzValClosestFound = mzValsTree.at(static_cast<int>(mzIndex.front()));
+            const double distanceFromFound = std::abs(mzValClosestFound - mzVal);
+
+            if (distanceFromFound > 0.2) {
                 qDebug() << peptideStringWithMods;
-                qDebug() << mzVal;
-                qDebug() << outDistSqr.front();
+                qDebug() << "Searched mzVal:" << mzVal;
+                qDebug() << "Closest val found:" << mzValClosestFound;
+                qDebug() << "Distance from closest val found:" << distanceFromFound;
                 qDebug() << "Theo Frag" << mzValsTree;
                 qDebug() << "Emp Frag" << mzValsToPair;
                 rrr(eValueError);
@@ -186,7 +217,7 @@ namespace {
                 &charge
         ); ree;
 
-        e = loadKDTree(
+        e = matchMzValsToIonType(
                 fragLibReaderRow.mzVals,
                 peptideStringWithMods,
                 charge,
