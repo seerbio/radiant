@@ -1008,6 +1008,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     int counter = 0;
     int decoys = 0;
     int entrap = 0;
+    int fmrCorrectCount = 0;
 
     for (CandidateScores *cs : *candidateScores) {
         counter++;
@@ -1028,6 +1029,10 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             ) {
             entrap++;
         }
+
+        if (entrap / static_cast<double>(counter) < 0.01) {
+            fmrCorrectCount++;
+        }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "By Classifier Score:"
@@ -1035,11 +1040,13 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             << "| Counter:" << counter
             << "| Decoys:" <<  decoys
             << "| Entrap:" << entrap
-            << "| Entrap%" << entrap / static_cast<double>(counter);
+            << "| Counter FMR Corrected:" << fmrCorrectCount
+            << "| Entrap%:" << entrap / static_cast<double>(counter);
 
     counter = 0;
     decoys = 0;
     entrap = 0;
+    fmrCorrectCount = 0;
     QVector<CandidateScores*> candidateScoresCopy = *candidateScores;
     std::sort(
         candidateScoresCopy.rbegin(),
@@ -1066,6 +1073,10 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             ) {
             entrap++;
             }
+
+        if (entrap / static_cast<double>(counter) < 0.01) {
+            fmrCorrectCount++;
+        }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
             << "By Discriminant Score:"
@@ -1073,7 +1084,8 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             << "| Counter:" << counter
             << "| Decoys:" <<  decoys
             << "| Entrap:" << entrap
-            << "| Entrap%" << entrap / static_cast<double>(counter);
+            << "| Counter FMR Corrected:" << fmrCorrectCount
+            << "| Entrap%:" << entrap / static_cast<double>(counter);
 #endif
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
