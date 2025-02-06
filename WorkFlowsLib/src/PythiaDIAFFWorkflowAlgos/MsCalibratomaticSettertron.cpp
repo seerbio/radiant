@@ -308,11 +308,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
             filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            constexpr int recalibrationPointCountMin = 400;
+            constexpr int recalibrationPointCountMinMS1 = 400;
             qDebug()<< qPrintable(S_GLOBAL_TIMER.elapsed())
                 << candidateScoresVecBatchPntrsRecal.size()
                 << "found for MS1 Recalibration";
-            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMinMS1) {
                 qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
                         << "Skipping MS1 recalibration.  Not enough points found";
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
@@ -331,7 +331,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                     &msCalibrationReaderRowsMS1
                     ); ree;
 
-            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMinMS1) {
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
                 m_targetDecoyCandidatePairsTopScores.clear();
