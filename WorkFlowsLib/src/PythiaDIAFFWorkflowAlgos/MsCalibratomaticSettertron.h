@@ -46,6 +46,8 @@ private:
         int topCandidatesMass
     );
 
+    Err setMsCalibratomaticMetrics();
+
     Err recalibrateMzVals(
         const MSLevelEnum &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,

@@ -251,51 +251,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
             m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
-            constexpr int minVecSize = 3;
-            std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
-            if (m_scanTimeStDevs.size() >= minVecSize) {
-                m_scanTimeStDevs.pop_front();
-                m_scanTimeStDevs.pop_back();
-            }
-
-            std::sort(m_ms2PPMStDevs.begin(), m_ms2PPMStDevs.end());
-            if (m_ms2PPMStDevs.size() >= minVecSize) {
-                m_ms2PPMStDevs.pop_front();
-                m_ms2PPMStDevs.pop_back();
-            }
-
-            qDebug()
-            << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "ScanTimeWindow Mean|Median|Min"
-            << MathUtils::mean(m_scanTimeStDevs)
-            << MathUtils::median(m_scanTimeStDevs)
-            << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
-
-            qDebug()
-            << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "Ms2 ppm Mean|Median"
-            << MathUtils::mean(m_ms2PPMStDevs)
-            << MathUtils::median(m_ms2PPMStDevs);
-
-            if (m_msReaderPointerAcc->ptr->isTIMS()) {
-                std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
-                if (m_ionMobilityStDevs.size() >= minVecSize) {
-                    m_ionMobilityStDevs.pop_front();
-                    m_ionMobilityStDevs.pop_back();
-                }
-
-                qDebug()
-                << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "ScanTimeWindow Mean|Median|Min"
-                << MathUtils::mean(m_ionMobilityStDevs)
-                << MathUtils::median(m_ionMobilityStDevs)
-                << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
-
-                m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
-            }
-
-            m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
-            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
+            e = setMsCalibratomaticMetrics(); ree;
 
             if (!m_msReaderPointerAcc->useLazyLoading()) {
                 e = recalibrateMzVals(
@@ -465,6 +421,59 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
             MSLevelEnum::MS2
             ); ree;
     }
+
+    ERR_RETURN
+}
+
+Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
+
+    ERR_INIT
+
+    constexpr int minVecSize = 3;
+    std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
+    if (m_scanTimeStDevs.size() >= minVecSize) {
+        m_scanTimeStDevs.pop_front();
+        m_scanTimeStDevs.pop_back();
+    }
+
+    std::sort(m_ms2PPMStDevs.begin(), m_ms2PPMStDevs.end());
+    if (m_ms2PPMStDevs.size() >= minVecSize) {
+        m_ms2PPMStDevs.pop_front();
+        m_ms2PPMStDevs.pop_back();
+    }
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "ScanTimeWindow Mean|Median|Min"
+    << MathUtils::mean(m_scanTimeStDevs)
+    << MathUtils::median(m_scanTimeStDevs)
+    << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "Ms2 ppm Mean|Median"
+    << MathUtils::mean(m_ms2PPMStDevs)
+    << MathUtils::median(m_ms2PPMStDevs);
+
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
+        if (m_ionMobilityStDevs.size() >= minVecSize) {
+            m_ionMobilityStDevs.pop_front();
+            m_ionMobilityStDevs.pop_back();
+        }
+
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "ScanTimeWindow Mean|Median|Min"
+        << MathUtils::mean(m_ionMobilityStDevs)
+        << MathUtils::median(m_ionMobilityStDevs)
+        << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+
+        m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
+    }
+
+    m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
+    m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
 
     ERR_RETURN
 }
