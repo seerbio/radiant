@@ -462,7 +462,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
+            row.iRTPredicted = cs->targetDecoyCandidatePair->iRt();
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
             row.driftTime = cs->imDriftTime;

@@ -153,33 +153,6 @@ namespace {
             );
     }
 
-    void filterTopPointsByPercentile(
-        double percentileAsFraction,
-        Ms1FrameTIMS *frameTims
-        ) {
-
-        QVector<float> intensityVals;
-        for (const ScanPoints &sps : *frameTims) {
-            for (const ScanPoint &sp : sps) {
-                intensityVals.push_back(sp.y());
-            }
-        }
-        std::sort(intensityVals.rbegin(), intensityVals.rend());
-
-        const double intensityThresholdCutOffFraction
-                = intensityVals.at(static_cast<int>(intensityVals.size() * percentileAsFraction));
-
-        const auto terminatorLogic = [intensityThresholdCutOffFraction](const ScanPoint &sp) {
-            return sp.y() < intensityThresholdCutOffFraction;
-        };
-
-        for (ScanPoints &sp : *frameTims) {
-            const auto terminator = std::remove_if(sp.begin(), sp.end(), terminatorLogic);
-            sp.erase(terminator, sp.end());
-        }
-
-    }
-
     Err buildMs1Frame(
         const TimsFrameInfo &timsFrameInfo,
         timsdata::TimsData *data,
@@ -187,8 +160,6 @@ namespace {
         ) {
 
         ERR_INIT
-
-        // e = ErrorUtils::isFalse(timsFrameInfo.numScans > 0); ree;
 
         const timsdata::FrameProxy scans = data->readScans(
             timsFrameInfo.frameId,
@@ -219,11 +190,6 @@ namespace {
             frameTims->insert(ionMobilityIndex, scanPointsScan);
         }
 
-        // filterTopPointsByPercentile(
-        //     percentileFilterFraction,
-        //     frameTims
-        //     );
-
         ERR_RETURN
     }
 
@@ -246,12 +212,6 @@ namespace {
         for (int i = 0; i < numberOfPeaksCollapsed; i++) {
             scanPointsMS1->push_back({static_cast<float>(scansCollapsed.mz_values.at(i)), scansCollapsed.area_values.at(i)});
         }
-
-        constexpr double percentileFilterFraction = 0.5;
-        filterTopPointsByPercentile(
-            percentileFilterFraction,
-            scanPointsMS1
-            );
 
         e = buildMs1Frame(timsFrameInfo, data, frameTims); ree;
 

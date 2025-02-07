@@ -2032,9 +2032,9 @@ namespace {
         Eigen::VectorX<float> anchorColumn = _anchorColumn;
 
         *cosineSimMS1 = 0.01;
-        *mzMS1Mean = 0.01;
+        *mzMS1Mean = 0.0;
         *mzMS1StDev = 10.0;
-        *ppmDiff = 100.0;
+        *ppmDiff = 50.0;
         *ms1IntensitySum = 0.0;
 
         XICPoints xicPoints = turboXicMS1->extractPointsXIC(
@@ -2108,17 +2108,19 @@ namespace {
             cosineSimMS1
             ); ree;
 
-        const int nonZeros = EigenUtils::nonZeros(xicVec);
-        if (nonZeros < 1) {
-            ERR_RETURN
-        }
+        const int xicPointsSize = static_cast<float>(xicPoints.size());
 
         const auto meanLogic = [](float sum, const XICPoint &p){return sum + p.mz;};
-        *mzMS1Mean = std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, meanLogic) / static_cast<float>(nonZeros);
+        *mzMS1Mean = std::accumulate(
+            xicPoints.begin(),
+            xicPoints.end(),
+            0.0f,
+            meanLogic
+            ) / xicPointsSize;
 
         const auto stDevLogic = [mzMS1Mean](float sum, const XICPoint &p){return sum + std::pow((p.mz - *mzMS1Mean) , 2);};
         *mzMS1StDev = std::sqrt(std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, stDevLogic)
-                    / static_cast<float>(nonZeros));
+                    / xicPointsSize);
 
         *ppmDiff = MathUtils::calculateMassAccuracyPPM(mzToExtract, *mzMS1Mean);
         *ms1IntensitySum = xicVec.sum();
