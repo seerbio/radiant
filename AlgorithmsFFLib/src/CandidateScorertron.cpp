@@ -2240,22 +2240,6 @@ Err CandidateScorertron::setMs1RelatedScores(
         &unusedApexIntensity
         ); ree;
 
-    e = calculateMs1Scores(
-        d_ptr->m_kernelMs2,
-        anchorColumn,
-        c13isotopeMz2,
-        massTol,
-        frameIndexMinMS1,
-        frameIndexMaxMS1,
-        m_turboXicMS1,
-        &candidateScores->featuresArray[CosineSim100MS1Iso3],
-        &candidateScores->featuresArray[Ms1MzMeanFoundIso3],
-        &candidateScores->featuresArray[Ms1MzStDevFoundIso3],
-        &candidateScores->featuresArray[Ms1MzMeanFoundIso3PPM],
-        &candidateScores->featuresArray[Ms1IntensityFoundIso3],
-        &unusedApexIntensity
-        ); ree;
-
     candidateScores->featuresArray[CosineSimSum100MS1]
         = candidateScores->featuresArray[CosineSim100MS1]
         + candidateScores->featuresArray[CosineSim100MS1Iso1]
