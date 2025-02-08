@@ -1380,9 +1380,9 @@ namespace {
             klDivByRow.coeffRef(row) = klDiv;
         }
 
-        // for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
-        //     candidateScores->featuresArray[CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
-        // }
+        for (int i = 0; i < bestCorrelationResult.peakCorrelations.size(); i++) {
+            candidateScores->featuresArray[Features::CosineSimToAnchor1 + i] = bestCorrelationResult.peakCorrelations.at(i);
+        }
 
         const float cosineSimMax = cosineSimsByRow.coeff(bestCorrelationResult.bestAnchorRowIndex);
         candidateScores->featuresArray[CosineSimSpectrum] = cosineSimMax;
@@ -1585,8 +1585,8 @@ namespace {
         const Eigen::VectorX<float> intensitySumsNormalized
                 = matBlockTrimmedIntensityIntegrationSums / std::max(static_cast<float>(bestCorrelationResult.matBlockTrimmedIntensity.maxCoeff()), 1.0f);
 
-        for (int i = 0; i < std::min(static_cast<int>(matBlockTrimmedIntensityIntegrationSums.size()), arraySizeMax / 2); i++) {
-            candidateScores->featuresArray[IntensityFoundMax1 + i] = matBlockTrimmedIntensityIntegrationSums.coeff(i);
+        for (int i = 0; i < std::min(static_cast<int>(matBlockTrimmedIntensityIntegrationSums.size()), arraySizeMax); i++) {
+            candidateScores->featuresArray[Features::IntensityFoundMax1 + i] = matBlockTrimmedIntensityIntegrationSums.coeff(i);
         }
 
         for (int i = 0; i < std::min(static_cast<int>(intensitySumsNormalized.size()), arraySizeMax); i++) {
@@ -1792,7 +1792,7 @@ namespace {
 
         ERR_INIT
 
-        constexpr int top6 = 6;
+        constexpr int top12 = 12;
 
         if (peakCenter > 0) {
             const int startScan = std::max(bestCorrelationResult.bestAnchorRowIndex - static_cast<int>(std::round(peakCenter / 2.0)), 0);
@@ -1813,16 +1813,16 @@ namespace {
             const Eigen::VectorX<float> matBlockTrimmedIntensityIntegrationSum = matBlockTrimmedIntensityIntegration.colwise().sum();
             QVector<float> vec = EigenUtils::convertEigenVectorToQVector(matBlockTrimmedIntensityIntegrationSum);
 
-            vec.resize(top6);
+            vec.resize(top12);
 
             candidateScores->integrations = vec;
 
             ERR_RETURN
         }
 
-        candidateScores->integrations = QVector<float>(top6, 0.0f);
-        for (int i = 0; i < top6; i++) {
-            candidateScores->integrations[i] = candidateScores->featuresArray[IntensityFoundMax1 + i];
+        candidateScores->integrations = QVector<float>(top12, 0.0f);
+        for (int i = 0; i < top12; i++) {
+            candidateScores->integrations[i] = candidateScores->featuresArray[Features::IntensityFoundMax1 + i];
         }
 
         ERR_RETURN
