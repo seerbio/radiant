@@ -335,36 +335,36 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
         }
         else if (useExtendedScores) {
             const QVector<Features> vec = {
-                            CosineSimSum100GreaterThan80,
-                            CosineSimSpectrumOverTimeCubed,
-                            CosineSimSpectrumStDev,
-                            CosineSimSum100MS1,
-                            CosineSim100MS1,
-                            CosineSim100MS1Iso1, //5
-                            CosineSim100MS1Iso2,
-                            // CosineSim100MS1PreMono,
-                            CosineSimSpectrumCubed,
-                            CosineSimSum45,
-                            CosineSimSumTop, //10
-                            CosineSimSumBottom,
-                            TopBottomRatio,
-                            TopBottomRatioNorm,
-                            PeakShapeRatio1,
-                            PeakShapeRatio2,//15
-                            PeakShapeRatio3,
-                            MatrixZeroPercentage,
-                            MzPPMMeanAbs,
-                            FoundY,
-                            FoundPercent, //20
-                            CosineSimSum100Top12,
-                            ScanTimeDeltaAbs,
-                            ScanTimePdAbs,
-                            ShadowsCosineSimSum,
-                            TotalIntensityLog, //25
-                            CosineSimSum100Window1p5X,
-                            CosineSimSum100Window2X,
-                            TargetWindowLocationAbs
-                            };
+                CosineSimSum100GreaterThan80,
+                CosineSimSpectrumOverTimeCubed,
+                CosineSimSpectrumStDev,
+                CosineSimSum100MS1,
+                CosineSim100MS1,
+                CosineSim100MS1Iso1, //5
+                CosineSim100MS1Iso2,
+                // CosineSim100MS1PreMono,
+                CosineSimSpectrumCubed,
+                CosineSimSum45,
+                CosineSimSumTop, //10
+                CosineSimSumBottom,
+                TopBottomRatio,
+                TopBottomRatioNorm,
+                PeakShapeRatio1,
+                PeakShapeRatio2,//15
+                PeakShapeRatio3,
+                MatrixZeroPercentage,
+                MzPPMMeanAbs,
+                FoundY,
+                FoundPercent, //20
+                CosineSimSum100Top12,
+                ScanTimeDeltaAbs,
+                ScanTimePdAbs,
+                ShadowsCosineSimSum,
+                TotalIntensityLog, //25
+                CosineSimSum100Window1p5X,
+                CosineSimSum100Window2X,
+                TargetWindowLocationAbs
+                };
 
             const QVector<float> vecScores = candidateScores->selectFeaturesArrayFeatures(vec);
             return vecScores;
