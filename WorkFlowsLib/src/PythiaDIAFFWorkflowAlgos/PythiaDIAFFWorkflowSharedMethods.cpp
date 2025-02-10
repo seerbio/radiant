@@ -267,10 +267,6 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         featuresArrayPntrs.append({pr.first, pr.second});
     }
 
-    // for (auto x : featuresArrayPntrs) {
-    //     qDebug() << "featuresArrayPntrs" << *x;
-    // }
-
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             pythiaParameters.verbosity,
