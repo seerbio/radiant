@@ -43,7 +43,7 @@ SET(SOURCE_FILES
         src/PythiaParameterReader.cpp
         src/QuanReader.cpp
         src/SpecLibReader.cpp
-#        ${TIMS_CPPSQL_SOURCE}
+        ${TIMS_CPPSQL_SOURCE}
         )
 
 SET(HEADER_FILES

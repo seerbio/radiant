@@ -10,6 +10,7 @@
 #include "IonMobilitron.h"
 #include "InterferingCandidatesEliminatomatic.h"
 #include "MsReaderPointerAcc.h"
+#include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 #include "QValueSettertron.h"
@@ -58,7 +59,7 @@ namespace {
 
         constexpr double cosineSimSumMS1Min = 0.9;
         const auto terminatorLogic = [cosineSimSumMS1Min](const CandidateScores *cs){
-            return cs->featuresArray[Features::CosineSim100MS1] <= cosineSimSumMS1Min;
+            return cs->featuresArray[CosineSim100MS1] <= cosineSimSumMS1Min;
         };
 
         const auto terminator = std::remove_if(
@@ -204,6 +205,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             ); ree;
 
         m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+        m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
         m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
         QString fdrString;
@@ -246,31 +248,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             e = m_msCalibratomatic.setCalibrationCoeffsUsingAllMeans(); ree;
 
             m_scanTimeStDevs.push_back(m_msCalibratomatic.scanTimeStDev());
+            m_ionMobilityStDevs.push_back(m_msCalibratomatic.ionMobilityStDev());
             m_ms2PPMStDevs.push_back(m_msCalibratomatic.mzStDevMS2());
 
-            constexpr int minVecSize = 3;
-            std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
-            if (m_scanTimeStDevs.size() >= minVecSize) {
-                m_scanTimeStDevs.pop_front();
-                m_scanTimeStDevs.pop_back();
-            }
-
-            std::sort(m_ms2PPMStDevs.begin(), m_ms2PPMStDevs.end());
-            if (m_ms2PPMStDevs.size() >= minVecSize) {
-                m_ms2PPMStDevs.pop_front();
-                m_ms2PPMStDevs.pop_back();
-            }
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                     << "ScanTimeWindow Mean|Median|Min"
-                     << MathUtils::mean(m_scanTimeStDevs)
-                     << MathUtils::median(m_scanTimeStDevs)
-                     << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
-
-            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms2 ppm Mean|Median" << MathUtils::mean(m_ms2PPMStDevs) << MathUtils::median(m_ms2PPMStDevs);
-
-            m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
-            m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
+            e = setMsCalibratomaticMetrics(); ree;
 
             if (!m_msReaderPointerAcc->useLazyLoading()) {
                 e = recalibrateMzVals(
@@ -283,11 +264,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             candidateScoresVecBatchPntrsRecal = candidateScoresVecBatchPntrs;
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
             filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
-            constexpr int recalibrationPointCountMin = 400;
+            constexpr int recalibrationPointCountMinMS1 = 400;
             qDebug()<< qPrintable(S_GLOBAL_TIMER.elapsed())
                 << candidateScoresVecBatchPntrsRecal.size()
                 << "found for MS1 Recalibration";
-            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMin) {
+            if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMinMS1) {
                 qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
                         << "Skipping MS1 recalibration.  Not enough points found";
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
@@ -306,7 +287,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                     &msCalibrationReaderRowsMS1
                     ); ree;
 
-            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMin) {
+            if (msCalibrationReaderRowsMS1.size() < recalibrationPointCountMinMS1) {
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
                 *msCalibratomatic = m_msCalibratomatic;
                 m_targetDecoyCandidatePairsTopScores.clear();
@@ -320,11 +301,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 MSLevelEnum::MS1
                 ); ree;
 
-            e = recalibrateMzVals(
-                    MSLevelEnum::MS1,
-                    m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
-                    m_targetDecoyCandidatePairScoretron->ms1ScanNumberVsScanPoints()
-                    ); ree;
+            // e = recalibrateMzVals(
+            //         MSLevelEnum::MS1,
+            //         m_targetDecoyCandidatePairScoretron->diaTargetFrames(),
+            //         m_targetDecoyCandidatePairScoretron->ms1ScanNumberVsScanPoints()
+            //         ); ree;
 
             e = m_targetDecoyCandidatePairScoretron->reloadTurboXICMS1(); ree;
 
@@ -388,6 +369,14 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         ERR_RETURN
     }
 
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        e = IonMobilitron::assignIonMobilityIndexesToCandidateScores(
+            candidateScoresVecBatchPntrsResized,
+            m_pythiaParameters->ms1ExtractionWidthPPM,
+            m_msReaderPointerAcc
+            ); ree;
+    }
+
     QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
     e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
             MSLevelEnum::MS2,
@@ -413,6 +402,9 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
     }
 
     e = m_msCalibratomatic.buildRTMapper(msCalibrationReaderRows); ree;
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        e = m_msCalibratomatic.buildIMMapper(msCalibrationReaderRows); ree;
+    }
 
     if (m_pythiaParameters->verbosity > 0) {
         qDebug() << "----- scanTimeWindowStDev x" << m_pythiaParameters->scanTimeWindowStDevs
@@ -429,6 +421,59 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
             MSLevelEnum::MS2
             ); ree;
     }
+
+    ERR_RETURN
+}
+
+Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
+
+    ERR_INIT
+
+    constexpr int minVecSize = 3;
+    std::sort(m_scanTimeStDevs.begin(), m_scanTimeStDevs.end());
+    if (m_scanTimeStDevs.size() >= minVecSize) {
+        m_scanTimeStDevs.pop_front();
+        m_scanTimeStDevs.pop_back();
+    }
+
+    std::sort(m_ms2PPMStDevs.begin(), m_ms2PPMStDevs.end());
+    if (m_ms2PPMStDevs.size() >= minVecSize) {
+        m_ms2PPMStDevs.pop_front();
+        m_ms2PPMStDevs.pop_back();
+    }
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "ScanTimeWindow Mean|Median|Min"
+    << MathUtils::mean(m_scanTimeStDevs)
+    << MathUtils::median(m_scanTimeStDevs)
+    << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+
+    qDebug()
+    << qPrintable(S_GLOBAL_TIMER.elapsed())
+    << "Ms2 ppm Mean|Median"
+    << MathUtils::mean(m_ms2PPMStDevs)
+    << MathUtils::median(m_ms2PPMStDevs);
+
+    if (m_msReaderPointerAcc->ptr->isTIMS()) {
+        std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
+        if (m_ionMobilityStDevs.size() >= minVecSize) {
+            m_ionMobilityStDevs.pop_front();
+            m_ionMobilityStDevs.pop_back();
+        }
+
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "ScanTimeWindow Mean|Median|Min"
+        << MathUtils::mean(m_ionMobilityStDevs)
+        << MathUtils::median(m_ionMobilityStDevs)
+        << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+
+        m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
+    }
+
+    m_msCalibratomatic.setScanTimeStDev(m_scanTimeStDevs.front());
+    m_msCalibratomatic.setMzStDevMS2(MathUtils::mean(m_ms2PPMStDevs));
 
     ERR_RETURN
 }

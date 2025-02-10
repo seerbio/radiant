@@ -262,16 +262,16 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         &featuresArrayTargetVsDecoyPntrs
         ); ree;
 
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
+        featuresArrayPntrs.append({pr.first, pr.second});
+    }
+
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             pythiaParameters.verbosity,
             weights
             ); ree;
-
-    QVector<FeaturesArray*> featuresArrayPntrs;
-    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
-        featuresArrayPntrs.append({pr.first, pr.second});
-    }
 
     QVector<float> discriminantScores;
     e = DiscriminantScoretron::applyWeights(
@@ -301,17 +301,6 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     ERR_RETURN
 }
 
-namespace {
-
-    PeptideSequenceWithModsChargeAndTargetKey buildPeptideSequenceWithModsChargeAndTargetKey(const CandidateScores* candidateScores) {
-        return candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
-             + "|"
-             + QString::number(candidateScores->targetDecoyCandidatePair->charge())
-             + "|"
-             + candidateScores->targetKey;
-    }
-
-}//namespace
 Err PythiaDIAFFWorkflowSharedMethods::buildTargetDecoyCandidateScorePairsPntrs(
     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &targetDecoyCandidateScorePairs,
     QVector<QPair<CandidateScoresTarget*, CandidateScoresDecoy*>> *targetDecoyCandidateScorePairsPntrs
@@ -473,9 +462,11 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
             MsCalibarationReaderRow row;
             row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            row.iRTPredicted = static_cast<float>(cs->targetDecoyCandidatePair->iRt());
+            row.iRTPredicted = cs->targetDecoyCandidatePair->iRt();
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
+            row.driftTime = cs->imDriftTime;
+            row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
 
             if (msLevel == MSLevelEnum::MS2) {
 
@@ -491,15 +482,15 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 }
 
                 row.mzSearchedVec = mzSearchedVals;
-                row.mzFoundMeanVec = cs->featuresArray.mid(Features::MzFoundMean1, top6);
-                row.mzFoundStDevVec = cs->featuresArray.mid(Features::MzFoundStDev1, top6);
-                row.intensityFoundMaxVec = cs->featuresArray.mid(Features::IntensityFoundMax1, top6);
+                row.mzFoundMeanVec = cs->featuresArray.mid(MzFoundMean1, top6);
+                row.mzFoundStDevVec = cs->featuresArray.mid(MzFoundStDev1, top6);
+                row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
             }
             else {
                 row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
-                row.mzFoundMeanVec = {cs->featuresArray[Features::Ms1MzMeanFound100]};
-                row.mzFoundStDevVec = {cs->featuresArray[Features::Ms1MzStDevFound100]};
-                row.intensityFoundMaxVec = {cs->featuresArray[Features::Ms1IntensityFound100]};
+                row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
+                row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
+                row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};
             }
 
             return row;
@@ -590,4 +581,3 @@ QVector<QVector<MsScanInfo>> msScanInfosesTranced;
 
     ERR_RETURN
 }
-

@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
+#include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "XYMappermatic.h"
 
@@ -17,6 +18,8 @@ using namespace Error;
 
 using IMPredicted = double;
 using IMEmpirical = double;
+
+using Ms1FrameTIMS = QMap<IonMobilityIndex, ScanPoints>;
 
 class ALGORITHMSFFLIB_EXPORTS IonMobilitron {
 
@@ -32,17 +35,22 @@ public:
         int *predictedIonMobilityIndex
         ) const;
 
-    static Err assignIonMobilityValues(
-        const PythiaParameters &pythiaParameters,
-        const QVector<CandidateScores*> &candidateScorePairs,
-        QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-    );
+    static Err assignIonMobilityIndexesToCandidateScores(
+        const QVector<CandidateScores*> &candidateScoresVecBatchPntrs,
+        float ppmTol,
+        MsReaderPointerAcc *msReaderPointerAcc
+        );
+
+    static std::tuple<Err, float, float> findEmpericalIonMobilityDriftTime(
+        CandidateScores *candidateScores,
+        Ms1FrameTIMS *ms1FrameTims,
+        MsReaderPointerAcc *msReaderPointerAcc,
+        float extractionPPMTol
+        );
 
 private:
 
     XYMappermatic m_iIMtoIonMobilityIndexMapper;
-
-
 
 };
 

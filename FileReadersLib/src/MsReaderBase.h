@@ -342,7 +342,7 @@ public:
     Err getMsScanInfos(
             const MzTargetKey &mzTargetKey,
             QVector<MsScanInfo*> *msScanInfos
-            );
+            ) const;
 
     /**
     * @brief Retrieves all available MS scan information for a particular msLevel.
@@ -375,7 +375,7 @@ public:
     Err getMsScanInfo(
             ScanNumber scanNumber,
             MsScanInfo *msScanInfo
-            );
+            ) const;
 
     /**
     * @brief Sorts ScanPoints based on the specified sorting criteria.
@@ -424,6 +424,11 @@ public:
     [[nodiscard]] QMap<ScanNumber, ScanTime> getScanNumberVsScanTime() const;
 
     Err getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi);
+
+    Err driftTimeFromIonMobilityIndex(
+            const IonMobilityIndex &ionMobilityIndex,
+            double *driftTime
+            ) const;
 
     /**
     * @brief Splits ScanPoints into separate vectors for m/z and intensity values.

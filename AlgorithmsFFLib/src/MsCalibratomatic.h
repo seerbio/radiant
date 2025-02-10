@@ -29,6 +29,7 @@ public:
     ~MsCalibratomatic() = default;
 
     Err buildRTMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
+    Err buildIMMapper(const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows);
 
     Err setMassCalibrationCoeffs(
         const QVector<MsCalibarationReaderRow> &msCalibarationReaderRows,
@@ -56,8 +57,10 @@ public:
     [[nodiscard]] float mzStDevMS2() const;
 
     [[nodiscard]] float scanTimeStDev(float nStdDevs = 1.0f) const;
+    [[nodiscard]] float ionMobilityStDev(float nStdDevs = 1.0f) const;
 
     void setScanTimeStDev(double val);
+    void setIonMobilityStDev(double val);
     void setMzStDevMS2(double val);
 
     Err predictScanTime(
@@ -79,20 +82,22 @@ private:
     double m_mzStDevMS1;
     double m_mzStDevMS2;
     double m_scanTimeStd;
+    double m_ionMobilityStd;
 
     XYMappermatic m_iRTtoScanTimeMapper;
+    XYMappermatic m_iIMtoScanTimeMapper;
     QVector<double> m_calibrationCurveCoeffsMS1;
     QVector<double> m_calibrationCurveCoeffsMS2;
 
     QVector<QVector<double>> m_calibrationCurveCoEffsAll;
 
     bool m_isInitRT;
+    bool m_isInitIM;
     bool m_isInitMS1;
     bool m_isInitMS2;
 
     int m_polynomialOrderMassCal;
 
 };
-
 
 #endif //PYTHIADIACPP_MSCALIBRATOMATIC_H

@@ -74,16 +74,36 @@ void MsReaderMZMLMappedTests::troubleShoot() {
 
     ERR_INIT
 
+    QSKIP("Turn on after complete and making tests.");
+
     // const QString filename  = "/home/anichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
     // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";
     // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
+    const QString filename = "/home/andrewnichols/Desktop/Data/ExplorisDiscreps/TESTING_20240213RC8_30minE2A22.raw.mzML";
 
-    const QString &filename = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
+    // const QString &filename = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     MsReaderMzMLMapped msReaderMzMlMapped;
     e = msReaderMzMlMapped.openFile(filename);
     QCOMPARE(e, eNoError);
-    QCOMPARE(msReaderMzMlMapped.getMsScanInfos().size(), 372);
+
+    QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> diaTargetFrames;
+    e = msReaderMzMlMapped.collateMS2MzTargetFrames(&diaTargetFrames);
+    QCOMPARE(e, eNoError);
+
+    for (auto it = diaTargetFrames.begin(); it != diaTargetFrames.end(); ++it) {
+
+        const QMap<ScanNumber, ScanPoints*> &scanPoints = it.value();
+        int scanPointsInFrame = std::accumulate(
+            scanPoints.begin(),
+            scanPoints.end(),
+            0, [](int sum, const ScanPoints* scanPoints) {return scanPoints->size() + sum;}
+            );
+
+        qDebug() << it.key() << scanPointsInFrame;
+    }
+
+
 
 }
 

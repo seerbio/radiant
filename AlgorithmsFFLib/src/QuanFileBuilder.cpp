@@ -176,7 +176,7 @@ namespace {
         qr->scanTime = cs->scanTime;
         qr->scanTimeStart = cs->scanTimeStart;
         qr->scanTimeEnd = cs->scanTimeEnd;
-        qr->cosineSimSum100 = cs->featuresArray[Features::CosineSimSum100Top12];
+        qr->cosineSimSum100 = cs->featuresArray[CosineSimSum100Top12];
         qr->intensityValMz1 = cs->integrations.at(0);
         qr->intensityValMz2 = cs->integrations.at(1);
         qr->intensityValMz3 = cs->integrations.at(2);

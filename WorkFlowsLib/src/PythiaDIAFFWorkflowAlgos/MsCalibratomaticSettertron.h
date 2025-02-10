@@ -46,6 +46,8 @@ private:
         int topCandidatesMass
     );
 
+    Err setMsCalibratomaticMetrics();
+
     Err recalibrateMzVals(
         const MSLevelEnum &msLevel,
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrames,
@@ -64,7 +66,6 @@ private:
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> m_diaTargetFrames;
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFramesPntrs;
 
-
     QVector<TargetDecoyCandidatePair*> m_targetDecoyPairPntrs;
     QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsTopScores;
     QHash<TargetDecoyCandidatePair*, bool> m_entered;
@@ -72,6 +73,7 @@ private:
     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> m_candidateScorePairs;
 
     QVector<float> m_scanTimeStDevs;
+    QVector<float> m_ionMobilityStDevs;
     QVector<float> m_ms2PPMStDevs;
     QVector<float> m_weights;
 

@@ -264,7 +264,7 @@ QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos(int msLevel) {
 Err MsReaderBase::getMsScanInfos(
     const MzTargetKey &mzTargetKey,
     QVector<MsScanInfo*> *msScanInfos
-    ) {
+    ) const {
 
     ERR_INIT
     e = ErrorUtils::isNotEmpty(m_mzTargetVsScanInfosPntrs); ree;
@@ -282,7 +282,7 @@ QMap<ScanNumber, MsScanInfo> MsReaderBase::getMsScanInfos() {
 Err MsReaderBase::getMsScanInfo(
         ScanNumber scanNumber,
         MsScanInfo *msScanInfo
-){
+) const {
 
     ERR_INIT
 
@@ -366,6 +366,20 @@ Err MsReaderBase::getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi) 
         minMaxMsScanInfo.first->precursorTargetMz - minMaxMsScanInfo.first->isoWindowLower,
         minMaxMsScanInfo.second->precursorTargetMz + minMaxMsScanInfo.second->isoWindowLower
     };
+
+    ERR_RETURN
+}
+
+Err MsReaderBase::driftTimeFromIonMobilityIndex(
+    const IonMobilityIndex &ionMobilityIndex,
+    double *driftTime
+    ) const {
+
+    ERR_INIT
+
+    e = ErrorUtils::contains(ionMobilityIndex, m_frameIndexVsDriftTime); ree;
+
+    *driftTime = m_frameIndexVsDriftTime.value(ionMobilityIndex);
 
     ERR_RETURN
 }

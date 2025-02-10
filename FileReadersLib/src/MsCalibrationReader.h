@@ -19,9 +19,10 @@ namespace MsCalibarationReaderNamespace {
 
     const QString PEP_STR_MODS = QStringLiteral("peptideStringWithMods");
     const QString IRT_PRED = QStringLiteral("iRTPredicted");
-    const QString IIM_PRED = QStringLiteral("iIM");
+    const QString IIM_PRED = QStringLiteral("iIMPredicted");
     const QString SCAN_TIME = QStringLiteral("scanTime");
     const QString SCAN_NUMBER = QStringLiteral("scanNumber");
+    const QString DRIFT_TIME = QStringLiteral("driftTime");
     const QString MZ_SRCH_V = QStringLiteral("mzSearchedVec");
     const QString MZ_FND_MEAN_V = QStringLiteral("mzFoundMeanVec");
     const QString MZ_FND_STDEV_V = QStringLiteral("mzFoundStDevVec");
@@ -33,6 +34,7 @@ namespace MsCalibarationReaderNamespace {
             IIM_PRED,
             SCAN_TIME,
             SCAN_NUMBER,
+            DRIFT_TIME,
             MZ_SRCH_V,
             MZ_FND_MEAN_V,
             MZ_FND_STDEV_V,
@@ -53,6 +55,9 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
     QVector<float> mzFoundMeanVec;
     QVector<float> mzFoundStDevVec;
     QVector<float> intensityFoundMaxVec;
+
+    float iMPredicted = -1.0;
+    float driftTime = -1.0;
 
     QMap<QString, QVariant> map() override {
 
@@ -91,8 +96,10 @@ struct MsCalibarationReaderRow: public ParquetReaderInputBase {
 
         peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_MODS).toString());
         iRTPredicted = dataMap.value(IRT_PRED).toFloat();
+        iMPredicted = dataMap.value(IIM_PRED).toFloat();
         scanTime = dataMap.value(SCAN_TIME).toFloat();
         scanNumber = dataMap.value(SCAN_NUMBER).toInt();
+        driftTime = dataMap.value(DRIFT_TIME).toFloat();
         mzSearchedVec = bytesArrayToQVector<float>(dataMap.value(MZ_SRCH_V).toByteArray());
         mzFoundMeanVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_MEAN_V).toByteArray());
         mzFoundStDevVec = bytesArrayToQVector<float>(dataMap.value(MZ_FND_STDEV_V).toByteArray());

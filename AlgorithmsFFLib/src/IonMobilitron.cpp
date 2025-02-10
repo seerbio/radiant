@@ -8,8 +8,9 @@
 #include "EigenUtils.h"
 #include "ErrorUtils.h"
 #include "FeatureFinderHillBuilder.h"
-
+#include "MsReaderBase.h"
 #include "ObjectCSVWriters.h"
+#include "TurboXIC.h"
 
 
 Err IonMobilitron::init(const QVector<QPair<IMPredicted, IMEmpirical>> &imPredVsImEmpValuesSortedDiscScoreHiLo) {
@@ -80,413 +81,264 @@ Err IonMobilitron::predictIonMobilityIndex(
     ERR_RETURN
 }
 
-
 namespace {
 
-    Err loadMatrix(
-        int column,
-        QVector<FeatureFinderHill*> *featureFinderHills,
-        Eigen::MatrixX<float> *imMatIntensity,
-        Eigen::MatrixX<float> *imMatMz
-        ) {
+    struct IonMobilityInput {
+        CandidateScores *candidateScores = nullptr;
+        QMap<FrameNumberTIMS, Ms1FrameTIMS> *ms1Frames = nullptr;
+        MsReaderPointerAcc *msReaderPointerAcc = nullptr;
+        float ppmTol = -1.0;
+        QVector<ScanNumber> scanNumbers;
+    };
+
+    Err assignIonMobilityIndexesToCandidateScoresLogic(const IonMobilityInput &imi) {
 
         ERR_INIT
 
-        constexpr int minRows = 1;
+        FrameIndex ms1ScanNumberClosest = imi.scanNumbers.at(MathUtils::closest(imi.scanNumbers, imi.candidateScores->scanNumber));
+        ms1ScanNumberClosest = ms1ScanNumberClosest > imi.candidateScores->scanNumber
+                             ? imi.scanNumbers.at(MathUtils::closest(imi.scanNumbers, imi.candidateScores->scanNumber) - 1)
+                             : ms1ScanNumberClosest;
 
-        e = ErrorUtils::isAboveThreshold(
-            static_cast<int>(imMatIntensity->rows()),
-            minRows,
-            ErrorUtilsParam::IncludeThreshold
-            ); ree;
+        e = ErrorUtils::contains(ms1ScanNumberClosest, *imi.ms1Frames); ree;
+        Ms1FrameTIMS ms1FrameTims = imi.ms1Frames->value(ms1ScanNumberClosest);
 
-        e = ErrorUtils::isAboveThreshold(
-            static_cast<int>(imMatMz->rows()),
-            minRows,
-            ErrorUtilsParam::IncludeThreshold
-            ); ree;
-
-        const int maxScanNumber = static_cast<int>(imMatIntensity->rows()) - 1;
-
-        for (const FeatureFinderHill *ffh : *featureFinderHills) {
-
-            const QVector<ScanNumberIndex> scanNumberIndexes = ffh->scanNumberIndexes();
-            const QVector<double> mzVals = ffh->mzVals();
-            const QVector<float> intensityVals = ffh->intensities();
-
-            for (int i = 0; i < scanNumberIndexes.size(); i++) {
-                const ScanNumberIndex scanNumberIndex = scanNumberIndexes.at(i);
-                const double mzVal = mzVals.at(i);
-                const float intensityVal = intensityVals.at(i);
-
-                if (scanNumberIndex > maxScanNumber) {
-                    continue;
-                }
-
-                imMatIntensity->coeffRef(scanNumberIndex, column) = +intensityVal;
-                imMatMz->coeffRef(scanNumberIndex, column) = static_cast<float>(mzVal);
-            }
-        }
-
-        ERR_RETURN
-    }
-
-    Err buildMS1IonMobilityMatriciesAndVectors(
-        const Eigen::VectorX<float> &kernel,
-        QVector<FeatureFinderHill*> *featureFinderHillsMs1MonoIso,
-        QVector<FeatureFinderHill*> *featureFinderHillsMs1Iso1,
-        QVector<FeatureFinderHill*> *featureFinderHillsMs1Iso2,
-        Eigen::MatrixX<float> *imMatIntensity,
-        Eigen::MatrixX<float> *imMatMz,
-        Eigen::VectorX<float> *imIntegrationVec
-        ) {
-
-        ERR_INIT
-
-        const auto minMaxLogic = [](const FeatureFinderHill *l,const FeatureFinderHill *r) {
-            return l->scanNumberIndexMinMax().second < r->scanNumberIndexMinMax().second;
-        };
-
-        const FeatureFinderHill *maxIMIndexFFHMono = *std::max_element(
-            featureFinderHillsMs1MonoIso->begin(),
-            featureFinderHillsMs1MonoIso->end(),
-            minMaxLogic
+        const std::tuple<Err, float, float> result = IonMobilitron::findEmpericalIonMobilityDriftTime(
+            imi.candidateScores,
+            &ms1FrameTims,
+            imi.msReaderPointerAcc,
+            imi.ppmTol
             );
+        e = std::get<0>(result); ree;
 
-        const IonMobilityIndex maxIMIndex = maxIMIndexFFHMono->scanNumberIndexMinMax().second + 10;
-
-        constexpr int columns = 3;
-        imMatIntensity->resize(maxIMIndex, columns);
-        imMatIntensity->setZero();
-
-        imMatMz->resize(maxIMIndex, columns);
-        imMatMz->setZero();
-
-        e = loadMatrix(
-            0,
-            featureFinderHillsMs1MonoIso,
-            imMatIntensity,
-            imMatMz
-            ); ree;
-
-        e = loadMatrix(
-            1,
-            featureFinderHillsMs1Iso1,
-            imMatIntensity,
-            imMatMz
-            ); ree;
-
-        e = loadMatrix(
-            2,
-            featureFinderHillsMs1Iso2,
-            imMatIntensity,
-            imMatMz
-            ); ree;
-
-        *imMatIntensity = EigenKernelUtils::applyKernelToEachColumnInMatrix(
-            *imMatIntensity,
-            kernel
-            );
-
-        constexpr float intensityThresholdVal = 0.1;
-        constexpr float countValue = 1.0;
-        Eigen::MatrixX<float> imMatIntensityDigital = *imMatIntensity;
-        imMatIntensityDigital
-            = (imMatIntensityDigital.array() > intensityThresholdVal).select(countValue, imMatIntensityDigital);
-        EigenUtils::thresholdMatrix(0.0f, &imMatIntensityDigital);
-
-        *imIntegrationVec = imMatIntensityDigital.rowwise().sum();
-        *imIntegrationVec = EigenKernelUtils::convolveVectorWithKernel(*imIntegrationVec, kernel);
-        *imIntegrationVec = imIntegrationVec->array() * imMatIntensity->array().rowwise().sum();
-
-        ERR_RETURN;
-    }
-
-    float calculateWeightedMeanOfIndexes(
-        const Eigen::VectorX<float> &imIntegrationVec,
-        const PeakIntegrationIndexes &imPeakIntegrationIndexes
-        ) {
-
-        float numerator = 0.0f;
-        float denominator = 0.0f;
-
-        const int peakLen = imPeakIntegrationIndexes.first + (imPeakIntegrationIndexes.second - imPeakIntegrationIndexes.first + 1);
-
-        for (int i = imPeakIntegrationIndexes.first; i < peakLen; i++) {
-
-            const float intensity = imIntegrationVec.coeff(i);
-
-            if (MathUtils::tZero(intensity)) {
-                continue;
-            }
-
-            numerator += i * intensity;
-            denominator += intensity;
-        }
-
-        if (MathUtils::tZero(denominator)) {
-            return -1;
-        }
-
-        return static_cast<int>(std::round(numerator / denominator));
-    }
-
-    Err processMS1IonMobilityIntegrationVec(
-        const Eigen::VectorX<float> &imIntegrationVec,
-        const Eigen::VectorX<float> &kernel,
-        int *imPeakCount,
-        float *imArea,
-        float *imAreaRatioTop2,
-        int *imIndexMax,
-        PeakIntegrationIndexes *imPeakIntegrationIndexes
-        ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isAboveThreshold(
-            static_cast<int>(imIntegrationVec.rows()),
-            0,
-            ErrorUtilsParam::ExcludeThreshold
-            ); ree;
-
-        const Eigen::VectorX<float> imIntegrationVecSmoothed = EigenKernelUtils::convolveVectorWithKernel(
-            imIntegrationVec,
-            kernel
-            );
-
-        constexpr float stopThresholdFractionMS2 = 0.2;
-        constexpr float peakDifferenceFractionThreshold = 0.4;
-        QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
-        e = EigenUtils::simpleIntegrator(
-            imIntegrationVecSmoothed,
-            stopThresholdFractionMS2,
-            peakDifferenceFractionThreshold,
-            &peakIntegrationsVsIntensities
-            ); ree;
-
-        *imPeakCount = peakIntegrationsVsIntensities.size();
-
-        using CONT = QPair<PeakIntegrationIndexes, Intensity>;
-        std::sort(
-            peakIntegrationsVsIntensities.rbegin(),
-            peakIntegrationsVsIntensities.rend(),
-            [](const CONT &l, const CONT &r) {return l.second < r.second;}
-            );
-
-        QVector<float> trapAreas;
-        for (int i = 0; i < std::min(peakIntegrationsVsIntensities.size(), 2); i++) {
-
-            const QPair<PeakIntegrationIndexes, Intensity> pr = peakIntegrationsVsIntensities.at(i);
-            const Eigen::VectorX<float> imIntegrationVecSmoothedPeak = imIntegrationVecSmoothed.segment(
-                pr.first.first,
-                pr.first.second - pr.first.first + 1
-            );
-
-            trapAreas.push_back(EigenUtils::calculateTrapizoidalArea(imIntegrationVecSmoothedPeak));
-        }
-
-        if (trapAreas.isEmpty()) {
-            *imArea = 0.0;
-            *imAreaRatioTop2 = 0.0f;
-            *imPeakIntegrationIndexes = {-1, -1};
-            *imIndexMax = -1;
-        }
-        else if (trapAreas.size() < 2) {
-            *imArea = trapAreas.front();
-            *imAreaRatioTop2 = 0.0f;
-            *imPeakIntegrationIndexes = peakIntegrationsVsIntensities.at(0).first;
-            *imIndexMax = calculateWeightedMeanOfIndexes(imIntegrationVec, *imPeakIntegrationIndexes);
-        }
-        else {
-
-            const int trapAreaIndexMax = MathUtils::findMaxIndexInVector(trapAreas);
-            const int trapAreaIndexMin = trapAreaIndexMax == 1 ? 0 : 1;
-
-            *imArea = trapAreas.at(trapAreaIndexMax);
-            *imAreaRatioTop2 = trapAreas.at(trapAreaIndexMax) / trapAreas.at(trapAreaIndexMin);
-            *imPeakIntegrationIndexes = peakIntegrationsVsIntensities.at(trapAreaIndexMax).first;
-            *imIndexMax = calculateWeightedMeanOfIndexes(imIntegrationVec, *imPeakIntegrationIndexes);
-        }
-
-        ERR_RETURN;
-    }
-
-    Err assignIonMobilityLogic(
-            float ppmTolerance,
-            const QVector<CandidateScores*> &candidateScoresPntrs,
-            const Eigen::MatrixX<float> &kernel,
-            QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-            ) {
-
-        ERR_INIT
-
-        e = ErrorUtils::isNotEmpty(candidateScoresPntrs); ree;
-        e = ErrorUtils::isFalse(scanNumberVsFeatureFinderHillBuildersPntrsTIMS->isEmpty()); ree;
-
-        const QVector<ScanNumber> scanNumbers = scanNumberVsFeatureFinderHillBuildersPntrsTIMS->keys().toVector();
-
-        for (CandidateScores *cs : candidateScoresPntrs) {
-
-            if (cs->scanNumber < 0) {
-                continue;
-            }
-
-            FrameIndex ms1ScanNumberClosest = scanNumbers.at(MathUtils::closest(scanNumbers, cs->scanNumber));
-            ms1ScanNumberClosest = ms1ScanNumberClosest > cs->scanNumber
-                                 ? scanNumbers.at(MathUtils::closest(scanNumbers, cs->scanNumber) - 1)
-                                 : ms1ScanNumberClosest;
-
-            e = ErrorUtils::contains(ms1ScanNumberClosest, *scanNumberVsFeatureFinderHillBuildersPntrsTIMS); ree;
-
-            const FeatureFinderHillBuilder *ffhb = scanNumberVsFeatureFinderHillBuildersPntrsTIMS->value(ms1ScanNumberClosest);
-
-            const float mzMonoIso = cs->targetDecoyCandidatePair->mz(cs->isDecoy);
-            const float massToleranceMonoIso = MathUtils::calculatePPM(mzMonoIso, ppmTolerance);
-            QVector<FeatureFinderHill*> featureFinderHillsMs1MonoIso;
-            e = ffhb->getHills(
-                static_cast<double>(mzMonoIso - massToleranceMonoIso),
-                static_cast<double>(mzMonoIso + massToleranceMonoIso),
-                &featureFinderHillsMs1MonoIso
-                ); ree;
-
-            const float isoDistance
-                = S_GLOBAL_SETTINGS.ISO_DIFF / static_cast<float>(cs->targetDecoyCandidatePair->charge());
-
-            const float mzIso1 = mzMonoIso + isoDistance;
-            const float massToleranceIso1 = MathUtils::calculatePPM(mzIso1, ppmTolerance);
-            QVector<FeatureFinderHill*> featureFinderHillsMs1Iso1;
-            e = ffhb->getHills(
-                static_cast<double>(mzIso1 - massToleranceIso1),
-                static_cast<double>(mzIso1 + massToleranceIso1),
-                &featureFinderHillsMs1Iso1
-                ); ree;
-
-            const float mzIso2 = mzMonoIso + (isoDistance * 2);
-            const float massToleranceIso2 = MathUtils::calculatePPM(mzIso2, ppmTolerance);
-            QVector<FeatureFinderHill*> featureFinderHillsMs1Iso2;
-            e = ffhb->getHills(
-                static_cast<double>(mzIso2 - massToleranceIso2),
-                static_cast<double>(mzIso2 + massToleranceIso2),
-                &featureFinderHillsMs1Iso2
-                ); ree;
-
-            if (featureFinderHillsMs1MonoIso.isEmpty()) {
-                continue;
-            }
-
-            Eigen::MatrixX<float> imMatIntensity;
-            Eigen::MatrixX<float> imMatMz;
-            Eigen::VectorX<float> imIntegrationVec;
-            e = buildMS1IonMobilityMatriciesAndVectors(
-                kernel,
-                &featureFinderHillsMs1MonoIso,
-                &featureFinderHillsMs1Iso1,
-                &featureFinderHillsMs1Iso2,
-                &imMatIntensity,
-                &imMatMz,
-                &imIntegrationVec
-                ); ree;
-
-            int imPeakCount;
-            float imArea;
-            float imAreaRatioTop2;
-            int imIndexMax;
-            PeakIntegrationIndexes imPeakIntegrationIndexes;
-            e = processMS1IonMobilityIntegrationVec(
-                imIntegrationVec,
-                kernel,
-                &imPeakCount,
-                &imArea,
-                &imAreaRatioTop2,
-                &imIndexMax,
-                &imPeakIntegrationIndexes
-                ); ree;
-
-            const int imPeakLen = imPeakIntegrationIndexes.second - imPeakIntegrationIndexes.first + 1;
-
-            // cs->featuresArray[Features::ImPeakCount] = static_cast<float>(imPeakCount);
-            // cs->featuresArray[Features::ImPeakLength] = imPeakLen < 2 ? -1 : static_cast<float>(imPeakLen);
-            // cs->featuresArray[Features::ImAreaLog10] = std::log10(imArea);
-            // cs->featuresArray[Features::ImAreaRatioTop2] = imAreaRatioTop2;
-            cs->ionMobilityIndex = imIndexMax;
-            cs->ionMobilityIndexStart = imPeakIntegrationIndexes.first;
-            cs->ionMobilityIndexEnd = imPeakIntegrationIndexes.second;
-        }
+        imi.candidateScores->imDriftTime = std::get<1>(result);
+        imi.candidateScores->featuresArray[Ms1IntensityFoundApex100IM] = std::get<2>(result);
 
         ERR_RETURN
     }
 
 }//namespace
-Err IonMobilitron::assignIonMobilityValues(
-    const PythiaParameters &pythiaParameters,
-    const QVector<CandidateScores*> &_candidateScoresPntrs,
-    QMap<ScanNumber, FeatureFinderHillBuilder*> *scanNumberVsFeatureFinderHillBuildersPntrsTIMS
+Err IonMobilitron::assignIonMobilityIndexesToCandidateScores(
+    const QVector<CandidateScores*> &candidateScoresVecBatchPntrs,
+    float ppmTol,
+    MsReaderPointerAcc *msReaderPointerAcc
     ) {
 
     ERR_INIT
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "IonMobilitron::assignIonMobilityValues";
+    QMap<FrameNumberTIMS, Ms1FrameTIMS> *ms1Frames = msReaderPointerAcc->ptr->frameNumberVsMS1FrameTIMSPntr();
+    const QMap<ScanNumber, MsScanInfo> ms1ScanInfos = msReaderPointerAcc->ptr->getMsScanInfos(1);
+    const QVector<ScanNumber> scanNumbers = ms1ScanInfos.keys().toVector();
 
-    e = ErrorUtils::isNotEmpty(_candidateScoresPntrs); ree;
+    QVector<IonMobilityInput> ionMobilityInputs;
+    for (CandidateScores *cs : candidateScoresVecBatchPntrs) {
 
-    QVector<CandidateScores*> candidateScoresPntrs = _candidateScoresPntrs;
+        const float cosineSim100MS1 = cs->featuresArray[CosineSim100MS1];
+        if (constexpr float cutOff = 0.9; cosineSim100MS1 < cutOff) {
+            continue;
+        }
 
-    constexpr int filterLength = 3;
-    constexpr int order = 1;
-    constexpr int derivative = 0;
-    constexpr int rate = 1;
+        IonMobilityInput imi;
+        imi.candidateScores = cs;
+        imi.ms1Frames = ms1Frames;
+        imi.ppmTol = ppmTol;
+        imi.scanNumbers = scanNumbers;
+        imi.msReaderPointerAcc = msReaderPointerAcc;
+        ionMobilityInputs.push_back(imi);
+    }
 
-    Eigen::MatrixX<float> kernel;
-    e = EigenKernelUtils::buildSavitzkyGolayKernel(
-        filterLength,
-        order,
-        derivative,
-        rate,
-        &kernel
-        ); ree;
-    const Eigen::VectorX<float> kernelVec(kernel);
-
-    std::sort(
-        candidateScoresPntrs.begin(),
-        candidateScoresPntrs.end(),
-        [](const CandidateScores* l, const CandidateScores* r) {return l->scanNumber < r->scanNumber;}
-        );
-
-    QVector<QVector<CandidateScores*>> candidateScoresPntrsTranched;
-    e = ParallelUtils::trancheVectorForParallelizationInOrder(
-        candidateScoresPntrs,
-        pythiaParameters.threadCount,
-        0,
-        &candidateScoresPntrsTranched
-        ); ree;
-
-#define ASSIGN_ION_MOBILITY_PARALLEL
-#ifdef ASSIGN_ION_MOBILITY_PARALLEL
-    const auto assignMobilityBinder = std::bind(
-            assignIonMobilityLogic,
-            pythiaParameters.ms2ExtractionWidthPPM,
-            std::placeholders::_1,
-            kernelVec,
-            scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-            );
-
+#define PARALLEL_ION_MOBILITY
+#ifdef PARALLEL_ION_MOBILITY
     QFuture<Err> futures = QtConcurrent::mapped(
-        candidateScoresPntrsTranched,
-        assignMobilityBinder
+        ionMobilityInputs,
+        assignIonMobilityIndexesToCandidateScoresLogic
         );
     futures.waitForFinished();
 #else
-    for (QVector<CandidateScores*> &csTranche : candidateScoresPntrsTranched) {
-        e = assignIonMobilityLogic(
-            pythiaParameters.ms2ExtractionWidthPPM,
-            csTranche,
-            kernel,
-            scanNumberVsFeatureFinderHillBuildersPntrsTIMS
-            ); ree;
+    for (IonMobilityInput &imi : ionMobilityInputs) {
+        e = assignIonMobilityIndexesToCandidateScoresLogic(imi); ree;
     }
-#endif
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "IonMobilitron::assignIonMobilityValues finished";
+#endif//PARALLEL_ION_MOBILITY
 
     ERR_RETURN
+}
+
+namespace {
+
+    Err getXICPoints(
+        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        Ms1FrameTIMS *ms1FrameTims,
+        float extractionPPMTol,
+        QVector<XICPoints> *xicPointses
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isFalse(ms1FrameTims->isEmpty()); ree;
+
+        QMap<ScanNumber, ScanPoints*> ms1FrameTimsPntrs;
+        for (auto it = ms1FrameTims->begin(); it != ms1FrameTims->end(); ++it) {
+            ms1FrameTimsPntrs.insert(it.key(), &it.value());
+        }
+
+        TurboXIC turboXic;
+        e = turboXic.init(ms1FrameTimsPntrs); ree;
+
+        const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
+        const float mzMono = targetDecoyCandidatePair->mz(false);
+
+        for (int i = 0; i < 2; i++) {
+            const float mzExtract = mzMono + (i * chargeDistance);
+            const float massTol = MathUtils::calculatePPM(mzExtract, extractionPPMTol);
+
+            const XICPoints xicPoints = turboXic.extractPointsXIC(
+                mzExtract - massTol,
+                mzExtract + massTol
+                );
+            xicPointses->push_back(xicPoints);
+        }
+
+        ERR_RETURN
+    }
+
+    Err buildCombinedXIC(
+        const QVector<XICPoints> &xicPointses,
+        Eigen::MatrixX<float> *xicMat,
+        Eigen::VectorX<float> *integrationVector
+        ) {
+
+        ERR_INIT
+
+        constexpr int filterLength = 3;
+        constexpr int order = 1;
+        constexpr int derivative = 0;
+        constexpr int rate = 1;
+
+        Eigen::MatrixX<float> sgKernel;
+        e = EigenKernelUtils::buildSavitzkyGolayKernel(
+            filterLength,
+            order,
+            derivative,
+            rate,
+            &sgKernel
+            ); ree;
+
+        const auto sortLogic
+            = [](const XICPoint &l, const XICPoint &r) {return l.scanNumber < r.scanNumber;};
+
+        IonMobilityIndex ionMobilityIndexMax = 0;
+
+        for (const XICPoints &xicPoints : xicPointses ) {
+
+            if (xicPoints.empty()) {
+                continue;
+            }
+
+            const IonMobilityIndex maxIonMobilityIndex = std::max_element(
+                xicPoints.begin(),
+                xicPoints.end(),
+                sortLogic
+                )->scanNumber;
+
+            ionMobilityIndexMax = std::max(ionMobilityIndexMax, maxIonMobilityIndex);
+        }
+
+        if (ionMobilityIndexMax < 1) {
+            ERR_RETURN
+        }
+
+        constexpr int buffer = 10;
+        integrationVector->resize(ionMobilityIndexMax + buffer);
+        integrationVector->setZero();
+        xicMat->resize(ionMobilityIndexMax + buffer, 3);
+        xicMat->setZero();
+
+        int column = 0;
+        for (const XICPoints &xicPoints : xicPointses) {
+            for (const XICPoint &xicPoint : xicPoints) {
+
+                e = ErrorUtils::isBelowThreshold(
+                    xicPoint.scanNumber,
+                    ionMobilityIndexMax + buffer,
+                    ErrorUtilsParam::ExcludeThreshold
+                    ); ree;
+
+                integrationVector->coeffRef(xicPoint.scanNumber) += 1.0f;
+                xicMat->coeffRef(xicPoint.scanNumber, column) += xicPoint.intensity;
+            }
+            column++;
+        }
+
+        const Eigen::VectorX<float> isotopeIntenstiesSummed = xicMat->rowwise().sum();
+
+        *integrationVector = integrationVector->array() * isotopeIntenstiesSummed.array();
+
+        const Eigen::VectorX<float> sgKernelVec = sgKernel;
+        *integrationVector = EigenKernelUtils::convolveVectorWithKernel(
+            *integrationVector,
+            sgKernelVec
+            );
+
+        ERR_RETURN
+    }
+
+}//namespace
+std::tuple<Err, float, float> IonMobilitron::findEmpericalIonMobilityDriftTime(
+    CandidateScores *candidateScores,
+    Ms1FrameTIMS *ms1FrameTims,
+    MsReaderPointerAcc *msReaderPointerAcc,
+    float extractionPPMTol
+    ) {
+
+    ERR_INIT
+
+    e = ErrorUtils::isFalse(ms1FrameTims->isEmpty()); rtee;
+
+    QVector<XICPoints> xicPointses;
+    e = getXICPoints(
+        candidateScores->targetDecoyCandidatePair,
+        ms1FrameTims,
+        extractionPPMTol,
+        &xicPointses
+        ); rtee;
+
+    const XICPoints &xicPointsMonoIsotope = xicPointses.front();
+    if (xicPointsMonoIsotope.empty()) {
+        return {e, -1.0f, -1.0f};
+    }
+
+    Eigen::VectorX<float> integrationVector;
+    Eigen::MatrixX<float> xicMat;
+    e = buildCombinedXIC(
+        xicPointses,
+        &xicMat,
+        &integrationVector
+        ); rtee;
+
+    constexpr float stopThresholdFractionMS2 = 0.2;
+    constexpr float peakDifferenceFractionThreshold = 0.25;
+
+    QVector<QPair<PeakIntegrationIndexes, Intensity>> peakIntegrationsVsIntensities;
+    e = EigenUtils::simpleIntegrator(
+        integrationVector,
+        stopThresholdFractionMS2,
+        peakDifferenceFractionThreshold,
+        &peakIntegrationsVsIntensities
+        ); rtee;
+
+    const QPair<PeakIntegrationIndexes, Intensity> &prImLimits = peakIntegrationsVsIntensities.front();
+
+    const XICPoint xicPointApex = *std::max_element(
+        xicPointsMonoIsotope.begin(),
+        xicPointsMonoIsotope.end(),
+        [](const XICPoint &l, const XICPoint &r) {return l.intensity < r.intensity;}
+        );
+
+    double driftTime;
+    e = msReaderPointerAcc->ptr->driftTimeFromIonMobilityIndex(
+        xicPointApex.scanNumber,
+        &driftTime
+        ); rtee;
+
+    return {e, static_cast<float>(driftTime), xicPointApex.intensity};
 }

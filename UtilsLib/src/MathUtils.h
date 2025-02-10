@@ -518,6 +518,23 @@ public:
         return false;
     }
 
+    template<typename T>
+    static T calculatePearsonCoefficient(const QVector<T> &x, const QVector<T> &y) {
+        T xMean = mean(x);
+        T yMean = mean(y);
+
+        T numerator = 0.0;
+        T denominator1 = 0.0;
+        T denominator2 = 0.0;
+
+        for (size_t i = 0; i < x.size(); ++i) {
+            numerator += (x[i] - xMean) * (y[i] - yMean);
+            denominator1 += std::pow((x[i] - xMean), 2);
+            denominator2 += std::pow((y[i] - yMean), 2);
+        }
+
+        return numerator / std::sqrt(denominator1 * denominator2);
+    }
 };
 
 

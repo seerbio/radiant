@@ -95,6 +95,8 @@ Err TurboXIC::Private::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsSca
         return l.first.get<0>() < r.first.get<0>();
     });
 
+    delete m_rTree;
+
     constexpr int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
@@ -131,6 +133,8 @@ Err TurboXIC::Private::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoint
     std::sort(cloudLoader.begin(), cloudLoader.end(), [](const rTreePoint &l, const rTreePoint &r){
         return l.first.get<0>() < r.first.get<0>();
     });
+
+    delete m_rTree;
 
     constexpr int maxElements = 16;
     m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
