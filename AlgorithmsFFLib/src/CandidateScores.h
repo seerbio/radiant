@@ -262,6 +262,7 @@ enum Features {
     // MzFoundStDev11,
     // MzFoundStDev12,
 
+    MonoPreMonoRatio,
 
     FeaturesSize
     };

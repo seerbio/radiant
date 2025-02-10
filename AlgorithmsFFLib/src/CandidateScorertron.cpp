@@ -2247,6 +2247,9 @@ Err CandidateScorertron::setMs1RelatedScores(
         // + candidateScores->featuresArray[CosineSim100MS1Iso3];
         // - candidateScores->featuresArray[CosineSim100MS1PreMono];
 
+    candidateScores->featuresArray[MonoPreMonoRatio] = std::max(candidateScores->featuresArray[CosineSim100MS1PreMono]
+                                                     / std::max(candidateScores->featuresArray[CosineSim100MS1], 1.0f), 1.0f);
+
     ERR_RETURN
 }
 

@@ -149,6 +149,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
             Ms1MzStDevFound100,
             CosineSim100MS1Iso1,
             CosineSim100MS1Iso2,
+            // MonoPreMonoRatio,
             // CosineSim100MS1PreMono,
             CosineSimSpectrumCubed,
             CosineSimSum45,
@@ -318,7 +319,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 // BIonSeriesMaxFoundToTheoFraction,
                 // YIonSeriesCountRatio,
                 // BIonSeriesCountRatio,
-
+                MonoPreMonoRatio,
                 // CosineSimFullTheo,
                 IonsFoundFractionFull,
                 CosineSimFullTheoXIonsFoundFractionFull,
@@ -342,6 +343,7 @@ QVector<float> DiscriminantScoretron::scoreVectorLogic(
                 CosineSim100MS1,
                 CosineSim100MS1Iso1, //5
                 CosineSim100MS1Iso2,
+                MonoPreMonoRatio,
                 // CosineSim100MS1PreMono,
                 CosineSimSpectrumCubed,
                 CosineSimSum45,
