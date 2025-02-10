@@ -262,16 +262,20 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
         &featuresArrayTargetVsDecoyPntrs
         ); ree;
 
+    QVector<FeaturesArray*> featuresArrayPntrs;
+    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
+        featuresArrayPntrs.append({pr.first, pr.second});
+    }
+
+    // for (auto x : featuresArrayPntrs) {
+    //     qDebug() << "featuresArrayPntrs" << *x;
+    // }
+
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,
             pythiaParameters.verbosity,
             weights
             ); ree;
-
-    QVector<FeaturesArray*> featuresArrayPntrs;
-    for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
-        featuresArrayPntrs.append({pr.first, pr.second});
-    }
 
     QVector<float> discriminantScores;
     e = DiscriminantScoretron::applyWeights(
