@@ -208,10 +208,9 @@ namespace {
 
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::processBatch(
+    const QVector<Features> &features,
     QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
     const PythiaParameters &pythiaParameters,
-    bool useExtendedScores,
-    bool useNeuralNetworkScores,
     QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
     QMap<int, int> *fdrVsCounts,
     QVector<float> *weights
@@ -242,9 +241,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
 
     QVector<QPair<FeaturesArrayTargets, FeaturesArrayDecoys>> featuresArrayTargetVsDecoy;
     e = DiscriminantScoretron::convertScoreCandidatesToFeaturesArrays(
+        features,
         targetDecoyCandidateScorePairsPntrs,
-        useExtendedScores,
-        useNeuralNetworkScores,
         &featuresArrayTargetVsDecoy
         ); ree;
 

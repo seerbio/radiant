@@ -62,12 +62,11 @@ public:
     * @return Error code indicating success or failure during the scoring process.
     */
     Err scoreTargetDecoyPairs(
+            const QVector<Features> &features,
             int topNMS2Ions,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
             int threadCount,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
             bool useTopNIntegrationsParameter,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             const QVector<float> &weights,
@@ -76,12 +75,11 @@ public:
             ) const;
 
     Err scoreTargetDecoyPairs(
+        const QVector<Features> &features,
         int topNMS2Ions,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
         int threadCount,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
         bool useTopNIntegrationsParameter,
         const QVector<MsScanInfo> &msScanInfos,
         const QVector<float> &weights,
@@ -122,12 +120,11 @@ public:
 private:
 
     Err buildParallelInput(
+            const QVector<Features> &features,
             int topNMS2Ions,
             const QPair<double, double> &scanTimeMinMax,
             const MsCalibratomatic &msCalibratomatic,
             float minPeakCount,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
             bool useTopNIntegrationsParameter,
             const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXicPntrs,
             const QVector<float> &weights,
@@ -136,12 +133,11 @@ private:
             ) const;
 
     Err buildParallelInput(
+        const QVector<Features> &features,
         int topNMS2Ions,
         const QPair<double, double> &scanTimeMinMax,
         const MsCalibratomatic &msCalibratomatic,
         float minPeakCount,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
         bool useTopNIntegrationsParameter,
         const QVector<MsScanInfo> &msScanInfos,
         const QVector<float> &weights,

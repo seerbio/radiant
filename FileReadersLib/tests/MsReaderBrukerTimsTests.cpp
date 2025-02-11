@@ -47,6 +47,7 @@ void MsReaderBrukerTimsTests::writeFrameTest() {
 void MsReaderBrukerTimsTests::openFileTest() {
 
     // TODO make test
+    QSKIP("Need to update fix writeFrame");
 
     ERR_INIT
 

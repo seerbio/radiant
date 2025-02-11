@@ -27,6 +27,7 @@ public:
     ~MsCalibratomaticSettertron() = default;
 
     Err init(
+        const QVector<Features> &featuresCalibration,
         PythiaParameters *pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
@@ -76,6 +77,8 @@ private:
     QVector<float> m_ionMobilityStDevs;
     QVector<float> m_ms2PPMStDevs;
     QVector<float> m_weights;
+    QVector<Features> m_featuresCalibration;
+
 
     bool m_excludeDecoys;
 

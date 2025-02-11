@@ -247,15 +247,14 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         constexpr int topNMS2Ions = 12;
         m_candidateScorePairs.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+                DiscriminantScoretron::featuresOptimization(),
                 topNMS2Ions,
                 *m_msCalibratomatic,
                 minPeakCountOptimization,
                 threadCount,
-                useExtendedScores,
-                useNeuralNetworkScores,
                 useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
-                DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores),
+                DiscriminantScoretron::defaultWeights(DiscriminantScoretron::featuresOptimization()),
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScorePairs
                 ); ree
@@ -264,10 +263,9 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+            DiscriminantScoretron::featuresOptimization(),
             m_candidateScorePairs,
             *m_pythiaParameters,
-            useExtendedScores,
-            useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
             &weights

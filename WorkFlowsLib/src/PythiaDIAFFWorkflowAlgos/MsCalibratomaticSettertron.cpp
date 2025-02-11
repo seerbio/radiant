@@ -25,6 +25,7 @@ MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 {}
 
 Err MsCalibratomaticSettertron::init(
+    const QVector<Features> &featuresCalibration,
     PythiaParameters *pythiaParameters,
     MsReaderPointerAcc *msReaderPointerAcc,
     TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
@@ -38,11 +39,13 @@ Err MsCalibratomaticSettertron::init(
     e = ErrorUtils::isTrue(targetDecoyCandidatePairManager->isInit()); ree;
     e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
+    e = ErrorUtils::isNotEmpty(featuresCalibration); ree;
 
     m_msReaderPointerAcc = msReaderPointerAcc;
     m_targetDecoyCandidatePairManager = targetDecoyCandidatePairManager;
     m_pythiaParameters = pythiaParameters;
     m_targetDecoyCandidatePairScoretron = targetDecoyCandidatePairScoretron;
+    m_featuresCalibration = featuresCalibration;
 
     e = m_targetDecoyCandidatePairManager->getTargetDecoyCandidatePairPointers(
         &m_targetDecoyPairPntrs
@@ -148,12 +151,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 ); ree;
 
         constexpr int topNMS2IonsCalibration = 6;
-        constexpr bool useExtendedScores = false;
-        constexpr bool useNeuralNetworkScores = false;
+
         constexpr bool useTopNIntegrationsParameter = false;
 
         m_weights = m_weights.isEmpty()
-                  ? DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores)
+                  ? DiscriminantScoretron::defaultWeights(m_featuresCalibration)
                   : m_weights;
 
         constexpr int splitter = 2;
@@ -164,12 +166,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         constexpr float minPeakCountCalibration = 4.9;
         m_candidateScorePairs.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+                m_featuresCalibration,
                 topNMS2IonsCalibration,
                 m_msCalibratomatic,
                 minPeakCountCalibration,
                 threadCount,
-                useExtendedScores,
-                useNeuralNetworkScores,
                 useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
                 m_weights,
@@ -181,10 +182,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+            m_featuresCalibration,
             m_candidateScorePairs,
             *m_pythiaParameters,
-            useExtendedScores,
-            useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
             &weights

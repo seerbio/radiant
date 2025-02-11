@@ -310,15 +310,17 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
 
     {
+
         MsCalibratomaticSettertron msCalibratomaticSettertron;
         e = msCalibratomaticSettertron.init(
+            DiscriminantScoretron::featuresCalibration(),
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
             &m_targetDecoyCandidatePairScoretron,
             false
             ); ree;
-        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic);
+        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
 
         if (e != eNoError) {
 
@@ -326,13 +328,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
             MsCalibratomaticSettertron msCalibratomaticSettertronBackup;
             e = msCalibratomaticSettertronBackup.init(
+                DiscriminantScoretron::featuresCalibration(),
                 &m_pythiaParameters,
                 &msReaderPointerAcc,
                 &m_targetDecoyCandidatePairManager,
                 &m_targetDecoyCandidatePairScoretron,
                 true
                 ); ree;
-            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic);
+            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic); ree;
         }
     }
 
@@ -474,17 +477,16 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
                           ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters.threadCount)
                           : m_pythiaParameters.threadCount;
 
-    m_weights = DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores);
+    m_weights = DiscriminantScoretron::defaultWeights(DiscriminantScoretron::featuresOptimization());
 
     constexpr float minPeakCount = 3.9;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            DiscriminantScoretron::featuresOptimization(),
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
             minPeakCount,
             threadCount,
-            useExtendedScores,
-            useNeuralNetworkScores,
             useTopNIntegrationsParameter,
             uniqueMsScanInfos,
             m_weights,
@@ -497,10 +499,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     QMap<int, int> fdrVsCounts;
     QVector<float> weights;
     e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+        DiscriminantScoretron::featuresOptimization(),
         m_candidateScorePairs,
         m_pythiaParameters,
-        useExtendedScores,
-        useNeuralNetworkScores,
         &candidateScoresVecBatchPntrs,
         &fdrVsCounts,
         &weights
@@ -576,9 +577,15 @@ namespace {
 
 // #define WRITE_KARNNN_NORM_TO_FILE
 #ifdef WRITE_KARNNN_NORM_TO_FILE
-            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(cs);
+            karnnNnTarget.scoreVecNormalized = = CandidateScores::selectFeaturesArrayFeatures(
+                    cs->featuresArray,
+                    DiscriminantScoretron::featuresNeuralNetwork()
+                    );
 #else
-        karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+        karnnNnTarget.scoreVecNormalized = CandidateScores::selectFeaturesArrayFeatures(
+            cs->featuresArray,
+            DiscriminantScoretron::featuresNeuralNetwork()
+            );
 #endif
 
             karnnNNTargets.push_back(karnnNnTarget);
