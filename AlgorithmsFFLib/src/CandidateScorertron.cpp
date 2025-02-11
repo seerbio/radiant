@@ -423,7 +423,7 @@ Err CandidateScorertron::calculateScores(
 
 #endif
 
-#define TROUBLE_SHOOT_INTEGRATION
+// #define TROUBLE_SHOOT_INTEGRATION
 #ifdef TROUBLE_SHOOT_INTEGRATION
     if (targetDecoyCandidatePair->peptideStringWithMods() == "TVC(UniMod:4)LPDGSFPSGSEC(UniMod:4)HISGWGVTETGK"
         && targetDecoyCandidatePair->charge() == 3

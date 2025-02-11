@@ -23,6 +23,7 @@ SET(TIMS_CPPSQL_SOURCE "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/t
 SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so")
 
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
+ADD_SUBDIRECTORY("AlgorithmsOptimizersLib")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 ADD_SUBDIRECTORY("Apps/PythiaDIA")
 ADD_SUBDIRECTORY("ChemLib")
