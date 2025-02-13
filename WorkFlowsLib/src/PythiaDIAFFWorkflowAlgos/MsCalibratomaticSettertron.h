@@ -37,6 +37,8 @@ public:
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
 
+    int batchCounter() const;
+
 private:
 
     int calculateNumberOfTranches() const;
@@ -79,6 +81,7 @@ private:
     QVector<float> m_weights;
     QVector<Features> m_featuresCalibration;
 
+    int m_batchCounter;
 
     bool m_excludeDecoys;
 

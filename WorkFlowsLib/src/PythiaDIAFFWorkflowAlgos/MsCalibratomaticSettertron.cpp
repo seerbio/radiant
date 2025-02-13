@@ -21,6 +21,7 @@ MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 , m_targetDecoyCandidatePairManager(nullptr)
 , m_targetDecoyCandidatePairScoretron(nullptr)
 , m_pythiaParameters(nullptr)
+, m_batchCounter(0)
 , m_excludeDecoys(false)
 {}
 
@@ -133,7 +134,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             &targetDecoyCandidatePointersTranched
             ); ree;
 
-    int batchCounter = 0;
+    
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
         QElapsedTimer etBatch;
@@ -212,7 +213,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "Processed batch" << ++batchCounter
+                << "Processed batch" << ++m_batchCounter
                 << "of"
                 << targetDecoyCandidatePointersTranched.size()
                 << etBatch.elapsed()
@@ -320,6 +321,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     m_candidateScorePairs.clear();
     *msCalibratomatic = m_msCalibratomatic;
     ERR_RETURN
+}
+
+int MsCalibratomaticSettertron::batchCounter() const {
+    return m_batchCounter;
 }
 
 int MsCalibratomaticSettertron::calculateNumberOfTranches() const {
