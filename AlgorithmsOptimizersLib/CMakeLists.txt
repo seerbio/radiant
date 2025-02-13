@@ -22,9 +22,13 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/GeneticFeatureSelection.cpp
+        src/OptimizorMsCalibratomatic.cpp
         )
 
 SET(HEADER_FILES
+        src/GeneticFeatureSelection.h
+        src/OptimizorMsCalibratomatic.h
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -48,6 +52,7 @@ FIND_PACKAGE(Qt5 COMPONENTS
         REQUIRED
         )
 
+
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
@@ -56,6 +61,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         FileReadersLib
         UtilsLib
+        WorkFlowsLib
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

@@ -25,6 +25,7 @@ SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/li
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
 ADD_SUBDIRECTORY("AlgorithmsOptimizersLib")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
+ADD_SUBDIRECTORY("Apps/FeatureOptimizerPrime")
 ADD_SUBDIRECTORY("Apps/PythiaDIA")
 ADD_SUBDIRECTORY("ChemLib")
 ADD_SUBDIRECTORY("EigenLib")
