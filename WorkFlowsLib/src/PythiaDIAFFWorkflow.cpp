@@ -33,6 +33,9 @@
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 : m_minTopNMs2Ions(6)
 , m_minTrainingCountTranche(50)
+, m_calibratomaticFeatures(DiscriminantScoretron::featuresCalibration())
+, m_ppmOptimizationFeatures(DiscriminantScoretron::featuresOptimization())
+, m_neuralNetFeatures(DiscriminantScoretron::featuresNeuralNetwork())
 {}
 
 PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
@@ -314,7 +317,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
         MsCalibratomaticSettertron msCalibratomaticSettertron;
         e = msCalibratomaticSettertron.init(
-            DiscriminantScoretron::featuresCalibration(),
+            m_calibratomaticFeatures,
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
@@ -329,7 +332,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
             MsCalibratomaticSettertron msCalibratomaticSettertronBackup;
             e = msCalibratomaticSettertronBackup.init(
-                DiscriminantScoretron::featuresCalibration(),
+                m_calibratomaticFeatures,
                 &m_pythiaParameters,
                 &msReaderPointerAcc,
                 &m_targetDecoyCandidatePairManager,

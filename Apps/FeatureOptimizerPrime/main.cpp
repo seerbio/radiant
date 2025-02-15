@@ -8,7 +8,6 @@
 #include <QDirIterator>
 #include <QElapsedTimer>
 
-#include "OptimizorMsCalibratomatic.h"
 
 using namespace Error;
 
@@ -24,16 +23,6 @@ int main(int argc, char *argv[]) {
         // "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML"
     };
 
-    constexpr int maxGenerations = 20;
-    e = OptimizorMsCalibratomatic::optimize(
-        msDataFilePaths,
-        libFilePath,
-        parametersFilePath,
-        maxGenerations
-        );
-    if (e != eNoError) {
-      qDebug() << "Error optimizing";
-    }
 
 
     return 0;

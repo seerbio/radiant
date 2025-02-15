@@ -1172,6 +1172,53 @@ public:
         ERR_RETURN
     }
 
+    template<typename T>
+    static Err pearsonCorrelation(
+        const Eigen::VectorX<T> &X,
+        const Eigen::VectorX<T> &Y,
+        double *correlation
+        ) {
+
+        ERR_INIT
+
+        const double threshold = 0.000001;
+
+        Eigen::VectorX<double> x = X.template cast<double>();
+        EigenUtils::thresholdVector(threshold, threshold, &x);
+
+        Eigen::VectorX<double> y = Y.template cast<double>();
+        EigenUtils::thresholdVector(threshold, threshold, &y);
+
+        const int n = X.rows();
+
+        e = ErrorUtils::isEqual(x.rows(), y.rows()); ree;
+        e = ErrorUtils::isTrue(n > 0); ree;
+
+        const double sumX = x.sum();
+        const double sumY = y.sum();
+        const double sumXY = x.dot(y);
+        const double sumX2 = x.dot(x);
+        const double sumY2 = y.dot(y);
+        const double numerator = n * sumXY - sumX * sumY;
+        const double denominator = sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+        *correlation = (denominator == 0)
+                     ? 0
+                     : static_cast<double>(numerator) / static_cast<double>(denominator);
+
+        // if (std::isnan(*correlation)) {
+        //     qDebug() << "sumX" << sumX;
+        //     qDebug() << "sumY" << sumY;
+        //     qDebug() << "sumXY" << sumXY;
+        //     qDebug() << "sumX2"<< sumX2;
+        //     qDebug() << "sumY2"<< sumY2;
+        //     qDebug() << "numerator" << numerator;
+        //     qDebug() << "denominator" << denominator;
+        // }
+
+        ERR_RETURN
+    }
+
 
 };
 

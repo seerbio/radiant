@@ -135,6 +135,10 @@ private:
 
     QVector<FragLibReaderRow> m_fragLibReaderRows;
 
+    QVector<Features> m_calibratomaticFeatures;
+    QVector<Features> m_ppmOptimizationFeatures;
+    QVector<Features> m_neuralNetFeatures;
+
 };
 
 

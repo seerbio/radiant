@@ -5,6 +5,8 @@
 #include "PythiaDIAFFWorkflowSharedMethods.h"
 
 #include "DiscriminantScoretron.h"
+#include "EigenUtils.h"
+#include "ErrorUtils.h"
 #include "FDRCLassifierNeuralNet.h"
 #include "MsFrame.h"
 #include "QValueSettertron.h"
@@ -206,6 +208,47 @@ namespace {
         ERR_RETURN
     }
 
+    Err featureSelection(const QVector<FeaturesArray*> &featuresArrayPntrs) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isNotEmpty(featuresArrayPntrs); ree;
+
+        const Eigen::MatrixX<float> mat = EigenUtils::convertQVectorsToEigenMatrix(featuresArrayPntrs);
+
+        QHash<int, bool> columnsToRemove;
+
+        for (int col1 = 0; col1 < mat.cols(); col1++) {
+
+            const Eigen::VectorX<float> v1 = mat.col(col1);
+
+            for (int col2 = col1 + 1; col2 < mat.cols(); col2++) {
+
+                if (columnsToRemove.value(col1)) {
+                    continue;
+                }
+
+                const Eigen::VectorX<float> v2 = mat.col(col2);
+
+                double pearsonsCorr;
+                e = EigenUtils::pearsonCorrelation(v1, v2, &pearsonsCorr); ree;
+
+                if (std::isnan(pearsonsCorr)) {
+                    continue;
+                }
+
+                if (constexpr float threshold = 0.9;  pearsonsCorr >= threshold) {
+                    qDebug() << "PearsonsCorr" << pearsonsCorr << col1 << col2;
+                    columnsToRemove.insert(col2, true);
+                }
+
+            }
+
+        }
+
+        ERR_RETURN
+    }
+
 }//namespace
 Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     const QVector<Features> &features,
@@ -264,6 +307,8 @@ Err PythiaDIAFFWorkflowSharedMethods::processBatch(
     for (const QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*> &pr : featuresArrayTargetVsDecoyPntrs) {
         featuresArrayPntrs.append({pr.first, pr.second});
     }
+
+    // e = featureSelection(featuresArrayPntrs); ree;
 
     e = DiscriminantScoretron::trainLDAClassifier(
             featuresArrayTargetVsDecoyPntrs,

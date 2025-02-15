@@ -27,42 +27,77 @@ private:
     Eigen::MatrixX<int> m_testMatIntEmpty;
 
 
+
 private Q_SLOTS:
 
     void initTestCase();
     void cleanupTestCase();
 
-    void apexesTest();
-    void troughtsTest();
+    static void apexesTest();
+    static void troughtsTest();
 
-    void rowWiseCosineSimilarOfMatricesTest();
-    void rowWiseKLDivergeneceTest();
+    static void rowWiseCosineSimilarOfMatricesTest();
+    static void rowWiseKLDivergeneceTest();
 
-    void removeRowsBelowThresholdTest();
+    static void removeRowsBelowThresholdTest();
 
-    void minMaxScaleVectorTest();
-    void minMaxScaleMatrixTest();
+    static void minMaxScaleVectorTest();
+    static void minMaxScaleMatrixTest();
 
-    void replaceNaNTest();
-    void trimVectorTest();
+    static void replaceNaNTest();
+    static void trimVectorTest();
 
-    void returnIndexNearestToCutoffTest();
-    void calculateRMSETest();
-    void calculateStDevOfVectorTest();
+    static void returnIndexNearestToCutoffTest();
+    static void calculateRMSETest();
+    static void calculateStDevOfVectorTest();
 
-    void returnTopIndexAndValueTest();
-    void returnTopIndexAndValuesTest();
-    void apexIndexesOnlyTest();
+    static void returnTopIndexAndValueTest();
+    static void returnTopIndexAndValuesTest();
+    static void apexIndexesOnlyTest();
 
-    void normalizeVectorTest();
-    void normalizeMatrixTest();
-    void thresholdMatrixTest();
-    void thresholdVectorTest();
+    static void normalizeVectorTest();
+    static void normalizeMatrixTest();
+    static void thresholdMatrixTest();
+    static void thresholdVectorTest();
 
-    void linearRegressionTest();
+    static void linearRegressionTest();
+    static void pearsonsCorrelationTest();
 
 };
 
+
+void EigenUtilsTests::pearsonsCorrelationTest() {
+
+    ERR_INIT
+
+    Eigen::VectorX<int> testVec1(5);
+    testVec1 << 1, 2, 3, 4, 5;
+
+    Eigen::VectorX<int> testVec2(5);
+    testVec2 << 2, 4, 6, 8, 10;
+
+    double corr = 0;
+    e = EigenUtils::pearsonCorrelation(
+        testVec1,
+        testVec2,
+        &corr
+        );
+    QCOMPARE(e, eNoError);
+    QCOMPARE(corr, 1);
+
+    Eigen::VectorX<int> testVec3(5);
+    testVec3 << 2, 5, 6, 7, 9;
+
+    e = EigenUtils::pearsonCorrelation(
+        testVec1,
+        testVec3,
+        &corr
+        );
+    QCOMPARE(e, eNoError);
+    QVERIFY(MathUtils::tSame(corr, 0.977356));
+    qDebug() << corr;
+
+}
 
 void EigenUtilsTests::linearRegressionTest() {
 

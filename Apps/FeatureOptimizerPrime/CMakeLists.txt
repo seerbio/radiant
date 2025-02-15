@@ -28,7 +28,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Sql
         Qt5::Widgets
         AlgorithmsFFLib
-        AlgorithmsOptimizersLib
         FileReadersLib
         UtilsLib
         WorkFlowsLib
