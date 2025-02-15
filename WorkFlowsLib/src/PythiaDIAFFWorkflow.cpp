@@ -71,6 +71,7 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.calibrationTrainingVolume = 100000;
     // m_pythiaParameters.ionsSharedToReject = 4;
     // m_pythiaParameters.filterLengthIntegration = 7;
     // m_pythiaParameters.maxAnchorColumnIndex = 6;

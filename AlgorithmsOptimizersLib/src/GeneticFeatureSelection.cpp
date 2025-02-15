@@ -91,7 +91,7 @@ namespace {
 
             MsCalibratomatic msCalibratomatic;
             e = msCalibratomaticSettertron.buildCalibration(&msCalibratomatic);
-            *fitness += 100 - msCalibratomaticSettertron.batchCounter();
+            *fitness += msCalibratomaticSettertron.fdrWeightedMean();
         }
 
         ERR_RETURN
@@ -187,13 +187,13 @@ namespace {
             QVector<double> fitnessValues(populationSize);
             for (int i = 0; i < populationSize; ++i) {
                     fitnessFunction(
-                    msDataFilePaths,
-                    population[i],
-                    features,
-                    pythiaParameters,
-                    targetDecoyCandidatePairManager,
-                    &fitnessValues[i]
-                    );
+                        msDataFilePaths,
+                        population[i],
+                        features,
+                        pythiaParameters,
+                        targetDecoyCandidatePairManager,
+                        &fitnessValues[i]
+                        );
 
                 qDebug() << "CURRENT POPULATION:" << qvectorBoolToQVectorInt(population[i]);
                 qDebug() << "CURRENT FITNESS: " << fitnessValues;
@@ -218,7 +218,7 @@ namespace {
             std::cout << "Generation " << generation + 1 << ": Best Fitness = " << bestFitness << std::endl;
 
             for (int i = 0; i < fitnessValues.size(); ++i) {
-                if (fitnessValues[i] == bestFitnessOverall) {
+                if (fitnessValues[i] >= bestFitnessOverall) {
                     for (int j = 0; j < population[i].size(); ++j) {
 
                         if (!population[i][j]) {

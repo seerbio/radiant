@@ -87,7 +87,7 @@ public:
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames
         );
 
-
+    static double weightedFDRMean(const QMap<int, int> &fdrVsCounts);
 };
 
 

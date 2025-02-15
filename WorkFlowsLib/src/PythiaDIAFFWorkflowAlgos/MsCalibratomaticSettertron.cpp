@@ -23,6 +23,7 @@ MsCalibratomaticSettertron::MsCalibratomaticSettertron()
 , m_pythiaParameters(nullptr)
 , m_batchCounter(0)
 , m_excludeDecoys(false)
+, m_fdrWeightedMean(0)
 {}
 
 Err MsCalibratomaticSettertron::init(
@@ -211,6 +212,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
+        m_fdrWeightedMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                 << "Processed batch" << ++m_batchCounter
@@ -218,7 +220,9 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 << targetDecoyCandidatePointersTranched.size()
                 << etBatch.elapsed()
                 << "mSec"
-                << qPrintable(fdrString);
+                << qPrintable(fdrString)
+                << "FDR Weighted Mean"
+                << m_fdrWeightedMean;
 
         if (fdrVsCounts.value(fdrKey) > m_pythiaParameters->calibrationTrainingVolume
             || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
@@ -325,6 +329,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
 
 int MsCalibratomaticSettertron::batchCounter() const {
     return m_batchCounter;
+}
+
+double MsCalibratomaticSettertron::fdrWeightedMean() {
+    return m_fdrWeightedMean;
 }
 
 int MsCalibratomaticSettertron::calculateNumberOfTranches() const {

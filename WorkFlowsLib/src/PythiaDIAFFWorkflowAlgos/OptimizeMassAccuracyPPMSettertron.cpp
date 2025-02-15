@@ -274,12 +274,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
 
-        QVector<float> weightValues;
-        int counter = 0;
-        for (int v : fdrVsCounts.values()) {
-            weightValues.push_back(v * ((10.0 - counter++)/10.0));
-        }
-        const double fdrMean = MathUtils::mean(weightValues);
+        const double fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "ppmTol"

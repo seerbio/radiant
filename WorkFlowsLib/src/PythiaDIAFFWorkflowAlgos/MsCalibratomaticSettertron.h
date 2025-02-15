@@ -39,6 +39,8 @@ public:
 
     int batchCounter() const;
 
+    double fdrWeightedMean();
+
 private:
 
     int calculateNumberOfTranches() const;
@@ -82,6 +84,7 @@ private:
     QVector<Features> m_featuresCalibration;
 
     int m_batchCounter;
+    double m_fdrWeightedMean;
 
     bool m_excludeDecoys;
 

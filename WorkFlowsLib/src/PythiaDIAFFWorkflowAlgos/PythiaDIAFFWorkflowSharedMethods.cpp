@@ -579,3 +579,18 @@ QVector<QVector<MsScanInfo>> msScanInfosesTranced;
 
     ERR_RETURN
 }
+
+double PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(const QMap<int, int> &fdrVsCounts) {
+
+    QVector<float> weightValues;
+
+    int counter = 0;
+    for (int v : fdrVsCounts.values()) {
+        weightValues.push_back(v * ((10.0 - counter++)/10.0));
+    }
+
+    const double fdrMean = MathUtils::mean(weightValues);
+
+    return fdrMean;
+}
+
