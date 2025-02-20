@@ -11,10 +11,12 @@ FIND_PACKAGE(Qt5 COMPONENTS
 )
 
 SET(SOURCE_FILES
+        src/CommandLineParser.cpp
         main.cpp
      )
 
 SET(HEADER_FILES
+    src/CommandLineParser.h
     )
 
 INCLUDE_DIRECTORIES(

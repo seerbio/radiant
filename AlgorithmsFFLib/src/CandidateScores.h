@@ -151,7 +151,6 @@ enum Features {
 
     Ms1IntensityFoundApex100IM,
 
-
     Ms1IntensityFound45,
     Ms1IntensityFoundPreMono,
     Ms1IntensityFoundIso1,
