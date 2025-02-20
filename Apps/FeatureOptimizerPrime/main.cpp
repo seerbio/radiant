@@ -386,7 +386,7 @@ namespace {
                 QSet<int> candidateSet = selectedFeatures;
                 candidateSet.remove(feature);  // Try removing this feature
 
-                if (constexpr double newScore = evaluateModel(candidateSet); newScore > bestNewScore) {
+                if (const double newScore = evaluateModel(candidateSet); newScore > bestNewScore) {
                     bestNewScore = newScore;
                     worstFeature = feature;
                 }

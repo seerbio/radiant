@@ -40,20 +40,6 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         DiscScoresStDev,
         DiscScore1stRunnerUp,
         DiscScore2ndRunnerUp,
-
-        // ScanTimeDeltaAbs,
-        // ScanTimePdAbs,
-        // ScanIonCount,
-
-        // MzFoundStDev1,
-        // MzFoundStDev2,
-        // MzFoundStDev3,//170
-        // MzFoundStDev4,
-        // MzFoundStDev5,
-        // MzFoundStDev6,
-
-
-
     };
 
     return baseFeatures;
