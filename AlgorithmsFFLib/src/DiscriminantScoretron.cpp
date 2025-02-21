@@ -76,7 +76,7 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         TotalIntensityLog,
         CosineSimSum100Window1p5X,
         CosineSimSum100Window2X,
-        TargetWindowLocationAbs
+        TargetWindowLocationAbs,
         };
 
     return vec;
@@ -88,6 +88,7 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 CosineSimSum100Top12,
                 CosineSimSum100GreaterThan80,
                 AllignedMaxIndexesCount,
+
                 CosineSim100MS1,
                 CosineSimSpectrumCubed,
                 KlDivSpectrumCubeRoot,
@@ -170,12 +171,12 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 AltTargetKeyIdTimeDeltaCharge2_1,
                 AltTargetKeyIdTimeDeltaCharge3_1,
                 AltTargetKeyIdTimeDeltaCharge4_1,
-                Ms1MzMeanFound100,
-                Ms1MzMeanFoundPreMono,
-                Ms1MzMeanFound100PPM,
-                Ms1MzMeanFoundPreMonoPPM,
-                Ms1MzStDevFound100,
-                Ms1MzStDevFoundPreMono,
+                // Ms1MzMeanFound100,
+                // Ms1MzMeanFoundPreMono,
+                // Ms1MzMeanFound100PPM,
+                // Ms1MzMeanFoundPreMonoPPM,
+                // Ms1MzStDevFound100,
+                // Ms1MzStDevFoundPreMono,
                 Ms1IntensityFound100,
                 Ms1IntensityFound45,
                 Ms1IntensityFoundPreMono,
@@ -221,6 +222,22 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
                 FoundB,
                 FoundY,
                 FoundPercent,
+
+                MzPeakLengthsMean,
+                MzPeakLengthsStd,
+                MzPeakLengthsNorm1,
+                MzPeakLengthsNorm2,
+                MzPeakLengthsNorm3,//120
+                MzPeakLengthsNorm4,
+                MzPeakLengthsNorm5,
+                MzPeakLengthsNorm6,
+                MzPeakLengthsNorm7,
+                MzPeakLengthsNorm8,
+                MzPeakLengthsNorm9,
+                MzPeakLengthsNorm10,
+                MzPeakLengthsNorm11,
+                MzPeakLengthsNorm12,
+
                 MzPPMStd
             };
 
@@ -228,19 +245,24 @@ QVector<Features> DiscriminantScoretron::featuresNeuralNetwork() {
 }
 
 Err DiscriminantScoretron::trainLDAClassifier(
-        const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &targetDecoyCandidateScoresPair,
+        const QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> &_targetDecoyCandidateScoresPair,
         int verbosity,
         QVector<float> *weights
         ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(targetDecoyCandidateScoresPair); ree;
+    e = ErrorUtils::isNotEmpty(_targetDecoyCandidateScoresPair); ree;
 
     QElapsedTimer et;
     et.start();
 
     weights->clear();
+
+    QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> targetDecoyCandidateScoresPair = _targetDecoyCandidateScoresPair;
+    // targetDecoyCandidateScoresPair.resize(
+    //     std::max(targetDecoyCandidateScoresPair.size() / 2, std::min(50, _targetDecoyCandidateScoresPair.size()))
+    //     ); ree;
 
     const QPair<QVector<FeaturesArrayTargets*>, QVector<FeaturesArrayDecoys*>> unzipped
                                                         = ParallelUtils::unZip(targetDecoyCandidateScoresPair);

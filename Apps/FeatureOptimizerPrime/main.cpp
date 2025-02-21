@@ -350,56 +350,7 @@ namespace {
         return features;
     }
 
-    // Mock function to evaluate model performance
-    double evaluateModel(const QSet<int>& featureSet) {
-        // Dummy scoring function: Features closer to {0, 2, 4} are more important
-        double score = 0;
-        for (int feature : featureSet) {
-            if (feature == 0 || feature == 2 || feature == 4) {
-                score += 10;  // More important features contribute more
-            } else {
-                score += 3;   // Less important features contribute less
-            }
-        }
-        return score;
-    }
 
-    // Sequential Backward Selection (SBS)
-    QSet<int> backwardSelection(
-        int num_features,
-        PythiaDIAFFWorkflow *pythiaDiaFFWorkflow
-        ) {
-
-        QSet<int> selectedFeatures;
-        for (int i = 0; i < num_features; ++i) {
-            selectedFeatures.insert(i);
-        }
-
-        double bestScore = evaluateModel(selectedFeatures);
-        QSet<int> bestSubset = selectedFeatures;
-
-        while (selectedFeatures.size() > 1) {
-            int worstFeature = -1;
-            double bestNewScore = -std::numeric_limits<double>::infinity();
-
-            for (int feature : selectedFeatures) {
-                QSet<int> candidateSet = selectedFeatures;
-                candidateSet.remove(feature);  // Try removing this feature
-
-                if (const double newScore = evaluateModel(candidateSet); newScore > bestNewScore) {
-                    bestNewScore = newScore;
-                    worstFeature = feature;
-                }
-            }
-
-            if (worstFeature == -1 || bestNewScore < bestScore) break; // Stop if no improvement
-            selectedFeatures.remove(worstFeature);
-            bestScore = bestNewScore;
-            bestSubset = selectedFeatures;
-        }
-
-        return bestSubset;
-    }
 
 }//namespace
 int main(int argc, char *argv[]) {
@@ -442,6 +393,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    ///// OVERRIDES ////////////////////////////////////////
+    pythiaParameters.calibrationTrainingVolume = 10000000;
+
+
+    ////////////////////////////////////////////////////////
+
     PythiaDIAFFWorkflow pythiaDiaFFWorkflow;
     e = pythiaDiaFFWorkflow.init(
             pythiaParameters,
@@ -453,15 +410,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QSet<int> selected = backwardSelection(
-        num_features,
-        &pythiaDiaFFWorkflow
-        );
 
-    qDebug() << "Selected Features: ";
-    for (int feature : selected) {
-        qDebug() << feature;
-    }
+
 
     // e = pythiaDiaFFWorkflow.processFile(msDataFile);
     // if (e != eNoError) {

@@ -1816,6 +1816,38 @@ namespace {
         ERR_RETURN
     }
 
+    Err setNormPeakLengthScores(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(
+            bestCorrelationResult.bestAnchorColumnIndex,
+            0,
+            ErrorUtilsParam::IncludeThreshold
+            ); ree;
+
+        const int columnCount = bestCorrelationResult.matBlockTrimmedIntensity.cols();
+        QVector<int> peakLengths(columnCount, 0);
+
+        for (int col = 0; col < columnCount; col++) {
+            peakLengths[col] = EigenUtils::nonZeros(bestCorrelationResult.matBlockTrimmedIntensity.col(col));
+        }
+
+        const int anchorPeakLength = peakLengths[bestCorrelationResult.bestAnchorColumnIndex];
+        e = ErrorUtils::isFalse(anchorPeakLength <= 0); ree;
+
+        for (int i = 0; i < peakLengths.size(); i++) {
+            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = peakLengths[i] / anchorPeakLength;
+        }
+
+        candidateScores->featuresArray[MzPeakLengthsMean] = MathUtils::mean(peakLengths);
+        candidateScores->featuresArray[MzPeakLengthsStd] = MathUtils::stDev(peakLengths);
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
@@ -1970,6 +2002,8 @@ Err CandidateScorertron::setCandidateScores(
         m_pythiaParameters.peakCenter,
         candidateScores
         ); ree;
+
+    e = setNormPeakLengthScores(bestCorrelationResult, candidateScores); ree;
 
     ERR_RETURN
 }

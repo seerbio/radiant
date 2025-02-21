@@ -242,18 +242,22 @@ enum Features {
     // CosineSimShadowsToAnchor10,
     // CosineSimShadowsToAnchor11,
     // CosineSimShadowsToAnchor12,
-    // MzPeakLengthsNorm1,
-    // MzPeakLengthsNorm2,
-    // MzPeakLengthsNorm3,//120
-    // MzPeakLengthsNorm4,
-    // MzPeakLengthsNorm5,
-    // MzPeakLengthsNorm6,
-    // MzPeakLengthsNorm7,
-    // MzPeakLengthsNorm8,
-    // MzPeakLengthsNorm9,
-    // MzPeakLengthsNorm10,
-    // MzPeakLengthsNorm11,
-    // MzPeakLengthsNorm12,
+    MzPeakLengthsNorm1,
+    MzPeakLengthsNorm2,
+    MzPeakLengthsNorm3,//120
+    MzPeakLengthsNorm4,
+    MzPeakLengthsNorm5,
+    MzPeakLengthsNorm6,
+    MzPeakLengthsNorm7,
+    MzPeakLengthsNorm8,
+    MzPeakLengthsNorm9,
+    MzPeakLengthsNorm10,
+    MzPeakLengthsNorm11,
+    MzPeakLengthsNorm12,
+
+    MzPeakLengthsMean,
+    MzPeakLengthsStd,
+
     // MzFoundStDev7,
     // MzFoundStDev8,
     // MzFoundStDev9,
@@ -262,6 +266,19 @@ enum Features {
     // MzFoundStDev12,
 
     MonoPreMonoRatio,
+
+    ApexDistanceFromAnchor1,
+    ApexDistanceFromAnchor2,
+    ApexDistanceFromAnchor3,
+    ApexDistanceFromAnchor4,
+    ApexDistanceFromAnchor5,
+    ApexDistanceFromAnchor6,
+    ApexDistanceFromAnchor7,
+    ApexDistanceFromAnchor8,
+    ApexDistanceFromAnchor9,
+    ApexDistanceFromAnchor10,
+    ApexDistanceFromAnchor11,
+    ApexDistanceFromAnchor12,
 
     FeaturesSize
     };
