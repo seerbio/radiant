@@ -432,13 +432,6 @@ int main(int argc, char *argv[]) {
 
     int num_features = 6; // Example: 6 features
 
-    QSet<int> selected = backwardSelection(num_features);
-
-    qDebug() << "Selected Features: ";
-    for (int feature : selected) {
-        qDebug() << feature;
-    }
-
     PythiaParameters pythiaParameters;
     e = PythiaParameterReader::buildPythiaParameters(
             pythiaParamsFilePath,
@@ -458,6 +451,16 @@ int main(int argc, char *argv[]) {
     if (e != eNoError) {
         qDebug() << "Error initializing Pythia Workflow Libraries";
         return 1;
+    }
+
+    QSet<int> selected = backwardSelection(
+        num_features,
+        &pythiaDiaFFWorkflow
+        );
+
+    qDebug() << "Selected Features: ";
+    for (int feature : selected) {
+        qDebug() << feature;
     }
 
     // e = pythiaDiaFFWorkflow.processFile(msDataFile);

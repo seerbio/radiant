@@ -21,7 +21,6 @@
 #include <iostream>
 
 class EIGENLIB_EXPORTS EigenUtils {
-
 public:
 
     /*!
@@ -1171,6 +1170,36 @@ public:
 
         ERR_RETURN
     }
+
+    template<typename T>
+    static Err linearRegression(
+        const Eigen::VectorX<T> x,
+        const Eigen::VectorX<T> y,
+        T *slope,
+        T *intercept,
+        T *stdError,
+        T *pValue
+        ) {
+        ERR_INIT
+
+        e = ErrorUtils::isEqual(x.size(), y.size()); ree;
+
+        QVector<QPair<T, T>> xValuesVsYValues;
+        for (int i = 0; i < x.size(); i++) {
+            xValuesVsYValues.push_back({x.coeff(i), y.coeff(i)});
+        }
+
+        e = linearRegression(
+            xValuesVsYValues,
+            slope,
+            intercept,
+            stdError,
+            pValue
+            ); ree;
+
+        ERR_RETURN
+    }
+
 
     template<typename T>
     static Err pearsonCorrelation(
