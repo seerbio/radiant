@@ -34,7 +34,7 @@ SET(SOURCE_FILES
         src/FragLibTsvReader.cpp
         src/MsReaderParquet.cpp
         src/MsReaderBase.cpp
-        src/MsReaderBrukerTims.cpp
+#        src/MsReaderBrukerTims.cpp
         src/MsReaderMzML.cpp
         src/MsReaderMzMLLazyLoad.cpp
         src/MsReaderMzMLMapped.cpp
@@ -62,7 +62,7 @@ SET(HEADER_FILES
         src/FragLibTsvReader.h
         src/MsReaderParquet.h
         src/MsReaderBase.h
-        src/MsReaderBrukerTims.h
+#        src/MsReaderBrukerTims.h
         src/MsReaderMzML.h
         src/MsReaderMzMLLazyLoad.h
         src/MsReaderMzMLMapped.h
