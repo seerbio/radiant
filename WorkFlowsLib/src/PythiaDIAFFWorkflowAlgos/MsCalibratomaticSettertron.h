@@ -37,13 +37,13 @@ public:
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
 
-    int batchCounter() const;
+    [[nodiscard]] int batchCounter() const;
 
     double fdrWeightedMean();
 
 private:
 
-    int calculateNumberOfTranches() const;
+    [[nodiscard]] int calculateNumberOfTranches(int verbosity) const;
 
     Err honeIRTAndMassCalibration(
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,

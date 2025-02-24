@@ -655,15 +655,18 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
 
         m_calibrationCurveCoEffsAll.erase(terminator, m_calibrationCurveCoEffsAll.end());
     }
-    // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-    //          << "Using" << m_calibrationCurveCoEffsAll.size()
-    //          << "of"
-    //          << ogCoeffsSize
-    //          << "for calibration curve averaging";
+
+    if (m_params.verbosity >= 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Using" << m_calibrationCurveCoEffsAll.size()
+                 << "of"
+                 << ogCoeffsSize
+                 << "for calibration curve averaging";
+    }
 
     for (const QVector<double> &coeffs : m_calibrationCurveCoEffsAll) {
 
-        if (m_params.verbosity > 1) {
+        if (m_params.verbosity >= 1) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                 << coeffs
                 << "Mean:"
@@ -683,12 +686,18 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
 
     m_calibrationCurveCoeffsMS2 = calibrationCoeffsMeans;
 
+    if (m_params.verbosity >= 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Mass calibration coeffs MS2"
+        << m_calibrationCurveCoeffsMS2;
+    }
+
     ERR_RETURN
 }
 
 void MsCalibratomatic::setScanTimeStDev(double val) {
     m_scanTimeStd = val;
-    if (m_params.verbosity > 0) {
+    if (m_params.verbosity >= 0) {
         qDebug()
         << qPrintable(S_GLOBAL_TIMER.elapsed())
         << "ScanTimeStDev has been set to:"

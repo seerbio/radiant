@@ -11,7 +11,15 @@
 #include <QDirIterator>
 #include <QElapsedTimer>
 
+#include "FragLibReader.h"
+#include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h"
 #include "PythiaDIAFFWorkflow.h"
+#include "TargetDecoyCandidatePairManager.h"
+#include "TargetDecoyCandidatePairScoretron.h"
+
+#include <random>
+
+#include "DiscriminantScoretron.h"
 
 using namespace Error;
 
@@ -350,6 +358,144 @@ namespace {
         return features;
     }
 
+    int generateRandomInt(int minInt, int maxInt) {
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dist(minInt, maxInt - 1);
+
+        return dist(gen);
+    }
+
+    QVector<QVector<Features>> generateRandomFeatures(
+        const QVector<Features>& features,
+        int featureCountMin,
+        int featureCountMax,
+        int numberOfFeaturesToGenerate
+        ) {
+
+        QVector<QVector<Features>> featureses;
+        featureses.reserve(numberOfFeaturesToGenerate + 1);
+
+        featureses.push_back(DiscriminantScoretron::featuresCalibration());
+
+        const int featureCount = features.size();
+
+        for (int i = 0; i < numberOfFeaturesToGenerate; i++) {
+
+            const int numberOfFeatures = generateRandomInt(featureCountMin, featureCountMax);
+
+            QVector<Features> featuresBlock(numberOfFeatures);
+
+            QHash<int, bool> featuresHash;
+            for (int i = 0; i < numberOfFeatures; i++) {
+                int randomFeatureIndex = generateRandomInt(0, featureCount);
+                while (featuresHash.contains(randomFeatureIndex)) {
+                    randomFeatureIndex = generateRandomInt(0, featureCount);
+                }
+
+                featuresBlock[i] = features[randomFeatureIndex];
+                featuresHash.insert(randomFeatureIndex, true);
+            }
+
+            featureses.push_back(featuresBlock);
+        }
+
+        return featureses;
+    }
+
+    Err optimizeCalibration(
+        PythiaParameters *pythiaParameters,
+        TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
+        TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
+        MsReaderPointerAcc *msReaderPointerAcc,
+        QVector<QPair<float, QVector<Features>>> *featuresResults
+        ) {
+
+        ERR_INIT
+
+        constexpr int featuresCountMin = 10;
+        constexpr int featuresCountMax = 30;
+        constexpr int maxFeaturesToGenerate = 1e3;
+
+        QVector<QVector<Features>> featuresCombos = generateRandomFeatures(
+            featuresCalibration(),
+            featuresCountMin,
+            featuresCountMax,
+            maxFeaturesToGenerate
+            );
+
+        int counter = 0;
+        for (const QVector<Features>& features : featuresCombos) {
+
+            QElapsedTimer et;
+            et.start();
+
+            MsCalibratomaticSettertron msCalibratomaticSettertron;
+            e = msCalibratomaticSettertron.init(
+                features,
+                pythiaParameters,
+                msReaderPointerAcc,
+                targetDecoyCandidatePairManager,
+                targetDecoyCandidatePairScoretron,
+                false
+                ); ree;
+
+            MsCalibratomatic msCalibratomatic;
+            e = msCalibratomaticSettertron.buildCalibration(&msCalibratomatic); ree;
+
+            qDebug() << counter++ << et.elapsed() << "mSec" << features << msCalibratomaticSettertron.fdrWeightedMean();
+            featuresResults->push_back({static_cast<float>(msCalibratomaticSettertron.fdrWeightedMean()), features});
+        }
+
+
+        ERR_RETURN
+    }
+
+    Err writeResultsToFile(
+        const QString &msDataFilePath,
+        const QVector<QPair<float, QVector<Features>>> &featuresResults
+        ) {
+
+        ERR_INIT
+
+        const int longestFeatureLength = std::max_element(
+            featuresResults.begin(),
+            featuresResults.end(),
+            [](const QPair<float, QVector<Features>> &l, const QPair<float, QVector<Features>> &r) {
+                return l.second.size() < r.second.size();
+            }
+            )->second.size();
+
+        QStringList columnNames = {"Score"};
+        for (int i = 0; i < longestFeatureLength; i++) {
+            columnNames.push_back("Feature" + QString::number(i));
+        }
+
+        const QString filePathDestination = msDataFilePath + ".optResult";
+
+        QFile file(filePathDestination);
+        e = ErrorUtils::isTrue(file.open(QIODevice::WriteOnly)); ree;
+
+        QTextStream stream(&file);
+
+        for (const QString &s : columnNames) {
+            stream << s << "\t";
+        }
+        stream << '\n';
+
+        for (const QPair<float, QVector<Features>> &f : featuresResults) {
+            stream << QString::number(f.first) << "\t";
+            for (int i : f.second) {
+                stream << QString::number(i) << "\t";
+            }
+            stream << '\n';
+        }
+
+        file.close();
+
+        ERR_RETURN
+    }
 
 
 }//namespace
@@ -379,7 +525,7 @@ int main(int argc, char *argv[]) {
     const QString fragLibPath = cliParameters.fragLibFilePath;
     const QString fastaFilePath = cliParameters.fastaFilePath;
     const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
-    const QString msDataFile = cliParameters.msDataFile;
+    const QString msDataFilePath = cliParameters.msDataFile;
 
     int num_features = 6; // Example: 6 features
 
@@ -395,30 +541,68 @@ int main(int argc, char *argv[]) {
 
     ///// OVERRIDES ////////////////////////////////////////
     pythiaParameters.calibrationTrainingVolume = 10000000;
-
-
+    pythiaParameters.verbosity = -1;
+    pythiaParameters.optimizeMode = true;
     ////////////////////////////////////////////////////////
 
-    PythiaDIAFFWorkflow pythiaDiaFFWorkflow;
-    e = pythiaDiaFFWorkflow.init(
-            pythiaParameters,
-            fragLibPath,
-            fastaFilePath
-    );
+    e = ErrorUtils::fileExists(msDataFilePath); ree;
+    MsReaderPointerAcc msReaderPointerAcc;
+    e = msReaderPointerAcc.openFile(msDataFilePath);
     if (e != eNoError) {
-        qDebug() << "Error initializing Pythia Workflow Libraries";
+        qDebug() << "Error reading msDataFilePath";
+        return 1;
+    }
+
+    QVector<FragLibReaderRow> fragLibReaderRows;
+    e = FragLibReader::getFragLibReaderRows(
+        fragLibPath,
+        &fragLibReaderRows
+        );
+    if (e != eNoError) {
+        qDebug() << "Error reading library";
+        return 1;
+    }
+
+    TargetDecoyCandidatePairManager targetDecoyCandidatePairManager;
+    e = targetDecoyCandidatePairManager.init(
+            pythiaParameters,
+            &fragLibReaderRows
+            ); ree;
+    if (e != eNoError) {
+        qDebug() << "Error building target pairs";
+        return 1;
+    }
+
+    TargetDecoyCandidatePairScoretron2 targetDecoyCandidatePairScoretron;
+    e = targetDecoyCandidatePairScoretron.init(
+        pythiaParameters,
+        &msReaderPointerAcc
+        ); ree;
+    if (e != eNoError) {
+        qDebug() << "Error building target scoretron";
+        return 1;
+    }
+
+    QVector<QPair<float, QVector<Features>>> featuresResults;
+    e = optimizeCalibration(
+        &pythiaParameters,
+        &targetDecoyCandidatePairManager,
+        &targetDecoyCandidatePairScoretron,
+        &msReaderPointerAcc,
+        &featuresResults
+        );
+    if (e != eNoError) {
+        qDebug() << "Error during optimization";
+        return 1;
+    }
+
+    e = writeResultsToFile(msDataFilePath, featuresResults);
+    if (e != eNoError) {
+        qDebug() << "writing to disk failed";
         return 1;
     }
 
 
-
-
-    // e = pythiaDiaFFWorkflow.processFile(msDataFile);
-    // if (e != eNoError) {
-    //     qDebug() << msDataFile << "Did not run completely";
-    //     return 1;
-    // }
-    // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMing done in" << et.elapsed() << "mSec";
 
     return 0;
 }

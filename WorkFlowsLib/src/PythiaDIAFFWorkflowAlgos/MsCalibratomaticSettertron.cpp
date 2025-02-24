@@ -86,7 +86,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(m_targetDecoyCandidatePairScoretron->isInit()); ree;
 
-    const int numberOfTranches = calculateNumberOfTranches();
+    const int numberOfTranches = calculateNumberOfTranches(m_pythiaParameters->verbosity);
 
     const QVector<MsScanInfo> uniqueMsScanInfos = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 
@@ -135,7 +135,6 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             &targetDecoyCandidatePointersTranched
             ); ree;
 
-    
     for (const QVector<TargetDecoyCandidatePair*> &tdcp : targetDecoyCandidatePointersTranched) {
 
         QElapsedTimer etBatch;
@@ -214,15 +213,21 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
         m_fdrWeightedMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                << "Processed batch" << ++m_batchCounter
-                << "of"
-                << targetDecoyCandidatePointersTranched.size()
-                << etBatch.elapsed()
-                << "mSec"
-                << qPrintable(fdrString)
-                << "FDR Weighted Mean"
-                << m_fdrWeightedMean;
+        if (m_pythiaParameters->verbosity >= 0) {
+            qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                    << "Processed batch" << ++m_batchCounter
+                    << "of"
+                    << targetDecoyCandidatePointersTranched.size()
+                    << etBatch.elapsed()
+                    << "mSec"
+                    << qPrintable(fdrString)
+                    << "FDR Weighted Mean"
+                    << m_fdrWeightedMean;
+        }
+
+        if (m_pythiaParameters->optimizeMode) {
+            continue;
+        }
 
         if (fdrVsCounts.value(fdrKey) > m_pythiaParameters->calibrationTrainingVolume
             || &tdcp == targetDecoyCandidatePointersTranched.cend() - 1
@@ -270,13 +275,22 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
             candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKeyMassCalMS1)));
             filterMs1CandidateRowsByCorr(&candidateScoresVecBatchPntrsRecal);
             constexpr int recalibrationPointCountMinMS1 = 400;
-            qDebug()<< qPrintable(S_GLOBAL_TIMER.elapsed())
-                << candidateScoresVecBatchPntrsRecal.size()
-                << "found for MS1 Recalibration";
+
+            if (m_pythiaParameters->verbosity > 0) {
+                qDebug()<< qPrintable(S_GLOBAL_TIMER.elapsed())
+                    << candidateScoresVecBatchPntrsRecal.size()
+                    << "found for MS1 Recalibration";
+            }
+
             if (candidateScoresVecBatchPntrsRecal.size() < recalibrationPointCountMinMS1) {
-                qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
+
+                if (m_pythiaParameters->verbosity > 0) {
+                    qWarning() << qPrintable(S_GLOBAL_TIMER.elapsed())
                         << "Skipping MS1 recalibration.  Not enough points found";
+                }
+
                 for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
+
                 *msCalibratomatic = m_msCalibratomatic;
                 m_targetDecoyCandidatePairsTopScores.clear();
                 m_entered.clear();
@@ -320,6 +334,7 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
     }
 
     for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
+
     m_targetDecoyCandidatePairsTopScores.clear();
     m_entered.clear();
     m_candidateScorePairs.clear();
@@ -335,17 +350,19 @@ double MsCalibratomaticSettertron::fdrWeightedMean() {
     return m_fdrWeightedMean;
 }
 
-int MsCalibratomaticSettertron::calculateNumberOfTranches() const {
+int MsCalibratomaticSettertron::calculateNumberOfTranches(int verbosity) const {
 
     const auto sizePerTranche = static_cast<double>(m_pythiaParameters->trancheSizeMax);
     const int numberOfTranches = std::max(static_cast<int>(m_targetDecoyPairPntrs.size() / sizePerTranche), 1);
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "Number of tranches for calibration:" << numberOfTranches
-             << "target count:" << m_targetDecoyPairPntrs.size()
-             << "sizePerTranche:" << static_cast<int>(sizePerTranche);
+
+    if (verbosity > 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Number of tranches for calibration:" << numberOfTranches
+                 << "target count:" << m_targetDecoyPairPntrs.size()
+                 << "sizePerTranche:" << static_cast<int>(sizePerTranche);
+    }
 
     return numberOfTranches;
-
 }
 
 
@@ -455,18 +472,20 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
         m_ms2PPMStDevs.pop_back();
     }
 
-    qDebug()
-    << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "ScanTimeWindow Mean|Median|Min"
-    << MathUtils::mean(m_scanTimeStDevs)
-    << MathUtils::median(m_scanTimeStDevs)
-    << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
+    if (m_pythiaParameters->verbosity >= 0) {
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "ScanTimeWindow Mean|Median|Min"
+        << MathUtils::mean(m_scanTimeStDevs)
+        << MathUtils::median(m_scanTimeStDevs)
+        << *std::min({m_scanTimeStDevs.begin(), m_scanTimeStDevs.end()});
 
-    qDebug()
-    << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "Ms2 ppm Mean|Median"
-    << MathUtils::mean(m_ms2PPMStDevs)
-    << MathUtils::median(m_ms2PPMStDevs);
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Ms2 ppm Mean|Median"
+        << MathUtils::mean(m_ms2PPMStDevs)
+        << MathUtils::median(m_ms2PPMStDevs);
+    }
 
     if (m_msReaderPointerAcc->ptr->isTIMS()) {
         std::sort(m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end());
@@ -475,12 +494,14 @@ Err MsCalibratomaticSettertron::setMsCalibratomaticMetrics() {
             m_ionMobilityStDevs.pop_back();
         }
 
-        qDebug()
-        << qPrintable(S_GLOBAL_TIMER.elapsed())
-        << "ScanTimeWindow Mean|Median|Min"
-        << MathUtils::mean(m_ionMobilityStDevs)
-        << MathUtils::median(m_ionMobilityStDevs)
-        << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+        if (m_pythiaParameters->verbosity >= 0) {
+            qDebug()
+            << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "ScanTimeWindow Mean|Median|Min"
+            << MathUtils::mean(m_ionMobilityStDevs)
+            << MathUtils::median(m_ionMobilityStDevs)
+            << *std::min({m_ionMobilityStDevs.begin(), m_ionMobilityStDevs.end()});
+        }
 
         m_msCalibratomatic.setIonMobilityStDev(m_ionMobilityStDevs.front());
     }
@@ -524,8 +545,6 @@ Err MsCalibratomaticSettertron::recalibrateMzVals(
     e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
     e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Recalibrating mz vals";
-
     QElapsedTimer et;
     et.start();
 
@@ -566,7 +585,9 @@ Err MsCalibratomaticSettertron::recalibrateMzVals(
             ); ree;
     }
 
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Points recalibrated in" << et.elapsed() << "mSec";
+    if (m_pythiaParameters->verbosity > 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Points recalibrated in" << et.elapsed() << "mSec";
+    }
 
     ERR_RETURN
 }
