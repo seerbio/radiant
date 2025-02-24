@@ -148,9 +148,7 @@ enum Features {
     Ms1MzStDevFoundIso2,
     Ms1IntensityFound100,
     Ms1IntensityFoundApex100,
-
     Ms1IntensityFoundApex100IM,
-
     Ms1IntensityFound45,
     Ms1IntensityFoundPreMono,
     Ms1IntensityFoundIso1,
@@ -205,7 +203,6 @@ enum Features {
     CosineSimFullTheo,
     IonsFoundFractionFull,
     CosineSimFullTheoXIonsFoundFractionFull,
-
     // MzFoundMean1PPM,
     // MzFoundMean2PPM,
     // MzFoundMean3PPM,
@@ -254,19 +251,15 @@ enum Features {
     MzPeakLengthsNorm10,
     MzPeakLengthsNorm11,
     MzPeakLengthsNorm12,
-
     MzPeakLengthsMean,
     MzPeakLengthsStd,
-
     // MzFoundStDev7,
     // MzFoundStDev8,
     // MzFoundStDev9,
     // MzFoundStDev10,
     // MzFoundStDev11,
     // MzFoundStDev12,
-
     MonoPreMonoRatio,
-
     ApexDistanceFromAnchor1,
     ApexDistanceFromAnchor2,
     ApexDistanceFromAnchor3,
