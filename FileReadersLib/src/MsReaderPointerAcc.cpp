@@ -71,8 +71,8 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
 
     else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
         rrr(eFunctionNotImplemented);
-        // //TODO uncomment code when ARM is sorted out.
-
+        // // //TODO uncomment code when ARM is sorted out.
+        //
         // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
         // m_useLazyLoading = false;
         //

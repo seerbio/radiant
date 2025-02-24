@@ -72,7 +72,7 @@ SET(HEADER_FILES
         src/QuanReader.h
         src/SpecLibReader.h
         src/toml.hpp
-        ${TIMS_CPPSQL_HEADER}
+#        ${TIMS_CPPSQL_HEADER}
         )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -90,8 +90,8 @@ INCLUDE_DIRECTORIES(
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         ${EIGEN_DIRECTORY}
         ${NANOFLANN_DIRECTORY}
-        ${TIMS_INCLUDE_DIRECTORY}
-        ${TIMS_CPPSQL_DIRECTORY}
+#        ${TIMS_INCLUDE_DIRECTORY}
+#        ${TIMS_CPPSQL_DIRECTORY}
         ${LIBXML2_INCLUDE_DIR}
 )
 
@@ -110,7 +110,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         EigenLib
         UtilsLib
         Parquet::parquet_static
-        ${TIMS_LIB}
+#        ${TIMS_LIB}
         ${LIBXML2_LIBRARIES}
         sqlite3
         )
