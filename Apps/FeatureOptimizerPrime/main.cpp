@@ -409,7 +409,7 @@ namespace {
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
         TargetDecoyCandidatePairScoretron2 *targetDecoyCandidatePairScoretron,
         MsReaderPointerAcc *msReaderPointerAcc,
-        QVector<QPair<float, QVector<Features>>> *featuresResults
+        QVector<std::tuple<float, int, QVector<Features>>> *featuresResults
         ) {
 
         ERR_INIT
@@ -444,8 +444,20 @@ namespace {
             MsCalibratomatic msCalibratomatic;
             e = msCalibratomaticSettertron.buildCalibration(&msCalibratomatic); ree;
 
-            qDebug() << counter++ << et.elapsed() << "mSec" << features << msCalibratomaticSettertron.fdrWeightedMean();
-            featuresResults->push_back({static_cast<float>(msCalibratomaticSettertron.fdrWeightedMean()), features});
+            qDebug()
+            << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << counter++
+            << et.elapsed()
+            << "mSec"
+            << features
+            << msCalibratomaticSettertron.batchCounter()
+            << msCalibratomaticSettertron.fdrWeightedMean();
+
+            featuresResults->push_back({
+                static_cast<float>(msCalibratomaticSettertron.fdrWeightedMean()),
+                msCalibratomaticSettertron.batchCounter(),
+                features
+            });
         }
 
 
@@ -454,20 +466,22 @@ namespace {
 
     Err writeResultsToFile(
         const QString &msDataFilePath,
-        const QVector<QPair<float, QVector<Features>>> &featuresResults
+        const QVector<std::tuple<float, int, QVector<Features>>> &featuresResults
         ) {
 
         ERR_INIT
 
-        const int longestFeatureLength = std::max_element(
+        const auto longestFeatureLengthElement = std::max_element(
             featuresResults.begin(),
             featuresResults.end(),
-            [](const QPair<float, QVector<Features>> &l, const QPair<float, QVector<Features>> &r) {
-                return l.second.size() < r.second.size();
-            }
-            )->second.size();
+            [](const std::tuple<float, int, QVector<Features>> &l, const std::tuple<float, int, QVector<Features>> &r) {
+                // return l.second.size() < r.second.size();
+                return std::get<2>(l).size() < std::get<2>(r).size();
+            });
 
-        QStringList columnNames = {"Score"};
+        const int longestFeatureLength = std::get<2>(*longestFeatureLengthElement).size();
+
+        QStringList columnNames = {"Score", "Iterations"};
         for (int i = 0; i < longestFeatureLength; i++) {
             columnNames.push_back("Feature" + QString::number(i));
         }
@@ -484,9 +498,10 @@ namespace {
         }
         stream << '\n';
 
-        for (const QPair<float, QVector<Features>> &f : featuresResults) {
-            stream << QString::number(f.first) << "\t";
-            for (int i : f.second) {
+        for (const std::tuple<float, int, QVector<Features>> &f : featuresResults) {
+            stream << QString::number(std::get<0>(f)) << "\t";
+            stream << QString::number(std::get<1>(f)) << "\t";
+            for (int i : std::get<2>(f)) {
                 stream << QString::number(i) << "\t";
             }
             stream << '\n';
@@ -583,7 +598,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QVector<QPair<float, QVector<Features>>> featuresResults;
+    QVector<std::tuple<float, int, QVector<Features>>> featuresResults;
     e = optimizeCalibration(
         &pythiaParameters,
         &targetDecoyCandidatePairManager,

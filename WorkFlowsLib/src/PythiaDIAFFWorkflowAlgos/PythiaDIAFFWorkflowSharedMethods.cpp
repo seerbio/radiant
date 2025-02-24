@@ -493,6 +493,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
         e = ErrorUtils::isNotEmpty(_candidateScores); ree;
 
         QVector<CandidateScores*> candidateScoresFiltered = _candidateScores;
+
         filterDuplicateCandidateScoresByDiscriminantScore(&candidateScoresFiltered);
 
         if(verbosity > 0) {

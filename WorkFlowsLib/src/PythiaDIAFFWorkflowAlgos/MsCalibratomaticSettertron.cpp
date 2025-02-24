@@ -213,9 +213,10 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
         m_fdrWeightedMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
+        ++m_batchCounter;
         if (m_pythiaParameters->verbosity >= 0) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-                    << "Processed batch" << ++m_batchCounter
+                    << "Processed batch" << m_batchCounter
                     << "of"
                     << targetDecoyCandidatePointersTranched.size()
                     << etBatch.elapsed()
