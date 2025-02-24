@@ -6,6 +6,7 @@
 #define PYTHIADIACPP_CANDIDATESCORERTRON_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "CandidateScores.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
@@ -44,8 +45,7 @@ public:
         float minPeakCount,
         float scanTimeRange,
         const QMap<NominalMzMass, QVector<float>> &averagineTable,
-        bool useExtendedScores,
-        bool useNeuralNetworkScores,
+        const QVector<Features> &features,
         bool useTopNIntegrationsParameter,
         XICPeakManager *xicPeakManager,
         MsFrame *msFrameMzTarget,
@@ -115,8 +115,7 @@ private:
 
     QMap<NominalMzMass, QVector<float>> m_averagineTable;;
 
-    bool m_useExtendedScores;
-    bool m_useNeuralNetworkScores;
+    QVector<Features> m_features;
     bool m_useTopNIntegrationsParam;
 
     Q_DISABLE_COPY(CandidateScorertron) class Private;

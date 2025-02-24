@@ -24,6 +24,7 @@ public:
     ~OptimizeMassAccuracyPPMSettertron() = default;
 
     Err initExec(
+        const QVector<Features> &optimzeFeatures,
         MsReaderPointerAcc *msReaderPointerAcc,
         MsCalibratomatic *msCalibratomatic,
         PythiaParameters *pythiaParameters,
@@ -53,6 +54,8 @@ private:
 
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> m_diaTargetFrames;
     QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> m_diaTargetFramesPntrs;
+
+    QVector<Features> m_optimizeFeatures;
 
 };
 

@@ -30,6 +30,21 @@ struct KarnnNNTarget {
     QVector<float> scoreVecNormalized;
 };
 
+struct ResultsSummary {
+    int altPSMCountNeuralNet = -1;
+    int psmCountNeuralNet = -1;
+    int decoyCountNeuralNet = -1;
+    int entrapCountNeuralNet = -1;
+    int psmCountCorrectedFMRNeuralNet = -1;
+    float eFDRNeuralNet = -1.0;
+
+    int psmCountLDA = -1;
+    int decoyCountLDA = -1;
+    int entrapCountLDA = -1;
+    int psmCountCorrectedFMRLDA = -1;
+    float eFDRLDA = -1.0;
+};
+
 class WORKFLOWSLIB_EXPORTS PythiaDIAFFWorkflow {
 
 public:
@@ -80,6 +95,12 @@ public:
     */
     Err processFile(const QString &msDataFilePath);
 
+    Err setCalibratomaticFeatures(const QVector<Features> &features);
+    Err setPPMOptimizationFeatures(const QVector<Features> &features);
+    Err setNeuralNetFeatures(const QVector<Features> &features);
+
+    [[nodiscard]] ResultsSummary resultsSummary() const;
+
 
 private:
 
@@ -98,7 +119,7 @@ private:
         const QString &fastaFilePath,
         int targetCountBelowFDRThresholdOnePercent,
         QVector<CandidateScores*> *candidateScores
-        ) const;
+        );
 
     void filterDecoysOrNot(QVector<CandidateScores*> *candidateScoreClassifierPntrs) const;
 
@@ -135,7 +156,12 @@ private:
 
     QVector<FragLibReaderRow> m_fragLibReaderRows;
 
-};
+    QVector<Features> m_calibratomaticFeatures;
+    QVector<Features> m_ppmOptimizationFeatures;
+    QVector<Features> m_neuralNetFeatures;
 
+    ResultsSummary m_resultsSummary;
+
+};
 
 #endif //PYTHIADIACPP_PYTHIADIAWORKFLOW_H

@@ -27,6 +27,7 @@ public:
     ~MsCalibratomaticSettertron() = default;
 
     Err init(
+        const QVector<Features> &featuresCalibration,
         PythiaParameters *pythiaParameters,
         MsReaderPointerAcc *msReaderPointerAcc,
         TargetDecoyCandidatePairManager *targetDecoyCandidatePairManager,
@@ -36,9 +37,13 @@ public:
 
     Err buildCalibration(MsCalibratomatic *msCalibratomatic);
 
+    [[nodiscard]] int batchCounter() const;
+
+    double fdrWeightedMean();
+
 private:
 
-    int calculateNumberOfTranches() const;
+    [[nodiscard]] int calculateNumberOfTranches(int verbosity) const;
 
     Err honeIRTAndMassCalibration(
         QVector<CandidateScores*> *candidateScoresVecScoredPntrs,
@@ -76,6 +81,10 @@ private:
     QVector<float> m_ionMobilityStDevs;
     QVector<float> m_ms2PPMStDevs;
     QVector<float> m_weights;
+    QVector<Features> m_featuresCalibration;
+
+    int m_batchCounter;
+    double m_fdrWeightedMean;
 
     bool m_excludeDecoys;
 

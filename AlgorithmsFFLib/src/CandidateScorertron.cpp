@@ -91,8 +91,6 @@ CandidateScorertron::CandidateScorertron()
 , d_ptr(QScopedPointer<Private>(new Private))
 , m_minPeakCount(3.9)
 , m_scanTimeRange(0)
-, m_useExtendedScores(false)
-, m_useNeuralNetworkScores(false)
 , m_useTopNIntegrationsParam(false)
 {}
 
@@ -106,8 +104,7 @@ Err CandidateScorertron::init(
     float minPeakCount,
     float scanTimeRange,
     const QMap<NominalMzMass, QVector<float>> &averagineTable,
-    bool useExtendedScores,
-    bool useNeuralNetworkScores,
+    const QVector<Features> &features,
     bool useTopNIntegrationsParameter,
     XICPeakManager *xicPeakManager,
     MsFrame *msFrameMzTarget,
@@ -123,6 +120,7 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
     e = ErrorUtils::isTrue(msFrameMS1->isValid()); ree;
     e = ErrorUtils::isNotEmpty(mzTargetKey); ree;
+    e = ErrorUtils::isNotEmpty(features); ree;
     e = ErrorUtils::isNotEmpty(averagineTable); ree;
     e = ErrorUtils::isFalse(MathUtils::tZero(scanTimeRange)); ree;
     e = ErrorUtils::isAboveThreshold(
@@ -146,8 +144,7 @@ Err CandidateScorertron::init(
     m_scanTimeRange = scanTimeRange;
     m_averagineTable = averagineTable;
     m_msFrameMS1 = msFrameMS1;
-    m_useExtendedScores = useExtendedScores;
-    m_useNeuralNetworkScores = useNeuralNetworkScores;
+    m_features = features;
     m_minPeakCount = minPeakCount;
     m_useTopNIntegrationsParam = useTopNIntegrationsParameter;
 
@@ -360,10 +357,10 @@ Err CandidateScorertron::calculateScores(
             &cs
             ); ree;
 
-        const FeaturesArray fa = DiscriminantScoretron::scoreVectorLogic(
-            m_useExtendedScores,
-            m_useNeuralNetworkScores,
-            &cs);
+        const FeaturesArray fa = CandidateScores::selectFeaturesArrayFeatures(
+            cs.featuresArray,
+            m_features
+            );
 
         candidateScoresFeatures.push_back(cs);
         candidateScoresFeatureArrays.push_back(fa);
@@ -449,23 +446,14 @@ Err CandidateScorertron::calculateScores(
             << b.second.frameIndexStart << ","
             << b.second.frameIndexEnd
             << b.first
-            << DiscriminantScoretron::scoreVectorLogic(true, false, &b.second)
             << bestCorrelationResultsInds.value(b.second.frameIndexStart).apexStarts
             << "SDLKFJSDL";
             //
             // std::cout << bestCorrelationResultsInds.value(b.second.frameIndexStart).matBlockTrimmedIntensity << std::endl;;
             // std::cout << " **************** " << std::endl;
-
         }
 
         qDebug() << weights;
-
-        const QVector<float> arr1 = DiscriminantScoretron::scoreVectorLogic(true, false, &candidateScoresPairs[0].second);
-        const QVector<float> arr2 = DiscriminantScoretron::scoreVectorLogic(true, false, &candidateScoresPairs[1].second);
-
-        for (int i = 0; i < weights.size(); ++i) {
-            qDebug() << i+1 << weights.at(i) << arr1.at(i) << arr2.at(i) << "SDLKFJS";
-        }
 
         const QString &intensityVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/intensity.csv");
         const QString &prodVecPath = QStringLiteral("/home/andrewnichols/Repos/Graphing/prod.csv");
@@ -1828,6 +1816,38 @@ namespace {
         ERR_RETURN
     }
 
+    Err setNormPeakLengthScores(
+        const BestCorrelationResult &bestCorrelationResult,
+        CandidateScores *candidateScores
+        ) {
+
+        ERR_INIT
+
+        e = ErrorUtils::isAboveThreshold(
+            bestCorrelationResult.bestAnchorColumnIndex,
+            0,
+            ErrorUtilsParam::IncludeThreshold
+            ); ree;
+
+        const int columnCount = bestCorrelationResult.matBlockTrimmedIntensity.cols();
+        QVector<int> peakLengths(columnCount, 0);
+
+        for (int col = 0; col < columnCount; col++) {
+            peakLengths[col] = EigenUtils::nonZeros(bestCorrelationResult.matBlockTrimmedIntensity.col(col));
+        }
+
+        const int anchorPeakLength = peakLengths[bestCorrelationResult.bestAnchorColumnIndex];
+        e = ErrorUtils::isFalse(anchorPeakLength <= 0); ree;
+
+        for (int i = 0; i < peakLengths.size(); i++) {
+            candidateScores->featuresArray[Features::MzPeakLengthsNorm1 + i] = peakLengths[i] / anchorPeakLength;
+        }
+
+        candidateScores->featuresArray[MzPeakLengthsMean] = MathUtils::mean(peakLengths);
+        candidateScores->featuresArray[MzPeakLengthsStd] = MathUtils::stDev(peakLengths);
+
+        ERR_RETURN
+    }
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
@@ -1982,6 +2002,8 @@ Err CandidateScorertron::setCandidateScores(
         m_pythiaParameters.peakCenter,
         candidateScores
         ); ree;
+
+    e = setNormPeakLengthScores(bestCorrelationResult, candidateScores); ree;
 
     ERR_RETURN
 }

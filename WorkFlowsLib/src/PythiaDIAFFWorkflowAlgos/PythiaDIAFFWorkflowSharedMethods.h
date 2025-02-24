@@ -47,10 +47,9 @@ public:
         );
 
     static Err processBatch(
+            const QVector<Features> &features,
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
             const PythiaParameters &pythiaParameters,
-            bool useExtendedScores,
-            bool useNeuralNetworkScores,
             QVector<CandidateScores*> *candidateScoresVecBatchPntrs,
             QMap<int, int> *fdrVsCounts,
             QVector<float> *weights
@@ -88,7 +87,7 @@ public:
         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints>> *diaTargetFrames
         );
 
-
+    static double weightedFDRMean(const QMap<int, int> &fdrVsCounts);
 };
 
 

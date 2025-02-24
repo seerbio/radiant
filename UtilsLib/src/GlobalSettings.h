@@ -156,7 +156,7 @@ public:
     const QString PRECURSOR_IONS = QStringLiteral("precursorIons");
 
     const float TIGHT_1_FRACTION = 0.45;
-    const float TIGHT_2_FRACTION = 0.2;
+    const float TIGHT_2_FRACTION = 0.20;
 
     const int NUMBER_OF_THE_BEAST = 666;
 

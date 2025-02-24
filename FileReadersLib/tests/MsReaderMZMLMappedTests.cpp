@@ -103,8 +103,6 @@ void MsReaderMZMLMappedTests::troubleShoot() {
         qDebug() << it.key() << scanPointsInFrame;
     }
 
-
-
 }
 
 

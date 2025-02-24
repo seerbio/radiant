@@ -33,6 +33,9 @@
 PythiaDIAFFWorkflow::PythiaDIAFFWorkflow()
 : m_minTopNMs2Ions(6)
 , m_minTrainingCountTranche(50)
+, m_calibratomaticFeatures(DiscriminantScoretron::featuresCalibration())
+, m_ppmOptimizationFeatures(DiscriminantScoretron::featuresOptimization())
+, m_neuralNetFeatures(DiscriminantScoretron::featuresNeuralNetwork())
 {}
 
 PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
@@ -71,6 +74,7 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.calibrationTrainingVolume = 100000;
     // m_pythiaParameters.ionsSharedToReject = 4;
     // m_pythiaParameters.filterLengthIntegration = 7;
     // m_pythiaParameters.maxAnchorColumnIndex = 6;
@@ -310,15 +314,17 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
 
     {
+
         MsCalibratomaticSettertron msCalibratomaticSettertron;
         e = msCalibratomaticSettertron.init(
+            m_calibratomaticFeatures,
             &m_pythiaParameters,
             &msReaderPointerAcc,
             &m_targetDecoyCandidatePairManager,
             &m_targetDecoyCandidatePairScoretron,
             false
             ); ree;
-        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic);
+        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
 
         if (e != eNoError) {
 
@@ -326,13 +332,14 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
 
             MsCalibratomaticSettertron msCalibratomaticSettertronBackup;
             e = msCalibratomaticSettertronBackup.init(
+                m_calibratomaticFeatures,
                 &m_pythiaParameters,
                 &msReaderPointerAcc,
                 &m_targetDecoyCandidatePairManager,
                 &m_targetDecoyCandidatePairScoretron,
                 true
                 ); ree;
-            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic);
+            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic); ree;
         }
     }
 
@@ -355,12 +362,13 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     else {
         OptimizeMassAccuracyPPMSettertron msOptimizeMassAccuracyPPMSettertron;
         e = msOptimizeMassAccuracyPPMSettertron.initExec(
-             &msReaderPointerAcc,
-             &m_msCalibratomatic,
-             &m_pythiaParameters,
-             &m_targetDecoyCandidatePairScoretron,
-             &m_targetDecoyPairPntrs
-             ); ree;
+            m_ppmOptimizationFeatures,
+            &msReaderPointerAcc,
+            &m_msCalibratomatic,
+            &m_pythiaParameters,
+            &m_targetDecoyCandidatePairScoretron,
+            &m_targetDecoyPairPntrs
+            ); ree;
     }
 
     int targetCountBelowFDRThreshold;
@@ -439,6 +447,31 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     ERR_RETURN
 }
 
+Err PythiaDIAFFWorkflow::setCalibratomaticFeatures(const QVector<Features> &features) {
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(features); ree;
+    m_calibratomaticFeatures = features;
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::setPPMOptimizationFeatures(const QVector<Features> &features) {
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(features); ree;
+    m_ppmOptimizationFeatures = features;
+    ERR_RETURN
+}
+
+Err PythiaDIAFFWorkflow::setNeuralNetFeatures(const QVector<Features> &features) {
+    ERR_INIT
+    e = ErrorUtils::isNotEmpty(features); ree;
+    m_neuralNetFeatures = features;
+    ERR_RETURN
+}
+
+ResultsSummary PythiaDIAFFWorkflow::resultsSummary() const {
+    return m_resultsSummary;
+}
+
 Err PythiaDIAFFWorkflow::mainAnalysis(
         const MsReaderPointerAcc *msReaderPointerAcc,
         int *targetCountBelowFDRThresholdOnePercent
@@ -450,8 +483,6 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
 
     m_candidateScorePairs.clear();
 
-    constexpr bool useExtendedScores = true;
-    constexpr bool useNeuralNetworkScores = false;
     constexpr int topNMs2IonsMainAnalysis = 12;
     constexpr bool useTopNIntegrationsParameter = false;
 
@@ -474,17 +505,16 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
                           ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters.threadCount)
                           : m_pythiaParameters.threadCount;
 
-    m_weights = DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores);
+    m_weights = DiscriminantScoretron::defaultWeights(m_ppmOptimizationFeatures);
 
     constexpr float minPeakCount = 3.9;
     m_candidateScorePairs.clear();
     e = m_targetDecoyCandidatePairScoretron.scoreTargetDecoyPairs(
+            m_ppmOptimizationFeatures,
             topNMs2IonsMainAnalysis,
             m_msCalibratomatic,
             minPeakCount,
             threadCount,
-            useExtendedScores,
-            useNeuralNetworkScores,
             useTopNIntegrationsParameter,
             uniqueMsScanInfos,
             m_weights,
@@ -497,10 +527,9 @@ Err PythiaDIAFFWorkflow::mainAnalysis(
     QMap<int, int> fdrVsCounts;
     QVector<float> weights;
     e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+        m_ppmOptimizationFeatures,
         m_candidateScorePairs,
         m_pythiaParameters,
-        useExtendedScores,
-        useNeuralNetworkScores,
         &candidateScoresVecBatchPntrs,
         &fdrVsCounts,
         &weights
@@ -559,8 +588,9 @@ namespace {
     }
 
     Err buildKarnnNNTargetsNormalized(
-            const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
-            QVector<KarnnNNTarget> *karnnNNTargetsNorm
+        const QVector<Features> &neuralNetFeatures,
+        const QVector<CandidateScores*> &candidateScoresTargetsAndDecoysFDRFiltered,
+        QVector<KarnnNNTarget> *karnnNNTargetsNorm
     ){
 
         ERR_INIT
@@ -576,9 +606,15 @@ namespace {
 
 // #define WRITE_KARNNN_NORM_TO_FILE
 #ifdef WRITE_KARNNN_NORM_TO_FILE
-            karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(cs);
+            karnnNnTarget.scoreVecNormalized = = CandidateScores::selectFeaturesArrayFeatures(
+                    cs->featuresArray,
+                    DiscriminantScoretron::featuresNeuralNetwork()
+                    );
 #else
-        karnnNnTarget.scoreVecNormalized = DiscriminantScoretron::scoreVectorLogic(true, true, cs);
+        karnnNnTarget.scoreVecNormalized = CandidateScores::selectFeaturesArrayFeatures(
+            cs->featuresArray,
+            neuralNetFeatures
+            );
 #endif
 
             karnnNNTargets.push_back(karnnNnTarget);
@@ -850,9 +886,10 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     QVector<KarnnNNTarget> karnnNNTargetsNorm;
     e = buildKarnnNNTargetsNormalized(
-            candidateScoresTargetsAndDecoysNeuralNet,
-            &karnnNNTargetsNorm
-            ); ree;
+        m_neuralNetFeatures,
+        candidateScoresTargetsAndDecoysNeuralNet,
+        &karnnNNTargetsNorm
+        ); ree;
 
     QVector<KarnnNNTarget> karnnNNTargetsNormTrain;
     e = subsetKarnnNNTargetsForTraining(
@@ -943,7 +980,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         const QString &fastaFilePath,
         int targetCountBelowFDRThresholdOnePercent,
         QVector<CandidateScores*> *candidateScores
-        ) const {
+        ) {
 
     ERR_INIT
 
@@ -1038,6 +1075,13 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             << "| Counter FMR Corrected:" << fmrCorrectCount
             << "| Entrap%:" << entrap / static_cast<double>(counter);
 
+    m_resultsSummary.altPSMCountNeuralNet = targetCountBelowFDRThresholdOnePercent;
+    m_resultsSummary.psmCountNeuralNet = counter;
+    m_resultsSummary.decoyCountNeuralNet = decoys;
+    m_resultsSummary.entrapCountNeuralNet = entrap;
+    m_resultsSummary.psmCountCorrectedFMRNeuralNet = fmrCorrectCount;
+    m_resultsSummary.eFDRNeuralNet = entrap / static_cast<double>(counter);
+
     counter = 0;
     decoys = 0;
     entrap = 0;
@@ -1081,6 +1125,12 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             << "| Entrap:" << entrap
             << "| Counter FMR Corrected:" << fmrCorrectCount
             << "| Entrap%:" << entrap / static_cast<double>(counter);
+
+    m_resultsSummary.psmCountLDA = counter;
+    m_resultsSummary.decoyCountLDA = decoys;
+    m_resultsSummary.entrapCountLDA = entrap;
+    m_resultsSummary.psmCountCorrectedFMRLDA = fmrCorrectCount;
+    m_resultsSummary.eFDRLDA = entrap / static_cast<double>(counter);
 #endif
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";

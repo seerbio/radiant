@@ -81,6 +81,7 @@ struct PythiaParameters{
     bool writePythiaDIA = true;
     bool reannotate = false;
     bool useLazyLoading = false;
+    bool optimizeMode = false;
 
     //[LibraryParams]
     int chargeStateMin = -1;

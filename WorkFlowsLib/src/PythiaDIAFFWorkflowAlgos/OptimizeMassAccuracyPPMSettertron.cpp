@@ -26,6 +26,7 @@ OptimizeMassAccuracyPPMSettertron::OptimizeMassAccuracyPPMSettertron()
 {}
 
 Err OptimizeMassAccuracyPPMSettertron::initExec(
+    const QVector<Features> &optimzeFeatures,
     MsReaderPointerAcc *msReaderPointerAcc,
     MsCalibratomatic *msCalibratomatic,
     PythiaParameters *pythiaParameters,
@@ -39,7 +40,7 @@ Err OptimizeMassAccuracyPPMSettertron::initExec(
     e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
     e = ErrorUtils::isTrue(targetDecoyCandidatePairScoretron->isInit()); ree;
     e = ErrorUtils::isFalse(targetDecoyPairPntrs->isEmpty()); ree;
-
+    e = ErrorUtils::isNotEmpty(optimzeFeatures); ree;
     e = ErrorUtils::isTrue(msCalibratomatic->isInitRT()); eee_absorb;
 
     m_msReaderPointerAcc = msReaderPointerAcc;
@@ -47,6 +48,7 @@ Err OptimizeMassAccuracyPPMSettertron::initExec(
     m_pythiaParameters = pythiaParameters;
     m_targetDecoyCandidatePairScoretron = targetDecoyCandidatePairScoretron;
     m_targetDecoyPairPntrs = targetDecoyPairPntrs;
+    m_optimizeFeatures = optimzeFeatures;
 
     optimizePPM();
 
@@ -240,22 +242,19 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
                       ? std::min(uniqueMsScanInfos.size() * splitter, m_pythiaParameters->threadCount)
                       : m_pythiaParameters->threadCount;
 
-        constexpr bool useExtendedScores = true;
-        constexpr bool useNeuralNetworkScores = false;
         constexpr bool useTopNIntegrationsParameter = true;
         constexpr float minPeakCountOptimization = 3.9;
         constexpr int topNMS2Ions = 12;
         m_candidateScorePairs.clear();
         e = m_targetDecoyCandidatePairScoretron->scoreTargetDecoyPairs(
+                m_optimizeFeatures,
                 topNMS2Ions,
                 *m_msCalibratomatic,
                 minPeakCountOptimization,
                 threadCount,
-                useExtendedScores,
-                useNeuralNetworkScores,
                 useTopNIntegrationsParameter,
                 mzTargetKeyVsTurboXicPntrs,
-                DiscriminantScoretron::defaultWeights(useExtendedScores, useNeuralNetworkScores),
+                DiscriminantScoretron::defaultWeights(m_optimizeFeatures),
                 &mzTargetKeyVsTargetDecoyCandidatePointers,
                 &m_candidateScorePairs
                 ); ree
@@ -264,10 +263,9 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         QMap<int, int> fdrVsCounts;
         QVector<float> weights;
         e = PythiaDIAFFWorkflowSharedMethods::processBatch(
+            m_optimizeFeatures,
             m_candidateScorePairs,
             *m_pythiaParameters,
-            useExtendedScores,
-            useNeuralNetworkScores,
             &candidateScoresVecBatchPntrs,
             &fdrVsCounts,
             &weights
@@ -276,12 +274,7 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         QString fdrString;
         e = FDRCLassifierNeuralNet::outPutFDRCounts(fdrVsCounts, &fdrString); ree;
 
-        QVector<float> weightValues;
-        int counter = 0;
-        for (int v : fdrVsCounts.values()) {
-            weightValues.push_back(v * ((10.0 - counter++)/10.0));
-        }
-        const double fdrMean = MathUtils::mean(weightValues);
+        const double fdrMean = PythiaDIAFFWorkflowSharedMethods::weightedFDRMean(fdrVsCounts);
 
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                  << "ppmTol"

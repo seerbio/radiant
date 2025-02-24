@@ -84,7 +84,7 @@ namespace {
         const double mean = MathUtils::mean(diffs);
         const double stDev = MathUtils::stDev(diffs);
 
-        if (verbosity > -1) {
+        if (verbosity > 0) {
             if (metricType == MetricType::IRT) {
                 qDebug()
                 << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -394,7 +394,7 @@ namespace {
         const double meanReCal = MathUtils::mean(ppmReCals);
         const double stDevReCal = MathUtils::stDev(ppmReCals);
 
-        if (verbosity >= 0) {
+        if (verbosity > 0) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Mz Cal Metrics: rmse" << rmse;
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "meanOG PPM" << meanOriginal << "stDevOG PPM" << stDevOriginal;
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "meanReCal PPM" << meanReCal << "stDevReCal PPM" << stDevReCal;
@@ -655,15 +655,18 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
 
         m_calibrationCurveCoEffsAll.erase(terminator, m_calibrationCurveCoEffsAll.end());
     }
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "Using" << m_calibrationCurveCoEffsAll.size()
-             << "of"
-             << ogCoeffsSize
-             << "for calibration curve averaging";
+
+    if (m_params.verbosity >= 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+                 << "Using" << m_calibrationCurveCoEffsAll.size()
+                 << "of"
+                 << ogCoeffsSize
+                 << "for calibration curve averaging";
+    }
 
     for (const QVector<double> &coeffs : m_calibrationCurveCoEffsAll) {
 
-        if (m_params.verbosity > 1) {
+        if (m_params.verbosity >= 1) {
             qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
                 << coeffs
                 << "Mean:"
@@ -683,22 +686,30 @@ Err MsCalibratomatic::setCalibrationCoeffsUsingAllMeans() {
 
     m_calibrationCurveCoeffsMS2 = calibrationCoeffsMeans;
 
+    if (m_params.verbosity >= 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "Mass calibration coeffs MS2"
+        << m_calibrationCurveCoeffsMS2;
+    }
+
     ERR_RETURN
 }
 
 void MsCalibratomatic::setScanTimeStDev(double val) {
     m_scanTimeStd = val;
-    qDebug()
-    << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "ScanTimeStDev has been set to:"
-    << scanTimeStDev()
-    << "seconds";
+    if (m_params.verbosity >= 0) {
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "ScanTimeStDev has been set to:"
+        << scanTimeStDev()
+        << "seconds";
 
-    qDebug()
-    << qPrintable(S_GLOBAL_TIMER.elapsed())
-    << "ScanTimeStDev x 3:"
-    << scanTimeStDev(m_params.scanTimeWindowStDevs)
-    << "seconds";
+        qDebug()
+        << qPrintable(S_GLOBAL_TIMER.elapsed())
+        << "ScanTimeStDev x 3:"
+        << scanTimeStDev(m_params.scanTimeWindowStDevs)
+        << "seconds";
+    }
 }
 
 void MsCalibratomatic::setIonMobilityStDev(double val) {
@@ -718,5 +729,7 @@ void MsCalibratomatic::setIonMobilityStDev(double val) {
 
 void MsCalibratomatic::setMzStDevMS2(double val) {
     m_mzStDevMS2 = val;
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MzStdDevMS2 has been set to:" << m_mzStDevMS2;
+    if (m_params.verbosity > 0) {
+        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MzStdDevMS2 has been set to:" << m_mzStDevMS2;
+    }
 }
