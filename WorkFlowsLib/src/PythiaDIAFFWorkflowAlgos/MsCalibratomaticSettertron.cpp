@@ -238,6 +238,11 @@ Err MsCalibratomaticSettertron::buildCalibration(MsCalibratomatic *msCalibratoma
                 candidateScoresVecBatchPntrsRecal.resize(std::min(candidateScoresVecBatchPntrsRecal.size(), fdrVsCounts.value(fdrKey)));
             }
 
+            if (candidateScoresVecBatchPntrsRecal.isEmpty()) {
+                for (TurboXIC* turboXic : mzTargetKeyVsTurboXicPntrs) {delete turboXic;}
+                rrr(eValueError);
+            }
+
             QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
             e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                     MSLevelEnum::MS2,

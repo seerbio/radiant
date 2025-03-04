@@ -324,7 +324,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             &m_targetDecoyCandidatePairScoretron,
             false
             ); ree;
-        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic); ree;
+        e = msCalibratomaticSettertron.buildCalibration(&m_msCalibratomatic);
 
         if (e != eNoError) {
 
