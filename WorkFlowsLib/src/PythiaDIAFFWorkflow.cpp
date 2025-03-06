@@ -339,7 +339,11 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
                 &m_targetDecoyCandidatePairScoretron,
                 true
                 ); ree;
-            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic); ree;
+            e = msCalibratomaticSettertronBackup.buildCalibration(&m_msCalibratomatic);
+            if (e != eNoError) {
+                qWarning() << "Could not find enough significant PSMs for calibration";
+                eee_absorb;
+            }
         }
     }
 
