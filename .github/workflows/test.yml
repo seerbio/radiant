@@ -3,7 +3,7 @@ on: [pull_request]
 jobs:
   test-x86_64:
     name: Test Container (x86_64)
-    runs-on: [self-hosted, X64]
+    runs-on: [self-hosted, aws-master, X64]
     steps:
       - uses: actions/checkout@v2
       - name: container-test
@@ -11,7 +11,7 @@ jobs:
 
   test-aarch64:
     name: Test Container (aarch64)
-    runs-on: [self-hosted, ARM64]
+    runs-on: [self-hosted, aws-master, ARM64]
     steps:
       - uses: actions/checkout@v2
       - name: container-test
