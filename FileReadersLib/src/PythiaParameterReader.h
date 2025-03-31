@@ -20,6 +20,7 @@ namespace PythiaParameterReaderConstants {
     extern const QString FILEREADERSLIB_EXPORTS kWritePythiaDIA;
     extern const QString FILEREADERSLIB_EXPORTS kUseLazyLoading;
     extern const QString FILEREADERSLIB_EXPORTS kReannotate;
+    extern const QString FILEREADERSLIB_EXPORTS kShortReport;
 
     extern const QString FILEREADERSLIB_EXPORTS kLibraryParams;
     extern const QString FILEREADERSLIB_EXPORTS kChargeStateMin;
@@ -82,6 +83,7 @@ struct PythiaParameters{
     bool reannotate = false;
     bool useLazyLoading = false;
     bool optimizeMode = false;
+    bool shortReport = false;
 
     //[LibraryParams]
     int chargeStateMin = -1;
@@ -184,6 +186,7 @@ struct PythiaParameters{
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kWritePythiaDIA) << writePythiaDIA;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kUseLazyLoading) << useLazyLoading;
         qDebug() << qPrintable(PythiaParameterReaderConstants:: kReannotate) << reannotate;
+        qDebug() << qPrintable(PythiaParameterReaderConstants:: kShortReport) << shortReport;
 
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kLibraryParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kChargeStateMin) << chargeStateMin;

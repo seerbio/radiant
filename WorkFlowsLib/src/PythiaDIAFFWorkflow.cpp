@@ -74,6 +74,7 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.shortReport = true;
     // m_pythiaParameters.calibrationTrainingVolume = 100000;
     // m_pythiaParameters.ionsSharedToReject = 4;
     // m_pythiaParameters.filterLengthIntegration = 7;
@@ -277,9 +278,26 @@ namespace {
 
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
+        bool writeShortReport,
         MsReaderPointerAcc *msReaderPointerAcc
         ) {
         ERR_INIT
+
+        if (writeShortReport) {
+
+            QVector<CandidateScoresReaderRowTrunc> candidateScoreReaderRows;
+            std::transform(
+                    candidateScoresPntrs.begin(),
+                    candidateScoresPntrs.end(),
+                    std::back_inserter(candidateScoreReaderRows),
+                    [](const CandidateScores *cs){return CandidateScoresReaderRowTrunc::buildCandidateScoresReaderRow(cs);}
+                    );
+
+            const QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+            e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+
+            ERR_RETURN
+        }
 
         QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
         std::transform(
@@ -438,6 +456,7 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     if (m_pythiaParameters.writePythiaDIA) {
         e = writePythiaDIA(
             candidateScoreClassifierPntrs,
+            m_pythiaParameters.shortReport,
             &msReaderPointerAcc
             ); ree;
     }
