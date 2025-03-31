@@ -21,6 +21,7 @@ namespace PythiaParameterReaderConstants {
     const QString kWritePythiaDIA = QStringLiteral("writePythiaDIA");
     const QString kUseLazyLoading = QStringLiteral("useLazyLoading");
     const QString kReannotate = QStringLiteral("reannotate");
+    const QString kShortReport = QStringLiteral("shortReport");
 
     const QString kLibraryParams = QStringLiteral("LibraryParams");
     const QString kChargeStateMin = QStringLiteral("chargeStateMin");
@@ -115,6 +116,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->useLazyLoading = parser[kGeneral.toStdString()][kUseLazyLoading.toStdString()].value_or(false);
     pythiaParameters->writePythiaDIA = parser[kGeneral.toStdString()][kWritePythiaDIA.toStdString()].value_or(true);
     pythiaParameters->reannotate = parser[kGeneral.toStdString()][kReannotate.toStdString()].value_or(false);
+    pythiaParameters->shortReport = parser[kGeneral.toStdString()][kShortReport.toStdString()].value_or(false);
 
     const auto libraryNode =  parser[kLibraryParams.toStdString()];
     pythiaParameters->chargeStateMin = libraryNode[kChargeStateMin.toStdString()].value_or(0);
