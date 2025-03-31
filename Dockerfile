@@ -165,4 +165,4 @@ WORKDIR /work/
 # Using this entrypoint means the "command" passed to `docker run` will be arguments to
 # this binary (e.g. `docker run seer/pythia-dia -h`). To run a different binary requires
 # overriding the entrypoint (e.g. `docker run -it --entrypoint bash`)
-ENTRYPOINT ["/usr/local/bin/PythiaDIACpp/PythiaDIA"]
+ENTRYPOINT ["PythiaDIA"]
