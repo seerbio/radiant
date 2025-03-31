@@ -47,6 +47,10 @@ cp /src/PythiaDIACpp/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsda
 
 cp /src/pytorch/build/lib/* "$pythia_lib/"
 
+# Create symlinks
+# Must match ${pythia_bin} above, but relative to the target!
+ln -s ../../../usr/local/bin/PythiaDIACpp/PythiaDIA "${package_dir}/usr/local/bin/PythiaDIA"
+
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
 echo "Version: ${pythiadia_version}" >> "${package_dir}/DEBIAN/control"
