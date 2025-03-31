@@ -6,6 +6,7 @@ verbosity = 0
 useLazyLoading = false
 writePythiaDIA = true
 reannotate = false
+shortReport = false
 
 [LibraryParams]
 chargeStateMin = 1

@@ -322,7 +322,6 @@ public:
     QVector<float> integrations;
 
     PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey;
-    CandidateScores *converseCandidateScore;
 
 
     /**
@@ -1832,6 +1831,239 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         featuresArray[TargetWindowLocation] = candidateScoresReaderRow.targetWindowLocation;
 
         return featuresArray;
+    }
+
+};
+
+struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetReaderInputBase {
+
+
+    float charge = -1.0;
+    float mass = -1.0;
+    // float mzFoundMean1 = -1.0;
+    // float mzFoundMean2 = -1.0;
+    // float mzFoundMean3 = -1.0;
+    // float mzFoundMean4 = -1.0;
+    // float mzFoundMean5 = -1.0;
+    // float mzFoundMean6 = -1.0;
+    // float mzFoundMean7 = -1.0;
+    // float mzFoundMean8 = -1.0;
+    // float mzFoundMean9 = -1.0;
+    // float mzFoundMean10 = -1.0;
+    // float mzFoundMean11 = -1.0;
+    // float mzFoundMean12 = -1.0;
+    float intensityFoundMax1 = -1.0;
+    float intensityFoundMax2 = -1.0;
+    float intensityFoundMax3 = -1.0;
+    float intensityFoundMax4 = -1.0;
+    float intensityFoundMax5 = -1.0;
+    float intensityFoundMax6 = -1.0;
+    float intensityFoundMax7 = -1.0;
+    float intensityFoundMax8 = -1.0;
+    float intensityFoundMax9 = -1.0;
+    float intensityFoundMax10 = -1.0;
+    float intensityFoundMax11 = -1.0;
+    float intensityFoundMax12 = -1.0;
+
+    QString targetKey;
+    PeptideStringWithMods peptideStringWithMods;
+    QString proteinGroup;
+    bool isDecoy = false;
+    ScanNumber scanNumber = -1;
+    ScanTime scanTime = -1.0;
+    ScanTime scanTimeStart = -1.0;
+    ScanTime scanTimeEnd = -1.0;
+    double classifierScore = -1.0;
+    double qValue = 1.0;
+
+    float mzSearched1 = -1.0;
+    float mzSearched2 = -1.0;
+    float mzSearched3 = -1.0;
+    float mzSearched4 = -1.0;
+    float mzSearched5 = -1.0;
+    float mzSearched6 = -1.0;
+    float mzSearched7 = -1.0;
+    float mzSearched8 = -1.0;
+    float mzSearched9 = -1.0;
+    float mzSearched10 = -1.0;
+    float mzSearched11 = -1.0;
+    float mzSearched12 = -1.0;
+
+    Err initFromRead(const ParquetReaderInputBase &row) override {
+
+        using namespace CandidateScoresReaderRowNamespace;
+
+        ERR_INIT
+
+        const QMap<QString, QVariant> &dataMap = row.dataMap();
+        const bool allKeysPresent = ParquetReaderInputBase::checkIfExpectedKeysArePresent(
+                dataMap,
+                keysToCheck
+        );
+
+        e = ErrorUtils::isTrue(allKeysPresent); ree;
+
+        charge = dataMap.value(CHARGE).toFloat();
+        mass = dataMap.value(MASS).toFloat();
+
+        intensityFoundMax1 = dataMap.value(INTS_FND_MAX_1).toFloat();
+        intensityFoundMax2 = dataMap.value(INTS_FND_MAX_2).toFloat();
+        intensityFoundMax3 = dataMap.value(INTS_FND_MAX_3).toFloat();
+        intensityFoundMax4 = dataMap.value(INTS_FND_MAX_4).toFloat();
+        intensityFoundMax5 = dataMap.value(INTS_FND_MAX_5).toFloat();
+        intensityFoundMax6 = dataMap.value(INTS_FND_MAX_6).toFloat();
+        intensityFoundMax7 = dataMap.value(INTS_FND_MAX_7).toFloat();
+        intensityFoundMax8 = dataMap.value(INTS_FND_MAX_8).toFloat();
+        intensityFoundMax9 = dataMap.value(INTS_FND_MAX_9).toFloat();
+        intensityFoundMax10 = dataMap.value(INTS_FND_MAX_10).toFloat();
+        intensityFoundMax11 = dataMap.value(INTS_FND_MAX_11).toFloat();
+        intensityFoundMax12 = dataMap.value(INTS_FND_MAX_12).toFloat();
+
+        targetKey = dataMap.value(TARG_KEY).toString();
+        peptideStringWithMods = PeptideStringWithMods(dataMap.value(PEP_STR_W_MODS).toString());
+        proteinGroup = dataMap.value(PROT_GRP).toString();
+        isDecoy = dataMap.value(IS_DECOY).toBool();
+        scanNumber = dataMap.value(SCAN_NUM).toInt();
+        scanTime = dataMap.value(SCAN_TIME).toFloat();
+        scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
+        scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
+        classifierScore = dataMap.value(CLASS_SCR).toDouble();
+        qValue = dataMap.value(Q_VAL).toDouble();
+
+        ERR_RETURN
+    }
+
+    QMap<QString, QVariant> map() override {
+
+        using namespace CandidateScoresReaderRowNamespace;
+
+        return {
+                {CHARGE, QVariant(charge)},
+                {MASS, QVariant(mass)},
+
+                {INTS_FND_MAX_1, QVariant(intensityFoundMax1)},
+                {INTS_FND_MAX_2, QVariant(intensityFoundMax2)},
+                {INTS_FND_MAX_3, QVariant(intensityFoundMax3)},
+                {INTS_FND_MAX_4, QVariant(intensityFoundMax4)},
+                {INTS_FND_MAX_5, QVariant(intensityFoundMax5)},
+                {INTS_FND_MAX_6, QVariant(intensityFoundMax6)},
+                {INTS_FND_MAX_7, QVariant(intensityFoundMax7)},
+                {INTS_FND_MAX_8, QVariant(intensityFoundMax8)},
+                {INTS_FND_MAX_9, QVariant(intensityFoundMax9)},
+                {INTS_FND_MAX_10, QVariant(intensityFoundMax10)},
+                {INTS_FND_MAX_11, QVariant(intensityFoundMax11)},
+                {INTS_FND_MAX_12, QVariant(intensityFoundMax12)},
+
+                {TARG_KEY, QVariant(targetKey)},
+                {PEP_STR_W_MODS, QVariant(peptideStringWithMods)},
+                {PROT_GRP, QVariant(proteinGroup)},
+                {IS_DECOY, QVariant(isDecoy)},
+                {SCAN_NUM, QVariant(scanNumber)},
+                {SCAN_TIME, QVariant(scanTime)},
+                {SCAN_TIME_START, QVariant(scanTimeStart)},
+                {SCAN_TIME_END, QVariant(scanTimeEnd)},
+                {CLASS_SCR, QVariant(classifierScore)},
+                {Q_VAL, QVariant(qValue)},
+
+                {MZ_SEARCHED_1, QVariant(mzSearched1)},
+                {MZ_SEARCHED_2, QVariant(mzSearched2)},
+                {MZ_SEARCHED_3, QVariant(mzSearched3)},
+                {MZ_SEARCHED_4, QVariant(mzSearched4)},
+                {MZ_SEARCHED_5, QVariant(mzSearched5)},
+                {MZ_SEARCHED_6, QVariant(mzSearched6)},
+                {MZ_SEARCHED_7, QVariant(mzSearched7)},
+                {MZ_SEARCHED_8, QVariant(mzSearched8)},
+                {MZ_SEARCHED_9, QVariant(mzSearched9)},
+                {MZ_SEARCHED_10, QVariant(mzSearched10)},
+                {MZ_SEARCHED_11, QVariant(mzSearched11)},
+                {MZ_SEARCHED_12, QVariant(mzSearched12)},
+        };
+    }
+
+    static CandidateScoresReaderRowTrunc buildCandidateScoresReaderRow(const CandidateScores* candidateScores) {
+
+        CandidateScoresReaderRowTrunc row;
+
+        row.charge = candidateScores->featuresArray[Features::Charge];
+        row.mass = candidateScores->featuresArray[Features::Mass];
+
+        row.intensityFoundMax1 = candidateScores->integrations.at(0);
+        row.intensityFoundMax2 = candidateScores->integrations.at(1);
+        row.intensityFoundMax3 = candidateScores->integrations.at(2);
+        row.intensityFoundMax4 = candidateScores->integrations.at(3);
+        row.intensityFoundMax5 = candidateScores->integrations.at(4);
+        row.intensityFoundMax6 = candidateScores->integrations.at(5);
+        row.intensityFoundMax7 = candidateScores->integrations.at(6);
+        row.intensityFoundMax8 = candidateScores->integrations.at(7);
+        row.intensityFoundMax9 = candidateScores->integrations.at(8);
+        row.intensityFoundMax10 = candidateScores->integrations.at(9);
+        row.intensityFoundMax11 = candidateScores->integrations.at(10);
+        row.intensityFoundMax12 = candidateScores->integrations.at(11);
+
+        row.targetKey = candidateScores->targetKey;
+        row.peptideStringWithMods = candidateScores->isDecoy
+                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+
+        row.proteinGroup = candidateScores->proteinGroup;
+        row.isDecoy = candidateScores->isDecoy;
+        row.scanNumber = candidateScores->scanNumber;
+        row.scanTime = candidateScores->scanTime;
+        row.scanTimeStart = candidateScores->scanTimeStart;
+        row.scanTimeEnd = candidateScores->scanTimeEnd;
+        row.classifierScore = candidateScores->classifierScore;
+        row.qValue = candidateScores->qValue;
+
+        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
+                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
+                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+
+        for (int i = 0; i < ms2Ions.size(); ++i) {
+
+            switch (i) {
+                case 0:
+                    row.mzSearched1 = ms2Ions.at(0).mz;
+                    break;
+                case 1:
+                    row.mzSearched2 = ms2Ions.at(1).mz;
+                    break;
+                case 2:
+                    row.mzSearched3 = ms2Ions.at(2).mz;
+                    break;
+                case 3:
+                    row.mzSearched4 = ms2Ions.at(3).mz;
+                    break;
+                case 4:
+                    row.mzSearched5 = ms2Ions.at(4).mz;
+                    break;
+                case 5:
+                    row.mzSearched6 = ms2Ions.at(5).mz;
+                    break;
+                case 6:
+                    row.mzSearched7 = ms2Ions.at(6).mz;
+                    break;
+                case 7:
+                    row.mzSearched8 = ms2Ions.at(7).mz;
+                    break;
+                case 8:
+                    row.mzSearched9 = ms2Ions.at(8).mz;
+                    break;
+                case 9:
+                    row.mzSearched10 = ms2Ions.at(9).mz;
+                    break;
+                case 10:
+                    row.mzSearched11 = ms2Ions.at(10).mz;
+                    break;
+                case 11:
+                    row.mzSearched12 = ms2Ions.at(11).mz;
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        return row;
     }
 
 };
