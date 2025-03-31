@@ -49,7 +49,7 @@ cp /src/pytorch/build/lib/* "$pythia_lib/"
 
 # Create symlinks
 # Must match ${pythia_bin} above, but relative to the target!
-ln -s ../../../usr/local/bin/PythiaDIACpp/PythiaDIA ${package_dir}/usr/local/bin/PythiaDIA
+ln -s ../../../usr/local/bin/PythiaDIACpp/PythiaDIA "${package_dir}/usr/local/bin/PythiaDIA"
 
 mkdir -p "${package_dir}/DEBIAN/"
 cp "control.${ARCH}" "${package_dir}/DEBIAN/control"
