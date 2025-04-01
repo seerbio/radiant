@@ -113,7 +113,8 @@ public:
     const QString NEWLINE = "\n";
     const QString NONE = QStringLiteral("NONE");
     const int POLYNOMIAL_DEGREE = 11;
-    const int ROUNDING_PRECISION = 12;
+    const int ROUNDING_PRECISION = 5;
+    const float ROUNDING_PRECISION_DECIMAL = 0.000000001;
     const QChar SEPARATOR = ';';
     const double STDEV_MULTIPLIER = 3.0;
     const QString TAB = "\t";

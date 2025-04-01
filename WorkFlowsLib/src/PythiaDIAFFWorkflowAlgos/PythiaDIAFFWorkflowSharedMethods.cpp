@@ -140,9 +140,31 @@ Err PythiaDIAFFWorkflowSharedMethods::buildCandidateScoresPtrs(
 }
 
 void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(QVector<CandidateScores*> *candidateScoresPntrs) {
-    std::sort(candidateScoresPntrs->rbegin(), candidateScoresPntrs->rend(), [](const CandidateScores *l, const CandidateScores *r){
-        return l->discriminantScore < r->discriminantScore;
+    std::sort(candidateScoresPntrs->begin(), candidateScoresPntrs->end(), [](const CandidateScores *l, const CandidateScores *r){
+
+        if (MathUtils::tSame(l->discriminantScore, r->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+
+            if (MathUtils::tSame(l->featuresArray[CosineSimSum100], r->featuresArray[CosineSimSum100], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                return l->isDecoy > r->isDecoy;
+            }
+
+            return l->featuresArray[CosineSimSum100] > r->featuresArray[CosineSimSum100];
+        }
+
+        return l->discriminantScore > r->discriminantScore;
     });
+}
+
+void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs) {
+    std::sort(
+        candidateScoresPntrs->begin(),
+        candidateScoresPntrs->end(),
+        [](const CandidateScores *l, const CandidateScores *r){
+            if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                return l->discriminantScore > r->discriminantScore;
+            }
+            return l->classifierScore < r->classifierScore;
+        });
 }
 
 namespace {

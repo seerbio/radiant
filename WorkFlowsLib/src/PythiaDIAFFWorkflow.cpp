@@ -69,11 +69,12 @@ Err PythiaDIAFFWorkflow::init(
 /***** DEV OVERRIDES *****/
 // #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
-    // m_pythiaParameters.useLazyLoading = true;
+    m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+    m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
     // m_pythiaParameters.calibrationTrainingVolume = 100000;
     // m_pythiaParameters.ionsSharedToReject = 4;
@@ -131,16 +132,10 @@ namespace {
         const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
         candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
 
-        std::sort(
-                candidateScoresTargetsAndDecoys->rbegin(),
-                candidateScoresTargetsAndDecoys->rend(),
-                [](const CandidateScores *l, const CandidateScores *r){
-                    return l->discriminantScore < r->discriminantScore;
-                });
+        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidateScoresTargetsAndDecoys);
 
         int counter = 0;
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
-
             counter++;
             if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
                 break;
@@ -149,16 +144,16 @@ namespace {
 
         candidateScoresTargetsAndDecoys->resize(counter);
 
-        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-
-        const int shuffleCount = 3;
-        for (int i = 0; i < shuffleCount; i++) {
-            std::shuffle(
-                    candidateScoresTargetsAndDecoys->begin(),
-                    candidateScoresTargetsAndDecoys->end(),
-                    rng
-            );
-        }
+        // std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+        //
+        // const int shuffleCount = 3;
+        // for (int i = 0; i < shuffleCount; i++) {
+        //     std::shuffle(
+        //             candidateScoresTargetsAndDecoys->begin(),
+        //             candidateScoresTargetsAndDecoys->end(),
+        //             rng
+        //     );
+        // }
 
         ERR_RETURN
     }
@@ -263,6 +258,8 @@ namespace {
         ERR_INIT
 
         e = ErrorUtils::isFalse(candidateScoresPntrs->isEmpty()); ree;
+
+        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidateScoresPntrs);
 
         QHash<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
         for (CandidateScores *cs : *candidateScoresPntrs) {
@@ -433,14 +430,18 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         ); ree;
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
-            << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
+             << "Pre Neural Net PSMs Count" << targetCountBelowFDRThreshold
+             << "| Post Neural Net Count PSMs" << targetCountBelowFDRThresholdOnePercent;
 
     const bool candidateScoresSortedHiLo = std::is_sorted(
         candidateScoreClassifierPntrs.begin(),
         candidateScoreClassifierPntrs.end(),
-        [](const CandidateScores *l, const CandidateScores *r){return l->classifierScore < r->classifierScore;}
-        );
+        [](const CandidateScores *l, const CandidateScores *r) {
+            if (MathUtils::tSame(l->classifierScore, r->classifierScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                return l->discriminantScore > r->discriminantScore;
+            }
+            return l->classifierScore < r->classifierScore;
+        });
     e = ErrorUtils::isTrue(candidateScoresSortedHiLo); ree;
 
     filterDecoysOrNot(&candidateScoreClassifierPntrs);
@@ -792,12 +793,7 @@ namespace {
 
         e = ErrorUtils::isFalse(candidateScoreses->isEmpty()); ree;
 
-        std::sort(
-            candidateScoreses->begin(),
-            candidateScoreses->end(),
-            [](const CandidateScores *l, const CandidateScores *r){
-                return l->classifierScore < r->classifierScore;
-            });
+        PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersClassifierScoreAsc(candidateScoreses);
 
         int counter = 0;
         for (const CandidateScores *csp : *candidateScoreses) {
@@ -824,10 +820,14 @@ namespace {
 
         *karnnNNTargetsNormTrain = karnnNNTargetsNorm;
         std::sort(
-            karnnNNTargetsNormTrain->rbegin(),
-            karnnNNTargetsNormTrain->rend(),
+            karnnNNTargetsNormTrain->begin(),
+            karnnNNTargetsNormTrain->end(),
             [](const KarnnNNTarget &l, const KarnnNNTarget &r) {
-                return l.candidateScores->discriminantScore < r.candidateScores->discriminantScore;
+                if (MathUtils::tSame(l.candidateScores->discriminantScore, r.candidateScores->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                    return l.candidateScores->featuresArray[CosineSimSum100] > r.candidateScores->featuresArray[CosineSimSum100];
+                }
+
+                return l.candidateScores->discriminantScore > r.candidateScores->discriminantScore;
             });
 
         int counter = 0;
@@ -901,8 +901,8 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         CandidateScoresReaderRow csrr = CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);
         candidateScoresReaderRows.push_back(csrr);
     }
-
-    e = ParquetReader::write(candidateScoresReaderRows, "candidates.parquet"); ree;
+    const QString filename = "candidates_" + QString::number(m_pythiaParameters.threadCount) + ".prq";
+    e = ParquetReader::write(candidateScoresReaderRows, filename); ree;
 #endif
 
     candidateScoreClassifier->clear();
@@ -920,6 +920,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         &karnnNNTargetsNormTrain
         ); ree;
 
+// #define WRITE_KARNNN_NORM_TO_FILE
 #ifdef WRITE_KARNNN_NORM_TO_FILE
 
     e = updateProteinGroupAnnotation(
@@ -928,7 +929,8 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         &candidateScoresTargetsAndDecoysNeuralNet
         ); ree;
 
-    QFile file("kareNN.dat");
+    const QString filenameNN = "kareNN_" + QString::number(m_pythiaParameters.threadCount) + ".dat";
+    QFile file(filenameNN);
     if (!file.open(QIODevice::WriteOnly)) {
         rrr(eFileError);
     }
@@ -983,6 +985,17 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
             ); ree;
 
     *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;
+
+// #define WRITE_RESULTS_TO_FILE
+#ifdef WRITE_RESULTS_TO_FILE
+    QVector<CandidateScoresReaderRow> candidateScoresReaderRowsResults;
+    for (const CandidateScores *cs : candidateScoresTargetsAndDecoysNeuralNet) {
+        CandidateScoresReaderRow csrr = CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);
+        candidateScoresReaderRowsResults.push_back(csrr);
+    }
+    const QString filenameResults = "results_" + QString::number(m_pythiaParameters.threadCount) + ".prq";
+    e = ParquetReader::write(candidateScoresReaderRowsResults, filenameResults); ree;
+#endif
 
     e = QValueSettertron::setQValueForCandidates(
             QValueSettertron::QValueScoreType::NNClassifierScore,
@@ -1060,61 +1073,15 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 //TODO delete this after dev is done.
 #define REPORT_ENTRAP
 #ifdef REPORT_ENTRAP
+
+    QVector<CandidateScores*> candidateScoresCopy = *candidateScores;
+
     int counter = 0;
     int decoys = 0;
     int entrap = 0;
     int fmrCorrectCount = 0;
 
-    for (CandidateScores *cs : *candidateScores) {
-        counter++;
-
-        if (decoys/static_cast<double>(counter) >= 0.01) {
-            break;
-        }
-
-        if (cs->isDecoy) {
-            decoys++;
-            continue;
-        }
-
-        if (!cs->proteinGroup.contains("_HUMAN")
-            && !cs->isDecoy
-            && cs->proteinGroup.contains("_ARATH")
-            && !cs->proteinGroup.isEmpty()
-            ) {
-            entrap++;
-        }
-
-        if (entrap / static_cast<double>(counter) < 0.01) {
-            fmrCorrectCount++;
-        }
-    }
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "By Classifier Score:"
-            << "Alt:" << targetCountBelowFDRThresholdOnePercent
-            << "| Counter:" << counter
-            << "| Decoys:" <<  decoys
-            << "| Entrap:" << entrap
-            << "| Counter FMR Corrected:" << fmrCorrectCount
-            << "| Entrap%:" << entrap / static_cast<double>(counter);
-
-    m_resultsSummary.altPSMCountNeuralNet = targetCountBelowFDRThresholdOnePercent;
-    m_resultsSummary.psmCountNeuralNet = counter;
-    m_resultsSummary.decoyCountNeuralNet = decoys;
-    m_resultsSummary.entrapCountNeuralNet = entrap;
-    m_resultsSummary.psmCountCorrectedFMRNeuralNet = fmrCorrectCount;
-    m_resultsSummary.eFDRNeuralNet = entrap / static_cast<double>(counter);
-
-    counter = 0;
-    decoys = 0;
-    entrap = 0;
-    fmrCorrectCount = 0;
-    QVector<CandidateScores*> candidateScoresCopy = *candidateScores;
-    std::sort(
-        candidateScoresCopy.rbegin(),
-        candidateScoresCopy.rend(),
-        [](const CandidateScores *l, const CandidateScores *r){return l->discriminantScore < r->discriminantScore;}
-        );
+    PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(&candidateScoresCopy);
 
     for (CandidateScores *cs : candidateScoresCopy) {
         counter++;
@@ -1154,6 +1121,53 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
     m_resultsSummary.entrapCountLDA = entrap;
     m_resultsSummary.psmCountCorrectedFMRLDA = fmrCorrectCount;
     m_resultsSummary.eFDRLDA = entrap / static_cast<double>(counter);
+
+    PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersClassifierScoreAsc(&candidateScoresCopy);
+
+    counter = 0;
+    decoys = 0;
+    entrap = 0;
+    fmrCorrectCount = 0;
+
+    for (CandidateScores *cs : candidateScoresCopy) {
+        counter++;
+
+        if (decoys/static_cast<double>(counter) >= 0.01) {
+            break;
+        }
+
+        if (cs->isDecoy) {
+            decoys++;
+            continue;
+        }
+
+        if (!cs->proteinGroup.contains("_HUMAN")
+            && !cs->isDecoy
+            && cs->proteinGroup.contains("_ARATH")
+            && !cs->proteinGroup.isEmpty()
+            ) {
+            entrap++;
+            }
+
+        if (entrap / static_cast<double>(counter) < 0.01) {
+            fmrCorrectCount++;
+        }
+    }
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+            << "By Classifier Score:"
+            << "Alt:" << targetCountBelowFDRThresholdOnePercent
+            << "| Counter:" << counter
+            << "| Decoys:" <<  decoys
+            << "| Entrap:" << entrap
+            << "| Counter FMR Corrected:" << fmrCorrectCount
+            << "| Entrap%:" << entrap / static_cast<double>(counter);
+
+    m_resultsSummary.altPSMCountNeuralNet = targetCountBelowFDRThresholdOnePercent;
+    m_resultsSummary.psmCountNeuralNet = counter;
+    m_resultsSummary.decoyCountNeuralNet = decoys;
+    m_resultsSummary.entrapCountNeuralNet = entrap;
+    m_resultsSummary.psmCountCorrectedFMRNeuralNet = fmrCorrectCount;
+    m_resultsSummary.eFDRNeuralNet = entrap / static_cast<double>(counter);
 #endif
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Annotation finished";
