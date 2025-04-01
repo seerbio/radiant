@@ -46,6 +46,8 @@ public:
         QVector<CandidateScores*> *candidateScoresPntrs
         );
 
+    static void sortCandidatePointersClassifierScoreAsc(QVector<CandidateScores*> *candidateScoresPntrs);
+
     static Err processBatch(
             const QVector<Features> &features,
             QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>> &candidateScoresPairsVecBatch,
