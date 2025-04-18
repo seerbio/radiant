@@ -69,12 +69,12 @@ Err PythiaDIAFFWorkflow::init(
 /***** DEV OVERRIDES *****/
 // #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
-    m_pythiaParameters.useLazyLoading = true;
+    // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
-    m_pythiaParameters.threadCount = 8;
+    // m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
     // m_pythiaParameters.calibrationTrainingVolume = 100000;
     // m_pythiaParameters.ionsSharedToReject = 4;
@@ -414,6 +414,19 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
     //
     //     e = predictIonMobilityIndexes(candidateScoresTargetsAndDecoys); ree;
     // }
+
+// #define WRITE_DISC_RESULTS
+#ifdef WRITE_DISC_RESULTS
+    const QString resultsFilePath = "disc_score_results_" + QString::number(m_pythiaParameters.threadCount) +".prq";
+    QVector<CandidateScoresReaderRow> candidateScoreReaderRows;
+    std::transform(
+            candidateScoresTargetsAndDecoys.begin(),
+            candidateScoresTargetsAndDecoys.end(),
+            std::back_inserter(candidateScoreReaderRows),
+            [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
+            );
+    e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
+#endif
 
     QVector<CandidateScores*> candidateScoreClassifierPntrs;
     e = applyNeuralNetClassifier(
