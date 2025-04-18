@@ -145,7 +145,12 @@ void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(QVecto
         if (MathUtils::tSame(l->discriminantScore, r->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
 
             if (MathUtils::tSame(l->featuresArray[CosineSimSum100], r->featuresArray[CosineSimSum100], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                return l->isDecoy > r->isDecoy;
+
+                if (MathUtils::tSame(l->featuresArray[CosineSimSpectrumOverTime], r->featuresArray[CosineSimSpectrumOverTime], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
+                    return l->isDecoy > r->isDecoy;
+                }
+
+                return l->featuresArray[CosineSimSpectrumOverTime] > r->featuresArray[CosineSimSpectrumOverTime];
             }
 
             return l->featuresArray[CosineSimSum100] > r->featuresArray[CosineSimSum100];
