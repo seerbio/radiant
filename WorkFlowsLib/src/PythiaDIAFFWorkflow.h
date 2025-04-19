@@ -71,7 +71,8 @@ public:
     Err init(
             const PythiaParameters &pythiaParameters,
             const QString &fragLibUri,
-            const QString &fastaUri
+            const QString &fastaUri,
+            const QString &outputFolderPath
             );
 
     /**
@@ -146,6 +147,7 @@ private:
     PythiaParameters m_pythiaParameters;
     QString m_fragLibUri;
     QString m_fastaUri;
+    QString m_outputFolderPath;
 
     int m_minTopNMs2Ions;
     int m_minTrainingCountTranche;

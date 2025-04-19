@@ -19,6 +19,7 @@ public:
         QString fastaFilePath;
         QString pythiaParametersFilePath;
         QString msDataFile;
+        QString outputFolderPath;
     };
 
     CommandLineParser();
