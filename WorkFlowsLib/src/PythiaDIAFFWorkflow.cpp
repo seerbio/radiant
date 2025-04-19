@@ -491,7 +491,12 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
             ); ree;
     }
 
-    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    if (!m_outputFolderPath.isEmpty()) {
+        const QFileInfo fileInfo(quanFilePath);
+        const QString msDataFileName = fileInfo.fileName();
+        quanFilePath = m_outputFolderPath + msDataFileName;
+    }
     e = QuanFileBuilder::buildQuanFile(
         candidateScoreClassifierPntrs,
         quanFilePath
