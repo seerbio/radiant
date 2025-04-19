@@ -9,7 +9,6 @@
 
 #include <QFileInfo>
 
-
 namespace {
     const QString ARG_FRAGLIB_PATH = QStringLiteral("fraglibff-path");
     const QString ARG_FASTA_PATH = QStringLiteral("fasta-path");
@@ -25,7 +24,6 @@ CommandLineParser::CommandLineParser() {
     addPositionalArgument(ARG_PYTHIA_PARAMS, QObject::tr("*.pythia file"));
     addPositionalArgument(ARG_DATAFILE_PATH, QObject::tr("data directory path"));
 
-    // Register the "-of" flag with a value
     addOption(QCommandLineOption(
         {ARG_OUTPUT_FOLDER},
         QObject::tr("Set the output folder path."),
@@ -97,7 +95,6 @@ bool CommandLineParser::validateArguments(const QStringList &args) {
         return false;
     }
 
-    // Check the "-of" flag and read its value
     if (isSet(ARG_OUTPUT_FOLDER)) {
         m_cliParams.outputFolderPath = value(ARG_OUTPUT_FOLDER);
         m_cliParams.outputFolderPath = m_cliParams.outputFolderPath.back() == "/"
