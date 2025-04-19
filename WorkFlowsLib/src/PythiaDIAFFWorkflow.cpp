@@ -49,7 +49,8 @@ PythiaDIAFFWorkflow::~PythiaDIAFFWorkflow() {
 Err PythiaDIAFFWorkflow::init(
         const PythiaParameters &pythiaParameters,
         const QString &fragLibUri,
-        const QString &fastaUri
+        const QString &fastaUri,
+        const QString &outputFolderPath
         ) {
 
     ERR_INIT
@@ -94,6 +95,7 @@ Err PythiaDIAFFWorkflow::init(
 /**************************/
 
     m_fragLibUri = fragLibUri;
+    m_outputFolderPath = outputFolderPath;
     m_pythiaParameters.print();
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Reading library";
@@ -276,6 +278,7 @@ namespace {
     Err writePythiaDIA(
         const QVector<CandidateScores*> &candidateScoresPntrs,
         bool writeShortReport,
+        const QString &outputFolderPath,
         MsReaderPointerAcc *msReaderPointerAcc
         ) {
         ERR_INIT
@@ -290,7 +293,13 @@ namespace {
                     [](const CandidateScores *cs){return CandidateScoresReaderRowTrunc::buildCandidateScoresReaderRow(cs);}
                     );
 
-            const QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+            QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+
+            if (!outputFolderPath.isEmpty()) {
+                const QFileInfo fileInfo(resultsFilePath);
+                const QString msDataFileName = fileInfo.fileName();
+                resultsFilePath = outputFolderPath + msDataFileName;
+            }
             e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
 
             ERR_RETURN
@@ -304,7 +313,13 @@ namespace {
                 [](const CandidateScores *cs){return CandidateScoresReaderRow::buildCandidateScoresReaderRow(cs);}
                 );
 
-        const QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+        QString resultsFilePath = msReaderPointerAcc->ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_DIA_FILE_EXTENSION;
+
+        if (!outputFolderPath.isEmpty()) {
+            const QFileInfo fileInfo(resultsFilePath);
+            const QString msDataFileName = fileInfo.fileName();
+            resultsFilePath = outputFolderPath + msDataFileName;
+        }
         e = ParquetReader::write(candidateScoreReaderRows, resultsFilePath); ree;
 
         ERR_RETURN
@@ -471,11 +486,17 @@ Err PythiaDIAFFWorkflow::processFile(const QString &msDataFilePath) {
         e = writePythiaDIA(
             candidateScoreClassifierPntrs,
             m_pythiaParameters.shortReport,
+            m_outputFolderPath,
             &msReaderPointerAcc
             ); ree;
     }
 
-    const QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    QString quanFilePath = msReaderPointerAcc.ptr->filePath() + S_GLOBAL_SETTINGS.DOT_PYTHIA_QUAN_FILE_EXTENSION;
+    if (!m_outputFolderPath.isEmpty()) {
+        const QFileInfo fileInfo(quanFilePath);
+        const QString msDataFileName = fileInfo.fileName();
+        quanFilePath = m_outputFolderPath + msDataFileName;
+    }
     e = QuanFileBuilder::buildQuanFile(
         candidateScoreClassifierPntrs,
         quanFilePath

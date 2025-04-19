@@ -35,10 +35,11 @@ int main(int argc, char *argv[]) {
 
     const CommandLineParser::CliParameters &cliParameters = parser.getCliParams();
 
-    const QString fragLibPath = cliParameters.fragLibFilePath;
-    const QString fastaFilePath = cliParameters.fastaFilePath;
-    const QString pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
-    const QString msDataFile = cliParameters.msDataFile;
+    const QString &fragLibPath = cliParameters.fragLibFilePath;
+    const QString &fastaFilePath = cliParameters.fastaFilePath;
+    const QString &pythiaParamsFilePath = cliParameters.pythiaParametersFilePath;
+    const QString &msDataFile = cliParameters.msDataFile;
+    const QString &outputFolderPath = cliParameters.outputFolderPath;
 
     PythiaParameters pythiaParameters;
     e = PythiaParameterReader::buildPythiaParameters(
@@ -54,7 +55,8 @@ int main(int argc, char *argv[]) {
     e = pythiaDiaFFWorkflow.init(
             pythiaParameters,
             fragLibPath,
-            fastaFilePath
+            fastaFilePath,
+            outputFolderPath
     );
     if (e != eNoError) {
         qDebug() << "Error initializing Pythia Workflow Libraries";

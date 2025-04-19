@@ -38,21 +38,24 @@ void PythiaDIAFFWorkflowTests::initTest() {
     e = pythiaDiaffWorkflow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
             testFragLibFilePath,
-            testFastaFilePath
+            testFastaFilePath,
+            ""
             );
     QCOMPARE(e, eNoError);
 
     e = pythiaDiaffWorkflow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
             "kalliope.fragLibDF",
-            testFastaFilePath
+            testFastaFilePath,
+            ""
     );
     QCOMPARE(e, eFileError);
 
     e = pythiaDiaffWorkflow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
             testFragLibFilePath,
-            "bellatrix.fasta"
+            "bellatrix.fasta",
+            ""
     );
     QCOMPARE(e, eFileError);
 
@@ -81,7 +84,8 @@ void PythiaDIAFFWorkflowTests::buildUniqueInfoScanKeyVsTargetDecoyCandidatePoint
     e = pythiaDiaffWorkflow.init(
             PythiaParameterReader::genericPythiaParametersForTests(),
             testFragLibFilePath,
-            testFastaFilePath
+            testFastaFilePath,
+            ""
             );
     QCOMPARE(e, eNoError);
 
