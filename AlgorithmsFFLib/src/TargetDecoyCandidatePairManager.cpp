@@ -81,6 +81,37 @@ namespace {
         return {e, targetDecoyCandidatePair};
     }
 
+    void filterNullSequences(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
+        const auto terminatorLogic = [](const TargetDecoyCandidatePair &tdcp){return tdcp.peptideStringWithMods().isEmpty();};
+        const auto terminator = std::remove_if(targetDecoyCandidatePairs->begin(), targetDecoyCandidatePairs->end(), terminatorLogic);
+        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
+    }
+
+    void filterLeucineIsoleucineIsomers(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
+
+        QVector<TargetDecoyCandidatePair> targetDecoyCandidatePairsFiltered;
+
+        QHash<QString, bool> isomers;
+        for (int i = 0; i < targetDecoyCandidatePairs->size(); ++i) {
+
+            const TargetDecoyCandidatePair &tdcp = targetDecoyCandidatePairs->at(i);
+
+            QString peptideStringWithModsIsomer = tdcp.peptideStringWithMods();
+            peptideStringWithModsIsomer = peptideStringWithModsIsomer.replace('I', 'L');
+            peptideStringWithModsIsomer += QString::number(tdcp.charge());
+
+            if (isomers.value(peptideStringWithModsIsomer)) {
+                continue;
+            }
+
+            targetDecoyCandidatePairsFiltered.push_back(tdcp);
+            isomers.insert(peptideStringWithModsIsomer, true);
+        }
+
+        *targetDecoyCandidatePairs = targetDecoyCandidatePairsFiltered;
+
+    }
+
 }//namespace
 Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
         QVector<FragLibReaderRow> *fragLibReaderRows
@@ -141,6 +172,9 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     for (int i = 0; i < m_targetDecoyCandidatePairs.size(); i++) {
         m_targetDecoyCandidatePairs[i].setFragLibReaderRowPntr(&(*fragLibReaderRows)[i]);
     }
+
+    filterNullSequences(&m_targetDecoyCandidatePairs);
+    filterLeucineIsoleucineIsomers(&m_targetDecoyCandidatePairs);
 
     e = filterDecoySequencesThatAreAlsoTargetSequences();
 
