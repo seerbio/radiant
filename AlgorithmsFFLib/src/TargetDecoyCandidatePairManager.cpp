@@ -81,6 +81,39 @@ namespace {
         return {e, targetDecoyCandidatePair};
     }
 
+    void filterNullSequences(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
+        const auto terminatorLogic = [](const TargetDecoyCandidatePair &tdcp){return tdcp.peptideStringWithMods().isEmpty();};
+        const auto terminator = std::remove_if(targetDecoyCandidatePairs->begin(), targetDecoyCandidatePairs->end(), terminatorLogic);
+        targetDecoyCandidatePairs->erase(terminator, targetDecoyCandidatePairs->end());
+    }
+
+    void filterLeucineIsoleucineIsomers(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
+
+        QVector<int> indexesToRemove;
+        QHash<QString, bool> isomers;
+        for (int i = 0; i < targetDecoyCandidatePairs->size(); ++i) {
+
+            const TargetDecoyCandidatePair &tdcp = targetDecoyCandidatePairs->at(i);
+
+            QString peptideStringWithModsIsomer = tdcp.peptideStringWithMods();
+            peptideStringWithModsIsomer = peptideStringWithModsIsomer.replace('I', 'L');
+            peptideStringWithModsIsomer += QString::number(tdcp.charge());
+
+            if (isomers.value(peptideStringWithModsIsomer)) {
+                indexesToRemove.push_back(i);
+                continue;
+            }
+
+            isomers.insert(peptideStringWithModsIsomer, true);
+        }
+
+        std::sort(indexesToRemove.rbegin(), indexesToRemove.rend());
+        for (int indexToRemove : indexesToRemove) {
+            targetDecoyCandidatePairs->remove(indexToRemove);
+        }
+
+    }
+
 }//namespace
 Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
         QVector<FragLibReaderRow> *fragLibReaderRows
@@ -141,6 +174,9 @@ Err TargetDecoyCandidatePairManager::buildTargetDecoyCandidatePairs(
     for (int i = 0; i < m_targetDecoyCandidatePairs.size(); i++) {
         m_targetDecoyCandidatePairs[i].setFragLibReaderRowPntr(&(*fragLibReaderRows)[i]);
     }
+
+    filterNullSequences(&m_targetDecoyCandidatePairs);
+    filterLeucineIsoleucineIsomers(&m_targetDecoyCandidatePairs);
 
     e = filterDecoySequencesThatAreAlsoTargetSequences();
 
