@@ -16,8 +16,8 @@ public:
 
 private Q_SLOTS:
 
-    void initTest();
-    void peptideStringWithModsFromPeptideSequenceChargeKeyTest();
+    static void initTest();
+    static void peptideStringWithModsFromPeptideSequenceChargeKeyTest();
 
 };
 

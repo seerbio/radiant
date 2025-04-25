@@ -1889,6 +1889,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
     ScanTime scanTimeEnd = -1.0;
     double classifierScore = -1.0;
     double qValue = 1.0;
+    double discScore = -1.0;
 
     float mzSearched1 = -1.0;
     float mzSearched2 = -1.0;
@@ -1943,6 +1944,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         scanTimeStart = dataMap.value(SCAN_TIME_START).toFloat();
         scanTimeEnd = dataMap.value(SCAN_TIME_END).toFloat();
         classifierScore = dataMap.value(CLASS_SCR).toDouble();
+        discScore = dataMap.value(DISC_SCR).toDouble();
         qValue = dataMap.value(Q_VAL).toDouble();
         totalIntensityRaw = dataMap.value(TOT_INTENSITY_RAW).toFloat();
 
@@ -1980,6 +1982,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
                 {SCAN_TIME_START, QVariant(scanTimeStart)},
                 {SCAN_TIME_END, QVariant(scanTimeEnd)},
                 {CLASS_SCR, QVariant(classifierScore)},
+                {DISC_SCR, QVariant(discScore)},
                 {Q_VAL, QVariant(qValue)},
 
                 {MZ_SEARCHED_1, QVariant(mzSearched1)},
@@ -2032,6 +2035,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.scanTimeStart = candidateScores->scanTimeStart;
         row.scanTimeEnd = candidateScores->scanTimeEnd;
         row.classifierScore = candidateScores->classifierScore;
+        row.discScore = candidateScores->discriminantScore;
         row.qValue = candidateScores->qValue;
 
         row.totalIntensityRaw = std::accumulate(

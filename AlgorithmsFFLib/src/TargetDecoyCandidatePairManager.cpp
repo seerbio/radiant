@@ -89,7 +89,8 @@ namespace {
 
     void filterLeucineIsoleucineIsomers(QVector<TargetDecoyCandidatePair> *targetDecoyCandidatePairs) {
 
-        QVector<int> indexesToRemove;
+        QVector<TargetDecoyCandidatePair> targetDecoyCandidatePairsFiltered;
+
         QHash<QString, bool> isomers;
         for (int i = 0; i < targetDecoyCandidatePairs->size(); ++i) {
 
@@ -100,17 +101,14 @@ namespace {
             peptideStringWithModsIsomer += QString::number(tdcp.charge());
 
             if (isomers.value(peptideStringWithModsIsomer)) {
-                indexesToRemove.push_back(i);
                 continue;
             }
 
+            targetDecoyCandidatePairsFiltered.push_back(tdcp);
             isomers.insert(peptideStringWithModsIsomer, true);
         }
 
-        std::sort(indexesToRemove.rbegin(), indexesToRemove.rend());
-        for (int indexToRemove : indexesToRemove) {
-            targetDecoyCandidatePairs->remove(indexToRemove);
-        }
+        *targetDecoyCandidatePairs = targetDecoyCandidatePairsFiltered;
 
     }
 
