@@ -48,7 +48,8 @@ sigma = 1.0
 signalToNoiseRatio = 2.0
 smoothCount = 1
 
-[FeatureFinderParams]
-minScanCount = 3
-skipScanCount = 3
-
+[NeuralNetParams]
+epochs = 2
+baggingSize = 4
+learningRate = 0.003
+nodesFraction = 0.5

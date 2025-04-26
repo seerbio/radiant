@@ -142,7 +142,7 @@ struct PythiaParameters{
     //[NeuralNet]
     int epochs = 2;
     int baggingSize = 4;
-    double learningRate = 0.003;
+    float learningRate = 0.003;
     double nodesFraction = 0.5;
 
     [[nodiscard]] bool isValid() const {
