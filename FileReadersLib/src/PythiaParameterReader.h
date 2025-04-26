@@ -71,6 +71,12 @@ namespace PythiaParameterReaderConstants {
 
     extern const QString FILEREADERSLIB_EXPORTS kRtBinning;
 
+    extern const QString FILEREADERSLIB_EXPORTS kNeuralNetParams;
+    extern const QString FILEREADERSLIB_EXPORTS kEpochs;
+    extern const QString FILEREADERSLIB_EXPORTS kBaggingSize;
+    extern const QString FILEREADERSLIB_EXPORTS kLearningRate;
+    extern const QString FILEREADERSLIB_EXPORTS kNodesFraction;
+
 
 }
 
@@ -132,6 +138,12 @@ struct PythiaParameters{
     //[FeatureFinder]
     int minScanCount = 3;
     int skipScanCount = 2;
+
+    //[NeuralNet]
+    int epochs = 2;
+    int baggingSize = 4;
+    double learningRate = 0.003;
+    double nodesFraction = 0.5;
 
     [[nodiscard]] bool isValid() const {
 
@@ -234,6 +246,12 @@ struct PythiaParameters{
         qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kFeatureFinderParams << qPrintable("***");
         qDebug() << qPrintable(PythiaParameterReaderConstants::kMinScanCount) << minScanCount;
         qDebug() << qPrintable(PythiaParameterReaderConstants::kSkipScanCount) << skipScanCount;
+
+        qDebug() << qPrintable("***") << PythiaParameterReaderConstants::kNeuralNetParams << qPrintable("***");
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kEpochs) << epochs;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kBaggingSize) << baggingSize;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kLearningRate) << learningRate;
+        qDebug() << qPrintable(PythiaParameterReaderConstants::kNodesFraction) << nodesFraction;
 
         qDebug() << QStringLiteral("**********************************************");
     }

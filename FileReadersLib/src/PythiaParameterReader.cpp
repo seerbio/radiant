@@ -72,6 +72,12 @@ namespace PythiaParameterReaderConstants {
 
     const QString kRtBinning = QStringLiteral("rtBinning");
 
+    const QString kNeuralNetParams = QStringLiteral("NeuralNetParams");
+    const QString kEpochs = QStringLiteral("epochs");
+    const QString kBaggingSize = QStringLiteral("baggingSize");
+    const QString kLearningRate = QStringLiteral("learningRate");
+    const QString kNodesFraction = QStringLiteral("nodesFraction");
+
 }
 
 PythiaParameters PythiaParameterReader::genericPythiaParametersForTests() {
@@ -164,6 +170,12 @@ Err PythiaParameterReader::buildPythiaParameters(
     const auto featureFinderParamsNode = parser[kFeatureFinderParams.toStdString()];
     pythiaParameters->minScanCount = featureFinderParamsNode[kMinScanCount.toStdString()].value_or(0);
     pythiaParameters->skipScanCount = featureFinderParamsNode[kSkipScanCount.toStdString()].value_or(0);
+
+    const auto neuralNetParamsNode = parser[kNeuralNetParams.toStdString()];
+    pythiaParameters->epochs = neuralNetParamsNode[kEpochs.toStdString()].value_or(pythiaParameters->epochs);
+    pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
+    pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
+    pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
 
     ERR_RETURN
 }
