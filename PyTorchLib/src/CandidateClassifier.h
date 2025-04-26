@@ -38,8 +38,9 @@ public:
             int batchSize,
             double learningRate,
             int seed,
+            double nodeFraction,
             int verbosity
-            );
+            ) const;
 
     /*!
     * @brief   Principal method for using the trained classifier to predict outcomes for given inputs.

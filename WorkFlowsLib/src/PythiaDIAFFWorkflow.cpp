@@ -75,6 +75,7 @@ Err PythiaDIAFFWorkflow::init(
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+    // m_pythiaParameters.baggingSize = 4;
     // m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
     // m_pythiaParameters.calibrationTrainingVolume = 100000;
@@ -684,10 +685,9 @@ namespace {
     }
 
     Err trainNeuralNetwork(
+            const PythiaParameters &pythiaParameters,
             const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
             int seed,
-            int threadCount,
-            int verbosity,
             FDRCLassifierNeuralNet *fdrcLassifierNeuralNet
             ) {
 
@@ -718,23 +718,24 @@ namespace {
         file.close();
 #endif
 
-        constexpr int baggingSize = 4;
-        constexpr float learningRate = 0.003;
-        constexpr int epochs = 3; //TODO make this settable
+        // constexpr int baggingSize = 4;
+        // constexpr float learningRate = 0.003;
+        // constexpr int epochs = 2;
 
         e = fdrcLassifierNeuralNet->init(
-                epochs,
-                baggingSize,
+                pythiaParameters.epochs,
+                pythiaParameters.baggingSize,
                 batchSize,
-                learningRate,
-                threadCount
+                pythiaParameters.learningRate,
+                pythiaParameters.nodesFraction,
+                pythiaParameters.threadCount
         ); ree;
 
         e = fdrcLassifierNeuralNet->trainClassifier(
                 xData,
                 yData,
                 seed,
-                verbosity
+                pythiaParameters.verbosity
                 ); ree;
 
         ERR_RETURN
@@ -997,10 +998,9 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
 
     FDRCLassifierNeuralNet fdrClassifierNeuralNet;
     e = trainNeuralNetwork(
+            m_pythiaParameters,
             karnnNNTargetsNormTrain,
             seed,
-            m_pythiaParameters.threadCount,
-            m_pythiaParameters.verbosity,
             &fdrClassifierNeuralNet
             ); ree;
 

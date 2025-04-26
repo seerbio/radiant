@@ -109,6 +109,8 @@ public:
     * @param baggingSize An integer representing the size of the bagging ensemble.
     * @param batchSize An integer representing the batch size for training.
     * @param learningRate A double representing the learning rate for training.
+    * @param nodesFraction nodefraction
+    * @param threadCount threadCount,
     * @return An Err enum indicating the success or failure of the operation.
     */
     Err init(
@@ -116,6 +118,7 @@ public:
             int baggingSize,
             int batchSize,
             double learningRate,
+            double nodesFraction,
             int threadCount
             );
 
@@ -220,6 +223,7 @@ private:
     int m_baggingSize;
     int m_batchSize;
     double m_learningRate;
+    double m_nodesFraction;
     int m_threadCount;
 
     bool m_isInit;
