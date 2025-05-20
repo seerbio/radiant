@@ -170,4 +170,17 @@ INSTALL(EXPORT ${PROJECT_NAME}Targets
         COMPONENT Devel
         )
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result OUTPUT output)
+if(result)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+        add_compile_options(-flto=auto -fuse-linker-plugin)
+        add_link_options(-flto=auto -fuse-linker-plugin)
+        target_compile_options(FileReadersLib PRIVATE -flto=auto -fuse-linker-plugin)
+        target_link_options(FileReadersLib PRIVATE -flto=auto -fuse-linker-plugin)
+
+else()
+        message(WARNING "IPO (LTO) not supported: ${output}")
+endif()
+
 ADD_SUBDIRECTORY("tests")
