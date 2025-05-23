@@ -2,7 +2,7 @@
 // Created by andrewnichols on 5/23/25.
 //
 
-#include "MsFraggatron.h"
+#include "MsFraggertron.h"
 
 #include "TargetDecoyCandidatePair.h"
 
@@ -15,7 +15,7 @@
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-class Q_DECL_HIDDEN MsFraggatron::Private {
+class Q_DECL_HIDDEN MsFraggertron::Private {
 	using rTreeMzDouble = double;
 	using rTreeMzHashed = MzHashed;
 	using rTreeCoor = bg::model::point<rTreeMzDouble, 1, bg::cs::cartesian>;
@@ -35,15 +35,15 @@ private:
 
 };
 
-MsFraggatron::Private::Private()
+MsFraggertron::Private::Private()
 : m_rTree(Q_NULLPTR)
 {}
 
-MsFraggatron::Private::~Private() {
+MsFraggertron::Private::~Private() {
 	delete m_rTree;
 }
 
-Err MsFraggatron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs) {
+Err MsFraggertron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs) {
 
 	ERR_INIT
 
@@ -69,7 +69,7 @@ Err MsFraggatron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair
 	constexpr int maxElements = 16;
 	m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
 
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsFraggatron initiated";
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsFraggertron initiated";
 
 	ERR_RETURN
 }
@@ -79,15 +79,15 @@ Err MsFraggatron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-MsFraggatron::MsFraggatron()
+MsFraggertron::MsFraggertron()
 : m_mzHashedVsTDCPPntrs(Q_NULLPTR)
 , d_ptr(QScopedPointer<Private>(new Private))
 {}
 
-MsFraggatron::~MsFraggatron() {
+MsFraggertron::~MsFraggertron() {
 }
 
-Err MsFraggatron::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs) {
+Err MsFraggertron::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs) {
 	ERR_INIT
 	e = ErrorUtils::isNotEmpty(*mzHashedVsTDCPPntrs); ree;
 	m_mzHashedVsTDCPPntrs = mzHashedVsTDCPPntrs;

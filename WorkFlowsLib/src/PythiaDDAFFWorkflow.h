@@ -10,7 +10,7 @@
 #include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
-#include "MsFraggatron.h"
+#include "MsFraggertron.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 
@@ -72,7 +72,7 @@ private:
 
 private:
 
-	MsFraggatron m_msFraggatron;
+	MsFraggertron m_msFraggertron;
     PythiaParameters m_pythiaParameters;
     TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
 

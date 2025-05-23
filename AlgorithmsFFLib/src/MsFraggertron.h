@@ -13,11 +13,11 @@ using namespace Error;
 
 class TargetDecoyCandidatePair;
 
-class ALGORITHMSFFLIB_EXPORTS MsFraggatron {
+class ALGORITHMSFFLIB_EXPORTS MsFraggertron {
 
 public:
-	MsFraggatron();
-	~MsFraggatron();
+	MsFraggertron();
+	~MsFraggertron();
 
 	Err init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs);
 
@@ -27,7 +27,7 @@ private:
 	QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *m_mzHashedVsTDCPPntrs;
 
 
-	Q_DISABLE_COPY(MsFraggatron) class Private;
+	Q_DISABLE_COPY(MsFraggertron) class Private;
 	const QScopedPointer<Private> d_ptr;
 
 };

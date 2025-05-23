@@ -46,7 +46,7 @@ Err PythiaDDAFFWorkflow::init(
             ); ree;
 
     e = buildMzHashedVsTargetDecoyCandidatePairs(); ree;
-	e = m_msFraggatron.init(&m_mzHashedVsTargetDecoyCandidatePairs); ree;
+	e = m_msFraggertron.init(&m_mzHashedVsTargetDecoyCandidatePairs); ree;
 
     ERR_RETURN
 }
@@ -58,14 +58,14 @@ namespace {
 		int scanNumberMin = -1;
 		int scanNumberMax = -1;
 		MsReaderPointerAcc *msReaderPointerAcc = nullptr;
-		MsFraggatron *msFraggatron = nullptr;
+		MsFraggertron *msFraggertron = nullptr;
 	};
 
 	QVector<DDAJobChunk> buildDdaJobChunks(
 		const PythiaParameters &pythiaParameters,
 		int ms2ScanCount,
 		int chunkSize,
-		MsFraggatron *msFraggatron,
+		MsFraggertron *msFraggertron,
 		MsReaderPointerAcc *msReaderPointerAcc
 	) {
 		QVector<DDAJobChunk> jobChunks;
@@ -75,7 +75,7 @@ namespace {
 			chunk.pythiaParameters = pythiaParameters;
 			chunk.scanNumberMin = i + 1; //scanNumber does not start at 0
 			chunk.scanNumberMax = std::min(chunk.scanNumberMin + chunkSize - 1, ms2ScanCount);
-			chunk.msFraggatron = msFraggatron;
+			chunk.msFraggertron = msFraggertron;
 			chunk.msReaderPointerAcc = msReaderPointerAcc;
 			jobChunks.push_back(chunk);
 		}
@@ -126,7 +126,7 @@ Err PythiaDDAFFWorkflow::processFile(const QString &msDataFilePath) {
 		m_pythiaParameters,
 		lastScanNumber,
 		chunkSize,
-		&m_msFraggatron,
+		&m_msFraggertron,
 		&msReaderPointerAcc
 		);
 
