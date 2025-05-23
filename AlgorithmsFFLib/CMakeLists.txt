@@ -37,6 +37,7 @@ SET(SOURCE_FILES
         src/MS2Ion.cpp
         src/Ms2IonFraggertronManager.cpp
         src/MsCalibratomatic.cpp
+        src/MsFraggatron.cpp
         src/MsFrame.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
@@ -72,6 +73,7 @@ SET(HEADER_FILES
         src/MS2Ion.h
         src/Ms2IonFraggertronManager.h
         src/MsCalibratomatic.h
+        src/MsFraggatron.h
         src/MsFrame.h
         src/MsUtils.h
         src/PeakIntegratomatic.h

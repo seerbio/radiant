@@ -504,6 +504,21 @@ public:
 
     QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
 
+	Err buildMsScanInfoPntrVsScanPointPntrsMs2(
+		int scanNumberMin,
+		int scanNumberMax,
+		int threadCount,
+		QVector<QPair<MsScanInfo*, ScanPoint*>> *scanNumberVsScanPointPntrs
+		);
+
+	int scanPointsCount();
+
+	int scanPointsCount(int scanNumberMin, int scanNumberMax);
+
+	int scanCount(int msLevel);
+
+	int lastScanNumber() const;
+
 
 protected:
 

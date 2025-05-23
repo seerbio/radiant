@@ -106,6 +106,7 @@ public:
     const QString DOT_TSV = QStringLiteral(".tsv");
     const QString FAILED_SHUFFLE = QStringLiteral("Failed Shuffle");
     const int HASHING_PRECISION = 3;
+    const int HASHING_PRECISION_DDA = 4;
     const double ISO_DIFF = 1.003355;
     const int MAX_CHARGE_TANDEM_DEISOTOPING = 2;
     const QChar MODIFICATION_INTERNAL_SEP = '|';

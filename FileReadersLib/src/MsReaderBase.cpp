@@ -481,6 +481,7 @@ Err MsReaderBase::printFileInfo() {
     const int meanFrameScanCount = static_cast<int>(std::round(static_cast<float>(ms2ScanSize) / uniqueTandemScanInfos.size()));
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsData FilePath" << m_filePath;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanPoints Count" << scanPointsCount();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Range" << m_mzMs1Min << "-" << m_mzMs1Max;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Count" << ms1ScanSize;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Range" << m_mzMs2Min << "-" << m_mzMs2Max;
@@ -507,3 +508,82 @@ float MsReaderBase::mzMs2Max() const {
 QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
     return &m_frameNumberVsMS1FrameTIMS;
 }
+
+namespace {
+
+}//namespace
+Err MsReaderBase::buildMsScanInfoPntrVsScanPointPntrsMs2(
+	int scanNumberMin,
+	int scanNumberMax,
+	int threadCount,
+	QVector<QPair<MsScanInfo*, ScanPoint*>> *scanNumberVsScanPointPntrs
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(m_scanPoints); ree;
+
+	const int scanPointCountChunk = scanPointsCount(scanNumberMin, scanNumberMax);
+	scanNumberVsScanPointPntrs->clear();
+	scanNumberVsScanPointPntrs->reserve(scanPointCountChunk);
+
+	for (int scanNumber = scanNumberMin; scanNumber <= scanNumberMax; scanNumber++) {
+
+		e = ErrorUtils::contains(scanNumber, m_msScanInfo); ree;
+		e = ErrorUtils::contains(scanNumber, m_scanPoints); ree;
+
+		MsScanInfo &msi = m_msScanInfo[scanNumber];
+		if (msi.scanNumber < 2) {
+			continue;
+		}
+		ScanPoints &scanPoints = m_scanPoints[scanNumber];
+
+		for (ScanPoint &sp : scanPoints) {
+			scanNumberVsScanPointPntrs->push_back({&msi, &sp});
+		}
+	}
+
+	using QP = QPair<MsScanInfo*, ScanPoint*>;
+	std::sort(
+		scanNumberVsScanPointPntrs->begin(),
+		scanNumberVsScanPointPntrs->end(),
+		[](const QP &a, const QP &b) {return a.second->x() < b.second->x();}
+		);
+
+	ERR_RETURN
+}
+
+int MsReaderBase::scanPointsCount() {
+
+	return 	std::accumulate(
+		m_scanPoints.begin(),
+		m_scanPoints.end(),
+		0,
+		[](const int sum, const ScanPoints &sp){return sum + sp.size();}
+	);
+
+}
+
+int MsReaderBase::scanPointsCount(int scanNumberMin, int scanNumberMax) {
+	return 	std::accumulate(
+		m_scanPoints.begin() + scanNumberMin,
+		m_scanPoints.begin() + scanNumberMin + (scanNumberMax - scanNumberMin),
+		0,
+		[](const int sum, const ScanPoints &sp){return sum + sp.size();}
+	);
+}
+
+int MsReaderBase::scanCount(int msLevel) {
+	return getMsScanInfos(msLevel).size();
+}
+
+int MsReaderBase::lastScanNumber() const {
+	return m_msScanInfo.lastKey();
+}
+
+
+
+
+
+
+

@@ -10,9 +10,10 @@
 #include "FeatureFinderHillBuilder.h"
 #include "GlobalSettings.h"
 #include "MsCalibratomatic.h"
+#include "MsFraggatron.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
-#include "TargetDecoyCandidatePairScoretron.h"
+
 
 using namespace Error;
 
@@ -67,7 +68,21 @@ public:
 
 private:
 
+    Err buildMzHashedVsTargetDecoyCandidatePairs();
+
+private:
+
+	MsFraggatron m_msFraggatron;
     PythiaParameters m_pythiaParameters;
+    TargetDecoyCandidatePairManager m_targetDecoyCandidatePairManager;
+
+    QString m_fragLibUri;
+    QString m_outputFolderPath;
+    QString m_fastaUri;
+    QVector<FragLibReaderRow> m_fragLibReaderRows;
+
+    QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> m_mzHashedVsTargetDecoyCandidatePairs;
+	QVector<QPair<ScanNumber, ScanPoint*>> m_scanNumberVsScanPointPntrs;
 
 };
 
