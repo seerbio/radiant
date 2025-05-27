@@ -229,7 +229,7 @@ Err MsReaderBase::collateMS2MzTargetFrames(
 
 QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
 
-    const int msLevel = 2;
+    constexpr int msLevel = 2;
     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
 
     QMap<MzTargetKey, MsScanInfo> uniqueMsScanInfos;

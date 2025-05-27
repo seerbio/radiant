@@ -28,26 +28,40 @@ public:
 	Private();
 	~Private();
 
-	Err init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs);
+	Err init(
+		QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs
+		);
+
+	Err findTargetDecoyCandidates(
+		double mz,
+		double ppmTolerance,
+		QVector<TargetDecoyCandidatePair *> *targetDecoyCandidates
+		);
 
 private:
 	RTree *m_rTree;
+	QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *m_mzHashedVsTDCPPntrs;
 
 };
 
 MsFraggertron::Private::Private()
 : m_rTree(Q_NULLPTR)
+, m_mzHashedVsTDCPPntrs(Q_NULLPTR)
 {}
 
 MsFraggertron::Private::~Private() {
 	delete m_rTree;
 }
 
-Err MsFraggertron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs) {
+Err MsFraggertron::Private::init(
+	QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPsPntrs
+	) {
 
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(*mzHashedVsTDCPsPntrs); ree;
+
+	m_mzHashedVsTDCPPntrs = mzHashedVsTDCPsPntrs;
 
 	std::vector<rTreePoint> cloudLoader;
 	for (auto it = mzHashedVsTDCPsPntrs->begin(); it != mzHashedVsTDCPsPntrs->end(); it++) {
@@ -74,14 +88,45 @@ Err MsFraggertron::Private::init(QHash<MzHashed, QVector<TargetDecoyCandidatePai
 	ERR_RETURN
 }
 
+Err MsFraggertron::Private::findTargetDecoyCandidates(
+	double mz,
+	double ppmTolerance,
+	QVector<TargetDecoyCandidatePair*> *targetDecoyCandidates
+	) {
+
+	ERR_INIT
+
+	const double mzTol = MathUtils::calculatePPM(mz, ppmTolerance);
+	const double mzMin = mz - mzTol;
+	const double mzMax = mz + mzTol;
+
+	const rTreeSearchBox queryBox(
+		(rTreeCoor(mzMin)),
+		rTreeCoor(mzMax)
+	);
+
+	std::vector<rTreePoint> result;
+	m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+	QHash<TargetDecoyCandidatePair*, Occurrence> occurrences;
+	for (const rTreePoint &p : result) {
+		const QVector<TargetDecoyCandidatePair*> prs = m_mzHashedVsTDCPPntrs->value(p.second);
+		targetDecoyCandidates->append(prs);
+		// for (TargetDecoyCandidatePair *p : prs) {
+		// 	occurrences[p]++;
+		// }
+	}
+
+	ERR_RETURN
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
 MsFraggertron::MsFraggertron()
-: m_mzHashedVsTDCPPntrs(Q_NULLPTR)
-, d_ptr(QScopedPointer<Private>(new Private))
+: d_ptr(QScopedPointer<Private>(new Private))
 {}
 
 MsFraggertron::~MsFraggertron() {
@@ -90,7 +135,23 @@ MsFraggertron::~MsFraggertron() {
 Err MsFraggertron::init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs) {
 	ERR_INIT
 	e = ErrorUtils::isNotEmpty(*mzHashedVsTDCPPntrs); ree;
-	m_mzHashedVsTDCPPntrs = mzHashedVsTDCPPntrs;
 	e = d_ptr->init(mzHashedVsTDCPPntrs); ree;
+	ERR_RETURN
+}
+
+Err MsFraggertron::findTargetDecoyCandidates(
+	double mz,
+	double ppmTolerance,
+	QVector<TargetDecoyCandidatePair *> *targetDecoyCandidates
+	) {
+
+	ERR_INIT
+
+	e = d_ptr->findTargetDecoyCandidates(
+			mz,
+			ppmTolerance,
+			targetDecoyCandidates
+			); ree;
+
 	ERR_RETURN
 }

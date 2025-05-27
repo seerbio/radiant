@@ -98,10 +98,21 @@ namespace {
 			&scanNumberVsScanPointPntrs
 			); ree;
 
+		QMap<ScanNumber, QVector<TargetDecoyCandidatePair*>> scanNumberVsTargetDecoyCandidatePairPntrs;
+
+		for (const QPair<MsScanInfo*, ScanPoint*> &pr : scanNumberVsScanPointPntrs) {
+			QVector<TargetDecoyCandidatePair*> targetDecoyCandidates;
+			e = chunk.msFraggertron->findTargetDecoyCandidates(
+				 pr.second->x(),
+				 chunk.pythiaParameters.ms2ExtractionWidthPPM,
+				 &targetDecoyCandidates
+				 ); ree;
+			// scanNumberVsTargetDecoyCandidatePairPntrs[pr.first->scanNumber].append(targetDecoyCandidates);
+		}
+
 		if (chunk.pythiaParameters.verbosity > -1) { //TODO change verbosity threshold from -1 -> 0
 			qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "processDDAJobChunkLogic" << chunk.scanNumberMin;
 		}
-
 
 		ERR_RETURN
 	}
@@ -150,12 +161,16 @@ namespace {
         QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> mzHashedVsTargetDecoyCandidatePairs;
 
         for (TargetDecoyCandidatePair* tdcp : tdcps) {
-            for (const MS2Ion &ms2Ion : tdcp->ms2IonsDecoy()) {
+
+        	const QVector<MS2Ion> &targets = tdcp->ms2IonsTarget();
+        	const QVector<MS2Ion> &decoys = tdcp->ms2IonsDecoy();
+
+            for (const MS2Ion &ms2Ion : targets) {
                 const auto mz = static_cast<double>(ms2Ion.mz);
                 const int mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION_DDA);
                 mzHashedVsTargetDecoyCandidatePairs[mzHashed].push_back(tdcp);
             }
-            for (const MS2Ion &ms2Ion : tdcp->ms2IonsTarget()) {
+            for (const MS2Ion &ms2Ion : decoys) {
                 const auto mz = static_cast<double>(ms2Ion.mz);
                 const int mzHashed = MathUtils::hashDecimal(mz, S_GLOBAL_SETTINGS.HASHING_PRECISION_DDA);
                 mzHashedVsTargetDecoyCandidatePairs[mzHashed].push_back(tdcp);

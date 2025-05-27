@@ -21,11 +21,14 @@ public:
 
 	Err init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs);
 
+	Err findTargetDecoyCandidates(
+		double mz,
+		double ppmTolerance,
+		QVector<TargetDecoyCandidatePair*> *targetDecoyCandidates
+		);
+
 
 private:
-
-	QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *m_mzHashedVsTDCPPntrs;
-
 
 	Q_DISABLE_COPY(MsFraggertron) class Private;
 	const QScopedPointer<Private> d_ptr;
