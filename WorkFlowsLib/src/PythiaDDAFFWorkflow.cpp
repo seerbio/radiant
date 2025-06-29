@@ -6,6 +6,7 @@
 
 #include "FragLibReader.h"
 #include "MsReaderPointerAcc.h"
+#include "MsUtils.h"
 
 
 PythiaDDAFFWorkflow::PythiaDDAFFWorkflow() {}
@@ -45,8 +46,7 @@ Err PythiaDDAFFWorkflow::init(
             &m_fragLibReaderRows
             ); ree;
 
-    e = buildMzHashedVsTargetDecoyCandidatePairs(); ree;
-	e = m_msFraggertron.init(&m_mzHashedVsTargetDecoyCandidatePairs); ree;
+    // e = buildMzHashedVsTargetDecoyCandidatePairs(); ree;
 
     ERR_RETURN
 }
@@ -100,15 +100,15 @@ namespace {
 
 		QMap<ScanNumber, QVector<TargetDecoyCandidatePair*>> scanNumberVsTargetDecoyCandidatePairPntrs;
 
-		for (const QPair<MsScanInfo*, ScanPoint*> &pr : scanNumberVsScanPointPntrs) {
-			QVector<TargetDecoyCandidatePair*> targetDecoyCandidates;
-			e = chunk.msFraggertron->findTargetDecoyCandidates(
-				 pr.second->x(),
-				 chunk.pythiaParameters.ms2ExtractionWidthPPM,
-				 &targetDecoyCandidates
-				 ); ree;
-			// scanNumberVsTargetDecoyCandidatePairPntrs[pr.first->scanNumber].append(targetDecoyCandidates);
-		}
+		// for (const QPair<MsScanInfo*, ScanPoint*> &pr : scanNumberVsScanPointPntrs) {
+		// 	QVector<TargetDecoyCandidatePair*> targetDecoyCandidates;
+		// 	e = chunk.msFraggertron->findTargetDecoyCandidates(
+		// 		 pr.second->x(),
+		// 		 chunk.pythiaParameters.ms2ExtractionWidthPPM,
+		// 		 &targetDecoyCandidates
+		// 		 ); ree;
+		// 	// scanNumberVsTargetDecoyCandidatePairPntrs[pr.first->scanNumber].append(targetDecoyCandidates);
+		// }
 
 		if (chunk.pythiaParameters.verbosity > -1) { //TODO change verbosity threshold from -1 -> 0
 			qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "processDDAJobChunkLogic" << chunk.scanNumberMin;
@@ -130,23 +130,49 @@ Err PythiaDDAFFWorkflow::processFile(const QString &msDataFilePath) {
     e = msReaderPointerAcc.openFile(msDataFilePath); ree;
     msReaderPointerAcc.ptr->printSize();
 
-	constexpr int chunkSize = 1000; //TODO find a better way to set this based on scancounts
-	const int lastScanNumber = msReaderPointerAcc.ptr->lastScanNumber();
+	e = m_msFraggertron.init(&msReaderPointerAcc); ree;
 
-	const QVector<DDAJobChunk> ddaJobChunks = buildDdaJobChunks(
-		m_pythiaParameters,
-		lastScanNumber,
-		chunkSize,
-		&m_msFraggertron,
-		&msReaderPointerAcc
-		);
+	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsPntrs;
+	e = m_targetDecoyCandidatePairManager.getTargetDecoyCandidatePairPointers(&targetDecoyCandidatePairsPntrs); ree;
+	int counter = 0;
+	for (const TargetDecoyCandidatePair* tdcp : targetDecoyCandidatePairsPntrs) {
 
-	QFuture<Err> future = QtConcurrent::mapped(
-		ddaJobChunks,
-		processDDAJobChunkLogic
-		);
-	future.waitForFinished();
+		if (counter++ % 10 == 0) {
+			qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << counter;
+		}
 
+		QVector<ScanPoints*> scanPointses;
+		e = m_msFraggertron.findScanPointsPntrs(
+			tdcp->mz(false),
+			m_pythiaParameters.precursorExtractionWindowThomsons,
+			&scanPointses
+			); ree;
+
+		if (scanPointses.isEmpty()) {
+			continue;
+		}
+
+		QVector<MS2Ion> targetIons = tdcp->ms2IonsTarget();
+		targetIons.resize(12);
+		QVector<QPointF> ms2IonsTarget;
+		std::transform(
+			targetIons.begin(),
+			targetIons.end(),
+			std::back_inserter(ms2IonsTarget),
+			[](const MS2Ion &ms2Ion){return QPointF(ms2Ion.mz, ms2Ion.intensity);}
+			);
+
+		for (ScanPoints* scanPoints : scanPointses) {
+			qDebug() << scanPoints->size() << "SLDKFJSL";
+			ExtractPoints extractionPoints = MsUtils::extractPointsFromPoints(
+				*scanPoints,
+				ms2IonsTarget,
+				m_pythiaParameters.ms2ExtractionWidthPPM
+				);
+		}
+
+
+	}
 
 
     ERR_RETURN
@@ -213,6 +239,7 @@ Err PythiaDDAFFWorkflow::buildMzHashedVsTargetDecoyCandidatePairs() {
     }
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished building" << m_mzHashedVsTargetDecoyCandidatePairs.size() << "hashes";
+	qDebug() << m_mzHashedVsTargetDecoyCandidatePairs.size() << "SDLFJSJKF";
 
     ERR_RETURN
 }

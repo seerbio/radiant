@@ -9,6 +9,7 @@
 #include "GlobalSettings.h"
 #include "Error.h"
 
+class MsReaderPointerAcc;
 using namespace Error;
 
 class TargetDecoyCandidatePair;
@@ -19,12 +20,12 @@ public:
 	MsFraggertron();
 	~MsFraggertron();
 
-	Err init(QHash<MzHashed, QVector<TargetDecoyCandidatePair*>> *mzHashedVsTDCPPntrs);
+	Err init(MsReaderPointerAcc *msReader);
 
-	Err findTargetDecoyCandidates(
+	Err findScanPointsPntrs(
 		double mz,
-		double ppmTolerance,
-		QVector<TargetDecoyCandidatePair*> *targetDecoyCandidates
+		double precursorExtractionWindowThomsons,
+		QVector<ScanPoints*> *scanPointsPntrs
 		);
 
 
