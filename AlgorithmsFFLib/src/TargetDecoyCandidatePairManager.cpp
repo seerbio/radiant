@@ -69,7 +69,8 @@ namespace {
             || peptideLength > pythiaParameters.peptideLengthMax
             || charge < pythiaParameters.chargeStateMin
             || charge > pythiaParameters.chargeStateMax
-            || flrr.isDecoy == 1) {
+            // || flrr.isDecoy == 1
+            ) {
             return {e, {}};
         }
 
