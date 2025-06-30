@@ -25,6 +25,7 @@ SET(SOURCE_FILES
         src/Centroidotron.cpp
         src/ClassifierWeightsManager.cpp
         src/Deconvolvotron.cpp
+        src/DeIsotopotron.cpp
         src/DiscriminantScoretron.cpp
         src/DeMultiplexScanerator.cpp
         src/DeMultiplexScaneratorManager.cpp
@@ -60,6 +61,7 @@ SET(HEADER_FILES
         src/Centroidotron.h
         src/ClassifierWeightsManager.h
         src/Deconvolvotron.h
+        src/DeIsotopotron.h
         src/DeMultiplexScanerator.h
         src/DeMultiplexScaneratorManager.h
         src/DiscriminantScoretron.h

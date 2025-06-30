@@ -128,6 +128,16 @@ public:
         const QString &filePathDestination
         );
 
+	static Err writeScanPoints(
+		const QVector<PointFF> &scanPoints,
+		const QString &filePathDestination
+		);
+
+	static Err readScanPoints(
+		const QString &filePathSource,
+		QVector<PointFF> *scanPoints
+		);
+
 };
 
 

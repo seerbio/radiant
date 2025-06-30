@@ -21,6 +21,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
         src/ConvertMzMLToParquetWorkFlow.cpp
+        src/PythiaDDAWorkflow.cpp
         src/PythiaDIAFFWorkflow.cpp
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
         src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
@@ -29,6 +30,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
         src/ConvertMzMLToParquetWorkFlow.h
+        src/PythiaDDAWorkflow.h
         src/PythiaDIAFFWorkflow.h
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
         src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h

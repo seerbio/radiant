@@ -22,6 +22,31 @@ SET(TIMS_CPPSQL_HEADER "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/t
 SET(TIMS_CPPSQL_SOURCE "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/thirdparty/CppSQLite-master/CppSQLite3.cpp")
 SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so")
 
+include(CheckCXXCompilerFlag)
+# Check for AVX
+check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
+check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
+check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512)
+
+if(COMPILER_SUPPORTS_AVX512)
+    message(STATUS "Enabling AVX-512 support, AVX, and AVX2")
+    add_compile_options(-mavx512f -mfma -mavx512bw -mavx512cd -mavx2 -mavx)
+elseif(COMPILER_SUPPORTS_AVX2)
+    message(STATUS "Enabling AVX2 support")
+    add_compile_options(-mavx -mavx2 -mfma)
+elseif(COMPILER_SUPPORTS_AVX)
+    message(STATUS "Enabling AVX support")
+    add_compile_options(-mavx -mfma)
+elseif(MSVC)
+    message(STATUS "Enabling AVX support for MSVC")
+    add_compile_options(/arch:AVX) # Enable AVX support for MSVC
+else()
+    message(WARNING "Your compiler does not support AVX, AVX2, or AVX-512 extensions.")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=auto")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto=auto")
+
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 ADD_SUBDIRECTORY("Apps/FeatureOptimizerPrime")

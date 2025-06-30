@@ -17,6 +17,7 @@ SET(TEST_CLASSES
         CentroidotronTests
         ClassifierWeightsManagerTests
         DeconvolvotronTests
+        DeIsotopotronTests
         DeMultiplexScaneratorTests
         DiscriminantScoretronTests
         FDRCLassifierNeuralNetTests
