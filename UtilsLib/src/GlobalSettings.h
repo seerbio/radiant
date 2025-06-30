@@ -176,8 +176,8 @@ public:
     }
 
     [[nodiscard]] QString elapsed() const {
-        const int minutesElapsed = static_cast<int>(std::floor(m_timer.elapsed() / (1000 * 60.0)));
-        const int secondsElapsed = static_cast<int>(std::floor(m_timer.elapsed() / 1000.0) - (minutesElapsed * 60.0));
+        const int minutesElapsed = static_cast<int>(std::floor(static_cast<double>(m_timer.elapsed()) / (1000 * 60.0)));
+        const int secondsElapsed = static_cast<int>(std::floor(static_cast<double>(m_timer.elapsed()) / 1000.0) - (minutesElapsed * 60.0));
         const QString timerGoneBy = secondsElapsed < 10 ? QStringLiteral("[%1:0%2 Peak:Current RSS %3:%4 mB]") : QStringLiteral("[%1:%2 Peak:Current RSS %3:%4 mB]");
         return timerGoneBy.arg(minutesElapsed).arg(secondsElapsed).arg(ParallelUtils::getPeakRSS()).arg(ParallelUtils::getCurrentRSS());
     }

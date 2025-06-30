@@ -14,6 +14,13 @@ using namespace Error;
 
 class ALGORITHMSFFLIB_EXPORTS DeIsotopotron {
 
+public:
+
+	static Err deisotopeTandemScan(
+		float extractionTolerancePPM,
+		ScanPoints *scanPoints
+		);
+
 };
 
 

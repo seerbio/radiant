@@ -11,7 +11,6 @@ SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTORCC ON)
 SET(CMAKE_AUTOUIC ON)
 
-
 SET(CMAKE_AUTOMOC_MACRO_NAMES
         "Q_OBJECT"
         "Q_GADGET"
@@ -141,6 +140,32 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD 17
         CXX_EXTENSIONS OFF
         )
+
+include(CheckCXXCompilerFlag)
+# Check for AVX
+check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
+check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
+check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512)
+
+if(COMPILER_SUPPORTS_AVX512)
+    message(STATUS "Enabling AVX-512 support, AVX, and AVX2 ${COMPILER_SUPPORTS_AVX512}")
+    add_compile_definitions(AVX512=1)
+    set_source_files_properties(
+            src/DeIsotopotron.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mavx512vl -mfma -mavx2 -mfma -mavx -mfma"
+    )
+elseif(COMPILER_SUPPORTS_AVX2)
+    message(STATUS "Enabling AVX2 support")
+    add_compile_options(-mavx2 -mfma)
+elseif(COMPILER_SUPPORTS_AVX)
+    message(STATUS "Enabling AVX support")
+    add_compile_options(-mavx -mfma)
+elseif(MSVC)
+    message(STATUS "Enabling AVX support for MSVC")
+    add_compile_options(/arch:AVX) # Enable AVX support for MSVC
+else()
+    message(WARNING "Your compiler does not support AVX, AVX2, or AVX-512 extensions.")
+endif()
+
 
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "Libs")
 

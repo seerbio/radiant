@@ -17,6 +17,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "PointFF.h"
+
 class UTILSLIB_EXPORTS ParallelUtils {
 
 public:
@@ -520,6 +522,22 @@ public:
         }
 
         return {v1, v2};
+    }
+
+	static QPair<QVector<float>, QVector<float>> unZipPointFF(const QVector<PointFF> &points) {
+
+    	QVector<float> v1;
+    	v1.reserve(points.size());
+
+    	QVector<float> v2;
+    	v1.reserve(points.size());
+
+    	for (const PointFF &p : points) {
+    		v1.push_back(p.x());
+    		v2.push_back(p.y());
+    	}
+
+    	return {v1, v2};
     }
 
     /*!

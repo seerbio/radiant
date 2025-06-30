@@ -30,6 +30,10 @@ void DeIsotopotronTests::deisotopeTest() {
 	QCOMPARE(e, eNoError);
 	QCOMPARE(scanPoints.size(), 91);
 
+	constexpr float ppmTol = 10.0f;
+	e = DeIsotopotron::deisotopeTandemScan(ppmTol, &scanPoints);
+	QCOMPARE(e, eNoError);
+
 
 }
 

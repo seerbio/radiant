@@ -243,7 +243,7 @@ public:
     */
     template<typename T>
     static T calculatePPM(T val, T ppmTolerance) {
-        return (val * ppmTolerance) / 1e6;
+        return (val * ppmTolerance) / static_cast<T>(1e6);
     }
 
     /*!

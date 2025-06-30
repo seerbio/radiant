@@ -4,6 +4,7 @@
 
 #include "PythiaDDAWorkflow.h"
 
+#include "DeIsotopotron.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "ObjectCSVWriters.h"
 #include "ParallelUtils.h"
@@ -54,6 +55,7 @@ namespace {
 
 	QPair<Err, QMap<ScanNumber, ScanPoints>> readScanPointsParallel(
 		const QVector<MsScanInfo*> &msScanInfosSubset,
+		float ppmTol,
 		MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
 		) {
 
@@ -71,9 +73,7 @@ namespace {
 			const ScanNumber scanNumber = it.key();
 			ScanPoints &scanPointsIter = it.value();
 
-			if (scanNumber == 27355) {
-				ObjectCSVWriters::writeScanPoints(scanPointsIter, "Scan27355.txt");
-			}
+			DeIsotopotron::deisotopeTandemScan(ppmTol, &scanPointsIter);
 		}
 
 		return {e, scanPoints};
@@ -93,10 +93,13 @@ namespace {
 			&msScanInfosSubsetTranched
 			); ree;
 
+// #define DDA_PARALLEL
+#ifdef DDA_PARALLEL
 
 		const auto binderLogic = std::bind(
 			readScanPointsParallel,
 			std::placeholders::_1,
+			10.0, //TODO replace this w/ extractionPPM
 			msReaderMzMlLazyLoad
 			);
 
@@ -109,6 +112,17 @@ namespace {
 		for (const QPair<Err, QMap<ScanNumber, ScanPoints>> &result : futures) {
 			e = result.first; ree;
 		}
+#else
+
+		QPair<Err, QMap<ScanNumber, ScanPoints>> result = readScanPointsParallel(
+			msScanInfosSubset,
+			10.0f,
+			msReaderMzMlLazyLoad
+			);
+		e = result.first; ree;
+
+
+#endif
 
 
 
