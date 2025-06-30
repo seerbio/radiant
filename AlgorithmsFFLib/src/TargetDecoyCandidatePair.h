@@ -73,6 +73,8 @@ public:
     */
     [[nodiscard]] float mz(bool isDecoy) const;
 
+	[[nodiscard]] bool isDecoy() const;
+
     /**
     * @brief Gets the charge of the target-decoy candidate pair.
     *

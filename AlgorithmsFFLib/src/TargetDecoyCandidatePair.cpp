@@ -193,6 +193,10 @@ float TargetDecoyCandidatePair::mz(bool isDecoy) const {
         : BiophysicalCalcs::calculateThomsonFromMass(mass(), charge());
 }
 
+bool TargetDecoyCandidatePair::isDecoy() const {
+	return m_fragLibReaderRowPntr->isDecoy;
+}
+
 int TargetDecoyCandidatePair::charge() const {
     return m_fragLibReaderRowPntr->precursorCharge;
 }
