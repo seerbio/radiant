@@ -24,7 +24,7 @@ SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/li
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=auto")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto=auto")
-
+MESSAGE("Building Everything")
 ADD_SUBDIRECTORY("AlgorithmsFFLib")
 ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 ADD_SUBDIRECTORY("Apps/FeatureOptimizerPrime")
