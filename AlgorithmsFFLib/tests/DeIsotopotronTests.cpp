@@ -30,9 +30,11 @@ void DeIsotopotronTests::deisotopeTest() {
 	QCOMPARE(e, eNoError);
 	QCOMPARE(scanPoints.size(), 91);
 
+	// ObjectCSVWriters::writeScanPoints(scanPoints, "before.csv");
 	constexpr float ppmTol = 10.0f;
 	e = DeIsotopotron::deisotopeTandemScan(ppmTol, &scanPoints);
 	QCOMPARE(e, eNoError);
+	// ObjectCSVWriters::writeScanPoints(scanPoints, "after.csv");
 
 
 }

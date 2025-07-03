@@ -8,6 +8,7 @@
 #include "ParallelUtils.h"
 
 #include <cpuid.h>
+#include <cstring>
 #include <immintrin.h>
 
 
@@ -25,17 +26,6 @@ namespace {
 		return vecSizeOG;
 	}
 
-	void copyFloatAVX512(
-		const float* src,
-		float* dst,
-		size_t count
-		){
-			constexpr size_t simdWidth = 16;
-			for (size_t i = 0; i + simdWidth < count; i += simdWidth) {
-				__m512 v = _mm512_loadu_ps(src + i);
-				_mm512_store_ps(dst + i, v);
-			}
-	}
 
 	void copyFloatAVX2(
 		const float* src,
@@ -43,9 +33,15 @@ namespace {
 		size_t count
 		) {
 		constexpr size_t simdWidth = 8;
-		for (size_t i = 0; i + simdWidth <= count; i += simdWidth) {
+		size_t i = 0;
+
+		for (; i + simdWidth <= count; i += simdWidth) {
 			__m256 v = _mm256_loadu_ps(src + i);
 			_mm256_storeu_ps(dst + i, v);
+		}
+
+		if (i < count) {
+			std::memcpy(dst + i, src + i, (count - i) * sizeof(float));
 		}
 
 	}
@@ -74,11 +70,11 @@ namespace {
 	}
 
 	void subtractValInRangeFromIntensityAtGivenMzAVX2(
-		const __m256& avx256Mz,
+		const __m256 &avx256Mz,
 		float mzMin,
 		float mzMax,
 		float subtractVal,
-		__m256* avx256Intensity
+		__m256 *avx256Intensity
 		) {
 			const __m256 mzValMin = _mm256_set1_ps(mzMin);
 			const __m256 mzValMax = _mm256_set1_ps(mzMax);
@@ -95,6 +91,15 @@ namespace {
 				maskCombined
 			);
 		}
+
+	static void printAVX(const __m256 &avx) {
+		alignas(64) float values[8];
+		_mm256_store_ps(values, avx);
+		QDebug debug = qDebug().nospace();
+		for (int j = 0; j < 8; j++) {
+			debug << MathUtils::pRound(values[j], 3) << ", ";
+		}
+	}
 
 	void printAVX512Float(const __m512 &avx) {
 		alignas(64) float values[16];
@@ -120,6 +125,37 @@ namespace {
 		return (ebx & (1 << 16)) != 0; // AVX512F bit in EBX
 	}
 
+	float horizontalMin(__m256 vec) {
+		// Extract the 8 floats into a 256-bit vector
+		__m128 low = _mm256_castps256_ps128(vec); // Lower 4 floats
+		__m128 high = _mm256_extractf128_ps(vec, 1); // Upper 4 floats
+		__m128 min4 = _mm_min_ps(low, high); // Element-wise minimum of low and high
+
+		// Reduce the result further
+		__m128 min2 = _mm_min_ps(min4, _mm_movehl_ps(min4, min4)); // Compare first two and last two floats
+		__m128 min1 = _mm_min_ps(min2, _mm_shuffle_ps(min2, min2, 0x1)); // Compare adjacent floats
+
+		return _mm_cvtss_f32(min1); // Extract the smallest float
+	}
+
+	float horizontalMax(__m256 vec) {
+		__m128 low = _mm256_castps256_ps128(vec); // Lower 4 floats
+		__m128 high = _mm256_extractf128_ps(vec, 1); // Upper 4 floats
+		__m128 max4 = _mm_max_ps(low, high); // Element-wise maximum of low and high
+
+		__m128 max2 = _mm_max_ps(max4, _mm_movehl_ps(max4, max4)); // Compare first two and last two floats
+		__m128 max1 = _mm_max_ps(max2, _mm_shuffle_ps(max2, max2, 0x1)); // Compare adjacent floats
+
+		return _mm_cvtss_f32(max1); // Extract the largest float
+	}
+
+	__m256 fillNegativesWithZeros(__m256 input) {
+		__m256 zeros = _mm256_setzero_ps();
+		__m256 mask = _mm256_cmp_ps(input, zeros, _CMP_LT_OS);
+		__m256 result = _mm256_blendv_ps(input, zeros, mask);
+		return result;
+	}
+
 }//namespace
 Err DeIsotopotron::deisotopeTandemScan(
 	float extractionTolerancePPM,
@@ -132,216 +168,75 @@ Err DeIsotopotron::deisotopeTandemScan(
 	const QVector<float> &mzVals = scanPointsSplit.first;
 	const QVector<float> &intensityVals = scanPointsSplit.second;
 
-	if (supportsAVX512()) {
+	constexpr int avx256FloatSize = 8;
+	const int vecSizeBuffered = calculateBufferedVecSizeAVX(scanPoints->size(), avx256FloatSize);
 
-		constexpr int avx512FloatSize = 16;
-		const int vecSizeBuffered = calculateBufferedVecSizeAVX(scanPoints->size(), avx512FloatSize);
-		const int avx512RegistersCount = vecSizeBuffered / avx512FloatSize;
+	alignas(32) float mzValsRaw[vecSizeBuffered] = {0.0f};
+	copyFloatAVX2(mzVals.data(), mzValsRaw, mzVals.size());
 
-		alignas(64) float mzValsRaw[vecSizeBuffered] = {0.0f};
-		copyFloatAVX512(mzVals.data(), mzValsRaw, mzVals.size());
+	alignas(32) float intensityValsRaw[vecSizeBuffered] = {0.0f};
+	copyFloatAVX2(intensityVals.data(), intensityValsRaw, intensityVals.size());
 
-		alignas(64) float intensityValsRaw[vecSizeBuffered] = {0.0f};
-		copyFloatAVX512(intensityVals.data(), intensityValsRaw, intensityVals.size());
+	float mzRegisterMin = 0.0f;
+	int currentRegisterIndex = 0;
+	__m256 mzRegisterCurrent = _mm256_load_ps(mzValsRaw + currentRegisterIndex);
+	__m256 intensityzRegisterCurrent = _mm256_load_ps(intensityValsRaw + currentRegisterIndex);
+	float mzRegisterMax = horizontalMax(mzRegisterCurrent);
+	for (int i = 0; i < mzVals.size(); i++) {
 
-		__m512 mzRegisterCurrent = _mm512_setzero_ps();
-		__m512 mzRegisterNext = _mm512_setzero_ps();
-		__m512 intensityRegisterCurrent = _mm512_setzero_ps();
-		__m512 intensityRegisterNext = _mm512_setzero_ps();
-		printAVX512Float(intensityRegisterCurrent);
+		const float mzVal = mzValsRaw[i];
 
-		int avxIndexCurrent = -1;
-		for (int i = 0; i < mzVals.size(); i++) {
+		float mzValIso1 = mzVal + static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF * 0.5);
+		float mzValIso2 = mzVal + static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF);
+		const float mzTol = MathUtils::calculatePPM(mzVal, extractionTolerancePPM);
 
-			const int avxIndex = i / avx512FloatSize;
-			if (avxIndex != avxIndexCurrent) {
-
-				if (i > 0) {
-
-					// printAVX512Float(intensityRegisterCurrent);
-
-					// _mm512_storeu_ps(
-					// 	&intensityValsRaw + (avxIndexCurrent * avx512FloatSize),
-					// 	intensityRegisterCurrent
-					// 	);
-
-					// _mm512_store_ps(
-					// 	intensityValsRaw + ((avxIndexCurrent + 1) * avx512FloatSize),
-					// 	intensityRegisterNext
-					// 	);
-				}
-
-
-				mzRegisterCurrent = _mm512_load_ps(mzValsRaw + (avxIndex * avx512FloatSize));
-				intensityRegisterCurrent = _mm512_load_ps(intensityValsRaw + (avxIndex * avx512FloatSize));
-
-				if (avxIndex + 1 < avx512RegistersCount) {
-					mzRegisterNext = _mm512_load_ps(mzValsRaw + ((avxIndex + 1) * avx512FloatSize));
-					intensityRegisterNext = _mm512_load_ps(intensityValsRaw + ((avxIndex + 1) * avx512FloatSize));
-				}
-
-				avxIndexCurrent = avxIndex;
-			}
-
-			const float mzValCurrent = mzValsRaw[i];
-			const float mzValCurrentCharge1 = mzValCurrent + static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF);
-			const float mzValCurrentCharge2 = mzValCurrent + static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF) / 2.0f;
-			const float mzTol = MathUtils::calculatePPM(mzValCurrentCharge1, extractionTolerancePPM);
-			const float intensityValCurrent = intensityValsRaw[i];
-
-			if (MathUtils::tZero(intensityValCurrent)) {
-				continue;
-			}
-
-			subtractValInRangeFromIntensityAtGivenMz(
-				mzRegisterCurrent,
-				mzValCurrentCharge1 - mzTol,
-				mzValCurrentCharge1 + mzTol,
-				intensityValCurrent,
-				&intensityRegisterCurrent
-				);
-
-			subtractValInRangeFromIntensityAtGivenMz(
-				mzRegisterCurrent,
-				mzValCurrentCharge2 - mzTol,
-				mzValCurrentCharge2 + mzTol,
-				intensityValCurrent,
-				&intensityRegisterCurrent
-				);
-
-			if (avxIndexCurrent + 1 < avx512RegistersCount) {
-
-				subtractValInRangeFromIntensityAtGivenMz(
-					mzRegisterNext,
-					mzValCurrentCharge1 - mzTol,
-					mzValCurrentCharge1 + mzTol,
-					intensityValCurrent,
-					&intensityRegisterNext
-					);
-
-				subtractValInRangeFromIntensityAtGivenMz(
-					mzRegisterNext,
-					mzValCurrentCharge2 - mzTol,
-					mzValCurrentCharge2 + mzTol,
-					intensityValCurrent,
-					&intensityRegisterNext
-					);
-			}
-
+		if (
+			(mzValIso1 + mzTol < mzRegisterMin && mzValIso2 + mzTol < mzRegisterMin) ||
+			MathUtils::tSame(mzVal, mzRegisterMin) || MathUtils::tSame(mzVal, mzRegisterMax)
+			) {
+			continue;
 		}
+
+		while (mzValIso1 - mzTol > mzRegisterMax && mzValIso2 - mzTol > mzRegisterMax) {
+			_mm256_store_ps(intensityValsRaw + currentRegisterIndex, intensityzRegisterCurrent);
+			currentRegisterIndex += avx256FloatSize;
+			mzRegisterCurrent = _mm256_load_ps(mzValsRaw + currentRegisterIndex);
+			intensityzRegisterCurrent = _mm256_load_ps(intensityValsRaw + currentRegisterIndex);
+			mzRegisterMin = mzRegisterMax;
+			mzRegisterMax = horizontalMax(mzRegisterCurrent);
+		}
+
+		subtractValInRangeFromIntensityAtGivenMzAVX2(
+			mzRegisterCurrent,
+			mzValIso1 - mzTol,
+			mzValIso1 + mzTol,
+			intensityValsRaw[i],
+			&intensityzRegisterCurrent
+			);
+
+		subtractValInRangeFromIntensityAtGivenMzAVX2(
+			mzRegisterCurrent,
+			mzValIso2 - mzTol,
+			mzValIso2 + mzTol,
+			intensityValsRaw[i],
+			&intensityzRegisterCurrent
+			);
+
+		// qDebug() << mzValIso1 - mzTol << mzValIso1 + mzTol;
+		// qDebug() << mzValIso2 - mzTol << mzValIso2 + mzTol;
+		// printAVX(mzRegisterCurrent);
+		// printAVX(intensityzRegisterCurrent);
+		// intensityzRegisterCurrent = fillNegativesWithZeros(intensityzRegisterCurrent);
 	}
 
-	else {
-		constexpr int avx256FloatSize = 8;
-		const int vecSizeBuffered = calculateBufferedVecSizeAVX(scanPoints->size(), avx256FloatSize);
-		const int avx256RegistersCount = vecSizeBuffered / avx256FloatSize;
-
-		alignas(32) float mzValsRaw[vecSizeBuffered] = {0.0f};
-		copyFloatAVX2(mzVals.data(), mzValsRaw, mzVals.size());
-
-		alignas(32) float intensityValsRaw[vecSizeBuffered] = {0.0f};
-		copyFloatAVX2(intensityVals.data(), intensityValsRaw, intensityVals.size());
-
-		__m256 mzRegisterCurrent = _mm256_setzero_ps();
-		__m256 mzRegisterNext = _mm256_setzero_ps();
-		__m256 intensityRegisterCurrent = _mm256_setzero_ps();
-		__m256 intensityRegisterNext = _mm256_setzero_ps();
-
-		int avxIndexCurrent = -1;
-		for (int i = 0; i < mzVals.size(); i++) {
-		    const int avxIndex = i / avx256FloatSize;
-		    if (avxIndex != avxIndexCurrent) {
-		        if (i > 0) {
-
-		            _mm256_store_ps(
-		                &intensityValsRaw[(avxIndexCurrent * avx256FloatSize)],
-		                intensityRegisterCurrent
-		            );
-
-		        	if (avxIndexCurrent + 1 < avx256RegistersCount) {
-
-remove the following and use another for (int i = 0; i < mzVals.size(); i++) with intensityValsRaw[((avxIndex + 1) * avx256FloatSize)],
-
-		        		// _mm256_store_ps(
-		        		//     &intensityValsRaw[((avxIndex + 1) * avx256FloatSize)],
-		        		//     intensityRegisterNext
-		        		// );
-		        	}
-
-
-		        }
-
-		    	avxIndexCurrent = avxIndex;
-
-		        mzRegisterCurrent = _mm256_load_ps(mzValsRaw + (avxIndexCurrent * avx256FloatSize));
-		        intensityRegisterCurrent = _mm256_load_ps(intensityValsRaw + (avxIndexCurrent * avx256FloatSize));
-
-		        if (avxIndex + 1 < avx256RegistersCount) {
-		            mzRegisterNext = _mm256_load_ps(mzValsRaw + ((avxIndexCurrent + 1) * avx256FloatSize));
-		            intensityRegisterNext = _mm256_load_ps(intensityValsRaw + ((avxIndexCurrent + 1) * avx256FloatSize));
-		        }
-
-		    }
-
-		    const float mzValCurrent = mzValsRaw[i];
-		    const float mzValCurrentIsotopeCharge1 = mzValCurrent + (static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF) / 1.0f);
-		    const float mzValCurrentIsotopeCharge2 = mzValCurrent + (static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF) / 2.0f);
-		    const float mzTol = MathUtils::calculatePPM(mzValCurrent, extractionTolerancePPM);
-		    const float intensityValCurrent = intensityValsRaw[i];
-
-		    if (MathUtils::tZero(intensityValCurrent)) {
-		        continue;
-		    }
-
-		    subtractValInRangeFromIntensityAtGivenMzAVX2(
-		        mzRegisterCurrent,
-		        mzValCurrentIsotopeCharge1 - mzTol,
-		        mzValCurrentIsotopeCharge1 + mzTol,
-		        intensityValCurrent,
-		        &intensityRegisterCurrent
-		    );
-
-		    subtractValInRangeFromIntensityAtGivenMzAVX2(
-		        mzRegisterCurrent,
-		        mzValCurrentIsotopeCharge2 - mzTol,
-		        mzValCurrentIsotopeCharge2 + mzTol,
-		        intensityValCurrent,
-		        &intensityRegisterCurrent
-		    );
-
-		    if (avxIndexCurrent + 1 < avx256RegistersCount) {
-		        subtractValInRangeFromIntensityAtGivenMzAVX2(
-		            mzRegisterNext,
-		            mzValCurrentIsotopeCharge1 - mzTol,
-		            mzValCurrentIsotopeCharge1 + mzTol,
-		            intensityValCurrent,
-		            &intensityRegisterNext
-		        );
-
-		        subtractValInRangeFromIntensityAtGivenMzAVX2(
-		            mzRegisterNext,
-		            mzValCurrentIsotopeCharge2 - mzTol,
-		            mzValCurrentIsotopeCharge2 + mzTol,
-		            intensityValCurrent,
-		            &intensityRegisterNext
-		        );
-		    }
+	scanPoints->clear();
+	for (int i = 0; i < mzVals.size(); i++) {
+		const float intensityVal = intensityValsRaw[i];
+		if (intensityVal < 0) {
+			continue;
 		}
-
-
-		for (int i = 0; i < mzVals.size(); i++) {
-			qDebug() << mzVals[i] << mzValsRaw[i] << intensityVals[i] << intensityValsRaw[i];
-		}
-
-
-
-
+		scanPoints->push_back({mzValsRaw[i], intensityValsRaw[i]});
 	}
-
-
-
-
-
 
 	ERR_RETURN
 }

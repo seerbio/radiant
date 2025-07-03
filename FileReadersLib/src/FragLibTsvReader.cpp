@@ -369,7 +369,8 @@ Err FragLibTsvReader::getFragLibReaderRows(
                     e = ErrorUtils::toDouble(valString, &fragLibTsvReaderRow.libraryIntensity); eee_absorb;
                 }
                 else if (colName == DECOY) {
-                    e = ErrorUtils::toInt(valString, &fragLibTsvReaderRow.decoy); eee_absorb;
+                	const QString boolConversion = valString.toLower() == "true" || valString == "1" ? "1" : "0";
+                    e = ErrorUtils::toInt(boolConversion, &fragLibTsvReaderRow.decoy); eee_absorb;
                 }
                 else if (colName == FRAG_TYPE){
                     fragLibTsvReaderRow.fragmentType = valString;

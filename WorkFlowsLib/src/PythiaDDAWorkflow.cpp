@@ -93,7 +93,7 @@ namespace {
 			&msScanInfosSubsetTranched
 			); ree;
 
-// #define DDA_PARALLEL
+#define DDA_PARALLEL
 #ifdef DDA_PARALLEL
 
 		const auto binderLogic = std::bind(
