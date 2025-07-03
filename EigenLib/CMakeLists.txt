@@ -51,6 +51,32 @@ FIND_PACKAGE(Qt5 REQUIRED
 	Network
 )
 
+#include(CheckCXXCompilerFlag)
+## Check for AVX
+#check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
+#check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
+#check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512)
+#
+#if(COMPILER_SUPPORTS_AVX512)
+#    message(STATUS "Enabling AVX-512 support, AVX, and AVX2 ${COMPILER_SUPPORTS_AVX512}")
+#    add_compile_options(-mavx2 -mfma)
+#    add_definitions(-DEIGEN_VECTORIZE_AVX)
+#elseif(COMPILER_SUPPORTS_AVX2)
+#    message(STATUS "Enabling AVX2 support")
+#    add_definitions(-DEIGEN_VECTORIZE_AVX)
+#    add_compile_options(-mavx2 -mfma)
+#elseif(COMPILER_SUPPORTS_AVX)
+#    message(STATUS "Enabling AVX support")
+#    add_definitions(-DEIGEN_VECTORIZE_AVX)
+#    add_compile_options(-mavx -mfma)
+#elseif(MSVC)
+#    message(STATUS "Enabling AVX support for MSVC")
+#    add_compile_options(/arch:AVX) # Enable AVX support for MSVC
+#    add_definitions(-DEIGEN_VECTORIZE_AVX)
+#else()
+#    message(WARNING "Your compiler does not support AVX, AVX2, or AVX-512 extensions.")
+#endif()
+
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         UtilsLib
