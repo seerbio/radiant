@@ -153,6 +153,22 @@ public:
         return eNoError;
     }
 
+	template<typename T>
+	static Err isByteAligned(
+		T* arr,
+		size_t byteSize
+		) {
+
+    	ERR_INIT
+
+	   e = isFalse(
+		   reinterpret_cast<uintptr_t>(arr) % byteSize != 0,
+		   eAVXAlignmentError
+		   ); ree;
+
+    	ERR_RETURN
+	}
+
     /*!
     * @brief  Checks if two string-type values are equal.
     * @tparam T: The type of the string values. The type T should be comparable using the '!=' operator.

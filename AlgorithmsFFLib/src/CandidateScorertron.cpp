@@ -478,13 +478,13 @@ namespace {
     void filterXICPointsByAccuracyPPM(
         float mzVal,
         float ppmTol,
-        XICPoints *xicPoints
+        XICPointsPntrs *xicPoints
         ) {
 
         const float massTol = MathUtils::calculatePPM(mzVal, ppmTol);
 
-        const auto terminatorLogic = [mzVal, massTol](const XICPoint &p) {
-            return !(mzVal - massTol < p.mz && p.mz < mzVal + massTol);
+        const auto terminatorLogic = [mzVal, massTol](XICPoint *p) {
+            return !(mzVal - massTol < p->mz && p->mz < mzVal + massTol);
         };
 
         const auto terminator = std::remove_if(
@@ -499,11 +499,11 @@ namespace {
     void filterXICPointsByFrameIndex(
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
-        XICPoints *xicPoints
+        XICPointsPntrs *xicPoints
         ) {
 
-        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](const XICPoint &p) {
-            return !(frameIndexPredictedMin < p.scanNumber && p.scanNumber < frameIndexPredictedMax);
+        const auto terminatorLogic = [frameIndexPredictedMin, frameIndexPredictedMax](XICPoint *p) {
+            return !(frameIndexPredictedMin < p->scanNumber && p->scanNumber < frameIndexPredictedMax);
         };
 
         const auto terminator = std::remove_if(
@@ -521,9 +521,9 @@ namespace {
         FrameIndex frameIndexPredictedMin,
         FrameIndex frameIndexPredictedMax,
         XICPeakManager *xicPeakManager,
-        QVector<XICPoints> *xicPointsVec100,
-        QVector<XICPoints> *xicPointsVec100Shadows,
-        QVector<XICPoints> *xicPointsVec45
+        QVector<XICPointsPntrs> *xicPointsVec100,
+        QVector<XICPointsPntrs> *xicPointsVec100Shadows,
+        QVector<XICPointsPntrs> *xicPointsVec45
         ) {
 
         ERR_INIT
@@ -538,15 +538,15 @@ namespace {
 
             const MS2Ion &ms2Ion = ms2Ions.at(i);
 
-            XICPoints xicPoints;
+            XICPointsPntrs xicPoints;
             e = xicPeakManager->getXIC(ms2Ion.mz, &xicPoints); ree;
 
             if (frameIndexPredictedMax > 0) {
                 filterXICPointsByFrameIndex(
-                frameIndexPredictedMin,
-                frameIndexPredictedMax,
-                &xicPoints
-                );
+	                frameIndexPredictedMin,
+	                frameIndexPredictedMax,
+	                &xicPoints
+	                );
             }
 
             if (xicPoints.empty()) {
@@ -556,7 +556,7 @@ namespace {
                 continue;
             }
 
-            XICPoints xicPointsShadows;
+            XICPointsPntrs xicPointsShadows;
             const float isotopeDistanceThomsons = S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge;
             e = xicPeakManager->getXIC(ms2Ion.mz - isotopeDistanceThomsons, &xicPointsShadows); ree;
             if (xicPointsShadows.empty()) {
@@ -587,29 +587,31 @@ namespace {
         ERR_RETURN
     }
 
-    FrameIndex findFrameIndexMaxXICPointsVec (const QVector<XICPoints> &xicPointsVec100) {
+	FrameIndex findFrameIndexMaxXICPointsVec(const QVector<XICPointsPntrs> &xicPointsVec100) {
+    	FrameIndex frameIndexMax = std::numeric_limits<FrameIndex>::min();  // Initialize to smallest possible value
 
-        FrameIndex frameIndexMax = -1;
+    	for (const XICPointsPntrs &xicPoints : xicPointsVec100) {
+    		if (xicPoints.empty()) {
+    			continue;
+    		}
 
-        for (const XICPoints &xicPoints : xicPointsVec100) {
+    		auto maxIt = std::max_element(
+				xicPoints.begin(),
+				xicPoints.end(),
+				[](XICPoint *l, XICPoint *r) { return l->scanNumber < r->scanNumber; }
+			);
 
-            if (xicPoints.empty()) {
-                continue;
-            }
+    		if (maxIt != xicPoints.end()) {
+    			FrameIndex frameIndexMaxXICPoints = (*maxIt)->scanNumber;
+    			frameIndexMax = std::max(frameIndexMax, frameIndexMaxXICPoints);
+    		}
+    	}
 
-            const FrameIndex frameIndexMaxXICPoints = std::max_element(
-                xicPoints.begin(),
-                xicPoints.end(),
-                [](const XICPoint &l, const XICPoint &r){return l.scanNumber < r.scanNumber;}
-                )->scanNumber;
-            frameIndexMax = std::max(frameIndexMax, frameIndexMaxXICPoints);
-        }
-
-        return frameIndexMax;
+    	return (frameIndexMax == std::numeric_limits<FrameIndex>::min()) ? -1 : frameIndexMax;
     }
 
     Err buildEigenMatrix(
-        const QVector<XICPoints> &xicPointsVec,
+        const QVector<XICPointsPntrs> &xicPointsVec,
         const Eigen::VectorX<float> &kernelMs2,
         FrameIndex frameIndexMax,
         bool buildMzMatrix,
@@ -633,23 +635,23 @@ namespace {
 
         for (int col = 0; col < xicPointsVec.size(); col++) {
 
-            const XICPoints &xicPointsCol = xicPointsVec.at(col);
-            for (const XICPoint &p : xicPointsCol) {
+            const XICPointsPntrs &xicPointsCol = xicPointsVec.at(col);
+            for (XICPoint *p : xicPointsCol) {
 
-                if (p.scanNumber >= rows) {
+                if (p->scanNumber >= rows) {
                     continue;
                 }
 
-                matIntensity->coeffRef(p.scanNumber, col) += p.intensity;
+                matIntensity->coeffRef(p->scanNumber, col) += p->intensity;
                 if (buildMzMatrix) {
 
-                    if (matMz->coeff(p.scanNumber, col) > 0) {
-                        matMz->coeffRef(p.scanNumber, col) += p.mz;
-                        matMz->coeffRef(p.scanNumber, col) /= 2.0;
+                    if (matMz->coeff(p->scanNumber, col) > 0) {
+                        matMz->coeffRef(p->scanNumber, col) += p->mz;
+                        matMz->coeffRef(p->scanNumber, col) /= 2.0;
                         continue;
                     }
 
-                    matMz->coeffRef(p.scanNumber, col) = p.mz;
+                    matMz->coeffRef(p->scanNumber, col) = p->mz;
                 }
             }
         }
@@ -688,9 +690,9 @@ namespace {
         EigenUtils::thresholdVector(minPeakCount, &integrationVecLocal);
 
         *ionCountVec = EigenKernelUtils::convolveVectorWithKernel(
-        integrationVecLocal,
-        kernelIntegration
-        );
+	        integrationVecLocal,
+	        kernelIntegration
+	        );
 
         ERR_RETURN
     }
@@ -764,9 +766,9 @@ Err CandidateScorertron::initMatricesdAndVecs(
             );
         e = ErrorUtils::isTrue(ms2IonsAreSorted); ree;
 
-        QVector<XICPoints> xicPointsVec100;
-        QVector<XICPoints> xicPointsVec100Shadow;
-        QVector<XICPoints> xicPointsVec45;
+        QVector<XICPointsPntrs> xicPointsVec100;
+        QVector<XICPointsPntrs> xicPointsVec100Shadow;
+        QVector<XICPointsPntrs> xicPointsVec45;
         e = getXICs(
             ms2IonsResized,
             static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM),
@@ -2011,7 +2013,7 @@ Err CandidateScorertron::setCandidateScores(
 namespace {
 
     Eigen::VectorX<float> buildXicPointsVector(
-        const XICPoints &xicPoints,
+        const XICPointsPntrs &xicPoints,
         FrameIndex frameIndexMin,
         FrameIndex frameIndexMax
         ) {
@@ -2019,12 +2021,12 @@ namespace {
         Eigen::VectorX<float> vec(frameIndexMax + 1);
         vec.setZero();
 
-        for (const auto &[mz, intensity, scanNumber, ionMobilityIndex] : xicPoints) {
+        for (XICPoint *xicPoint : xicPoints) {
 
-            if (!(frameIndexMin <= scanNumber && scanNumber <= frameIndexMax)) {
+            if (!(frameIndexMin <= xicPoint->scanNumber && xicPoint->scanNumber <= frameIndexMax)) {
                 continue;
             }
-            vec.coeffRef(scanNumber) += intensity;
+            vec.coeffRef(xicPoint->scanNumber) += xicPoint->intensity;
         }
 
         return vec;
@@ -2059,7 +2061,7 @@ namespace {
         *ppmDiff = 50.0;
         *ms1IntensitySum = 0.0;
 
-        XICPoints xicPoints = turboXicMS1->extractPointsXIC(
+        XICPointsPntrs xicPoints = turboXicMS1->extractPointsXICAVX(
             mzToExtract - massTol,
             mzToExtract + massTol
             );
@@ -2132,7 +2134,7 @@ namespace {
 
         const int xicPointsSize = static_cast<float>(xicPoints.size());
 
-        const auto meanLogic = [](float sum, const XICPoint &p){return sum + p.mz;};
+        const auto meanLogic = [](float sum, XICPoint* p){return sum + p->mz;};
         *mzMS1Mean = std::accumulate(
             xicPoints.begin(),
             xicPoints.end(),
@@ -2140,7 +2142,7 @@ namespace {
             meanLogic
             ) / xicPointsSize;
 
-        const auto stDevLogic = [mzMS1Mean](float sum, const XICPoint &p){return sum + std::pow((p.mz - *mzMS1Mean) , 2);};
+        const auto stDevLogic = [mzMS1Mean](float sum, const XICPoint *p){return sum + std::pow((p->mz - *mzMS1Mean) , 2);};
         *mzMS1StDev = std::sqrt(std::accumulate(xicPoints.begin(), xicPoints.end(), 0.0f, stDevLogic)
                     / xicPointsSize);
 

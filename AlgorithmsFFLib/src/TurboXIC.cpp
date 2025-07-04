@@ -8,6 +8,8 @@
 #include "ErrorUtils.h"
 #include "MsUtils.h"
 
+#include <immintrin.h>
+
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -22,7 +24,7 @@ class Q_DECL_HIDDEN TurboXIC::Private
     using rTreeIntensity = float;
     using rTreeCoor = bg::model::point<float, 1, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
-    using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>> ;
+    using rTreePoint = std::pair<rTreeCoor, std::pair<rTreeScanNumber , rTreeIntensity>>;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 public:
@@ -210,22 +212,110 @@ bool TurboXIC::Private::isInit() const {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-TurboXIC::TurboXIC() : d_ptr(QScopedPointer<Private>(new Private)) {}
+TurboXIC::TurboXIC()
+: d_ptr(QScopedPointer<Private>(new Private))
+, m_mzVals(nullptr)
+, m_indexesMz(nullptr)
+, m_indexesI(nullptr)
+, m_alignasPiecesOfEight(0)
+// , m_indexes(nullptr)
+, m_scanPointsCountAlignas(0)
+{}
 
 TurboXIC::~TurboXIC() {
+	delete m_mzVals;
 }
 
 
-Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const {
+Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
     ERR_INIT
-    e = d_ptr->init(scanNumberVsScanPoints); ree;
+    // e = d_ptr->init(scanNumberVsScanPoints); ree;
+    e = initAVX(scanNumberVsScanPoints); ree;
     ERR_RETURN
 }
 
-Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const {
-    ERR_INIT
-    e = d_ptr->init(scanNumberVsScanPoints); ree;
-    ERR_RETURN
+// Err TurboXIC::init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const {
+//     ERR_INIT
+//     e = d_ptr->init(scanNumberVsScanPoints); ree;
+//     ERR_RETURN
+// }
+
+namespace {
+
+	ulong calculateNextAlignasSize(ulong vecSize) {
+		while (vecSize % 32 != 0) {
+			vecSize++;
+		}
+		return vecSize;
+	}
+
+}//namespace
+Err TurboXIC::initAVX(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+	e = ErrorUtils::isEqual(
+		static_cast<short>(sizeof(float)),
+		static_cast<short>(sizeof(uint32_t))
+		); ree;
+
+	const ulong scanPointsCount = std::accumulate(
+		scanNumberVsScanPoints.begin(),
+		scanNumberVsScanPoints.end(),
+		0,
+		[](ulong sum, ScanPoints *sp){return sum + sp->size();}
+		);
+
+	e = ErrorUtils::isBelowThreshold(
+		scanPointsCount,
+		static_cast<ulong>(std::numeric_limits<uint32_t>::max()),
+		ErrorUtilsParam::IncludeThreshold
+		); ree;
+
+	m_scanPointsCountAlignas = calculateNextAlignasSize(scanPointsCount);
+	delete m_mzVals;
+	auto* mzVals = static_cast<float*>(std::aligned_alloc(32, m_scanPointsCountAlignas * sizeof(float)));
+	m_mzVals = mzVals;
+
+	m_alignasPiecesOfEight = m_scanPointsCountAlignas / 8;
+
+	delete m_indexesMz;
+	auto* indexesMz = static_cast<float*>(std::aligned_alloc(32, m_alignasPiecesOfEight * sizeof(float)));
+	m_indexesMz = indexesMz;
+
+	delete m_indexesI;
+	auto* indexesI = static_cast<uint32_t*>(std::aligned_alloc(32, m_alignasPiecesOfEight * sizeof(uint32_t)));
+	m_indexesI = indexesI;
+
+	m_xicPoints.reserve(scanPointsCount);
+	for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); ++it) {
+		const ScanNumber scanNumber = it.key();
+		const ScanPoints *scanPoints = it.value();
+		for(const ScanPoint &sp : *scanPoints) {
+			XICPoint xicPoint;
+			xicPoint.mz = sp.x();
+			xicPoint.intensity = sp.y();
+			xicPoint.scanNumber = scanNumber;
+			xicPoint.ionMobilityIndex = -1;
+			m_xicPoints.push_back(xicPoint);
+		}
+	}
+	std::sort(
+		m_xicPoints.begin(),
+		m_xicPoints.end(),
+		[](const XICPoint &l, const XICPoint &r){return l.mz < r.mz;}
+		);
+
+	int indexCounter = 0;
+	for (int i = 0; i <  m_xicPoints.size(); i++) {
+		m_mzVals[i] = m_xicPoints[i].mz;
+		if (i % 8 == 0) {
+			m_indexesMz[indexCounter] = m_xicPoints[i].mz;
+			m_indexesI[indexCounter++] = i;
+		}
+	}
+
+	ERR_RETURN
 }
 
 XICPoints TurboXIC::extractPointsXIC(
@@ -236,6 +326,51 @@ XICPoints TurboXIC::extractPointsXIC(
             mzMin,
             mzMax
     );
+}
+
+XICPointsPntrs TurboXIC::extractPointsXICAVX(float mzMin, float mzMax) {
+
+	XICPointsPntrs results;
+	results.reserve(1000);
+
+	const __m256 mz_min_v = _mm256_set1_ps(mzMin);
+	const __m256 mz_max_v = _mm256_set1_ps(mzMax);
+
+	size_t left = 0, right = m_alignasPiecesOfEight;
+	while (left < right) {
+		size_t mid = left + (right - left) / 2;
+		if (m_indexesMz[mid] < mzMin)
+			left = mid + 1;
+		else
+			right = mid;
+	}
+
+	for (size_t i = m_indexesI[left & ~0x7]; i + 8 <= m_scanPointsCountAlignas; i += 8) {
+		__m256 mz_v = _mm256_load_ps(&m_mzVals[i]);
+
+		__m256 cmp_ge = _mm256_cmp_ps(mz_v, mz_min_v, _CMP_GE_OS);
+		__m256 cmp_le = _mm256_cmp_ps(mz_v, mz_max_v, _CMP_LE_OS);
+		__m256 mask = _mm256_and_ps(cmp_ge, cmp_le);
+
+		int movemask = _mm256_movemask_ps(mask);
+
+		if (movemask == 0) {
+			__m256 cmp_gt_max = _mm256_cmp_ps(mz_v, mz_max_v, _CMP_GT_OS);
+			int gt_mask = _mm256_movemask_ps(cmp_gt_max);
+			if (gt_mask == 0xFF) {
+				break;
+			}
+			continue;
+		}
+
+		for (int bit = 0; bit < 8; ++bit) {
+			if (movemask & (1 << bit)) {
+				results.push_back(&m_xicPoints[i + bit]);
+			}
+		}
+	}
+
+	return results;
 }
 
 Err TurboXIC::getRTreeLimits(
@@ -253,17 +388,18 @@ Err TurboXIC::getRTreeLimits(
 }
 
 bool TurboXIC::isInit() {
-    return d_ptr->isInit();
+	return !m_xicPoints.empty();
+    // return d_ptr->isInit();
 }
 
 void TurboXIC::filterXICPointsByScanNumber(
     ScanNumber scanNumberMin,
     ScanNumber scanNumberMax,
-    XICPoints* xicPoints
+    XICPointsPntrs* xicPoints
     ) {
 
-    const auto terminatorLogic = [scanNumberMin, scanNumberMax](const XICPoint &p) {
-        return !(scanNumberMin <= p.scanNumber && p.scanNumber <= scanNumberMax);
+    const auto terminatorLogic = [scanNumberMin, scanNumberMax](XICPoint *p) {
+        return !(scanNumberMin <= p->scanNumber && p->scanNumber <= scanNumberMax);
     };
 
     const auto terminator = std::remove_if(xicPoints->begin(), xicPoints->end(), terminatorLogic);

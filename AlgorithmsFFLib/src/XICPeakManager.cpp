@@ -78,10 +78,11 @@ bool XICPeakManager::isValid() const {
     return m_isInit;
 }
 
+
 Err XICPeakManager:: getXIC(
     float mzVal,
-    XICPoints *xicPoints
-    ) const {
+    XICPointsPntrs *xicPoints
+    ) {
 
     ERR_INIT
 
@@ -92,8 +93,17 @@ Err XICPeakManager:: getXIC(
     const float mzMin = mzVal - massTol;
     const float mzMax = mzVal + massTol;
 
-    const XICPoints xicPointsLocal = m_turboXic->extractPointsXIC(mzMin, mzMax);
-    *xicPoints = xicPointsLocal;
+	// QElapsedTimer et;
+	// et.start();
+ //    const XICPoints xicPointsLocal = m_turboXic->extractPointsXIC(mzMin, mzMax);
+	// long reg = et.nsecsElapsed();
+	// et.restart();
+    const XICPointsPntrs xicPointsLocalAVX = m_turboXic->extractPointsXICAVX(mzMin, mzMax);
+	// long reg2 = et.nsecsElapsed();
+
+    *xicPoints = xicPointsLocalAVX;
+	// qDebug() << "XICPeakManager::getXIC reg:" << reg << reg2 << xicPointsLocal.size() << xicPointsLocalAVX.size() << (reg2 < reg);
+
 
     ERR_RETURN
 }

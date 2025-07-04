@@ -28,6 +28,7 @@ private Q_SLOTS:
     static void isFalseTest();
     static void containsTest();
     static void doesNotContainTest();
+	static void isByteAlignedTest();
 };
 
 
@@ -267,6 +268,20 @@ void ErrorUtilsTests::doesNotContainTest() {
 
     e = ErrorUtils::doesNotContain(666, testHash);
     QCOMPARE(e, eNoError);
+
+}
+
+void ErrorUtilsTests::isByteAlignedTest() {
+
+	ERR_INIT
+
+	alignas(32) float testPositive[96];
+	e = ErrorUtils::isByteAligned(testPositive, 32);
+	QCOMPARE(e, eNoError);
+
+	float testNegative[91];
+	e = ErrorUtils::isByteAligned(testNegative, 32);
+	QCOMPARE(e, eAVXAlignmentError);
 
 }
 

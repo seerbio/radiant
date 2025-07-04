@@ -41,8 +41,8 @@ public:
 
     Err getXIC(
         float mzVal,
-        XICPoints *xicPoints
-        ) const;
+        XICPointsPntrs *xicPoints
+        );
 
 
 private:

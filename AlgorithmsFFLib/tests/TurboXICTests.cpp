@@ -85,6 +85,7 @@ void TurboXICTests::extractPointsTest() {
     //TODO fix test
 
     const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
+    const XICPoints xicPointsAVX = turboXIC.extractPointsXICAVX(100.0, 100.13);
 
     QCOMPARE(xicPoints.size(), 3);
     QCOMPARE(xicPoints.front().scanNumber, 1);

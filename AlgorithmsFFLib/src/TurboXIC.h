@@ -13,6 +13,7 @@
 
 using namespace Error;
 
+
 struct ALGORITHMSFFLIB_EXPORTS XICPoint {
     float mz = -1.0;
     float intensity = -1.0;
@@ -42,6 +43,7 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
 };
 
 using XICPoints = std::vector<XICPoint>;
+using XICPointsPntrs = std::vector<XICPoint*>;
 
 
 class ALGORITHMSFFLIB_EXPORTS TurboXIC {
@@ -61,7 +63,7 @@ public:
     * @param scanNumberVsScanPoints A map of scan numbers to scan points.
     * @return An error code indicating success or failure.
     */
-    Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) const;
+    [[nodiscard]] Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
     /**
     * @brief Initializes the TurboXIC private implementation.
@@ -72,7 +74,9 @@ public:
     * @param scanNumberVsScanPoints A pointer to a map of scan numbers to scan points.
     * @return An error code indicating success or failure.
     */
-    Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const;
+    // Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const;
+
+	Err initAVX(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
 
     /**
     * @brief Extracts XIC points within the specified m/z range.
@@ -84,10 +88,15 @@ public:
     * @param mzMax The maximum m/z value for the extraction.
     * @return XICPoints containing the extracted XIC points.
     */
-    XICPoints extractPointsXIC(
+    [[nodiscard]] XICPoints extractPointsXIC(
             float mzMin,
             float mzMax
     ) const;
+
+	[[nodiscard]] XICPointsPntrs extractPointsXICAVX(
+		float mzMin,
+		float mzMax
+	);
 
     /**
     * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.
@@ -116,11 +125,24 @@ public:
     static void filterXICPointsByScanNumber(
         ScanNumber scanNumberMin,
         ScanNumber scanNumberMzx,
-        XICPoints *xicPoints
+        XICPointsPntrs *xicPoints
         );
 
 
 private:
+
+	// float* m_mzVals;
+	// uint32_t* m_indexes;
+
+	float* m_mzVals;
+
+
+	float* m_indexesMz;
+	uint32_t* m_indexesI;
+	XICPoints m_xicPoints;
+
+	ulong m_scanPointsCountAlignas;
+	ulong m_alignasPiecesOfEight;
 
     Q_DISABLE_COPY(TurboXIC) class Private;
     const QScopedPointer<Private> d_ptr;
