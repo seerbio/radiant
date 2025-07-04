@@ -186,8 +186,11 @@ public:
     */
     template <typename T>
     static bool tSame(T v1, T v2, double fudgeFactor = 0.01) {
-        //TODO Figure out a better way to do this.
-        return std::abs(v1 - v2) < fudgeFactor;
+    	if constexpr (std::is_unsigned<T>::value) {
+    		return (v1 > v2 ? v1 - v2 : v2 - v1) < fudgeFactor;
+    	} else {
+    		return std::abs(v1 - v2) < fudgeFactor;
+    	}
     }
 
     template <typename T>

@@ -137,6 +137,7 @@ namespace {
             const QVector<float> &mzValsToPair,
             const PeptideStringWithMods &peptideStringWithMods,
             int charge,
+            bool isDecoy,
             QString *ionLabels
         ) {
 
@@ -186,6 +187,7 @@ namespace {
 
             if (distanceFromFound > 0.2) {
                 qDebug() << peptideStringWithMods;
+            	qDebug() << "Is Decoy:" << isDecoy;
                 qDebug() << "Searched mzVal:" << mzVal;
                 qDebug() << "Closest val found:" << mzValClosestFound;
                 qDebug() << "Distance from closest val found:" << distanceFromFound;
@@ -221,8 +223,9 @@ namespace {
                 fragLibReaderRow.mzVals,
                 peptideStringWithMods,
                 charge,
+                fragLibReaderRow.isDecoy,
                 ionLabels
-        ); ree;
+        ); eee_absorb;
 
         ERR_RETURN
     }
