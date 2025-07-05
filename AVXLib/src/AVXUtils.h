@@ -24,36 +24,44 @@ public:
 	static inline constexpr size_t AVX2_FLOAT_REGISTER_SIZE = 8;
 	static inline constexpr size_t AVX2_ALIGNAS_SIZE = 32;
 
-	static Err copyAVXFFloat(
+	static Err copyAVXFloatToAligned(
 		float* src,
 		float* dst,
 		size_t size
-
-		) {
-
-		ERR_INIT
-
-		e = ErrorUtils::isByteAligned(dst, AVX2_ALIGNAS_SIZE);
-
-		size_t i = 0;
-
-		for (; i + AVX2_FLOAT_REGISTER_SIZE <= size; i += AVX2_FLOAT_REGISTER_SIZE) {
-			__m256 v = _mm256_loadu_ps(src + i);
-			_mm256_store_ps(dst + i, v);
-		}
-
-		if (i < size) {
-			std::memcpy(dst + i, src + i, (size - i) * sizeof(float));
-		}
-
-		ERR_RETURN
-	}
-
-
+		);
 
 	static size_t calculateNextAlignedBlockSize(
 		size_t arrSize,
 		size_t byteSize
+		);
+
+	static void printAVXFloat(const __m256 &avx);
+
+	template<typename T>
+	static void printMask(
+		const T &mask,
+		size_t maskSize
+		) {
+
+		QDebug debug = qDebug().nospace();;
+		for (int j = 0; j < maskSize; j++) {
+			debug << ((mask >> j) & 1) << ", ";
+		}
+	}
+
+	static void printMask(const __m256& mask, size_t size);
+
+	static Err convolveWithKernelAVXFloat(
+		const QVector<float> &kernel,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		size_t size
 		);
 
 };

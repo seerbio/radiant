@@ -82,7 +82,7 @@ bool XICPeakManager::isValid() const {
 Err XICPeakManager:: getXIC(
     float mzVal,
     XICPointsPntrs *xicPoints
-    ) {
+    ) const {
 
     ERR_INIT
 

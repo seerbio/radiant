@@ -42,7 +42,7 @@ public:
     Err getXIC(
         float mzVal,
         XICPointsPntrs *xicPoints
-        );
+        ) const;
 
 
 private:
