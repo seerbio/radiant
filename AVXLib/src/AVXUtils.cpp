@@ -63,6 +63,7 @@ namespace {
 }//namespace
 Err AVXUtils::convolveWithKernelAVXFloat(
 	const QVector<float> &kernel,
+	size_t size,
 	float* v0,
 	float* v1,
 	float* v2,
@@ -70,8 +71,7 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 	float* v4,
 	float* v5,
 	float* v6,
-	float* v7,
-	size_t size
+	float* v7
 	) {
 
 	ERR_INIT
@@ -92,6 +92,7 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 	alignas(AVX2_ALIGNAS_SIZE) float result[masterVectorSize] = {0};
 
 	for (int i = 0; i < size; i++) {
+		// __m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
 		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
 		const size_t insertIndex = paddingSingleRegister + (i * AVX2_FLOAT_REGISTER_SIZE);
 		_mm256_store_ps(masterVector + insertIndex, parallelVec);

@@ -4,6 +4,7 @@
 
 #include "CandidateScorertron.h"
 
+#include "AVXUtils.h"
 #include "CandidateScores.h"
 #include "DiscriminantScoretron.h"
 #include "EigenKernelUtils.h"
@@ -657,7 +658,24 @@ namespace {
         }
 
         for (int smooth = 0; smooth < smoothCount; smooth++) {
-            *matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+			if (xicPointsVec.size() == 8) {
+				QVector<float> kern = EigenUtils::convertEigenVectorToQVector(kernelMs2);
+				e = AVXUtils::convolveWithKernelAVXFloat(
+					kern,
+					matIntensity->rows(),
+					matIntensity->col(0).data(),
+					matIntensity->col(1).data(),
+					matIntensity->col(2).data(),
+					matIntensity->col(3).data(),
+					matIntensity->col(4).data(),
+					matIntensity->col(5).data(),
+					matIntensity->col(6).data(),
+					matIntensity->col(7).data()
+					); ree;
+				continue;
+			}
+        	*matIntensity= EigenKernelUtils::applyKernelToEachColumnInMatrix(*matIntensity, kernelMs2);
+
         }
 
         ERR_RETURN

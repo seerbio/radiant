@@ -53,6 +53,7 @@ public:
 
 	static Err convolveWithKernelAVXFloat(
 		const QVector<float> &kernel,
+		size_t size,
 		float* v0,
 		float* v1,
 		float* v2,
@@ -60,8 +61,7 @@ public:
 		float* v4,
 		float* v5,
 		float* v6,
-		float* v7,
-		size_t size
+		float* v7
 		);
 
 };

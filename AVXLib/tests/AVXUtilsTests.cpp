@@ -103,6 +103,7 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 
 	e = AVXUtils::convolveWithKernelAVXFloat(
 		kernel,
+		size,
 		vAsc.data(),
 		v2.data(),
 		v3.data(),
@@ -110,8 +111,7 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 		v2.data(),
 		v3.data(),
 		v1.data(),
-		v2.data(),
-		size
+		v2.data()
 		);
 
 	const QVector<int> resultAsc = {4, 6, 9, 3};
@@ -121,7 +121,7 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 		QCOMPARE(static_cast<int>(vAsc[i]), resultAsc[i]);
 		QCOMPARE(static_cast<int>(v1[i]), resultV1[i]);
 	}
-	
+
 }
 
 

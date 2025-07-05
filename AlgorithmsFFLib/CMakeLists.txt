@@ -125,6 +125,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
         Qt5::Core
         Qt5::Test
+        AVXLib
         ChemLib
         EigenLib
         FileReadersLib
