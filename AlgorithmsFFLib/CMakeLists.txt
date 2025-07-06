@@ -19,75 +19,75 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
-        src/CandidateScores.cpp
-        src/CandidateScorertron.cpp
-        src/Centroidotron.cpp
-        src/ClassifierWeightsManager.cpp
-        src/Deconvolvotron.cpp
-        src/DeIsotopotron.cpp
-        src/DiscriminantScoretron.cpp
-        src/DeMultiplexScanerator.cpp
-        src/DeMultiplexScaneratorManager.cpp
-        src/FDRCLassifierNeuralNet.cpp
-        src/FeatureFinderHill.cpp
-        src/FeatureFinderHillBuilder.cpp
-        src/IonMobilitron.cpp
-        src/InterferingCandidatesEliminatomatic.cpp
-        src/IsotopicDistributionBuilder.cpp
-        src/MS2Ion.cpp
-        src/Ms2IonFraggertronManager.cpp
-        src/MsCalibratomatic.cpp
-        src/MsFrame.cpp
-        src/MsUtils.cpp
-        src/PeakIntegratomatic.cpp
-        src/QuanFileBuilder.cpp
-        src/QuanTransitionRefinertron.cpp
-        src/QValueSettertron.cpp
-        src/SequenceSubstringSearchomatic.cpp
-        src/SpectrumCentricMzTargetFrameSearch.cpp
-        src/TargetDecoyCandidatePair.cpp
-        src/TargetDecoyCandidatePairManager.cpp
-        src/TargetDecoyCandidatePairScoretron.cpp
+#        src/CandidateScores.cpp
+#        src/CandidateScorertron.cpp
+#        src/Centroidotron.cpp
+#        src/ClassifierWeightsManager.cpp
+#        src/Deconvolvotron.cpp
+#        src/DeIsotopotron.cpp
+#        src/DiscriminantScoretron.cpp
+#        src/DeMultiplexScanerator.cpp
+#        src/DeMultiplexScaneratorManager.cpp
+#        src/FDRCLassifierNeuralNet.cpp
+#        src/FeatureFinderHill.cpp
+#        src/FeatureFinderHillBuilder.cpp
+#        src/IonMobilitron.cpp
+#        src/InterferingCandidatesEliminatomatic.cpp
+#        src/IsotopicDistributionBuilder.cpp
+#        src/MS2Ion.cpp
+#        src/Ms2IonFraggertronManager.cpp
+#        src/MsCalibratomatic.cpp
+#        src/MsFrame.cpp
+#        src/MsUtils.cpp
+#        src/PeakIntegratomatic.cpp
+#        src/QuanFileBuilder.cpp
+#        src/QuanTransitionRefinertron.cpp
+#        src/QValueSettertron.cpp
+#        src/SequenceSubstringSearchomatic.cpp
+#        src/SpectrumCentricMzTargetFrameSearch.cpp
+#        src/TargetDecoyCandidatePair.cpp
+#        src/TargetDecoyCandidatePairManager.cpp
+#        src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
-        src/TurboXIC2D.cpp
-        src/XICPeakManager.cpp
-        src/XYMappermatic.cpp
+#        src/TurboXIC2D.cpp
+#        src/XICPeakManager.cpp
+#        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
-        src/CandidateScores.h
-        src/CandidateScorertron.h
-        src/Centroidotron.h
-        src/ClassifierWeightsManager.h
-        src/Deconvolvotron.h
-        src/DeIsotopotron.h
-        src/DeMultiplexScanerator.h
-        src/DeMultiplexScaneratorManager.h
-        src/DiscriminantScoretron.h
-        src/FDRCLassifierNeuralNet.h
-        src/FeatureFinderHill.h
-        src/FeatureFinderHillBuilder.h
-        src/InterferingCandidatesEliminatomatic.h
-        src/IonMobilitron.h
-        src/IsotopicDistributionBuilder.h
-        src/MS2Ion.h
-        src/Ms2IonFraggertronManager.h
-        src/MsCalibratomatic.h
-        src/MsFrame.h
-        src/MsUtils.h
-        src/PeakIntegratomatic.h
-        src/QuanFileBuilder.h
-        src/QuanTransitionRefinertron.h
-        src/QValueSettertron.h
-        src/SequenceSubstringSearchomatic.h
-        src/SpectrumCentricMzTargetFrameSearch.h
-        src/TargetDecoyCandidatePair.h
-        src/TargetDecoyCandidatePairManager.h
-        src/TargetDecoyCandidatePairScoretron.h
+#        src/CandidateScores.h
+#        src/CandidateScorertron.h
+#        src/Centroidotron.h
+#        src/ClassifierWeightsManager.h
+#        src/Deconvolvotron.h
+#        src/DeIsotopotron.h
+#        src/DeMultiplexScanerator.h
+#        src/DeMultiplexScaneratorManager.h
+#        src/DiscriminantScoretron.h
+#        src/FDRCLassifierNeuralNet.h
+#        src/FeatureFinderHill.h
+#        src/FeatureFinderHillBuilder.h
+#        src/InterferingCandidatesEliminatomatic.h
+#        src/IonMobilitron.h
+#        src/IsotopicDistributionBuilder.h
+#        src/MS2Ion.h
+#        src/Ms2IonFraggertronManager.h
+#        src/MsCalibratomatic.h
+#        src/MsFrame.h
+#        src/MsUtils.h
+#        src/PeakIntegratomatic.h
+#        src/QuanFileBuilder.h
+#        src/QuanTransitionRefinertron.h
+#        src/QValueSettertron.h
+#        src/SequenceSubstringSearchomatic.h
+#        src/SpectrumCentricMzTargetFrameSearch.h
+#        src/TargetDecoyCandidatePair.h
+#        src/TargetDecoyCandidatePairManager.h
+#        src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
-        src/TurboXIC2D.h
-        src/XICPeakManager.h
-        src/XYMappermatic.h
+#        src/TurboXIC2D.h
+#        src/XICPeakManager.h
+#        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -112,9 +112,9 @@ FIND_PACKAGE(Qt5 COMPONENTS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        ${EIGEN_DIRECTORY}
-        ${NANOFLANN_DIRECTORY}
-        ${SEQAN_INCLUDE_DIRS}
+#        ${EIGEN_DIRECTORY}
+#        ${NANOFLANN_DIRECTORY}
+#        ${SEQAN_INCLUDE_DIRS}
         )
 
 ADD_DEFINITIONS (${SEQAN_DEFINITIONS})
@@ -126,12 +126,12 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         AVXLib
-        ChemLib
-        EigenLib
+#        ChemLib
+#        EigenLib
         FileReadersLib
-        PyTorchLib
+#        PyTorchLib
         UtilsLib
-        ${SEQAN_LIBRARIES}
+#        ${SEQAN_LIBRARIES}
         )
 
 # This puts binaries and exes in bin directory.  Otherwise won't run

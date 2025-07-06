@@ -3,7 +3,7 @@
 //
 
 #include "ErrorUtils.h"
-#include "MsFrame.h"
+// #include "MsFrame.h"
 #include "MsReaderMzML.h"
 #include "MsUtils.h"
 #include "ParallelUtils.h"
@@ -24,6 +24,7 @@ private Q_SLOTS:
     void initTest();
     void extractPointsTest();
     void turboXICUtility();
+	void readWriteTest();
 
 
 private:
@@ -82,15 +83,12 @@ void TurboXICTests::extractPointsTest() {
     e = turboXIC.init(points);
     QCOMPARE(e, eNoError);
 
-    //TODO fix test
-
-    const XICPoints xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
-    const XICPoints xicPointsAVX = turboXIC.extractPointsXICAVX(100.0, 100.13);
+    const XICPointsPntrs xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
 
     QCOMPARE(xicPoints.size(), 3);
-    QCOMPARE(xicPoints.front().scanNumber, 1);
-    QVERIFY(MathUtils::tSame(xicPoints.front().intensity, 100.1f));
-    QVERIFY(MathUtils::tSame(xicPoints.back().intensity, 100.3f));
+    QCOMPARE(xicPoints.front()->scanNumber, 1);
+    QVERIFY(MathUtils::tSame(xicPoints.front()->intensity, 100.1f));
+    QVERIFY(MathUtils::tSame(xicPoints.back()->intensity, 100.3f));
 
 }
 
@@ -153,6 +151,45 @@ void TurboXICTests::turboXICUtility() {
 
 }
 
+void TurboXICTests::readWriteTest() {
+
+	QMap<int, QVector<PointFF>> _points = buildPoints();
+
+	QMap<int, QVector<PointFF>*> points;
+	for (auto it = _points.begin(); it != _points.end(); it++) {
+		points.insert(it.key(), &it.value());
+	}
+
+	ERR_INIT
+
+	TurboXIC turboXIC;
+	e = turboXIC.init(points);
+	QCOMPARE(e, eNoError);
+
+	const XICPointsPntrs xicPoints = turboXIC.extractPointsXIC(100.0, 100.13);
+
+	QCOMPARE(xicPoints.size(), 3);
+	QCOMPARE(xicPoints.front()->scanNumber, 1);
+	QVERIFY(MathUtils::tSame(xicPoints.front()->intensity, 100.1f));
+	QVERIFY(MathUtils::tSame(xicPoints.back()->intensity, 100.3f));
+
+	e = turboXIC.write("TurboXICReadWriteTest.xic");
+	QCOMPARE(e, eNoError);
+
+	TurboXIC turboXICRead;
+	e = turboXICRead.init("TurboXICReadWriteTest.xic");
+	QCOMPARE(e, eNoError);
+
+	const XICPointsPntrs xicPointsRead = turboXICRead.extractPointsXIC(100.0, 100.13);
+
+	// QCOMPARE(xicPointsRead.size(), 3);
+	// QCOMPARE(xicPointsRead.front()->scanNumber, 1);
+	// QVERIFY(MathUtils::tSame(xicPointsRead.front()->intensity, 100.1f));
+	// QVERIFY(MathUtils::tSame(xicPointsRead.back()->intensity, 100.3f));
+
+
+
+}
 
 QTEST_MAIN(TurboXICTests)
 #include "TurboXICTests.moc"

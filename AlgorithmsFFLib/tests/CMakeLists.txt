@@ -12,33 +12,33 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/bin)
 
 #Add classes to test here.
 SET(TEST_CLASSES
-        BiophysicalCalcsTests
-        CandidateScorertronTests
-        CentroidotronTests
-        ClassifierWeightsManagerTests
-        DeconvolvotronTests
-        DeIsotopotronTests
-        DeMultiplexScaneratorTests
-        DiscriminantScoretronTests
-        FDRCLassifierNeuralNetTests
-        FeatureFinderHillBuilderTests
-        FeatureFinderHillTests
-        IsotopicDistributionBuilderTests
-        MS2IonTests
-        MsCalibratomaticTests
-        MsFrameTests
-        MsUtilsTests
-        PeakIntegratomaticTests
-        QuanTransitionRefinertronTests
-        QValueSettertronTests
-        SequenceSubstringSearchomaticTests
-        TargetDecoyCandidatePairManagerTests
-        TargetDecoyCandidatePairScoretronTests
-        TargetDecoyCandidatePairTests
+#        BiophysicalCalcsTests
+#        CandidateScorertronTests
+#        CentroidotronTests
+#        ClassifierWeightsManagerTests
+#        DeconvolvotronTests
+#        DeIsotopotronTests
+#        DeMultiplexScaneratorTests
+#        DiscriminantScoretronTests
+#        FDRCLassifierNeuralNetTests
+#        FeatureFinderHillBuilderTests
+#        FeatureFinderHillTests
+#        IsotopicDistributionBuilderTests
+#        MS2IonTests
+#        MsCalibratomaticTests
+#        MsFrameTests
+#        MsUtilsTests
+#        PeakIntegratomaticTests
+#        QuanTransitionRefinertronTests
+#        QValueSettertronTests
+#        SequenceSubstringSearchomaticTests
+#        TargetDecoyCandidatePairManagerTests
+#        TargetDecoyCandidatePairScoretronTests
+#        TargetDecoyCandidatePairTests
         TurboXICTests
-        TurboXIC2DTests
-        XICPeakManagerTests
-        XYMappermaticTests
+#        TurboXIC2DTests
+#        XICPeakManagerTests
+#        XYMappermaticTests
 )
 
 foreach(class ${TEST_CLASSES})

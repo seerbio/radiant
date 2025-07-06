@@ -29,6 +29,7 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
         stream << obj.scanNumber;
         stream << obj.mz;
         stream << obj.intensity;
+    	stream << obj.ionMobilityIndex;
 
         return stream;
     }
@@ -37,19 +38,22 @@ struct ALGORITHMSFFLIB_EXPORTS XICPoint {
         stream >> obj.scanNumber;
         stream >> obj.mz;
         stream >> obj.intensity;
+        stream >> obj.ionMobilityIndex;
 
         return stream;
     }
 };
 
-using XICPoints = std::vector<XICPoint>;
-using XICPointsPntrs = std::vector<XICPoint*>;
+using XICPoints = QVector<XICPoint>;
+using XICPointsPntrs = QVector<XICPoint*>;
 
 
 class ALGORITHMSFFLIB_EXPORTS TurboXIC {
 
 
 public:
+
+	friend class TurboXICTests;
 
     TurboXIC();
     ~TurboXIC();
@@ -64,19 +68,7 @@ public:
     * @return An error code indicating success or failure.
     */
     [[nodiscard]] Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
-
-    /**
-    * @brief Initializes the TurboXIC private implementation.
-    *
-    * This method initializes the TurboXIC private implementation by populating the scan number vs. intensity pointers,
-    * creating an R-tree for spatial indexing, and performing necessary checks.
-    *
-    * @param scanNumberVsScanPoints A pointer to a map of scan numbers to scan points.
-    * @return An error code indicating success or failure.
-    */
-    // Err init(QMap<ScanNumber, ScanPoints*> *scanNumberVsScanPoints) const;
-
-	Err initAVX(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+	Err init(const QString& filePath);
 
     /**
     * @brief Extracts XIC points within the specified m/z range.
@@ -88,29 +80,10 @@ public:
     * @param mzMax The maximum m/z value for the extraction.
     * @return XICPoints containing the extracted XIC points.
     */
-    [[nodiscard]] XICPoints extractPointsXIC(
+    [[nodiscard]] XICPointsPntrs extractPointsXIC(
             float mzMin,
             float mzMax
-    ) const;
-
-	[[nodiscard]] XICPointsPntrs extractPointsXICAVX(
-		float mzMin,
-		float mzMax
-	);
-
-    /**
-    * @brief Retrieves the limits of the RTree in the TurboXIC private implementation.
-    *
-    * This method retrieves the minimum and maximum m/z values of the RTree used in the TurboXIC private implementation.
-    *
-    * @param mzMin Pointer to store the minimum m/z value.
-    * @param mzMax Pointer to store the maximum m/z value.
-    * @return Error code indicating the success or failure of the operation.
-    */
-    Err getRTreeLimits(
-            float *mzMin,
-            float *mzMax
-            ) const;
+    );
 
     /**
     * @brief Checks if the TurboXIC private implementation is initialized.
@@ -120,7 +93,10 @@ public:
     *
     * @return True if the TurboXIC private implementation is initialized, otherwise false.
     */
-    bool isInit();
+    [[nodiscard]] bool isInit() const;
+
+	[[nodiscard]] Err write(const QString& filePath) const;
+
 
     static void filterXICPointsByScanNumber(
         ScanNumber scanNumberMin,
@@ -131,21 +107,13 @@ public:
 
 private:
 
-	// float* m_mzVals;
-	// uint32_t* m_indexes;
-
 	float* m_mzVals;
-
-
 	float* m_indexesMz;
 	uint32_t* m_indexesI;
 	XICPoints m_xicPoints;
 
-	ulong m_scanPointsCountAlignas;
-	ulong m_alignasPiecesOfEight;
-
-    Q_DISABLE_COPY(TurboXIC) class Private;
-    const QScopedPointer<Private> d_ptr;
+	quint64 m_scanPointsCountAlignas;
+	quint64 m_alignasPiecesOfEight;
 
 };
 

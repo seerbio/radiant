@@ -64,8 +64,8 @@ public:
 
 struct MsScan {
 	MsScanInfo* msScanInfoPntr = nullptr;
-	QVector<float> mzVals;
-	QVector<float> intensityVals;
+	MzVals mzVals;
+	IntensityVals intensityVals;
 };
 
 class FILEREADERSLIB_EXPORTS MsReaderBase {

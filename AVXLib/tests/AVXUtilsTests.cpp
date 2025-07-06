@@ -18,8 +18,10 @@ private slots:
 	static void printAVXFloatTest();
 	static void printAVXMaskTest();
 	static void convolveWithKernelAVXFloatTest();
+	static void splitAVXUInt16to32Test();
 
 };
+
 
 void AVXUtilsTests::copyAVXTest() {
 
@@ -55,9 +57,6 @@ void AVXUtilsTests::copyAVXTest() {
 	QCOMPARE(static_cast<int>(dst1[size - 3]), 93);
 	QCOMPARE(static_cast<int>(dst1[size - 2]), 0);
 	QCOMPARE(static_cast<int>(dst1[size - 1]), 0);
-
-
-
 }
 
 void AVXUtilsTests::calculateNextAlignedBlockSizeTest() {
@@ -84,7 +83,6 @@ void AVXUtilsTests::printAVXMaskTest() {
 	const __m256 mask = _mm256_cmp_ps(data, mzValMin, _CMP_GE_OQ);
 
 	AVXUtils::printMask(mask, 8);
-
 }
 
 void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
@@ -120,6 +118,40 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 	for (int i = 0; i < size; i++) {
 		QCOMPARE(static_cast<int>(vAsc[i]), resultAsc[i]);
 		QCOMPARE(static_cast<int>(v1[i]), resultV1[i]);
+	}
+
+}
+
+void AVXUtilsTests::splitAVXUInt16to32Test() {
+
+	ERR_INIT
+
+	alignas(32) uint16_t inputValues[16] = {
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14, 15, 16
+	};
+
+	__m256i input = _mm256_load_si256(reinterpret_cast<const __m256i*>(inputValues));
+
+	__m256i int32Output1;
+	__m256i int32Output2;
+	e = AVXUtils::splitAVXUInt16to32(
+		input,
+		&int32Output1,
+		&int32Output2
+		);
+
+	AVXUtils::printAVXInt32(int32Output1);
+	AVXUtils::printAVXInt32(int32Output2);
+
+	__m256i int32OutputRecombine = _mm256_packs_epi32(int32Output1, int32Output2);
+	AVXUtils::printAVXInt16(int32OutputRecombine);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int32OutputRecombine);
+
+	for (int i = 0; i < AVXUtils::AVX2_INT16_REGISTER_SIZE; i++) {
+		QCOMPARE(values[i], inputValues[i]);
 	}
 
 }

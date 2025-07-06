@@ -22,6 +22,8 @@ class AVXLIB_EXPORTS AVXUtils {
 public:
 
 	static inline constexpr size_t AVX2_FLOAT_REGISTER_SIZE = 8;
+	static inline constexpr size_t AVX2_INT16_REGISTER_SIZE = 16;
+	static inline constexpr size_t AVX2_INT32_REGISTER_SIZE = 8;
 	static inline constexpr size_t AVX2_ALIGNAS_SIZE = 32;
 
 	static Err copyAVXFloatToAligned(
@@ -36,6 +38,8 @@ public:
 		);
 
 	static void printAVXFloat(const __m256 &avx);
+	static void printAVXInt16(const __m256i &avx);
+	static void printAVXInt32(const __m256i &avx);
 
 	template<typename T>
 	static void printMask(
@@ -63,6 +67,13 @@ public:
 		float* v6,
 		float* v7
 		);
+
+	static Err splitAVXUInt16to32(
+		__m256i intShort,
+		__m256i *int32Output1,
+		__m256i *int32Output2
+		);
+
 
 };
 

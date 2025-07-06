@@ -48,6 +48,28 @@ void AVXUtils::printAVXFloat(const __m256 &avx) {
 	}
 }
 
+void AVXUtils::printAVXInt16(const __m256i &avx) {
+
+	alignas(AVX2_ALIGNAS_SIZE) int16_t values[AVX2_INT16_REGISTER_SIZE];
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), avx);
+
+	QDebug debug = qDebug().nospace();
+	for (int j = 0; j < AVX2_INT16_REGISTER_SIZE; j++) {
+		debug << values[j] << ", ";
+	}
+}
+
+void AVXUtils::printAVXInt32(const __m256i &avx) {
+
+	alignas(AVX2_ALIGNAS_SIZE) int32_t values[AVX2_INT32_REGISTER_SIZE];
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), avx);
+
+	QDebug debug = qDebug().nospace();
+	for (int j = 0; j < AVX2_INT32_REGISTER_SIZE; j++) {
+		debug << values[j] << ", ";
+	}
+}
+
 void AVXUtils::printMask(const __m256 &mask, size_t size) {
 	int intMask = _mm256_movemask_ps(mask);
 
@@ -92,7 +114,6 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 	alignas(AVX2_ALIGNAS_SIZE) float result[masterVectorSize] = {0};
 
 	for (int i = 0; i < size; i++) {
-		// __m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
 		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
 		const size_t insertIndex = paddingSingleRegister + (i * AVX2_FLOAT_REGISTER_SIZE);
 		_mm256_store_ps(masterVector + insertIndex, parallelVec);
@@ -122,6 +143,20 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 		v6[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
 		v7[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
 	}
+
+	ERR_RETURN
+}
+
+Err AVXUtils::splitAVXUInt16to32(
+	__m256i intShort,
+	__m256i *int32Output1,
+	__m256i *int32Output2
+	) {
+
+	ERR_INIT
+
+	*int32Output1 = _mm256_unpacklo_epi16(intShort, _mm256_setzero_si256());
+	*int32Output2 = _mm256_unpackhi_epi16(intShort, _mm256_setzero_si256());
 
 	ERR_RETURN
 }

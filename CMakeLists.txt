@@ -23,11 +23,11 @@ add_definitions("-DBOOST_BIND_GLOBAL_PLACEHOLDERS")
 #SET(TIMS_LIB "${PROJECT_SOURCE_DIR}/ThirdPartyLibs/timsdata-2.21.0.4/timsdata/linux64/libtimsdata.so")
 
 
-#ADD_SUBDIRECTORY("AlgorithmsFFLib")
+ADD_SUBDIRECTORY("AlgorithmsFFLib")
 #ADD_SUBDIRECTORY("Apps/LycaonMzMLTransmorgitron")
 #ADD_SUBDIRECTORY("Apps/FeatureOptimizerPrime")
 #ADD_SUBDIRECTORY("Apps/PythiaDIA")
-#ADD_SUBDIRECTORY("AVXLib")
+ADD_SUBDIRECTORY("AVXLib")
 #ADD_SUBDIRECTORY("ChemLib")
 #ADD_SUBDIRECTORY("EigenLib")
 ADD_SUBDIRECTORY("FileReadersLib")
