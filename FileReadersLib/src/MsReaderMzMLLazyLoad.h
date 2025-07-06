@@ -59,7 +59,7 @@ public:
 
     Err getMzTargetScanPoints(
         const MzTargetKey& targetKey,
-        QMap<ScanNumber, ScanPoints>* scanNumberVsScanPoints
+        QVector<MsScan> *msScans
         ) override;
 
     /**
@@ -73,18 +73,26 @@ public:
     * @return MsReaderBase - an instance of MsReaderBase with scan information and scan points set from the current
     * MsReaderMzMLMapped instance.
     */
-    MsReaderBase msReaderBase() const;
+    // MsReaderBase msReaderBase() const;
 
     Err extractScanPoints(
-            const QVector<MsScanInfo*> &msScanInfos,
-            QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
-            ) override;
+	    const QVector<MsScanInfo*> &msScanInfos,
+		QVector<MsScan> *msScans
+        ) override;
+
+	static Err extractScanPoints(
+		const QString &fileName,
+		const QVector<MsScanInfo*> &msScanInfos,
+		QVector<MsScan> *msScans
+		);
 
 private:
 
     Q_DISABLE_COPY(MsReaderMzMLLazyLoad)
     class PrivateData;
     QScopedPointer<PrivateData> m_d;
+
+	static inline long long m_counter = 0;
 };
 
 

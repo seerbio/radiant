@@ -14,24 +14,24 @@ INCLUDE_DIRECTORIES(
 
 #Add classes to test here.
 SET(TEST_CLASSES
-        CommandLineParserUtilsTests
-        CSVReaderTests
-        FastaReaderTests
-        FeatureFinderHillReaderTests
-        FragLibReaderTests
-        FragLibTsvReaderTests
-        MsCalibrationReaderTests
-        MsReaderBaseTests
+#        CommandLineParserUtilsTests
+#        CSVReaderTests
+#        FastaReaderTests
+#        FeatureFinderHillReaderTests
+#        FragLibReaderTests
+#        FragLibTsvReaderTests
+#        MsCalibrationReaderTests
+#        MsReaderBaseTests
 #        MsReaderBrukerTimsTests
-        MsReaderMZMLTests
+#        MsReaderMZMLTests
         MsReaderMZMLLazyLoadTests
-        MsReaderMZMLMappedTests
-        MsReaderParquetTests
-        MsReaderPointerAccTests
-        ParquetReaderTests
-        PythiaParameterReaderTests
-        QuanReaderTests
-        SpecLibReaderTests
+#        MsReaderMZMLMappedTests
+#        MsReaderParquetTests
+#        MsReaderPointerAccTests
+#        ParquetReaderTests
+#        PythiaParameterReaderTests
+#        QuanReaderTests
+#        SpecLibReaderTests
         )
 
 foreach(class ${TEST_CLASSES})

@@ -16,31 +16,35 @@ MsReaderBase::MsReaderBase()
 : m_fileIsCalibrated(false)
 , m_isTIMS(false)
 , m_mzMs1Min(std::numeric_limits<float>::max())
-, m_mzMs1Max(-1.0)
+, m_mzMs1Max(std::numeric_limits<float>::lowest())
 , m_mzMs2Min(std::numeric_limits<float>::max())
-, m_mzMs2Max(-1.0)
+, m_mzMs2Max(std::numeric_limits<float>::lowest())
+, m_intensityMs1Min(std::numeric_limits<float>::max())
+, m_intensityMs1Max(std::numeric_limits<float>::lowest())
+, m_intensityMs2Min(std::numeric_limits<float>::max())
+, m_intensityMs2Max(std::numeric_limits<float>::lowest())
 {}
 
 void MsReaderBase::setMsScanInfo(const QMap<ScanNumber, MsScanInfo> &msScanInfos) {
     m_msScanInfo = msScanInfos;
 }
 
-Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
+// Err MsReaderBase::setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints) {
+//
+//     ERR_INIT
+//
+//     const int originalScanPointsSize = getMsScanInfos().size();
+//     e = ErrorUtils::isEqual(scanPoints.size(), originalScanPointsSize); ree;
+//
+//     m_scanPoints = scanPoints;
+//
+//     ERR_RETURN
+// }
 
-    ERR_INIT
-
-    const int originalScanPointsSize = getMsScanInfos().size();
-    e = ErrorUtils::isEqual(scanPoints.size(), originalScanPointsSize); ree;
-
-    m_scanPoints = scanPoints;
-
-    ERR_RETURN
-}
-
-void MsReaderBase::reset() {
-    QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
-    QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
-}
+// void MsReaderBase::reset() {
+//     QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
+//     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
+// }
 
 Err MsReaderBase::openFile(const QString &filePath) {
     return Error::eFunctionNotImplemented;
@@ -63,8 +67,8 @@ Err MsReaderBase::openFile(
 
 Err MsReaderBase::closeFile() {
     QMap<ScanNumber, MsScanInfo>().swap(m_msScanInfo);
-    QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
-    QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
+    // QMap<ScanNumber, ScanPoints>().swap(m_scanPoints);
+    // QMap<ScanNumber, ScanTime>().swap(m_scanNumberVsScanTime);
     return Error::eNoError;
 }
 
@@ -75,11 +79,25 @@ Err MsReaderBase::extractScanPoints(
     return eFunctionNotImplemented;
 }
 
+Err MsReaderBase::extractScanPoints(
+	const QVector<MsScanInfo*> &msScanInfos,
+	QVector<MsScan> *msScans
+	){
+	return eFunctionNotImplemented;
+}
+
 Err MsReaderBase::getMzTargetScanPoints(
     const MzTargetKey &targetKey,
     QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
     ){
     return eFunctionNotImplemented;
+}
+
+Err MsReaderBase::getMzTargetScanPoints(
+	const MzTargetKey& targetKey,
+	QVector<MsScan> *msScans
+	){
+	return eFunctionNotImplemented;
 }
 
 QString MsReaderBase::filePath() {
@@ -124,108 +142,108 @@ QPair<ScanTime, ScanTime > MsReaderBase::scanTimeMinMax() {
     return {m_msScanInfo.first().scanTime, m_msScanInfo.last().scanTime};
 }
 
-QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
-    return m_scanPoints;
-}
+// QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
+//     return m_scanPoints;
+// }
 
-QMap<ScanNumber, ScanPoints *> MsReaderBase::getScanPointsPntrs() {
+// QMap<ScanNumber, ScanPoints *> MsReaderBase::getScanPointsPntrs() {
+//
+//     QMap<ScanNumber, ScanPoints *> scanNumberVsScanPointsPtrs;
+//
+//     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
+//         scanNumberVsScanPointsPtrs.insert(it.key(), &it.value());
+//     }
+//
+//     return scanNumberVsScanPointsPtrs;
+// }
 
-    QMap<ScanNumber, ScanPoints *> scanNumberVsScanPointsPtrs;
+// Err MsReaderBase::getScanPoints(
+//         int msLevel,
+//         QMap<ScanNumber, ScanPoints> *scanPoints
+// ) {
+//
+//     ERR_INIT
+//
+//     scanPoints->clear();
+//
+//     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
+//
+//         const ScanNumber scanNumber = it.key();
+//         const ScanPoints &scanPointsVec = it.value();
+//
+//         MsScanInfo msScanInfo;
+//         e = getMsScanInfo(scanNumber, &msScanInfo); ree
+//
+//         if (msScanInfo.msLevel != msLevel) {
+//             continue;
+//         }
+//
+//         scanPoints->insert(scanNumber, scanPointsVec);
+//     }
+//
+//     ERR_RETURN;
+// }
 
-    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
-        scanNumberVsScanPointsPtrs.insert(it.key(), &it.value());
-    }
+// Err MsReaderBase::getScanPoints(
+//         int msLevel,
+//         QMap<ScanNumber, ScanPoints*> *scanPoints
+// ) {
+//
+//     ERR_INIT
+//
+//     for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
+//
+//         const ScanNumber scanNumber = it.key();
+//         ScanPoints *scanPointsVec = &it.value();
+//
+//         MsScanInfo msScanInfo;
+//         e = getMsScanInfo(scanNumber, &msScanInfo); ree
+//
+//         if (msScanInfo.msLevel != msLevel) {
+//             continue;
+//         }
+//
+//         scanPoints->insert(scanNumber, scanPointsVec);
+//     }
+//
+//     ERR_RETURN;
+// }
 
-    return scanNumberVsScanPointsPtrs;
-}
+// QPair<Err, ScanPoints*> MsReaderBase::getScanPoints(int scanNumber) {
+//
+//     ERR_INIT
+//
+//     e = ErrorUtils::contains(scanNumber, m_msScanInfo); rree;
+//     e = ErrorUtils::contains(scanNumber, m_scanPoints); rree;
+//     return {e, &m_scanPoints[scanNumber]};
+// }
 
-Err MsReaderBase::getScanPoints(
-        int msLevel,
-        QMap<ScanNumber, ScanPoints> *scanPoints
-) {
-
-    ERR_INIT
-
-    scanPoints->clear();
-
-    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        const ScanPoints &scanPointsVec = it.value();
-
-        MsScanInfo msScanInfo;
-        e = getMsScanInfo(scanNumber, &msScanInfo); ree
-
-        if (msScanInfo.msLevel != msLevel) {
-            continue;
-        }
-
-        scanPoints->insert(scanNumber, scanPointsVec);
-    }
-
-    ERR_RETURN;
-}
-
-Err MsReaderBase::getScanPoints(
-        int msLevel,
-        QMap<ScanNumber, ScanPoints*> *scanPoints
-) {
-
-    ERR_INIT
-
-    for (auto it = m_scanPoints.begin(); it != m_scanPoints.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        ScanPoints *scanPointsVec = &it.value();
-
-        MsScanInfo msScanInfo;
-        e = getMsScanInfo(scanNumber, &msScanInfo); ree
-
-        if (msScanInfo.msLevel != msLevel) {
-            continue;
-        }
-
-        scanPoints->insert(scanNumber, scanPointsVec);
-    }
-
-    ERR_RETURN;
-}
-
-QPair<Err, ScanPoints*> MsReaderBase::getScanPoints(int scanNumber) {
-
-    ERR_INIT
-
-    e = ErrorUtils::contains(scanNumber, m_msScanInfo); rree;
-    e = ErrorUtils::contains(scanNumber, m_scanPoints); rree;
-    return {e, &m_scanPoints[scanNumber]};
-}
-
-Err MsReaderBase::collateMS2MzTargetFrames(
-        QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame
-        ) {
-
-    ERR_INIT
-
-    e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
-    e = ErrorUtils::isNotEmpty(m_scanPoints); ree;
-//    e = ErrorUtils::isTrue(isDIA()); ree;
-
-    const int msLevel = 2;
-    const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
-
-    for (auto it = tandemScanInfos.begin(); it != tandemScanInfos.end(); it++) {
-
-        const ScanNumber scanNumber = it.key();
-        const MsScanInfo msScanInfo = it.value();
-
-        QPair<Err, ScanPoints*> scanPointsResult = getScanPoints(scanNumber);
-        e = scanPointsResult.first; ree;
-        (*diaTargetFrame)[msScanInfo.targetKey()].insert(scanNumber, scanPointsResult.second);
-    }
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "DIA Target Frames Count:" << diaTargetFrame->size();
-    ERR_RETURN
-}
+// Err MsReaderBase::collateMS2MzTargetFrames(
+//         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>> *diaTargetFrame
+//         ) {
+//
+//     ERR_INIT
+//
+//     e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
+//     e = ErrorUtils::isNotEmpty(m_scanPoints); ree;
+// //    e = ErrorUtils::isTrue(isDIA()); ree;
+//
+//     const int msLevel = 2;
+//     const QMap<ScanNumber, MsScanInfo> tandemScanInfos = getMsScanInfos(msLevel);
+//
+//     for (auto it = tandemScanInfos.begin(); it != tandemScanInfos.end(); it++) {
+//
+//         const ScanNumber scanNumber = it.key();
+//         const MsScanInfo msScanInfo = it.value();
+//
+//         QPair<Err, ScanPoints*> scanPointsResult = getScanPoints(scanNumber);
+//         e = scanPointsResult.first; ree;
+//         (*diaTargetFrame)[msScanInfo.targetKey()].insert(scanNumber, scanPointsResult.second);
+//     }
+//
+//     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "DIA Target Frames Count:" << diaTargetFrame->size();
+//     ERR_RETURN
+// }
 
 QVector<MsScanInfo> MsReaderBase::getUniqueTandemMsScanInfos() {
 
@@ -267,10 +285,10 @@ Err MsReaderBase::getMsScanInfos(
     ) const {
 
     ERR_INIT
-    e = ErrorUtils::isNotEmpty(m_mzTargetVsScanInfosPntrs); ree;
-    e = ErrorUtils::contains(mzTargetKey, m_mzTargetVsScanInfosPntrs); ree;
-
-    *msScanInfos = m_mzTargetVsScanInfosPntrs.value(mzTargetKey);
+    // e = ErrorUtils::isNotEmpty(m_mzTargetVsScanInfosPntrs); ree;
+    // e = ErrorUtils::contains(mzTargetKey, m_mzTargetVsScanInfosPntrs); ree;
+    //
+    // *msScanInfos = m_mzTargetVsScanInfosPntrs.value(mzTargetKey);
 
     ERR_RETURN
 }
@@ -370,19 +388,19 @@ Err MsReaderBase::getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi) 
     ERR_RETURN
 }
 
-Err MsReaderBase::driftTimeFromIonMobilityIndex(
-    const IonMobilityIndex &ionMobilityIndex,
-    double *driftTime
-    ) const {
-
-    ERR_INIT
-
-    e = ErrorUtils::contains(ionMobilityIndex, m_frameIndexVsDriftTime); ree;
-
-    *driftTime = m_frameIndexVsDriftTime.value(ionMobilityIndex);
-
-    ERR_RETURN
-}
+// Err MsReaderBase::driftTimeFromIonMobilityIndex(
+//     const IonMobilityIndex &ionMobilityIndex,
+//     double *driftTime
+//     ) const {
+//
+//     ERR_INIT
+//
+//     e = ErrorUtils::contains(ionMobilityIndex, m_frameIndexVsDriftTime); ree;
+//
+//     *driftTime = m_frameIndexVsDriftTime.value(ionMobilityIndex);
+//
+//     ERR_RETURN
+// }
 
 Err MsReaderBase::splitScanPoints(
         const ScanPoints &scanPoints,
@@ -446,7 +464,7 @@ Err MsReaderBase::zipScanPoints(
 
 void MsReaderBase::printSize() const {
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsScanInfo size" << m_msScanInfo.size();
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanPoints size" << m_scanPoints.size();
+    // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanPoints size" << m_scanPoints.size();
 }
 
 Err MsReaderBase::printFileInfo() {
@@ -462,18 +480,18 @@ Err MsReaderBase::printFileInfo() {
         ms1ScanSize = ms1Scans.size();
 
         for (const MsScanInfo &msScanInfo : ms1Scans) {
-            const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
-            m_mzMs1Min = std::min(m_mzMs1Min, scanPoints.front().x());
-            m_mzMs1Max = std::max(m_mzMs1Max, scanPoints.back().x());
+            // const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
+            // m_mzMs1Min = std::min(m_mzMs1Min, scanPoints.front().x());
+            // m_mzMs1Max = std::max(m_mzMs1Max, scanPoints.back().x());
         }
 
         const QMap<ScanNumber, MsScanInfo> ms2Scans = getMsScanInfos(++msLevel);
         ms2ScanSize = ms2Scans.size();
 
         for (const MsScanInfo &msScanInfo : ms2Scans) {
-            const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
-            m_mzMs2Min = std::min(m_mzMs1Min, scanPoints.front().x());
-            m_mzMs2Max = std::max(m_mzMs1Max, scanPoints.back().x());
+            // const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
+            // m_mzMs2Min = std::min(m_mzMs1Min, scanPoints.front().x());
+            // m_mzMs2Max = std::max(m_mzMs1Max, scanPoints.back().x());
         }
     }
 
@@ -482,8 +500,10 @@ Err MsReaderBase::printFileInfo() {
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsData FilePath" << m_filePath;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Range" << m_mzMs1Min << "-" << m_mzMs1Max;
+    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Intensity Range" << m_intensityMs1Min << "-" << m_intensityMs1Max;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS1 Scan Count" << ms1ScanSize;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Range" << m_mzMs2Min << "-" << m_mzMs2Max;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Intensity Range" << m_intensityMs2Min << "-" << m_intensityMs2Max;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Scan Count" << ms2ScanSize;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Target Window Count" << uniqueTandemScanInfos.size();
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MS2 Target Window Mean Scan Count" << meanFrameScanCount;
@@ -504,6 +524,7 @@ float MsReaderBase::mzMs2Max() const {
     return m_mzMs2Max;
 }
 
-QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
-    return &m_frameNumberVsMS1FrameTIMS;
-}
+// QMap<FrameNumberTIMS, Ms1FrameTIMS>* MsReaderBase::frameNumberVsMS1FrameTIMSPntr() {
+//     return &m_frameNumberVsMS1FrameTIMS;
+// }
+

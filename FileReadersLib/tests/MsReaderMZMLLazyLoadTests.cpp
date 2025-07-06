@@ -83,9 +83,9 @@ namespace {
 
         e = ErrorUtils::isTrue(msReaderMzMLLazyLoad->isInit()); ree;
 
-        QMap<ScanNumber, ScanPoints> scanNumberVsScanPoints;
-        e = msReaderMzMLLazyLoad->getMzTargetScanPoints(msi.targetKey(), &scanNumberVsScanPoints); ree;
-        qDebug() << msi.targetKey() << scanNumberVsScanPoints.size() << "scanNumberVsScanPoints Size yo!" << et.elapsed();
+        QVector<MsScan> msScans;
+        e = msReaderMzMLLazyLoad->getMzTargetScanPoints(msi.targetKey(), &msScans); ree;
+        qDebug() << msi.targetKey() << msScans.size() << "scanNumberVsScanPoints Size yo!" << et.elapsed();
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ms";
 
         ERR_RETURN
@@ -111,56 +111,101 @@ namespace {
         return retVal;
     }
 
+
+	int openParallelTestLogic(
+		const QString &fileName,
+		const QVector<MsScanInfo*> &msScanInfos
+		) {
+
+    	ERR_INIT
+
+    	QVector<MsScan> msScans;
+    	e = MsReaderMzMLLazyLoad::extractScanPoints(
+			fileName,
+			msScanInfos,
+			&msScans
+			);
+
+    	// qDebug() << e << msScans.size() << "scanNumberVsScanPoints Size yo!" << msScans.front().mzVals.at(0);
+    	// qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ms";
+
+    	return 1;
+    }
+
 }//namespace
 void MsReaderMZMLLazyLoadTests::troubleShoot() {
 
     ERR_INIT
 
-    QSKIP("Troubleshooting");
+    // QSKIP("Troubleshooting");
     //TODO make more tests.
 
     const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
-    // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";
-    // const QString filename = "/home/anichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
+    // const QString filename = "/home/andrewnichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";
+    // const QString filename = "/home/andrewnichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
 
     // const QString &filename = QDir(qApp->applicationDirPath()).filePath("1min.mzML");
 
     MsReaderMzMLLazyLoad msReaderMzMLLazyLoad;
     e = msReaderMzMLLazyLoad.openFile(filename);
     QCOMPARE(e, eNoError);
-    QCOMPARE(msReaderMzMLLazyLoad.m_mzTargetVsScanInfosPntrs.size(), 201);
+    // QCOMPARE(msReaderMzMLLazyLoad.m_mzTargetVsScanInfosPntrs.size(), 201);
 
-    QVector<MsScanInfo> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
+    const QVector<MsScanInfo> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
 
-#define RUN_PARALLEL_TEST
-#ifdef RUN_PARALLEL_TEST
+	QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetVsScanInfosPntrs = msReaderMzMLLazyLoad.m_mzTargetVsScanInfosPntrs;
 
-    QVector<QVector<MsScanInfo>> msScanInfosesTranced;
-    e = ParallelUtils::trancheVectorForParallelization(
-        scanInfos,
-        ParallelUtils::numberOfAvailableSystemProcessors(),
-        &msScanInfosesTranced
-        );
-    QCOMPARE(e, eNoError);
+	const auto binderLogic = std::bind(
+		openParallelTestLogic,
+		filename,
+		std::placeholders::_1
+		);
 
-    const auto trainingLogicBinder = std::bind(
-        parallelLogic,
-        std::placeholders::_1,
-        &msReaderMzMLLazyLoad
-        );
+	QElapsedTimer et;
+	et.start();
+	QFuture<int> futures = QtConcurrent::mapped(
+		mzTargetVsScanInfosPntrs,
+		binderLogic
+		);
+	futures.waitForFinished();
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << et.elapsed() << MsReaderMzMLLazyLoad::m_counter;
 
-    QFuture<Err> futures = QtConcurrent::mapped(
-        scanInfos,
-        trainingLogicBinder
-        );
-    futures.waitForFinished();
+	// QVector<MsReaderMzMLLazyLoad> msReaderMzMLLazyLoads;
+	// for (int i = 0; i < 32; i++) {
+	// 	msReaderMzMLLazyLoads.push_back(msReaderMzMLLazyLoad);
+	// }
 
-#else
-    for (const MsScanInfo& msi : scanInfos) {
-        e = parallelLogic(msi, &msReaderMzMLLazyLoad);
-        QCOMPARE(e, eNoError);
-    }
-#endif
+
+
+// #define RUN_PARALLEL_TEST
+// #ifdef RUN_PARALLEL_TEST
+//
+//     QVector<QVector<MsScanInfo>> msScanInfosesTranced;
+//     e = ParallelUtils::trancheVectorForParallelization(
+//         scanInfos,
+//         ParallelUtils::numberOfAvailableSystemProcessors(),
+//         &msScanInfosesTranced
+//         );
+//     QCOMPARE(e, eNoError);
+//
+//     const auto trainingLogicBinder = std::bind(
+//         parallelLogic,
+//         std::placeholders::_1,
+//         &msReaderMzMLLazyLoad
+//         );
+//
+//     QFuture<Err> futures = QtConcurrent::mapped(
+//         scanInfos,
+//         trainingLogicBinder
+//         );
+//     futures.waitForFinished();
+//
+// #else
+//     for (const MsScanInfo& msi : scanInfos) {
+//         e = parallelLogic(msi, &msReaderMzMLLazyLoad);
+//         QCOMPARE(e, eNoError);
+//     }
+// #endif
 }
 
 

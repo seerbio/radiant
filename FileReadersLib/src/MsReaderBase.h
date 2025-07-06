@@ -27,6 +27,7 @@ enum class ScanPointsSort {
     DescIntensity
 };
 
+
 class FILEREADERSLIB_EXPORTS MsScanInfo {
 
 public:
@@ -39,6 +40,11 @@ public:
     float isoWindowLower = -1.0;
     float isoWindowUpper = -1.0;
     float ionMobilityDriftTime = -1.0;
+	float mzMin = -1.0;
+	float mzMax = -1.0;
+	float intensityMin = -1.0;
+	float intensityMax = -1.0;
+	int pointCount = -1;
     IonMobilityIndex ionMobilityIndex = -1;
 
     long scanOffsetStart = -1;
@@ -56,6 +62,11 @@ public:
     }
 };
 
+struct MsScan {
+	MsScanInfo* msScanInfoPntr = nullptr;
+	QVector<float> mzVals;
+	QVector<float> intensityVals;
+};
 
 class FILEREADERSLIB_EXPORTS MsReaderBase {
 
@@ -92,7 +103,7 @@ public:
     * with a success state is returned. If the number of ScanPoints does not match the original number,
     * the function will return an Err object initialized with a failure state.
     */
-    Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
+    // Err setScanPoints(const QMap<ScanNumber, ScanPoints> &scanPoints);
 
     /**
     * @brief Resets the MS Reader.
@@ -100,7 +111,7 @@ public:
     * This method clears all the ScanPoints in the MS Reader by swapping the
     * m_scanPoints member variable with an empty QMap.
     */
-    void reset();
+    // void reset();
 
     /**
     * @brief Opens a file in the MS Reader (declaration).
@@ -164,10 +175,20 @@ public:
             QMap<ScanNumber, ScanPoints> *scanNumberVsScanPoints
             );
 
+	virtual Err extractScanPoints(
+		const QVector<MsScanInfo*> &msScanInfos,
+		QVector<MsScan> *msScans
+		);
+
     virtual Err getMzTargetScanPoints(
             const MzTargetKey& targetKey,
             QMap<ScanNumber, ScanPoints>* scanNumberVsScanPoints
             );
+
+	virtual Err getMzTargetScanPoints(
+		const MzTargetKey& targetKey,
+		QVector<MsScan> *msScans
+		);
 
     /**
     * @brief Gets the file path of the currently opened file in the MS Reader.
@@ -221,7 +242,7 @@ public:
     *
     * @return Returns a QMap where each key-value pair represents the scan number and the corresponding scan points respectively.
     */
-    QMap<ScanNumber, ScanPoints> getScanPoints();
+    // QMap<ScanNumber, ScanPoints> getScanPoints();
 
     /**
     * @brief Retrieves pointers to the scan points in the MS Reader.
@@ -231,7 +252,7 @@ public:
     *
     * @return Returns a QMap where each key-value pair represents the scan number and the corresponding scan points pointer respectively.
     */
-    QMap<ScanNumber, ScanPoints*> getScanPointsPntrs();
+    // QMap<ScanNumber, ScanPoints*> getScanPointsPntrs();
 
     /**
     * @brief Retrieves scan points of a specific MS level from the MS Reader.
@@ -246,10 +267,10 @@ public:
     * @return Returns an Err object. If successful, the function returns an Err object initialized with a
     * success state. If any error occurs during the fetching of the scan points, it returns an Err object initialized with a failure state.
     */
-    Err getScanPoints(
-            int msLevel,
-            QMap<ScanNumber, ScanPoints> *scanPoints
-            );
+    // Err getScanPoints(
+    //         int msLevel,
+    //         QMap<ScanNumber, ScanPoints> *scanPoints
+    //         );
 
     /**
     * @brief Retrieves pointers to scan points of a specific MS level from the MS Reader.
@@ -264,10 +285,10 @@ public:
     * @return Returns an Err object. If successful, the function returns an Err object initialized with a
     * success state. If any error occurs during the retrieval of the scan points, it returns an Err object initialized with a failure state.
     */
-    Err getScanPoints(
-            int msLevel,
-            QMap<ScanNumber, ScanPoints*> *scanPoints
-    );
+    // Err getScanPoints(
+    //         int msLevel,
+    //         QMap<ScanNumber, ScanPoints*> *scanPoints
+    // );
 
     /**
     * @brief Retrieves scan points of a specific ScanNumber.
@@ -280,7 +301,7 @@ public:
     * @return Returns a QPair<Err, ScanPoints> object. If successful, the function returns an Err object initialized with a
     * success state as well as the ScanPoints. If any error occurs during the fetching of the scan points, it returns an Err object initialized with a failure state.
     */
-    QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
+    // QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
 
     /**
     * @brief Collates MS2 MzTarget frames for Data-Independent Acquisition (DIA).
@@ -296,9 +317,9 @@ public:
     *                      representing the target frame structure to be populated.
     * @return Err The error code indicating success or failure of the operation.
     */
-    Err collateMS2MzTargetFrames(
-            QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
-    );
+    // Err collateMS2MzTargetFrames(
+    //         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
+    // );
 
     /**
     * @brief Retrieves unique tandem MS scan information for MS level 2.
@@ -425,10 +446,10 @@ public:
 
     Err getHiLoMzPrecursors(QPair<MzMin, MzMax> *precursorMzLoVsMzHi);
 
-    Err driftTimeFromIonMobilityIndex(
-            const IonMobilityIndex &ionMobilityIndex,
-            double *driftTime
-            ) const;
+    // Err driftTimeFromIonMobilityIndex(
+    //         const IonMobilityIndex &ionMobilityIndex,
+    //         double *driftTime
+    //         ) const;
 
     /**
     * @brief Splits ScanPoints into separate vectors for m/z and intensity values.
@@ -502,7 +523,7 @@ public:
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
+    // QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
 
 
 protected:
@@ -512,11 +533,11 @@ protected:
 
     QMap<ScanNumber, MsScanInfo> m_msScanInfo;
     QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetVsScanInfosPntrs;
-    QMap<ScanNumber, ScanPoints>  m_scanPoints;
+    // QMap<ScanNumber, ScanPoints>  m_scanPoints;
     QMap<ScanNumber, ScanTime> m_scanNumberVsScanTime;
 
-    QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
-    QMap<FrameIndex, double> m_frameIndexVsDriftTime;
+    // QMap<FrameNumberTIMS, Ms1FrameTIMS> m_frameNumberVsMS1FrameTIMS;
+    // QMap<FrameIndex, double> m_frameIndexVsDriftTime;
 
 
     QString m_filePath;
@@ -525,6 +546,11 @@ protected:
     float m_mzMs1Max;
     float m_mzMs2Min;
     float m_mzMs2Max;
+	float m_intensityMs1Min;
+	float m_intensityMs1Max;
+	float m_intensityMs2Min;
+	float m_intensityMs2Max;
+
 };
 
 
