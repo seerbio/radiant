@@ -8,6 +8,7 @@
 #include "AlgorithmsFFLib_Exports.h"
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "MsReaderBase.h"
 #include "PointFF.h"
 
 
@@ -67,7 +68,7 @@ public:
     * @param scanNumberVsScanPoints A map of scan numbers to scan points.
     * @return An error code indicating success or failure.
     */
-    [[nodiscard]] Err init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints);
+    [[nodiscard]] Err init(const QVector<MsScan> &msScans);
 	Err init(const QString& filePath);
 
     /**
@@ -83,7 +84,7 @@ public:
     [[nodiscard]] XICPointsPntrs extractPointsXIC(
             float mzMin,
             float mzMax
-    );
+            );
 
     /**
     * @brief Checks if the TurboXIC private implementation is initialized.

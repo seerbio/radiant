@@ -830,17 +830,12 @@ Err MsReaderMzMLLazyLoad::extractScanPoints(
     e = ErrorUtils::fileExists(fileName); ree;
     e = ErrorUtils::isNotEmpty(msScanInfos); ree;
 
-	QElapsedTimer et;
-	et.start();
-
     QFile file(fileName);
     qint64 fileSize;
     uchar *ucharData;
     e = memoryMapFile(file, &fileSize, &ucharData); ree;
 
     const auto* data = reinterpret_cast<const char*>(ucharData);
-
-	long opening = et.nsecsElapsed();
 
     for (MsScanInfo *msi : msScanInfos) {
         size_t start = msi->scanOffsetStart;
@@ -863,8 +858,6 @@ Err MsReaderMzMLLazyLoad::extractScanPoints(
         msScans->push_back(msScan);
     }
 
-	qDebug() << opening << et.nsecsElapsed() << "SDLfjdsl" << msScans->back().msScanInfoPntr->targetKey();
-	m_counter += et.nsecsElapsed();
 	file.close();
 
     ERR_RETURN

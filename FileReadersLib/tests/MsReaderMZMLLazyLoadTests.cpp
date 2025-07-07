@@ -168,7 +168,7 @@ void MsReaderMZMLLazyLoadTests::troubleShoot() {
 		binderLogic
 		);
 	futures.waitForFinished();
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << et.elapsed() << MsReaderMzMLLazyLoad::m_counter;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << et.elapsed();
 
 	// QVector<MsReaderMzMLLazyLoad> msReaderMzMLLazyLoads;
 	// for (int i = 0; i < 32; i++) {

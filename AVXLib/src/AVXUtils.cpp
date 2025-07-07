@@ -25,6 +25,26 @@ Err AVXUtils::copyAVXFloatToAligned(float *src, float *dst, size_t size) {
 	ERR_RETURN
 }
 
+Err AVXUtils::copyAVXIntToAligned(uint32_t *src, uint32_t *dst, size_t size) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isByteAligned(dst, AVX2_ALIGNAS_SIZE);
+
+	size_t i = 0;
+
+	for (; i + AVX2_INT32_REGISTER_SIZE <= size; i += AVX2_INT32_REGISTER_SIZE) {
+		__m256i v = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src + i));
+		_mm256_store_si256(reinterpret_cast<__m256i*>(dst + i), v);
+	}
+
+	if (i < size) {
+		std::memcpy(dst + i, src + i, (size - i) * sizeof(float));
+	}
+
+	ERR_RETURN
+}
+
 size_t AVXUtils::calculateNextAlignedBlockSize(
 	size_t arrSize,
 	size_t byteSize

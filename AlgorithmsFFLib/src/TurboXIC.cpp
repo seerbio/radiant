@@ -25,20 +25,20 @@ TurboXIC::~TurboXIC() {
 	delete m_indexesI;
 }
 
-Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) {
+Err TurboXIC::init(const QVector<MsScan> &msScans) {
 	ERR_INIT
 
-	e = ErrorUtils::isNotEmpty(scanNumberVsScanPoints); ree;
+	e = ErrorUtils::isNotEmpty(msScans); ree;
 	e = ErrorUtils::isEqual(
 		static_cast<short>(sizeof(float)),
 		static_cast<short>(sizeof(uint32_t))
 		); ree;
 
 	const ulong scanPointsCount = std::accumulate(
-		scanNumberVsScanPoints.begin(),
-		scanNumberVsScanPoints.end(),
+		msScans.begin(),
+		msScans.end(),
 		0,
-		[](ulong sum, ScanPoints *sp){return sum + sp->size();}
+		[](ulong sum, const MsScan &s){return sum + s.msScanInfoPntr->pointCount;}
 		);
 
 	e = ErrorUtils::isBelowThreshold(
@@ -67,14 +67,13 @@ Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) 
 	m_indexesI = indexesI;
 
 	m_xicPoints.reserve(scanPointsCount);
-	for (auto it = scanNumberVsScanPoints.begin(); it != scanNumberVsScanPoints.end(); ++it) {
-		const ScanNumber scanNumber = it.key();
-		const ScanPoints *scanPoints = it.value();
-		for(const ScanPoint &sp : *scanPoints) {
+	for (const MsScan &s : msScans) {
+
+		for(int i = 0; i < s.msScanInfoPntr->pointCount; i++) {
 			XICPoint xicPoint;
-			xicPoint.mz = sp.x();
-			xicPoint.intensity = sp.y();
-			xicPoint.scanNumber = scanNumber;
+			xicPoint.mz = s.mzVals[i];
+			xicPoint.intensity = s.intensityVals[i];
+			xicPoint.scanNumber = s.msScanInfoPntr->scanNumber;
 			xicPoint.ionMobilityIndex = -1;
 			m_xicPoints.push_back(xicPoint);
 		}
@@ -97,6 +96,56 @@ Err TurboXIC::init(const QMap<ScanNumber, ScanPoints*> &scanNumberVsScanPoints) 
 	ERR_RETURN
 }
 
+Err TurboXIC::init(const QString &filePath) {
+
+	ERR_INIT
+
+	QFile file(filePath);
+	if (!file.open(QIODevice::ReadOnly)) {
+		qWarning() << "Failed to open file for reading:" << filePath;
+		rrr(eFileError);
+	}
+
+	QDataStream in(&file);
+	in.setVersion(QDataStream::Qt_5_15);  // Ensure compatibility with the saved version
+
+	in >> m_scanPointsCountAlignas;
+	in >> m_alignasPiecesOfEight;
+
+	delete m_mzVals;
+	auto* mzVals
+		= static_cast<float*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_scanPointsCountAlignas * sizeof(float)));
+	m_mzVals = mzVals;
+
+	delete m_indexesMz;
+	auto* indexesMz
+		= static_cast<float*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_alignasPiecesOfEight * sizeof(float)));
+	m_indexesMz = indexesMz;
+
+	delete m_indexesI;
+	auto* indexesI
+		= static_cast<uint32_t*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_alignasPiecesOfEight * sizeof(uint32_t)));
+	m_indexesI = indexesI;
+
+	QVector<float> mzValsLoad;
+	in >> mzValsLoad;
+	AVXUtils::copyAVXFloatToAligned(mzValsLoad.data(), m_mzVals, m_scanPointsCountAlignas);
+
+	QVector<float> indexesMzLoad;
+	in >> indexesMzLoad;
+	AVXUtils::copyAVXFloatToAligned(indexesMzLoad.data(), m_indexesMz, m_alignasPiecesOfEight);
+
+	QVector<uint32_t> indexesILoad;
+	in >> indexesILoad;
+	AVXUtils::copyAVXIntToAligned(indexesILoad.data(), m_indexesI, m_alignasPiecesOfEight);
+
+	in >> m_xicPoints;
+
+	file.close();
+	// qDebug() << "TurboXIC data loaded successfully from" << filePath;
+
+	ERR_RETURN
+}
 
 XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 
@@ -148,7 +197,6 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 	return results;
 }
 
-
 bool TurboXIC::isInit() const {
 	return !m_xicPoints.empty();
 }
@@ -186,8 +234,8 @@ Err TurboXIC::write(const QString &filePath) const {
 	out.setVersion(QDataStream::Qt_5_15);
 
 	QVector<float> mzValsVector(m_mzVals, m_mzVals + m_scanPointsCountAlignas);
-	QVector<float> indexesMz(m_indexesMz, m_indexesMz + m_scanPointsCountAlignas);
-	QVector<int> indexesI(m_indexesI, m_indexesI + m_scanPointsCountAlignas);
+	QVector<float> indexesMz(m_indexesMz, m_indexesMz + m_alignasPiecesOfEight);
+	QVector<int> indexesI(m_indexesI, m_indexesI + m_alignasPiecesOfEight);
 
 	out << m_scanPointsCountAlignas;
 	out << m_alignasPiecesOfEight;
@@ -196,61 +244,8 @@ Err TurboXIC::write(const QString &filePath) const {
 	out << indexesI;
 	out << m_xicPoints;
 
-
 	file.close();
-	qDebug() << "Turbo Data saved successfully to" << filePath;
-
-	ERR_RETURN
-}
-
-Err TurboXIC::init(const QString &filePath) {
-
-	ERR_INIT
-
-	QFile file(filePath);
-	if (!file.open(QIODevice::ReadOnly)) {
-		qWarning() << "Failed to open file for reading:" << filePath;
-		rrr(eFileError);
-	}
-
-	QDataStream in(&file);
-	in.setVersion(QDataStream::Qt_5_15);  // Ensure compatibility with the saved version
-
-	in >> m_scanPointsCountAlignas;
-	in >> m_alignasPiecesOfEight;
-
-	delete m_mzVals;
-	auto* mzVals
-		= static_cast<float*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_scanPointsCountAlignas * sizeof(float)));
-	m_mzVals = mzVals;
-
-	delete m_indexesMz;
-	auto* indexesMz
-		= static_cast<float*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_alignasPiecesOfEight * sizeof(float)));
-	m_indexesMz = indexesMz;
-
-	delete m_indexesI;
-	auto* indexesI
-		= static_cast<uint32_t*>(std::aligned_alloc(AVXUtils::AVX2_ALIGNAS_SIZE, m_alignasPiecesOfEight * sizeof(uint32_t)));
-	m_indexesI = indexesI;
-
-	QVector<float> mzValsLoad;
-	in >> mzValsLoad;
-	qDebug() << mzValsLoad.size() << "SDLFKJDSL";
-	m_mzVals = mzValsLoad.data();
-
-	QVector<float> indexesMzLoad;
-	in >> indexesMzLoad;
-	m_indexesMz = indexesMzLoad.data();
-
-	QVector<uint32_t> indexesILoad;
-	in >> indexesILoad;
-	m_indexesI = indexesILoad.data();
-
-	in >> m_xicPoints;
-
-	file.close();
-	qDebug() << "TurboXIC data loaded successfully from" << filePath;
+	// qDebug() << "Turbo Data saved successfully to" << filePath;
 
 	ERR_RETURN
 }

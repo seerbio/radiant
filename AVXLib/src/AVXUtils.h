@@ -32,6 +32,12 @@ public:
 		size_t size
 		);
 
+	static Err copyAVXIntToAligned(
+		uint32_t *src,
+		uint32_t *dst,
+		size_t size
+		);
+
 	static size_t calculateNextAlignedBlockSize(
 		size_t arrSize,
 		size_t byteSize

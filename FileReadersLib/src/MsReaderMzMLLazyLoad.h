@@ -24,6 +24,7 @@ class FILEREADERSLIB_EXPORTS MsReaderMzMLLazyLoad : public MsReaderBase {
 public:
 
     friend class MsReaderMZMLLazyLoadTests;
+    friend class TurboXICTests;
 
     MsReaderMzMLLazyLoad();
 
@@ -92,7 +93,6 @@ private:
     class PrivateData;
     QScopedPointer<PrivateData> m_d;
 
-	static inline long long m_counter = 0;
 };
 
 
