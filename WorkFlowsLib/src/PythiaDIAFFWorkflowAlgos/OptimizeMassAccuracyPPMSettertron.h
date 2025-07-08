@@ -36,7 +36,7 @@ public:
 
 private:
 
-    int calculateNumberOfTranches() const;
+    [[nodiscard]] int calculateNumberOfTranches() const;
 
     Err optimizePPM();
 

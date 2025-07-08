@@ -77,6 +77,8 @@ QVector<Features> DiscriminantScoretron::featuresOptimization() {
         CosineSimSum100Window1p5X,
         CosineSimSum100Window2X,
         TargetWindowLocationAbs,
+
+    	MzPeakLengthsStd
         };
 
     return vec;

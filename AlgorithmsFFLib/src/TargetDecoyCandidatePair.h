@@ -23,6 +23,7 @@ public:
 
     friend class DiscriminantScoretronTests;
     friend class QValueSettertronTests;
+    friend class TargetDecoyCandidatePairTests;
 
     TargetDecoyCandidatePair();
 
@@ -112,6 +113,11 @@ public:
 private:
 
     void setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods);
+
+	static void mutateCandidatePeptideTargetTestAccess(
+		const PeptideStringWithMods &peptideStringWithMods,
+		const QVector<MS2Ion> &ms2IonTarget
+		);
 
 private:
 

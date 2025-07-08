@@ -14,6 +14,7 @@ public:
 private Q_SLOTS:
 
     void gettersTest();
+	static void mutateCandidatePeptideTargetTestAccessTest();
 
 
 };
@@ -57,6 +58,29 @@ void TargetDecoyCandidatePairTests::gettersTest() {
     // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.mass(), 666.6f));
     // QVERIFY(MathUtils::tSame(targetDecoyCandidatePair.iRt(), 66.6f));
     // QCOMPARE(targetDecoyCandidatePair.totalFragmentCount(), 12);
+
+}
+
+void TargetDecoyCandidatePairTests::mutateCandidatePeptideTargetTestAccessTest() {
+
+	QVector<MS2Ion> ms2Ions = {
+		MS2Ion(845.452, 1, "y7", 1, 1) ,
+		MS2Ion(560.304, 0.904366, "y5", 1, 2) ,
+		MS2Ion(673.388, 0.676435, "y6", 1, 3) ,
+		MS2Ion(423.229, 0.483817, "y7^2", 2, 4) ,
+		MS2Ion(473.272, 0.285317, "y4", 1, 5) ,
+		MS2Ion(946.499, 0.188432, "y8", 1, 6) ,
+		MS2Ion(473.753, 0.155437, "y8^2", 2, 7) ,
+		MS2Ion(373.187, 0.130075, "b3", 1, 8) ,
+		MS2Ion(486.271, 0.0711044, "b4", 1, 9) ,
+		MS2Ion(573.303, 0.0261274, "b5", 1, 10),
+		MS2Ion(785.41926, 0.0261274, "b7", 1, 11),
+		MS2Ion(899.46219 , 0.0261274, "b8", 1, 12)
+	};
+
+	PeptideStringWithMods peptideStringWithMods = PeptideStringWithMods("VTWLSPTNK");
+
+	TargetDecoyCandidatePair::mutateCandidatePeptideTargetTestAccess(peptideStringWithMods, ms2Ions);
 
 }
 

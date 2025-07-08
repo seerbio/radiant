@@ -17,14 +17,21 @@ class ALGORITHMSFFLIB_EXPORTS MS2Ion {
 
 public:
 
+	MS2Ion() = default;
+	~MS2Ion() = default;
+
+	MS2Ion(float mz, float intensity, const QString &ionLabel, ushort charge, ushort rank)
+	: mz(mz)
+	, intensity(intensity)
+	, ionLabel(ionLabel)
+	, charge(charge)
+	, rank(rank) {}
+
     float mz = -1.0;
     float intensity = -1.0;
     QString ionLabel;
     ushort charge = -1;
     ushort rank = -1;
-
-    MS2Ion() = default;
-    ~MS2Ion() = default;
 
     friend QDebug operator<<(QDebug dbg, const MS2Ion& obj) {
         dbg.nospace() << "MS2Ion(" << obj.mz << ", " << obj.intensity << ", " << obj.ionLabel << ") ";
