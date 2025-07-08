@@ -136,6 +136,7 @@ namespace {
     Err matchMzValsToIonType(
             const QVector<float> &mzValsToPair,
             const PeptideStringWithMods &peptideStringWithMods,
+            bool isDecoy,
             int charge,
             QString *ionLabels
         ) {
@@ -186,6 +187,7 @@ namespace {
 
             if (distanceFromFound > 0.2) {
                 qDebug() << peptideStringWithMods;
+                qDebug() << "Decoy:" << isDecoy;
                 qDebug() << "Searched mzVal:" << mzVal;
                 qDebug() << "Closest val found:" << mzValClosestFound;
                 qDebug() << "Distance from closest val found:" << distanceFromFound;
@@ -220,6 +222,7 @@ namespace {
         e = matchMzValsToIonType(
                 fragLibReaderRow.mzVals,
                 peptideStringWithMods,
+                fragLibReaderRow.isDecoy,
                 charge,
                 ionLabels
         ); ree;
