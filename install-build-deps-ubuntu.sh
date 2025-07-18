@@ -16,9 +16,14 @@ set -euo pipefail
 # Get initial requirements
 ${APT} install --no-install-recommends -y ca-certificates lsb-release wget
 
-wget -P /tmp/ "https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
-${APT} install -y -V "/tmp/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
-rm "/tmp/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
+# Allow overriding the distribution name -- on Pop!OS run with `DISTRO=`
+# Fallback to using lsb_release only occurs when DISTRO is not set; if blank we will fall back to default below.
+DISTRO=${DISTRO-"$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')"}
+CODENAME=$(lsb_release --codename --short)
+
+wget -P /tmp/ https://apache.jfrog.io/artifactory/arrow/${DISTRO:-ubuntu}/apache-arrow-apt-source-latest-${CODENAME}.deb
+${APT} install -y -V "/tmp/apache-arrow-apt-source-latest-${CODENAME}.deb"
+rm "/tmp/apache-arrow-apt-source-latest-${CODENAME}.deb"
 ${APT} update
 
 ${APT} install --no-install-recommends -y \
