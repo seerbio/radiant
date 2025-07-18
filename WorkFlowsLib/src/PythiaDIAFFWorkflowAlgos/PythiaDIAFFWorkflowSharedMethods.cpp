@@ -558,7 +558,10 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
             }
             else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
+                // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
+               bool useDecoyMz = cs->isDecoy != cs->targetDecoyCandidatePair->isDecoy();
+
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(useDecoyMz)};
                 row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};

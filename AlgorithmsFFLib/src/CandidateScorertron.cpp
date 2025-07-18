@@ -1961,7 +1961,10 @@ Err CandidateScorertron::setCandidateScores(
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[PeptideLengthNorm] = static_cast<float>(pepLength);
 
-    const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
+    // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
+    bool useDecoyMz = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy();
+
+    const auto mz = candidateScores->targetDecoyCandidatePair->mz(useDecoyMz);
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
     candidateScores->featuresArray[Mass] = candidateScores->targetDecoyCandidatePair->mass();
@@ -2191,7 +2194,10 @@ Err CandidateScorertron::setMs1RelatedScores(
 
     const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
 
-    const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
+    // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
+    bool useDecoyMz = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy();
+
+    const float monoIsotopeMz = candidateScores->targetDecoyCandidatePair->mz(useDecoyMz);
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);
