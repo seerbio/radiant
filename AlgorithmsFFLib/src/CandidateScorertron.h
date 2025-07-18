@@ -54,11 +54,10 @@ public:
         );
 
     Err calculateScores(
-        const QVector<MS2Ion> &ms2Ions,
         const QVector<float> &weights,
         TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
-        ) const;
+    ) const;
 
 
 private:
@@ -85,10 +84,10 @@ private:
 
     Err setCandidateScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        QVector<MS2Ion> ms2Ions,
         const QVector<BestCorrelationResult> &bestCorrelationResults,
-        const QVector<float> &ms1Averagine,
-        CandidateScores *candidateScores
-        ) const;
+        const QVector<float> &ms1Averagine, CandidateScores *candidateScores
+    ) const;
 
     Err setMs1RelatedScores(
         const TargetDecoyCandidatePair *targetDecoyCandidatePair,

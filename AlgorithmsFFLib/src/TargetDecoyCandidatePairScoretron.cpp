@@ -309,30 +309,28 @@ namespace {
                 ); rree;
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
-
-                const QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
-
-                if (ms2TargetIons.isEmpty()) {
+                // Skip library entries without any ions
+                if (tdcp->ms2IonsTarget().isEmpty()) {
                     continue;
                 }
 
+                // Score the target candidate for the pair
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
-                        ms2TargetIons,
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresTarget
-                        ); rree;
+                    pi.weights,
+                    tdcp,
+                    &candidateScoresTarget
+                ); rree;
 
+                // Score the decoy candidate for the pair
                 CandidateScores candidateScoresDecoy;
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
-                        tdcp->ms2IonsDecoy(),
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresDecoy
-                        ); rree;
+                    pi.weights,
+                    tdcp,
+                    &candidateScoresDecoy
+                ); rree;
 
                 if (
                     MathUtils::tZero(candidateScoresTarget.featuresArray[CosineSimSum100])
