@@ -26,7 +26,6 @@ PeptideString CandidateScores::peptideString() const {
 }
 
 PeptideStringWithMods CandidateScores::peptideStringWithMods() const {
-    // TODO: must return the correct thing when the pair is a library decoy!
     if (isDecoy()) {
         // Return the decoy sequence
         if (targetDecoyCandidatePair->isDecoy()) {
