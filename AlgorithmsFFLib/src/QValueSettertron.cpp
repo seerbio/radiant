@@ -14,9 +14,9 @@
 namespace {
 
     QString buildCandidateKey(const CandidateScores &candidateScores) {
-        const QString decoyToString = candidateScores.isDecoy ? "_1" : "_0";
-        return candidateScores.targetDecoyCandidatePair->peptideStringWithMods()
-               + QString::number(candidateScores.targetDecoyCandidatePair->charge()) + candidateScores.targetKey + decoyToString;
+        const QString decoyToString = candidateScores.isDecoy() ? "_1" : "_0";
+        return candidateScores.peptideStringWithMods()
+               + QString::number(candidateScores.charge()) + candidateScores.targetKey + decoyToString;
     }
 
     Err buildSetQValueForCandidateScoresInputs(
@@ -46,7 +46,7 @@ namespace {
                 classifierScore = cs->discriminantScore;
             }
 
-            if (cs->isDecoy) {
+            if (cs->isDecoy()) {
                 identifierVsDecoys->insert(peptideSequenceChargeKey, classifierScore);
                 continue;
             }
@@ -65,7 +65,7 @@ namespace {
 
         ERR_INIT
 
-        if (cs->isDecoy) {
+        if (cs->isDecoy()) {
             ERR_RETURN
         }
 

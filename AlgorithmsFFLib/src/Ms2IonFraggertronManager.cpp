@@ -105,11 +105,9 @@ Err Ms2IonFraggertronManager::Private::buildRTreeInput(QVector<rTreePoint> *clou
     for (CandidateScores *cs : m_candidateScores) {
 
         float predictedScanTime;
-        e = m_msCalibratomatic.predictScanTime(cs->targetDecoyCandidatePair->iRt(), &predictedScanTime); ree;
+        e = m_msCalibratomatic.predictScanTime(cs->iRt(), &predictedScanTime); ree;
 
-        const QVector<MS2Ion> &ms2Ions = cs->isDecoy
-                                       ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        const QVector<MS2Ion> &ms2Ions = cs->ms2Ions();
 
         for (const MS2Ion &ms2Ion : ms2Ions) {
             rTreeCoor coor(ms2Ion.mz, predictedScanTime);
@@ -165,11 +163,9 @@ Err Ms2IonFraggertronManager::Private::initTesting(const QVector<CandidateScores
     QVector<rTreePoint> cloudLoader;
     for (CandidateScores *cs : m_candidateScores) {
 
-        float predictedScanTime = cs->targetDecoyCandidatePair->iRt();
+        float predictedScanTime = cs->iRt();
 
-        const QVector<MS2Ion> &ms2Ions = cs->isDecoy
-                                       ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        const QVector<MS2Ion> &ms2Ions = cs->ms2Ions();
 
         for (const MS2Ion &ms2Ion : ms2Ions) {
             rTreeCoor coor(ms2Ion.mz, predictedScanTime);

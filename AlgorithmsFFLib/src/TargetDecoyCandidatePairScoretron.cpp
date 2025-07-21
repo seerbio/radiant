@@ -315,20 +315,16 @@ namespace {
                 }
 
                 // Score the target candidate for the pair
-                CandidateScores candidateScoresTarget;
-                candidateScoresTarget.isDecoy = false;
+                CandidateScores candidateScoresTarget(tdcp, false);
                 e = candidateScorertron.calculateScores(
                     pi.weights,
-                    tdcp,
                     &candidateScoresTarget
                 ); rree;
 
                 // Score the decoy candidate for the pair
-                CandidateScores candidateScoresDecoy;
-                candidateScoresDecoy.isDecoy = true;
+                CandidateScores candidateScoresDecoy(tdcp, true);
                 e = candidateScorertron.calculateScores(
                     pi.weights,
-                    tdcp,
                     &candidateScoresDecoy
                 ); rree;
 

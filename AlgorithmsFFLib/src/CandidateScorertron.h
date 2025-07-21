@@ -55,7 +55,6 @@ public:
 
     Err calculateScores(
         const QVector<float> &weights,
-        TargetDecoyCandidatePair* targetDecoyCandidatePair,
         CandidateScores *candidateScores
     ) const;
 
@@ -70,11 +69,10 @@ private:
         ) const;
 
     Err setPredictedFrameIndexes(
-        float iRT,
         CandidateScores *candidateScores,
         FrameIndex *frameIndexPredictedMin,
         FrameIndex *frameIndexPredictedMax
-        ) const;
+    ) const;
 
     Err processIntegrationVectorPeakIntegrations(
         const MatriciesAndVecs &matriciesAndVecs,
@@ -83,18 +81,16 @@ private:
         ) const;
 
     Err setCandidateScores(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        CandidateScores *candidateScores,
         QVector<MS2Ion> ms2Ions,
-        const QVector<BestCorrelationResult> &bestCorrelationResults,
-        const QVector<float> &ms1Averagine, CandidateScores *candidateScores
+        const QVector<BestCorrelationResult> &bestCorrelationResults, const QVector<float> &ms1Averagine
     ) const;
 
     Err setMs1RelatedScores(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        CandidateScores *candidateScores,
         const BestCorrelationResult &bestCorrelationResult,
-        float ppmTol,
-        CandidateScores *candidateScores
-        ) const;
+        float ppmTol
+    ) const;
 
     Err setFullTheoMs2IonsScores(CandidateScores *candidateScores) const;
 

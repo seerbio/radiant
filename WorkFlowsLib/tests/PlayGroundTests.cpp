@@ -82,13 +82,13 @@ void PlayGroundTests::testme() {
 
     CandidateScores cs1;
     cs1.targetDecoyCandidatePair = pep1;
-    cs1.isDecoy = false;
+    cs1.m_isDecoy = false;
     CandidateScores cs2;
     cs2.targetDecoyCandidatePair = pep2;
-    cs2.isDecoy = false;
+    cs2.m_isDecoy = false;
     CandidateScores cs3;
     cs3.targetDecoyCandidatePair = pep2;
-    cs3.isDecoy = true;
+    cs3.m_isDecoy = true;
     // cs3.targetDecoyCandidatePair->ms2IonsTarget() = cs3.targetDecoyCandidatePair->ms2IonsDecoy();
 
     QPair<Err, ScanPoints*> scanPoints = msReader.ptr->getScanPoints(scanNumber);

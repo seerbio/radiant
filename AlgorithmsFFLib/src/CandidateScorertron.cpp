@@ -266,49 +266,25 @@ namespace {
 
 
     PeptideSequenceWithModsChargeAndTargetKey buildPeptideSequenceWithModsChargeAndTargetKey(const CandidateScores* candidateScores) {
-        return candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
+        return candidateScores->peptideStringWithMods()
              + "|"
-             + QString::number(candidateScores->targetDecoyCandidatePair->charge())
+             + QString::number(candidateScores->charge())
              + "|"
              + candidateScores->targetKey;
-    }
-
-    QVector<MS2Ion> getScoringIons(TargetDecoyCandidatePair* targetDecoyCandidatePair, bool isCandidateDecoy) {
-        if (isCandidateDecoy) {
-            // Return the ions used for scoring the decoy of this pair
-            if (targetDecoyCandidatePair->isDecoy()) {
-                // Use ions from the library
-                return targetDecoyCandidatePair->ms2IonsTarget();
-            } else {
-                // Use shuffled ions
-                return targetDecoyCandidatePair->ms2IonsDecoy();
-            }
-        } else {
-            // Return the ions used for scoring the target of this pair
-            if (targetDecoyCandidatePair->isDecoy()) {
-                // Use shuffled ions
-                return targetDecoyCandidatePair->ms2IonsDecoy();
-            } else {
-                // Use ions from the library
-                return targetDecoyCandidatePair->ms2IonsTarget();
-            }
-        }
     }
 
 }//namespace
 Err CandidateScorertron::calculateScores(
     const QVector<float> &weights,
-    TargetDecoyCandidatePair* targetDecoyCandidatePair,
     CandidateScores *candidateScores
 ) const {
 
     ERR_INIT
 
-    QVector<MS2Ion> ms2Ions = getScoringIons(targetDecoyCandidatePair, candidateScores->isDecoy);
+    QVector<MS2Ion> ms2Ions = candidateScores->ms2Ions();
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
-    candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
     candidateScores->initFeaturesArray();
     candidateScores->targetKey = m_mzTargetKey;
 
@@ -318,7 +294,6 @@ Err CandidateScorertron::calculateScores(
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
-        targetDecoyCandidatePair->iRt(),
         candidateScores,
         &frameIndexPredictedMin,
         &frameIndexPredictedMax
@@ -353,7 +328,7 @@ Err CandidateScorertron::calculateScores(
 
     constexpr int multiplierForKeySettingByTen = 10;
     const int nominalMass
-        = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
+        = static_cast<int>((std::round(candidateScores->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
     const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
 
@@ -374,12 +349,11 @@ Err CandidateScorertron::calculateScores(
     for (const BestCorrelationResult &bcr : bestCorrelationResults) {
         CandidateScores cs = *candidateScores;
         e = setCandidateScores(
-            targetDecoyCandidatePair,
+            &cs,
             ms2Ions,
             {bcr},
-            ms1Averagine,
-            &cs
-            ); ree;
+            ms1Averagine
+        ); ree;
 
         const FeaturesArray fa = CandidateScores::selectFeaturesArrayFeatures(
             cs.featuresArray,
@@ -878,11 +852,10 @@ Err CandidateScorertron::initMatricesdAndVecs(
     }
 
 Err CandidateScorertron::setPredictedFrameIndexes(
-    float iRT,
     CandidateScores *candidateScores,
     FrameIndex *frameIndexPredictedMin,
     FrameIndex *frameIndexPredictedMax
-    ) const {
+) const {
 
     ERR_INIT
 
@@ -892,7 +865,7 @@ Err CandidateScorertron::setPredictedFrameIndexes(
             = m_msCalibratomatic.scanTimeStDev(static_cast<float>(m_pythiaParameters.scanTimeWindowStDevs));
 
         e = m_msCalibratomatic.predictScanTime(
-                iRT,
+                candidateScores->iRt(),
                 &candidateScores->scanTimePredicted
         ); ree;
 
@@ -1456,7 +1429,7 @@ namespace {
                 = std::log(std::max(1.0f, cosineSimSumTop) / (cosineSimSumTop + cosineSimSumBottom + 1.0f));
 
         candidateScores->featuresArray[TopBottomRatioNorm]
-                = cosineSimSumBottom / static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
+                = cosineSimSumBottom / static_cast<float>(candidateScores->totalFragmentCount());
 
         ERR_RETURN
     }
@@ -1542,7 +1515,7 @@ namespace {
             stdMeanValsFound.push_back(static_cast<float>(EigenUtils::calculateStDevOfVector(colMzNonZero)));
         }
 
-        const QVector<MS2Ion> &ms2Ions = getScoringIons(candidateScores->targetDecoyCandidatePair, candidateScores->isDecoy);
+        const QVector<MS2Ion> &ms2Ions = candidateScores->ms2Ions();
 
         int foundB = 0;
         int foundY = 0;
@@ -1691,7 +1664,7 @@ namespace {
             {'Z', 0}
         };
 
-        const QString peptideString = candidateScores->targetDecoyCandidatePair->peptideString();
+        const QString peptideString = candidateScores->peptideString();
 
         for (const QChar aminoAcid : peptideString) {
 
@@ -1871,10 +1844,10 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    CandidateScores *candidateScores,
     QVector<MS2Ion> ms2Ions,
     const QVector<BestCorrelationResult> &bestCorrelationResults,
-    const QVector<float> &ms1Averagine, CandidateScores *candidateScores
+    const QVector<float> &ms1Averagine
 ) const {
 
     ERR_INIT
@@ -1932,7 +1905,7 @@ Err CandidateScorertron::setCandidateScores(
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
     candidateScores->featuresArray[TheoFragmentCount]
-                                                            = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
+                                                            = static_cast<float>(candidateScores->totalFragmentCount());
 
     candidateScores->featuresArray[TotalIntensityLog]
                                         = std::log(std::max(bestCorrelationResult.matBlockTrimmedIntensity.sum(),
@@ -1944,7 +1917,7 @@ Err CandidateScorertron::setCandidateScores(
     candidateScores->featuresArray[TotalIntensityRaw]
                                             = std::exp(candidateScores->featuresArray[TotalIntensityLog]);
 
-    candidateScores->featuresArray[Charge] = static_cast<float>(candidateScores->targetDecoyCandidatePair->charge());
+    candidateScores->featuresArray[Charge] = static_cast<float>(candidateScores->charge());
 
     const float scanTimeDelta = candidateScores->scanTime - candidateScores->scanTimePredicted;
     candidateScores->featuresArray[ScanTimeDelta] = scanTimeDelta;
@@ -1958,16 +1931,13 @@ Err CandidateScorertron::setCandidateScores(
                                                          ? -static_cast<float>(std::abs(pdScanTime))
                                                          : static_cast<float>(std::abs(pdScanTime));
 
-    const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
+    const double pepLength = (-10.0 + candidateScores->peptideString().size()) / 10.0;
     candidateScores->featuresArray[PeptideLengthNorm] = static_cast<float>(pepLength);
 
-    // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
-    bool useDecoyMz = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy();
-
-    const auto mz = candidateScores->targetDecoyCandidatePair->mz(useDecoyMz);
+    const auto mz = candidateScores->mz();
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
-    candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
-    candidateScores->featuresArray[Mass] = candidateScores->targetDecoyCandidatePair->mass();
+    candidateScores->featuresArray[IRTPredicted] = candidateScores->iRt();
+    candidateScores->featuresArray[Mass] = candidateScores->mass();
 
     const float mzTargetKey = MathUtils::unHashDecimal<float>(m_mzTargetKey.toInt(), S_GLOBAL_SETTINGS.HASHING_PRECISION);
     candidateScores->featuresArray[TargetWindowLocation] = mzTargetKey - mz;
@@ -2001,11 +1971,10 @@ Err CandidateScorertron::setCandidateScores(
     );ree
 
     e = setMs1RelatedScores(
-        targetDecoyCandidatePair,
+        candidateScores,
         bestCorrelationResult,
-        static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
-        candidateScores
-        ); ree;
+        static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM)
+    ); ree;
 
     e = setFoundMs2Ions(
         bestCorrelationResults,
@@ -2176,11 +2145,10 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::setMs1RelatedScores(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    CandidateScores *candidateScores,
     const BestCorrelationResult &bestCorrelationResult,
-    float ppmTol,
-    CandidateScores *candidateScores
-    ) const {
+    float ppmTol
+) const {
 
     ERR_INIT
 
@@ -2192,12 +2160,9 @@ Err CandidateScorertron::setMs1RelatedScores(
     FrameIndex frameIndexMaxMS1;
     e = m_msFrameMS1->frameIndexFromScanTime(candidateScores->scanTimeEnd, &frameIndexMaxMS1); ree;
 
-    const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
+    const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / candidateScores->charge();
 
-    // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
-    bool useDecoyMz = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy();
-
-    const float monoIsotopeMz = candidateScores->targetDecoyCandidatePair->mz(useDecoyMz);
+    const float monoIsotopeMz = candidateScores->mz();
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);
@@ -2465,7 +2430,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 
     const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
 
-    const QVector<MS2Ion> ms2IonsTheoritical = getScoringIons(candidateScores->targetDecoyCandidatePair, candidateScores->isDecoy);
+    const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->ms2Ions();
 
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(

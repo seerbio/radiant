@@ -283,20 +283,39 @@ enum Features {
  * This class defines a set of features and provides storage for scores related to a candidate.
  * It includes various features such as cosine similarity, peak intensities, charge, mass, scan time, etc.
  *
+ * In typical use, each library entry (corresponding to a TargetDecoyCandidatePair) will have two CandidateScores
+ * instances: one for the target and one for the decoy. This class encapsulate all accesses to the candidate pair,
+ * to ensure that the correct data is used for scoring, depending on whether the candidate is a target or a decoy.
+ * This is espeically important for correct handling of library decoys, which are treated opposite of library targets,
+ * with the target candidate using a shuffled sequence and ions.
+ *
  */
 class ALGORITHMSFFLIB_EXPORTS CandidateScores {
+
+    // Friend access to allow keying on the TargetDecoyCandidatePair when tracking entries used for calibration.
+    // This access may be unnecessary, but is allowed to pierce encapsulation to match previous behavior.
+    friend class MsCalibratomaticSettertron;
+
+    // Friend access for testing
+    friend class PlayGroundTests;
+
+private:
+
+    TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
+
+    bool m_isDecoy = false;
 
 public:
 
     CandidateScores() = default;
+    CandidateScores(TargetDecoyCandidatePair *tdcp, bool isDecoy);
     ~CandidateScores() = default;
 
-    TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-
     MzTargetKey targetKey;
+    PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey;
+
     QString proteinGroup;
 
-    bool isDecoy = false;
     FrameIndex frameIndex = -1;
     FrameIndex frameIndexStart = -1;
     FrameIndex frameIndexEnd = -1;
@@ -321,13 +340,26 @@ public:
     QVector<float> featuresArray;
     QVector<float> integrations;
 
-    PeptideSequenceWithModsChargeAndTargetKey peptideSequenceWithModsChargeAndTargetKey;
-
-
     /**
     * @brief Initializes the features array with default values.
     */
     void initFeaturesArray();
+
+    bool isDecoy() const;
+
+    PeptideString peptideString() const;
+    PeptideStringWithMods peptideStringWithMods() const;
+    PeptideStringWithMods peptideStringWithModsDecoyOrigin() const;
+    float mz() const;
+    int charge() const;
+    float mass() const;
+
+    float iRt() const;
+    float iIM() const;
+
+    QVector<MS2Ion> ms2Ions() const;
+
+    int totalFragmentCount() const;
 
     QVector<float> selectFeaturesArrayFeatures(const QVector<Features> &enumFeatures);
 
@@ -1542,13 +1574,11 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         // row.mzFoundStDev11 = candidateScores->featuresArray[Features::MzFoundStDev11];
         // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
-        row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
-                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
-        row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+        row.peptideStringWithMods = candidateScores->peptideStringWithMods();
+        row.peptideStringWithModsDecoyOrigin = candidateScores->peptideStringWithModsDecoyOrigin();
 
         row.proteinGroup = candidateScores->proteinGroup;
-        row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
+        row.isDecoy = candidateScores->isDecoy();  // IMPORTANT: this will mark the paired target generated from library decoys as a target!
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
         row.scanTimeStart = candidateScores->scanTimeStart;
@@ -1610,9 +1640,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         row.targetWindowLocation = candidateScores->featuresArray[TargetWindowLocation];
 
-        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
-                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+        const QVector<MS2Ion> &ms2Ions = candidateScores->ms2Ions();
 
         for (int i = 0; i < ms2Ions.size(); ++i) {
 
@@ -2023,13 +2051,11 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.intensityFoundMax12 = candidateScores->integrations.at(11);
 
         row.targetKey = candidateScores->targetKey;
-        row.peptideStringWithMods = candidateScores->isDecoy
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
-                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
-        row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+        row.peptideStringWithMods = candidateScores->peptideStringWithMods();
+        row.peptideStringWithModsDecoyOrigin = candidateScores->peptideStringWithModsDecoyOrigin();
 
         row.proteinGroup = candidateScores->proteinGroup;
-        row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
+        row.isDecoy = candidateScores->isDecoy();  // IMPORTANT: this will mark the paired target generated from library decoys as a target!
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
         row.scanTimeStart = candidateScores->scanTimeStart;
@@ -2044,9 +2070,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
             0.0f
             );
 
-        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
-                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+        const QVector<MS2Ion> &ms2Ions = candidateScores->ms2Ions();
 
         for (int i = 0; i < ms2Ions.size(); ++i) {
 

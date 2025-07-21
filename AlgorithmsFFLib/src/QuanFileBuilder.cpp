@@ -141,9 +141,7 @@ namespace {
 
         ERR_INIT
 
-        const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                                      ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                      : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        const QVector<MS2Ion> ms2Ions = cs->ms2Ions();
 
         constexpr int maxIonsSize = 12;
         QVector<float> mzSearchedVals(maxIonsSize, -1.0f);
@@ -152,8 +150,8 @@ namespace {
             mzSearchedVals[i] = ms2Ions.at(i).mz;
         }
 
-        qr->peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
-        qr->charge = cs->targetDecoyCandidatePair->charge();
+        qr->peptideStringWithMods = cs->peptideStringWithMods();
+        qr->charge = cs->charge();
         qr->targetKey = cs->targetKey;
         qr->mzSearched1 = mzSearchedVals.at(0);
         qr->mzSearched2 = mzSearchedVals.at(1);
@@ -171,7 +169,7 @@ namespace {
         qr->classifierScore = static_cast<float>(cs->classifierScore);
         qr->discScore = static_cast<float>(cs->discriminantScore);
         qr->qValue = static_cast<float>(cs->qValue);
-        qr->isDecoy = cs->isDecoy;
+        qr->isDecoy = cs->isDecoy();
 
         qr->scanTime = cs->scanTime;
         qr->scanTimeStart = cs->scanTimeStart;

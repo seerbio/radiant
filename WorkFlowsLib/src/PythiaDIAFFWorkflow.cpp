@@ -140,7 +140,7 @@ namespace {
         int counter = 0;
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
             counter++;
-            if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy()) {
                 break;
             }
         }
@@ -184,9 +184,9 @@ namespace {
                     continue;
                 }
 
-                switch (csAlt->targetDecoyCandidatePair->charge()) {
+                switch (csAlt->charge()) {
                 case 1:
-                    if (!csAlt->isDecoy) {
+                    if (!csAlt->isDecoy()) {
                         csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
                                             = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
                                                 - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
@@ -201,7 +201,7 @@ namespace {
                     break;
 
                 case 2:
-                    if (!csAlt->isDecoy) {
+                    if (!csAlt->isDecoy()) {
                         csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
                                             = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
                                                 - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
@@ -216,7 +216,7 @@ namespace {
                     break;
 
                 case 3:
-                    if (!csAlt->isDecoy) {
+                    if (!csAlt->isDecoy()) {
                         csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
                                             = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
                                                 - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
@@ -231,7 +231,7 @@ namespace {
                     break;
 
                 case 4:
-                    if (!csAlt->isDecoy) {
+                    if (!csAlt->isDecoy()) {
                         csOG->featuresArray[AltTargetKeyIdDiscScoreChargeOG_alt]
                                             = ((csOG->featuresArray[CosineSimSum100] * csOG->featuresArray[CosineSimSpectrumOverTimeCubed] * csOG->featuresArray[CosineSim100MS1])
                                                 - (csAlt->featuresArray[CosineSimSum100]  * csAlt->featuresArray[CosineSimSpectrumOverTimeCubed]  * csAlt->featuresArray[CosineSim100MS1]))
@@ -266,7 +266,7 @@ namespace {
 
         QHash<PeptideStringWithMods, QVector<CandidateScores*>> pepStrWModsVsCandScoresEntries;
         for (CandidateScores *cs : *candidateScoresPntrs) {
-            pepStrWModsVsCandScoresEntries[cs->targetDecoyCandidatePair->peptideStringWithMods()].push_back(cs);
+            pepStrWModsVsCandScoresEntries[cs->peptideStringWithMods()].push_back(cs);
         }
 
         for (const QVector<CandidateScores*> &csPntrs : pepStrWModsVsCandScoresEntries) {
@@ -702,7 +702,7 @@ namespace {
         QVector<float> yData;
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
             xData.push_back(kt.scoreVecNormalized);
-            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+            yData.push_back(kt.candidateScores->isDecoy() ? 1.0 : 0.0);
         }
 
 
@@ -756,7 +756,7 @@ namespace {
         yData.reserve(karnnNNTargetsNorm.size());
         for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
             xData.push_back(kt.scoreVecNormalized);
-            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+            yData.push_back(kt.candidateScores->isDecoy() ? 1.0 : 0.0);
         }
 
         e = fdrcLassifierNeuralNet->predictBaggedClassifiers(
@@ -834,7 +834,7 @@ namespace {
         for (const CandidateScores *csp : *candidateScoreses) {
 
             counter++;
-            if (csp->qValue >= threshold && !csp->isDecoy) {
+            if (csp->qValue >= threshold && !csp->isDecoy()) {
                 break;
             }
         }
@@ -868,7 +868,7 @@ namespace {
         int counter = 0;
         for (const KarnnNNTarget &knt : *karnnNNTargetsNormTrain) {
             counter++;
-            if (constexpr double fdrTrainingThreshold = 0.65; knt.candidateScores->qValue >= fdrTrainingThreshold && !knt.candidateScores->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.65; knt.candidateScores->qValue >= fdrTrainingThreshold && !knt.candidateScores->isDecoy()) {
                 break;
             }
         }
@@ -988,7 +988,7 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
     const int decoyCount = static_cast<int>(std::count_if(
             karnnNNTargetsNormTrain.begin(),
             karnnNNTargetsNormTrain.end(),
-            [](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy;}
+            [](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy();}
             ));
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -1078,7 +1078,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
         candidateScores->begin(),
         candidateScores->end(),
         std::back_inserter(searchSequences),
-        [](CandidateScores *cs){return cs->targetDecoyCandidatePair->peptideString();}
+        [](CandidateScores *cs){return cs->peptideString();}
         );
 
     QVector<QString> proteinGroupsAll;
@@ -1090,7 +1090,7 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
 
     for (int i = 0; i < proteinGroupsAll.size(); i++) {
 
-        if (candidateScores->at(i)->isDecoy) {
+        if (candidateScores->at(i)->isDecoy()) {
             QStringList proteinGroupSplit = proteinGroupsAll.at(i).split(";");
             for (QString &pg : proteinGroupSplit) {
                 pg = pg.replace('>', ">decoy_");
@@ -1124,13 +1124,13 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             break;
         }
 
-        if (cs->isDecoy) {
+        if (cs->isDecoy()) {
             decoys++;
             continue;
         }
 
         if (!cs->proteinGroup.contains("_HUMAN")
-            && !cs->isDecoy
+            && !cs->isDecoy()
             && cs->proteinGroup.contains("_ARATH")
             && !cs->proteinGroup.isEmpty()
             ) {
@@ -1170,13 +1170,13 @@ Err PythiaDIAFFWorkflow::updateProteinGroupAnnotation(
             break;
         }
 
-        if (cs->isDecoy) {
+        if (cs->isDecoy()) {
             decoys++;
             continue;
         }
 
         if (!cs->proteinGroup.contains("_HUMAN")
-            && !cs->isDecoy
+            && !cs->isDecoy()
             && cs->proteinGroup.contains("_ARATH")
             && !cs->proteinGroup.isEmpty()
             ) {
@@ -1231,7 +1231,7 @@ void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidate
         for (const CandidateScores *candidateScores : *candidateScoreClassifierPntrs) {
 
             counter++;
-            if (candidateScores->isDecoy) {
+            if (candidateScores->isDecoy()) {
                 decoyCounter++;
             }
 

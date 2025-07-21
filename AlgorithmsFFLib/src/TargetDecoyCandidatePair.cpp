@@ -188,6 +188,11 @@ QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {
+    if (this->isDecoy()) {
+        // If this entry is a library decoy, we use the library mz when isDecoy is true!
+        isDecoy = !isDecoy;
+    }
+
     return isDecoy
         ? BiophysicalCalcs::calculateThomsonFromMass(mass() + m_decoyMassDelta, charge())
         : BiophysicalCalcs::calculateThomsonFromMass(mass(), charge());

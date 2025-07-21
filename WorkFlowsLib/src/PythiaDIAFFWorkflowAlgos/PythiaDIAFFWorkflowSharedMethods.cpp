@@ -147,7 +147,7 @@ void PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(QVecto
             if (MathUtils::tSame(l->featuresArray[CosineSimSum100], r->featuresArray[CosineSimSum100], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
 
                 if (MathUtils::tSame(l->featuresArray[CosineSimSpectrumOverTime], r->featuresArray[CosineSimSpectrumOverTime], S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                    return l->isDecoy > r->isDecoy;
+                    return l->isDecoy() > r->isDecoy();
                 }
 
                 return l->featuresArray[CosineSimSpectrumOverTime] > r->featuresArray[CosineSimSpectrumOverTime];
@@ -497,7 +497,7 @@ namespace {
         for (CandidateScores *cs : *candidateScores) {
 
             const QString key
-                = cs->targetDecoyCandidatePair->peptideStringWithMods() + QString::number(cs->targetDecoyCandidatePair->charge());
+                = cs->peptideStringWithMods() + QString::number(cs->charge());
             if (keyVsCandidatesFoundBest.contains(key)) {
                 continue;
             }
@@ -532,18 +532,16 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
         const auto msCalibrationReaderRowsInsertLogic = [msLevel, top6](CandidateScores *cs){
 
             MsCalibarationReaderRow row;
-            row.peptideStringWithMods = cs->targetDecoyCandidatePair->peptideStringWithMods();
-            row.iRTPredicted = cs->targetDecoyCandidatePair->iRt();
+            row.peptideStringWithMods = cs->peptideStringWithMods();
+            row.iRTPredicted = cs->iRt();
             row.scanTime = cs->scanTime;
             row.scanNumber = cs->scanNumber;
             row.driftTime = cs->imDriftTime;
-            row.iMPredicted = cs->targetDecoyCandidatePair->iIM();
+            row.iMPredicted = cs->iIM();
 
             if (msLevel == MSLevelEnum::MS2) {
 
-                const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
+                const QVector<MS2Ion> ms2Ions = cs->ms2Ions();
 
                 QVector<float> mzSearchedVals(top6, -1.0f);
                 const int maxSize = std::min(top6, ms2Ions.size());
@@ -558,10 +556,7 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
             }
             else {
-                // If scoring a target candidate, use the target mz unless the entry is a decoy, and vice-versa
-               bool useDecoyMz = cs->isDecoy != cs->targetDecoyCandidatePair->isDecoy();
-
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(useDecoyMz)};
+                row.mzSearchedVec = {cs->mz()};
                 row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};

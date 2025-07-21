@@ -428,7 +428,7 @@ Err MsCalibratomaticSettertron::honeIRTAndMassCalibration(
         }
 
         if (m_excludeDecoys) {
-            if (cs->isDecoy) {
+            if (cs->isDecoy()) {
                 continue;
             }
         }

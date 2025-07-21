@@ -166,11 +166,10 @@ Err IonMobilitron::assignIonMobilityIndexesToCandidateScores(
 namespace {
 
     Err getXICPoints(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
         Ms1FrameTIMS *ms1FrameTims,
-        float extractionPPMTol,
-        QVector<XICPoints> *xicPointses
-        ) {
+        float mz,
+        int charge, float extractionPPMTol, QVector<XICPoints> *xicPointses
+    ) {
 
         ERR_INIT
 
@@ -184,8 +183,8 @@ namespace {
         TurboXIC turboXic;
         e = turboXic.init(ms1FrameTimsPntrs); ree;
 
-        const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
-        const float mzMono = targetDecoyCandidatePair->mz(false);
+        const double chargeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / charge;
+        const float mzMono = mz;
 
         for (int i = 0; i < 2; i++) {
             const float mzExtract = mzMono + (i * chargeDistance);
@@ -296,11 +295,11 @@ std::tuple<Err, float, float> IonMobilitron::findEmpericalIonMobilityDriftTime(
 
     QVector<XICPoints> xicPointses;
     e = getXICPoints(
-        candidateScores->targetDecoyCandidatePair,
         ms1FrameTims,
-        extractionPPMTol,
-        &xicPointses
-        ); rtee;
+        candidateScores->mz(),
+        candidateScores->charge(),
+        extractionPPMTol, &xicPointses
+    ); rtee;
 
     const XICPoints &xicPointsMonoIsotope = xicPointses.front();
     if (xicPointsMonoIsotope.empty()) {
