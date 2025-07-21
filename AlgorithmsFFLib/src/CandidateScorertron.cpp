@@ -1933,7 +1933,7 @@ Err CandidateScorertron::setCandidateScores(
     const double pepLength = (-10.0 + candidateScores->peptideString().size()) / 10.0;
     candidateScores->featuresArray[PeptideLengthNorm] = static_cast<float>(pepLength);
 
-    const auto mz = candidateScores->mz();
+    const float mz = candidateScores->mz();
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[IRTPredicted] = candidateScores->iRt();
     candidateScores->featuresArray[Mass] = candidateScores->mass();
