@@ -10,6 +10,9 @@ APT=${APT:-'sudo apt-get'}
 # If unset, install `cmake` into the current directory
 CMAKE_PREFIX=${CMAKE_PREFIX:-'./cmake'}
 
+# Enable "strict mode" -- importantly this will cause the script to exit on any error
+set -euo pipefail
+
 # Get initial requirements
 ${APT} install --no-install-recommends -y ca-certificates lsb-release wget
 
