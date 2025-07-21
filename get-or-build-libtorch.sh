@@ -54,7 +54,7 @@ else
     # Build libtorch from sources
     mkdir -p "${PYTORCH_PREFIX_PATH}"
     cd "${PYTORCH_PREFIX_PATH}" || exit
-    if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
+    if [ ! -d pytorch ]; then git clone --depth 1 --recursive --shallow-submodules --branch v2.0.1 https://github.com/pytorch/pytorch; fi
     cd pytorch || exit
 
     # Install Python, which is needed by the libtorch build
