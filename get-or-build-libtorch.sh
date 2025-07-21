@@ -48,16 +48,16 @@ else
     echo "Found architecture: ${ARCH}"
     echo "Building libtorch..."
 
-    # Install Python, which is needed by the libtorch build
-    ${APT} install -y python3.10 python-is-python3 python3-pip git
-    pip install setuptools pyyaml typing-extensions
-
     # Build libtorch from sources
     mkdir -p "${PYTORCH_PREFIX_PATH}"
     cd "${PYTORCH_PREFIX_PATH}" || exit
     if [ ! -d pytorch ]; then git clone --recursive https://github.com/pytorch/pytorch; fi
     cd pytorch || exit
 
+    # Install Python, which is needed by the libtorch build
+    ${APT} install -y python3.10 python-is-python3 python3-pip
+    pip install setuptools pyyaml typing-extensions
+    
     if [ -f "${CMAKE}" ]
     then
         CMAKE=$(realpath  "${CMAKE}")
