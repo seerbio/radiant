@@ -14,6 +14,9 @@
 # `${PYTORCH_PREFIX_PATH}/pytorch/build` to match the location
 # of files when building from sources.
 
+# Enable "strict mode" -- importantly this will cause the script to exit on any error
+set -euo pipefail
+
 # If unset, use `sudo apt-get` as the apt command
 APT=${APT:-'sudo apt-get'}
 
