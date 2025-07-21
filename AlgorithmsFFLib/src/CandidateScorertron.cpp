@@ -337,11 +337,10 @@ Err CandidateScorertron::calculateScores(
     e = sortBestCorrelationResult(&bestCorrelationResults); ree;
 
     e = setCandidateScores(
-        targetDecoyCandidatePair,
+        candidateScores,
         ms2Ions,
         bestCorrelationResults,
-        ms1Averagine,
-        candidateScores
+        ms1Averagine
         ); ree;
 #else
     QVector<FeaturesArray> candidateScoresFeatureArrays;
