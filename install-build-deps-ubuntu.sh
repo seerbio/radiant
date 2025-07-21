@@ -16,7 +16,7 @@ CMAKE_PREFIX=${CMAKE_PREFIX:-'./cmake'}
 # Get initial requirements
 ${APT} install --no-install-recommends -y ca-certificates lsb-release wget
 
-wget -P /tmp/ https://packages.apache.org/artifactory/arrow/${DISTRO}/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+wget -P /tmp/ "https://packages.apache.org/artifactory/arrow/${DISTRO}/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
 ${APT} install -y -V "/tmp/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
 rm "/tmp/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb"
 ${APT} update
