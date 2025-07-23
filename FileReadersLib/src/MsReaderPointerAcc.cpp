@@ -6,9 +6,9 @@
 
 #include "GlobalSettings.h"
 // #include "MsReaderBrukerTims.h"
-#include "MsReaderParquet.h"
+// #include "MsReaderParquet.h"
 #include "MsReaderMzMLLazyLoad.h"
-#include "MsReaderMzMLMapped.h"
+// #include "MsReaderMzMLMapped.h"
 #include "StringUtils.h"
 
 #include <QByteArray>
@@ -43,84 +43,43 @@ Err MsReaderPointerAcc::setMsReaderPointer(const QString &filePath) {
     const QString fileSuffix = fi.suffix();
 
     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
-        if (m_useLazyLoading) {
+        // if (m_useLazyLoading) {
             QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLLazyLoad);
             ptr = msReader;
             e = ptr->openFile(filePath); ree;
         }
-        else {
-            QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
-            ptr = msReader;
-            e = ptr->openFile(filePath); ree;
-        }
+        // else {
+        //     QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
+        //     ptr = msReader;
+        //     e = ptr->openFile(filePath); ree;
+        // }
 
-    }
+    // }
 
-    else if (
-            (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
-                || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
-            && fi.isFile()) {
-
-        qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ .prq files";
-        m_useLazyLoading = false;
-
-        QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
-        ptr = msReader;
-        e = ptr->openFile(filePath); ree;
-    }
-
-    else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
-        rrr(eFunctionNotImplemented);
-        // // //TODO uncomment code when ARM is sorted out.
-        //
-        // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
-        // m_useLazyLoading = false;
-        //
-        // QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
-        // ptr = msReader;
-        // e = ptr->openFile(filePath); ree;
-    }
-
-    else {
-        qDebug() << "Filepath" << filePath;
-        qDebug() << "Suffix" << fileSuffix;
-        rrr(eFileIncorrectTypeError);
-    }
-
-    const QString msReaderType = typeid(*ptr).name();
-    const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsReader Derived Type" << msReaderType << isMsReaderBase;
-
-    ERR_RETURN
-}
-
-Err MsReaderPointerAcc::openFile(
-        const QString &filePath,
-        const QString &columnToFilterBy,
-        const QPair<double, double> &filterRange
-        ) {
-
-    ERR_INIT
-
-    QFileInfo fi(filePath);
-    const QString fileSuffix = fi.suffix();
-
-    if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
-
-        QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
-        ptr = msReader;
-        e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
-    }
-
-    else if (
-            (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
-             || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
-            && fi.isFile()) {
-
-        QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
-        ptr = msReader;
-        e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
-    }
+    // else if (
+    //         (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
+    //             || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
+    //         && fi.isFile()) {
+    //
+    //     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ .prq files";
+    //     m_useLazyLoading = false;
+    //
+    //     QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
+    //     ptr = msReader;
+    //     e = ptr->openFile(filePath); ree;
+    // }
+    //
+    // else if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.BRUKER_FILE_EXTENSION, false) && fi.isDir()) {
+    //     rrr(eFunctionNotImplemented);
+    //     // // //TODO uncomment code when ARM is sorted out.
+    //     //
+    //     // qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Cannot use lazy loading w/ Bruker files";
+    //     // m_useLazyLoading = false;
+    //     //
+    //     // QSharedPointer<MsReaderBase> msReader(new MsReaderBrukerTims);
+    //     // ptr = msReader;
+    //     // e = ptr->openFile(filePath); ree;
+    // }
 
     else {
         qDebug() << "Filepath" << filePath;
@@ -134,6 +93,47 @@ Err MsReaderPointerAcc::openFile(
 
     ERR_RETURN
 }
+
+// Err MsReaderPointerAcc::openFile(
+//         const QString &filePath,
+//         const QString &columnToFilterBy,
+//         const QPair<double, double> &filterRange
+//         ) {
+//
+//     ERR_INIT
+//
+//     QFileInfo fi(filePath);
+//     const QString fileSuffix = fi.suffix();
+//
+//     if (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.MZML_FILE_EXTENSION, false) && fi.isFile()) {
+//
+//         QSharedPointer<MsReaderBase> msReader(new MsReaderMzMLMapped);
+//         ptr = msReader;
+//         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
+//     }
+//
+//     else if (
+//             (StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.PRQ_FILE_EXTENSION, false)
+//              || StringUtils::stringsMatch(fileSuffix, S_GLOBAL_SETTINGS.CACHED_FILE_EXTENSION, false))
+//             && fi.isFile()) {
+//
+//         QSharedPointer<MsReaderBase> msReader(new MsReaderParquet);
+//         ptr = msReader;
+//         e = ptr->openFile(filePath, columnToFilterBy, filterRange); ree;
+//     }
+//
+//     else {
+//         qDebug() << "Filepath" << filePath;
+//         qDebug() << "Suffix" << fileSuffix;
+//         rrr(eFileIncorrectTypeError);
+//     }
+//
+//     const QString msReaderType = typeid(*ptr).name();
+//     const bool isMsReaderBase = msReaderType.contains(QStringLiteral("MsReaderBase"));
+//     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsReader Derived Type" << msReaderType << isMsReaderBase;
+//
+//     ERR_RETURN
+// }
 
 Err MsReaderPointerAcc::openFile(const QString &filePath, const QString &columnToFilterBy) {
     return eFunctionNotImplemented;

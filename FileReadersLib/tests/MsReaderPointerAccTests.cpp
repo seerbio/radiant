@@ -79,18 +79,18 @@ void MsReaderPointerAccTests::openFileTest3() {
 
     const QString column = QStringLiteral("scanNumber");
 
-    MsReaderPointerAcc msReaderPointerAcc;
-    e = msReaderPointerAcc.openFile(
-            prqFFFilePath,
-            column,
-            {1, 20}
-            );
-    QCOMPARE(e, eNoError);
-
-    const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
-    QCOMPARE(msScanInfos.size(), 20);
-    QCOMPARE(msScanInfos.first().scanNumber, 1);
-    QCOMPARE(msScanInfos.last().scanNumber, 20);
+    // MsReaderPointerAcc msReaderPointerAcc;
+    // e = msReaderPointerAcc.openFile(
+    //         prqFFFilePath,
+    //         column,
+    //         {1, 20}
+    //         );
+    // QCOMPARE(e, eNoError);
+    //
+    // const QMap<ScanNumber, MsScanInfo> msScanInfos = msReaderPointerAcc.ptr->getMsScanInfos();
+    // QCOMPARE(msScanInfos.size(), 20);
+    // QCOMPARE(msScanInfos.first().scanNumber, 1);
+    // QCOMPARE(msScanInfos.last().scanNumber, 20);
 
 }
 

@@ -18,7 +18,7 @@ SET(TEST_CLASSES
 #        CSVReaderTests
 #        FastaReaderTests
 #        FeatureFinderHillReaderTests
-#        FragLibReaderTests
+        FragLibReaderTests
 #        FragLibTsvReaderTests
 #        MsCalibrationReaderTests
 #        MsReaderBaseTests
@@ -27,11 +27,11 @@ SET(TEST_CLASSES
         MsReaderMZMLLazyLoadTests
 #        MsReaderMZMLMappedTests
 #        MsReaderParquetTests
-#        MsReaderPointerAccTests
-#        ParquetReaderTests
+        MsReaderPointerAccTests
+        ParquetReaderTests
 #        PythiaParameterReaderTests
 #        QuanReaderTests
-#        SpecLibReaderTests
+        SpecLibReaderTests
         )
 
 foreach(class ${TEST_CLASSES})

@@ -52,11 +52,11 @@ public:
     * @return Err The error code indicating success or failure of the operation.
     *
     */
-    Err openFile(
-            const QString &filePath,
-            const QString &columnToFilterBy,
-            const QPair<double, double> &filterRange
-    );
+    // Err openFile(
+    //         const QString &filePath,
+    //         const QString &columnToFilterBy,
+    //         const QPair<double, double> &filterRange
+    // );
 
     /**
      * eFunctionNotImplemented
