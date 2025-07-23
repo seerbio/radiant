@@ -150,25 +150,30 @@ Err TurboXIC::init(const QString &filePath) {
 XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 
 	XICPointsPntrs results;
-	results.reserve(1000);
+
+	constexpr int reserveEstimate = 1000;
+	results.reserve(reserveEstimate);
 
 	const __m256 mz_min_v = _mm256_set1_ps(mzMin);
 	const __m256 mz_max_v = _mm256_set1_ps(mzMax);
 
-	size_t left = 0, right = m_alignasPiecesOfEight;
+	size_t left = 0;
+	size_t right = m_alignasPiecesOfEight;
 	while (left < right) {
 		size_t mid = left + (right - left) / 2;
-		if (m_indexesMz[mid] < mzMin)
+		if (m_indexesMz[mid] < mzMin) {
 			left = mid + 1;
-		else
+		}
+		else {
 			right = mid;
+		}
 	}
 
 	for (
-		size_t i = m_indexesI[left & ~0x7];
+		size_t i = m_indexesI[left];
 		i + AVXUtils::AVX2_FLOAT_REGISTER_SIZE <= m_scanPointsCountAlignas;
-		i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE)
-		{
+		i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE
+		) {
 
 		__m256 mz_v = _mm256_load_ps(&m_mzVals[i]);
 
@@ -176,7 +181,7 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 		__m256 cmp_le = _mm256_cmp_ps(mz_v, mz_max_v, _CMP_LE_OS);
 		__m256 mask = _mm256_and_ps(cmp_ge, cmp_le);
 
-		int movemask = _mm256_movemask_ps(mask);
+		const int movemask = _mm256_movemask_ps(mask);
 
 		if (movemask == 0) {
 			__m256 cmp_gt_max = _mm256_cmp_ps(mz_v, mz_max_v, _CMP_GT_OS);

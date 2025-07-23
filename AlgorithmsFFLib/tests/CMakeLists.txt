@@ -27,7 +27,7 @@ SET(TEST_CLASSES
 #        MS2IonTests
 #        MsCalibratomaticTests
 #        MsFrameTests
-#        MsUtilsTests
+        MsUtilsTests
 #        PeakIntegratomaticTests
 #        QuanTransitionRefinertronTests
 #        QValueSettertronTests

@@ -24,6 +24,7 @@ public:
 private Q_SLOTS:
 
     void extractPointsFromPointsTest();
+    void extractPointsFromPointsBSTTest();
     static void extractPointsFromPointsSimpleTest();
 
 private:
@@ -173,9 +174,12 @@ private:
 
 };
 
+
 MsUtilsTests::MsUtilsTests() : QObject(){}
 
 void MsUtilsTests::extractPointsFromPointsTest() {
+
+	// QSKIP("Turn on in Production");
 
     ERR_INIT
 
@@ -188,8 +192,11 @@ void MsUtilsTests::extractPointsFromPointsTest() {
     e = ParallelUtils::zip(m_byIonsForPeptide_PFDAFTDLK, expectedYVals, &extractPoints);
     QCOMPARE(e, eNoError);
 
+	QElapsedTimer et;
+	et.start();
     const ExtractPoints extractPointsVector
         = MsUtils::extractPointsFromPoints(m_points, extractPoints, 6.0);
+	qDebug() << et.nsecsElapsed() << "nSec linear search";
 
     for (const QPointF &p : extractPointsVector.intensityFoundVsSearched) {
         QCOMPARE(p.x(), p.y());
@@ -197,7 +204,43 @@ void MsUtilsTests::extractPointsFromPointsTest() {
 
 }
 
+void MsUtilsTests::extractPointsFromPointsBSTTest() {
+
+	// QSKIP("Turn on in Production");
+
+	ERR_INIT
+
+	const QVector<double> expectedYVals
+			= {461319, 182115, 217524, 256857, 62657.9, 193157, 12558.8, 331685, 132471, 839768, 5638.05, 813249, -1};
+
+	std::sort(m_byIonsForPeptide_PFDAFTDLK.begin(), m_byIonsForPeptide_PFDAFTDLK.end());
+
+	QVector<QPointF> extractPoints;
+	e = ParallelUtils::zip(m_byIonsForPeptide_PFDAFTDLK, expectedYVals, &extractPoints);
+	QCOMPARE(e, eNoError);
+
+	QElapsedTimer et;
+	et.start();
+	const ExtractPoints extractPointsVector
+		= MsUtils::extractPointsFromPointsBST(m_points, extractPoints, 6.0);
+	qDebug() << et.nsecsElapsed() << "nSec Binary Search Tree search";
+
+	for (const QPointF &p : extractPointsVector.intensityFoundVsSearched) {
+		QCOMPARE(p.x(), p.y());
+	}
+
+	// for (int i = 0; i < expectedYVals.size(); ++i) {
+	// 	const QPointF &intz = extractPointsVector.intensityFoundVsSearched.at(i);
+	// 	const QPointF &mz = extractPointsVector.mzFoundVsSearched.at(i);
+	// 	qDebug() << intz << mz;
+	// }
+
+}
+
 void MsUtilsTests::extractPointsFromPointsSimpleTest() {
+
+	QSKIP("Turn on in Production");
+
 
     QVector<QPointF> p1 = {{1, 10}, {2,20}, {3,30}};
     QVector<QPointF> p2 = {{1, 10}, {2,20}, {4,40}};

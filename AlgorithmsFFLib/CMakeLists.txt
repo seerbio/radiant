@@ -38,7 +38,7 @@ SET(SOURCE_FILES
 #        src/Ms2IonFraggertronManager.cpp
 #        src/MsCalibratomatic.cpp
 #        src/MsFrame.cpp
-#        src/MsUtils.cpp
+        src/MsUtils.cpp
 #        src/PeakIntegratomatic.cpp
 #        src/QuanFileBuilder.cpp
 #        src/QuanTransitionRefinertron.cpp
@@ -74,7 +74,7 @@ SET(HEADER_FILES
 #        src/Ms2IonFraggertronManager.h
 #        src/MsCalibratomatic.h
 #        src/MsFrame.h
-#        src/MsUtils.h
+        src/MsUtils.h
 #        src/PeakIntegratomatic.h
 #        src/QuanFileBuilder.h
 #        src/QuanTransitionRefinertron.h
@@ -126,8 +126,8 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Core
         Qt5::Test
         AVXLib
-#        ChemLib
-#        EigenLib
+        ChemLib
+        EigenLib
         FileReadersLib
 #        PyTorchLib
         UtilsLib

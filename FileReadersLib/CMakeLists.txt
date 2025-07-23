@@ -106,8 +106,8 @@ FIND_PACKAGE(Qt5 COMPONENTS
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_LIB_SOURCES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
         Qt5::Concurrent
-        ChemLib
-        EigenLib
+#        ChemLib
+#        EigenLib
         UtilsLib
         Parquet::parquet_static
 #        ${TIMS_LIB}

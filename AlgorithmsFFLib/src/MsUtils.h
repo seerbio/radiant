@@ -38,10 +38,16 @@ public:
     * @return An ExtractPoints object containing extracted points.
     */
     static ExtractPoints extractPointsFromPoints(
-            const QVector<QPointF> &points,
-            const QVector<QPointF> &extractionPoints,
-            double extractionPPM
+	    const QVector<QPointF> &_points,
+		const QVector<QPointF> &_pointsToExtract,
+        double extractionPPM
     );
+
+	static ExtractPoints extractPointsFromPointsBST(
+		const QVector<QPointF> &_points,
+		const QVector<QPointF> &_pointsToExtract,
+		double extractionPPM
+	);
 
     /**
     * @brief Extracts data points from a set of points based on specified extraction points and ppm threshold.
