@@ -20,6 +20,9 @@ set -euo pipefail
 # If unset, use `sudo apt-get` as the apt command
 APT=${APT:-'sudo apt-get'}
 
+# The version of PyTorch to use
+PYTORCH_VERSION=${PYTORCH_VERSION:-'2.0.1'}
+
 # If unset, place `pytorch` into the current directory
 PYTORCH_PREFIX_PATH=${PYTORCH_PREFIX_PATH:-'.'}
 
@@ -36,10 +39,10 @@ then
 
     # Download prebuilt binary
     # https://pytorch.org
-    wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -q -O /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+    wget "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2Bcpu.zip" -q -O "/tmp/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2Bcpu.zip"
     rm -rf /tmp/libtorch
-    unzip /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip -d /tmp/
-    rm /tmp/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip
+    unzip "/tmp/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2Bcpu.zip" -d /tmp/
+    rm "/tmp/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2Bcpu.zip"
     rm -rf "${PYTORCH_PREFIX_PATH}/pytorch/build/"
     mkdir -p "${PYTORCH_PREFIX_PATH}/pytorch/"
     mv /tmp/libtorch "${PYTORCH_PREFIX_PATH}/pytorch/build"
@@ -54,7 +57,7 @@ else
     # Build libtorch from sources
     mkdir -p "${PYTORCH_PREFIX_PATH}"
     cd "${PYTORCH_PREFIX_PATH}" || exit
-    if [ ! -d pytorch ]; then git clone --depth 1 --recursive --shallow-submodules --branch v2.0.1 https://github.com/pytorch/pytorch; fi
+    if [ ! -d pytorch ]; then git clone --depth 1 --recursive --shallow-submodules --branch "v${PYTORCH_VERSION}" https://github.com/pytorch/pytorch; fi
     cd pytorch || exit
 
     # Install Python, which is needed by the libtorch build
