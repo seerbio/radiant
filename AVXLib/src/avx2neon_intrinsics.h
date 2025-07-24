@@ -23,37 +23,23 @@ static inline void _mm256_storeu_ps(float* mem_addr, __m256 a) {
     vst1q_f32(mem_addr + 4, a.vect_f32[1]);
 }
 
-// _mm256_unpacklo_epi16: Interleave lower 8 int16_t from each __m256i, zero-extend to int32_t
+// _mm256_unpacklo_epi16: Interleave lower 8 uint16_t from each __m256i, zero-extend to uint32_t
 static inline __m256i _mm256_unpacklo_epi16(__m256i a, __m256i b) {
     __m256i result;
-    // Interleave lower 4 elements of each 128-bit lane
-    int16x4_t a0 = vget_low_s16(a.vect_s16[0]);
-    int16x4_t b0 = vget_low_s16(b.vect_s16[0]);
-    int16x4_t a1 = vget_low_s16(a.vect_s16[1]);
-    int16x4_t b1 = vget_low_s16(b.vect_s16[1]);
-    // Interleave
-    int16x4x2_t zipped0 = vzip_s16(a0, b0);
-    int16x4x2_t zipped1 = vzip_s16(a1, b1);
-    // Widen to int32x4_t
-    result.vect_s32[0] = vmovl_s16(zipped0.val[0]);
-    result.vect_s32[1] = vmovl_s16(zipped1.val[0]);
+    uint16x8x2_t zipped0 = vzipq_u16(a.vect_u16[0], b.vect_u16[0]);
+    uint16x8x2_t zipped1 = vzipq_u16(a.vect_u16[1], b.vect_u16[1]);
+    result.vect_u32[0] = vmovl_u16(vget_low_u16(zipped0.val[0]));
+    result.vect_u32[1] = vmovl_u16(vget_high_u16(zipped0.val[0]));
     return result;
 }
 
-// _mm256_unpackhi_epi16: Interleave upper 8 int16_t from each __m256i, zero-extend to int32_t
+// _mm256_unpackhi_epi16: Interleave upper 8 uint16_t from each __m256i, zero-extend to uint32_t
 static inline __m256i _mm256_unpackhi_epi16(__m256i a, __m256i b) {
     __m256i result;
-    // Interleave upper 4 elements of each 128-bit lane
-    int16x4_t a0 = vget_high_s16(a.vect_s16[0]);
-    int16x4_t b0 = vget_high_s16(b.vect_s16[0]);
-    int16x4_t a1 = vget_high_s16(a.vect_s16[1]);
-    int16x4_t b1 = vget_high_s16(b.vect_s16[1]);
-    // Interleave
-    int16x4x2_t zipped0 = vzip_s16(a0, b0);
-    int16x4x2_t zipped1 = vzip_s16(a1, b1);
-    // Widen to int32x4_t
-    result.vect_s32[0] = vmovl_s16(zipped0.val[0]);
-    result.vect_s32[1] = vmovl_s16(zipped1.val[0]);
+    uint16x8x2_t zipped0 = vzipq_u16(a.vect_u16[0], b.vect_u16[0]);
+    uint16x8x2_t zipped1 = vzipq_u16(a.vect_u16[1], b.vect_u16[1]);
+    result.vect_u32[0] = vmovl_u16(vget_low_u16(zipped0.val[1]));
+    result.vect_u32[1] = vmovl_u16(vget_high_u16(zipped0.val[1]));
     return result;
 }
 
