@@ -16,7 +16,7 @@
 #if defined(__aarch64__) || defined(__arm__) || defined(__ARM_NEON)
 #warning "Building on ARM; will use avx2neon to translate intrinsics!"
 #include <avx2neon.h>
-#include "mm256_loadu_ps_arm.h" // Provide _mm256_loadu_ps for ARM
+#include "avx2neon_intrinsics.h" // Provide missing AVX2 intrinsics for ARM
 #else
 #include <immintrin.h>
 #endif
