@@ -26,18 +26,17 @@ static inline void _mm256_storeu_ps(float* mem_addr, __m256 a) {
 // _mm256_unpacklo_epi16: Interleave lower 8 int16_t from each __m256i, zero-extend to int32_t
 static inline __m256i _mm256_unpacklo_epi16(__m256i a, __m256i b) {
     __m256i result;
-    result.vect_i128[0] = vreinterpretq_s64_s32(vmovl_s16(vget_low_s16(vreinterpretq_s16_m128i(a.vect_i128[0]))));
-    result.vect_i128[1] = vreinterpretq_s64_s32(vmovl_s16(vget_low_s16(vreinterpretq_s16_m128i(b.vect_i128[0]))));
+    result.vect_i128[0] = vreinterpretq_s64_s32(vmovl_s16(vget_low_s16(vreinterpretq_s16_s64(a.vect_i128[0]))));
+    result.vect_i128[1] = vreinterpretq_s64_s32(vmovl_s16(vget_low_s16(vreinterpretq_s16_s64(b.vect_i128[0]))));
     return result;
 }
 
 // _mm256_unpackhi_epi16: Interleave upper 8 int16_t from each __m256i, zero-extend to int32_t
 static inline __m256i _mm256_unpackhi_epi16(__m256i a, __m256i b) {
     __m256i result;
-    result.vect_i128[0] = vreinterpretq_s64_s32(vmovl_s16(vget_high_s16(vreinterpretq_s16_m128i(a.vect_i128[0]))));
-    result.vect_i128[1] = vreinterpretq_s64_s32(vmovl_s16(vget_high_s16(vreinterpretq_s16_m128i(b.vect_i128[0]))));
+    result.vect_i128[0] = vreinterpretq_s64_s32(vmovl_s16(vget_high_s16(vreinterpretq_s16_s64(a.vect_i128[0]))));
+    result.vect_i128[1] = vreinterpretq_s64_s32(vmovl_s16(vget_high_s16(vreinterpretq_s16_s64(b.vect_i128[0]))));
     return result;
 }
 
 #endif // AVXLIB_AVX2NEON_INTRINSICS_H
-
