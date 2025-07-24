@@ -12,7 +12,13 @@
 
 #include <cstdint>
 #include <cstring>
+
+#if defined(__aarch64__) || defined(__arm__) || defined(__ARM_NEON)
+#warning "Building on ARM; will use avx2neon to translate intrinsics!"
+#include <avx2neon.h>
+#else
 #include <immintrin.h>
+#endif
 
 
 using namespace Error;
