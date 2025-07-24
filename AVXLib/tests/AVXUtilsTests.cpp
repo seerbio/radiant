@@ -144,9 +144,9 @@ void AVXUtilsTests::test_mm256_unpacklo_epi16() {
 
 	__m256i int16Output	= _mm256_unpacklo_epi16(input, input2);
 
-	AVXUtils::printAVXInt32(int16Output);
+	AVXUtils::printAVXInt16(int16Output);
 
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) uint16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int16Output);
 
 	alignas(32) uint16_t expectedValues[16] = {
@@ -176,9 +176,9 @@ void AVXUtilsTests::test_mm256_unpackhi_epi16() {
 
 	__m256i int16Output	= _mm256_unpackhi_epi16(input, input2);
 
-	AVXUtils::printAVXInt32(int16Output);
+	AVXUtils::printAVXInt16(int16Output);
 
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) uint16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int16Output);
 
 	alignas(32) uint16_t expectedValues[16] = {
