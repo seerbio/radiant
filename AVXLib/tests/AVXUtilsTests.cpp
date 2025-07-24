@@ -18,7 +18,12 @@ private slots:
 	static void printAVXFloatTest();
 	static void printAVXMaskTest();
 	static void convolveWithKernelAVXFloatTest();
-	static void splitAVXUInt16to32Test();
+
+    void test_mm256_unpacklo_epi16();
+
+    void test_mm256_unpackhi_epi16();
+
+    static void splitAVXUInt16to32Test();
 
 };
 
@@ -120,6 +125,70 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 		QCOMPARE(static_cast<int>(v1[i]), resultV1[i]);
 	}
 
+}
+
+void AVXUtilsTests::test_mm256_unpacklo_epi16() {
+	ERR_INIT
+
+	alignas(32) uint16_t inputValues[16] = {
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14, 15, 16
+	};
+	alignas(32) uint16_t inputValues2[16] = {
+		17, 18, 19, 20, 21, 22, 23, 24,
+		25, 26, 27, 28, 29, 30, 31, 32
+	};
+
+	__m256i input = _mm256_load_si256(reinterpret_cast<const __m256i*>(inputValues));
+	__m256i input2 = _mm256_load_si256(reinterpret_cast<const __m256i*>(inputValues2));
+
+	__m256i int16Output	= _mm256_unpacklo_epi16(input, input2);
+
+	AVXUtils::printAVXInt32(int16Output);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int16Output);
+
+	alignas(32) uint16_t expectedValues[16] = {
+		1, 17, 2, 18, 3, 19, 4, 20,
+		9, 25, 10, 26, 11, 27, 12, 28
+	};
+
+	for (int i = 0; i < AVXUtils::AVX2_INT16_REGISTER_SIZE; i++) {
+		QCOMPARE(values[i], expectedValues[i]);
+	}
+}
+
+void AVXUtilsTests::test_mm256_unpackhi_epi16() {
+	ERR_INIT
+
+	alignas(32) uint16_t inputValues[16] = {
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14, 15, 16
+	};
+	alignas(32) uint16_t inputValues2[16] = {
+		17, 18, 19, 20, 21, 22, 23, 24,
+		25, 26, 27, 28, 29, 30, 31, 32
+	};
+
+	__m256i input = _mm256_load_si256(reinterpret_cast<const __m256i*>(inputValues));
+	__m256i input2 = _mm256_load_si256(reinterpret_cast<const __m256i*>(inputValues2));
+
+	__m256i int16Output	= _mm256_unpackhi_epi16(input, input2);
+
+	AVXUtils::printAVXInt32(int16Output);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int16Output);
+
+	alignas(32) uint16_t expectedValues[16] = {
+		5, 21, 6, 22, 7, 23, 8, 24,
+		13, 29, 14, 30, 15, 31, 16, 32
+	};
+
+	for (int i = 0; i < AVXUtils::AVX2_INT16_REGISTER_SIZE; i++) {
+		QCOMPARE(values[i], expectedValues[i]);
+	}
 }
 
 void AVXUtilsTests::splitAVXUInt16to32Test() {
