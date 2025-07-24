@@ -57,4 +57,14 @@ static inline __m256i _mm256_unpackhi_epi16(__m256i a, __m256i b) {
     return result;
 }
 
+// _mm256_and_ps: Bitwise AND of packed single-precision (float) elements
+static inline __m256 _mm256_and_ps(__m256 a, __m256 b) {
+    __m256 result;
+    result.vect_f32[0] = vreinterpretq_f32_u32(
+        vandq_u32(vreinterpretq_u32_f32(a.vect_f32[0]), vreinterpretq_u32_f32(b.vect_f32[0])));
+    result.vect_f32[1] = vreinterpretq_f32_u32(
+        vandq_u32(vreinterpretq_u32_f32(a.vect_f32[1]), vreinterpretq_u32_f32(b.vect_f32[1])));
+    return result;
+}
+
 #endif // AVXLIB_AVX2NEON_INTRINSICS_H
