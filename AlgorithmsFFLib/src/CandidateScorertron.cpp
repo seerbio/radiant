@@ -1660,13 +1660,10 @@ namespace {
             {'Z', 0}
         };
 
-        // If this is the decoy candidate for a target entry, or the target candidate for a decoy entry,
-        // use the mutated sequence.
-        const QString peptideString = (
-            candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy()
-                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
-                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
-            ).removeUniModChars();
+        // Always use the library-provided sequence for amino acid counts.
+        // Note: when handling library decoys this will differ from the sequence used when generating the same sequence
+        // from a target entry!
+        const QString peptideString = candidateScores->targetDecoyCandidatePair->peptideString();
 
         for (const QChar aminoAcid : peptideString) {
 
