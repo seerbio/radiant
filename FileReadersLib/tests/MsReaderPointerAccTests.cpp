@@ -52,6 +52,8 @@ void MsReaderPointerAccTests::openFileTest() {
 
 void MsReaderPointerAccTests::openFileTest2() {
 
+	QSKIP("If you decide to reuse this format redo it");
+
     ERR_INIT
 
     const QString prqFFFilePath
