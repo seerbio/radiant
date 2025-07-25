@@ -1542,9 +1542,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         // row.mzFoundStDev11 = candidateScores->featuresArray[Features::MzFoundStDev11];
         // row.mzFoundStDev12 = candidateScores->featuresArray[Features::MzFoundStDev12];
         row.targetKey = candidateScores->targetKey;
-        row.peptideStringWithMods = candidateScores->isDecoy
+
+        // If this is the decoy candidate for a target entry, or the target candidate for a decoy entry,
+        // report the mutated sequence.
+        row.peptideStringWithMods = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy()
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+
+        // Always use the library sequence for the origin column. This may cause issues downstream if reannotation uses
+        // this column, but it is the only way to ensure that the origin of the sequence is clear. In typical usage
+        // reannotation will be performed on first-pass results, without decoys present in the library.
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
         row.proteinGroup = candidateScores->proteinGroup;
@@ -2025,9 +2032,16 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.intensityFoundMax12 = candidateScores->integrations.at(11);
 
         row.targetKey = candidateScores->targetKey;
-        row.peptideStringWithMods = candidateScores->isDecoy
+
+        // If this is the decoy candidate for a target entry, or the target candidate for a decoy entry,
+        // report the mutated sequence.
+        row.peptideStringWithMods = candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy()
                 ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
                 : candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
+
+        // Always use the library sequence for the origin column. This may cause issues downstream if reannotation uses
+        // this column, but it is the only way to ensure that the origin of the sequence is clear. In typical usage
+        // reannotation will be performed on first-pass results, without decoys present in the library.
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
         row.proteinGroup = candidateScores->proteinGroup;

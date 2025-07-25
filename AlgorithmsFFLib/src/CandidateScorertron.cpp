@@ -1660,7 +1660,13 @@ namespace {
             {'Z', 0}
         };
 
-        const QString peptideString = candidateScores->targetDecoyCandidatePair->peptideString();
+        // If this is the decoy candidate for a target entry, or the target candidate for a decoy entry,
+        // use the mutated sequence.
+        const QString peptideString = (
+            candidateScores->isDecoy != candidateScores->targetDecoyCandidatePair->isDecoy()
+                ? AminoAcids::mutatePenultimatePeptideResidues(candidateScores->targetDecoyCandidatePair->peptideStringWithMods())
+                : candidateScores->targetDecoyCandidatePair->peptideStringWithMods()
+            ).removeUniModChars();
 
         for (const QChar aminoAcid : peptideString) {
 
