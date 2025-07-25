@@ -277,7 +277,7 @@ namespace {
 }//namespace
 Err CandidateScorertron::calculateScores(
     CandidateScores *candidateScores,
-    const QVector<MS2Ion> &ms2Ions,
+    QVector<MS2Ion> &ms2Ions,
     const QVector<float> &weights
     ) const {
 

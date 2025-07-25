@@ -314,25 +314,33 @@ namespace {
                     continue;
                 }
 
+                // Score target candidate
                 CandidateScores candidateScoresTarget;
                 candidateScoresTarget.targetDecoyCandidatePair = tdcp;
                 candidateScoresTarget.isDecoy = false;
+
+                // This is the target candidate; score it against the target ions, unless the entry is a decoy
+                QVector<MS2Ion> targetIons = tdcp->isDecoy() ? tdcp->ms2IonsDecoy() : tdcp->ms2IonsTarget();
+
                 e = candidateScorertron.calculateScores(
                     &candidateScoresTarget,
-                    // This is the target candidate; score it against the target ions, unless the entry is a decoy
-                    tdcp->isDecoy() ? tdcp->ms2IonsDecoy() : tdcp->ms2IonsTarget(),
+                    targetIons,
                     pi.weights
                     ); rree;
 
+                // Score decoy candidate
                 CandidateScores candidateScoresDecoy;
                 candidateScoresDecoy.targetDecoyCandidatePair = tdcp;
                 candidateScoresDecoy.isDecoy = true;
+
+                // This is the decoy candidate; score it against the decoy ions, unless the entry is a decoy
+                QVector<MS2Ion> decoyIons = tdcp->isDecoy() ? tdcp->ms2IonsTarget() : tdcp->ms2IonsDecoy();
+
                 e = candidateScorertron.calculateScores(
                     &candidateScoresDecoy,
-                    // Thsi is the decoy candidate; score it against the decoy ions, unless the entry is a decoy
-                    tdcp->isDecoy() ? tdcp->ms2IonsTarget() : tdcp->ms2IonsDecoy(),
+                    decoyIons,
                     pi.weights
-                ); rree;
+                    ); rree;
 
                 if (
                     MathUtils::tZero(candidateScoresTarget.featuresArray[CosineSimSum100])
