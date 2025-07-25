@@ -1610,9 +1610,11 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
 
         row.targetWindowLocation = candidateScores->featuresArray[TargetWindowLocation];
 
-        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
-                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+        // Use target ions when the candidate is a target and the entry is a target,
+        // or when the candidate is a decoy and the entry is a decoy.
+        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy == candidateScores->targetDecoyCandidatePair->isDecoy()
+                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsTarget()
+                                       : candidateScores->targetDecoyCandidatePair->ms2IonsDecoy();
 
         for (int i = 0; i < ms2Ions.size(); ++i) {
 
@@ -2044,9 +2046,11 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
             0.0f
             );
 
-        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
-                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
+        // Use target ions when the candidate is a target and the entry is a target,
+        // or when the candidate is a decoy and the entry is a decoy.
+        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy == candidateScores->targetDecoyCandidatePair->isDecoy()
+                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsTarget()
+                                       : candidateScores->targetDecoyCandidatePair->ms2IonsDecoy();
 
         for (int i = 0; i < ms2Ions.size(); ++i) {
 

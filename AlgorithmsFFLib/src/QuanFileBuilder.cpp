@@ -141,9 +141,11 @@ namespace {
 
         ERR_INIT
 
-        const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                                      ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                                      : cs->targetDecoyCandidatePair->ms2IonsTarget();
+        // Use target ions when the candidate is a target and the entry is a target,
+        // or when the candidate is a decoy and the entry is a decoy.
+        const QVector<MS2Ion> &ms2Ions = cs->isDecoy == cs->targetDecoyCandidatePair->isDecoy()
+                                       ? cs->targetDecoyCandidatePair->ms2IonsTarget()
+                                       : cs->targetDecoyCandidatePair->ms2IonsDecoy();
 
         constexpr int maxIonsSize = 12;
         QVector<float> mzSearchedVals(maxIonsSize, -1.0f);

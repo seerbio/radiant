@@ -541,9 +541,11 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
 
             if (msLevel == MSLevelEnum::MS2) {
 
-                const QVector<MS2Ion> ms2Ions = cs->isDecoy
-                              ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-                              : cs->targetDecoyCandidatePair->ms2IonsTarget();
+                // Use target ions when the candidate is a target and the entry is a target,
+                // or when the candidate is a decoy and the entry is a decoy.
+                const QVector<MS2Ion> &ms2Ions = cs->isDecoy == cs->targetDecoyCandidatePair->isDecoy()
+                                               ? cs->targetDecoyCandidatePair->ms2IonsTarget()
+                                               : cs->targetDecoyCandidatePair->ms2IonsDecoy();
 
                 QVector<float> mzSearchedVals(top6, -1.0f);
                 const int maxSize = std::min(top6, ms2Ions.size());
@@ -558,7 +560,9 @@ Err PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
                 row.intensityFoundMaxVec = cs->featuresArray.mid(IntensityFoundMax1, top6);
             }
             else {
-                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy)};
+                // Use the shifted "decoy" m/z value only if the candidate is a decoy and the library entry is not, or vice versa.
+                // We thus use the library m/z for a library decoy's decoy candidate, or for a target's target candidate.
+                row.mzSearchedVec = {cs->targetDecoyCandidatePair->mz(cs->isDecoy != cs->targetDecoyCandidatePair->isDecoy())};
                 row.mzFoundMeanVec = {cs->featuresArray[Ms1MzMeanFound100]};
                 row.mzFoundStDevVec = {cs->featuresArray[Ms1MzStDevFound100]};
                 row.intensityFoundMaxVec = {cs->featuresArray[Ms1IntensityFound100]};

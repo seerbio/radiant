@@ -310,29 +310,29 @@ namespace {
 
             for (TargetDecoyCandidatePair* tdcp : targetDecoyPointers) {
 
-                const QVector<MS2Ion> ms2TargetIons = tdcp->ms2IonsTarget();
-
-                if (ms2TargetIons.isEmpty()) {
+                if (tdcp->ms2IonsTarget().isEmpty()) {
                     continue;
                 }
 
                 CandidateScores candidateScoresTarget;
+                candidateScoresTarget.targetDecoyCandidatePair = tdcp;
                 candidateScoresTarget.isDecoy = false;
                 e = candidateScorertron.calculateScores(
-                        ms2TargetIons,
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresTarget
-                        ); rree;
+                    &candidateScoresTarget,
+                    // This is the target candidate; score it against the target ions, unless the entry is a decoy
+                    tdcp->isDecoy() ? tdcp->ms2IonsDecoy() : tdcp->ms2IonsTarget(),
+                    pi.weights
+                    ); rree;
 
                 CandidateScores candidateScoresDecoy;
+                candidateScoresDecoy.targetDecoyCandidatePair = tdcp;
                 candidateScoresDecoy.isDecoy = true;
                 e = candidateScorertron.calculateScores(
-                        tdcp->ms2IonsDecoy(),
-                        pi.weights,
-                        tdcp,
-                        &candidateScoresDecoy
-                        ); rree;
+                    &candidateScoresDecoy,
+                    // Thsi is the decoy candidate; score it against the decoy ions, unless the entry is a decoy
+                    tdcp->isDecoy() ? tdcp->ms2IonsTarget() : tdcp->ms2IonsDecoy(),
+                    pi.weights
+                ); rree;
 
                 if (
                     MathUtils::tZero(candidateScoresTarget.featuresArray[CosineSimSum100])

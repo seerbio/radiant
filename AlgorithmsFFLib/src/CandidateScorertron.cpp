@@ -276,17 +276,15 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::calculateScores(
+    CandidateScores *candidateScores,
     const QVector<MS2Ion> &ms2Ions,
-    const QVector<float> &weights,
-    TargetDecoyCandidatePair* targetDecoyCandidatePair,
-    CandidateScores *candidateScores
+    const QVector<float> &weights
     ) const {
 
     ERR_INIT
 
     e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
-    candidateScores->targetDecoyCandidatePair = targetDecoyCandidatePair;
     candidateScores->initFeaturesArray();
     candidateScores->targetKey = m_mzTargetKey;
 
@@ -296,7 +294,6 @@ Err CandidateScorertron::calculateScores(
     FrameIndex frameIndexPredictedMin;
     FrameIndex frameIndexPredictedMax;
     e = setPredictedFrameIndexes(
-        targetDecoyCandidatePair->iRt(),
         candidateScores,
         &frameIndexPredictedMin,
         &frameIndexPredictedMax
@@ -331,7 +328,7 @@ Err CandidateScorertron::calculateScores(
 
     constexpr int multiplierForKeySettingByTen = 10;
     const int nominalMass
-        = static_cast<int>((std::round(targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
+        = static_cast<int>((std::round(candidateScores->targetDecoyCandidatePair->mass() / multiplierForKeySettingByTen) * multiplierForKeySettingByTen));
     e = ErrorUtils::isTrue(m_averagineTable.contains(nominalMass)); ;
     const QVector<float> ms1Averagine = m_averagineTable.value(nominalMass);
 
@@ -340,7 +337,7 @@ Err CandidateScorertron::calculateScores(
     e = sortBestCorrelationResult(&bestCorrelationResults); ree;
 
     e = setCandidateScores(
-        targetDecoyCandidatePair,
+        ms2Ions,
         bestCorrelationResults,
         ms1Averagine,
         candidateScores
@@ -349,20 +346,19 @@ Err CandidateScorertron::calculateScores(
     QVector<FeaturesArray> candidateScoresFeatureArrays;
     QVector<CandidateScores> candidateScoresFeatures;
     for (const BestCorrelationResult &bcr : bestCorrelationResults) {
-        CandidateScores cs = *candidateScores;
         e = setCandidateScores(
-            targetDecoyCandidatePair,
+            ms2Ions,
             {bcr},
             ms1Averagine,
-            &cs
-            ); ree;
+            candidateScores
+        ); ree;
 
         const FeaturesArray fa = CandidateScores::selectFeaturesArrayFeatures(
-            cs.featuresArray,
+            candidateScores->featuresArray,
             m_features
             );
 
-        candidateScoresFeatures.push_back(cs);
+        candidateScoresFeatures.push_back(*candidateScores);
         candidateScoresFeatureArrays.push_back(fa);
     }
 
@@ -418,7 +414,7 @@ Err CandidateScorertron::calculateScores(
     candidateScores->featuresArray[DiscScoresMean] = MathUtils::mean(discScoresSubbed);
     candidateScores->featuresArray[DiscScoresStDev] = MathUtils::stDev(discScoresSubbed);
 
-    e = setFullTheoMs2IonsScores(candidateScores); ree;
+    e = setFullTheoMs2IonsScores(candidateScores, ms2Ions); ree;
 
 
 #endif
@@ -854,7 +850,6 @@ Err CandidateScorertron::initMatricesdAndVecs(
     }
 
 Err CandidateScorertron::setPredictedFrameIndexes(
-    float iRT,
     CandidateScores *candidateScores,
     FrameIndex *frameIndexPredictedMin,
     FrameIndex *frameIndexPredictedMax
@@ -868,7 +863,7 @@ Err CandidateScorertron::setPredictedFrameIndexes(
             = m_msCalibratomatic.scanTimeStDev(static_cast<float>(m_pythiaParameters.scanTimeWindowStDevs));
 
         e = m_msCalibratomatic.predictScanTime(
-                iRT,
+                candidateScores->targetDecoyCandidatePair->iRt(),
                 &candidateScores->scanTimePredicted
         ); ree;
 
@@ -1305,7 +1300,7 @@ namespace {
     }
 
     Err setCosineSimilarityMetrics(
-        const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+        QVector<MS2Ion> ms2Ions,
         const BestCorrelationResult& bestCorrelationResult,
         CandidateScores *candidateScores
         ) {
@@ -1315,15 +1310,12 @@ namespace {
         //TODO add kldiv and pearsons corr.
 
         e = ErrorUtils::isTrue(bestCorrelationResult.matBlockTrimmedIntensity.size() > 0); ree;
-        QVector<MS2Ion> ms2IonsTheo = candidateScores->isDecoy
-                                    ? targetDecoyCandidatePair->ms2IonsDecoy()
-                                    : targetDecoyCandidatePair->ms2IonsTarget();
-        ms2IonsTheo.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
+        ms2Ions.resize(static_cast<int>(bestCorrelationResult.matBlockTrimmedIntensity.cols()));
 
         QVector<float> intensitiesTheo;
         std::transform(
-            ms2IonsTheo.begin(),
-            ms2IonsTheo.end(),
+            ms2Ions.begin(),
+            ms2Ions.end(),
             std::back_inserter(intensitiesTheo),
             [](const MS2Ion &ms2Ion){return ms2Ion.intensity;}
             );
@@ -1484,6 +1476,7 @@ namespace {
 
     Err setFoundMs2Ions(
         const QVector<BestCorrelationResult> &bestCorrelationResults,
+        const QVector<MS2Ion> &ms2Ions,
         int topNMS2Ions,
         MsFrame *msFrameMzTarget,
         CandidateScores *candidateScores
@@ -1519,10 +1512,6 @@ namespace {
             mzMeanValsFound.push_back(colMzNonZero.mean());
             stdMeanValsFound.push_back(static_cast<float>(EigenUtils::calculateStDevOfVector(colMzNonZero)));
         }
-
-        const QVector<MS2Ion> &ms2Ions = candidateScores->isDecoy
-                                       ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                       : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
 
         int foundB = 0;
         int foundY = 0;
@@ -1851,11 +1840,11 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::setCandidateScores(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
+    QVector<MS2Ion> &ms2Ions,
     const QVector<BestCorrelationResult> &bestCorrelationResults,
     const QVector<float> &ms1Averagine,
     CandidateScores *candidateScores
-    ) const {
+) const {
 
     ERR_INIT
 
@@ -1912,7 +1901,7 @@ Err CandidateScorertron::setCandidateScores(
                                             = calculatedCosineSimSumGreaterThan80(bestCorrelationResult.peakCorrelations);
 
     candidateScores->featuresArray[TheoFragmentCount]
-                                                            = static_cast<float>(targetDecoyCandidatePair->totalFragmentCount());
+                                                            = static_cast<float>(candidateScores->targetDecoyCandidatePair->totalFragmentCount());
 
     candidateScores->featuresArray[TotalIntensityLog]
                                         = std::log(std::max(bestCorrelationResult.matBlockTrimmedIntensity.sum(),
@@ -1941,6 +1930,7 @@ Err CandidateScorertron::setCandidateScores(
     const double pepLength = (-10.0 + candidateScores->targetDecoyCandidatePair->peptideString().size()) / 10.0;
     candidateScores->featuresArray[PeptideLengthNorm] = static_cast<float>(pepLength);
 
+    // Always use the library candidate's m/z, not decoy candidate's shifted m/z; this will agree with the `Mass` value
     const auto mz = candidateScores->targetDecoyCandidatePair->mz(false);
     candidateScores->featuresArray[MzNorm] = (mz - 600.0f) * 0.002f;
     candidateScores->featuresArray[IRTPredicted] = candidateScores->targetDecoyCandidatePair->iRt();
@@ -1972,13 +1962,12 @@ Err CandidateScorertron::setCandidateScores(
     e = setAminoAcidFrequencies(candidateScores); ree;
 
     e = setCosineSimilarityMetrics(
-        targetDecoyCandidatePair,
+        ms2Ions,
         bestCorrelationResult,
         candidateScores
         );ree
 
     e = setMs1RelatedScores(
-        targetDecoyCandidatePair,
         bestCorrelationResult,
         static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
         candidateScores
@@ -1986,6 +1975,7 @@ Err CandidateScorertron::setCandidateScores(
 
     e = setFoundMs2Ions(
         bestCorrelationResults,
+        ms2Ions,
         m_topNMS2Ions,
         m_msFrameMzTarget,
         candidateScores
@@ -2153,7 +2143,6 @@ namespace {
 
 }//namespace
 Err CandidateScorertron::setMs1RelatedScores(
-    const TargetDecoyCandidatePair *targetDecoyCandidatePair,
     const BestCorrelationResult &bestCorrelationResult,
     float ppmTol,
     CandidateScores *candidateScores
@@ -2169,9 +2158,10 @@ Err CandidateScorertron::setMs1RelatedScores(
     FrameIndex frameIndexMaxMS1;
     e = m_msFrameMS1->frameIndexFromScanTime(candidateScores->scanTimeEnd, &frameIndexMaxMS1); ree;
 
-    const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / targetDecoyCandidatePair->charge();
+    const float isotopeDistance = S_GLOBAL_SETTINGS.ISO_DIFF / candidateScores->targetDecoyCandidatePair->charge();
 
-    const float monoIsotopeMz = targetDecoyCandidatePair->mz(false);
+    // Always use the original library entry m/z for MS1 scoring
+    const float monoIsotopeMz = candidateScores->targetDecoyCandidatePair->mz(false);
     const float monoIsotopeShadowMz = monoIsotopeMz - isotopeDistance;
     const float c13isotopeMz1 = monoIsotopeMz + isotopeDistance;
     const float c13isotopeMz2 = monoIsotopeMz + (isotopeDistance * 2);
@@ -2433,20 +2423,16 @@ namespace {
     }
 
 }//namespace
-Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScores) const {
+Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScores, const QVector<MS2Ion> &ms2Ions) const {
 
     ERR_INIT
 
     const ScanPoints* scanPoints = m_msFrameMzTarget->getScanPointsByScanNumber(candidateScores->scanNumber);
 
-    const QVector<MS2Ion> ms2IonsTheoritical = candidateScores->isDecoy
-                                     ? candidateScores->targetDecoyCandidatePair->ms2IonsDecoy()
-                                     : candidateScores->targetDecoyCandidatePair->ms2IonsTarget();
-
     QVector<QPair<QPointF, MS2Ion>> foundPointVsMS2Ions;
     e = extractFullTheoreticalPointsFromScan(
         scanPoints,
-        ms2IonsTheoritical,
+        ms2Ions,
         m_pythiaParameters.ms2ExtractionWidthPPM,
         &foundPointVsMS2Ions
         ); ree;
@@ -2462,7 +2448,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
     e = EigenUtils::cosineSimilarity(v1, v2, &cosineSimFullTheo); ree;
     candidateScores->featuresArray[CosineSimFullTheo] = cosineSimFullTheo;
 
-    candidateScores->featuresArray[IonsFoundFractionFull] = foundPointVsMS2Ions.size() / static_cast<float>(ms2IonsTheoritical.size());
+    candidateScores->featuresArray[IonsFoundFractionFull] = foundPointVsMS2Ions.size() / static_cast<float>(ms2Ions.size());
     candidateScores->featuresArray[CosineSimFullTheoXIonsFoundFractionFull] = cosineSimFullTheo * candidateScores->featuresArray[IonsFoundFractionFull];
 
     QSet<int> yIonsSeries;
@@ -2473,7 +2459,7 @@ Err CandidateScorertron::setFullTheoMs2IonsScores(CandidateScores *candidateScor
 
     QSet<int> yIonsSeriesTheo;
     QSet<int> bIonsSeriesTheo;
-    e = buildTheoIonSeriesSets(ms2IonsTheoritical, &yIonsSeriesTheo, &bIonsSeriesTheo);
+    e = buildTheoIonSeriesSets(ms2Ions, &yIonsSeriesTheo, &bIonsSeriesTheo);
     const QVector<int> yIonsSeriesLongestTheo = findLongestSeriesInSet(yIonsSeriesTheo);
     const QVector<int> bIonsSeriesLongestTheo = findLongestSeriesInSet(bIonsSeriesTheo);
 
