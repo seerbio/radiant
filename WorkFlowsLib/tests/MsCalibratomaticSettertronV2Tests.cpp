@@ -8,6 +8,8 @@
 #include "FragLibReader.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h"
 #include "MsReaderPointerAcc.h"
+#include "PythiaParameterReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
 
 class MsCalibratomaticSettertronV2Tests : public QObject
@@ -42,8 +44,22 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 		);
 	QCOMPARE(e, eNoError);
 
+
+	PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
+
+	TargetDecoyCandidatePairManager tdcpManager;
+	e = tdcpManager.init(
+		pythiaParameters,
+		&fragLibReaderRows
+		);
+	QCOMPARE(e, eNoError);
+
 	MsCalibratomaticSettertronV2 setter;
-	e = setter.init(&reader);
+	e = setter.init(
+		&tdcpManager,
+		&reader,
+		&pythiaParameters
+		);
 	QCOMPARE(e, eNoError);
 
 

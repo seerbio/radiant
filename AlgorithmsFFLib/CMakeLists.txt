@@ -34,7 +34,7 @@ SET(SOURCE_FILES
 #        src/IonMobilitron.cpp
 #        src/InterferingCandidatesEliminatomatic.cpp
 #        src/IsotopicDistributionBuilder.cpp
-#        src/MS2Ion.cpp
+        src/MS2Ion.cpp
 #        src/Ms2IonFraggertronManager.cpp
 #        src/MsCalibratomatic.cpp
 #        src/MsFrame.cpp
@@ -45,8 +45,8 @@ SET(SOURCE_FILES
 #        src/QValueSettertron.cpp
 #        src/SequenceSubstringSearchomatic.cpp
 #        src/SpectrumCentricMzTargetFrameSearch.cpp
-#        src/TargetDecoyCandidatePair.cpp
-#        src/TargetDecoyCandidatePairManager.cpp
+        src/TargetDecoyCandidatePair.cpp
+        src/TargetDecoyCandidatePairManager.cpp
 #        src/TargetDecoyCandidatePairScoretron.cpp
         src/TurboXIC.cpp
 #        src/TurboXIC2D.cpp
@@ -70,7 +70,7 @@ SET(HEADER_FILES
 #        src/InterferingCandidatesEliminatomatic.h
 #        src/IonMobilitron.h
 #        src/IsotopicDistributionBuilder.h
-#        src/MS2Ion.h
+        src/MS2Ion.h
 #        src/Ms2IonFraggertronManager.h
 #        src/MsCalibratomatic.h
 #        src/MsFrame.h
@@ -81,8 +81,8 @@ SET(HEADER_FILES
 #        src/QValueSettertron.h
 #        src/SequenceSubstringSearchomatic.h
 #        src/SpectrumCentricMzTargetFrameSearch.h
-#        src/TargetDecoyCandidatePair.h
-#        src/TargetDecoyCandidatePairManager.h
+        src/TargetDecoyCandidatePair.h
+        src/TargetDecoyCandidatePairManager.h
 #        src/TargetDecoyCandidatePairScoretron.h
         src/TurboXIC.h
 #        src/TurboXIC2D.h

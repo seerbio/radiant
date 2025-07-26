@@ -5,11 +5,15 @@
 #include "MsCalibratomaticSettertronV2.h"
 
 #include "ErrorUtils.h"
-#include "FragLibReaderRow.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderPointerAcc.h"
-#include "SpecLibReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
+
+MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
+: m_tdcpManager(nullptr)
+, m_msReaderPointerAcc(nullptr)
+{}
 
 MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() {
 	for (const TurboXIC *turboXic : m_mzTargetKeyVsTurboXICs) {
@@ -93,6 +97,8 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
+		mzTargetKeyVsTurboXICs->clear();
+
 		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Building calibration TurboXIC";
 
 		QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetKeyVsMsScanInfos;
@@ -122,12 +128,24 @@ namespace {
 		ERR_RETURN
 	}
 
+
+
 }//namespace
-Err MsCalibratomaticSettertronV2::init(MsReaderPointerAcc *msReaderPointerAcc) {
+Err MsCalibratomaticSettertronV2::init(
+	TargetDecoyCandidatePairManager *tdcpManager,
+	MsReaderPointerAcc *msReaderPointerAcc,
+	PythiaParameters *pythiaParameters
+	) {
 
 	ERR_INIT
 
 	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
+	e = ErrorUtils::isTrue(tdcpManager->isInit()); ree;
+	e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
+
+	m_tdcpManager = tdcpManager;
+	m_msReaderPointerAcc = msReaderPointerAcc;
+	m_pythiaParameters = pythiaParameters;
 
 	constexpr int msLevel = 2;
 	m_msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos(msLevel);
@@ -144,6 +162,115 @@ Err MsCalibratomaticSettertronV2::init(MsReaderPointerAcc *msReaderPointerAcc) {
 		&m_mzTargetKeyVsTurboXICs
 		); ree;
 
+
+	e = buildMzTargetKeyVsTargetDecoyCandidatePairPntrs(); ree;
+
+	ERR_RETURN
+}
+
+namespace {
+
+	void filterUniqueScanInfosByMzTargetKey(
+		const QList<MzTargetKey> &mzTargetKeys,
+		QVector<MsScanInfo> *msScanInfos
+		) {
+
+		const auto terminatorLogic = [mzTargetKeys](const MsScanInfo &msi) {
+			return !mzTargetKeys.contains(msi.targetKey());
+		};
+
+		const auto terminator = std::remove_if(
+			msScanInfos->begin(),
+			msScanInfos->end(),
+			terminatorLogic
+			);
+
+		msScanInfos->erase(terminator, msScanInfos->end());
+	}
+
+	std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> buildMzTargetKeyVsTargetDecoyCandidatePairPntrsLogic(
+		const MsScanInfo &msScanInfo,
+		double precursorExtractionWindowThomsons,
+		QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsPntrs
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); rtee;
+		e = ErrorUtils::isGreaterThanZero(precursorExtractionWindowThomsons); rtee;
+
+		const float mzMin = msScanInfo.precursorTargetMz
+						  - (msScanInfo.isoWindowLower + static_cast<float>(precursorExtractionWindowThomsons));
+
+		const float mzMax = msScanInfo.precursorTargetMz
+						  + (msScanInfo.isoWindowUpper + static_cast<float>(precursorExtractionWindowThomsons));
+
+		const auto terminatorLogic = [mzMin, mzMax](TargetDecoyCandidatePair *tdcp) {
+			const float mzPrecursor = tdcp->mz(false);
+			return mzPrecursor < mzMin || mzPrecursor > mzMax;
+		};
+
+		const auto terminator = std::remove_if(
+			targetDecoyCandidatePairsPntrs.begin(),
+			targetDecoyCandidatePairsPntrs.end(),
+			terminatorLogic
+			);
+
+		targetDecoyCandidatePairsPntrs.erase(terminator, targetDecoyCandidatePairsPntrs.end());
+
+		return {e, msScanInfo.targetKey(), targetDecoyCandidatePairsPntrs};
+	}
+
+}//namespace
+Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntrs() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isTrue(m_tdcpManager->isInit()); ree;
+	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
+	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsTurboXICs); ree;
+
+	m_mzTargetKeyVsTargetDecoyCandidatePairPntrs.clear();
+
+	const QList<MzTargetKey> &mzTargetKeys = m_mzTargetKeyVsTurboXICs.keys();
+	QVector<MsScanInfo> uniqueMsScanInfosFiltered = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
+	filterUniqueScanInfosByMzTargetKey(mzTargetKeys, &uniqueMsScanInfosFiltered);
+
+	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsPntrs;
+	e = m_tdcpManager->getTargetDecoyCandidatePairPointers(&targetDecoyCandidatePairsPntrs); rtee;
+
+#define FILTER_PARALLEL_TDCP
+#ifdef FILTER_PARALLEL_TDCP
+	const auto loadLogicBinder = std::bind(
+		buildMzTargetKeyVsTargetDecoyCandidatePairPntrsLogic,
+		std::placeholders::_1,
+		m_pythiaParameters->precursorExtractionWindowThomsons,
+		targetDecoyCandidatePairsPntrs
+		);
+
+	QFuture<std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>>> futures = QtConcurrent::mapped(
+		uniqueMsScanInfosFiltered,
+		loadLogicBinder
+		);
+	futures.waitForFinished();
+
+	for (const std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tpl : futures) {
+		e = std::get<0>(tpl); ree;
+		m_mzTargetKeyVsTargetDecoyCandidatePairPntrs.insert(std::get<1>(tpl), std::get<2>(tpl));
+	}
+#else
+	for (const MsScanInfo &msi : uniqueMsScanInfosFiltered) {
+		std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> tpl = buildMzTargetKeyVsTargetDecoyCandidatePairPntrsLogic(
+			msi,
+			m_pythiaParameters->precursorExtractionWindowThomsons,
+			targetDecoyCandidatePairsPntrs
+			);
+		e = std::get<0>(tpl); ree;
+		m_mzTargetKeyVsTargetDecoyCandidatePairPntrs.insert(std::get<1>(tpl), std::get<2>(tpl));
+	}
+#endif
+	
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished building TargetPairs";
 
 	ERR_RETURN
 }
