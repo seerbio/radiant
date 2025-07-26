@@ -16,6 +16,8 @@ Err FragLibReader::getFragLibReaderRows(
 
     ERR_INIT
 
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Building library";
+
     e = ErrorUtils::fileExists(fragLibFilePath); ree;
 
     QFileInfo fi(fragLibFilePath);

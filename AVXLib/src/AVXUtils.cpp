@@ -147,8 +147,8 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 			const size_t readIndex = i + (j * AVX2_FLOAT_REGISTER_SIZE);
 			const __m256 reg = _mm256_load_ps(masterVector + readIndex);
 			const __m256 parallelVec = _mm256_set1_ps(kernel[j]);
-			const __m256 result = _mm256_mul_ps(reg, parallelVec);
-			vSum = _mm256_add_ps(result, vSum);
+			const __m256 resultLocal = _mm256_mul_ps(reg, parallelVec);
+			vSum = _mm256_add_ps(resultLocal, vSum);
 		}
 		_mm256_store_ps(result + i, vSum);
 	}

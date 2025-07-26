@@ -15,9 +15,9 @@
 
 #include <fstream>
 #include <iostream>
-#include <vector>
-#include <string>
 #include <regex>
+#include <string>
+#include <vector>
 
 
 using namespace Error;
@@ -119,61 +119,27 @@ public:
 		ERR_RETURN;
 	}
 
-	template<class F>
-	Err read(
-		F &input,
-		QVector<FragLibReaderRow> *fragLibReaderRows
+	static QPair<Err, QVector<FragLibReaderRow>> entriesLoadLogic(
+		const QVector<int> &indexes,
+		const std::vector<Entry> &entries,
+		const std::vector<std::string> &precursors,
+		const std::vector<PG> &proteinIds
 		) {
 
 		ERR_INIT
 
-		int gd = 0;
-		int gc = 0;
-		int ip = 0;
-		int version = 0;
+		QVector<FragLibReaderRow> fragLibReaderRows;
+		fragLibReaderRows.reserve(indexes.size());
 
-		input.read(reinterpret_cast<char*>(&version), sizeof(int));
-		if (version >= 0) gd = version;
-		else input.read(reinterpret_cast<char*>(&gd), sizeof(int));
+		for (int index : indexes) {
+			const Entry &entry = entries[index];
 
-		if (version < -3) {
-			std::cout << "ERROR: version is not supported" << -version << std::endl;
-			rrr(eFileError);
-		}
-
-		input.read(reinterpret_cast<char*>(&gc), sizeof(int));
-		input.read(reinterpret_cast<char*>(&ip), sizeof(int));
-		genDecoys = gd;
-		genCharges = gc;
-		inferProteotypicity = ip;
-
-		Readers::readString(input, name);
-		Readers::readString(input, fastaNames);
-		Readers::readArray(input, proteins);
-		Readers::readArray(input, proteinIds);
-		Readers::readStrings(input, precursors);
-		Readers::readStrings(input, names);
-		Readers::readStrings(input, genes);
-		input.read(reinterpret_cast<char*>(&iRTMin), sizeof(double));
-		input.read(reinterpret_cast<char*>(&iRTMax), sizeof(double));
-		Readers::readArray(input, entries, version);
-
-		if (version <= -1 && input.peek() != std::char_traits<char>::eof()) {
-			Readers::readVector(input, elution_groups);
-		}
-
-		fragLibReaderRows->reserve(static_cast<int>(entries.size()));
-
-		for (int i = 0; i < entries.size(); i++) {
-
-			e = ErrorUtils::isWithinRange(i, entries); ree;
-
-			const auto &[target, decoy, entryFlags, proteotypic, name, pidIndex, pgQValue, ptmQvalue, siteConf] = entries.at(i);
-			const auto &p = precursors.at(i);
+			const auto &[target, decoy, entryFlags, proteotypic, name, pidIndex, pgQValue, ptmQvalue, siteConf] = entry;
+			const auto &p = precursors.at(index);
 
 			FragLibReaderRow flrr;
 
-			const QString proteinGroups = QString::fromStdString(proteinIds.at(entries.at(i).pidIndex).names);
+			const QString proteinGroups = QString::fromStdString(proteinIds.at(entry.pidIndex).names);
 			flrr.proteinGroups = proteinGroups;
 
 			QString specLibPeptide = QString::fromStdString(p);
@@ -184,7 +150,7 @@ public:
 			specLibPeptide += '|' + specLibPeptideCharge;
 
 			flrr.peptideSequenceChargeKey = specLibPeptide;
-			e = ErrorUtils::toInt(QString(specLibPeptideCharge), &flrr.precursorCharge); ree;
+			e = ErrorUtils::toInt(QString(specLibPeptideCharge), &flrr.precursorCharge); rree;
 			flrr.iM = target.iIM;
 			flrr.iRT = target.iRT;
 			flrr.isDecoy = false;
@@ -223,14 +189,107 @@ public:
 					ionLoss,
 					peptideString.size(),
 					&ionLabel
-					); ree;
+					); rree;
 				ionLabelsList.push_back(ionLabel);
 			}
 
 			flrr.ionLabels = ionLabelsList.join(S_GLOBAL_SETTINGS.SEPARATOR);
-			fragLibReaderRows->push_back(flrr);
+			fragLibReaderRows.push_back(flrr);
 		}
 
+		return {e, fragLibReaderRows};
+	}
+
+	template<class F>
+	Err read(
+		F &input,
+		QVector<FragLibReaderRow> *fragLibReaderRows
+		) {
+
+		ERR_INIT
+
+		int gd = 0;
+		int gc = 0;
+		int ip = 0;
+		int version = 0;
+
+		input.read(reinterpret_cast<char*>(&version), sizeof(int));
+		if (version >= 0) gd = version;
+		else input.read(reinterpret_cast<char*>(&gd), sizeof(int));
+
+		if (version < -3) {
+			std::cout << "ERROR: version is not supported" << -version << std::endl;
+			rrr(eFileError);
+		}
+
+		input.read(reinterpret_cast<char*>(&gc), sizeof(int));
+		input.read(reinterpret_cast<char*>(&ip), sizeof(int));
+		Readers::readString(input, name);
+		Readers::readString(input, fastaNames);
+		Readers::readArray(input, proteins);
+		Readers::readArray(input, proteinIds);
+		Readers::readStrings(input, precursors);
+		Readers::readStrings(input, names);
+		Readers::readStrings(input, genes);
+		input.read(reinterpret_cast<char*>(&iRTMin), sizeof(double));
+		input.read(reinterpret_cast<char*>(&iRTMax), sizeof(double));
+		Readers::readArray(input, entries, version);
+
+		genDecoys = gd;
+		genCharges = gc;
+		inferProteotypicity = ip;
+
+		if (version <= -1 && input.peek() != std::char_traits<char>::eof()) {
+			Readers::readVector(input, elution_groups);
+		}
+
+		e = ErrorUtils::isNotEmpty(entries); ree;
+		fragLibReaderRows->reserve(static_cast<int>(entries.size()));
+
+#define ENTRIES_PARALLEL
+#ifdef ENTRIES_PARALLEL
+		QVector<int> indexes(entries.size());
+		std::iota(indexes.begin(), indexes.end(), 0);
+
+		QVector<QVector<int>> indexesTranched;
+		e = ParallelUtils::trancheVectorForParallelizationInOrder(
+			indexes,
+			ParallelUtils::numberOfAvailableSystemProcessors(),
+			0,
+			&indexesTranched
+			); ree;
+
+		const auto binderLogic = std::bind(
+			entriesLoadLogic,
+			std::placeholders::_1,
+			entries,
+			precursors,
+			proteinIds
+			);
+
+		QFuture<QPair<Err, QVector<FragLibReaderRow>>> futures = QtConcurrent::mapped(
+			indexesTranched,
+			binderLogic
+			);
+		futures.waitForFinished();
+
+		for (const QPair<Err, QVector<FragLibReaderRow>> &pr : futures) {
+			e = pr.first; ree;
+			fragLibReaderRows->append(pr.second);
+		}
+#else
+		for (int i = 0; i < entries.size(); i++) {
+			QPair<Err, FragLibReaderRow> pr = entriesLoadLogic(
+				i,
+				entries,
+				precursors,
+				proteinIds
+				);
+
+			e = pr.first; ree;
+			fragLibReaderRows->push_back(pr.second);
+		}
+#endif
 		ERR_RETURN
 	}
 };

@@ -5,6 +5,7 @@
 #include <QtTest/QtTest>
 #include <QtConcurrent/QtConcurrent>
 
+#include "FragLibReader.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h"
 #include "MsReaderPointerAcc.h"
 
@@ -31,6 +32,14 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 
 	MsReaderPointerAcc reader;
 	e = reader.openFile(filename);
+	QCOMPARE(e, eNoError);
+
+	const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/human_plasma_arath_entrapment.fasta.predicted.speclib";
+	QVector<FragLibReaderRow> fragLibReaderRows;
+	e = FragLibReader::getFragLibReaderRows(
+		fragLibUri,
+		&fragLibReaderRows
+		);
 	QCOMPARE(e, eNoError);
 
 	MsCalibratomaticSettertronV2 setter;

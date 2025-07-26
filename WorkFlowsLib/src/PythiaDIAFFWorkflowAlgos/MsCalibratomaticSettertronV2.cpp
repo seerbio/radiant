@@ -5,8 +5,10 @@
 #include "MsCalibratomaticSettertronV2.h"
 
 #include "ErrorUtils.h"
+#include "FragLibReaderRow.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderPointerAcc.h"
+#include "SpecLibReader.h"
 
 
 MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() {
@@ -25,11 +27,30 @@ namespace {
 		ERR_INIT
 
 		QVector<MsScanInfo*> msScanInfosVec = msScanInfosPntrs;
-		const auto msScanInfosThird = static_cast<int>(msScanInfosVec.size() / 3.0);
+		const auto msScanInfosThird = static_cast<int>(msScanInfosVec.size() * 0.333333);
 		msScanInfosVec = msScanInfosVec.mid(msScanInfosThird, msScanInfosThird);
 
+		QMap<MzTargetKey, bool> temp;
 		for (MsScanInfo *msi : msScanInfosVec) {
-			(*mzTargetKeyVsMsScanInfos)[msi->targetKey()].push_back(msi);
+			temp[msi->targetKey()] = true;
+		}
+
+		QVector<MzTargetKey> mzTargetKeys = temp.keys().toVector();
+		const auto mzTargetKeysQuartered = static_cast<int>(mzTargetKeys.size() * 0.25);
+		mzTargetKeys = mzTargetKeys.mid(mzTargetKeysQuartered, mzTargetKeysQuartered * 2);
+		temp.clear();
+		for (const MzTargetKey &mzTargetKey : mzTargetKeys) {
+			temp[mzTargetKey] = true;
+		}
+
+		for (MsScanInfo *msi : msScanInfosVec) {
+
+			const MzTargetKey mzTargetKey = msi->targetKey();
+			if (!temp.contains(mzTargetKey)) {
+				continue;
+			}
+
+			(*mzTargetKeyVsMsScanInfos)[mzTargetKey].push_back(msi);;
 		}
 
 		ERR_RETURN
@@ -122,11 +143,6 @@ Err MsCalibratomaticSettertronV2::init(MsReaderPointerAcc *msReaderPointerAcc) {
 		m_msScanInfosPntrs,
 		&m_mzTargetKeyVsTurboXICs
 		); ree;
-
-
-
-
-
 
 
 	ERR_RETURN
