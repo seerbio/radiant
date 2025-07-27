@@ -7,6 +7,7 @@
 
 #include "FragLibReader.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h"
+#include "MsCalibratomatic.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
@@ -36,14 +37,14 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 	e = reader.openFile(filename);
 	QCOMPARE(e, eNoError);
 
-	const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/human_plasma_arath_entrapment.fasta.predicted.speclib";
+	// const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/human_plasma_arath_entrapment.fasta.predicted.speclib";
+	const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
 	QVector<FragLibReaderRow> fragLibReaderRows;
 	e = FragLibReader::getFragLibReaderRows(
 		fragLibUri,
 		&fragLibReaderRows
 		);
 	QCOMPARE(e, eNoError);
-
 
 	PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
 
@@ -60,6 +61,10 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 		&reader,
 		&pythiaParameters
 		);
+	QCOMPARE(e, eNoError);
+
+	MsCalibratomatic msCalibratomatic;
+	e = setter.buildMsCalibratomatic(&msCalibratomatic);
 	QCOMPARE(e, eNoError);
 
 

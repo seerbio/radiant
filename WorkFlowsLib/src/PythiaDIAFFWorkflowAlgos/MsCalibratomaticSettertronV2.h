@@ -9,6 +9,7 @@
 
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "MsCalibratomatic.h"
 #include "MsReaderBase.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
@@ -33,6 +34,8 @@ public:
 		PythiaParameters *pythiaParameters
 		);
 
+	Err buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic);
+
 private:
 
 	Err buildMzTargetKeyVsTargetDecoyCandidatePairPntrs();
@@ -42,10 +45,11 @@ private:
 	QMap<ScanNumber, MsScanInfo> m_msScanInfos;
 	QVector<MsScanInfo*> m_msScanInfosPntrs;
 	QMap<MzTargetKey, TurboXIC*> m_mzTargetKeyVsTurboXICs;
-	QMap<MzTargetKey, QVector<TargetDecoyCandidatePair*>> m_mzTargetKeyVsTargetDecoyCandidatePairPntrs;
+	QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> m_mzTargetKeyVsTargetDecoyCandidatePairPntrs;
 	TargetDecoyCandidatePairManager *m_tdcpManager;
 	MsReaderPointerAcc *m_msReaderPointerAcc;
 	PythiaParameters *m_pythiaParameters;
+	MsCalibratomatic *m_msCalibratomatic;
 
 };
 

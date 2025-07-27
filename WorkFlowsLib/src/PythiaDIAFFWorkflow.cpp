@@ -1359,7 +1359,6 @@ void PythiaDIAFFWorkflow::filterDecoysOrNot(QVector<CandidateScores*> *candidate
 //     for (const SpectrumCentricParallelInput &inp : spectrumCentricParallelInputs) {
 //         QPair<Err, QVector<QPair<CandidateScores*, DeconvolvotronResult>>> res = spectrumCentricParallelLogic(inp); ree;
 //         e = res.first; ree;
-//         qDebug() << res.second.size() << "SDLFKDJSL";
 //     }
 // #endif
 //

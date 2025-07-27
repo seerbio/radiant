@@ -26,7 +26,7 @@ SET(SOURCE_FILES
 
 #        src/MsCalibrationReader.cpp
 #        src/CommandLineParserUtils.cpp
-#        src/CSVReader.cpp
+        src/CSVReader.cpp
 #        src/FastaReader.cpp
 #        src/FeatureFinderHillReader.cpp
         src/FragLibReader.cpp
@@ -54,7 +54,7 @@ SET(HEADER_FILES
 
 #        src/MsCalibrationReader.h
 #        src/CommandLineParserUtils.h
-#        src/CSVReader.h
+        src/CSVReader.h
 #        src/FastaReader.h
 #        src/FeatureFinderHillReader.h
         src/FragLibReader.h

@@ -36,7 +36,7 @@ SET(SOURCE_FILES
 #        src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
 #        src/Ms2IonFraggertronManager.cpp
-#        src/MsCalibratomatic.cpp
+        src/MsCalibratomatic.cpp
 #        src/MsFrame.cpp
         src/MsUtils.cpp
 #        src/PeakIntegratomatic.cpp
@@ -48,10 +48,11 @@ SET(SOURCE_FILES
         src/TargetDecoyCandidatePair.cpp
         src/TargetDecoyCandidatePairManager.cpp
 #        src/TargetDecoyCandidatePairScoretron.cpp
+        src/TargetDecoyCandidatePairScoretronV2.cpp
         src/TurboXIC.cpp
 #        src/TurboXIC2D.cpp
 #        src/XICPeakManager.cpp
-#        src/XYMappermatic.cpp
+        src/XYMappermatic.cpp
 )
 
 SET(HEADER_FILES
@@ -72,7 +73,7 @@ SET(HEADER_FILES
 #        src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
 #        src/Ms2IonFraggertronManager.h
-#        src/MsCalibratomatic.h
+        src/MsCalibratomatic.h
 #        src/MsFrame.h
         src/MsUtils.h
 #        src/PeakIntegratomatic.h
@@ -84,10 +85,11 @@ SET(HEADER_FILES
         src/TargetDecoyCandidatePair.h
         src/TargetDecoyCandidatePairManager.h
 #        src/TargetDecoyCandidatePairScoretron.h
+        src/TargetDecoyCandidatePairScoretronV2.h
         src/TurboXIC.h
 #        src/TurboXIC2D.h
 #        src/XICPeakManager.h
-#        src/XYMappermatic.h
+        src/XYMappermatic.h
 )
 
 SET(${PROJECT_NAME}_LIB_SOURCES
@@ -112,7 +114,7 @@ FIND_PACKAGE(Qt5 COMPONENTS
 INCLUDE_DIRECTORIES(
         DLL_LIB_INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-#        ${EIGEN_DIRECTORY}
+        ${EIGEN_DIRECTORY}
 #        ${NANOFLANN_DIRECTORY}
 #        ${SEQAN_INCLUDE_DIRS}
         )

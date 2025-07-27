@@ -392,7 +392,10 @@ namespace {
                 }
 
                 if (str.contains(spectrumElementName)) {
-                    e = processSpectrumKey(str, &msScanInfoLocal.scanNumber); rree;
+                    e = processSpectrumKey(
+                    	str,
+                    	&msScanInfoLocal.scanNumber
+                    	); rree;
                 }
                 else if (str.contains(MS_LEVEL)) {
                     QMap<QString, QString> attributes = parseAttributes(str);
@@ -932,6 +935,7 @@ Err MsReaderMzMLLazyLoad::openFile(const QString &filePath) {
     e = ErrorUtils::isNotEmpty(m_msScanInfo); ree;
     for (MsScanInfo &msi : m_msScanInfo) {
         const MzTargetKey mzTargetKey = msi.targetKey();
+    	msi.frameIndex = m_mzTargetVsScanInfosPntrs[mzTargetKey].size();
         m_mzTargetVsScanInfosPntrs[mzTargetKey].push_back(&msi);
 
     	if (msi.msLevel == 1) {

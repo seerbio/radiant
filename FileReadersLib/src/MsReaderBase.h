@@ -34,6 +34,7 @@ public:
 
     int msLevel = -1;
     ScanNumber scanNumber = -1;
+	FrameIndex frameIndex = -1;
     float scanTime = -1.0;
     float collisionEnergy = -1.0;
     float precursorTargetMz = -1.0;
@@ -221,7 +222,7 @@ public:
     * @return Returns true if m_msScanInfo is not empty, indicating that the MS Reader has been initialized.
     * If m_msScanInfo is empty, returns false.
     */
-    bool isInit();
+    bool isInit() const;
 
     /**
     * @brief Retrieves the minimum and maximum scan times from the currently opened file in the MS Reader.
@@ -522,6 +523,7 @@ public:
 
     [[nodiscard]] float mzMs2Min() const;
     [[nodiscard]] float mzMs2Max() const;
+    [[nodiscard]] int meanFrameScanCountMS2() const;
 
     // QMap<FrameNumberTIMS, Ms1FrameTIMS>* frameNumberVsMS1FrameTIMSPntr();
 
@@ -550,6 +552,10 @@ protected:
 	float m_intensityMs1Max;
 	float m_intensityMs2Min;
 	float m_intensityMs2Max;
+
+	int m_ms1ScanSize;
+	int m_ms2ScanSize;
+	int m_meanFrameScanCountMS2;
 
 };
 

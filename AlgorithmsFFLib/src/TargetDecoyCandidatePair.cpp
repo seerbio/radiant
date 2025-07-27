@@ -58,7 +58,7 @@ namespace {
         }
 
         constexpr float mzMin = 200.0;
-        constexpr float mzMax = 1500.0;
+        constexpr float mzMax = 1800.0;
         MS2Ion::filterMS2IonsByMz(
                 mzMin,
                 mzMax,
@@ -179,12 +179,15 @@ namespace {
 
 }//namespace
 QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy() const {
+	return ms2IonsDecoy(ms2IonsTarget());
+}
 
-    QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget());
-    if (m_decoySharesSequenceWithOtherTarget) {
-        mangleMs2IonsDecoy(&ms2IonsDec);
-    }
-    return ms2IonsDec;
+QVector<MS2Ion> TargetDecoyCandidatePair::ms2IonsDecoy(const QVector<MS2Ion> &ms2IonsTarget) const {
+	QVector<MS2Ion> ms2IonsDec = mutateCandidatePeptideTarget(peptideStringWithMods(), ms2IonsTarget);
+	if (m_decoySharesSequenceWithOtherTarget) {
+		mangleMs2IonsDecoy(&ms2IonsDec);
+	}
+	return ms2IonsDec;
 }
 
 float TargetDecoyCandidatePair::mz(bool isDecoy) const {

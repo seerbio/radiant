@@ -25,7 +25,7 @@ SET(TEST_CLASSES
 #        FeatureFinderHillTests
 #        IsotopicDistributionBuilderTests
 #        MS2IonTests
-#        MsCalibratomaticTests
+        MsCalibratomaticTests
 #        MsFrameTests
         MsUtilsTests
 #        PeakIntegratomaticTests
@@ -38,7 +38,7 @@ SET(TEST_CLASSES
         TurboXICTests
 #        TurboXIC2DTests
 #        XICPeakManagerTests
-#        XYMappermaticTests
+        XYMappermaticTests
 )
 
 foreach(class ${TEST_CLASSES})

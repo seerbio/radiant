@@ -65,6 +65,7 @@ public:
     * @return QVector<MS2Ion> representing the MS2 ions for the decoy.
     */
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy() const;
+    [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy(const QVector<MS2Ion> &ms2IonsTarget) const;
 
     /**
     * @brief Calculates and gets the m/z (mass-to-charge ratio) for the target-decoy candidate pair.
