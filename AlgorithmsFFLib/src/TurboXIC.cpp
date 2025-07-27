@@ -74,6 +74,7 @@ Err TurboXIC::init(const QVector<MsScan> &msScans) {
 			xicPoint.mz = s.mzVals[i];
 			xicPoint.intensity = s.intensityVals[i];
 			xicPoint.scanNumber = s.msScanInfoPntr->scanNumber;
+			xicPoint.frameIndex = s.msScanInfoPntr->frameIndex;
 			xicPoint.ionMobilityIndex = -1;
 			m_xicPoints.push_back(xicPoint);
 		}

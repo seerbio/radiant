@@ -305,19 +305,6 @@ namespace {
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
 
 
-			// QVector<int> frameIndexVsScanNumber;
-			// frameIndexVsScanNumber.reserve(xicPointsPntrs.size());
-			// for (const XICPoint *xicPoint : xicPointsPntrs) {
-			// 	if (!frameIndexVsScanNumber.isEmpty()) {
-			// 		if (frameIndexVsScanNumber.back() == xicPoint->scanNumber) {
-			// 			continue;
-			// 		}
-			// 	}
-			// 	frameIndexVsScanNumber.push_back(xicPoint->scanNumber);
-			// }
-
-
-
 		}
 
 

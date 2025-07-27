@@ -37,7 +37,10 @@ public:
 
 private:
 
-	Err scoreMS2Ions(const QVector<MS2Ion> &ms2Ions) const;
+	Err scoreMS2Ions(const QVector<MS2Ion> &ms2Ions);
+	Err loadMS2IonArrays(const QVector<MS2Ion> &ms2Ions);
+	void zeroOutArrays();
+	Err smoothMS2IonArrays();
 
 private:
 
@@ -50,8 +53,12 @@ private:
 	size_t m_xicSizeMaxAlignas;
 	int m_ms2IonsCount;
 
-	QVector<float*> m_xicsAlignas;
-	QVector<float*> m_xicsAlignasShadows;
+	QVector<float*> m_xicsAlignasIntensity;
+	QVector<float*> m_xicsAlignasIntensityShadows;
+	QVector<float*> m_xicsAlignasMz;
+	QVector<float*> m_xicsAlignasMzShadows;
+
+	int m_frameIndexTargetMax;
 
 };
 

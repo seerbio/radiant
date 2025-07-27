@@ -28,7 +28,7 @@ public:
 
     MsReaderMzMLLazyLoad();
 
-    ~MsReaderMzMLLazyLoad();
+    ~MsReaderMzMLLazyLoad() override;
 
     /**
     * @brief Opens an MzML file in MsReaderMzMLMapped::PrivateData.
