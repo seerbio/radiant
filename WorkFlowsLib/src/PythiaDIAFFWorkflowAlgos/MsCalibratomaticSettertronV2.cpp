@@ -18,11 +18,7 @@ MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
 , m_msCalibratomatic(nullptr)
 {}
 
-MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() {
-	for (const TurboXIC *turboXic : m_mzTargetKeyVsTurboXICs) {
-		delete turboXic;
-	}
-}
+MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() = default;
 
 namespace {
 
@@ -70,7 +66,7 @@ namespace {
 
 		ERR_INIT
 
-		QVector<MsScanInfo*> msScanInfosCopy = msScanInfos;
+		const QVector<MsScanInfo*> &msScanInfosCopy = msScanInfos;
 		QVector<MsScan> msScans;
 		e = MsReaderMzMLLazyLoad::extractScanPoints(
 			filePath,
@@ -89,46 +85,6 @@ namespace {
 		return {e, msScans.back().msScanInfoPntr->targetKey(), turboXIC};
 	}
 
-	Err buildTurboXICs(
-		const QString &filePath,
-		const QVector<MsScanInfo*> &msScanInfosPntrs,
-		QMap<MzTargetKey, TurboXIC*> *mzTargetKeyVsTurboXICs
-		) {
-
-		ERR_INIT
-
-		QElapsedTimer et;
-		et.start();
-
-		mzTargetKeyVsTurboXICs->clear();
-
-		QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetKeyVsMsScanInfos;
-		e = buildMzTargetKeyVsMsScanInfosTrunc(
-			msScanInfosPntrs,
-			&mzTargetKeyVsMsScanInfos
-			); ree;
-
-		const auto binderLogic = std::bind(
-			parallelLoadTurboXIC,
-			std::placeholders::_1,
-			filePath
-			);
-
-		QFuture<std::tuple<Err, MzTargetKey, TurboXIC*>> futures = QtConcurrent::mapped(
-			mzTargetKeyVsMsScanInfos,
-			binderLogic
-			);
-		futures.waitForFinished();
-
-		for (const std::tuple<Err, MzTargetKey, TurboXIC*> &tpl : futures) {
-			e = std::get<0>(tpl); ree;
-			mzTargetKeyVsTurboXICs->insert(std::get<1>(tpl), std::get<2>(tpl));
-		}
-		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished building calibration TurboXIC";
-
-		ERR_RETURN
-	}
-
 }//namespace
 Err MsCalibratomaticSettertronV2::init(
 	TargetDecoyCandidatePairManager *tdcpManager,
@@ -145,21 +101,6 @@ Err MsCalibratomaticSettertronV2::init(
 	m_tdcpManager = tdcpManager;
 	m_msReaderPointerAcc = msReaderPointerAcc;
 	m_pythiaParameters = pythiaParameters;
-
-	constexpr int msLevel = 2;
-	m_msScanInfos = msReaderPointerAcc->ptr->getMsScanInfos(msLevel);
-	e = ErrorUtils::isNotEmpty(m_msScanInfos); ree;
-
-	m_msScanInfosPntrs.reserve(m_msScanInfos.size());
-	for (MsScanInfo &msi : m_msScanInfos) {
-		m_msScanInfosPntrs.push_back(&msi);
-	}
-
-	e = buildTurboXICs(
-		msReaderPointerAcc->ptr->filePath(),
-		m_msScanInfosPntrs,
-		&m_mzTargetKeyVsTurboXICs
-		); ree;
 
 	e = buildMzTargetKeyVsTargetDecoyCandidatePairPntrs(); ree;
 
@@ -226,11 +167,24 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 
 	e = ErrorUtils::isTrue(m_tdcpManager->isInit()); ree;
 	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
-	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsTurboXICs); ree;
 
 	m_mzTargetKeyVsTargetDecoyCandidatePairPntrs.clear();
 
-	const QList<MzTargetKey> &mzTargetKeys = m_mzTargetKeyVsTurboXICs.keys();
+	constexpr int msLevel = 2;
+	m_msScanInfos = m_msReaderPointerAcc->ptr->getMsScanInfos(msLevel);
+	e = ErrorUtils::isNotEmpty(m_msScanInfos); ree;
+
+	m_msScanInfosPntrs.reserve(m_msScanInfos.size());
+	for (MsScanInfo &msi : m_msScanInfos) {
+		m_msScanInfosPntrs.push_back(&msi);
+	}
+
+	e = buildMzTargetKeyVsMsScanInfosTrunc(
+		m_msScanInfosPntrs,
+		&m_mzTargetKeyVsMsScanInfos
+		); ree;
+
+	const QList<MzTargetKey> &mzTargetKeys = m_mzTargetKeyVsMsScanInfos.keys();
 	QVector<MsScanInfo> uniqueMsScanInfosFiltered = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
 	filterUniqueScanInfosByMzTargetKey(mzTargetKeys, &uniqueMsScanInfosFiltered);
 
@@ -282,21 +236,20 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 namespace {
 
 	Err parallelProcessingLogic(
-		const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXICs,
+		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 		const PythiaParameters &pythiaParameters,
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
-		int meanFrameScanCountMS2
+		MsReaderPointerAcc *msReaderPointerAcc
 		) {
 
 		ERR_INIT
 
-
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
-			mzTargetKeyVsTurboXICs,
+			mzTargetKeyVsMsScanInfos,
 			pythiaParameters,
-			meanFrameScanCountMS2,
-			S_GLOBAL_SETTINGS.MIN_MS2_IONS
+			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
+			msReaderPointerAcc
 			); ree;
 
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
@@ -315,6 +268,10 @@ namespace {
 Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic) {
 	ERR_INIT
 
+	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsScanInfos); ree;
+	e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
+	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
+
 	m_msCalibratomatic = msCalibratomatic;
 
 	QVector<QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>>> mzTargetDecoyCandidatePairsPntrsTranched;
@@ -329,10 +286,10 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 #ifdef CALIBRATION_PARALLEL_TDCP
 	const auto binderLogic = std::bind(
 		parallelProcessingLogic,
-		m_mzTargetKeyVsTurboXICs,
+		m_mzTargetKeyVsMsScanInfos,
 		*m_pythiaParameters,
 		std::placeholders::_1,
-		m_msReaderPointerAcc->ptr->meanFrameScanCountMS2()
+		m_msReaderPointerAcc
 		);
 
 	QFuture<Err> futures = QtConcurrent::mapped(
@@ -343,10 +300,10 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
 		e = parallelProcessingLogic(
-			m_mzTargetKeyVsTurboXICs,
+			m_mzTargetKeyVsMsScanInfos,
 			*m_pythiaParameters,
 			pr,
-			m_msReaderPointerAcc->ptr->meanFrameScanCountMS2()
+			m_msReaderPointerAcc
 			); ree;
 	}
 #endif

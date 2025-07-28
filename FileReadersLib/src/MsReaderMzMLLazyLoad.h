@@ -87,11 +87,11 @@ public:
 		QVector<MsScan> *msScans
 		);
 
-	static Err extractScanPoints(
-		const QString &fileName,
-		QVector<MsScanInfo> *msScanInfos,
-		QVector<MsScan> *msScans
-		);
+	// static Err extractScanPoints(
+	// 	const QString &fileName,
+	// 	QVector<MsScanInfo> *msScanInfos,
+	// 	QVector<MsScan> *msScans
+	// 	);
 
 private:
 

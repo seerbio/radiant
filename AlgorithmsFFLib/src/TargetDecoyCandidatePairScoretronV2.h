@@ -9,6 +9,7 @@
 
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TurboXIC.h"
 
@@ -25,10 +26,10 @@ public:
 	~TargetDecoyCandidatePairScoretronV2();
 
 	Err init(
-		const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXICs,
+		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 		const PythiaParameters &pythiaParameters,
-		int meanFrameScanCountMS2,
-		int ms2IonsCount
+		int ms2IonsCount,
+		MsReaderPointerAcc *msReaderPointerAcc
 		);
 
 	Err scoreTargetDecoyCandidatePairPntr(
@@ -46,7 +47,8 @@ private:
 
 private:
 
-	QMap<MzTargetKey, TurboXIC*> m_mzTargetKeyVsTurboXICs;
+	MsReaderPointerAcc *m_msReaderPointerAcc;
+	QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetKeyVsMsScanInfos;
 	PythiaParameters m_pythiaParameters;
 
 	MzTargetKey m_mzTargetKeyCurrent;

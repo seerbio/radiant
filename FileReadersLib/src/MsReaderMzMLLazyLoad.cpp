@@ -866,48 +866,48 @@ Err MsReaderMzMLLazyLoad::extractScanPoints(
     ERR_RETURN
 }
 
-Err MsReaderMzMLLazyLoad::extractScanPoints(
-		const QString &fileName,
-		QVector<MsScanInfo> *msScanInfos,
-		QVector<MsScan> *msScans
-		) {
-	ERR_INIT
-
-	e = ErrorUtils::fileExists(fileName); ree;
-	e = ErrorUtils::isNotEmpty(*msScanInfos); ree;
-
-	QFile file(fileName);
-	qint64 fileSize;
-	uchar *ucharData;
-	e = memoryMapFile(file, &fileSize, &ucharData); ree;
-
-	const auto* data = reinterpret_cast<const char*>(ucharData);
-
-	for (MsScanInfo &msi : *msScanInfos) {
-		size_t start = msi.scanOffsetStart;
-		size_t end = msi.scanOffsetEnd;
-
-		FileChunk fileChunk;
-		fileChunk.data = data;
-		fileChunk.start = start;
-		fileChunk.end = end;
-		fileChunk.overlap = 0;
-
-		QPair<Err, QPair<MzVals, IntensityVals>> scanPointsResult = processChunkScanPoints(fileChunk);
-		e = scanPointsResult.first; ree;
-
-		MsScan msScan;
-		msScan.msScanInfoPntr = &msi;
-		msScan.mzVals = scanPointsResult.second.first;
-		msScan.intensityVals = scanPointsResult.second.second;
-
-		msScans->push_back(msScan);
-	}
-
-	file.close();
-
-	ERR_RETURN
-}
+// Err MsReaderMzMLLazyLoad::extractScanPoints(
+// 		const QString &fileName,
+// 		QVector<MsScanInfo> *msScanInfos,
+// 		QVector<MsScan> *msScans
+// 		) {
+// 	ERR_INIT
+//
+// 	e = ErrorUtils::fileExists(fileName); ree;
+// 	e = ErrorUtils::isNotEmpty(*msScanInfos); ree;
+//
+// 	QFile file(fileName);
+// 	qint64 fileSize;
+// 	uchar *ucharData;
+// 	e = memoryMapFile(file, &fileSize, &ucharData); ree;
+//
+// 	const auto* data = reinterpret_cast<const char*>(ucharData);
+//
+// 	for (MsScanInfo &msi : *msScanInfos) {
+// 		size_t start = msi.scanOffsetStart;
+// 		size_t end = msi.scanOffsetEnd;
+//
+// 		FileChunk fileChunk;
+// 		fileChunk.data = data;
+// 		fileChunk.start = start;
+// 		fileChunk.end = end;
+// 		fileChunk.overlap = 0;
+//
+// 		QPair<Err, QPair<MzVals, IntensityVals>> scanPointsResult = processChunkScanPoints(fileChunk);
+// 		e = scanPointsResult.first; ree;
+//
+// 		MsScan msScan;
+// 		msScan.msScanInfoPntr = &msi;
+// 		msScan.mzVals = scanPointsResult.second.first;
+// 		msScan.intensityVals = scanPointsResult.second.second;
+//
+// 		msScans->push_back(msScan);
+// 	}
+//
+// 	file.close();
+//
+// 	ERR_RETURN
+// }
 
 MsReaderMzMLLazyLoad::MsReaderMzMLLazyLoad() {
     m_d.reset(new PrivateData(&this->m_msScanInfo));

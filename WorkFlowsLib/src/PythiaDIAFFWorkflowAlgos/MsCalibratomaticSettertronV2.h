@@ -44,12 +44,12 @@ private:
 
 	QMap<ScanNumber, MsScanInfo> m_msScanInfos;
 	QVector<MsScanInfo*> m_msScanInfosPntrs;
-	QMap<MzTargetKey, TurboXIC*> m_mzTargetKeyVsTurboXICs;
 	QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> m_mzTargetKeyVsTargetDecoyCandidatePairPntrs;
 	TargetDecoyCandidatePairManager *m_tdcpManager;
 	MsReaderPointerAcc *m_msReaderPointerAcc;
 	PythiaParameters *m_pythiaParameters;
 	MsCalibratomatic *m_msCalibratomatic;
+	QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetKeyVsMsScanInfos;
 
 };
 

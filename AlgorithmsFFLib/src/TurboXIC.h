@@ -84,9 +84,10 @@ public:
     * @param mzMax The maximum m/z value for the extraction.
     * @return XICPoints containing the extracted XIC points.
     */
-    [[nodiscard]] XICPointsPntrs extractPointsXIC(
+    [[nodiscard]] Err extractPointsXIC(
             float mzMin,
-            float mzMax
+            float mzMax,
+            XICPointsPntrs *xicPointsPntrs
             );
 
     /**

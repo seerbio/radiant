@@ -152,7 +152,13 @@ Err TurboXIC::init(const QString &filePath) {
 	ERR_RETURN
 }
 
-XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
+Err TurboXIC::extractPointsXIC(
+	float mzMin,
+	float mzMax,
+	XICPointsPntrs *xicPointsPntrs
+	) {
+
+	ERR_INIT
 
 	XICPointsPntrs results;
 
@@ -174,11 +180,20 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 		}
 	}
 
+	if (left >= m_alignasPiecesOfEight - AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+		ERR_RETURN
+	}
+
 	for (
 		size_t i = m_indexesI[left];
 		i + AVXUtils::AVX2_FLOAT_REGISTER_SIZE <= m_scanPointsCountAlignas;
 		i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE
 		) {
+
+		e = ErrorUtils::isTrue(
+			i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE == 0,
+			eValueError
+			); ree;
 
 		__m256 mz_v = _mm256_load_ps(&m_mzVals[i]);
 
@@ -204,7 +219,9 @@ XICPointsPntrs TurboXIC::extractPointsXIC(float mzMin, float mzMax) {
 		}
 	}
 
-	return results;
+	*xicPointsPntrs = results;
+
+	ERR_RETURN
 }
 
 bool TurboXIC::isInit() const {

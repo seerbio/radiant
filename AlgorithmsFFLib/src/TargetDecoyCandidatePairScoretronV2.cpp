@@ -8,18 +8,20 @@
 #include "EigenUtils.h"
 #include "EigenKernelUtils.h"
 #include "MS2Ion.h"
+#include "MsReaderMzMLLazyLoad.h"
 #include "TargetDecoyCandidatePair.h"
 
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
-: m_mzTargetKeyCurrent("null")
+: m_msReaderPointerAcc(nullptr)
+, m_mzTargetKeyCurrent("null")
 , m_turboXICCurrent(nullptr)
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
-, m_frameIndexTargetMax(-1)
 , m_intensityVec(nullptr)
 , m_ionCountVec(nullptr)
 , m_integrationVecCosineSim(nullptr)
 , m_productVec(nullptr)
+, m_frameIndexTargetMax(-1)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -43,25 +45,28 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_ionCountVec;
 	delete m_integrationVecCosineSim;
 	delete m_productVec;
+
+	delete m_turboXICCurrent;
 }
 
 Err TargetDecoyCandidatePairScoretronV2::init(
-	const QMap<MzTargetKey, TurboXIC*> &mzTargetKeyVsTurboXICs,
+	const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 	const PythiaParameters &pythiaParameters,
-	int meanFrameScanCountMS2,
-	int ms2IonsCount
+	int ms2IonsCount,
+	MsReaderPointerAcc *msReaderPointerAcc
 	) {
 	ERR_INIT
 
-	e = ErrorUtils::isNotEmpty(mzTargetKeyVsTurboXICs); ree;
+	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsScanInfos); ree;
+	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
-	e = ErrorUtils::isGreaterThanZero(meanFrameScanCountMS2); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
 
-	m_mzTargetKeyVsTurboXICs = mzTargetKeyVsTurboXICs;
+	m_msReaderPointerAcc = msReaderPointerAcc;
+	m_mzTargetKeyVsMsScanInfos = mzTargetKeyVsMsScanInfos;
 	m_pythiaParameters = pythiaParameters;
 	m_xicSizeMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		meanFrameScanCountMS2,
+		m_msReaderPointerAcc->ptr->meanFrameScanCountMS2(),
 		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
 	m_ms2IonsCount = ms2IonsCount;
@@ -148,12 +153,33 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	) {
 
 	ERR_INIT
+	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
 
 	const MzTargetKey &mzTargetKey = mzTargetKeyVsTdcpPntr.first;
 	if (mzTargetKey != m_mzTargetKeyCurrent) {
-		m_turboXICCurrent = m_mzTargetKeyVsTurboXICs.value(mzTargetKey);
+
+		delete m_turboXICCurrent;
+
+		const QVector<MsScanInfo*> &msScanInfosCopy = m_mzTargetKeyVsMsScanInfos.value(mzTargetKey);
+		QVector<MsScan> msScans;
+		e = MsReaderMzMLLazyLoad::extractScanPoints(
+			m_msReaderPointerAcc->ptr->filePath(),
+			msScanInfosCopy,
+			&msScans
+			); rtee;
+
+		e = ErrorUtils::isTrue(
+			msScans.front().msScanInfoPntr->targetKey() ==
+			msScans.back().msScanInfoPntr->targetKey()
+			); rtee;
+
+		auto *turboXIC = new TurboXIC();
+		e = turboXIC->init(msScans); rtee;
+		m_turboXICCurrent = turboXIC;
+
 		e = ErrorUtils::isTrue(m_turboXICCurrent->isInit()); ree;
 		m_mzTargetKeyCurrent = mzTargetKey;
+
 	}
 
 	TargetDecoyCandidatePair *tdcpPntr = mzTargetKeyVsTdcpPntr.second;
@@ -209,10 +235,12 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		const float mzMin = ms2Ion.mz - mzTol;
 		const float mzMax = ms2Ion.mz + mzTol;
-		const XICPointsPntrs xicPointsPntrs = m_turboXICCurrent->extractPointsXIC(
+		XICPointsPntrs xicPointsPntrs;
+		e = m_turboXICCurrent->extractPointsXIC(
 			mzMin,
-			mzMax
-			);
+			mzMax,
+			&xicPointsPntrs
+			); ree;
 
 		const auto isotopeDistanceThomsons = static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF / ms2Ion.charge);
 		const float mzShadow = ms2Ion.mz - isotopeDistanceThomsons;
@@ -223,10 +251,12 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		const float mzShadowMin = mzShadow - mzShadowTol;
 		const float mzShadowMax = mzShadow + mzShadowTol;
-		const XICPointsPntrs xicPointsPntrsShadows = m_turboXICCurrent->extractPointsXIC(
+		XICPointsPntrs xicPointsPntrsShadows;
+		e = m_turboXICCurrent->extractPointsXIC(
 			mzShadowMin,
-			mzShadowMax
-			);
+			mzShadowMax,
+			&xicPointsPntrsShadows
+			); ree;
 
 		float* arrIntensity = m_xicsAlignasIntensity[arrayIndex];
 		float* arrMz = m_xicsAlignasMz[arrayIndex];
