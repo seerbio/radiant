@@ -4,6 +4,8 @@
 
 #include "AVXUtils.h"
 
+#include "GlobalSettings.h"
+
 
 Err AVXUtils::copyAVXFloatToAligned(float *src, float *dst, size_t size) {
 
@@ -162,6 +164,34 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 		v5[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
 		v6[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
 		v7[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
+	}
+
+	ERR_RETURN
+}
+
+Err AVXUtils::subtractArraysAVX2(
+	float *source,
+	const float *subtractor,
+	size_t size
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isTrue(isNByteAligned(source, AVX2_ALIGNAS_SIZE)); ree;
+	e = ErrorUtils::isTrue(isNByteAligned(subtractor, AVX2_ALIGNAS_SIZE)); ree;
+
+	const size_t avx2Iterations = size / AVX2_FLOAT_REGISTER_SIZE;
+
+	for (size_t i = 0; i < avx2Iterations * AVX2_FLOAT_REGISTER_SIZE; i += AVX2_FLOAT_REGISTER_SIZE) {
+		const __m256 a = _mm256_load_ps(source + i);
+		const __m256 b = _mm256_load_ps(subtractor + i);
+		const __m256 resultVector = _mm256_sub_ps(a, b);
+
+		_mm256_store_ps(source + i, resultVector);
+	}
+
+	for (size_t i = avx2Iterations * AVX2_FLOAT_REGISTER_SIZE; i < size; ++i) {
+		source[i] = source[i] - subtractor[i];
 	}
 
 	ERR_RETURN

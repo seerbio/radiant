@@ -88,9 +88,13 @@ Err TurboXIC::init(const QVector<MsScan> &msScans) {
 	int indexCounter = 0;
 	for (int i = 0; i <  m_xicPoints.size(); i++) {
 		m_mzVals[i] = m_xicPoints[i].mz;
-		if (i % 8 == 0) {
+		if (i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE == 0) {
 			m_indexesMz[indexCounter] = m_xicPoints[i].mz;
 			m_indexesI[indexCounter++] = i;
+
+			if (i % AVXUtils::AVX2_FLOAT_REGISTER_SIZE != 0) {
+				std::cout << i << " SDJFLDSJDLSJD" << std::endl;
+			}
 		}
 	}
 

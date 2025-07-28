@@ -342,7 +342,12 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 	futures.waitForFinished();
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
-		e = parallelProcessingLogic(m_mzTargetKeyVsTurboXICs, *m_pythiaParameters, pr); ree;
+		e = parallelProcessingLogic(
+			m_mzTargetKeyVsTurboXICs,
+			*m_pythiaParameters,
+			pr,
+			m_msReaderPointerAcc->ptr->meanFrameScanCountMS2()
+			); ree;
 	}
 #endif
 

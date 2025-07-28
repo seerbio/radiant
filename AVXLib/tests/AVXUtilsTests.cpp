@@ -19,6 +19,8 @@ private slots:
 	static void printAVXMaskTest();
 	static void convolveWithKernelAVXFloatTest();
 	static void splitAVXUInt16to32Test();
+	static void subtractArraysAVX2Test();
+	static void isNByteAlignedTest();
 
 };
 
@@ -156,6 +158,36 @@ void AVXUtilsTests::splitAVXUInt16to32Test() {
 
 }
 
+void AVXUtilsTests::subtractArraysAVX2Test() {
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float arr1[16];
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float arr2[16];
+	for (int i = 0; i < 16; i++) {
+		arr1[i] = static_cast<float>(i);
+		arr2[i] = static_cast<float>(i);
+	}
+	AVXUtils::subtractArraysAVX2(arr1, arr2, 16);
+
+	for (int i = 0; i < 16; i++) {
+		QVERIFY(MathUtils::tZero(arr1[i]));
+	}
+
+}
+
+void AVXUtilsTests::isNByteAlignedTest() {
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float unaligned[16];
+	float* unalignedPtr = reinterpret_cast<float*>(
+		reinterpret_cast<uint8_t*>(unaligned) + 4
+	);
+	const bool isAligned = AVXUtils::isNByteAligned(unalignedPtr, AVXUtils::AVX2_ALIGNAS_SIZE);
+	QCOMPARE(isAligned, false);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float aligned[16];
+	const bool isAligned2 = AVXUtils::isNByteAligned(aligned, AVXUtils::AVX2_ALIGNAS_SIZE);
+	QCOMPARE(isAligned2, true);
+
+}
 
 QTEST_MAIN(AVXUtilsTests)
 

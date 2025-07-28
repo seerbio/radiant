@@ -377,18 +377,18 @@ Err ParquetReader::Private::writeDataToParquet(
 
 namespace {
 
-    std::map<std::string, int> buildSchemaMap(const std::shared_ptr<arrow::Schema> &schema) {
+    std::vector<std::pair<std::string, int>> buildSchemaMap(const std::shared_ptr<arrow::Schema> &schema) {
 
         std::string schemaColumns = schema->ToString();
         const std::vector<std::string> schemaColumnsSplit = schema->field_names();
 
-        std::map<std::string, int> schemaMap;
+        std::vector<std::pair<std::string, int>> schemaMap;
 
 //        qDebug() << "PARQUET SCHEMA";
 //        qDebug() << QString::fromStdString(schemaColumns);
         for (int i = 0; i < schemaColumnsSplit.size(); i++) {
 //            qDebug() << QString::fromStdString(schemaColumnsSplit.at(i));
-            schemaMap.emplace(schemaColumnsSplit.at(i), i);
+            schemaMap.emplace_back(schemaColumnsSplit.at(i), i);
         }
 
         return schemaMap;
@@ -495,70 +495,147 @@ namespace {
         return readColumnLogic(colChunks, outputVec);
     }
 
+	QPair<Err, QVector<QPair<QString, QVector<QVariant>>>> extractColumnsParallelLogic(
+		const std::pair<std::string, int> &it,
+		const std::shared_ptr<arrow::Table> &table,
+		const std::shared_ptr<arrow::Schema> &schema
+		) {
+
+		ERR_INIT
+    	bool columnChecker = true;
+
+    	const QString colName = QString::fromStdString(it.first);
+    	const int colIndex = it.second;
+
+    	QVector<QPair<QString, QVector<QVariant>>> columnsMap;
+    	QVector<QVariant> columnValsVec;
+    	columnChecker = readColumn(
+				table,
+				schema,
+				colIndex,
+				&columnValsVec
+		);
+    	if (!columnChecker) {
+    		return {eError, {}};
+    	}
+
+    	columnsMap.push_back({colName, columnValsVec});
+
+		return {e, columnsMap};
+    }
+
     Err extractColumns(
             const std::shared_ptr<arrow::Table> &table,
-            QMap<QString, QVector<QVariant>> *columnsMap
+            QVector<QPair<QString, QVector<QVariant>>> *columnsVec
             ) {
 
         ERR_INIT
 
         const std::shared_ptr<arrow::Schema> schema = table->schema();
-        const std::map<std::string, int> schemaMap = buildSchemaMap(schema);
+        std::vector<std::pair<std::string, int>> schemaMap = buildSchemaMap(schema);
 
-        bool columnChecker = true;
-        for (auto it = schemaMap.begin(); it != schemaMap.end(); it++) {
+#define COLUMNS_EXTRACT_PARALLEL
+#ifdef COLUMNS_EXTRACT_PARALLEL
+    	const auto loadLogicBinder = std::bind(
+			extractColumnsParallelLogic,
+			std::placeholders::_1,
+			table,
+			schema
+			);
 
-                const QString colName = QString::fromStdString(it->first);
-                const int colIndex = it->second;
+    	QFuture<QPair<Err, QVector<QPair<QString, QVector<QVariant>>>>> future = QtConcurrent::mapped(
+    		schemaMap,
+    		loadLogicBinder
+    		);
+    	future.waitForFinished();
 
-                QVector<QVariant> columnValsVec;
-                columnChecker = readColumn(
-                        table,
-                        schema,
-                        colIndex,
-                        &columnValsVec
-                );
-                if (!columnChecker) {
-                    rrr(eError);
-                }
+    	for (const QPair<Err, QVector<QPair<QString, QVector<QVariant>>>> &pr : future) {
+    		e = pr.first; ree;
 
-                columnsMap->insert(colName, columnValsVec);
+    		const QVector<QPair<QString, QVector<QVariant>>> &res = pr.second;
+    		for (const QPair<QString, QVector<QVariant>> &r: res) {
+    			columnsVec->push_back(r);
+    		}
+    	}
+#else
+        for (const std::pair<std::string, int> &it : schemaMap) {
+
+        	 const QPair<Err, QVector<QPair<QString, QVector<QVariant>>>> pr = extractColumnsParallelLogic(
+        	 	it,
+        	 	table,
+	            schema
+        	 	);
+
+        	e = pr.first; ree;
+
+        	const QVector<QPair<QString, QVector<QVariant>>> &res = pr.second;
+        	for (const QPair<QString, QVector<QVariant>> &r: res) {
+        		columnsVec->push_back(r);
+        	}
         }
+#endif
 
         ERR_RETURN
     }
 
+	ParquetReaderInputBase columnsMapToRowsMapLogic(
+		int index,
+		const QVector<QPair<QString, QVector<QVariant>>> &columnsMap
+		) {
+
+    	QMap<QString, QVariant> rowMap;
+
+    	for (const QPair<QString, QVector<QVariant>> &v : columnsMap) {
+
+    		const QString &colName = v.first;
+    		const QVector<QVariant> &var = v.second;
+
+    		rowMap.insert(colName, var.at(index));
+    	}
+
+    	ParquetReaderInputBase prib;
+    	prib.setDataMap(rowMap);
+
+    	return prib;
+    }
+
     Err columnsMapToRowsMap(
-            const QMap<QString, QVector<QVariant>> &columnsMap,
+            const QVector<QPair<QString, QVector<QVariant>>> &columnsMap,
             QVector<ParquetReaderInputBase> *rowsRead
             ) {
 
         ERR_INIT
 
-        const int colSize = columnsMap.first().size();
+        const int colSize = columnsMap.front().second.size();
 
-        for (const QVector<QVariant> &v : columnsMap) {
-            e = ErrorUtils::isEqual(v.size(), colSize);
+        for (const QPair<QString, QVector<QVariant>> &v : columnsMap) {
+            e = ErrorUtils::isEqual(v.second.size(), colSize);
         }
 
+#define COLUMNS_TO_ROWS_PARALLEL
+#ifdef COLUMNS_TO_ROWS_PARALLEL
+    	const auto loadLogicBinder = std::bind(
+			columnsMapToRowsMapLogic,
+			std::placeholders::_1,
+			columnsMap
+			);
+
+    	QVector<int> colsIndex(colSize);
+    	std::iota(colsIndex.begin(), colsIndex.end(), 0);
+    	QFuture<ParquetReaderInputBase> futures = QtConcurrent::mapped(
+    		colsIndex,
+    		loadLogicBinder
+    		);
+    	futures.waitForFinished();
+
+    	for (const ParquetReaderInputBase &prib: futures) {
+    		rowsRead->push_back(prib);
+    	}
+#else
         for (int i = 0; i < colSize; i++) {
-
-            QMap<QString, QVariant> rowMap;
-
-            for (auto it = columnsMap.begin(); it != columnsMap.end(); it++) {
-
-                const QString &colName = it.key();
-                const QVector<QVariant> &var = it.value();
-
-                rowMap.insert(colName, var.at(i));
-            }
-
-            ParquetReaderInputBase prib;
-            prib.setDataMap(rowMap);
-
-            rowsRead->push_back(prib);
+        	rowsRead->push_back(columnsMapToRowsMapLogic(i, columnsMap));
         }
-
+#endif
         ERR_RETURN
     }
 
@@ -583,6 +660,7 @@ Err ParquetReader::Private::readDataFromParquet(
         return Error::eFileError;
     }
     const std::unique_ptr<parquet::arrow::FileReader> arrowReader = std::move(result).ValueOrDie();
+	arrowReader->set_use_threads(true);
 
     std::shared_ptr<arrow::Table> table;
     st = arrowReader->ReadTable(&table);
@@ -590,14 +668,14 @@ Err ParquetReader::Private::readDataFromParquet(
         return Error::eError;
     }
 
-    QMap<QString, QVector<QVariant>> columnsMap;
+    QVector<QPair<QString, QVector<QVariant>>> columnsVec;
     e = extractColumns(
             table,
-            &columnsMap
+            &columnsVec
             ); ree;
 
     e = columnsMapToRowsMap(
-            columnsMap,
+            columnsVec,
             rowsRead
             ); ree;
 
@@ -614,7 +692,7 @@ namespace {
         ERR_INIT
 
         const std::shared_ptr<arrow::Schema> schema = recordBatch->schema();
-        const std::map<std::string, int> schemaMap = buildSchemaMap(schema);
+        std::vector<std::pair<std::string, int>> schemaMap = buildSchemaMap(schema);
 
         bool columnChecker = true;
         for (auto it = schemaMap.begin(); it != schemaMap.end(); it++) {
@@ -885,12 +963,12 @@ arrow::Status ParquetReader::Private::readDataFromParquetUniqueByColumn(
 
 ParquetReader::ParquetReader() : d_ptr(QScopedPointer<Private>(new Private())) {}
 
-ParquetReader::~ParquetReader() {}
+ParquetReader::~ParquetReader() = default;
 
 Err ParquetReader::writeDataToParquet(
         const QString &outputFilePath,
         const QVector<QSharedPointer<ParquetReaderInputBase>> &rowsToWrite
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -905,7 +983,7 @@ Err ParquetReader::writeDataToParquet(
 Err ParquetReader::readDataFromParquet(
         const QString &parquetFilePath,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 
@@ -922,7 +1000,7 @@ Err ParquetReader::readDataFromParquet(
         const QString &columnToFilterBy,
         const QPair<double, double> &filterRange,
         QVector<ParquetReaderInputBase> *rowsRead
-        ) {
+        ) const {
 
     ERR_INIT
 

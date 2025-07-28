@@ -39,8 +39,10 @@ private:
 
 	Err scoreMS2Ions(const QVector<MS2Ion> &ms2Ions);
 	Err loadMS2IonArrays(const QVector<MS2Ion> &ms2Ions);
+	Err subtractShadowsArrays();
 	void zeroOutArrays();
 	Err smoothMS2IonArrays();
+	Err buildLocationVectors();
 
 private:
 
@@ -58,7 +60,14 @@ private:
 	QVector<float*> m_xicsAlignasMz;
 	QVector<float*> m_xicsAlignasMzShadows;
 
+	float* m_intensityVec;
+	float* m_ionCountVec;
+	float* m_integrationVecCosineSim;
+	float* m_productVec;
+
 	int m_frameIndexTargetMax;
+
+	QVector<float> m_savitzkyGolayKernel;
 
 };
 

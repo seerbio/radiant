@@ -74,11 +74,24 @@ public:
 		float* v7
 		);
 
+	static Err subtractArraysAVX2(
+		float* array1,
+		const float* array2,
+		size_t size
+		);
+
 	static Err splitAVXUInt16to32(
 		__m256i intShort,
 		__m256i *int32Output1,
 		__m256i *int32Output2
 		);
+
+	static bool isNByteAligned(
+		const void* ptr,
+		size_t byteSize
+		) {
+		return reinterpret_cast<uintptr_t>(ptr) % byteSize == 0;
+	}
 
 
 };

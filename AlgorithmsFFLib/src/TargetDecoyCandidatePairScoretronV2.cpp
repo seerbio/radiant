@@ -5,6 +5,8 @@
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
 #include "AVXUtils.h"
+#include "EigenUtils.h"
+#include "EigenKernelUtils.h"
 #include "MS2Ion.h"
 #include "TargetDecoyCandidatePair.h"
 
@@ -14,6 +16,10 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
 , m_frameIndexTargetMax(-1)
+, m_intensityVec(nullptr)
+, m_ionCountVec(nullptr)
+, m_integrationVecCosineSim(nullptr)
+, m_productVec(nullptr)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -32,6 +38,11 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	for (float* v : m_xicsAlignasMzShadows) {
 		delete v;
 	}
+
+	delete m_intensityVec;
+	delete m_ionCountVec;
+	delete m_integrationVecCosineSim;
+	delete m_productVec;
 }
 
 Err TargetDecoyCandidatePairScoretronV2::init(
@@ -51,7 +62,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	m_pythiaParameters = pythiaParameters;
 	m_xicSizeMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
 		meanFrameScanCountMS2,
-		S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS
+		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
 	m_ms2IonsCount = ms2IonsCount;
 
@@ -62,29 +73,67 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	for (int i = 0; i < m_ms2IonsCount; i++) {
 
 		auto* alignedIntensityVals = static_cast<float*>(std::aligned_alloc(
-			S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS,
+			AVXUtils::AVX2_ALIGNAS_SIZE,
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasIntensity[i] = alignedIntensityVals;
 
 		auto* alignedMzVals = static_cast<float*>(std::aligned_alloc(
-			S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS,
+			AVXUtils::AVX2_ALIGNAS_SIZE,
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasMz[i] = alignedMzVals;
 
 		auto* alignedIntensityValsShadows = static_cast<float*>(std::aligned_alloc(
-			S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS,
+			AVXUtils::AVX2_ALIGNAS_SIZE,
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasIntensityShadows[i] = alignedIntensityValsShadows;
 
 		auto* alignedMzValsShadows = static_cast<float*>(std::aligned_alloc(
-			S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS,
+			AVXUtils::AVX2_ALIGNAS_SIZE,
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasMzShadows[i] = alignedMzValsShadows;
 	}
+
+	auto* alignedIntensityVec = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_intensityVec = alignedIntensityVec;
+
+	auto* alignedIonCountVec = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_ionCountVec = alignedIonCountVec;
+
+	auto* alignedIntegrationVecCosineSim = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_integrationVecCosineSim = alignedIntegrationVecCosineSim;
+
+	auto* alignedProductVec = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_productVec = alignedProductVec;
+
+	constexpr int order = 1;
+	constexpr int derivative = 0;
+	constexpr int rate = 1;
+	Eigen::MatrixX<float> kernel;
+	e = EigenKernelUtils::buildSavitzkyGolayKernel(
+		m_pythiaParameters.filterLengthMS2,
+		order,
+		derivative,
+		rate,
+		&kernel
+		); ree;
+	const Eigen::VectorX<float> kernelVec(kernel);
+	m_savitzkyGolayKernel = EigenUtils::convertEigenVectorToQVector(kernelVec);
 
 	ERR_RETURN
 }
@@ -126,6 +175,17 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 	ERR_INIT
 
 	e = loadMS2IonArrays(ms2Ions); ree;
+
+	if (m_frameIndexTargetMax < 0) {
+		//TODO figure out what to return here. Most likely blank candidate score
+		ERR_RETURN
+	}
+
+	if (m_pythiaParameters.subtractShadows) {
+		e = subtractShadowsArrays(); ree;
+	}
+
+	e = smoothMS2IonArrays(); ree;
 
 
 
@@ -202,6 +262,25 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		arrayIndex++;
 	}
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
+
+	ERR_INIT
+
+	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
+		m_frameIndexTargetMax,
+		AVXUtils::AVX2_ALIGNAS_SIZE
+		);
+
+	for (int i = 0; i < m_ms2IonsCount; i++) {
+		e = AVXUtils::subtractArraysAVX2(
+			m_xicsAlignasIntensity[i],
+			m_xicsAlignasIntensityShadows[i],
+			xicSizeTargetMaxAlignas
+			); ree;
+	}
 
 	ERR_RETURN
 }
@@ -223,18 +302,61 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 	for (float *f : m_xicsAlignasMzShadows) {
 		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
 	}
+
+	std::memset(m_intensityVec, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_ionCountVec, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_integrationVecCosineSim, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_productVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 }
 
 Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 
 	ERR_INIT
 
-	e = ErrorUtils::isGreaterThanZero(m_frameIndexTargetMax);
+	e = ErrorUtils::isGreaterThanZero(m_frameIndexTargetMax); ree;
+	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
-	int m_xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
+	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
 		m_frameIndexTargetMax,
-		S_GLOBAL_SETTINGS.AVX2_BYTE_SIZE_ALIGNAS
+		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
+
+	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
+
+		e = AVXUtils::convolveWithKernelAVXFloat(
+			m_savitzkyGolayKernel,
+			xicSizeTargetMaxAlignas,
+			m_xicsAlignasIntensity[0],
+			m_xicsAlignasIntensity[1],
+			m_xicsAlignasIntensity[2],
+			m_xicsAlignasIntensity[3],
+			m_xicsAlignasIntensity[4],
+			m_xicsAlignasIntensity[5],
+			m_xicsAlignasIntensity[6],
+			m_xicsAlignasIntensity[7]
+			); ree;
+
+		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
+			e = AVXUtils::convolveWithKernelAVXFloat(
+					m_savitzkyGolayKernel,
+					xicSizeTargetMaxAlignas,
+					m_xicsAlignasIntensity[8],
+					m_xicsAlignasIntensity[9],
+					m_xicsAlignasIntensity[10],
+					m_xicsAlignasIntensity[11],
+					m_xicsAlignasIntensity[12],
+					m_xicsAlignasIntensity[13],
+					m_xicsAlignasIntensity[14],
+					m_xicsAlignasIntensity[15]
+					); ree;
+		}
+	}
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors() {
+	ERR_INIT
 
 
 	ERR_RETURN

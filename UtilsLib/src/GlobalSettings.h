@@ -165,7 +165,7 @@ public:
 
     const int MIN_MS2_IONS = 8;
     const int MAX_MS2_IONS = 16;
-	const size_t AVX2_BYTE_SIZE_ALIGNAS = 32;
+
 
     const QString MS1Key = QStringLiteral("-1000");
 
