@@ -77,7 +77,8 @@ public:
 	static Err subtractArraysAVX2(
 		float* array1,
 		const float* array2,
-		size_t size
+		size_t size,
+		bool zeroNegatives
 		);
 
 	static Err splitAVXUInt16to32(
@@ -91,6 +92,28 @@ public:
 		size_t byteSize
 		) {
 		return reinterpret_cast<uintptr_t>(ptr) % byteSize == 0;
+	}
+
+	static void replaceArrayValuesAVXGreaterThan(
+		float threshold,
+		float relacementValue,
+		__m256 &arr
+		) {
+		const __m256 thresholds = _mm256_set1_ps(threshold);
+		const __m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_GT_OQ);
+		const __m256 replaceVals = _mm256_set1_ps(relacementValue);
+		arr = _mm256_and_ps(mask, replaceVals);
+	}
+
+	static void replaceArrayValuesAVXLessThan(
+		float threshold,
+		float relacementValue,
+		__m256 &arr
+		) {
+		const __m256 thresholds = _mm256_set1_ps(threshold);
+		const __m256 replaceVals = _mm256_set1_ps(relacementValue);
+		__m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_LT_OQ);
+		arr = _mm256_blendv_ps(arr, replaceVals, mask);
 	}
 
 

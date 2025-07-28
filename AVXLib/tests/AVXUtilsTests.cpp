@@ -21,9 +21,9 @@ private slots:
 	static void splitAVXUInt16to32Test();
 	static void subtractArraysAVX2Test();
 	static void isNByteAlignedTest();
+	static void replaceArrayValuesAVXTest();
 
 };
-
 
 void AVXUtilsTests::copyAVXTest() {
 
@@ -187,6 +187,21 @@ void AVXUtilsTests::isNByteAlignedTest() {
 	const bool isAligned2 = AVXUtils::isNByteAligned(aligned, AVXUtils::AVX2_ALIGNAS_SIZE);
 	QCOMPARE(isAligned2, true);
 
+}
+
+void AVXUtilsTests::replaceArrayValuesAVXTest() {
+
+	alignas(32) float arr1[8] = {0, 100, 200, 0, 0, 100, 200, 0};
+	__m256 values = _mm256_load_ps(arr1);
+
+	AVXUtils::replaceArrayValuesAVXGreaterThan(0.1, 1.0, values);
+
+	_mm256_store_ps(arr1, values);
+
+	alignas(32) float expectedResult[8] = {0, 1, 1, 0, 0, 1, 1, 0};
+	for (int i = 0; i < 8; i++) {
+		QCOMPARE(static_cast<int>(arr1[i]), static_cast<int>(expectedResult[i]));
+	}
 }
 
 QTEST_MAIN(AVXUtilsTests)

@@ -172,7 +172,8 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 Err AVXUtils::subtractArraysAVX2(
 	float *source,
 	const float *subtractor,
-	size_t size
+	size_t size,
+	bool zeroNegatives
 	) {
 
 	ERR_INIT
@@ -185,13 +186,21 @@ Err AVXUtils::subtractArraysAVX2(
 	for (size_t i = 0; i < avx2Iterations * AVX2_FLOAT_REGISTER_SIZE; i += AVX2_FLOAT_REGISTER_SIZE) {
 		const __m256 a = _mm256_load_ps(source + i);
 		const __m256 b = _mm256_load_ps(subtractor + i);
-		const __m256 resultVector = _mm256_sub_ps(a, b);
+		__m256 resultVector = _mm256_sub_ps(a, b);
+
+		if (zeroNegatives) {
+			constexpr float thresholdValue = 0.0;
+			constexpr float replaceValue = 0.0;
+			replaceArrayValuesAVXLessThan(thresholdValue, replaceValue, resultVector);
+		}
 
 		_mm256_store_ps(source + i, resultVector);
 	}
 
 	for (size_t i = avx2Iterations * AVX2_FLOAT_REGISTER_SIZE; i < size; ++i) {
-		source[i] = source[i] - subtractor[i];
+		source[i] = zeroNegatives
+				  ? std::max(source[i] - subtractor[i], 0.0f)
+				  : source[i] + subtractor[i];
 	}
 
 	ERR_RETURN

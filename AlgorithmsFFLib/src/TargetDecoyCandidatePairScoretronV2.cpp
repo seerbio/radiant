@@ -220,8 +220,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 	}
 
 	e = smoothMS2IonArrays(); ree;
-
-
+	e = buildLocationVectors(); ree;
 
 	ERR_RETURN
 }
@@ -313,10 +312,12 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 		);
 
 	for (int i = 0; i < m_ms2IonsCount; i++) {
+		constexpr bool zeroNegatives = true;
 		e = AVXUtils::subtractArraysAVX2(
 			m_xicsAlignasIntensity[i],
 			m_xicsAlignasIntensityShadows[i],
-			xicSizeTargetMaxAlignas
+			xicSizeTargetMaxAlignas,
+			zeroNegatives
 			); ree;
 	}
 
@@ -360,7 +361,6 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 		);
 
 	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
-
 		e = AVXUtils::convolveWithKernelAVXFloat(
 			m_savitzkyGolayKernel,
 			xicSizeTargetMaxAlignas,
@@ -394,7 +394,99 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 }
 
 Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors() {
+
 	ERR_INIT
+
+	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
+		m_frameIndexTargetMax,
+		AVXUtils::AVX2_ALIGNAS_SIZE
+		);
+
+	for (int i = 0; i < xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+
+		__m256 v0 = _mm256_load_ps(m_xicsAlignasIntensity[0] + i);
+		__m256 v1 = _mm256_load_ps(m_xicsAlignasIntensity[1] + i);
+		__m256 v2 = _mm256_load_ps(m_xicsAlignasIntensity[2] + i);
+		__m256 v3 = _mm256_load_ps(m_xicsAlignasIntensity[3] + i);
+		__m256 v4 = _mm256_load_ps(m_xicsAlignasIntensity[4] + i);
+		__m256 v5 = _mm256_load_ps(m_xicsAlignasIntensity[5] + i);
+		__m256 v6 = _mm256_load_ps(m_xicsAlignasIntensity[6] + i);
+		__m256 v7 = _mm256_load_ps(m_xicsAlignasIntensity[7] + i);
+
+		__m256 sum1 = _mm256_add_ps(v0, v1);
+		__m256 sum2 = _mm256_add_ps(v2, v3);
+		__m256 sum3 = _mm256_add_ps(v4, v5);
+		__m256 sum4 = _mm256_add_ps(v6, v7);
+		__m256 intermediate1 = _mm256_add_ps(sum1, sum2);
+		__m256 intermediate2 = _mm256_add_ps(sum3, sum4);
+		__m256 finalSum1 = _mm256_add_ps(intermediate1, intermediate2);
+
+		constexpr float thresholdValue = 0.1;
+		constexpr float replaceValue = 1.0;
+
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v0);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v1);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v2);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v3);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v4);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v5);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v6);
+		AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v7);
+
+		__m256 sumCount1 = _mm256_add_ps(v0, v1);
+		__m256 sumCount2 = _mm256_add_ps(v2, v3);
+		__m256 sumCount3 = _mm256_add_ps(v4, v5);
+		__m256 sumCount4 = _mm256_add_ps(v6, v7);
+		__m256 intermediateCount1 = _mm256_add_ps(sumCount1, sumCount2);
+		__m256 intermediateCount2 = _mm256_add_ps(sumCount3, sumCount4);
+		__m256 finalSumCount1 = _mm256_add_ps(intermediateCount1, intermediateCount2);
+
+		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
+			__m256 v8 = _mm256_load_ps(m_xicsAlignasIntensity[8] + i);
+			__m256 v9 = _mm256_load_ps(m_xicsAlignasIntensity[9] + i);
+			__m256 v10 = _mm256_load_ps(m_xicsAlignasIntensity[10] + i);
+			__m256 v11 = _mm256_load_ps(m_xicsAlignasIntensity[11] + i);
+			__m256 v12 = _mm256_load_ps(m_xicsAlignasIntensity[12] + i);
+			__m256 v13 = _mm256_load_ps(m_xicsAlignasIntensity[13] + i);
+			__m256 v14 = _mm256_load_ps(m_xicsAlignasIntensity[14] + i);
+			__m256 v15 = _mm256_load_ps(m_xicsAlignasIntensity[15] + i);
+
+			__m256 sum5 = _mm256_add_ps(v8, v9);
+			__m256 sum6 = _mm256_add_ps(v10, v11);
+			__m256 sum7 = _mm256_add_ps(v12, v13);
+			__m256 sum8 = _mm256_add_ps(v14, v15);
+			__m256 intermediate3 = _mm256_add_ps(sum5, sum6);
+			__m256 intermediate4 = _mm256_add_ps(sum7, sum8);
+			__m256 finalSum2 = _mm256_add_ps(intermediate3, intermediate4);
+			__m256 finalSumForReal = _mm256_add_ps(finalSum1, finalSum2);
+
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v8);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v9);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v10);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v11);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v12);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v13);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v14);
+			AVXUtils::replaceArrayValuesAVXGreaterThan(thresholdValue, replaceValue, v15);
+
+			__m256 sumCount5 = _mm256_add_ps(v8, v9);
+			__m256 sumCount6 = _mm256_add_ps(v10, v11);
+			__m256 sumCount7 = _mm256_add_ps(v12, v13);
+			__m256 sumCount8 = _mm256_add_ps(v14, v15);
+			__m256 intermediateCount3 = _mm256_add_ps(sumCount5, sumCount6);
+			__m256 intermediateCount4 = _mm256_add_ps(sumCount7, sumCount8);
+			__m256 finalSumCount2 = _mm256_add_ps(intermediateCount3, intermediateCount4);
+			__m256 finalSumForRealCount = _mm256_add_ps(finalSumCount1, finalSumCount2);
+
+			_mm256_store_ps(m_intensityVec + i, finalSumForReal);
+			_mm256_store_ps(m_ionCountVec + i, finalSumForRealCount);
+		}
+		else {
+			_mm256_store_ps(m_intensityVec + i, finalSum1);
+			_mm256_store_ps(m_ionCountVec + i, finalSumCount1);
+		}
+
+	}
 
 
 	ERR_RETURN
