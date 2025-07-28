@@ -22,6 +22,8 @@ private slots:
 	static void subtractArraysAVX2Test();
 	static void isNByteAlignedTest();
 	static void replaceArrayValuesAVXTest();
+	static void cosineSimilarityAVXTest();
+	static void cosineSimilarityAVXTest2();
 
 };
 
@@ -166,7 +168,12 @@ void AVXUtilsTests::subtractArraysAVX2Test() {
 		arr1[i] = static_cast<float>(i);
 		arr2[i] = static_cast<float>(i);
 	}
-	AVXUtils::subtractArraysAVX2(arr1, arr2, 16);
+	AVXUtils::subtractArraysAVX2(
+		arr1,
+		arr2,
+		16,
+		false
+		);
 
 	for (int i = 0; i < 16; i++) {
 		QVERIFY(MathUtils::tZero(arr1[i]));
@@ -202,6 +209,35 @@ void AVXUtilsTests::replaceArrayValuesAVXTest() {
 	for (int i = 0; i < 8; i++) {
 		QCOMPARE(static_cast<int>(arr1[i]), static_cast<int>(expectedResult[i]));
 	}
+}
+
+void AVXUtilsTests::cosineSimilarityAVXTest() {
+
+	const __m256 a = _mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0);
+	const __m256 b = _mm256_set_ps(0, 1, 2, 3, 4, 5, 6, 7);
+	const __m256 c = _mm256_set_ps(1, 1, 1, 1, 0, 0, 0, 0);
+	const __m256 d = _mm256_set_ps(2, 0, 0, 0, 1, 1, 0, 0);
+
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(a, b), 0.4f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(a, a), 1.0f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(_mm256_setzero_ps(), a), 0.0f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(c, d), 0.408248f));
+
+}
+
+void AVXUtilsTests::cosineSimilarityAVXTest2() {
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float z[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float a[8] = {7, 6, 5, 4, 3, 2, 1, 0};
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float b[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float c[8] = {1, 1, 1, 1, 0, 0, 0, 0};
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float d[8] = {2, 0, 0, 0, 1, 1, 0, 0};
+
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(a, b, 8), 0.4f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(a, a, 8), 1.0f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(z, a, 8), 0.0f));
+	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(c, d, 8), 0.408248f));
+
 }
 
 QTEST_MAIN(AVXUtilsTests)

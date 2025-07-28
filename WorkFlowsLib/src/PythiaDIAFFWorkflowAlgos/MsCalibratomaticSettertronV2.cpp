@@ -29,27 +29,30 @@ namespace {
 
 		ERR_INIT
 
+		e = ErrorUtils::isNotEmpty(msScanInfosPntrs); ree;
+
 		QVector<MsScanInfo*> msScanInfosVec = msScanInfosPntrs;
 		const auto msScanInfosThird = static_cast<int>(msScanInfosVec.size() * 0.333333);
 		msScanInfosVec = msScanInfosVec.mid(msScanInfosThird, msScanInfosThird);
 
-		QMap<MzTargetKey, bool> temp;
+		QMap<MzTargetKey, bool> allTargetKeys;
 		for (MsScanInfo *msi : msScanInfosVec) {
-			temp[msi->targetKey()] = true;
+			allTargetKeys[msi->targetKey()] = true;
 		}
 
-		QVector<MzTargetKey> mzTargetKeys = temp.keys().toVector();
-		const auto mzTargetKeysQuartered = static_cast<int>(mzTargetKeys.size() * 0.25);
-		mzTargetKeys = mzTargetKeys.mid(mzTargetKeysQuartered, mzTargetKeysQuartered * 2);
-		temp.clear();
-		for (const MzTargetKey &mzTargetKey : mzTargetKeys) {
-			temp[mzTargetKey] = true;
+		QVector<MzTargetKey> mzTargetKeys = allTargetKeys.keys().toVector();
+
+		constexpr int skipCount = 4;
+		QMap<MzTargetKey, bool> selectTargetKeys;
+		for (int i = 0; i < mzTargetKeys.size(); i += skipCount) {
+			const MzTargetKey &mzTargetKey = mzTargetKeys[i];
+			selectTargetKeys[mzTargetKey] = true;
 		}
 
 		for (MsScanInfo *msi : msScanInfosVec) {
 
 			const MzTargetKey mzTargetKey = msi->targetKey();
-			if (!temp.contains(mzTargetKey)) {
+			if (!selectTargetKeys.contains(mzTargetKey)) {
 				continue;
 			}
 
@@ -207,7 +210,6 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 	futures.waitForFinished();
 
 	for (const std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> &tpl : futures) {
-
 		e = std::get<0>(tpl); ree;
 
 		const MzTargetKey mzTargetKey = std::get<1>(tpl);

@@ -98,23 +98,35 @@ public:
 		float threshold,
 		float relacementValue,
 		__m256 &arr
-		) {
-		const __m256 thresholds = _mm256_set1_ps(threshold);
-		const __m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_GT_OQ);
-		const __m256 replaceVals = _mm256_set1_ps(relacementValue);
-		arr = _mm256_and_ps(mask, replaceVals);
-	}
+		);
 
 	static void replaceArrayValuesAVXLessThan(
 		float threshold,
 		float relacementValue,
 		__m256 &arr
-		) {
-		const __m256 thresholds = _mm256_set1_ps(threshold);
-		const __m256 replaceVals = _mm256_set1_ps(relacementValue);
-		__m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_LT_OQ);
-		arr = _mm256_blendv_ps(arr, replaceVals, mask);
-	}
+		);
+
+	static float cosineSimilarityAVX(
+		__m256 vec1,
+		__m256 vec2
+		);
+
+	static float dotProductAvx(
+		const float* arrayA,
+		const float* arrayB,
+		size_t length
+		);
+
+	static float magnitudeAvx(
+		const float* array,
+		size_t length
+		);
+
+	static float cosineSimilarityAVX(
+		const float* arrayA,
+		const float* arrayB,
+		size_t length
+		);
 
 
 };

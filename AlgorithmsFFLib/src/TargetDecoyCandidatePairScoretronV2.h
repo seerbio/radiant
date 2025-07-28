@@ -20,6 +20,8 @@ class TargetDecoyCandidatePair;
 
 class ALGORITHMSFFLIB_EXPORTS TargetDecoyCandidatePairScoretronV2 {
 
+	friend class TargetDecoyCandidatePairScoretronV2Tests;
+
 public:
 
 	TargetDecoyCandidatePairScoretronV2();
@@ -43,7 +45,8 @@ private:
 	Err subtractShadowsArrays();
 	void zeroOutArrays();
 	Err smoothMS2IonArrays();
-	Err buildLocationVectors();
+	Err buildLocationVectors(const QVector<MS2Ion> &ms2Ions);
+	Err buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions);
 
 private:
 

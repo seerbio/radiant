@@ -48,6 +48,7 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 	QCOMPARE(e, eNoError);
 
 	PythiaParameters pythiaParameters = PythiaParameterReader::genericPythiaParametersForTests();
+	// pythiaParameters.ms2ExtractionWidthPPM = 8;
 
 	TargetDecoyCandidatePairManager tdcpManager;
 	e = tdcpManager.init(

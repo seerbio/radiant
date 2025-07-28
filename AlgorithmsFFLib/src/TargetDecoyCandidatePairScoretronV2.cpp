@@ -193,7 +193,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 		std::max(m_mzMs2Min, mzMs2MinMin),
 		m_mzMs2Max
 		);
-
+	const int ms2IonsTargetSizeOG = ms2IonsTarget.size(); //TODO, add this to feature vec in CandScores
 	ms2IonsTarget.resize(std::min(ms2IonsTarget.size(), m_ms2IonsCount));
 
 	const QVector<MS2Ion> &ms2IonsDecoy = tdcpPntr->ms2IonsDecoy(ms2IonsTarget);
@@ -220,7 +220,25 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 	}
 
 	e = smoothMS2IonArrays(); ree;
-	e = buildLocationVectors(); ree;
+	// for (int i = 0; i < m_frameIndexTargetMax; i++) {
+	//
+	// 	if ( m_xicsAlignasIntensity[0][i] < 1) {
+	// 		continue;
+	// 	}
+	//
+	// 	qDebug()
+	// 	<< m_xicsAlignasIntensity[0][i]
+	// 	<< m_xicsAlignasIntensity[1][i]
+	// 	<< m_xicsAlignasIntensity[2][i]
+	// 	<< m_xicsAlignasIntensity[3][i]
+	// 	<< m_xicsAlignasIntensity[4][i]
+	// 	<< m_xicsAlignasIntensity[5][i]
+	// 	<< m_xicsAlignasIntensity[6][i]
+	// 	<< m_xicsAlignasIntensity[7][i]
+	// 	<< "SDLKFJSDL"
+	// 	;
+	// }
+	e = buildLocationVectors(ms2Ions); ree;
 
 	ERR_RETURN
 }
@@ -393,16 +411,11 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors() {
+Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors(const QVector<MS2Ion> &ms2Ions) {
 
 	ERR_INIT
 
-	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_frameIndexTargetMax,
-		AVXUtils::AVX2_ALIGNAS_SIZE
-		);
-
-	for (int i = 0; i < xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+	for (int i = 0; i < m_frameIndexTargetMax; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
 
 		__m256 v0 = _mm256_load_ps(m_xicsAlignasIntensity[0] + i);
 		__m256 v1 = _mm256_load_ps(m_xicsAlignasIntensity[1] + i);
@@ -488,6 +501,33 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors() {
 
 	}
 
+	e = buildIntegrationVecCosineSim(ms2Ions); ree;
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(ms2Ions); ree;
+	e = ErrorUtils::isGreaterThanZero(m_frameIndexTargetMax); ree;
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float scanIntensities[m_ms2IonsCount] = {0};
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float theoIntensities[m_ms2IonsCount] = {0};
+	for (int i = 0; i < std::min(m_ms2IonsCount, ms2Ions.size()); i++) {
+		theoIntensities[i] = ms2Ions[i].intensity;
+	}
+
+	for (int i = 0; i < m_frameIndexTargetMax; i++) {
+		for (int j = 0; j < std::min(m_ms2IonsCount, ms2Ions.size()); j++) {
+			scanIntensities[j] = m_xicsAlignasIntensity[j][i];
+		}
+
+		const float cosineSim = AVXUtils::cosineSimilarityAVX(scanIntensities, theoIntensities, m_ms2IonsCount);
+		m_integrationVecCosineSim[i] = cosineSim;
+
+	}
 
 	ERR_RETURN
 }

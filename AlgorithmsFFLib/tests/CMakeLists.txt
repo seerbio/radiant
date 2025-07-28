@@ -33,7 +33,7 @@ SET(TEST_CLASSES
 #        QValueSettertronTests
 #        SequenceSubstringSearchomaticTests
 #        TargetDecoyCandidatePairManagerTests
-#        TargetDecoyCandidatePairScoretronTests
+        TargetDecoyCandidatePairScoretronV2Tests
 #        TargetDecoyCandidatePairTests
         TurboXICTests
 #        TurboXIC2DTests

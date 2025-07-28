@@ -156,7 +156,7 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 	}
 
 	for (int i = 0; i < size; i++) {
-		v0[i] = result[i];
+		v0[i] = result[i * AVX2_FLOAT_REGISTER_SIZE];
 		v1[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
 		v2[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
 		v3[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
@@ -218,6 +218,85 @@ Err AVXUtils::splitAVXUInt16to32(
 	*int32Output2 = _mm256_unpackhi_epi16(intShort, _mm256_setzero_si256());
 
 	ERR_RETURN
+}
+
+void AVXUtils::replaceArrayValuesAVXGreaterThan(float threshold, float relacementValue, __m256 &arr) {
+	const __m256 thresholds = _mm256_set1_ps(threshold);
+	const __m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_GT_OQ);
+	const __m256 replaceVals = _mm256_set1_ps(relacementValue);
+	arr = _mm256_and_ps(mask, replaceVals);
+}
+
+void AVXUtils::replaceArrayValuesAVXLessThan(float threshold, float relacementValue, __m256 &arr) {
+	const __m256 thresholds = _mm256_set1_ps(threshold);
+	const __m256 replaceVals = _mm256_set1_ps(relacementValue);
+	__m256 mask = _mm256_cmp_ps(arr, thresholds, _CMP_LT_OQ);
+	arr = _mm256_blendv_ps(arr, replaceVals, mask);
+}
+
+namespace {
+	float dotProduct256(__m256 a, __m256 b) {
+		__m256 mul = _mm256_mul_ps(a, b);
+		__m128 low = _mm256_castps256_ps128(mul);
+		__m128 high = _mm256_extractf128_ps(mul, 1);
+		__m128 sum128 = _mm_add_ps(low, high);
+		sum128 = _mm_hadd_ps(sum128, sum128);
+		sum128 = _mm_hadd_ps(sum128, sum128);
+		return _mm_cvtss_f32(sum128);
+	}
+}
+float AVXUtils::cosineSimilarityAVX(
+	__m256 vec1,
+	__m256 vec2
+	) {
+
+	const float dotProduct = dotProduct256(vec1, vec2);
+	const float mag1 = std::sqrt(dotProduct256(vec1, vec1));
+	const float mag2 = std::sqrt(dotProduct256(vec2, vec2));
+
+	const float cosineSimilarity = dotProduct / (mag1 * mag2);
+	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
+}
+
+float AVXUtils::dotProductAvx(const float *arrayA, const float *arrayB, size_t length) {
+
+	__m256 sumVec = _mm256_setzero_ps();
+
+	for (size_t i = 0; i < length; i += 8) {
+		__m256 vecA = _mm256_load_ps(&arrayA[i]);
+		__m256 vecB = _mm256_load_ps(&arrayB[i]);
+		__m256 mul = _mm256_mul_ps(vecA, vecB);
+		sumVec = _mm256_add_ps(sumVec, mul);
+	}
+
+	__m128 low = _mm256_castps256_ps128(sumVec);
+	__m128 high = _mm256_extractf128_ps(sumVec, 1);
+	__m128 sum128 = _mm_add_ps(low, high);
+	sum128 = _mm_hadd_ps(sum128, sum128);
+	sum128 = _mm_hadd_ps(sum128, sum128);
+
+	return _mm_cvtss_f32(sum128);
+}
+
+float AVXUtils::magnitudeAvx(
+	const float *array,
+	size_t length
+	) {
+	return std::sqrt(dotProductAvx(array, array, length));
+}
+
+float AVXUtils::cosineSimilarityAVX(
+	const float *arrayA,
+	const float *arrayB,
+	size_t length
+	) {
+
+	float dot = dotProductAvx(arrayA, arrayB, length);
+	float magA = magnitudeAvx(arrayA, length);
+	float magB = magnitudeAvx(arrayB, length);
+
+	const float cosineSimilarity = dot / (magA * magB);
+	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
 }
 
 
