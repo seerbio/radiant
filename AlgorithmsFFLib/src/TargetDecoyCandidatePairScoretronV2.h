@@ -71,6 +71,9 @@ private:
 
 	QVector<float> m_savitzkyGolayKernel;
 
+	float m_mzMs2Min;
+	float m_mzMs2Max;
+
 };
 
 

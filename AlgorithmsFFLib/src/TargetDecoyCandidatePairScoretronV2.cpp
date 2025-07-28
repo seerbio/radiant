@@ -22,6 +22,8 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_integrationVecCosineSim(nullptr)
 , m_productVec(nullptr)
 , m_frameIndexTargetMax(-1)
+, m_mzMs2Min(-1)
+, m_mzMs2Max(-1)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -70,6 +72,8 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
 	m_ms2IonsCount = ms2IonsCount;
+	m_mzMs2Min = m_msReaderPointerAcc->ptr->mzMs2Min();
+	m_mzMs2Max = m_msReaderPointerAcc->ptr->mzMs2Max();
 
 	m_xicsAlignasIntensity.resize(m_ms2IonsCount);
 	m_xicsAlignasIntensityShadows.resize(m_ms2IonsCount);
@@ -184,7 +188,11 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 	TargetDecoyCandidatePair *tdcpPntr = mzTargetKeyVsTdcpPntr.second;
 
-	QVector<MS2Ion> ms2IonsTarget = tdcpPntr->ms2IonsTarget();
+	constexpr float mzMs2MinMin = 200.0f;
+	QVector<MS2Ion> ms2IonsTarget = tdcpPntr->ms2IonsTarget(
+		std::max(m_mzMs2Min, mzMs2MinMin),
+		m_mzMs2Max
+		);
 
 	ms2IonsTarget.resize(std::min(ms2IonsTarget.size(), m_ms2IonsCount));
 
