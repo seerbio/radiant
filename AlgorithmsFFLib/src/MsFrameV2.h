@@ -11,6 +11,8 @@
 #include "GlobalSettings.h"
 #include "TurboXIC.h"
 
+//TODO BUILD QTESTS
+
 class ALGORITHMSFFLIB_EXPORTS MsFrameV2 {
 
 public:

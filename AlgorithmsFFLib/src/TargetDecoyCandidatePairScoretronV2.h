@@ -9,6 +9,7 @@
 
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "MsFrameV2.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TurboXIC.h"
@@ -55,7 +56,7 @@ private:
 	PythiaParameters m_pythiaParameters;
 
 	MzTargetKey m_mzTargetKeyCurrent;
-	TurboXIC *m_turboXICCurrent;
+	MsFrameV2 *m_msFrameV2Current;
 
 	size_t m_xicSizeMaxAlignas;
 	int m_ms2IonsCount;

@@ -14,7 +14,7 @@
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 : m_msReaderPointerAcc(nullptr)
 , m_mzTargetKeyCurrent("null")
-, m_turboXICCurrent(nullptr)
+, m_msFrameV2Current(nullptr)
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
 , m_intensityVec(nullptr)
@@ -49,7 +49,7 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_integrationVecCosineSim;
 	delete m_productVec;
 
-	delete m_turboXICCurrent;
+	delete m_msFrameV2Current;
 }
 
 Err TargetDecoyCandidatePairScoretronV2::init(
@@ -163,7 +163,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	const MzTargetKey &mzTargetKey = mzTargetKeyVsTdcpPntr.first;
 	if (mzTargetKey != m_mzTargetKeyCurrent) {
 
-		delete m_turboXICCurrent;
+		delete m_msFrameV2Current;
 
 		const QVector<MsScanInfo*> &msScanInfosCopy = m_mzTargetKeyVsMsScanInfos.value(mzTargetKey);
 		QVector<MsScan> msScans;
@@ -178,11 +178,11 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 			msScans.back().msScanInfoPntr->targetKey()
 			); rtee;
 
-		auto *turboXIC = new TurboXIC();
-		e = turboXIC->init(msScans); rtee;
-		m_turboXICCurrent = turboXIC;
+		auto* msFrame = new MsFrameV2();
+		e = msFrame->init(msScans); rtee;
+		m_msFrameV2Current = msFrame;
 
-		e = ErrorUtils::isTrue(m_turboXICCurrent->isInit()); ree;
+		e = ErrorUtils::isTrue(m_msFrameV2Current->isInit()); ree;
 		m_mzTargetKeyCurrent = mzTargetKey;
 
 	}
@@ -263,7 +263,7 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 		const float mzMin = ms2Ion.mz - mzTol;
 		const float mzMax = ms2Ion.mz + mzTol;
 		XICPointsPntrs xicPointsPntrs;
-		e = m_turboXICCurrent->extractPointsXIC(
+		e = m_msFrameV2Current->getTurboXICPntr()->extractPointsXIC(
 			mzMin,
 			mzMax,
 			&xicPointsPntrs
@@ -279,7 +279,7 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 		const float mzShadowMin = mzShadow - mzShadowTol;
 		const float mzShadowMax = mzShadow + mzShadowTol;
 		XICPointsPntrs xicPointsPntrsShadows;
-		e = m_turboXICCurrent->extractPointsXIC(
+		e = m_msFrameV2Current->getTurboXICPntr()->extractPointsXIC(
 			mzShadowMin,
 			mzShadowMax,
 			&xicPointsPntrsShadows
