@@ -51,16 +51,17 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 	MsReaderPointerAcc msReaderPointerAcc;
 	e = msReaderPointerAcc.openFile(msDataFileUri); ree;
 
-	e = buildMS1Frame(&msReaderPointerAcc); ree;
+	// e = buildMS1Frame(&msReaderPointerAcc); ree;
 
-	{
-		MsCalibratomaticSettertronV2 setter;
-		e = setter.init(
-			&m_tdcpManager,
-			&msReaderPointerAcc,
-			&m_pythiaParameters
-			); ree;
-	}
+	// {
+	// 	MsCalibratomaticSettertronV2 msCalibratomaticSettertronV2;
+	// 	e = msCalibratomaticSettertronV2.init(
+	// 		&m_tdcpManager,
+	// 		&msReaderPointerAcc,
+	// 		&m_pythiaParameters
+	// 		); ree;
+	// 	e = msCalibratomaticSettertronV2.buildMsCalibratomatic(&m_msCalibratomatic); ree;
+	// }
 
 	ERR_RETURN
 }

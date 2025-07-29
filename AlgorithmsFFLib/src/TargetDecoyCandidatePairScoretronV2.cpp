@@ -221,24 +221,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 	}
 
 	e = smoothMS2IonArrays(); ree;
-	// for (int i = 0; i < m_targetFrameIndexMax; i++) {
-	//
-	// 	if ( m_xicsAlignasIntensity[0][i] < 1) {
-	// 		continue;
-	// 	}
-	//
-	// 	qDebug()
-	// 	<< m_xicsAlignasIntensity[0][i]
-	// 	<< m_xicsAlignasIntensity[1][i]
-	// 	<< m_xicsAlignasIntensity[2][i]
-	// 	<< m_xicsAlignasIntensity[3][i]
-	// 	<< m_xicsAlignasIntensity[4][i]
-	// 	<< m_xicsAlignasIntensity[5][i]
-	// 	<< m_xicsAlignasIntensity[6][i]
-	// 	<< m_xicsAlignasIntensity[7][i]
-	// 	<< "SDLKFJSDL"
-	// 	;
-	// }
+
 	e = buildLocationVectors(ms2Ions); ree;
 
 	ERR_RETURN
