@@ -17,7 +17,7 @@ public:
     ~TargetDecoyCandidatePairScoretronV2Tests() override = default;
 
 private Q_SLOTS:
-    void buildIntegrationVecCosineSimTest();
+    static void buildIntegrationVecCosineSimTest();
 
 
 };
