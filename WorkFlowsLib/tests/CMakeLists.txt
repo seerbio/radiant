@@ -18,6 +18,7 @@ SET(TEST_CLASSES
         MsCalibratomaticSettertronV2Tests
 #        ConvertMzMLToParquetWorkFlowTests
 #        PythiaDDAWorkflowTests
+        PythiaDIAFFWorkflowV2Tests
 #        PythiaDIAFFWorkflowTests
 #
 #        PlayGroundTests

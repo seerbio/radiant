@@ -21,9 +21,10 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_ionCountVec(nullptr)
 , m_integrationVecCosineSim(nullptr)
 , m_productVec(nullptr)
-, m_frameIndexTargetMax(-1)
+, m_targetFrameIndexMax(-1)
 , m_mzMs2Min(-1)
 , m_mzMs2Max(-1)
+, m_intensityVecMax(0)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -210,7 +211,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 
 	e = loadMS2IonArrays(ms2Ions); ree;
 
-	if (m_frameIndexTargetMax < 0) {
+	if (m_targetFrameIndexMax < 0) {
 		//TODO figure out what to return here. Most likely blank candidate score
 		ERR_RETURN
 	}
@@ -220,7 +221,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 	}
 
 	e = smoothMS2IonArrays(); ree;
-	// for (int i = 0; i < m_frameIndexTargetMax; i++) {
+	// for (int i = 0; i < m_targetFrameIndexMax; i++) {
 	//
 	// 	if ( m_xicsAlignasIntensity[0][i] < 1) {
 	// 		continue;
@@ -247,7 +248,8 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 	ERR_INIT
 
-	m_frameIndexTargetMax = -1;
+	m_targetFrameIndexMax = -1;
+	m_intensityVecMax = 0;
 	zeroOutArrays();
 
 	int arrayIndex = 0;
@@ -287,7 +289,7 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 		float* arrMz = m_xicsAlignasMz[arrayIndex];
 		for (const XICPoint *xicPoint : xicPointsPntrs) {
 
-			m_frameIndexTargetMax = std::max(m_frameIndexTargetMax, xicPoint->frameIndex);
+			m_targetFrameIndexMax = std::max(m_targetFrameIndexMax, xicPoint->frameIndex);
 
 			arrIntensity[xicPoint->frameIndex] += xicPoint->intensity;
 
@@ -325,7 +327,7 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 	ERR_INIT
 
 	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_frameIndexTargetMax,
+		m_targetFrameIndexMax,
 		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
 
@@ -370,11 +372,11 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 
 	ERR_INIT
 
-	e = ErrorUtils::isGreaterThanZero(m_frameIndexTargetMax); ree;
+	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
 	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_frameIndexTargetMax,
+		m_targetFrameIndexMax,
 		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
 
@@ -415,7 +417,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors(const QVector<MS2I
 
 	ERR_INIT
 
-	for (int i = 0; i < m_frameIndexTargetMax; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+	for (int i = 0; i < m_targetFrameIndexMax; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
 
 		__m256 v0 = _mm256_load_ps(m_xicsAlignasIntensity[0] + i);
 		__m256 v1 = _mm256_load_ps(m_xicsAlignasIntensity[1] + i);
@@ -491,10 +493,12 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors(const QVector<MS2I
 			__m256 finalSumCount2 = _mm256_add_ps(intermediateCount3, intermediateCount4);
 			__m256 finalSumForRealCount = _mm256_add_ps(finalSumCount1, finalSumCount2);
 
+			m_intensityVecMax = std::max(m_intensityVecMax, AVXUtils::maxFloat(finalSumForReal));
 			_mm256_store_ps(m_intensityVec + i, finalSumForReal);
 			_mm256_store_ps(m_ionCountVec + i, finalSumForRealCount);
 		}
 		else {
+			m_intensityVecMax = std::max(m_intensityVecMax, AVXUtils::maxFloat(finalSum1));
 			_mm256_store_ps(m_intensityVec + i, finalSum1);
 			_mm256_store_ps(m_ionCountVec + i, finalSumCount1);
 		}
@@ -511,7 +515,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildIntegrationVecCosineSim(const QVec
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-	e = ErrorUtils::isGreaterThanZero(m_frameIndexTargetMax); ree;
+	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
 
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float scanIntensities[m_ms2IonsCount] = {0};
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float theoIntensities[m_ms2IonsCount] = {0};
@@ -519,7 +523,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildIntegrationVecCosineSim(const QVec
 		theoIntensities[i] = ms2Ions[i].intensity;
 	}
 
-	for (int i = 0; i < m_frameIndexTargetMax; i++) {
+	for (int i = 0; i < m_targetFrameIndexMax; i++) {
 		for (int j = 0; j < std::min(m_ms2IonsCount, ms2Ions.size()); j++) {
 			scanIntensities[j] = m_xicsAlignasIntensity[j][i];
 		}

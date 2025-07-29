@@ -42,7 +42,6 @@ private:
 
 private:
 
-	QMap<ScanNumber, MsScanInfo> m_msScanInfos;
 	QVector<MsScanInfo*> m_msScanInfosPntrs;
 	QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> m_mzTargetKeyVsTargetDecoyCandidatePairPntrs;
 	TargetDecoyCandidatePairManager *m_tdcpManager;

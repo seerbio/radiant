@@ -235,61 +235,6 @@ public:
     */
     QPair<ScanTime , ScanTime > scanTimeMinMax();
 
-    /**
-    * @brief Retrieves the scan points from the MS Reader.
-    *
-    * This method is a getter for the m_scanPoints member variable. It allows to retrieve the scan points
-    * that were read from the file in the MS Reader.
-    *
-    * @return Returns a QMap where each key-value pair represents the scan number and the corresponding scan points respectively.
-    */
-    // QMap<ScanNumber, ScanPoints> getScanPoints();
-
-    /**
-    * @brief Retrieves pointers to the scan points in the MS Reader.
-    *
-    * This method creates a QMap with pointers to the ScanPoints objects stored in the member variable m_scanPoints.
-    * It can be used when direct access to these objects is required without copying them.
-    *
-    * @return Returns a QMap where each key-value pair represents the scan number and the corresponding scan points pointer respectively.
-    */
-    // QMap<ScanNumber, ScanPoints*> getScanPointsPntrs();
-
-    /**
-    * @brief Retrieves scan points of a specific MS level from the MS Reader.
-    *
-    * This method iterates over the stored scan points in the MS Reader and retrieves only those that
-    * correspond to the specified MS level. It does this by checking the MS level of each scan point and
-    * including only those of the desired level.
-    *
-    * @param msLevel The MS level for which to fetch the scan points.
-    * @param scanPoints A pointer to a QMap where the fetched scan points should be stored.
-    *
-    * @return Returns an Err object. If successful, the function returns an Err object initialized with a
-    * success state. If any error occurs during the fetching of the scan points, it returns an Err object initialized with a failure state.
-    */
-    // Err getScanPoints(
-    //         int msLevel,
-    //         QMap<ScanNumber, ScanPoints> *scanPoints
-    //         );
-
-    /**
-    * @brief Retrieves pointers to scan points of a specific MS level from the MS Reader.
-    *
-    * This method iterates over the stored scan points in the MS Reader and retrieves pointers to those scan points that
-    * correspond to the specified MS level. It does this by checking the MS level of each scan point and
-    * including only those of the desired level.
-    *
-    * @param msLevel The MS level for which to fetch the scan point pointers.
-    * @param scanPoints A pointer to a QMap where the fetched scan points pointers should be stored. The stored QMap will have scan numbers as keys and pointers to corresponding scan points as values.
-    *
-    * @return Returns an Err object. If successful, the function returns an Err object initialized with a
-    * success state. If any error occurs during the retrieval of the scan points, it returns an Err object initialized with a failure state.
-    */
-    // Err getScanPoints(
-    //         int msLevel,
-    //         QMap<ScanNumber, ScanPoints*> *scanPoints
-    // );
 
     /**
     * @brief Retrieves scan points of a specific ScanNumber.
@@ -305,24 +250,6 @@ public:
     // QPair<Err, ScanPoints*> getScanPoints(int scanNumber);
 
     /**
-    * @brief Collates MS2 MzTarget frames for Data-Independent Acquisition (DIA).
-    *
-    * This function takes a QMap of MzTargetKey to QMap of ScanNumber to ScanPoints,
-    * and populates it with MS2 MzTarget frames by iterating over tandemScanInfos.
-    * It checks for the existence and non-empty nature of necessary data structures,
-    * retrieves MS scan information for MS level 2, and associates the corresponding
-    * ScanPoints with the MzTargetKey and ScanNumber. Finally, it logs the count of
-    * DIA Target Frames and returns any encountered errors.
-    *
-    * @param diaTargetFrame A pointer to a QMap<MzTargetKey, QMap<ScanNumber, ScanPoints *>>,
-    *                      representing the target frame structure to be populated.
-    * @return Err The error code indicating success or failure of the operation.
-    */
-    // Err collateMS2MzTargetFrames(
-    //         QMap<MzTargetKey, QMap<ScanNumber, ScanPoints*>> *diaTargetFrame
-    // );
-
-    /**
     * @brief Retrieves unique tandem MS scan information for MS level 2.
     *
     * This function obtains tandem MS scan information for MS level 2 using the
@@ -334,7 +261,7 @@ public:
     * @return QVector<MsScanInfo> A vector containing unique tandem MS scan information
     *                             for MS level 2.
     */
-    QVector<MsScanInfo> getUniqueTandemMsScanInfos();
+    QVector<MsScanInfo*> getUniqueTandemMsScanInfos();
 
     /**
     * @brief Retrieves the frame count for tandem MS scans at MS level 2.
@@ -360,7 +287,8 @@ public:
     * @return QMap<ScanNumber, MsScanInfo> A map of MS scan information for the specified MS level.
     *
     */
-    QMap<ScanNumber, MsScanInfo> getMsScanInfos(int msLevel);
+    QMap<ScanNumber, MsScanInfo*> getMsScanInfos(int msLevel);
+
     Err getMsScanInfos(
             const MzTargetKey &mzTargetKey,
             QVector<MsScanInfo*> *msScanInfos
@@ -377,6 +305,7 @@ public:
     *
     */
     QMap<ScanNumber, MsScanInfo> getMsScanInfos();
+    QMap<MzTargetKey, QVector<MsScanInfo*>> getMzTargetKeyVsMsScanInfosPntrs();
 
     /**
     * @brief Retrieves MS scan information for a specific ScanNumber.

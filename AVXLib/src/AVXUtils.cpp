@@ -299,6 +299,18 @@ float AVXUtils::cosineSimilarityAVX(
 	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
 }
 
+float AVXUtils::maxFloat(__m256 vec)  {
+	__m128 high = _mm256_extractf128_ps(vec, 1);
+	__m128 low = _mm256_castps256_ps128(vec);
+
+	__m128 max128 = _mm_max_ps(low, high);
+
+	max128 = _mm_max_ps(max128, _mm_movehl_ps(max128, max128));
+	max128 = _mm_max_ps(max128, _mm_shuffle_ps(max128, max128, 0x1));
+
+	return _mm_cvtss_f32(max128);
+}
+
 
 
 

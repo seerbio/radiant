@@ -38,6 +38,7 @@ SET(SOURCE_FILES
 #        src/Ms2IonFraggertronManager.cpp
         src/MsCalibratomatic.cpp
 #        src/MsFrame.cpp
+        src/MsFrameV2.cpp
         src/MsUtils.cpp
 #        src/PeakIntegratomatic.cpp
 #        src/QuanFileBuilder.cpp
@@ -75,6 +76,7 @@ SET(HEADER_FILES
 #        src/Ms2IonFraggertronManager.h
         src/MsCalibratomatic.h
 #        src/MsFrame.h
+        src/MsFrameV2.h
         src/MsUtils.h
 #        src/PeakIntegratomatic.h
 #        src/QuanFileBuilder.h

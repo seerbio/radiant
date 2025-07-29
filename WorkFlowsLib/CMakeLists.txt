@@ -23,6 +23,7 @@ SET(SOURCE_FILES
 #        src/ConvertMzMLToParquetWorkFlow.cpp
 #        src/PythiaDDAWorkflow.cpp
 #        src/PythiaDIAFFWorkflow.cpp
+        src/PythiaDIAFFWorkflowV2.cpp
 #        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.cpp
 #        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
@@ -33,6 +34,7 @@ SET(HEADER_FILES
 #        src/ConvertMzMLToParquetWorkFlow.h
 #        src/PythiaDDAWorkflow.h
 #        src/PythiaDIAFFWorkflow.h
+        src/PythiaDIAFFWorkflowV2.h
 #        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h
 #        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h

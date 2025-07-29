@@ -128,6 +128,8 @@ public:
 		size_t length
 		);
 
+	static float maxFloat(__m256 vec);
+
 
 };
 

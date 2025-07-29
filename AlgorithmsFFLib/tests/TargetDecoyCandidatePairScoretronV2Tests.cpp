@@ -57,7 +57,7 @@ void TargetDecoyCandidatePairScoretronV2Tests::buildIntegrationVecCosineSimTest(
 		std::copy_n(v.begin(), 24, tdcpScoretron.m_xicsAlignasIntensity[i]);
 	}
 
-	tdcpScoretron.m_frameIndexTargetMax = 24;
+	tdcpScoretron.m_targetFrameIndexMax = 24;
 	tdcpScoretron.m_ms2IonsCount = 16;
 
 	// e = tdcpScoretron.buildIntegrationVecCosineSim();
