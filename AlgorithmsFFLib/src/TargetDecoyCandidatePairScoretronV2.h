@@ -32,6 +32,7 @@ public:
 		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 		const PythiaParameters &pythiaParameters,
 		int ms2IonsCount,
+		float minMs2IonsFoundCount,
 		MsReaderPointerAcc *msReaderPointerAcc
 		);
 
@@ -48,6 +49,7 @@ private:
 	Err smoothMS2IonArrays();
 	Err buildLocationVectors(const QVector<MS2Ion> &ms2Ions);
 	Err buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions);
+	Err buildProductVec() const;
 
 private:
 
@@ -78,6 +80,8 @@ private:
 	float m_mzMs2Min;
 	float m_mzMs2Max;
 	float m_intensityVecMax;
+
+	float m_minMs2IonsFoundCount;
 
 };
 

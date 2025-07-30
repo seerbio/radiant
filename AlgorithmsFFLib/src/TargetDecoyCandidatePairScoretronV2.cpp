@@ -25,6 +25,7 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_mzMs2Min(-1)
 , m_mzMs2Max(-1)
 , m_intensityVecMax(0)
+, m_minMs2IonsFoundCount(-1)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -56,6 +57,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 	const PythiaParameters &pythiaParameters,
 	int ms2IonsCount,
+	float minMs2IonsFoundCount,
 	MsReaderPointerAcc *msReaderPointerAcc
 	) {
 	ERR_INIT
@@ -64,6 +66,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
+	e = ErrorUtils::isGreaterThanZero(minMs2IonsFoundCount); ree;
 
 	m_msReaderPointerAcc = msReaderPointerAcc;
 	m_mzTargetKeyVsMsScanInfos = mzTargetKeyVsMsScanInfos;
@@ -75,6 +78,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	m_ms2IonsCount = ms2IonsCount;
 	m_mzMs2Min = m_msReaderPointerAcc->ptr->mzMs2Min();
 	m_mzMs2Max = m_msReaderPointerAcc->ptr->mzMs2Max();
+	m_minMs2IonsFoundCount = minMs2IonsFoundCount;
 
 	m_xicsAlignasIntensity.resize(m_ms2IonsCount);
 	m_xicsAlignasIntensityShadows.resize(m_ms2IonsCount);
@@ -484,6 +488,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors(const QVector<MS2I
 	}
 
 	e = buildIntegrationVecCosineSim(ms2Ions); ree;
+	e = buildProductVec(); ree;
 
 	ERR_RETURN
 }
@@ -509,6 +514,38 @@ Err TargetDecoyCandidatePairScoretronV2::buildIntegrationVecCosineSim(const QVec
 		const float cosineSim = AVXUtils::cosineSimilarityAVX(scanIntensities, theoIntensities, m_ms2IonsCount);
 		m_integrationVecCosineSim[i] = cosineSim;
 
+	}
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::buildProductVec() const {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
+
+	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
+		m_targetFrameIndexMax,
+		AVXUtils::AVX2_ALIGNAS_SIZE
+		);
+
+	for (int i = 0; i < xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+
+		__m256 ionCount = _mm256_load_ps(m_ionCountVec + i);
+		const __m256 thresholds = _mm256_set1_ps(m_minMs2IonsFoundCount);
+		const __m256 mask = _mm256_cmp_ps(ionCount, thresholds, _CMP_LT_OQ);
+
+		if (AVXUtils::isAllOnes(mask)) {
+			continue;
+		}
+
+		ionCount = _mm256_blendv_ps(ionCount, _mm256_setzero_ps(), mask);
+		const __m256 cosineSim = _mm256_load_ps(m_integrationVecCosineSim + i);
+		const __m256 cosineSimSqrt = _mm256_sqrt_ps(cosineSim);
+
+		const __m256 product = _mm256_mul_ps(ionCount, cosineSimSqrt);
+		_mm256_store_ps(m_productVec + i, product);
 	}
 
 	ERR_RETURN

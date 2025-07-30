@@ -221,11 +221,14 @@ namespace {
 
 		ERR_INIT
 
+		constexpr float minMs2IonsFoundCount = 4.9;
+
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
 			mzTargetKeyVsMsScanInfos,
 			pythiaParameters,
 			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
+			minMs2IonsFoundCount,
 			msReaderPointerAcc
 			); ree;
 

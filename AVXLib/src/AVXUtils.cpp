@@ -311,6 +311,12 @@ float AVXUtils::maxFloat(__m256 vec)  {
 	return _mm_cvtss_f32(max128);
 }
 
+bool AVXUtils::isAllOnes(__m256 mask) {
+	__m256i intMask = _mm256_castps_si256(mask);
+	__m256i allOnes = _mm256_set1_epi32(-1);
+	return _mm256_testc_si256(intMask, allOnes);
+}
+
 
 
 

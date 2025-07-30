@@ -130,6 +130,7 @@ public:
 
 	static float maxFloat(__m256 vec);
 
+	static bool isAllOnes(__m256 mask);
 
 };
 
