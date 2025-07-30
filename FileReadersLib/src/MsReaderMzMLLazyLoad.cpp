@@ -753,8 +753,6 @@ namespace {
 
             str = str.trimmed();
 
-        	// qDebug() << str << "SDFKJLS";
-
             if (str.contains(BIT64_FLOAT)) {
                 type = TYPES::FLOAT64;
             }
