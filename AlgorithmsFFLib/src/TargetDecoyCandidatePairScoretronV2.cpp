@@ -148,16 +148,12 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	ERR_RETURN
 }
 
-namespace {
-
-
-
-}//namespace
 Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr
 	) {
 
 	ERR_INIT
+
 	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
 
 	const MzTargetKey &mzTargetKey = mzTargetKeyVsTdcpPntr.first;

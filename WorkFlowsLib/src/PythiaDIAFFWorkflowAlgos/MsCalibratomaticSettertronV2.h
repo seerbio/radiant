@@ -10,11 +10,11 @@
 #include "GlobalSettings.h"
 #include "Error.h"
 #include "MsCalibratomatic.h"
+#include "MsFrameV2.h"
 #include "MsReaderBase.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
-#include "TurboXIC.h"
 
 using namespace Error;
 
@@ -31,7 +31,8 @@ public:
 	Err init(
 		TargetDecoyCandidatePairManager *tdcpManager,
 		MsReaderPointerAcc *msReaderPointerAcc,
-		PythiaParameters *pythiaParameters
+		PythiaParameters *pythiaParameters,
+		MsFrameV2 *msFrameMS1
 		);
 
 	Err buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic);
@@ -48,6 +49,7 @@ private:
 	MsReaderPointerAcc *m_msReaderPointerAcc;
 	PythiaParameters *m_pythiaParameters;
 	MsCalibratomatic *m_msCalibratomatic;
+	MsFrameV2 *m_msFrameMS1;
 	QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetKeyVsMsScanInfos;
 
 };

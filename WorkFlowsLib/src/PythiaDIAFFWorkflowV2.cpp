@@ -58,7 +58,8 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 		e = msCalibratomaticSettertronV2.init(
 			&m_tdcpManager,
 			&msReaderPointerAcc,
-			&m_pythiaParameters
+			&m_pythiaParameters,
+			&m_msFrameMS1
 			); ree;
 		e = msCalibratomaticSettertronV2.buildMsCalibratomatic(&m_msCalibratomatic); ree;
 	}

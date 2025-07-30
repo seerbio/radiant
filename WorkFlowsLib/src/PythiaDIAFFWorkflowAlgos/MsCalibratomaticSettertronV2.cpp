@@ -62,36 +62,12 @@ namespace {
 		ERR_RETURN
 	}
 
-	// std::tuple<Err, MzTargetKey, TurboXIC*> parallelLoadTurboXIC(
-	// 	const QVector<MsScanInfo*> &msScanInfos,
-	// 	MsReaderPointerAcc *msReaderPointerAcc
-	// 	) {
-	//
-	// 	ERR_INIT
-	//
-	// 	const QVector<MsScanInfo*> &msScanInfosCopy = msScanInfos;
-	// 	QVector<MsScan> msScans;
-	// 	e = msReaderPointerAcc->ptr->extractScanPoints(
-	// 		msScanInfosCopy,
-	// 		&msScans
-	// 		); rtee;
-	//
-	// 	e = ErrorUtils::isTrue(
-	// 		msScans.front().msScanInfoPntr->targetKey() ==
-	// 		msScans.back().msScanInfoPntr->targetKey()
-	// 		); rtee;
-	//
-	// 	auto *turboXIC = new TurboXIC();
-	// 	e = turboXIC->init(msScans); rtee;
-	//
-	// 	return {e, msScans.back().msScanInfoPntr->targetKey(), turboXIC};
-	// }
-
 }//namespace
 Err MsCalibratomaticSettertronV2::init(
 	TargetDecoyCandidatePairManager *tdcpManager,
 	MsReaderPointerAcc *msReaderPointerAcc,
-	PythiaParameters *pythiaParameters
+	PythiaParameters *pythiaParameters,
+	MsFrameV2 *msFrameMS1
 	) {
 
 	ERR_INIT
@@ -99,10 +75,12 @@ Err MsCalibratomaticSettertronV2::init(
 	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
 	e = ErrorUtils::isTrue(tdcpManager->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
+	e = ErrorUtils::isTrue(msFrameMS1->isInit()); ree;
 
 	m_tdcpManager = tdcpManager;
 	m_msReaderPointerAcc = msReaderPointerAcc;
 	m_pythiaParameters = pythiaParameters;
+	m_msFrameMS1 = msFrameMS1;
 
 	constexpr int msLevel = 2;
 	m_msScanInfosPntrs = m_msReaderPointerAcc->ptr->getMsScanInfos(msLevel).values().toVector();
@@ -253,9 +231,7 @@ namespace {
 
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
 
-
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
-
 
 		}
 
