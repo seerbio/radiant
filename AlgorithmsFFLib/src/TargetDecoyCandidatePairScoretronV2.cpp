@@ -15,13 +15,21 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 : m_msReaderPointerAcc(nullptr)
 , m_mzTargetKeyCurrent("null")
 , m_msFrameV2Current(nullptr)
+, m_msFrameV2MS1(nullptr)
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
 , m_intensityVec(nullptr)
 , m_ionCountVec(nullptr)
 , m_integrationVecCosineSim(nullptr)
 , m_productVec(nullptr)
+, m_mzMs1MonoIsotopeVecIntensity(nullptr)
+, m_mzMs1C13VecIntensity(nullptr)
+, m_mzMs1MonoIsotopeShadowVecIntensity(nullptr)
+, m_mzMs1MonoIsotopeVecMz(nullptr)
+, m_mzMs1C13VecMz(nullptr)
+, m_mzMs1MonoIsotopeShadowVecMz(nullptr)
 , m_targetFrameIndexMax(-1)
+, m_xicSizeTargetMaxAlignas(-1)
 , m_mzMs2Min(-1)
 , m_mzMs2Max(-1)
 , m_intensityVecMax(0)
@@ -50,6 +58,13 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_integrationVecCosineSim;
 	delete m_productVec;
 
+	delete m_mzMs1MonoIsotopeVecIntensity;
+	delete m_mzMs1C13VecIntensity;
+	delete m_mzMs1MonoIsotopeShadowVecIntensity;
+	delete m_mzMs1MonoIsotopeVecMz;
+	delete m_mzMs1C13VecMz;
+	delete m_mzMs1MonoIsotopeShadowVecMz;
+
 	delete m_msFrameV2Current;
 }
 
@@ -58,7 +73,8 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	const PythiaParameters &pythiaParameters,
 	int ms2IonsCount,
 	float minMs2IonsFoundCount,
-	MsReaderPointerAcc *msReaderPointerAcc
+	MsReaderPointerAcc *msReaderPointerAcc,
+	MsFrameV2 *msFrameV2MS1
 	) {
 	ERR_INIT
 
@@ -67,6 +83,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
 	e = ErrorUtils::isGreaterThanZero(minMs2IonsFoundCount); ree;
+	e = ErrorUtils::isTrue(msFrameV2MS1->isInit()); ree;
 
 	m_msReaderPointerAcc = msReaderPointerAcc;
 	m_mzTargetKeyVsMsScanInfos = mzTargetKeyVsMsScanInfos;
@@ -79,6 +96,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	m_mzMs2Min = m_msReaderPointerAcc->ptr->mzMs2Min();
 	m_mzMs2Max = m_msReaderPointerAcc->ptr->mzMs2Max();
 	m_minMs2IonsFoundCount = minMs2IonsFoundCount;
+	m_msFrameV2MS1 = msFrameV2MS1;
 
 	m_xicsAlignasIntensity.resize(m_ms2IonsCount);
 	m_xicsAlignasIntensityShadows.resize(m_ms2IonsCount);
@@ -134,6 +152,42 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		m_xicSizeMaxAlignas * sizeof(float))
 		);
 	m_productVec = alignedProductVec;
+
+	auto* mzMs1MonoIsotopeVecIntensity = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1MonoIsotopeVecIntensity = mzMs1MonoIsotopeVecIntensity;
+
+	auto* mzMs1C13VecIntensity = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1C13VecIntensity = mzMs1C13VecIntensity;
+
+	auto* mzMs1MonoIsotopeShadowVecIntensity = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1MonoIsotopeShadowVecIntensity = mzMs1MonoIsotopeShadowVecIntensity;
+
+	auto* mzMs1MonoIsotopeVecMz = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1MonoIsotopeVecMz = mzMs1MonoIsotopeVecMz;
+
+	auto* mzMs1C13VecMz = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1C13VecMz = mzMs1C13VecMz;
+
+	auto* mzMs1MonoIsotopeShadowVecMz = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_mzMs1MonoIsotopeShadowVecMz = mzMs1MonoIsotopeShadowVecMz;
 
 	constexpr int order = 1;
 	constexpr int derivative = 0;
@@ -198,13 +252,17 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 	const QVector<MS2Ion> &ms2IonsDecoy = tdcpPntr->ms2IonsDecoy(ms2IonsTarget);
 
-	e = scoreMS2Ions(ms2IonsTarget); ree;
-	e = scoreMS2Ions(ms2IonsDecoy); ree;
+	e = scoreMS2Ions(ms2IonsTarget, false, tdcpPntr); ree;
+	e = scoreMS2Ions(ms2IonsDecoy, true, tdcpPntr); ree;
 
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2Ions) {
+Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
+	const QVector<MS2Ion> &ms2Ions,
+	bool isDecoy,
+	TargetDecoyCandidatePair *tdcp
+	) {
 
 	ERR_INIT
 
@@ -215,13 +273,27 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(const QVector<MS2Ion> &ms2
 		ERR_RETURN
 	}
 
+	e = smoothMS2IonArrays(); ree;
 	if (m_pythiaParameters.subtractShadows) {
 		e = subtractShadowsArrays(); ree;
 	}
 
-	e = smoothMS2IonArrays(); ree;
-
 	e = buildLocationVectors(ms2Ions); ree;
+
+	e = buildMs1Vec(isDecoy, tdcp); ree;
+
+	e = smoothScoreArrays(); ree;
+	if (m_pythiaParameters.subtractShadows) {
+		constexpr bool zeroNegatives = true;
+		e = AVXUtils::subtractArraysAVX2(
+			m_mzMs1MonoIsotopeVecIntensity,
+			m_mzMs1MonoIsotopeShadowVecIntensity,
+			m_xicSizeTargetMaxAlignas,
+			zeroNegatives
+			); ree;
+	}
+
+	e = buildProductVec(); ree;
 
 	ERR_RETURN
 }
@@ -230,8 +302,6 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 	ERR_INIT
 
-	m_targetFrameIndexMax = -1;
-	m_intensityVecMax = 0;
 	zeroOutArrays();
 
 	int arrayIndex = 0;
@@ -301,6 +371,12 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		arrayIndex++;
 	}
+
+	m_xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
+		m_targetFrameIndexMax,
+		AVXUtils::AVX2_ALIGNAS_SIZE
+		);
+
 	ERR_RETURN
 }
 
@@ -308,17 +384,14 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 
 	ERR_INIT
 
-	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_targetFrameIndexMax,
-		AVXUtils::AVX2_ALIGNAS_SIZE
-		);
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
 
 	for (int i = 0; i < m_ms2IonsCount; i++) {
 		constexpr bool zeroNegatives = true;
 		e = AVXUtils::subtractArraysAVX2(
 			m_xicsAlignasIntensity[i],
 			m_xicsAlignasIntensityShadows[i],
-			xicSizeTargetMaxAlignas,
+			m_xicSizeTargetMaxAlignas,
 			zeroNegatives
 			); ree;
 	}
@@ -327,6 +400,10 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 }
 
 void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
+
+	m_targetFrameIndexMax = -1;
+	m_xicSizeTargetMaxAlignas -1;
+	m_intensityVecMax = 0;
 
 	for (float *f : m_xicsAlignasIntensity) {
 		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
@@ -348,24 +425,26 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 	std::memset(m_ionCountVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_integrationVecCosineSim, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_productVec, 0, m_xicSizeMaxAlignas * sizeof(float));
+
+	std::memset(m_mzMs1MonoIsotopeVecIntensity, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_mzMs1C13VecIntensity, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_mzMs1MonoIsotopeShadowVecIntensity, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_mzMs1MonoIsotopeVecMz, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_mzMs1C13VecMz, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_mzMs1MonoIsotopeShadowVecMz, 0, m_xicSizeMaxAlignas * sizeof(float));
 }
 
 Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 
 	ERR_INIT
 
-	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
-
-	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_targetFrameIndexMax,
-		AVXUtils::AVX2_ALIGNAS_SIZE
-		);
 
 	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
 		e = AVXUtils::convolveWithKernelAVXFloat(
 			m_savitzkyGolayKernel,
-			xicSizeTargetMaxAlignas,
+			m_xicSizeTargetMaxAlignas,
 			m_xicsAlignasIntensity[0],
 			m_xicsAlignasIntensity[1],
 			m_xicsAlignasIntensity[2],
@@ -379,7 +458,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
 			e = AVXUtils::convolveWithKernelAVXFloat(
 					m_savitzkyGolayKernel,
-					xicSizeTargetMaxAlignas,
+					m_xicSizeTargetMaxAlignas,
 					m_xicsAlignasIntensity[8],
 					m_xicsAlignasIntensity[9],
 					m_xicsAlignasIntensity[10],
@@ -488,7 +567,6 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors(const QVector<MS2I
 	}
 
 	e = buildIntegrationVecCosineSim(ms2Ions); ree;
-	e = buildProductVec(); ree;
 
 	ERR_RETURN
 }
@@ -525,12 +603,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildProductVec() const {
 
 	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
 
-	const size_t xicSizeTargetMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_targetFrameIndexMax,
-		AVXUtils::AVX2_ALIGNAS_SIZE
-		);
-
-	for (int i = 0; i < xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+	for (int i = 0; i < m_xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
 
 		__m256 ionCount = _mm256_load_ps(m_ionCountVec + i);
 		const __m256 thresholds = _mm256_set1_ps(m_minMs2IonsFoundCount);
@@ -546,6 +619,104 @@ Err TargetDecoyCandidatePairScoretronV2::buildProductVec() const {
 
 		const __m256 product = _mm256_mul_ps(ionCount, cosineSimSqrt);
 		_mm256_store_ps(m_productVec + i, product);
+	}
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::buildMs1Vec(bool isDecoy, TargetDecoyCandidatePair *tdcp) const {
+
+	ERR_INIT
+
+	e = ErrorUtils::isTrue(m_msFrameV2MS1->isInit()); ree;
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
+
+	const auto isotopeDistanceThomsons = static_cast<float>(S_GLOBAL_SETTINGS.ISO_DIFF / tdcp->charge());
+
+	const float mzMs1MonoIsotope = tdcp->mz(isDecoy);
+	const float mzMs1C13 = mzMs1MonoIsotope + isotopeDistanceThomsons;
+	const float mzMs1MonoIsotopeShadow = mzMs1MonoIsotope - isotopeDistanceThomsons;
+	const auto ms2ExtractionWidthPPM = static_cast<float>(m_pythiaParameters.ms2ExtractionWidthPPM);
+
+	const float massTolMonoIsotope = MathUtils::calculatePPM(mzMs1MonoIsotope, ms2ExtractionWidthPPM);
+	const float massTolMs1C13 = MathUtils::calculatePPM(mzMs1C13 , ms2ExtractionWidthPPM);
+	const float massTolMs1MonoIsotopeShadow = MathUtils::calculatePPM(mzMs1C13 , ms2ExtractionWidthPPM);
+
+	TurboXIC *turboXICMS1 = m_msFrameV2MS1->getTurboXICPntr();
+
+	XICPointsPntrs xicPointsPntrsMono;
+	XICPointsPntrs xicPointsPntrsC13;
+	XICPointsPntrs xicPointsPntrsMonoShadow;
+
+	e = turboXICMS1->extractPointsXIC(
+		mzMs1MonoIsotope - massTolMonoIsotope,
+		mzMs1MonoIsotope + massTolMonoIsotope,
+		&xicPointsPntrsMono
+		); ree;
+
+	e = turboXICMS1->extractPointsXIC(
+		mzMs1C13 - massTolMs1C13,
+		mzMs1C13 + massTolMs1C13,
+		&xicPointsPntrsC13
+		); ree;
+
+	e = turboXICMS1->extractPointsXIC(
+		mzMs1MonoIsotopeShadow - massTolMs1MonoIsotopeShadow,
+		mzMs1MonoIsotopeShadow + massTolMs1MonoIsotopeShadow,
+		&xicPointsPntrsMonoShadow
+		); ree;
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::fitMS1XICToVecs(
+	const XICPointsPntrs &xicPointsPntrs,
+	float* vecIntensity,
+	float *vecMz
+	) const {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(xicPointsPntrs); ree;
+	e = ErrorUtils::isTrue(m_msFrameV2MS1->isInit()); ree;
+	e = ErrorUtils::isTrue(m_msFrameV2Current->isInit()); ree;
+
+	for (XICPoint *xicPoint : xicPointsPntrs) {
+		const float ms1ScanTime = m_msFrameV2MS1->getScanTimeFromFrameIndex(xicPoint->frameIndex);
+		const FrameIndex frameIndexMS2 = m_msFrameV2Current->getFrameIndex(ms1ScanTime);
+
+		if (frameIndexMS2 > m_targetFrameIndexMax  || frameIndexMS2 < 0) {
+			continue;
+		}
+
+		vecIntensity[frameIndexMS2] += xicPoint->intensity;
+		vecMz[frameIndexMS2] = xicPoint->mz;
+	}
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::smoothScoreArrays() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
+	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
+
+	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
+		e = AVXUtils::convolveWithKernelAVXFloat(
+			m_savitzkyGolayKernel,
+			m_xicSizeTargetMaxAlignas,
+			m_ionCountVec,
+			m_intensityVec,
+			m_integrationVecCosineSim,
+			m_mzMs1MonoIsotopeVecIntensity,
+			m_mzMs1C13VecIntensity,
+			m_mzMs1MonoIsotopeShadowVecIntensity,
+
+			m_xicsAlignasIntensity[6],
+			m_xicsAlignasIntensity[7]
+			); ree;
 	}
 
 	ERR_RETURN

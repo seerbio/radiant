@@ -12,7 +12,6 @@
 #include "MsFrameV2.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
-#include "TurboXIC.h"
 
 using namespace Error;
 
@@ -33,7 +32,8 @@ public:
 		const PythiaParameters &pythiaParameters,
 		int ms2IonsCount,
 		float minMs2IonsFoundCount,
-		MsReaderPointerAcc *msReaderPointerAcc
+		MsReaderPointerAcc *msReaderPointerAcc,
+		MsFrameV2 *msFrameV2MS1
 		);
 
 	Err scoreTargetDecoyCandidatePairPntr(
@@ -42,14 +42,35 @@ public:
 
 private:
 
-	Err scoreMS2Ions(const QVector<MS2Ion> &ms2Ions);
+	Err scoreMS2Ions(
+		const QVector<MS2Ion> &ms2Ions,
+		bool isDecoy,
+		TargetDecoyCandidatePair *tdcp
+		);
+
 	Err loadMS2IonArrays(const QVector<MS2Ion> &ms2Ions);
+
 	Err subtractShadowsArrays();
+
 	void zeroOutArrays();
+
 	Err smoothMS2IonArrays();
+
 	Err buildLocationVectors(const QVector<MS2Ion> &ms2Ions);
+
 	Err buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions);
-	Err buildProductVec() const;
+
+	[[nodiscard]] Err buildProductVec() const;
+
+	[[nodiscard]] Err buildMs1Vec(bool isDecoy, TargetDecoyCandidatePair *tdcp) const;
+
+	Err fitMS1XICToVecs(
+		const XICPointsPntrs &xicPointsPntrs,
+		float* vecIntensity,
+		float *vecMz
+		) const;
+
+	Err smoothScoreArrays();
 
 private:
 
@@ -59,6 +80,7 @@ private:
 
 	MzTargetKey m_mzTargetKeyCurrent;
 	MsFrameV2 *m_msFrameV2Current;
+	MsFrameV2 *m_msFrameV2MS1;
 
 	size_t m_xicSizeMaxAlignas;
 	int m_ms2IonsCount;
@@ -73,7 +95,15 @@ private:
 	float* m_integrationVecCosineSim;
 	float* m_productVec;
 
+	float* m_mzMs1MonoIsotopeVecIntensity;
+	float* m_mzMs1C13VecIntensity;
+	float* m_mzMs1MonoIsotopeShadowVecIntensity;
+	float* m_mzMs1MonoIsotopeVecMz;
+	float* m_mzMs1C13VecMz;
+	float* m_mzMs1MonoIsotopeShadowVecMz;
+
 	int m_targetFrameIndexMax;
+	size_t m_xicSizeTargetMaxAlignas;
 
 	QVector<float> m_savitzkyGolayKernel;
 

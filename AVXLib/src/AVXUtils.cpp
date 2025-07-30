@@ -101,10 +101,54 @@ void AVXUtils::printMask(const __m256 &mask, size_t size) {
 	}
 }
 
-namespace {
 
 
-}//namespace
+void AVXUtils::interleaveVectors(
+	size_t size,
+	size_t paddingSingleRegister,
+	float* v0,
+	float* v1,
+	float* v2,
+	float* v3,
+	float* v4,
+	float* v5,
+	float* v6,
+	float* v7,
+	float* resultVector
+	) {
+
+	for (int i = 0; i < size; i++) {
+		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
+		const size_t insertIndex = paddingSingleRegister + (i * AVX2_FLOAT_REGISTER_SIZE);
+		_mm256_store_ps(resultVector + insertIndex, parallelVec);
+	}
+}
+
+void AVXUtils::separateInterleavedVectors(
+	const float* interleavedVectors,
+	size_t size,
+	float* v0,
+	float* v1,
+	float* v2,
+	float* v3,
+	float* v4,
+	float* v5,
+	float* v6,
+	float* v7
+	) {
+
+	for (int i = 0; i < size; i++) {
+		v0[i] = interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE];
+		v1[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
+		v2[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
+		v3[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
+		v4[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+4];
+		v5[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
+		v6[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
+		v7[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
+	}
+}
+
 Err AVXUtils::convolveWithKernelAVXFloat(
 	const QVector<float> &kernel,
 	size_t size,
@@ -135,11 +179,19 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 	alignas(AVX2_ALIGNAS_SIZE) float masterVector[masterVectorSizeAlignas] = {0};
 	alignas(AVX2_ALIGNAS_SIZE) float result[masterVectorSize] = {0};
 
-	for (int i = 0; i < size; i++) {
-		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
-		const size_t insertIndex = paddingSingleRegister + (i * AVX2_FLOAT_REGISTER_SIZE);
-		_mm256_store_ps(masterVector + insertIndex, parallelVec);
-	}
+	interleaveVectors(
+		 size,
+		 paddingSingleRegister,
+		 v0,
+		 v1,
+		 v2,
+		 v3,
+		 v4,
+		 v5,
+		 v6,
+		 v7,
+		 masterVector
+		);
 
 	for (int i = 0; i < (size * AVX2_FLOAT_REGISTER_SIZE); i += AVX2_FLOAT_REGISTER_SIZE) {
 
@@ -155,16 +207,18 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 		_mm256_store_ps(result + i, vSum);
 	}
 
-	for (int i = 0; i < size; i++) {
-		v0[i] = result[i * AVX2_FLOAT_REGISTER_SIZE];
-		v1[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
-		v2[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
-		v3[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
-		v4[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+4];
-		v5[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
-		v6[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
-		v7[i] = result[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
-	}
+	separateInterleavedVectors(
+		masterVector,
+		size,
+		v0,
+		v1,
+		v2,
+		v3,
+		v4,
+		v5,
+		v6,
+		v7
+		);
 
 	ERR_RETURN
 }

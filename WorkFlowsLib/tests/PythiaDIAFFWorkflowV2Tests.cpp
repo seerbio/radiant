@@ -18,7 +18,7 @@ public:
 
 private slots:
 
-    void initTest();
+    static void initTest();
 
     void buildUniqueInfoScanKeyVsTargetDecoyCandidatePointersTest();
 

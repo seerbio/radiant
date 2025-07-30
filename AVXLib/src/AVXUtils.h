@@ -132,6 +132,33 @@ public:
 
 	static bool isAllOnes(__m256 mask);
 
+	static void interleaveVectors(
+		size_t size,
+		size_t paddingSingleRegister,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float* resultVector
+		);
+
+	static void separateInterleavedVectors(
+		const float* interleavedVectors,
+		size_t size,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7
+		);
+
 };
 
 

@@ -216,7 +216,8 @@ namespace {
 		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
 		const PythiaParameters &pythiaParameters,
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
-		MsReaderPointerAcc *msReaderPointerAcc
+		MsReaderPointerAcc *msReaderPointerAcc,
+		MsFrameV2 *msFrameV2MS1
 		) {
 
 		ERR_INIT
@@ -229,7 +230,8 @@ namespace {
 			pythiaParameters,
 			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
 			minMs2IonsFoundCount,
-			msReaderPointerAcc
+			msReaderPointerAcc,
+			msFrameV2MS1
 			); ree;
 
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
@@ -267,7 +269,8 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		m_mzTargetKeyVsMsScanInfos,
 		*m_pythiaParameters,
 		std::placeholders::_1,
-		m_msReaderPointerAcc
+		m_msReaderPointerAcc,
+		m_msFrameMS1
 		);
 
 	QFuture<Err> futures = QtConcurrent::mapped(

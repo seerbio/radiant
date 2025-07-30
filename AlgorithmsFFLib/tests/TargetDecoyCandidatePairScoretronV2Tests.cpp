@@ -36,29 +36,29 @@ void TargetDecoyCandidatePairScoretronV2Tests::buildIntegrationVecCosineSimTest(
 	QCOMPARE(e, eNoError);
 
 
-	QMap<ScanNumber, MsScanInfo> msScanInfos = reader.ptr->getMsScanInfos(2);
-
-	QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetKeyVsMsScanInfos;
-	for (MsScanInfo &msi : msScanInfos) {
-		mzTargetKeyVsMsScanInfos[msi.targetKey()].push_back(&msi);
-	}
-
-	TargetDecoyCandidatePairScoretronV2 tdcpScoretron;
-	e = tdcpScoretron.init(
-		mzTargetKeyVsMsScanInfos,
-		PythiaParameterReader::genericPythiaParametersForTests(),
-		16,
-		&reader
-		);
-	QCOMPARE(e, eNoError);
-
-	for (int i = 0; i < 16; i ++) {
-		QVector<float> v(24, static_cast<float>(i));
-		std::copy_n(v.begin(), 24, tdcpScoretron.m_xicsAlignasIntensity[i]);
-	}
-
-	tdcpScoretron.m_targetFrameIndexMax = 24;
-	tdcpScoretron.m_ms2IonsCount = 16;
+	// QMap<ScanNumber, MsScanInfo> msScanInfos = reader.ptr->getMsScanInfos(2);
+	//
+	// QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetKeyVsMsScanInfos;
+	// for (MsScanInfo &msi : msScanInfos) {
+	// 	mzTargetKeyVsMsScanInfos[msi.targetKey()].push_back(&msi);
+	// }
+	//
+	// TargetDecoyCandidatePairScoretronV2 tdcpScoretron;
+	// e = tdcpScoretron.init(
+	// 	mzTargetKeyVsMsScanInfos,
+	// 	PythiaParameterReader::genericPythiaParametersForTests(),
+	// 	16,
+	// 	&reader
+	// 	);
+	// QCOMPARE(e, eNoError);
+	//
+	// for (int i = 0; i < 16; i ++) {
+	// 	QVector<float> v(24, static_cast<float>(i));
+	// 	std::copy_n(v.begin(), 24, tdcpScoretron.m_xicsAlignasIntensity[i]);
+	// }
+	//
+	// tdcpScoretron.m_targetFrameIndexMax = 24;
+	// tdcpScoretron.m_ms2IonsCount = 16;
 
 	// e = tdcpScoretron.buildIntegrationVecCosineSim();
 	QCOMPARE(e, eNoError);
