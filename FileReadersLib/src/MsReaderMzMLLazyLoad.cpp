@@ -94,30 +94,14 @@ class Q_DECL_HIDDEN MsReaderMzMLLazyLoad::PrivateData  {
 
 public:
 
-    PrivateData(QMap<ScanNumber, MsScanInfo> *msScanInfo);
+    explicit PrivateData(QMap<ScanNumber, MsScanInfo> *msScanInfo);
 
     ~PrivateData();
 
-    Err openFile(const QString& filename);
-    Err closeFile() const;
-
-   //  static Err extractScanPoints(
-   //          const QString &fileName,
-   //          const QVector<MsScanInfo*> &msScanInfos,
-			// QVector<MsScan> *msScans
-   //          );
+    [[nodiscard]] Err openFile(const QString& filename) const;
+    [[nodiscard]] Err closeFile() const;
 
     [[nodiscard]] bool isScanNumberValid(int scanNumber) const;
-
-    [[nodiscard]] Err setScanOffsetsMsScanInfos(
-            const QVector<FileChunk> &chunks,
-            qint64 fileSize
-            ) const;
-
-    Err extractScanOffsets(
-            const FileChunk &chunk,
-            bool *foundOffsets
-            ) const;
 
 public:
     QMap<ScanNumber, MsScanInfo> *m_msScanInfo;
@@ -128,7 +112,7 @@ MsReaderMzMLLazyLoad::PrivateData::PrivateData(QMap<ScanNumber, MsScanInfo> *msS
 : m_msScanInfo(msScanInfo){}
 
 MsReaderMzMLLazyLoad::PrivateData::~PrivateData() {
-    closeFile();
+    Err e = closeFile();
 }
 
 namespace {
@@ -191,6 +175,142 @@ namespace {
 
         return fileChunks;
     }
+
+		QString extractTagContents(
+		std::ifstream& file,
+		const std::streampos& tagPosition,
+		const std::string& tag
+		) {
+
+		file.seekg(tagPosition);
+
+		std::string line, tagContent;
+		bool insideTag = false;
+		std::string closingTag = "</" + tag.substr(1);
+
+		while (std::getline(file, line)) {
+			size_t start = (insideTag ? 0 : line.find(tag));
+			if (start != std::string::npos) {
+
+				start += tag.length();
+				insideTag = true;
+			}
+
+			if (insideTag) {
+				size_t close = line.find(closingTag);
+				if (close != std::string::npos) {
+					tagContent += line.substr(start, close - start);
+					break;
+				}
+
+				tagContent += line.substr(start) + "\n";
+
+			}
+		}
+
+		return QString::fromStdString(tagContent);
+	}
+
+	QPair<Err, std::streampos> findIndexListOffset(std::ifstream *file) {
+
+		ERR_INIT
+
+		const std::string& tag = "<indexListOffset>";
+
+		std::streampos fileSize = file->tellg();
+		std::streampos chunkSize = 4096;
+		std::streampos position = fileSize;
+		std::string buffer;
+
+		std::string chunk;
+
+		while (position > 0) {
+			std::streampos readSize = (position >= chunkSize) ? chunkSize : position;
+			position -= readSize;
+			file->seekg(position);
+
+			chunk.resize(readSize);
+			file->read(&chunk[0], readSize);
+
+			buffer.insert(0, chunk);
+
+			size_t tagPos = buffer.rfind(tag);
+			if (tagPos != std::string::npos) {
+
+				const QString indexListOffsetLocationString
+						= extractTagContents(*file, position + static_cast<std::streamoff>(tagPos), tag);
+
+				return {e , static_cast<std::streamoff>(indexListOffsetLocationString.toLong())};
+			}
+
+			if (buffer.length() > tag.length()) {
+				buffer = buffer.substr(0, tag.length());
+			}
+		}
+
+		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Error: Tag <indexListOffset> not found.";
+		return {eFileError, {}};
+	}
+
+	Err initMsScanInfosWithOffsets(
+		const QString &filePath,
+		QMap<ScanNumber, MsScanInfo> *msScanInfos
+		) {
+		ERR_INIT
+
+		e = ErrorUtils::fileExists(filePath); ree;
+
+		std::ifstream file(filePath.toStdString(), std::ios::binary | std::ios::ate);
+		e = ErrorUtils::isTrue(file.is_open()); ree;
+
+		const QPair<Err, std::streampos> errVsStreamPos = findIndexListOffset(&file);
+		e = errVsStreamPos.first; ree;
+		const std::streampos posOffsets = errVsStreamPos.second;
+
+		file.seekg(posOffsets);
+		std::string line;
+
+		while (std::getline(file, line)) {
+
+			const QString lineQString = QString::fromStdString(line).trimmed();
+
+			if (lineQString.mid(0, 7) != "<offset") {
+				continue;
+			}
+
+			static QRegularExpression re(R"(<offset idRef="[^"]*">(\d+)</offset>)");
+			QRegularExpressionMatch match = re.match(lineQString);
+
+			e = ErrorUtils::isTrue(match.hasMatch()); ree;
+			const QString offsetStr = match.captured(1);
+			long offset;
+			e = ErrorUtils::toLong(offsetStr, &offset); ree;
+
+			static QRegularExpression re2(lineQString.contains(scanKey) ? R"(scan=(\d+))" : R"(index=(\d+))");
+			QRegularExpressionMatch match2 = re2.match(lineQString);
+			if (!match2.hasMatch()) {
+				continue;
+			}
+
+			const QString scanNumberStr = match2.captured(1);
+
+			int scanNumber;
+			e = ErrorUtils::toInt(scanNumberStr, &scanNumber); ree;
+
+			MsScanInfo msScanInfo;
+			msScanInfo.scanOffsetStart = offset;
+			msScanInfo.scanNumber = scanNumber;
+
+			if (!msScanInfos->isEmpty()) {
+				MsScanInfo *msScanInfoLast = &(*msScanInfos)[msScanInfos->lastKey()];
+				msScanInfoLast->scanOffsetEnd = offset;
+			}
+
+			msScanInfos->insert(msScanInfo.scanNumber, msScanInfo);
+		}
+
+		ERR_RETURN
+	}
 
     bool decompress(const QByteArray &input, QByteArray *output) {
 
@@ -506,25 +626,10 @@ namespace {
 
                     if (mzValues.size() != intensityValues.size() || msScanInfoLocal.scanNumber < 0) {
                         msScanInfoLocal = MsScanInfo();
-                        // scanPointsLocal = ScanPoints();
                         str.clear();
                         continue;
                     }
 
-//                    e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); rree;
-
-//                    scanPointsLocal.resize(mzValues.size());
-//                    scanPointsLocal.reserve(mzValues.size());
-//
-//                    for (int i = 0; i < mzValues.size(); i++) {
-//                        const ScanPoint point(
-//                                static_cast<float>(mzValues.at(i)),
-//                                static_cast<float>(intensityValues.at(i))
-//                                );
-//                        scanPointsLocal[i] = point;
-//                    }
-
-//                    filterZeroIntensityQPoints(&scanPointsLocal);
                     msScanInfosVsScanPoints.push_back({msScanInfoLocal, scanPointsLocal});
 
                     msScanInfoLocal = MsScanInfo();
@@ -539,7 +644,7 @@ namespace {
     }
 
 }//NAMESPACE
-Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) {
+Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) const {
 
     ERR_INIT
 
@@ -547,6 +652,9 @@ Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) {
     qint64 fileSize;
     uchar *ucharData;
     e = memoryMapFile(file, &fileSize, &ucharData); ree;
+
+	e = initMsScanInfosWithOffsets(filename, m_msScanInfo); ree;
+	m_msScanInfo->last().scanOffsetEnd = fileSize;
 
     const QVector<FileChunk> chunks = buildFileChunks(fileSize, ucharData);
 
@@ -556,14 +664,33 @@ Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) {
     future.waitForFinished();
 
     for (const QPair<Err, QVector<QPair<MsScanInfo, ScanPoints>>> &result : future) {
-        e = result.first; ree;
-        for (const QPair<MsScanInfo, ScanPoints> &pr : result.second) {
-            const MsScanInfo &msScanInfo = pr.first;
-            if (m_msScanInfo->contains(msScanInfo.scanNumber) || msScanInfo.scanNumber < 0) {
+
+    	e = result.first; ree;
+
+    	for (const QPair<MsScanInfo, ScanPoints> &pr : result.second) {
+
+        	const MsScanInfo &msScanInfo = pr.first;
+            if (msScanInfo.scanNumber < 0) {
                 continue;
             }
 
-            m_msScanInfo->insert(msScanInfo.scanNumber, msScanInfo);
+    		e = ErrorUtils::contains(msScanInfo.scanNumber, *m_msScanInfo); ree;
+
+    		MsScanInfo *msScanInfoPntr = &(*m_msScanInfo)[msScanInfo.scanNumber];
+    		msScanInfoPntr->frameIndex = msScanInfo.frameIndex;
+    		msScanInfoPntr->collisionEnergy = msScanInfo.collisionEnergy;
+    		msScanInfoPntr->intensityMin = msScanInfo.intensityMin;
+    		msScanInfoPntr->intensityMax = msScanInfo.intensityMax;
+    		msScanInfoPntr->pointCount = msScanInfo.pointCount;
+    		msScanInfoPntr->msLevel = msScanInfo.msLevel;
+    		msScanInfoPntr->scanTime = msScanInfo.scanTime;
+    		msScanInfoPntr->precursorTargetMz = msScanInfo.precursorTargetMz;
+    		msScanInfoPntr->isoWindowLower = msScanInfo.isoWindowLower;
+    		msScanInfoPntr->isoWindowUpper = msScanInfo.isoWindowUpper;
+    		msScanInfoPntr->ionMobilityDriftTime = msScanInfo.ionMobilityDriftTime;
+    		msScanInfoPntr->mzMin = msScanInfo.mzMin;
+    		msScanInfoPntr->mzMax = msScanInfo.mzMax;
+    		msScanInfoPntr->ionMobilityIndex = msScanInfo.ionMobilityIndex;
         }
     }
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Scan Count" << m_msScanInfo->size();
@@ -583,117 +710,20 @@ Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) {
     }
 #endif
 
-    e = setScanOffsetsMsScanInfos(chunks, fileSize); ree;
-
     file.unmap(ucharData);
     file.close();
 
-    ERR_RETURN
+	ERR_RETURN
 }
 
 Err MsReaderMzMLLazyLoad::PrivateData::closeFile() const {
-
     ERR_INIT
-
     m_msScanInfo->clear();
-
     ERR_RETURN
 }
 
 bool MsReaderMzMLLazyLoad::PrivateData::isScanNumberValid(int scanNumber) const {
     return scanNumber >= 1 && scanNumber <= m_msScanInfo->size();
-}
-
-Err MsReaderMzMLLazyLoad::PrivateData::extractScanOffsets(
-        const FileChunk &chunk,
-        bool *foundOffsets
-        ) const {
-
-    ERR_INIT
-
-    e = ErrorUtils::isFalse(m_msScanInfo->isEmpty()); ree;
-
-    *foundOffsets = false;
-
-    QString str;
-    for (size_t i = chunk.start; i < chunk.end; ++i) {
-
-        str += chunk.data[i];
-
-        if (chunk.data[i] == '\n') {
-
-            str = str.trimmed();
-            if (str.isEmpty() || str.front() != '<') {
-                str.clear();
-                continue;
-            }
-
-            if (str.contains(offsetElementName) && (str.contains(scanKey) || str.contains(indexKey))) {
-
-                static QRegularExpression re(R"(<offset idRef="[^"]*">(\d+)</offset>)");
-                QRegularExpressionMatch match = re.match(str);
-
-                e = ErrorUtils::isTrue(match.hasMatch()); ree;
-                const QString offsetStr = match.captured(1);
-                long offset;
-                e = ErrorUtils::toLong(offsetStr, &offset); ree;
-
-                static QRegularExpression re2(str.contains(scanKey) ? R"(scan=(\d+))" : R"(index=(\d+))");
-                QRegularExpressionMatch match2 = re2.match(str);
-
-                e = ErrorUtils::isTrue(match2.hasMatch());ree;
-                const QString scanNumberStr = match2.captured(1);
-
-                int scanNumber;
-                e = ErrorUtils::toInt(scanNumberStr, &scanNumber); ree;
-                e = ErrorUtils::isTrue(m_msScanInfo->contains(scanNumber)); ree;
-
-                MsScanInfo &msScanInfo = (*m_msScanInfo)[scanNumber];
-                msScanInfo.scanOffsetStart = offset;
-
-                *foundOffsets = true;
-            }
-
-            str.clear();
-        }
-    }
-
-    ERR_RETURN
-}
-
-Err MsReaderMzMLLazyLoad::PrivateData::setScanOffsetsMsScanInfos(
-        const QVector<FileChunk> &chunks,
-        qint64 fileSize
-        ) const {
-
-    ERR_INIT
-
-    int falseCount = 0;
-    for (int i = chunks.size() - 1; i > 0; i--) {
-        bool foundOffset;
-        const FileChunk &fc = chunks.at(i);
-        e = extractScanOffsets(fc, &foundOffset); ree;
-
-        if (!foundOffset) {
-            falseCount++;
-        }
-
-        constexpr int maxFalseCutCount = 1;
-        if (falseCount >= maxFalseCutCount) {
-            break;
-        }
-    }
-
-    const QList<int> &scanNumbers = m_msScanInfo->keys();
-    for (int scanNumber : scanNumbers) {
-        MsScanInfo &msScanInfoCurrent = (*m_msScanInfo)[scanNumber];
-        const MsScanInfo &msScanInfoNext = m_msScanInfo->value(scanNumber+1);
-        msScanInfoCurrent.scanOffsetEnd = msScanInfoNext.scanOffsetStart;
-    }
-
-    m_msScanInfo->last().scanOffsetEnd = fileSize;
-
-    ERR_RETURN
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -715,110 +745,202 @@ namespace {
         MzVals mzValues;
         IntensityVals intensityValues;
 
-        QString str;
-        for (size_t i = chunk.start; i < chunk.end; ++i) {
+    	const size_t length = chunk.end - chunk.start;
+    	const QString qstr = QString::fromUtf8(chunk.data + chunk.start, length);
+    	QStringList qstrList = qstr.split('\n', Qt::SkipEmptyParts);
 
-            str += chunk.data[i];
+        for (QString &str : qstrList) {
 
-            if (chunk.data[i] == '\n') {
+            str = str.trimmed();
 
-                str = str.trimmed();
-                if (str.isEmpty() || str.front() != '<') {
+        	// qDebug() << str << "SDFKJLS";
+
+            if (str.contains(BIT64_FLOAT)) {
+                type = TYPES::FLOAT64;
+            }
+            else if (str.contains(BIT32_FLOAT)) {
+                type = TYPES::FLOAT32;
+            }
+            else if (str.contains(ZLIB_COMPRESSION)) {
+                compression = COMPRESSION::ZLIB;
+            }
+            else if (str.contains(NO_COMPRESSION)) {
+                compression = COMPRESSION::NO_COMPRESS;
+            }
+            else if (str.contains(MZ_ARRAY)) {
+                spectrumType = SPECTRUM_TYPE::MZ_ARR;
+            }
+            else if (str.contains(INTENSITY_ARRAY)) {
+                spectrumType = SPECTRUM_TYPE::INTENSITY_ARR;
+            }
+            else if (str.contains(binaryElementName)) {
+
+                str = str.replace(binaryElementName, "");
+                str = str.replace(binaryElementEndName, "");
+                const std::string elementText = str.toStdString();
+
+                QByteArray binaryData = QByteArray::fromBase64(QByteArray::fromStdString(elementText));
+
+                QByteArray binaryDataOut;
+                if (compression == COMPRESSION::ZLIB) {
+                    decompress(binaryData, &binaryDataOut);
+                }
+                else if (compression == COMPRESSION::NO_COMPRESS){
+                    binaryDataOut = binaryData;
+                }
+
+                QVector<float> decodedBLOB;
+                if (type == TYPES::FLOAT64) {
+                	const QVector<double> decodedBLOBDouble = SqlUtils::decodeBLOB<double>(binaryDataOut);
+                	decodedBLOB.reserve(decodedBLOBDouble.size());
+                	std::copy(decodedBLOBDouble.cbegin(), decodedBLOBDouble.cend(), std::back_inserter(decodedBLOB));
+                }
+                else if (type == TYPES::FLOAT32) {
+                	decodedBLOB = SqlUtils::decodeBLOB<float>(binaryDataOut);
+                }
+
+                if (spectrumType == SPECTRUM_TYPE::MZ_ARR) {
+                    mzValues = decodedBLOB;
+                }
+                else if (spectrumType == SPECTRUM_TYPE::INTENSITY_ARR) {
+                    intensityValues = decodedBLOB;
+                }
+            }
+            else if (str.contains(spectrumElementEndName)) {
+
+                if (mzValues.size() != intensityValues.size()) {
+                    scanPointsLocal = ScanPoints();
                     str.clear();
                     continue;
                 }
 
-                if (str.contains(BIT64_FLOAT)) {
-                    type = TYPES::FLOAT64;
+                e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); rree;
+                scanPointsLocal.resize(mzValues.size());
+                scanPointsLocal.reserve(mzValues.size());
+
+                for (int j = 0; j < mzValues.size(); j++) {
+                    const ScanPoint point(
+                            static_cast<float>(mzValues.at(j)),
+                            static_cast<float>(intensityValues.at(j))
+                            );
+                    scanPointsLocal[j] = point;
                 }
-                else if (str.contains(BIT32_FLOAT)) {
-                    type = TYPES::FLOAT32;
-                }
-                else if (str.contains(ZLIB_COMPRESSION)) {
-                    compression = COMPRESSION::ZLIB;
-                }
-                else if (str.contains(NO_COMPRESSION)) {
-                    compression = COMPRESSION::NO_COMPRESS;
-                }
-                else if (str.contains(MZ_ARRAY)) {
-                    spectrumType = SPECTRUM_TYPE::MZ_ARR;
-                }
-                else if (str.contains(INTENSITY_ARRAY)) {
-                    spectrumType = SPECTRUM_TYPE::INTENSITY_ARR;
-                }
-                else if (str.contains(binaryElementName)) {
+                filterZeroIntensityQPoints(&scanPointsLocal);
 
-                    str = str.replace(binaryElementName, "");
-                    str = str.replace(binaryElementEndName, "");
-                    const std::string elementText = str.toStdString();
-
-                    QByteArray binaryData = QByteArray::fromBase64(QByteArray::fromStdString(elementText));
-
-                    QByteArray binaryDataOut;
-                    if (compression == COMPRESSION::ZLIB) {
-                        decompress(binaryData, &binaryDataOut);
-                    }
-                    else if (compression == COMPRESSION::NO_COMPRESS){
-                        binaryDataOut = binaryData;
-                    }
-
-                	QVector<float> decodedBLOB;
-                	if (type == TYPES::FLOAT64) {
-                		const QVector<double> decodedBLOBDouble = SqlUtils::decodeBLOB<double>(binaryDataOut);
-                		decodedBLOB.reserve(decodedBLOBDouble.size());
-                		std::copy(decodedBLOBDouble.cbegin(), decodedBLOBDouble.cend(), std::back_inserter(decodedBLOB));
-                	}
-                	else if (type == TYPES::FLOAT32) {
-                		decodedBLOB = SqlUtils::decodeBLOB<float>(binaryDataOut);
-                	}
-
-                    if (spectrumType == SPECTRUM_TYPE::MZ_ARR) {
-                        mzValues = decodedBLOB;
-                    }
-                    else if (spectrumType == SPECTRUM_TYPE::INTENSITY_ARR) {
-                        intensityValues = decodedBLOB;
-                    }
-                }
-                else if (str.contains(spectrumElementEndName)) {
-
-                    if (mzValues.size() != intensityValues.size()) {
-                        scanPointsLocal = ScanPoints();
-                        str.clear();
-                        continue;
-                    }
-
-                    e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); rree;
-
-                    scanPointsLocal.resize(mzValues.size());
-                    scanPointsLocal.reserve(mzValues.size());
-
-                    for (int j = 0; j < mzValues.size(); j++) {
-                        const ScanPoint point(
-                                static_cast<float>(mzValues.at(j)),
-                                static_cast<float>(intensityValues.at(j))
-                                );
-                        scanPointsLocal[j] = point;
-                    }
-                    filterZeroIntensityQPoints(&scanPointsLocal);
-
-                	mzValues.resize(scanPointsLocal.size());
-                	intensityValues.resize(scanPointsLocal.size());
-                	mzValues.clear();
-                	intensityValues.clear();
-                	for (int j = 0; j < scanPointsLocal.size(); j++) {
-                		const ScanPoint sp =scanPointsLocal[j];
-                		mzValues[j] = sp.x();
-                		intensityValues[j] = sp.y();
-                	}
-
-                    break;
+                mzValues.resize(scanPointsLocal.size());
+                intensityValues.resize(scanPointsLocal.size());
+                mzValues.clear();
+                intensityValues.clear();
+                for (int j = 0; j < scanPointsLocal.size(); j++) {
+                	const ScanPoint sp =scanPointsLocal[j];
+                	mzValues[j] = sp.x();
+                	intensityValues[j] = sp.y();
                 }
 
-                str.clear();
+                break;
             }
+
+            str.clear();
         }
 
         return {e, {mzValues, intensityValues}};
+
+    	// QXmlStreamReader xml(qstr);
+    	// while (!xml.atEnd() && !xml.hasError()) {
+	    //
+    	// 	QXmlStreamReader::TokenType token = xml.readNext();
+		   //  if (token == QXmlStreamReader::StartElement){
+	    //
+		   //  	if (xml.attributes().hasAttribute(ACCESSION)) {
+		   //  		const QString accession = xml.attributes().value("accession").toString();
+	    //
+		   //  		if (accession == BIT64_FLOAT) {
+		   //  			type = TYPES::FLOAT64;
+		   //  		}
+		   //  		else if (accession == BIT32_FLOAT) {
+		   //  			type = TYPES::FLOAT32;
+		   //  		}
+		   //  		else if (accession == ZLIB_COMPRESSION) {
+		   //  			compression = COMPRESSION::ZLIB;
+		   //  		}
+		   //  		else if (accession == NO_COMPRESSION) {
+		   //  			compression = COMPRESSION::NO_COMPRESS;
+		   //  		}
+		   //  		else if (accession == MZ_ARRAY) {
+		   //  			spectrumType = SPECTRUM_TYPE::MZ_ARR;
+		   //  		}
+		   //  		else if (accession == INTENSITY_ARRAY) {
+		   //  			spectrumType = SPECTRUM_TYPE::INTENSITY_ARR;
+		   //  		}
+		   //  	}
+	    //
+    	// 		else if (xml.name() == "binary") {
+	    //
+    	// 			const QString binaryValue = xml.readElementText();
+    	// 		    const std::string elementText = binaryValue.toStdString();
+	    //
+    	// 		    QByteArray binaryData = QByteArray::fromBase64(QByteArray::fromStdString(elementText));
+	    //
+    	// 		    QByteArray binaryDataOut;
+    	// 		    if (compression == COMPRESSION::ZLIB) {
+    	// 		        decompress(binaryData, &binaryDataOut);
+    	// 		    }
+    	// 		    else if (compression == COMPRESSION::NO_COMPRESS){
+    	// 		        binaryDataOut = binaryData;
+    	// 		    }
+	    //
+    	// 		    QVector<float> decodedBLOB;
+    	// 		    if (type == TYPES::FLOAT64) {
+    	// 			    const QVector<double> decodedBLOBDouble = SqlUtils::decodeBLOB<double>(binaryDataOut);
+    	// 			    decodedBLOB.reserve(decodedBLOBDouble.size());
+    	// 			    std::copy(decodedBLOBDouble.cbegin(), decodedBLOBDouble.cend(), std::back_inserter(decodedBLOB));
+    	// 		    }
+    	// 		    else if (type == TYPES::FLOAT32) {
+    	// 			    decodedBLOB = SqlUtils::decodeBLOB<float>(binaryDataOut);
+    	// 		    }
+	    //
+    	// 		    if (spectrumType == SPECTRUM_TYPE::MZ_ARR) {
+    	// 		        mzValues = decodedBLOB;
+    	// 		    }
+    	// 		    else if (spectrumType == SPECTRUM_TYPE::INTENSITY_ARR) {
+    	// 		        intensityValues = decodedBLOB;
+    	// 		    }
+    	// 		}
+    	// 	}
+    	// 	if (token == QXmlStreamReader::EndElement) {
+    	// 		if (xml.name() == "spectrum") {
+    	// 			if (mzValues.size() != intensityValues.size()) {
+    	// 				scanPointsLocal = ScanPoints();
+    	// 				continue;
+    	// 			}
+    	// 			e = ErrorUtils::isEqual(mzValues.size(), intensityValues.size()); rree;
+	    //
+    	// 			scanPointsLocal.resize(mzValues.size());
+    	// 			scanPointsLocal.reserve(mzValues.size());
+	    //
+    	// 			for (int j = 0; j < mzValues.size(); j++) {
+    	// 				const ScanPoint point(
+					// 			static_cast<float>(mzValues.at(j)),
+					// 			static_cast<float>(intensityValues.at(j))
+					// 			);
+    	// 				scanPointsLocal[j] = point;
+    	// 			}
+    	// 			filterZeroIntensityQPoints(&scanPointsLocal);
+	    //
+    	// 			mzValues.resize(scanPointsLocal.size());
+    	// 			intensityValues.resize(scanPointsLocal.size());
+    	// 			mzValues.clear();
+    	// 			intensityValues.clear();
+    	// 			for (int j = 0; j < scanPointsLocal.size(); j++) {
+    	// 				const ScanPoint sp =scanPointsLocal[j];
+    	// 				mzValues[j] = sp.x();
+    	// 				intensityValues[j] = sp.y();
+    	// 			}
+	    //
+    	// 			break;
+    	// 		}
+    	// 	}
+    	// }
     }
 
 

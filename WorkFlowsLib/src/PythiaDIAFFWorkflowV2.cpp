@@ -51,17 +51,17 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 	MsReaderPointerAcc msReaderPointerAcc;
 	e = msReaderPointerAcc.openFile(msDataFileUri); ree;
 
-	// e = buildMS1Frame(&msReaderPointerAcc); ree;
+	e = buildMS1Frame(&msReaderPointerAcc); ree;
 
-	// {
-	// 	MsCalibratomaticSettertronV2 msCalibratomaticSettertronV2;
-	// 	e = msCalibratomaticSettertronV2.init(
-	// 		&m_tdcpManager,
-	// 		&msReaderPointerAcc,
-	// 		&m_pythiaParameters
-	// 		); ree;
-	// 	e = msCalibratomaticSettertronV2.buildMsCalibratomatic(&m_msCalibratomatic); ree;
-	// }
+	{
+		MsCalibratomaticSettertronV2 msCalibratomaticSettertronV2;
+		e = msCalibratomaticSettertronV2.init(
+			&m_tdcpManager,
+			&msReaderPointerAcc,
+			&m_pythiaParameters
+			); ree;
+		e = msCalibratomaticSettertronV2.buildMsCalibratomatic(&m_msCalibratomatic); ree;
+	}
 
 	ERR_RETURN
 }
@@ -73,13 +73,15 @@ Err PythiaDIAFFWorkflowV2::buildMS1Frame(MsReaderPointerAcc *msReaderPointerAcc)
 	constexpr int msLevel = 1;
 	const QMap<ScanNumber, MsScanInfo*> ms1ScanInfos = msReaderPointerAcc->ptr->getMsScanInfos(msLevel);
 	QVector<MsScan> msScans;
-	e = MsReaderMzMLLazyLoad::extractScanPoints(
-		msReaderPointerAcc->ptr->filePath(),
+
+	e = msReaderPointerAcc->ptr->extractScanPoints(
 		ms1ScanInfos.values().toVector(),
 		&msScans
 		); ree;
 
 	e = m_msFrameMS1.init(msScans); ree;
+
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Ms1 Data Frames built";
 
 	ERR_RETURN
 }

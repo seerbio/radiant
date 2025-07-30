@@ -167,8 +167,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 		const QVector<MsScanInfo*> &msScanInfosCopy = m_mzTargetKeyVsMsScanInfos.value(mzTargetKey);
 		QVector<MsScan> msScans;
-		e = MsReaderMzMLLazyLoad::extractScanPoints(
-			m_msReaderPointerAcc->ptr->filePath(),
+		e = m_msReaderPointerAcc->ptr->extractScanPoints(
 			msScanInfosCopy,
 			&msScans
 			); rtee;

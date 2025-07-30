@@ -62,31 +62,30 @@ namespace {
 		ERR_RETURN
 	}
 
-	std::tuple<Err, MzTargetKey, TurboXIC*> parallelLoadTurboXIC(
-		const QVector<MsScanInfo*> &msScanInfos,
-		const QString &filePath
-		) {
-
-		ERR_INIT
-
-		const QVector<MsScanInfo*> &msScanInfosCopy = msScanInfos;
-		QVector<MsScan> msScans;
-		e = MsReaderMzMLLazyLoad::extractScanPoints(
-			filePath,
-			msScanInfosCopy,
-			&msScans
-			); rtee;
-
-		e = ErrorUtils::isTrue(
-			msScans.front().msScanInfoPntr->targetKey() ==
-			msScans.back().msScanInfoPntr->targetKey()
-			); rtee;
-
-		auto *turboXIC = new TurboXIC();
-		e = turboXIC->init(msScans); rtee;
-
-		return {e, msScans.back().msScanInfoPntr->targetKey(), turboXIC};
-	}
+	// std::tuple<Err, MzTargetKey, TurboXIC*> parallelLoadTurboXIC(
+	// 	const QVector<MsScanInfo*> &msScanInfos,
+	// 	MsReaderPointerAcc *msReaderPointerAcc
+	// 	) {
+	//
+	// 	ERR_INIT
+	//
+	// 	const QVector<MsScanInfo*> &msScanInfosCopy = msScanInfos;
+	// 	QVector<MsScan> msScans;
+	// 	e = msReaderPointerAcc->ptr->extractScanPoints(
+	// 		msScanInfosCopy,
+	// 		&msScans
+	// 		); rtee;
+	//
+	// 	e = ErrorUtils::isTrue(
+	// 		msScans.front().msScanInfoPntr->targetKey() ==
+	// 		msScans.back().msScanInfoPntr->targetKey()
+	// 		); rtee;
+	//
+	// 	auto *turboXIC = new TurboXIC();
+	// 	e = turboXIC->init(msScans); rtee;
+	//
+	// 	return {e, msScans.back().msScanInfoPntr->targetKey(), turboXIC};
+	// }
 
 }//namespace
 Err MsCalibratomaticSettertronV2::init(
