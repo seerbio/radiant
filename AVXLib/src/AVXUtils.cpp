@@ -214,7 +214,7 @@ Err AVXUtils::convolveEightVecsWithKernelAVXFloat(
 			previousRegisters[j] = previousRegisters[j+1];
 		}
 		previousRegisters[kernelSize - 1] = registerCurrent;
-		
+
 		__m256 vSum = _mm256_setzero_ps();
 		for (size_t j = 0; j < kernelSize; j++) {
 			const __m256 multVal = _mm256_mul_ps(previousRegisters[j], filterRegisters[j]);

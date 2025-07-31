@@ -42,9 +42,18 @@ namespace {
 
 		QVector<MzTargetKey> mzTargetKeys = allTargetKeys.keys().toVector();
 
-		constexpr int skipCount = 5;
+		constexpr int desiredTargetKeysToAnalyze = 40;
+
+		const int skipSizeData = mzTargetKeys.size() / desiredTargetKeysToAnalyze;
+		const int skipCountMzTargetKey = std::max(skipSizeData, 2);
+
+		qDebug()
+		<< qPrintable(S_GLOBAL_TIMER.elapsed())
+		<< "MzTargetKey skip count:" << skipCountMzTargetKey
+		<< "| MzTargetKey count:" << mzTargetKeys.size();
+
 		QMap<MzTargetKey, bool> selectTargetKeys;
-		for (int i = 0; i < mzTargetKeys.size(); i += skipCount) {
+		for (int i = 0; i < mzTargetKeys.size(); i += skipCountMzTargetKey) {
 			const MzTargetKey &mzTargetKey = mzTargetKeys[i];
 			selectTargetKeys[mzTargetKey] = true;
 		}
@@ -234,7 +243,13 @@ namespace {
 			msFrameV2MS1
 			); ree;
 
+		constexpr int skipCountTDCP = 1;
+		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
+
+			// if (counter++ % skipCountTDCP != 0) {
+			// 	continue;
+			// }
 
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
 
