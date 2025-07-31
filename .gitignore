@@ -20,3 +20,7 @@ CMakeUserPresets.json
 /cmake-build-relwithdebinfo/
 
 vcpkg/
+
+ThirdPartyLibs/libduckdb-linux-amd64/
+
+ThirdPartyLibs/libduckdb-linux-arm64/
