@@ -57,11 +57,26 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 		);
 	QCOMPARE(e, eNoError);
 
+	constexpr int msLevel = 1;
+	const QMap<ScanNumber, MsScanInfo*> ms1ScanInfos = reader.ptr->getMsScanInfos(msLevel);
+	QVector<MsScan> msScans;
+
+	e = reader.ptr->extractScanPoints(
+		ms1ScanInfos.values().toVector(),
+		&msScans
+		);
+	QCOMPARE(e, eNoError);
+
+	MsFrameV2 msFrameMS1;
+	e = msFrameMS1.init(msScans);
+	QCOMPARE(e, eNoError);
+
 	MsCalibratomaticSettertronV2 setter;
 	e = setter.init(
 		&tdcpManager,
 		&reader,
-		&pythiaParameters
+		&pythiaParameters,
+		&msFrameMS1
 		);
 	QCOMPARE(e, eNoError);
 

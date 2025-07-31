@@ -287,7 +287,7 @@ void TurboXICTests::troubleShootTest() {
 	e = msReaderMzMLLazyLoad.openFile(filename);
 	QCOMPARE(e, eNoError);
 
-	const QVector<MsScanInfo> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
+	const QVector<MsScanInfo*> scanInfos = msReaderMzMLLazyLoad.getUniqueTandemMsScanInfos();
 
 	QMap<MzTargetKey, QVector<MsScanInfo*>> mzTargetVsScanInfosPntrs = msReaderMzMLLazyLoad.m_mzTargetVsScanInfosPntrs;
 
