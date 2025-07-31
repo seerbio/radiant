@@ -28,6 +28,7 @@ private slots:
 	static void isAllOnesTest();
 	static void interleaveVectorsTest();
 	static void separateInterleavedVectorsTest();
+	static void findApexesEightVecsTest();
 };
 
 void AVXUtilsTests::copyAVXTest() {
@@ -460,6 +461,72 @@ void AVXUtilsTests::separateInterleavedVectorsTest() {
 		QCOMPARE(static_cast<int>(sevens[i]), 7);
 		QCOMPARE(static_cast<int>(eights[i]), 8);
 	}
+}
+
+void AVXUtilsTests::findApexesEightVecsTest() {
+
+	QVector<float> v0(8, 0);
+	QVector<float> v1(8, 0);
+	QVector<float> v2(8, 0);
+	QVector<float> v3(8, 0);
+	QVector<float> v4(8, 0);
+	QVector<float> v5(8, 0);
+	QVector<float> v6(8, 0);
+	QVector<float> v7(8, 0);
+
+	QVector<float> vApexes0(8, 0);
+	QVector<float> vApexes1(8, 0);
+	QVector<float> vApexes2(8, 0);
+	QVector<float> vApexes3(8, 0);
+	QVector<float> vApexes4(8, 0);
+	QVector<float> vApexes5(8, 0);
+	QVector<float> vApexes6(8, 0);
+	QVector<float> vApexes7(8, 0);
+
+	v0[0] = 0;
+	v1[1] = 1;
+	v2[2] = 2;
+	v3[3] = 3;
+	v4[4] = 4;
+	v5[5] = 5;
+	v6[6] = 6;
+	v7[7] = 7;
+
+	v0[0] = 0;
+	v1[0] = 1;
+	v2[1] = 1;
+	v3[2] = 1;
+	v4[3] = 1;
+	v5[4] = 1;
+	v6[5] = 1;
+	v7[6] = 1;
+
+	ERR_INIT
+	e = AVXUtils::findApexesEightVecs(
+		8,
+		v0.data(),
+		v1.data(),
+		v2.data(),
+		v3.data(),
+		v4.data(),
+		v5.data(),
+		v6.data(),
+		v7.data(),
+		vApexes0.data(),
+		vApexes1.data(),
+		vApexes2.data(),
+		vApexes3.data(),
+		vApexes4.data(),
+		vApexes5.data(),
+		vApexes6.data(),
+		vApexes7.data()
+		);
+
+	QCOMPARE(static_cast<int>(v2[2]), 2);
+	QCOMPARE(static_cast<int>(v3[3]), 3);
+	QCOMPARE(static_cast<int>(v4[4]), 4);
+	QCOMPARE(static_cast<int>(v5[5]), 5);
+	QCOMPARE(static_cast<int>(v6[6]), 6);
 }
 
 

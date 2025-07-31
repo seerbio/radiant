@@ -242,6 +242,88 @@ Err AVXUtils::convolveEightVecsWithKernelAVXFloat(
 	ERR_RETURN
 }
 
+Err AVXUtils::findApexesEightVecs(
+	size_t maxVecSize,
+	float *v0,
+	float *v1,
+	float *v2,
+	float *v3,
+	float *v4,
+	float *v5,
+	float *v6,
+	float *v7,
+	float *v0Apexes,
+	float *v1Apexes,
+	float *v2Apexes,
+	float *v3Apexes,
+	float *v4Apexes,
+	float *v5Apexes,
+	float *v6Apexes,
+	float *v7Apexes
+	) {
+
+	ERR_INIT
+
+	const size_t masterVectorSize = maxVecSize * AVX2_FLOAT_REGISTER_SIZE;
+
+	const size_t masterVectorSizeAlignas = calculateNextAlignedBlockSize(
+		masterVectorSize,
+		AVX2_ALIGNAS_SIZE
+		);
+
+	alignas(AVX2_ALIGNAS_SIZE) float masterVector[masterVectorSizeAlignas] = {0};
+	alignas(AVX2_ALIGNAS_SIZE) float masterVectorApexes[masterVectorSizeAlignas] = {0};
+
+	interleaveVectors(
+		 maxVecSize,
+		 0,
+		 v0,
+		 v1,
+		 v2,
+		 v3,
+		 v4,
+		 v5,
+		 v6,
+		 v7,
+		 masterVector
+		);
+
+	__m256 zeroVec = _mm256_setzero_ps();
+
+	__m256 previous = _mm256_load_ps(masterVector + 0);
+	__m256 current = _mm256_load_ps(masterVector + AVX2_FLOAT_REGISTER_SIZE);
+	for (int i = 2; i < maxVecSize; i++) {
+		__m256 next = _mm256_load_ps(masterVector + (i * AVX2_FLOAT_REGISTER_SIZE));
+
+		__m256 gtPrevious = _mm256_cmp_ps(current, previous, _CMP_GT_OQ);
+		__m256 gtNext = _mm256_cmp_ps(current, next, _CMP_GT_OQ);
+		__m256 apexMask = _mm256_and_ps(gtPrevious, gtNext);
+
+		__m256 apexValues = _mm256_blendv_ps(zeroVec, current, apexMask);
+
+		_mm256_store_ps(masterVectorApexes + ((i -1) * AVX2_FLOAT_REGISTER_SIZE), apexValues);
+
+		previous = current;
+		current = next;
+	}
+
+	separateInterleavedVectors(
+		masterVectorApexes,
+		masterVectorSize,
+		0,
+		v0Apexes,
+		v1Apexes,
+		v2Apexes,
+		v3Apexes,
+		v4Apexes,
+		v5Apexes,
+		v6Apexes,
+		v7Apexes
+		);
+
+	ERR_RETURN
+}
+
 Err AVXUtils::subtractArraysAVX2(
 	float *source,
 	const float *subtractor,

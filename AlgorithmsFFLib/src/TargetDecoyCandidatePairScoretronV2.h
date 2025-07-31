@@ -72,6 +72,8 @@ private:
 
 	Err smoothScoreArrays();
 
+	Err buildApexVectors() const;
+
 private:
 
 	MsReaderPointerAcc *m_msReaderPointerAcc;
@@ -86,6 +88,7 @@ private:
 	int m_ms2IonsCount;
 
 	QVector<float*> m_xicsAlignasIntensity;
+	QVector<float*> m_xicsAlignasIntensityApexes;
 	QVector<float*> m_xicsAlignasIntensityShadows;
 	QVector<float*> m_xicsAlignasMz;
 	QVector<float*> m_xicsAlignasMzShadows;

@@ -74,6 +74,26 @@ public:
 		float* v7
 		);
 
+	static Err findApexesEightVecs (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float* v0Apexes,
+		float* v1Apexes,
+		float* v2Apexes,
+		float* v3Apexes,
+		float* v4Apexes,
+		float* v5Apexes,
+		float* v6Apexes,
+		float* v7Apexes
+		);
+
 	static Err subtractArraysAVX2(
 		float* array1,
 		const float* array2,
