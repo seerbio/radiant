@@ -43,10 +43,11 @@ namespace {
 
 		QVector<MzTargetKey> mzTargetKeys = allTargetKeys.keys().toVector();
 
-		constexpr int desiredTargetKeysToAnalyze = 40;
+		constexpr float desiredTargetKeysToAnalyze = 40.0f;
+		const int skipSizeData
+			= std::ceil(static_cast<float>(mzTargetKeys.size()) / desiredTargetKeysToAnalyze);
 
-		const int skipSizeData = mzTargetKeys.size() / desiredTargetKeysToAnalyze;
-		const int skipCountMzTargetKey = std::max(skipSizeData, 2);
+		const int skipCountMzTargetKey = std::max(skipSizeData, 1);
 
 		qDebug()
 		<< qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -244,8 +245,8 @@ namespace {
 			msFrameV2MS1
 			); ree;
 
-		constexpr int skipCountTDCP = 1;
-		int counter = 0;
+		// constexpr int skipCountTDCP = 50;
+		// int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
 
 			// if (counter++ % skipCountTDCP != 0) {
