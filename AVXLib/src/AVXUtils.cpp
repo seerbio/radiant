@@ -6,7 +6,6 @@
 
 #include "GlobalSettings.h"
 
-
 Err AVXUtils::copyAVXFloatToAligned(float *src, float *dst, size_t size) {
 
 	ERR_INIT
@@ -101,8 +100,6 @@ void AVXUtils::printMask(const __m256 &mask, size_t size) {
 	}
 }
 
-
-
 void AVXUtils::interleaveVectors(
 	size_t size,
 	size_t paddingSingleRegister,
@@ -119,14 +116,15 @@ void AVXUtils::interleaveVectors(
 
 	for (int i = 0; i < size; i++) {
 		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
-		const size_t insertIndex = paddingSingleRegister + (i * AVX2_FLOAT_REGISTER_SIZE);
-		_mm256_store_ps(resultVector + insertIndex, parallelVec);
+		const size_t insertIndex = (paddingSingleRegister * AVX2_FLOAT_REGISTER_SIZE) + (i * AVX2_FLOAT_REGISTER_SIZE);
+		_mm256_storeu_ps(resultVector + insertIndex, parallelVec);
 	}
 }
 
 void AVXUtils::separateInterleavedVectors(
 	const float* interleavedVectors,
 	size_t size,
+	size_t paddingSingleRegister,
 	float* v0,
 	float* v1,
 	float* v2,
@@ -137,21 +135,23 @@ void AVXUtils::separateInterleavedVectors(
 	float* v7
 	) {
 
-	for (int i = 0; i < size; i++) {
-		v0[i] = interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE];
-		v1[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
-		v2[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
-		v3[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
-		v4[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+4];
-		v5[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
-		v6[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
-		v7[i] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
+	const size_t registerCount = size / AVX2_FLOAT_REGISTER_SIZE;
+
+	for (int i = static_cast<int>(paddingSingleRegister); i < registerCount  - paddingSingleRegister; i++) {
+		v0[i - paddingSingleRegister] = interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE];
+		v1[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
+		v2[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
+		v3[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
+		v4[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+4];
+		v5[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
+		v6[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
+		v7[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
 	}
 }
 
-Err AVXUtils::convolveWithKernelAVXFloat(
+Err AVXUtils::convolveEightVecsWithKernelAVXFloat(
 	const QVector<float> &kernel,
-	size_t size,
+	size_t maxVecSize,
 	float* v0,
 	float* v1,
 	float* v2,
@@ -166,10 +166,12 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 
 	e = ErrorUtils::isNotEmpty(kernel); ree;
 
-	const size_t padding = kernel.size() - 1;
-	const size_t paddingSingle = padding / 2;
-	const size_t paddingSingleRegister = paddingSingle * AVX2_FLOAT_REGISTER_SIZE;
-	const size_t masterVectorSize = (size * AVX2_FLOAT_REGISTER_SIZE) + padding;
+	const int kernelSize = kernel.size();
+
+	const size_t paddingSingleSide = (kernelSize - 1) / 2;
+	const size_t paddingRegister = paddingSingleSide * AVX2_FLOAT_REGISTER_SIZE;
+	const size_t masterVectorSize = (maxVecSize * AVX2_FLOAT_REGISTER_SIZE) + (paddingRegister * 2);
+	const size_t resultsSize = maxVecSize * AVX2_FLOAT_REGISTER_SIZE;
 
 	const size_t masterVectorSizeAlignas = calculateNextAlignedBlockSize(
 		masterVectorSize,
@@ -177,11 +179,11 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 		);
 
 	alignas(AVX2_ALIGNAS_SIZE) float masterVector[masterVectorSizeAlignas] = {0};
-	alignas(AVX2_ALIGNAS_SIZE) float result[masterVectorSize] = {0};
+	alignas(AVX2_ALIGNAS_SIZE) float result[masterVectorSizeAlignas] = {0};
 
 	interleaveVectors(
-		 size,
-		 paddingSingleRegister,
+		 maxVecSize,
+		 paddingSingleSide,
 		 v0,
 		 v1,
 		 v2,
@@ -193,23 +195,40 @@ Err AVXUtils::convolveWithKernelAVXFloat(
 		 masterVector
 		);
 
-	for (int i = 0; i < (size * AVX2_FLOAT_REGISTER_SIZE); i += AVX2_FLOAT_REGISTER_SIZE) {
+	__m256 previousRegisters[kernelSize];
+	for (int i = 0; i < kernelSize; i++) {
+		previousRegisters[i] = _mm256_setzero_ps();
+	}
 
-		__m256 vSum = _mm256_setzero_ps();
+	__m256 filterRegisters[kernelSize];
+	for (int i = 0; i < kernelSize; i++) {
+		filterRegisters[i] = _mm256_set1_ps(kernel[i]);
+	}
 
-		for (int j = 0; j < kernel.size(); j++) {
-			const size_t readIndex = i + (j * AVX2_FLOAT_REGISTER_SIZE);
-			const __m256 reg = _mm256_load_ps(masterVector + readIndex);
-			const __m256 parallelVec = _mm256_set1_ps(kernel[j]);
-			const __m256 resultLocal = _mm256_mul_ps(reg, parallelVec);
-			vSum = _mm256_add_ps(resultLocal, vSum);
+	for (int i = paddingSingleSide; i < maxVecSize  + paddingSingleSide; i++) {
+
+		const size_t readIndex = i * AVX2_FLOAT_REGISTER_SIZE;
+		const __m256 registerCurrent = _mm256_load_ps(masterVector + readIndex);
+
+		for (int j = 0; j < kernelSize - 1; j++) {
+			previousRegisters[j] = previousRegisters[j+1];
 		}
-		_mm256_store_ps(result + i, vSum);
+		previousRegisters[kernelSize - 1] = registerCurrent;
+		
+		__m256 vSum = _mm256_setzero_ps();
+		for (size_t j = 0; j < kernelSize; j++) {
+			const __m256 multVal = _mm256_mul_ps(previousRegisters[j], filterRegisters[j]);
+			vSum = _mm256_add_ps(vSum, multVal);
+		}
+
+		const size_t writeIndex = (i - (paddingSingleSide * 2)) * AVX2_FLOAT_REGISTER_SIZE;
+		_mm256_store_ps(result + writeIndex, vSum);
 	}
 
 	separateInterleavedVectors(
-		masterVector,
-		size,
+		result,
+		resultsSize,
+		0,
 		v0,
 		v1,
 		v2,
@@ -369,6 +388,13 @@ bool AVXUtils::isAllOnes(__m256 mask) {
 	__m256i intMask = _mm256_castps_si256(mask);
 	__m256i allOnes = _mm256_set1_epi32(-1);
 	return _mm256_testc_si256(intMask, allOnes);
+}
+
+bool AVXUtils::isAllZeros(__m256 vec) {
+	__m256 zero_vec = _mm256_setzero_ps();
+	__m256 cmp = _mm256_cmp_ps(vec, zero_vec, _CMP_EQ_OQ); // _CMP_EQ_OQ: Equal, ordered, quiet NaN handling
+	int mask = _mm256_movemask_ps(cmp);
+	return (mask == 0xFF);
 }
 
 

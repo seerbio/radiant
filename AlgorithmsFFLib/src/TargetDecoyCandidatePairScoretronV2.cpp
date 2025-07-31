@@ -442,7 +442,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
 	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
-		e = AVXUtils::convolveWithKernelAVXFloat(
+		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
 			m_savitzkyGolayKernel,
 			m_xicSizeTargetMaxAlignas,
 			m_xicsAlignasIntensity[0],
@@ -456,7 +456,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 			); ree;
 
 		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
-			e = AVXUtils::convolveWithKernelAVXFloat(
+			e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
 					m_savitzkyGolayKernel,
 					m_xicSizeTargetMaxAlignas,
 					m_xicsAlignasIntensity[8],
@@ -704,7 +704,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothScoreArrays() {
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
 	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
-		e = AVXUtils::convolveWithKernelAVXFloat(
+		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
 			m_savitzkyGolayKernel,
 			m_xicSizeTargetMaxAlignas,
 			m_ionCountVec,

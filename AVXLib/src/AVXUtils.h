@@ -61,9 +61,9 @@ public:
 
 	static void printMask(const __m256& mask, size_t size);
 
-	static Err convolveWithKernelAVXFloat(
+	static Err convolveEightVecsWithKernelAVXFloat(
 		const QVector<float> &kernel,
-		size_t size,
+		size_t maxVecSize,
 		float* v0,
 		float* v1,
 		float* v2,
@@ -132,6 +132,8 @@ public:
 
 	static bool isAllOnes(__m256 mask);
 
+	static bool isAllZeros(__m256 vec);
+
 	static void interleaveVectors(
 		size_t size,
 		size_t paddingSingleRegister,
@@ -149,6 +151,7 @@ public:
 	static void separateInterleavedVectors(
 		const float* interleavedVectors,
 		size_t size,
+		size_t paddingSingleRegister,
 		float* v0,
 		float* v1,
 		float* v2,

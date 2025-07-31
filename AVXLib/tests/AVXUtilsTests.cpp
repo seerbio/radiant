@@ -24,7 +24,10 @@ private slots:
 	static void replaceArrayValuesAVXTest();
 	static void cosineSimilarityAVXTest();
 	static void cosineSimilarityAVXTest2();
-
+	static void maxFloatTest();
+	static void isAllOnesTest();
+	static void interleaveVectorsTest();
+	static void separateInterleavedVectorsTest();
 };
 
 void AVXUtilsTests::copyAVXTest() {
@@ -93,37 +96,48 @@ void AVXUtilsTests::convolveWithKernelAVXFloatTest() {
 
 	ERR_INIT
 
-	const size_t size = 4;
+	constexpr size_t size = 21;
 
+	QVector<float> v0(size, 0);
 	QVector<float> v1(size, 1);
 	QVector<float> v2(size, 2);
 	QVector<float> v3(size, 3);
+	QVector<float> v4(size, 4);
+	QVector<float> v5(size, 5);
+	QVector<float> v6(size, 6);
+	QVector<float> v7(size, 7);
+
 	QVector<float> vAsc(size);
 	std::iota(vAsc.begin(), vAsc.end(), 1.0f);
 
-	const QVector<float> kernel = {1, 2, 1};
+	QVector<float> oneHotMid(size, 0);
+	oneHotMid[oneHotMid.size() / 2 - 1] = 1;
 
-	e = AVXUtils::convolveWithKernelAVXFloat(
+	QVector<float> oneHotMidCopy(size, 0);
+	oneHotMidCopy[oneHotMidCopy.size() / 2 - 1] = 1;
+
+
+	QVector<float> oneHotLast(size, 0);
+	oneHotLast[oneHotLast.size() - 1] = 1;
+
+	// const QVector<float> kernel = {0.25, 0.5, 0.25};
+	// const QVector<float> kernel = {0.1, 0.2, 0.4, 0.2, 0.1};
+	const QVector<float> kernel = {0.1, 1, 2, 4, 2, 1, 0.1};
+
+	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
 		kernel,
 		size,
-		vAsc.data(),
-		v2.data(),
-		v3.data(),
-		v1.data(),
-		v2.data(),
-		v3.data(),
-		v1.data(),
-		v2.data()
+		oneHotLast.data(),
+		v0.data(),
+		v0.data(),
+		v0.data(),
+		oneHotMid.data(),
+		v0.data(),
+		v0.data(),
+		v0.data()
 		);
 
-	const QVector<int> resultAsc = {4, 6, 9, 3};
-	const QVector<int> resultV1 = {3, 4, 4, 3};
-
-	for (int i = 0; i < size; i++) {
-		QCOMPARE(static_cast<int>(vAsc[i]), resultAsc[i]);
-		QCOMPARE(static_cast<int>(v1[i]), resultV1[i]);
-	}
-
+		QCOMPARE(static_cast<int>(oneHotMid[oneHotMid.size() / 2 - 1]), 4);
 }
 
 void AVXUtilsTests::splitAVXUInt16to32Test() {
@@ -239,6 +253,215 @@ void AVXUtilsTests::cosineSimilarityAVXTest2() {
 	QVERIFY(MathUtils::tSame(AVXUtils::cosineSimilarityAVX(c, d, 8), 0.408248f));
 
 }
+
+void AVXUtilsTests::maxFloatTest() {
+	__m256 reg = _mm256_set_ps(1.0, -2.0, 22.0, 11.0, 133.0, 3.0, 666.0, 665.9);
+	const float regMax = AVXUtils::maxFloat(reg);
+	QCOMPARE(static_cast<int>(regMax), 666);
+}
+
+void AVXUtilsTests::isAllOnesTest() {
+
+	const __m256 six = _mm256_set1_ps(6);
+	const __m256 eight = _mm256_set1_ps(8);
+	const __m256 mix = _mm256_set_ps(2.0, 7.0, 2.0, 7.0, 2.0, 7.0, 2.0, 7.0);
+
+	const __m256 maskPos = _mm256_cmp_ps(mix, eight, _CMP_LT_OQ);
+	const __m256 maskNeg = _mm256_cmp_ps(mix, six, _CMP_LT_OQ);
+
+	const bool posTest = AVXUtils::isAllOnes(maskPos);
+	QCOMPARE(posTest, true);
+
+	const bool negTest = AVXUtils::isAllOnes(maskNeg);
+	QCOMPARE(negTest, false);
+}
+
+void AVXUtilsTests::interleaveVectorsTest() {
+
+	QVector<float> ones(8, 1);
+	QVector<float> twos(8, 2);
+	QVector<float> threes(8, 3);
+	QVector<float> fours(8, 4);
+	QVector<float> fives(8, 5);
+	QVector<float> sixes(8, 6);
+	QVector<float> sevens(8, 7);
+	QVector<float> eights(8, 8);
+
+	int padding = 0;
+	int resultSize = AVXUtils::AVX2_FLOAT_REGISTER_SIZE * (ones.size() + (padding * 2));
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float result[resultSize] = {0};
+	AVXUtils::interleaveVectors(
+		ones.size(),
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data(),
+		result
+		);
+
+	for (int i = 0; i < ones.size(); i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+		QCOMPARE(static_cast<int>(result[i]), 1);
+		QCOMPARE(static_cast<int>(result[i+1]), 2);
+		QCOMPARE(static_cast<int>(result[i+2]), 3);
+		QCOMPARE(static_cast<int>(result[i+3]), 4);
+		QCOMPARE(static_cast<int>(result[i+4]), 5);
+		QCOMPARE(static_cast<int>(result[i+5]), 6);
+		QCOMPARE(static_cast<int>(result[i+6]), 7);
+		QCOMPARE(static_cast<int>(result[i+7]), 8);
+	}
+
+	padding = 2;
+	resultSize = AVXUtils::AVX2_FLOAT_REGISTER_SIZE * (ones.size() + (padding * 2));
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultPad[resultSize] = {0};
+	AVXUtils::interleaveVectors(
+		ones.size(),
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data(),
+		resultPad
+		);
+
+	for (int i = 0; i < resultSize; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+
+		if (i < (2 * AVXUtils::AVX2_FLOAT_REGISTER_SIZE) || i >= resultSize - (2 * AVXUtils::AVX2_FLOAT_REGISTER_SIZE)) {
+			for (int j = 0; j < 8; j++) {
+				QCOMPARE(static_cast<int>(resultPad[i + j]), 0);
+			}
+			continue;
+		}
+		QCOMPARE(static_cast<int>(resultPad[i]), 1);
+		QCOMPARE(static_cast<int>(resultPad[i+1]), 2);
+		QCOMPARE(static_cast<int>(resultPad[i+2]), 3);
+		QCOMPARE(static_cast<int>(resultPad[i+3]), 4);
+		QCOMPARE(static_cast<int>(resultPad[i+4]), 5);
+		QCOMPARE(static_cast<int>(resultPad[i+5]), 6);
+		QCOMPARE(static_cast<int>(resultPad[i+6]), 7);
+		QCOMPARE(static_cast<int>(resultPad[i+7]), 8);
+	}
+}
+
+void AVXUtilsTests::separateInterleavedVectorsTest() {
+
+	QVector<float> ones(8, 1);
+	QVector<float> twos(8, 2);
+	QVector<float> threes(8, 3);
+	QVector<float> fours(8, 4);
+	QVector<float> fives(8, 5);
+	QVector<float> sixes(8, 6);
+	QVector<float> sevens(8, 7);
+	QVector<float> eights(8, 8);
+
+	int padding = 0;
+	int resultSize = AVXUtils::AVX2_FLOAT_REGISTER_SIZE * (ones.size() + (padding * 2));
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float result[resultSize] = {0};
+	AVXUtils::interleaveVectors(
+		ones.size(),
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data(),
+		result
+		);
+
+	AVXUtils::separateInterleavedVectors(
+		result,
+		resultSize,
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data()
+		);
+
+	for (int i = 0; i < 8; i ++) {
+		QCOMPARE(static_cast<int>(ones[i]), 1);
+		QCOMPARE(static_cast<int>(twos[i]), 2);
+		QCOMPARE(static_cast<int>(threes[i]), 3);
+		QCOMPARE(static_cast<int>(fours[i]), 4);
+		QCOMPARE(static_cast<int>(fives[i]), 5);
+		QCOMPARE(static_cast<int>(sixes[i]), 6);
+		QCOMPARE(static_cast<int>(sevens[i]), 7);
+		QCOMPARE(static_cast<int>(eights[i]), 8);
+	}
+
+	// qDebug()
+	// << resultPad[i]
+	// << resultPad[i+1]
+	// << resultPad[i+2]
+	// << resultPad[i+3]
+	// << resultPad[i+4]
+	// << resultPad[i+5]
+	// << resultPad[i+6]
+	// << resultPad[i+7]
+	// ;
+
+	padding = 3;
+	resultSize = AVXUtils::AVX2_FLOAT_REGISTER_SIZE * (ones.size() + (padding * 2));
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultPad[resultSize] = {0};
+	AVXUtils::interleaveVectors(
+		ones.size(),
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data(),
+		resultPad
+		);
+
+	AVXUtils::separateInterleavedVectors(
+		resultPad,
+		resultSize,
+		padding,
+		ones.data(),
+		twos.data(),
+		threes.data(),
+		fours.data(),
+		fives.data(),
+		sixes.data(),
+		sevens.data(),
+		eights.data()
+		);
+
+	for (int i = 0; i < 8; i ++) {
+		QCOMPARE(static_cast<int>(ones[i]), 1);
+		QCOMPARE(static_cast<int>(twos[i]), 2);
+		QCOMPARE(static_cast<int>(threes[i]), 3);
+		QCOMPARE(static_cast<int>(fours[i]), 4);
+		QCOMPARE(static_cast<int>(fives[i]), 5);
+		QCOMPARE(static_cast<int>(sixes[i]), 6);
+		QCOMPARE(static_cast<int>(sevens[i]), 7);
+		QCOMPARE(static_cast<int>(eights[i]), 8);
+	}
+}
+
 
 QTEST_MAIN(AVXUtilsTests)
 
