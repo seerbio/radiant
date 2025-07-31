@@ -257,7 +257,6 @@ namespace {
 
 		}
 
-
 		ERR_RETURN
 	}
 

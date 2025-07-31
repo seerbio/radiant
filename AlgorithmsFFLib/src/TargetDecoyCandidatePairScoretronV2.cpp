@@ -9,6 +9,7 @@
 #include "EigenKernelUtils.h"
 #include "MS2Ion.h"
 #include "MsReaderMzMLLazyLoad.h"
+#include "MsUtils.h"
 #include "TargetDecoyCandidatePair.h"
 
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
@@ -237,36 +238,35 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 		e = ErrorUtils::isTrue(m_msFrameV2Current->isInit()); ree;
 		m_mzTargetKeyCurrent = mzTargetKey;
-
 	}
 
 	TargetDecoyCandidatePair *tdcpPntr = mzTargetKeyVsTdcpPntr.second;
 
 	constexpr float mzMs2MinMin = 200.0f;
-	QVector<MS2Ion> ms2IonsTarget = tdcpPntr->ms2IonsTarget(
+	const QVector<MS2Ion> ms2IonsTargetFullLength = tdcpPntr->ms2IonsTarget(
 		std::max(m_mzMs2Min, mzMs2MinMin),
 		m_mzMs2Max
 		);
-	const int ms2IonsTargetSizeOG = ms2IonsTarget.size(); //TODO, add this to feature vec in CandScores
-	ms2IonsTarget.resize(std::min(ms2IonsTarget.size(), m_ms2IonsCount));
+	const QVector<MS2Ion> &ms2IonsDecoyFullLength = tdcpPntr->ms2IonsDecoy(ms2IonsTargetFullLength);
 
-	const QVector<MS2Ion> &ms2IonsDecoy = tdcpPntr->ms2IonsDecoy(ms2IonsTarget);
-
-	e = scoreMS2Ions(ms2IonsTarget, false, tdcpPntr); ree;
-	e = scoreMS2Ions(ms2IonsDecoy, true, tdcpPntr); ree;
+	e = scoreMS2Ions(ms2IonsTargetFullLength, false, tdcpPntr); ree;
+	e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
 
 	ERR_RETURN
 }
 
 Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
-	const QVector<MS2Ion> &ms2Ions,
+	const QVector<MS2Ion> &ms2IonsFull,
 	bool isDecoy,
 	TargetDecoyCandidatePair *tdcp
 	) {
 
 	ERR_INIT
 
-	e = loadMS2IonArrays(ms2Ions); ree;
+	QVector<MS2Ion> ms2IonsTrunc = ms2IonsFull;
+	ms2IonsTrunc.resize(m_ms2IonsCount);
+
+	e = loadMS2IonArrays(ms2IonsTrunc); ree;
 
 	if (m_targetFrameIndexMax < 0) {
 		//TODO figure out what to return here. Most likely blank candidate score
@@ -278,7 +278,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 		e = subtractShadowsArrays(); ree;
 	}
 
-	e = buildLocationVectors(ms2Ions); ree;
+	e = buildLocationVectors(ms2IonsTrunc); ree;
 
 	e = buildMs1Vec(isDecoy, tdcp); ree;
 

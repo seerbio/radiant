@@ -43,7 +43,7 @@ public:
 private:
 
 	Err scoreMS2Ions(
-		const QVector<MS2Ion> &ms2Ions,
+		const QVector<MS2Ion> &ms2IonsFull,
 		bool isDecoy,
 		TargetDecoyCandidatePair *tdcp
 		);
