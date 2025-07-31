@@ -16,6 +16,7 @@ MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
 , m_msReaderPointerAcc(nullptr)
 , m_pythiaParameters(nullptr)
 , m_msCalibratomatic(nullptr)
+, m_msFrameMS1(nullptr)
 {}
 
 MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() = default;
