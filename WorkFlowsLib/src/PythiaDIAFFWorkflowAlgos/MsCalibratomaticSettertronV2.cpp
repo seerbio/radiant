@@ -233,6 +233,9 @@ namespace {
 
 		ERR_INIT
 
+		QElapsedTimer et;
+		et.start();
+
 		constexpr float minMs2IonsFoundCount = 4.9;
 
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
@@ -256,6 +259,18 @@ namespace {
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
 
 		}
+
+		qDebug()
+		<< qPrintable(S_GLOBAL_TIMER.elapsed())
+		<< "Finished processing"
+		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.size()
+		<< "targets in"
+		<< et.elapsed()
+		<< "mSec | MzTargetKeys"
+		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.front().first
+		<< "to"
+		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.back().first
+		;
 
 		ERR_RETURN
 	}

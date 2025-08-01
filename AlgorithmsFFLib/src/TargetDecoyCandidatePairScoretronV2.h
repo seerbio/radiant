@@ -89,6 +89,8 @@ private:
 
 	QVector<float*> m_xicsAlignasIntensity;
 	QVector<float*> m_xicsAlignasIntensityApexes;
+	float* m_apexVectorInterleavedLower;
+	float* m_apexVectorInterleavedUpper;
 	QVector<float*> m_xicsAlignasIntensityShadows;
 	QVector<float*> m_xicsAlignasMz;
 	QVector<float*> m_xicsAlignasMzShadows;

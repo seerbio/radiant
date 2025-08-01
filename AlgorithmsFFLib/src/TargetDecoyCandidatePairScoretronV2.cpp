@@ -19,6 +19,8 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_msFrameV2MS1(nullptr)
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
+, m_apexVectorInterleavedLower(nullptr)
+, m_apexVectorInterleavedUpper(nullptr)
 , m_intensityVec(nullptr)
 , m_ionCountVec(nullptr)
 , m_integrationVecCosineSim(nullptr)
@@ -69,6 +71,9 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_mzMs1MonoIsotopeVecMz;
 	delete m_mzMs1C13VecMz;
 	delete m_mzMs1MonoIsotopeShadowVecMz;
+
+	delete m_apexVectorInterleavedLower;
+	delete m_apexVectorInterleavedUpper;
 
 	delete m_msFrameV2Current;
 }
@@ -164,6 +169,18 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		m_xicSizeMaxAlignas * sizeof(float))
 		);
 	m_productVec = alignedProductVec;
+
+	auto* apexVectorInterleavedLower = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float))
+		);
+	m_apexVectorInterleavedLower = apexVectorInterleavedLower;
+
+	auto* apexVectorInterleavedUpper = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float))
+		);
+	m_apexVectorInterleavedUpper = apexVectorInterleavedUpper;
 
 	auto* mzMs1MonoIsotopeVecIntensity = static_cast<float*>(std::aligned_alloc(
 		AVXUtils::AVX2_ALIGNAS_SIZE,
@@ -755,14 +772,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 			m_xicsAlignasIntensity[5],
 			m_xicsAlignasIntensity[6],
 			m_xicsAlignasIntensity[7],
-			m_xicsAlignasIntensityApexes[0],
-			m_xicsAlignasIntensityApexes[1],
-			m_xicsAlignasIntensityApexes[2],
-			m_xicsAlignasIntensityApexes[3],
-			m_xicsAlignasIntensityApexes[4],
-			m_xicsAlignasIntensityApexes[5],
-			m_xicsAlignasIntensityApexes[6],
-			m_xicsAlignasIntensityApexes[7]
+			m_apexVectorInterleavedLower
 			); ree;
 
 		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
@@ -776,14 +786,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 				m_xicsAlignasIntensity[13],
 				m_xicsAlignasIntensity[14],
 				m_xicsAlignasIntensity[15],
-				m_xicsAlignasIntensityApexes[8],
-				m_xicsAlignasIntensityApexes[9],
-				m_xicsAlignasIntensityApexes[10],
-				m_xicsAlignasIntensityApexes[11],
-				m_xicsAlignasIntensityApexes[12],
-				m_xicsAlignasIntensityApexes[13],
-				m_xicsAlignasIntensityApexes[14],
-				m_xicsAlignasIntensityApexes[15]
+				m_apexVectorInterleavedUpper
 				); ree;
 		}
 	}

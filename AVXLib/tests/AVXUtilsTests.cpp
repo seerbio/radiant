@@ -465,23 +465,24 @@ void AVXUtilsTests::separateInterleavedVectorsTest() {
 
 void AVXUtilsTests::findApexesEightVecsTest() {
 
-	QVector<float> v0(8, 0);
-	QVector<float> v1(8, 0);
-	QVector<float> v2(8, 0);
-	QVector<float> v3(8, 0);
-	QVector<float> v4(8, 0);
-	QVector<float> v5(8, 0);
-	QVector<float> v6(8, 0);
-	QVector<float> v7(8, 0);
+	const int size = 8;
 
-	QVector<float> vApexes0(8, 0);
-	QVector<float> vApexes1(8, 0);
-	QVector<float> vApexes2(8, 0);
-	QVector<float> vApexes3(8, 0);
-	QVector<float> vApexes4(8, 0);
-	QVector<float> vApexes5(8, 0);
-	QVector<float> vApexes6(8, 0);
-	QVector<float> vApexes7(8, 0);
+	QVector<float> v0(size, 0);
+	QVector<float> v1(size, 0);
+	QVector<float> v2(size, 0);
+	QVector<float> v3(size, 0);
+	QVector<float> v4(size, 0);
+	QVector<float> v5(size, 0);
+	QVector<float> v6(size, 0);
+	QVector<float> v7(size, 0);
+	QVector<float> vApexes0(size, 0);
+	QVector<float> vApexes1(size, 0);
+	QVector<float> vApexes2(size, 0);
+	QVector<float> vApexes3(size, 0);
+	QVector<float> vApexes4(size, 0);
+	QVector<float> vApexes5(size, 0);
+	QVector<float> vApexes6(size, 0);
+	QVector<float> vApexes7(size, 0);
 
 	v0[0] = 0;
 	v1[1] = 1;
@@ -501,9 +502,16 @@ void AVXUtilsTests::findApexesEightVecsTest() {
 	v6[5] = 1;
 	v7[6] = 1;
 
+	const size_t masterVecApexesSize = AVXUtils::calculateNextAlignedBlockSize(
+		size * AVXUtils::AVX2_FLOAT_REGISTER_SIZE,
+		AVXUtils::AVX2_ALIGNAS_SIZE
+		);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float masterVecApexes[masterVecApexesSize];
+
 	ERR_INIT
 	e = AVXUtils::findApexesEightVecs(
-		8,
+		size,
 		v0.data(),
 		v1.data(),
 		v2.data(),
@@ -512,6 +520,13 @@ void AVXUtilsTests::findApexesEightVecsTest() {
 		v5.data(),
 		v6.data(),
 		v7.data(),
+		masterVecApexes
+		);
+
+	AVXUtils::separateInterleavedVectors(
+		masterVecApexes,
+		masterVecApexesSize,
+		0,
 		vApexes0.data(),
 		vApexes1.data(),
 		vApexes2.data(),

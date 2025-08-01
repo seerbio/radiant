@@ -84,14 +84,7 @@ public:
 		float* v5,
 		float* v6,
 		float* v7,
-		float* v0Apexes,
-		float* v1Apexes,
-		float* v2Apexes,
-		float* v3Apexes,
-		float* v4Apexes,
-		float* v5Apexes,
-		float* v6Apexes,
-		float* v7Apexes
+		float *masterVectorApexes
 		);
 
 	static Err subtractArraysAVX2(

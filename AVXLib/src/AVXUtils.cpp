@@ -244,22 +244,15 @@ Err AVXUtils::convolveEightVecsWithKernelAVXFloat(
 
 Err AVXUtils::findApexesEightVecs(
 	size_t maxVecSize,
-	float *v0,
-	float *v1,
-	float *v2,
-	float *v3,
-	float *v4,
-	float *v5,
-	float *v6,
-	float *v7,
-	float *v0Apexes,
-	float *v1Apexes,
-	float *v2Apexes,
-	float *v3Apexes,
-	float *v4Apexes,
-	float *v5Apexes,
-	float *v6Apexes,
-	float *v7Apexes
+	float* v0,
+	float* v1,
+	float* v2,
+	float* v3,
+	float* v4,
+	float* v5,
+	float* v6,
+	float* v7,
+	float *masterVectorApexes
 	) {
 
 	ERR_INIT
@@ -272,7 +265,6 @@ Err AVXUtils::findApexesEightVecs(
 		);
 
 	alignas(AVX2_ALIGNAS_SIZE) float masterVector[masterVectorSizeAlignas] = {0};
-	alignas(AVX2_ALIGNAS_SIZE) float masterVectorApexes[masterVectorSizeAlignas] = {0};
 
 	interleaveVectors(
 		 maxVecSize,
@@ -306,20 +298,6 @@ Err AVXUtils::findApexesEightVecs(
 		previous = current;
 		current = next;
 	}
-
-	separateInterleavedVectors(
-		masterVectorApexes,
-		masterVectorSize,
-		0,
-		v0Apexes,
-		v1Apexes,
-		v2Apexes,
-		v3Apexes,
-		v4Apexes,
-		v5Apexes,
-		v6Apexes,
-		v7Apexes
-		);
 
 	ERR_RETURN
 }
