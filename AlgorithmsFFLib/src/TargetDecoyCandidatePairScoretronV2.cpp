@@ -10,6 +10,7 @@
 #include "MS2Ion.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsUtils.h"
+#include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
@@ -278,6 +279,36 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	const QVector<MS2Ion> &ms2IonsDecoyFullLength = tdcpPntr->ms2IonsDecoy(ms2IonsTargetFullLength);
 
 	e = scoreMS2Ions(ms2IonsTargetFullLength, false, tdcpPntr); ree;
+
+// #define CHECK_VEC
+#ifdef CHECK_VEC
+	QVector<float> vectorFromPointer(m_xicSizeMaxAlignas, 0);
+	std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
+	const float max = *std::max_element(vectorFromPointer.begin(), vectorFromPointer.end());
+
+	if (max > 7) {
+
+		// e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
+		// std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
+
+		ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv");
+
+		QVector<float> vectorFromPointerIntx(m_xicSizeMaxAlignas, 0);
+		std::copy_n(m_intensityVec, m_xicSizeMaxAlignas, vectorFromPointerIntx.data());
+		ObjectCSVWriters::writeVectorToFile(vectorFromPointerIntx, "testesIntz.csv");
+
+		QVector<float> vectorFromPointerSize(m_xicSizeMaxAlignas, 0);
+		std::copy_n(m_ionCountVec, m_xicSizeMaxAlignas, vectorFromPointerSize.data());
+		ObjectCSVWriters::writeVectorToFile(vectorFromPointerSize, "testesCnt.csv");
+
+		QVector<float> vectorFromPointerCos(m_xicSizeMaxAlignas, 0);
+		std::copy_n(m_integrationVecCosineSim, m_xicSizeMaxAlignas, vectorFromPointerCos.data());
+		ObjectCSVWriters::writeVectorToFile(vectorFromPointerCos, "testesCos.csv");
+
+		throw std::runtime_error("Error in TargetDecoyCandidatePairScoretronV2");
+	}
+#endif
+
 	e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
 
 	ERR_RETURN

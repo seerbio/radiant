@@ -236,7 +236,7 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
-		constexpr float minMs2IonsFoundCount = 4.9;
+		constexpr float minMs2IonsFoundCount = 2.5;
 
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
@@ -317,7 +317,8 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 			m_mzTargetKeyVsMsScanInfos,
 			*m_pythiaParameters,
 			pr,
-			m_msReaderPointerAcc
+			m_msReaderPointerAcc,
+			m_msFrameMS1
 			); ree;
 	}
 #endif
