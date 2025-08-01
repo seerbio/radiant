@@ -260,17 +260,19 @@ namespace {
 
 		}
 
-		qDebug()
-		<< qPrintable(S_GLOBAL_TIMER.elapsed())
-		<< "Finished processing"
-		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.size()
-		<< "targets in"
-		<< et.elapsed()
-		<< "mSec | MzTargetKeys"
-		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.front().first
-		<< "to"
-		<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.back().first
-		;
+		if (false) { //TODO add verbose variable to parallel processing logic to replace false;
+			qDebug()
+			<< qPrintable(S_GLOBAL_TIMER.elapsed())
+			<< "Finished processing"
+			<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.size()
+			<< "targets in"
+			<< et.elapsed()
+			<< "mSec | MzTargetKeys"
+			<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.front().first
+			<< "to"
+			<< mzTargetKeyVsTargetDecoyCandidatePairPntrs.back().first
+			;
+		}
 
 		ERR_RETURN
 	}
