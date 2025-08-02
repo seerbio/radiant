@@ -29,7 +29,9 @@ private slots:
 	static void interleaveVectorsTest();
 	static void separateInterleavedVectorsTest();
 	static void findApexesEightVecsTest();
+	static void log256Test();
 };
+
 
 void AVXUtilsTests::copyAVXTest() {
 
@@ -544,6 +546,23 @@ void AVXUtilsTests::findApexesEightVecsTest() {
 	QCOMPARE(static_cast<int>(v6[6]), 6);
 }
 
+void AVXUtilsTests::log256Test() {
+
+	__m256 v0 = _mm256_set_ps(2, 4, 8, 16, 32, 64, 128, 256);
+
+	__m256 logLn = AVXUtils::log256(v0);
+
+	float v[8];
+	_mm256_store_ps(v, logLn);
+
+	int e[8] = {5, 4, 3, 3, 2, 1, 1, 0};
+
+	for (int i = 0; i < 8; i ++) {
+		QCOMPARE(static_cast<int>(v[i]), e[i]);
+	}
+
+
+}
 
 QTEST_MAIN(AVXUtilsTests)
 

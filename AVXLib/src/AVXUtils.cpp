@@ -113,11 +113,25 @@ void AVXUtils::interleaveVectors(
 	float* v7,
 	float* resultVector
 	) {
+	constexpr int avx2 = AVX2_FLOAT_REGISTER_SIZE * 2;
+	constexpr int avx3 = AVX2_FLOAT_REGISTER_SIZE * 3;
 
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i + 3 < size; i += 4) {
+		__m256 p0 = _mm256_set_ps(v7[i],   v6[i],   v5[i],   v4[i],   v3[i],   v2[i],   v1[i],   v0[i]);
+		__m256 p1 = _mm256_set_ps(v7[i+1], v6[i+1], v5[i+1], v4[i+1], v3[i+1], v2[i+1], v1[i+1], v0[i+1]);
+		__m256 p2 = _mm256_set_ps(v7[i+2], v6[i+2], v5[i+2], v4[i+2], v3[i+2], v2[i+2], v1[i+2], v0[i+2]);
+		__m256 p3 = _mm256_set_ps(v7[i+3], v6[i+3], v5[i+3], v4[i+3], v3[i+3], v2[i+3], v1[i+3], v0[i+3]);
+
+		size_t base = (paddingSingleRegister + i) * AVX2_FLOAT_REGISTER_SIZE;
+		_mm256_store_ps(resultVector + base,  p0);
+		_mm256_store_ps(resultVector + base + AVX2_FLOAT_REGISTER_SIZE,  p1);
+		_mm256_store_ps(resultVector + base + avx2, p2);
+		_mm256_store_ps(resultVector + base + avx3, p3);
+	}
+	for (size_t i = (size & ~3); i < size; i++) {
 		__m256 parallelVec = _mm256_set_ps(v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]);
-		const size_t insertIndex = (paddingSingleRegister * AVX2_FLOAT_REGISTER_SIZE) + (i * AVX2_FLOAT_REGISTER_SIZE);
-		_mm256_storeu_ps(resultVector + insertIndex, parallelVec);
+		const size_t insertIndex = (paddingSingleRegister + i) * AVX2_FLOAT_REGISTER_SIZE;
+		_mm256_store_ps(resultVector + insertIndex, parallelVec);
 	}
 }
 
@@ -137,16 +151,49 @@ void AVXUtils::separateInterleavedVectors(
 
 	const size_t registerCount = size / AVX2_FLOAT_REGISTER_SIZE;
 
-	for (int i = static_cast<int>(paddingSingleRegister); i < registerCount  - paddingSingleRegister; i++) {
-		v0[i - paddingSingleRegister] = interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE];
-		v1[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+1];
-		v2[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+2];
-		v3[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+3];
-		v4[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+4];
-		v5[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+5];
-		v6[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+6];
-		v7[i - paddingSingleRegister] = interleavedVectors[(i * AVX2_FLOAT_REGISTER_SIZE)+7];
+	for (size_t i = paddingSingleRegister; i < registerCount - paddingSingleRegister; ++i) {
+		__m256 vec = _mm256_load_ps(&interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE]);
+
+		float* dst[] = { v0, v1, v2, v3, v4, v5, v6, v7 };
+		for (int lane = 0; lane < 8; ++lane) {
+			dst[lane][i - paddingSingleRegister] = _mm256_cvtss_f32(_mm256_permutevar8x32_ps(vec, _mm256_set1_epi32(lane)));
+		}
 	}
+}
+
+__m256 AVXUtils::log256(__m256 x) {
+	__m256 one = _mm256_set1_ps(1.0f);
+
+	x = _mm256_max_ps(x, _mm256_set1_ps(1.17549e-38f)); // Avoid log(0)
+
+	__m256i ix = _mm256_castps_si256(x);
+	__m256i emm0 = _mm256_srli_epi32(ix, 23);
+
+	// Keep only the fractional part
+	ix = _mm256_and_si256(ix, _mm256_set1_epi32(0x7FFFFF));
+	ix = _mm256_or_si256(ix, _mm256_set1_epi32(0x3f000000));
+	__m256 f = _mm256_castsi256_ps(ix);
+
+	// Exponent
+	emm0 = _mm256_sub_epi32(emm0, _mm256_set1_epi32(127));
+	__m256 e = _mm256_cvtepi32_ps(emm0);
+
+	f = _mm256_sub_ps(f, one);
+
+	// Approximate polynomial
+	__m256 p = _mm256_set1_ps(7.0376836292e-2f);
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(-1.1514610310e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(1.1676998740e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(-1.2420140846e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(+1.4249322787e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(-1.6668057665e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(+2.0000714765e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(-2.4999993993e-1f));
+	p = _mm256_fmadd_ps(p, f, _mm256_set1_ps(+3.3333331174e-1f));
+
+	__m256 log1pf = _mm256_mul_ps(p, f);
+
+	return _mm256_add_ps(_mm256_mul_ps(e, _mm256_set1_ps(0.69314718056f)), log1pf);
 }
 
 Err AVXUtils::convolveEightVecsWithKernelAVXFloat(

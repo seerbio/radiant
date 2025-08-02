@@ -175,6 +175,8 @@ public:
 		float* v7
 		);
 
+	static __m256 log256(__m256 x);
+
 };
 
 
