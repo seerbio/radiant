@@ -236,7 +236,7 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
-		constexpr float minMs2IonsFoundCount = 2.5;
+		constexpr float minMs2IonsFoundCount = 3.0;
 
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(

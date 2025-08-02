@@ -56,7 +56,7 @@ private:
 
 	Err smoothMS2IonArrays();
 
-	Err buildLocationVectors(const QVector<MS2Ion> &ms2Ions);
+	Err buildLocationVectors();
 
 	Err buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions);
 
@@ -70,9 +70,9 @@ private:
 		float *vecMz
 		) const;
 
-	Err smoothScoreArrays();
+	Err smoothScoreAndMS1Arrays();
 
-	Err buildApexVectors() const;
+	[[nodiscard]] Err buildApexVectors() const;
 
 private:
 
@@ -102,9 +102,11 @@ private:
 
 	float* m_mzMs1MonoIsotopeVecIntensity;
 	float* m_mzMs1C13VecIntensity;
+	float* m_mzMs1C132VecIntensity;
 	float* m_mzMs1MonoIsotopeShadowVecIntensity;
 	float* m_mzMs1MonoIsotopeVecMz;
 	float* m_mzMs1C13VecMz;
+	float* m_mzMs1C132VecMz;
 	float* m_mzMs1MonoIsotopeShadowVecMz;
 
 	int m_targetFrameIndexMax;
