@@ -236,7 +236,7 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
-		constexpr float minMs2IonsFoundCount = 3.0;
+		constexpr float minMs2IonsFoundCount = 2.22;
 
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
@@ -257,7 +257,6 @@ namespace {
 			// }
 
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
-
 		}
 
 		if (false) { //TODO add verbose variable to parallel processing logic to replace false;
@@ -295,7 +294,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		&mzTargetDecoyCandidatePairsPntrsTranched
 		); ree;
 
-#define CALIBRATION_PARALLEL_TDCP
+// #define CALIBRATION_PARALLEL_TDCP
 #ifdef CALIBRATION_PARALLEL_TDCP
 	const auto binderLogic = std::bind(
 		parallelProcessingLogic,

@@ -9,7 +9,6 @@
 #include "EigenKernelUtils.h"
 #include "MS2Ion.h"
 #include "MsReaderMzMLLazyLoad.h"
-#include "MsUtils.h"
 #include "ObjectCSVWriters.h"
 #include "TargetDecoyCandidatePair.h"
 
@@ -25,6 +24,7 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_intensityVec(nullptr)
 , m_ionCountVec(nullptr)
 , m_integrationVecCosineSim(nullptr)
+, m_intensityApexesSum(nullptr)
 , m_productVec(nullptr)
 , m_mzMs1MonoIsotopeVecIntensity(nullptr)
 , m_mzMs1C13VecIntensity(nullptr)
@@ -66,6 +66,7 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_intensityVec;
 	delete m_ionCountVec;
 	delete m_integrationVecCosineSim;
+	delete m_intensityApexesSum;
 	delete m_productVec;
 
 	delete m_mzMs1MonoIsotopeVecIntensity;
@@ -169,6 +170,12 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		);
 	m_integrationVecCosineSim = alignedIntegrationVecCosineSim;
 
+	auto* intensityApexesSum = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+	m_intensityApexesSum = intensityApexesSum;
+
 	auto* alignedProductVec = static_cast<float*>(std::aligned_alloc(
 		AVXUtils::AVX2_ALIGNAS_SIZE,
 		m_xicSizeMaxAlignas * sizeof(float))
@@ -235,19 +242,21 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		);
 	m_mzMs1MonoIsotopeShadowVecMz = mzMs1MonoIsotopeShadowVecMz;
 
-	constexpr int order = 1;
-	constexpr int derivative = 0;
-	constexpr int rate = 1;
-	Eigen::MatrixX<float> kernel;
-	e = EigenKernelUtils::buildSavitzkyGolayKernel(
-		m_pythiaParameters.filterLengthMS2,
-		order,
-		derivative,
-		rate,
-		&kernel
-		); ree;
-	const Eigen::VectorX<float> kernelVec(kernel);
-	m_savitzkyGolayKernel = EigenUtils::convertEigenVectorToQVector(kernelVec);
+	// constexpr int order = 1;
+	// constexpr int derivative = 0;
+	// constexpr int rate = 1;
+	// Eigen::MatrixX<float> kernel;
+	// e = EigenKernelUtils::buildSavitzkyGolayKernel(
+	// 	m_pythiaParameters.filterLengthMS2,
+	// 	order,
+	// 	derivative,
+	// 	rate,
+	// 	&kernel
+	// 	); ree;
+	// const Eigen::VectorX<float> kernelVec(kernel);
+	// m_savitzkyGolayKernel = EigenUtils::convertEigenVectorToQVector(kernelVec);
+
+	m_savitzkyGolayKernel = {0.25, 0.5, 0.25};
 
 	ERR_RETURN
 }
@@ -296,7 +305,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 	e = scoreMS2Ions(ms2IonsTargetFullLength, false, tdcpPntr); ree;
 
-// #define CHECK_VEC
+#define CHECK_VEC
 #ifdef CHECK_VEC
 	QVector<float> vectorFromPointer(m_xicSizeMaxAlignas, 0);
 	std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
@@ -307,19 +316,19 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 		// e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
 		// std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
 
-		ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv");
+		e = ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv"); ree;
 
-		QVector<float> vectorFromPointerIntx(m_xicSizeMaxAlignas, 0);
-		std::copy_n(m_intensityVec, m_xicSizeMaxAlignas, vectorFromPointerIntx.data());
-		ObjectCSVWriters::writeVectorToFile(vectorFromPointerIntx, "testesIntz.csv");
+		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityVec, m_xicSizeMaxAlignas, "testesIntz.csv"); ree;
+		e = ObjectCSVWriters::writeRawPointerToFile(m_ionCountVec, m_xicSizeMaxAlignas, "testesCnt.csv"); ree;
+		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityApexesSum, m_xicSizeMaxAlignas, "testesApexSum.csv"); ree;
 
-		QVector<float> vectorFromPointerSize(m_xicSizeMaxAlignas, 0);
-		std::copy_n(m_ionCountVec, m_xicSizeMaxAlignas, vectorFromPointerSize.data());
-		ObjectCSVWriters::writeVectorToFile(vectorFromPointerSize, "testesCnt.csv");
-
-		QVector<float> vectorFromPointerCos(m_xicSizeMaxAlignas, 0);
-		std::copy_n(m_integrationVecCosineSim, m_xicSizeMaxAlignas, vectorFromPointerCos.data());
-		ObjectCSVWriters::writeVectorToFile(vectorFromPointerCos, "testesCos.csv");
+		for (int i = 0; i < m_xicsAlignasIntensity.size(); i++) {
+			e = ObjectCSVWriters::writeRawPointerToFile(
+				m_xicsAlignasIntensity[i],
+				m_xicSizeMaxAlignas,
+				"intz_" + QString::number(i) + ".csv"
+				); ree;
+		}
 
 		throw std::runtime_error("Error in TargetDecoyCandidatePairScoretronV2");
 	}
@@ -352,6 +361,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	if (m_pythiaParameters.subtractShadows) {
 		e = subtractShadowsArrays(); ree;
 	}
+	// e = buildApexVectors(); ree;
 
 	e = buildLocationVectors(); ree;
 
@@ -488,7 +498,7 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 
 	m_targetFrameIndexMax = -1;
-	m_xicSizeTargetMaxAlignas -1;
+	m_xicSizeTargetMaxAlignas = -1;
 	m_intensityVecMax = 0;
 
 	for (float *f : m_xicsAlignasIntensity) {
@@ -514,6 +524,7 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 	std::memset(m_intensityVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_ionCountVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_integrationVecCosineSim, 0, m_xicSizeMaxAlignas * sizeof(float));
+	std::memset(m_intensityApexesSum, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_productVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 
 	std::memset(m_mzMs1MonoIsotopeVecIntensity, 0, m_xicSizeMaxAlignas * sizeof(float));
@@ -533,34 +544,32 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
-	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
-		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-			m_savitzkyGolayKernel,
-			m_xicSizeTargetMaxAlignas,
-			m_xicsAlignasIntensity[0],
-			m_xicsAlignasIntensity[1],
-			m_xicsAlignasIntensity[2],
-			m_xicsAlignasIntensity[3],
-			m_xicsAlignasIntensity[4],
-			m_xicsAlignasIntensity[5],
-			m_xicsAlignasIntensity[6],
-			m_xicsAlignasIntensity[7]
-			); ree;
+	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
+		m_savitzkyGolayKernel,
+		m_xicSizeTargetMaxAlignas,
+		m_xicsAlignasIntensity[0],
+		m_xicsAlignasIntensity[1],
+		m_xicsAlignasIntensity[2],
+		m_xicsAlignasIntensity[3],
+		m_xicsAlignasIntensity[4],
+		m_xicsAlignasIntensity[5],
+		m_xicsAlignasIntensity[6],
+		m_xicsAlignasIntensity[7]
+		); ree;
 
-		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
-			e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-					m_savitzkyGolayKernel,
-					m_xicSizeTargetMaxAlignas,
-					m_xicsAlignasIntensity[8],
-					m_xicsAlignasIntensity[9],
-					m_xicsAlignasIntensity[10],
-					m_xicsAlignasIntensity[11],
-					m_xicsAlignasIntensity[12],
-					m_xicsAlignasIntensity[13],
-					m_xicsAlignasIntensity[14],
-					m_xicsAlignasIntensity[15]
-					); ree;
-		}
+	if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
+		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
+				m_savitzkyGolayKernel,
+				m_xicSizeTargetMaxAlignas,
+				m_xicsAlignasIntensity[8],
+				m_xicsAlignasIntensity[9],
+				m_xicsAlignasIntensity[10],
+				m_xicsAlignasIntensity[11],
+				m_xicsAlignasIntensity[12],
+				m_xicsAlignasIntensity[13],
+				m_xicsAlignasIntensity[14],
+				m_xicsAlignasIntensity[15]
+				); ree;
 	}
 
 	ERR_RETURN
@@ -697,13 +706,13 @@ Err TargetDecoyCandidatePairScoretronV2::buildProductVec() const {
 	for (int i = 0; i < m_xicSizeTargetMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
 
 		__m256 ionCount = _mm256_load_ps(m_ionCountVec + i);
-		// const __m256 thresholds = _mm256_set1_ps(m_minMs2IonsFoundCount);
-		// const __m256 mask = _mm256_cmp_ps(ionCount, thresholds, _CMP_LT_OQ);
-		//
-		// if (AVXUtils::isAllOnes(mask)) {
-		// 	continue;
-		// }
-		// ionCount = _mm256_blendv_ps(ionCount, _mm256_setzero_ps(), mask);
+		const __m256 thresholds = _mm256_set1_ps(m_minMs2IonsFoundCount);
+		const __m256 mask = _mm256_cmp_ps(ionCount, thresholds, _CMP_LT_OQ);
+
+		if (AVXUtils::isAllOnes(mask)) {
+			continue;
+		}
+		ionCount = _mm256_blendv_ps(ionCount, _mm256_setzero_ps(), mask);
 
 		// const __m256 cosineSim = _mm256_load_ps(m_integrationVecCosineSim + i);
 		// const __m256 cosineSimSqrt = _mm256_sqrt_ps(cosineSim);
@@ -817,28 +826,25 @@ Err TargetDecoyCandidatePairScoretronV2::fitMS1XICToVecs(
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::smoothScoreAndMS1Arrays() {
+Err TargetDecoyCandidatePairScoretronV2::smoothScoreAndMS1Arrays() const {
 
 	ERR_INIT
 
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
-	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
-		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-			m_savitzkyGolayKernel,
-			m_xicSizeTargetMaxAlignas,
-			m_ionCountVec,
-			m_intensityVec,
-			m_integrationVecCosineSim,
-			m_mzMs1MonoIsotopeVecIntensity,
-			m_mzMs1C13VecIntensity,
-			m_mzMs1C132VecIntensity,
-			m_mzMs1MonoIsotopeShadowVecIntensity,
-
-			m_xicsAlignasIntensity[6]//TODO replace these with somethng you need smoothed.
-			); ree;
-	}
+	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
+		m_savitzkyGolayKernel,
+		m_xicSizeTargetMaxAlignas,
+		m_ionCountVec,
+		m_intensityVec,
+		m_integrationVecCosineSim,
+		m_mzMs1MonoIsotopeVecIntensity,
+		m_mzMs1C13VecIntensity,
+		m_mzMs1C132VecIntensity,
+		m_mzMs1MonoIsotopeShadowVecIntensity,
+		m_intensityApexesSum
+		); ree;
 
 	ERR_RETURN
 }
@@ -847,39 +853,75 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 
 	ERR_INIT
 
-	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeMaxAlignas); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
-	for (int i = 0; i < m_pythiaParameters.smoothCountMS2; i++) {
+	e = AVXUtils::findApexesEightVecs(
+		m_xicSizeMaxAlignas,
+		m_xicsAlignasIntensity[0],
+		m_xicsAlignasIntensity[1],
+		m_xicsAlignasIntensity[2],
+		m_xicsAlignasIntensity[3],
+		m_xicsAlignasIntensity[4],
+		m_xicsAlignasIntensity[5],
+		m_xicsAlignasIntensity[6],
+		m_xicsAlignasIntensity[7],
+		m_apexVectorInterleavedLower
+		); ree;
+
+	AVXUtils::separateInterleavedVectors(
+		m_apexVectorInterleavedLower,
+		m_targetFrameIndexMax * AVXUtils::AVX2_FLOAT_REGISTER_SIZE,
+		0,
+		m_xicsAlignasIntensityApexes[0],
+		m_xicsAlignasIntensityApexes[1],
+		m_xicsAlignasIntensityApexes[2],
+		m_xicsAlignasIntensityApexes[3],
+		m_xicsAlignasIntensityApexes[4],
+		m_xicsAlignasIntensityApexes[5],
+		m_xicsAlignasIntensityApexes[6],
+		m_xicsAlignasIntensityApexes[7]
+		);
+
+	if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
 		e = AVXUtils::findApexesEightVecs(
-			m_xicSizeTargetMaxAlignas,
-			m_xicsAlignasIntensity[0],
-			m_xicsAlignasIntensity[1],
-			m_xicsAlignasIntensity[2],
-			m_xicsAlignasIntensity[3],
-			m_xicsAlignasIntensity[4],
-			m_xicsAlignasIntensity[5],
-			m_xicsAlignasIntensity[6],
-			m_xicsAlignasIntensity[7],
-			m_apexVectorInterleavedLower
+			m_xicSizeMaxAlignas,
+			m_xicsAlignasIntensity[8],
+			m_xicsAlignasIntensity[9],
+			m_xicsAlignasIntensity[10],
+			m_xicsAlignasIntensity[11],
+			m_xicsAlignasIntensity[12],
+			m_xicsAlignasIntensity[13],
+			m_xicsAlignasIntensity[14],
+			m_xicsAlignasIntensity[15],
+			m_apexVectorInterleavedUpper
 			); ree;
 
-		if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
-			e = AVXUtils::findApexesEightVecs(
-				m_xicSizeTargetMaxAlignas,
-				m_xicsAlignasIntensity[8],
-				m_xicsAlignasIntensity[9],
-				m_xicsAlignasIntensity[10],
-				m_xicsAlignasIntensity[11],
-				m_xicsAlignasIntensity[12],
-				m_xicsAlignasIntensity[13],
-				m_xicsAlignasIntensity[14],
-				m_xicsAlignasIntensity[15],
-				m_apexVectorInterleavedUpper
-				); ree;
-		}
+		AVXUtils::separateInterleavedVectors(
+			m_apexVectorInterleavedUpper,
+			m_targetFrameIndexMax * AVXUtils::AVX2_FLOAT_REGISTER_SIZE,
+			0,
+			m_xicsAlignasIntensityApexes[8],
+			m_xicsAlignasIntensityApexes[9],
+			m_xicsAlignasIntensityApexes[10],
+			m_xicsAlignasIntensityApexes[11],
+			m_xicsAlignasIntensityApexes[12],
+			m_xicsAlignasIntensityApexes[13],
+			m_xicsAlignasIntensityApexes[14],
+			m_xicsAlignasIntensityApexes[15]
+			);
 	}
 
+	for (int i = 0; i < m_xicSizeMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+
+		__m256 runningSum = _mm256_setzero_ps();
+		for (int j = 0; j < m_xicsAlignasIntensityApexes.size(); j++) {
+			const __m256 x = _mm256_load_ps(m_xicsAlignasIntensityApexes[j] + i);
+			runningSum = _mm256_add_ps(runningSum, x);
+		}
+		_mm256_store_ps(m_intensityApexesSum + i, runningSum);
+		m_intensityApexesSum[0] =0;
+	}
 
 	ERR_RETURN
 }

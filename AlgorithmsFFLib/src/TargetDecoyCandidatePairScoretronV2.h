@@ -70,7 +70,7 @@ private:
 		float *vecMz
 		) const;
 
-	Err smoothScoreAndMS1Arrays();
+	Err smoothScoreAndMS1Arrays() const;
 
 	[[nodiscard]] Err buildApexVectors() const;
 
@@ -99,6 +99,8 @@ private:
 	float* m_ionCountVec;
 	float* m_integrationVecCosineSim;
 	float* m_productVec;
+
+	float* m_intensityApexesSum;
 
 	float* m_mzMs1MonoIsotopeVecIntensity;
 	float* m_mzMs1C13VecIntensity;

@@ -87,6 +87,18 @@ public:
 		float *masterVectorApexes
 		);
 
+	static Err findPeaksEightVecs (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7
+		);
+
 	static Err subtractArraysAVX2(
 		float* array1,
 		const float* array2,
@@ -176,6 +188,8 @@ public:
 		);
 
 	static __m256 log256(__m256 x);
+
+	static float sum256(__m256 vec);
 
 };
 

@@ -196,6 +196,19 @@ __m256 AVXUtils::log256(__m256 x) {
 	return _mm256_add_ps(_mm256_mul_ps(e, _mm256_set1_ps(0.69314718056f)), log1pf);
 }
 
+float AVXUtils::sum256(__m256 vec)  {
+	__m256 shuff1 = _mm256_permute2f128_ps(vec, vec, 1);
+	__m256 sum1 = _mm256_add_ps(vec, shuff1);
+
+	__m256 shuff2 = _mm256_shuffle_ps(sum1, sum1, _MM_SHUFFLE(2, 3, 0, 1));
+	__m256 sum2 = _mm256_add_ps(sum1, shuff2);
+
+	__m256 shuff3 = _mm256_shuffle_ps(sum2, sum2, _MM_SHUFFLE(1, 0, 3, 2));
+	__m256 sum3 = _mm256_add_ps(sum2, shuff3);
+
+	return _mm_cvtss_f32(_mm256_castps256_ps128(sum3));
+}
+
 Err AVXUtils::convolveEightVecsWithKernelAVXFloat(
 	const QVector<float> &kernel,
 	size_t maxVecSize,
@@ -345,6 +358,56 @@ Err AVXUtils::findApexesEightVecs(
 		previous = current;
 		current = next;
 	}
+
+	ERR_RETURN
+}
+
+Err AVXUtils::findPeaksEightVecs(
+	size_t maxVecSize,
+	float *v0,
+	float *v1,
+	float *v2,
+	float *v3,
+	float *v4,
+	float *v5,
+	float *v6,
+	float *v7
+	) {
+	ERR_INIT
+
+	const size_t itensitiesInterleavedSize = maxVecSize * AVX2_FLOAT_REGISTER_SIZE;
+	const size_t itensitiesInterleavedSizeAlignas = calculateNextAlignedBlockSize(
+		itensitiesInterleavedSize,
+		AVX2_ALIGNAS_SIZE
+		);
+	alignas(AVX2_ALIGNAS_SIZE) float itensitiesInterleaved[itensitiesInterleavedSizeAlignas] = {0};
+
+	interleaveVectors(
+		 maxVecSize,
+		 0,
+		 v0,
+		 v1,
+		 v2,
+		 v3,
+		 v4,
+		 v5,
+		 v6,
+		 v7,
+		 itensitiesInterleaved
+		);
+
+	__m256 registerMaxes = _mm256_setzero_ps();
+	__m256 inPeakMask = _mm256_setzero_ps();
+	for (int i = 0; i < itensitiesInterleavedSizeAlignas; i++) {
+
+		const __m256 frameIndexRegisterCurrent
+			= _mm256_load_ps(itensitiesInterleaved + (i * AVX2_FLOAT_REGISTER_SIZE));
+
+		__m256 registerMaxesComparison = _mm256_cmp_ps(frameIndexRegisterCurrent, registerMaxes, _CMP_GT_OQ);
+
+
+	}
+
 
 	ERR_RETURN
 }
