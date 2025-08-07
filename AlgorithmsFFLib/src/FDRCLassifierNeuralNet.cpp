@@ -25,9 +25,10 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 {}
 
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
-    for (CandidateClassifier *cc : m_candidateClassifiers) {
-        delete cc;
-    }
+    // for (CandidateClassifier *cc : m_candidateClassifiers) {
+    //     delete cc;
+    // }
+    // }
 }
 
 Err FDRCLassifierNeuralNet::init(

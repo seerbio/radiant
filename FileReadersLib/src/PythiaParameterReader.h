@@ -140,8 +140,8 @@ struct PythiaParameters{
     int skipScanCount = 2;
 
     //[NeuralNet]
-    int epochs = 2;
-    int baggingSize = 4;
+    int epochs = 12;
+    int baggingSize = 12;
     float learningRate = 0.003;
     double nodesFraction = 0.5;
 
