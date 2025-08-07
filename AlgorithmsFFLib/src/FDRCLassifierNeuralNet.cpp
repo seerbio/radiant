@@ -27,7 +27,7 @@ FDRCLassifierNeuralNet::FDRCLassifierNeuralNet()
 FDRCLassifierNeuralNet::~FDRCLassifierNeuralNet() {
     // for (CandidateClassifier *cc : m_candidateClassifiers) {
     //     delete cc;
-    }
+    // }
     // }
 }
 
