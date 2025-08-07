@@ -31,7 +31,7 @@ public:
     * Note: This method uses the PyTorch library for building and training the neural network classifier.
     * Note2: Weights are initialized using kaiming_uniform_, (Tanh), for optimal gradient descent performance.
     */
-    bool trainCandidateClassifier(
+    [[nodiscard]] bool trainCandidateClassifier(
             const QVector<QVector<float>> &xData,
             const QVector<float> &yData,
             int epochsMax,
