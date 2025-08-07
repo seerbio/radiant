@@ -68,16 +68,16 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-#define DEV_OVERRIDES
+// #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 11;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
-	m_pythiaParameters.baggingSize = 12;
-	m_pythiaParameters.epochs = 12;
-	m_pythiaParameters.nodesFraction = 0.5;
+		m_pythiaParameters.baggingSize = 12;
+		m_pythiaParameters.epochs = 12;
+		m_pythiaParameters.nodesFraction = 0.5;
     // m_pythiaParameters.baggingSize = 4;
     // m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
