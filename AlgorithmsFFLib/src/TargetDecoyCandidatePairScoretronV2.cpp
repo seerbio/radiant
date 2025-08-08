@@ -305,7 +305,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 	e = scoreMS2Ions(ms2IonsTargetFullLength, false, tdcpPntr); ree;
 
-#define CHECK_VEC
+// #define CHECK_VEC
 #ifdef CHECK_VEC
 	QVector<float> vectorFromPointer(m_xicSizeMaxAlignas, 0);
 	std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());

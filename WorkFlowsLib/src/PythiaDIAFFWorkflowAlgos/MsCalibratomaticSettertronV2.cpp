@@ -294,7 +294,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		&mzTargetDecoyCandidatePairsPntrsTranched
 		); ree;
 
-// #define CALIBRATION_PARALLEL_TDCP
+#define CALIBRATION_PARALLEL_TDCP
 #ifdef CALIBRATION_PARALLEL_TDCP
 	const auto binderLogic = std::bind(
 		parallelProcessingLogic,
