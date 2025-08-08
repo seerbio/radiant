@@ -13,8 +13,7 @@
 #include "TargetDecoyCandidatePair.h"
 
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
-: m_msReaderPointerAcc(nullptr)
-, m_mzTargetKeyCurrent("null")
+: m_mzTargetKeyCurrent("null")
 , m_msFrameV2Current(nullptr)
 , m_msFrameV2MS1(nullptr)
 , m_xicSizeMaxAlignas(-1)
@@ -80,37 +79,34 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 
 	delete m_apexVectorInterleavedLower;
 	delete m_apexVectorInterleavedUpper;
-
-	delete m_msFrameV2Current;
 }
 
 Err TargetDecoyCandidatePairScoretronV2::init(
-	const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
+	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 	const PythiaParameters &pythiaParameters,
 	int ms2IonsCount,
 	float minMs2IonsFoundCount,
-	MsReaderPointerAcc *msReaderPointerAcc,
 	MsFrameV2 *msFrameV2MS1
 	) {
 	ERR_INIT
 
-	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsScanInfos); ree;
-	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
+	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFramesMS2Pntrs); ree;
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
 	e = ErrorUtils::isGreaterThanZero(minMs2IonsFoundCount); ree;
 	e = ErrorUtils::isTrue(msFrameV2MS1->isInit()); ree;
 
-	m_msReaderPointerAcc = msReaderPointerAcc;
-	m_mzTargetKeyVsMsScanInfos = mzTargetKeyVsMsScanInfos;
+	m_mzTargetKeyVsMsFramesMS2Pntrs = mzTargetKeyVsMsFramesMS2Pntrs;
 	m_pythiaParameters = pythiaParameters;
+
+	constexpr int buffer = 10;
 	m_xicSizeMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
-		m_msReaderPointerAcc->ptr->meanFrameScanCountMS2(),
+		mzTargetKeyVsMsFramesMS2Pntrs.first()->frameIndexSize() + buffer,
 		AVXUtils::AVX2_ALIGNAS_SIZE
 		);
+	m_mzMs2Min = mzTargetKeyVsMsFramesMS2Pntrs.first()->mzMin();
+	m_mzMs2Max = mzTargetKeyVsMsFramesMS2Pntrs.first()->mzMax();
 	m_ms2IonsCount = ms2IonsCount;
-	m_mzMs2Min = m_msReaderPointerAcc->ptr->mzMs2Min();
-	m_mzMs2Max = m_msReaderPointerAcc->ptr->mzMs2Max();
 	m_minMs2IonsFoundCount = minMs2IonsFoundCount;
 	m_msFrameV2MS1 = msFrameV2MS1;
 
@@ -267,29 +263,10 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 
 	ERR_INIT
 
-	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
-
 	const MzTargetKey &mzTargetKey = mzTargetKeyVsTdcpPntr.first;
 	if (mzTargetKey != m_mzTargetKeyCurrent) {
-
-		delete m_msFrameV2Current;
-
-		const QVector<MsScanInfo*> &msScanInfosCopy = m_mzTargetKeyVsMsScanInfos.value(mzTargetKey);
-		QVector<MsScan> msScans;
-		e = m_msReaderPointerAcc->ptr->extractScanPoints(
-			msScanInfosCopy,
-			&msScans
-			); rtee;
-
-		e = ErrorUtils::isTrue(
-			msScans.front().msScanInfoPntr->targetKey() ==
-			msScans.back().msScanInfoPntr->targetKey()
-			); rtee;
-
-		auto* msFrame = new MsFrameV2();
-		e = msFrame->init(msScans); rtee;
-		m_msFrameV2Current = msFrame;
-
+		e = ErrorUtils::contains(mzTargetKey, m_mzTargetKeyVsMsFramesMS2Pntrs); ree;
+		m_msFrameV2Current = m_mzTargetKeyVsMsFramesMS2Pntrs.value(mzTargetKey);
 		e = ErrorUtils::isTrue(m_msFrameV2Current->isInit()); ree;
 		m_mzTargetKeyCurrent = mzTargetKey;
 	}

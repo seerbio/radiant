@@ -89,6 +89,28 @@ FrameIndex MsFrameV2::getFrameIndex(ScanTime scanTime) const {
 	return static_cast<FrameIndex>(frameIndex);
 }
 
+int MsFrameV2::frameIndexSize() const {
+	return m_scanNumbers.size();
+}
+
+float MsFrameV2::mzMin() const {
+	const auto it = std::min_element(
+		m_msScanInfosTargetKey.begin(),
+		m_msScanInfosTargetKey.end(),
+		[](const MsScanInfo *l, const MsScanInfo *r){return l->mzMin < r->mzMin;}
+		);
+	return (*it)->mzMin;
+}
+
+float MsFrameV2::mzMax() const {
+	const auto it = std::max_element(
+		m_msScanInfosTargetKey.begin(),
+		m_msScanInfosTargetKey.end(),
+		[](const MsScanInfo *l, const MsScanInfo *r){return l->mzMax < r->mzMax;}
+		);
+	return (*it)->mzMax;
+}
+
 ScanNumber MsFrameV2::getScanNumber(FrameIndex frameIndex) const {
 	return m_scanNumbers[frameIndex];
 }

@@ -33,6 +33,10 @@ public:
 	[[nodiscard]] FrameIndex getFrameIndex(ScanNumber scanNumber) const;
 	[[nodiscard]] FrameIndex getFrameIndex(ScanTime scanTime) const;
 
+	int frameIndexSize() const;
+	float mzMin() const;
+	float mzMax() const;
+
 	TurboXIC* getTurboXICPntr();
 
 private:

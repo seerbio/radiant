@@ -13,7 +13,6 @@
 
 MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
 : m_tdcpManager(nullptr)
-, m_msReaderPointerAcc(nullptr)
 , m_pythiaParameters(nullptr)
 , m_msCalibratomatic(nullptr)
 , m_msFrameMS1(nullptr)
@@ -21,81 +20,27 @@ MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
 
 MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() = default;
 
-namespace {
-
-	Err buildMzTargetKeyVsMsScanInfosTrunc(
-		const QVector<MsScanInfo*> &msScanInfosPntrs,
-		QMap<MzTargetKey, QVector<MsScanInfo*>> *mzTargetKeyVsMsScanInfos
-		) {
-
-		ERR_INIT
-
-		e = ErrorUtils::isNotEmpty(msScanInfosPntrs); ree;
-
-		QVector<MsScanInfo*> msScanInfosVec = msScanInfosPntrs;
-		const auto msScanInfosTenthed = static_cast<int>(msScanInfosVec.size() * 0.1);
-		msScanInfosVec = msScanInfosVec.mid(msScanInfosTenthed * 1, static_cast<int>(msScanInfosTenthed * 8));
-
-		QMap<MzTargetKey, bool> allTargetKeys;
-		for (MsScanInfo *msi : msScanInfosVec) {
-			allTargetKeys[msi->targetKey()] = true;
-		}
-
-		QVector<MzTargetKey> mzTargetKeys = allTargetKeys.keys().toVector();
-
-		constexpr float desiredTargetKeysToAnalyze = 40.0f;
-		const int skipSizeData
-			= std::ceil(static_cast<float>(mzTargetKeys.size()) / desiredTargetKeysToAnalyze);
-
-		const int skipCountMzTargetKey = std::max(skipSizeData, 1);
-
-		qDebug()
-		<< qPrintable(S_GLOBAL_TIMER.elapsed())
-		<< "MzTargetKey skip count:" << skipCountMzTargetKey
-		<< "| MzTargetKey count:" << mzTargetKeys.size();
-
-		QMap<MzTargetKey, bool> selectTargetKeys;
-		for (int i = 0; i < mzTargetKeys.size(); i += skipCountMzTargetKey) {
-			const MzTargetKey &mzTargetKey = mzTargetKeys[i];
-			selectTargetKeys[mzTargetKey] = true;
-		}
-
-		for (MsScanInfo *msi : msScanInfosVec) {
-
-			const MzTargetKey mzTargetKey = msi->targetKey();
-			if (!selectTargetKeys.contains(mzTargetKey)) {
-				continue;
-			}
-
-			(*mzTargetKeyVsMsScanInfos)[mzTargetKey].push_back(msi);;
-		}
-
-		ERR_RETURN
-	}
-
-}//namespace
 Err MsCalibratomaticSettertronV2::init(
+	const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
+	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 	TargetDecoyCandidatePairManager *tdcpManager,
-	MsReaderPointerAcc *msReaderPointerAcc,
 	PythiaParameters *pythiaParameters,
 	MsFrameV2 *msFrameMS1
 	) {
 
 	ERR_INIT
 
-	e = ErrorUtils::isTrue(msReaderPointerAcc->isInit()); ree;
+	e = ErrorUtils::isNotEmpty(mzTargetKeyVsUniqueMsScanInfoPntrs); ree;
+	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFramesMS2Pntrs); ree;
 	e = ErrorUtils::isTrue(tdcpManager->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
 	e = ErrorUtils::isTrue(msFrameMS1->isInit()); ree;
 
 	m_tdcpManager = tdcpManager;
-	m_msReaderPointerAcc = msReaderPointerAcc;
 	m_pythiaParameters = pythiaParameters;
 	m_msFrameMS1 = msFrameMS1;
-
-	constexpr int msLevel = 2;
-	m_msScanInfosPntrs = m_msReaderPointerAcc->ptr->getMsScanInfos(msLevel).values().toVector();
-	e = ErrorUtils::isNotEmpty(m_msScanInfosPntrs); ree;
+	m_mzTargetKeyVsUniqueMsScanInfoPntrs = mzTargetKeyVsUniqueMsScanInfoPntrs;
+	m_mzTargetKeyVsMsFramesMS2Pntrs = mzTargetKeyVsMsFramesMS2Pntrs;
 
 	e = buildMzTargetKeyVsTargetDecoyCandidatePairPntrs(); ree;
 
@@ -104,22 +49,26 @@ Err MsCalibratomaticSettertronV2::init(
 
 namespace {
 
-	void filterUniqueScanInfosByMzTargetKey(
+	Err buildMsScanInfosPntrsForCalibration(
 		const QList<MzTargetKey> &mzTargetKeys,
-		QVector<MsScanInfo*> *msScanInfos
+		const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
+		QVector<MsScanInfo*> *msScanInfosPntrsForCalibration
 		) {
 
-		const auto terminatorLogic = [mzTargetKeys](const MsScanInfo *msi) {
-			return !mzTargetKeys.contains(msi->targetKey());
-		};
+		ERR_INIT
 
-		const auto terminator = std::remove_if(
-			msScanInfos->begin(),
-			msScanInfos->end(),
-			terminatorLogic
-			);
+		for (int i = 0; i < mzTargetKeys.size(); ++i) {
 
-		msScanInfos->erase(terminator, msScanInfos->end());
+			const MzTargetKey &mzTargetKey = mzTargetKeys.at(i);
+			if (constexpr int skipCount = 5; i % skipCount != 0) {
+				continue;
+			}
+
+			e = ErrorUtils::contains(mzTargetKey, mzTargetKeyVsUniqueMsScanInfoPntrs);
+			msScanInfosPntrsForCalibration->push_back(mzTargetKeyVsUniqueMsScanInfoPntrs.value(mzTargetKey));
+		}
+
+		ERR_RETURN
 	}
 
 	std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> buildMzTargetKeyVsTargetDecoyCandidatePairPntrsLogic(
@@ -161,18 +110,18 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 	ERR_INIT
 
 	e = ErrorUtils::isTrue(m_tdcpManager->isInit()); ree;
-	e = ErrorUtils::isNotEmpty(m_msScanInfosPntrs); ree;
+	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsUniqueMsScanInfoPntrs); ree;
 
 	m_mzTargetKeyVsTargetDecoyCandidatePairPntrs.clear();
 
-	e = buildMzTargetKeyVsMsScanInfosTrunc(
-		m_msScanInfosPntrs,
-		&m_mzTargetKeyVsMsScanInfos
-		); ree;
+	const QList<MzTargetKey> &mzTargetKeys = m_mzTargetKeyVsUniqueMsScanInfoPntrs.keys();
 
-	const QList<MzTargetKey> &mzTargetKeys = m_mzTargetKeyVsMsScanInfos.keys();
-	QVector<MsScanInfo*> uniqueMsScanInfosFiltered = m_msReaderPointerAcc->ptr->getUniqueTandemMsScanInfos();
-	filterUniqueScanInfosByMzTargetKey(mzTargetKeys, &uniqueMsScanInfosFiltered);
+	QVector<MsScanInfo*> msScanInfosPntrsForCalibration;
+	e = buildMsScanInfosPntrsForCalibration(
+		mzTargetKeys,
+		m_mzTargetKeyVsUniqueMsScanInfoPntrs,
+		&msScanInfosPntrsForCalibration
+		); ree;
 
 	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsPntrs;
 	e = m_tdcpManager->getTargetDecoyCandidatePairPointers(&targetDecoyCandidatePairsPntrs); rtee;
@@ -187,7 +136,7 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 		);
 
 	QFuture<std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>>> futures = QtConcurrent::mapped(
-		uniqueMsScanInfosFiltered,
+		msScanInfosPntrsForCalibration,
 		loadLogicBinder
 		);
 	futures.waitForFinished();
@@ -202,7 +151,7 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 		}
 	}
 #else
-	for (const MsScanInfo *msi : uniqueMsScanInfosFiltered) {
+	for (const MsScanInfo *msi : msScanInfosPntrsForCalibration) {
 		std::tuple<Err, MzTargetKey, QVector<TargetDecoyCandidatePair*>> tpl = buildMzTargetKeyVsTargetDecoyCandidatePairPntrsLogic(
 			msi,
 			m_pythiaParameters->precursorExtractionWindowThomsons,
@@ -224,10 +173,9 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 namespace {
 
 	Err parallelProcessingLogic(
-		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
-		const PythiaParameters &pythiaParameters,
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
-		MsReaderPointerAcc *msReaderPointerAcc,
+		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+		const PythiaParameters &pythiaParameters,
 		MsFrameV2 *msFrameV2MS1
 		) {
 
@@ -236,21 +184,30 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
+		QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted
+																			= mzTargetKeyVsTargetDecoyCandidatePairPntrs;
+
+		using T = QPair<MzTargetKey, TargetDecoyCandidatePair*>;
+		std::sort(
+			mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted.begin(),
+			mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted.end(),
+			[](const T &l, const T &r){return l.first < r.first;}
+			);
+
 		constexpr float minMs2IonsFoundCount = 2.22;
 
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
-			mzTargetKeyVsMsScanInfos,
+			mzTargetKeyVsMsFramesMS2Pntrs,
 			pythiaParameters,
 			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
 			minMs2IonsFoundCount,
-			msReaderPointerAcc,
 			msFrameV2MS1
 			); ree;
 
 		// constexpr int skipCountTDCP = 50;
 		// int counter = 0;
-		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrs) {
+		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
 			// if (counter++ % skipCountTDCP != 0) {
 			// 	continue;
@@ -280,9 +237,8 @@ namespace {
 Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic) {
 	ERR_INIT
 
-	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsScanInfos); ree;
+	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsUniqueMsScanInfoPntrs); ree;
 	e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
-	e = ErrorUtils::isTrue(m_msReaderPointerAcc->isInit()); ree;
 
 	m_msCalibratomatic = msCalibratomatic;
 
@@ -298,10 +254,9 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 #ifdef CALIBRATION_PARALLEL_TDCP
 	const auto binderLogic = std::bind(
 		parallelProcessingLogic,
-		m_mzTargetKeyVsMsScanInfos,
-		*m_pythiaParameters,
 		std::placeholders::_1,
-		m_msReaderPointerAcc,
+		m_mzTargetKeyVsMsFramesMS2Pntrs,
+		*m_pythiaParameters,
 		m_msFrameMS1
 		);
 
@@ -313,10 +268,9 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
 		e = parallelProcessingLogic(
-			m_mzTargetKeyVsMsScanInfos,
-			*m_pythiaParameters,
 			pr,
-			m_msReaderPointerAcc,
+			m_mzTargetKeyVsMsFramesMS2Pntrs,
+			*m_pythiaParameters,
 			m_msFrameMS1
 			); ree;
 	}

@@ -29,8 +29,9 @@ public:
 	~MsCalibratomaticSettertronV2();
 
 	Err init(
+		const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
+		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 		TargetDecoyCandidatePairManager *tdcpManager,
-		MsReaderPointerAcc *msReaderPointerAcc,
 		PythiaParameters *pythiaParameters,
 		MsFrameV2 *msFrameMS1
 		);
@@ -43,14 +44,14 @@ private:
 
 private:
 
-	QVector<MsScanInfo*> m_msScanInfosPntrs;
 	QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> m_mzTargetKeyVsTargetDecoyCandidatePairPntrs;
 	TargetDecoyCandidatePairManager *m_tdcpManager;
-	MsReaderPointerAcc *m_msReaderPointerAcc;
+
 	PythiaParameters *m_pythiaParameters;
 	MsCalibratomatic *m_msCalibratomatic;
+	QMap<MzTargetKey, MsScanInfo*> m_mzTargetKeyVsUniqueMsScanInfoPntrs;
+	QMap<MzTargetKey, MsFrameV2*> m_mzTargetKeyVsMsFramesMS2Pntrs;
 	MsFrameV2 *m_msFrameMS1;
-	QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetKeyVsMsScanInfos;
 
 };
 

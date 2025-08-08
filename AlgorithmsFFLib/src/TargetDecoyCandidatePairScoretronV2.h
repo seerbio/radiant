@@ -28,11 +28,10 @@ public:
 	~TargetDecoyCandidatePairScoretronV2();
 
 	Err init(
-		const QMap<MzTargetKey, QVector<MsScanInfo*>> &mzTargetKeyVsMsScanInfos,
+		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 		const PythiaParameters &pythiaParameters,
 		int ms2IonsCount,
 		float minMs2IonsFoundCount,
-		MsReaderPointerAcc *msReaderPointerAcc,
 		MsFrameV2 *msFrameV2MS1
 		);
 
@@ -76,8 +75,7 @@ private:
 
 private:
 
-	MsReaderPointerAcc *m_msReaderPointerAcc;
-	QMap<MzTargetKey, QVector<MsScanInfo*>> m_mzTargetKeyVsMsScanInfos;
+	QMap<MzTargetKey, MsFrameV2*> m_mzTargetKeyVsMsFramesMS2Pntrs;
 	PythiaParameters m_pythiaParameters;
 
 	MzTargetKey m_mzTargetKeyCurrent;

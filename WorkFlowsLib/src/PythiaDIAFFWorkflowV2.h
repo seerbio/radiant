@@ -41,6 +41,7 @@ public:
 private:
 
 	Err buildMS1Frame(MsReaderPointerAcc *msReaderPointerAcc);
+	Err buildMzTargetKeyVsMsFramesMS2Pntrs(MsReaderPointerAcc *msReaderPointerAcc);
 
 
 private:
@@ -48,6 +49,8 @@ private:
 	MsCalibratomatic m_msCalibratomatic;
 	QVector<FragLibReaderRow> m_fragLibReaderRows;
 	MsFrameV2 m_msFrameMS1;
+	QMap<MzTargetKey, MsFrameV2*> m_mzTargetKeyVsMsFramesMS2Pntrs;
+	QMap<MzTargetKey, MsScanInfo*> m_mzTargetKeyVsUniqueMsScanInfoPntrs;
 	PythiaParameters m_pythiaParameters;
 	TargetDecoyCandidatePairManager m_tdcpManager;
 
