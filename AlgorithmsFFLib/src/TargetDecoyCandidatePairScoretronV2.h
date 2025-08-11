@@ -71,9 +71,11 @@ private:
 
 	[[nodiscard]] Err smoothMS1Arrays() const;
 
-	[[nodiscard]] Err buildApexVectors() const;
+	[[nodiscard]] Err buildApexVectors();
 
-	Err scoreProductVecApexes();
+	Err scoreProductVecApexes() const;
+
+	Err connectApexes();
 
 private:
 
@@ -89,6 +91,7 @@ private:
 
 	QVector<float*> m_xicsAlignasIntensity;
 	QVector<float*> m_xicsAlignasIntensityApexes;
+	QVector<QVector<int>> m_xicsAlignasIntensityApexesStdVec;
 	float* m_apexVectorInterleavedLower;
 	float* m_apexVectorInterleavedUpper;
 	QVector<float*> m_xicsAlignasIntensityShadows;

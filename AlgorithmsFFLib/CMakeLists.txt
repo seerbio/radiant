@@ -19,6 +19,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
         )
 
 SET(SOURCE_FILES
+        src/ApexConnector.cpp
 #        src/CandidateScores.cpp
 #        src/CandidateScorertron.cpp
 #        src/Centroidotron.cpp
@@ -57,6 +58,7 @@ SET(SOURCE_FILES
 )
 
 SET(HEADER_FILES
+        src/ApexConnector.h
 #        src/CandidateScores.h
 #        src/CandidateScorertron.h
 #        src/Centroidotron.h

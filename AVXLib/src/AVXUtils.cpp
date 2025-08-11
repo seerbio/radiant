@@ -155,7 +155,7 @@ void AVXUtils::separateInterleavedVectors(
 		__m256 vec = _mm256_load_ps(&interleavedVectors[i * AVX2_FLOAT_REGISTER_SIZE]);
 
 		float* dst[] = { v0, v1, v2, v3, v4, v5, v6, v7 };
-		for (int lane = 0; lane < 8; ++lane) {
+		for (int lane = 0; lane < AVX2_FLOAT_REGISTER_SIZE; ++lane) {
 			dst[lane][i - paddingSingleRegister] = _mm256_cvtss_f32(_mm256_permutevar8x32_ps(vec, _mm256_set1_epi32(lane)));
 		}
 	}

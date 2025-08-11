@@ -4,6 +4,7 @@
 
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
+#include "ApexConnector.h"
 #include "AVXUtils.h"
 #include "EigenUtils.h"
 #include "EigenKernelUtils.h"
@@ -339,13 +340,15 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 		e = subtractShadowsArrays(); ree;
 	}
 	e = buildApexVectors(); ree;
-	// e = buildLocationVectors(); ree;
 
-	// e = buildIntegrationVecCosineSim(ms2IonsTrunc); ree;
-
+	{
+		// e = buildLocationVectors(); ree;
+		// e = buildIntegrationVecCosineSim(ms2IonsTrunc); ree;
+	}
 	e = buildMs1Vec(isDecoy, tdcp); ree;
 
 	e = smoothMS1Arrays(); ree;
+	{
 	// if (m_pythiaParameters.subtractShadows) {
 	// 	constexpr bool zeroNegatives = true;
 	// 	e = AVXUtils::subtractArraysAVX2(
@@ -356,8 +359,11 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	// 		); ree;
 	// }
 
-	e = buildProductVec(); ree;
+	// e = buildProductVec(); ree;
 	// e = scoreProductVecApexes(); ree;
+	}
+
+	e = connectApexes(); ree;
 
 	ERR_RETURN
 }
@@ -826,7 +832,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS1Arrays() const {
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
+Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() {
 
 	ERR_INIT
 
@@ -887,6 +893,19 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 			m_xicsAlignasIntensityApexes[14],
 			m_xicsAlignasIntensityApexes[15]
 			);
+
+		m_xicsAlignasIntensityApexesStdVec.resize(m_xicsAlignasIntensityApexes.size());
+
+
+		for (int i = 0; i < m_xicsAlignasIntensityApexes.size(); i++) {
+			constexpr float nearZero = 0.1;
+			const float* f = m_xicsAlignasIntensityApexes[i];
+			for (int j = 0; j < m_xicSizeTargetMaxAlignas; j++) {
+				if(f[j] > nearZero) {
+					m_xicsAlignasIntensityApexesStdVec[i].push_back(j);
+				}
+			}
+		}
 	}
 
 	for (int i = 0; i < m_xicSizeMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
@@ -903,7 +922,7 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
+Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() const {
 
 	ERR_INIT
 
@@ -917,6 +936,21 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
 	for (auto &pr : productVecApexes) {
 		std::cout << pr.first << std::endl;
 	}
+
+	ERR_RETURN
+}
+
+
+Err TargetDecoyCandidatePairScoretronV2::connectApexes() {
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(m_xicsAlignasIntensityApexesStdVec); ree;
+
+	QVector<QVector<int>> connectedApexes;
+	e = ApexConnector::connectApexes(
+		m_xicsAlignasIntensityApexesStdVec,
+		&connectedApexes
+		); ree;
 
 	ERR_RETURN
 }
