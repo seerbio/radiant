@@ -21,14 +21,14 @@ SET(TEST_CLASSES
 #        DeMultiplexScaneratorTests
 #        DiscriminantScoretronTests
 #        FDRCLassifierNeuralNetTests
-#        FeatureFinderHillBuilderTests
+        FeatureFinderHillBuilderTests
 #        FeatureFinderHillTests
 #        IsotopicDistributionBuilderTests
 #        MS2IonTests
         MsCalibratomaticTests
 #        MsFrameTests
         MsUtilsTests
-#        PeakIntegratomaticTests
+        PeakIntegratomaticTests
 #        QuanTransitionRefinertronTests
 #        QValueSettertronTests
 #        SequenceSubstringSearchomaticTests

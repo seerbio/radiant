@@ -191,6 +191,8 @@ public:
 
 	static float sum256(__m256 vec);
 
+	static QVector<QPair<int, float>> findApexesAVX2(const float* array, size_t size);
+
 };
 
 

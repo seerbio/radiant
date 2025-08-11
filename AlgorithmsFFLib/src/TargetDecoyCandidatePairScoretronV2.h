@@ -69,9 +69,11 @@ private:
 		float *vecMz
 		) const;
 
-	Err smoothScoreAndMS1Arrays() const;
+	[[nodiscard]] Err smoothMS1Arrays() const;
 
 	[[nodiscard]] Err buildApexVectors() const;
+
+	Err scoreProductVecApexes();
 
 private:
 

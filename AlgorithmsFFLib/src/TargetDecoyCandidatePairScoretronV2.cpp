@@ -285,16 +285,14 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 // #define CHECK_VEC
 #ifdef CHECK_VEC
 	QVector<float> vectorFromPointer(m_xicSizeMaxAlignas, 0);
+
 	std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
 	const float max = *std::max_element(vectorFromPointer.begin(), vectorFromPointer.end());
 
 	if (max > 7.9) {
-
-		// e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
-		// std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
-
+		e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
+		std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
 		e = ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv"); ree;
-
 		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityVec, m_xicSizeMaxAlignas, "testesIntz.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_ionCountVec, m_xicSizeMaxAlignas, "testesCnt.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityApexesSum, m_xicSizeMaxAlignas, "testesApexSum.csv"); ree;
@@ -307,6 +305,8 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 				); ree;
 		}
 
+		e = scoreProductVecApexes();
+		qDebug() << e << "E";
 		throw std::runtime_error("Error in TargetDecoyCandidatePairScoretronV2");
 	}
 #endif
@@ -338,15 +338,14 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	if (m_pythiaParameters.subtractShadows) {
 		e = subtractShadowsArrays(); ree;
 	}
-	// e = buildApexVectors(); ree;
-
-	e = buildLocationVectors(); ree;
+	e = buildApexVectors(); ree;
+	// e = buildLocationVectors(); ree;
 
 	// e = buildIntegrationVecCosineSim(ms2IonsTrunc); ree;
 
 	e = buildMs1Vec(isDecoy, tdcp); ree;
 
-	e = smoothScoreAndMS1Arrays(); ree;
+	e = smoothMS1Arrays(); ree;
 	// if (m_pythiaParameters.subtractShadows) {
 	// 	constexpr bool zeroNegatives = true;
 	// 	e = AVXUtils::subtractArraysAVX2(
@@ -358,6 +357,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	// }
 
 	e = buildProductVec(); ree;
+	// e = scoreProductVecApexes(); ree;
 
 	ERR_RETURN
 }
@@ -803,7 +803,7 @@ Err TargetDecoyCandidatePairScoretronV2::fitMS1XICToVecs(
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::smoothScoreAndMS1Arrays() const {
+Err TargetDecoyCandidatePairScoretronV2::smoothMS1Arrays() const {
 
 	ERR_INIT
 
@@ -898,6 +898,24 @@ Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() const {
 		}
 		_mm256_store_ps(m_intensityApexesSum + i, runningSum);
 		m_intensityApexesSum[0] =0;
+	}
+
+	ERR_RETURN
+}
+
+Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(m_xicSizeMaxAlignas); ree;
+
+	const QVector<QPair<int, float>> productVecApexes = AVXUtils::findApexesAVX2(
+		m_intensityVec,
+		m_xicSizeTargetMaxAlignas
+		);
+
+	for (auto &pr : productVecApexes) {
+		std::cout << pr.first << std::endl;
 	}
 
 	ERR_RETURN

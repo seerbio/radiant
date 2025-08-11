@@ -29,8 +29,8 @@ SET(SOURCE_FILES
 #        src/DeMultiplexScanerator.cpp
 #        src/DeMultiplexScaneratorManager.cpp
 #        src/FDRCLassifierNeuralNet.cpp
-#        src/FeatureFinderHill.cpp
-#        src/FeatureFinderHillBuilder.cpp
+        src/FeatureFinderHill.cpp
+        src/FeatureFinderHillBuilder.cpp
 #        src/IonMobilitron.cpp
 #        src/InterferingCandidatesEliminatomatic.cpp
 #        src/IsotopicDistributionBuilder.cpp
@@ -40,7 +40,7 @@ SET(SOURCE_FILES
 #        src/MsFrame.cpp
         src/MsFrameV2.cpp
         src/MsUtils.cpp
-#        src/PeakIntegratomatic.cpp
+        src/PeakIntegratomatic.cpp
 #        src/QuanFileBuilder.cpp
 #        src/QuanTransitionRefinertron.cpp
 #        src/QValueSettertron.cpp
@@ -67,8 +67,8 @@ SET(HEADER_FILES
 #        src/DeMultiplexScaneratorManager.h
 #        src/DiscriminantScoretron.h
 #        src/FDRCLassifierNeuralNet.h
-#        src/FeatureFinderHill.h
-#        src/FeatureFinderHillBuilder.h
+        src/FeatureFinderHill.h
+        src/FeatureFinderHillBuilder.h
 #        src/InterferingCandidatesEliminatomatic.h
 #        src/IonMobilitron.h
 #        src/IsotopicDistributionBuilder.h
@@ -78,7 +78,7 @@ SET(HEADER_FILES
 #        src/MsFrame.h
         src/MsFrameV2.h
         src/MsUtils.h
-#        src/PeakIntegratomatic.h
+        src/PeakIntegratomatic.h
 #        src/QuanFileBuilder.h
 #        src/QuanTransitionRefinertron.h
 #        src/QValueSettertron.h
