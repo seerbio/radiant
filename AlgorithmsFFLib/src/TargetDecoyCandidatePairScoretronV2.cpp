@@ -4,7 +4,6 @@
 
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
-#include "ApexConnector.h"
 #include "AVXUtils.h"
 #include "EigenUtils.h"
 #include "EigenKernelUtils.h"
