@@ -11,6 +11,7 @@
 #include "MS2Ion.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "ObjectCSVWriters.h"
+#include "PeakIntegratomatic.h"
 #include "TargetDecoyCandidatePair.h"
 
 TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
@@ -19,12 +20,8 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_msFrameV2MS1(nullptr)
 , m_xicSizeMaxAlignas(-1)
 , m_ms2IonsCount(-1)
-, m_apexVectorInterleavedLower(nullptr)
-, m_apexVectorInterleavedUpper(nullptr)
 , m_intensityVec(nullptr)
 , m_ionCountVec(nullptr)
-, m_integrationVecCosineSim(nullptr)
-, m_intensityApexesSum(nullptr)
 , m_productVec(nullptr)
 , m_mzMs1MonoIsotopeVecIntensity(nullptr)
 , m_mzMs1C13VecIntensity(nullptr)
@@ -40,14 +37,11 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_mzMs2Max(-1)
 , m_intensityVecMax(0)
 , m_minMs2IonsFoundCount(-1)
+, m_msCalibratomatic(nullptr)
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	for (float* v : m_xicsAlignasIntensity) {
-		delete v;
-	}
-
-	for (float* v : m_xicsAlignasIntensityApexes) {
 		delete v;
 	}
 
@@ -65,8 +59,6 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 
 	delete m_intensityVec;
 	delete m_ionCountVec;
-	delete m_integrationVecCosineSim;
-	delete m_intensityApexesSum;
 	delete m_productVec;
 
 	delete m_mzMs1MonoIsotopeVecIntensity;
@@ -77,9 +69,6 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 	delete m_mzMs1C13VecMz;
 	delete m_mzMs1C132VecMz;
 	delete m_mzMs1MonoIsotopeShadowVecMz;
-
-	delete m_apexVectorInterleavedLower;
-	delete m_apexVectorInterleavedUpper;
 }
 
 Err TargetDecoyCandidatePairScoretronV2::init(
@@ -95,7 +84,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
 	e = ErrorUtils::isGreaterThanZero(minMs2IonsFoundCount); ree;
-	e = ErrorUtils::isTrue(msFrameV2MS1->isInit()); ree;
+	// e = ErrorUtils::isTrue(msFrameV2MS1->isInit()); ree;
 
 	m_mzTargetKeyVsMsFramesMS2Pntrs = mzTargetKeyVsMsFramesMS2Pntrs;
 	m_pythiaParameters = pythiaParameters;
@@ -112,7 +101,6 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	m_msFrameV2MS1 = msFrameV2MS1;
 
 	m_xicsAlignasIntensity.resize(m_ms2IonsCount);
-	m_xicsAlignasIntensityApexes.resize(m_ms2IonsCount);
 	m_xicsAlignasIntensityShadows.resize(m_ms2IonsCount);
 	m_xicsAlignasMz.resize(m_ms2IonsCount);
 	m_xicsAlignasMzShadows.resize(m_ms2IonsCount);
@@ -123,12 +111,6 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasIntensity[i] = alignedIntensityVals;
-
-		auto* alignedIntensityApexes = static_cast<float*>(std::aligned_alloc(
-			AVXUtils::AVX2_ALIGNAS_SIZE,
-			m_xicSizeMaxAlignas * sizeof(float))
-			);
-		m_xicsAlignasIntensityApexes[i] = alignedIntensityApexes;
 
 		auto* alignedMzVals = static_cast<float*>(std::aligned_alloc(
 			AVXUtils::AVX2_ALIGNAS_SIZE,
@@ -161,35 +143,11 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		);
 	m_ionCountVec = alignedIonCountVec;
 
-	auto* alignedIntegrationVecCosineSim = static_cast<float*>(std::aligned_alloc(
-		AVXUtils::AVX2_ALIGNAS_SIZE,
-		m_xicSizeMaxAlignas * sizeof(float))
-		);
-	m_integrationVecCosineSim = alignedIntegrationVecCosineSim;
-
-	auto* intensityApexesSum = static_cast<float*>(std::aligned_alloc(
-		AVXUtils::AVX2_ALIGNAS_SIZE,
-		m_xicSizeMaxAlignas * sizeof(float))
-		);
-	m_intensityApexesSum = intensityApexesSum;
-
 	auto* alignedProductVec = static_cast<float*>(std::aligned_alloc(
 		AVXUtils::AVX2_ALIGNAS_SIZE,
 		m_xicSizeMaxAlignas * sizeof(float))
 		);
 	m_productVec = alignedProductVec;
-
-	auto* apexVectorInterleavedLower = static_cast<float*>(std::aligned_alloc(
-		AVXUtils::AVX2_ALIGNAS_SIZE,
-		m_xicSizeMaxAlignas * AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float))
-		);
-	m_apexVectorInterleavedLower = apexVectorInterleavedLower;
-
-	auto* apexVectorInterleavedUpper = static_cast<float*>(std::aligned_alloc(
-		AVXUtils::AVX2_ALIGNAS_SIZE,
-		m_xicSizeMaxAlignas * AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float))
-		);
-	m_apexVectorInterleavedUpper = apexVectorInterleavedUpper;
 
 	auto* mzMs1MonoIsotopeVecIntensity = static_cast<float*>(std::aligned_alloc(
 		AVXUtils::AVX2_ALIGNAS_SIZE,
@@ -287,16 +245,18 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 #ifdef CHECK_VEC
 	QVector<float> vectorFromPointer(m_xicSizeMaxAlignas, 0);
 
-	std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
+	std::copy_n(m_ionCountVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
 	const float max = *std::max_element(vectorFromPointer.begin(), vectorFromPointer.end());
 
 	if (max > 7.9) {
-		e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
-		std::copy_n(m_productVec, m_xicSizeMaxAlignas, vectorFromPointer.data());
+
+		qDebug() << max << "Maximulmmml";
+
 		e = ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityVec, m_xicSizeMaxAlignas, "testesIntz.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_ionCountVec, m_xicSizeMaxAlignas, "testesCnt.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityApexesSum, m_xicSizeMaxAlignas, "testesApexSum.csv"); ree;
+		e = ObjectCSVWriters::writeRawPointerToFile(m_productVec, m_xicSizeMaxAlignas, "testesProd.csv"); ree;
 
 		for (int i = 0; i < m_xicsAlignasIntensity.size(); i++) {
 			e = ObjectCSVWriters::writeRawPointerToFile(
@@ -306,8 +266,15 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 				); ree;
 		}
 
-		e = scoreProductVecApexes();
-		qDebug() << e << "E";
+		for (const QPair<int, float> &ap : m_productVecApexes) {
+
+			if (m_ionCountVec[ap.first] < 3) {
+				continue;
+			}
+
+			std::cout << ap.first << "," << std::endl;
+		}
+
 		throw std::runtime_error("Error in TargetDecoyCandidatePairScoretronV2");
 	}
 #endif
@@ -339,15 +306,15 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	if (m_pythiaParameters.subtractShadows) {
 		e = subtractShadowsArrays(); ree;
 	}
-	e = buildApexVectors(); ree;
 
-	{
-		// e = buildLocationVectors(); ree;
-		// e = buildIntegrationVecCosineSim(ms2IonsTrunc); ree;
+	e = buildLocationVectors(); ree;
+	if (m_msFrameV2MS1->isInit()) {
+		e = buildMs1Vec(isDecoy, tdcp); ree;
 	}
-	e = buildMs1Vec(isDecoy, tdcp); ree;
-
+	e = buildProductVec(); ree;
 	e = smoothMS1Arrays(); ree;
+	e = scoreProductVecApexes();ree;
+
 	{
 	// if (m_pythiaParameters.subtractShadows) {
 	// 	constexpr bool zeroNegatives = true;
@@ -358,12 +325,10 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	// 		zeroNegatives
 	// 		); ree;
 	// }
-
-	// e = buildProductVec(); ree;
 	// e = scoreProductVecApexes(); ree;
 	}
 
-	e = connectApexes(); ree;
+	// e = connectApexes(); ree;
 
 	ERR_RETURN
 }
@@ -488,10 +453,6 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
 	}
 
-	for (float *f : m_xicsAlignasIntensityApexes) {
-		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
-	}
-
 	for (float *f : m_xicsAlignasIntensityShadows) {
 		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
 	}
@@ -506,8 +467,6 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 
 	std::memset(m_intensityVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_ionCountVec, 0, m_xicSizeMaxAlignas * sizeof(float));
-	std::memset(m_integrationVecCosineSim, 0, m_xicSizeMaxAlignas * sizeof(float));
-	std::memset(m_intensityApexesSum, 0, m_xicSizeMaxAlignas * sizeof(float));
 	std::memset(m_productVec, 0, m_xicSizeMaxAlignas * sizeof(float));
 
 	std::memset(m_mzMs1MonoIsotopeVecIntensity, 0, m_xicSizeMaxAlignas * sizeof(float));
@@ -647,33 +606,6 @@ Err TargetDecoyCandidatePairScoretronV2::buildLocationVectors() {
 			_mm256_store_ps(m_intensityVec + i, finalSum1);
 			_mm256_store_ps(m_ionCountVec + i, finalSumCount1);
 		}
-
-	}
-
-	ERR_RETURN
-}
-
-Err TargetDecoyCandidatePairScoretronV2::buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions) {
-
-	ERR_INIT
-
-	e = ErrorUtils::isNotEmpty(ms2Ions); ree;
-	e = ErrorUtils::isGreaterThanZero(m_targetFrameIndexMax); ree;
-
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float scanIntensities[m_ms2IonsCount] = {0};
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float theoIntensities[m_ms2IonsCount] = {0};
-	for (int i = 0; i < std::min(m_ms2IonsCount, ms2Ions.size()); i++) {
-		theoIntensities[i] = ms2Ions[i].intensity;
-	}
-
-	for (int i = 0; i < m_targetFrameIndexMax; i++) {
-		for (int j = 0; j < std::min(m_ms2IonsCount, ms2Ions.size()); j++) {
-			scanIntensities[j] = m_xicsAlignasIntensity[j][i];
-		}
-
-		const float cosineSim = AVXUtils::cosineSimilarityAVX(scanIntensities, theoIntensities, m_ms2IonsCount);
-		m_integrationVecCosineSim[i] = cosineSim;
-
 	}
 
 	ERR_RETURN
@@ -816,140 +748,81 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS1Arrays() const {
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
 	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
 
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float dummy[m_xicSizeTargetMaxAlignas];
 	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
 		m_savitzkyGolayKernel,
 		m_xicSizeTargetMaxAlignas,
 		m_ionCountVec,
 		m_intensityVec,
-		m_integrationVecCosineSim,
+		m_productVec,
 		m_mzMs1MonoIsotopeVecIntensity,
 		m_mzMs1C13VecIntensity,
 		m_mzMs1C132VecIntensity,
 		m_mzMs1MonoIsotopeShadowVecIntensity,
-		m_intensityApexesSum
+		dummy
 		); ree;
 
 	ERR_RETURN
 }
 
-Err TargetDecoyCandidatePairScoretronV2::buildApexVectors() {
+namespace {
+	void filterApexesByIonCount(
+		const float* ionCountVec,
+		float thresholdValue,
+		QVector<QPair<int, float>> *productVecApexes
+		) {
 
-	ERR_INIT
+		const auto terminatorLogic = [thresholdValue, ionCountVec](const QPair<int, float> &pr) {
+			return ionCountVec[pr.first] < thresholdValue;
+		};
 
-	e = ErrorUtils::isGreaterThanZero(m_xicSizeMaxAlignas); ree;
-	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
-
-	e = AVXUtils::findApexesEightVecs(
-		m_xicSizeMaxAlignas,
-		m_xicsAlignasIntensity[0],
-		m_xicsAlignasIntensity[1],
-		m_xicsAlignasIntensity[2],
-		m_xicsAlignasIntensity[3],
-		m_xicsAlignasIntensity[4],
-		m_xicsAlignasIntensity[5],
-		m_xicsAlignasIntensity[6],
-		m_xicsAlignasIntensity[7],
-		m_apexVectorInterleavedLower
-		); ree;
-
-	AVXUtils::separateInterleavedVectors(
-		m_apexVectorInterleavedLower,
-		m_targetFrameIndexMax * AVXUtils::AVX2_FLOAT_REGISTER_SIZE,
-		0,
-		m_xicsAlignasIntensityApexes[0],
-		m_xicsAlignasIntensityApexes[1],
-		m_xicsAlignasIntensityApexes[2],
-		m_xicsAlignasIntensityApexes[3],
-		m_xicsAlignasIntensityApexes[4],
-		m_xicsAlignasIntensityApexes[5],
-		m_xicsAlignasIntensityApexes[6],
-		m_xicsAlignasIntensityApexes[7]
-		);
-
-	if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
-		e = AVXUtils::findApexesEightVecs(
-			m_xicSizeMaxAlignas,
-			m_xicsAlignasIntensity[8],
-			m_xicsAlignasIntensity[9],
-			m_xicsAlignasIntensity[10],
-			m_xicsAlignasIntensity[11],
-			m_xicsAlignasIntensity[12],
-			m_xicsAlignasIntensity[13],
-			m_xicsAlignasIntensity[14],
-			m_xicsAlignasIntensity[15],
-			m_apexVectorInterleavedUpper
-			); ree;
-
-		AVXUtils::separateInterleavedVectors(
-			m_apexVectorInterleavedUpper,
-			m_targetFrameIndexMax * AVXUtils::AVX2_FLOAT_REGISTER_SIZE,
-			0,
-			m_xicsAlignasIntensityApexes[8],
-			m_xicsAlignasIntensityApexes[9],
-			m_xicsAlignasIntensityApexes[10],
-			m_xicsAlignasIntensityApexes[11],
-			m_xicsAlignasIntensityApexes[12],
-			m_xicsAlignasIntensityApexes[13],
-			m_xicsAlignasIntensityApexes[14],
-			m_xicsAlignasIntensityApexes[15]
+		const auto terminator = std::remove_if(
+			productVecApexes->begin(),
+			productVecApexes->end(),
+			terminatorLogic
 			);
 
-		m_xicsAlignasIntensityApexesStdVec.resize(m_xicsAlignasIntensityApexes.size());
-
-
-		for (int i = 0; i < m_xicsAlignasIntensityApexes.size(); i++) {
-			constexpr float nearZero = 0.1;
-			const float* f = m_xicsAlignasIntensityApexes[i];
-			for (int j = 0; j < m_xicSizeTargetMaxAlignas; j++) {
-				if(f[j] > nearZero) {
-					m_xicsAlignasIntensityApexesStdVec[i].push_back(j);
-				}
-			}
-		}
+		productVecApexes->erase(terminator, productVecApexes->end());
 	}
-
-	for (int i = 0; i < m_xicSizeMaxAlignas; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
-
-		__m256 runningSum = _mm256_setzero_ps();
-		for (int j = 0; j < m_xicsAlignasIntensityApexes.size(); j++) {
-			const __m256 x = _mm256_load_ps(m_xicsAlignasIntensityApexes[j] + i);
-			runningSum = _mm256_add_ps(runningSum, x);
-		}
-		_mm256_store_ps(m_intensityApexesSum + i, runningSum);
-		m_intensityApexesSum[0] =0;
-	}
-
-	ERR_RETURN
 }
-
-Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() const {
+Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
 
 	ERR_INIT
 
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeMaxAlignas); ree;
 
-	const QVector<QPair<int, float>> productVecApexes = AVXUtils::findApexesAVX2(
-		m_intensityVec,
+	m_productVecApexes = AVXUtils::findApexesAVX2(
+		m_productVec,
 		m_xicSizeTargetMaxAlignas
 		);
 
-	for (auto &pr : productVecApexes) {
-		std::cout << pr.first << std::endl;
-	}
+	constexpr float ionCountThreshold = 3.0f;
+	filterApexesByIonCount(
+		m_ionCountVec,
+		ionCountThreshold,
+		&m_productVecApexes
+		);
 
-	ERR_RETURN
-}
+	PeakIntegratomaticParameters params;
+	params.stopThresholdFraction = 0.1;
 
+	PeakIntegratomatic peakIntegratomatic;
+	e = peakIntegratomatic.init(params); ree;
 
-Err TargetDecoyCandidatePairScoretronV2::connectApexes() {
-	ERR_INIT
+	QVector<int> apexes;
+	std::transform(
+		m_productVecApexes.begin(),
+		m_productVecApexes.end(),
+		std::back_inserter(apexes),
+		[](const QPair<int, float> &pr) { return pr.first;}
+		);
 
-	e = ErrorUtils::isNotEmpty(m_xicsAlignasIntensityApexesStdVec); ree;
-
-	QVector<QVector<int>> connectedApexes;
-	e = ApexConnector::connectApexes(
-		m_xicsAlignasIntensityApexesStdVec,
-		&connectedApexes
+	QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+	e = peakIntegratomatic.simpleIntegrator(
+		apexes,
+		m_productVec,
+		m_xicSizeTargetMaxAlignas,
+		&peakIntegrationIndexesVsIntensity
 		); ree;
 
 	ERR_RETURN

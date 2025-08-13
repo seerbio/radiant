@@ -29,6 +29,7 @@ Err PeakIntegratomatic::init(const PeakIntegratomaticParameters &params) {
 }
 
 Err PeakIntegratomatic::simpleIntegrator(
+	const QVector<int> &apexes,
 	const float* vec,
 	int vecSize,
 	QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
@@ -38,54 +39,57 @@ Err PeakIntegratomatic::simpleIntegrator(
 
     e = ErrorUtils::isTrue(m_params.isValid()); ree;
 
-	float lastIntensity = 0.0f;
-	float apexIntensity = 0.0f;
+	int lastGlobalStopLeft = std::numeric_limits<int>::max();
+	int lastGlobalStopRight = 0;
 
-	bool inPeak = false;
-	bool isBackSide = false;
+	for (int apex : apexes) {
+		const float stopThresold = vec[apex] * m_params.stopThresholdFraction;
 
-	int peakStart = 0;
-	int peakEnd = 0;
+		int lastLeftStop = apex;
+		float lastLeftValue = vec[apex];
 
-	for (int i = 0; i < vecSize; i++) {
+		while (lastLeftStop > 0) {
 
-		const float currentIntensity = vec[i];
+			const int currentLeftStop = lastLeftStop - 1;
+			const float currentLeftValue = vec[currentLeftStop];
 
-		if (currentIntensity > lastIntensity && !MathUtils::tZero(currentIntensity) && !inPeak) {
-			qDebug() << "PeakStart";
-			peakStart = i - 1;
-			inPeak = true;
+			if (currentLeftValue <= stopThresold
+				|| currentLeftValue > lastLeftValue * (1.0 + m_params.hysteresis)
+				|| lastLeftStop - 1 == lastGlobalStopRight
+				) {
+				lastLeftStop = currentLeftStop;
+				lastGlobalStopLeft = lastLeftStop;
+				break;
+			}
+
+			lastLeftStop = currentLeftStop;
+			lastLeftValue = currentLeftValue;
+			lastGlobalStopLeft = lastLeftStop;
 		}
 
-		qDebug() << i << lastIntensity << currentIntensity << apexIntensity << inPeak;
+		int lastRightStop = apex;
+		float lastRightValue = vec[apex];
+		while (lastRightStop < vecSize) {
 
-		if (!inPeak) {
-			lastIntensity = currentIntensity;
-			continue;
+			const int currentRightStop = lastRightStop + 1;
+			const float currentRightValue = vec[currentRightStop];
+
+			if (currentRightValue <= stopThresold
+				|| currentRightValue > lastRightValue * (1.0 + m_params.hysteresis)
+				|| lastRightStop + 1 == lastGlobalStopLeft
+				) {
+				lastRightStop = currentRightStop;
+				lastGlobalStopRight = lastRightStop;
+				break;
+				}
+
+			lastRightStop = currentRightStop;
+			lastRightValue = currentRightValue;
+			lastGlobalStopRight = lastRightStop;
 		}
 
-		if (currentIntensity > lastIntensity) {
-			apexIntensity = currentIntensity;
-		}
-
-		if (currentIntensity < m_params.stopThresholdFraction * apexIntensity) {
-			peakEnd = i - 1;
-			peakIntegrationIndexesVsIntensity->push_back({{peakStart, peakEnd}, apexIntensity});
-
-			inPeak = false;
-			isBackSide = false;
-			apexIntensity = 0.0f;
-			lastIntensity = currentIntensity;
-			peakStart = peakEnd;
-			qDebug() << "PeakEnd";
-		}
-
-		lastIntensity = currentIntensity;
+		peakIntegrationIndexesVsIntensity->push_back({{lastLeftStop, lastRightStop}, vec[apex]});
 	}
-
-
-
-
 
     ERR_RETURN
 }

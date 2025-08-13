@@ -55,10 +55,11 @@ public:
     * @return An error code indicating the success or failure of the integration.
     */
     Err simpleIntegrator(
-            const float* vec,
-            int vecSize,
-            QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
-            ) const;
+	    const QVector<int> &apexes,
+        const float* vec,
+        int vecSize,
+        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+        ) const;
 
 private:
 

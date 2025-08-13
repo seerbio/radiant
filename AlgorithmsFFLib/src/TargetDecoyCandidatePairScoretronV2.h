@@ -9,6 +9,7 @@
 
 #include "GlobalSettings.h"
 #include "Error.h"
+#include "MsCalibratomatic.h"
 #include "MsFrameV2.h"
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
@@ -57,8 +58,6 @@ private:
 
 	Err buildLocationVectors();
 
-	Err buildIntegrationVecCosineSim(const QVector<MS2Ion> &ms2Ions);
-
 	[[nodiscard]] Err buildProductVec() const;
 
 	[[nodiscard]] Err buildMs1Vec(bool isDecoy, TargetDecoyCandidatePair *tdcp) const;
@@ -71,11 +70,8 @@ private:
 
 	[[nodiscard]] Err smoothMS1Arrays() const;
 
-	[[nodiscard]] Err buildApexVectors();
+	Err scoreProductVecApexes();
 
-	Err scoreProductVecApexes() const;
-
-	Err connectApexes();
 
 private:
 
@@ -90,20 +86,13 @@ private:
 	int m_ms2IonsCount;
 
 	QVector<float*> m_xicsAlignasIntensity;
-	QVector<float*> m_xicsAlignasIntensityApexes;
-	QVector<QVector<int>> m_xicsAlignasIntensityApexesStdVec;
-	float* m_apexVectorInterleavedLower;
-	float* m_apexVectorInterleavedUpper;
 	QVector<float*> m_xicsAlignasIntensityShadows;
 	QVector<float*> m_xicsAlignasMz;
 	QVector<float*> m_xicsAlignasMzShadows;
 
 	float* m_intensityVec;
 	float* m_ionCountVec;
-	float* m_integrationVecCosineSim;
 	float* m_productVec;
-
-	float* m_intensityApexesSum;
 
 	float* m_mzMs1MonoIsotopeVecIntensity;
 	float* m_mzMs1C13VecIntensity;
@@ -124,6 +113,10 @@ private:
 	float m_intensityVecMax;
 
 	float m_minMs2IonsFoundCount;
+
+	QVector<QPair<int, float>> m_productVecApexes;
+
+	MsCalibratomatic *m_msCalibratomatic;
 
 };
 

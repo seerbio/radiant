@@ -213,57 +213,47 @@ QVector<QPair<int, float>> AVXUtils::findApexesAVX2(const float *array, size_t s
 
 	QVector<QPair<int, float>> maxima;
 
-
-	// Check for trivial case (array too small for apexes)
-	if (size < 3) {
-		return maxima; // No apexes in array with fewer than 3 elements
-	}
-
-	// Iterate through the array, excluding the first and last elements
-	for (int i = 1; i < size - 1; ++i) {
-		if (array[i] > array[i - 1] && array[i] > array[i + 1]) {
-			maxima.push_back({i, array[i]});
-		}
-	}
-
-	return maxima;
-
 	// if (size < 3) {
-	// 	return maxima;
+	// 	return maxima; // No apexes in array with fewer than 3 elements
 	// }
 	//
-	// int i = 1;
-	// for (; i + AVX2_FLOAT_REGISTER_SIZE < size - 1; i += 8) {
-	//
-	// 	const __m256 left = _mm256_loadu_ps(array + i - 1);
-	// 	const __m256 center = _mm256_loadu_ps(array + i);
-	// 	const __m256 right = _mm256_loadu_ps(array + i + 1);
-	//
-	// 	const __m256 greaterThanLeft = _mm256_cmp_ps(center, left, _CMP_GT_OS);
-	// 	const __m256 greaterThanRight = _mm256_cmp_ps(center, right, _CMP_GT_OS);
-	// 	const __m256 maximaMask = _mm256_and_ps(greaterThanLeft, greaterThanRight);
-	//
-	// 	const int mask = _mm256_movemask_ps(maximaMask);
-	//
-	// 	for (int j = 0; j < 8; ++j) {
-	// 		if (mask & (1 << j)) {
-	// 			maxima.push_back({i + j, array[i + j]});
-	// 		}
-	// 	}
-	// }
-	//
-	// for (; i < size - 1; ++i) {
-	// 	if (array[i] > array[i - 1] && array[i] > array[i + 1]) { // Local maxima
+	// for (int i = 1; i < size - 1; ++i) {
+	// 	if (array[i] > array[i - 1] && array[i] > array[i + 1]) {
 	// 		maxima.push_back({i, array[i]});
 	// 	}
 	// }
 	//
-	// using T = QPair<int, float>;
-	// std::sort(
-	// 	maxima.rbegin(),
-	// 	maxima.rend(),
-	// 	[](const T &l, const T &r){return l.second < r.second;}
-	// 	);
+	// return maxima;
+
+	if (size < 3) {
+		return maxima;
+	}
+
+	int i = 1;
+	for (; i + AVX2_FLOAT_REGISTER_SIZE < size - 1; i += 8) {
+
+		const __m256 left = _mm256_loadu_ps(array + i - 1);
+		const __m256 center = _mm256_loadu_ps(array + i);
+		const __m256 right = _mm256_loadu_ps(array + i + 1);
+
+		const __m256 greaterThanLeft = _mm256_cmp_ps(center, left, _CMP_GT_OS);
+		const __m256 greaterThanRight = _mm256_cmp_ps(center, right, _CMP_GT_OS);
+		const __m256 maximaMask = _mm256_and_ps(greaterThanLeft, greaterThanRight);
+
+		const int mask = _mm256_movemask_ps(maximaMask);
+
+		for (int j = 0; j < 8; ++j) {
+			if (mask & (1 << j)) {
+				maxima.push_back({i + j, array[i + j]});
+			}
+		}
+	}
+
+	for (; i < size - 1; ++i) {
+		if (array[i] > array[i - 1] && array[i] > array[i + 1]) { // Local maxima
+			maxima.push_back({i, array[i]});
+		}
+	}
 
     return maxima;
 }
