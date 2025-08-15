@@ -1,0 +1,58 @@
+//
+// Created by andrewnichols on 8/14/25.
+//
+
+#ifndef CANDIDATESCORESV2_H
+#define CANDIDATESCORESV2_H
+
+#include "AlgorithmsFFLib_Exports.h"
+
+#include "Error.h"
+#include "GlobalSettings.h"
+#include "TargetDecoyCandidatePair.h"
+
+#include <cstring>
+
+using namespace Error;
+
+class ALGORITHMSFFLIB_EXPORTS CandidateScoresV2 {
+
+public:
+
+	CandidateScoresV2() = default;
+	~CandidateScoresV2() = default;
+
+	TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
+
+	MzTargetKey targetKey;
+	QString proteinGroup;
+
+	bool isDecoy = false;
+	FrameIndex frameIndex = -1;
+	FrameIndex frameIndexStart = -1;
+	FrameIndex frameIndexEnd = -1;
+	ScanNumber scanNumber = -1;
+	ScanNumber scanNumberStart = -1;
+	ScanNumber scanNumberEnd = -1;
+	ScanTime scanTime = -1.0;
+	ScanTime scanTimeStart = -1.0;
+	ScanTime scanTimeEnd = -1.0;
+	ScanTime scanTimePredicted = -1.0;
+
+	double classifierScore = -1.0;
+	double discriminantScore = -1.0;
+	double qValue = 1.0;
+
+	QVector<float> featuresArray;
+
+	void initFeaturesArray(int size) {
+		featuresArray.clear();
+		featuresArray.resize(size);
+		std::memset(featuresArray.data(), 0, size * sizeof(float));
+	}
+
+};
+
+
+
+#endif //CANDIDATESCORESV2_H

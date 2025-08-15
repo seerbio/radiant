@@ -153,6 +153,20 @@ public:
 		size_t length
 		);
 
+	static float cosineSimilarityAVX(
+		const float* arrRef,
+		const float* array0,
+		const float* array1,
+		const float* array2,
+		const float* array3,
+		const float* array4,
+		const float* array5,
+		const float* array6,
+		const float* array7,
+		size_t length,
+		float* cosineSimResults
+		);
+
 	static float maxFloat(__m256 vec);
 
 	static bool isAllOnes(__m256 mask);

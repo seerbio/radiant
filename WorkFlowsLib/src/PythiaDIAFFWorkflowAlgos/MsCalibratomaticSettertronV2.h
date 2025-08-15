@@ -7,6 +7,7 @@
 
 #include "WorkFlowsLib_Exports.h"
 
+#include "CandidateScoresFeatureManager.h"
 #include "GlobalSettings.h"
 #include "Error.h"
 #include "MsCalibratomatic.h"
@@ -31,6 +32,7 @@ public:
 	Err init(
 		const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
 		TargetDecoyCandidatePairManager *tdcpManager,
 		PythiaParameters *pythiaParameters,
 		MsFrameV2 *msFrameMS1
@@ -49,6 +51,7 @@ private:
 
 	PythiaParameters *m_pythiaParameters;
 	MsCalibratomatic *m_msCalibratomatic;
+	QVector<CandidateScoresFeatureManager::Features> m_featuresCalibration;
 	QMap<MzTargetKey, MsScanInfo*> m_mzTargetKeyVsUniqueMsScanInfoPntrs;
 	QMap<MzTargetKey, MsFrameV2*> m_mzTargetKeyVsMsFramesMS2Pntrs;
 	MsFrameV2 *m_msFrameMS1;

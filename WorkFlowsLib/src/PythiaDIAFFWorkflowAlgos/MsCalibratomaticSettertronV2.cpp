@@ -23,6 +23,7 @@ MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() = default;
 Err MsCalibratomaticSettertronV2::init(
 	const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
 	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+	const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
 	TargetDecoyCandidatePairManager *tdcpManager,
 	PythiaParameters *pythiaParameters,
 	MsFrameV2 *msFrameMS1
@@ -35,12 +36,14 @@ Err MsCalibratomaticSettertronV2::init(
 	e = ErrorUtils::isTrue(tdcpManager->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
 	e = ErrorUtils::isTrue(msFrameMS1->isInit()); ree;
+	e = ErrorUtils::isNotEmpty(featuresCalibration); ree;
 
 	m_tdcpManager = tdcpManager;
 	m_pythiaParameters = pythiaParameters;
 	m_msFrameMS1 = msFrameMS1;
 	m_mzTargetKeyVsUniqueMsScanInfoPntrs = mzTargetKeyVsUniqueMsScanInfoPntrs;
 	m_mzTargetKeyVsMsFramesMS2Pntrs = mzTargetKeyVsMsFramesMS2Pntrs;
+	m_featuresCalibration = featuresCalibration;
 
 	e = buildMzTargetKeyVsTargetDecoyCandidatePairPntrs(); ree;
 
@@ -175,6 +178,7 @@ namespace {
 	Err parallelProcessingLogic(
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
 		const PythiaParameters &pythiaParameters,
 		MsFrameV2 *msFrameV2MS1
 		) {
@@ -199,6 +203,7 @@ namespace {
 		TargetDecoyCandidatePairScoretronV2 targetDecoyCandidatePairScoretronV2;
 		e = targetDecoyCandidatePairScoretronV2.init(
 			mzTargetKeyVsMsFramesMS2Pntrs,
+			featuresCalibration,
 			pythiaParameters,
 			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
 			minMs2IonsFoundCount,
@@ -238,6 +243,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsUniqueMsScanInfoPntrs); ree;
+	e = ErrorUtils::isNotEmpty(m_featuresCalibration); ree;
 	e = ErrorUtils::isTrue(m_pythiaParameters->isValid()); ree;
 
 	m_msCalibratomatic = msCalibratomatic;
@@ -256,6 +262,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		parallelProcessingLogic,
 		std::placeholders::_1,
 		m_mzTargetKeyVsMsFramesMS2Pntrs,
+		m_featuresCalibration,
 		*m_pythiaParameters,
 		m_msFrameMS1
 		);
@@ -270,6 +277,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		e = parallelProcessingLogic(
 			pr,
 			m_mzTargetKeyVsMsFramesMS2Pntrs,
+			m_featuresCalibration,
 			*m_pythiaParameters,
 			m_msFrameMS1
 			); ree;

@@ -591,6 +591,43 @@ float AVXUtils::cosineSimilarityAVX(
 	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
 }
 
+float AVXUtils::cosineSimilarityAVX(
+	const float *arrRef,
+	const float *array0,
+	const float *array1,
+	const float *array2,
+	const float *array3,
+	const float *array4,
+	const float *array5,
+	const float *array6,
+	const float *array7,
+	size_t length,
+	float* cosineSimResults
+	) {
+
+	__m256 dotProductsBuilder = _mm256_setzero_ps();
+	__m256 magnitudesBuilder = _mm256_setzero_ps();
+
+	for (int i = 0; i < length; i += AVXUtils::AVX2_FLOAT_REGISTER_SIZE) {
+
+		const __m256 ref = _mm256_set1_ps(arrRef[i]);
+		const __m256 vi = _mm256_set_ps(
+			array7[i], array6[i], array5[i], array4[i], array3[i], array2[i], array1[i], array0[i]
+			);
+
+		const __m256 producti = _mm256_mul_ps(ref, vi);
+		dotProductsBuilder = _mm256_add_ps(dotProductsBuilder, producti);
+
+		const __m256 magnitudei = _mm256_mul_ps(vi, vi);
+		magnitudesBuilder = _mm256_add_ps(magnitudesBuilder, magnitudei);
+	}
+
+	const __m256 magnitudesSqrt = _mm256_sqrt_ps(magnitudesBuilder);
+	__m256 res_vec = _mm256_div_ps(dotProductsBuilder, magnitudesSqrt);
+
+	_mm256_store_ps(cosineSimResults, res_vec);
+}
+
 float AVXUtils::maxFloat(__m256 vec)  {
 	__m128 high = _mm256_extractf128_ps(vec, 1);
 	__m128 low = _mm256_castps256_ps128(vec);

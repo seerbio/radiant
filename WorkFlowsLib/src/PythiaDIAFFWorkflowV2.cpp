@@ -4,6 +4,7 @@
 
 #include "PythiaDIAFFWorkflowV2.h"
 
+#include "CandidateScoresFeatureManager.h"
 #include "FragLibReader.h"
 #include "PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h"
 #include "MsReaderMzMLLazyLoad.h"
@@ -57,10 +58,15 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 	e = buildMzTargetKeyVsMsFramesMS2Pntrs(&msReaderPointerAcc); ree;
 
 	{
+
+		const QVector<CandidateScoresFeatureManager::Features> featuresCalibration
+			= CandidateScoresFeatureManager::featuresCalibration();
+
 		MsCalibratomaticSettertronV2 msCalibratomaticSettertronV2;
 		e = msCalibratomaticSettertronV2.init(
 			m_mzTargetKeyVsUniqueMsScanInfoPntrs,
 			m_mzTargetKeyVsMsFramesMS2Pntrs,
+			featuresCalibration,
 			&m_tdcpManager,
 			&m_pythiaParameters,
 			&m_msFrameMS1

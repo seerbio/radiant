@@ -20,7 +20,10 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
 #        src/CandidateScores.cpp
+        src/CandidateScoresV2.cpp
+        src/CandidateScoresFeatureManager.cpp
 #        src/CandidateScorertron.cpp
+        src/CandidateScorertronV2.cpp
 #        src/Centroidotron.cpp
 #        src/ClassifierWeightsManager.cpp
 #        src/Deconvolvotron.cpp
@@ -58,7 +61,10 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
 #        src/CandidateScores.h
+        src/CandidateScoresV2.h
+        src/CandidateScoresFeatureManager.h
 #        src/CandidateScorertron.h
+        src/CandidateScorertronV2.h
 #        src/Centroidotron.h
 #        src/ClassifierWeightsManager.h
 #        src/Deconvolvotron.h
