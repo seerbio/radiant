@@ -30,6 +30,7 @@ private slots:
 	static void separateInterleavedVectorsTest();
 	static void findApexesEightVecsTest();
 	static void log256Test();
+	static void cosineSimilarityAVXParallelTest();
 };
 
 
@@ -162,11 +163,11 @@ void AVXUtilsTests::splitAVXUInt16to32Test() {
 		&int32Output2
 		);
 
-	AVXUtils::printAVXInt32(int32Output1);
-	AVXUtils::printAVXInt32(int32Output2);
+	// AVXUtils::printAVXInt32(int32Output1);
+	// AVXUtils::printAVXInt32(int32Output2);
 
 	__m256i int32OutputRecombine = _mm256_packs_epi32(int32Output1, int32Output2);
-	AVXUtils::printAVXInt16(int32OutputRecombine);
+	// AVXUtils::printAVXInt16(int32OutputRecombine);
 
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) int16_t values[AVXUtils::AVX2_INT16_REGISTER_SIZE];
 	_mm256_storeu_si256(reinterpret_cast<__m256i*>(values), int32OutputRecombine);
@@ -560,8 +561,55 @@ void AVXUtilsTests::log256Test() {
 	for (int i = 0; i < 8; i ++) {
 		QCOMPARE(static_cast<int>(v[i]), e[i]);
 	}
+}
 
+void AVXUtilsTests::cosineSimilarityAVXParallelTest() {
 
+	float refArr[8] = {1, 2, 3, 4, 5, 4, 3, 2};
+	float nullArr[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[8];
+
+	AVXUtils::cosineSimilarityAVXParallel(
+		refArr,
+		nullArr,
+		refArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		8,
+		resultArr
+		);
+
+	for (int i = 0; i < 8; ++i) {
+		if (i == 1) {
+			QCOMPARE(MathUtils::tSame(resultArr[i], 1.0f), true);
+			continue;
+		}
+
+		QCOMPARE(MathUtils::tZero(resultArr[i]), true);
+	}
+
+	float c[8] = {1, 1, 1, 1, 0, 0, 0, 0};
+	float d[8] = {2, 0, 0, 0, 1, 1, 0, 0};
+	AVXUtils::cosineSimilarityAVXParallel(
+		c,
+		d,
+		refArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		nullArr,
+		8,
+		resultArr
+		);
+
+	QVERIFY(MathUtils::tSame(resultArr[0], 0.408248f));
 }
 
 QTEST_MAIN(AVXUtilsTests)

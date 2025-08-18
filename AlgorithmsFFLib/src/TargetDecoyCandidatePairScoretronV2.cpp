@@ -5,6 +5,7 @@
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
 #include "AVXUtils.h"
+#include "CandidateScorertronV2.h"
 #include "EigenUtils.h"
 #include "EigenKernelUtils.h"
 #include "MS2Ion.h"
@@ -37,6 +38,7 @@ TargetDecoyCandidatePairScoretronV2::TargetDecoyCandidatePairScoretronV2()
 , m_intensityVecMax(0)
 , m_minMs2IonsFoundCount(-1)
 , m_msCalibratomatic(nullptr)
+, m_smoothingKernel({0.25, 0.5, 0.25})
 {}
 
 TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
@@ -72,6 +74,7 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 
 Err TargetDecoyCandidatePairScoretronV2::init(
 	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+	const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
 	const PythiaParameters &pythiaParameters,
 	int ms2IonsCount,
 	float minMs2IonsFoundCount,
@@ -80,6 +83,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFramesMS2Pntrs); ree;
+	e = ErrorUtils::isNotEmpty(featuresCalibration); ree;
 	e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
 	e = ErrorUtils::isGreaterThanZero(ms2IonsCount); ree;
 	e = ErrorUtils::isGreaterThanZero(minMs2IonsFoundCount); ree;
@@ -87,6 +91,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 
 	m_mzTargetKeyVsMsFramesMS2Pntrs = mzTargetKeyVsMsFramesMS2Pntrs;
 	m_pythiaParameters = pythiaParameters;
+	m_features = featuresCalibration;
 
 	constexpr int buffer = 10;
 	m_xicSizeMaxAlignas = AVXUtils::calculateNextAlignedBlockSize(
@@ -196,6 +201,11 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 		);
 	m_mzMs1MonoIsotopeShadowVecMz = mzMs1MonoIsotopeShadowVecMz;
 
+	e = m_candidateScoretronV2.init(
+		featuresCalibration,
+		m_ms2IonsCount
+		); ree;
+
 	// constexpr int order = 1;
 	// constexpr int derivative = 0;
 	// constexpr int rate = 1;
@@ -208,9 +218,9 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	// 	&kernel
 	// 	); ree;
 	// const Eigen::VectorX<float> kernelVec(kernel);
-	// m_savitzkyGolayKernel = EigenUtils::convertEigenVectorToQVector(kernelVec);
+	// m_smoothingKernel = EigenUtils::convertEigenVectorToQVector(kernelVec);
 
-	m_savitzkyGolayKernel = {0.25, 0.5, 0.25};
+
 
 	ERR_RETURN
 }
@@ -227,6 +237,8 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 		m_msFrameV2Current = m_mzTargetKeyVsMsFramesMS2Pntrs.value(mzTargetKey);
 		e = ErrorUtils::isTrue(m_msFrameV2Current->isInit()); ree;
 		m_mzTargetKeyCurrent = mzTargetKey;
+		m_mzMs2Min = m_msFrameV2Current->mzMin();
+		m_mzMs2Max = m_msFrameV2Current->mzMax();
 	}
 
 	TargetDecoyCandidatePair *tdcpPntr = mzTargetKeyVsTdcpPntr.second;
@@ -254,7 +266,6 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 		e = ObjectCSVWriters::writeVectorToFile(vectorFromPointer, "testes.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityVec, m_xicSizeMaxAlignas, "testesIntz.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_ionCountVec, m_xicSizeMaxAlignas, "testesCnt.csv"); ree;
-		e = ObjectCSVWriters::writeRawPointerToFile(m_intensityApexesSum, m_xicSizeMaxAlignas, "testesApexSum.csv"); ree;
 		e = ObjectCSVWriters::writeRawPointerToFile(m_productVec, m_xicSizeMaxAlignas, "testesProd.csv"); ree;
 
 		for (int i = 0; i < m_xicsAlignasIntensity.size(); i++) {
@@ -265,14 +276,14 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 				); ree;
 		}
 
-		for (const QPair<int, float> &ap : m_productVecApexes) {
-
-			if (m_ionCountVec[ap.first] < 3) {
-				continue;
-			}
-
-			std::cout << ap.first << "," << std::endl;
-		}
+		// for (const QPair<int, float> &ap : m_productVecApexes) {
+		//
+		// 	if (m_ionCountVec[ap.first] < 3) {
+		// 		continue;
+		// 	}
+		//
+		// 	std::cout << ap.first << "," << std::endl;
+		// }
 
 		throw std::runtime_error("Error in TargetDecoyCandidatePairScoretronV2");
 	}
@@ -312,7 +323,11 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	}
 	e = buildProductVec(); ree;
 	e = smoothMS1Arrays(); ree;
-	e = scoreProductVecApexes();ree;
+	e = scoreProductVecApexes(
+		ms2IonsFull,
+		isDecoy,
+		tdcp
+		);ree;
 
 	{
 	// if (m_pythiaParameters.subtractShadows) {
@@ -483,10 +498,10 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 	ERR_INIT
 
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
-	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
+	e = ErrorUtils::isNotEmpty(m_smoothingKernel); ree;
 
 	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-		m_savitzkyGolayKernel,
+		m_smoothingKernel,
 		m_xicSizeTargetMaxAlignas,
 		m_xicsAlignasIntensity[0],
 		m_xicsAlignasIntensity[1],
@@ -500,7 +515,7 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 
 	if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
 		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-				m_savitzkyGolayKernel,
+				m_smoothingKernel,
 				m_xicSizeTargetMaxAlignas,
 				m_xicsAlignasIntensity[8],
 				m_xicsAlignasIntensity[9],
@@ -628,9 +643,6 @@ Err TargetDecoyCandidatePairScoretronV2::buildProductVec() const {
 		}
 		ionCount = _mm256_blendv_ps(ionCount, _mm256_setzero_ps(), mask);
 
-		// const __m256 cosineSim = _mm256_load_ps(m_integrationVecCosineSim + i);
-		// const __m256 cosineSimSqrt = _mm256_sqrt_ps(cosineSim);
-
 		const __m256 intensity = _mm256_load_ps(m_intensityVec + i);
 		const __m256 product = _mm256_mul_ps(ionCount, intensity);
 
@@ -745,11 +757,11 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS1Arrays() const {
 	ERR_INIT
 
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeTargetMaxAlignas); ree;
-	e = ErrorUtils::isNotEmpty(m_savitzkyGolayKernel); ree;
+	e = ErrorUtils::isNotEmpty(m_smoothingKernel); ree;
 
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float dummy[m_xicSizeTargetMaxAlignas];
 	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
-		m_savitzkyGolayKernel,
+		m_smoothingKernel,
 		m_xicSizeTargetMaxAlignas,
 		m_ionCountVec,
 		m_intensityVec,
@@ -784,18 +796,23 @@ namespace {
 		productVecApexes->erase(terminator, productVecApexes->end());
 	}
 }
-Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
+Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
+	const QVector<MS2Ion> &ms2IonsFull,
+	bool isDecoy,
+	TargetDecoyCandidatePair *tdcp
+	) {
 
 	ERR_INIT
 
 	e = ErrorUtils::isGreaterThanZero(m_xicSizeMaxAlignas); ree;
+	e = ErrorUtils::isTrue(m_candidateScoretronV2.isInit()); ree;
 
 	m_productVecApexes = AVXUtils::findApexesAVX2(
 		m_productVec,
 		m_xicSizeTargetMaxAlignas
 		);
 
-	constexpr float ionCountThreshold = 3.0f;
+	constexpr float ionCountThreshold = 3.0f; //TODO experiment w/ this value
 	filterApexesByIonCount(
 		m_ionCountVec,
 		ionCountThreshold,
@@ -823,6 +840,49 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes() {
 		m_xicSizeTargetMaxAlignas,
 		&peakIntegrationIndexesVsIntensity
 		); ree;
+
+	for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
+
+		CandidateScoresV2 candidateScores;
+		candidateScores.isDecoy = isDecoy;
+		candidateScores.targetDecoyCandidatePair = tdcp;
+		candidateScores.initFeaturesArray();
+
+		e = m_candidateScoretronV2.scoreCandidate(
+			pii.first,
+			ms2IonsFull,
+			m_xicsAlignasIntensity,
+			m_productVec,
+			&candidateScores
+			); ree;
+
+		// if (candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top8] < 7.5) {
+		// 	continue;
+		// }
+		//
+		// qDebug()
+		// << candidateScores.isDecoy
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top8]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top16]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100GreaterThan80]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor1]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor2]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor3]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor4]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor5]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor6]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor7]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor8]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor9]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor10]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor11]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor12]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor13]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor14]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor15]
+		// ;
+
+	}
 
 	ERR_RETURN
 }

@@ -7,6 +7,7 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 
+#include "CandidateScoresFeatureManager.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 #include "TargetDecoyCandidatePair.h"
@@ -45,10 +46,10 @@ public:
 
 	QVector<float> featuresArray;
 
-	void initFeaturesArray(int size) {
+	void initFeaturesArray() {
 		featuresArray.clear();
-		featuresArray.resize(size);
-		std::memset(featuresArray.data(), 0, size * sizeof(float));
+		featuresArray.resize(CandidateScoresFeatureManager::Features::FeaturesSize);
+		std::memset(featuresArray.data(), 0, CandidateScoresFeatureManager::Features::FeaturesSize * sizeof(float));
 	}
 
 };

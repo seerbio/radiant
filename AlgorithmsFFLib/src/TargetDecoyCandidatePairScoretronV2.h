@@ -7,6 +7,8 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 
+#include "CandidateScoresFeatureManager.h"
+#include "CandidateScorertronV2.h"
 #include "GlobalSettings.h"
 #include "Error.h"
 #include "MsCalibratomatic.h"
@@ -30,6 +32,7 @@ public:
 
 	Err init(
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
+		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
 		const PythiaParameters &pythiaParameters,
 		int ms2IonsCount,
 		float minMs2IonsFoundCount,
@@ -70,7 +73,11 @@ private:
 
 	[[nodiscard]] Err smoothMS1Arrays() const;
 
-	Err scoreProductVecApexes();
+	Err scoreProductVecApexes(
+		const QVector<MS2Ion> &ms2IonsFull,
+		bool isDecoy,
+		TargetDecoyCandidatePair *tdcp
+		);
 
 
 private:
@@ -106,7 +113,7 @@ private:
 	int m_targetFrameIndexMax;
 	size_t m_xicSizeTargetMaxAlignas;
 
-	QVector<float> m_savitzkyGolayKernel;
+	QVector<float> m_smoothingKernel;
 
 	float m_mzMs2Min;
 	float m_mzMs2Max;
@@ -117,6 +124,10 @@ private:
 	QVector<QPair<int, float>> m_productVecApexes;
 
 	MsCalibratomatic *m_msCalibratomatic;
+
+	QVector<CandidateScoresFeatureManager::Features> m_features;
+
+	CandidateScorertronV2 m_candidateScoretronV2;
 
 };
 

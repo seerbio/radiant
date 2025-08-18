@@ -17,8 +17,8 @@ class  ALGORITHMSFFLIB_EXPORTS CandidateScoresFeatureManager {
 public:
 
     enum Features {
-	    CosineSimSum100 = 0,
-	    CosineSimSum100Top12,
+	    CosineSimSum100Top8 = 0,
+	    CosineSimSum100Top16,
 	    CosineSimSum100GreaterThan80,
 	    AllignedMaxIndexesCount,
 	    CosineSim100MS1, //5
@@ -217,6 +217,9 @@ public:
 	    CosineSimToAnchor10,
 	    CosineSimToAnchor11,
 	    CosineSimToAnchor12,
+	    CosineSimToAnchor13,
+	    CosineSimToAnchor14,
+	    CosineSimToAnchor15,
 	    MzPeakLengthsNorm1,
 	    MzPeakLengthsNorm2,
 	    MzPeakLengthsNorm3,//120

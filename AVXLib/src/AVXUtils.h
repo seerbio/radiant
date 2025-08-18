@@ -153,7 +153,7 @@ public:
 		size_t length
 		);
 
-	static float cosineSimilarityAVX(
+	static void cosineSimilarityAVXParallel(
 		const float* arrRef,
 		const float* array0,
 		const float* array1,
@@ -164,7 +164,7 @@ public:
 		const float* array6,
 		const float* array7,
 		size_t length,
-		float* cosineSimResults
+		float* cosineSimResultsAligned
 		);
 
 	static float maxFloat(__m256 vec);
