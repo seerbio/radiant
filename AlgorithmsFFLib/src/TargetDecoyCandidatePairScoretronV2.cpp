@@ -90,7 +90,7 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 
 Err TargetDecoyCandidatePairScoretronV2::init(
 	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
-	const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+	const QVector<FTR> &featuresCalibration,
 	const PythiaParameters &pythiaParameters,
 	int ms2IonsCount,
 	float minMs2IonsFoundCount,
@@ -982,48 +982,48 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 			&candidateScores
 			); ree;
 
-		// if (candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8] < 7.5) {
+		// if (candidateScores.featuresArray[FTR::CosineSimSumTop8] < 7.5) {
 		// 	continue;
 		// }
 		//
 		// qDebug()
 		// << candidateScores.isDecoy
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop16]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumGreaterThan80]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor1]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor2]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor3]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor4]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor5]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor6]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor7]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor8]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor9]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor10]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor11]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor12]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor13]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor14]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor15]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8Tight1]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop16Tight1]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumGreaterThan80Tight1]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_1]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_2]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_3]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_4]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_5]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_6]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_7]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_8]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_9]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_10]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_11]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_12]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_13]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_14]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_15]
+		// << candidateScores.featuresArray[FTR::CosineSimSumTop8]
+		// << candidateScores.featuresArray[FTR::CosineSimSumTop16]
+		// << candidateScores.featuresArray[FTR::CosineSimSumGreaterThan80]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor1]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor2]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor3]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor4]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor5]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor6]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor7]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor8]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor9]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor10]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor11]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor12]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor13]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor14]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchor15]
+		// << candidateScores.featuresArray[FTR::CosineSimSumTop8Tight1]
+		// << candidateScores.featuresArray[FTR::CosineSimSumTop16Tight1]
+		// << candidateScores.featuresArray[FTR::CosineSimSumGreaterThan80Tight1]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_1]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_2]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_3]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_4]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_5]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_6]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_7]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_8]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_9]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_10]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_11]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_12]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_13]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_14]
+		// << candidateScores.featuresArray[FTR::CosineSimToAnchorTight1_15]
 		// ;
 
 	}

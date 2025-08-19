@@ -48,8 +48,8 @@ public:
 
 	void initFeaturesArray() {
 		featuresArray.clear();
-		featuresArray.resize(CandidateScoresFeatureManager::Features::FeaturesSize);
-		std::memset(featuresArray.data(), 0, CandidateScoresFeatureManager::Features::FeaturesSize * sizeof(float));
+		featuresArray.resize(FTR::FeaturesSize);
+		std::memset(featuresArray.data(), 0, FTR::FeaturesSize * sizeof(float));
 	}
 
 };

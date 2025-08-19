@@ -32,7 +32,7 @@ public:
 
 	Err init(
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
-		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+		const QVector<FTR> &featuresCalibration,
 		const PythiaParameters &pythiaParameters,
 		int ms2IonsCount,
 		float minMs2IonsFoundCount,
@@ -130,7 +130,7 @@ private:
 
 	MsCalibratomatic *m_msCalibratomatic;
 
-	QVector<CandidateScoresFeatureManager::Features> m_features;
+	QVector<FTR> m_features;
 
 	CandidateScorertronV2 m_candidateScoretronV2;
 

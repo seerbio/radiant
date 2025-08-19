@@ -59,7 +59,7 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 
 	{
 
-		const QVector<CandidateScoresFeatureManager::Features> featuresCalibration
+		const QVector<FTR> featuresCalibration
 			= CandidateScoresFeatureManager::featuresCalibration();
 
 		MsCalibratomaticSettertronV2 msCalibratomaticSettertronV2;

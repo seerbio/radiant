@@ -4,8 +4,8 @@
 
 #include "CandidateScoresFeatureManager.h"
 
-	QVector<CandidateScoresFeatureManager::Features> CandidateScoresFeatureManager::featuresCalibration() {
-		const QVector<CandidateScoresFeatureManager::Features> baseFeatures = {
+	QVector<FTR> CandidateScoresFeatureManager::featuresCalibration() {
+		const QVector<FTR> baseFeatures = {
 			CosineSimSumGreaterThan80,
 			CosineSimSpectrumOverTimeCubed,
 			CosineSimSpectrumStDev,

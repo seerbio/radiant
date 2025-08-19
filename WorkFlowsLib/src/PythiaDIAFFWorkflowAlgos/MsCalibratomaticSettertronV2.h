@@ -32,7 +32,7 @@ public:
 	Err init(
 		const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
-		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+		const QVector<FTR> &featuresCalibration,
 		TargetDecoyCandidatePairManager *tdcpManager,
 		PythiaParameters *pythiaParameters,
 		MsFrameV2 *msFrameMS1
@@ -51,7 +51,7 @@ private:
 
 	PythiaParameters *m_pythiaParameters;
 	MsCalibratomatic *m_msCalibratomatic;
-	QVector<CandidateScoresFeatureManager::Features> m_featuresCalibration;
+	QVector<FTR> m_featuresCalibration;
 	QMap<MzTargetKey, MsScanInfo*> m_mzTargetKeyVsUniqueMsScanInfoPntrs;
 	QMap<MzTargetKey, MsFrameV2*> m_mzTargetKeyVsMsFramesMS2Pntrs;
 	MsFrameV2 *m_msFrameMS1;

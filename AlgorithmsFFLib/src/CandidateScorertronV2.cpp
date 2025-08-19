@@ -26,7 +26,7 @@ CandidateScorertronV2::~CandidateScorertronV2() {
 }
 
 Err CandidateScorertronV2::init(
-	const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+	const QVector<FTR> &featuresCalibration,
 	int ms2IonCount
 	) {
 
@@ -43,7 +43,7 @@ Err CandidateScorertronV2::init(
 	m_integrationArraySizeMax
 		= AVXUtils::calculateNextAlignedBlockSize(100, AVXUtils::AVX2_ALIGNAS_SIZE);;
 
-	for (const CandidateScoresFeatureManager::Features &f : m_features) {
+	for (const FTR &f : m_features) {
 		m_featuresVsFeaturesArrayIndex[f] = m_featuresVsFeaturesArrayIndex.size();
 	}
 
@@ -179,11 +179,11 @@ Err CandidateScorertronV2::calculateScores(
 
 	e = calculateRTCorrelationScoresMS2(candidateScoresV2); ree;
 	e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
-	// e = calculateFragmentCorrelationScoresMS2(
-	// 	pii,
-	// 	ms2IonsFull,
-	// 	candidateScoresV2
-	// 	); ree;
+	e = calculateFragmentCorrelationScoresMS2(
+		pii,
+		ms2IonsFull,
+		candidateScoresV2
+		); ree;
 
 
 	ERR_RETURN
@@ -221,7 +221,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *ca
 		for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
 			const float cosineSimToAnchorI = resultArrUpper[i];
 			candScores->featuresArray[
-				CandidateScoresFeatureManager::CosineSimToAnchor1
+				FTR::CosineSimToAnchor1
 				+ i
 				+ AVXUtils::AVX2_FLOAT_REGISTER_SIZE
 				] = cosineSimToAnchorI;
@@ -248,18 +248,18 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *ca
 
 	for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
 		const float cosineSimToAnchorI = resultArr[i];
-		candScores->featuresArray[CandidateScoresFeatureManager::CosineSimToAnchor1 + i] = cosineSimToAnchorI;
+		candScores->featuresArray[FTR::CosineSimToAnchor1 + i] = cosineSimToAnchorI;
 		cosineSimSum += cosineSimToAnchorI;
 		if (cosineSimToAnchorI > 0.8f) {
 			cosineSimSumGreaterThan80 += cosineSimToAnchorI;
 		}
 	}
 
-	candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumTop8] = cosineSimSum;
-	candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumGreaterThan80] = cosineSimSumGreaterThan80;
+	candScores->featuresArray[FTR::CosineSimSumTop8] = cosineSimSum;
+	candScores->featuresArray[FTR::CosineSimSumGreaterThan80] = cosineSimSumGreaterThan80;
 
 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumTop16] = cosineSimSum + CosineSimSumTop16;
+		candScores->featuresArray[FTR::CosineSimSumTop16] = cosineSimSum + CosineSimSumTop16;
 	}
 
 	ERR_RETURN
@@ -296,7 +296,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScores
 		for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
 			const float cosineSimToAnchorI = resultArrUpper[i];
 			candScores->featuresArray[
-				CandidateScoresFeatureManager::CosineSimToAnchorTight1_1
+				FTR::CosineSimToAnchorTight1_1
 				+ i
 				+ AVXUtils::AVX2_FLOAT_REGISTER_SIZE
 				] = cosineSimToAnchorI;
@@ -323,18 +323,18 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScores
 
 	for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
 		const float cosineSimToAnchorI = resultArr[i];
-		candScores->featuresArray[CandidateScoresFeatureManager::CosineSimToAnchorTight1_1 + i] = cosineSimToAnchorI;
+		candScores->featuresArray[FTR::CosineSimToAnchorTight1_1 + i] = cosineSimToAnchorI;
 		cosineSimSum += cosineSimToAnchorI;
 		if (cosineSimToAnchorI > 0.8f) {
 			cosineSimSumGreaterThan80 += cosineSimToAnchorI;
 		}
 	}
 
-	candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumTop8Tight1] = cosineSimSum;
-	candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumGreaterThan80Tight1] = cosineSimSumGreaterThan80;
+	candScores->featuresArray[FTR::CosineSimSumTop8Tight1] = cosineSimSum;
+	candScores->featuresArray[FTR::CosineSimSumGreaterThan80Tight1] = cosineSimSumGreaterThan80;
 
 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumTop16Tight1] = cosineSimSum + CosineSimSumTop16;
+		candScores->featuresArray[FTR::CosineSimSumTop16Tight1] = cosineSimSum + CosineSimSumTop16;
 	}
 
 	ERR_RETURN
@@ -363,20 +363,8 @@ Err CandidateScorertronV2::calculateFragmentCorrelationScoresMS2(
 		theoIntensities[0]
 		);
 
-	QVector<float> cosineCumulative(m_peakLength);
-	cosineCumulative.reserve(m_peakLength);
-	for (int i = pii.first; i < pii.first + m_peakLength; i++) {
-
-		qDebug() <<
-			m_xicsAlignasIntensityIntegration[7][i] <<
-			m_xicsAlignasIntensityIntegration[6][i] <<
-			m_xicsAlignasIntensityIntegration[5][i] <<
-			m_xicsAlignasIntensityIntegration[4][i] <<
-			m_xicsAlignasIntensityIntegration[3][i] <<
-			m_xicsAlignasIntensityIntegration[2][i] <<
-			m_xicsAlignasIntensityIntegration[1][i] <<
-			m_xicsAlignasIntensityIntegration[0][i]
-		;
+	QVector<float> cosineCumulative(m_peakLength, 0.0f);
+	for (int i = 0; i < m_peakLength; i++) {
 
 		const __m256 empericalIntensitiesFrameIndex = _mm256_set_ps(
 			m_xicsAlignasIntensityIntegration[7][i],
@@ -393,15 +381,17 @@ Err CandidateScorertronV2::calculateFragmentCorrelationScoresMS2(
 			empericalIntensitiesFrameIndex,
 			theoFragmentIntensities
 			);
-		cosineCumulative.push_back(cosineSimFrameIndex);
+		cosineCumulative[i] = cosineSimFrameIndex;
 	}
 
 	const float cosineCumulativeMean = MathUtils::mean(cosineCumulative);
 	const float cosineCumulativeStDev = MathUtils::stDev(cosineCumulative);
 
-	// if (candScores->featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8] > 8.5) {
-	// 	qDebug() << cosineCumulativeMean << cosineCumulativeStDev << m_peakLength;
-	// }
+
+	candScores->featuresArray[FTR::CosineSimSpectrumOverTime] = cosineCumulativeMean;
+	candScores->featuresArray[FTR::CosineSimSpectrumOverTimeCubed] = static_cast<float>(std::pow(cosineCumulativeMean, 3));
+	candScores->featuresArray[FTR::CosineSimSpectrumOverTimeStDev] = cosineCumulativeMean;
+
 
 	ERR_RETURN
 }

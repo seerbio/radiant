@@ -23,7 +23,7 @@ public:
 	~CandidateScorertronV2();
 
 	Err init(
-		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+		const QVector<FTR> &featuresCalibration,
 		int ms2IonCount
 		);
 
@@ -73,8 +73,8 @@ private:
 	QVector<float*> m_xicsAlignasIntensityIntegrationTight1;
 	float* m_productVecIntegration;
 
-	QVector<CandidateScoresFeatureManager::Features> m_features;
-	QHash<CandidateScoresFeatureManager::Features, Index> m_featuresVsFeaturesArrayIndex;
+	QVector<FTR> m_features;
+	QHash<FTR, Index> m_featuresVsFeaturesArrayIndex;
 };
 
 

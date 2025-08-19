@@ -23,7 +23,7 @@ MsCalibratomaticSettertronV2::~MsCalibratomaticSettertronV2() = default;
 Err MsCalibratomaticSettertronV2::init(
 	const QMap<MzTargetKey, MsScanInfo*> &mzTargetKeyVsUniqueMsScanInfoPntrs,
 	const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
-	const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+	const QVector<FTR> &featuresCalibration,
 	TargetDecoyCandidatePairManager *tdcpManager,
 	PythiaParameters *pythiaParameters,
 	MsFrameV2 *msFrameMS1
@@ -178,7 +178,7 @@ namespace {
 	Err parallelProcessingLogic(
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
-		const QVector<CandidateScoresFeatureManager::Features> &featuresCalibration,
+		const QVector<FTR> &featuresCalibration,
 		const PythiaParameters &pythiaParameters,
 		MsFrameV2 *msFrameV2MS1
 		) {

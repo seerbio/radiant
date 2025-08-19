@@ -161,6 +161,7 @@ public:
 	    CosineSimSpectrumOverTime,
 	    CosineSimSpectrumOverTimeCubed,
 	    CosineSimSpectrumStDev,
+	    CosineSimSpectrumOverTimeStDev,
 	    CosineSimSum100MS1,
 	    MS1Averagine,
 	    CosineSimSum100Window1p5X,//250
@@ -273,6 +274,6 @@ public:
 
 };
 
-
+using FTR = CandidateScoresFeatureManager::Features;
 
 #endif //CANDIDATESCORESFEATUREMANAGER_H
