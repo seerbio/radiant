@@ -49,10 +49,19 @@ private:
 		float* productVec
 		);
 
-	Err calculateScores(CandidateScoresV2 *candidateScoresV2);
+	Err calculateScores(
+		const PeakIntegrationIndexes &pii,
+		const QVector<MS2Ion> &ms2IonsFull,
+		CandidateScoresV2 *candidateScoresV2
+		);
 
-	Err calculateCorrelationScoresMS2(CandidateScoresV2 *candScores);
-	Err calculateCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
+	Err calculateRTCorrelationScoresMS2(CandidateScoresV2 *candScores);
+	Err calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
+	Err calculateFragmentCorrelationScoresMS2(
+		const PeakIntegrationIndexes &pii,
+		const QVector<MS2Ion> &ms2IonsFull,
+		CandidateScoresV2 *candScores
+		);
 
 private:
 

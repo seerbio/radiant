@@ -159,21 +159,30 @@ Err CandidateScorertronV2::copyToPeakVecs(
 	ERR_RETURN
 }
 
-Err CandidateScorertronV2::calculateScores(CandidateScoresV2 *candidateScoresV2) {
+Err CandidateScorertronV2::calculateScores(
+	const PeakIntegrationIndexes &pii,
+	const QVector<MS2Ion> &ms2IonsFull,
+	CandidateScoresV2 *candidateScoresV2
+	) {
 
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(m_featuresVsFeaturesArrayIndex); ree;
 	e = ErrorUtils::isGreaterThanZero(m_peakLength); ree;
 
-	e = calculateCorrelationScoresMS2(candidateScoresV2); ree;
-	e = calculateCorrelationScoresMS2Tight1(candidateScoresV2); ree;
+	e = calculateRTCorrelationScoresMS2(candidateScoresV2); ree;
+	e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
+	e = calculateFragmentCorrelationScoresMS2(
+		pii,
+		ms2IonsFull,
+		candidateScoresV2
+		); ree;
 
 
 	ERR_RETURN
 }
 
-Err CandidateScorertronV2::calculateCorrelationScoresMS2(CandidateScoresV2 *candScores) {
+Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *candScores) {
 
 	ERR_INIT
 
@@ -249,7 +258,7 @@ Err CandidateScorertronV2::calculateCorrelationScoresMS2(CandidateScoresV2 *cand
 	ERR_RETURN
 }
 
-Err CandidateScorertronV2::calculateCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores) {
+Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores) {
 	ERR_INIT
 
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
@@ -320,6 +329,19 @@ Err CandidateScorertronV2::calculateCorrelationScoresMS2Tight1(CandidateScoresV2
 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
 		candScores->featuresArray[CandidateScoresFeatureManager::CosineSimSumTop16Tight1] = cosineSimSum + CosineSimSumTop16;
 	}
+
+	ERR_RETURN
+}
+
+Err CandidateScorertronV2::calculateFragmentCorrelationScoresMS2(
+	const PeakIntegrationIndexes &pii,
+	const QVector<MS2Ion> &ms2IonsFull,
+	CandidateScoresV2 *candScores
+	) {
+	ERR_INIT
+
+	const QVector<MS2Ion> &ms2IonsTrunc = ms2IonsFull.mid(0, m_ms2IonsCount);
+
 
 	ERR_RETURN
 }
