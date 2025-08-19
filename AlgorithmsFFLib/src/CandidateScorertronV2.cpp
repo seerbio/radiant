@@ -99,7 +99,11 @@ Err CandidateScorertronV2::scoreCandidate(
 		productVec
 		); ree;
 
-	e = calculateScores(candidateScores); ree;
+	e = calculateScores(
+		pii,
+		ms2IonsFull,
+		candidateScores
+		); ree;
 
 	ERR_RETURN
 }
@@ -130,6 +134,9 @@ Err CandidateScorertronV2::copyToPeakVecs(
 	zeroOutArrays();
 
 	m_peakLength = pii.second - pii.first + 1;
+
+	e = ErrorUtils::isTrue(m_peakLength < m_integrationArraySizeMax); ree;
+
 	e = ErrorUtils::isBelowThreshold(
 		m_peakLength,
 		m_integrationArraySizeMax,
@@ -172,11 +179,11 @@ Err CandidateScorertronV2::calculateScores(
 
 	e = calculateRTCorrelationScoresMS2(candidateScoresV2); ree;
 	e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
-	e = calculateFragmentCorrelationScoresMS2(
-		pii,
-		ms2IonsFull,
-		candidateScoresV2
-		); ree;
+	// e = calculateFragmentCorrelationScoresMS2(
+	// 	pii,
+	// 	ms2IonsFull,
+	// 	candidateScoresV2
+	// 	); ree;
 
 
 	ERR_RETURN
@@ -197,7 +204,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *ca
 	float cosineSimSumGreaterThan80 = 0.0;
 
 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		AVXUtils::cosineSimilarityAVXParallel(
+		AVXUtils::cosineSimilarityIntraAVXParallel(
 			m_productVecIntegration,
 			m_xicsAlignasIntensityIntegration[8],
 			m_xicsAlignasIntensityIntegration[9],
@@ -225,7 +232,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *ca
 		}
 	}
 
-	AVXUtils::cosineSimilarityAVXParallel(
+	AVXUtils::cosineSimilarityIntraAVXParallel(
 		m_productVecIntegration,
 		m_xicsAlignasIntensityIntegration[0],
 		m_xicsAlignasIntensityIntegration[1],
@@ -272,7 +279,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScores
 	float cosineSimSumGreaterThan80 = 0.0;
 
 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		AVXUtils::cosineSimilarityAVXParallel(
+		AVXUtils::cosineSimilarityIntraAVXParallel(
 			m_productVecIntegration,
 			m_xicsAlignasIntensityIntegrationTight1[8],
 			m_xicsAlignasIntensityIntegrationTight1[9],
@@ -300,7 +307,7 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScores
 		}
 	}
 
-	AVXUtils::cosineSimilarityAVXParallel(
+	AVXUtils::cosineSimilarityIntraAVXParallel(
 		m_productVecIntegration,
 		m_xicsAlignasIntensityIntegrationTight1[0],
 		m_xicsAlignasIntensityIntegrationTight1[1],
@@ -340,8 +347,61 @@ Err CandidateScorertronV2::calculateFragmentCorrelationScoresMS2(
 	) {
 	ERR_INIT
 
-	const QVector<MS2Ion> &ms2IonsTrunc = ms2IonsFull.mid(0, m_ms2IonsCount);
+	QVector<float> theoIntensities(AVXUtils::AVX2_FLOAT_REGISTER_SIZE, 0.0f);
+	for (int i = 0; i < std::min(m_ms2IonsCount, ms2IonsFull.size()); i++) {
+		theoIntensities[i] = ms2IonsFull[i].intensity;
+	}
 
+	const __m256 theoFragmentIntensities = _mm256_set_ps(
+		theoIntensities[7],
+		theoIntensities[6],
+		theoIntensities[5],
+		theoIntensities[4],
+		theoIntensities[3],
+		theoIntensities[2],
+		theoIntensities[1],
+		theoIntensities[0]
+		);
+
+	QVector<float> cosineCumulative(m_peakLength);
+	cosineCumulative.reserve(m_peakLength);
+	for (int i = pii.first; i < pii.first + m_peakLength; i++) {
+
+		qDebug() <<
+			m_xicsAlignasIntensityIntegration[7][i] <<
+			m_xicsAlignasIntensityIntegration[6][i] <<
+			m_xicsAlignasIntensityIntegration[5][i] <<
+			m_xicsAlignasIntensityIntegration[4][i] <<
+			m_xicsAlignasIntensityIntegration[3][i] <<
+			m_xicsAlignasIntensityIntegration[2][i] <<
+			m_xicsAlignasIntensityIntegration[1][i] <<
+			m_xicsAlignasIntensityIntegration[0][i]
+		;
+
+		const __m256 empericalIntensitiesFrameIndex = _mm256_set_ps(
+			m_xicsAlignasIntensityIntegration[7][i],
+			m_xicsAlignasIntensityIntegration[6][i],
+			m_xicsAlignasIntensityIntegration[5][i],
+			m_xicsAlignasIntensityIntegration[4][i],
+			m_xicsAlignasIntensityIntegration[3][i],
+			m_xicsAlignasIntensityIntegration[2][i],
+			m_xicsAlignasIntensityIntegration[1][i],
+			m_xicsAlignasIntensityIntegration[0][i]
+			);
+
+		const float cosineSimFrameIndex = AVXUtils::cosineSimilarityAVX(
+			empericalIntensitiesFrameIndex,
+			theoFragmentIntensities
+			);
+		cosineCumulative.push_back(cosineSimFrameIndex);
+	}
+
+	const float cosineCumulativeMean = MathUtils::mean(cosineCumulative);
+	const float cosineCumulativeStDev = MathUtils::stDev(cosineCumulative);
+
+	// if (candScores->featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8] > 8.5) {
+	// 	qDebug() << cosineCumulativeMean << cosineCumulativeStDev << m_peakLength;
+	// }
 
 	ERR_RETURN
 }

@@ -153,7 +153,7 @@ public:
 		size_t length
 		);
 
-	static void cosineSimilarityAVXParallel(
+	static void cosineSimilarityIntraAVXParallel(
 		const float* arrRef,
 		const float* array0,
 		const float* array1,

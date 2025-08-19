@@ -547,14 +547,14 @@ float AVXUtils::cosineSimilarityAVX(
 	const float mag2 = std::sqrt(dotProduct256(vec2, vec2));
 
 	const float cosineSimilarity = dotProduct / (mag1 * mag2);
-	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
+	return std::isnan(cosineSimilarity) || std::isinf(cosineSimilarity) ? 0.0f : cosineSimilarity;
 }
 
 float AVXUtils::dotProductAvx(const float *arrayA, const float *arrayB, size_t length) {
 
 	__m256 sumVec = _mm256_setzero_ps();
 
-	for (size_t i = 0; i < length; i += 8) {
+	for (size_t i = 0; i < length; i += AVX2_FLOAT_REGISTER_SIZE) {
 		__m256 vecA = _mm256_load_ps(&arrayA[i]);
 		__m256 vecB = _mm256_load_ps(&arrayB[i]);
 		__m256 mul = _mm256_mul_ps(vecA, vecB);
@@ -591,7 +591,7 @@ float AVXUtils::cosineSimilarityAVX(
 	return std::isnan(cosineSimilarity) ? 0.0f : cosineSimilarity;
 }
 
-void AVXUtils::cosineSimilarityAVXParallel(
+void AVXUtils::cosineSimilarityIntraAVXParallel(
 	const float *arrRef,
 	const float *array0,
 	const float *array1,

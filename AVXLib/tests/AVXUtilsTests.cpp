@@ -570,7 +570,7 @@ void AVXUtilsTests::cosineSimilarityAVXParallelTest() {
 
 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[8];
 
-	AVXUtils::cosineSimilarityAVXParallel(
+	AVXUtils::cosineSimilarityIntraAVXParallel(
 		refArr,
 		nullArr,
 		refArr,
@@ -595,7 +595,7 @@ void AVXUtilsTests::cosineSimilarityAVXParallelTest() {
 
 	float c[8] = {1, 1, 1, 1, 0, 0, 0, 0};
 	float d[8] = {2, 0, 0, 0, 1, 1, 0, 0};
-	AVXUtils::cosineSimilarityAVXParallel(
+	AVXUtils::cosineSimilarityIntraAVXParallel(
 		c,
 		d,
 		refArr,
