@@ -63,9 +63,9 @@ namespace {
 		for (int i = 0; i < mzTargetKeys.size(); ++i) {
 
 			const MzTargetKey &mzTargetKey = mzTargetKeys.at(i);
-			if (constexpr int skipCount = 5; i % skipCount != 0) {
-				continue;
-			}
+			// if (constexpr int skipCount = 5; i % skipCount != 0) {
+			// 	continue;
+			// }
 
 			e = ErrorUtils::contains(mzTargetKey, mzTargetKeyVsUniqueMsScanInfoPntrs);
 			msScanInfosPntrsForCalibration->push_back(mzTargetKeyVsUniqueMsScanInfoPntrs.value(mzTargetKey));
@@ -210,13 +210,13 @@ namespace {
 			msFrameV2MS1
 			); ree;
 
-		// constexpr int skipCountTDCP = 50;
-		// int counter = 0;
+		constexpr int skipCountTDCP = 5;
+		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
-			// if (counter++ % skipCountTDCP != 0) {
-			// 	continue;
-			// }
+			if (counter++ % skipCountTDCP != 0) {
+				continue;
+			}
 
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
 		}

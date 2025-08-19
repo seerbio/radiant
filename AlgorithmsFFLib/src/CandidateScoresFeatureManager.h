@@ -17,11 +17,14 @@ class  ALGORITHMSFFLIB_EXPORTS CandidateScoresFeatureManager {
 public:
 
     enum Features {
-	    CosineSimSum100Top8 = 0,
-	    CosineSimSum100Top16,
-	    CosineSimSum100GreaterThan80,
+	    CosineSimSumTop8 = 0,
+	    CosineSimSumTop16,
+	    CosineSimSumGreaterThan80,
+    	CosineSimSumTop8Tight1,
+		CosineSimSumTop16Tight1,
+		CosineSimSumGreaterThan80Tight1,
 	    AllignedMaxIndexesCount,
-	    CosineSim100MS1, //5
+	    CosineSimMS1, //5
 	    CosineSimSpectrumCubed,
 	    KlDivSpectrumCubeRoot,
 	    CosineSimSum45,
@@ -220,6 +223,21 @@ public:
 	    CosineSimToAnchor13,
 	    CosineSimToAnchor14,
 	    CosineSimToAnchor15,
+    	CosineSimToAnchorTight1_1,
+		CosineSimToAnchorTight1_2,
+		CosineSimToAnchorTight1_3,
+		CosineSimToAnchorTight1_4,
+		CosineSimToAnchorTight1_5,
+		CosineSimToAnchorTight1_6,
+		CosineSimToAnchorTight1_7,//40
+		CosineSimToAnchorTight1_8,
+		CosineSimToAnchorTight1_9,
+		CosineSimToAnchorTight1_10,
+		CosineSimToAnchorTight1_11,
+		CosineSimToAnchorTight1_12,
+		CosineSimToAnchorTight1_13,
+		CosineSimToAnchorTight1_14,
+		CosineSimToAnchorTight1_15,
 	    MzPeakLengthsNorm1,
 	    MzPeakLengthsNorm2,
 	    MzPeakLengthsNorm3,//120

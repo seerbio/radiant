@@ -6,14 +6,13 @@
 
 	QVector<CandidateScoresFeatureManager::Features> CandidateScoresFeatureManager::featuresCalibration() {
 		const QVector<CandidateScoresFeatureManager::Features> baseFeatures = {
-			CosineSimSum100GreaterThan80,
+			CosineSimSumGreaterThan80,
 			CosineSimSpectrumOverTimeCubed,
 			CosineSimSpectrumStDev,
-			CosineSim100MS1,
+			CosineSimMS1,
 			CosineSimSpectrumCubed,
 			TopBottomRatio,
 			TopBottomRatioNorm,
-
 		};
 
 		return baseFeatures;

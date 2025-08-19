@@ -33,6 +33,7 @@ public:
 		const PeakIntegrationIndexes &pii,
 		const QVector<MS2Ion> &ms2IonsFull,
 		const QVector<float*> &xicsAlignasIntensity,
+		const QVector<float*> &xicsAlignasIntensityTight1,
 		float* productVec,
 		CandidateScoresV2 *candidateScores
 		);
@@ -44,12 +45,14 @@ private:
 	Err copyToPeakVecs(
 		const PeakIntegrationIndexes &pii,
 		const QVector<float*> &xicsAlignasIntensity,
+		const QVector<float*> &xicsAlignasIntensityTight1,
 		float* productVec
 		);
 
 	Err calculateScores(CandidateScoresV2 *candidateScoresV2);
 
 	Err calculateCorrelationScoresMS2(CandidateScoresV2 *candScores);
+	Err calculateCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
 
 private:
 
@@ -58,6 +61,7 @@ private:
 
 	int m_peakLength;
 	QVector<float*> m_xicsAlignasIntensityIntegration;
+	QVector<float*> m_xicsAlignasIntensityIntegrationTight1;
 	float* m_productVecIntegration;
 
 	QVector<CandidateScoresFeatureManager::Features> m_features;

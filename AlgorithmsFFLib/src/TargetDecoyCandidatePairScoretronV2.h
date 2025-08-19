@@ -97,6 +97,11 @@ private:
 	QVector<float*> m_xicsAlignasMz;
 	QVector<float*> m_xicsAlignasMzShadows;
 
+	QVector<float*> m_xicsAlignasIntensityTight1;
+	QVector<float*> m_xicsAlignasIntensityShadowsTight1;
+	QVector<float*> m_xicsAlignasMzTight1;
+	QVector<float*> m_xicsAlignasMzShadowsTight1;
+
 	float* m_intensityVec;
 	float* m_ionCountVec;
 	float* m_productVec;

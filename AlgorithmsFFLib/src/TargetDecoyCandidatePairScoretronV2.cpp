@@ -58,6 +58,22 @@ TargetDecoyCandidatePairScoretronV2::~TargetDecoyCandidatePairScoretronV2() {
 		delete v;
 	}
 
+	for (float* v : m_xicsAlignasIntensityTight1) {
+		delete v;
+	}
+
+	for (float* v : m_xicsAlignasIntensityShadowsTight1) {
+		delete v;
+	}
+
+	for (float* v : m_xicsAlignasMzTight1) {
+		delete v;
+	}
+
+	for (float* v : m_xicsAlignasMzShadowsTight1) {
+		delete v;
+	}
+
 	delete m_intensityVec;
 	delete m_ionCountVec;
 	delete m_productVec;
@@ -108,6 +124,10 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 	m_xicsAlignasIntensityShadows.resize(m_ms2IonsCount);
 	m_xicsAlignasMz.resize(m_ms2IonsCount);
 	m_xicsAlignasMzShadows.resize(m_ms2IonsCount);
+	m_xicsAlignasIntensityTight1.resize(m_ms2IonsCount);
+	m_xicsAlignasIntensityShadowsTight1.resize(m_ms2IonsCount);
+	m_xicsAlignasMzTight1.resize(m_ms2IonsCount);
+	m_xicsAlignasMzShadowsTight1.resize(m_ms2IonsCount);
 	for (int i = 0; i < m_ms2IonsCount; i++) {
 
 		auto* alignedIntensityVals = static_cast<float*>(std::aligned_alloc(
@@ -133,6 +153,30 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 			m_xicSizeMaxAlignas * sizeof(float))
 			);
 		m_xicsAlignasMzShadows[i] = alignedMzValsShadows;
+
+		auto* alignedIntensityValsTight1 = static_cast<float*>(std::aligned_alloc(
+		AVXUtils::AVX2_ALIGNAS_SIZE,
+		m_xicSizeMaxAlignas * sizeof(float))
+		);
+		m_xicsAlignasIntensityTight1[i] = alignedIntensityValsTight1;
+
+		auto* alignedMzValsTight1 = static_cast<float*>(std::aligned_alloc(
+			AVXUtils::AVX2_ALIGNAS_SIZE,
+			m_xicSizeMaxAlignas * sizeof(float))
+			);
+		m_xicsAlignasMzTight1[i] = alignedMzValsTight1;
+
+		auto* alignedIntensityValsShadowsTight1 = static_cast<float*>(std::aligned_alloc(
+			AVXUtils::AVX2_ALIGNAS_SIZE,
+			m_xicSizeMaxAlignas * sizeof(float))
+			);
+		m_xicsAlignasIntensityShadowsTight1[i] = alignedIntensityValsShadowsTight1;
+
+		auto* alignedMzValsShadowsTight1 = static_cast<float*>(std::aligned_alloc(
+			AVXUtils::AVX2_ALIGNAS_SIZE,
+			m_xicSizeMaxAlignas * sizeof(float))
+			);
+		m_xicsAlignasMzShadowsTight1[i] = alignedMzValsShadowsTight1;
 	}
 
 	auto* alignedIntensityVec = static_cast<float*>(std::aligned_alloc(
@@ -347,26 +391,6 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	ERR_RETURN
 }
 
-namespace {
-
-	void loadVecsFromXICPoints(
-		const XICPointsPntrs &xicPointsPntrs,
-		float* arrIntensity,
-		float* arrMz
-		) {
-		for (const XICPoint *xicPoint : xicPointsPntrs) {
-			arrIntensity[xicPoint->frameIndex] += xicPoint->intensity;
-
-			if (arrMz[xicPoint->frameIndex] > 1) {
-				arrMz[xicPoint->frameIndex] += xicPoint->mz;
-				arrMz[xicPoint->frameIndex] * 0.5;
-				continue;
-			}
-
-			arrMz[xicPoint->frameIndex] = xicPoint->mz;
-		}
-	}
-}//namespace
 Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> &ms2Ions) {
 
 	ERR_INIT
@@ -383,6 +407,10 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		const float mzMin = ms2Ion.mz - mzTol;
 		const float mzMax = ms2Ion.mz + mzTol;
+		const float mzTolTight1 = mzTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION;
+		const float mzMinTight1 = ms2Ion.mz - mzTolTight1;
+		const float mzMaxTight1 = ms2Ion.mz + mzTolTight1;
+
 		XICPointsPntrs xicPointsPntrs;
 		e = m_msFrameV2Current->getTurboXICPntr()->extractPointsXIC(
 			mzMin,
@@ -399,6 +427,10 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		const float mzShadowMin = mzShadow - mzShadowTol;
 		const float mzShadowMax = mzShadow + mzShadowTol;
+		const float mzShadowTolTight1 = mzShadowTol * S_GLOBAL_SETTINGS.TIGHT_1_FRACTION;
+		const float mzShadowMinTight1 = mzShadow - mzShadowTolTight1;
+		const float mzShadowMaxTight1 = mzShadow + mzShadowTolTight1;
+
 		XICPointsPntrs xicPointsPntrsShadows;
 		e = m_msFrameV2Current->getTurboXICPntr()->extractPointsXIC(
 			mzShadowMin,
@@ -408,24 +440,66 @@ Err TargetDecoyCandidatePairScoretronV2::loadMS2IonArrays(const QVector<MS2Ion> 
 
 		float* arrIntensity = m_xicsAlignasIntensity[arrayIndex];
 		float* arrMz = m_xicsAlignasMz[arrayIndex];
+		float* arrIntensityTight1 = m_xicsAlignasIntensityTight1[arrayIndex];
+		float* arrMzTight1 = m_xicsAlignasMzTight1[arrayIndex];
 		for (const XICPoint *xicPoint : xicPointsPntrs) {
 
 			m_targetFrameIndexMax = std::max(m_targetFrameIndexMax, xicPoint->frameIndex);
 
-			arrIntensity[xicPoint->frameIndex] += xicPoint->intensity;
+			const float mz = xicPoint->mz;
+			const FrameIndex frameIndex = xicPoint->frameIndex;
 
-			if (arrMz[xicPoint->frameIndex] > 1) {
-				arrMz[xicPoint->frameIndex] += xicPoint->mz;
-				arrMz[xicPoint->frameIndex] * 0.5;
+			arrIntensity[frameIndex] += xicPoint->intensity;
+			if (arrMz[frameIndex] > 1) {
+				arrMz[frameIndex] += mz;
+				arrMz[frameIndex] *= 0.5;
+				continue;
+			}
+			arrMz[xicPoint->frameIndex] = mz;
+
+			if (mz < mzMinTight1 || mz > mzMaxTight1) {
 				continue;
 			}
 
-			arrMz[xicPoint->frameIndex] = xicPoint->mz;
+			arrIntensityTight1[frameIndex] += xicPoint->intensity;
+			if (arrMzTight1[frameIndex] > 1) {
+				arrMzTight1[frameIndex] += mz;
+				arrMzTight1[frameIndex] *= 0.5;
+				continue;
+			}
+			arrMzTight1[xicPoint->frameIndex] = mz;
 		}
 
 		float* arrIntensityShadows = m_xicsAlignasIntensityShadows[arrayIndex];
 		float* arrMzShadows = m_xicsAlignasMzShadows[arrayIndex];
-		loadVecsFromXICPoints(xicPointsPntrsShadows, arrIntensityShadows, arrMzShadows);
+		float* arrIntensityShadowsTight1 = m_xicsAlignasIntensityShadowsTight1[arrayIndex];
+		float* arrMzShadowsTight1 = m_xicsAlignasMzShadowsTight1[arrayIndex];
+
+		for (const XICPoint *xicPoint : xicPointsPntrsShadows) {
+
+			const float mz = xicPoint->mz;
+			const FrameIndex frameIndex = xicPoint->frameIndex;
+
+			arrIntensityShadows[frameIndex] += xicPoint->intensity;
+			if (arrMzShadows[frameIndex] > 1) {
+				arrMzShadows[frameIndex] += mz;
+				arrMzShadows[frameIndex] *= 0.5;
+				continue;
+			}
+			arrMzShadows[xicPoint->frameIndex] = mz;
+
+			if (mz < mzShadowMinTight1 || mz > mzShadowMaxTight1) {
+				continue;
+			}
+
+			arrIntensityShadowsTight1[frameIndex] += xicPoint->intensity;
+			if (arrMzShadowsTight1[frameIndex] > 1) {
+				arrMzShadowsTight1[frameIndex] += mz;
+				arrMzShadowsTight1[frameIndex] *= 0.5;
+				continue;
+			}
+			arrMzShadowsTight1[xicPoint->frameIndex] = mz;
+		}
 
 		arrayIndex++;
 	}
@@ -449,6 +523,13 @@ Err TargetDecoyCandidatePairScoretronV2::subtractShadowsArrays() {
 		e = AVXUtils::subtractArraysAVX2(
 			m_xicsAlignasIntensity[i],
 			m_xicsAlignasIntensityShadows[i],
+			m_xicSizeTargetMaxAlignas,
+			zeroNegatives
+			); ree;
+
+		e = AVXUtils::subtractArraysAVX2(
+			m_xicsAlignasIntensityTight1[i],
+			m_xicsAlignasIntensityShadowsTight1[i],
 			m_xicSizeTargetMaxAlignas,
 			zeroNegatives
 			); ree;
@@ -476,6 +557,22 @@ void TargetDecoyCandidatePairScoretronV2::zeroOutArrays() {
 	}
 
 	for (float *f : m_xicsAlignasMzShadows) {
+		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
+	}
+
+	for (float *f : m_xicsAlignasIntensityTight1) {
+		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
+	}
+
+	for (float *f : m_xicsAlignasIntensityShadowsTight1) {
+		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
+	}
+
+	for (float *f : m_xicsAlignasMzTight1) {
+		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
+	}
+
+	for (float *f : m_xicsAlignasMzShadowsTight1) {
 		std::memset(f, 0, m_xicSizeMaxAlignas * sizeof(float));
 	}
 
@@ -525,6 +622,34 @@ Err TargetDecoyCandidatePairScoretronV2::smoothMS2IonArrays() {
 				m_xicsAlignasIntensity[13],
 				m_xicsAlignasIntensity[14],
 				m_xicsAlignasIntensity[15]
+				); ree;
+	}
+
+	e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
+		m_smoothingKernel,
+		m_xicSizeTargetMaxAlignas,
+		m_xicsAlignasIntensityTight1[0],
+		m_xicsAlignasIntensityTight1[1],
+		m_xicsAlignasIntensityTight1[2],
+		m_xicsAlignasIntensityTight1[3],
+		m_xicsAlignasIntensityTight1[4],
+		m_xicsAlignasIntensityTight1[5],
+		m_xicsAlignasIntensityTight1[6],
+		m_xicsAlignasIntensityTight1[7]
+		); ree;
+
+	if (m_ms2IonsCount == S_GLOBAL_SETTINGS.MAX_MS2_IONS) {
+		e = AVXUtils::convolveEightVecsWithKernelAVXFloat(
+				m_smoothingKernel,
+				m_xicSizeTargetMaxAlignas,
+				m_xicsAlignasIntensityTight1[8],
+				m_xicsAlignasIntensityTight1[9],
+				m_xicsAlignasIntensityTight1[10],
+				m_xicsAlignasIntensityTight1[11],
+				m_xicsAlignasIntensityTight1[12],
+				m_xicsAlignasIntensityTight1[13],
+				m_xicsAlignasIntensityTight1[14],
+				m_xicsAlignasIntensityTight1[15]
 				); ree;
 	}
 
@@ -852,19 +977,20 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 			pii.first,
 			ms2IonsFull,
 			m_xicsAlignasIntensity,
+			m_xicsAlignasIntensityTight1,
 			m_productVec,
 			&candidateScores
 			); ree;
 
-		// if (candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top8] < 7.5) {
+		// if (candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8] < 7.5) {
 		// 	continue;
 		// }
 		//
 		// qDebug()
 		// << candidateScores.isDecoy
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top8]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100Top16]
-		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSum100GreaterThan80]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop16]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumGreaterThan80]
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor1]
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor2]
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor3]
@@ -880,6 +1006,24 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor13]
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor14]
 		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchor15]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop8Tight1]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumTop16Tight1]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimSumGreaterThan80Tight1]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_1]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_2]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_3]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_4]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_5]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_6]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_7]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_8]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_9]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_10]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_11]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_12]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_13]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_14]
+		// << candidateScores.featuresArray[CandidateScoresFeatureManager::Features::CosineSimToAnchorTight1_15]
 		// ;
 
 	}
