@@ -91,22 +91,25 @@ Err TargetDecoyCandidatePairScoretron2::init(
         e = m_msReaderPointerAcc->ptr->getScanPoints(msLevel, &m_ms1ScanNumberVsScanPoints); ree;
     }
 
-    QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
-    for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
-        ms1FramePtrs.insert(it.key(), &it.value());
-    }
+	if (!m_ms1ScanNumberVsScanPoints.isEmpty()) {
 
-    m_msFrameMS1 = new MsFrame;
-    e = m_msFrameMS1->init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+		QMap<ScanNumber, ScanPoints*> ms1FramePtrs;
 
-    m_turboXICMS1 = new TurboXIC();
-    e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
+		for (auto it = m_ms1ScanNumberVsScanPoints.begin(); it != m_ms1ScanNumberVsScanPoints.end(); ++it) {
+			ms1FramePtrs.insert(it.key(), &it.value());
+		}
 
-    if (!diaTargetFrames.isEmpty()) {
-        e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
-        m_diaTargetFrames = diaTargetFrames;
-        e = buildMzTargetKeyVsMsFrames(); ree;
-    }
+		m_msFrameMS1 = new MsFrame;
+		e = m_msFrameMS1->init(ms1FramePtrs, m_msReaderPointerAcc->ptr->getScanNumberVsScanTime()); ree;
+
+		m_turboXICMS1 = new TurboXIC();
+		e = m_turboXICMS1->init(m_msFrameMS1->frameIndexVsScanPoints()); ree;
+	}
+
+	if (!diaTargetFrames.isEmpty()) {
+		m_diaTargetFrames = diaTargetFrames;
+		e = buildMzTargetKeyVsMsFrames(); ree;
+	}
 
     e = buildAveragineTable(); ree;
 
@@ -203,8 +206,10 @@ namespace {
         QVector<QPair<Err, QVector<QPair<CandidateScoresTarget, CandidateScoresDecoy>>>> outputs;
 
         for (const TargetDecoyPairParallelInput &pi : inputs) {
-            
-            e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
+
+        	if (pi.turboXicMS1) {
+        		e = ErrorUtils::isTrue(pi.turboXicMS1->isInit()); rree;
+        	}
 
             QVector<TargetDecoyCandidatePair*> targetDecoyPointers = pi.targetDecoyPointers;
 
@@ -536,7 +541,7 @@ Err TargetDecoyCandidatePairScoretron2::scoreTargetDecoyPairs(
 }
 
 bool TargetDecoyCandidatePairScoretron2::isInit() const {
-    return m_pythiaParameters.isValid() && !m_ms1ScanNumberVsScanPoints.isEmpty();
+    return m_pythiaParameters.isValid();
 }
 
 Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
@@ -558,8 +563,7 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
-    e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
-    e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+    // e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
     e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFramePntr); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
     e = ErrorUtils::isNotEmpty(features); ree;
@@ -634,8 +638,12 @@ Err TargetDecoyCandidatePairScoretron2::buildParallelInput(
     e = ErrorUtils::isTrue(m_pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(m_msReaderPointerAcc->ptr->isInit()); ree;
     e = ErrorUtils::isNotEmpty(m_diaTargetFrames); ree;
-    e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
-    e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+
+	if (m_msFrameMS1) {
+		e = ErrorUtils::isTrue(m_msFrameMS1->isValid()); ree;
+		e = ErrorUtils::isNotEmpty(m_ms1ScanNumberVsScanPoints); ree;
+	}
+
     e = ErrorUtils::isNotEmpty(m_mzTargetKeyVsMsFramePntr); ree;
     e = ErrorUtils::isNotEmpty(features); ree;
     e = ErrorUtils::isAboveThreshold(minPeakCount, 1.0f, ErrorUtilsParam::ExcludeThreshold); ree;
