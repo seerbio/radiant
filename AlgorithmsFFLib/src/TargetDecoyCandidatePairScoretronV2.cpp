@@ -270,7 +270,8 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 }
 
 Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
-	const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr
+	const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr,
+	QPair<CandidateScoresV2, CandidateScoresV2> *scoresTargetVsDecoyPair
 	) {
 
 	ERR_INIT
@@ -294,7 +295,13 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 		);
 	const QVector<MS2Ion> &ms2IonsDecoyFullLength = tdcpPntr->ms2IonsDecoy(ms2IonsTargetFullLength);
 
-	e = scoreMS2Ions(ms2IonsTargetFullLength, false, tdcpPntr); ree;
+	CandidateScoresV2 candidateScoresV2Target;
+	e = scoreMS2Ions(
+		ms2IonsTargetFullLength,
+		false,
+		tdcpPntr,
+		&candidateScoresV2Target
+		); ree;
 
 // #define CHECK_VEC
 #ifdef CHECK_VEC
@@ -333,7 +340,15 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	}
 #endif
 
-	e = scoreMS2Ions(ms2IonsDecoyFullLength, true, tdcpPntr); ree;
+	CandidateScoresV2 candidateScoresV2Decoy;
+	e = scoreMS2Ions(
+		ms2IonsDecoyFullLength,
+		true,
+		tdcpPntr,
+		&candidateScoresV2Decoy
+		); ree;
+
+	*scoresTargetVsDecoyPair = {candidateScoresV2Target, candidateScoresV2Decoy};
 
 	ERR_RETURN
 }
@@ -341,7 +356,8 @@ Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	const QVector<MS2Ion> &ms2IonsFull,
 	bool isDecoy,
-	TargetDecoyCandidatePair *tdcp
+	TargetDecoyCandidatePair *tdcp,
+	CandidateScoresV2 *candidateScoresV2Best
 	) {
 
 	ERR_INIT
@@ -370,7 +386,8 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 	e = scoreProductVecApexes(
 		ms2IonsFull,
 		isDecoy,
-		tdcp
+		tdcp,
+		candidateScoresV2Best
 		);ree;
 
 	{
@@ -815,27 +832,27 @@ Err TargetDecoyCandidatePairScoretronV2::buildMs1Vec(bool isDecoy, TargetDecoyCa
 		m_mzMs1MonoIsotopeVecMz
 		); ree;
 
-	// e = turboXICMS1->extractPointsXIC(
-	// 	mzMs1C13 - massTolMs1C13,
-	// 	mzMs1C13 + massTolMs1C13,
-	// 	&xicPointsPntrsC13
-	// 	); ree;
-	// e = fitMS1XICToVecs(
-	// 	xicPointsPntrsC13,
-	// 	m_mzMs1C13VecIntensity,
-	// 	m_mzMs1C13VecMz
-	// 	); ree;
-	//
-	// e = turboXICMS1->extractPointsXIC(
-	// 	mzMs1C132 - massTolMs1C132,
-	// 	mzMs1C132 + massTolMs1C132,
-	// 	&xicPointsPntrsC132
-	// 	); ree;
-	// e = fitMS1XICToVecs(
-	// 	xicPointsPntrsC132,
-	// 	m_mzMs1C132VecIntensity,
-	// 	m_mzMs1C132VecMz
-	// 	); ree;
+	e = turboXICMS1->extractPointsXIC(
+		mzMs1C13 - massTolMs1C13,
+		mzMs1C13 + massTolMs1C13,
+		&xicPointsPntrsC13
+		); ree;
+	e = fitMS1XICToVecs(
+		xicPointsPntrsC13,
+		m_mzMs1C13VecIntensity,
+		m_mzMs1C13VecMz
+		); ree;
+
+	e = turboXICMS1->extractPointsXIC(
+		mzMs1C132 - massTolMs1C132,
+		mzMs1C132 + massTolMs1C132,
+		&xicPointsPntrsC132
+		); ree;
+	e = fitMS1XICToVecs(
+		xicPointsPntrsC132,
+		m_mzMs1C132VecIntensity,
+		m_mzMs1C132VecMz
+		); ree;
 
 	e = turboXICMS1->extractPointsXIC(
 		mzMs1MonoIsotopeShadow - massTolMs1MonoIsotopeShadow,
@@ -920,11 +937,12 @@ namespace {
 
 		productVecApexes->erase(terminator, productVecApexes->end());
 	}
-}
+}//namespace
 Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 	const QVector<MS2Ion> &ms2IonsFull,
 	bool isDecoy,
-	TargetDecoyCandidatePair *tdcp
+	TargetDecoyCandidatePair *tdcp,
+	CandidateScoresV2 *candidateScoresBest
 	) {
 
 	ERR_INIT
@@ -966,7 +984,24 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		&peakIntegrationIndexesVsIntensity
 		); ree;
 
+	CandidateScorertronV2Input input;
+	input.ms2IonsFull = ms2IonsFull;
+	input.xicsAlignasIntensity = m_xicsAlignasIntensity;
+	input.xicsAlignasIntensityTight1 = m_xicsAlignasIntensityTight1;
+	input.productVec = m_productVec;
+	input.ms1MonoIsotopeVec = m_mzMs1MonoIsotopeVecIntensity;
+	input.ms1C13Vec = m_mzMs1C13VecIntensity;
+	input.ms1C132Vec = m_mzMs1C132VecIntensity;
+	input.ms1PreMonoShadowVec = m_mzMs1MonoIsotopeShadowVecIntensity;
+
 	for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
+
+		input.pii = pii.first;
+
+		if(pii.first.second - pii.first.first + 1 > 100) {
+			qDebug() << pii << "SDKLFSJ";
+			continue;
+		}
 
 		CandidateScoresV2 candidateScores;
 		candidateScores.isDecoy = isDecoy;
@@ -974,13 +1009,16 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		candidateScores.initFeaturesArray();
 
 		e = m_candidateScoretronV2.scoreCandidate(
-			pii.first,
-			ms2IonsFull,
-			m_xicsAlignasIntensity,
-			m_xicsAlignasIntensityTight1,
-			m_productVec,
+			input,
 			&candidateScores
 			); ree;
+
+		if (
+			candidateScores.featuresArray[FTR::CosineSimSumTop8]
+			> candidateScoresBest->featuresArray[FTR::CosineSimSumTop8]
+			) {
+			*candidateScoresBest = candidateScores;
+		}
 
 		// if (candidateScores.featuresArray[FTR::CosineSimSumTop8] < 7.5) {
 		// 	continue;

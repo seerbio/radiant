@@ -175,7 +175,7 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 
 namespace {
 
-	Err parallelProcessingLogic(
+	QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> parallelProcessingLogic(
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 		const QVector<FTR> &featuresCalibration,
@@ -187,6 +187,8 @@ namespace {
 
 		QElapsedTimer et;
 		et.start();
+
+		QVector<QPair<CandidateScoresV2, CandidateScoresV2>> scoresTargetVsDecoyPairs;
 
 		QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted
 																			= mzTargetKeyVsTargetDecoyCandidatePairPntrs;
@@ -208,17 +210,22 @@ namespace {
 			S_GLOBAL_SETTINGS.MIN_MS2_IONS,
 			minMs2IonsFoundCount,
 			msFrameV2MS1
-			); ree;
+			); rree;
 
-		constexpr int skipCountTDCP = 5;
+		constexpr int skipCountTDCP = 4;
 		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
 			if (counter++ % skipCountTDCP != 0) {
 				continue;
 			}
+			QPair<CandidateScoresV2, CandidateScoresV2> scoresTargetVsDecoyPair;
+			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(
+				pr,
+				&scoresTargetVsDecoyPair
+				); rree;
 
-			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(pr); ree;
+			scoresTargetVsDecoyPairs.push_back(scoresTargetVsDecoyPair);
 		}
 
 		if (false) { //TODO add verbose variable to parallel processing logic to replace false;
@@ -235,7 +242,7 @@ namespace {
 			;
 		}
 
-		ERR_RETURN
+		return {e, scoresTargetVsDecoyPairs};
 	}
 
 }//namespace
@@ -256,6 +263,8 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		&mzTargetDecoyCandidatePairsPntrsTranched
 		); ree;
 
+	QVector<QPair<CandidateScoresV2, CandidateScoresV2>> scoresTargetVsTargetDecoyPairs;
+
 #define CALIBRATION_PARALLEL_TDCP
 #ifdef CALIBRATION_PARALLEL_TDCP
 	const auto binderLogic = std::bind(
@@ -267,20 +276,60 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		m_msFrameMS1
 		);
 
-	QFuture<Err> futures = QtConcurrent::mapped(
+	QFuture<QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>>> futures = QtConcurrent::mapped(
 		mzTargetDecoyCandidatePairsPntrsTranched,
 		binderLogic
 		);
 	futures.waitForFinished();
+
+	for (const QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> &pr : futures) {
+		e = pr.first; ree;
+		scoresTargetVsTargetDecoyPairs.append(pr.second);
+	}
+
+	using T = QPair<CandidateScoresV2, CandidateScoresV2>;
+
+	QVector<CandidateScoresV2*> candidateScores;
+	for (T &pr : scoresTargetVsTargetDecoyPairs) {
+		candidateScores.push_back(&pr.first);
+		candidateScores.push_back(&pr.second);
+	};
+
+	std::sort(
+		candidateScores.rbegin(),
+		candidateScores.rend(),
+		[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
+			return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
+		});
+
+	int counter = 0;
+	int decoys = 0;
+	for (const CandidateScoresV2 *cs : candidateScores) {
+		if (cs->isDecoy) {
+			decoys++;
+		}
+		qDebug()
+		<< counter++
+		<< decoys / static_cast<float>(counter)
+		<< cs->isDecoy
+		<< cs->featuresArray[FTR::CosineSimSumTop8]
+		<< cs->featuresArray[FTR::CosineSimSumMeanCorrelation]
+		<< cs->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope]
+		<< cs->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow]
+		<< cs->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
+		;
+	}
+
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
-		e = parallelProcessingLogic(
+		const QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> result = parallelProcessingLogic(
 			pr,
 			m_mzTargetKeyVsMsFramesMS2Pntrs,
 			m_featuresCalibration,
 			*m_pythiaParameters,
 			m_msFrameMS1
-			); ree;
+			);
+		e = result.first; ree;
 	}
 #endif
 

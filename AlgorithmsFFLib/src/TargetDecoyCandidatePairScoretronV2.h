@@ -40,7 +40,8 @@ public:
 		);
 
 	Err scoreTargetDecoyCandidatePairPntr(
-		const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr
+		const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr,
+		QPair<CandidateScoresV2, CandidateScoresV2> *scoresTargetVsDecoyPair
 		);
 
 private:
@@ -48,7 +49,8 @@ private:
 	Err scoreMS2Ions(
 		const QVector<MS2Ion> &ms2IonsFull,
 		bool isDecoy,
-		TargetDecoyCandidatePair *tdcp
+		TargetDecoyCandidatePair *tdcp,
+		CandidateScoresV2 *candidateScoresV2Best
 		);
 
 	Err loadMS2IonArrays(const QVector<MS2Ion> &ms2Ions);
@@ -76,7 +78,8 @@ private:
 	Err scoreProductVecApexes(
 		const QVector<MS2Ion> &ms2IonsFull,
 		bool isDecoy,
-		TargetDecoyCandidatePair *tdcp
+		TargetDecoyCandidatePair *tdcp,
+		CandidateScoresV2 *candidateScoresBest
 		);
 
 

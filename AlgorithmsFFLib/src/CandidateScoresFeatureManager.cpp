@@ -8,11 +8,11 @@
 		const QVector<FTR> baseFeatures = {
 			CosineSimSumGreaterThan80,
 			CosineSimSpectrumOverTimeCubed,
-			CosineSimSpectrumStDev,
-			CosineSimMS1,
-			CosineSimSpectrumCubed,
-			TopBottomRatio,
-			TopBottomRatioNorm,
+			CosineSimSpectrumOverTimeStDev,
+			// CosineSimMS1,
+			// CosineSimSpectrumCubed,
+			// TopBottomRatio,
+			// TopBottomRatioNorm,
 		};
 
 		return baseFeatures;

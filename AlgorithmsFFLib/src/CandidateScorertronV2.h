@@ -15,6 +15,19 @@
 
 using namespace Error;
 
+struct CandidateScorertronV2Input {
+	PeakIntegrationIndexes pii;
+	QVector<MS2Ion> ms2IonsFull;
+	QVector<float*> xicsAlignasIntensity;
+	QVector<float*> xicsAlignasIntensityTight1;
+	float* productVec = nullptr;
+	float* ms1MonoIsotopeVec = nullptr;
+	float* ms1C13Vec = nullptr;
+	float* ms1C132Vec = nullptr;
+	float* ms1PreMonoShadowVec = nullptr;
+
+};
+
 class ALGORITHMSFFLIB_EXPORTS CandidateScorertronV2 {
 
 public:
@@ -30,11 +43,7 @@ public:
 	bool isInit() const;
 
 	Err scoreCandidate(
-		const PeakIntegrationIndexes &pii,
-		const QVector<MS2Ion> &ms2IonsFull,
-		const QVector<float*> &xicsAlignasIntensity,
-		const QVector<float*> &xicsAlignasIntensityTight1,
-		float* productVec,
+		const CandidateScorertronV2Input &input,
 		CandidateScoresV2 *candidateScores
 		);
 
@@ -50,16 +59,22 @@ private:
 		);
 
 	Err calculateScores(
-		const PeakIntegrationIndexes &pii,
-		const QVector<MS2Ion> &ms2IonsFull,
+		const CandidateScorertronV2Input &input,
 		CandidateScoresV2 *candidateScoresV2
 		);
 
 	Err calculateRTCorrelationScoresMS2(CandidateScoresV2 *candScores);
+
 	Err calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
+
 	Err calculateFragmentCorrelationScoresMS2(
 		const PeakIntegrationIndexes &pii,
 		const QVector<MS2Ion> &ms2IonsFull,
+		CandidateScoresV2 *candScores
+		);
+
+	Err calculateRTCorrelationScoresMS1(
+		const CandidateScorertronV2Input &input,
 		CandidateScoresV2 *candScores
 		);
 
