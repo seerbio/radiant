@@ -32,7 +32,7 @@ Err PeakIntegratomatic::simpleIntegrator(
 	const QVector<int> &apexes,
 	const float* vec,
 	int vecSize,
-	QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+	QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> *peakIntegrationIndexesVsIntensity
 ) const {
 
     ERR_INIT
@@ -45,13 +45,13 @@ Err PeakIntegratomatic::simpleIntegrator(
 	int previousApex = 0;
 	for (int i = 0; i < apexes.size(); i++) {
 
-		const int apex = apexes[i];
-		const int nextApex = i < apexes.size() - 1 ? apexes[i + 1] : 2 * apex;
+		const FrameIndex apexFrameIndex = apexes[i];
+		const int nextApex = i < apexes.size() - 1 ? apexes[i + 1] : 2 * apexFrameIndex;
 
-		const float apexIntensity = vec[apex];
+		const float apexIntensity = vec[apexFrameIndex];
 		const float stopThresold = apexIntensity * m_params.stopThresholdFraction;
 
-		int lastLeftStop = apex;
+		int lastLeftStop = apexFrameIndex;
 		float lastLeftValueLowest = apexIntensity;
 
 		while (lastLeftStop > 0) {
@@ -60,7 +60,7 @@ Err PeakIntegratomatic::simpleIntegrator(
 			const float currentLeftValue = vec[currentLeftStop];
 
 			if (lastLeftStop <= previousApex) {
-				lastLeftStop = static_cast<int>((previousApex + apex) / 2);
+				lastLeftStop = static_cast<int>((previousApex + apexFrameIndex) / 2);
 				lastGlobalStopLeft = lastLeftStop;
 				break;
 			}
@@ -80,15 +80,15 @@ Err PeakIntegratomatic::simpleIntegrator(
 			lastGlobalStopLeft = lastLeftStop;
 		}
 
-		int lastRightStop = apex;
-		float lastRightValueLowest = vec[apex];
+		int lastRightStop = apexFrameIndex;
+		float lastRightValueLowest = vec[apexFrameIndex];
 		while (lastRightStop < vecSize) {
 
 			const int currentRightStop = lastRightStop + 1;
 			const float currentRightValue = vec[currentRightStop];
 
 			if (lastRightStop >= nextApex) {
-				lastRightStop = static_cast<int>((nextApex + apex) / 2);
+				lastRightStop = static_cast<int>((nextApex + apexFrameIndex) / 2);
 				lastGlobalStopRight = lastRightStop;
 				break;
 			}
@@ -108,8 +108,8 @@ Err PeakIntegratomatic::simpleIntegrator(
 			lastGlobalStopRight = lastRightStop;
 		}
 
-		previousApex = apex;
-		peakIntegrationIndexesVsIntensity->push_back({{lastLeftStop, lastRightStop}, vec[apex]});
+		previousApex = apexFrameIndex;
+		peakIntegrationIndexesVsIntensity->push_back({{lastLeftStop, lastRightStop}, vec[apexFrameIndex], apexFrameIndex});
 	}
 
     ERR_RETURN

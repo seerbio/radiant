@@ -41,7 +41,7 @@ public:
 
 	Err scoreTargetDecoyCandidatePairPntr(
 		const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr,
-		QPair<CandidateScoresV2, CandidateScoresV2> *scoresTargetVsDecoyPair
+		QPair<CandidateScoresV2Target, CandidateScoresV2Decoy> *scoresTargetVsDecoyPair
 		);
 
 private:

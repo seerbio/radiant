@@ -58,7 +58,7 @@ public:
 	    const QVector<int> &apexes,
         const float* vec,
         int vecSize,
-        QVector<QPair<PeakIntegrationIndexes, float>> *peakIntegrationIndexesVsIntensity
+        QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> *peakIntegrationIndexesVsIntensity
         ) const;
 
 private:

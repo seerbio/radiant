@@ -27,7 +27,7 @@ SET(SOURCE_FILES
 #        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.cpp
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.cpp
 #        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.cpp
-#        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.cpp
+        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.cpp
     )
 
 SET(HEADER_FILES
@@ -38,7 +38,7 @@ SET(HEADER_FILES
 #        src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertron.h
         src/PythiaDIAFFWorkflowAlgos/MsCalibratomaticSettertronV2.h
 #        src/PythiaDIAFFWorkflowAlgos/OptimizeMassAccuracyPPMSettertron.h
-#        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h
+        src/PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h
     )
 
 SET(${PROJECT_NAME}_LIB_SOURCES

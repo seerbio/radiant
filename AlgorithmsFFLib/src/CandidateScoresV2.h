@@ -54,6 +54,9 @@ public:
 
 };
 
+using CandidateScoresV2Target = CandidateScoresV2;
+using CandidateScoresV2Decoy = CandidateScoresV2;
+
 
 
 #endif //CANDIDATESCORESV2_H

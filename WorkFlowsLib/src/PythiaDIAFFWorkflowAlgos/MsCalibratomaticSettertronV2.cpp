@@ -10,6 +10,7 @@
 #include "TargetDecoyCandidatePairManager.h"
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
+#include "PythiaDIAFFWorkflowAlgos/PythiaDIAFFWorkflowSharedMethods.h"
 
 MsCalibratomaticSettertronV2::MsCalibratomaticSettertronV2()
 : m_tdcpManager(nullptr)
@@ -175,7 +176,7 @@ Err MsCalibratomaticSettertronV2::buildMzTargetKeyVsTargetDecoyCandidatePairPntr
 
 namespace {
 
-	QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> parallelProcessingLogic(
+	QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> parallelProcessingLogic(
 		const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &mzTargetKeyVsTargetDecoyCandidatePairPntrs,
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 		const QVector<FTR> &featuresCalibration,
@@ -188,7 +189,7 @@ namespace {
 		QElapsedTimer et;
 		et.start();
 
-		QVector<QPair<CandidateScoresV2, CandidateScoresV2>> scoresTargetVsDecoyPairs;
+		QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>> scoresTargetVsDecoyPairs;
 
 		QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted
 																			= mzTargetKeyVsTargetDecoyCandidatePairPntrs;
@@ -219,7 +220,7 @@ namespace {
 			if (counter++ % skipCountTDCP != 0) {
 				continue;
 			}
-			QPair<CandidateScoresV2, CandidateScoresV2> scoresTargetVsDecoyPair;
+			QPair<CandidateScoresV2Target, CandidateScoresV2Decoy> scoresTargetVsDecoyPair;
 			e = targetDecoyCandidatePairScoretronV2.scoreTargetDecoyCandidatePairPntr(
 				pr,
 				&scoresTargetVsDecoyPair
@@ -245,6 +246,34 @@ namespace {
 		return {e, scoresTargetVsDecoyPairs};
 	}
 
+	QPair<Err, float> simpleFDRCalcForTopN(
+		const QVector<CandidateScoresV2*> &candidateScores,
+		int topN
+		) {
+
+		ERR_INIT;
+
+		const bool isSorted = std::is_sorted(
+			candidateScores.rbegin(),
+			candidateScores.rend(),
+			[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
+				return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
+			}
+			);
+
+		e = ErrorUtils::isTrue(isSorted); rree;
+
+		int decoyCount = 0;
+		for (int i = 0; i < topN; ++i) {
+			const CandidateScoresV2 *cs = candidateScores.at(i);
+			if (cs->isDecoy) {
+				++decoyCount;
+			}
+		}
+
+		return {e, static_cast<float>(decoyCount) / static_cast<float>(topN)};
+	}
+
 }//namespace
 Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic) {
 	ERR_INIT
@@ -263,7 +292,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		&mzTargetDecoyCandidatePairsPntrsTranched
 		); ree;
 
-	QVector<QPair<CandidateScoresV2, CandidateScoresV2>> scoresTargetVsTargetDecoyPairs;
+	QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>> scoresTargetVsTargetDecoyPairs;
 
 #define CALIBRATION_PARALLEL_TDCP
 #ifdef CALIBRATION_PARALLEL_TDCP
@@ -276,18 +305,18 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		m_msFrameMS1
 		);
 
-	QFuture<QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>>> futures = QtConcurrent::mapped(
+	QFuture<QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>>> futures = QtConcurrent::mapped(
 		mzTargetDecoyCandidatePairsPntrsTranched,
 		binderLogic
 		);
 	futures.waitForFinished();
 
-	for (const QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> &pr : futures) {
+	for (const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> &pr : futures) {
 		e = pr.first; ree;
 		scoresTargetVsTargetDecoyPairs.append(pr.second);
 	}
 
-	using T = QPair<CandidateScoresV2, CandidateScoresV2>;
+	using T = QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>;
 
 	QVector<CandidateScoresV2*> candidateScores;
 	for (T &pr : scoresTargetVsTargetDecoyPairs) {
@@ -301,6 +330,30 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
 			return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
 		});
+
+	constexpr int topN = 1000;
+	const QPair<Err, float> fdrTop1000 = simpleFDRCalcForTopN(
+		candidateScores,
+		topN
+		);
+	e = fdrTop1000.first; ree;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "QVal for first" << topN << ":" << fdrTop1000.second;
+
+	QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+	e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
+			MSLevelEnum::MS2,
+			candidateScores.mid(0, topN),
+			m_pythiaParameters->verbosity,
+			&msCalibrationReaderRows
+			); ree;
+
+	e = m_msCalibratomatic->buildRTMapper(msCalibrationReaderRows); ree;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTime StdDev Predicted:"<< m_msCalibratomatic->scanTimeStDev();
+
+	for (const CandidateScoresV2 *cs : candidateScores) {
+
+	}
+
 
 	// int counter = 0;
 	// int decoys = 0;
@@ -328,7 +381,7 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
-		const QPair<Err, QVector<QPair<CandidateScoresV2, CandidateScoresV2>>> result = parallelProcessingLogic(
+		const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> result = parallelProcessingLogic(
 			pr,
 			m_mzTargetKeyVsMsFramesMS2Pntrs,
 			m_featuresCalibration,

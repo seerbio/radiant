@@ -271,7 +271,7 @@ Err TargetDecoyCandidatePairScoretronV2::init(
 
 Err TargetDecoyCandidatePairScoretronV2::scoreTargetDecoyCandidatePairPntr(
 	const QPair<MzTargetKey, TargetDecoyCandidatePair*> &mzTargetKeyVsTdcpPntr,
-	QPair<CandidateScoresV2, CandidateScoresV2> *scoresTargetVsDecoyPair
+	QPair<CandidateScoresV2Target, CandidateScoresV2Decoy> *scoresTargetVsDecoyPair
 	) {
 
 	ERR_INIT
@@ -976,12 +976,12 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		[](const QPair<int, float> &pr) { return pr.first;}
 		);
 
-	QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+	QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> peakIntegrationIndexesVsIntensityVsApex;
 	e = peakIntegratomatic.simpleIntegrator(
 		apexes,
 		m_productVec,
 		m_xicSizeTargetMaxAlignas,
-		&peakIntegrationIndexesVsIntensity
+		&peakIntegrationIndexesVsIntensityVsApex
 		); ree;
 
 	CandidateScorertronV2Input input;
@@ -994,13 +994,13 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 	input.ms1C132Vec = m_mzMs1C132VecIntensity;
 	input.ms1PreMonoShadowVec = m_mzMs1MonoIsotopeShadowVecIntensity;
 
-	for (const QPair<PeakIntegrationIndexes, float> &pii : peakIntegrationIndexesVsIntensity) {
+	for (const std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex> &pii : peakIntegrationIndexesVsIntensityVsApex) {
 
-		input.pii = pii.first;
+		input.pii = std::get<0>(pii);
 
-		if(pii.first.second - pii.first.first + 1 > 100) {
+		if(std::get<0>(pii).second - std::get<0>(pii).first + 1 > 100) {
 			qDebug() << "ACHTUNG!!!";
-			const QString filename = "prod_vec_" + QString::number(pii.first.first) + "_" + QString::number(pii.first.second) + ".csv";
+			const QString filename = "prod_vec_" + QString::number(std::get<0>(pii).first) + "_" + QString::number(std::get<0>(pii).second) + ".csv";
 			e = ObjectCSVWriters::writeRawPointerToFile(m_productVec, m_xicSizeMaxAlignas, filename); ree;
 			continue;
 		}
@@ -1009,6 +1009,9 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		candidateScores.isDecoy = isDecoy;
 		candidateScores.targetDecoyCandidatePair = tdcp;
 		candidateScores.initFeaturesArray();
+		candidateScores.frameIndex = std::get<2>(pii);
+		candidateScores.scanNumber = m_msFrameV2Current->getScanNumber(candidateScores.frameIndex);
+		candidateScores.scanTime = m_msFrameV2Current->getScanTimeFromFrameIndex(candidateScores.frameIndex);
 
 		e = m_candidateScoretronV2.scoreCandidate(
 			input,
