@@ -212,7 +212,7 @@ namespace {
 			msFrameV2MS1
 			); rree;
 
-		constexpr int skipCountTDCP = 4;
+		constexpr int skipCountTDCP = 5;
 		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
@@ -305,15 +305,21 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 	// int counter = 0;
 	// int decoys = 0;
 	// for (const CandidateScoresV2 *cs : candidateScores) {
+	// 	counter++;
 	// 	if (cs->isDecoy) {
 	// 		decoys++;
 	// 	}
+	//
+	// 	if (!cs->isDecoy) {
+	// 		continue;
+	// 	}
 	// 	qDebug()
-	// 	<< counter++
+	// 	<< counter
 	// 	<< decoys / static_cast<float>(counter)
 	// 	<< cs->isDecoy
 	// 	<< cs->featuresArray[FTR::CosineSimSumTop8]
 	// 	<< cs->featuresArray[FTR::CosineSimSumMeanCorrelation]
+	// 	<< cs->featuresArray[FTR::CosineSimSumTop8Tight1]
 	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope]
 	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow]
 	// 	<< cs->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
