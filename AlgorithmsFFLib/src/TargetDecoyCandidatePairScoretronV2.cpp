@@ -999,7 +999,9 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		input.pii = pii.first;
 
 		if(pii.first.second - pii.first.first + 1 > 100) {
-			qDebug() << pii << "SDKLFSJ";
+			qDebug() << "ACHTUNG!!!";
+			const QString filename = "prod_vec_" + QString::number(pii.first.first) + "_" + QString::number(pii.first.second) + ".csv";
+			e = ObjectCSVWriters::writeRawPointerToFile(m_productVec, m_xicSizeMaxAlignas, filename); ree;
 			continue;
 		}
 

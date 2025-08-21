@@ -42,20 +42,33 @@ Err PeakIntegratomatic::simpleIntegrator(
 	int lastGlobalStopLeft = std::numeric_limits<int>::max();
 	int lastGlobalStopRight = 0;
 
-	for (int apex : apexes) {
-		const float stopThresold = vec[apex] * m_params.stopThresholdFraction;
+	int previousApex = 0;
+	for (int i = 0; i < apexes.size(); i++) {
+
+		const int apex = apexes[i];
+		const int nextApex = i < apexes.size() - 1 ? apexes[i + 1] : 2 * apex;
+
+		const float apexIntensity = vec[apex];
+		const float stopThresold = apexIntensity * m_params.stopThresholdFraction;
 
 		int lastLeftStop = apex;
-		float lastLeftValue = vec[apex];
+		float lastLeftValueLowest = apexIntensity;
 
 		while (lastLeftStop > 0) {
 
 			const int currentLeftStop = lastLeftStop - 1;
 			const float currentLeftValue = vec[currentLeftStop];
 
+			if (lastLeftStop <= previousApex) {
+				lastLeftStop = static_cast<int>((previousApex + apex) / 2);
+				lastGlobalStopLeft = lastLeftStop;
+				break;
+			}
+
 			if (currentLeftValue <= stopThresold
-				|| currentLeftValue > lastLeftValue * (1.0 + m_params.hysteresis)
+				|| currentLeftValue > lastLeftValueLowest * (1.0 + m_params.hysteresis)
 				|| lastLeftStop - 1 == lastGlobalStopRight
+				|| currentLeftValue > apexIntensity
 				) {
 				lastLeftStop = currentLeftStop;
 				lastGlobalStopLeft = lastLeftStop;
@@ -63,31 +76,39 @@ Err PeakIntegratomatic::simpleIntegrator(
 			}
 
 			lastLeftStop = currentLeftStop;
-			lastLeftValue = currentLeftValue;
+			lastLeftValueLowest = std::min(currentLeftValue, lastLeftValueLowest);
 			lastGlobalStopLeft = lastLeftStop;
 		}
 
 		int lastRightStop = apex;
-		float lastRightValue = vec[apex];
+		float lastRightValueLowest = vec[apex];
 		while (lastRightStop < vecSize) {
 
 			const int currentRightStop = lastRightStop + 1;
 			const float currentRightValue = vec[currentRightStop];
 
+			if (lastRightStop >= nextApex) {
+				lastRightStop = static_cast<int>((nextApex + apex) / 2);
+				lastGlobalStopRight = lastRightStop;
+				break;
+			}
+
 			if (currentRightValue <= stopThresold
-				|| currentRightValue > lastRightValue * (1.0 + m_params.hysteresis)
+				|| currentRightValue > lastRightValueLowest * (1.0 + m_params.hysteresis)
 				|| lastRightStop + 1 == lastGlobalStopLeft
+				|| currentRightValue > apexIntensity
 				) {
-				lastRightStop = currentRightStop;
+				// lastRightStop = currentRightStop;
 				lastGlobalStopRight = lastRightStop;
 				break;
 				}
 
 			lastRightStop = currentRightStop;
-			lastRightValue = currentRightValue;
+			lastRightValueLowest = std::min(currentRightValue, lastRightValueLowest);
 			lastGlobalStopRight = lastRightStop;
 		}
 
+		previousApex = apex;
 		peakIntegrationIndexesVsIntensity->push_back({{lastLeftStop, lastRightStop}, vec[apex]});
 	}
 

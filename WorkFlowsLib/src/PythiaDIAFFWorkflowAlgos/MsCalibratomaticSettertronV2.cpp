@@ -302,23 +302,23 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 			return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
 		});
 
-	int counter = 0;
-	int decoys = 0;
-	for (const CandidateScoresV2 *cs : candidateScores) {
-		if (cs->isDecoy) {
-			decoys++;
-		}
-		qDebug()
-		<< counter++
-		<< decoys / static_cast<float>(counter)
-		<< cs->isDecoy
-		<< cs->featuresArray[FTR::CosineSimSumTop8]
-		<< cs->featuresArray[FTR::CosineSimSumMeanCorrelation]
-		<< cs->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope]
-		<< cs->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow]
-		<< cs->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
-		;
-	}
+	// int counter = 0;
+	// int decoys = 0;
+	// for (const CandidateScoresV2 *cs : candidateScores) {
+	// 	if (cs->isDecoy) {
+	// 		decoys++;
+	// 	}
+	// 	qDebug()
+	// 	<< counter++
+	// 	<< decoys / static_cast<float>(counter)
+	// 	<< cs->isDecoy
+	// 	<< cs->featuresArray[FTR::CosineSimSumTop8]
+	// 	<< cs->featuresArray[FTR::CosineSimSumMeanCorrelation]
+	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope]
+	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow]
+	// 	<< cs->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
+	// 	;
+	// }
 
 #else
 	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
