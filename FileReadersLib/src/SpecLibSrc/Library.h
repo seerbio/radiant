@@ -106,7 +106,7 @@ public:
 			eValueError
 			); ree;
 
-		e = ErrorUtils::isEqual(static_cast<int>(ionLoss), 0); ree;
+		// e = ErrorUtils::isEqual(static_cast<int>(ionLoss), 0); ree;
 
 		const QChar ionType = ionTypeInt == 1 ? 'b' : 'y';
 		const int ionIndex = ionTypeInt == 1 ? ionIndexRaw : peptideLen - ionIndexRaw;
