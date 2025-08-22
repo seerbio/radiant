@@ -71,10 +71,13 @@ Err PythiaDIAFFWorkflow::init(
 // #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
-    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 6.75;
+    // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 100;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
+		m_pythiaParameters.baggingSize = 12;
+		m_pythiaParameters.epochs = 12;
+		m_pythiaParameters.nodesFraction = 0.5;
     // m_pythiaParameters.baggingSize = 4;
     // m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
@@ -132,7 +135,11 @@ namespace {
         const auto terminatorLogic = [minMs2FragCount](CandidateScores *cs) {
             return cs->featuresArray[CosineSimSum100] < static_cast<float>(minMs2FragCount);
         };
-        const auto terminator = std::remove_if(candidateScoresTargetsAndDecoys->begin(), candidateScoresTargetsAndDecoys->end(), terminatorLogic);
+        const auto terminator = std::remove_if(
+        	candidateScoresTargetsAndDecoys->begin(),
+        	candidateScoresTargetsAndDecoys->end(),
+        	terminatorLogic
+        	);
         candidateScoresTargetsAndDecoys->erase(terminator, candidateScoresTargetsAndDecoys->end());
 
         PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidateScoresTargetsAndDecoys);
@@ -140,23 +147,23 @@ namespace {
         int counter = 0;
         for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
             counter++;
-            if (constexpr double fdrTrainingThreshold = 0.85; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
+            if (constexpr double fdrTrainingThreshold = 0.5; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
                 break;
             }
         }
 
         candidateScoresTargetsAndDecoys->resize(counter);
 
-        // std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-        //
-        // const int shuffleCount = 3;
-        // for (int i = 0; i < shuffleCount; i++) {
-        //     std::shuffle(
-        //             candidateScoresTargetsAndDecoys->begin(),
-        //             candidateScoresTargetsAndDecoys->end(),
-        //             rng
-        //     );
-        // }
+        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
+
+        constexpr int shuffleCount = 3;
+        for (int i = 0; i < shuffleCount; i++) {
+            std::shuffle(
+                    candidateScoresTargetsAndDecoys->begin(),
+                    candidateScoresTargetsAndDecoys->end(),
+                    rng
+            );
+        }
 
         ERR_RETURN
     }
@@ -684,27 +691,80 @@ namespace {
         ERR_RETURN
     }
 
+	QPair<Err, FDRCLassifierNeuralNet> trainNeuralNetworkLogic(
+		const QPair<QVector<QVector<float>>, QVector<float>> &trainingVecs,
+		const PythiaParameters &pythiaParameters,
+		int batchSize
+		) {
+	    ERR_INIT
+    	FDRCLassifierNeuralNet fdrcLassifierNeuralNet;
+
+    	constexpr int baggingOverride = 1;
+    	e = fdrcLassifierNeuralNet.init(
+				pythiaParameters.epochs,
+				baggingOverride,
+				batchSize,
+				pythiaParameters.learningRate,
+				pythiaParameters.nodesFraction,
+				pythiaParameters.threadCount
+		); rree;
+
+    	e = fdrcLassifierNeuralNet.trainClassifier(
+				trainingVecs.first,
+				trainingVecs.second,
+				S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST,
+				pythiaParameters.verbosity
+				); rree;
+
+    	return {e, fdrcLassifierNeuralNet};
+    }
+
     Err trainNeuralNetwork(
             const PythiaParameters &pythiaParameters,
-            const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
+            const QVector<QVector<KarnnNNTarget>> &karnnNNTargetsNormTranched,
             int seed,
-            FDRCLassifierNeuralNet *fdrcLassifierNeuralNet
+            QVector<FDRCLassifierNeuralNet> *fdrcLassifierNeuralNets,
+            QVector<QVector<KarnnNNTarget>> *inferenceKarnnVecs
             ) {
 
         ERR_INIT
 
-        constexpr int batchSizeMin = 500;
-        const int batchSize = std::min(batchSizeMin, std::max(1, static_cast<int>(karnnNNTargetsNorm.size() / 100.0)));
+    	const int trainingSize = std::accumulate(
+    		karnnNNTargetsNormTranched.begin(),
+    		karnnNNTargetsNormTranched.end(),
+    		0,
+    		[](int total, const QVector<KarnnNNTarget> &karnnNNTargets){return total + karnnNNTargets.size();}
+    		);
 
+        constexpr int batchSizeMin = 500;
+        const int batchSize = std::min(batchSizeMin, std::max(1, static_cast<int>(trainingSize / 100.0)));
         qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Batch Size:" << batchSize;
 
-        QVector<QVector<float>> xData;
-        QVector<float> yData;
-        for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
-            xData.push_back(kt.scoreVecNormalized);
-            yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
-        }
+    	QVector<QPair<QVector<QVector<float>>, QVector<float>>> trainingVecs(karnnNNTargetsNormTranched.size());
+    	inferenceKarnnVecs->resize(karnnNNTargetsNormTranched.size());
 
+    	for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
+    		for (int j = 0; j < karnnNNTargetsNormTranched.size(); j++) {
+
+    			const QVector<KarnnNNTarget> &karnnNNTargetsNorm = karnnNNTargetsNormTranched.at(j);
+
+    			QVector<QVector<float>> xData;
+    			QVector<float> yData;
+
+    			if (i == j) {
+    				(*inferenceKarnnVecs)[i] = karnnNNTargetsNorm;
+    				continue;
+    			}
+
+    			for (const KarnnNNTarget &kt : karnnNNTargetsNorm) {
+    				xData.push_back(kt.scoreVecNormalized);
+    				yData.push_back(kt.candidateScores->isDecoy ? 1.0 : 0.0);
+    			}
+
+    			trainingVecs[i].first.append(xData);
+    			trainingVecs[i].second.append(yData);
+    		}
+    	}
 
 // #define WRITENN_NORM
 #ifdef WRITENN_NORM
@@ -718,25 +778,37 @@ namespace {
         file.close();
 #endif
 
-        // constexpr int baggingSize = 4;
-        // constexpr float learningRate = 0.003;
-        // constexpr int epochs = 2;
+// #define TRAIN_NN_PARALLEL_YP
+#ifdef TRAIN_NN_PARALLEL_YP
+    	const auto loadLogicBinder = std::bind(
+			trainNeuralNetworkLogic,
+			std::placeholders::_1,
+			pythiaParameters,
+			batchSize
+			);
 
-        e = fdrcLassifierNeuralNet->init(
-                pythiaParameters.epochs,
-                pythiaParameters.baggingSize,
-                batchSize,
-                pythiaParameters.learningRate,
-                pythiaParameters.nodesFraction,
-                pythiaParameters.threadCount
-        ); ree;
+    	QFuture<QPair<Err, FDRCLassifierNeuralNet>> future = QtConcurrent::mapped(
+    		trainingVecs,
+    		loadLogicBinder
+    		);
+    	future.waitForFinished();
 
-        e = fdrcLassifierNeuralNet->trainClassifier(
-                xData,
-                yData,
-                seed,
-                pythiaParameters.verbosity
-                ); ree;
+    	for (const QPair<Err, FDRCLassifierNeuralNet> &result : future) {
+    		e = result.first; ree;
+    		fdrcLassifierNeuralNets->push_back(result.second);
+    	}
+#else
+		for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
+			const QPair<Err, FDRCLassifierNeuralNet> result = trainNeuralNetworkLogic(
+				trainingVecs[i],
+				pythiaParameters,
+				batchSize
+				);
+
+			e = result.first; ree;
+			fdrcLassifierNeuralNets->push_back(result.second);
+		}
+#endif
 
         ERR_RETURN
     }
@@ -768,37 +840,47 @@ namespace {
     }
 
     Err predictClassifierScores(
-        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
-        FDRCLassifierNeuralNet *fdrcLassifierNeuralNet,
-        QVector<float> *predictions
+		const QVector<QVector<KarnnNNTarget>> &inferenceKarnnVecs,
+        QVector<FDRCLassifierNeuralNet> &fdrcLassifierNeuralNets,
+        QVector<QVector<float>> *predictions
         ) {
 
         ERR_INIT
 
-        const auto applyWeightsBinder = std::bind(
-            predictClassiferScoresLogic,
-            std::placeholders::_1,
-            fdrcLassifierNeuralNet
-            );
+    	predictions->resize(inferenceKarnnVecs.size());
+    	for (int i = 0; i < inferenceKarnnVecs.size(); i++) {
+    		const QPair<Err, QVector<float>> result = predictClassiferScoresLogic(
+    			inferenceKarnnVecs[i],
+    			&fdrcLassifierNeuralNets[i]
+    			);
+    		e = result.first; ree;
+    		(*predictions)[i] = result.second;
+    	}
 
-        QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormVecsTranched;
-        e = ParallelUtils::trancheVectorForParallelizationInOrder(
-            karnnNNTargetsNorm,
-            ParallelUtils::numberOfAvailableSystemProcessors(),
-            0,
-            &karnnNNTargetsNormVecsTranched
-            ); ree;
+        // const auto applyWeightsBinder = std::bind(
+        //     predictClassiferScoresLogic,
+        //     std::placeholders::_1,
+        //     fdrcLassifierNeuralNet
+        //     );
 
-        QFuture<QPair<Err, QVector<float>>> future = QtConcurrent::mapped(
-            karnnNNTargetsNormVecsTranched,
-            applyWeightsBinder
-            );
-        future.waitForFinished();
-
-        for (const QPair<Err, QVector<float>> &pr : future) {
-            e = pr.first; ree;
-            predictions->append(pr.second);
-        }
+        // QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormVecsTranched;
+        // e = ParallelUtils::trancheVectorForParallelizationInOrder(
+        //     karnnNNTargetsNorm,
+        //     ParallelUtils::numberOfAvailableSystemProcessors(),
+        //     0,
+        //     &karnnNNTargetsNormVecsTranched
+        //     ); ree;
+        //
+        // QFuture<QPair<Err, QVector<float>>> future = QtConcurrent::mapped(
+        //     karnnNNTargetsNormVecsTranched,
+        //     applyWeightsBinder
+        //     );
+        // future.waitForFinished();
+        //
+        // for (const QPair<Err, QVector<float>> &pr : future) {
+        //     e = pr.first; ree;
+        //     predictions->append(pr.second);
+        // }
 
         ERR_RETURN
     }
@@ -844,47 +926,44 @@ namespace {
         ERR_RETURN
     }
 
-    Err subsetKarnnNNTargetsForTraining(
-        const QVector<KarnnNNTarget> &karnnNNTargetsNorm,
-        QVector<KarnnNNTarget> *karnnNNTargetsNormTrain
-        ) {
+	void logNeuralNetStats(const QVector<KarnnNNTarget> &karnnNNTargetsNorm) {
+    	const int totalCount = karnnNNTargetsNorm.size();
+    	const int decoyCount = static_cast<int>(std::count_if(
+				karnnNNTargetsNorm.begin(),
+				karnnNNTargetsNorm.end(),
+				[](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy;}
+				));
 
-        ERR_INIT
+    	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+				 << "target vs decoy count for neural net training"
+				 << totalCount - decoyCount << ":" << decoyCount
+				 << "total" << totalCount;
 
-        e = ErrorUtils::isNotEmpty(karnnNNTargetsNorm); ree;
+// #define WRITE_KARNNN_NORM_TO_FILE
+#ifdef WRITE_KARNNN_NORM_TO_FILE
+    	e = updateProteinGroupAnnotation(
+			m_fastaUri,
+			0,
+			&candidateScoresTargetsAndDecoysNeuralNet
+			); ree;
 
-        *karnnNNTargetsNormTrain = karnnNNTargetsNorm;
-        std::sort(
-            karnnNNTargetsNormTrain->begin(),
-            karnnNNTargetsNormTrain->end(),
-            [](const KarnnNNTarget &l, const KarnnNNTarget &r) {
-                if (MathUtils::tSame(l.candidateScores->discriminantScore, r.candidateScores->discriminantScore, S_GLOBAL_SETTINGS.ROUNDING_PRECISION_DECIMAL)) {
-                    return l.candidateScores->featuresArray[CosineSimSum100] > r.candidateScores->featuresArray[CosineSimSum100];
-                }
+    	const QString filenameNN = "kareNN_" + QString::number(m_pythiaParameters.threadCount) + ".dat";
+    	QFile file(filenameNN);
+    	if (!file.open(QIODevice::WriteOnly)) {
+    		rrr(eFileError);
+    	}
 
-                return l.candidateScores->discriminantScore > r.candidateScores->discriminantScore;
-            });
+    	QDataStream out(&file);
+    	out << karnnNNTargetsNormTrain.size();
 
-        int counter = 0;
-        for (const KarnnNNTarget &knt : *karnnNNTargetsNormTrain) {
-            counter++;
-            if (constexpr double fdrTrainingThreshold = 0.65; knt.candidateScores->qValue >= fdrTrainingThreshold && !knt.candidateScores->isDecoy) {
-                break;
-            }
-        }
-        karnnNNTargetsNormTrain->resize(counter);
-
-        std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
-        constexpr int shuffleCount = 3;
-        for (int i = 0; i < shuffleCount; i++) {
-            std::shuffle(
-                    karnnNNTargetsNormTrain->begin(),
-                    karnnNNTargetsNormTrain->end(),
-                    rng
-            );
-        }
-
-        ERR_RETURN
+    	for (const KarnnNNTarget &kt : karnnNNTargetsNormTrain) {
+    		float label =kt.candidateScores->isDecoy ? 1.0 : 0.0;
+    		out << kt.scoreVecNormalized;
+    		out << label;
+    		out << kt.candidateScores->proteinGroup;
+    	}
+    	file.close();
+#endif
     }
 
 }//namespace
@@ -948,74 +1027,44 @@ Err PythiaDIAFFWorkflow::applyNeuralNetClassifier(
         candidateScoresTargetsAndDecoysNeuralNet,
         &karnnNNTargetsNorm
         ); ree;
+	logNeuralNetStats(karnnNNTargetsNorm);
 
-    QVector<KarnnNNTarget> karnnNNTargetsNormTrain;
-    e = subsetKarnnNNTargetsForTraining(
-        karnnNNTargetsNorm,
-        &karnnNNTargetsNormTrain
-        ); ree;
+	QVector<QVector<KarnnNNTarget>> karnnNNTargetsNormTranched;
+	e = ParallelUtils::trancheVectorForParallelization(
+		karnnNNTargetsNorm,
+		m_pythiaParameters.baggingSize,
+		&karnnNNTargetsNormTranched
+		); ree;
 
-// #define WRITE_KARNNN_NORM_TO_FILE
-#ifdef WRITE_KARNNN_NORM_TO_FILE
-
-    e = updateProteinGroupAnnotation(
-        m_fastaUri,
-        0,
-        &candidateScoresTargetsAndDecoysNeuralNet
-        ); ree;
-
-    const QString filenameNN = "kareNN_" + QString::number(m_pythiaParameters.threadCount) + ".dat";
-    QFile file(filenameNN);
-    if (!file.open(QIODevice::WriteOnly)) {
-        rrr(eFileError);
-    }
-
-    QDataStream out(&file);
-    out << karnnNNTargetsNormTrain.size();
-
-    for (const KarnnNNTarget &kt : karnnNNTargetsNormTrain) {
-        float label =kt.candidateScores->isDecoy ? 1.0 : 0.0;
-        out << kt.scoreVecNormalized;
-        out << label;
-        out << kt.candidateScores->proteinGroup;
-    }
-    file.close();
-
-
-#endif
-
-    const int totalCount = karnnNNTargetsNormTrain.size();
-    const int decoyCount = static_cast<int>(std::count_if(
-            karnnNNTargetsNormTrain.begin(),
-            karnnNNTargetsNormTrain.end(),
-            [](const KarnnNNTarget &kt){return kt.candidateScores->isDecoy;}
-            ));
-
-    qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-             << "target vs decoy count for neural net training"
-             << totalCount - decoyCount << ":" << decoyCount
-             << "total" << totalCount;
-
-    FDRCLassifierNeuralNet fdrClassifierNeuralNet;
+    QVector<FDRCLassifierNeuralNet> fdrClassifierNeuralNets;
+	QVector<QVector<KarnnNNTarget>> inferenceKarnnVecs;
     e = trainNeuralNetwork(
             m_pythiaParameters,
-            karnnNNTargetsNormTrain,
+            karnnNNTargetsNormTranched,
             seed,
-            &fdrClassifierNeuralNet
+            &fdrClassifierNeuralNets,
+            &inferenceKarnnVecs
             ); ree;
 
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference start";
-    QVector<float> predictions;
+    QVector<QVector<float>> predictions;
     e = predictClassifierScores(
-        karnnNNTargetsNorm,
-        &fdrClassifierNeuralNet,
+        inferenceKarnnVecs,
+        fdrClassifierNeuralNets,
         &predictions
         ); ree;
     qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Inference end";
 
+	QVector<float> predictionsCollated;
+	QVector<KarnnNNTarget> karnnNnTargetsCollated;
+	for (int i = 0; i < predictions.size(); i++) {
+		predictionsCollated.append(predictions[i]);
+		karnnNnTargetsCollated.append(inferenceKarnnVecs[i]);
+	}
+
     e = processPredictions(
-            predictions,
-            &karnnNNTargetsNorm
+            predictionsCollated,
+            &karnnNnTargetsCollated
             ); ree;
 
     *candidateScoreClassifier = candidateScoresTargetsAndDecoysNeuralNet;

@@ -549,7 +549,8 @@ Err MsCalibratomaticSettertron::recalibrateMzVals(
 
     e = ErrorUtils::isTrue(m_msCalibratomatic.isInitCalMS2() || m_msCalibratomatic.isInitCalMS1()); ree;
     e = ErrorUtils::isFalse(diaTargetFrames->isEmpty()); ree;
-    e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
+
+	// e = ErrorUtils::isFalse(scanNumberVsScanTimeMS1->isEmpty()); ree;
 
     QElapsedTimer et;
     et.start();

@@ -102,7 +102,7 @@ namespace {
 
         const PeptideString &peptideString = peptideStringWithMods.removeUniModChars();
 
-        const int firstIndexToMutate = 1;
+        constexpr int firstIndexToMutate = 1;
         const int secondIndexToMutate = peptideString.size() - 2;
 
         const double nTermDeltaMass = diannMutateAminoAcidToMass.value(peptideString.at(firstIndexToMutate));
@@ -123,21 +123,21 @@ namespace {
 
                 if (ionLableInfo.second.contains("^2")) {
 
-                    if (ionLableInfo.first >= firstIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
                         ms2IonDecoy.mz += nTermDeltaMassCharge2;
                     }
 
-                    if (ionLableInfo.first >= secondIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
                         ms2IonDecoy.mz += cTermDeltaMassCharge2;
                     }
                 }
                 else {
 
-                    if (ionLableInfo.first >= firstIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
                         ms2IonDecoy.mz += nTermDeltaMass;
                     }
 
-                    if (ionLableInfo.first >= secondIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
                         ms2IonDecoy.mz += cTermDeltaMass;
                     }
                 }
@@ -147,21 +147,21 @@ namespace {
 
                 if (ionLableInfo.second.contains("^2")) {
 
-                    if (ionLableInfo.first >= firstIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
                         ms2IonDecoy.mz += cTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
 
-                    if (ionLableInfo.first >= secondIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= secondIndexToMutate) {
                         ms2IonDecoy.mz += nTermDeltaMassCharge2; //NOTE: do not static cast to float
                     }
                 }
                 else {
 
-                    if (ionLableInfo.first >= firstIndexToMutate) {
+                    if (ionLableInfo.first - 1  >= firstIndexToMutate) {
                         ms2IonDecoy.mz += cTermDeltaMass; //NOTE: do not static cast to float
                     }
 
-                    if (ionLableInfo.first >= secondIndexToMutate) {
+                    if (ionLableInfo.first - 1 >= secondIndexToMutate) {
                         ms2IonDecoy.mz += nTermDeltaMass; //NOTE: do not static cast to float
                     }
                 }
@@ -193,6 +193,10 @@ float TargetDecoyCandidatePair::mz(bool isDecoy) const {
         : BiophysicalCalcs::calculateThomsonFromMass(mass(), charge());
 }
 
+bool TargetDecoyCandidatePair::isDecoy() const {
+	return m_fragLibReaderRowPntr->isDecoy;
+}
+
 int TargetDecoyCandidatePair::charge() const {
     return m_fragLibReaderRowPntr->precursorCharge;
 }
@@ -215,6 +219,19 @@ int TargetDecoyCandidatePair::totalFragmentCount() const {
 
 void TargetDecoyCandidatePair::setPeptideStringWithMods(const PeptideStringWithMods &peptideStringWithMods) {
     m_peptideStringWithMods = peptideStringWithMods;
+}
+
+void TargetDecoyCandidatePair::mutateCandidatePeptideTargetTestAccess(
+	const PeptideStringWithMods &peptideStringWithMods,
+	const QVector<MS2Ion> &ms2IonTarget
+	) {
+
+	qDebug() << peptideStringWithMods.bSeries(1, AminoAcids());
+	qDebug() << peptideStringWithMods.ySeries(1, AminoAcids());
+
+	const QVector<MS2Ion> decoys = mutateCandidatePeptideTarget(peptideStringWithMods, ms2IonTarget);
+	qDebug() << ms2IonTarget;
+	qDebug() << decoys;
 }
 
 void TargetDecoyCandidatePair::mangleMs2IonsDecoy(QVector<MS2Ion> *ms2Ions) {

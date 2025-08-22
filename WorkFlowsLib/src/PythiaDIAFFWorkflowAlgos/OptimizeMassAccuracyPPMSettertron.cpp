@@ -289,6 +289,10 @@ Err OptimizeMassAccuracyPPMSettertron::optimizePPM() {
         res.fdrCount = fdrMean;
         results.push_back(res);
 
+    	if (fdrVsCounts.value(1) == 0) {
+    		continue;
+    	}
+
         if (res.fdrCount >= bestResultCount) {
             bestResultCount = res.fdrCount;
             countSinceLastHigh = 0;

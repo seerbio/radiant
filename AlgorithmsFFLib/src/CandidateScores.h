@@ -1548,7 +1548,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRow : public ParquetReaderIn
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
         row.proteinGroup = candidateScores->proteinGroup;
-        row.isDecoy = candidateScores->isDecoy;
+        row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
         row.scanTimeStart = candidateScores->scanTimeStart;
@@ -2029,7 +2029,7 @@ struct ALGORITHMSFFLIB_EXPORTS CandidateScoresReaderRowTrunc : public ParquetRea
         row.peptideStringWithModsDecoyOrigin = candidateScores->targetDecoyCandidatePair->peptideStringWithMods();
 
         row.proteinGroup = candidateScores->proteinGroup;
-        row.isDecoy = candidateScores->isDecoy;
+        row.isDecoy = candidateScores->targetDecoyCandidatePair->isDecoy() ? true : candidateScores->isDecoy;
         row.scanNumber = candidateScores->scanNumber;
         row.scanTime = candidateScores->scanTime;
         row.scanTimeStart = candidateScores->scanTimeStart;

@@ -117,8 +117,12 @@ Err CandidateScorertron::init(
     e = ErrorUtils::isTrue(pythiaParameters.isValid()); ree;
     e = ErrorUtils::isTrue(xicPeakManager->isValid()); ree;
     e = ErrorUtils::isTrue(msFrameMzTarget->isValid()); ree;
-    e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
-    e = ErrorUtils::isTrue(msFrameMS1->isValid()); ree;
+
+	if (turboXicMS1) {
+		e = ErrorUtils::isTrue(turboXicMS1->isInit()); ree;
+		e = ErrorUtils::isTrue(msFrameMS1->isValid()); ree;
+	}
+
     e = ErrorUtils::isNotEmpty(mzTargetKey); ree;
     e = ErrorUtils::isNotEmpty(features); ree;
     e = ErrorUtils::isNotEmpty(averagineTable); ree;
@@ -1977,12 +1981,14 @@ Err CandidateScorertron::setCandidateScores(
         candidateScores
         );ree
 
-    e = setMs1RelatedScores(
-        targetDecoyCandidatePair,
-        bestCorrelationResult,
-        static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
-        candidateScores
-        ); ree;
+	if (m_turboXicMS1) {
+		e = setMs1RelatedScores(
+			targetDecoyCandidatePair,
+			bestCorrelationResult,
+			static_cast<float>(m_pythiaParameters.ms1ExtractionWidthPPM),
+			candidateScores
+			); ree;
+	}
 
     e = setFoundMs2Ions(
         bestCorrelationResults,
