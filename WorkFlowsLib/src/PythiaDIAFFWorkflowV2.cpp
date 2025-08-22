@@ -53,12 +53,9 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 
 	MsReaderPointerAcc msReaderPointerAcc;
 	e = msReaderPointerAcc.openFile(msDataFileUri); ree;
-
-	e = buildMS1Frame(&msReaderPointerAcc); ree;
 	e = buildMzTargetKeyVsMsFramesMS2Pntrs(&msReaderPointerAcc); ree;
 
 	{
-
 		const QVector<FTR> featuresCalibration
 			= CandidateScoresFeatureManager::featuresCalibration();
 
@@ -73,6 +70,8 @@ Err PythiaDIAFFWorkflowV2::processFile(const QString &msDataFileUri) {
 			); ree;
 		e = msCalibratomaticSettertronV2.buildMsCalibratomatic(&m_msCalibratomatic); ree;
 	}
+
+	e = buildMS1Frame(&msReaderPointerAcc); ree;
 
 	ERR_RETURN
 }

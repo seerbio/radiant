@@ -372,7 +372,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreMS2Ions(
 		ERR_RETURN
 	}
 
-	e = smoothMS2IonArrays(); ree;
+	// e = smoothMS2IonArrays(); ree;
 	if (m_pythiaParameters.subtractShadows) {
 		e = subtractShadowsArrays(); ree;
 	}
@@ -937,6 +937,29 @@ namespace {
 
 		productVecApexes->erase(terminator, productVecApexes->end());
 	}
+
+	QPair<float, float> calcMedianAndStdDev (
+		float *ionCountVec,
+		int size
+		) {
+
+		QVector<float> ionCountsNoZeros;
+		ionCountsNoZeros.reserve(size);
+
+		for (int i = 0; i < size; i++) {
+			const float cnt = ionCountVec[i];
+			if (MathUtils::tZero(cnt)) {
+				continue;
+			}
+			ionCountsNoZeros.push_back(cnt);
+		}
+
+		return {
+			static_cast<float>(MathUtils::median(ionCountsNoZeros)),
+			static_cast<float>(MathUtils::stDev(ionCountsNoZeros))
+		};
+	}
+
 }//namespace
 Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 	const QVector<MS2Ion> &ms2IonsFull,
@@ -955,7 +978,12 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		m_xicSizeTargetMaxAlignas
 		);
 
-	constexpr float ionCountThreshold = 3.0f; //TODO experiment w/ this value
+	QPair<float, float> medianVsStDev = calcMedianAndStdDev(
+		m_ionCountVec,
+		m_xicSizeTargetMaxAlignas
+		);
+
+	const float ionCountThreshold = medianVsStDev.first * (2 * medianVsStDev.second);
 	filterApexesByIonCount(
 		m_ionCountVec,
 		ionCountThreshold,
@@ -983,6 +1011,20 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		m_xicSizeTargetMaxAlignas,
 		&peakIntegrationIndexesVsIntensityVsApex
 		); ree;
+
+	// using T = std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>;
+	// std::sort(
+	// 	peakIntegrationIndexesVsIntensityVsApex.rbegin(),
+	// 	peakIntegrationIndexesVsIntensityVsApex.rend(),
+	// 	[](const T &l, const T &r){return std::get<1>(l) < std::get<1>(r);}
+	// 	);
+	// constexpr int top10 = 10;
+	// peakIntegrationIndexesVsIntensityVsApex.resize(std::min(top10, peakIntegrationIndexesVsIntensityVsApex.size()));
+	// std::sort(
+	// 	peakIntegrationIndexesVsIntensityVsApex.begin(),
+	// 	peakIntegrationIndexesVsIntensityVsApex.end(),
+	// 	[](const T &l, const T &r){return std::get<2>(l) < std::get<2>(r);}
+	// 	);
 
 	CandidateScorertronV2Input input;
 	input.ms2IonsFull = ms2IonsFull;

@@ -173,17 +173,18 @@ Err CandidateScorertronV2::calculateScores(
 	e = ErrorUtils::isGreaterThanZero(m_peakLength); ree;
 
 	e = calculateRTCorrelationScoresMS2(candidateScoresV2); ree;
-	e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
-	e = calculateFragmentCorrelationScoresMS2(
-		input.pii,
-		input.ms2IonsFull,
-		candidateScoresV2
-		); ree;
+	// e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
+	// e = calculateFragmentCorrelationScoresMS2(
+	// 	input.pii,
+	// 	input.ms2IonsFull,
+	// 	candidateScoresV2
+	// 	); ree;
 
-	e = calculateRTCorrelationScoresMS1(
-		input,
-		candidateScoresV2
-		); ree;
+	// e = calculateRTCorrelationScoresMS1(
+	// 	input,
+	// 	candidateScoresV2
+	// 	); ree;
+
 
 
 	ERR_RETURN

@@ -36,7 +36,6 @@ Err MsCalibratomaticSettertronV2::init(
 	e = ErrorUtils::isNotEmpty(mzTargetKeyVsMsFramesMS2Pntrs); ree;
 	e = ErrorUtils::isTrue(tdcpManager->isInit()); ree;
 	e = ErrorUtils::isTrue(pythiaParameters->isValid()); ree;
-	e = ErrorUtils::isTrue(msFrameMS1->isInit()); ree;
 	e = ErrorUtils::isNotEmpty(featuresCalibration); ree;
 
 	m_tdcpManager = tdcpManager;
@@ -213,7 +212,7 @@ namespace {
 			msFrameV2MS1
 			); rree;
 
-		constexpr int skipCountTDCP = 5;
+		constexpr int skipCountTDCP = 1;
 		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
@@ -253,6 +252,8 @@ namespace {
 
 		ERR_INIT;
 
+		e = ErrorUtils::isNotEmpty(candidateScores); rree;
+
 		const bool isSorted = std::is_sorted(
 			candidateScores.rbegin(),
 			candidateScores.rend(),
@@ -272,6 +273,46 @@ namespace {
 		}
 
 		return {e, static_cast<float>(decoyCount) / static_cast<float>(topN)};
+	}
+
+	QPair<Err, int> simpleCountAtNFDR(
+		const QVector<CandidateScoresV2*> &candidateScores,
+		float fdrThreshold
+		) {
+
+		ERR_INIT;
+
+		e = ErrorUtils::isNotEmpty(candidateScores); rree;
+
+		const bool isSorted = std::is_sorted(
+			candidateScores.rbegin(),
+			candidateScores.rend(),
+			[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
+				return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
+			}
+			);
+
+		e = ErrorUtils::isTrue(isSorted); rree;
+
+		int decoyCount = 0;
+		int fdrCount = 0;
+		for (int i = 0; i < candidateScores.size(); ++i) {
+
+			const CandidateScoresV2 *cs = candidateScores[i];
+
+			if (cs->isDecoy) {
+				decoyCount++;
+			}
+
+			const float currentFDR = static_cast<float>(decoyCount) / static_cast<float>(i + 1);
+
+			if (currentFDR > fdrThreshold) {
+				fdrCount = i;
+				break;
+			}
+		}
+
+		return {e, fdrCount};
 	}
 
 }//namespace
@@ -338,6 +379,23 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		);
 	e = fdrTop1000.first; ree;
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "QVal for first" << topN << ":" << fdrTop1000.second;
+
+	const QPair<Err, int> fdr50PercentCountResult = simpleCountAtNFDR(
+		candidateScores,
+		0.4
+		);
+	e = fdr50PercentCountResult.first; ree;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Count at 50% FDR" << fdr50PercentCountResult.second;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
+	<< "Score at 50% FDR"
+	<< candidateScores[fdr50PercentCountResult.second]->featuresArray[FTR::CosineSimSumTop8];
+
+	const QPair<Err, int> fdr1PercentCountResult = simpleCountAtNFDR(
+		candidateScores,
+		0.01
+		);
+	e = fdr1PercentCountResult.first; ree;
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Count at 1% FDR" << fdr1PercentCountResult.second;
 
 	QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
 	e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
