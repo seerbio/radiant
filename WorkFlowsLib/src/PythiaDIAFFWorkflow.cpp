@@ -68,16 +68,16 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-// #define DEV_OVERRIDES
+#define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 100;
     // m_pythiaParameters.peakCenter = 4;
     // m_pythiaParameters.writePythiaDIA = false;
     m_pythiaParameters.reannotate = true;
-		m_pythiaParameters.baggingSize = 12;
-		m_pythiaParameters.epochs = 12;
-		m_pythiaParameters.nodesFraction = 0.5;
+		// m_pythiaParameters.baggingSize = 12;
+		// m_pythiaParameters.epochs = 12;
+		// m_pythiaParameters.nodesFraction = 0.5;
     // m_pythiaParameters.baggingSize = 4;
     // m_pythiaParameters.threadCount = 8;
     // m_pythiaParameters.shortReport = true;
@@ -778,37 +778,37 @@ namespace {
         file.close();
 #endif
 
-// #define TRAIN_NN_PARALLEL_YP
-#ifdef TRAIN_NN_PARALLEL_YP
-    	const auto loadLogicBinder = std::bind(
-			trainNeuralNetworkLogic,
-			std::placeholders::_1,
-			pythiaParameters,
-			batchSize
-			);
-
-    	QFuture<QPair<Err, FDRCLassifierNeuralNet>> future = QtConcurrent::mapped(
-    		trainingVecs,
-    		loadLogicBinder
-    		);
-    	future.waitForFinished();
-
-    	for (const QPair<Err, FDRCLassifierNeuralNet> &result : future) {
-    		e = result.first; ree;
-    		fdrcLassifierNeuralNets->push_back(result.second);
-    	}
-#else
-		for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
-			const QPair<Err, FDRCLassifierNeuralNet> result = trainNeuralNetworkLogic(
-				trainingVecs[i],
+		if (pythiaParameters.parallelNeuralNets) {
+			const auto loadLogicBinder = std::bind(
+				trainNeuralNetworkLogic,
+				std::placeholders::_1,
 				pythiaParameters,
 				batchSize
 				);
 
-			e = result.first; ree;
-			fdrcLassifierNeuralNets->push_back(result.second);
+			QFuture<QPair<Err, FDRCLassifierNeuralNet>> future = QtConcurrent::mapped(
+				trainingVecs,
+				loadLogicBinder
+				);
+			future.waitForFinished();
+
+			for (const QPair<Err, FDRCLassifierNeuralNet> &result : future) {
+				e = result.first; ree;
+				fdrcLassifierNeuralNets->push_back(result.second);
+			}
 		}
-#endif
+		else {
+			for (int i = 0; i < karnnNNTargetsNormTranched.size(); i++) {
+				const QPair<Err, FDRCLassifierNeuralNet> result = trainNeuralNetworkLogic(
+					trainingVecs[i],
+					pythiaParameters,
+					batchSize
+					);
+
+				e = result.first; ree;
+				fdrcLassifierNeuralNets->push_back(result.second);
+			}
+		}
 
         ERR_RETURN
     }
