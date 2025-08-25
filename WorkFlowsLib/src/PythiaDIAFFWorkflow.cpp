@@ -68,7 +68,7 @@ Err PythiaDIAFFWorkflow::init(
     m_pythiaParameters = pythiaParameters;
 
 /***** DEV OVERRIDES *****/
-#define DEV_OVERRIDES
+// #define DEV_OVERRIDES
 #ifdef DEV_OVERRIDES
     // m_pythiaParameters.useLazyLoading = true;
     // m_pythiaParameters.ms2ExtractionWidthPPMOverride = 100;
@@ -144,15 +144,21 @@ namespace {
 
         PythiaDIAFFWorkflowSharedMethods::sortCandidatePointersDiscScoreDesc(candidateScoresTargetsAndDecoys);
 
-        int counter = 0;
-        for (const CandidateScores *csp : *candidateScoresTargetsAndDecoys) {
-            counter++;
-            if (constexpr double fdrTrainingThreshold = 0.5; csp->qValue >= fdrTrainingThreshold && !csp->isDecoy) {
-                break;
-            }
-        }
+    	e = QValueSettertron::setQValueForCandidates(
+			QValueSettertron::QValueScoreType::DiscriminantScore,
+			candidateScoresTargetsAndDecoys
+			); ree;
 
-        candidateScoresTargetsAndDecoys->resize(counter);
+    	QMap<int, int> fdrVsCount;
+    	e = FDRCLassifierNeuralNet::outputFDRResults(
+			*candidateScoresTargetsAndDecoys,
+			true,
+			&fdrVsCount
+			); ree;
+
+    	constexpr int fdrTrainingThresholdInt = 50;
+
+        candidateScoresTargetsAndDecoys->resize(fdrVsCount.value(fdrTrainingThresholdInt));
 
         std::mt19937 rng(S_GLOBAL_SETTINGS.NUMBER_OF_THE_BEAST);
 
