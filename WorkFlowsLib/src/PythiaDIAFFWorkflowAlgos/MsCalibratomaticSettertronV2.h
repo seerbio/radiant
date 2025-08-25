@@ -8,6 +8,7 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "CandidateScoresFeatureManager.h"
+#include "CandidateScoresV2.h"
 #include "GlobalSettings.h"
 #include "Error.h"
 #include "MsCalibratomatic.h"
@@ -43,6 +44,8 @@ public:
 private:
 
 	Err buildMzTargetKeyVsTargetDecoyCandidatePairPntrs();
+
+	Err predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores);
 
 private:
 

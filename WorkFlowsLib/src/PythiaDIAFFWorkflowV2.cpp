@@ -31,6 +31,13 @@ Err PythiaDIAFFWorkflowV2::init(
 
 	m_pythiaParameters = pythiaParameters;
 
+// #define OVERRIDES
+#ifdef OVERRIDES
+	m_pythiaParameters.ms2ExtractionWidthPPM = 7;
+#endif
+
+	m_pythiaParameters.print();
+
 	e = FragLibReader::getFragLibReaderRows(
 		fragLibUri,
 		&m_fragLibReaderRows

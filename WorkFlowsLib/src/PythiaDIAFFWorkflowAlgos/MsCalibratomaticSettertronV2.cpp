@@ -225,7 +225,20 @@ namespace {
 				&scoresTargetVsDecoyPair
 				); rree;
 
+			if (!scoresTargetVsDecoyPair.first.targetDecoyCandidatePair) {
+				// std::cout << "No target found " << scoresTargetVsDecoyPair.first.targetDecoyCandidatePair  << std::endl;
+				continue;
+			}
+
+			if (!scoresTargetVsDecoyPair.second.targetDecoyCandidatePair) {
+				// std::cout << "No decoy found " << scoresTargetVsDecoyPair.second.targetDecoyCandidatePair  << std::endl;
+				scoresTargetVsDecoyPair.second.targetDecoyCandidatePair = pr.second;
+				scoresTargetVsDecoyPair.second.isDecoy = true;
+				scoresTargetVsDecoyPair.second.initFeaturesArray();
+			}
+
 			scoresTargetVsDecoyPairs.push_back(scoresTargetVsDecoyPair);
+
 		}
 
 		if (false) { //TODO add verbose variable to parallel processing logic to replace false;
@@ -408,9 +421,13 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 	e = m_msCalibratomatic->buildRTMapper(msCalibrationReaderRows); ree;
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTime StdDev Predicted:"<< m_msCalibratomatic->scanTimeStDev();
 
-	for (const CandidateScoresV2 *cs : candidateScores) {
-
+	for (CandidateScoresV2 *cs : candidateScores) {
+		if (!cs->targetDecoyCandidatePair) {
+			qDebug() << "DFJSLJFdls" << cs->targetDecoyCandidatePair;
+		}
 	}
+
+	e = predictScanTimesForCandidateScores(candidateScores); ree;
 
 
 	// int counter = 0;
@@ -454,3 +471,45 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 
 	ERR_RETURN
 }
+
+namespace {
+
+	Err predictScanTimesForCandidateScoresParallelLogic(
+		MsCalibratomatic *msCalibratomatic,
+		CandidateScoresV2 *cs
+		) {
+
+		ERR_INIT
+
+		e = msCalibratomatic->predictScanTime(
+			cs->targetDecoyCandidatePair->iRt(),
+			&cs->scanTimePredicted
+			);
+
+		ERR_RETURN
+	}
+
+}//namespace
+Err MsCalibratomaticSettertronV2::predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(candidateScores); ree;
+	e = ErrorUtils::isTrue(m_msCalibratomatic->isInitRT()); ree;
+
+	for (CandidateScoresV2 *cs : candidateScores) {
+		e = predictScanTimesForCandidateScoresParallelLogic(m_msCalibratomatic, cs); ree;
+	}
+
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimes prediction finished";
+
+	ERR_RETURN
+}
+
+
+
+
+
+
+
+
