@@ -77,6 +77,7 @@ namespace PythiaParameterReaderConstants {
     const QString kBaggingSize = QStringLiteral("baggingSize");
     const QString kLearningRate = QStringLiteral("learningRate");
     const QString kNodesFraction = QStringLiteral("nodesFraction");
+    const QString kParallelNeuralNets = QStringLiteral("parallelNeuralNets");
 
 }
 
@@ -176,6 +177,7 @@ Err PythiaParameterReader::buildPythiaParameters(
     pythiaParameters->baggingSize = neuralNetParamsNode[kBaggingSize.toStdString()].value_or(pythiaParameters->baggingSize);
     pythiaParameters->learningRate = neuralNetParamsNode[kLearningRate.toStdString()].value_or(pythiaParameters->learningRate);
     pythiaParameters->nodesFraction = neuralNetParamsNode[kNodesFraction.toStdString()].value_or(pythiaParameters->nodesFraction);
+    pythiaParameters->parallelNeuralNets = neuralNetParamsNode[kParallelNeuralNets.toStdString()].value_or(pythiaParameters->parallelNeuralNets);
 
     ERR_RETURN
 }

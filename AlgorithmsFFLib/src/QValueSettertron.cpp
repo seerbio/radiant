@@ -127,12 +127,9 @@ Err QValueSettertron::setQValueForCandidates(
             &identifierVsTargets,
             &identifierVsDecoys
             ); ree;
-    qDebug() << et.restart() << "SLDJFDSL 1";
 
     const QVector<QPair<PeptideSequenceChargeKey, double>> identifierVsTargetsScores
                                             = ParallelUtils::convertHashToVectorPairs(identifierVsTargets);
-
-    qDebug() << et.restart() << "SLDJFDSL 2";
 
     QHash<PeptideSequenceChargeKey, QPair<double, double>> identifierVsQValueVsDecoyRatio;
     e = MathUtils::calculateQValue(
@@ -141,14 +138,10 @@ Err QValueSettertron::setQValueForCandidates(
             &identifierVsQValueVsDecoyRatio
     ); ree;
 
-    qDebug() << et.restart() << "SLDJFDSL 3";
-
     e = setQValueAndDecoyRatioToTargetDecoyCandidatePairs(
             identifierVsQValueVsDecoyRatio,
             candidateScores
     ); ree;
-
-    qDebug() << et.restart() << "SLDJFDSL 4";
 
     ERR_RETURN
 }
