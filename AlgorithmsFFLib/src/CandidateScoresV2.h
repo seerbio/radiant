@@ -40,9 +40,13 @@ public:
 	ScanTime scanTimeEnd = -1.0;
 	ScanTime scanTimePredicted = -1.0;
 
+	float ionCountVectorMean = -1.0f;
+	float ionCountVectorStDev = -1.0f;
+
 	double classifierScore = -1.0;
 	double discriminantScore = -1.0;
 	double qValue = 1.0;
+	double decoyRatio = -1.0;
 
 	QVector<float> featuresArray;
 

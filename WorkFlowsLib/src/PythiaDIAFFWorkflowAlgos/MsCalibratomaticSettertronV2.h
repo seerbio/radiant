@@ -45,7 +45,7 @@ private:
 
 	Err buildMzTargetKeyVsTargetDecoyCandidatePairPntrs();
 
-	Err predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores);
+	Err predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores) const;
 
 private:
 

@@ -47,6 +47,7 @@ SET(SOURCE_FILES
 #        src/QuanFileBuilder.cpp
 #        src/QuanTransitionRefinertron.cpp
 #        src/QValueSettertron.cpp
+        src/QValueSettertronV2.cpp
 #        src/SequenceSubstringSearchomatic.cpp
 #        src/SpectrumCentricMzTargetFrameSearch.cpp
         src/TargetDecoyCandidatePair.cpp
@@ -88,6 +89,7 @@ SET(HEADER_FILES
 #        src/QuanFileBuilder.h
 #        src/QuanTransitionRefinertron.h
 #        src/QValueSettertron.h
+        src/QValueSettertronV2.h
 #        src/SequenceSubstringSearchomatic.h
 #        src/SpectrumCentricMzTargetFrameSearch.h
         src/TargetDecoyCandidatePair.h

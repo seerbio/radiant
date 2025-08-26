@@ -978,12 +978,12 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		m_xicSizeTargetMaxAlignas
 		);
 
-	QPair<float, float> medianVsStDev = calcMedianAndStdDev(
+	QPair<float, float> medianVsStDevIonCount = calcMedianAndStdDev(
 		m_ionCountVec,
 		m_xicSizeTargetMaxAlignas
 		);
 
-	const float ionCountThreshold = medianVsStDev.first * (2 * medianVsStDev.second);
+	const float ionCountThreshold = medianVsStDevIonCount.first * (2 * medianVsStDevIonCount.second);
 	filterApexesByIonCount(
 		m_ionCountVec,
 		ionCountThreshold,
@@ -1054,6 +1054,8 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 		candidateScores.frameIndex = std::get<2>(pii);
 		candidateScores.scanNumber = m_msFrameV2Current->getScanNumber(candidateScores.frameIndex);
 		candidateScores.scanTime = m_msFrameV2Current->getScanTimeFromFrameIndex(candidateScores.frameIndex);
+		candidateScores.ionCountVectorMean = medianVsStDevIonCount.first / static_cast<float>(m_ms2IonsCount);
+		candidateScores.ionCountVectorStDev = medianVsStDevIonCount.second  / static_cast<float>(m_ms2IonsCount);
 
 		e = m_candidateScoretronV2.scoreCandidate(
 			input,

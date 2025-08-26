@@ -19,7 +19,7 @@ CandidateScorertronV2::~CandidateScorertronV2() {
 	for (float* f : m_xicsAlignasIntensityIntegration) {
 		delete f;
 	}
-	for (float* f : m_xicsAlignasIntensityIntegrationTight1) {
+	for (float* f : m_xicsAlignasMzIntegration) {
 		delete f;
 	}
 	delete m_productVecIntegration;
@@ -38,7 +38,7 @@ Err CandidateScorertronV2::init(
 	m_features = featuresCalibration;
 	m_ms2IonsCount = ms2IonCount;
 	m_xicsAlignasIntensityIntegration.resize(m_ms2IonsCount);
-	m_xicsAlignasIntensityIntegrationTight1.resize(m_ms2IonsCount);
+	m_xicsAlignasMzIntegration.resize(m_ms2IonsCount);
 
 	m_integrationArraySizeMax
 		= AVXUtils::calculateNextAlignedBlockSize(100, AVXUtils::AVX2_ALIGNAS_SIZE);;
@@ -58,7 +58,7 @@ Err CandidateScorertronV2::init(
 			AVXUtils::AVX2_ALIGNAS_SIZE,
 			m_integrationArraySizeMax * sizeof(float))
 			);
-		m_xicsAlignasIntensityIntegrationTight1[i] = alignedIntensityIntegrationValsTight1;
+		m_xicsAlignasMzIntegration[i] = alignedIntensityIntegrationValsTight1;
 	}
 
 	auto* productIntegrationVec = static_cast<float*>(std::aligned_alloc(
@@ -110,7 +110,7 @@ void CandidateScorertronV2::zeroOutArrays() {
 	for (float *f : m_xicsAlignasIntensityIntegration) {
 		std::memset(f, 0, m_integrationArraySizeMax * sizeof(float));
 	}
-	for (float *f : m_xicsAlignasIntensityIntegrationTight1) {
+	for (float *f : m_xicsAlignasMzIntegration) {
 		std::memset(f, 0, m_integrationArraySizeMax * sizeof(float));
 	}
 	std::memset(m_productVecIntegration, 0, m_integrationArraySizeMax * sizeof(float));
@@ -147,7 +147,7 @@ Err CandidateScorertronV2::copyToPeakVecs(
 			);
 
 		std::memcpy(
-			m_xicsAlignasIntensityIntegrationTight1[i],
+			m_xicsAlignasMzIntegration[i],
 			xicsAlignasIntensityTight1[i] + pii.first,
 			m_peakLength * sizeof(float)
 			);
@@ -174,11 +174,13 @@ Err CandidateScorertronV2::calculateScores(
 
 	e = calculateRTCorrelationScoresMS2(candidateScoresV2); ree;
 	// e = calculateRTCorrelationScoresMS2Tight1(candidateScoresV2); ree;
-	// e = calculateFragmentCorrelationScoresMS2(
-	// 	input.pii,
-	// 	input.ms2IonsFull,
-	// 	candidateScoresV2
-	// 	); ree;
+	e = calculateFragmentCorrelationScoresMS2(
+		input.pii,
+		input.ms2IonsFull,
+		candidateScoresV2
+		); ree;
+
+	e = setIntensities(candidateScoresV2); ree;
 
 	// e = calculateRTCorrelationScoresMS1(
 	// 	input,
@@ -272,77 +274,131 @@ Err CandidateScorertronV2::calculateRTCorrelationScoresMS2(CandidateScoresV2 *ca
 	ERR_RETURN
 }
 
-Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores) {
+// Err CandidateScorertronV2::calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores) {
+// 	ERR_INIT
+//
+// 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+// 	std::memset(resultArr, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+//
+// 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArrUpper[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+// 	std::memset(resultArrUpper, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+//
+// 	float cosineSimSum = 0.0;
+// 	float CosineSimSumTop16 = 0.0;
+// 	float cosineSimSumGreaterThan80 = 0.0;
+//
+// 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
+// 		AVXUtils::cosineSimilarityIntraAVXParallel(
+// 			m_productVecIntegration,
+// 			m_xicsAlignasMzIntegration[8],
+// 			m_xicsAlignasMzIntegration[9],
+// 			m_xicsAlignasMzIntegration[10],
+// 			m_xicsAlignasMzIntegration[11],
+// 			m_xicsAlignasMzIntegration[12],
+// 			m_xicsAlignasMzIntegration[13],
+// 			m_xicsAlignasMzIntegration[14],
+// 			m_xicsAlignasMzIntegration[15],
+// 			m_peakLength,
+// 			resultArrUpper
+// 			);
+//
+// 		for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
+// 			const float cosineSimToAnchorI = resultArrUpper[i];
+// 			candScores->featuresArray[
+// 				FTR::CosineSimToAnchorTight1_1
+// 				+ i
+// 				+ AVXUtils::AVX2_FLOAT_REGISTER_SIZE
+// 				] = cosineSimToAnchorI;
+// 			CosineSimSumTop16 += cosineSimToAnchorI;
+// 			if (cosineSimToAnchorI > 0.8f) {
+// 				cosineSimSumGreaterThan80 += cosineSimToAnchorI;
+// 			}
+// 		}
+// 	}
+//
+// 	AVXUtils::cosineSimilarityIntraAVXParallel(
+// 		m_productVecIntegration,
+// 		m_xicsAlignasMzIntegration[0],
+// 		m_xicsAlignasMzIntegration[1],
+// 		m_xicsAlignasMzIntegration[2],
+// 		m_xicsAlignasMzIntegration[3],
+// 		m_xicsAlignasMzIntegration[4],
+// 		m_xicsAlignasMzIntegration[5],
+// 		m_xicsAlignasMzIntegration[6],
+// 		m_xicsAlignasMzIntegration[7],
+// 		m_peakLength,
+// 		resultArr
+// 		);
+//
+// 	for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
+// 		const float cosineSimToAnchorI = resultArr[i];
+// 		candScores->featuresArray[FTR::CosineSimToAnchorTight1_1 + i] = cosineSimToAnchorI;
+// 		cosineSimSum += cosineSimToAnchorI;
+// 		if (cosineSimToAnchorI > 0.8f) {
+// 			cosineSimSumGreaterThan80 += cosineSimToAnchorI;
+// 		}
+// 	}
+//
+// 	candScores->featuresArray[FTR::CosineSimSumTop8Tight1] = cosineSimSum;
+// 	candScores->featuresArray[FTR::CosineSimSumGreaterThan80Tight1] = cosineSimSumGreaterThan80;
+//
+// 	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
+// 		candScores->featuresArray[FTR::CosineSimSumTop16Tight1] = cosineSimSum + CosineSimSumTop16;
+// 	}
+//
+// 	ERR_RETURN
+// }
+
+Err CandidateScorertronV2::setIntensities(CandidateScoresV2 *candScores) {
+
 	ERR_INIT
 
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
-	std::memset(resultArr, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+	e = ErrorUtils::isGreaterThanZero(m_peakLength); ree;
 
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArrUpper[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
-	std::memset(resultArrUpper, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float intensitySums[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+	std::memset(intensitySums, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
 
-	float cosineSimSum = 0.0;
-	float CosineSimSumTop16 = 0.0;
-	float cosineSimSumGreaterThan80 = 0.0;
-
-	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		AVXUtils::cosineSimilarityIntraAVXParallel(
-			m_productVecIntegration,
-			m_xicsAlignasIntensityIntegrationTight1[8],
-			m_xicsAlignasIntensityIntegrationTight1[9],
-			m_xicsAlignasIntensityIntegrationTight1[10],
-			m_xicsAlignasIntensityIntegrationTight1[11],
-			m_xicsAlignasIntensityIntegrationTight1[12],
-			m_xicsAlignasIntensityIntegrationTight1[13],
-			m_xicsAlignasIntensityIntegrationTight1[14],
-			m_xicsAlignasIntensityIntegrationTight1[15],
-			m_peakLength,
-			resultArrUpper
-			);
-
-		for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
-			const float cosineSimToAnchorI = resultArrUpper[i];
-			candScores->featuresArray[
-				FTR::CosineSimToAnchorTight1_1
-				+ i
-				+ AVXUtils::AVX2_FLOAT_REGISTER_SIZE
-				] = cosineSimToAnchorI;
-			CosineSimSumTop16 += cosineSimToAnchorI;
-			if (cosineSimToAnchorI > 0.8f) {
-				cosineSimSumGreaterThan80 += cosineSimToAnchorI;
-			}
-		}
-	}
-
-	AVXUtils::cosineSimilarityIntraAVXParallel(
-		m_productVecIntegration,
-		m_xicsAlignasIntensityIntegrationTight1[0],
-		m_xicsAlignasIntensityIntegrationTight1[1],
-		m_xicsAlignasIntensityIntegrationTight1[2],
-		m_xicsAlignasIntensityIntegrationTight1[3],
-		m_xicsAlignasIntensityIntegrationTight1[4],
-		m_xicsAlignasIntensityIntegrationTight1[5],
-		m_xicsAlignasIntensityIntegrationTight1[6],
-		m_xicsAlignasIntensityIntegrationTight1[7],
+	e = AVXUtils::sumParallel(
 		m_peakLength,
-		resultArr
-		);
+		m_xicsAlignasIntensityIntegration[0],
+		m_xicsAlignasIntensityIntegration[1],
+		m_xicsAlignasIntensityIntegration[2],
+		m_xicsAlignasIntensityIntegration[3],
+		m_xicsAlignasIntensityIntegration[4],
+		m_xicsAlignasIntensityIntegration[5],
+		m_xicsAlignasIntensityIntegration[6],
+		m_xicsAlignasIntensityIntegration[7],
+		intensitySums
+		); ree;
 
 	for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
-		const float cosineSimToAnchorI = resultArr[i];
-		candScores->featuresArray[FTR::CosineSimToAnchorTight1_1 + i] = cosineSimToAnchorI;
-		cosineSimSum += cosineSimToAnchorI;
-		if (cosineSimToAnchorI > 0.8f) {
-			cosineSimSumGreaterThan80 += cosineSimToAnchorI;
+		candScores->featuresArray[FTR::Intensity1 + i] = intensitySums[i];
+	}
+
+	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
+		std::memset(intensitySums, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+		e = AVXUtils::sumParallel(
+			m_peakLength,
+			m_xicsAlignasIntensityIntegration[8],
+			m_xicsAlignasIntensityIntegration[9],
+			m_xicsAlignasIntensityIntegration[10],
+			m_xicsAlignasIntensityIntegration[11],
+			m_xicsAlignasIntensityIntegration[12],
+			m_xicsAlignasIntensityIntegration[13],
+			m_xicsAlignasIntensityIntegration[14],
+			m_xicsAlignasIntensityIntegration[15],
+			intensitySums
+			); ree;
+
+		for (int i = 0; i < AVXUtils::AVX2_FLOAT_REGISTER_SIZE; i++) {
+			candScores->featuresArray[FTR::Intensity1 + AVXUtils::AVX2_FLOAT_REGISTER_SIZE + i] = intensitySums[i];
 		}
 	}
 
-	candScores->featuresArray[FTR::CosineSimSumTop8Tight1] = cosineSimSum;
-	candScores->featuresArray[FTR::CosineSimSumGreaterThan80Tight1] = cosineSimSumGreaterThan80;
+	QVector<float> intensitySumsQ(AVXUtils::AVX2_FLOAT_REGISTER_SIZE, 0.0f);
+	std::memcpy(intensitySumsQ.data(), intensitySums, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
 
-	if (m_ms2IonsCount > S_GLOBAL_SETTINGS.MIN_MS2_IONS) {
-		candScores->featuresArray[FTR::CosineSimSumTop16Tight1] = cosineSimSum + CosineSimSumTop16;
-	}
+	candScores->featuresArray[FTR::IntensitySumNormalize] = std::accumulate(intensitySumsQ.begin(), intensitySumsQ.end(), 0.0f);
 
 	ERR_RETURN
 }
@@ -403,65 +459,65 @@ Err CandidateScorertronV2::calculateFragmentCorrelationScoresMS2(
 	ERR_RETURN
 }
 
-Err CandidateScorertronV2::calculateRTCorrelationScoresMS1(
-	const CandidateScorertronV2Input &input,
-	CandidateScoresV2 *candScores
-	) {
-
-	ERR_INIT
-
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
-	std::memset(resultArr, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
-
-	float* ms1MonoIntegrate = m_xicsAlignasIntensityIntegration[0];
-	std::memcpy(
-		ms1MonoIntegrate,
-		input.ms1MonoIsotopeVec + input.pii.first,
-		m_peakLength * sizeof(float)
-		);
-
-	float* ms1C13Integrate = m_xicsAlignasIntensityIntegration[1];
-	std::memcpy(
-		ms1C13Integrate,
-		input.ms1C13Vec + input.pii.first,
-		m_peakLength * sizeof(float)
-		);
-
-	float* ms1C132Integrate = m_xicsAlignasIntensityIntegration[2];
-	std::memcpy(
-		ms1C132Integrate,
-		input.ms1C132Vec + input.pii.first,
-		m_peakLength * sizeof(float)
-		);
-
-	float* ms1PreMonoShadowIntegrate = m_xicsAlignasIntensityIntegration[3];
-	std::memcpy(
-		ms1PreMonoShadowIntegrate,
-		input.ms1PreMonoShadowVec + input.pii.first,
-		m_peakLength * sizeof(float)
-		);
-
-	AVXUtils::cosineSimilarityIntraAVXParallel(
-		m_productVecIntegration,
-		ms1MonoIntegrate,
-		ms1C13Integrate,
-		ms1C132Integrate,
-		ms1PreMonoShadowIntegrate,
-		m_xicsAlignasIntensityIntegration[4],
-		m_xicsAlignasIntensityIntegration[5],
-		m_xicsAlignasIntensityIntegration[6],
-		m_xicsAlignasIntensityIntegration[7],
-		m_peakLength,
-		resultArr
-		);
-
-	candScores->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope] = resultArr[0];
-	candScores->featuresArray[FTR::CosineSimToAnchorMS1C13] = resultArr[1];
-	candScores->featuresArray[FTR::CosineSimToAnchorMS1C132] = resultArr[2];
-	candScores->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow] = resultArr[3];
-	candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadow] = resultArr[0] - resultArr[3];
-	candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
-					= std::abs(candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadow]);
-
-	ERR_RETURN
-}
+// Err CandidateScorertronV2::calculateRTCorrelationScoresMS1(
+// 	const CandidateScorertronV2Input &input,
+// 	CandidateScoresV2 *candScores
+// 	) {
+//
+// 	ERR_INIT
+//
+// 	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+// 	std::memset(resultArr, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+//
+// 	float* ms1MonoIntegrate = m_xicsAlignasIntensityIntegration[0];
+// 	std::memcpy(
+// 		ms1MonoIntegrate,
+// 		input.ms1MonoIsotopeVec + input.pii.first,
+// 		m_peakLength * sizeof(float)
+// 		);
+//
+// 	float* ms1C13Integrate = m_xicsAlignasIntensityIntegration[1];
+// 	std::memcpy(
+// 		ms1C13Integrate,
+// 		input.ms1C13Vec + input.pii.first,
+// 		m_peakLength * sizeof(float)
+// 		);
+//
+// 	float* ms1C132Integrate = m_xicsAlignasIntensityIntegration[2];
+// 	std::memcpy(
+// 		ms1C132Integrate,
+// 		input.ms1C132Vec + input.pii.first,
+// 		m_peakLength * sizeof(float)
+// 		);
+//
+// 	float* ms1PreMonoShadowIntegrate = m_xicsAlignasIntensityIntegration[3];
+// 	std::memcpy(
+// 		ms1PreMonoShadowIntegrate,
+// 		input.ms1PreMonoShadowVec + input.pii.first,
+// 		m_peakLength * sizeof(float)
+// 		);
+//
+// 	AVXUtils::cosineSimilarityIntraAVXParallel(
+// 		m_productVecIntegration,
+// 		ms1MonoIntegrate,
+// 		ms1C13Integrate,
+// 		ms1C132Integrate,
+// 		ms1PreMonoShadowIntegrate,
+// 		m_xicsAlignasIntensityIntegration[4],
+// 		m_xicsAlignasIntensityIntegration[5],
+// 		m_xicsAlignasIntensityIntegration[6],
+// 		m_xicsAlignasIntensityIntegration[7],
+// 		m_peakLength,
+// 		resultArr
+// 		);
+//
+// 	candScores->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope] = resultArr[0];
+// 	candScores->featuresArray[FTR::CosineSimToAnchorMS1C13] = resultArr[1];
+// 	candScores->featuresArray[FTR::CosineSimToAnchorMS1C132] = resultArr[2];
+// 	candScores->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow] = resultArr[3];
+// 	candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadow] = resultArr[0] - resultArr[3];
+// 	candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
+// 					= std::abs(candScores->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadow]);
+//
+// 	ERR_RETURN
+// }

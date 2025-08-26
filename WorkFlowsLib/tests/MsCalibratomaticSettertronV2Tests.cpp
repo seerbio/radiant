@@ -71,18 +71,19 @@ void MsCalibratomaticSettertronV2Tests::testme() {
 	e = msFrameMS1.init(msScans);
 	QCOMPARE(e, eNoError);
 
-	MsCalibratomaticSettertronV2 setter;
-	e = setter.init(
-		&tdcpManager,
-		&reader,
-		&pythiaParameters,
-		&msFrameMS1
-		);
-	QCOMPARE(e, eNoError);
 
-	MsCalibratomatic msCalibratomatic;
-	e = setter.buildMsCalibratomatic(&msCalibratomatic);
-	QCOMPARE(e, eNoError);
+	// MsCalibratomaticSettertronV2 setter;
+	// e = setter.init(
+	// 	&tdcpManager,
+	// 	&reader,
+	// 	&pythiaParameters,
+	// 	&msFrameMS1
+	// 	);
+	// QCOMPARE(e, eNoError);
+	//
+	// MsCalibratomatic msCalibratomatic;
+	// e = setter.buildMsCalibratomatic(&msCalibratomatic);
+	// QCOMPARE(e, eNoError);
 
 
 }

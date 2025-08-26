@@ -6,9 +6,11 @@
 
 	QVector<FTR> CandidateScoresFeatureManager::featuresCalibration() {
 		const QVector<FTR> baseFeatures = {
-			CosineSimSumGreaterThan80,
+			CosineSimSumMeanCorrelation,
+			CosineSimSumStDevCorrelation,
 			CosineSimSpectrumOverTimeCubed,
 			CosineSimSpectrumOverTimeStDev,
+			ScanTimeRelativeDeltaAbs,
 			// CosineSimMS1,
 			// CosineSimSpectrumCubed,
 			// TopBottomRatio,

@@ -111,6 +111,10 @@ float MsFrameV2::mzMax() const {
 	return (*it)->mzMax;
 }
 
+float MsFrameV2::scanTimeMax() const {
+	return m_scanTimes.back();
+}
+
 ScanNumber MsFrameV2::getScanNumber(FrameIndex frameIndex) const {
 	return m_scanNumbers[frameIndex];
 }

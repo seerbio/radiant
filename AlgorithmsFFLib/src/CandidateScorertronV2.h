@@ -65,7 +65,9 @@ private:
 
 	Err calculateRTCorrelationScoresMS2(CandidateScoresV2 *candScores);
 
-	Err calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
+	// Err calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
+
+	Err setIntensities(CandidateScoresV2 *candScores);
 
 	Err calculateFragmentCorrelationScoresMS2(
 		const PeakIntegrationIndexes &pii,
@@ -73,10 +75,10 @@ private:
 		CandidateScoresV2 *candScores
 		);
 
-	Err calculateRTCorrelationScoresMS1(
-		const CandidateScorertronV2Input &input,
-		CandidateScoresV2 *candScores
-		);
+	// Err calculateRTCorrelationScoresMS1(
+	// 	const CandidateScorertronV2Input &input,
+	// 	CandidateScoresV2 *candScores
+	// 	);
 
 private:
 
@@ -85,7 +87,7 @@ private:
 
 	int m_peakLength;
 	QVector<float*> m_xicsAlignasIntensityIntegration;
-	QVector<float*> m_xicsAlignasIntensityIntegrationTight1;
+	QVector<float*> m_xicsAlignasMzIntegration;
 	float* m_productVecIntegration;
 
 	QVector<FTR> m_features;

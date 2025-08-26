@@ -87,6 +87,19 @@ public:
 		float *masterVectorApexes
 		);
 
+	static Err sumParallel (
+		size_t maxVecSize,
+		float* v0,
+		float* v1,
+		float* v2,
+		float* v3,
+		float* v4,
+		float* v5,
+		float* v6,
+		float* v7,
+		float *sums
+		);
+
 	static Err findPeaksEightVecs (
 		size_t maxVecSize,
 		float* v0,

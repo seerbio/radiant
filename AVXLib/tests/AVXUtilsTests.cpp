@@ -31,6 +31,7 @@ private slots:
 	static void findApexesEightVecsTest();
 	static void log256Test();
 	static void cosineSimilarityAVXParallelTest();
+	static void sumParallelTest();
 };
 
 
@@ -610,6 +611,25 @@ void AVXUtilsTests::cosineSimilarityAVXParallelTest() {
 		);
 
 	QVERIFY(MathUtils::tSame(resultArr[0], 0.408248f));
+}
+
+void AVXUtilsTests::sumParallelTest() {
+
+	ERR_INIT
+
+	float a[4] = {1, 1, 1, 1};
+	float b[4] = {2, 2, 2, 2};
+	float z[4] = {0, 0, 0, 0};
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[8];
+	e = AVXUtils::sumParallel(
+		4,
+		a, b, z, z,z,z,z,z, resultArr
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(resultArr[0]), 4);
+	QCOMPARE(static_cast<int>(resultArr[1]), 8);
+
 }
 
 QTEST_MAIN(AVXUtilsTests)

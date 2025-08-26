@@ -68,7 +68,7 @@ void PeakIntegratomaticTests::simpleIntegratorTest() {
 	e = peakIntegratomatic.init(params);
 	QCOMPARE(e, eNoError);
 
-	QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+	QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> peakIntegrationIndexesVsIntensity;
 	e = peakIntegratomatic.simpleIntegrator(
 		apexes,
 		signal.data(),
@@ -78,8 +78,8 @@ void PeakIntegratomaticTests::simpleIntegratorTest() {
 	qDebug() << signal.size() << "LSDFJDSL";
 	QCOMPARE(e, eNoError);
 
-	for (const QPair<PeakIntegrationIndexes, float> &r : peakIntegrationIndexesVsIntensity) {
-		std::cout << "(" << r.first.first << "," << r.first.second << ")," << std::endl;
+	for (const std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex> &r : peakIntegrationIndexesVsIntensity) {
+		std::cout << "(" << std::get<0>(r).first << "," << std::get<0>(r).second << ")," << std::endl;
 	}
 
 }
@@ -117,7 +117,7 @@ void PeakIntegratomaticTests::simpleIntegratorTest2() {
 	e = peakIntegratomatic.init(params);
 	QCOMPARE(e, eNoError);
 
-	QVector<QPair<PeakIntegrationIndexes, float>> peakIntegrationIndexesVsIntensity;
+	QVector<std::tuple<PeakIntegrationIndexes, Intensity, FrameIndex>> peakIntegrationIndexesVsIntensity;
 	e = peakIntegratomatic.simpleIntegrator(
 		apexes,
 		signal.data(),

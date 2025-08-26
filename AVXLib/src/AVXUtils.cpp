@@ -411,6 +411,37 @@ Err AVXUtils::findApexesEightVecs(
 	ERR_RETURN
 }
 
+Err AVXUtils::sumParallel(
+	size_t maxVecSize,
+	float *v0,
+	float *v1,
+	float *v2,
+	float *v3,
+	float *v4,
+	float *v5,
+	float *v6,
+	float *v7,
+	float *sums
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(maxVecSize); ree;
+
+	__m256 runningSum = _mm256_setzero_ps();
+
+	for (int i = 0; i < maxVecSize; i++) {
+		const __m256 iRow = _mm256_set_ps(
+			v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]
+			);
+		runningSum = _mm256_add_ps(runningSum, iRow);
+	}
+
+	_mm256_store_ps(sums, runningSum);
+
+	ERR_RETURN
+}
+
 Err AVXUtils::findPeaksEightVecs(
 	size_t maxVecSize,
 	float *v0,

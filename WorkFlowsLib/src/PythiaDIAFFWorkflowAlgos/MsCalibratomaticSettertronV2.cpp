@@ -7,6 +7,7 @@
 #include "ErrorUtils.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderPointerAcc.h"
+#include "QValueSettertronV2.h"
 #include "TargetDecoyCandidatePairManager.h"
 #include "TargetDecoyCandidatePairScoretronV2.h"
 
@@ -180,6 +181,7 @@ namespace {
 		const QMap<MzTargetKey, MsFrameV2*> &mzTargetKeyVsMsFramesMS2Pntrs,
 		const QVector<FTR> &featuresCalibration,
 		const PythiaParameters &pythiaParameters,
+		int skipCount,
 		MsFrameV2 *msFrameV2MS1
 		) {
 
@@ -212,11 +214,10 @@ namespace {
 			msFrameV2MS1
 			); rree;
 
-		constexpr int skipCountTDCP = 1;
 		int counter = 0;
 		for (const QPair<MzTargetKey, TargetDecoyCandidatePair*> &pr : mzTargetKeyVsTargetDecoyCandidatePairPntrsSorted) {
 
-			if (counter++ % skipCountTDCP != 0) {
+			if (counter++ % skipCount != 0) {
 				continue;
 			}
 			QPair<CandidateScoresV2Target, CandidateScoresV2Decoy> scoresTargetVsDecoyPair;
@@ -258,75 +259,76 @@ namespace {
 		return {e, scoresTargetVsDecoyPairs};
 	}
 
-	QPair<Err, float> simpleFDRCalcForTopN(
+	Err countScoreCandidatesByFDR(
 		const QVector<CandidateScoresV2*> &candidateScores,
-		int topN
-		) {
+		double qValueThreshold,
+		int *targetCountBelowFDRThreshold
+) {
 
-		ERR_INIT;
+		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(candidateScores); rree;
+		e = ErrorUtils::isNotEmpty(candidateScores); ree;
+		e = ErrorUtils::isTrue(qValueThreshold > 0.0); ree;
 
-		const bool isSorted = std::is_sorted(
-			candidateScores.rbegin(),
-			candidateScores.rend(),
-			[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
-				return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
-			}
-			);
+		const auto countLogic = [qValueThreshold](const CandidateScoresV2 *cs){
+			return cs->qValue < qValueThreshold;
+		};
 
-		e = ErrorUtils::isTrue(isSorted); rree;
+		*targetCountBelowFDRThreshold
+				= static_cast<int>(std::count_if(candidateScores.begin(), candidateScores.end(), countLogic));
 
-		int decoyCount = 0;
-		for (int i = 0; i < topN; ++i) {
-			const CandidateScoresV2 *cs = candidateScores.at(i);
-			if (cs->isDecoy) {
-				++decoyCount;
-			}
-		}
-
-		return {e, static_cast<float>(decoyCount) / static_cast<float>(topN)};
+		ERR_RETURN
 	}
 
-	QPair<Err, int> simpleCountAtNFDR(
-		const QVector<CandidateScoresV2*> &candidateScores,
-		float fdrThreshold
+	Err outPutFDRCounts(
+		const QMap<int, int> &fdrVsCount,
+		QString *outputString
 		) {
 
-		ERR_INIT;
+		ERR_INIT
+		e = ErrorUtils::isNotEmpty(fdrVsCount); ree;
 
-		e = ErrorUtils::isNotEmpty(candidateScores); rree;
-
-		const bool isSorted = std::is_sorted(
-			candidateScores.rbegin(),
-			candidateScores.rend(),
-			[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
-				return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
-			}
-			);
-
-		e = ErrorUtils::isTrue(isSorted); rree;
-
-		int decoyCount = 0;
-		int fdrCount = 0;
-		for (int i = 0; i < candidateScores.size(); ++i) {
-
-			const CandidateScoresV2 *cs = candidateScores[i];
-
-			if (cs->isDecoy) {
-				decoyCount++;
-			}
-
-			const float currentFDR = static_cast<float>(decoyCount) / static_cast<float>(i + 1);
-
-			if (currentFDR > fdrThreshold) {
-				fdrCount = i;
-				break;
-			}
+		QStringList builder;
+		for (auto it = fdrVsCount.begin(); it != fdrVsCount.end(); ++it) {
+			const QString &k = QString::number(it.key());
+			builder.push_back(k + "%: " + QString::number(it.value()));
 		}
 
-		return {e, fdrCount};
+		*outputString = builder.join(" | ");
+
+		ERR_RETURN
 	}
+
+	Err outputFDRResults(
+		QVector<CandidateScoresV2*> &candidateScores,
+		int verbose,
+		QMap<int, int> *fdrVsCount
+		) {
+
+		ERR_INIT
+
+		const QVector<double> fdrFractions = {0.5, 0.2, 0.1, 0.05, 0.02, 0.01};
+		for (double fdrThresh : fdrFractions) {
+			int foundAtThreshold;
+			e = countScoreCandidatesByFDR(
+					candidateScores,
+					fdrThresh,
+					&foundAtThreshold
+			); ree;
+			const int fdrPercent = static_cast<int>(fdrThresh * 100);
+			fdrVsCount->insert(fdrPercent, foundAtThreshold);
+		}
+
+		QString outputString;
+		e = outPutFDRCounts(*fdrVsCount, &outputString); ree;
+
+		if (verbose > -1) {
+			qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs found:" << qPrintable(outputString);
+		}
+
+		ERR_RETURN
+	}
+
 
 }//namespace
 Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic) {
@@ -347,125 +349,89 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 		); ree;
 
 	QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>> scoresTargetVsTargetDecoyPairs;
+	QVector<CandidateScoresV2*> candidateScores;
+
+	const QVector<int> skipCounts = {4,2,1};
+	for (int skipCount : skipCounts) {
+
+		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Calibration skip count:" << skipCount;
 
 #define CALIBRATION_PARALLEL_TDCP
 #ifdef CALIBRATION_PARALLEL_TDCP
-	const auto binderLogic = std::bind(
-		parallelProcessingLogic,
-		std::placeholders::_1,
-		m_mzTargetKeyVsMsFramesMS2Pntrs,
-		m_featuresCalibration,
-		*m_pythiaParameters,
-		m_msFrameMS1
-		);
-
-	QFuture<QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>>> futures = QtConcurrent::mapped(
-		mzTargetDecoyCandidatePairsPntrsTranched,
-		binderLogic
-		);
-	futures.waitForFinished();
-
-	for (const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> &pr : futures) {
-		e = pr.first; ree;
-		scoresTargetVsTargetDecoyPairs.append(pr.second);
-	}
-
-	using T = QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>;
-
-	QVector<CandidateScoresV2*> candidateScores;
-	for (T &pr : scoresTargetVsTargetDecoyPairs) {
-		candidateScores.push_back(&pr.first);
-		candidateScores.push_back(&pr.second);
-	};
-
-	std::sort(
-		candidateScores.rbegin(),
-		candidateScores.rend(),
-		[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
-			return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
-		});
-
-	constexpr int topN = 1000;
-	const QPair<Err, float> fdrTop1000 = simpleFDRCalcForTopN(
-		candidateScores,
-		topN
-		);
-	e = fdrTop1000.first; ree;
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "QVal for first" << topN << ":" << fdrTop1000.second;
-
-	const QPair<Err, int> fdr50PercentCountResult = simpleCountAtNFDR(
-		candidateScores,
-		0.4
-		);
-	e = fdr50PercentCountResult.first; ree;
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Count at 50% FDR" << fdr50PercentCountResult.second;
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed())
-	<< "Score at 50% FDR"
-	<< candidateScores[fdr50PercentCountResult.second]->featuresArray[FTR::CosineSimSumTop8];
-
-	const QPair<Err, int> fdr1PercentCountResult = simpleCountAtNFDR(
-		candidateScores,
-		0.01
-		);
-	e = fdr1PercentCountResult.first; ree;
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Count at 1% FDR" << fdr1PercentCountResult.second;
-
-	QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
-	e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
-			MSLevelEnum::MS2,
-			candidateScores.mid(0, topN),
-			m_pythiaParameters->verbosity,
-			&msCalibrationReaderRows
-			); ree;
-
-	e = m_msCalibratomatic->buildRTMapper(msCalibrationReaderRows); ree;
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTime StdDev Predicted:"<< m_msCalibratomatic->scanTimeStDev();
-
-	for (CandidateScoresV2 *cs : candidateScores) {
-		if (!cs->targetDecoyCandidatePair) {
-			qDebug() << "DFJSLJFdls" << cs->targetDecoyCandidatePair;
-		}
-	}
-
-	e = predictScanTimesForCandidateScores(candidateScores); ree;
-
-
-	// int counter = 0;
-	// int decoys = 0;
-	// for (const CandidateScoresV2 *cs : candidateScores) {
-	// 	counter++;
-	// 	if (cs->isDecoy) {
-	// 		decoys++;
-	// 	}
-	//
-	// 	if (!cs->isDecoy) {
-	// 		continue;
-	// 	}
-	// 	qDebug()
-	// 	<< counter
-	// 	<< decoys / static_cast<float>(counter)
-	// 	<< cs->isDecoy
-	// 	<< cs->featuresArray[FTR::CosineSimSumTop8]
-	// 	<< cs->featuresArray[FTR::CosineSimSumMeanCorrelation]
-	// 	<< cs->featuresArray[FTR::CosineSimSumTop8Tight1]
-	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1MonoIsotope]
-	// 	<< cs->featuresArray[FTR::CosineSimToAnchorMS1PreMonoShadow]
-	// 	<< cs->featuresArray[FTR::CosineSimSumDiffMonoVsPreMonoShadowAbs]
-	// 	;
-	// }
-
-#else
-	for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
-		const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> result = parallelProcessingLogic(
-			pr,
+		const auto binderLogic = std::bind(
+			parallelProcessingLogic,
+			std::placeholders::_1,
 			m_mzTargetKeyVsMsFramesMS2Pntrs,
 			m_featuresCalibration,
 			*m_pythiaParameters,
+			skipCount,
 			m_msFrameMS1
 			);
-		e = result.first; ree;
-	}
+
+		QFuture<QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>>> futures = QtConcurrent::mapped(
+			mzTargetDecoyCandidatePairsPntrsTranched,
+			binderLogic
+			);
+		futures.waitForFinished();
+
+		for (const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> &pr : futures) {
+			e = pr.first; ree;
+			scoresTargetVsTargetDecoyPairs.append(pr.second);
+		}
+
+		using T = QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>;
+
+		for (T &pr : scoresTargetVsTargetDecoyPairs) {
+			candidateScores.push_back(&pr.first);
+			candidateScores.push_back(&pr.second);
+		};
+
+		std::sort(
+			candidateScores.rbegin(),
+			candidateScores.rend(),
+			[](const CandidateScoresV2 *l, const CandidateScoresV2 *r) {
+				return l->featuresArray[FTR::CosineSimSumMeanCorrelation] < r->featuresArray[FTR::CosineSimSumMeanCorrelation];
+			});
+
+		e = QValueSettertronV2::setQValueForCandidates(
+			QValueSettertronV2::QValueScoreTypeV2::CosineSimSumMeanCorrelation,
+			&candidateScores
+			); ree;
+
+		QMap<int, int> fdrVsCounts;
+		e = outputFDRResults(
+		    candidateScores,
+		    m_pythiaParameters->verbosity,
+		    &fdrVsCounts
+		    ); ree;
+
+		constexpr int rtTrainingVolume = 1000;
+		if (constexpr int fdrPercent = 1; fdrVsCounts.value(fdrPercent) < rtTrainingVolume) {
+			continue;
+		}
+
+		e = predictScanTimesForCandidateScores(candidateScores); ree;
+		break;
+
+#else
+		for (const QVector<QPair<MzTargetKey, TargetDecoyCandidatePair*>> &pr : mzTargetDecoyCandidatePairsPntrsTranched) {
+			const QPair<Err, QVector<QPair<CandidateScoresV2Target, CandidateScoresV2Decoy>>> result = parallelProcessingLogic(
+				pr,
+				m_mzTargetKeyVsMsFramesMS2Pntrs,
+				m_featuresCalibration,
+				*m_pythiaParameters,
+				skipCount,
+				m_msFrameMS1
+				);
+			e = result.first; ree;
+		}
 #endif
+	}//end loop
+
+	for (const CandidateScoresV2 *cs : candidateScores) {
+		qDebug() << "SDLFKJDSL" << cs->featuresArray;
+	}
+
 
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished building Calibration";
 
@@ -489,16 +455,59 @@ namespace {
 		ERR_RETURN
 	}
 
-}//namespace
-Err MsCalibratomaticSettertronV2::predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores) {
+	Err buildRTCurves(
+		const QVector<CandidateScoresV2*> &candidateScores,
+		const PythiaParameters *pythiaParameters,
+		int topN,
+		MsCalibratomatic *msCalibratomatic
+		) {
 
+		ERR_INIT
+
+		QVector<MsCalibarationReaderRow> msCalibrationReaderRows;
+		e = PythiaDIAFFWorkflowSharedMethods::buildMsCalibrationReaderRows(
+				MSLevelEnum::MS2,
+				candidateScores.mid(0, topN),
+				pythiaParameters->verbosity,
+				&msCalibrationReaderRows
+				); ree;
+
+		e = msCalibratomatic->buildRTMapper(msCalibrationReaderRows); ree;
+		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTime StdDev Predicted:"<< msCalibratomatic->scanTimeStDev();
+
+		for (CandidateScoresV2 *cs : candidateScores) {
+			if (!cs->targetDecoyCandidatePair) {
+				qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Null targetDecoyCandidatePair:" << cs->targetDecoyCandidatePair;
+			}
+		}
+
+		ERR_RETURN
+	}
+
+}//namespace
+Err MsCalibratomaticSettertronV2::predictScanTimesForCandidateScores(const QVector<CandidateScoresV2*> &candidateScores) const {
+//TODO move this to a place were everyone can use it.
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(candidateScores); ree;
+
+	constexpr int topN = 1000;
+	e = buildRTCurves(
+		candidateScores,
+		m_pythiaParameters,
+		topN,
+		m_msCalibratomatic
+		); ree;
+
 	e = ErrorUtils::isTrue(m_msCalibratomatic->isInitRT()); ree;
+
+	const float scanTimeMax = m_mzTargetKeyVsMsFramesMS2Pntrs.last()->scanTimeMax();
 
 	for (CandidateScoresV2 *cs : candidateScores) {
 		e = predictScanTimesForCandidateScoresParallelLogic(m_msCalibratomatic, cs); ree;
+		cs->featuresArray[FTR::ScanTimeRelative] = cs->scanTime / scanTimeMax;
+		cs->featuresArray[FTR::ScanTimeRelativeDelta] = (cs->scanTime - cs->scanTimePredicted) / scanTimeMax;
+		cs->featuresArray[FTR::ScanTimeRelativeDeltaAbs] = std::abs(cs->scanTime - cs->scanTimePredicted) / scanTimeMax;
 	}
 
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "ScanTimes prediction finished";
