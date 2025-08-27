@@ -414,11 +414,12 @@ Err CandidateScorertronV2::setMzValsPPM(
 	e = ErrorUtils::isNotEmpty(ms2IonsFull); ree;
 	e = ErrorUtils::isGreaterThanZero(m_peakLength); ree;
 
-	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float mzSums[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
-	std::memset(mzSums, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float mzMeans[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+	std::memset(mzMeans, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
 
-	e = AVXUtils::sumParallel(
+	e = AVXUtils::meanParallel(
 		m_peakLength,
+		true,
 		m_xicsAlignasMzIntegration[0],
 		m_xicsAlignasMzIntegration[1],
 		m_xicsAlignasMzIntegration[2],
@@ -427,22 +428,37 @@ Err CandidateScorertronV2::setMzValsPPM(
 		m_xicsAlignasMzIntegration[5],
 		m_xicsAlignasMzIntegration[6],
 		m_xicsAlignasMzIntegration[7],
-		mzSums
+		mzMeans
+		); ree;
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float stDevs[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+	std::memset(stDevs, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+
+	e = AVXUtils::stDevParallel(
+		m_peakLength,
+		true,
+		mzMeans,
+		m_xicsAlignasMzIntegration[0],
+		m_xicsAlignasMzIntegration[1],
+		m_xicsAlignasMzIntegration[2],
+		m_xicsAlignasMzIntegration[3],
+		m_xicsAlignasMzIntegration[4],
+		m_xicsAlignasMzIntegration[5],
+		m_xicsAlignasMzIntegration[6],
+		m_xicsAlignasMzIntegration[7],
+		stDevs
 		); ree;
 
 	const int size = std::min(static_cast<int>(AVXUtils::AVX2_FLOAT_REGISTER_SIZE), ms2IonsFull.size());
 	for (int i = 0; i < size; i++) {
-		qDebug() << ms2IonsFull[i].mz << m_xicsAlignasMzIntegration[i][0] << m_xicsAlignasMzIntegration[i][m_peakLength];
+		const float mzSearched = ms2IonsFull[i].mz;
+		const float mzFoundMean = mzMeans[i];
+		const float ppm = 1.0e6f * (mzFoundMean - mzSearched) / mzSearched;
+		candScores->featuresArray[FTR::mzPPM1 + i] = ppm;
+		candScores->featuresArray[FTR::mzAbsPPM1 + i] = std::abs(ppm);
+		candScores->featuresArray[FTR::mzAbsLog10PPM1 + i] = std::log10(std::abs(ppm));
+		candScores->featuresArray[FTR::mzPPMStDev1 + i] = stDevs[i];
 	}
-
-
-	// for (int i = 0; i < size; i++) {
-	// 	const float mzSearched = ms2IonsFull[i].mz;
-	// 	const float mzFoundMean = mzSums[i] / size;
-	// 	const float ppm = 1.0e6f * (mzFoundMean - mzSearched) / mzSearched;
-	// 	candScores->featuresArray[FTR::mzPPM1 + i] = ppm;
-	// }
-
 
 	ERR_RETURN
 }

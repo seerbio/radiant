@@ -32,6 +32,8 @@ private slots:
 	static void log256Test();
 	static void cosineSimilarityAVXParallelTest();
 	static void sumParallelTest();
+	static void meanParallelTest();
+	static void stDevParallelTest();
 };
 
 
@@ -629,6 +631,95 @@ void AVXUtilsTests::sumParallelTest() {
 	QCOMPARE(e, eNoError);
 	QCOMPARE(static_cast<int>(resultArr[0]), 4);
 	QCOMPARE(static_cast<int>(resultArr[1]), 8);
+
+}
+
+void AVXUtilsTests::meanParallelTest() {
+
+	ERR_INIT
+
+	float a[4] = {1, 0, 1, 1};
+	float b[4] = {2, 2, 2, 2};
+	float z[4] = {0, 0, 0, 0};
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float resultArr[8];
+	e = AVXUtils::meanParallel(
+		4,
+		true,
+		a, b, z, z,z,z,z,z, resultArr
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(resultArr[0]), 1);
+	QCOMPARE(static_cast<int>(resultArr[1]), 2);
+
+	std::memset(resultArr, 0, sizeof(resultArr));
+	e = AVXUtils::meanParallel(
+		4,
+		false,
+		a, b, z, z,z,z,z,z, resultArr
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(resultArr[0] * 100), static_cast<int>(0.75 * 100));
+	QCOMPARE(static_cast<int>(resultArr[1]), 2);
+}
+
+void AVXUtilsTests::stDevParallelTest() {
+
+	ERR_INIT
+
+	float a[4] = {1, 0, 1, 1};
+	float b[4] = {2, 2, 2, 2};
+	float z[4] = {0, 0, 0, 0};
+	float m[4] = {1, 2, 1, 2};
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float means[8];
+	e = AVXUtils::meanParallel(
+		4,
+		true,
+		a, b, z, m,z,z,z,z, means
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(means[0]), 1);
+	QCOMPARE(static_cast<int>(means[1]), 2);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float stDevs[8];
+	e = AVXUtils::stDevParallel(
+		4,
+		true,
+		means,
+		a, b, z, m,z,z,z,z,
+		stDevs
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(stDevs[0]), 0);
+	QCOMPARE(static_cast<int>(stDevs[1]), 0);
+	QCOMPARE(std::isnan(stDevs[2]), true);
+	QCOMPARE(static_cast<int>(stDevs[3] * 10), 5);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float means2[8];
+	e = AVXUtils::meanParallel(
+		4,
+		false,
+		a, b, z, m,z,z,z,z, means2
+		);
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(means2[0] * 100), static_cast<int>(0.75 * 100));
+	QCOMPARE(static_cast<int>(means2[1]), 2);
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float stDevs2[8];
+	e = AVXUtils::stDevParallel(
+		4,
+		false,
+		means2,
+		a, b, z, m,z,z,z,z,
+		stDevs2
+		);
+
+	QCOMPARE(e, eNoError);
+	QCOMPARE(static_cast<int>(stDevs2[0] * 1e6), 433012);
+	QCOMPARE(stDevs2[1], 0);
+	QCOMPARE(stDevs2[2], 0);
+	QCOMPARE(static_cast<int>(stDevs2[3] * 10), 5);
 
 }
 

@@ -26,7 +26,8 @@ private slots:
 };
 
 void PythiaDIAFFWorkflowV2Tests::initTest() {
-    ERR_INIT
+
+	ERR_INIT
 
 	const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
 	// const QString filename  = "/home/andrewnichols/Desktop/Data/MsData/EXP22092_2022ms0742X32_A.raw.mzML";

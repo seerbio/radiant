@@ -329,7 +329,6 @@ namespace {
 		ERR_RETURN
 	}
 
-
 }//namespace
 Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCalibratomatic) {
 	ERR_INIT
@@ -428,10 +427,11 @@ Err MsCalibratomaticSettertronV2::buildMsCalibratomatic(MsCalibratomatic *msCali
 #endif
 	}//end loop
 
-	for (const CandidateScoresV2 *cs : candidateScores) {
-		qDebug() << "SDLFKJDSL" << cs->featuresArray;
-	}
+	// for (const CandidateScoresV2 *cs : candidateScores) {
+	// 	qDebug() << "SDLFKJDSL" << cs->featuresArray.mid(25, 20);
+	// }
 
+	e = CandidateScoresFeatureManager::cleanScores(candidateScores); ree;
 
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Finished building Calibration";
 

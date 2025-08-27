@@ -12,6 +12,10 @@
 
 using namespace Error;
 
+//NOTE: Must use forward declaration here to avoid circular dependency since CandidateScoresV2
+// includes this class in the header.
+class CandidateScoresV2;
+
 class  ALGORITHMSFFLIB_EXPORTS CandidateScoresFeatureManager {
 
 public:
@@ -97,6 +101,30 @@ public:
 		mzPPM6,
 		mzPPM7,//40
 		mzPPM8,
+    	mzPPMStDev1,
+		mzPPMStDev2,
+		mzPPMStDev3,
+		mzPPMStDev4,
+		mzPPMStDev5,
+		mzPPMStDev6,
+		mzPPMStDev7,//40
+		mzPPMStDev8,
+    	mzAbsPPM1,
+		mzAbsPPM2,
+		mzAbsPPM3,
+		mzAbsPPM4,
+		mzAbsPPM5,
+		mzAbsPPM6,
+		mzAbsPPM7,//40
+		mzAbsPPM8,
+    	mzAbsLog10PPM1,
+		mzAbsLog10PPM2,
+		mzAbsLog10PPM3,
+		mzAbsLog10PPM4,
+		mzAbsLog10PPM5,
+		mzAbsLog10PPM6,
+		mzAbsLog10PPM7,//40
+		mzAbsLog10PPM8,
 		// mzPPM9,
 		// mzPPM10,
 		// mzPPM11,
@@ -333,6 +361,8 @@ public:
 	    };
 
 	static QVector<Features> featuresCalibration();
+
+	static Err cleanScores(const QVector<CandidateScoresV2*> &candidateScoresV2s);
 
 };
 

@@ -442,6 +442,94 @@ Err AVXUtils::sumParallel(
 	ERR_RETURN
 }
 
+Err AVXUtils::meanParallel(
+	size_t maxVecSize,
+	bool excludeZeros,
+	float *v0,
+	float *v1,
+	float *v2,
+	float *v3,
+	float *v4,
+	float *v5,
+	float *v6,
+	float *v7,
+	float *mean
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(maxVecSize); ree;
+
+	__m256 runningSum = _mm256_setzero_ps();
+	__m256 nonZeroLaneCounts = _mm256_setzero_ps();
+
+	for (int i = 0; i < maxVecSize; i++) {
+		const __m256 iRow = _mm256_set_ps(
+			v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]
+			);
+		runningSum = _mm256_add_ps(runningSum, iRow);
+
+		const __m256 nonZeroMask = _mm256_cmp_ps(iRow, _mm256_setzero_ps(), _CMP_NEQ_OQ);
+		const __m256 nonZeroMaskAsOnes = _mm256_and_ps(nonZeroMask, _mm256_set1_ps(1.0f));
+		nonZeroLaneCounts = _mm256_add_ps(nonZeroLaneCounts, nonZeroMaskAsOnes);
+	}
+
+	__m256 denom = excludeZeros ? nonZeroLaneCounts : _mm256_set1_ps(static_cast<float>(maxVecSize));
+	__m256 laneMeans = _mm256_div_ps(runningSum, denom);
+
+	_mm256_store_ps(mean, laneMeans);
+
+	ERR_RETURN
+}
+
+Err AVXUtils::stDevParallel(
+	size_t maxVecSize,
+	bool excludeZeros,
+	float *means,
+	float *v0,
+	float *v1,
+	float *v2,
+	float *v3,
+	float *v4,
+	float *v5,
+	float *v6,
+	float *v7,
+	float *stDevs
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(maxVecSize); ree;
+
+	__m256 diffsSquaredSum = _mm256_setzero_ps();
+	__m256 means256 = _mm256_load_ps(means);
+	__m256 nonZeroLaneCounts = _mm256_setzero_ps();
+
+	for (int i = 0; i < maxVecSize; i++) {
+		const __m256 iRow = _mm256_set_ps(
+			v7[i], v6[i], v5[i], v4[i], v3[i], v2[i], v1[i], v0[i]
+			);
+		const __m256 diff = _mm256_sub_ps(means256, iRow);
+		__m256 diffSquared = _mm256_mul_ps(diff, diff);
+
+		const __m256 nonZeroMask = _mm256_cmp_ps(iRow, _mm256_setzero_ps(), _CMP_NEQ_OQ);
+		const __m256 nonZeroMaskAsOnes = _mm256_and_ps(nonZeroMask, _mm256_set1_ps(1.0f));
+		nonZeroLaneCounts = _mm256_add_ps(nonZeroLaneCounts, nonZeroMaskAsOnes);
+
+		diffSquared = excludeZeros ? _mm256_mul_ps(nonZeroMaskAsOnes, diffSquared) : diffSquared;
+		diffsSquaredSum = _mm256_add_ps(diffsSquaredSum, diffSquared);
+	}
+
+	__m256 denom = excludeZeros ? nonZeroLaneCounts : _mm256_set1_ps(static_cast<float>(maxVecSize));
+
+	const __m256 varience = _mm256_div_ps(diffsSquaredSum, denom);
+	const __m256 stdDevs256 = _mm256_sqrt_ps(varience);
+
+	_mm256_store_ps(stDevs, stdDevs256);
+
+	ERR_RETURN
+}
+
 Err AVXUtils::findPeaksEightVecs(
 	size_t maxVecSize,
 	float *v0,

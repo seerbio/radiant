@@ -100,6 +100,35 @@ public:
 		float *sums
 		);
 
+	static Err meanParallel(
+		size_t maxVecSize,
+		bool excludeZeros,
+		float *v0,
+		float *v1,
+		float *v2,
+		float *v3,
+		float *v4,
+		float *v5,
+		float *v6,
+		float *v7,
+		float *sums
+		);
+
+	static Err stDevParallel(
+		size_t maxVecSize,
+		bool excludeZeros,
+		float *means,
+		float *v0,
+		float *v1,
+		float *v2,
+		float *v3,
+		float *v4,
+		float *v5,
+		float *v6,
+		float *v7,
+		float *stDevs
+		);
+
 	static Err findPeaksEightVecs (
 		size_t maxVecSize,
 		float* v0,
