@@ -19,6 +19,7 @@ struct CandidateScorertronV2Input {
 	PeakIntegrationIndexes pii;
 	QVector<MS2Ion> ms2IonsFull;
 	QVector<float*> xicsAlignasIntensity;
+	QVector<float*> xicsAlignasMz;
 	QVector<float*> xicsAlignasIntensityTight1;
 	float* productVec = nullptr;
 	float* ms1MonoIsotopeVec = nullptr;
@@ -54,7 +55,7 @@ private:
 	Err copyToPeakVecs(
 		const PeakIntegrationIndexes &pii,
 		const QVector<float*> &xicsAlignasIntensity,
-		const QVector<float*> &xicsAlignasIntensityTight1,
+		const QVector<float*> &xicsAlignasMz,
 		float* productVec
 		);
 
@@ -68,6 +69,10 @@ private:
 	// Err calculateRTCorrelationScoresMS2Tight1(CandidateScoresV2 *candScores);
 
 	Err setIntensities(CandidateScoresV2 *candScores);
+	Err setMzValsPPM(
+		const QVector<MS2Ion> &ms2IonsFull,
+		CandidateScoresV2 *candScores
+		);
 
 	Err calculateFragmentCorrelationScoresMS2(
 		const PeakIntegrationIndexes &pii,

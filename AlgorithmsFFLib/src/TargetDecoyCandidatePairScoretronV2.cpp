@@ -1029,6 +1029,7 @@ Err TargetDecoyCandidatePairScoretronV2::scoreProductVecApexes(
 	CandidateScorertronV2Input input;
 	input.ms2IonsFull = ms2IonsFull;
 	input.xicsAlignasIntensity = m_xicsAlignasIntensity;
+	input.xicsAlignasMz = m_xicsAlignasMz;
 	input.xicsAlignasIntensityTight1 = m_xicsAlignasIntensityTight1;
 	input.productVec = m_productVec;
 	input.ms1MonoIsotopeVec = m_mzMs1MonoIsotopeVecIntensity;

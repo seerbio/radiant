@@ -91,7 +91,7 @@ Err CandidateScorertronV2::scoreCandidate(
 	e = copyToPeakVecs(
 		input.pii,
 		input.xicsAlignasIntensity,
-		input.xicsAlignasIntensityTight1,
+		input.xicsAlignasMz,
 		input.productVec
 		); ree;
 
@@ -119,7 +119,7 @@ void CandidateScorertronV2::zeroOutArrays() {
 Err CandidateScorertronV2::copyToPeakVecs(
 	const PeakIntegrationIndexes &pii,
 	const QVector<float*> &xicsAlignasIntensity,
-	const QVector<float*> &xicsAlignasIntensityTight1,
+	const QVector<float*> &xicsAlignasMz,
 	float* productVec
 	) {
 	ERR_INIT
@@ -148,7 +148,7 @@ Err CandidateScorertronV2::copyToPeakVecs(
 
 		std::memcpy(
 			m_xicsAlignasMzIntegration[i],
-			xicsAlignasIntensityTight1[i] + pii.first,
+			xicsAlignasMz[i] + pii.first,
 			m_peakLength * sizeof(float)
 			);
 	}
@@ -181,6 +181,7 @@ Err CandidateScorertronV2::calculateScores(
 		); ree;
 
 	e = setIntensities(candidateScoresV2); ree;
+	e = setMzValsPPM(input.ms2IonsFull, candidateScoresV2); ree;
 
 	// e = calculateRTCorrelationScoresMS1(
 	// 	input,
@@ -399,6 +400,49 @@ Err CandidateScorertronV2::setIntensities(CandidateScoresV2 *candScores) {
 	std::memcpy(intensitySumsQ.data(), intensitySums, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
 
 	candScores->featuresArray[FTR::IntensitySumNormalize] = std::accumulate(intensitySumsQ.begin(), intensitySumsQ.end(), 0.0f);
+
+	ERR_RETURN
+}
+
+Err CandidateScorertronV2::setMzValsPPM(
+	const QVector<MS2Ion> &ms2IonsFull,
+	CandidateScoresV2 *candScores
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(ms2IonsFull); ree;
+	e = ErrorUtils::isGreaterThanZero(m_peakLength); ree;
+
+	alignas(AVXUtils::AVX2_ALIGNAS_SIZE) float mzSums[AVXUtils::AVX2_FLOAT_REGISTER_SIZE];
+	std::memset(mzSums, 0, AVXUtils::AVX2_FLOAT_REGISTER_SIZE * sizeof(float));
+
+	e = AVXUtils::sumParallel(
+		m_peakLength,
+		m_xicsAlignasMzIntegration[0],
+		m_xicsAlignasMzIntegration[1],
+		m_xicsAlignasMzIntegration[2],
+		m_xicsAlignasMzIntegration[3],
+		m_xicsAlignasMzIntegration[4],
+		m_xicsAlignasMzIntegration[5],
+		m_xicsAlignasMzIntegration[6],
+		m_xicsAlignasMzIntegration[7],
+		mzSums
+		); ree;
+
+	const int size = std::min(static_cast<int>(AVXUtils::AVX2_FLOAT_REGISTER_SIZE), ms2IonsFull.size());
+	for (int i = 0; i < size; i++) {
+		qDebug() << ms2IonsFull[i].mz << m_xicsAlignasMzIntegration[i][0] << m_xicsAlignasMzIntegration[i][m_peakLength];
+	}
+
+
+	// for (int i = 0; i < size; i++) {
+	// 	const float mzSearched = ms2IonsFull[i].mz;
+	// 	const float mzFoundMean = mzSums[i] / size;
+	// 	const float ppm = 1.0e6f * (mzFoundMean - mzSearched) / mzSearched;
+	// 	candScores->featuresArray[FTR::mzPPM1 + i] = ppm;
+	// }
+
 
 	ERR_RETURN
 }
