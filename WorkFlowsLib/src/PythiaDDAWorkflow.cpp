@@ -169,14 +169,17 @@ namespace {
 			const ScanNumber scanNumber = msScan->msScanInfoPntr->scanNumber;
 			const int pointCount = msScan->msScanInfoPntr->pointCount;
 
-			const QVector<float> intensityValsCopy(intensityVals.data(), intensityVals.data() + pointCount);
-
-			const float medianIntensity = MathUtils::median(intensityValsCopy);
-
+			float cutoffIntensity = -1.0;
+			constexpr int topNScanPoints = 500;
+			if (pointCount > topNScanPoints) {
+				QVector<float> intensityValsCopy(intensityVals.data(), intensityVals.data() + pointCount);
+				std::sort(intensityValsCopy.rbegin(), intensityValsCopy.rend());
+				cutoffIntensity = intensityValsCopy[topNScanPoints - 1];
+			}
 			for (int i = 0; i < pointCount; ++i) {
 
 				const float intensity = msScan->intensityVals[i];
-				if (intensity < medianIntensity) {
+				if (intensity < cutoffIntensity) {
 					continue;
 				}
 
