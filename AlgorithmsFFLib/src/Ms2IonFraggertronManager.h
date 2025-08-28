@@ -6,16 +6,22 @@
 #define MS2IONFRAGGERTRONMANAGER_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "MS2Ion.h"
 
 #include "Error.h"
 
 using namespace Error;
 
 class CandidateScores;
-class MS2Ion;
 class MsCalibratomatic;
 class MsScanInfo;
 class TargetDecoyCandidatePair;
+
+struct MS2Frag {
+	Id tdcpId = -1;
+	float mzVal = -1.f;
+	float intensityVal = -1.f;
+};
 
 class ALGORITHMSFFLIB_EXPORTS Ms2IonFraggertronManager {
 
@@ -26,14 +32,16 @@ public:
     Ms2IonFraggertronManager();
     ~Ms2IonFraggertronManager();
 
-    [[nodiscard]] Err init(const QVector<TargetDecoyCandidatePair*> &tdcpPntrs) const;
+    [[nodiscard]] Err init(
+		const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions
+    	) const;
 
     Err extractMs2Points(
         float mzMin,
         float mzMax,
-        float scanTimeMin,
-        float scanTimeMax,
-        QVector<QPair<MS2Ion, CandidateScores*>> *ms2IonsVsCandidateScoresPntrses
+        float iRTMin,
+        float iRTMax,
+        QVector<MS2Frag*> *tdPeptideFrags
         );
 
 private:

@@ -28,7 +28,7 @@ class Q_DECL_HIDDEN Ms2IonFraggertronManager::Private
     using rTreeIntensity = float;
     using rTreeCoor = bg::model::point<float, 2, bg::cs::cartesian>;
     using rTreeSearchBox = bg::model::box<rTreeCoor>;
-    using rTreePoint = std::pair<rTreeCoor, std::pair<MS2Ion, TargetDecoyCandidatePair*>> ;
+    using rTreePoint = std::pair<rTreeCoor, MS2Frag*> ;
     using RTree = bgi::rtree<rTreePoint, bgi::dynamic_quadratic>;
 
 public:
@@ -36,24 +36,28 @@ public:
     Private();
     ~Private();
 
-    Err init(const QVector<TargetDecoyCandidatePair*> &tdcpPntrs);
+    Err init(
+		const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions
+    	);
 
     Err initTesting(const QVector<CandidateScores*> &candidateScoresPntrs);
 
-    Err buildRTreeInput(QVector<rTreePoint> *cloudLoader);
+    Err buildRTreeInput(
+		const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions,
+    	QVector<rTreePoint> *cloudLoader
+    	);
 
     Err extractMs2Points(
         float mzMin,
         float mzMax,
-        float scanTimeMin,
-        float scanTimeMax,
-        QVector<QPair<MS2Ion, CandidateScores*>> *ms2IonsVsCandidateScoresPntrses
+        float iRTMin,
+		float iRTMax,
+		QVector<MS2Frag*> *tdPeptideFrags
         ) const;
 
 private:
 
-	QVector<TargetDecoyCandidatePair*> m_tdcpPntrs;
-
+	QVector<MS2Frag> m_ms2Frags;
     RTree *m_rTree;
     bool m_isInit;
 
@@ -67,42 +71,79 @@ Ms2IonFraggertronManager::Private::Private()
 Ms2IonFraggertronManager::Private::~Private() {delete m_rTree;}
 
 Err Ms2IonFraggertronManager::Private::init(
-	const QVector<TargetDecoyCandidatePair*> &tdcpPntrs
+	const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions
     ) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(tdcpPntrs); ree;
-	m_tdcpPntrs = tdcpPntrs;
+    e = ErrorUtils::isNotEmpty(ms2Ions); ree;
 
     QVector<rTreePoint> cloudLoader;
-    e = buildRTreeInput(&cloudLoader); ree;
+    e = buildRTreeInput(
+    	ms2Ions,
+    	&cloudLoader
+    	); ree;
 
-    // constexpr int maxElements = 16;
-    // m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    // m_isInit = true;
+	std::sort(
+		cloudLoader.begin(),
+		cloudLoader.end(),
+		[](const rTreePoint &l, const rTreePoint &r) {return l.second->mzVal < r.second->mzVal;}
+		);
+
+    constexpr int maxElements = 16;
+    m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
+    m_isInit = true;
 
     ERR_RETURN
 }
 
-Err Ms2IonFraggertronManager::Private::buildRTreeInput(QVector<rTreePoint> *cloudLoader) {
+Err Ms2IonFraggertronManager::Private::buildRTreeInput(
+	const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions,
+	QVector<rTreePoint> *cloudLoader
+	) {
 
     ERR_INIT
 
-    e = ErrorUtils::isNotEmpty(m_tdcpPntrs); ree;
+	for (const std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> &tpl : ms2Ions) {
+		TargetDecoyCandidatePair *tdcpPntr = std::get<0>(tpl);
+		const MS2IonsTarget &ms2Target = std::get<1>(tpl);
+		const MS2IonsDecoy &ms2Decoy = std::get<2>(tpl);
 
-    for (TargetDecoyCandidatePair *tdcp : m_tdcpPntrs) {
-    	constexpr float mzMin = 200;
-    	constexpr float mzMax = 2000;
-        const QVector<MS2Ion> &ms2IonsTarget = tdcp->ms2IonsTarget(mzMin, mzMax);
-        // const QVector<MS2Ion> &ms2Ions = tdcp->ms2IonsDecoy(ms2IonsTarget);
+		constexpr int decoyDoubler = 2;
+		constexpr int top8Ions = 8;
+		m_ms2Frags.reserve(ms2Ions.size() * decoyDoubler * top8Ions);
 
-        // for (const MS2Ion &ms2Ion : ms2Ions) {
-        //     rTreeCoor coor(ms2Ion.mz, tdcp->iRt());
-        //     rTreePoint point(coor, {ms2Ion, tdcp});
-        //     cloudLoader->push_back(point);
-        // }
-    }
+		for (const MS2Ion &ms2Ion : ms2Target.mid(0, std::min(top8Ions, ms2Target.size()))) {
+
+			rTreeCoor coor(ms2Ion.mz, tdcpPntr->iRt());
+
+			MS2Frag ms2Frag;
+			ms2Frag.tdcpId = tdcpPntr->id;
+			ms2Frag.mzVal = ms2Ion.mz;
+			ms2Frag.intensityVal = ms2Ion.intensity;
+
+			m_ms2Frags.push_back(ms2Frag);
+
+			rTreePoint point(coor, &m_ms2Frags.back());
+			cloudLoader->push_back(point);
+		}
+
+		for (const MS2Ion &ms2Ion : ms2Decoy.mid(0, std::min(top8Ions, ms2Decoy.size()))) {
+
+			rTreeCoor coor(ms2Ion.mz, tdcpPntr->iRt());
+
+			MS2Frag ms2Frag;
+			ms2Frag.tdcpId = tdcpPntr->id + 1;
+			ms2Frag.mzVal = ms2Ion.mz;
+			ms2Frag.intensityVal = ms2Ion.intensity;
+
+			m_ms2Frags.push_back(ms2Frag);
+
+			rTreePoint point(coor, &m_ms2Frags.back());
+			cloudLoader->push_back(point);
+		}
+
+	}
 
     ERR_RETURN
 }
@@ -110,28 +151,27 @@ Err Ms2IonFraggertronManager::Private::buildRTreeInput(QVector<rTreePoint> *clou
 Err Ms2IonFraggertronManager::Private::extractMs2Points(
     float mzMin,
     float mzMax,
-    float scanTimeMin,
-    float scanTimeMax,
-    QVector<QPair<MS2Ion, CandidateScores*>>* ms2IonsVsCandidateScoresPntrses
+    float iRTMin,
+	float iRTMax,
+	QVector<MS2Frag*> *tdPeptideFrags
     ) const {
 
     ERR_INIT
 
-    // e = ErrorUtils::isTrue(m_isInit); ree;
-    //
-    // const rTreeSearchBox queryBox(
-    //     rTreeCoor(mzMin, scanTimeMin),
-    //     rTreeCoor(mzMax, scanTimeMax)
-    // );
-    //
-    // std::vector<rTreePoint> result;
-    // m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
-    //
-    // ms2IonsVsCandidateScoresPntrses->reserve(static_cast<int>(result.size()));
-    // for (const auto &[coordinate, ms2Ion_and_ScorePair] : result) {
-    //     auto &[ms2Ion, candidateScore] = ms2Ion_and_ScorePair;
-    //     ms2IonsVsCandidateScoresPntrses->push_back({ms2Ion, candidateScore});
-    // }
+    e = ErrorUtils::isTrue(m_isInit); ree;
+    
+    const rTreeSearchBox queryBox(
+        rTreeCoor(mzMin, iRTMin),
+        rTreeCoor(mzMax, iRTMax)
+    );
+    
+    std::vector<rTreePoint> result;
+    m_rTree->query(bgi::intersects(queryBox), std::back_inserter(result));
+
+    tdPeptideFrags->reserve(static_cast<int>(result.size()));
+    for (const auto &[fst, snd] : result) {
+        tdPeptideFrags->push_back(snd);
+    }
 
     ERR_RETURN
 }
@@ -181,31 +221,31 @@ Ms2IonFraggertronManager::Ms2IonFraggertronManager() : d_ptr(QScopedPointer<Priv
 
 Ms2IonFraggertronManager::~Ms2IonFraggertronManager() {}
 
-Err Ms2IonFraggertronManager::init(const QVector<TargetDecoyCandidatePair*> &tdcpPntrs) const {
+Err Ms2IonFraggertronManager::init(
+	const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions
+	) const {
 
 	ERR_INIT
 
-	e = d_ptr->init(tdcpPntrs); ree;
+	e = d_ptr->init(ms2Ions); ree;
 
 	ERR_RETURN
 }
 
-
-
 Err Ms2IonFraggertronManager::extractMs2Points(
     float mzMin,
     float mzMax,
-    float scanTimeMin,
-    float scanTimeMax,
-    QVector<QPair<MS2Ion, CandidateScores*>> *ms2IonsVsCandidateScoresPntrses
+    float iRTMin,
+	float iRTMax,
+	QVector<MS2Frag*> *tdPeptideFrags
     ) {
     ERR_INIT
     e = d_ptr->extractMs2Points(
         mzMin,
         mzMax,
-        scanTimeMin,
-        scanTimeMax,
-        ms2IonsVsCandidateScoresPntrses
+        iRTMin,
+        iRTMax,
+        tdPeptideFrags
         ); ree;
     ERR_RETURN
 }

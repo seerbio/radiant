@@ -10,6 +10,7 @@
 #include "Error.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
+#include "MsReaderBase.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 
@@ -36,7 +37,11 @@ public:
 
 private:
 
-	Err performFragging(const QString &msDataFilePath);
+	Err extractScansParallel(
+		const QVector<MsScanInfo*> &scanInfosPntrs,
+		MsReaderPointerAcc *msReaderPtr
+		);
+	Err performFragging();
 
 
 private:
@@ -47,6 +52,7 @@ private:
 	QVector<QVector<MsScanInfo*>> m_msScanInfosTranched;
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
 	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
+	QVector<MsScan> m_msScans;
 
 };
 
