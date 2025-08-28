@@ -41,7 +41,6 @@ void PythiaDDAWorkflowTests::processFileTest() {
 	const QString ddaMsDataFilePath = "/home/andrewnichols/Desktop/Data/MsData/EXP21126_2021ms0425XRC6_C.raw.mzML";
 	const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
 
-
 	const PythiaParameters parameters = PythiaParameterReader::genericPythiaParametersForTests();
 
 	PythiaDDAWorkflow ddaMsWorkflow;
