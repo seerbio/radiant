@@ -44,6 +44,10 @@ Err CandidateScoresFeatureManager::cleanScores(const QVector<CandidateScoresV2 *
 			}
 		}
 
+		for (int i = 0; i < FTR::FeaturesSize; i++) {
+			qDebug() << featuresArrayMaxes[i] << nanCounts[i] << "SDJFLds";
+		}
+
 		for (CandidateScoresV2 *cs : candidateScoresV2s) {
 
 			for (int i = 0; i < FTR::FeaturesSize; i++) {

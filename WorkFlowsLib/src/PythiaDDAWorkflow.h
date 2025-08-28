@@ -8,7 +8,10 @@
 #include "WorkFlowsLib_Exports.h"
 
 #include "Error.h"
+#include "FragLibReader.h"
 #include "GlobalSettings.h"
+#include "PythiaParameterReader.h"
+#include "TargetDecoyCandidatePairManager.h"
 
 class MsReaderMzMLLazyLoad;
 class MsScanInfo;
@@ -23,22 +26,22 @@ public:
 	PythiaDDAWorkflow() = default;
 	~PythiaDDAWorkflow() = default;
 
-	Err init();
+	Err init(
+		const PythiaParameters &parameters,
+		const QString& libraryFilePath
+		);
 
 	Err processFile(const QString &msDataFilePath);
 
 
 private:
 
-	Err processChunk(
-		const QVector<MsScanInfo*> &scanInfosPntrs,
-		size_t msScanInfosMinIndex,
-		size_t msScanInfosMaxIndex,
-		MsReaderMzMLLazyLoad *msReaderMzMlLazyLoad
-		);
-
 
 private:
+
+	PythiaParameters m_parameters;
+	QVector<FragLibReaderRow> m_fragLibReaderRows;
+	TargetDecoyCandidatePairManager m_tdcpManager;
 
 };
 
