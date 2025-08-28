@@ -13,7 +13,7 @@
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 
-class MsReaderMzMLLazyLoad;
+class MsReaderPointerAcc;
 class MsScanInfo;
 
 using namespace Error;
@@ -36,12 +36,17 @@ public:
 
 private:
 
+	Err performFragging(const QString &msDataFilePath);
+
 
 private:
 
 	PythiaParameters m_parameters;
 	QVector<FragLibReaderRow> m_fragLibReaderRows;
 	TargetDecoyCandidatePairManager m_tdcpManager;
+	QVector<QVector<MsScanInfo*>> m_msScanInfosTranched;
+	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
+	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
 
 };
 

@@ -38,7 +38,7 @@ void PythiaDDAWorkflowTests::processFileTest() {
 
 	ERR_INIT
 
-	const QString ddaMsDataFilePath = "/home/andrewnichols/Downloads/EXP21126_2021ms0425XRC6_C.raw.mzML";
+	const QString ddaMsDataFilePath = "/home/andrewnichols/Desktop/Data/MsData/EXP21126_2021ms0425XRC6_C.raw.mzML";
 	const QString fragLibUri  = "/home/andrewnichols/Desktop/Data/Libraries/diannformat-human_plasma_arath_entrapment-lib.tsv.mods.fragLibFF";
 
 
@@ -51,7 +51,7 @@ void PythiaDDAWorkflowTests::processFileTest() {
 		);
 	QCOMPARE(e, eNoError);
 
-	// e = ddaMsWorkflow.processFile(ddaMsDataFilePath);
+	e = ddaMsWorkflow.processFile(ddaMsDataFilePath);
 	QCOMPARE(e, eNoError);
 
 }

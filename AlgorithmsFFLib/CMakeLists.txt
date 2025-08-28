@@ -38,7 +38,7 @@ SET(SOURCE_FILES
 #        src/InterferingCandidatesEliminatomatic.cpp
 #        src/IsotopicDistributionBuilder.cpp
         src/MS2Ion.cpp
-#        src/Ms2IonFraggertronManager.cpp
+        src/Ms2IonFraggertronManager.cpp
         src/MsCalibratomatic.cpp
 #        src/MsFrame.cpp
         src/MsFrameV2.cpp
@@ -80,7 +80,7 @@ SET(HEADER_FILES
 #        src/IonMobilitron.h
 #        src/IsotopicDistributionBuilder.h
         src/MS2Ion.h
-#        src/Ms2IonFraggertronManager.h
+        src/Ms2IonFraggertronManager.h
         src/MsCalibratomatic.h
 #        src/MsFrame.h
         src/MsFrameV2.h

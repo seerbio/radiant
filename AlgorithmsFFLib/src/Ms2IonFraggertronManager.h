@@ -14,6 +14,8 @@ using namespace Error;
 class CandidateScores;
 class MS2Ion;
 class MsCalibratomatic;
+class MsScanInfo;
+class TargetDecoyCandidatePair;
 
 class ALGORITHMSFFLIB_EXPORTS Ms2IonFraggertronManager {
 
@@ -24,11 +26,7 @@ public:
     Ms2IonFraggertronManager();
     ~Ms2IonFraggertronManager();
 
-    [[nodiscard]] Err init(
-        const MsCalibratomatic &msCalibratomatic,
-        const QVector<CandidateScores*> &candidateScoresPntrs
-        ) const;
-
+    [[nodiscard]] Err init(const QVector<TargetDecoyCandidatePair*> &tdcpPntrs) const;
 
     Err extractMs2Points(
         float mzMin,

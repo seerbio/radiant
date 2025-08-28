@@ -53,9 +53,9 @@ namespace {
         ms2IonsBuilder.reserve(flrr->mzVals.size());
         for (int i = 0; i < flrr->mzVals.size(); i++) {
             MS2Ion ms2Ion;
-            ms2Ion.mz = flrr->mzVals.at(i);
-            ms2Ion.intensity = flrr->intensityVals.at(i);
-            ms2Ion.ionLabel = ionLabelsSplit.at(i);
+            ms2Ion.mz = flrr->mzVals[i];
+            ms2Ion.intensity = flrr->intensityVals[i];
+            ms2Ion.ionLabel = ionLabelsSplit[i];
             ms2Ion.charge = ms2Ion.ionLabel.contains("^2") ? 2 : 1;
 
             ms2IonsBuilder.push_back(ms2Ion);
