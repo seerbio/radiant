@@ -136,8 +136,8 @@ namespace {
 
 		ERR_INIT
 
-		constexpr float mzMin = 200;
-		constexpr float mzMax = 2000;
+		constexpr float mzMin = 300; //TODO get values from MsReader for these vals
+		constexpr float mzMax = 1600; //TODO get values from MsReader for these vals
 		const QVector<MS2Ion> &ms2IonsTarget = tdcp->ms2IonsTarget(mzMin, mzMax);
 		const QVector<MS2Ion> &ms2IonsDecoy = tdcp->ms2IonsDecoy(ms2IonsTarget);
 
@@ -163,6 +163,7 @@ namespace {
 		e = fragger.init(ms2Ions); rree;
 
 		for (const MsScan *msScan : msScansPntrs) {
+
 			const MzVals &mzVals = msScan->mzVals ;
 			const IntensityVals &intensityVals = msScan->intensityVals ;
 			const ScanNumber scanNumber = msScan->msScanInfoPntr->scanNumber;
@@ -232,7 +233,6 @@ Err PythiaDDAWorkflow::performFragging() {
 		m_parameters.threadCount,
 		&msScansPntrsTranched
 		);
-
 
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
 
