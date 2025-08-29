@@ -23,6 +23,18 @@ struct MsScanPoint {
 	float intensityVal = -1.0;
 };
 
+struct MS2IonLibrary {
+	TargetDecoyCandidatePair *targeDecoyCandidatePairPntr = nullptr;
+	MS2Ion *ms2IonPntr = nullptr;
+	bool isDecoy = false;
+};
+
+struct ProcessingGroup {
+	QPair<float, float> mzPrecursorRangeMinMax;
+	QVector<MsScanPoint*> msScanPoints;
+	QVector<MS2IonLibrary*> ms2IonsLibrary;
+};
+
 using namespace Error;
 
 
