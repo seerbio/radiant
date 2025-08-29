@@ -17,6 +17,12 @@
 class MsReaderPointerAcc;
 class MsScanInfo;
 
+struct MsScanPoint {
+	MsScanInfo *scanInfoPntr = nullptr;
+	float mzVal = -1.0;
+	float intensityVal = -1.0;
+};
+
 using namespace Error;
 
 
@@ -52,7 +58,7 @@ private:
 	QVector<QVector<MsScanInfo*>> m_msScanInfosTranched;
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
 	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
-	QVector<MsScan> m_msScans;
+	QVector<QVector<MsScanPoint>> m_msScanPointsTranched;
 
 };
 

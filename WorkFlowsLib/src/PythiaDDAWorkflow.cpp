@@ -66,14 +66,14 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 		&msReaderPtr
 		); ree;
 
-	e = performFragging(); ree;
+	// e = performFragging(); ree;
 
 	ERR_RETURN
 }
 
 namespace {
 
-	QPair<Err, QVector<MsScan>> extractScansParallelLogic(
+	QPair<Err, QVector<MsScanPoint>> extractScansParallelLogic(
 		const QVector<MsScanInfo*> &scanInfosPntrs,
 		MsReaderPointerAcc *msReaderPtr
 		) {
@@ -85,7 +85,37 @@ namespace {
 			&msScans
 			); rree;
 
-		return {e, msScans};
+		QVector<MsScanPoint> msScanPoints;
+		for (const MsScan &scan : msScans) {
+			for (int i = 0; i < scan.msScanInfoPntr->pointCount; i++) {
+				MsScanPoint msScanPoint;
+				msScanPoint.scanInfoPntr = scan.msScanInfoPntr;
+				msScanPoint.mzVal = scan.mzVals[i];
+				msScanPoint.intensityVal = scan.intensityVals[i];
+				msScanPoints.push_back(msScanPoint);
+			}
+
+		}
+
+		constexpr float mzMin = 300; //TODO get values from MsReader for these vals
+		constexpr float mzMax = 1600; //TODO get values from MsReader for these vals
+		const auto terminatorLogic = [mzMin, mzMax](const MsScanPoint &mssp) {
+			return mssp.mzVal < mzMin || mssp.mzVal > mzMax;
+		};
+		const auto terminator = std::remove_if(msScanPoints.begin(), msScanPoints.end(), terminatorLogic);
+		msScanPoints.erase(terminator, msScanPoints.end());
+
+		std::sort(
+			msScanPoints.begin(),
+			msScanPoints.end(),
+			[](const MsScanPoint &l, const MsScanPoint &r) {
+				if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
+					return l.mzVal < r.mzVal;
+				}
+				return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
+			});
+
+		return {e, msScanPoints};
 	}
 
 }//namespace
@@ -99,10 +129,9 @@ Err PythiaDDAWorkflow::extractScansParallel(
 	e = ErrorUtils::isTrue(msReaderPtr->isInit()); ree;
 
 	QVector<QVector<MsScanInfo*>> scanInfosPntrsTranched;
-	e = ParallelUtils::trancheVectorForParallelizationInOrder(
+	e = ParallelUtils::trancheVectorForParallelization(
 		scanInfosPntrs,
-		m_parameters.threadCount,
-		0,
+		m_parameters.threadCount * 4,
 		&scanInfosPntrsTranched
 		); ree;
 
@@ -112,15 +141,15 @@ Err PythiaDDAWorkflow::extractScansParallel(
 		msReaderPtr
 		);
 
-	QFuture<QPair<Err, QVector<MsScan>>> future = QtConcurrent::mapped(
+	QFuture<QPair<Err, QVector<MsScanPoint>>> future = QtConcurrent::mapped(
 		scanInfosPntrsTranched,
 		binderLogic
 		);
 	future.waitForFinished();
 
-	for (const QPair<Err, QVector<MsScan>> &res : future) {
+	for (const QPair<Err, QVector<MsScanPoint>> &res : future) {
 		e = res.first; ree;
-		m_msScans.append(res.second);
+		m_msScanPointsTranched.push_back(res.second);
 	}
 
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsPoints extracted";
@@ -222,59 +251,104 @@ Err PythiaDDAWorkflow::performFragging() {
 		&targetDecoyCandidatePairsPntrsTranched
 		); ree;
 
-	QVector<MsScan*> msScansPntrs;
-	std::transform(
-		m_msScans.begin(),
-		m_msScans.end(),
-		std::back_inserter(msScansPntrs),
-		[](MsScan &s){return &s;}
-		);
-
-	QVector<QVector<MsScan*>> msScansPntrsTranched;
-	e = ParallelUtils::trancheVectorForParallelization(
-		msScansPntrs,
-		m_parameters.threadCount,
-		&msScansPntrsTranched
-		);
-
-	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
-
-		QFuture<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> futureLib = QtConcurrent::mapped(
-			tdcps,
-			buildMs2Ions
-			);
-		futureLib.waitForFinished();
-
-		QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> ms2Ions;
-		ms2Ions.reserve(tdcps.size());
-		for (const std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> &r : futureLib) {
-			ms2Ions.push_back(r);
-		}
-
-#define FRAG_PARALLEL
-#ifdef FRAG_PARALLEL
-		const auto binderLogic = std::bind(
-			performFraggingLogic,
-			std::placeholders::_1,
-			ms2Ions,
-			m_parameters
-			);
-
-		QFuture<QPair<Err, int>> futureScans = QtConcurrent::mapped(
-			msScansPntrsTranched,
-			binderLogic
-			);
-		futureScans.waitForFinished();
-#else
-		for (const QVector<MsScan*> &msScans : msScansPntrsTranched) {
-			const QPair<Err, int> res = performFraggingLogic(msScans, ms2Ions, m_parameters);
-			e = res.first; ree;
-		}
-#endif
 
 
+	// QVector<float> mzValsSample;
+	// for (const QVector<MsScan*> &msScans : msScansPntrsTranched) {
+	// 	constexpr int skipCount = 50;
+	// 	int counter = 0;
+	// 	for (const MsScan *msScan : msScans) {
+	// 		if (counter++ % skipCount != 0) {
+	// 			continue;
+	// 		}
+	// 		const QVector<float> mzVals(
+	// 			msScan->mzVals.data(),
+	// 			msScan->mzVals.data() + msScan->msScanInfoPntr->pointCount
+	// 			);
+	//
+	// 		mzValsSample.append(mzVals);
+	// 	}
+	// }
+	// std::sort(mzValsSample.begin(), mzValsSample.end());
+	// qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Sample mz distribution size" << mzValsSample.size();
+	//
+	// const int increment = mzValsSample.size() / m_parameters.threadCount;
+	// for (int i = 0; i < m_parameters.threadCount; i++) {
+	// 	qDebug() << i << mzValsSample[std::min(i * increment, mzValsSample.size() - 1)] << "upper limit";
+	// }
+	//
+	//
 
-	}
+
+	// for (const QVector<MsScan*> &msScans : msScansPntrsTranched) {
+	//
+	// 	QElapsedTimer et2;
+	// 	et2.start();
+	// 	const int totalPointCount = std::accumulate(
+	// 		msScans.begin(),
+	// 		msScans.end(),
+	// 		0,
+	// 		[](int sum, const MsScan *s){return sum + s->msScanInfoPntr->pointCount;}
+	// 		);
+	//
+	// 	QVector<MsScanPoint> msScanPoints;
+	// 	msScanPoints.reserve(totalPointCount);
+	// 	for (MsScan *msScan : msScans) {
+	// 		for (int i = 0; i < msScan->msScanInfoPntr->pointCount; ++i) {
+	// 			MsScanPoint msScanPoint;
+	// 			msScanPoint.mzVal = msScan->mzVals[i];
+	// 			msScanPoint.scanInfoPntr = msScan->msScanInfoPntr;
+	// 			msScanPoints.push_back(msScanPoint);
+	// 		}
+	// 	}
+	//
+	// 	std::sort(
+	// 		msScanPoints.begin(),
+	// 		msScanPoints.end(),
+	// 		[](const MsScanPoint &l, const MsScanPoint &r){return l.mzVal < r.mzVal;}
+	// 		);
+	//
+	// 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << et2.elapsed() << "SDFLJDS";
+	// }
+
+
+// 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
+//
+// 		QFuture<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> futureLib = QtConcurrent::mapped(
+// 			tdcps,
+// 			buildMs2Ions
+// 			);
+// 		futureLib.waitForFinished();
+//
+// 		QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> ms2Ions;
+// 		ms2Ions.reserve(tdcps.size());
+// 		for (const std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> &r : futureLib) {
+// 			ms2Ions.push_back(r);
+// 		}
+//
+// // #define FRAG_PARALLEL
+// // #ifdef FRAG_PARALLEL
+// // 		const auto binderLogic = std::bind(
+// // 			performFraggingLogic,
+// // 			std::placeholders::_1,
+// // 			ms2Ions,
+// // 			m_parameters
+// // 			);
+// //
+// // 		QFuture<QPair<Err, int>> futureScans = QtConcurrent::mapped(
+// // 			msScansPntrsTranched,
+// // 			binderLogic
+// // 			);
+// // 		futureScans.waitForFinished();
+// // #else
+// // 		for (const QVector<MsScan*> &msScans : msScansPntrsTranched) {
+// // 			const QPair<Err, int> res = performFraggingLogic(msScans, ms2Ions, m_parameters);
+// // 			e = res.first; ree;
+// // 		}
+// // #endif
+// //
+
+	// }
 
 
 	ERR_RETURN
