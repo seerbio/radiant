@@ -219,6 +219,9 @@ namespace {
 				msScanPoints.begin(),
 				msScanPoints.end(),
 				[](const MsScanPoint &l, const MsScanPoint &r) {
+					if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
+						return l.mzVal < r.mzVal;
+					}
 					return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
 				});
 			e = ErrorUtils::isTrue(isSortedMzAsc); rree;
@@ -356,6 +359,9 @@ namespace {
 
 		for (const ProcessingGroup &pg : processingGroups) {
 
+			// e = ErrorUtils::isNotEmpty(pg.ms2IonsLibrary); eee_absorb;
+			e = ErrorUtils::isNotEmpty(pg.msScanPoints); ree;
+
 			e = ErrorUtils::isAboveThreshold(
 				pg.msScanPoints.front()->scanInfoPntr->precursorTargetMz,
 				pg.mzPrecursorRangeMinMax.first,
@@ -368,75 +374,138 @@ namespace {
 				ErrorUtilsParam::IncludeThreshold
 				); ree;
 
-			e = ErrorUtils::isAboveThreshold(
-				pg.mzPrecursorRangeMinMax.first,
-				pg.ms2IonsLibrary.front()->targeDecoyCandidatePairPntr->mz(pg.ms2IonsLibrary.front()->isDecoy),
-				ErrorUtilsParam::IncludeThreshold
-				); ree;
-
-			e = ErrorUtils::isBelowThreshold(
-				pg.mzPrecursorRangeMinMax.second,
-				pg.ms2IonsLibrary.back()->targeDecoyCandidatePairPntr->mz(pg.ms2IonsLibrary.back()->isDecoy),
-				ErrorUtilsParam::IncludeThreshold
-				); ree;
+			// e = ErrorUtils::isAboveThreshold(
+			// 	pg.mzPrecursorRangeMinMax.first,
+			// 	pg.ms2IonsLibrary.front()->targeDecoyCandidatePairPntr->mz(pg.ms2IonsLibrary.front()->isDecoy),
+			// 	ErrorUtilsParam::IncludeThreshold
+			// 	); ree;
+			//
+			// e = ErrorUtils::isBelowThreshold(
+			// 	pg.mzPrecursorRangeMinMax.second,
+			// 	pg.ms2IonsLibrary.back()->targeDecoyCandidatePairPntr->mz(pg.ms2IonsLibrary.back()->isDecoy),
+			// 	ErrorUtilsParam::IncludeThreshold
+			// 	); ree;
 
 		}
 
 		ERR_RETURN;
 	}
 
+	Err addMs2IonsLibraryToProcessingGroups(
+		QVector<MS2IonLibrary> &ms2IonLibraries,
+		float precursorExtractionWindowThomsons,
+		QVector<ProcessingGroup> *processingGroups
+		) {
+
+		ERR_INIT
+
+		std::sort(
+			ms2IonLibraries.begin(),
+			ms2IonLibraries.end(),
+			[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
+				return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
+			});
+
+		for (ProcessingGroup &pg : *processingGroups) {
+
+			e = ErrorUtils::isTrue(pg.ms2IonsLibrary.isEmpty()); ree;
+
+			constexpr float buffer = 2.f;
+			const float precursorMzMin = pg.mzPrecursorRangeMinMax.first - precursorExtractionWindowThomsons - buffer;
+			const float precursorMzMax = pg.mzPrecursorRangeMinMax.second + precursorExtractionWindowThomsons + buffer;
+
+			const int precursorMzMinLowerBoundIndex = std::upper_bound(
+				ms2IonLibraries.begin(),
+				ms2IonLibraries.end(),
+				precursorMzMin,
+				[](float val, const MS2IonLibrary &stct) {return stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy) > val;}
+				) - ms2IonLibraries.begin();
+
+			const int precursorMzMaxUpperBoundIndex = std::lower_bound(
+				ms2IonLibraries.begin(),
+				ms2IonLibraries.end(),
+				precursorMzMax,
+				[](const MS2IonLibrary &stct, float val) {return val > stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy);}
+				) - ms2IonLibraries.begin() - 1;
+
+			const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
+			if (size < 1) {
+				continue;
+			}
+
+			pg.ms2IonsLibrary.reserve(size);
+			for (int i = precursorMzMinLowerBoundIndex; i <= precursorMzMaxUpperBoundIndex; ++i) {
+				pg.ms2IonsLibrary.push_back(&ms2IonLibraries[i]);
+			}
+		}
+
+		ERR_RETURN
+	}
+
 	QPair<Err, int> performFraggingLogic(
-		const QVector<MsScan*> &msScansPntrs,
-		const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions,
+		const ProcessingGroup &pgs,
 		const PythiaParameters &parameters
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(ms2Ions); rree;
-		e = ErrorUtils::isNotEmpty(msScansPntrs); rree;
+		e = ErrorUtils::isNotEmpty(pgs.msScanPoints); rree;
+
+		if (pgs.ms2IonsLibrary.isEmpty()) {
+			qDebug()
+			<< "No ms2IonsLibrary found for precursor range"
+			<< pgs.mzPrecursorRangeMinMax.first << "-"
+			<< pgs.mzPrecursorRangeMinMax.second;
+			return {e, -1};
+		}
 
 		Ms2IonFraggertronManager fragger;
-		e = fragger.init(ms2Ions); rree;
+		e = fragger.init(pgs.ms2IonsLibrary); rree;
 
-		for (const MsScan *msScan : msScansPntrs) {
+		for (MsScanPoint *mssp : pgs.msScanPoints) {
 
-			const MzVals &mzVals = msScan->mzVals ;
-			const IntensityVals &intensityVals = msScan->intensityVals ;
-			const ScanNumber scanNumber = msScan->msScanInfoPntr->scanNumber;
-			const int pointCount = msScan->msScanInfoPntr->pointCount;
+			const float precursorMzVal = mssp->scanInfoPntr->precursorTargetMz;
+			const float mzTolPrecursor = MathUtils::calculatePPM(
+				precursorMzVal,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
 
-			float cutoffIntensity = -1.0;
-			constexpr int topNScanPoints = 500;
-			if (pointCount > topNScanPoints) {
-				QVector<float> intensityValsCopy(intensityVals.data(), intensityVals.data() + pointCount);
-				std::sort(intensityValsCopy.rbegin(), intensityValsCopy.rend());
-				cutoffIntensity = intensityValsCopy[topNScanPoints - 1];
-			}
-			for (int i = 0; i < pointCount; ++i) {
+			const float mzPrecursorMin = precursorMzVal - mzTolPrecursor;
+			const float mzPrecursorMax = precursorMzVal + mzTolPrecursor;
 
-				const float intensity = msScan->intensityVals[i];
-				if (intensity < cutoffIntensity) {
-					continue;
-				}
+			const float mzVal = mssp->mzVal;
+			const float mzTol = MathUtils::calculatePPM(
+				mzVal,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
 
-				constexpr float iRTMin = -10000;
-				constexpr float iRTMax = 10000;
+			const float mzMin = mzVal - mzTol;
+			const float mzMax = mzVal + mzTol;
 
-				const float mzVal = msScan->mzVals[i];
-				const float mzTol = MathUtils::calculatePPM(mzVal, static_cast<float>(parameters.ms2ExtractionWidthPPM));
-				const float mzMin = mzVal - mzTol;
-				const float mzMax = mzVal + mzTol;
+			QVector<MS2IonLibrary*> tdPeptideFrags;
+			e = fragger.extractMs2Points(
+				mzPrecursorMin,
+				mzPrecursorMax,
+				mzMin,
+				mzMax,
+				&tdPeptideFrags
+				); rree;
 
-				QVector<MS2Frag*> tdPeptideFrags;
-				e = fragger.extractMs2Points(
-					mzMin,
-					mzMax,
-					iRTMin,
-					iRTMax,
-					&tdPeptideFrags
-					); rree;
-			}
+			// if (tdPeptideFrags.size() > 3) {
+			// 	qDebug()
+			// 	<< mssp->scanInfoPntr->scanNumber
+			// 	<< tdPeptideFrags.size()
+			// 	<< "SDLFJDS"
+			// 	<< tdPeptideFrags.front()->targeDecoyCandidatePairPntr->mz(tdPeptideFrags.front()->isDecoy)
+			// 	<< tdPeptideFrags.back()->targeDecoyCandidatePairPntr->mz(tdPeptideFrags.back()->isDecoy)
+			// 	<< tdPeptideFrags.front()->ms2IonPntr->mz
+			// 	<< tdPeptideFrags.back()->ms2IonPntr->mz
+			// 	<< tdPeptideFrags.front()->isDecoy
+			// 	<< tdPeptideFrags.front()->targeDecoyCandidatePairPntr->peptideStringWithMods()
+			// 	<< tdPeptideFrags.back()->isDecoy
+			// 	<< tdPeptideFrags.back()->targeDecoyCandidatePairPntr->peptideStringWithMods()
+			// 	;
+			// }
 		}
 
 		return {e, -1};
@@ -472,9 +541,9 @@ Err PythiaDDAWorkflow::performFragging() {
 		);
 	e = processingGroupsResult.first; ree;
 
-	QVector<ProcessingGroup> &processingGroups = processingGroupsResult.second;
-
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
+
+		QVector<ProcessingGroup> processingGroups = processingGroupsResult.second;
 
 		QPair<Err, QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>>> ms2IonsLibraryTrancheResult
 																								= buildLibraryMS2IonsTrancheLogic(tdcps);
@@ -483,68 +552,39 @@ Err PythiaDDAWorkflow::performFragging() {
 																								= ms2IonsLibraryTrancheResult.second;
 
 		QVector<MS2IonLibrary> ms2IonLibraries;
-		e = buildM22IonLibraries(ms2IonsLibraryTranche, &ms2IonLibraries); ree;
-		std::sort(
-			ms2IonLibraries.begin(),
-			ms2IonLibraries.end(),
-			[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
-				return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
-			});
+		e = buildM22IonLibraries(
+			ms2IonsLibraryTranche,
+			&ms2IonLibraries
+			); ree;
 
-		for (ProcessingGroup &pg : processingGroups) {
-
-			constexpr float buffer = 2.f;
-			const float precursorMzMin = pg.mzPrecursorRangeMinMax.first - m_parameters.precursorExtractionWindowThomsons - buffer;
-			const float precursorMzMax = pg.mzPrecursorRangeMinMax.second + m_parameters.precursorExtractionWindowThomsons + buffer;
-
-			const int precursorMzMinLowerBoundIndex = std::upper_bound(
-				ms2IonLibraries.begin(),
-				ms2IonLibraries.end(),
-				precursorMzMin,
-				[](float val, const MS2IonLibrary &stct) {return stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy) > val;}
-				) - ms2IonLibraries.begin();
-
-			const int precursorMzMaxUpperBoundIndex = std::lower_bound(
-				ms2IonLibraries.begin(),
-				ms2IonLibraries.end(),
-				precursorMzMax,
-				[](const MS2IonLibrary &stct, float val) {return val > stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy);}
-				) - ms2IonLibraries.begin() - 1;
-
-			const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
-			if (size < 1) {
-				continue;
-			}
-
-			pg.ms2IonsLibrary.reserve(size);
-			for (int i = precursorMzMinLowerBoundIndex; i <= precursorMzMaxUpperBoundIndex; ++i) {
-				pg.ms2IonsLibrary.push_back(&ms2IonLibraries[i]);
-			}
-		}
+		e = addMs2IonsLibraryToProcessingGroups(
+			ms2IonLibraries,
+			m_parameters.precursorExtractionWindowThomsons,
+			&processingGroups
+			); ree;
 
 		e = checkProcessingGroupRangesAreValid(processingGroups); ree;
 
-// #define FRAG_PARALLEL
-// #ifdef FRAG_PARALLEL
-// 		const auto binderLogic = std::bind(
-// 			performFraggingLogic,
-// 			std::placeholders::_1,
-// 			ms2Ions,
-// 			m_parameters
-// 			);
-//
-// 		QFuture<QPair<Err, int>> futureScans = QtConcurrent::mapped(
-// 			msScansPntrsTranched,
-// 			binderLogic
-// 			);
-// 		futureScans.waitForFinished();
-// #else
-// 		for (const QVector<MsScan*> &msScans : msScansPntrsTranched) {
-// 			const QPair<Err, int> res = performFraggingLogic(msScans, ms2Ions, m_parameters);
-// 			e = res.first; ree;
-// 		}
-// #endif
-//
+#define FRAG_PARALLEL
+#ifdef FRAG_PARALLEL
+		const auto binderLogic = std::bind(
+			performFraggingLogic,
+			std::placeholders::_1,
+			m_parameters
+			);
+
+		QFuture<QPair<Err, int>> futureScans = QtConcurrent::mapped(
+			processingGroups,
+			binderLogic
+			);
+		futureScans.waitForFinished();
+#else
+		for (const ProcessingGroup &pgs : processingGroups) {
+			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
+			e = res.first; ree;
+		}
+#endif
+
 
 	}
 

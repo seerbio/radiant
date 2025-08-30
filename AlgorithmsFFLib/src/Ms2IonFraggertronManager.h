@@ -7,21 +7,33 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 #include "MS2Ion.h"
+#include "MsReaderBase.h"
+#include "TargetDecoyCandidatePair.h"
 
 #include "Error.h"
 
 using namespace Error;
 
+struct MsScanPoint {
+	MsScanInfo *scanInfoPntr = nullptr;
+	float mzVal = -1.0;
+	float intensityVal = -1.0;
+};
+
+struct MS2IonLibrary {
+	TargetDecoyCandidatePair *targeDecoyCandidatePairPntr = nullptr;
+	MS2Ion *ms2IonPntr = nullptr;
+	bool isDecoy = false;
+};
+
+struct ProcessingGroup {
+	QPair<float, float> mzPrecursorRangeMinMax;
+	QVector<MsScanPoint*> msScanPoints;
+	QVector<MS2IonLibrary*> ms2IonsLibrary;
+};
+
 class CandidateScores;
 class MsCalibratomatic;
-class MsScanInfo;
-class TargetDecoyCandidatePair;
-
-struct MS2Frag {
-	Id tdcpId = -1;
-	float mzVal = -1.f;
-	float intensityVal = -1.f;
-};
 
 class ALGORITHMSFFLIB_EXPORTS Ms2IonFraggertronManager {
 
@@ -33,7 +45,7 @@ public:
     ~Ms2IonFraggertronManager();
 
     [[nodiscard]] Err init(
-		const QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2Ions
+		const QVector<MS2IonLibrary*> &ms2IonsLibrary
     	) const;
 
     Err extractMs2Points(
@@ -41,8 +53,8 @@ public:
         float mzMax,
         float iRTMin,
         float iRTMax,
-        QVector<MS2Frag*> *tdPeptideFrags
-        );
+        QVector<MS2IonLibrary*> *tdPeptideFrags
+        ) const;
 
 private:
 
