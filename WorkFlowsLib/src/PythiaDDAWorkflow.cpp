@@ -22,6 +22,7 @@ Err PythiaDDAWorkflow::init(
 	e = ErrorUtils::fileExists(libraryFilePath); ree;
 
 	m_parameters = parameters;
+	m_parameters.ms2ExtractionWidthPPM = 7;
 	m_parameters.print();
 
 	e = FragLibReader::getFragLibReaderRows(
@@ -36,10 +37,6 @@ Err PythiaDDAWorkflow::init(
 
 	int idCounter = 0;
 	m_tdcpManager.getTargetDecoyCandidatePairPointers(&m_targetDecoyCandidatePairsPntrs);
-	for (TargetDecoyCandidatePair *tdcp : m_targetDecoyCandidatePairsPntrs) {
-		tdcp->id = idCounter;
-		idCounter += 2;
-	}
 
 	qDebug()
 	<< qPrintable(S_GLOBAL_TIMER.elapsed())
@@ -533,7 +530,6 @@ Err PythiaDDAWorkflow::performFragging() {
 		);
 	e = processingGroupsResult.first; ree;
 
-	int count = 0;
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
 
 		QVector<ProcessingGroup> processingGroups = processingGroupsResult.second;
@@ -575,7 +571,6 @@ Err PythiaDDAWorkflow::performFragging() {
 		for (const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &res : futureScans) {
 			e = res.first; ree;
 		}
-
 #else
 		for (const ProcessingGroup &pgs : processingGroups) {
 			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
@@ -584,9 +579,6 @@ Err PythiaDDAWorkflow::performFragging() {
 #endif
 
 	}
-
-
-	qDebug() << count << "DSFJKLSDJ";
 
 	ERR_RETURN
 }

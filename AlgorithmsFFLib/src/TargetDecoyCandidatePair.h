@@ -24,8 +24,6 @@ public:
     friend class DiscriminantScoretronTests;
     friend class QValueSettertronTests;
 
-	int id = -1;
-
     TargetDecoyCandidatePair();
 
     TargetDecoyCandidatePair(
