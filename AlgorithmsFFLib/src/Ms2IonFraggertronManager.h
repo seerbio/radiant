@@ -32,6 +32,11 @@ struct ProcessingGroup {
 	QVector<MS2IonLibrary*> ms2IonsLibrary;
 };
 
+struct IonSearchResult {
+	MsScanPoint* msScanPointPntr = nullptr;
+	MS2IonLibrary *ms2IonLibraryPntr = nullptr;
+};
+
 class CandidateScores;
 class MsCalibratomatic;
 

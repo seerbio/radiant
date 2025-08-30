@@ -442,7 +442,7 @@ namespace {
 		ERR_RETURN
 	}
 
-	QPair<Err, int> performFraggingLogic(
+	QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> performFraggingLogic(
 		const ProcessingGroup &pgs,
 		const PythiaParameters &parameters
 		) {
@@ -456,22 +456,23 @@ namespace {
 			<< "No ms2IonsLibrary found for precursor range"
 			<< pgs.mzPrecursorRangeMinMax.first << "-"
 			<< pgs.mzPrecursorRangeMinMax.second;
-			return {e, -1};
+			return {e, {}};
 		}
 
 		Ms2IonFraggertronManager fragger;
 		e = fragger.init(pgs.ms2IonsLibrary); rree;
 
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
+
 		for (MsScanPoint *mssp : pgs.msScanPoints) {
 
-			const float precursorMzVal = mssp->scanInfoPntr->precursorTargetMz;
-			const float mzTolPrecursor = MathUtils::calculatePPM(
-				precursorMzVal,
-				static_cast<float>(parameters.ms2ExtractionWidthPPM)
-				);
+			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
+										    - mssp->scanInfoPntr->isoWindowLower
+											- parameters.precursorExtractionWindowThomsons;
 
-			const float mzPrecursorMin = precursorMzVal - mzTolPrecursor;
-			const float mzPrecursorMax = precursorMzVal + mzTolPrecursor;
+			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
+											+ mssp->scanInfoPntr->isoWindowUpper
+											+ parameters.precursorExtractionWindowThomsons;
 
 			const float mzVal = mssp->mzVal;
 			const float mzTol = MathUtils::calculatePPM(
@@ -484,31 +485,22 @@ namespace {
 
 			QVector<MS2IonLibrary*> tdPeptideFrags;
 			e = fragger.extractMs2Points(
-				mzPrecursorMin,
-				mzPrecursorMax,
+				precursorMzValLower,
+				precursorMzValUpper,
 				mzMin,
 				mzMax,
 				&tdPeptideFrags
 				); rree;
 
-			// if (tdPeptideFrags.size() > 3) {
-			// 	qDebug()
-			// 	<< mssp->scanInfoPntr->scanNumber
-			// 	<< tdPeptideFrags.size()
-			// 	<< "SDLFJDS"
-			// 	<< tdPeptideFrags.front()->targeDecoyCandidatePairPntr->mz(tdPeptideFrags.front()->isDecoy)
-			// 	<< tdPeptideFrags.back()->targeDecoyCandidatePairPntr->mz(tdPeptideFrags.back()->isDecoy)
-			// 	<< tdPeptideFrags.front()->ms2IonPntr->mz
-			// 	<< tdPeptideFrags.back()->ms2IonPntr->mz
-			// 	<< tdPeptideFrags.front()->isDecoy
-			// 	<< tdPeptideFrags.front()->targeDecoyCandidatePairPntr->peptideStringWithMods()
-			// 	<< tdPeptideFrags.back()->isDecoy
-			// 	<< tdPeptideFrags.back()->targeDecoyCandidatePairPntr->peptideStringWithMods()
-			// 	;
-			// }
+			for (MS2IonLibrary *msil : tdPeptideFrags) {
+				IonSearchResult isr;
+				isr.ms2IonLibraryPntr = msil;
+				isr.msScanPointPntr = mssp;
+				ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
+			}
 		}
 
-		return {e, -1};
+		return {e, ionSearchResults};
 	}
 
 }//namespace
@@ -541,6 +533,7 @@ Err PythiaDDAWorkflow::performFragging() {
 		);
 	e = processingGroupsResult.first; ree;
 
+	int count = 0;
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
 
 		QVector<ProcessingGroup> processingGroups = processingGroupsResult.second;
@@ -573,11 +566,16 @@ Err PythiaDDAWorkflow::performFragging() {
 			m_parameters
 			);
 
-		QFuture<QPair<Err, int>> futureScans = QtConcurrent::mapped(
+		QFuture<QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>>> futureScans = QtConcurrent::mapped(
 			processingGroups,
 			binderLogic
 			);
 		futureScans.waitForFinished();
+
+		for (const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &res : futureScans) {
+			e = res.first; ree;
+		}
+
 #else
 		for (const ProcessingGroup &pgs : processingGroups) {
 			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
@@ -585,11 +583,10 @@ Err PythiaDDAWorkflow::performFragging() {
 		}
 #endif
 
-
 	}
 
 
-
+	qDebug() << count << "DSFJKLSDJ";
 
 	ERR_RETURN
 }
