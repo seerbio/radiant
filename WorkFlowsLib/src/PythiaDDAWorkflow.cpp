@@ -4,6 +4,8 @@
 
 #include "PythiaDDAWorkflow.h"
 
+#include <boost/geometry/index/rtree.hpp>
+
 #include "DeIsotopotron.h"
 #include "Ms2IonFraggertronManager.h"
 #include "MsReaderMzMLLazyLoad.h"
@@ -310,7 +312,7 @@ namespace {
 		return {e, tdcpMs2IonsTargetDecoyTpl};
 	}
 
-	Err buildM22IonLibraries(
+	Err buildMS2IonLibraries(
 		QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2IonsLibraryTranche,
 		QVector<MS2IonLibrary> *ms2IonLibraries
 		) {
@@ -388,20 +390,78 @@ namespace {
 		ERR_RETURN;
 	}
 
-	Err addMs2IonsLibraryToProcessingGroups(
-		QVector<MS2IonLibrary> &ms2IonLibraries,
-		float precursorExtractionWindowThomsons,
-		QVector<ProcessingGroup> *processingGroups
-		) {
 
-		ERR_INIT
-
+	void ms2IonLibrarySortLogic(QVector<MS2IonLibrary> &ms2IonLibraries) {
 		std::sort(
 			ms2IonLibraries.begin(),
 			ms2IonLibraries.end(),
 			[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
 				return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
 			});
+	}
+
+	const auto sortLogicMzAsc = [](const MS2IonLibrary &l, const MS2IonLibrary &r) {
+		return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
+	};
+
+	void parallelSortMS2IonLibraries(
+		int threadCount,
+		QVector<MS2IonLibrary> *ms2IonLibraries
+		) {
+
+		auto [minIt, maxIt] = std::minmax_element(
+			ms2IonLibraries->begin(),
+			ms2IonLibraries->end(),
+			sortLogicMzAsc
+			);
+
+		const MS2IonLibrary min = *minIt;
+		const MS2IonLibrary max = *maxIt;
+
+		const int numTranches = threadCount;
+		const int range = max.targeDecoyCandidatePairPntr->mz(max.isDecoy)
+						- min.targeDecoyCandidatePairPntr->mz(min.isDecoy) + 1;
+
+		const int trancheSize = range / numTranches;
+
+		QVector<QVector<MS2IonLibrary>> tranches(numTranches);
+		for (const MS2IonLibrary &num : *ms2IonLibraries) {
+			int trancheIndex = (
+				static_cast<int>(num.targeDecoyCandidatePairPntr->mz(num.isDecoy) - min.targeDecoyCandidatePairPntr->mz(min.isDecoy))
+				) / trancheSize;
+			trancheIndex = std::min(trancheIndex, numTranches - 1);  // Handle edge case
+			tranches[trancheIndex].push_back(num);
+		}
+
+		QFuture<void> sortedTranchesFuture = QtConcurrent::map(tranches, ms2IonLibrarySortLogic);
+		sortedTranchesFuture.waitForFinished();
+
+		ms2IonLibraries->clear();
+		for (const QVector<MS2IonLibrary> &l : tranches) {
+			ms2IonLibraries->append(l);
+		}
+	}
+
+	Err addMs2IonsLibraryToProcessingGroups(
+		QVector<MS2IonLibrary> &ms2IonLibraries,
+		float precursorExtractionWindowThomsons,
+		int threadCount,
+		QVector<ProcessingGroup> *processingGroups
+		) {
+
+		ERR_INIT
+
+		parallelSortMS2IonLibraries(
+			threadCount,
+			&ms2IonLibraries
+			);
+
+		const bool isSorted = std::is_sorted(
+			ms2IonLibraries.begin(),
+			ms2IonLibraries.end(),
+			sortLogicMzAsc
+			);
+		e = ErrorUtils::isTrue(isSorted); ree;
 
 		for (ProcessingGroup &pg : *processingGroups) {
 
@@ -500,6 +560,72 @@ namespace {
 		return {e, ionSearchResults};
 	}
 
+	struct TallyResult {
+		ScanNumber scanNumber;
+		Occurrence occurrence;
+	};
+
+	using TallyResultTarget = TallyResult;
+	using TallyResultDecoy = TallyResult;
+	using TallyResultTuple = std::tuple<Err, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
+
+	TallyResultTuple collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
+		const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &input
+		) {
+
+		ERR_INIT
+
+		e = input.first; rtee;
+
+		QHash<ScanNumber, Occurrence> occurrencesTarget;
+		QHash<ScanNumber, Occurrence> occurrencesDecoy;
+		for (const QVector<IonSearchResult> &isrs : input.second) {
+			for (const IonSearchResult &isr : isrs) {
+
+				if (isr.ms2IonLibraryPntr->isDecoy) {
+					occurrencesDecoy[isr.msScanPointPntr->scanInfoPntr->scanNumber]++;
+					continue;
+				}
+
+				occurrencesTarget[isr.msScanPointPntr->scanInfoPntr->scanNumber]++;
+			}
+		}
+
+		constexpr int occurenceCountMin = 3;
+
+		QVector<TallyResultTarget> tallyResultsTarget;
+		tallyResultsTarget.reserve(occurrencesTarget.size());
+		for (auto it = occurrencesTarget.begin(); it != occurrencesTarget.end(); ++it) {
+			if (it.value() <= occurenceCountMin) {
+				continue;
+			}
+			tallyResultsTarget.push_back({it.key(), it.value()});
+		}
+
+		std::sort(
+			tallyResultsTarget.rbegin(),
+			tallyResultsTarget.rend(),
+			[](const TallyResult &l, const TallyResult &r) {return l.scanNumber < r.scanNumber;}
+			);
+
+		QVector<TallyResultDecoy> tallyResultsDecoy;
+		tallyResultsDecoy.reserve(occurrencesDecoy.size());
+		for (auto it = occurrencesDecoy.begin(); it != occurrencesDecoy.end(); ++it) {
+			if (it.value() <= occurenceCountMin) {
+				continue;
+			}
+			tallyResultsDecoy.push_back({it.key(), it.value()});
+		}
+
+		std::sort(
+			tallyResultsDecoy.rbegin(),
+			tallyResultsDecoy.rend(),
+			[](const TallyResult &l, const TallyResult &r) {return l.scanNumber < r.scanNumber;}
+			);
+
+		return {e, tallyResultsTarget, tallyResultsDecoy};
+	}
+
 }//namespace
 Err PythiaDDAWorkflow::performFragging() {
 
@@ -509,7 +635,11 @@ Err PythiaDDAWorkflow::performFragging() {
 	et.start();
 
 	QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
-	constexpr int libTrancheSize = 4;
+
+	constexpr int batchSize = 2e5;
+	const int libTrancheSize = std::max(m_targetDecoyCandidatePairsPntrs.size() / batchSize, 1);
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Processing library in" << libTrancheSize << "tranches";
+
 	e = ParallelUtils::trancheVectorForParallelization(
 		m_targetDecoyCandidatePairsPntrs,
 		libTrancheSize,
@@ -541,7 +671,7 @@ Err PythiaDDAWorkflow::performFragging() {
 																								= ms2IonsLibraryTrancheResult.second;
 
 		QVector<MS2IonLibrary> ms2IonLibraries;
-		e = buildM22IonLibraries(
+		e = buildMS2IonLibraries(
 			ms2IonsLibraryTranche,
 			&ms2IonLibraries
 			); ree;
@@ -549,10 +679,12 @@ Err PythiaDDAWorkflow::performFragging() {
 		e = addMs2IonsLibraryToProcessingGroups(
 			ms2IonLibraries,
 			m_parameters.precursorExtractionWindowThomsons,
+			m_parameters.threadCount,
 			&processingGroups
 			); ree;
 
 		e = checkProcessingGroupRangesAreValid(processingGroups); ree;
+
 
 #define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
@@ -568,9 +700,11 @@ Err PythiaDDAWorkflow::performFragging() {
 			);
 		futureScans.waitForFinished();
 
-		for (const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &res : futureScans) {
-			e = res.first; ree;
-		}
+		QFuture<TallyResultTuple> futureResults = QtConcurrent::mapped(
+			futureScans,
+			collateScanNumberVsOccurrencesTargetDecoyCandidatePairs
+			);
+		futureResults.waitForFinished();
 #else
 		for (const ProcessingGroup &pgs : processingGroups) {
 			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
