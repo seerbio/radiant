@@ -23,6 +23,52 @@ class UTILSLIB_EXPORTS ParallelUtils {
 
 public:
 
+	static double getCpuLoad() {
+		static long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle;
+		QFile file("/proc/stat");
+
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			qWarning() << "Failed to open /proc/stat";
+			return -1;
+		}
+
+		QTextStream in(&file);
+
+		while (!in.atEnd()) {
+			QString line = in.readLine();
+			if (line.startsWith("cpu ")) {
+				QStringList values = line.split(" ", Qt::SkipEmptyParts);
+				if (values.size() < 5) {
+					qWarning() << "Unexpected format in /proc/stat";
+					return -1;
+				}
+
+				long long totalUser = values[1].toLongLong();
+				long long totalUserLow = values[2].toLongLong();
+				long long totalSys = values[3].toLongLong();
+				long long totalIdle = values[4].toLongLong();
+
+				long long total = (totalUser - lastTotalUser) +
+								  (totalUserLow - lastTotalUserLow) +
+								  (totalSys - lastTotalSys);
+				long long totalTime = total + (totalIdle - lastTotalIdle);
+
+				lastTotalUser = totalUser;
+				lastTotalUserLow = totalUserLow;
+				lastTotalSys = totalSys;
+				lastTotalIdle = totalIdle;
+
+				if (totalTime == 0) {
+					return 0;
+				}
+
+				return (double)total / totalTime * 100.0; // CPU usage in percentage
+			}
+		}
+
+		return -1;
+	}
+
     static long getCurrentRSS() {
         std::ifstream procStatus("/proc/self/status");
         std::string line;
