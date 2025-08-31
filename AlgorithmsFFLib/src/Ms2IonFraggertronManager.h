@@ -28,7 +28,7 @@ struct MS2IonLibrary {
 
 struct ProcessingGroup {
 	QPair<float, float> mzPrecursorRangeMinMax;
-	QVector<MsScanPoint*> msScanPoints;
+	QVector<MsScanPoint*> *msScanPointsPntr = nullptr;
 	QVector<MS2IonLibrary*> ms2IonsLibrary;
 };
 

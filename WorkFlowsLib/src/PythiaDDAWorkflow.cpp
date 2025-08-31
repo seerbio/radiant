@@ -25,6 +25,7 @@ Err PythiaDDAWorkflow::init(
 
 	m_parameters = parameters;
 	m_parameters.ms2ExtractionWidthPPM = 7;
+	// m_parameters.threadCount = 64; //TODO use higher threadcount to load balans
 	m_parameters.print();
 
 	e = FragLibReader::getFragLibReaderRows(
@@ -55,17 +56,72 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 
 	MsReaderPointerAcc msReaderPtr;
 	e = msReaderPtr.openFile(msDataFilePath); ree;
+	e = buildMsScanPointPntrs(&msReaderPtr); ree;
+	e = performFragging(); ree;
+
+	ERR_RETURN
+}
+
+Err PythiaDDAWorkflow::buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr) {
+	ERR_INIT
 
 	constexpr int msLevel = 2;
-	m_scanNumberVsMsScanInfoMS2 = msReaderPtr.ptr->getMsScanInfos(msLevel); ree;
+	m_scanNumberVsMsScanInfoMS2 = msReaderPtr->ptr->getMsScanInfos(msLevel); ree;
 	e = ErrorUtils::isNotEmpty(m_scanNumberVsMsScanInfoMS2); ree;
 
+	QVector<MsScanInfo*> msScanInfosMS2 = m_scanNumberVsMsScanInfoMS2.values().toVector();
+	std::sort(
+		msScanInfosMS2.begin(),
+		msScanInfosMS2.end(),
+		[](const MsScanInfo *l, const MsScanInfo *r) {
+			return l->precursorTargetMz < r->precursorTargetMz;
+		});
+
 	e = extractScansParallel(
-		m_scanNumberVsMsScanInfoMS2.values().toVector(),
-		&msReaderPtr
+		msScanInfosMS2,
+		msReaderPtr
 		); ree;
 
-	e = performFragging(); ree;
+	const int ms2PointCount = std::accumulate(
+		m_msScanPointsTranched.begin(),
+		m_msScanPointsTranched.end(),
+		0,
+		[](int sum, const QVector<MsScanPoint> &v) {return sum + v.size();}
+		);
+
+	const int trancheSize = ms2PointCount / m_parameters.threadCount;
+	m_msScanPointsPntrsTranched.resize(m_parameters.threadCount);
+
+	QVector<MsScanPoint*> currentMsScanPointsPntrsTranche;
+	currentMsScanPointsPntrsTranche.reserve(trancheSize + m_parameters.threadCount);
+
+	int counter = 0;
+	for (QVector<MsScanPoint> &v : m_msScanPointsTranched) {
+
+		for (MsScanPoint &p : v) {
+
+			currentMsScanPointsPntrsTranche.push_back(&p);
+
+			if (currentMsScanPointsPntrsTranche.size() >= trancheSize) {
+
+				m_msScanPointsPntrsTranched[std::min(counter++, m_parameters.threadCount -1)] = currentMsScanPointsPntrsTranche;
+
+				//TODO parallel sort this if you decide this sort is necessary
+				// std::sort(
+				// 	currentMsScanPointsPntrsTranche.begin(),
+				// 	currentMsScanPointsPntrsTranche.end(),
+				// 	[](const MsScanPoint *l, const MsScanPoint *r) {
+				// 		return l->scanInfoPntr->precursorTargetMz < r->scanInfoPntr->precursorTargetMz;
+				// 	});
+
+				m_mzPrecursorStartVsStopResult.push_back({
+					currentMsScanPointsPntrsTranche.front()->scanInfoPntr->precursorTargetMz,
+					currentMsScanPointsPntrsTranche.back()->scanInfoPntr->precursorTargetMz
+				});
+				currentMsScanPointsPntrsTranche.clear();
+			}
+		}
+	}
 
 	ERR_RETURN
 }
@@ -128,9 +184,10 @@ Err PythiaDDAWorkflow::extractScansParallel(
 	e = ErrorUtils::isTrue(msReaderPtr->isInit()); ree;
 
 	QVector<QVector<MsScanInfo*>> scanInfosPntrsTranched;
-	e = ParallelUtils::trancheVectorForParallelization(
+	e = ParallelUtils::trancheVectorForParallelizationInOrder(
 		scanInfosPntrs,
 		m_parameters.threadCount * 4,
+		0,
 		&scanInfosPntrsTranched
 		); ree;
 
@@ -156,120 +213,82 @@ Err PythiaDDAWorkflow::extractScansParallel(
 	ERR_RETURN
 }
 
+
 namespace {
 
-	QPair<Err, QVector<QPair<float, float>>> buildMzPrecursorTargetRanges(
-		const QVector<QVector<MsScanPoint>> &msScanPointsTranched,
-		int threadCount
-		) {
-		ERR_INIT
-
-		e = ErrorUtils::isNotEmpty(msScanPointsTranched); rree;
-		e = ErrorUtils::isNotEmpty(msScanPointsTranched.front()); rree;
-		e = ErrorUtils::isNotEmpty(msScanPointsTranched.back()); rree;
-
-		QVector<float> precursorMzValsSample;
-		for (const QVector<MsScanPoint> &msScanPoints : msScanPointsTranched) {
-
-			constexpr int skipCount = 50;
-			for (int i = 0; i <= msScanPoints.size(); i += skipCount) {
-
-				const MsScanPoint &msScanPoint = msScanPoints[i];
-				precursorMzValsSample.append(msScanPoint.scanInfoPntr->precursorTargetMz);
-			}
-		}
-		std::sort(precursorMzValsSample.begin(), precursorMzValsSample.end());
-		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Sample mz distribution size" << precursorMzValsSample.size();
-
-		QVector<QVector<float>> precursorMzValsSampleTranched;
-		e = ParallelUtils::trancheVectorForParallelizationInOrder(
-			precursorMzValsSample,
-			threadCount,
-			0,
-			&precursorMzValsSampleTranched
-			); rree;
-
-		QVector<QPair<float, float>> precursorMzValsStartStopTranches;
-		for (const QVector<float> &v : precursorMzValsSampleTranched) {
-			precursorMzValsStartStopTranches.push_back({v.front(), v.back()});
-		}
-
-		return {e, precursorMzValsStartStopTranches};
-	}
-
-	QPair<Err, QVector<ProcessingGroup>> rearrangeMsScanPointsByMzPrecursorTargetRanges(
-		QVector<QVector<MsScanPoint>> &msScanPointsTranched,
-		const QVector<QPair<float, float>> &mzPrecursorTargetRanges
-		) {
-
-		ERR_INIT
-
-		e = ErrorUtils::isNotEmpty(msScanPointsTranched); rree;
-		e = ErrorUtils::isNotEmpty(mzPrecursorTargetRanges); rree;
-
-		QVector<ProcessingGroup> processingGroups(mzPrecursorTargetRanges.size());
-		for (int i = 0; i < mzPrecursorTargetRanges.size(); i++) {
-			processingGroups[i].mzPrecursorRangeMinMax = mzPrecursorTargetRanges[i];
-		}
-
-		for (QVector<MsScanPoint> &msScanPoints : msScanPointsTranched) {
-
-			const bool isSortedMzAsc = std::is_sorted(
-				msScanPoints.begin(),
-				msScanPoints.end(),
-				[](const MsScanPoint &l, const MsScanPoint &r) {
-					if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
-						return l.mzVal < r.mzVal;
-					}
-					return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
-				});
-			e = ErrorUtils::isTrue(isSortedMzAsc); rree;
-
-			for (ProcessingGroup &pr : processingGroups) {
-				const float precursorMzMin = pr.mzPrecursorRangeMinMax.first;
-				const float precursorMzMax = pr.mzPrecursorRangeMinMax.second;
-
-				const int precursorMzMinLowerBoundIndex = std::upper_bound(
-					msScanPoints.begin(),
-					msScanPoints.end(),
-					precursorMzMin,
-					[](float val, const MsScanPoint &stct) {return stct.scanInfoPntr->precursorTargetMz > val;}
-					) - msScanPoints.begin();
-
-				const int precursorMzMaxUpperBoundIndex = std::lower_bound(
-					msScanPoints.begin(),
-					msScanPoints.end(),
-					precursorMzMax,
-					[](const MsScanPoint &stct, float val) {return val > stct.scanInfoPntr->precursorTargetMz;}
-					) - msScanPoints.begin() - 1;
-
-				const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
-				if (size < 1) {
-					continue;
-				}
-
-				pr.msScanPoints.reserve(size);
-				for(int i = precursorMzMinLowerBoundIndex; i <= precursorMzMaxUpperBoundIndex; i++) {
-					pr.msScanPoints.push_back(&msScanPoints[i]);
-				}
-
-				e = ErrorUtils::isAboveThreshold(
-					pr.msScanPoints.front()->scanInfoPntr->precursorTargetMz,
-					precursorMzMin,
-					ErrorUtilsParam::IncludeThreshold
-					); rree;
-
-				e = ErrorUtils::isBelowThreshold(
-					pr.msScanPoints.back()->scanInfoPntr->precursorTargetMz,
-					precursorMzMax,
-					ErrorUtilsParam::IncludeThreshold
-					); rree;
-
-			}
-		}
-
-		return {e, processingGroups};
-	}
+	// QPair<Err, QVector<ProcessingGroup>> rearrangeMsScanPointsByMzPrecursorTargetRanges(
+	// 	QVector<QVector<MsScanPoint*>> &msScanPointsTranched,
+	// 	const QVector<QPair<float, float>> &mzPrecursorTargetRanges
+	// 	) {
+	//
+	// 	ERR_INIT
+	//
+	// 	e = ErrorUtils::isNotEmpty(msScanPointsTranched); rree;
+	// 	e = ErrorUtils::isNotEmpty(mzPrecursorTargetRanges); rree;
+	//
+	// 	QVector<ProcessingGroup> processingGroups(mzPrecursorTargetRanges.size());
+	// 	for (int i = 0; i < mzPrecursorTargetRanges.size(); i++) {
+	// 		processingGroups[i].mzPrecursorRangeMinMax = mzPrecursorTargetRanges[i];
+	// 	}
+	//
+	// 	for (QVector<MsScanPoint*> &msScanPoints : msScanPointsTranched) {
+	//
+	// 		const bool isSortedMzAsc = std::is_sorted(
+	// 			msScanPoints.begin(),
+	// 			msScanPoints.end(),
+	// 			[](const MsScanPoint &l, const MsScanPoint &r) {
+	// 				if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
+	// 					return l.mzVal < r.mzVal;
+	// 				}
+	// 				return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
+	// 			});
+	// 		e = ErrorUtils::isTrue(isSortedMzAsc); rree;
+	//
+	// 		for (ProcessingGroup &pr : processingGroups) {
+	// 			const float precursorMzMin = pr.mzPrecursorRangeMinMax.first;
+	// 			const float precursorMzMax = pr.mzPrecursorRangeMinMax.second;
+	//
+	// 			const int precursorMzMinLowerBoundIndex = std::upper_bound(
+	// 				msScanPoints.begin(),
+	// 				msScanPoints.end(),
+	// 				precursorMzMin,
+	// 				[](float val, const MsScanPoint &stct) {return stct.scanInfoPntr->precursorTargetMz > val;}
+	// 				) - msScanPoints.begin();
+	//
+	// 			const int precursorMzMaxUpperBoundIndex = std::lower_bound(
+	// 				msScanPoints.begin(),
+	// 				msScanPoints.end(),
+	// 				precursorMzMax,
+	// 				[](const MsScanPoint &stct, float val) {return val > stct.scanInfoPntr->precursorTargetMz;}
+	// 				) - msScanPoints.begin() - 1;
+	//
+	// 			const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
+	// 			if (size < 1) {
+	// 				continue;
+	// 			}
+	//
+	// 			pr.msScanPoints.reserve(size);
+	// 			for(int i = precursorMzMinLowerBoundIndex; i <= precursorMzMaxUpperBoundIndex; i++) {
+	// 				pr.msScanPoints.push_back(&msScanPoints[i]);
+	// 			}
+	//
+	// 			e = ErrorUtils::isAboveThreshold(
+	// 				pr.msScanPoints.front()->scanInfoPntr->precursorTargetMz,
+	// 				precursorMzMin,
+	// 				ErrorUtilsParam::IncludeThreshold
+	// 				); rree;
+	//
+	// 			e = ErrorUtils::isBelowThreshold(
+	// 				pr.msScanPoints.back()->scanInfoPntr->precursorTargetMz,
+	// 				precursorMzMax,
+	// 				ErrorUtilsParam::IncludeThreshold
+	// 				); rree;
+	//
+	// 		}
+	// 	}
+	//
+	// 	return {e, processingGroups};
+	// }
 
 	std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> buildMs2Ions(
 		TargetDecoyCandidatePair *tdcp
@@ -288,7 +307,6 @@ namespace {
 
 		return res;
 	}
-
 
 	QPair<Err, QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>>>
 										buildLibraryMS2IonsTrancheLogic(const QVector<TargetDecoyCandidatePair*> &tdcps) {
@@ -356,22 +374,22 @@ namespace {
 	Err checkProcessingGroupRangesAreValid(const QVector<ProcessingGroup> &processingGroups) {
 		ERR_INIT
 
-		for (const ProcessingGroup &pg : processingGroups) {
-
-			// e = ErrorUtils::isNotEmpty(pg.ms2IonsLibrary); eee_absorb;
-			e = ErrorUtils::isNotEmpty(pg.msScanPoints); ree;
-
-			e = ErrorUtils::isAboveThreshold(
-				pg.msScanPoints.front()->scanInfoPntr->precursorTargetMz,
-				pg.mzPrecursorRangeMinMax.first,
-				ErrorUtilsParam::IncludeThreshold
-				); ree;
-
-			e = ErrorUtils::isBelowThreshold(
-				pg.msScanPoints.back()->scanInfoPntr->precursorTargetMz,
-				pg.mzPrecursorRangeMinMax.second,
-				ErrorUtilsParam::IncludeThreshold
-				); ree;
+		// for (const ProcessingGroup &pg : processingGroups) {
+		//
+		// 	// e = ErrorUtils::isNotEmpty(pg.ms2IonsLibrary); eee_absorb;
+		// 	e = ErrorUtils::isNotEmpty(pg.msScanPoints); ree;
+		//
+		// 	e = ErrorUtils::isAboveThreshold(
+		// 		pg.msScanPoints.front()->scanInfoPntr->precursorTargetMz,
+		// 		pg.mzPrecursorRangeMinMax.first,
+		// 		ErrorUtilsParam::IncludeThreshold
+		// 		); ree;
+		//
+		// 	e = ErrorUtils::isBelowThreshold(
+		// 		pg.msScanPoints.back()->scanInfoPntr->precursorTargetMz,
+		// 		pg.mzPrecursorRangeMinMax.second,
+		// 		ErrorUtilsParam::IncludeThreshold
+		// 		); ree;
 
 			// e = ErrorUtils::isAboveThreshold(
 			// 	pg.mzPrecursorRangeMinMax.first,
@@ -385,7 +403,7 @@ namespace {
 			// 	ErrorUtilsParam::IncludeThreshold
 			// 	); ree;
 
-		}
+		// }
 
 		ERR_RETURN;
 	}
@@ -497,240 +515,285 @@ namespace {
 
 		ERR_RETURN
 	}
+	//
+	// QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> performFraggingLogic(
+	// 	const ProcessingGroup &pgs,
+	// 	const PythiaParameters &parameters
+	// 	) {
+	//
+	// 	ERR_INIT
+	//
+	// // 	e = ErrorUtils::isNotEmpty(pgs.msScanPoints); rree;
+	// //
+	// // 	if (pgs.ms2IonsLibrary.isEmpty()) {
+	// // 		qDebug()
+	// // 			<< "No ms2IonsLibrary found for precursor range"
+	// // 			<< pgs.mzPrecursorRangeMinMax.first << "-"
+	// // 			<< pgs.mzPrecursorRangeMinMax.second
+	// // 		;
+	// // 		return {e, {}};
+	// // 	}
+	// //
+	// // 	Ms2IonFraggertronManager fragger;
+	// // 	e = fragger.init(pgs.ms2IonsLibrary); rree;
+	// //
+	// // 	QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
+	// //
+	// // 	for (MsScanPoint *mssp : pgs.msScanPoints) {
+	// // 		const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
+	// // 										- mssp->scanInfoPntr->isoWindowLower
+	// // 										- parameters.precursorExtractionWindowThomsons;
+	// //
+	// // 		const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
+	// // 										+ mssp->scanInfoPntr->isoWindowUpper
+	// // 										+ parameters.precursorExtractionWindowThomsons;
+	// //
+	// // 		const float mzVal = mssp->mzVal;
+	// // 		const float mzTol = MathUtils::calculatePPM(
+	// // 			mzVal,
+	// // 			static_cast<float>(parameters.ms2ExtractionWidthPPM)
+	// // 			);
+	// //
+	// // 		const float mzMin = mzVal - mzTol;
+	// // 		const float mzMax = mzVal + mzTol;
+	// //
+	// // 		QVector<MS2IonLibrary*> tdPeptideFrags;
+	// // 		e = fragger.extractMs2Points(
+	// // 			precursorMzValLower,
+	// // 			precursorMzValUpper,
+	// // 			mzMin,
+	// // 			mzMax,
+	// // 			&tdPeptideFrags
+	// // 			); rree;
+	// //
+	// // 		std::sort(
+	// // 			tdPeptideFrags.begin(),
+	// // 			tdPeptideFrags.end(),
+	// // 			[](const MS2IonLibrary *l, const MS2IonLibrary *r) {
+	// // 				return l->targeDecoyCandidatePairPntr < r->targeDecoyCandidatePairPntr;
+	// // 			}
+	// // 		);
+	// //
+	// // 		for (MS2IonLibrary *msil : tdPeptideFrags) {
+	// // 			IonSearchResult isr;
+	// // 			isr.ms2IonLibraryPntr = msil;
+	// // 			isr.msScanPointPntr = mssp;
+	// // 			ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
+	// // 		}
+	// // 	}
+	// //
+	// // 	return {e, ionSearchResults};
+	// // }
+	// //
+	// struct TallyResult {
+	// 	ScanNumber scanNumber = -1;
+	// 	Occurrence occurrence = 0;
+	// 	QVector<int> ranks;
+	// 	// int indexesFoundY = 0;
+	// 	// int indexesFoundB = 0;
+	// 	// int seqTagLongestY = 0;
+	// 	// int seqTagLongestB = 0;
+	// };
+	//
+	// using TallyResultTarget = TallyResult;
+	// using TallyResultDecoy = TallyResult;
+	// using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
+	//
+	// // int findLongestContinuousSequenceSize(const QSet<int>& set) {
+	// // 	QSet<int> hashSet = set;
+	// //
+	// // 	int maxLength = 0;
+	// //
+	// // 	for (int num : set) {
+	// // 		if (!hashSet.contains(num - 1)) {
+	// // 			int currentLength = 1;
+	// // 			int currentNum = num;
+	// //
+	// // 			while (hashSet.contains(currentNum + 1)) {
+	// // 				currentNum++;
+	// // 				currentLength++;
+	// // 			}
+	// //
+	// // 			maxLength = std::max(maxLength, currentLength);
+	// // 		}
+	// // 	}
+	// //
+	// // 	return maxLength;
+	// // }
+	// //
+	//
+	// // QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
+	// // 	const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &input
+	// // 	) {
+	// //
+	// // 	ERR_INIT
+	// //
+	// // 	e = input.first; rtee;
+	// //
+	// // 	struct T {
+	// // 		Occurrence occurrence = 0;
+	// // 		QVector<int> ranks;
+	// // 		// QSet<int> indexesFoundY;
+	// // 		// QSet<int> indexesFoundB;
+	// // 	};
+	// //
+	// 	// QVector<TallyResultTuple> result;
+	// //
+	// // 	QHash<ScanNumber, T> occurrencesTarget;
+	// // 	QHash<ScanNumber, T> occurrencesDecoy;
+	// //
+	// // 	for (auto it = input.second.begin(); it != input.second.end(); it++) {
+	// //
+	// // 		occurrencesTarget.clear();
+	// // 		occurrencesDecoy.clear();
+	// //
+	// // 		const QVector<IonSearchResult> &isrs = it.value();
+	// // 		TargetDecoyCandidatePair *targetDecoyCandidatePair = it.key();
+	// //
+	// // 		for (const IonSearchResult &isr : isrs) {
+	// // 			const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
+	// // 			if (isr.ms2IonLibraryPntr->isDecoy) {
+	// // 				auto &[occurrence, ranks] = occurrencesDecoy[scanNumber];
+	// // 				occurrence++;
+	// // 				ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 				// if (isr.ms2IonLibraryPntr->ms2IonPntr->ionLabel.contains("y")) {
+	// // 				// 	occurrencesDecoy[scanNumber].indexesFoundY.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 				// }
+	// // 				// else {
+	// // 				// 	occurrencesDecoy[scanNumber].indexesFoundB.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 				// }
+	// // 				continue;
+	// // 			}
+	// //
+	// // 			auto &[occurrence, ranks] = occurrencesTarget[scanNumber];
+	// // 			occurrence++;
+	// // 			ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 			// if (isr.ms2IonLibraryPntr->ms2IonPntr->ionLabel.contains("y")) {
+	// // 			// 	occurrencesDecoy[scanNumber].indexesFoundY.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 			// }
+	// // 			// else {
+	// // 			// 	occurrencesDecoy[scanNumber].indexesFoundB.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+	// // 			// }
+	// // 		}
+	// //
+	// // 		if (occurrencesTarget.isEmpty() && occurrencesDecoy.isEmpty()) {
+	// // 			continue;
+	// // 		}
+	// //
+	// // 		constexpr int occurenceCountMin = 3;
+	// //
+	// // 		QVector<TallyResultTarget> tallyResultsTarget;
+	// // 		if (!occurrencesTarget.isEmpty()) {
+	// //
+	// // 			for (auto itt = occurrencesTarget.begin(); itt != occurrencesTarget.end(); ++itt) {
+	// //
+	// // 				if (itt.value().occurrence <= occurenceCountMin) {
+	// // 					continue;
+	// // 				}
+	// //
+	// // 				TallyResultTarget tallyResult;
+	// // 				tallyResult.scanNumber = itt.key();
+	// // 				tallyResult.occurrence = itt.value().occurrence;
+	// // 				tallyResult.ranks = itt.value().ranks;
+	// // 				// tallyResult.indexesFoundY = it.value().indexesFoundY.size();
+	// // 				// tallyResult.indexesFoundB = it.value().indexesFoundB.size();
+	// // 				// tallyResult.seqTagLongestY = findLongestContinuousSequenceSize(it.value().indexesFoundY);
+	// // 				// tallyResult.seqTagLongestB = findLongestContinuousSequenceSize(it.value().indexesFoundB);
+	// //
+	// // 				tallyResultsTarget.push_back(tallyResult);
+	// // 			}
+	// //
+	// // 			if (!tallyResultsTarget.isEmpty()) {
+	// // 				std::sort(
+	// // 					tallyResultsTarget.rbegin(),
+	// // 					tallyResultsTarget.rend(),
+	// // 					[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
+	// // 				);
+	// // 			}
+	// // 		}
+	// //
+	// // 		QVector<TallyResultTarget> tallyResultsDecoy;
+	// // 		if (!occurrencesDecoy.isEmpty()) {
+	// //
+	// // 			for (auto itt = occurrencesDecoy.begin(); itt != occurrencesDecoy.end(); ++itt) {
+	// //
+	// // 				if (itt.value().occurrence <= occurenceCountMin) {
+	// // 					continue;
+	// // 				}
+	// //
+	// // 				TallyResultTarget tallyResult;
+	// // 				tallyResult.scanNumber = itt.key();
+	// // 				tallyResult.occurrence = itt.value().occurrence;
+	// // 				tallyResult.ranks = itt.value().ranks;
+	// // 				// tallyResult.indexesFoundY = it.value().indexesFoundY.size();
+	// // 				// tallyResult.indexesFoundB = it.value().indexesFoundB.size();
+	// // 				// tallyResult.seqTagLongestY = findLongestContinuousSequenceSize(it.value().indexesFoundY);
+	// // 				// tallyResult.seqTagLongestB = findLongestContinuousSequenceSize(it.value().indexesFoundB);
+	// //
+	// // 				tallyResultsDecoy.push_back(tallyResult);
+	// // 			}
+	// //
+	// // 			if (!tallyResultsDecoy.isEmpty()) {
+	// // 				std::sort(
+	// // 					tallyResultsDecoy.rbegin(),
+	// // 					tallyResultsDecoy.rend(),
+	// // 					[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
+	// // 				);
+	// // 			}
+	// // 		}
+	// //
+	// // 		if (tallyResultsTarget.isEmpty() && tallyResultsDecoy.isEmpty()) {
+	// // 			continue;
+	// // 		}
+	// //
+	// // 		result.push_back({targetDecoyCandidatePair, tallyResultsTarget, tallyResultsDecoy});
+	// // 	}
+	// //
+	// // 	return {e, result};
+	// }
 
-	QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> performFraggingLogic(
-		const ProcessingGroup &pgs,
-		const PythiaParameters &parameters
+	Err initProcessingGroups(
+		const QVector<QPair<float, float>> &mzPrecursorStartVsStopResult,
+		QVector<QVector<MsScanPoint*>> *msScanPointsPntrsTranched,
+		QVector<ProcessingGroup> *processingGroups
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(pgs.msScanPoints); rree;
+		e = ErrorUtils::isNotEmpty(*msScanPointsPntrsTranched); ree;
+		e = ErrorUtils::isEqual(mzPrecursorStartVsStopResult.size(), msScanPointsPntrsTranched->size()); ree;
 
-		if (pgs.ms2IonsLibrary.isEmpty()) {
-			qDebug()
-				<< "No ms2IonsLibrary found for precursor range"
-				<< pgs.mzPrecursorRangeMinMax.first << "-"
-				<< pgs.mzPrecursorRangeMinMax.second
-			;
-			return {e, {}};
+		processingGroups->resize(msScanPointsPntrsTranched->size());
+
+		for (int i = 0; i < msScanPointsPntrsTranched->size(); i++) {
+			ProcessingGroup processingGroup;
+			processingGroup.msScanPointsPntr = &(*msScanPointsPntrsTranched)[i];
+			(*processingGroups)[i] = processingGroup;
 		}
 
-		Ms2IonFraggertronManager fragger;
-		e = fragger.init(pgs.ms2IonsLibrary); rree;
-
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
-
-		for (MsScanPoint *mssp : pgs.msScanPoints) {
-			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
-											- mssp->scanInfoPntr->isoWindowLower
-											- parameters.precursorExtractionWindowThomsons;
-
-			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
-											+ mssp->scanInfoPntr->isoWindowUpper
-											+ parameters.precursorExtractionWindowThomsons;
-
-			const float mzVal = mssp->mzVal;
-			const float mzTol = MathUtils::calculatePPM(
-				mzVal,
-				static_cast<float>(parameters.ms2ExtractionWidthPPM)
-				);
-
-			const float mzMin = mzVal - mzTol;
-			const float mzMax = mzVal + mzTol;
-
-			QVector<MS2IonLibrary*> tdPeptideFrags;
-			e = fragger.extractMs2Points(
-				precursorMzValLower,
-				precursorMzValUpper,
-				mzMin,
-				mzMax,
-				&tdPeptideFrags
-				); rree;
-
-			std::sort(
-				tdPeptideFrags.begin(),
-				tdPeptideFrags.end(),
-				[](const MS2IonLibrary *l, const MS2IonLibrary *r) {
-					return l->targeDecoyCandidatePairPntr < r->targeDecoyCandidatePairPntr;
-				}
-			);
-
-			for (MS2IonLibrary *msil : tdPeptideFrags) {
-				IonSearchResult isr;
-				isr.ms2IonLibraryPntr = msil;
-				isr.msScanPointPntr = mssp;
-				ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
-			}
-		}
-
-		return {e, ionSearchResults};
+		ERR_RETURN
 	}
 
-	struct TallyResult {
-		ScanNumber scanNumber = -1;
-		Occurrence occurrence = 0;
-		QVector<int> ranks;
-		// int indexesFoundY = 0;
-		// int indexesFoundB = 0;
-		// int seqTagLongestY = 0;
-		// int seqTagLongestB = 0;
-	};
-
-	int findLongestContinuousSequenceSize(const QSet<int>& set) {
-		QSet<int> hashSet = set;
-
-		int maxLength = 0;
-
-		for (int num : set) {
-			if (!hashSet.contains(num - 1)) {
-				int currentLength = 1;
-				int currentNum = num;
-
-				while (hashSet.contains(currentNum + 1)) {
-					currentNum++;
-					currentLength++;
-				}
-
-				maxLength = std::max(maxLength, currentLength);
-			}
-		}
-
-		return maxLength;
-	}
-
-	using TallyResultTarget = TallyResult;
-	using TallyResultDecoy = TallyResult;
-	using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
-
-	QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
-		const QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>> &input
+	Err buildTargetDecoyCandidatePairsPntrsTranched(
+		const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs,
+		QVector<QVector<TargetDecoyCandidatePair*>> *targetDecoyCandidatePairsPntrsTranched
 		) {
-
 		ERR_INIT
 
-		e = input.first; rtee;
+		e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); ree;
+		targetDecoyCandidatePairsPntrsTranched->clear();
 
-		struct T {
-			Occurrence occurrence = 0;
-			QVector<int> ranks;
-			// QSet<int> indexesFoundY;
-			// QSet<int> indexesFoundB;
-		};
+		constexpr int batchSize = 2e5;
+		const int libTrancheSize = std::max(targetDecoyCandidatePairsPntrs.size() / batchSize, 1);
+		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Processing library in" << libTrancheSize << "tranches";
 
-		QVector<TallyResultTuple> result;
+		e = ParallelUtils::trancheVectorForParallelization(
+			targetDecoyCandidatePairsPntrs,
+			libTrancheSize,
+			targetDecoyCandidatePairsPntrsTranched
+			); ree;
 
-		QHash<ScanNumber, T> occurrencesTarget;
-		QHash<ScanNumber, T> occurrencesDecoy;
-
-		for (auto it = input.second.begin(); it != input.second.end(); it++) {
-
-			occurrencesTarget.clear();
-			occurrencesDecoy.clear();
-
-			const QVector<IonSearchResult> &isrs = it.value();
-			TargetDecoyCandidatePair *targetDecoyCandidatePair = it.key();
-
-			for (const IonSearchResult &isr : isrs) {
-				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
-				if (isr.ms2IonLibraryPntr->isDecoy) {
-					auto &[occurrence, ranks] = occurrencesDecoy[scanNumber];
-					occurrence++;
-					ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-					// if (isr.ms2IonLibraryPntr->ms2IonPntr->ionLabel.contains("y")) {
-					// 	occurrencesDecoy[scanNumber].indexesFoundY.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-					// }
-					// else {
-					// 	occurrencesDecoy[scanNumber].indexesFoundB.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-					// }
-					continue;
-				}
-
-				auto &[occurrence, ranks] = occurrencesTarget[scanNumber];
-				occurrence++;
-				ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-				// if (isr.ms2IonLibraryPntr->ms2IonPntr->ionLabel.contains("y")) {
-				// 	occurrencesDecoy[scanNumber].indexesFoundY.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-				// }
-				// else {
-				// 	occurrencesDecoy[scanNumber].indexesFoundB.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-				// }
-			}
-
-			if (occurrencesTarget.isEmpty() && occurrencesDecoy.isEmpty()) {
-				continue;
-			}
-
-			constexpr int occurenceCountMin = 3;
-
-			QVector<TallyResultTarget> tallyResultsTarget;
-			if (!occurrencesTarget.isEmpty()) {
-
-				for (auto itt = occurrencesTarget.begin(); itt != occurrencesTarget.end(); ++itt) {
-
-					if (itt.value().occurrence <= occurenceCountMin) {
-						continue;
-					}
-
-					TallyResultTarget tallyResult;
-					tallyResult.scanNumber = itt.key();
-					tallyResult.occurrence = itt.value().occurrence;
-					tallyResult.ranks = itt.value().ranks;
-					// tallyResult.indexesFoundY = it.value().indexesFoundY.size();
-					// tallyResult.indexesFoundB = it.value().indexesFoundB.size();
-					// tallyResult.seqTagLongestY = findLongestContinuousSequenceSize(it.value().indexesFoundY);
-					// tallyResult.seqTagLongestB = findLongestContinuousSequenceSize(it.value().indexesFoundB);
-
-					tallyResultsTarget.push_back(tallyResult);
-				}
-
-				if (!tallyResultsTarget.isEmpty()) {
-					std::sort(
-						tallyResultsTarget.rbegin(),
-						tallyResultsTarget.rend(),
-						[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
-					);
-				}
-			}
-
-			QVector<TallyResultTarget> tallyResultsDecoy;
-			if (!occurrencesDecoy.isEmpty()) {
-
-				for (auto itt = occurrencesDecoy.begin(); itt != occurrencesDecoy.end(); ++itt) {
-
-					if (itt.value().occurrence <= occurenceCountMin) {
-						continue;
-					}
-
-					TallyResultTarget tallyResult;
-					tallyResult.scanNumber = itt.key();
-					tallyResult.occurrence = itt.value().occurrence;
-					tallyResult.ranks = itt.value().ranks;
-					// tallyResult.indexesFoundY = it.value().indexesFoundY.size();
-					// tallyResult.indexesFoundB = it.value().indexesFoundB.size();
-					// tallyResult.seqTagLongestY = findLongestContinuousSequenceSize(it.value().indexesFoundY);
-					// tallyResult.seqTagLongestB = findLongestContinuousSequenceSize(it.value().indexesFoundB);
-
-					tallyResultsDecoy.push_back(tallyResult);
-				}
-
-				if (!tallyResultsDecoy.isEmpty()) {
-					std::sort(
-						tallyResultsDecoy.rbegin(),
-						tallyResultsDecoy.rend(),
-						[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
-					);
-				}
-			}
-
-			if (tallyResultsTarget.isEmpty() && tallyResultsDecoy.isEmpty()) {
-				continue;
-			}
-
-			result.push_back({targetDecoyCandidatePair, tallyResultsTarget, tallyResultsDecoy});
-		}
-
-		return {e, result};
+		ERR_RETURN
 	}
 
 }//namespace
@@ -741,181 +804,178 @@ Err PythiaDDAWorkflow::performFragging() {
 	QElapsedTimer et;
 	et.start();
 
+	e = ErrorUtils::isNotEmpty(m_msScanPointsPntrsTranched); ree;
+	e = ErrorUtils::isEqual(m_msScanPointsPntrsTranched.size(), m_mzPrecursorStartVsStopResult.size()); ree;
+
+	QVector<ProcessingGroup> processingGroups;
+	e = initProcessingGroups(
+		m_mzPrecursorStartVsStopResult,
+		&m_msScanPointsPntrsTranched,
+		&processingGroups
+		);
+
 	QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
-
-	constexpr int batchSize = 2e5;
-	const int libTrancheSize = std::max(m_targetDecoyCandidatePairsPntrs.size() / batchSize, 1);
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Processing library in" << libTrancheSize << "tranches";
-
-	e = ParallelUtils::trancheVectorForParallelization(
+	e = buildTargetDecoyCandidatePairsPntrsTranched(
 		m_targetDecoyCandidatePairsPntrs,
-		libTrancheSize,
 		&targetDecoyCandidatePairsPntrsTranched
 		); ree;
 
 
-	const QPair<Err, QVector<QPair<float, float>>> mzPrecursorStartVsStopResult = buildMzPrecursorTargetRanges(
-		m_msScanPointsTranched,
-		m_parameters.threadCount
-		);
-	e = mzPrecursorStartVsStopResult.first; ree;
-	const QVector<QPair<float, float>> &mzPrecursorStartVsStop = mzPrecursorStartVsStopResult.second;
-
-	QPair<Err, QVector<ProcessingGroup>> processingGroupsResult = rearrangeMsScanPointsByMzPrecursorTargetRanges(
-		m_msScanPointsTranched,
-		mzPrecursorStartVsStop
-		);
-	e = processingGroupsResult.first; ree;
-
-	QVector<TallyResultTuple> tallyResultsFinal;
-
-	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
-
-		QVector<ProcessingGroup> processingGroups = processingGroupsResult.second;
-
-		QPair<Err, QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>>> ms2IonsLibraryTrancheResult
-																								= buildLibraryMS2IonsTrancheLogic(tdcps);
-		e = ms2IonsLibraryTrancheResult.first; ree;
-		QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2IonsLibraryTranche
-																								= ms2IonsLibraryTrancheResult.second;
-
-		QVector<MS2IonLibrary> ms2IonLibraries;
-		e = buildMS2IonLibraries(
-			ms2IonsLibraryTranche,
-			&ms2IonLibraries
-			); ree;
-
-		e = addMs2IonsLibraryToProcessingGroups(
-			ms2IonLibraries,
-			m_parameters.precursorExtractionWindowThomsons,
-			m_parameters.threadCount,
-			&processingGroups
-			); ree;
-
-		e = checkProcessingGroupRangesAreValid(processingGroups); ree;
 
 
-#define FRAG_PARALLEL
-#ifdef FRAG_PARALLEL
-		const auto binderLogic = std::bind(
-			performFraggingLogic,
-			std::placeholders::_1,
-			m_parameters
-			);
-
-		QFuture<QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>>> futureScans = QtConcurrent::mapped(
-			processingGroups,
-			binderLogic
-			);
-		futureScans.waitForFinished();
-
-		QFuture<QPair<Err, QVector<TallyResultTuple>>> futureResults = QtConcurrent::mapped(
-			futureScans,
-			collateScanNumberVsOccurrencesTargetDecoyCandidatePairs
-			);
-		futureResults.waitForFinished();
-
-		for (const QPair<Err, QVector<TallyResultTuple>> &result : futureResults) {
-			e = result.first; ree;
-			const QVector<TallyResultTuple> &tallyResultTuples = result.second;
-			tallyResultsFinal.append(tallyResultTuples);
-
-			// for (const TallyResultTuple &trt : tallyResultTuples) {
-			//
-			// 	const TargetDecoyCandidatePair *tdcp = std::get<0>(trt);
-			// 	const QVector<TallyResult> &tallyResultsTarget = std::get<1>(trt);
-			// 	const QVector<TallyResult> &tallyResultsDecoy = std::get<2>(trt);
-			//
-			// 	// qDebug()
-			// 	// 	<< tdcp->peptideStringWithMods()
-			// 	// 	<< tallyResultsTarget.size()
-			// 	// 	<< tallyResultsDecoy.size()
-			// 	// 	<< tallyResultsTarget.front().scanNumber
-			// 	// 	<< tallyResultsTarget.front().occurrence
-			// 	// 	<< tallyResultsDecoy.front().scanNumber
-			// 	// 	<< tallyResultsDecoy.front().occurrence
-			// 	// ;
-			// }
-
-		}
-
-		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
-#else
-		for (const ProcessingGroup &pgs : processingGroups) {
-			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
-			e = res.first; ree;
-		}
-#endif
-
-	}
 
 
-	struct T {
-		TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-		bool isDecoy = false;
-		Occurrence occurrence;
-		float rankMean;
-		int rankBest;
-	};
-
-	QVector<T> ts;
-
-	for (const TallyResultTuple &tpl : tallyResultsFinal) {
-		T t;
-		if (std::get<1>(tpl).front().occurrence > 0) {
-			t.targetDecoyCandidatePair = std::get<0>(tpl);
-			t.occurrence = std::get<1>(tpl).front().occurrence;
-			t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
-			t.rankBest = *std::max_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
-			t.isDecoy = false;
-			ts.push_back(t);
-		}
-
-		T td;
-		if (std::get<2>(tpl).front().occurrence > 0) {
-			td.targetDecoyCandidatePair = std::get<0>(tpl);
-			td.occurrence = std::get<2>(tpl).front().occurrence;
-			td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
-			td.rankBest = *std::max_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
-			td.isDecoy = true;
-			ts.push_back(td);
-		}
-
-	}
-
-	std::sort(
-		ts.begin(),
-		ts.end(),
-		[](const T &l, const T &r) {
-			// if (l.occurrence == r.occurrence) {
-			// 	return l.rankMean < r.rankMean;
-			// }
-
-			return l.occurrence > r.occurrence;
-		}
-		);
-
-	int counter = 0;
-	int decoy = 0;
-	for (const T &t : ts) {
-
-		if (t.isDecoy) {
-			decoy++;
-		}
-
-		const float q = static_cast<float>(decoy) / ++counter;
-		if (q > 0.01) break;
-
-		std::cout
-			<< counter << " "
-			<< q << " "
-			<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
-			<< t.occurrence  << " "
-			<< t.rankMean  << " "
-			<< t.rankBest  << " "
-			<< t.isDecoy
-			<< std::endl;
-	}
+// 	QVector<TallyResultTuple> tallyResultsFinal;
+//
+// 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
+//
+// 		QVector<ProcessingGroup> processingGroups = processingGroupsResult.second;
+//
+// 		QPair<Err, QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>>> ms2IonsLibraryTrancheResult
+// 																								= buildLibraryMS2IonsTrancheLogic(tdcps);
+// 		e = ms2IonsLibraryTrancheResult.first; ree;
+// 		QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>> &ms2IonsLibraryTranche
+// 																								= ms2IonsLibraryTrancheResult.second;
+//
+// 		QVector<MS2IonLibrary> ms2IonLibraries;
+// 		e = buildMS2IonLibraries(
+// 			ms2IonsLibraryTranche,
+// 			&ms2IonLibraries
+// 			); ree;
+//
+// 		e = addMs2IonsLibraryToProcessingGroups(
+// 			ms2IonLibraries,
+// 			m_parameters.precursorExtractionWindowThomsons,
+// 			m_parameters.threadCount,
+// 			&processingGroups
+// 			); ree;
+//
+// 		e = checkProcessingGroupRangesAreValid(processingGroups); ree;
+//
+//
+// #define FRAG_PARALLEL
+// #ifdef FRAG_PARALLEL
+// 		const auto binderLogic = std::bind(
+// 			performFraggingLogic,
+// 			std::placeholders::_1,
+// 			m_parameters
+// 			);
+//
+// 		QFuture<QPair<Err, QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>>>> futureScans = QtConcurrent::mapped(
+// 			processingGroups,
+// 			binderLogic
+// 			);
+// 		futureScans.waitForFinished();
+//
+// 		QFuture<QPair<Err, QVector<TallyResultTuple>>> futureResults = QtConcurrent::mapped(
+// 			futureScans,
+// 			collateScanNumberVsOccurrencesTargetDecoyCandidatePairs
+// 			);
+// 		futureResults.waitForFinished();
+//
+// 		for (const QPair<Err, QVector<TallyResultTuple>> &result : futureResults) {
+// 			e = result.first; ree;
+// 			const QVector<TallyResultTuple> &tallyResultTuples = result.second;
+// 			tallyResultsFinal.append(tallyResultTuples);
+//
+// 			// for (const TallyResultTuple &trt : tallyResultTuples) {
+// 			//
+// 			// 	const TargetDecoyCandidatePair *tdcp = std::get<0>(trt);
+// 			// 	const QVector<TallyResult> &tallyResultsTarget = std::get<1>(trt);
+// 			// 	const QVector<TallyResult> &tallyResultsDecoy = std::get<2>(trt);
+// 			//
+// 			// 	// qDebug()
+// 			// 	// 	<< tdcp->peptideStringWithMods()
+// 			// 	// 	<< tallyResultsTarget.size()
+// 			// 	// 	<< tallyResultsDecoy.size()
+// 			// 	// 	<< tallyResultsTarget.front().scanNumber
+// 			// 	// 	<< tallyResultsTarget.front().occurrence
+// 			// 	// 	<< tallyResultsDecoy.front().scanNumber
+// 			// 	// 	<< tallyResultsDecoy.front().occurrence
+// 			// 	// ;
+// 			// }
+//
+// 		}
+//
+// 		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
+// #else
+// 		for (const ProcessingGroup &pgs : processingGroups) {
+// 			const QPair<Err, int> res = performFraggingLogic(pgs, m_parameters);
+// 			e = res.first; ree;
+// 		}
+// #endif
+//
+// 	}
+//
+//
+// 	struct T {
+// 		TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
+// 		bool isDecoy = false;
+// 		Occurrence occurrence;
+// 		float rankMean;
+// 		int rankBest;
+// 	};
+//
+// 	QVector<T> ts;
+//
+// 	for (const TallyResultTuple &tpl : tallyResultsFinal) {
+// 		T t;
+// 		if (std::get<1>(tpl).front().occurrence > 0) {
+// 			t.targetDecoyCandidatePair = std::get<0>(tpl);
+// 			t.occurrence = std::get<1>(tpl).front().occurrence;
+// 			t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
+// 			t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
+// 			t.isDecoy = false;
+// 			ts.push_back(t);
+// 		}
+//
+// 		T td;
+// 		if (std::get<2>(tpl).front().occurrence > 0) {
+// 			td.targetDecoyCandidatePair = std::get<0>(tpl);
+// 			td.occurrence = std::get<2>(tpl).front().occurrence;
+// 			td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
+// 			td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
+// 			td.isDecoy = true;
+// 			ts.push_back(td);
+// 		}
+//
+// 	}
+//
+// 	std::sort(
+// 		ts.begin(),
+// 		ts.end(),
+// 		[](const T &l, const T &r) {
+// 			if (l.occurrence == r.occurrence) {
+// 				return l.rankMean < r.rankMean;
+// 			}
+//
+// 			return l.occurrence > r.occurrence;
+// 		}
+// 		);
+//
+// 	int counter = 0;
+// 	int decoy = 0;
+// 	for (const T &t : ts) {
+//
+// 		if (t.isDecoy) {
+// 			decoy++;
+// 		}
+//
+// 		const float q = static_cast<float>(decoy) / ++counter;
+// 		if (q > 0.01) break;
+//
+// 		std::cout
+// 			<< counter << " "
+// 			<< q << " "
+// 			<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
+// 			<< t.occurrence  << " "
+// 			<< t.rankMean  << " "
+// 			<< t.rankBest  << " "
+// 			<< t.isDecoy
+// 			<< std::endl;
+//
+// 		//mean mz thomsons found, higher is more specific than lower
+// 	}
 
 	ERR_RETURN
 }

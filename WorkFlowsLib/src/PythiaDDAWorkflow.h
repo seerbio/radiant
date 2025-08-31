@@ -36,10 +36,13 @@ public:
 
 private:
 
+	Err buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr);
+
 	Err extractScansParallel(
 		const QVector<MsScanInfo*> &scanInfosPntrs,
 		MsReaderPointerAcc *msReaderPtr
 		);
+
 	Err performFragging();
 
 
@@ -52,7 +55,8 @@ private:
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
 	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
 	QVector<QVector<MsScanPoint>> m_msScanPointsTranched;
-
+	QVector<QVector<MsScanPoint*>> m_msScanPointsPntrsTranched;
+	QVector<QPair<float, float>> m_mzPrecursorStartVsStopResult;
 };
 
 
