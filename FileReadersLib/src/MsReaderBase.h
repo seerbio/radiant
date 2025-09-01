@@ -234,6 +234,7 @@ public:
     * @return Returns a QPair where the first element is the minimum scan time and the second element is the maximum scan time.
     */
     QPair<ScanTime , ScanTime > scanTimeMinMax();
+    QPair<ScanNumber , ScanNumber > scanNumberMinMax();
 
 
     /**

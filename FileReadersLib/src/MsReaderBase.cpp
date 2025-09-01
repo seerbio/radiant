@@ -145,6 +145,10 @@ QPair<ScanTime, ScanTime > MsReaderBase::scanTimeMinMax() {
     return {m_msScanInfo.first().scanTime, m_msScanInfo.last().scanTime};
 }
 
+QPair<ScanNumber, ScanNumber> MsReaderBase::scanNumberMinMax() {
+	return {m_msScanInfo.first().scanNumber, m_msScanInfo.last().scanNumber};
+}
+
 // QMap<ScanNumber, ScanPoints> MsReaderBase::getScanPoints() {
 //     return m_scanPoints;
 // }

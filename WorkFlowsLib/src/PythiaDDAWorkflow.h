@@ -45,6 +45,11 @@ private:
 
 	Err performFragging();
 
+	Err processTargetDecoyCandidatePairsPntrsTranch(
+		const QVector<TargetDecoyCandidatePair*> &tdcps,
+		const QVector<ProcessingGroup> &processingGroups
+		);
+
 
 private:
 
