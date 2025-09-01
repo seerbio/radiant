@@ -822,74 +822,75 @@ Err PythiaDDAWorkflow::processTargetDecoyCandidatePairsPntrsTranch(
 		}
 #endif
 
-	// struct T {
-	// 	TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-	// 	bool isDecoy = false;
-	// 	Occurrence occurrence;
-	// 	float rankMean;
-	// 	int rankBest;
-	// };
-	//
-	// QVector<T> ts;
-	//
-	// for (const TallyResultTuple &tpl : tallyResultsFinal) {
-	// 	T t;
-	// 	if (std::get<1>(tpl).front().occurrence > 0) {
-	// 		t.targetDecoyCandidatePair = std::get<0>(tpl);
-	// 		t.occurrence = std::get<1>(tpl).front().occurrence;
-	// 		t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
-	// 		t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
-	// 		t.isDecoy = false;
-	// 		ts.push_back(t);
-	// 	}
-	//
-	// 	T td;
-	// 	if (std::get<2>(tpl).front().occurrence > 0) {
-	// 		td.targetDecoyCandidatePair = std::get<0>(tpl);
-	// 		td.occurrence = std::get<2>(tpl).front().occurrence;
-	// 		td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
-	// 		td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
-	// 		td.isDecoy = true;
-	// 		ts.push_back(td);
-	// 	}
-	//
-	// }
-	//
-	// std::sort(
-	// 	ts.begin(),
-	// 	ts.end(),
-	// 	[](const T &l, const T &r) {
-	// 		if (l.occurrence == r.occurrence) {
-	// 			return l.rankMean < r.rankMean;
-	// 		}
-	//
-	// 		return l.occurrence > r.occurrence;
-	// 	}
-	// 	);
-	//
-	// int counter = 0;
-	// int decoy = 0;
-	// for (const T &t : ts) {
-	//
-	// 	if (t.isDecoy) {
-	// 		decoy++;
-	// 	}
-	//
-	// 	const float q = static_cast<float>(decoy) / ++counter;
-	// 	if (q > 0.01) break;
-	//
-	// 	std::cout
-	// 		<< counter << " "
-	// 		<< q << " "
-	// 		<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
-	// 		<< t.occurrence  << " "
-	// 		<< t.rankMean  << " "
-	// 		<< t.rankBest  << " "
-	// 		<< t.isDecoy
-	// 		<< std::endl;
-	//
-	// 	//mean mz thomsons found, higher is more specific than lower
-	// }
+	struct T {
+		TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
+		bool isDecoy = false;
+		Occurrence occurrence;
+		float rankMean;
+		int rankBest;
+	};
+
+	QVector<T> ts;
+
+	for (const TallyResultTuple &tpl : tallyResultsFinal) {
+		T t;
+		if (std::get<1>(tpl).front().occurrence > 0) {
+			t.targetDecoyCandidatePair = std::get<0>(tpl);
+			t.occurrence = std::get<1>(tpl).front().occurrence;
+			t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
+			t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
+			t.isDecoy = false;
+			ts.push_back(t);
+		}
+
+		T td;
+		if (std::get<2>(tpl).front().occurrence > 0) {
+			td.targetDecoyCandidatePair = std::get<0>(tpl);
+			td.occurrence = std::get<2>(tpl).front().occurrence;
+			td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
+			td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
+			td.isDecoy = true;
+			ts.push_back(td);
+		}
+
+	}
+
+	std::sort(
+		ts.begin(),
+		ts.end(),
+		[](const T &l, const T &r) {
+			if (l.occurrence == r.occurrence) {
+				return l.rankMean < r.rankMean;
+			}
+
+			return l.occurrence > r.occurrence;
+		}
+		);
+
+	int counter = 0;
+	int decoy = 0;
+	for (const T &t : ts) {
+
+		if (t.isDecoy) {
+			decoy++;
+		}
+
+		const float q = static_cast<float>(decoy) / ++counter;
+
+		std::cout
+			<< counter << " "
+			<< q << " "
+			<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
+			<< t.occurrence  << " "
+			<< t.rankMean  << " "
+			<< t.rankBest  << " "
+			<< t.isDecoy
+			<< std::endl;
+
+		if (q > 0.01) break;
+
+		//mean mz thomsons found, higher is more specific than lower
+	}
 
 	ERR_RETURN
 }
