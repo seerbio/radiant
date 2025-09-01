@@ -514,13 +514,6 @@ namespace {
 					T &t = occurrencesDecoy[scanNumber];
 					t.occurrence++;
 					t.ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-
-					// if (isr.ms2IonLibraryPntr->ms2IonPntr->ionLabel.contains("y")) {
-					// 	occurrencesDecoy[scanNumber].indexesFoundY.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-					// }
-					// else {
-					// 	occurrencesDecoy[scanNumber].indexesFoundB.insert(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-					// }
 					continue;
 				}
 
@@ -565,7 +558,7 @@ namespace {
 
 				for (auto itt = occurrencesDecoy.begin(); itt != occurrencesDecoy.end(); itt++) {
 
-					const T &trt =  occurrencesTarget[itt.key()];
+					const T &trt =  occurrencesDecoy[itt.key()];
 					if (trt.occurrence <= occurenceCountMin) {
 						continue;
 					}
@@ -655,6 +648,35 @@ namespace {
 				ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
 			}
 		}
+
+#define TR_SHT
+#ifdef TR_SHT
+		for (auto it = ionSearchResults.begin(); it != ionSearchResults.end(); it++) {
+			const TargetDecoyCandidatePair *tcp = it.key();
+			QVector<IonSearchResult> &r = it.value();
+
+			if (tcp->peptideStringWithMods() != "LTVTSLQETGLK" || tcp->charge() != 2) {
+				continue;
+			}
+
+			std::sort(r.begin(), r.end(), [](const IonSearchResult &l, const IonSearchResult &r) {
+				return l.msScanPointPntr->scanInfoPntr->scanNumber < r.msScanPointPntr->scanInfoPntr->scanNumber;
+			});
+
+			for (auto x : r) {
+				qDebug()
+					<< x.msScanPointPntr->scanInfoPntr->scanNumber
+					<< tcp->peptideStringWithMods()
+					// << tcp->mz(x.ms2IonLibraryPntr->isDecoy)
+					// << x.msScanPointPntr->scanInfoPntr->precursorTargetMz
+					<< x.msScanPointPntr->mzVal
+					<< x.ms2IonLibraryPntr->ms2IonPntr->mz
+					<< x.ms2IonLibraryPntr->isDecoy
+					<< "SLDFJSDL"
+				;
+			}
+		}
+#endif
 
 		QPair<Err, QVector<TallyResultTuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(ionSearchResults); rree;
@@ -755,8 +777,8 @@ Err PythiaDDAWorkflow::performFragging() {
 
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
 		e = processTargetDecoyCandidatePairsPntrsTranch(tdcps, processingGroups); ree;
+		break;
 	}
-
 
 	ERR_RETURN
 }
@@ -822,6 +844,28 @@ Err PythiaDDAWorkflow::processTargetDecoyCandidatePairsPntrsTranch(
 		}
 #endif
 
+	// for (const TallyResultTuple &result : tallyResultsFinal) {
+	// 	using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
+	//
+	// 	QVector<TallyResultDecoy> decoysFinal = std::get<2>(result);
+	// 	std::sort(decoysFinal.rbegin(), decoysFinal.rend(),
+	// 		[](const TallyResultDecoy &l, const TallyResultDecoy &r){return l.occurrence < r.occurrence ;}
+	// 		);
+	// 	for (const TallyResultDecoy &decoy : decoysFinal) {
+	// 		if (decoy.occurrence < 10) {
+	// 			continue;
+	// 		}
+	//
+	// 		qDebug()
+	// 			<< std::get<0>(result)->peptideStringWithMods()
+	// 			<< std::get<0>(result)->charge()
+	// 			<< decoy.occurrence
+	// 			<< decoy.scanNumber
+	// 			<< decoy.ranks
+	// 		;
+	// 	}
+	// }
+
 	struct T {
 		TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
 		bool isDecoy = false;
@@ -878,7 +922,7 @@ Err PythiaDDAWorkflow::processTargetDecoyCandidatePairsPntrsTranch(
 		const float q = static_cast<float>(decoy) / ++counter;
 
 		std::cout
-			<< counter << " "
+			<< counter << " fdsafda "
 			<< q << " "
 			<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
 			<< t.occurrence  << " "
