@@ -491,10 +491,12 @@ namespace {
 
 			const QVector<IonSearchResult> &isrs = it.value();
 			TargetDecoyCandidatePair *targetDecoyCandidatePair = it.key();
+
 			occurrencesTarget.clear();
 			occurrencesDecoy.clear();
 
 			for (const IonSearchResult &isr : isrs) {
+
 				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
 				if (isr.ms2IonLibraryPntr->isDecoy) {
 					T &t = occurrencesDecoy[scanNumber];
@@ -516,8 +518,10 @@ namespace {
 
 			QVector<TallyResultTarget> tallyResultsTarget;
 			if (!occurrencesTarget.isEmpty()) {
-				for (auto itt = occurrencesDecoy.begin(); itt != occurrencesDecoy.end(); itt++) {
+				for (auto itt = occurrencesTarget.begin(); itt != occurrencesTarget.end(); itt++) {
+
 					const T &trt =  occurrencesTarget[itt.key()];
+
 					if (trt.occurrence <= occurenceCountMin) {
 						continue;
 					}
@@ -526,7 +530,6 @@ namespace {
 					tallyResult.scanNumber = itt.key();
 					tallyResult.occurrence = trt.occurrence;
 					tallyResult.ranks = trt.ranks;
-
 					tallyResultsTarget.push_back(tallyResult);
 				}
 
@@ -641,7 +644,7 @@ namespace {
 			const TargetDecoyCandidatePair *tcp = it.key();
 			QVector<IonSearchResult> &r = it.value();
 
-			if (tcp->peptideStringWithMods() != "LTVTSLQETGLK" || tcp->charge() != 2) {
+			if (tcp->peptideStringWithMods() != "YGGPNHHLPLPDNWK" || tcp->charge() != 3) {
 				continue;
 			}
 
@@ -737,6 +740,182 @@ namespace {
 		ERR_RETURN
 	}
 
+	Err combineDuplicateCollates(QVector<TallyResultTuple> *tallyResultsFinal) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(*tallyResultsFinal); ree;
+
+		std::sort(
+			tallyResultsFinal->begin(),
+			tallyResultsFinal->end(),
+			[](const TallyResultTuple &l, const TallyResultTuple &r) {
+				if (std::get<1>(l).front().occurrence == std::get<1>(r).front().occurrence) {
+					return std::get<2>(l).front().occurrence > std::get<2>(r).front().occurrence;
+				}
+				return std::get<1>(l).front().occurrence > std::get<1>(r).front().occurrence;
+			});
+
+		QHash<TargetDecoyCandidatePair*, TallyResultTuple> tallyResultTuplesCombiner;
+		for (const TallyResultTuple &trt : *tallyResultsFinal) {
+
+			TargetDecoyCandidatePair *tdcp = std::get<0>(trt);
+
+			if (tallyResultTuplesCombiner.contains(tdcp)) {
+
+				TallyResultTuple &tallyTupleOld = tallyResultTuplesCombiner[tdcp];
+				QVector<TallyResultTarget> &tallyResultTargetOld = std::get<1>(tallyTupleOld);
+
+				const QVector<TallyResultTarget> &tallyResultTargetNew = std::get<1>(trt);
+
+				QHash<ScanNumber, TallyResult> tallyResultTargetNewHash;
+				for (const TallyResultTarget &t  : tallyResultTargetNew) {
+					tallyResultTargetNewHash[t.scanNumber] = t;
+				}
+				for (TallyResultTarget &trtOld : tallyResultTargetOld) {
+
+					if (!tallyResultTargetNewHash.contains(trtOld.scanNumber)) {
+						continue;
+					}
+
+					TallyResult &tn = tallyResultTargetNewHash[trtOld.scanNumber];
+
+					if (tn.occurrence < 1) {
+						continue;
+					}
+
+					trtOld.occurrence += tn.occurrence;
+					trtOld.ranks.append(tn.ranks);
+				}
+
+				std::sort(
+					tallyResultTargetOld.rbegin(),
+					tallyResultTargetOld.rend(),
+					[](const TallyResultTarget &l, const TallyResultTarget &r){return l.occurrence < r.occurrence;}
+					);
+
+				const QVector<TallyResultTarget> &tallyResultDecoyNew = std::get<2>(trt);
+				QHash<ScanNumber, TallyResult> tallyResultDecoyNewHash;
+				for (const TallyResultDecoy &t  : tallyResultDecoyNew) {
+					tallyResultDecoyNewHash[t.scanNumber] = t;
+				}
+				QVector<TallyResultDecoy> &tallyResultDecoyOld = std::get<2>(tallyTupleOld);
+				for (TallyResultDecoy &trdOld : tallyResultDecoyOld) {
+
+					if (!tallyResultDecoyNewHash.contains(trdOld.scanNumber)) {
+						continue;
+					}
+
+					TallyResult &tn = tallyResultDecoyNewHash[trdOld.scanNumber];
+
+					if (tn.occurrence < 1) {
+						continue;
+					}
+
+					trdOld.occurrence += tn.occurrence;
+					trdOld.ranks.append(tn.ranks);
+				}
+
+				std::sort(
+					tallyResultDecoyOld.rbegin(),
+					tallyResultDecoyOld.rend(),
+					[](const TallyResultTarget &l, const TallyResultTarget &r){return l.occurrence < r.occurrence;}
+					);
+
+				continue;
+			}
+
+			tallyResultTuplesCombiner.insert(tdcp, trt);
+		}
+
+		*tallyResultsFinal = tallyResultTuplesCombiner.values().toVector();
+
+		ERR_RETURN
+	}
+
+	void reportResults(const QVector<TallyResultTuple> &tallyResultsFinal) 	{
+
+		struct T {
+			TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
+			ScanNumber scanNumber = -1;
+			bool isDecoy = false;
+			Occurrence occurrence;
+			float rankMean;
+			int rankBest;
+		};
+
+		QVector<T> ts;
+
+		for (const TallyResultTuple &tpl : tallyResultsFinal) {
+
+			T t;
+			if (std::get<1>(tpl).front().occurrence > 0) {
+				t.targetDecoyCandidatePair = std::get<0>(tpl);
+				t.occurrence = std::get<1>(tpl).front().occurrence;
+				t.scanNumber = std::get<1>(tpl).front().scanNumber;
+				t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
+				t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
+				t.isDecoy = false;
+				ts.push_back(t);
+			}
+
+			T td;
+			if (std::get<2>(tpl).front().occurrence > 0) {
+				td.targetDecoyCandidatePair = std::get<0>(tpl);
+				td.occurrence = std::get<2>(tpl).front().occurrence;
+				t.scanNumber = std::get<2>(tpl).front().scanNumber;
+				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
+				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
+				td.isDecoy = true;
+				ts.push_back(td);
+			}
+		}
+
+		std::sort(
+			ts.begin(),
+			ts.end(),
+			[](const T &l, const T &r) {
+				if (l.occurrence == r.occurrence) {
+					return l.targetDecoyCandidatePair->peptideStringWithMods() < r.targetDecoyCandidatePair->peptideStringWithMods();
+				}
+
+				return l.occurrence > r.occurrence;
+			}
+			);
+
+		int counter = 0;
+		int decoy = 0;
+		QHash<TargetDecoyCandidatePair*, T> founds;
+		for (const T &t : ts) {
+
+			if (t.isDecoy) {
+				decoy++;
+			}
+
+			const float q = static_cast<float>(decoy) / ++counter;
+
+			// if (founds.contains(t.targetDecoyCandidatePair)) {
+			if (true) {
+				std::cout
+					<< counter << " fdsafda "
+					<< q
+					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()
+					<< t.targetDecoyCandidatePair->charge()
+					<< t.occurrence << founds.value(t.targetDecoyCandidatePair).occurrence
+					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence
+					// << t.rankBest
+					<< t.scanNumber << founds.value(t.targetDecoyCandidatePair).scanNumber
+					<< t.isDecoy
+					<< std::endl;
+			}
+
+			founds.insert(t.targetDecoyCandidatePair, t);
+			if (q > 0.01) break;
+
+			//mean mz thomsons found average, higher is more specific than lower (this is a reminder to add another NN/LDA feature)
+		}
+	}
+
 }//namespace
 Err PythiaDDAWorkflow::performFragging() {
 
@@ -768,73 +947,9 @@ Err PythiaDDAWorkflow::performFragging() {
 		tallyResultsFinal.append(result.second);
 	}
 
-	struct T {
-		TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-		bool isDecoy = false;
-		Occurrence occurrence;
-		float rankMean;
-		int rankBest;
-	};
-	QVector<T> ts;
+	e = combineDuplicateCollates(&tallyResultsFinal); ree;
 
-	for (const TallyResultTuple &tpl : tallyResultsFinal) {
-		T t;
-		if (std::get<1>(tpl).front().occurrence > 0) {
-			t.targetDecoyCandidatePair = std::get<0>(tpl);
-			t.occurrence = std::get<1>(tpl).front().occurrence;
-			t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
-			t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
-			t.isDecoy = false;
-			ts.push_back(t);
-		}
-
-		T td;
-		if (std::get<2>(tpl).front().occurrence > 0) {
-			td.targetDecoyCandidatePair = std::get<0>(tpl);
-			td.occurrence = std::get<2>(tpl).front().occurrence;
-			td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
-			td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
-			td.isDecoy = true;
-			ts.push_back(td);
-		}
-	}
-
-	std::sort(
-		ts.begin(),
-		ts.end(),
-		[](const T &l, const T &r) {
-			if (l.occurrence == r.occurrence) {
-				return l.rankMean < r.rankMean;
-			}
-
-			return l.occurrence > r.occurrence;
-		}
-		);
-
-	int counter = 0;
-	int decoy = 0;
-	for (const T &t : ts) {
-
-		if (t.isDecoy) {
-			decoy++;
-		}
-
-		const float q = static_cast<float>(decoy) / ++counter;
-
-		std::cout
-			<< counter << " fdsafda "
-			<< q << " "
-			<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString() << " "
-			<< t.occurrence  << " "
-			<< t.rankMean  << " "
-			<< t.rankBest  << " "
-			<< t.isDecoy
-			<< std::endl;
-
-		if (q > 0.01 || t.occurrence < 10) break;
-
-		//mean mz thomsons found, higher is more specific than lower
-	}
+	// reportResults(tallyResultsFinal);
 
 	ERR_RETURN
 }
@@ -876,24 +991,24 @@ QPair<Err, QVector<TallyResultTuple>> PythiaDDAWorkflow::processTargetDecoyCandi
 
 #define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
-		const auto binderLogic = std::bind(
-			performFraggingLogic,
-			std::placeholders::_1,
-			m_parameters
-			);
+	const auto binderLogic = std::bind(
+		performFraggingLogic,
+		std::placeholders::_1,
+		m_parameters
+		);
 
-		QFuture<QPair<Err, QVector<TallyResultTuple>>> future = QtConcurrent::mapped(
-			processingGroups,
-			binderLogic
-			);
-		future.waitForFinished();
+	QFuture<QPair<Err, QVector<TallyResultTuple>>> future = QtConcurrent::mapped(
+		processingGroups,
+		binderLogic
+		);
+	future.waitForFinished();
 
-		for (const QPair<Err, QVector<TallyResultTuple>> &result : future) {
-			e = result.first; rree;
-			const QVector<TallyResultTuple> &tallyResultTuples = result.second;
-			tallyResultsFinal.append(tallyResultTuples);
-		}
-		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
+	for (const QPair<Err, QVector<TallyResultTuple>> &result : future) {
+		e = result.first; rree;
+		const QVector<TallyResultTuple> &tallyResultTuples = result.second;
+		tallyResultsFinal.append(tallyResultTuples);
+	}
+	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
 #else
 		for (const ProcessingGroup &pgs : processingGroups) {
 			const QPair<Err, QVector<TallyResultTuple>> res = performFraggingLogic(pgs, m_parameters);
