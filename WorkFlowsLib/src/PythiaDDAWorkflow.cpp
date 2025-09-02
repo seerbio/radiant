@@ -73,6 +73,9 @@ Err PythiaDDAWorkflow::buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr) {
 		msScanInfosMS2.begin(),
 		msScanInfosMS2.end(),
 		[](const MsScanInfo *l, const MsScanInfo *r) {
+			if (MathUtils::tSame(l->precursorTargetMz, r->precursorTargetMz, 0.01)) {
+				return l->scanNumber < r->scanNumber;
+			}
 			return l->precursorTargetMz < r->precursorTargetMz;
 		});
 
@@ -135,10 +138,6 @@ Err PythiaDDAWorkflow::buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr) {
 						0.5
 						));
 
-				m_mzPrecursorStartVsStopResult.push_back({
-					minPrecursorMz,
-					maxPrecursorMz
-				});
 				currentMsScanPointsPntrsTranche.clear();
 			}
 		}
@@ -151,6 +150,31 @@ Err PythiaDDAWorkflow::buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr) {
 		m_parameters.threadCount,
 		m_msScanPointsPntrsTranched.size()
 		); ree;
+
+	for (int i = 0; i < m_msScanPointsPntrsTranched.size() - 1; i++) {
+		QVector<MsScanPoint*> &prev = m_msScanPointsPntrsTranched[i];
+		QVector<MsScanPoint*> &next = m_msScanPointsPntrsTranched[i+1];
+
+		const MsScanPoint *prevLastPntr = prev.back();
+		QVector<MsScanPoint*> frontPntrs;
+		for (MsScanPoint *nextFrontPntr : next) {
+			if (prevLastPntr->scanInfoPntr->scanNumber != nextFrontPntr->scanInfoPntr->scanNumber) {
+				break;
+			}
+			frontPntrs.push_back(nextFrontPntr);
+		}
+
+		prev.append(frontPntrs);
+		next.erase(next.begin(), next.begin() + frontPntrs.size());
+	}
+
+	for (const QVector<MsScanPoint*> &v : m_msScanPointsPntrsTranched) {
+
+		m_mzPrecursorStartVsStopResult.push_back({
+			v.front()->scanInfoPntr->precursorTargetMz,
+			v.back()->scanInfoPntr->precursorTargetMz,
+		});
+	}
 
 	ERR_RETURN
 }
@@ -194,7 +218,7 @@ namespace {
 			msScanPoints.end(),
 			[](const MsScanPoint &l, const MsScanPoint &r) {
 				if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
-					return l.mzVal < r.mzVal;
+					return l.scanInfoPntr->scanNumber < r.scanInfoPntr->scanNumber;
 				}
 				return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
 			});
@@ -295,7 +319,7 @@ namespace {
 		ms2IonLibraries->clear();
 
 		constexpr int targetDecoyDoubler = 2;
-		constexpr int maxLibraryIonCount = 10;
+		constexpr int maxLibraryIonCount = 12;
 		ms2IonLibraries->reserve(ms2IonsLibraryTranche.size() * targetDecoyDoubler * maxLibraryIonCount);
 		for (std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> &tpl : ms2IonsLibraryTranche) {
 			TargetDecoyCandidatePair *tdcp = std::get<0>(tpl);
@@ -484,8 +508,11 @@ namespace {
 
 		QVector<TallyResultTuple> result;
 
+		constexpr int expectedHashTableSize = 1000;
 		QHash<ScanNumber, T> occurrencesTarget;
+		occurrencesTarget.reserve(expectedHashTableSize);
 		QHash<ScanNumber, T> occurrencesDecoy;
+		occurrencesDecoy.reserve(expectedHashTableSize);
 
 		for (auto it = input.begin(); it != input.end(); it++) {
 
@@ -514,7 +541,7 @@ namespace {
 				continue;
 			}
 
-			constexpr int occurenceCountMin = 1;
+			constexpr int occurenceCountMin = 3;
 
 			QVector<TallyResultTarget> tallyResultsTarget;
 			if (!occurrencesTarget.isEmpty()) {
@@ -590,6 +617,7 @@ namespace {
 
 		if (pgs.ms2IonsLibrary.isEmpty()) {
 			qDebug()
+				<< qPrintable(S_GLOBAL_TIMER.elapsed())
 				<< "No ms2IonsLibrary found for precursor range"
 				<< pgs.mzPrecursorRangeMinMax.first << "-"
 				<< pgs.mzPrecursorRangeMinMax.second
@@ -601,6 +629,8 @@ namespace {
 		e = fragger.init(pgs.ms2IonsLibrary); rree;
 
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
+		constexpr int batchSize = 1.5e5; //TODO make this settable in params
+		ionSearchResults.reserve(batchSize);
 
 		for (MsScanPoint *mssp : *pgs.msScanPointsPntr) {
 			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
@@ -666,7 +696,6 @@ namespace {
 			}
 		}
 #endif
-
 		QPair<Err, QVector<TallyResultTuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(ionSearchResults); rree;
 
@@ -773,7 +802,6 @@ namespace {
 					tallyResultTargetNewHash[t.scanNumber] = t;
 				}
 				for (TallyResultTarget &trtOld : tallyResultTargetOld) {
-
 					if (!tallyResultTargetNewHash.contains(trtOld.scanNumber)) {
 						continue;
 					}
@@ -786,6 +814,8 @@ namespace {
 
 					trtOld.occurrence += tn.occurrence;
 					trtOld.ranks.append(tn.ranks);
+
+					e = ErrorUtils::isFalse(tallyResultTargetNewHash.contains(trtOld.scanNumber)); eee_absorb;
 				}
 
 				std::sort(
@@ -814,6 +844,8 @@ namespace {
 
 					trdOld.occurrence += tn.occurrence;
 					trdOld.ranks.append(tn.ranks);
+
+					e = ErrorUtils::isFalse(tallyResultDecoyNewHash.contains(trdOld.scanNumber)); eee_absorb;
 				}
 
 				std::sort(
@@ -949,7 +981,7 @@ Err PythiaDDAWorkflow::performFragging() {
 
 	e = combineDuplicateCollates(&tallyResultsFinal); ree;
 
-	// reportResults(tallyResultsFinal);
+	reportResults(tallyResultsFinal);
 
 	ERR_RETURN
 }
