@@ -7,6 +7,7 @@
 #include <boost/geometry/index/rtree.hpp>
 
 #include "DeIsotopotron.h"
+#include "EigenUtils.h"
 #include "Ms2IonFraggertronManager.h"
 #include "MsReaderMzMLLazyLoad.h"
 #include "MsReaderPointerAcc.h"
@@ -25,7 +26,7 @@ Err PythiaDDAWorkflow::init(
 
 	m_parameters = parameters;
 	m_parameters.ms2ExtractionWidthPPM = 7;
-	// m_parameters.threadCount = 64; //TODO use higher threadcount to load balans
+	m_parameters.threadCount = 64; //TODO use higher threadcount to load balans
 	m_parameters.print();
 
 	e = FragLibReader::getFragLibReaderRows(
@@ -501,138 +502,162 @@ namespace {
 
 		ERR_INIT
 
-		struct T {
-			Occurrence occurrence = 0;
-			QVector<int> ranks;
-		};
-
 		QVector<TallyResultTuple> result;
 
 		constexpr int expectedHashTableSize = 1000;
-		QHash<ScanNumber, T> occurrencesTarget;
-		occurrencesTarget.reserve(expectedHashTableSize);
-		QHash<ScanNumber, T> occurrencesDecoy;
-		occurrencesDecoy.reserve(expectedHashTableSize);
+		QVector<Tally> tallyResultsTarget;
+		tallyResultsTarget.resize(expectedHashTableSize);
+		QVector<Tally> tallyResultsDecoy;
+		tallyResultsDecoy.resize(expectedHashTableSize);
+
+		Tally tallyTarget;
+		Tally tallyDecoy;
 
 		for (auto it = input.begin(); it != input.end(); it++) {
 
-			const QVector<IonSearchResult> &isrs = it.value();
+			QVector<IonSearchResult> &isrs = it.value();
 			TargetDecoyCandidatePair *targetDecoyCandidatePair = it.key();
 
-			occurrencesTarget.clear();
-			occurrencesDecoy.clear();
+			std::sort(
+				isrs.begin(),
+				isrs.end(),
+				[](const IonSearchResult &l, const IonSearchResult &r) {
+					return l.msScanPointPntr->scanInfoPntr->scanNumber <
+						   r.msScanPointPntr->scanInfoPntr->scanNumber;
+				});
+
+			int currentScanNumber = -1;
 
 			for (const IonSearchResult &isr : isrs) {
 
 				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
+
+				if (currentScanNumber != scanNumber) {
+					if (currentScanNumber > 0) {
+						constexpr int occurenceCountMin = 3;
+						if (tallyTarget.occurrence > occurenceCountMin) {
+							tallyTarget.scanNumber = currentScanNumber;
+							e = EigenUtils::cosineSimilarity(
+								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical),
+								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical),
+								&tallyTarget.cosineSimilarity
+								);
+							tallyResultsTarget.push_back(tallyTarget);
+						}
+						if (tallyDecoy.occurrence > occurenceCountMin) {
+							tallyDecoy.scanNumber = currentScanNumber;
+							e = EigenUtils::cosineSimilarity(
+								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical),
+								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical),
+								&tallyDecoy.cosineSimilarity
+								);
+							tallyResultsDecoy.push_back(tallyDecoy);
+						}
+
+						tallyTarget = Tally();
+						tallyDecoy = Tally();
+					}
+					currentScanNumber = scanNumber;
+				}
+
 				if (isr.ms2IonLibraryPntr->isDecoy) {
-					T &t = occurrencesDecoy[scanNumber];
-					t.occurrence++;
-					t.ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+					tallyDecoy.occurrence++;
+					tallyDecoy.ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+					tallyDecoy.intensitiesEmperical.push_back(isr.msScanPointPntr->intensityVal);
+					tallyDecoy.intensitiesTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->intensity);
+					tallyDecoy.intensitiesSum += isr.msScanPointPntr->intensityVal;
 					continue;
 				}
 
-				T &t = occurrencesTarget[scanNumber];
-				t.occurrence++;
-				t.ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
-			}
-
-			if (occurrencesTarget.isEmpty() && occurrencesDecoy.isEmpty()) {
-				continue;
-			}
-
-			constexpr int occurenceCountMin = 3;
-
-			QVector<TallyResultTarget> tallyResultsTarget;
-			if (!occurrencesTarget.isEmpty()) {
-				for (auto itt = occurrencesTarget.begin(); itt != occurrencesTarget.end(); itt++) {
-
-					const T &trt =  occurrencesTarget[itt.key()];
-
-					if (trt.occurrence <= occurenceCountMin) {
-						continue;
-					}
-
-					TallyResultTarget tallyResult;
-					tallyResult.scanNumber = itt.key();
-					tallyResult.occurrence = trt.occurrence;
-					tallyResult.ranks = trt.ranks;
-					tallyResultsTarget.push_back(tallyResult);
-				}
-
-				if (!tallyResultsTarget.isEmpty()) {
-					std::sort(
-						tallyResultsTarget.rbegin(),
-						tallyResultsTarget.rend(),
-						[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
-					);
-				}
-			}
-
-			QVector<TallyResultTarget> tallyResultsDecoy;
-			if (!occurrencesDecoy.isEmpty()) {
-
-				for (auto itt = occurrencesDecoy.begin(); itt != occurrencesDecoy.end(); itt++) {
-
-					const T &trt =  occurrencesDecoy[itt.key()];
-					if (trt.occurrence <= occurenceCountMin) {
-						continue;
-					}
-
-					TallyResultTarget tallyResult;
-					tallyResult.scanNumber = itt.key();
-					tallyResult.occurrence = trt.occurrence;
-					tallyResult.ranks = trt.ranks;
-
-					tallyResultsDecoy.push_back(tallyResult);
-				}
-
-				if (!tallyResultsDecoy.isEmpty()) {
-					std::sort(
-						tallyResultsDecoy.rbegin(),
-						tallyResultsDecoy.rend(),
-						[](const TallyResult &l, const TallyResult &r) {return l.occurrence < r.occurrence;}
-					);
-				}
+				tallyTarget.occurrence++;
+				tallyTarget.ranks.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->rank);
+				tallyTarget.intensitiesEmperical.push_back(isr.msScanPointPntr->intensityVal);
+				tallyTarget.intensitiesTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->intensity);
+				tallyTarget.intensitiesSum += isr.msScanPointPntr->intensityVal;
 			}
 
 			if (tallyResultsTarget.isEmpty() && tallyResultsDecoy.isEmpty()) {
 				continue;
 			}
 
-			result.push_back({targetDecoyCandidatePair, tallyResultsTarget, tallyResultsDecoy});
+			const auto sortLogic = [](const Tally &l, const Tally &r) {
+				if (l.occurrence == r.occurrence) {
+					return l.cosineSimilarity > r.cosineSimilarity;
+				}
+				return l.occurrence > r.occurrence;
+			};
+			std::sort(tallyResultsTarget.begin(), tallyResultsTarget.end(), sortLogic);
+			std::sort(tallyResultsDecoy.begin(), tallyResultsDecoy.end(), sortLogic);
+
+			QVector<TallyResult> tallyResultsFinalTarget;
+			tallyResultsFinalTarget.reserve(tallyResultsTarget.size());
+			QVector<TallyResult> tallyResultsFinalDecoy;
+			tallyResultsFinalDecoy.reserve(tallyResultsDecoy.size());
+
+			constexpr int topN = 3;
+			for (int i = 0; i < std::min(tallyResultsTarget.size(), topN); ++i) {
+				TallyResult t;
+
+				const Tally &tally = tallyResultsTarget[i];
+				t.scanNumber = tally.scanNumber;
+				t.occurrence = tally.occurrence;
+				t.isDecoy = false;
+				t.cosineSimilarity = tally.cosineSimilarity;
+				t.intensitiesSum = tally.intensitiesSum;
+				t.ranks = tally.ranks;
+
+				tallyResultsFinalTarget.push_back(t);
+			}
+
+			for (int i = 0; i < std::min(tallyResultsDecoy.size(), topN); ++i) {
+				TallyResult t;
+
+				const Tally &tally = tallyResultsDecoy[i];
+				t.scanNumber = tally.scanNumber;
+				t.occurrence = tally.occurrence;
+				t.isDecoy = true;
+				t.cosineSimilarity = tally.cosineSimilarity;
+				t.intensitiesSum = tally.intensitiesSum;
+				t.ranks = tally.ranks;
+
+				tallyResultsFinalDecoy.push_back(t);
+			}
+
+			result.push_back({targetDecoyCandidatePair, tallyResultsFinalTarget, tallyResultsFinalDecoy});
+			tallyResultsTarget.clear();
+			tallyResultsDecoy.clear();
 		}
 
 		return {e, result};
 	}
 
 	QPair<Err, QVector<TallyResultTuple>> performFraggingLogic(
-		const ProcessingGroup &pgs,
+		const ProcessingGroup &pg,
 		const PythiaParameters &parameters
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(*pgs.msScanPointsPntr); rree;
+		e = ErrorUtils::isNotEmpty(*pg.msScanPointsPntr); rree;
 
-		if (pgs.ms2IonsLibrary.isEmpty()) {
+		if (pg.ms2IonsLibrary.isEmpty()) {
 			qDebug()
 				<< qPrintable(S_GLOBAL_TIMER.elapsed())
 				<< "No ms2IonsLibrary found for precursor range"
-				<< pgs.mzPrecursorRangeMinMax.first << "-"
-				<< pgs.mzPrecursorRangeMinMax.second
+				<< pg.mzPrecursorRangeMinMax.first << "-"
+				<< pg.mzPrecursorRangeMinMax.second
 			;
 			return {e, {}};
 		}
 
 		Ms2IonFraggertronManager fragger;
-		e = fragger.init(pgs.ms2IonsLibrary); rree;
+		e = fragger.init(pg.ms2IonsLibrary); rree;
 
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
-		constexpr int batchSize = 1.5e5; //TODO make this settable in params
+		constexpr int batchSize = 2e5; //TODO make this settable in params
 		ionSearchResults.reserve(batchSize);
 
-		for (MsScanPoint *mssp : *pgs.msScanPointsPntr) {
+		for (MsScanPoint *mssp : *pg.msScanPointsPntr) {
 			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
 											- mssp->scanInfoPntr->isoWindowLower
 											- parameters.precursorExtractionWindowThomsons;
@@ -696,8 +721,11 @@ namespace {
 			}
 		}
 #endif
+		QElapsedTimer et;
+		et.start();
 		QPair<Err, QVector<TallyResultTuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(ionSearchResults); rree;
+		// qDebug() << et.restart() << "SLFJDSL";
 
 		return result;
 	}
@@ -756,7 +784,7 @@ namespace {
 		e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); ree;
 		targetDecoyCandidatePairsPntrsTranched->clear();
 
-		constexpr int batchSize = 1.5e5; //TODO make this settable in params
+		constexpr int batchSize = 2e5; //TODO make this settable in params
 		const int libTrancheSize = std::max(targetDecoyCandidatePairsPntrs.size() / batchSize, 1);
 		qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "Processing library in" << libTrancheSize << "tranches";
 
@@ -871,9 +899,10 @@ namespace {
 			TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
 			ScanNumber scanNumber = -1;
 			bool isDecoy = false;
-			Occurrence occurrence;
-			float rankMean;
-			int rankBest;
+			Occurrence occurrence = -1;
+			float cosineSimilarity = -1;
+			float rankMean = -1;
+			int rankBest = -1;
 		};
 
 		QVector<T> ts;
@@ -888,6 +917,7 @@ namespace {
 				t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
 				t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
 				t.isDecoy = false;
+				t.cosineSimilarity = std::get<1>(tpl).front().cosineSimilarity;
 				ts.push_back(t);
 			}
 
@@ -898,6 +928,7 @@ namespace {
 				t.scanNumber = std::get<2>(tpl).front().scanNumber;
 				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
 				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
+				t.cosineSimilarity = std::get<2>(tpl).front().cosineSimilarity;
 				td.isDecoy = true;
 				ts.push_back(td);
 			}
@@ -908,7 +939,7 @@ namespace {
 			ts.end(),
 			[](const T &l, const T &r) {
 				if (l.occurrence == r.occurrence) {
-					return l.targetDecoyCandidatePair->peptideStringWithMods() < r.targetDecoyCandidatePair->peptideStringWithMods();
+					return l.cosineSimilarity > r.cosineSimilarity;
 				}
 
 				return l.occurrence > r.occurrence;
@@ -929,14 +960,15 @@ namespace {
 			// if (founds.contains(t.targetDecoyCandidatePair)) {
 			if (true) {
 				std::cout
+					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
 					<< counter << " fdsafda "
-					<< q
-					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()
-					<< t.targetDecoyCandidatePair->charge()
-					<< t.occurrence << founds.value(t.targetDecoyCandidatePair).occurrence
-					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence
-					// << t.rankBest
-					<< t.scanNumber << founds.value(t.targetDecoyCandidatePair).scanNumber
+					<< q << " "
+					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()  << " "
+					<< t.targetDecoyCandidatePair->charge()  << " "
+					<< t.occurrence << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
+					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
+					// << t.rankBest  << " "
+					<< t.scanNumber << founds.value(t.targetDecoyCandidatePair).scanNumber  << " "
 					<< t.isDecoy
 					<< std::endl;
 			}

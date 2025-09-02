@@ -19,8 +19,25 @@ using namespace Error;
 
 struct TallyResult {
 	ScanNumber scanNumber = -1;
+	bool isDecoy = false;
 	Occurrence occurrence = 0;
+	float cosineSimilarity = -1.0;
+	float intensitiesSum = -1.0;
 	QVector<int> ranks;
+	// int indexesFoundY = 0;
+	// int indexesFoundB = 0;
+	// int seqTagLongestY = 0;
+	// int seqTagLongestB = 0;
+};
+
+struct Tally {
+	ScanNumber scanNumber = -1;
+	Occurrence occurrence = 0;
+	float cosineSimilarity = -1.0;
+	float intensitiesSum = -1.0;
+	QVector<int> ranks;
+	QVector<float> intensitiesEmperical;
+	QVector<float> intensitiesTheoretical;
 	// int indexesFoundY = 0;
 	// int indexesFoundB = 0;
 	// int seqTagLongestY = 0;
