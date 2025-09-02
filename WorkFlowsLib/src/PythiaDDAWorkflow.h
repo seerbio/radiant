@@ -17,6 +17,19 @@
 
 using namespace Error;
 
+struct TallyResult {
+	ScanNumber scanNumber = -1;
+	Occurrence occurrence = 0;
+	QVector<int> ranks;
+	// int indexesFoundY = 0;
+	// int indexesFoundB = 0;
+	// int seqTagLongestY = 0;
+	// int seqTagLongestB = 0;
+};
+
+using TallyResultTarget = TallyResult;
+using TallyResultDecoy = TallyResult;
+using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
 class MsReaderPointerAcc;
 
 class WORKFLOWSLIB_EXPORTS PythiaDDAWorkflow {
@@ -45,7 +58,7 @@ private:
 
 	Err performFragging();
 
-	Err processTargetDecoyCandidatePairsPntrsTranch(
+	QPair<Err, QVector<TallyResultTuple>> processTargetDecoyCandidatePairsPntrsTranch(
 		const QVector<TargetDecoyCandidatePair*> &tdcps,
 		const QVector<ProcessingGroup> &processingGroups
 		);
