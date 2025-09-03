@@ -63,8 +63,6 @@ public:
 
 private:
 
-    [[nodiscard]] Err initTesting(const QVector<CandidateScores*> &candidateScoresPntrs) const;
-
 private:
 
     Q_DISABLE_COPY(Ms2IonFraggertronManager) class Private;

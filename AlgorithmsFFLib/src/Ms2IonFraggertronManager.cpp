@@ -38,8 +38,6 @@ public:
 
     Err init(const QVector<MS2IonLibrary*> &ms2IonsLibrary);
 
-    Err initTesting(const QVector<CandidateScores*> &candidateScoresPntrs);
-
     Err buildRTreeInput(QVector<rTreePoint> *cloudLoader);
 
     Err extractMs2Points(
@@ -127,42 +125,6 @@ Err Ms2IonFraggertronManager::Private::extractMs2Points(
     ERR_RETURN
 }
 
-Err Ms2IonFraggertronManager::Private::initTesting(const QVector<CandidateScores*>& candidateScoresPntrs) {
-
-    ERR_INIT
-
-    MsCalibratomatic msCalibratomatic;;
-    msCalibratomatic.setScanTimeStDev(0.8);
-
-    e = ErrorUtils::isNotEmpty(candidateScoresPntrs); ree;
-
-    // m_candidateScores = candidateScoresPntrs;
-    // m_msCalibratomatic = msCalibratomatic;
-    //
-    // QVector<rTreePoint> cloudLoader;
-    // for (CandidateScores *cs : m_candidateScores) {
-    //
-    //     float predictedScanTime = cs->targetDecoyCandidatePair->iRt();
-    //
-    //     const QVector<MS2Ion> &ms2Ions = cs->isDecoy
-    //                                    ? cs->targetDecoyCandidatePair->ms2IonsDecoy()
-    //                                    : cs->targetDecoyCandidatePair->ms2IonsTarget();
-    //
-    //     for (const MS2Ion &ms2Ion : ms2Ions) {
-    //         rTreeCoor coor(ms2Ion.mz, predictedScanTime);
-    //         rTreePoint point(coor, {ms2Ion, cs});
-    //         cloudLoader.push_back(point);
-    //     }
-    // }
-    //
-    // constexpr int maxElements = 16;
-    // m_rTree = new RTree(cloudLoader, bgi::dynamic_quadratic(maxElements));
-    //
-    // m_isInit = true;
-
-    ERR_RETURN
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////
 //END PRIVATE
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -196,11 +158,5 @@ Err Ms2IonFraggertronManager::extractMs2Points(
         mzMax,
         tdPeptideFrags
         ); ree;
-    ERR_RETURN
-}
-
-Err Ms2IonFraggertronManager::initTesting(const QVector<CandidateScores*>& candidateScoresPntrs) const {
-    ERR_INIT
-    e = d_ptr->initTesting(candidateScoresPntrs); ree;
     ERR_RETURN
 }

@@ -10,43 +10,15 @@
 #include "Error.h"
 #include "FragLibReader.h"
 #include "GlobalSettings.h"
-#include "Ms2IonFraggertronManager.h"
+#include "MsFraggertron.h"
+#include "MsCalibratomatic.h"
 #include "MsReaderBase.h"
 #include "PythiaParameterReader.h"
 #include "TargetDecoyCandidatePairManager.h"
 
 using namespace Error;
 
-struct TallyResult {
-	ScanNumber scanNumber = -1;
-	bool isDecoy = false;
-	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float intensitiesSum = -1.0;
-	QVector<int> ranks;
-	// int indexesFoundY = 0;
-	// int indexesFoundB = 0;
-	// int seqTagLongestY = 0;
-	// int seqTagLongestB = 0;
-};
 
-struct Tally {
-	ScanNumber scanNumber = -1;
-	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float intensitiesSum = -1.0;
-	QVector<int> ranks;
-	QVector<float> intensitiesEmperical;
-	QVector<float> intensitiesTheoretical;
-	// int indexesFoundY = 0;
-	// int indexesFoundB = 0;
-	// int seqTagLongestY = 0;
-	// int seqTagLongestB = 0;
-};
-
-using TallyResultTarget = TallyResult;
-using TallyResultDecoy = TallyResult;
-using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
 class MsReaderPointerAcc;
 
 class WORKFLOWSLIB_EXPORTS PythiaDDAWorkflow {
@@ -66,34 +38,17 @@ public:
 
 private:
 
-	Err buildMsScanPointPntrs(MsReaderPointerAcc *msReaderPtr);
-
-	Err extractScansParallel(
-		const QVector<MsScanInfo*> &scanInfosPntrs,
-		MsReaderPointerAcc *msReaderPtr
-		);
-
-	Err performFragging();
-
-	QPair<Err, QVector<TallyResultTuple>> processTargetDecoyCandidatePairsPntrsTranch(
-		const QVector<TargetDecoyCandidatePair*> &tdcps,
-		const QVector<ProcessingGroup> &processingGroups
-		);
 
 
 private:
 
 	PythiaParameters m_parameters;
+	MsFraggertron m_msFraggertron;
+	MsCalibratomatic m_msCalibratomatic;
 	QVector<FragLibReaderRow> m_fragLibReaderRows;
 	TargetDecoyCandidatePairManager m_tdcpManager;
-	QVector<QVector<MsScanInfo*>> m_msScanInfosTranched;
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
-	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
-	QVector<QVector<MsScanPoint>> m_msScanPointsTranched;
-	QVector<QVector<MsScanPoint*>> m_msScanPointsPntrsTranched;
-	QVector<QPair<float, float>> m_mzPrecursorStartVsStopResult;
+
 };
-
-
 
 #endif //PYTHIADDAWORKFLOW_H
