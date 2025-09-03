@@ -17,36 +17,6 @@
 
 using namespace Error;
 
-struct TallyResult {
-	ScanNumber scanNumber = -1;
-	bool isDecoy = false;
-	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float intensitiesSum = -1.0;
-	QVector<int> ranks;
-	// int indexesFoundY = 0;
-	// int indexesFoundB = 0;
-	// int seqTagLongestY = 0;
-	// int seqTagLongestB = 0;
-};
-
-struct Tally {
-	ScanNumber scanNumber = -1;
-	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float intensitiesSum = -1.0;
-	QVector<int> ranks;
-	QVector<float> intensitiesEmperical;
-	QVector<float> intensitiesTheoretical;
-	// int indexesFoundY = 0;
-	// int indexesFoundB = 0;
-	// int seqTagLongestY = 0;
-	// int seqTagLongestB = 0;
-};
-
-using TallyResultTarget = TallyResult;
-using TallyResultDecoy = TallyResult;
-using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
 class MsReaderPointerAcc;
 
 class WORKFLOWSLIB_EXPORTS PythiaDDAWorkflow {
@@ -90,7 +60,7 @@ private:
 	QVector<TargetDecoyCandidatePair*> m_targetDecoyCandidatePairsPntrs;
 	QMap<ScanNumber, MsScanInfo*> m_scanNumberVsMsScanInfoMS2;
 	QVector<QVector<MsScanPoint>> m_msScanPointsTranched;
-	QVector<QVector<MsScanPoint*>> m_msScanPointsPntrsTranched;
+	// QVector<QVector<MsScanPoint*>> m_msScanPointsPntrsTranched;
 	QVector<QPair<float, float>> m_mzPrecursorStartVsStopResult;
 };
 
