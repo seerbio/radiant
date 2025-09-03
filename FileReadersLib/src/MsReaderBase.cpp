@@ -473,7 +473,7 @@ Err MsReaderBase::printFileInfo() {
         for (const MsScanInfo &msScanInfo : ms2Scans) {
             const ScanPoints &scanPoints = m_scanPoints.value(msScanInfo.scanNumber);
             m_mzMs2Min = std::min(m_mzMs1Min, scanPoints.front().x());
-            m_mzMs2Max = std::max(m_mzMs1Max, scanPoints.back().x());
+            m_mzMs2Max = std::max(m_mzMs2Max, scanPoints.back().x());
         }
     }
 
