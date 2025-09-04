@@ -753,9 +753,16 @@ namespace {
 		Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(t->mzTheoretical);
 
 		Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+
+		std::cout << t->occurrence << " " << t->mzEmperical.size() << " " << t->mzTheoretical.size() << std::endl;
+		std::cout << ppm.mean() << Eigen::RowVectorX<float>(ppm) << std::endl;
+		Eigen::VectorX<float> ppmDiffsFromMean = (ppm.array() - ppm.mean()).array().abs();
+
+
 		if (t->occurrence > 12) {
 			qDebug() << t->ranks;
 			qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);
+			// qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMean);
 			qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
 			qDebug() << "************";
 		}
@@ -1064,7 +1071,7 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 
 	QVector<TallyResultTuple> tallyResultsFinal;
 
-#define FRAG_PARALLEL
+// #define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
 	const auto binderLogic = std::bind(
 		performFraggingLogic,
@@ -1087,7 +1094,7 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 #else
 	for (const ProcessingGroup &pgs : processingGroups) {
 		const QPair<Err, QVector<TallyResultTuple>> res = performFraggingLogic(pgs, m_parameters);
-		e = res.first; ree;
+		e = res.first; rree;
 	}
 #endif
 
