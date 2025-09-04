@@ -35,6 +35,8 @@ public:
 
 	Err processFile(const QString &msDataFilePath);
 
+	Err buildMsCalibratomatic();
+
 
 private:
 

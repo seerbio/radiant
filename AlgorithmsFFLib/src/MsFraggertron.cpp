@@ -7,6 +7,10 @@
 
 #include "EigenUtils.h"
 
+namespace {
+	constexpr int MAX_LIBRARY_ION_COUNT = 12;
+}
+
 MsFraggertron::MsFraggertron()
 : m_msReaderPtr(nullptr)
 , m_msCalibratomatic(nullptr)
@@ -212,10 +216,10 @@ namespace {
 			if (std::get<2>(tpl).front().occurrence > 0) {
 				td.targetDecoyCandidatePair = std::get<0>(tpl);
 				td.occurrence = std::get<2>(tpl).front().occurrence;
-				t.scanNumber = std::get<2>(tpl).front().scanNumber;
+				td.scanNumber = std::get<2>(tpl).front().scanNumber;
 				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
 				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
-				t.cosineSimilarity = std::get<2>(tpl).front().cosineSimilarity;
+				td.cosineSimilarity = std::get<2>(tpl).front().cosineSimilarity;
 				td.isDecoy = true;
 				td.ranks = std::get<2>(tpl).front().ranks;
 				ts.push_back(td);
@@ -249,15 +253,18 @@ namespace {
 			if (true) {
 				std::cout
 					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
-					<< counter << " fdsafda "
+					<< counter << " "
+					<< t.isDecoy
+					<< " fdsafda "
 					<< q << " "
 					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()  << " "
 					<< t.targetDecoyCandidatePair->charge()  << " "
-					<< t.occurrence << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
+					<< t.occurrence << " "
+					// << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankBest  << " "
-					<< t.scanNumber << founds.value(t.targetDecoyCandidatePair).scanNumber  << " "
-					<< t.isDecoy
+					<< t.scanNumber << " "
+					// << founds.value(t.targetDecoyCandidatePair).scanNumber  << " "
 					<< std::endl;
 			}
 
@@ -303,7 +310,7 @@ Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &tar
 		tallyResultsFinal.append(result.second);
 	}
 
-	e = combineDuplicateCollates(&tallyResultsFinal); ree;
+	// e = combineDuplicateCollates(&tallyResultsFinal); ree;
 
 	reportResults(tallyResultsFinal);
 
@@ -564,15 +571,15 @@ namespace {
 			ms2IonLibraries->clear();
 
 			constexpr int targetDecoyDoubler = 2;
-			constexpr int maxLibraryIonCount = 12;
-			ms2IonLibraries->reserve(ms2IonsLibraryTranche.size() * targetDecoyDoubler * maxLibraryIonCount);
+
+			ms2IonLibraries->reserve(ms2IonsLibraryTranche.size() * targetDecoyDoubler * MAX_LIBRARY_ION_COUNT);
 			for (std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy> &tpl : ms2IonsLibraryTranche) {
 				TargetDecoyCandidatePair *tdcp = std::get<0>(tpl);
 
 				MS2IonsTarget &ms2IonsTarget = std::get<1>(tpl);
 				MS2IonsDecoy &ms2IonsDecoy = std::get<2>(tpl);
 
-				for(int i = 0; i < std::min(maxLibraryIonCount, ms2IonsTarget.size()); ++i) {
+				for(int i = 0; i < std::min(MAX_LIBRARY_ION_COUNT, ms2IonsTarget.size()); ++i) {
 					MS2Ion *ms2Ion = &ms2IonsTarget[i];
 					MS2IonLibrary ms2IonLibrary;
 					ms2IonLibrary.ms2IonPntr = ms2Ion;
@@ -581,7 +588,7 @@ namespace {
 					ms2IonLibraries->push_back(ms2IonLibrary);
 				}
 
-				for(int i = 0; i < std::min(maxLibraryIonCount, ms2IonsDecoy.size()); ++i) {
+				for(int i = 0; i < std::min(MAX_LIBRARY_ION_COUNT, ms2IonsDecoy.size()); ++i) {
 					MS2Ion *ms2Ion = &ms2IonsDecoy[i];
 					MS2IonLibrary ms2IonLibrary;
 					ms2IonLibrary.ms2IonPntr = ms2Ion;
@@ -740,6 +747,22 @@ namespace {
 		ERR_RETURN;
 	}
 
+	void filterByPPM(Tally *t) {
+
+		Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(t->mzEmperical);
+		Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(t->mzTheoretical);
+
+		Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+		if (t->occurrence > 12) {
+			qDebug() << t->ranks;
+			qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);
+			qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
+			qDebug() << "************";
+		}
+
+
+	}
+
 	QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> &input
 		) {
@@ -780,7 +803,11 @@ namespace {
 					if (currentScanNumber > 0) {
 						constexpr int occurenceCountMin = 3;
 						if (tallyTarget.occurrence > occurenceCountMin) {
+
 							tallyTarget.scanNumber = currentScanNumber;
+
+							filterByPPM(&tallyTarget);
+
 							e = EigenUtils::cosineSimilarity(
 								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical),
 								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical),
@@ -790,7 +817,11 @@ namespace {
 							tallyResultsTarget.push_back(tallyTarget);
 						}
 						if (tallyDecoy.occurrence > occurenceCountMin) {
+
 							tallyDecoy.scanNumber = currentScanNumber;
+
+							filterByPPM(&tallyTarget);
+
 							e = EigenUtils::cosineSimilarity(
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical),
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical),
@@ -805,6 +836,7 @@ namespace {
 					tallyDecoy = Tally();
 					currentScanNumber = scanNumber;
 				}
+
 
 				if (isr.ms2IonLibraryPntr->isDecoy) {
 					tallyDecoy.occurrence++;

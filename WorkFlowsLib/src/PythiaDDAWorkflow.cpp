@@ -57,7 +57,28 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 
 	e = m_msFraggertron.init(m_parameters, &msReaderPtr); ree;
 
-	e = m_msFraggertron.performFragging(m_targetDecoyCandidatePairsPntrs); ree;
+	e = buildMsCalibratomatic(); ree;
+
+
+	ERR_RETURN
+}
+
+Err PythiaDDAWorkflow::buildMsCalibratomatic() {
+
+	ERR_INIT
+
+	e = ErrorUtils::isNotEmpty(m_targetDecoyCandidatePairsPntrs); ree;
+
+	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsCalibration;
+	for (int i = 0; i < m_targetDecoyCandidatePairsPntrs.size(); i++) {
+		constexpr int skipCount = 4;
+		if (i % skipCount != 0 ) {
+			continue;
+		}
+		targetDecoyCandidatePairsCalibration.push_back(m_targetDecoyCandidatePairsPntrs[i]);
+	}
+
+	e = m_msFraggertron.performFragging(targetDecoyCandidatePairsCalibration); ree;
 
 
 	ERR_RETURN
