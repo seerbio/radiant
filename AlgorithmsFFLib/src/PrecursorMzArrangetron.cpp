@@ -26,7 +26,7 @@ bool PrecursorMzArrangetron::isInit() const {
 
 namespace {
 
-	const int precursorMzKeyHashingPrecision = S_GLOBAL_SETTINGS.HASHING_PRECISION;
+	constexpr int precursorMzKeyHashingPrecision = 3;
 
 	void sortScanNumberMzIntensitiesMzPrecursorMzAscMS2Asc(QVector<ScanNumberMzIntensity> *scanNumberMzIntensities) {
 
