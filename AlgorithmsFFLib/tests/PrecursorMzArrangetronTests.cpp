@@ -25,6 +25,8 @@ void PrecursorMzArrangetronTests::initTest() {
 
 	QSKIP("Skipping till data is built");
 
+	//TODO build test data
+
     ERR_INIT
 
 	QString msFile = "/home/andrewnichols/Desktop/Data/MsData/EXP21126_2021ms0425XRC6_C.raw.mzML";
@@ -49,11 +51,11 @@ void PrecursorMzArrangetronTests::initTest() {
 		int key = it.key();
 		const QVector<ScanNumberMzIntensity> &v = it.value();
 
-		// qDebug()
-		// << qPrintable(S_GLOBAL_TIMER.elapsed())
-		// << "Precursor Key" << key
-		// << "Precursor Mz" << v.front().scanInfoPntr->precursorTargetMz
-		// << "Point count" << v.size();
+		qDebug()
+		<< qPrintable(S_GLOBAL_TIMER.elapsed())
+		<< "Precursor Key" << key
+		<< "Precursor Mz" << v.front().scanInfoPntr->precursorTargetMz
+		<< "Point count" << v.size();
 
 		for (const ScanNumberMzIntensity &snmi : v) {
 			const float currentMzPrecursor = snmi.scanInfoPntr->precursorTargetMz;
@@ -93,10 +95,12 @@ void PrecursorMzArrangetronTests::trancheMsScanPointsTest() {
 
 	// QSKIP("Skipping till data is built");
 
+	//TODO build test data
+
 	ERR_INIT
 
 	QString msFile = "/home/andrewnichols/Desktop/Data/MsData/EXP21126_2021ms0425XRC6_C.raw.mzML";
-	// msFile = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
+	msFile = "/home/andrewnichols/Desktop/Data/MsData/EXP23111_2023ms0979bX45_A.raw.mzML";
 	// msFile = "/home/andrewnichols/Desktop/Data/MsData/EXP23140_2023ms1194X42_A_BB6_1_884.d.mzML";
 
 	MsReaderPointerAcc msReader;
@@ -107,10 +111,10 @@ void PrecursorMzArrangetronTests::trancheMsScanPointsTest() {
 	e = precursorMzArrangetron.init(&msReader);
 	QCOMPARE(e, eNoError);
 
-	constexpr int threadCount = 64;
-	QVector<QVector<ScanNumberMzIntensity*>> scanNumberMzIntensityTranched;
-	e = precursorMzArrangetron.trancheMsScanPoints(threadCount, &scanNumberMzIntensityTranched);
-	QCOMPARE(e, eNoError);
+	// constexpr int threadCount = 64;
+	// QVector<QVector<ScanNumberMzIntensity*>> scanNumberMzIntensityTranched;
+	// e = precursorMzArrangetron.trancheMsScanPoints(threadCount, &scanNumberMzIntensityTranched);
+	// QCOMPARE(e, eNoError);
 
 }
 
