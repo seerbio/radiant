@@ -891,8 +891,23 @@ namespace {
 
 		const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
 		if (size < 1) {
-			qDebug() << "SDFLKJDSJFDLJ";
+			// auto mm = std::max_element(
+			// 	ms2IonLibraries->begin(),
+			// 	ms2IonLibraries->end(),
+			// 	[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
+			// 		return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
+			// 	});
+			// qDebug() << precursorMzValLower << precursorMzValUpper<< "SDFLK" << mm->targeDecoyCandidatePairPntr->mz(mm->isDecoy);
+			return {e, {}};
 		}
+
+		// qDebug()
+		// << "SDFLKJDSJFDLJ"
+		// << precursorMzValLower
+		// << (*ms2IonLibraries)[precursorMzMinLowerBoundIndex].targeDecoyCandidatePairPntr->mz((*ms2IonLibraries)[precursorMzMinLowerBoundIndex].isDecoy)
+		// << (*ms2IonLibraries)[precursorMzMaxUpperBoundIndex].targeDecoyCandidatePairPntr->mz((*ms2IonLibraries)[precursorMzMaxUpperBoundIndex].isDecoy)
+		// << precursorMzValUpper
+		// ;
 
 		// 	const float mzVal = mssp->mzVal;
 		// 	const float mzTol = MathUtils::calculatePPM(
