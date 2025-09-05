@@ -6,6 +6,7 @@
 #define PRECURSORMZARRANGETRON_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "GlobalSettings.h"
 #include "Error.h"
 #include "MsReaderPointerAcc.h"
 
@@ -24,10 +25,12 @@ class ALGORITHMSFFLIB_EXPORTS PrecursorMzArrangetron {
 
 public:
 
-	PrecursorMzArrangetron() = default;
+	PrecursorMzArrangetron();
 	~PrecursorMzArrangetron() = default;
 
 	Err init(MsReaderPointerAcc *msReaderPtr);
+
+	[[nodiscard]]bool isInit() const;
 
 	Err trancheMsScanPoints(
 		int threadCount,

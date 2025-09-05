@@ -6,6 +6,8 @@
 
 #include "ErrorUtils.h"
 
+PrecursorMzArrangetron::PrecursorMzArrangetron() : m_msReaderPtr(nullptr) {}
+
 Err PrecursorMzArrangetron::init(MsReaderPointerAcc *msReaderPtr) {
 
 	ERR_INIT
@@ -15,13 +17,16 @@ Err PrecursorMzArrangetron::init(MsReaderPointerAcc *msReaderPtr) {
 
 	e = extractScansParallel(); ree;
 
-
 	ERR_RETURN
+}
+
+bool PrecursorMzArrangetron::isInit() const {
+	return !m_precursorMzKeyVsScanNumberMzIntensity.isEmpty();
 }
 
 namespace {
 
-	constexpr int precursorMzKeyHashingPrecision = 3;
+	const int precursorMzKeyHashingPrecision = S_GLOBAL_SETTINGS.HASHING_PRECISION;
 
 	void sortScanNumberMzIntensitiesMzPrecursorMzAscMS2Asc(QVector<ScanNumberMzIntensity> *scanNumberMzIntensities) {
 
@@ -285,4 +290,3 @@ Err PrecursorMzArrangetron::trancheMsScanPoints(
 
 	ERR_RETURN
 }
-
