@@ -20,6 +20,8 @@ struct ScanNumberMzIntensity {
 
 class ALGORITHMSFFLIB_EXPORTS PrecursorMzArrangetron {
 
+	friend class PrecursorMzArrangetronTests;
+
 public:
 
 	PrecursorMzArrangetron() = default;
@@ -27,9 +29,16 @@ public:
 
 	Err init(MsReaderPointerAcc *msReaderPtr);
 
+	Err trancheMsScanPoints(
+		int threadCount,
+		QVector<QVector<ScanNumberMzIntensity*>> *scanNumberMzIntensityTranched
+		);
+
 private:
 
 	Err extractScansParallel();
+
+
 
 private:
 	MsReaderPointerAcc *m_msReaderPtr;

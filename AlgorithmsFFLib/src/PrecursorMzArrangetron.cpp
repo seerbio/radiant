@@ -50,83 +50,91 @@ namespace {
 			});
 	}
 
-	QPair<Err, QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>>> extractScansParallelLogic(
-		const QVector<MsScanInfo*> &scanInfosPntrs,
-		MsReaderPointerAcc *msReaderPtr
-		) {
-		ERR_INIT
+	Err extractScansParallelLogic(
+	    const QVector<MsScanInfo *> &scanInfosPntrs,
+	    MsReaderPointerAcc *msReaderPtr,
+	    QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>> *precursorMzKeyVsScanNumberMzIntensities,
+	    QMutex *mutex // New parameter for thread safety
+	) {
+	    ERR_INIT
 
-		QVector<MsScan> msScans;
-		e = msReaderPtr->ptr->extractScanPoints(
-			scanInfosPntrs,
-			&msScans
-			); rree;
+	    QVector<MsScan> msScans;
+	    e = msReaderPtr->ptr->extractScanPoints(
+	        scanInfosPntrs,
+	        &msScans
+	    );
+	    ree;
 
-		const int tranchePointCount = std::accumulate(
-			msScans.begin(),
-			msScans.end(),
-			0,
-			[](int sum, const MsScan &msScan){return sum + msScan.msScanInfoPntr->pointCount;}
-			);
+	    const int tranchePointCount = std::accumulate(
+	        msScans.begin(),
+	        msScans.end(),
+	        0,
+	        [](int sum, const MsScan &msScan) { return sum + msScan.msScanInfoPntr->pointCount; }
+	    );
 
-		QVector<ScanNumberMzIntensity> scanNumberMzIntensities;
-		scanNumberMzIntensities.reserve(tranchePointCount);
+	    QVector<ScanNumberMzIntensity> scanNumberMzIntensities;
+	    scanNumberMzIntensities.reserve(tranchePointCount);
 
-		for (const MsScan &scan : msScans) {
+	    for (const MsScan &scan : msScans) {
+	        for (int i = 0; i < scan.msScanInfoPntr->pointCount; i++) {
+	            constexpr float mzMS2Min = 300;  // TODO: get values from MsReader
+	            constexpr float mzMS2Max = 1600; // TODO: get values from MsReader
+	            const float mzMS2Val = scan.mzVals[i];
 
-			for (int i = 0; i < scan.msScanInfoPntr->pointCount; i++) {
+	            // Skip invalid values
+	            if (mzMS2Val < mzMS2Min || mzMS2Val > mzMS2Max) {
+	                continue;
+	            }
 
-				constexpr float mzMS2Min = 300; //TODO get values from MsReader for these vals
-				constexpr float mzMS2Max = 1600; //TODO get values from MsReader for these vals
-				const float mzMS2Val = scan.mzVals[i];
+	            ScanNumberMzIntensity sni;
+	            sni.scanInfoPntr = scan.msScanInfoPntr;
+	            sni.mzVal = mzMS2Val;
+	            sni.intensityVal = scan.intensityVals[i];
+	            scanNumberMzIntensities.push_back(sni);
+	        }
+	    }
+	    sortScanNumberMzIntensitiesMzPrecursorMzAscMS2Asc(&scanNumberMzIntensities);
 
-				if (mzMS2Val < mzMS2Min || mzMS2Val > mzMS2Max) {
-					continue;
-				}
+	    QVector<ScanNumberMzIntensity> scanNumberMzIntensityLoader;
+	    constexpr int reserveEstimation = 1e3;
+	    scanNumberMzIntensityLoader.reserve(reserveEstimation);
 
-				ScanNumberMzIntensity sni;
-				sni.scanInfoPntr = scan.msScanInfoPntr;
-				sni.mzVal = mzMS2Val;
-				sni.intensityVal = scan.intensityVals[i];
-				scanNumberMzIntensities.push_back(sni);
-			}
-		}
-		sortScanNumberMzIntensitiesMzPrecursorMzAscMS2Asc(&scanNumberMzIntensities);
+	    int currentMzPrecursorHashed = -1;
+	    for (const ScanNumberMzIntensity &snmi : scanNumberMzIntensities) {
+	        if (MathUtils::hashDecimal(snmi.scanInfoPntr->precursorTargetMz, precursorMzKeyHashingPrecision)
+	            != currentMzPrecursorHashed) {
+	            if (!scanNumberMzIntensityLoader.isEmpty()) {
+	                sortMzMS2Asc(scanNumberMzIntensityLoader);
 
-		QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>> precursorMzKeyVsScanNumberMzIntensities;
-		QVector<ScanNumberMzIntensity> scanNumberMzIntensityLoader;
-		constexpr int reserveEstimation = 1e3;
-		scanNumberMzIntensityLoader.reserve(reserveEstimation);
+	                // Lock the mutex while modifying the shared QMap
+	                {
+	                    QMutexLocker locker(mutex);
+	                    (*precursorMzKeyVsScanNumberMzIntensities)[currentMzPrecursorHashed].append(scanNumberMzIntensityLoader);
+	                }
 
-		int currentMzPrecursorHashed = -1;
-		for (const ScanNumberMzIntensity &snmi : scanNumberMzIntensities) {
+	                scanNumberMzIntensityLoader.clear();
+	            }
 
-			if (MathUtils::hashDecimal(snmi.scanInfoPntr->precursorTargetMz, precursorMzKeyHashingPrecision)
-				!= currentMzPrecursorHashed) {
+	            currentMzPrecursorHashed = MathUtils::hashDecimal(snmi.scanInfoPntr->precursorTargetMz, precursorMzKeyHashingPrecision);
+	        }
 
-				if (!scanNumberMzIntensityLoader.isEmpty()) {
+	        scanNumberMzIntensityLoader.push_back(snmi);
+	    }
 
-					sortMzMS2Asc(scanNumberMzIntensityLoader);
+	    if (!scanNumberMzIntensityLoader.isEmpty()) {
+	        const PrecursorMzKey precursorKey = MathUtils::hashDecimal(
+	            scanNumberMzIntensityLoader.front().scanInfoPntr->precursorTargetMz,
+	            precursorMzKeyHashingPrecision
+	        );
 
-					precursorMzKeyVsScanNumberMzIntensities[currentMzPrecursorHashed].append(scanNumberMzIntensityLoader);
-					scanNumberMzIntensityLoader.clear();
-				}
+	        // Lock the mutex while modifying the shared QMap
+	        {
+	            QMutexLocker locker(mutex);
+	            (*precursorMzKeyVsScanNumberMzIntensities)[precursorKey].append(scanNumberMzIntensityLoader);
+	        }
+	    }
 
-				currentMzPrecursorHashed = MathUtils::hashDecimal(snmi.scanInfoPntr->precursorTargetMz, precursorMzKeyHashingPrecision);
-			}
-
-			scanNumberMzIntensityLoader.push_back(snmi);
-		}
-
-		if (!precursorMzKeyVsScanNumberMzIntensities.isEmpty()) {
-			const PrecursorMzKey precursorKey = MathUtils::hashDecimal(
-				scanNumberMzIntensityLoader.front().scanInfoPntr->precursorTargetMz,
-				precursorMzKeyHashingPrecision
-				);
-			precursorMzKeyVsScanNumberMzIntensities[precursorKey].append(scanNumberMzIntensityLoader);
-		}
-
-		return {e, precursorMzKeyVsScanNumberMzIntensities};
+	    ERR_RETURN
 	}
 
 }//namespace
@@ -167,24 +175,24 @@ Err PrecursorMzArrangetron::extractScansParallel() {
 
 #define PARALLEL_LOAD_666
 #ifdef PARALLEL_LOAD_666
+	QMutex mutex;
+
 	const auto binderLogic = std::bind(
 		extractScansParallelLogic,
 		std::placeholders::_1,
-		m_msReaderPtr
-		);
+		m_msReaderPtr,
+		&m_precursorMzKeyVsScanNumberMzIntensity, // Shared data structure
+		&mutex                                    // Mutex for thread safety
+	);
 
-	QFuture<QPair<Err, QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>>>> future = QtConcurrent::mapped(
+	QFuture<Err> future = QtConcurrent::mapped(
 		scanInfosPntrsTranched,
 		binderLogic
-		);
+	);
 	future.waitForFinished();
 
-	for (const QPair<Err, QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>>> &res : future) {
-		e = res.first; ree;
-		const QMap<PrecursorMzKey, QVector<ScanNumberMzIntensity>> m = res.second;
-		for (auto it = m.begin(); it != m.end(); it++) {
-			m_precursorMzKeyVsScanNumberMzIntensity[it.key()].append(it.value());
-		}
+	for (const Err res : future) {
+		e = res; ree;
 	}
 
 	QFuture<void> future2 = QtConcurrent::map(
@@ -201,53 +209,79 @@ Err PrecursorMzArrangetron::extractScansParallel() {
 	}
 #endif
 
-// #define SANITY_CHECK
-#ifdef SANITY_CHECK
-	float lastMzPrecursor = -1;
-	float lastMzMS2 = -1;
-	for (auto it = m_precursorMzKeyVsScanNumberMzIntensity.begin(); it != m_precursorMzKeyVsScanNumberMzIntensity.end(); ++it) {
+	ERR_RETURN
+}
 
-		int key = it.key();
-		const QVector<ScanNumberMzIntensity> &v = it.value();
+namespace {
 
-		// qDebug()
-		// << qPrintable(S_GLOBAL_TIMER.elapsed())
-		// << "Precursor Key" << key
-		// << "Precursor Mz" << v.front().scanInfoPntr->precursorTargetMz
-		// << "Point count" << v.size();
+	QVector<int> calculateTranchSize(int size, int threadCount) {
 
-		for (const ScanNumberMzIntensity &snmi : v) {
-			const float currentMzPrecursor = snmi.scanInfoPntr->precursorTargetMz;
-			const float currentMzMS2 = snmi.mzVal;
+		const int tranchSize = size / threadCount;
+		int trancheSizeRemainder = size % threadCount;
+		QVector<int> trancheSizes(threadCount, tranchSize);
 
-			e = ErrorUtils::isTrue(
-				MathUtils::hashDecimal(lastMzPrecursor, precursorMzKeyHashingPrecision) == MathUtils::hashDecimal(currentMzPrecursor, precursorMzKeyHashingPrecision)
-				|| lastMzPrecursor < currentMzPrecursor
-				);
-			if (e != eNoError) {
-				qDebug() << lastMzPrecursor << currentMzPrecursor;
-				rrr(eValueError);
+		int counter = 0;
+		while (trancheSizeRemainder-- > 0) {
+			trancheSizes[counter++]++;
+		}
+
+		return trancheSizes;
+	}
+
+}//namespace
+Err PrecursorMzArrangetron::trancheMsScanPoints(
+	int threadCount,
+	QVector<QVector<ScanNumberMzIntensity*>> *scanNumberMzIntensityTranched
+	) {
+
+	ERR_INIT
+
+	e = ErrorUtils::isGreaterThanZero(threadCount); ree;
+	e = ErrorUtils::isNotEmpty(m_precursorMzKeyVsScanNumberMzIntensity); ree;
+
+	const int pointCountAllScans = std::accumulate(
+		m_precursorMzKeyVsScanNumberMzIntensity.begin(),
+		m_precursorMzKeyVsScanNumberMzIntensity.end(),
+		0,
+		[](int sum, const QVector<ScanNumberMzIntensity> &v){return sum + v.size();}
+		);
+
+
+	const QVector<int> trancheSizes = calculateTranchSize(pointCountAllScans, threadCount);
+	e = ErrorUtils::isEqual(trancheSizes.size(), threadCount); ree;
+
+	scanNumberMzIntensityTranched->resize(threadCount);
+	int pointCounter = 0;
+	int currentIndex = 0;
+	int currentTargetTrancheSize = trancheSizes[currentIndex];
+	for (QVector<ScanNumberMzIntensity> &v: m_precursorMzKeyVsScanNumberMzIntensity) {
+		for (ScanNumberMzIntensity &scanNumberMzIntensity : v) {
+			if (pointCounter++ == currentTargetTrancheSize) {
+				currentIndex++;
+				currentTargetTrancheSize = trancheSizes[currentIndex];
+				pointCounter = 0;
 			}
 
-			lastMzMS2 = MathUtils::hashDecimal(lastMzPrecursor, precursorMzKeyHashingPrecision)
-						!= MathUtils::hashDecimal(currentMzPrecursor, precursorMzKeyHashingPrecision)
-					  ? -1
-					  : lastMzMS2;
-
-			e = ErrorUtils::isTrue(
-			MathUtils::hashDecimal(lastMzMS2, precursorMzKeyHashingPrecision)
-					== MathUtils::hashDecimal(currentMzMS2, precursorMzKeyHashingPrecision) || lastMzMS2 < currentMzMS2
-				);
-			if (e != eNoError) {
-				qDebug() << lastMzMS2 << currentMzMS2;
-				rrr(eValueError);
-			}
-
-			lastMzPrecursor = currentMzPrecursor;
-			lastMzMS2 = currentMzMS2;
+			e = ErrorUtils::isTrue(currentIndex < threadCount); ree;
+			(*scanNumberMzIntensityTranched)[currentIndex].push_back(&scanNumberMzIntensity);
 		}
 	}
-#endif
+
+	// int counter = 0;
+	// for (const QVector<ScanNumberMzIntensity*> &v : scanNumberMzIntensityTranched) {
+	// 	qDebug()
+	// 	<< qPrintable(S_GLOBAL_TIMER.elapsed())
+	// 	<< counter++
+	// 	<< "Size" << v.size()
+	// 	<< "Precursor Mz range"
+	// 	<< v.front()->scanInfoPntr->precursorTargetMz
+	// 	<< "-"
+	// 	<< v.back()->scanInfoPntr->precursorTargetMz
+	// 	;
+		// for (auto a : v) {
+		// 	std::cout << a->scanInfoPntr->precursorTargetMz << " " << a->mzVal << std::endl;
+		// }
+	// }
 
 	ERR_RETURN
 }
