@@ -56,7 +56,6 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 	e = msReaderPtr.openFile(msDataFilePath); ree;
 
 	e = m_msFraggertron.init(m_parameters, &msReaderPtr); ree;
-
 	e = buildMsCalibratomatic(); ree;
 
 

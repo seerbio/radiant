@@ -29,13 +29,19 @@ Err MsFraggertron::init(
 	m_msReaderPtr = msReaderPtr;
 	m_parameters = params;
 
-	e = buildMsScanPointPntrs(); ree;
+	e = m_precursorMzArrangetron.init(m_msReaderPtr); ree;
+
+	constexpr int msScanIonTranches = 64;
+	e = m_precursorMzArrangetron.trancheMsScanPoints(
+		msScanIonTranches,
+		&m_scanNumberMzIntensityTranched
+		); ree;
 
 	ERR_RETURN
 }
 
 bool MsFraggertron::isInit() const {
-	return !m_msScanPointsPntrsTranched.isEmpty();
+	return !m_scanNumberMzIntensityTranched.isEmpty();
 }
 
 namespace {
@@ -274,7 +280,7 @@ namespace {
 			founds.insert(t.targetDecoyCandidatePair, t);
 			if (q > 0.01) break;
 
-			//mean mz thomsons found average, higher is more specific than lower (this is a reminder to add another NN/LDA feature)
+			//TODO mean mz thomsons found average, higher is more specific than lower (this is a reminder to add another NN/LDA feature)
 		}
 	}
 
@@ -287,18 +293,7 @@ Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &tar
 	et.start();
 
 	e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); ree;
-	e = ErrorUtils::isNotEmpty(m_msScanPointsPntrsTranched); ree;
-	e = ErrorUtils::isEqual(
-		m_msScanPointsPntrsTranched.size(),
-		m_mzPrecursorStartVsStopResult.size()
-		); ree;
-
-	QVector<ProcessingGroup> processingGroups;
-	e = initProcessingGroups(
-		m_mzPrecursorStartVsStopResult,
-		&m_msScanPointsPntrsTranched,
-		&processingGroups
-		); ree;
+	e = ErrorUtils::isTrue(m_precursorMzArrangetron.isInit()); ree;
 
 	QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
 	e = buildTargetDecoyCandidatePairsPntrsTranched(
@@ -308,219 +303,19 @@ Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &tar
 
 	QVector<TallyResultTuple> tallyResultsFinal;
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
-		const QPair<Err, QVector<TallyResultTuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps, processingGroups); ree;
+		const QPair<Err, QVector<TallyResultTuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); ree;
 		e = result.first; ree;
-		tallyResultsFinal.append(result.second);
+		// tallyResultsFinal.append(result.second);
+
 	}
 
-	// e = combineDuplicateCollates(&tallyResultsFinal); ree;
-
-	reportResults(tallyResultsFinal);
+	// // e = combineDuplicateCollates(&tallyResultsFinal); ree;
+	//
+	// reportResults(tallyResultsFinal);
 
 	ERR_RETURN
 }
 
-Err MsFraggertron::buildMsScanPointPntrs() {
-
-	ERR_INIT
-
-	e = ErrorUtils::isTrue(m_msReaderPtr->isInit()); ree;
-
-	constexpr int msLevel = 2;
-	const QMap<ScanNumber, MsScanInfo*> scanNumberVsMsScanInfoMS2
-								= m_msReaderPtr->ptr->getMsScanInfos(msLevel); ree;
-	e = ErrorUtils::isNotEmpty(scanNumberVsMsScanInfoMS2); ree;
-
-	QVector<MsScanInfo*> msScanInfosMS2 = scanNumberVsMsScanInfoMS2.values().toVector();
-	std::sort(
-		msScanInfosMS2.begin(),
-		msScanInfosMS2.end(),
-		[](const MsScanInfo *l, const MsScanInfo *r) {
-			if (MathUtils::tSame(l->precursorTargetMz, r->precursorTargetMz, 0.01)) {
-				return l->scanNumber < r->scanNumber;
-			}
-			return l->precursorTargetMz < r->precursorTargetMz;
-		});
-
-	e = extractScansParallel(msScanInfosMS2); ree;
-
-	const int ms2PointCount = std::accumulate(
-		m_msScanPointsTranched.begin(),
-		m_msScanPointsTranched.end(),
-		0,
-		[](int sum, const QVector<MsScanPoint> &v) {return sum + v.size();}
-		);
-
-	const int trancheSize = ms2PointCount / m_parameters.threadCount;
-	int trancheRemainder = ms2PointCount % m_parameters.threadCount;
-	m_msScanPointsPntrsTranched.reserve(m_parameters.threadCount);
-	QVector<int> trancheSizes(m_parameters.threadCount,trancheSize);
-
-	int counter = 0;
-	while (trancheRemainder > 0) {
-		trancheRemainder--;
-		trancheSizes[counter]++;
-		counter = counter == m_parameters.threadCount ? 0 : counter + 1;
-	}
-
-	QVector<MsScanPoint*> currentMsScanPointsPntrsTranche;
-	currentMsScanPointsPntrsTranche.reserve(trancheSizes.front());
-
-	for (QVector<MsScanPoint> &v : m_msScanPointsTranched) {
-
-		for (MsScanPoint &p : v) {
-
-			currentMsScanPointsPntrsTranche.push_back(&p);
-
-			if (currentMsScanPointsPntrsTranche.size() >= trancheSizes[m_msScanPointsPntrsTranched.size()]) {
-
-				m_msScanPointsPntrsTranched.push_back(currentMsScanPointsPntrsTranche);
-
-				const auto minMaxPrecursorMz = std::minmax_element(
-					currentMsScanPointsPntrsTranche.begin(),
-					currentMsScanPointsPntrsTranche.end(),// 	currentMsScanPointsPntrsTranche.end(),
-					[](const MsScanPoint *l, const MsScanPoint *r) {
-						return l->scanInfoPntr->precursorTargetMz < r->scanInfoPntr->precursorTargetMz;
-					});
-
-				const float minPrecursorMz = (*minMaxPrecursorMz.first)->scanInfoPntr->precursorTargetMz;
-				const float maxPrecursorMz = (*minMaxPrecursorMz.second)->scanInfoPntr->precursorTargetMz;
-
-				e = ErrorUtils::isTrue(MathUtils::tSame(
-						minPrecursorMz,
-						currentMsScanPointsPntrsTranche.front()->scanInfoPntr->precursorTargetMz,
-						0.5
-						));
-
-				e = ErrorUtils::isTrue(MathUtils::tSame(
-						maxPrecursorMz,
-						currentMsScanPointsPntrsTranche.back()->scanInfoPntr->precursorTargetMz,
-						0.5
-						));
-
-				currentMsScanPointsPntrsTranche.clear();
-			}
-		}
-	}
-
-	if (!currentMsScanPointsPntrsTranche.isEmpty()) {
-		m_msScanPointsPntrsTranched.back().append(currentMsScanPointsPntrsTranche);
-	}
-	e = ErrorUtils::isEqual(
-		m_parameters.threadCount,
-		m_msScanPointsPntrsTranched.size()
-		); ree;
-
-	for (int i = 0; i < m_msScanPointsPntrsTranched.size() - 1; i++) {
-		QVector<MsScanPoint*> &prev = m_msScanPointsPntrsTranched[i];
-		QVector<MsScanPoint*> &next = m_msScanPointsPntrsTranched[i+1];
-
-		const MsScanPoint *prevLastPntr = prev.back();
-		QVector<MsScanPoint*> frontPntrs;
-		for (MsScanPoint *nextFrontPntr : next) {
-			if (prevLastPntr->scanInfoPntr->scanNumber != nextFrontPntr->scanInfoPntr->scanNumber) {
-				break;
-			}
-			frontPntrs.push_back(nextFrontPntr);
-		}
-
-		prev.append(frontPntrs);
-		next.erase(next.begin(), next.begin() + frontPntrs.size());
-	}
-
-	for (const QVector<MsScanPoint*> &v : m_msScanPointsPntrsTranched) {
-		m_mzPrecursorStartVsStopResult.push_back({
-			v.front()->scanInfoPntr->precursorTargetMz,
-			v.back()->scanInfoPntr->precursorTargetMz,
-		});
-	}
-
-	ERR_RETURN
-}
-
-namespace {
-
-	QPair<Err, QVector<MsScanPoint>> extractScansParallelLogic(
-		const QVector<MsScanInfo*> &scanInfosPntrs,
-		MsReaderPointerAcc *msReaderPtr
-		) {
-		ERR_INIT
-
-		QVector<MsScan> msScans;
-		e = msReaderPtr->ptr->extractScanPoints(
-			scanInfosPntrs,
-			&msScans
-			); rree;
-
-		QVector<MsScanPoint> msScanPoints;
-		for (const MsScan &scan : msScans) {
-			for (int i = 0; i < scan.msScanInfoPntr->pointCount; i++) {
-				MsScanPoint msScanPoint;
-				msScanPoint.scanInfoPntr = scan.msScanInfoPntr;
-				msScanPoint.mzVal = scan.mzVals[i];
-				msScanPoint.intensityVal = scan.intensityVals[i];
-				msScanPoints.push_back(msScanPoint);
-			}
-
-		}
-
-		constexpr float mzMin = 300; //TODO get values from MsReader for these vals
-		constexpr float mzMax = 1600; //TODO get values from MsReader for these vals
-		const auto terminatorLogic = [mzMin, mzMax](const MsScanPoint &mssp) {
-			return mssp.mzVal < mzMin || mssp.mzVal > mzMax;
-		};
-		const auto terminator = std::remove_if(msScanPoints.begin(), msScanPoints.end(), terminatorLogic);
-		msScanPoints.erase(terminator, msScanPoints.end());
-
-		std::sort(
-			msScanPoints.begin(),
-			msScanPoints.end(),
-			[](const MsScanPoint &l, const MsScanPoint &r) {
-				if (MathUtils::tSame(l.scanInfoPntr->precursorTargetMz, r.scanInfoPntr->precursorTargetMz)) {
-					return l.scanInfoPntr->scanNumber < r.scanInfoPntr->scanNumber;
-				}
-				return l.scanInfoPntr->precursorTargetMz < r.scanInfoPntr->precursorTargetMz;
-			});
-
-		return {e, msScanPoints};
-	}
-
-}//namespace
-Err MsFraggertron::extractScansParallel(const QVector<MsScanInfo *> &scanInfosPntrs) {
-	ERR_INIT
-
-	e = ErrorUtils::isTrue(m_msReaderPtr->isInit()); ree;
-
-	QVector<QVector<MsScanInfo*>> scanInfosPntrsTranched;
-	e = ParallelUtils::trancheVectorForParallelizationInOrder(
-		scanInfosPntrs,
-		m_parameters.threadCount * 4,
-		0,
-		&scanInfosPntrsTranched
-		); ree;
-
-	const auto binderLogic = std::bind(
-		extractScansParallelLogic,
-		std::placeholders::_1,
-		m_msReaderPtr
-		);
-
-	QFuture<QPair<Err, QVector<MsScanPoint>>> future = QtConcurrent::mapped(
-		scanInfosPntrsTranched,
-		binderLogic
-		);
-	future.waitForFinished();
-
-	for (const QPair<Err, QVector<MsScanPoint>> &res : future) {
-		e = res.first; ree;
-		m_msScanPointsTranched.push_back(res.second);
-	}
-
-	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "MsPoints extracted";
-
-
-	ERR_RETURN
-}
 
 namespace {
 
@@ -609,6 +404,14 @@ namespace {
 			ms2IonLibraries.begin(),
 			ms2IonLibraries.end(),
 			[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
+
+				if (
+					MathUtils::hashDecimal(l.targeDecoyCandidatePairPntr->mz(l.isDecoy),S_GLOBAL_SETTINGS.HASHING_PRECISION)
+					== MathUtils::hashDecimal(r.targeDecoyCandidatePairPntr->mz(r.isDecoy),S_GLOBAL_SETTINGS.HASHING_PRECISION)
+					) {
+					return l.ms2IonPntr->mz < r.ms2IonPntr->mz;
+				}
+
 				return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
 			});
 	}
@@ -1044,66 +847,79 @@ namespace {
 
 
 	QPair<Err, QVector<TallyResultTuple>> performFraggingLogic(
-		const ProcessingGroup &pg,
-		const PythiaParameters &parameters
+		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
+		const PythiaParameters &parameters,
+		QVector<MS2IonLibrary> *ms2IonLibraries
 		) {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(*pg.msScanPointsPntr); rree;
+		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rree;
+		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rree;
 
-		if (pg.ms2IonsLibrary.isEmpty()) {
-			qDebug()
-				<< qPrintable(S_GLOBAL_TIMER.elapsed())
-				<< "No ms2IonsLibrary found for precursor range"
-				<< pg.mzPrecursorRangeMinMax.first << "-"
-				<< pg.mzPrecursorRangeMinMax.second
-			;
-			return {e, {}};
-		}
-
-		Ms2IonFraggertronManager fragger;
-		e = fragger.init(pg.ms2IonsLibrary); rree;
+		// Ms2IonFraggertronManager fragger;
+		// e = fragger.init(pg.ms2IonsLibrary); rree;
 
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
 		constexpr int batchSize = 2e5; //TODO make this settable in params
 		ionSearchResults.reserve(batchSize);
 
-		for (MsScanPoint *mssp : *pg.msScanPointsPntr) {
-			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
-											- mssp->scanInfoPntr->isoWindowLower
-											- parameters.precursorExtractionWindowThomsons;
+		const ScanNumberMzIntensity *snmiFirst = scanNumberMzIntensities.front();
+		const ScanNumberMzIntensity *snmiLast = scanNumberMzIntensities.back();
 
-			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
-											+ mssp->scanInfoPntr->isoWindowUpper
-											+ parameters.precursorExtractionWindowThomsons;
+		const float precursorMzValLower = snmiFirst->scanInfoPntr->precursorTargetMz
+										- snmiFirst->scanInfoPntr->isoWindowLower
+										- parameters.precursorExtractionWindowThomsons;
 
-			const float mzVal = mssp->mzVal;
-			const float mzTol = MathUtils::calculatePPM(
-				mzVal,
-				static_cast<float>(parameters.ms2ExtractionWidthPPM)
-				);
+		const float precursorMzValUpper = snmiLast->scanInfoPntr->precursorTargetMz
+										+ snmiLast->scanInfoPntr->isoWindowUpper
+										+ parameters.precursorExtractionWindowThomsons;
 
-			const float mzMin = mzVal - mzTol;
-			const float mzMax = mzVal + mzTol;
+		const int precursorMzMinLowerBoundIndex = std::upper_bound(
+			ms2IonLibraries->begin(),
+			ms2IonLibraries->end(),
+			precursorMzValLower,
+			[](float val, const MS2IonLibrary &stct) {return stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy) > val;}
+			) - ms2IonLibraries->begin();
 
-			QVector<MS2IonLibrary*> tdPeptideFrags;
-			e = fragger.extractMs2Points(
-				precursorMzValLower,
-				precursorMzValUpper,
-				mzMin,
-				mzMax,
-				&tdPeptideFrags
-				); rree;
+		const int precursorMzMaxUpperBoundIndex = std::lower_bound(
+			ms2IonLibraries->begin(),
+			ms2IonLibraries->end(),
+			precursorMzValUpper,
+			[](const MS2IonLibrary &stct, float val) {return val > stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy);}
+			) - ms2IonLibraries->begin() - 1;
 
-			for (MS2IonLibrary *msil : tdPeptideFrags) {
-				IonSearchResult isr;
-				isr.ms2IonLibraryPntr = msil;
-				isr.msScanPointPntr = mssp;
-
-				ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
-			}
+		const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
+		if (size < 1) {
+			qDebug() << "SDFLKJDSJFDLJ";
 		}
+
+		// 	const float mzVal = mssp->mzVal;
+		// 	const float mzTol = MathUtils::calculatePPM(
+		// 		mzVal,
+		// 		static_cast<float>(parameters.ms2ExtractionWidthPPM)
+		// 		);
+		//
+		// 	const float mzMin = mzVal - mzTol;
+		// 	const float mzMax = mzVal + mzTol;
+		//
+		// 	QVector<MS2IonLibrary*> tdPeptideFrags;
+		// 	e = fragger.extractMs2Points(
+		// 		precursorMzValLower,
+		// 		precursorMzValUpper,
+		// 		mzMin,
+		// 		mzMax,
+		// 		&tdPeptideFrags
+		// 		); rree;
+		//
+		// 	for (MS2IonLibrary *msil : tdPeptideFrags) {
+		// 		IonSearchResult isr;
+		// 		isr.ms2IonLibraryPntr = msil;
+		// 		isr.msScanPointPntr = mssp;
+		//
+		// 		ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
+		// 	}
+		// }
 
 // #define TR_SHT
 #ifdef TR_SHT
@@ -1142,15 +958,12 @@ namespace {
 
 }//namespace
 QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidatePairsPntrsTranch(
-	const QVector<TargetDecoyCandidatePair *> &tdcps,
-	const QVector<ProcessingGroup> &_processingGroups
+	const QVector<TargetDecoyCandidatePair *> &tdcps
 	) {
 	ERR_INIT
 
 	e = ErrorUtils::isNotEmpty(tdcps); rree;
-	e = ErrorUtils::isNotEmpty(_processingGroups); rree;
-
-	QVector<ProcessingGroup> processingGroups = _processingGroups;
+	e = ErrorUtils::isNotEmpty(m_scanNumberMzIntensityTranched); rree;
 
 	QPair<Err, QVector<std::tuple<TargetDecoyCandidatePair*, MS2IonsTarget, MS2IonsDecoy>>> ms2IonsLibraryTrancheResult
 																		= buildLibraryMS2IonsTrancheLogic(tdcps);
@@ -1164,14 +977,10 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 		&ms2IonLibraries
 		); rree;
 
-	e = addMs2IonsLibraryToProcessingGroups(
-		ms2IonLibraries,
-		m_parameters.precursorExtractionWindowThomsons,
-		m_parameters.threadCount,
-		&processingGroups
-		); rree;
-
-	e = checkProcessingGroupRangesAreValid(processingGroups); rree;
+	parallelSortMS2IonLibrariesMzAsc(
+		m_scanNumberMzIntensityTranched.size(),
+		&ms2IonLibraries
+		);
 
 	QVector<TallyResultTuple> tallyResultsFinal;
 
@@ -1180,11 +989,12 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 	const auto binderLogic = std::bind(
 		performFraggingLogic,
 		std::placeholders::_1,
-		m_parameters
+		m_parameters,
+		&ms2IonLibraries
 		);
 
 	QFuture<QPair<Err, QVector<TallyResultTuple>>> future = QtConcurrent::mapped(
-		processingGroups,
+		m_scanNumberMzIntensityTranched,
 		binderLogic
 		);
 	future.waitForFinished();

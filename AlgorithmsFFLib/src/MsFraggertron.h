@@ -9,6 +9,7 @@
 #include "MS2Ion.h"
 #include "Ms2IonFraggertronManager.h"
 #include "MsReaderBase.h"
+#include "PrecursorMzArrangetron.h"
 #include "TargetDecoyCandidatePair.h"
 
 #include "Error.h"
@@ -69,13 +70,9 @@ public:
 
 private:
 
-	Err buildMsScanPointPntrs();
-
-	Err extractScansParallel(const QVector<MsScanInfo*> &scanInfosPntrs);
-
 	QPair<Err, QVector<TallyResultTuple>> processTargetDecoyCandidatePairsPntrsTranch(
-		const QVector<TargetDecoyCandidatePair*> &tdcps,
-		const QVector<ProcessingGroup> &processingGroups
+		const QVector<TargetDecoyCandidatePair*> &tdcps
+
 		);
 
 private:
@@ -83,8 +80,10 @@ private:
 	PythiaParameters m_parameters;
 	MsReaderPointerAcc *m_msReaderPtr;
 	MsCalibratomatic *m_msCalibratomatic;
-	QVector<QVector<MsScanPoint>> m_msScanPointsTranched;
-	QVector<QVector<MsScanPoint*>> m_msScanPointsPntrsTranched;
+
+	PrecursorMzArrangetron m_precursorMzArrangetron;
+	QVector<QVector<ScanNumberMzIntensity*>> m_scanNumberMzIntensityTranched;
+
 	QVector<QPair<float, float>> m_mzPrecursorStartVsStopResult;
 
 
