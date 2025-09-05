@@ -71,7 +71,7 @@ Err PythiaDDAWorkflow::buildMsCalibratomatic() {
 
 	QVector<TargetDecoyCandidatePair*> targetDecoyCandidatePairsCalibration;
 	for (int i = 0; i < m_targetDecoyCandidatePairsPntrs.size(); i++) {
-		constexpr int skipCount = 4;
+		constexpr int skipCount = 1;
 		if (i % skipCount != 0 ) {
 			continue;
 		}

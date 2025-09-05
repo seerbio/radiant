@@ -620,6 +620,11 @@ namespace {
                     	const auto intensityValuesMinMax = std::minmax_element(intensityValues.begin(), intensityValues.end());
                     	msScanInfoLocal.intensityMin = static_cast<float>(*intensityValuesMinMax.first);
                     	msScanInfoLocal.intensityMax = static_cast<float>(*intensityValuesMinMax.second);
+
+						const int midPoint = intensityValues.size() / 2;
+                    	QVector<double> intensityValuesCopy = intensityValues;
+                    	std::nth_element(intensityValuesCopy.begin(), intensityValuesCopy.begin() + midPoint, intensityValuesCopy.end());
+                    	msScanInfoLocal.medianIntensity = intensityValuesCopy[midPoint - 1];
                     }
                 }
                 else if (str.contains(spectrumElementEndName)) {
@@ -681,6 +686,7 @@ Err MsReaderMzMLLazyLoad::PrivateData::openFile(const QString &filename) const {
     		msScanInfoPntr->collisionEnergy = msScanInfo.collisionEnergy;
     		msScanInfoPntr->intensityMin = msScanInfo.intensityMin;
     		msScanInfoPntr->intensityMax = msScanInfo.intensityMax;
+    		msScanInfoPntr->medianIntensity = msScanInfo.medianIntensity;
     		msScanInfoPntr->pointCount = msScanInfo.pointCount;
     		msScanInfoPntr->msLevel = msScanInfo.msLevel;
     		msScanInfoPntr->scanTime = msScanInfo.scanTime;

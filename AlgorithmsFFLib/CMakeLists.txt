@@ -45,6 +45,7 @@ SET(SOURCE_FILES
         src/MsFrameV2.cpp
         src/MsUtils.cpp
         src/PeakIntegratomatic.cpp
+        src/PrecursorMzArrangetron.cpp
 #        src/QuanFileBuilder.cpp
 #        src/QuanTransitionRefinertron.cpp
 #        src/QValueSettertron.cpp
@@ -88,6 +89,7 @@ SET(HEADER_FILES
         src/MsFrameV2.h
         src/MsUtils.h
         src/PeakIntegratomatic.h
+        src/PrecursorMzArrangetron.h
 #        src/QuanFileBuilder.h
 #        src/QuanTransitionRefinertron.h
 #        src/QValueSettertron.h

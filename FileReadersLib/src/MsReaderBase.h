@@ -46,6 +46,7 @@ public:
 	float intensityMin = -1.0;
 	float intensityMax = -1.0;
 	int pointCount = -1;
+	float medianIntensity = -1.0f;
     IonMobilityIndex ionMobilityIndex = -1;
 
     long scanOffsetStart = -1;

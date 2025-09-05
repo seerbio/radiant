@@ -190,6 +190,7 @@ namespace {
 			bool isDecoy = false;
 			Occurrence occurrence = -1;
 			float cosineSimilarity = -1;
+			float relativeIntensityDifferenceAverage = -1;
 			float rankMean = -1;
 			int rankBest = -1;
 			QVector<int> ranks;
@@ -208,6 +209,7 @@ namespace {
 				t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
 				t.isDecoy = false;
 				t.cosineSimilarity = std::get<1>(tpl).front().cosineSimilarity;
+				t.relativeIntensityDifferenceAverage = std::get<1>(tpl).front().relativeIntensityDifferenceAverage;
 				t.ranks = std::get<1>(tpl).front().ranks;
 				ts.push_back(t);
 			}
@@ -220,6 +222,7 @@ namespace {
 				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
 				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
 				td.cosineSimilarity = std::get<2>(tpl).front().cosineSimilarity;
+				td.relativeIntensityDifferenceAverage = std::get<2>(tpl).front().relativeIntensityDifferenceAverage;
 				td.isDecoy = true;
 				td.ranks = std::get<2>(tpl).front().ranks;
 				ts.push_back(td);
@@ -749,25 +752,47 @@ namespace {
 
 	void filterByPPM(Tally *t) {
 
-		Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(t->mzEmperical);
-		Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(t->mzTheoretical);
 
-		Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+		const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(t->mzEmperical);
+		Eigen::VectorX<float> intensityEmpericalVecNorm = EigenUtils::convertQVectorToEigenVector(t->intensitiesEmperical);
+		intensityEmpericalVecNorm.array() /= intensityEmpericalVecNorm.maxCoeff();
 
-		std::cout << t->occurrence << " " << t->mzEmperical.size() << " " << t->mzTheoretical.size() << std::endl;
-		std::cout << ppm.mean() << Eigen::RowVectorX<float>(ppm) << std::endl;
-		Eigen::VectorX<float> ppmDiffsFromMean = (ppm.array() - ppm.mean()).array().abs();
+		const Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(t->mzTheoretical);
 
+		const Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+		const Eigen::VectorX<float> ppmDiffsFromMeanAbs = (ppm.array() - ppm.mean()).array().abs();
 
-		if (t->occurrence > 12) {
-			qDebug() << t->ranks;
-			qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);
-			// qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMean);
-			qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
-			qDebug() << "************";
+		using Rank = int;
+		using PPMDiff = float;
+		QVector<QPair<Rank, PPMDiff>> bestIons(MAX_LIBRARY_ION_COUNT, QPair<Rank, PPMDiff>(-1, std::numeric_limits<float>::max()));
+		QVector<int> ogIndexes(MAX_LIBRARY_ION_COUNT, -1);
+		for (int i = 0; i < t->occurrence; ++i) {
+
+			ogIndexes[t->ranks[i]] = bestIons[t->ranks[i]].second > ppmDiffsFromMeanAbs.coeff(i)
+					   ? i
+					   : ogIndexes[t->ranks[i]];
+
+			bestIons[t->ranks[i]] = bestIons[t->ranks[i]].second > ppmDiffsFromMeanAbs.coeff(i)
+								  ? QPair<Rank, PPMDiff>(t->ranks[i], ppmDiffsFromMeanAbs.coeff(i))
+			                      : bestIons[t->ranks[i]];
 		}
 
+		Tally tNew;
+		for (const QPair<int, float> &pr : bestIons) {
 
+			if (pr.first < 0 || intensityEmpericalVecNorm.coeff(ogIndexes[pr.first]) < 0.01) {
+				continue;
+			}
+
+			tNew.occurrence++;
+			tNew.ranks.push_back(pr.first);
+			tNew.intensitiesEmperical.push_back(t->intensitiesEmperical[ogIndexes[pr.first]]);
+			tNew.intensitiesTheoretical.push_back(t->intensitiesTheoretical[ogIndexes[pr.first]]);
+			tNew.mzEmperical.push_back(t->mzEmperical[ogIndexes[pr.first]]);
+			tNew.mzTheoretical.push_back(t->mzTheoretical[ogIndexes[pr.first]]);
+		}
+
+		*t = tNew;
 	}
 
 	QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
@@ -821,20 +846,98 @@ namespace {
 								&tallyTarget.cosineSimilarity
 								);
 
+							Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical);
+							empIntensityRelative /= empIntensityRelative.maxCoeff();
+							Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical);
+							Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
+							tallyTarget.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyTarget.occurrence;
+
 							tallyResultsTarget.push_back(tallyTarget);
+
+							// if (
+							// 	tallyTarget.occurrence > 11
+							// 	// && targetDecoyCandidatePair->charge() == 3
+							// 	// && targetDecoyCandidatePair->peptideStringWithMods() == "VEYSAYLDVFSQPEK"
+							// 	) {
+							// 	Eigen::VectorX<float> intzNorm = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical);
+							// 	intzNorm.array() /= intzNorm.maxCoeff();
+							//
+							// 	qDebug() << tallyTarget.occurrence << "SDFKJSDL";
+							// 	qDebug() << tallyTarget.ranks << "SDFKJSDL";
+							// 	qDebug() << tallyTarget.relativeIntensityDifferenceAverage << tallyTarget.cosineSimilarity << "SDFKJSDL";
+							// 	qDebug() << tallyTarget.intensitiesEmperical;
+							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(intzNorm) << "SDFKJSDL";
+							// 	qDebug() << tallyTarget.intensitiesTheoretical << "SDFKJSDL";
+							// 	qDebug() << MathUtils::mean(tallyTarget.intensitiesTheoretical) << MathUtils::stDev(tallyTarget.intensitiesTheoretical) <<
+							// 	MathUtils::stDev(tallyTarget.intensitiesTheoretical)/ MathUtils::mean(tallyTarget.intensitiesTheoretical) << "mean";
+							// 	qDebug() << tallyTarget.mzEmperical << "SDFKJSDL";
+							// 	qDebug() << tallyTarget.mzTheoretical << "SDFKJSDL";
+							//
+							// 	double corr;
+							// 	EigenUtils::pearsonCorrelation(intzNorm, EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical), &corr);
+							// 	qDebug() << tallyTarget.cosineSimilarity << corr << "SDFKJSDL";
+							// 	const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(tallyTarget.mzEmperical);
+							// 	const Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(tallyTarget.mzTheoretical);
+							// 	const Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+							// 	const Eigen::VectorX<float> ppmDiffsFromMeanAbs = (ppm.array() - ppm.mean()).array().abs();
+							// 	qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
+							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);;
+							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMeanAbs);;
+							// 	qDebug() << "*********";
+							// }
 						}
 						if (tallyDecoy.occurrence > occurenceCountMin) {
 
 							tallyDecoy.scanNumber = currentScanNumber;
 
-							filterByPPM(&tallyTarget);
+							filterByPPM(&tallyDecoy);
 
 							e = EigenUtils::cosineSimilarity(
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical),
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical),
 								&tallyDecoy.cosineSimilarity
 								);
+
+							Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical);
+							empIntensityRelative /= empIntensityRelative.maxCoeff();
+							Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical);
+							Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
+							tallyDecoy.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyDecoy.occurrence;
+
 							tallyResultsDecoy.push_back(tallyDecoy);
+
+							// if (
+							// 	tallyDecoy.occurrence > 9
+							// 	// && targetDecoyCandidatePair->charge() == 3
+							// 	// && targetDecoyCandidatePair->peptideStringWithMods() == "VEYSAYLDVFSQPEK"
+							// 	) {
+							// 		Eigen::VectorX<float> intzNorm = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical);
+							// 		intzNorm.array() /= intzNorm.maxCoeff();
+							//
+							// 		qDebug() << tallyDecoy.occurrence << isr.msScanPointPntr->scanInfoPntr->medianIntensity
+							// 				<< isr.msScanPointPntr->scanInfoPntr->pointCount << "SDFKJSDL";
+							// 		qDebug() << tallyDecoy.ranks << "SDFKJSDL";
+							// 		qDebug() << tallyDecoy.relativeIntensityDifferenceAverage << tallyDecoy.cosineSimilarity << "SDFKJSDL";
+							// 		qDebug() << tallyDecoy.intensitiesEmperical;
+							// 		qDebug() << EigenUtils::convertEigenVectorToQVector(intzNorm) << "SDFKJSDL";
+							// 		qDebug() << tallyDecoy.intensitiesTheoretical << "SDFKJSDL";
+							// 		qDebug() << MathUtils::mean(tallyDecoy.intensitiesTheoretical) << MathUtils::stDev(tallyDecoy.intensitiesTheoretical) <<
+							// 		MathUtils::stDev(tallyDecoy.intensitiesTheoretical)/ MathUtils::mean(tallyDecoy.intensitiesTheoretical) << "mean";
+							// 		// qDebug() << tallyDecoy.mzEmperical << "SDFKJSDL";
+							// 		// qDebug() << tallyDecoy.mzTheoretical << "SDFKJSDL";
+							//
+							// 		double corr;
+							// 		EigenUtils::pearsonCorrelation(intzNorm, EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical), &corr);
+							// 		qDebug() << tallyDecoy.cosineSimilarity << corr << "SDFKJSDL";
+							// 		// const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(tallyDecoy.mzEmperical);
+							// 		// const Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(tallyDecoy.mzTheoretical);
+							// 		// const Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
+							// 		// const Eigen::VectorX<float> ppmDiffsFromMeanAbs = (ppm.array() - ppm.mean()).array().abs();
+							// 		// qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
+							// 		// qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);;
+							// 		// qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMeanAbs);;
+							// 		qDebug() << "*********";
+							// }
 						}
 
 					}
@@ -843,7 +946,6 @@ namespace {
 					tallyDecoy = Tally();
 					currentScanNumber = scanNumber;
 				}
-
 
 				if (isr.ms2IonLibraryPntr->isDecoy) {
 					tallyDecoy.occurrence++;
@@ -893,6 +995,7 @@ namespace {
 				t.occurrence = tally.occurrence;
 				t.isDecoy = false;
 				t.cosineSimilarity = tally.cosineSimilarity;
+				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
 				t.intensitiesSum = tally.intensitiesSum;
 				t.ranks = tally.ranks;
 
@@ -907,6 +1010,7 @@ namespace {
 				t.occurrence = tally.occurrence;
 				t.isDecoy = true;
 				t.cosineSimilarity = tally.cosineSimilarity;
+				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
 				t.intensitiesSum = tally.intensitiesSum;
 				t.ranks = tally.ranks;
 
@@ -1071,7 +1175,7 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 
 	QVector<TallyResultTuple> tallyResultsFinal;
 
-// #define FRAG_PARALLEL
+#define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
 	const auto binderLogic = std::bind(
 		performFraggingLogic,
