@@ -47,6 +47,11 @@ struct Tally {
 	// int seqTagLongestB = 0;
 };
 
+struct IonSearchResult2 {
+	ScanNumberMzIntensity* msScanPointPntr = nullptr;
+	MS2IonLibrary *ms2IonLibraryPntr = nullptr;
+};
+
 using namespace Error;
 using TallyResultTarget = TallyResult;
 using TallyResultDecoy = TallyResult;

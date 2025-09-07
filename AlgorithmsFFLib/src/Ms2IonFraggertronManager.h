@@ -37,6 +37,7 @@ struct IonSearchResult {
 	MS2IonLibrary *ms2IonLibraryPntr = nullptr;
 };
 
+
 class CandidateScores;
 class MsCalibratomatic;
 

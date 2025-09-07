@@ -7,6 +7,8 @@
 
 #include "EigenUtils.h"
 
+
+#include <iomanip>
 namespace {
 	constexpr int MAX_LIBRARY_ION_COUNT = 12;
 }
@@ -45,6 +47,8 @@ bool MsFraggertron::isInit() const {
 }
 
 namespace {
+
+	constexpr int precursorMzKeyHashingPrecision = 3;
 
 	Err initProcessingGroups(
 		const QVector<QPair<float, float>> &mzPrecursorStartVsStopResult,
@@ -305,13 +309,12 @@ Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &tar
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
 		const QPair<Err, QVector<TallyResultTuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); ree;
 		e = result.first; ree;
-		// tallyResultsFinal.append(result.second);
-
+		tallyResultsFinal.append(result.second);
 	}
 
 	// // e = combineDuplicateCollates(&tallyResultsFinal); ree;
 	//
-	// reportResults(tallyResultsFinal);
+	reportResults(tallyResultsFinal);
 
 	ERR_RETURN
 }
@@ -406,8 +409,9 @@ namespace {
 			[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
 
 				if (
-					MathUtils::hashDecimal(l.targeDecoyCandidatePairPntr->mz(l.isDecoy),S_GLOBAL_SETTINGS.HASHING_PRECISION)
-					== MathUtils::hashDecimal(r.targeDecoyCandidatePairPntr->mz(r.isDecoy),S_GLOBAL_SETTINGS.HASHING_PRECISION)
+					constexpr int hashingPrecision = 3;
+					MathUtils::hashDecimal(l.targeDecoyCandidatePairPntr->mz(l.isDecoy),hashingPrecision)
+					== MathUtils::hashDecimal(r.targeDecoyCandidatePairPntr->mz(r.isDecoy),hashingPrecision)
 					) {
 					return l.ms2IonPntr->mz < r.ms2IonPntr->mz;
 				}
@@ -599,7 +603,7 @@ namespace {
 	}
 
 	QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> &input
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input
 		) {
 
 		ERR_INIT
@@ -614,13 +618,13 @@ namespace {
 
 		for (auto it = input.begin(); it != input.end(); it++) {
 
-			QVector<IonSearchResult> &isrs = it.value();
+			QVector<IonSearchResult2> &isrs = it.value();
 			TargetDecoyCandidatePair *targetDecoyCandidatePair = it.key();
 
 			std::sort(
 				isrs.begin(),
 				isrs.end(),
-				[](const IonSearchResult &l, const IonSearchResult &r) {
+				[](const IonSearchResult2 &l, const IonSearchResult2 &r) {
 					return l.msScanPointPntr->scanInfoPntr->scanNumber <
 						   r.msScanPointPntr->scanInfoPntr->scanNumber;
 				});
@@ -630,7 +634,7 @@ namespace {
 			Tally tallyTarget;
 			Tally tallyDecoy;
 
-			for (const IonSearchResult &isr : isrs) {
+			for (const IonSearchResult2 &isr : isrs) {
 
 				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
 
@@ -845,8 +849,51 @@ namespace {
 		return {e, result};
 	}
 
+	Err indexScanNumberMzIntensities(
+		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
+		QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> *snmiVsIndexes
+		) {
 
-	QPair<Err, QVector<TallyResultTuple>> performFraggingLogic(
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); ree;
+
+		QVector<Index> batchIndexes;
+		int lastPrecursorMzHashed = -1;
+		int lastMs2MzHashed = -1;
+		for (int i = 0; i < scanNumberMzIntensities.size(); ++i) {
+
+			ScanNumberMzIntensity *snmi = scanNumberMzIntensities[i];
+
+			const int currentPrecursorMzHashed = MathUtils::hashDecimal(
+				snmi->scanInfoPntr->precursorTargetMz,
+				precursorMzKeyHashingPrecision
+				);
+			e = ErrorUtils::isTrue(currentPrecursorMzHashed >= lastPrecursorMzHashed); ree;
+
+			const int currentMs2MzHashed = MathUtils::hashDecimal(
+				snmi->mzVal,
+				precursorMzKeyHashingPrecision
+				);
+			if (lastPrecursorMzHashed == currentPrecursorMzHashed) {
+				e = ErrorUtils::isTrue(currentMs2MzHashed >= lastMs2MzHashed); ree;
+			}
+
+			if (lastMs2MzHashed != currentMs2MzHashed) {
+				snmiVsIndexes->push_back({snmi, {batchIndexes.front(), batchIndexes.back()}});
+				batchIndexes.clear();
+			}
+
+			batchIndexes.push_back(i);
+
+			lastPrecursorMzHashed = currentPrecursorMzHashed;
+			lastMs2MzHashed = currentMs2MzHashed;
+		}
+
+		ERR_RETURN
+	}
+
+	std::tuple<Err, int, int> getLibraryStartStopIndexes (
 		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
 		const PythiaParameters &parameters,
 		QVector<MS2IonLibrary> *ms2IonLibraries
@@ -854,15 +901,9 @@ namespace {
 
 		ERR_INIT
 
-		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rree;
-		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rree;
-
-		// Ms2IonFraggertronManager fragger;
-		// e = fragger.init(pg.ms2IonsLibrary); rree;
-
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult>> ionSearchResults;
-		constexpr int batchSize = 2e5; //TODO make this settable in params
-		ionSearchResults.reserve(batchSize);
+		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rtee;
+		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rtee;
+		e = ErrorUtils::isTrue(parameters.isValid()); rtee;
 
 		const ScanNumberMzIntensity *snmiFirst = scanNumberMzIntensities.front();
 		const ScanNumberMzIntensity *snmiLast = scanNumberMzIntensities.back();
@@ -875,66 +916,153 @@ namespace {
 										+ snmiLast->scanInfoPntr->isoWindowUpper
 										+ parameters.precursorExtractionWindowThomsons;
 
-		const int precursorMzMinLowerBoundIndex = std::upper_bound(
+		const int libraryPrecursorMzMinLowerBoundIndex = std::upper_bound(
 			ms2IonLibraries->begin(),
 			ms2IonLibraries->end(),
 			precursorMzValLower,
 			[](float val, const MS2IonLibrary &stct) {return stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy) > val;}
 			) - ms2IonLibraries->begin();
 
-		const int precursorMzMaxUpperBoundIndex = std::lower_bound(
+		const int libraryPrecursorMzMaxUpperBoundIndex = std::lower_bound(
 			ms2IonLibraries->begin(),
 			ms2IonLibraries->end(),
 			precursorMzValUpper,
 			[](const MS2IonLibrary &stct, float val) {return val > stct.targeDecoyCandidatePairPntr->mz(stct.isDecoy);}
 			) - ms2IonLibraries->begin() - 1;
 
-		const int size = precursorMzMaxUpperBoundIndex - precursorMzMinLowerBoundIndex;
+		return {e, libraryPrecursorMzMinLowerBoundIndex, libraryPrecursorMzMaxUpperBoundIndex};
+	}
+
+
+	QPair<Err, QVector<TallyResultTuple>> performFraggingLogic(
+		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
+		const PythiaParameters &parameters,
+		QVector<MS2IonLibrary> *ms2IonLibraries
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rree;
+		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rree;
+
+		QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> snmiVsIndexes;
+		e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); rree;
+
+		const std::tuple<Err, int, int> startStopResult = getLibraryStartStopIndexes(
+			scanNumberMzIntensities,
+			parameters,
+			ms2IonLibraries
+			);
+
+		e = std::get<0>(startStopResult); rree;
+		const int libraryPrecursorMzMinLowerBoundIndex = std::get<1>(startStopResult);
+		const int libraryPrecursorMzMaxUpperBoundIndex = std::get<2>(startStopResult);
+
+		const int size = libraryPrecursorMzMaxUpperBoundIndex - libraryPrecursorMzMinLowerBoundIndex;
 		if (size < 1) {
-			// auto mm = std::max_element(
-			// 	ms2IonLibraries->begin(),
-			// 	ms2IonLibraries->end(),
-			// 	[](const MS2IonLibrary &l, const MS2IonLibrary &r) {
-			// 		return l.targeDecoyCandidatePairPntr->mz(l.isDecoy) < r.targeDecoyCandidatePairPntr->mz(r.isDecoy);
-			// 	});
-			// qDebug() << precursorMzValLower << precursorMzValUpper<< "SDFLK" << mm->targeDecoyCandidatePairPntr->mz(mm->isDecoy);
 			return {e, {}};
 		}
 
-		// qDebug()
-		// << "SDFLKJDSJFDLJ"
-		// << precursorMzValLower
-		// << (*ms2IonLibraries)[precursorMzMinLowerBoundIndex].targeDecoyCandidatePairPntr->mz((*ms2IonLibraries)[precursorMzMinLowerBoundIndex].isDecoy)
-		// << (*ms2IonLibraries)[precursorMzMaxUpperBoundIndex].targeDecoyCandidatePairPntr->mz((*ms2IonLibraries)[precursorMzMaxUpperBoundIndex].isDecoy)
-		// << precursorMzValUpper
-		// ;
+		int currentScanPointsIndex = 0;
+		int currentLibraryIndex = libraryPrecursorMzMinLowerBoundIndex;
 
-		// 	const float mzVal = mssp->mzVal;
-		// 	const float mzTol = MathUtils::calculatePPM(
-		// 		mzVal,
-		// 		static_cast<float>(parameters.ms2ExtractionWidthPPM)
-		// 		);
-		//
-		// 	const float mzMin = mzVal - mzTol;
-		// 	const float mzMax = mzVal + mzTol;
-		//
-		// 	QVector<MS2IonLibrary*> tdPeptideFrags;
-		// 	e = fragger.extractMs2Points(
-		// 		precursorMzValLower,
-		// 		precursorMzValUpper,
-		// 		mzMin,
-		// 		mzMax,
-		// 		&tdPeptideFrags
-		// 		); rree;
-		//
-		// 	for (MS2IonLibrary *msil : tdPeptideFrags) {
-		// 		IonSearchResult isr;
-		// 		isr.ms2IonLibraryPntr = msil;
-		// 		isr.msScanPointPntr = mssp;
-		//
-		// 		ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
-		// 	}
-		// }
+		// const MS2IonLibrary l1 = (*ms2IonLibraries)[libraryPrecursorMzMinLowerBoundIndex - 1];
+		// const MS2IonLibrary l2 = (*ms2IonLibraries)[libraryPrecursorMzMinLowerBoundIndex];
+		// ScanNumberMzIntensity *s1 = scanNumberMzIntensities.front();
+		// ScanNumberMzIntensity *s2 = scanNumberMzIntensities.back();
+		// const MS2IonLibrary l3 = (*ms2IonLibraries)[libraryPrecursorMzMaxUpperBoundIndex];
+		// const MS2IonLibrary l4 = (*ms2IonLibraries)[libraryPrecursorMzMaxUpperBoundIndex + 1];
+
+		QVector<QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>>> snmiVsIndexesLibrary;
+		while (currentScanPointsIndex < snmiVsIndexes.size()) {
+
+			const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr = snmiVsIndexes[currentScanPointsIndex];
+			const float mzPrecursorScan = pr.first->scanInfoPntr->precursorTargetMz;
+			const float mzPrecursorScanTol = MathUtils::calculatePPM(
+				mzPrecursorScan,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
+			const float mzPrecursorScanMin = mzPrecursorScan - mzPrecursorScanTol;
+			const float mzPrecursorScanMax = mzPrecursorScan + mzPrecursorScanTol;
+
+			MS2IonLibrary &mil = (*ms2IonLibraries)[currentLibraryIndex];
+			float mzPrecursorLibrary = mil.targeDecoyCandidatePairPntr->mz(mil.isDecoy);
+
+			if (mzPrecursorLibrary > mzPrecursorScanMax) {
+				currentScanPointsIndex++;
+				continue;
+			}
+
+			if (mzPrecursorScanMin > mzPrecursorLibrary) {
+				currentLibraryIndex++;
+				continue;
+			}
+
+			const float mzMs2Scan = pr.first->mzVal;
+			const float mzMs2ScanTol = MathUtils::calculatePPM(
+				mzMs2Scan,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
+			const float mzMs2ScanMin = mzMs2Scan - mzMs2ScanTol;
+			const float mzMs2ScanMax = mzMs2Scan + mzMs2ScanTol;
+
+			QVector<MS2IonLibrary*> libraryIndexes;
+			while (currentLibraryIndex <= libraryPrecursorMzMaxUpperBoundIndex) {
+
+				const float mzMs2Library = mil.ms2IonPntr->mz;
+				if (mzPrecursorLibrary > mzPrecursorScanMax || mzMs2Library > mzMs2ScanMax) {
+					if (!libraryIndexes.isEmpty()) {
+						snmiVsIndexesLibrary.push_back({pr.first, libraryIndexes});
+					}
+					break;
+				}
+
+				if (mzMs2ScanMin < mzMs2Library && mzMs2Library < mzMs2ScanMax) {
+					libraryIndexes.push_back(&mil);
+				}
+
+				mil = (*ms2IonLibraries)[++currentLibraryIndex];
+				mzPrecursorLibrary = mil.targeDecoyCandidatePairPntr->mz(mil.isDecoy);
+			}
+
+
+			currentScanPointsIndex++;
+		}
+
+		QHash<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>> scanNumberMzIntensityPtrVsMS2IonLibraryPntrs;
+		for (const QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>> &pr : snmiVsIndexesLibrary) {
+			scanNumberMzIntensityPtrVsMS2IonLibraryPntrs.insert(pr.first, pr.second);
+		}
+
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResults;
+		constexpr int batchSize = 2e5; //TODO make this settable in params
+		ionSearchResults.reserve(batchSize);
+		for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr : snmiVsIndexes) {
+
+			ScanNumberMzIntensity *snmi = pr.first;
+			const QPair<Index, Index> &snmiVsIndexesRanges = pr.second;
+
+			if (!scanNumberMzIntensityPtrVsMS2IonLibraryPntrs.contains(snmi)) {
+				continue;
+			}
+
+			const QVector<MS2IonLibrary*> &ms2IonLibrariesSmni = scanNumberMzIntensityPtrVsMS2IonLibraryPntrs[snmi];
+
+			for (MS2IonLibrary *mil : ms2IonLibrariesSmni) {
+				TargetDecoyCandidatePair *tdcp = mil->targeDecoyCandidatePairPntr;
+				for (int i = snmiVsIndexesRanges.first; i  <= snmiVsIndexesRanges.second; i++) {
+					ScanNumberMzIntensity *snmip = scanNumberMzIntensities[i];
+
+					IonSearchResult2 isr2;
+					isr2.ms2IonLibraryPntr = mil;
+					isr2.msScanPointPntr = snmip;
+
+					ionSearchResults[tdcp].push_back(isr2);
+				}
+			}
+		}
+
+		qDebug() << ionSearchResults.size() << "SDFLJSDDS";
 
 // #define TR_SHT
 #ifdef TR_SHT
@@ -1021,9 +1149,14 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 	}
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
 #else
-	for (const ProcessingGroup &pgs : processingGroups) {
-		const QPair<Err, QVector<TallyResultTuple>> res = performFraggingLogic(pgs, m_parameters);
+	for (const QVector<ScanNumberMzIntensity*> &pgs : m_scanNumberMzIntensityTranched) {
+		auto res = performFraggingLogic(
+			pgs,
+			m_parameters,
+			&ms2IonLibraries
+			);
 		e = res.first; rree;
+		qDebug() << "--------------------------------";
 	}
 #endif
 
