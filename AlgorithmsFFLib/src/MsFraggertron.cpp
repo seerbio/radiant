@@ -945,6 +945,58 @@ namespace {
 		e = ErrorUtils::isNotEmpty(scanNumberMzIntensities); rree;
 		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); rree;
 
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResults;
+		constexpr int batchSize = 2e5; //TODO make this settable in params
+		ionSearchResults.reserve(batchSize);
+
+#define YET_ANOTHER_SANITY_CHECK
+#ifdef  YET_ANOTHER_SANITY_CHECK
+		QVector<MS2IonLibrary*> ms2IonLibrariesPntrs;
+		for (MS2IonLibrary &mil : *ms2IonLibraries) {
+			ms2IonLibrariesPntrs.push_back(&mil);
+		}
+
+		Ms2IonFraggertronManager fragger;
+		e = fragger.init(ms2IonLibrariesPntrs); rree;
+
+		for (ScanNumberMzIntensity *mssp : scanNumberMzIntensities) {
+			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
+											- mssp->scanInfoPntr->isoWindowLower
+											- parameters.precursorExtractionWindowThomsons;
+
+			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
+											+ mssp->scanInfoPntr->isoWindowUpper
+											+ parameters.precursorExtractionWindowThomsons;
+
+			const float mzVal = mssp->mzVal;
+			const float mzTol = MathUtils::calculatePPM(
+				mzVal,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
+
+			const float mzMin = mzVal - mzTol;
+			const float mzMax = mzVal + mzTol;
+
+			QVector<MS2IonLibrary*> tdPeptideFrags;
+			e = fragger.extractMs2Points(
+				precursorMzValLower,
+				precursorMzValUpper,
+				mzMin,
+				mzMax,
+				&tdPeptideFrags
+				); rree;
+
+			for (MS2IonLibrary *msil : tdPeptideFrags) {
+				IonSearchResult2 isr;
+				isr.ms2IonLibraryPntr = msil;
+				isr.msScanPointPntr = mssp;
+
+				ionSearchResults[msil->targeDecoyCandidatePairPntr].push_back(isr);
+			}
+		}
+
+		// qDebug() << ionSearchResults.size() << "SDFLJSDDS Alt";
+#else
 		QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> snmiVsIndexes;
 		e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); rree;
 
@@ -1037,9 +1089,6 @@ namespace {
 			scanNumberMzIntensityPtrVsMS2IonLibraryPntrs.insert(pr.first, pr.second);
 		}
 
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResults;
-		constexpr int batchSize = 2e5; //TODO make this settable in params
-		ionSearchResults.reserve(batchSize);
 		for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr : snmiVsIndexes) {
 
 			ScanNumberMzIntensity *snmi = pr.first;
@@ -1066,58 +1115,6 @@ namespace {
 		}
 
 		// qDebug() << ionSearchResults.size() << "SDFLJSDDS";
-
-// #define YET_ANOTHER_SANITY_CHECK
-#ifdef  YET_ANOTHER_SANITY_CHECK
-		QVector<MS2IonLibrary*> ms2IonLibrariesPntrs;
-		for (MS2IonLibrary &mil : *ms2IonLibraries) {
-			ms2IonLibrariesPntrs.push_back(&mil);
-		}
-
-
-		Ms2IonFraggertronManager fragger;
-		e = fragger.init(ms2IonLibrariesPntrs); rree;
-
-		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResultsAlt;
-		ionSearchResultsAlt.reserve(batchSize);
-
-		for (ScanNumberMzIntensity *mssp : scanNumberMzIntensities) {
-			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
-											- mssp->scanInfoPntr->isoWindowLower
-											- parameters.precursorExtractionWindowThomsons;
-
-			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
-											+ mssp->scanInfoPntr->isoWindowUpper
-											+ parameters.precursorExtractionWindowThomsons;
-
-			const float mzVal = mssp->mzVal;
-			const float mzTol = MathUtils::calculatePPM(
-				mzVal,
-				static_cast<float>(parameters.ms2ExtractionWidthPPM)
-				);
-
-			const float mzMin = mzVal - mzTol;
-			const float mzMax = mzVal + mzTol;
-
-			QVector<MS2IonLibrary*> tdPeptideFrags;
-			e = fragger.extractMs2Points(
-				precursorMzValLower,
-				precursorMzValUpper,
-				mzMin,
-				mzMax,
-				&tdPeptideFrags
-				); rree;
-
-			for (MS2IonLibrary *msil : tdPeptideFrags) {
-				IonSearchResult2 isr;
-				isr.ms2IonLibraryPntr = msil;
-				isr.msScanPointPntr = mssp;
-
-				ionSearchResultsAlt[msil->targeDecoyCandidatePairPntr].push_back(isr);
-			}
-		}
-
-		// qDebug() << ionSearchResultsAlt.size() << "SDFLJSDDS Alt";
 #endif
 
 
