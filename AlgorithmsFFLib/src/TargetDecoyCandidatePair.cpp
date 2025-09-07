@@ -73,15 +73,15 @@ namespace {
             ms2Ion.rank = i;
         }
 
-        if (ms2IonsBuilder.isEmpty()) {
-            qDebug()
-            << qPrintable(S_GLOBAL_TIMER.elapsed())
-            << "No MS2 ions found for"
-            << flrr->peptideSequenceChargeKey
-            << flrr->mzVals
-            << flrr->intensityVals
-            << flrr->ionLabels;
-        }
+        // if (ms2IonsBuilder.isEmpty()) {
+        //     qDebug()
+        //     << qPrintable(S_GLOBAL_TIMER.elapsed())
+        //     << "No MS2 ions found for"
+        //     << flrr->peptideSequenceChargeKey
+        //     << flrr->mzVals
+        //     << flrr->intensityVals
+        //     << flrr->ionLabels;
+        // }
 
         return ms2IonsBuilder;
     }

@@ -271,9 +271,40 @@ Err PrecursorMzArrangetron::trancheMsScanPoints(
 			(*scanNumberMzIntensityTranched)[currentIndex].push_back(&scanNumberMzIntensity);
 		}
 	}
+	e = ErrorUtils::isEqual(scanNumberMzIntensityTranched->size(), threadCount); ree;
+
+	for (int i = 0; i < threadCount - 1; i++) {
+
+		QVector<ScanNumberMzIntensity*> &v1 = (*scanNumberMzIntensityTranched)[i];
+		QVector<ScanNumberMzIntensity*> &v2 = (*scanNumberMzIntensityTranched)[i+1];
+
+		constexpr int hashingPrecision = 3;
+		const int v1PrecorsorMzLastHashed = MathUtils::hashDecimal(v1.back()->scanInfoPntr->precursorTargetMz, hashingPrecision);
+		const int v2PrecorsorMzFirstHashed = MathUtils::hashDecimal(v2.front()->scanInfoPntr->precursorTargetMz, hashingPrecision);
+
+		if (v1PrecorsorMzLastHashed != v2PrecorsorMzFirstHashed) {
+			continue;
+		}
+
+		int jLast = 0;
+		for (int j = 0; j < v2.size(); j++) {
+			ScanNumberMzIntensity *sni = v2[j];
+			const int sniPrecorsorMzFirstHashed = MathUtils::hashDecimal(sni->scanInfoPntr->precursorTargetMz, hashingPrecision);
+
+			jLast = j;
+			if (sniPrecorsorMzFirstHashed != v1PrecorsorMzLastHashed) {
+				break;
+			}
+
+			v1.push_back(sni);
+		}
+
+		v2.erase(v2.begin(), v2.begin() + jLast);
+
+	}
 
 	// int counter = 0;
-	// for (const QVector<ScanNumberMzIntensity*> &v : scanNumberMzIntensityTranched) {
+	// for (const QVector<ScanNumberMzIntensity*> &v : *scanNumberMzIntensityTranched) {
 	// 	qDebug()
 	// 	<< qPrintable(S_GLOBAL_TIMER.elapsed())
 	// 	<< counter++
@@ -283,10 +314,11 @@ Err PrecursorMzArrangetron::trancheMsScanPoints(
 	// 	<< "-"
 	// 	<< v.back()->scanInfoPntr->precursorTargetMz
 	// 	;
-		// for (auto a : v) {
-		// 	std::cout << a->scanInfoPntr->precursorTargetMz << " " << a->mzVal << std::endl;
-		// }
+	// 	// for (auto a : v) {
+	// 	// 	std::cout << a->scanInfoPntr->precursorTargetMz << " " << a->mzVal << std::endl;
+	// 	// }
 	// }
+	// throw;
 
 	ERR_RETURN
 }

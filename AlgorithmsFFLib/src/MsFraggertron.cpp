@@ -264,14 +264,13 @@ namespace {
 		// 		}
 		//
 		// 		return l.targetDecoyCandidatePair->peptideStringWithMods() > r.targetDecoyCandidatePair->peptideStringWithMods();
-		// 	}
-		// 	);
+		// 	});
 
 		int counter = 0;
 		int decoy = 0;
 		QHash<TargetDecoyCandidatePair*, T> founds;
-		int dupes = 0;
-		PeptideStringWithMods curr;
+		// int dupes = 0;
+		// PeptideStringWithMods curr;
 		for (const T &t : ts) {
 
 			if (t.isDecoy) {
@@ -283,17 +282,21 @@ namespace {
 			// if (founds.contains(t.targetDecoyCandidatePair)) {
 			if (true) {
 
-				if (t.targetDecoyCandidatePair->peptideStringWithMods() != curr) {
-
-					if (dupes > 4) {
-						break;
-					}
-					// std::cout << dupes << std::endl;
-					dupes = 0;
-					curr = t.targetDecoyCandidatePair->peptideStringWithMods();
-				}
-
-				dupes++;
+				// if(counter++ == 10000) {
+				// 	break;
+				// }
+				//
+				// if (t.targetDecoyCandidatePair->peptideStringWithMods() != curr) {
+				//
+				// 	if (dupes > 4) {
+				// 		std::cout << "HEREHREHEHE" << std::endl;
+				// 	}
+				// 	// std::cout << dupes << std::endl;
+				// 	dupes = 0;
+				// 	curr = t.targetDecoyCandidatePair->peptideStringWithMods();
+				// }
+				//
+				// dupes++;
 				std::cout
 					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
 					<< counter << " "
