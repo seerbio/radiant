@@ -974,7 +974,10 @@ namespace {
 		// const MS2IonLibrary l4 = (*ms2IonLibraries)[libraryPrecursorMzMaxUpperBoundIndex + 1];
 
 		QVector<QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>>> snmiVsIndexesLibrary;
-		while (currentScanPointsIndex < snmiVsIndexes.size()) {
+		while (currentScanPointsIndex < snmiVsIndexes.size()
+			&& currentScanPointsIndex < scanNumberMzIntensities.size() - 1
+			&& currentLibraryIndex < ms2IonLibraries->size() - 1
+			) {
 
 			const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr = snmiVsIndexes[currentScanPointsIndex];
 			const float mzPrecursorScan = pr.first->scanInfoPntr->precursorTargetMz;
@@ -1062,7 +1065,61 @@ namespace {
 			}
 		}
 
-		qDebug() << ionSearchResults.size() << "SDFLJSDDS";
+		// qDebug() << ionSearchResults.size() << "SDFLJSDDS";
+
+// #define YET_ANOTHER_SANITY_CHECK
+#ifdef  YET_ANOTHER_SANITY_CHECK
+		QVector<MS2IonLibrary*> ms2IonLibrariesPntrs;
+		for (MS2IonLibrary &mil : *ms2IonLibraries) {
+			ms2IonLibrariesPntrs.push_back(&mil);
+		}
+
+
+		Ms2IonFraggertronManager fragger;
+		e = fragger.init(ms2IonLibrariesPntrs); rree;
+
+		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> ionSearchResultsAlt;
+		ionSearchResultsAlt.reserve(batchSize);
+
+		for (ScanNumberMzIntensity *mssp : scanNumberMzIntensities) {
+			const float precursorMzValLower = mssp->scanInfoPntr->precursorTargetMz
+											- mssp->scanInfoPntr->isoWindowLower
+											- parameters.precursorExtractionWindowThomsons;
+
+			const float precursorMzValUpper = mssp->scanInfoPntr->precursorTargetMz
+											+ mssp->scanInfoPntr->isoWindowUpper
+											+ parameters.precursorExtractionWindowThomsons;
+
+			const float mzVal = mssp->mzVal;
+			const float mzTol = MathUtils::calculatePPM(
+				mzVal,
+				static_cast<float>(parameters.ms2ExtractionWidthPPM)
+				);
+
+			const float mzMin = mzVal - mzTol;
+			const float mzMax = mzVal + mzTol;
+
+			QVector<MS2IonLibrary*> tdPeptideFrags;
+			e = fragger.extractMs2Points(
+				precursorMzValLower,
+				precursorMzValUpper,
+				mzMin,
+				mzMax,
+				&tdPeptideFrags
+				); rree;
+
+			for (MS2IonLibrary *msil : tdPeptideFrags) {
+				IonSearchResult2 isr;
+				isr.ms2IonLibraryPntr = msil;
+				isr.msScanPointPntr = mssp;
+
+				ionSearchResultsAlt[msil->targeDecoyCandidatePairPntr].push_back(isr);
+			}
+		}
+
+		// qDebug() << ionSearchResultsAlt.size() << "SDFLJSDDS Alt";
+#endif
+
 
 // #define TR_SHT
 #ifdef TR_SHT
