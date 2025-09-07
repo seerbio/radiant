@@ -248,12 +248,30 @@ namespace {
 				}
 
 				return l.occurrence > r.occurrence;
-			}
-			);
+			});
+
+		// std::sort(
+		// 	ts.begin(),
+		// 	ts.end(),
+		// 	[](const T &l, const T &r) {
+		// 		if (l.targetDecoyCandidatePair->peptideStringWithMods() == r.targetDecoyCandidatePair->peptideStringWithMods()) {
+		//
+		// 			if (l.isDecoy < r.isDecoy) {
+		// 				return l.targetDecoyCandidatePair->charge() == r.targetDecoyCandidatePair->charge();
+		// 			}
+		//
+		// 			return l.targetDecoyCandidatePair->charge() > r.targetDecoyCandidatePair->charge();
+		// 		}
+		//
+		// 		return l.targetDecoyCandidatePair->peptideStringWithMods() > r.targetDecoyCandidatePair->peptideStringWithMods();
+		// 	}
+		// 	);
 
 		int counter = 0;
 		int decoy = 0;
 		QHash<TargetDecoyCandidatePair*, T> founds;
+		int dupes = 0;
+		PeptideStringWithMods curr;
 		for (const T &t : ts) {
 
 			if (t.isDecoy) {
@@ -264,21 +282,41 @@ namespace {
 
 			// if (founds.contains(t.targetDecoyCandidatePair)) {
 			if (true) {
+
+				if (t.targetDecoyCandidatePair->peptideStringWithMods() != curr) {
+
+					if (dupes > 4) {
+						break;
+					}
+					// std::cout << dupes << std::endl;
+					dupes = 0;
+					curr = t.targetDecoyCandidatePair->peptideStringWithMods();
+				}
+
+				dupes++;
 				std::cout
 					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
 					<< counter << " "
 					<< t.isDecoy
 					<< " fdsafda "
-					<< q << " "
+					// << q << " "
 					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()  << " "
 					<< t.targetDecoyCandidatePair->charge()  << " "
 					<< t.occurrence << " "
 					// << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankBest  << " "
-					<< t.scanNumber << " "
+					// << t.scanNumber << " "
 					// << founds.value(t.targetDecoyCandidatePair).scanNumber  << " "
-					<< std::endl;
+					// << std::endl
+				;
+
+					for (int r : t.ranks) {
+						std::cout << r << ",";
+					}
+					std::cout << std::endl;
+
+
 			}
 
 			founds.insert(t.targetDecoyCandidatePair, t);
