@@ -55,10 +55,10 @@ public:
     	) const;
 
     Err extractMs2Points(
-        float mzMin,
-        float mzMax,
-        float iRTMin,
-        float iRTMax,
+	    float mzPrecursorMin,
+		float mzPrecursorMax,
+		float mzMin,
+		float mzMax,
         QVector<MS2IonLibrary*> *tdPeptideFrags
         ) const;
 
