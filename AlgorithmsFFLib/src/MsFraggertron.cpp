@@ -812,6 +812,54 @@ namespace {
 		ERR_RETURN
 	}
 
+	Err indexMS2IonLibraries(
+		int libraryPrecursorMzMinLowerBoundIndex,
+		int libraryPrecursorMzMaxUpperBoundIndex,
+		QVector<MS2IonLibrary> *ms2IonLibraries,
+		QHash<MS2IonLibrary*, QVector<MS2IonLibrary*>> *ms2IonLibrariesIndexed
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(*ms2IonLibraries); ree;
+
+		ms2IonLibrariesIndexed->clear();
+
+		int lastHashedPrecursorMz = -1;
+		int lastHashedMs2Mz = -1;
+
+		QVector<MS2IonLibrary*> ms2IonLibrariesTemp;
+		for (int i = libraryPrecursorMzMinLowerBoundIndex ; i <= libraryPrecursorMzMaxUpperBoundIndex; ++i) {
+
+			MS2IonLibrary &mil = (*ms2IonLibraries)[i];
+
+			constexpr int hashingPrecision = 3;
+			const int currentHashedPrecursorMz = MathUtils::hashDecimal(
+				mil.targeDecoyCandidatePairPntr->mz(mil.isDecoy),
+				hashingPrecision
+				);
+
+			const int currentHashedMs2Mz = MathUtils::hashDecimal(
+				mil.ms2IonPntr->mz,
+				hashingPrecision
+				);
+
+			if (
+				lastHashedPrecursorMz != currentHashedPrecursorMz
+				&& lastHashedMs2Mz != currentHashedMs2Mz
+				) {
+				ms2IonLibrariesIndexed->insert(ms2IonLibrariesTemp.front(), ms2IonLibrariesTemp);
+				ms2IonLibrariesTemp.clear();
+			}
+
+			ms2IonLibrariesTemp.push_back(&mil);
+			lastHashedPrecursorMz = currentHashedPrecursorMz;
+			lastHashedMs2Mz = currentHashedMs2Mz;
+		}
+
+		ERR_RETURN
+	}
+
 	std::tuple<Err, int, int> getLibraryStartStopIndexes (
 		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
 		const PythiaParameters &parameters,
@@ -889,65 +937,14 @@ namespace {
 		if (size < 1) {
 			return {e, {}};
 		}
-		{
-			// /////////////////////////////////////
-			// fdsafdas
-			// 		// QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> snmiVsIndexes;
-			// 		// e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); rree;
-			// 		//
-			// 		// QVector<MS2IonLibrary*> ms2IonLibrariesPntrs;
-			// 		// for (MS2IonLibrary &mil : *ms2IonLibraries) {
-			// 		// 	ms2IonLibrariesPntrs.push_back(&mil);
-			// 		// }
-			// 		// Ms2IonFraggertronManager fragger;
-			// 		// e = fragger.init(ms2IonLibrariesPntrs.mid(libraryPrecursorMzMinLowerBoundIndex, size + 1)); rree;
-			// 		//
-			// 		// for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &snmi : snmiVsIndexes) {
-			// 		//
-			// 		// 	const float mzPrecursorScanTol = MathUtils::calculatePPM(
-			// 		// 		snmi.first->scanInfoPntr->precursorTargetMz,
-			// 		// 		static_cast<float>(parameters.ms2ExtractionWidthPPM)
-			// 		// 		);
-			// 		//
-			// 		// 	const float mzPrecursorScanMin = snmi.first->scanInfoPntr->precursorTargetMz
-			// 		// 									- mzPrecursorScanTol
-			// 		// 									- snmi.first->scanInfoPntr->isoWindowLower;
-			// 		//
-			// 		// 	const float mzPrecursorScanMax = snmi.first->scanInfoPntr->precursorTargetMz
-			// 		// 									+ mzPrecursorScanTol
-			// 		// 									+ snmi.first->scanInfoPntr->isoWindowUpper;
-			// 		//
-			// 		// 	const float mzMs2Tol = MathUtils::calculatePPM(
-			// 		// 		snmi.first->mzVal,
-			// 		// 		static_cast<float>(parameters.ms2ExtractionWidthPPM)
-			// 		// 		);
-			// 		//
-			// 		// 	const float mzMs2ScanMin = snmi.first->mzVal - mzMs2Tol;
-			// 		// 	const float mzMs2ScanMax = snmi.first->mzVal + mzMs2Tol;
-			// 		//
-			// 		// 	QVector<MS2IonLibrary*> tdPeptideFrags;
-			// 		// 	e = fragger.extractMs2Points(
-			// 		// 		mzPrecursorScanMin,
-			// 		// 		mzPrecursorScanMax,
-			// 		// 		mzMs2ScanMin,
-			// 		// 		mzMs2ScanMax,
-			// 		// 		&tdPeptideFrags
-			// 		// 		);
-			// 		//
-			// 		// 	const QPair<Index, Index> &snmiStartStop = snmi.second;
-			// 		// 	for (MS2IonLibrary *mil : tdPeptideFrags) {
-			// 		//
-			// 		// 		for (int j = snmiStartStop.first; j <= snmiStartStop.second; ++j) {
-			// 		// 			IonSearchResult2 isr;
-			// 		// 			isr.ms2IonLibraryPntr = mil;
-			// 		// 			isr.msScanPointPntr = scanNumberMzIntensities[j];
-			// 		//
-			// 		// 			ionSearchResults[mil->targeDecoyCandidatePairPntr].push_back(isr);
-			// 		// 		}
-			// 		// 	}
-			// 		// }
-			// //////////////////////////////////////////////
-		}
+
+		QHash<MS2IonLibrary*, QVector<MS2IonLibrary*>> ms2IonLibrariesIndexed;
+		e = indexMS2IonLibraries(
+			libraryPrecursorMzMinLowerBoundIndex,
+			libraryPrecursorMzMaxUpperBoundIndex,
+			ms2IonLibraries,
+			&ms2IonLibrariesIndexed
+			); rree;
 
 		QVector<QPair<ScanNumberMzIntensity*, QPair<Index, Index>>> snmiVsIndexes;
 		e = indexScanNumberMzIntensities(scanNumberMzIntensities, &snmiVsIndexes); rree;
@@ -960,12 +957,10 @@ namespace {
 		Ms2IonFraggertronManager fragger;
 		e = fragger.init(ms2IonLibrariesPntrs.mid(libraryPrecursorMzMinLowerBoundIndex, size + 1)); rree;
 
-		// int currentLibraryStartIndex = libraryPrecursorMzMinLowerBoundIndex;
-
 		QVector<QPair<ScanNumberMzIntensity*, QVector<MS2IonLibrary*>>> snmiVsIndexesLibrary;
 		for (const QPair<ScanNumberMzIntensity*, QPair<Index, Index>> &pr : snmiVsIndexes) {
+
 			ScanNumberMzIntensity *snmi = pr.first;
-			const QPair<Index, Index> &snmiRange = pr.second;
 
 			const float mzPrecursorScan = snmi->scanInfoPntr->precursorTargetMz;
 
@@ -989,44 +984,6 @@ namespace {
 				);
 			const float mzMs2ScanMin = mzMs2Scan - mzMs2ScanTol;
 			const float mzMs2ScanMax = mzMs2Scan + mzMs2ScanTol;
-
-			{
-				// while(true) {
-				// 	const MS2IonLibrary &msil = (*ms2IonLibraries)[currentLibraryStartIndex];
-				// 	const float msilMzPrecursorMz = msil.targeDecoyCandidatePairPntr->mz(msil.isDecoy);
-				// 	const float msilMzMs2Mz = msil.ms2IonPntr->mz;
-				//
-				// 	if (
-				// 		!(msilMzPrecursorMz >= mzPrecursorScanMin && msilMzMs2Mz >= mzMs2ScanMin) ||
-				// 		currentLibraryStartIndex >= ms2IonLibraries->size() - 1
-				// 		) {
-				// 		break;
-				// 	}
-				// 	currentLibraryStartIndex++;
-				// }
-				//
-				// QVector<MS2IonLibrary*> tdPeptideFrags;
-				// for (int i = currentLibraryStartIndex; i < ms2IonLibraries->size(); i++) {
-				//
-				// 	MS2IonLibrary &msil = (*ms2IonLibraries)[i];
-				// 	const float msilMzPrecursorMz = msil.targeDecoyCandidatePairPntr->mz(msil.isDecoy);
-				// 	const float msilMzMs2Mz = msil.ms2IonPntr->mz;
-				//
-				// 	if (mzPrecursorScanMin < msilMzPrecursorMz && msilMzPrecursorMz < mzPrecursorScanMax) {
-				// 		if (mzMs2ScanMin < msilMzMs2Mz && msilMzMs2Mz < mzMs2ScanMax) {
-				// 			tdPeptideFrags.push_back(&msil);
-				// 		}
-				// 	}
-				//
-				// 	if (msilMzPrecursorMz > mzPrecursorScanMax && msilMzMs2Mz > mzMs2ScanMax) {
-				// 		break;
-				// 	}
-				// }
-				//
-				// if (!tdPeptideFrags.isEmpty()) {
-				// 	snmiVsIndexesLibrary.push_back({snmi, tdPeptideFrags});
-				// }
-			}
 
 			QVector<MS2IonLibrary*> tdPeptideFrags;
 			e = fragger.extractMs2Points(
