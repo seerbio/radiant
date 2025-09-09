@@ -758,7 +758,7 @@ namespace {
 
 			const auto sortLogic = [](const Tally &l, const Tally &r) {
 				if (l.occurrence == r.occurrence) {
-					return l.cosineSimilarity > r.cosineSimilarity;
+					return l.intensitiesSum > r.intensitiesSum;
 				}
 				return l.occurrence > r.occurrence;
 			};
