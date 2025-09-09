@@ -24,6 +24,7 @@ struct TallyResult {
 	float relativeIntensityDifferenceAverage = -1.0;
 	float intensitiesSum = -1.0;
 	QVector<int> ranks;
+	int totalFound = -1;
 	// int indexesFoundY = 0;
 	// int indexesFoundB = 0;
 	// int seqTagLongestY = 0;

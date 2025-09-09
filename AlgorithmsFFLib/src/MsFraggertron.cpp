@@ -78,7 +78,9 @@ namespace {
 			TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
 			ScanNumber scanNumber = -1;
 			bool isDecoy = false;
+			int altCount = -1;
 			Occurrence occurrence = -1;
+			Occurrence occurrencePrevious = -1;
 			float cosineSimilarity = -1;
 			float relativeIntensityDifferenceAverage = -1;
 			float rankMean = -1;
@@ -94,6 +96,8 @@ namespace {
 			if (std::get<1>(tpl).front().occurrence > 0) {
 				t.targetDecoyCandidatePair = std::get<0>(tpl);
 				t.occurrence = std::get<1>(tpl).front().occurrence;
+				t.altCount = std::get<1>(tpl).front().totalFound;
+				t.occurrencePrevious = t.altCount > 1 ? std::get<1>(tpl)[1].occurrence : 0;
 				t.scanNumber = std::get<1>(tpl).front().scanNumber;
 				t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
 				t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
@@ -108,6 +112,8 @@ namespace {
 			if (std::get<2>(tpl).front().occurrence > 0) {
 				td.targetDecoyCandidatePair = std::get<0>(tpl);
 				td.occurrence = std::get<2>(tpl).front().occurrence;
+				td.altCount = std::get<2>(tpl).front().totalFound;
+				td.occurrencePrevious = td.altCount > 1 ? std::get<2>(tpl)[1].occurrence : 0;
 				td.scanNumber = std::get<2>(tpl).front().scanNumber;
 				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
 				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
@@ -180,12 +186,14 @@ namespace {
 				std::cout
 					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
 					<< counter << " "
-					<< t.isDecoy
+					<< t.isDecoy << " "
+					<< t.altCount << " "
+					<< t.scanNumber
 					<< " fdsafda "
-					// << q << " "
+					<< q << " "
 					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()  << " "
 					<< t.targetDecoyCandidatePair->charge()  << " "
-					<< t.occurrence << " "
+					<< t.occurrence << " " << t.occurrencePrevious << " "
 					// << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
 					// << t.rankBest  << " "
@@ -478,7 +486,6 @@ namespace {
 
 	void filterByPPM(Tally *t) {
 
-
 		const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(t->mzEmperical);
 		Eigen::VectorX<float> intensityEmpericalVecNorm = EigenUtils::convertQVectorToEigenVector(t->intensitiesEmperical);
 		intensityEmpericalVecNorm.array() /= intensityEmpericalVecNorm.maxCoeff();
@@ -504,6 +511,8 @@ namespace {
 		}
 
 		Tally tNew;
+		tNew.scanNumber = t->scanNumber;
+
 		for (const QPair<int, float> &pr : bestIons) {
 
 			if (pr.first < 0 || intensityEmpericalVecNorm.coeff(ogIndexes[pr.first]) < 0.01) {
@@ -517,6 +526,33 @@ namespace {
 			tNew.mzEmperical.push_back(t->mzEmperical[ogIndexes[pr.first]]);
 			tNew.mzTheoretical.push_back(t->mzTheoretical[ogIndexes[pr.first]]);
 		}
+
+		*t = tNew;
+	}
+
+	void filterByMedianScanIntensity(
+		float medianScanIntensity,
+		Tally *t
+		) {
+
+		Tally tNew;
+		tNew.scanNumber = t->scanNumber;
+
+		for (int i = 0; i < t->mzEmperical.size(); ++i) {
+
+			if (t->intensitiesEmperical[i] < medianScanIntensity) {
+				continue;
+			}
+
+			tNew.occurrence++;
+			tNew.ranks.push_back(t->ranks[i]);
+			tNew.intensitiesEmperical.push_back(t->intensitiesEmperical[i]);
+			tNew.mzEmperical.push_back(t->mzEmperical[i]);
+			tNew.mzTheoretical.push_back(t->mzTheoretical[i]);
+			tNew.intensitiesTheoretical.push_back(t->intensitiesTheoretical[i]);
+		}
+
+		tNew.intensitiesSum = std::accumulate(tNew.intensitiesEmperical.begin(), tNew.intensitiesEmperical.end(), 0.0f);
 
 		*t = tNew;
 	}
@@ -565,6 +601,18 @@ namespace {
 							tallyTarget.scanNumber = currentScanNumber;
 
 							filterByPPM(&tallyTarget);
+
+							if (isr.msScanPointPntr->scanInfoPntr->pointCount > 1000) {
+								filterByMedianScanIntensity(
+									isr.msScanPointPntr->scanInfoPntr->medianIntensity,
+									&tallyTarget
+									);
+							}
+
+
+							if (tallyTarget.occurrence <= occurenceCountMin) {
+								continue;
+							}
 
 							e = EigenUtils::cosineSimilarity(
 								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical),
@@ -618,6 +666,17 @@ namespace {
 
 							filterByPPM(&tallyDecoy);
 
+							if (isr.msScanPointPntr->scanInfoPntr->pointCount > 1000) {
+								filterByMedianScanIntensity(
+									isr.msScanPointPntr->scanInfoPntr->medianIntensity,
+									&tallyDecoy
+									);
+							}
+
+							if (tallyDecoy.occurrence <= occurenceCountMin) {
+								continue;
+							}
+
 							e = EigenUtils::cosineSimilarity(
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical),
 								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical),
@@ -633,7 +692,7 @@ namespace {
 							tallyResultsDecoy.push_back(tallyDecoy);
 
 							// if (
-							// 	tallyDecoy.occurrence > 9
+							// 	tallyDecoy.occurrence > 7
 							// 	// && targetDecoyCandidatePair->charge() == 3
 							// 	// && targetDecoyCandidatePair->peptideStringWithMods() == "VEYSAYLDVFSQPEK"
 							// 	) {
@@ -719,6 +778,7 @@ namespace {
 
 				t.scanNumber = tally.scanNumber;
 				t.occurrence = tally.occurrence;
+				t.totalFound = tallyResultsTarget.size();
 				t.isDecoy = false;
 				t.cosineSimilarity = tally.cosineSimilarity;
 				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
@@ -734,6 +794,7 @@ namespace {
 				const Tally &tally = tallyResultsDecoy[i];
 				t.scanNumber = tally.scanNumber;
 				t.occurrence = tally.occurrence;
+				t.totalFound = tallyResultsDecoy.size();
 				t.isDecoy = true;
 				t.cosineSimilarity = tally.cosineSimilarity;
 				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
