@@ -58,8 +58,8 @@ public:
     * @return QVector<MS2Ion> representing the MS2 ions for the target.
     */
     [[nodiscard]] QVector<MS2Ion> ms2IonsTarget(
-	    float mzMin,
-		float mzMax
+	    float mzMin = 0.0,
+		float mzMax = 2000.0
 	) const;
 
     /**
@@ -68,8 +68,8 @@ public:
     * @return QVector<MS2Ion> representing the MS2 ions for the decoy.
     */
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy(
-	    float mzMin,
-		float mzMax
+	    float mzMin = 0.0,
+		float mzMax = 2000.0
 	) const;
     [[nodiscard]] QVector<MS2Ion> ms2IonsDecoy(const QVector<MS2Ion> &ms2IonsTarget) const;
 

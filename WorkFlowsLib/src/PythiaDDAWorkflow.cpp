@@ -62,6 +62,32 @@ Err PythiaDDAWorkflow::processFile(const QString &msDataFilePath) {
 	ERR_RETURN
 }
 
+namespace {
+
+	Err buildLdaInputData(
+		const QVector<CandidateScoresDDATuple> &candidateScoresDDATuples,
+		const QVector<float> &weights,
+		QVector<QPair<FeaturesArrayTargets*, FeaturesArrayDecoys*>> *targetDecoyPairScores
+		) {
+
+		ERR_INIT
+
+		e = ErrorUtils::isNotEmpty(candidateScoresDDATuples); ree;
+		targetDecoyPairScores->clear();
+
+		for (const CandidateScoresDDATuple &pr : candidateScoresDDATuples) {
+
+			const QVector<CandidateScoresDDA> &scoresTarget = std::get<1>(pr);
+			const QVector<CandidateScoresDDA> &scoresDecoy = std::get<2>(pr);
+
+
+		}
+
+
+		ERR_RETURN
+	}
+
+}
 Err PythiaDDAWorkflow::buildMsCalibratomatic() {
 
 	ERR_INIT
@@ -77,8 +103,18 @@ Err PythiaDDAWorkflow::buildMsCalibratomatic() {
 		targetDecoyCandidatePairsCalibration.push_back(m_targetDecoyCandidatePairsPntrs[i]);
 	}
 
-	e = m_msFraggertron.performFragging(targetDecoyCandidatePairsCalibration); ree;
+	const QPair<Err, QVector<CandidateScoresDDATuple>> result
+		= m_msFraggertron.performFragging(targetDecoyCandidatePairsCalibration);
+	e = result.first; ree;
+
+	const QVector<CandidateScoresDDATuple> &tallyResults = result.second;
+
+	// e = buildLdaInputData(tallyResults); ree;
 
 
 	ERR_RETURN
 }
+
+
+
+

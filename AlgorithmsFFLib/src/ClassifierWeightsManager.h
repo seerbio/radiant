@@ -35,11 +35,11 @@ public:
     * @return An Err enum indicating the success or failure of the operation.
     */
     static Err buildDataClassifier1(
-            const QVector<QVector<float>*> &targets,
-            const QVector<QVector<float>*> &decoys,
-            QVector<QVector<float>> *A,
-            QVector<float> *b
-            );
+        const QVector<QVector<float>*> &targets,
+        const QVector<QVector<float>*> &decoys,
+        QVector<QVector<float>> *A,
+        QVector<float> *b
+        );
 
     /**
     * @brief Builds a data classifier using targets and decoys for classification.
@@ -55,10 +55,10 @@ public:
     * @return An Err enum indicating the success or failure of the operation.
     */
     static Err buildDataClassifier2(
-            const QVector<QVector<float>*> &targets,
-            const QVector<QVector<float>*> &decoys,
-            QVector<QVector<float>> *A,
-            QVector<float> *b
+        const QVector<QVector<float>*> &targets,
+        const QVector<QVector<float>*> &decoys,
+        QVector<QVector<float>> *A,
+        QVector<float> *b
     );
 
     /**
@@ -73,10 +73,10 @@ public:
     * @return An Err enum indicating the success or failure of the operation.
     */
     static Err fitWeights(
-            const QVector<QVector<float>> &matA,
-            const QVector<float> &vecB,
-            QVector<float> *weights
-            );
+        const QVector<QVector<float>> &matA,
+        const QVector<float> &vecB,
+        QVector<float> *weights
+        );
 
     /**
     * @brief Applies weights to input data for classification.
@@ -90,10 +90,10 @@ public:
     * @return An Err enum indicating the success or failure of the operation.
     */
     static Err applyWeights(
-            const QVector<QVector<float>*> &matA,
-            const QVector<float> &weights,
-            QVector<float> *results
-            );
+        const QVector<QVector<float>*> &matA,
+        const QVector<float> &weights,
+        QVector<float> *results
+        );
 
 private:
 

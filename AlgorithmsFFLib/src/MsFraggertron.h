@@ -73,7 +73,7 @@ public:
 
 	[[nodiscard]] bool isInit() const;
 
-	Err performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs);
+	QPair<Err, QVector<CandidateScoresDDATuple>> performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs);
 
 private:
 

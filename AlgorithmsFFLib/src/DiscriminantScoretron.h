@@ -7,6 +7,7 @@
 
 #include "AlgorithmsFFLib_Exports.h"
 #include "CandidateScores.h"
+#include "CandidateScoresDDA.h"
 #include "Error.h"
 #include "GlobalSettings.h"
 

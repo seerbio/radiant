@@ -22,8 +22,8 @@ enum FeaturesDDA {
 	IndexesFoundB,
 	SeqTagLongestY,
 	SeqTagLongestB,
-	ScanTimeDelta,
-	ScanTimeDeltaFromMean,
+	ScanTimeDeltaDDA,
+	ScanTimeDeltaDDAFromMean,
 
 	RelativeIntensityRank0,
 	RelativeIntensityRank1,

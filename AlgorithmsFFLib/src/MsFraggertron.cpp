@@ -71,34 +71,33 @@ namespace {
 
 			ERR_RETURN
 	}
-	
+
 }//namespace
-Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs) {
+QPair<Err, QVector<CandidateScoresDDATuple>> MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs) {
 
 	ERR_INIT
 
 	QElapsedTimer et;
 	et.start();
 
-	e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); ree;
-	e = ErrorUtils::isTrue(m_precursorMzArrangetron.isInit()); ree;
+	e = ErrorUtils::isNotEmpty(targetDecoyCandidatePairsPntrs); rree;
+	e = ErrorUtils::isTrue(m_precursorMzArrangetron.isInit()); rree;
 
 	QVector<QVector<TargetDecoyCandidatePair*>> targetDecoyCandidatePairsPntrsTranched;
 	e = buildTargetDecoyCandidatePairsPntrsTranched(
 		targetDecoyCandidatePairsPntrs,
 		&targetDecoyCandidatePairsPntrsTranched
-		); ree;
+		); rree;
 
 	QVector<CandidateScoresDDATuple> tallyResultsFinal;
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
-		const QPair<Err, QVector<CandidateScoresDDATuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); ree;
-		e = result.first; ree;
+		const QPair<Err, QVector<CandidateScoresDDATuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); rree;
+		e = result.first; rree;
 		tallyResultsFinal.append(result.second);
 	}
 
-	reportResults(tallyResultsFinal);
 
-	ERR_RETURN
+	return {e, tallyResultsFinal};
 }
 
 
@@ -482,38 +481,6 @@ namespace {
 							tallyTarget.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyTarget.occurrence;
 
 							tallyResultsTarget.push_back(tallyTarget);
-
-							// if (
-							// 	tallyTarget.occurrence > 11
-							// 	// && targetDecoyCandidatePair->charge() == 3
-							// 	// && targetDecoyCandidatePair->peptideStringWithMods() == "VEYSAYLDVFSQPEK"
-							// 	) {
-							// 	Eigen::VectorX<float> intzNorm = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical);
-							// 	intzNorm.array() /= intzNorm.maxCoeff();
-							//
-							// 	qDebug() << tallyTarget.occurrence << "SDFKJSDL";
-							// 	qDebug() << tallyTarget.ranks << "SDFKJSDL";
-							// 	qDebug() << tallyTarget.relativeIntensityDifferenceAverage << tallyTarget.cosineSimilarity << "SDFKJSDL";
-							// 	qDebug() << tallyTarget.intensitiesEmperical;
-							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(intzNorm) << "SDFKJSDL";
-							// 	qDebug() << tallyTarget.intensitiesTheoretical << "SDFKJSDL";
-							// 	qDebug() << MathUtils::mean(tallyTarget.intensitiesTheoretical) << MathUtils::stDev(tallyTarget.intensitiesTheoretical) <<
-							// 	MathUtils::stDev(tallyTarget.intensitiesTheoretical)/ MathUtils::mean(tallyTarget.intensitiesTheoretical) << "mean";
-							// 	qDebug() << tallyTarget.mzEmperical << "SDFKJSDL";
-							// 	qDebug() << tallyTarget.mzTheoretical << "SDFKJSDL";
-							//
-							// 	double corr;
-							// 	EigenUtils::pearsonCorrelation(intzNorm, EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical), &corr);
-							// 	qDebug() << tallyTarget.cosineSimilarity << corr << "SDFKJSDL";
-							// 	const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(tallyTarget.mzEmperical);
-							// 	const Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(tallyTarget.mzTheoretical);
-							// 	const Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
-							// 	const Eigen::VectorX<float> ppmDiffsFromMeanAbs = (ppm.array() - ppm.mean()).array().abs();
-							// 	qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
-							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);;
-							// 	qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMeanAbs);;
-							// 	qDebug() << "*********";
-							// }
 						}
 						if (tallyDecoy.occurrence > occurenceCountMin) {
 
@@ -545,41 +512,7 @@ namespace {
 							tallyDecoy.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyDecoy.occurrence;
 
 							tallyResultsDecoy.push_back(tallyDecoy);
-
-							// if (
-							// 	tallyDecoy.occurrence > 7
-							// 	// && targetDecoyCandidatePair->charge() == 3
-							// 	// && targetDecoyCandidatePair->peptideStringWithMods() == "VEYSAYLDVFSQPEK"
-							// 	) {
-							// 		Eigen::VectorX<float> intzNorm = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical);
-							// 		intzNorm.array() /= intzNorm.maxCoeff();
-							//
-							// 		qDebug() << tallyDecoy.occurrence << isr.msScanPointPntr->scanInfoPntr->medianIntensity
-							// 				<< isr.msScanPointPntr->scanInfoPntr->pointCount << "SDFKJSDL";
-							// 		qDebug() << tallyDecoy.ranks << "SDFKJSDL";
-							// 		qDebug() << tallyDecoy.relativeIntensityDifferenceAverage << tallyDecoy.cosineSimilarity << "SDFKJSDL";
-							// 		qDebug() << tallyDecoy.intensitiesEmperical;
-							// 		qDebug() << EigenUtils::convertEigenVectorToQVector(intzNorm) << "SDFKJSDL";
-							// 		qDebug() << tallyDecoy.intensitiesTheoretical << "SDFKJSDL";
-							// 		qDebug() << MathUtils::mean(tallyDecoy.intensitiesTheoretical) << MathUtils::stDev(tallyDecoy.intensitiesTheoretical) <<
-							// 		MathUtils::stDev(tallyDecoy.intensitiesTheoretical)/ MathUtils::mean(tallyDecoy.intensitiesTheoretical) << "mean";
-							// 		// qDebug() << tallyDecoy.mzEmperical << "SDFKJSDL";
-							// 		// qDebug() << tallyDecoy.mzTheoretical << "SDFKJSDL";
-							//
-							// 		double corr;
-							// 		EigenUtils::pearsonCorrelation(intzNorm, EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical), &corr);
-							// 		qDebug() << tallyDecoy.cosineSimilarity << corr << "SDFKJSDL";
-							// 		// const Eigen::VectorX<float> mzEmpericalVec = EigenUtils::convertQVectorToEigenVector(tallyDecoy.mzEmperical);
-							// 		// const Eigen::VectorX<float> mzTheoreticalVec = EigenUtils::convertQVectorToEigenVector(tallyDecoy.mzTheoretical);
-							// 		// const Eigen::VectorX<float> ppm = 1e6 * ((mzEmpericalVec - mzTheoreticalVec).array() / mzTheoreticalVec.array());
-							// 		// const Eigen::VectorX<float> ppmDiffsFromMeanAbs = (ppm.array() - ppm.mean()).array().abs();
-							// 		// qDebug() << ppm.mean() << EigenUtils::calculateStDevOfVector(ppm);
-							// 		// qDebug() << EigenUtils::convertEigenVectorToQVector(ppm);;
-							// 		// qDebug() << EigenUtils::convertEigenVectorToQVector(ppmDiffsFromMeanAbs);;
-							// 		qDebug() << "*********";
-							// }
 						}
-
 					}
 
 					tallyTarget = Tally();
@@ -633,6 +566,7 @@ namespace {
 
 				const Tally &tally = tallyResultsTarget[i];
 
+				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
 				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
@@ -661,6 +595,8 @@ namespace {
 				cs.initFeaturesArray();
 
 				const Tally &tally = tallyResultsDecoy[i];
+
+				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
 				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
@@ -683,22 +619,21 @@ namespace {
 				tallyResultsFinalDecoy.push_back(cs);
 			}
 
-// #define TS_PSM
-#ifdef TS_PSM
-			if (
-				targetDecoyCandidatePair->peptideStringWithMods() == "MADEAGSEADHEGTHSTK"
-				&& targetDecoyCandidatePair->charge() == 2
-				) {
-					for (const TallyResult &tr : tallyResultsFinalTarget) {
-						std::sort(tallyTarget.ranks.begin(), tallyTarget.ranks.end());
-						qDebug() << tr.isDecoy << tr.occurrence << tr.ranks << "SDLKJFS";
-					}
-					for (const TallyResult &tr : tallyResultsFinalDecoy) {
-						std::sort(tallyTarget.ranks.begin(), tallyTarget.ranks.end());
-						qDebug() << tr.isDecoy << tr.occurrence << tr.ranks << "SDLKJFS";
-					}
-				}
-#endif
+			if (tallyResultsTarget.isEmpty()) {
+				CandidateScoresDDA cs;
+				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
+				cs.isDecoy = false;
+				cs.initFeaturesArray();
+				tallyResultsFinalTarget.push_back(cs);
+			}
+
+			if (tallyResultsDecoy.isEmpty()) {
+				CandidateScoresDDA cs;
+				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
+				cs.isDecoy = true;
+				cs.initFeaturesArray();
+				tallyResultsFinalDecoy.push_back(cs);
+			}
 
 			result.push_back({targetDecoyCandidatePair, tallyResultsFinalTarget, tallyResultsFinalDecoy});
 			tallyResultsTarget.clear();
