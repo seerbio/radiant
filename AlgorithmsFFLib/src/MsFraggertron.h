@@ -6,6 +6,7 @@
 #define MSFRAGGERTRON_H
 
 #include "AlgorithmsFFLib_Exports.h"
+#include "CandidateScoresDDA.h"
 #include "MS2Ion.h"
 #include "Ms2IonFraggertronManager.h"
 #include "MsReaderBase.h"
@@ -16,20 +17,20 @@
 #include "MsReaderPointerAcc.h"
 #include "PythiaParameterReader.h"
 
-struct TallyResult {
-	ScanNumber scanNumber = -1;
-	bool isDecoy = false;
-	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float relativeIntensityDifferenceAverage = -1.0;
-	float intensitiesSum = -1.0;
-	QVector<int> ranks;
-	int totalFound = -1;
-	// int indexesFoundY = 0;
-	// int indexesFoundB = 0;
-	// int seqTagLongestY = 0;
-	// int seqTagLongestB = 0;
-};
+// struct TallyResult {
+// 	ScanNumber scanNumber = -1;
+// 	bool isDecoy = false;
+// 	Occurrence occurrence = 0;
+// 	float cosineSimilarity = -1.0;
+// 	float relativeIntensityDifferenceAverage = -1.0;
+// 	float intensitiesSum = -1.0;
+// 	QVector<int> ranks;
+// 	int totalFound = -1;
+// 	// int indexesFoundY = 0;
+// 	// int indexesFoundB = 0;
+// 	// int seqTagLongestY = 0;
+// 	// int seqTagLongestB = 0;
+// };
 
 struct Tally {
 	ScanNumber scanNumber = -1;
@@ -54,9 +55,9 @@ struct IonSearchResult2 {
 };
 
 using namespace Error;
-using TallyResultTarget = TallyResult;
-using TallyResultDecoy = TallyResult;
-using TallyResultTuple = std::tuple<TargetDecoyCandidatePair*, QVector<TallyResultTarget>, QVector<TallyResultDecoy>>;
+using ScoresTarget = CandidateScoresDDA;
+using ScoresDecoy = CandidateScoresDDA;
+using CandidateScoresDDATuple = std::tuple<TargetDecoyCandidatePair*, QVector<CandidateScoresDDA>, QVector<CandidateScoresDDA>>;
 
 class ALGORITHMSFFLIB_EXPORTS MsFraggertron {
 
@@ -76,7 +77,7 @@ public:
 
 private:
 
-	QPair<Err, QVector<TallyResultTuple>> processTargetDecoyCandidatePairsPntrsTranch(
+	QPair<Err, QVector<CandidateScoresDDATuple>> processTargetDecoyCandidatePairsPntrsTranch(
 		const QVector<TargetDecoyCandidatePair*> &tdcps
 
 		);

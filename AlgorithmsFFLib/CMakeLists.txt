@@ -20,6 +20,7 @@ SET(CMAKE_AUTOMOC_MACRO_NAMES
 
 SET(SOURCE_FILES
 #        src/CandidateScores.cpp
+        src/CandidateScoresDDA.cpp
         src/CandidateScoresV2.cpp
         src/CandidateScoresFeatureManager.cpp
 #        src/CandidateScorertron.cpp
@@ -64,6 +65,7 @@ SET(SOURCE_FILES
 
 SET(HEADER_FILES
 #        src/CandidateScores.h
+        src/CandidateScoresDDA.h
         src/CandidateScoresV2.h
         src/CandidateScoresFeatureManager.h
 #        src/CandidateScorertron.h

@@ -71,152 +71,7 @@ namespace {
 
 			ERR_RETURN
 	}
-
-	void reportResults(const QVector<TallyResultTuple> &tallyResultsFinal) 	{
-
-		struct T {
-			TargetDecoyCandidatePair *targetDecoyCandidatePair = nullptr;
-			ScanNumber scanNumber = -1;
-			bool isDecoy = false;
-			int altCount = -1;
-			Occurrence occurrence = -1;
-			Occurrence occurrencePrevious = -1;
-			float cosineSimilarity = -1;
-			float relativeIntensityDifferenceAverage = -1;
-			float rankMean = -1;
-			int rankBest = -1;
-			QVector<int> ranks;
-		};
-
-		QVector<T> ts;
-
-		for (const TallyResultTuple &tpl : tallyResultsFinal) {
-
-			T t;
-			if (std::get<1>(tpl).front().occurrence > 0) {
-				t.targetDecoyCandidatePair = std::get<0>(tpl);
-				t.occurrence = std::get<1>(tpl).front().occurrence;
-				t.altCount = std::get<1>(tpl).front().totalFound;
-				t.occurrencePrevious = t.altCount > 1 ? std::get<1>(tpl)[1].occurrence : 0;
-				t.scanNumber = std::get<1>(tpl).front().scanNumber;
-				t.rankMean = MathUtils::mean(std::get<1>(tpl).front().ranks);
-				t.rankBest = *std::min_element(std::get<1>(tpl).front().ranks.begin(), std::get<1>(tpl).front().ranks.end());
-				t.isDecoy = false;
-				t.cosineSimilarity = std::get<1>(tpl).front().cosineSimilarity;
-				t.relativeIntensityDifferenceAverage = std::get<1>(tpl).front().relativeIntensityDifferenceAverage;
-				t.ranks = std::get<1>(tpl).front().ranks;
-				ts.push_back(t);
-			}
-
-			T td;
-			if (std::get<2>(tpl).front().occurrence > 0) {
-				td.targetDecoyCandidatePair = std::get<0>(tpl);
-				td.occurrence = std::get<2>(tpl).front().occurrence;
-				td.altCount = std::get<2>(tpl).front().totalFound;
-				td.occurrencePrevious = td.altCount > 1 ? std::get<2>(tpl)[1].occurrence : 0;
-				td.scanNumber = std::get<2>(tpl).front().scanNumber;
-				td.rankMean = MathUtils::mean(std::get<2>(tpl).front().ranks);
-				td.rankBest = *std::min_element(std::get<2>(tpl).front().ranks.begin(), std::get<2>(tpl).front().ranks.end());
-				td.cosineSimilarity = std::get<2>(tpl).front().cosineSimilarity;
-				td.relativeIntensityDifferenceAverage = std::get<2>(tpl).front().relativeIntensityDifferenceAverage;
-				td.isDecoy = true;
-				td.ranks = std::get<2>(tpl).front().ranks;
-				ts.push_back(td);
-			}
-		}
-
-		std::sort(
-			ts.begin(),
-			ts.end(),
-			[](const T &l, const T &r) {
-				if (l.occurrence == r.occurrence) {
-					return l.cosineSimilarity > r.cosineSimilarity;
-				}
-
-				return l.occurrence > r.occurrence;
-			});
-
-		// std::sort(
-		// 	ts.begin(),
-		// 	ts.end(),
-		// 	[](const T &l, const T &r) {
-		// 		if (l.targetDecoyCandidatePair->peptideStringWithMods() == r.targetDecoyCandidatePair->peptideStringWithMods()) {
-		//
-		// 			if (l.isDecoy < r.isDecoy) {
-		// 				return l.targetDecoyCandidatePair->charge() == r.targetDecoyCandidatePair->charge();
-		// 			}
-		//
-		// 			return l.targetDecoyCandidatePair->charge() > r.targetDecoyCandidatePair->charge();
-		// 		}
-		//
-		// 		return l.targetDecoyCandidatePair->peptideStringWithMods() > r.targetDecoyCandidatePair->peptideStringWithMods();
-		// 	});
-
-		int counter = 0;
-		int decoy = 0;
-		QHash<TargetDecoyCandidatePair*, T> founds;
-		// int dupes = 0;
-		// PeptideStringWithMods curr;
-		for (const T &t : ts) {
-
-			if (t.isDecoy) {
-				decoy++;
-			}
-
-			const float q = static_cast<float>(decoy) / ++counter;
-
-			// if (founds.contains(t.targetDecoyCandidatePair)) {
-			if (true) {
-
-				// if(counter++ == 10000) {
-				// 	break;
-				// }
-				//
-				// if (t.targetDecoyCandidatePair->peptideStringWithMods() != curr) {
-				//
-				// 	if (dupes > 4) {
-				// 		std::cout << "HEREHREHEHE" << std::endl;
-				// 	}
-				// 	// std::cout << dupes << std::endl;
-				// 	dupes = 0;
-				// 	curr = t.targetDecoyCandidatePair->peptideStringWithMods();
-				// }
-				//
-				// dupes++;
-				std::cout
-					<< qPrintable(S_GLOBAL_TIMER.elapsed()) << " "
-					<< counter << " "
-					<< t.isDecoy << " "
-					<< t.altCount << " "
-					<< t.scanNumber
-					<< " fdsafda "
-					<< q << " "
-					<< t.targetDecoyCandidatePair->peptideStringWithMods().toStdString()  << " "
-					<< t.targetDecoyCandidatePair->charge()  << " "
-					<< t.occurrence << " " << t.occurrencePrevious << " "
-					// << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
-					// << t.rankMean  << founds.value(t.targetDecoyCandidatePair).occurrence  << " "
-					// << t.rankBest  << " "
-					// << t.scanNumber << " "
-					// << founds.value(t.targetDecoyCandidatePair).scanNumber  << " "
-					// << std::endl
-				;
-
-					for (int r : t.ranks) {
-						std::cout << r << ",";
-					}
-					std::cout << std::endl;
-
-
-			}
-
-			founds.insert(t.targetDecoyCandidatePair, t);
-			if (q > 0.01) break;
-
-			//TODO mean mz thomsons found average, higher is more specific than lower (this is a reminder to add another NN/LDA feature)
-		}
-	}
-
+	
 }//namespace
 Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &targetDecoyCandidatePairsPntrs) {
 
@@ -234,9 +89,9 @@ Err MsFraggertron::performFragging(const QVector<TargetDecoyCandidatePair*> &tar
 		&targetDecoyCandidatePairsPntrsTranched
 		); ree;
 
-	QVector<TallyResultTuple> tallyResultsFinal;
+	QVector<CandidateScoresDDATuple> tallyResultsFinal;
 	for (const QVector<TargetDecoyCandidatePair*> &tdcps : targetDecoyCandidatePairsPntrsTranched) {
-		const QPair<Err, QVector<TallyResultTuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); ree;
+		const QPair<Err, QVector<CandidateScoresDDATuple>> result = processTargetDecoyCandidatePairsPntrsTranch(tdcps); ree;
 		e = result.first; ree;
 		tallyResultsFinal.append(result.second);
 	}
@@ -557,13 +412,13 @@ namespace {
 		*t = tNew;
 	}
 
-	QPair<Err, QVector<TallyResultTuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
+	QPair<Err, QVector<CandidateScoresDDATuple>> collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(
 		QHash<TargetDecoyCandidatePair*, QVector<IonSearchResult2>> &input
 		) {
 
 		ERR_INIT
 
-		QVector<TallyResultTuple> result;
+		QVector<CandidateScoresDDATuple> result;
 
 		constexpr int expectedHashTableSize = 1000;
 		QVector<Tally> tallyResultsTarget;
@@ -765,43 +620,67 @@ namespace {
 			std::sort(tallyResultsTarget.begin(), tallyResultsTarget.end(), sortLogic);
 			std::sort(tallyResultsDecoy.begin(), tallyResultsDecoy.end(), sortLogic);
 
-			QVector<TallyResult> tallyResultsFinalTarget;
+			QVector<CandidateScoresDDA> tallyResultsFinalTarget;
 			tallyResultsFinalTarget.reserve(tallyResultsTarget.size());
-			QVector<TallyResult> tallyResultsFinalDecoy;
+			QVector<CandidateScoresDDA> tallyResultsFinalDecoy;
 			tallyResultsFinalDecoy.reserve(tallyResultsDecoy.size());
 
 			constexpr int topN = 3;
 			for (int i = 0; i < std::min(tallyResultsTarget.size(), topN); ++i) {
-				TallyResult t;
+
+				CandidateScoresDDA cs;
+				cs.initFeaturesArray();
 
 				const Tally &tally = tallyResultsTarget[i];
 
-				t.scanNumber = tally.scanNumber;
-				t.occurrence = tally.occurrence;
-				t.totalFound = tallyResultsTarget.size();
-				t.isDecoy = false;
-				t.cosineSimilarity = tally.cosineSimilarity;
-				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
-				t.intensitiesSum = tally.intensitiesSum;
-				t.ranks = tally.ranks;
+				cs.scanNumber = tally.scanNumber;
+				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
+				cs.foundInWindowsCount = tallyResultsTarget.size();
+				cs.isDecoy = false;
+				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;
+				cs.featuresArray[RelativeIntensityDifferenceAverage] = tally.relativeIntensityDifferenceAverage;
+				cs.featuresArray[IntensitiesSum] = tally.intensitiesSum;
 
-				tallyResultsFinalTarget.push_back(t);
+				const float maxIntensity = *std::max_element(
+					tally.intensitiesEmperical.begin(),
+					tally.intensitiesEmperical.end()
+					);
+
+				for (int j = 0; j < tally.ranks.size(); j++) {
+					const int rank = tally.ranks[j];
+					const float relIntensity = tally.intensitiesEmperical[rank] / maxIntensity;
+					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
+				}
+
+				tallyResultsFinalTarget.push_back(cs);
 			}
 
 			for (int i = 0; i < std::min(tallyResultsDecoy.size(), topN); ++i) {
-				TallyResult t;
+
+				CandidateScoresDDA cs;
+				cs.initFeaturesArray();
 
 				const Tally &tally = tallyResultsDecoy[i];
-				t.scanNumber = tally.scanNumber;
-				t.occurrence = tally.occurrence;
-				t.totalFound = tallyResultsDecoy.size();
-				t.isDecoy = true;
-				t.cosineSimilarity = tally.cosineSimilarity;
-				t.relativeIntensityDifferenceAverage = tally.relativeIntensityDifferenceAverage;
-				t.intensitiesSum = tally.intensitiesSum;
-				t.ranks = tally.ranks;
+				cs.scanNumber = tally.scanNumber;
+				cs.featuresArray[Occurences] = static_cast<float>(tally.occurrence);
+				cs.foundInWindowsCount = tallyResultsTarget.size();
+				cs.isDecoy = false;
+				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;
+				cs.featuresArray[RelativeIntensityDifferenceAverage] = tally.relativeIntensityDifferenceAverage;
+				cs.featuresArray[IntensitiesSum] = tally.intensitiesSum;
 
-				tallyResultsFinalDecoy.push_back(t);
+				const float maxIntensity = *std::max_element(
+					tally.intensitiesEmperical.begin(),
+					tally.intensitiesEmperical.end()
+					);
+
+				for (int j = 0; j < tally.ranks.size(); j++) {
+					const int rank = tally.ranks[j];
+					const float relIntensity = tally.intensitiesEmperical[rank] / maxIntensity;
+					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
+				}
+
+				tallyResultsFinalDecoy.push_back(cs);
 			}
 
 // #define TS_PSM
@@ -969,7 +848,7 @@ namespace {
 	}
 
 
-	QPair<Err, QVector<TallyResultTuple>> performFraggingLogic(
+	QPair<Err, QVector<CandidateScoresDDATuple>> performFraggingLogic(
 		const QVector<ScanNumberMzIntensity*> &scanNumberMzIntensities,
 		const PythiaParameters &parameters,
 		QVector<MS2IonLibrary> *ms2IonLibraries
@@ -1136,14 +1015,14 @@ namespace {
 		}
 #endif
 
-		QPair<Err, QVector<TallyResultTuple>> result
+		QPair<Err, QVector<CandidateScoresDDATuple>> result
 				= collateScanNumberVsOccurrencesTargetDecoyCandidatePairs(ionSearchResults); rree;
 
 		return result;
 	}
 
 }//namespace
-QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidatePairsPntrsTranch(
+QPair<Err, QVector<CandidateScoresDDATuple>> MsFraggertron::processTargetDecoyCandidatePairsPntrsTranch(
 	const QVector<TargetDecoyCandidatePair *> &tdcps
 	) {
 	ERR_INIT
@@ -1168,7 +1047,7 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 		&ms2IonLibraries
 		);
 
-	QVector<TallyResultTuple> tallyResultsFinal;
+	QVector<CandidateScoresDDATuple> tallyResultsFinal;
 
 #define FRAG_PARALLEL
 #ifdef FRAG_PARALLEL
@@ -1179,15 +1058,15 @@ QPair<Err, QVector<TallyResultTuple>> MsFraggertron::processTargetDecoyCandidate
 		&ms2IonLibraries
 		);
 
-	QFuture<QPair<Err, QVector<TallyResultTuple>>> future = QtConcurrent::mapped(
+	QFuture<QPair<Err, QVector<CandidateScoresDDATuple>>> future = QtConcurrent::mapped(
 		m_scanNumberMzIntensityTranched,
 		binderLogic
 		);
 	future.waitForFinished();
 
-	for (const QPair<Err, QVector<TallyResultTuple>> &result : future) {
+	for (const QPair<Err, QVector<CandidateScoresDDATuple>> &result : future) {
 		e = result.first; rree;
-		const QVector<TallyResultTuple> &tallyResultTuples = result.second;
+		const QVector<CandidateScoresDDATuple> &tallyResultTuples = result.second;
 		tallyResultsFinal.append(tallyResultTuples);
 	}
 	qDebug() << qPrintable(S_GLOBAL_TIMER.elapsed()) << "PSMs Found:" << tallyResultsFinal.size();
