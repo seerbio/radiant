@@ -35,9 +35,9 @@
 struct Tally {
 	ScanNumber scanNumber = -1;
 	Occurrence occurrence = 0;
-	float cosineSimilarity = -1.0;
-	float relativeIntensityDifferenceAverage = -1.0;
-	float intensitiesSum = -1.0;
+	// float cosineSimilarity = 0.0;
+	// float relativeIntensityDifferenceAverage = 1.0;
+	// float intensitiesSum = 0.0;
 	QVector<int> ranks;
 	QVector<float> mzEmperical;
 	QVector<float> mzTheoretical;

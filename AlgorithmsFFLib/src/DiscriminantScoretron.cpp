@@ -34,10 +34,10 @@ QVector<Features> DiscriminantScoretron::featuresCalibration() {
         MzPPMMeanAbs,
         FoundB,
         FoundY,
-        FoundPercent,
-        DiscScoresCount,
+        FoundPercent,//
+        DiscScoresCount,//
         DiscScoresMean,
-        DiscScoresStDev,
+        DiscScoresStDev,//
         DiscScore1stRunnerUp,
         DiscScore2ndRunnerUp,
     };
@@ -50,6 +50,7 @@ QVector<FeaturesDDA> DiscriminantScoretron::featuresCalibrationDDA() {
 	const QVector<FeaturesDDA> baseFeatures = {
 		Occurrences,
 		CosineSimilaritySpectrum,
+		RelativeIntensityDifferenceAverage,
 		Top6RelativePercent
 	};
 

@@ -406,8 +406,6 @@ namespace {
 			tNew.intensitiesTheoretical.push_back(t->intensitiesTheoretical[i]);
 		}
 
-		tNew.intensitiesSum = std::accumulate(tNew.intensitiesEmperical.begin(), tNew.intensitiesEmperical.end(), 0.0f);
-
 		*t = tNew;
 	}
 
@@ -443,13 +441,14 @@ namespace {
 			Tally tallyTarget;
 			Tally tallyDecoy;
 
+			constexpr int occurenceCountMin = 3;
+
 			for (const IonSearchResult2 &isr : isrs) {
 
 				const ScanNumber scanNumber = isr.msScanPointPntr->scanInfoPntr->scanNumber;
 
 				if (currentScanNumber != scanNumber) {
 					if (currentScanNumber > 0) {
-						constexpr int occurenceCountMin = 3;
 						if (tallyTarget.occurrence > occurenceCountMin) {
 
 							tallyTarget.scanNumber = currentScanNumber;
@@ -468,18 +467,7 @@ namespace {
 								continue;
 							}
 
-							e = EigenUtils::cosineSimilarity(
-								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical),
-								EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical),
-								&tallyTarget.cosineSimilarity
-								);
-
-							Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesEmperical);
-							empIntensityRelative /= empIntensityRelative.maxCoeff();
-							Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyTarget.intensitiesTheoretical);
-							Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
-							tallyTarget.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyTarget.occurrence;
-
+							e = ErrorUtils::isTrue(tallyTarget.occurrence == tallyTarget.intensitiesEmperical.size()); rree;
 							tallyResultsTarget.push_back(tallyTarget);
 						}
 						if (tallyDecoy.occurrence > occurenceCountMin) {
@@ -499,18 +487,7 @@ namespace {
 								continue;
 							}
 
-							e = EigenUtils::cosineSimilarity(
-								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical),
-								EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical),
-								&tallyDecoy.cosineSimilarity
-								);
-
-							Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesEmperical);
-							empIntensityRelative /= empIntensityRelative.maxCoeff();
-							Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tallyDecoy.intensitiesTheoretical);
-							Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
-							tallyDecoy.relativeIntensityDifferenceAverage = diffAbs.sum() / tallyDecoy.occurrence;
-
+							e = ErrorUtils::isTrue(tallyDecoy.occurrence == tallyDecoy.intensitiesEmperical.size()); rree;
 							tallyResultsDecoy.push_back(tallyDecoy);
 						}
 					}
@@ -527,7 +504,6 @@ namespace {
 					tallyDecoy.mzTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->mz);
 					tallyDecoy.intensitiesEmperical.push_back(isr.msScanPointPntr->intensityVal);
 					tallyDecoy.intensitiesTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->intensity);
-					tallyDecoy.intensitiesSum += isr.msScanPointPntr->intensityVal;
 					continue;
 				}
 
@@ -537,95 +513,150 @@ namespace {
 				tallyTarget.mzTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->mz);
 				tallyTarget.intensitiesEmperical.push_back(isr.msScanPointPntr->intensityVal);
 				tallyTarget.intensitiesTheoretical.push_back(isr.ms2IonLibraryPntr->ms2IonPntr->intensity);
-				tallyTarget.intensitiesSum += isr.msScanPointPntr->intensityVal;
 			}
 
 			if (tallyResultsTarget.isEmpty() && tallyResultsDecoy.isEmpty()) {
 				continue;
 			}
 
-			const auto sortLogic = [](const Tally &l, const Tally &r) {
-				if (l.occurrence == r.occurrence) {
-					return l.intensitiesSum > r.intensitiesSum;
-				}
-				return l.occurrence > r.occurrence;
-			};
-			std::sort(tallyResultsTarget.begin(), tallyResultsTarget.end(), sortLogic);
-			std::sort(tallyResultsDecoy.begin(), tallyResultsDecoy.end(), sortLogic);
-
 			QVector<CandidateScoresDDA> tallyResultsFinalTarget;
 			tallyResultsFinalTarget.reserve(tallyResultsTarget.size());
 			QVector<CandidateScoresDDA> tallyResultsFinalDecoy;
 			tallyResultsFinalDecoy.reserve(tallyResultsDecoy.size());
 
-			constexpr int topN = 3;
-			for (int i = 0; i < std::min(tallyResultsTarget.size(), topN); ++i) {
-
-				CandidateScoresDDA cs;
-				cs.initFeaturesArray();
+			constexpr int top6 = 6;
+			for (int i = 0; i < tallyResultsTarget.size(); ++i) {
 
 				const Tally &tally = tallyResultsTarget[i];
+
+				CandidateScoresDDA cs;
+				cs.isDecoy = false;
+				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
+				cs.scanNumber = tally.scanNumber;
+				cs.initFeaturesArray();
+
+				e = ErrorUtils::isTrue(tally.occurrence == tally.intensitiesEmperical.size()); rree;
+				if (tally.occurrence <= occurenceCountMin) {
+					tallyResultsFinalTarget.push_back(cs);
+					continue;
+				}
+
+				Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tally.intensitiesEmperical);
+				Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tally.intensitiesTheoretical);
+				e = EigenUtils::cosineSimilarity(
+					empIntensityRelative,
+					theoIntensityRelative,
+					&cs.featuresArray[CosineSimilaritySpectrum]
+					);
+
+				empIntensityRelative /= empIntensityRelative.maxCoeff();
+				Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
+				cs.featuresArray[RelativeIntensityDifferenceAverage] = diffAbs.sum() / tally.occurrence;
 
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
 				cs.featuresArray[Occurrences] = static_cast<float>(tally.occurrence);
 				cs.foundInWindowsCount = tallyResultsTarget.size();
-				cs.isDecoy = false;
-				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;
-				cs.featuresArray[RelativeIntensityDifferenceAverage] = tally.relativeIntensityDifferenceAverage;
-				cs.featuresArray[IntensitiesSum] = tally.intensitiesSum;
+				cs.featuresArray[IntensitiesSum] = std::accumulate(tally.intensitiesEmperical.begin(), tally.intensitiesEmperical.end(), 0.0f);
 
 				const float maxIntensity = *std::max_element(
 					tally.intensitiesEmperical.begin(),
 					tally.intensitiesEmperical.end()
 					);
+				e = ErrorUtils::isGreaterThanZero(maxIntensity); rree;
+				e = ErrorUtils::isFalse(std::isnan(maxIntensity)); rree;
 
 				for (int j = 0; j < tally.ranks.size(); j++) {
 					const int rank = tally.ranks[j];
-					const float relIntensity = tally.intensitiesEmperical[rank] / maxIntensity;
+					const float relIntensity = tally.intensitiesEmperical[j] / maxIntensity;
 					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
 				}
 
-				e = ErrorUtils::isGreaterThanZero(maxIntensity); rree;
-
-				constexpr int top6 = 6;
 				for (int j = 0; j < top6; j++) {
 					cs.featuresArray[Top6RelativePercent] += cs.featuresArray[RelativeIntensityRank0 + j];
 				}
 
+				const bool hasNoNan = std::none_of(
+					cs.featuresArray.begin(),
+					cs.featuresArray.end(),
+					[](float f){return std::isnan(f);}
+					);
+				e = ErrorUtils::isTrue(hasNoNan); rree;
 
 				tallyResultsFinalTarget.push_back(cs);
 			}
 
-			for (int i = 0; i < std::min(tallyResultsDecoy.size(), topN); ++i) {
-
-				CandidateScoresDDA cs;
-				cs.initFeaturesArray();
+			for (int i = 0; i < tallyResultsDecoy.size(); ++i) {
 
 				const Tally &tally = tallyResultsDecoy[i];
+				e = ErrorUtils::isTrue(tally.occurrence == tally.intensitiesEmperical.size()); rree;
 
+				CandidateScoresDDA cs;
+				cs.isDecoy = true;
 				cs.targetDecoyCandidatePair = targetDecoyCandidatePair;
 				cs.scanNumber = tally.scanNumber;
+				cs.initFeaturesArray();
+
+				if (tally.occurrence < occurenceCountMin) {
+					tallyResultsFinalDecoy.push_back(cs);
+					continue;
+				}
+
+				Eigen::VectorX<float> empIntensityRelative = EigenUtils::convertQVectorToEigenVector(tally.intensitiesEmperical);
+				Eigen::VectorX<float> theoIntensityRelative = EigenUtils::convertQVectorToEigenVector(tally.intensitiesTheoretical);
+				e = EigenUtils::cosineSimilarity(
+					empIntensityRelative,
+					theoIntensityRelative,
+					&cs.featuresArray[CosineSimilaritySpectrum]
+					);
+
+				empIntensityRelative /= empIntensityRelative.maxCoeff();
+				Eigen::VectorX<float> diffAbs = (empIntensityRelative - theoIntensityRelative).array().abs();
+				cs.featuresArray[RelativeIntensityDifferenceAverage] = diffAbs.sum() / tally.occurrence;
 				cs.featuresArray[Occurrences] = static_cast<float>(tally.occurrence);
-				cs.foundInWindowsCount = tallyResultsTarget.size();
-				cs.isDecoy = false;
-				cs.featuresArray[CosineSimilaritySpectrum] = tally.cosineSimilarity;
-				cs.featuresArray[RelativeIntensityDifferenceAverage] = tally.relativeIntensityDifferenceAverage;
-				cs.featuresArray[IntensitiesSum] = tally.intensitiesSum;
+				cs.foundInWindowsCount = tallyResultsDecoy.size();
+				cs.featuresArray[IntensitiesSum] = std::accumulate(tally.intensitiesEmperical.begin(), tally.intensitiesEmperical.end(), 0.0f);
 
 				const float maxIntensity = *std::max_element(
 					tally.intensitiesEmperical.begin(),
 					tally.intensitiesEmperical.end()
 					);
+				e = ErrorUtils::isGreaterThanZero(maxIntensity); rree;
+				e = ErrorUtils::isFalse(std::isnan(maxIntensity)); rree;
 
 				for (int j = 0; j < tally.ranks.size(); j++) {
 					const int rank = tally.ranks[j];
-					const float relIntensity = tally.intensitiesEmperical[rank] / maxIntensity;
+					const float relIntensity = tally.intensitiesEmperical[j] / maxIntensity;
 					cs.featuresArray[RelativeIntensityRank0 + rank] = relIntensity;
 				}
 
+				for (int j = 0; j < top6; j++) {
+					cs.featuresArray[Top6RelativePercent] += cs.featuresArray[RelativeIntensityRank0 + j];
+				}
+
+				const bool hasNoNan = std::none_of(
+					cs.featuresArray.begin(),
+					cs.featuresArray.end(),
+					[](float f){return std::isnan(f);}
+					);
+				e = ErrorUtils::isTrue(hasNoNan); rree;
+
 				tallyResultsFinalDecoy.push_back(cs);
 			}
+
+			const auto sortLogic = [](const CandidateScoresDDA &l, const CandidateScoresDDA &r) {
+				if (l.featuresArray[Occurrences] == r.featuresArray[Occurrences]) {
+					return l.featuresArray[IntensitiesSum] > r.featuresArray[IntensitiesSum];
+				}
+				return l.featuresArray[Occurrences] > r.featuresArray[Occurrences];
+			};
+
+			std::sort(tallyResultsFinalTarget.begin(), tallyResultsFinalTarget.end(), sortLogic);
+			std::sort(tallyResultsFinalDecoy.begin(), tallyResultsFinalDecoy.end(), sortLogic);
+
+			constexpr int topN = 3;
+			tallyResultsFinalTarget.resize(std::min(topN, tallyResultsFinalTarget.size()));
+			tallyResultsFinalDecoy.resize(std::min(topN, tallyResultsFinalDecoy.size()));
 
 			if (tallyResultsTarget.isEmpty()) {
 				CandidateScoresDDA cs;
